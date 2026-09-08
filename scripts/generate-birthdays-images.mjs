@@ -170,7 +170,7 @@ async function generateImageOpenAI(prompt, size) {
     throw new Error("OpenAI client not initialized. Check OPENAI_API_KEY environment variable.");
   }
 
-  const model = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2";
+  const model = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2.5-flare";
   const imageSize =
     size === "1792x1024" ? "1536x1024" : size === "1024x1792" ? "1024x1536" : size;
   const res = await openaiClient.images.generate({

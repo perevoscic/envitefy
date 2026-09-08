@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useId, useState } from "react";
 import { useTemplateEditor, useTemplateState } from "@/components/templates/TemplateEditorContext";
+import { getSignupDesign } from "@/lib/signup-designs";
 import { applySignupStarter, SIGNUP_STARTERS } from "@/lib/signup-starters";
+import { getSignupTheme } from "@/lib/signup-themes";
 import { type SignupIssue, validateSignupPublish } from "@/lib/signup-validation";
 import type { SignupForm } from "@/types/signup";
 import SignupBuilder from "./SignupBuilder";
@@ -22,7 +24,7 @@ const STEPS = [
     id: "design",
     name: "Design",
     title: "Make it yours",
-    description: "Choose a theme to start. You can adjust it any time.",
+    description: "Customize the colors, typography, and photos of your chosen design.",
   },
   {
     id: "details",
@@ -45,6 +47,8 @@ const STEPS = [
 ] as const;
 export default function SmartSignupWizard({ form, onChange, onSubmit, submitting }: Props) {
   const editor = useTemplateEditor();
+  const formId = useId();
+  const [mobilePreview, setMobilePreview] = useState(false);
   // Store a stable step ID so reordering the flow never changes a saved step's meaning.
   // Earlier drafts without this key enter the new flow at Design, keeping their form data.
   const [activeStep, setActiveStep] = useTemplateState<(typeof STEPS)[number]["id"]>(
@@ -101,7 +105,7 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
     );
   };
   return (
-    <div className={styles.editor}>
+    <div className={`${styles.editor} ${step === 0 ? styles.design : ""}`}>
       <ol className={styles.steps} aria-label="Signup creation steps">
         {STEPS.map((item, index) => (
           <li key={item.name}>
@@ -123,8 +127,34 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
         </div>
         <span className={styles.help}>Step {step + 1} of 4</span>
       </div>
-      <form onSubmit={submit}>
-        {step === 0 && <SignupDesignPanel form={form} onChange={onChange} />}
+      {step === 0 && (
+        <div className={`${styles.segmented} ${styles.mobileToggle}`}>
+          <button
+            type="button"
+            aria-pressed={!mobilePreview}
+            onClick={() => setMobilePreview(false)}
+          >
+            Edit design
+          </button>
+          <button type="button" aria-pressed={mobilePreview} onClick={() => setMobilePreview(true)}>
+            Preview page
+          </button>
+        </div>
+      )}
+      <form id={formId} onSubmit={submit}>
+        {step === 0 && (
+          <div className={`${styles.preview} ${!mobilePreview ? styles.hideMobile : ""}`}>
+            <div className={styles.previewLabel}>
+              <span>Live page preview</span>
+              <span>
+                {getSignupDesign(form.appearance?.designId)?.name ||
+                  getSignupTheme(form.appearance?.themeId)?.name ||
+                  "Your design"}
+              </span>
+            </div>
+            <SignupPageRenderer form={form} />
+          </div>
+        )}
         {step === 1 && (
           <div className="space-y-5">
             <details className={styles.panel} open={!form.starterId}>
@@ -257,42 +287,50 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
             {submitError}
           </p>
         )}
-        <div className={styles.footer}>
-          <button
-            type="button"
-            className={styles.secondary}
-            disabled={step === 0 || submitting}
-            onClick={() => go(step - 1)}
-          >
-            Back
-          </button>
-          <div className="flex flex-wrap gap-2">
-            {editor?.authenticated && (
-              <button
-                type="button"
-                className={styles.secondary}
-                disabled={submitting}
-                onClick={() => void editor.requestSave()}
-              >
-                Save draft
-              </button>
-            )}
-            {step < 3 ? (
-              <button type="button" className={styles.primary} onClick={() => go(step + 1)}>
-                Continue <span aria-hidden="true">→</span>
-              </button>
-            ) : (
-              <button type="submit" className={styles.primary} disabled={submitting}>
-                {submitting
-                  ? "Saving…"
-                  : editor && !editor.authenticated
-                    ? "Save and continue"
-                    : "Publish signup"}
-              </button>
-            )}
-          </div>
-        </div>
       </form>
+      {step === 0 && (
+        <aside
+          aria-label="Design customization"
+          className={`${styles.designSidebar} ${mobilePreview ? styles.hideMobile : ""}`}
+        >
+          <SignupDesignPanel form={form} onChange={onChange} />
+        </aside>
+      )}
+      <div className={styles.footer}>
+        <button
+          type="button"
+          className={styles.secondary}
+          disabled={step === 0 || submitting}
+          onClick={() => go(step - 1)}
+        >
+          Back
+        </button>
+        <div className="flex flex-wrap gap-2">
+          {editor?.authenticated && (
+            <button
+              type="button"
+              className={styles.secondary}
+              disabled={submitting}
+              onClick={() => void editor.requestSave()}
+            >
+              Save draft
+            </button>
+          )}
+          {step < 3 ? (
+            <button type="button" className={styles.primary} onClick={() => go(step + 1)}>
+              Continue <span aria-hidden="true">→</span>
+            </button>
+          ) : (
+            <button type="submit" form={formId} className={styles.primary} disabled={submitting}>
+              {submitting
+                ? "Saving…"
+                : editor && !editor.authenticated
+                  ? "Save and continue"
+                  : "Publish signup"}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

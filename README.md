@@ -63,7 +63,8 @@ STUDIO_OPENAI_TEXT_MODEL=gpt-6-astra
 ADMIN_EMAIL_GENERATOR_MODEL=gpt-6-astra
 ADMIN_AD_STUDIO_OPENAI_TEXT_MODEL=gpt-6-astra
 OCR_SKIN_OPENAI_TEXT_MODEL=gpt-6-astra
-STUDIO_OPENAI_IMAGE_MODEL=gpt-image-2
+STUDIO_OPENAI_IMAGE_MODEL=gpt-image-2.5-flare
+STUDIO_OPENAI_IMAGE_EDIT_MODEL=gpt-image-2.5-flare
 
 # Postgres (users + token store)
 DATABASE_URL=postgresql://appuser:pass@host:5432/envitefy
@@ -77,9 +78,10 @@ APP_URL=http://localhost:3001
 
 Premium Concierge extraction/planning, meet discovery parsing, invitation design, and
 admin email/ad generation default to GPT-6 Astra with medium reasoning. Routine chat
-and fast extraction use Luna; balanced extraction uses Terra. Image generation uses
-`gpt-image-2`. Explicit model environment variables override these defaults, so
-update any existing Sol pins on these premium routes to `gpt-6-astra` when deploying.
+and fast extraction use Luna; balanced extraction uses Terra. Image generation and
+editing use `gpt-image-2.5-flare`. Explicit model environment variables override these
+defaults, so update any existing image model pins to `gpt-image-2.5-flare` and Sol pins
+on these premium text routes to `gpt-6-astra` when deploying.
 The existing text/image-input requests use Chat Completions without tool calls;
 Astra tool calling requires the Responses API. See the
 [official Astra migration guide](https://developers.openai.com/api/docs/guides/latest-model#migration-quickstart).

@@ -42,7 +42,7 @@ test.afterEach(() => {
   restoreEnvValue("STUDIO_OPENAI_IMAGE_EDIT_MODEL", ORIGINAL_IMAGE_EDIT_MODEL);
 });
 
-test("OpenAI studio image generation defaults to gpt-image-2", async () => {
+test("OpenAI studio image generation defaults to gpt-image-2.5-flare", async () => {
   let requestedModel = "";
   delete process.env.STUDIO_OPENAI_IMAGE_QUALITY;
 
@@ -63,10 +63,10 @@ test("OpenAI studio image generation defaults to gpt-image-2", async () => {
   const result = await generateInvitationImageWithOpenAi("Create a birthday invite.");
 
   assert.equal(result.ok, true);
-  assert.equal(requestedModel, "gpt-image-2");
+  assert.equal(requestedModel, "gpt-image-2.5-flare");
 });
 
-test("OpenAI studio image edits default independently to gpt-image-2", async () => {
+test("OpenAI studio image edits default independently to gpt-image-2.5-flare", async () => {
   let requestedModel = "";
   delete process.env.STUDIO_OPENAI_IMAGE_QUALITY;
 
@@ -95,7 +95,7 @@ test("OpenAI studio image edits default independently to gpt-image-2", async () 
   );
 
   assert.equal(result.ok, true);
-  assert.equal(requestedModel, "gpt-image-2");
+  assert.equal(requestedModel, "gpt-image-2.5-flare");
 });
 
 test("explicit image quality override remains available", async () => {

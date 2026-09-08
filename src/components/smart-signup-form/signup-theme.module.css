@@ -13,35 +13,6 @@
   display: grid;
   gap: 1.25rem;
 }
-/* Fill the shared quarter-scale viewport instead of centering a tiny 960px sheet. */
-.thumbnailPage {
-  min-height: 100%;
-  padding: 40px;
-}
-.thumbnailPage .sheet {
-  max-width: none;
-}
-.thumbnailPage .split {
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-}
-.thumbnailPage .right {
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-}
-.thumbnailPage .right > img {
-  order: 2;
-}
-.thumbnailPage .cover {
-  height: 350px;
-}
-.thumbnailPage .headerContent {
-  padding: 40px;
-}
-.thumbnailPage .heading {
-  font-size: 3.4rem;
-}
-.thumbnailPage .board [data-signup-slots][data-layout="cards"] {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
 .header {
   overflow: hidden;
   border: 1px solid var(--signup-border);
@@ -191,20 +162,13 @@
   }
 }
 
-/* Complete page compositions. Container queries make the exact same layout
-   work in a full page, an editor pane, and the quarter-scale gallery. */
+/* Complete page compositions adapt to full pages and editor panes. */
 .page[data-signup-design] {
   padding: 28px;
 }
 .page[data-signup-design] .sheet {
   max-width: 1100px;
   gap: 28px;
-}
-.page[data-signup-design].thumbnailPage {
-  padding: 36px;
-}
-.page[data-signup-design].thumbnailPage .sheet {
-  max-width: none;
 }
 .composition {
   position: relative;

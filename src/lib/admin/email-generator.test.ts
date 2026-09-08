@@ -41,6 +41,7 @@ const emailScenariosSource = () =>
 test("admin email generator defaults to Astra with compatible reasoning parameters", () => {
   const source = emailGeneratorSource();
   assert.match(source, /DEFAULT_ADMIN_EMAIL_GENERATOR_MODEL = "gpt-6-astra"/);
+  assert.match(source, /DEFAULT_ADMIN_EMAIL_IMAGE_MODEL = "gpt-image-2\.5-flare"/);
   assert.match(source, /\.\.\.openAiChatCompatibilityParams\(model\)/);
   assert.doesNotMatch(source, /OPENAI_CONCIERGE_CHAT_MODEL/);
 });

@@ -73,7 +73,7 @@ test("ad hub is modular, provider-ready, and keeps server-side admin gates", () 
   assert.match(providers, /ADMIN_AD_STUDIO_IMAGE_PROVIDER/);
   assert.match(providers, /ADMIN_AD_STUDIO_OPENAI_IMAGE_MODEL/);
   assert.match(providers, /STUDIO_PROVIDER/);
-  assert.match(providers, /gpt-image-2/);
+  assert.match(providers, /"gpt-image-2\.5-flare"/);
   assert.match(index, /providerModels/);
 });
 

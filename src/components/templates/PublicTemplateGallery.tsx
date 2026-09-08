@@ -218,7 +218,7 @@ export default function PublicTemplateGallery({
             </Heading>
             <p className="mt-4 text-sm text-[#746775]">
               Customize freely. An account is required to save and share.
-              {category === "signup-forms" && " Each preview includes sample details you can edit."}
+              {category === "signup-forms" && " Choose a design, then make it yours in the editor."}
             </p>
           </div>
           {featured && (

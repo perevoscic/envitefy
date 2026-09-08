@@ -167,7 +167,7 @@ async function generateImage(prompt, size = "1024x1024") {
 
   // Default: OpenAI
   const res = await openaiClient.images.generate({
-    model: "gpt-image-2",
+    model: "gpt-image-2.5-flare",
     prompt,
     size,
     quality: "high",

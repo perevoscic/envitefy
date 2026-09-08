@@ -1,0 +1,179 @@
+.frame {
+  container-type: inline-size;
+}
+
+.thumbnail {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 5cqw;
+  width: 100%;
+  height: 100%;
+  padding: 6cqw;
+  background: var(--thumb-page);
+  color: var(--thumb-ink);
+}
+
+.artwork {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.artwork img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.caption {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4cqw;
+}
+
+.copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.eyebrow {
+  margin: 0 0 2cqw;
+  font-family: system-ui, sans-serif;
+  font-weight: 500;
+  line-height: 1.2;
+  font-size: 2.5cqw;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--thumb-font);
+  font-size: 7.6cqw;
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.ornament {
+  flex: 0 0 10cqw;
+  color: var(--thumb-accent);
+}
+
+.ornament svg {
+  display: block;
+  width: 100%;
+}
+
+.thumbnail[data-font="display"] .title {
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.thumbnail[data-reverse="true"] {
+  background: var(--thumb-surface);
+}
+
+.thumbnail[data-composition="studio"] .artwork {
+  border-top-left-radius: 20cqw;
+  border-bottom-right-radius: 3cqw;
+}
+
+.thumbnail[data-composition="menu"],
+.thumbnail[data-composition="invitation"] {
+  padding: 7cqw 10cqw;
+  outline: 1px solid var(--thumb-accent);
+  outline-offset: -3cqw;
+  background: var(--thumb-surface);
+}
+
+.thumbnail[data-composition="menu"] .artwork {
+  border-radius: 50%;
+  margin-inline: 8cqw;
+}
+
+.thumbnail[data-composition="menu"] .title {
+  font-style: italic;
+}
+
+.thumbnail[data-composition="invitation"] .artwork {
+  border-radius: 50% 50% 0 0;
+}
+
+.thumbnail[data-composition="menu"] .caption,
+.thumbnail[data-composition="invitation"] .caption {
+  text-align: center;
+}
+
+.thumbnail[data-composition="menu"] .ornament,
+.thumbnail[data-composition="invitation"] .ornament {
+  display: none;
+}
+
+.thumbnail[data-composition="scrapbook"] .artwork {
+  overflow: visible;
+  margin: 2cqw 3cqw;
+  border: 2cqw solid var(--thumb-surface);
+  box-shadow: 0 1cqw 3cqw #00000015;
+  transform: rotate(-3deg);
+}
+
+.thumbnail[data-composition="scrapbook"] .artwork::after {
+  content: "";
+  position: absolute;
+  top: -3.5cqw;
+  left: 35%;
+  width: 30%;
+  height: 4.5cqw;
+  background: var(--thumb-secondary);
+  opacity: 0.85;
+  transform: rotate(5deg);
+}
+
+.thumbnail[data-composition="botanical"] .artwork {
+  border-radius: 45% 45% 4cqw 4cqw;
+}
+
+.thumbnail[data-composition="gazette"] .caption,
+.thumbnail[data-composition="ledger"] .caption {
+  border-top: 3px double var(--thumb-accent);
+  padding-top: 4cqw;
+}
+
+.thumbnail[data-composition="journal"] {
+  outline: 1px dashed var(--thumb-accent);
+  outline-offset: -3cqw;
+}
+
+.thumbnail[data-composition="ticket"] .caption {
+  border-top: 1px dashed var(--thumb-accent);
+  padding-top: 4cqw;
+}
+
+.thumbnail[data-composition="poster"],
+.thumbnail[data-composition="marquee"] {
+  background: var(--thumb-accent);
+  color: #fff;
+}
+
+.thumbnail[data-composition="poster"] .ornament,
+.thumbnail[data-composition="marquee"] .ornament {
+  color: var(--thumb-secondary);
+}
+
+.thumbnail[data-composition="marquee"] {
+  outline: 1px solid var(--thumb-secondary);
+  outline-offset: -3cqw;
+}
+
+.thumbnail[data-composition="panorama"] {
+  padding: 0;
+  gap: 0;
+}
+
+.thumbnail[data-composition="panorama"] .caption {
+  padding: 6cqw;
+}

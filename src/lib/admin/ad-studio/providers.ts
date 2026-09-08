@@ -81,7 +81,7 @@ export function resolveAdStudioImageModel(): string {
     safeString(process.env.ADMIN_AD_STUDIO_OPENAI_IMAGE_MODEL) ||
     safeString(process.env.ADMIN_AD_STUDIO_IMAGE_MODEL) ||
     safeString(process.env.STUDIO_OPENAI_IMAGE_MODEL) ||
-    "gpt-image-2"
+    "gpt-image-2.5-flare"
   );
 }
 

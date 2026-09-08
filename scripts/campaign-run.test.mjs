@@ -138,11 +138,11 @@ test("normalizeCampaignInput normalizes envitefye.com typo to envitefy.com", () 
   assert.match(input.looseInput.extraNotes, /envitefy\.com/);
 });
 
-test("resolveImageModel is pinned to gpt-image-2", () => {
+test("resolveImageModel is pinned to gpt-image-2.5-flare", () => {
   process.env.STORYBOARD_OPENAI_IMAGE_MODEL = "gpt-image-1";
   process.env.STUDIO_OPENAI_IMAGE_MODEL = "gpt-image-1";
 
-  assert.equal(resolveImageModel(), "gpt-image-2");
+  assert.equal(resolveImageModel(), "gpt-image-2.5-flare");
 
   delete process.env.STORYBOARD_OPENAI_IMAGE_MODEL;
   delete process.env.STUDIO_OPENAI_IMAGE_MODEL;
@@ -151,11 +151,11 @@ test("resolveImageModel is pinned to gpt-image-2", () => {
 test("buildImageModelComplianceError returns hard blocker when effective model drifts", () => {
   const message = buildImageModelComplianceError(
     [
-      { frameNumber: 1, effectiveImageModel: "gpt-image-2" },
+      { frameNumber: 1, effectiveImageModel: "gpt-image-2.5-flare" },
       { frameNumber: 2, effectiveImageModel: "gpt-image-1" },
       { frameNumber: 3, effectiveImageModel: "gpt-image-1.5" },
     ],
-    "gpt-image-2",
+    "gpt-image-2.5-flare",
   );
 
   assert.match(message, /Image model compliance failure/);
@@ -163,13 +163,13 @@ test("buildImageModelComplianceError returns hard blocker when effective model d
   assert.match(message, /frame 3=gpt-image-1.5/);
 });
 
-test("buildImageModelComplianceError passes when all effective models are gpt-image-2", () => {
+test("buildImageModelComplianceError passes when all effective models are gpt-image-2.5-flare", () => {
   const message = buildImageModelComplianceError(
     [
-      { frameNumber: 1, effectiveImageModel: "gpt-image-2" },
-      { frameNumber: 2, effectiveImageModel: "gpt-image-2" },
+      { frameNumber: 1, effectiveImageModel: "gpt-image-2.5-flare" },
+      { frameNumber: 2, effectiveImageModel: "gpt-image-2.5-flare" },
     ],
-    "gpt-image-2",
+    "gpt-image-2.5-flare",
   );
 
   assert.equal(message, "");

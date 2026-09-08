@@ -147,7 +147,7 @@ function resolveTextModel() {
 }
 
 function resolveImageModel() {
-  return process.env.STORYBOARD_OPENAI_IMAGE_MODEL || process.env.STUDIO_OPENAI_IMAGE_MODEL || "gpt-image-2";
+  return process.env.STORYBOARD_OPENAI_IMAGE_MODEL || process.env.STUDIO_OPENAI_IMAGE_MODEL || "gpt-image-2.5-flare";
 }
 
 function resolveImageQuality() {

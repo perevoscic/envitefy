@@ -80,7 +80,7 @@ type GenerateAdminEmailDraftDeps = {
 };
 
 const DEFAULT_ADMIN_EMAIL_GENERATOR_MODEL = "gpt-6-astra";
-const DEFAULT_ADMIN_EMAIL_IMAGE_MODEL = "gpt-image-2";
+const DEFAULT_ADMIN_EMAIL_IMAGE_MODEL = "gpt-image-2.5-flare";
 const DEFAULT_ENVITEFY_CTA_URL = ADMIN_EMAIL_GENERATION_GUIDE.ctaDefaults.buttonUrl;
 const MAX_PROMPT_LENGTH = 5000;
 const MAX_BODY_HTML_LENGTH = 50000;

@@ -68,11 +68,11 @@ function resolveTextModel(): string {
 }
 
 function resolveImageModel(): string {
-  return process.env.STUDIO_OPENAI_IMAGE_MODEL || "gpt-image-2";
+  return process.env.STUDIO_OPENAI_IMAGE_MODEL || "gpt-image-2.5-flare";
 }
 
 function resolveImageEditModel(): string {
-  return process.env.STUDIO_OPENAI_IMAGE_EDIT_MODEL || "gpt-image-2";
+  return process.env.STUDIO_OPENAI_IMAGE_EDIT_MODEL || "gpt-image-2.5-flare";
 }
 
 function resolveImageSize(): "1024x1024" | "1536x1024" | "1024x1536" | "auto" {

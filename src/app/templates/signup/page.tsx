@@ -65,7 +65,7 @@ export default function SignupTemplatesPage() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-6 space-y-4">
+    <main className="mx-auto w-full max-w-[1536px] px-4 py-6 space-y-4 sm:px-6">
       <header className="flex items-center justify-between">
         <h1 className="text-sm font-semibold uppercase tracking-widest text-stone-500">
           Your signup page

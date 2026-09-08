@@ -125,7 +125,7 @@ function summarizeFrameCounts(frames) {
   return summary;
 }
 
-function collectNonCompliantImageModels(frames = [], expectedModel = "gpt-image-2") {
+function collectNonCompliantImageModels(frames = [], expectedModel = "gpt-image-2.5-flare") {
   const expected = clean(expectedModel).toLowerCase();
   return (Array.isArray(frames) ? frames : [])
     .map((frame) => ({
@@ -142,7 +142,7 @@ function collectNonCompliantImageModels(frames = [], expectedModel = "gpt-image-
     );
 }
 
-export function buildImageModelComplianceError(frames = [], expectedModel = "gpt-image-2") {
+export function buildImageModelComplianceError(frames = [], expectedModel = "gpt-image-2.5-flare") {
   const mismatches = collectNonCompliantImageModels(frames, expectedModel);
   if (!mismatches.length) return "";
   const details = mismatches
@@ -382,7 +382,7 @@ async function clearRenderedRunArtifacts(runPaths) {
 
 const CANONICAL_BRAND_DOMAIN = "envitefy.com";
 const BRAND_DOMAIN_TYPO_REGEX = /\benvitefye\.com\b/gi;
-const IMAGE_MODEL_FALLBACK_CHAIN = ["gpt-image-2"];
+const IMAGE_MODEL_FALLBACK_CHAIN = ["gpt-image-2.5-flare"];
 
 function normalizeBrandDomainText(value) {
   const text = clean(value);
@@ -583,7 +583,7 @@ export function resolveTextModel() {
 }
 
 export function resolveImageModel() {
-  return "gpt-image-2";
+  return "gpt-image-2.5-flare";
 }
 
 export function resolveImageQuality() {
@@ -2207,7 +2207,7 @@ async function generateStoryboardImagesForRun({
         });
         framesManifest.characterReferenceImage = frame.imageFile;
       }
-      const modelComplianceError = buildImageModelComplianceError([frame], "gpt-image-2");
+      const modelComplianceError = buildImageModelComplianceError([frame], "gpt-image-2.5-flare");
       if (modelComplianceError) {
         frame.status = "error";
         frame.error = modelComplianceError;
@@ -2223,7 +2223,7 @@ async function generateStoryboardImagesForRun({
   }
 
   const hadError = framesManifest.frames.some((frame) => frame.status === "error");
-  const modelComplianceError = buildImageModelComplianceError(framesManifest.frames, "gpt-image-2");
+  const modelComplianceError = buildImageModelComplianceError(framesManifest.frames, "gpt-image-2.5-flare");
   if (modelComplianceError) {
     setStageStatus(statusDoc, "image-generation", "error", {
       error: modelComplianceError,

@@ -140,7 +140,7 @@ test("designed headers retain empty-image and legacy-layout choices", () => {
   );
 });
 
-test("every signup catalog item renders a square inert full-page preview with demo content", () => {
+test("every signup catalog item renders an inert artwork thumbnail without form controls", () => {
   const { getPublicTemplates } = load("src/lib/public-template-catalog.ts", baseMocks);
   const Preview = load(
     "src/components/smart-signup-form/SignupTemplatePreview.tsx",
@@ -151,13 +151,14 @@ test("every signup catalog item renders a square inert full-page preview with de
     assert.match(html, /data-template-thumbnail-preview="true"/);
     assert.match(html, /aria-hidden="true" inert=""/);
     assert.match(html, /aspect-square/);
-    assert.match(html, /scale-\[0\.25\]/);
-    assert.match(html, /data-signup-theme=/);
-    assert.match(html, /Hosted by/);
-    assert.match(html, /2028/);
-    assert.equal((html.match(/data-signup-slot="true"/g) || []).length, 4, template.id);
-    assert.ok(!html.includes("Date to be announced"), template.id);
-    assert.ok(!html.includes("Location to be announced"), template.id);
+    assert.doesNotMatch(html, /scale-\[0\.25\]/);
+    assert.match(html, /data-composition=/);
+    assert.ok(html.includes(template.heroImage), template.id);
+    assert.ok(
+      html.includes(template.name.replaceAll("&", "&amp;").replaceAll("'", "&#x27;")),
+      template.id,
+    );
+    assert.doesNotMatch(html, /data-signup-slot=|<button\b|<input\b|<form\b|Hosted by/);
   }
 });
 
@@ -168,7 +169,16 @@ function verifyMarkup(html) {
     assert.ok(depth >= 0 && depth <= 1, "A button must never contain another button");
   }
   assert.equal(depth, 0);
-  assert.equal((html.match(/aria-label="Use [^"]+ theme"/g) || []).length, 6);
+  assert.doesNotMatch(html, /Make it feel like your event|Explore all 150 designs|Use [^"]+ theme/);
+  for (const label of [
+    "Color palette",
+    "Typography",
+    "Header layout",
+    "Photos &amp; artwork",
+    "Fine-tune the design",
+  ]) {
+    assert.ok(html.includes(label), label);
+  }
   const thumbnails = [
     ...html.matchAll(/<div(?=[^>]*data-template-thumbnail-preview="true")[^>]*>/g),
   ];
@@ -177,14 +187,9 @@ function verifyMarkup(html) {
     assert.ok(tag.includes('aria-hidden="true"'));
     assert.ok(tag.includes('inert=""'));
   }
-  // The whole preview must remain outside the selection button, even when passive today.
-  const selectionButtons = [
-    ...html.matchAll(/<button[^>]*aria-label="Use [^"]+ theme"[^>]*>([\s\S]*?)<\/button>/g),
-  ];
-  for (const [, contents] of selectionButtons) assert.ok(!contents.includes("data-signup-theme"));
 }
 
-test("theme picker renders real signup previews outside selection buttons", () => {
+test("design editor retains customization controls without repeating template selection", () => {
   const Panel = load("src/components/smart-signup-form/SignupDesignPanel.tsx", baseMocks).default;
   verifyMarkup(
     renderToStaticMarkup(
@@ -193,22 +198,37 @@ test("theme picker renders real signup previews outside selection buttons", () =
   );
 });
 
-test("theme-card HTML stays valid if a future preview includes an interactive control", () => {
-  const Panel = load("src/components/smart-signup-form/SignupDesignPanel.tsx", {
+test("wizard keeps customization outside the form and connects the publish button to the form", () => {
+  const wizardMocks = {
     ...baseMocks,
-    "./SignupPageRenderer": {
-      __esModule: true,
-      default: () =>
-        React.createElement(
-          "div",
-          { "data-signup-theme": "test" },
-          React.createElement("button", { type: "button", disabled: true }, "Select"),
-        ),
-    },
-  }).default;
-  verifyMarkup(
-    renderToStaticMarkup(
-      React.createElement(Panel, { form: createSignupThemeForm("harvest-table"), onChange() {} }),
-    ),
-  );
+    "./SignupBuilder": { __esModule: true, default: () => null },
+    "./SignupDetailsEditor": { __esModule: true, default: () => null },
+  };
+  for (const step of ["design", "review"]) {
+    const Wizard = load("src/components/smart-signup-form/Wizard.tsx", {
+      ...wizardMocks,
+      "@/components/templates/TemplateEditorContext": {
+        useTemplateEditor: () => null,
+        useTemplateState: () => React.useState(step),
+      },
+    }).default;
+    const html = renderToStaticMarkup(
+      React.createElement(Wizard, {
+        form: createSignupThemeForm("harvest-table"),
+        onChange() {},
+        onSubmit() {},
+      }),
+    );
+    const [, formId, formContents] = html.match(/<form id="([^"]+)"[^>]*>([\s\S]*?)<\/form>/);
+    assert.doesNotMatch(formContents, /Color palette|Design customization/);
+    if (step === "design") {
+      verifyMarkup(html);
+      assert.match(formContents, /Live page preview/);
+      assert.match(html, /<aside aria-label="Design customization"/);
+      assert.ok(html.indexOf("</form>") < html.indexOf("<aside"));
+    } else {
+      assert.ok(html.includes(`type="submit" form="${formId}"`));
+      assert.doesNotMatch(html, /<aside/);
+    }
+  }
 });

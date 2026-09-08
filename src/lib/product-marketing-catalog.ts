@@ -409,10 +409,10 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Guests can claim available needs from the shared form without installing an app.",
             "Hosts can see what is claimed, full, waitlisted, or still needed, then edit the live form after sharing.",
             "All 150 signup templates have a distinct curated design across 12 page compositions, with coordinated typography, paper colors, photo framing, and signup rows or cards. Styles include gazettes, menus, botanical invitations, posters, tickets, journals, scrapbooks, and modern studio layouts.",
-            "Hosts can keep the original template composition or customize its header, fonts, colors, photos, crops, and spacing. The same saved design appears in the gallery, editor, review, and shared signup page.",
+            "Hosts can keep the original template composition or customize its header, fonts, colors, photos, crops, and spacing. The same saved design appears in the editor, review, and shared signup page.",
             "All 150 signup designs include original photographic artwork, covering seasonal events, community groups, sports, celebrations, classes, and hobbies.",
-            "Every signup template has a square preview of the complete page with editable sample event details, hosts, signup needs, capacities, and questions.",
-            "A four-step editor starts with design, then details, signup slots, and review, with reusable starters and browser draft recovery.",
+            "All 150 signup templates have artwork-focused square thumbnails with readable names and coordinated design colors and typography in the gallery. Opening a template provides editable sample event details, hosts, signup needs, capacities, and questions.",
+            "A four-step editor starts with customizing the chosen design's colors, typography, header, and photos in a separate sidebar beside the live preview, then details, signup slots, and review, with reusable starters and browser draft recovery.",
             "Invited guests sign in to claim slots; the public preview shows availability without other participants’ contact information.",
           ],
           sellWhen: [
