@@ -1,0 +1,78 @@
+{
+  "draft": {
+    "intent": "create_event",
+    "creationSessionId": "demo-john-thread",
+    "requestedOutputs": [
+      "live_card"
+    ],
+    "sourceContext": {
+      "type": "none",
+      "hasUsableContext": false,
+      "ambiguity": "none"
+    },
+    "eventPurpose": "A space dinosaur disco birthday party",
+    "eventType": "birthday",
+    "title": "John is 10",
+    "ownership": "owned",
+    "draftStatus": "preview_ready",
+    "currentQuestion": null,
+    "canPersist": true,
+    "honoreeName": "John",
+    "relationship": "son",
+    "ageOrMilestone": "10",
+    "dateText": "Saturday, October 17",
+    "timeText": "2:00 PM",
+    "startISO": "2026-10-17T14:00:00-05:00",
+    "endISO": "2026-10-17T17:00:00-05:00",
+    "timezone": "America/Chicago",
+    "location": "Zilker Park, Austin, TX",
+    "venue": "Zilker Park",
+    "additionalLocations": [],
+    "rsvpEnabled": true,
+    "rsvpName": "John’s parent",
+    "rsvpContact": "john-party@envitefy.com",
+    "numberOfGuests": 20,
+    "registryLink": "https://www.amazon.com/registries",
+    "giftRegistryLink": "https://www.amazon.com/registries",
+    "theme": "Space dinosaurs and disco",
+    "tone": "playful",
+    "outputs": [
+      "live_card"
+    ],
+    "missingFields": [],
+    "previewCopy": {
+      "headline": "John is 10",
+      "subheadline": "Space Dino Disco",
+      "body": "Space dinosaurs, dancing stars, cake and a disco.",
+      "scheduleLine": "Saturday, October 17 at 2:00 PM",
+      "locationLine": "Zilker Park, Austin, TX",
+      "cta": "RSVP"
+    },
+    "source": "text"
+  },
+  "invitationData": {
+    "title": "John is 10",
+    "subtitle": "Space Dino Disco",
+    "heroTextMode": "image",
+    "description": "Join John for an out-of-this-world birthday party.",
+    "eventDetails": {
+      "category": "birthday",
+      "occasion": "birthday",
+      "eventDate": "2026-10-17",
+      "startTime": "14:00",
+      "endTime": "17:00",
+      "calendarStartISO": "2026-10-17T14:00:00-05:00",
+      "calendarEndISO": "2026-10-17T17:00:00-05:00",
+      "venueName": "Zilker Park",
+      "location": "Zilker Park, Austin, TX",
+      "eventTitle": "John is 10",
+      "rsvpEnabled": true,
+      "rsvpMode": "envitefy",
+      "eventId": "demo-john-is-10",
+      "rsvpName": "John’s parent",
+      "rsvpContact": "john-party@envitefy.com",
+      "registryLink": "https://www.amazon.com/registries",
+      "detailsDescription": "Space dinosaurs, dancing stars, cake and a disco. Come ready to celebrate John!"
+    }
+  }
+}

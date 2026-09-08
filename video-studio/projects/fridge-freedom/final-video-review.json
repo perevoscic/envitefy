@@ -1,0 +1,30 @@
+```json
+{
+  "dialogue": {
+    "0:00-0:01": "Can I go?",
+    "0:05-0:06": "There has to be a better way.",
+    "0:09-0:10": "Hello, Envitefy.",
+    "0:11-0:12": "Snap it.",
+    "0:13-0:16": "The party. All here. Date. Time. Place.",
+    "0:16-0:17": "Share it.",
+    "0:18-0:21": "Add it to your calendar.",
+    "0:21-0:22": "Snap it. Share it. Add it to your calendar.",
+    "0:27-0:29": "Keep the memories. Lose the paper clutter."
+  },
+  "sceneChecks": {
+    "child_hands_paper_to_mother": "Verified. The daughter hands the paper invitation to her mother at 0:00-0:01.",
+    "papers_fall_from_fridge": "Verified. Papers fall to the floor at 0:04-0:05 when the mother tries to attach the new invitation.",
+    "google_query_readable": "Verified. The search query 'turn paper birthday invite into a digital invitation' is clearly typed and readable at 0:07-0:09.",
+    "envitefy_opens": "Verified. The envitefy.com landing page is shown at 0:10.",
+    "phone_photo_action": "Verified. The mother is shown taking a photo of the invitation at 0:11-0:12 and again at 0:21-0:22.",
+    "digital_event_details_shown": "Verified. The extracted details (Saturday, October 17, 2:00 PM - 4:00 PM, Maple Park, Austin, TX) are clearly displayed at 0:14-0:15.",
+    "other_parent_sharing": "Verified. A text message sharing screen to 'Other parent' is shown at 0:17-0:18 with an 'Illustrative message' disclaimer.",
+    "add_to_calendar_and_saved_screen": "Verified. The calendar integration options and the saved event on October 17, 2026, are shown at 0:19-0:21 with an 'Illustrative calendar' disclaimer.",
+    "fridge_ends_with_only_drawing": "Verified. The mother clears the clutter, leaving only the rainbow drawing on the fridge at 0:25-0:26.",
+    "end_copy_and_logo": "Verified. The tagline 'Keep the memories. Lose the paper clutter.' and the envitefy.com logo are displayed at 0:27-0:30."
+  },
+  "visualIssues": "None. The video is high-quality, text overlays are fully legible, and the transition between live-action and illustrative mobile screens is clean and clearly labeled.",
+  "audioIssues": "None. The dialogue, sound effects (paper falling, camera shutter, calendar chime), and background music are well-balanced and clear.",
+  "overall": "The advertisement is technically flawless, meets all specified narrative beats, and clearly distinguishes illustrative UI mockups from real-world actions with appropriate on-screen disclaimers."
+}
+```

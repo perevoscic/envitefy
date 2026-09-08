@@ -1,7 +1,13 @@
+import { FridgeFreedom } from "./FridgeFreedom";
+import { WeddingCharacters } from "./WeddingCharacters";
 import { BirthdaySupport } from "./BirthdaySupport";
 import { Wedding200Texts } from "./Wedding200Texts";
 import "./index.css";
-import { type CalculateMetadataFunction, Composition, staticFile } from "remotion";
+import {
+  type CalculateMetadataFunction,
+  Composition,
+  staticFile,
+} from "remotion";
 import { BirthdaySecondJob } from "./BirthdaySecondJob";
 import { BirthdaySecondJobSquare } from "./BirthdaySecondJobSquare";
 import { EnvitefyVideo } from "./Composition";
@@ -9,15 +15,23 @@ import { loadBrandFonts } from "./fonts";
 import { HostMode } from "./HostMode";
 import type { VideoManifest, VideoProps } from "./types";
 
-const calculateMetadata: CalculateMetadataFunction<VideoProps> = async ({ props }) => {
-  if (!/^[a-z0-9-]+$/.test(props.projectId)) throw new Error("Invalid project id.");
-  const response = await fetch(staticFile(`projects/${props.projectId}/manifest.json`));
+const calculateMetadata: CalculateMetadataFunction<VideoProps> = async ({
+  props,
+}) => {
+  if (!/^[a-z0-9-]+$/.test(props.projectId))
+    throw new Error("Invalid project id.");
+  const response = await fetch(
+    staticFile(`projects/${props.projectId}/manifest.json`),
+  );
   if (!response.ok)
-    throw new Error(`Generate narration first: npm run narration -- ${props.projectId}`);
+    throw new Error(
+      `Generate narration first: npm run narration -- ${props.projectId}`,
+    );
   const manifest: VideoManifest = await response.json();
   const expectedScenes = ["hook", "create", "share", "updates", "payoff"];
   if (
-    manifest.scenes?.map((scene) => scene.id).join() !== expectedScenes.join() ||
+    manifest.scenes?.map((scene) => scene.id).join() !==
+      expectedScenes.join() ||
     !Number.isInteger(manifest.durationInFrames) ||
     manifest.durationInFrames < 1
   )
@@ -36,6 +50,28 @@ const calculateMetadata: CalculateMetadataFunction<VideoProps> = async ({ props 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      <Composition
+        id="EnvitefyFridgeFreedom"
+        calculateMetadata={() => ({
+          defaultOutName: "fridge-freedom/fridge-freedom-9x16-v1",
+        })}
+        component={FridgeFreedom}
+        width={1080}
+        height={1920}
+        fps={30}
+        durationInFrames={900}
+      />
+      <Composition
+        id="EnvitefyWeddingCharacters"
+        calculateMetadata={() => ({
+          defaultOutName: "wedding-characters/wedding-characters-9x16-v4",
+        })}
+        component={WeddingCharacters}
+        width={1080}
+        height={1920}
+        fps={30}
+        durationInFrames={750}
+      />
       <Composition
         id="EnvitefyWedding200Texts"
         component={Wedding200Texts}

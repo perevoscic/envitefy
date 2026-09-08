@@ -1,0 +1,33 @@
+[
+  {
+    "start": 1.1800000000000002,
+    "end": 2.96,
+    "text": " Been ready since February.",
+    "words": [
+      {
+        "word": " Been",
+        "start": 1.1800000000000002,
+        "end": 1.98,
+        "probability": 0.7987545132637024
+      },
+      {
+        "word": " ready",
+        "start": 1.98,
+        "end": 2.22,
+        "probability": 0.9756858944892883
+      },
+      {
+        "word": " since",
+        "start": 2.22,
+        "end": 2.56,
+        "probability": 0.9959303736686707
+      },
+      {
+        "word": " February.",
+        "start": 2.56,
+        "end": 2.96,
+        "probability": 0.9910905361175537
+      }
+    ]
+  }
+]

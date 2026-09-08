@@ -1,0 +1,42 @@
+```json
+{
+  "transcription": [
+    {
+      "timestamp": "00:01 - 00:02",
+      "speaker": "Child",
+      "text": "Can I go?"
+    },
+    {
+      "timestamp": "00:05 - 00:07",
+      "speaker": "Woman",
+      "text": "There has to be a better way."
+    }
+  ],
+  "audio_quality_issues": {
+    "clipped_words": "None",
+    "repetitions": "None",
+    "distortion": "None",
+    "harsh_sound_effects": "None"
+  },
+  "dialogue_evaluation": {
+    "natural": true,
+    "intelligible": true,
+    "notes": "The dialogue is clear, well-paced, and natural."
+  },
+  "specific_sounds": {
+    "camera_shutter": {
+      "detected": true,
+      "timestamp": "00:12"
+    },
+    "electronic_confirmation_chime": {
+      "detected": true,
+      "timestamp": "00:22"
+    }
+  },
+  "instrumental_ending": {
+    "ends_smoothly": true,
+    "notes": "The music fades out cleanly and smoothly at the end of the advertisement."
+  },
+  "defects_reported": []
+}
+```

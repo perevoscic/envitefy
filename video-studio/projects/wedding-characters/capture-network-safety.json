@@ -1,0 +1,10 @@
+{
+  "allExternalWritesBlocked": true,
+  "intercepted": [
+    {
+      "demoOnly": true,
+      "method": "POST",
+      "path": "/api/events/demo-wedding-characters/rsvp"
+    }
+  ]
+}

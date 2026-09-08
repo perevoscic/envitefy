@@ -1,0 +1,21 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//sebbo.net//ical-generator//EN
+METHOD:REQUEST
+NAME:Scanned Events
+X-WR-CALNAME:Scanned Events
+BEGIN:VEVENT
+UID:15b02293-85c0-476f-8e3b-e1a7fd9a3c43
+SEQUENCE:0
+DTSTAMP:20260908T171754Z
+DTSTART:20261010T213000Z
+DTEND:20261010T233000Z
+SUMMARY:Garden Vows
+LOCATION:Charleston\, SC
+DESCRIPTION:A refined wedding card for Ava & James\, set for an elegant ga
+ rden ceremony\, dinner\, candlelight\, and dancing beneath the glass atriu
+ m.
+ORGANIZER;CN="Envitefy":mailto:noreply@envitefy.com
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR

@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+const project='projects/wedding-characters/';
+const technical=JSON.parse(fs.readFileSync('out/wedding-characters/final-technical-review.json','utf8'));
+const deliverables={campaign:'wedding-characters',updatedAt:'2026-09-08',status:'assistant-reviewed',exports:[{composition:'EnvitefyWeddingCharacters',aspectRatio:'9:16',width:1080,height:1920,fps:30,durationSeconds:25,frames:750,version:1,file:technical.file,bytes:technical.probe.format.size,sha256:technical.sha256,reviewStatus:'assistant-reviewed',userApproved:false}],review:{contactSheet:'out/wedding-characters/final-contact.jpg',technical:'out/wedding-characters/final-technical-review.json',notes:project+'production-notes.md'}};
+fs.writeFileSync(project+'deliverables.json',JSON.stringify(deliverables,null,2));
+const brief=JSON.parse(fs.readFileSync(project+'brief.json','utf8'));brief.status='assistant-reviewed';brief.export=technical.file;brief.outputFolder='out/wedding-characters/';fs.writeFileSync(project+'brief.json',JSON.stringify(brief,null,2));
+const indexPath='projects/README.md';let index=fs.readFileSync(indexPath,'utf8');const row='| [Wedding Characters](wedding-characters/brief.json) | 25-second wedding mockumentary: Planner, Dancer and Crier, native dialogue, real RSVP/calendar close-ups, matching wedding payoffs and exact supplied branding. Reviewed vertical export. | `out/wedding-characters/wedding-characters-9x16-v1.mp4`; see [deliverables](wedding-characters/deliverables.json) and [notes](wedding-characters/production-notes.md). |\n';
+if(!index.includes('[Wedding Characters]'))index=index.replace('| [Wedding 200 Texts]',row+'| [Wedding 200 Texts]');fs.writeFileSync(indexPath,index);
+fs.writeFileSync(project+'feedback.md','# Feedback\n\n- 2026-09-08: Initial brief completed as one 25-second vertical export. Three character introductions, native Planner line, guest actions, wedding payoff, exact closing copy and actual branding included.\n- Internal review: refreshed stale capture HTML; corrected calendar caption timing; switched short RSVP inserts to generic confirmation; lowered music during the line.\n- Awaiting user feedback.\n');
+console.log('Campaign handoff records complete.');
+
