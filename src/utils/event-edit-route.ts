@@ -1,3 +1,4 @@
+import { getTemplateCategory, templateEditorHref } from "@/lib/template-categories";
 import { buildEventPath } from "./event-url";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -145,6 +146,9 @@ export const buildEditLink = (eventId: string, eventData: any, eventTitle: strin
 };
 
 export const resolveEditHref = (eventId: string, eventData: any, eventTitle: string): string => {
+  const editor = eventData?.templateEditor;
+  const category = editor && getTemplateCategory(editor.category);
+  if (category && typeof editor.templateId === "string") return `${templateEditorHref(category.slug, editor.templateId)}?edit=${encodeURIComponent(eventId)}`;
   try {
     const createdVia = String((eventData as any)?.createdVia || "")
       .toLowerCase()

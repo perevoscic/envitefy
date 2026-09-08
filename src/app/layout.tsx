@@ -152,7 +152,7 @@ export default async function RootLayout({
       height: 512,
     },
     description:
-      "Envitefy turns invites, flyers, PDFs, schedules, and studio-created cards into hosted live event pages with RSVPs, calendar saves, maps, registry links, and gymnastics meet pages.",
+      "Envitefy turns invites, flyers, PDFs, schedules, and Concierge-created cards into hosted live event pages with RSVPs, calendar saves, maps, registry links, and gymnastics meet pages.",
     sameAs: ENVITEFY_SOCIAL_LINKS.map(({ href }) => href),
     contactPoint: {
       "@type": "ContactPoint",

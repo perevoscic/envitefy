@@ -1,7 +1,7 @@
 import { BIRTHDAY_ORIGINAL_ART, BIRTHDAY_ORIGINAL_DIRECTION } from "./birthday-original-art";
 import { BIRTHDAY_KIDS_ART, BIRTHDAY_KIDS_DIRECTION } from "./birthday-kids-art";
 import { BIRTHDAY_ADULT_ART, BIRTHDAY_ADULT_DIRECTION } from "./birthday-adult-art";
-import { birthdayTemplateCatalog } from "@/components/event-create/BirthdayTemplateGallery";
+import { birthdayTemplateCatalog } from "@/data/birthday-template-catalog";
 import {
   buildBirthdayExperienceProfiles,
   type BirthdayExperienceProfile,

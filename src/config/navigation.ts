@@ -25,6 +25,7 @@ export type SignedOutMobileMenuLink = {
 
 export const publicUseCaseNavLinks: SignedOutMobileMenuLink[] = [
   { label: "Birthdays", href: "/birthdays" },
+  { label: "Anniversaries", href: "/anniversaries" },
   { label: "Weddings", href: "/weddings" },
   { label: "Baby Showers", href: "/baby-showers" },
   { label: "Bridal Showers", href: "/bridal-showers" },
@@ -77,6 +78,7 @@ export const signedOutBottomNav: SignedOutBottomNavItem[] = [
 ];
 
 export const signedOutMobileMenuLinks: SignedOutMobileMenuLink[] = [
+  { label: "Envitefy Concierge", href: "/envitefy-concierge" },
   { label: "Invitation Maker", href: "/invitation-maker" },
   ...publicUseCaseNavLinks,
   { label: "Guides", href: "/guides" },

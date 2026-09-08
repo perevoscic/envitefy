@@ -538,7 +538,7 @@ function TemplateCard({
         <Image
           src={
             t.previewImage ||
-            "/templates/baby-showers/soft-neutrals-shower.webp"
+            "/templates/baby-showers/pear-orchard-cradle.webp"
           } // Fallback
           alt={template.name}
           fill
@@ -624,7 +624,7 @@ function TemplatePreviewModal({
             <Image
               src={
                 t.previewImage ||
-                "/templates/baby-showers/soft-neutrals-shower.webp"
+                "/templates/baby-showers/pear-orchard-cradle.webp"
               }
               alt={`${template.name} preview`}
               width={1200}

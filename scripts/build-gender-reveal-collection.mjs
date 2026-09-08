@@ -39,7 +39,7 @@ whale-song|Whale Song|Coastal|satisfy|#eaf2f3|#2e4b61|#877157|wave|A majestic ge
 secret-greenhouse|Secret Greenhouse|Botanical|playfairdisplay|#f5f0df|#314d3e|#916044|greenhouse|Inside a Victorian glasshouse lush fern fronds frame one tiny white wicker bassinet with folded linen, botanical editorial photograph, warm diffused sunlight
 sunbeam-studio|Sunbeam Studio|Editorial|spacegrotesk|#fff0d6|#5e432d|#9f5425|sunburst|A large ochre pleated paper sun sculpture casting radial shadows on creamy plaster, small ivory ceramic orb below, modern craft art photograph
 balloon-cartographer|Balloon Cartographer|Storybook|pirataone|#f7efde|#435365|#9a633f|map|A vintage hot-air balloon with patchwork cream ochre and slate canopy gliding above handpainted imaginary islands, antique storybook travel illustration without map lettering
-rosewater-ripple|Rosewater Ripple|Editorial|allura|#f8edf0|#633c53|#98606e|ripple|A floating damask rose reflected in rippled rosewater with a pale pink glass bowl and scattered single petals, fine-art macro still life, iridescent sunlight
+rosewater-ripple|Rosewater Ripple|Editorial|arizonia|#f8edf0|#633c53|#98606e|ripple|A floating damask rose reflected in rippled rosewater with a pale pink glass bowl and scattered single petals, fine-art macro still life, iridescent sunlight
 little-acorn-almanac|Little Acorn Almanac|Storybook|breeserif|#f3edda|#4b4c2e|#8b5531|almanac|One carved wooden squirrel holding an acorn beside oak leaves and a small mushroom, charming handmade forest toy still life on oat linen
 midnight-macaron|Midnight Macaron|Editorial|cormorantgaramond|#f4e8eb|#43374f|#8d5369|nocturne|Lavender macarons stacked on a dark plum ceramic platter beside one silver star charm, sumptuous midnight food photograph with narrow theatrical light
 coral-cove|Coral Cove|Coastal|quicksand|#fff0e5|#526054|#a55144|cove|A peach coral sculpture under glass with small turquoise tide-pool stones and a sea fan, museum-inspired coastal still life, cream background and soft ocean light
@@ -68,7 +68,7 @@ const common = 'Use case: illustration-story / photorealistic-natural as specifi
 const ending = '. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors.';
 const designs = concepts.map((line) => {
   const [id,name,style,font,paper,ink,accent,composition,scene] = line.split('|');
-  return {id,name,description:scene.charAt(0).toUpperCase()+scene.slice(1)+'.',style,font,paper,ink,accent,composition,heroImage:`/templates/gender-reveal/collection-2026/${id}.webp`,imagePrompt:common+scene+ending};
+  return {id,name,description:scene.split(',')[0]+'.',style,font,paper,ink,accent,composition,heroImage:`/templates/gender-reveal/collection-2026/${id}.webp`,imagePrompt:common+scene+ending};
 });
 if(designs.length!==60 || new Set(designs.map(d=>d.id)).size!==60) throw new Error('Expected 60 distinct designs');
 fs.writeFileSync('src/data/gender-reveal-templates.json',JSON.stringify(designs,null,2)+'\n');

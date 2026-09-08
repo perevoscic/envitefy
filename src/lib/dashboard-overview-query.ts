@@ -96,7 +96,7 @@ export async function loadDashboardOverview(
           updatedAt: typeof row.data.updatedAt === "string" ? row.data.updatedAt : row.created_at,
           href:
             String(row.data.createdVia || "").toLowerCase() === "studio"
-              ? `/studio?editEvent=${encodeURIComponent(row.id)}`
+              ? `/event/${encodeURIComponent(row.id)}`
               : buildEditLink(row.id, row.data, row.title),
         })),
     };

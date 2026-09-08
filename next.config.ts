@@ -1,5 +1,6 @@
 import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 import type { NextConfig } from "next";
+import retiredBabyDesigns from "./src/data/baby-shower-retired-designs.json";
 
 const resolveDevDistDir = () => {
   const port = (process.env.PORT || "").trim();
@@ -12,6 +13,13 @@ const nextConfig = (phase: string): NextConfig => ({
   // Keep dev artifacts out of `.next` so `next build` doesn't race with `next dev`.
   distDir: phase === PHASE_DEVELOPMENT_SERVER ? resolveDevDistDir() : ".next",
   devIndicators: false,
+  async redirects() {
+    return Object.entries(retiredBabyDesigns).map(([retired, replacement]) => ({
+      source: `/templates/baby-showers/${retired}.webp`,
+      destination: `/templates/baby-showers/${replacement}.webp`,
+      permanent: true,
+    }));
+  },
   typescript: {
     ignoreBuildErrors: true,
   },

@@ -1,1 +1,63 @@
-{}
+{
+  "app/AppShell.tsx -> ./left-sidebar": {
+    "id": "app/AppShell.tsx -> ./left-sidebar",
+    "files": [
+      "static/chunks/_app-pages-browser_src_app_left-sidebar_tsx.js"
+    ]
+  },
+  "app/GlobalEventCreate.tsx -> @/components/EventCreateModal": {
+    "id": "app/GlobalEventCreate.tsx -> @/components/EventCreateModal",
+    "files": [
+      "static/chunks/_app-pages-browser_src_components_EventCreateModal_tsx.js"
+    ]
+  },
+  "components/templates/PublicTemplateEditor.tsx -> @/app/event/baby-showers/customize/page": {
+    "id": "components/templates/PublicTemplateEditor.tsx -> @/app/event/baby-showers/customize/page",
+    "files": [
+      "static/css/_app-pages-browser_src_app_event_baby-showers_customize_page_tsx.css",
+      "static/chunks/_app-pages-browser_src_app_event_baby-showers_customize_page_tsx.js"
+    ]
+  },
+  "components/templates/PublicTemplateEditor.tsx -> @/app/event/birthdays/customize/page": {
+    "id": "components/templates/PublicTemplateEditor.tsx -> @/app/event/birthdays/customize/page",
+    "files": [
+      "static/css/_app-pages-browser_src_app_event_birthdays_customize_page_tsx.css",
+      "static/chunks/_app-pages-browser_src_app_event_birthdays_customize_page_tsx.js"
+    ]
+  },
+  "components/templates/PublicTemplateEditor.tsx -> @/app/event/gender-reveal/customize/page": {
+    "id": "components/templates/PublicTemplateEditor.tsx -> @/app/event/gender-reveal/customize/page",
+    "files": [
+      "static/css/_app-pages-browser_src_app_event_gender-reveal_customize_page_tsx.css",
+      "static/chunks/_app-pages-browser_src_app_event_gender-reveal_customize_page_tsx.js"
+    ]
+  },
+  "components/templates/PublicTemplateEditor.tsx -> @/app/event/gymnastics/customize/page": {
+    "id": "components/templates/PublicTemplateEditor.tsx -> @/app/event/gymnastics/customize/page",
+    "files": [
+      "static/css/_app-pages-browser_src_app_event_gymnastics_customize_page_tsx.css",
+      "static/chunks/_app-pages-browser_src_app_event_gymnastics_customize_page_tsx.js"
+    ]
+  },
+  "components/templates/PublicTemplateEditor.tsx -> @/app/event/sport-events/customize/page": {
+    "id": "components/templates/PublicTemplateEditor.tsx -> @/app/event/sport-events/customize/page",
+    "files": [
+      "static/css/_app-pages-browser_src_app_event_sport-events_customize_page_tsx.css",
+      "static/chunks/_app-pages-browser_src_app_event_sport-events_customize_page_tsx.js"
+    ]
+  },
+  "components/templates/PublicTemplateEditor.tsx -> @/app/event/weddings/customize/page": {
+    "id": "components/templates/PublicTemplateEditor.tsx -> @/app/event/weddings/customize/page",
+    "files": [
+      "static/css/_app-pages-browser_src_app_event_weddings_customize_page_tsx.css",
+      "static/chunks/_app-pages-browser_src_app_event_weddings_customize_page_tsx.js"
+    ]
+  },
+  "components/templates/PublicTemplateEditor.tsx -> @/app/templates/signup/page": {
+    "id": "components/templates/PublicTemplateEditor.tsx -> @/app/templates/signup/page",
+    "files": [
+      "static/css/_app-pages-browser_src_app_templates_signup_page_tsx.css",
+      "static/chunks/_app-pages-browser_src_app_templates_signup_page_tsx.js"
+    ]
+  }
+}

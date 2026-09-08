@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { templateCategoryForPath } from "@/lib/template-categories";
 import AuthModal from "@/components/auth/AuthModal";
 import BottomNav from "@/components/navigation/BottomNav";
 import ConciergeSheet from "@/components/navigation/ConciergeSheet";
@@ -47,7 +48,8 @@ export default function SignedOutPageChrome({
   );
   const signupSource = signupIntent ? signupSourceForIntent(signupIntent) : undefined;
   const createAction = getCreateActionForSignupIntent(signupIntent);
-  const primaryCreateHref = createAction?.href || "/chat";
+  const templateCategory = templateCategoryForPath(pathname || "");
+  const primaryCreateHref = templateCategory ? `/${templateCategory.slug}/templates` : createAction?.href || "/chat";
   const loginSuccessRedirectUrl = createAction?.href || "/";
   const signupSuccessRedirectUrl = createAction?.href || "/chat";
   const successRedirectUrl = authMode === "signup" ? signupSuccessRedirectUrl : loginSuccessRedirectUrl;
@@ -65,15 +67,15 @@ export default function SignedOutPageChrome({
   return (
     <>
       <HeroTopNav
-        navLinks={[...signedOutPageNavLinks]}
+        navLinks={signedOutPageNavLinks.filter((link) => ["/birthdays", "/weddings", "/sport-events"].includes(link.href))}
         mobileNavLinks={[...signedOutMobileMenuLinks]}
-        primaryCtaLabel="Let's create"
+        primaryCtaLabel={templateCategory ? "Browse templates" : "Let's create"}
         authenticatedPrimaryHref={primaryCreateHref}
         brandHref={brandHref}
         variant={topNavVariant}
         loginSuccessRedirectUrl={loginSuccessRedirectUrl}
         onGuestLoginAction={() => openAuth("login")}
-        onGuestPrimaryAction={() => openAuth("signup")}
+        onGuestPrimaryAction={() => templateCategory ? router.push(primaryCreateHref) : openAuth("signup")}
       />
 
       <div className="fixed inset-x-0 bottom-0 z-50 md:hidden">

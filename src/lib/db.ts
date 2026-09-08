@@ -1,3 +1,4 @@
+import { canReadEventDraft } from "@/lib/event-draft-access";
 import { scanCounterUpdates } from "@/lib/scan-counters";
 import {
   createHash,
@@ -2781,6 +2782,8 @@ function buildHistoryUnionQuery(view: HistoryView, timeFilter: HistoryTimeFilter
       from event_shares es
       join event_history eh on eh.id = es.event_id
       where es.recipient_user_id = $1
+       and lower(trim(coalesce(eh.data->>'status', ''))) <> 'draft'
+       and lower(trim(coalesce(eh.data->>'draftStatus', ''))) <> 'draft'
         and es.status in ('pending', 'accepted')
         and es.revoked_at is null
     ),
@@ -3045,11 +3048,12 @@ export async function updateEventHistoryPublicSlug(params: {
 }
 
 export async function insertEventHistory(params: {
+  clientDraftId?: string;
   userId?: string | null;
   title: string;
   data: any;
 }): Promise<EventHistoryRow> {
-  const id = randomUUID();
+  const id = params.clientDraftId || randomUUID();
   const safeData = sanitizeJsonValueForPostgres(params.data ?? {});
   if (safeData && typeof safeData === "object") {
     normalizeCanonicalStartFields(safeData);
@@ -3063,10 +3067,14 @@ export async function insertEventHistory(params: {
   const res = await query<EventHistoryRow>(
     `insert into event_history (id, user_id, title, data, public_slug, created_at)
      values ($1, $2, $3, $4, $5, coalesce(now(), now()))
+     on conflict (id) do nothing
      returning id, user_id, title, data, public_slug, created_at`,
     [id, params.userId || null, params.title, JSON.stringify(dataWithPublicSlug), publicSlug],
   );
-  return res.rows[0];
+  if (res.rows[0]) return res.rows[0];
+  const existing = await getEventHistoryById(id);
+  if (!existing || !params.userId || existing.user_id !== params.userId) throw new Error("Draft identity belongs to another account");
+  return existing;
 }
 
 export async function getEventHistoryById(id: string): Promise<EventHistoryRow | null> {
@@ -3096,7 +3104,7 @@ export async function getEventHistoryOwnerById(
 }
 
 function buildEventHistoryPublicDataProjectionSql(dataSql: string, idSql: string): string {
-  const base = `((coalesce(${dataSql}, '{}'::jsonb) - 'ocrText' - 'calendarSync') #- '{attachment,dataUrl}' #- '{profileImage,dataUrl}' #- '{signupForm,header,backgroundImage,dataUrl}')`;
+  const base = `((coalesce(${dataSql}, '{}'::jsonb) - 'ocrText' - 'calendarSync') #- '{templateEditor,snapshot}' #- '{attachment,dataUrl}' #- '{profileImage,dataUrl}' #- '{signupForm,header,backgroundImage,dataUrl}')`;
   const withoutThumbnail = `case
     when coalesce(${dataSql}->>'thumbnail', '') like 'data:%' then (${base} - 'thumbnail')
     else ${base}
@@ -3185,9 +3193,10 @@ export async function getEventHistoryIdentityById(
 
 export async function getEventHistoryPublicRenderById(
   id: string,
+  viewerId?: string | null,
 ): Promise<EventHistoryPublicRow | null> {
   const slugReadyRow = await getEventHistoryById(id);
-  if (!slugReadyRow) return null;
+  if (!slugReadyRow || !canReadEventDraft(slugReadyRow.data, slugReadyRow.user_id, viewerId)) return null;
   const dataSql = "data";
   const projection = buildEventHistoryPublicDataProjectionSql(dataSql, "id");
   const res = await query<EventHistoryPublicQueryRow>(
@@ -3236,8 +3245,12 @@ export async function getEventHistoryPublicRenderById(
        end as signup_header_sig
      from event_history
      where id = $1
+       and (user_id = $2::uuid or (
+         lower(trim(coalesce(data->>'status', ''))) <> 'draft'
+         and lower(trim(coalesce(data->>'draftStatus', ''))) <> 'draft'
+       ))
      limit 1`,
-    [id],
+    [id, viewerId || null],
   );
   return mapEventHistoryPublicRow(res.rows[0]);
 }
@@ -3494,7 +3507,7 @@ export async function getEventHistoryPublicRenderBySlugOrId(params: {
 }): Promise<EventHistoryPublicRow | null> {
   const identity = await resolveEventHistoryIdentityBySlugOrId(params);
   if (!identity) return null;
-  return await getEventHistoryPublicRenderById(identity.id);
+  return await getEventHistoryPublicRenderById(identity.id, params.userId);
 }
 
 async function ensureEventPagesSchema(): Promise<void> {
@@ -4051,6 +4064,8 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
         from event_shares es
         join event_history eh on eh.id = es.event_id
         where es.recipient_user_id = $1
+       and lower(trim(coalesce(eh.data->>'status', ''))) <> 'draft'
+       and lower(trim(coalesce(eh.data->>'draftStatus', ''))) <> 'draft'
           and es.status in ('pending', 'accepted')
           and es.revoked_at is null
       ) shared_rows
@@ -4183,6 +4198,8 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
         from event_shares es
         join event_history eh on eh.id = es.event_id
         where es.recipient_user_id = $1
+       and lower(trim(coalesce(eh.data->>'status', ''))) <> 'draft'
+       and lower(trim(coalesce(eh.data->>'draftStatus', ''))) <> 'draft'
           and es.status in ('pending', 'accepted')
           and es.revoked_at is null
       ) shared_rows
@@ -4305,6 +4322,8 @@ export async function listSharedEventHistoryByRecipient(
      from event_shares es
      join event_history eh on eh.id = es.event_id
      where es.recipient_user_id = $1
+       and lower(trim(coalesce(eh.data->>'status', ''))) <> 'draft'
+       and lower(trim(coalesce(eh.data->>'draftStatus', ''))) <> 'draft'
        and es.status = 'accepted'
        and es.revoked_at is null
      order by eh.created_at desc nulls last, eh.id desc
@@ -4917,6 +4936,8 @@ export async function listAcceptedSharedEventsForUser(userId: string): Promise<E
      from event_shares es
      join event_history eh on eh.id = es.event_id
      where es.recipient_user_id = $1
+       and lower(trim(coalesce(eh.data->>'status', ''))) <> 'draft'
+       and lower(trim(coalesce(eh.data->>'draftStatus', ''))) <> 'draft'
        and es.status = 'accepted'
        and es.revoked_at is null
      order by eh.created_at desc nulls last, eh.id desc`,
@@ -5412,6 +5433,9 @@ export async function claimRegistryItem(params: {
          updated_at = now()
      where id = $1::uuid
        and claimed + $2 <= quantity
+       and exists (select 1 from event_history eh where eh.id = registry_items.event_id
+         and lower(trim(coalesce(eh.data->>'status', ''))) <> 'draft'
+         and lower(trim(coalesce(eh.data->>'draftStatus', ''))) <> 'draft')
      returning id, event_id, title, affiliate_url, image_url, price, quantity, claimed, category, notes, created_at, updated_at`,
     [params.itemId, qty],
   );

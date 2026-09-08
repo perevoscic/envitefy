@@ -1,4 +1,5 @@
 "use client";
+import { validateClientUploadFile } from "@/utils/media-upload-client";
 
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
 import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
@@ -619,6 +620,8 @@ const SignupBuilder: React.FC<Props> = ({
   };
 
   const uploadImageToIndex = async (index: number, file: File) => {
+    const issue = validateClientUploadFile(file, "header");
+    if (issue) { alert(issue); return; }
     const dataUrl = await readFileAsDataUrl(file);
     const thumb = (await createThumbnailDataUrl(file, 900, 0.9)) || dataUrl;
     const currentImages = Array.isArray(form.header?.images)
@@ -655,6 +658,8 @@ const SignupBuilder: React.FC<Props> = ({
       dataUrl: string;
     }> = [];
     for (const f of Array.from(files).slice(0, 6)) {
+      const issue = validateClientUploadFile(f, "header");
+      if (issue) { alert(issue); return; }
       const dataUrl = await readFileAsDataUrl(f);
       const thumb = (await createThumbnailDataUrl(f, 900, 0.9)) || dataUrl;
       items.push({
@@ -2658,6 +2663,8 @@ const SignupBuilder: React.FC<Props> = ({
       setHeader({ backgroundImage: null });
       return;
     }
+    const issue = validateClientUploadFile(file, "header");
+    if (issue) { alert(issue); return; }
     const dataUrl = await readFileAsDataUrl(file);
     const thumb = (await createThumbnailDataUrl(file, 600, 0.85)) as
       | string

@@ -50,7 +50,7 @@ const INITIAL_SHOWCASE_INDEX = 3;
 export default function LandingLiveCardShowcase({
   eyebrow,
   title = "Live Card Showcase",
-  description = "See how hosts use Envitefy Studio to create memorable event experiences.",
+  description = "See how hosts use Envitefy Concierge to create memorable event experiences.",
   tone = "default",
 }: LandingLiveCardShowcaseProps = {}) {
   const isLuxury = tone === "luxury";

@@ -28,6 +28,16 @@ test("guide builds audience-specific system prompts", () => {
   assert.notEqual(individual, broadcast);
 });
 
+test("email prompts distinguish Concierge creation, introductions, and category templates", () => {
+  for (const audience of ["individual", "broadcast"] as const) {
+    const prompt = buildAdminEmailSystemPromptFromGuide(audience);
+    assert.match(prompt, /creation CTAs to https:\/\/envitefy\.com\/chat/);
+    assert.match(prompt, /introductions to https:\/\/envitefy\.com\/envitefy-concierge/);
+    assert.match(prompt, /template CTAs to the matching category page/);
+    assert.match(prompt, /Studio and \/studio are retired customer entry points; do not promote them/);
+  }
+});
+
 test("guide payload and banned-link pattern stay in sync", () => {
   const payload = buildAdminEmailGuidePromptPayload({
     audienceMode: "broadcast",

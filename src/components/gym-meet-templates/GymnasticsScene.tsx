@@ -11,7 +11,7 @@ export function gymnasticsDesignStyle(design: GymMeetPageTemplateMeta): CSSPrope
     "--gym-paper": design.background,
     "--gym-ink": design.foreground,
     "--gym-accent": design.accent,
-    "--gym-font": `"${design.displayFont}", Georgia, serif`,
+    "--gym-font": design.displayFont === "ui-monospace" ? "ui-monospace, SFMono-Regular, Menlo, monospace" : `"${design.displayFont}", Georgia, serif`,
   } as CSSProperties;
 }
 
@@ -21,7 +21,7 @@ export default function GymnasticsScene({ model, design }: { model: GymMeetRende
   const host = model.hostGym || model.team;
   const typography = getGymMeetTitleTypography(design.id);
   return (
-    <header className={styles.scene} data-design={design.id} data-title-size={model.titleSize}>
+    <header className={styles.scene} data-design={design.id} data-body={design.bodyStyle} data-title-size={model.titleSize}>
       <div className={styles.masthead}>
         <span>Gymnastics meet</span><span>{model.season || "A day to remember"}</span>
       </div>
@@ -32,7 +32,6 @@ export default function GymnasticsScene({ model, design }: { model: GymMeetRende
       </div>
       <figure className={styles.artwork}>
         {/* The original artwork keeps its intrinsic ratio; the frame supplies the composition. */}
-        {/* biome-ignore lint/performance/noImgElement: local WebP is shared by full pages and passive previews */}
         <img src={model.heroImage || design.artwork} alt={model.heroImage ? "Meet artwork" : design.artworkAlt} width={1536} height={1024} loading="lazy" decoding="async" />
       </figure>
       <dl className={styles.facts}>

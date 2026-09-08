@@ -10,7 +10,7 @@ const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativ
 test("login form supports redirect targets passed by the caller", () => {
   const loginForm = readSource("src/components/auth/LoginForm.tsx");
   const authModal = readSource("src/components/auth/AuthModal.tsx");
-  const studioPage = readSource("src/app/studio/StudioMarketingPage.tsx");
+  const conciergePage = readSource("src/app/envitefy-concierge/ConciergeLandingPage.tsx");
 
   assert.match(loginForm, /successRedirectUrl = "\/"/);
   assert.match(loginForm, /callbackUrl: successRedirectUrl/);
@@ -18,7 +18,7 @@ test("login form supports redirect targets passed by the caller", () => {
   assert.match(loginForm, /window\.location\.replace\(successRedirectUrl\)/);
   assert.match(loginForm, /signIn\("google", \{ callbackUrl: successRedirectUrl \}\)/);
   assert.match(authModal, /<LoginForm[\s\S]*successRedirectUrl=\{successRedirectUrl\}/s);
-  assert.match(studioPage, /successRedirectUrl="\/studio"/);
+  assert.match(conciergePage, /successRedirectUrl="\/chat"/);
 });
 
 test("middleware redirects signed-in category marketing visits to their default create route", () => {
@@ -47,11 +47,11 @@ test("middleware lets authenticated users open /snap for the app launch cards", 
   assert.doesNotMatch(appShell, /const MARKETING_PATHS = new Set\(\[[^\]]*"\/snap"/s);
 });
 
-test("middleware keeps Studio public but requires authentication for chat", () => {
+test("middleware keeps the Concierge introduction public but requires authentication for chat", () => {
   const middleware = readSource("src/middleware.ts");
   const appShell = readSource("src/app/AppShell.tsx");
 
-  assert.match(middleware, /const PUBLIC_UNAUTH_PATHS = new Set\(\[[\s\S]*"\/studio"/s);
+  assert.match(middleware, /const PUBLIC_UNAUTH_PATHS = new Set\(\[[\s\S]*"\/envitefy-concierge"/s);
   const publicPaths = middleware.match(/const PUBLIC_UNAUTH_PATHS = new Set\(\[([\s\S]*?)\]\);/)?.[1] || "";
   assert.doesNotMatch(publicPaths, /"\/chat"/);
   assert.match(middleware, /const isStudioCardSharePath = \(pathname: string\) =>/);

@@ -1,3 +1,4 @@
+import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
 import Script from "next/script";
 import type { CSSProperties } from "react";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
@@ -49,6 +50,7 @@ export default function BirthdaysLandingView({ page }: { page: UseCasePage }) {
 
       <main>
         <BirthdayHero page={page} primaryHref={birthdayCreateHref} />
+        <PublicTemplateGallery category="birthdays" featured />
         <BirthdayEditorialSections page={page} primaryHref={birthdayCreateHref} />
       </main>
 

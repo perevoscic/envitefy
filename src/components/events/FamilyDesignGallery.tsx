@@ -2,7 +2,7 @@
 
 import { getGenderRevealDesign, genderRevealFont } from "@/lib/gender-reveal-designs";
 import { useSearchParams } from "next/navigation";
-import BabyShowerTemplateView from "@/components/BabyShowerTemplateView";
+import BabyShowerDesignPreview from "@/components/baby-showers/BabyShowerDesignPreview";
 import GenderRevealTemplateView from "@/components/GenderRevealTemplateView";
 import { babyShowerTemplateCatalog } from "@/components/event-create/BabyShowersTemplateGallery";
 import { genderRevealTemplateCatalog } from "@/components/event-create/GenderRevealTemplateGallery";
@@ -27,6 +27,7 @@ export default function FamilyDesignGallery({ category }: { category: FamilyTemp
         return `/event/${category}/customize?${params.toString()}`;
       }}
       renderPreview={(design) => {
+        if (isBaby) return <BabyShowerDesignPreview designId={design.id} />;
         const defaults = getFamilyTemplateDesign(category, design.id);
         const eventData = {
           templateId: design.id,
@@ -47,7 +48,7 @@ export default function FamilyDesignGallery({ category }: { category: FamilyTemp
           babyDetails: { notes: "Join us for an afternoon of little wishes, sweet treats, and so much love." },
         };
         const props = { eventId: "", eventTitle: isBaby ? design.name : "Our little surprise", eventData, shareUrl: "", isOwner: false, isReadOnly: true, editHref: "" };
-        return isBaby ? <BabyShowerTemplateView {...props} /> : <GenderRevealTemplateView {...props} preview />;
+        return <GenderRevealTemplateView {...props} preview thumbnail />;
       }}
     />
   );

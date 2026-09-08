@@ -1,177 +1,47 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck
 "use client";
 
-import { Check, ChevronRight } from "lucide-react";
+import { Check, Search } from "lucide-react";
+import { useState } from "react";
 import { TemplateThumbnailFrame, TemplateThumbnailPreview } from "@/components/events/TemplateThumbnail";
-import {
-  GYM_MEET_TEMPLATE_LIBRARY,
-  getGymMeetTemplateMeta,
-} from "./registry";
-import { getGymMeetTitleTypography } from "./titleTypography";
-import { GymMeetTemplateGroup, GymMeetTemplateId } from "./types";
+import GymnasticsPreview from "./GymnasticsPreview";
+import { GYM_MEET_TEMPLATE_LIBRARY, getGymMeetTemplateMeta } from "./registry";
+import type { GymMeetTemplateId } from "./types";
 
-const FEATURED_TEMPLATE_IDS: GymMeetTemplateId[] = [
-  "launchpad-editorial",
-  "glitch-sport",
-  "organic-flow",
-  "pixel-arena",
-  "architect-clean",
-  "noir-silhouette",
-];
-
-const HIDDEN_TEMPLATE_IDS: GymMeetTemplateId[] = ["elite-athlete"];
-
-const GROUP_ORDER: GymMeetTemplateGroup[] = [
-  "current",
-  "showcase",
-  "bold",
-  "classic",
-  "editorial",
-  "dashboard",
-];
-
-const TemplateCard = ({
-  template,
-  selected,
-  onSelect,
-  featured = false,
-}: {
-  template: (typeof GYM_MEET_TEMPLATE_LIBRARY)[number];
-  selected: boolean;
-  onSelect: (value: GymMeetTemplateId) => void;
-  featured?: boolean;
-}) => {
-  const titleTypography = getGymMeetTitleTypography(template.id);
-
-  return (
-    <button
-      type="button"
-      aria-label={template.name}
-      aria-pressed={selected}
-      onClick={() => onSelect(template.id)}
-      style={{ touchAction: "pan-y" }}
-      className={`group w-full overflow-hidden rounded-2xl border text-left transition-all ${
-        selected
-          ? "border-slate-900 bg-slate-900 text-white shadow-lg"
-          : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-md"
-      }`}
-    >
-      <TemplateThumbnailFrame>
-        {featured ? (
-          <div className="absolute left-3 top-3 z-10 rounded-full bg-amber-400 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-950">
-            New
-          </div>
-        ) : null}
-        <div
-          className={`absolute right-3 top-3 z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${
-            selected
-              ? "border-slate-900 bg-slate-900 text-white"
-              : "border-slate-200 bg-white/85 text-slate-400"
-          }`}
-        >
-          {selected ? <Check size={14} /> : <ChevronRight size={14} />}
-        </div>
-        <TemplateThumbnailPreview scaled={false}>
-          <div className={`relative h-full w-full ${template.previewClassName}`}>
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.24),transparent_42%)]" />
-            <div className={`relative flex h-full items-end px-4 pb-2 pt-4 pr-12 ${featured ? "pl-20" : ""}`}>
-              <div
-                className={`${titleTypography.cardClassName} text-base font-black leading-tight ${
-                  template.previewTitleClassName || "tracking-tight"
-                }`}
-                style={titleTypography.fontStyle}
-              >
-                {template.name}
-              </div>
-            </div>
-          </div>
-        </TemplateThumbnailPreview>
-      </TemplateThumbnailFrame>
-    </button>
-  );
-};
-
-export default function TemplateSelector({
-  value,
-  onChange,
-}: {
+export default function TemplateSelector({ value, onChange }: {
   value: GymMeetTemplateId;
   onChange: (value: GymMeetTemplateId) => void;
 }) {
+  const [query, setQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(12);
   const active = getGymMeetTemplateMeta(value);
-  const templates = GROUP_ORDER.flatMap((group) =>
-    GYM_MEET_TEMPLATE_LIBRARY.filter(
-      (template) =>
-        template.group === group && !HIDDEN_TEMPLATE_IDS.includes(template.id)
-    )
+  const matches = GYM_MEET_TEMPLATE_LIBRARY.filter((design) =>
+    `${design.name} ${design.style} ${design.description}`.toLowerCase().includes(query.trim().toLowerCase()),
   );
-  const featuredTemplates = FEATURED_TEMPLATE_IDS.map((id) =>
-    GYM_MEET_TEMPLATE_LIBRARY.find((template) => template.id === id)
-  ).filter((template): template is (typeof GYM_MEET_TEMPLATE_LIBRARY)[number] =>
-    Boolean(template) && !HIDDEN_TEMPLATE_IDS.includes(template.id)
-  );
-  const remainingTemplates = templates.filter(
-    (template) => !FEATURED_TEMPLATE_IDS.includes(template.id)
-  );
-
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-        <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-          Meet Page Templates
-        </p>
-        <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm">
-          <Check size={14} className="text-emerald-600" />
-          Selected: {active.name}
-        </div>
+        <p className="text-xs font-bold uppercase tracking-widest text-slate-500">60 meet page designs</p>
+        <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-slate-800"><Check size={14} /> Selected: {active.name}</p>
       </div>
-
-      <div
-        className="max-h-[calc(100dvh-17rem)] overflow-y-auto overscroll-contain pr-1 touch-pan-y"
-        style={{ WebkitOverflowScrolling: "touch" }}
-      >
-        <div className="space-y-6">
-          <section className="space-y-3">
-            <div className="px-1">
-              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                New Showcase Templates
-              </p>
-              <p className="mt-1 text-sm text-slate-500">
-                Featured templates appear first in the picker.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-3">
-              {featuredTemplates.map((template) => (
-                <TemplateCard
-                  key={template.id}
-                  template={template}
-                  selected={template.id === value}
-                  onSelect={onChange}
-                  featured
-                />
-              ))}
-            </div>
-          </section>
-
-          <section className="space-y-3">
-            <div className="px-1">
-              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                All Templates
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-3">
-              {remainingTemplates.map((template) => (
-                <TemplateCard
-                  key={template.id}
-                  template={template}
-                  selected={template.id === value}
-                  onSelect={onChange}
-                />
-              ))}
-            </div>
-          </section>
-        </div>
+      <label className="relative block">
+        <span className="sr-only">Search meet designs</span>
+        <Search size={16} className="absolute left-3 top-3.5 text-slate-500" aria-hidden="true" />
+        <input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setVisibleCount(12); }} placeholder="Search 60 designs" className="h-11 w-full rounded-full border border-slate-300 pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-slate-700" />
+      </label>
+      <p className="text-xs text-slate-500" aria-live="polite">{matches.length} designs</p>
+      <div className="max-h-[calc(100dvh-20rem)] space-y-5 overflow-y-auto overscroll-contain pr-1 touch-pan-y" style={{ WebkitOverflowScrolling: "touch" }}>
+        {matches.slice(0, visibleCount).map((design) => (
+          <div key={design.id} className="group relative">
+            <button type="button" aria-label={`Select ${design.name}`} aria-pressed={design.id === value} onClick={() => onChange(design.id)} className="absolute inset-0 z-20 rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-slate-800 focus-visible:ring-offset-2"><span className="sr-only">Select {design.name}</span></button>
+            <TemplateThumbnailFrame>
+              {design.id === value ? <span className="absolute right-3 top-3 z-10 rounded-full bg-slate-900 p-2 text-white"><Check size={16} aria-hidden="true" /></span> : null}
+              <TemplateThumbnailPreview><GymnasticsPreview design={design} /></TemplateThumbnailPreview>
+            </TemplateThumbnailFrame>
+            <div className="px-2 pt-3"><p className="text-sm font-semibold text-slate-900">{design.name}</p><p className="mt-1 text-xs text-slate-500">{design.style}</p></div>
+          </div>
+        ))}
+        {!matches.length ? <p className="p-5 text-center text-sm text-slate-500">No designs match your search.</p> : null}
+        {visibleCount < matches.length ? <button type="button" onClick={() => setVisibleCount((count) => count + 12)} className="w-full rounded-full border border-slate-300 px-4 py-3 text-sm font-semibold">Show more designs</button> : null}
       </div>
     </div>
   );

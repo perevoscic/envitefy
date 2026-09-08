@@ -1,3 +1,4 @@
+import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
 import {
   ArrowRight,
   Calendar,
@@ -202,7 +203,7 @@ function SectionEyebrow({ children }: { children: string }) {
 
 export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
   const pageUrl = `https://envitefy.com${page.path}`;
-  const primaryHref = `${page.path}?auth=signup`;
+  const primaryHref = "#templates";
   const studioHref = "/event/weddings";
 
   const webPageLd = {
@@ -277,10 +278,7 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
                 <Link
                   href={primaryHref}
                   className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-white px-9 py-4 text-xs font-medium uppercase tracking-widest text-slate-900 shadow-xl transition hover:-translate-y-0.5 sm:w-auto"
-                >
-                  <span>Launch Bespoke Studio</span>
-                  <ArrowRight className="h-3.5 w-3.5 text-[#ab8a5f]" aria-hidden="true" />
-                </Link>
+                >Browse templates</Link>
                 <a
                   href="#collections"
                   className="inline-flex w-full items-center justify-center rounded-full border border-white/35 bg-white/10 px-9 py-4 text-xs font-medium uppercase tracking-widest text-white backdrop-blur-md transition hover:bg-white/18 sm:w-auto"
@@ -345,14 +343,13 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
                   <Link
                     href={primaryHref}
                     className="relative block w-full rounded-xl bg-[#795b3d] py-4 text-xs font-medium uppercase tracking-widest text-white shadow-md transition hover:bg-[#634932]"
-                  >
-                    Open Wedding Invitation Suite
-                  </Link>
+                  >Browse templates</Link>
                 </div>
               </div>
             </div>
           </div>
         </section>
+        <PublicTemplateGallery category="weddings" featured />
 
         <section id="collections" className="border-t border-[#f2ece1] bg-white py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -407,10 +404,7 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
                     <Link
                       href={primaryHref}
                       className="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#795b3d] transition group-hover:gap-3"
-                    >
-                      View suite
-                      <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                    </Link>
+                    >Browse templates</Link>
                   </div>
                 </article>
               ))}
@@ -424,7 +418,7 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
         >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto mb-16 max-w-3xl space-y-4 text-center">
-              <SectionEyebrow>Bespoke Studio</SectionEyebrow>
+              <SectionEyebrow>Wedding Invitation Design</SectionEyebrow>
               <h2 className="font-wedding-serif text-3xl font-light tracking-wide text-slate-900 sm:text-5xl">
                 Design Your Wedding Invitation Live
               </h2>
@@ -438,7 +432,7 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
                 href={studioHref}
                 className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-8 py-3.5 text-xs font-medium uppercase tracking-widest text-white transition hover:bg-[#634932]"
               >
-                Open Full Wedding Studio
+                Customize Your Wedding Invitation
                 <ArrowRight className="h-3.5 w-3.5 text-[#c0a37b]" aria-hidden="true" />
               </Link>
             </div>
@@ -568,9 +562,7 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
                   <Link
                     href={primaryHref}
                     className="inline-block rounded-full bg-white px-10 py-4 text-xs font-semibold uppercase tracking-widest text-[#523c2a] shadow-xl transition hover:bg-[#fbf9f5]"
-                  >
-                    Design Wedding Suite Now
-                  </Link>
+                  >Browse templates</Link>
                 </div>
               </div>
             </div>

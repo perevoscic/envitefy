@@ -7,7 +7,8 @@ export type SignupIntent =
   | "sport_events"
   | "signup_forms"
   | "gender_reveal"
-  | "birthdays";
+  | "birthdays"
+  | "anniversaries";
 
 export type SignupSource = "snap" | "gymnastics";
 
@@ -21,6 +22,7 @@ export const SIGNUP_INTENTS: SignupIntent[] = [
   "signup_forms",
   "gender_reveal",
   "birthdays",
+  "anniversaries",
 ];
 
 const SIGNUP_INTENT_SET = new Set<string>(SIGNUP_INTENTS);
@@ -37,6 +39,7 @@ const INTENT_BY_MARKETING_PATH: Record<string, SignupIntent> = {
   "/signup-forms": "signup_forms",
   "/gender-reveal": "gender_reveal",
   "/birthdays": "birthdays",
+  "/anniversaries": "anniversaries",
 };
 
 const CREATE_ACTION_BY_INTENT: Record<
@@ -87,6 +90,7 @@ const CREATE_ACTION_BY_INTENT: Record<
     ctaLabel: "+ Gender Reveal",
     href: "/event/gender-reveal",
   },
+  anniversaries: { label: "Anniversary", ctaLabel: "+ Anniversary", href: "/event/anniversaries" },
   birthdays: {
     label: "Birthday Party",
     ctaLabel: "+ Birthday Party",
@@ -101,7 +105,7 @@ export function normalizeSignupIntent(value: unknown): SignupIntent | null {
 
 export function signupIntentForMarketingPath(pathname: string): SignupIntent | null {
   const normalized = (pathname || "").replace(/\/+$/, "") || "/";
-  return INTENT_BY_MARKETING_PATH[normalized] || null;
+  return INTENT_BY_MARKETING_PATH[normalized] || (normalized.includes("/templates") ? INTENT_BY_MARKETING_PATH[`/${normalized.split("/")[1]}`] : null) || null;
 }
 
 export function signupSourceForIntent(intent: SignupIntent | null | undefined): SignupSource {

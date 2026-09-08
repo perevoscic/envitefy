@@ -147,10 +147,7 @@ export function SignupFormsHeroContent({ page }: { page: UseCasePage }) {
           <Link
             href={createHref}
             className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#18214d] shadow-[0_22px_54px_rgba(0,0,0,0.24)] transition hover:-translate-y-0.5"
-          >
-            Create a signup form
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
+          >Browse templates</Link>
           <Link
             href={page.secondaryHref}
             className="inline-flex min-h-12 items-center rounded-full border border-white/32 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/18"
@@ -370,10 +367,7 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
             <Link
               href={createHref}
               className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#18214d] px-6 py-3 text-sm font-bold text-white shadow-[0_18px_50px_rgba(24,33,77,0.22)] transition hover:-translate-y-0.5"
-            >
-              Create your signup form
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
+            >Browse templates</Link>
           </div>
         </div>
       </section>
@@ -426,10 +420,7 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
             <Link
               href={createHref}
               className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#18214d] transition hover:-translate-y-0.5"
-            >
-              Create a signup form
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
+            >Browse templates</Link>
             <Link
               href={page.secondaryHref}
               className="inline-flex min-h-12 items-center rounded-full border border-white/35 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur"

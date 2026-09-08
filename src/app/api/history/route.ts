@@ -1,3 +1,4 @@
+import { isClientDraftId } from "@/lib/event-draft-access";
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
@@ -5,6 +6,7 @@ import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import {
   insertEventHistory,
+  getEventHistoryById,
   listDashboardHistoryFallbackForUser,
   listDashboardHistoryWindowForUser,
   listHistoryForUser,
@@ -313,7 +315,13 @@ export async function POST(req: Request) {
         { status: 409 },
       );
     }
+    if (!userId) return NextResponse.json({ error: "Sign in to save your event" }, { status: 401 });
     const body = await req.json().catch(() => ({}));
+    if (body.clientDraftId !== undefined && !isClientDraftId(body.clientDraftId)) return NextResponse.json({ error: "Invalid draft identity" }, { status: 400 });
+    if (body.clientDraftId) {
+      const existing = await getEventHistoryById(body.clientDraftId);
+      if (existing) return existing.user_id === userId ? NextResponse.json(existing) : NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     scanAttemptId =
       typeof body?.scanAttemptId === "string" && body.scanAttemptId.trim()
         ? body.scanAttemptId.trim().slice(0, 120)
@@ -361,7 +369,7 @@ export async function POST(req: Request) {
         payloadBytes: dataPayloadBytes,
       });
     }
-    const row = await insertEventHistory({ userId, title, data });
+    const row = await insertEventHistory({ userId, title, data, clientDraftId: body.clientDraftId });
 
     if (scanAttemptId) {
       try {

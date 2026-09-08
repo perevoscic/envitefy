@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
 import { parseEventGuestDate, eventLocalDateParts, normalizeEventGuestPlanning, type EventGuestPlanning } from "@/lib/event-guest-planning";
 
@@ -11,7 +12,7 @@ import {
   useCallback,
   useEffect,
 } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
@@ -39,7 +40,7 @@ import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 import { normalizeUrlValue } from "@/utils/contact";
-import { persistImageMediaValue } from "@/utils/media-upload-client";
+import { persistImageMediaValue as persistExistingImage } from "@/utils/media-upload-client";
 import WeddingRenderer from "@/components/weddings/WeddingRenderer";
 import etherealClassic from "../../../../../templates/weddings/ethereal-classic/config.json" with { type: "json" };
 import modernEditorial from "../../../../../templates/weddings/modern-editorial/config.json" with { type: "json" };
@@ -1549,13 +1550,15 @@ const ThemeGraphics = ({ themeId, isThumbnail = false }) => {
 // --- Components ---
 
 const App = () => {
-  const search = useSearchParams();
+  const templateEditor = useTemplateEditor();
+  const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
+  const search = useTemplateSearchParams();
   const router = useRouter();
   const editEventId = search?.get("edit") ?? undefined;
   const templateIdParam = search?.get("templateId") ?? undefined;
   const variationIdParam = search?.get("variationId") ?? undefined;
-  const [activeView, setActiveView] = useState("main");
-  const [data, setData] = useState(INITIAL_DATA);
+  const [activeView, setActiveView] = useTemplateState("activeView", "main");
+  const [data, setData] = useTemplateState("data", INITIAL_DATA);
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
   const [rsvpAttending, setRsvpAttending] = useState<boolean | null>(null);
   const {
@@ -1570,42 +1573,43 @@ const App = () => {
   const designGridRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
-  const [newEvent, setNewEvent] = useState({
+  const [newEvent, setNewEvent] = useTemplateState("newEvent", {
     title: "",
     date: "",
     time: "",
     location: "",
   });
-  const [newItem, setNewItem] = useState({
+  const [newItem, setNewItem] = useTemplateState("newItem", {
     title: "",
     description: "",
     category: "Activity",
   });
-  const [activeDesignView, setActiveDesignView] = useState("themes");
-  const [travelSubView, setTravelSubView] = useState("main");
-  const [tempHotel, setTempHotel] = useState({
+  const [activeDesignView, setActiveDesignView] = useTemplateState("activeDesignView", "themes");
+  const [travelSubView, setTravelSubView] = useTemplateState("travelSubView", "main");
+  const [tempHotel, setTempHotel] = useTemplateState("tempHotel", {
     name: "",
     address: "",
     link: "",
     deadline: "",
   });
-  const [tempAirport, setTempAirport] = useState({
+  const [tempAirport, setTempAirport] = useTemplateState("tempAirport", {
     name: "",
     code: "",
     distance: "",
   });
   const [creatingDraft, setCreatingDraft] = useState(false);
   const designGalleryHref = useMemo(() => {
+    if (templateEditor) return `/${templateEditor.category}/templates`;
     const params = new URLSearchParams();
     if (data.date) params.set("d", data.date);
     const query = params.toString();
     return `/event/weddings${query ? `?${query}` : ""}`;
-  }, [data.date]);
+  }, [data.date, templateEditor]);
 
   // When no editEventId is present, create a draft event_history row
   // so the builder always has an id to attach nested data (registry, etc.).
   useEffect(() => {
-    if (editEventId || creatingDraft) return;
+    if (templateEditor || editEventId || creatingDraft) return;
 
     let cancelled = false;
 
@@ -1886,6 +1890,7 @@ const App = () => {
 
   useEffect(() => {
     if (editEventId) return;
+    if (templateEditor?.initial.data) return;
     if (!templateIdParam) return;
     if (!TEMPLATE_CONFIGS[templateIdParam]) return;
     const previewCouple = getPreviewCouple(templateIdParam);
@@ -1922,7 +1927,7 @@ const App = () => {
       const designTop = designGridRef.current?.scrollTop ?? null;
       updateTheme("themeId", themeId);
 
-      if (editEventId) {
+      if (editEventId && !templateEditor) {
         try {
           await fetch(`/api/events/${editEventId}/update-theme`, {
             method: "POST",
@@ -1956,7 +1961,7 @@ const App = () => {
   const handleImageUpload = (field, e) => {
     const file = e.target.files[0];
     if (file) {
-      const imageUrl = URL.createObjectURL(file);
+      const imageUrl = (templateEditor ? templateEditor.previewPhoto(file) : URL.createObjectURL(file));
       setData((prev) => ({
         ...prev,
         images: { ...prev.images, [field]: imageUrl },
@@ -1969,7 +1974,7 @@ const App = () => {
     if (!files.length) return;
     const newImages = files.map((file) => ({
       id: `${file.name}-${Date.now()}`,
-      url: URL.createObjectURL(file),
+      url: (templateEditor ? templateEditor.previewPhoto(file) : URL.createObjectURL(file)),
     }));
     setData((prev) => ({
       ...prev,
@@ -2138,13 +2143,15 @@ const App = () => {
           state: data.state,
           story: data.story,
           party: data.party,
+          weddingParty: data.weddingParty,
+          registry: data.registry,
           schedule: data.schedule,
           travel: data.travel,
           thingsToDo: data.thingsToDo,
           hosts: data.hosts,
           theme: { ...data.theme, name: templateName },
           registries:
-            data.registries
+            data.registry
               ?.filter((r) => r?.url?.trim())
               .map((r) => ({
                 label: r.label?.trim() || "Registry",
@@ -2162,11 +2169,14 @@ const App = () => {
   );
 
   const handlePublish = useCallback(async () => {
+      if (templateEditor && !templateEditor.authenticated) { await templateEditor.requestSave(); return; }
     if (submitting) return;
     setSubmitting(true);
     try {
       const payload = await buildHistoryPayload("published");
       let id: string | undefined;
+
+      if (templateEditor) { await templateEditor.persist(payload, "published"); return; }
 
       if (editEventId) {
         await fetch(`/api/history/${editEventId}`, {
@@ -2218,9 +2228,10 @@ const App = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [buildHistoryPayload, editEventId, router, submitting]);
+  }, [templateEditor, buildHistoryPayload, editEventId, router, submitting]);
 
   const handleSaveDraft = useCallback(async () => {
+    if (templateEditor) { await templateEditor.requestSave(); return; }
     if (savingDraft || submitting) return;
     setSavingDraft(true);
     try {
@@ -2388,9 +2399,10 @@ const App = () => {
             disabled={savingDraft || submitting}
             className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {savingDraft ? "Saving draft..." : "Save draft"}
+            {savingDraft ? "Saving draft..." : templateEditor && !templateEditor.authenticated ? "Save and continue" : "Save draft"}
           </button>
           <button
+            hidden={Boolean(templateEditor && !templateEditor.authenticated)}
             onClick={handlePublish}
             disabled={submitting}
             className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
@@ -2889,7 +2901,15 @@ const App = () => {
 
   const renderRegistryEditor = () => (
     <EditorLayout title="Registry" onBack={() => setActiveView("main")}>
-      {editEventId ? (
+      {templateEditor ? <div className="space-y-5">
+        <p className="text-sm text-slate-600">Add links to your registries. Your guests can open them after you publish.</p>
+        {(data.registry || []).map((registry, index) => <div key={index} className="space-y-2 rounded-xl border p-4">
+          <InputGroup label="Registry name" value={registry.label} onChange={(value) => updateData("registry", data.registry.map((item, i) => i === index ? { ...item, label: value } : item))} />
+          <InputGroup label="Registry link" value={registry.url} onChange={(value) => updateData("registry", data.registry.map((item, i) => i === index ? { ...item, url: value } : item))} />
+          <button type="button" className="text-sm text-red-700" onClick={() => updateData("registry", data.registry.filter((_, i) => i !== index))}>Remove registry</button>
+        </div>)}
+        <button type="button" className="rounded-full border px-5 py-3 text-sm" onClick={() => updateData("registry", [...(data.registry || []), { label: "", url: "" }])}>Add registry link</button>
+      </div> : editEventId ? (
         <div className="space-y-4">
           <div className="bg-blue-50 border border-blue-100 text-blue-900 text-sm rounded-lg p-3">
             Add Amazon-style registry items to this wedding. Guests will see them on your live page.
@@ -4022,9 +4042,10 @@ const App = () => {
 };
 
 const MenuCard = ({ title, icon, desc, onClick, opacity = "opacity-100" }) => (
-  <div
+  <button
+    type="button"
     onClick={onClick}
-    className={`group bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex items-start gap-4 ${opacity}`}
+    className={`w-full text-left group bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex items-start gap-4 ${opacity}`}
   >
     <div className="bg-slate-50 p-3 rounded-lg text-slate-600 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors">
       {icon}
@@ -4039,7 +4060,7 @@ const MenuCard = ({ title, icon, desc, onClick, opacity = "opacity-100" }) => (
       </div>
       <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
     </div>
-  </div>
+  </button>
 );
 
 // Decorative divider component - different styles per theme
@@ -4748,6 +4769,7 @@ const EditorLayout = ({ title, onBack, children }) => (
   <div className="animate-fade-in-right">
     <div className="flex items-center mb-6 pb-4 border-b border-slate-100">
       <button
+        aria-label="Back to details"
         onClick={onBack}
         className="mr-3 p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
       >
@@ -4795,9 +4817,10 @@ const InputGroup = ({
         {label}
       </label>
       <input
+        aria-label={label}
         type={type}
         value={localValue}
-        onChange={(e) => setLocalValue(e.target.value)}
+        onChange={(e) => { setLocalValue(e.target.value); onChange(e.target.value); }}
         onBlur={handleBlur}
         placeholder={placeholder}
         className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none"

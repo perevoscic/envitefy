@@ -1,4 +1,5 @@
 "use client";
+import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
 
 import {
   ArrowRight,
@@ -174,10 +175,7 @@ export default function BridalShowersLandingView() {
               together.
             </p>
             <div className={styles.heroActions}>
-              <Link className={`${styles.button} ${styles.buttonIvory}`} href="?auth=signup">
-                Create your bridal shower
-                <ArrowRight aria-hidden="true" />
-              </Link>
+              <Link className={`${styles.button} ${styles.buttonIvory}`} href="#templates">Browse templates</Link>
               <a className={styles.heroTextLink} href="#bridal-collections">
                 Explore the collections
               </a>
@@ -195,6 +193,7 @@ export default function BridalShowersLandingView() {
             </div>
           </div>
         </section>
+        <PublicTemplateGallery category="bridal-showers" featured />
 
         <section className={styles.intro} aria-labelledby="bridal-experience-title">
           <div className={styles.sectionShell}>
@@ -238,7 +237,7 @@ export default function BridalShowersLandingView() {
           <div className={styles.sectionShell}>
             <div className={styles.splitHeading}>
               <div>
-                <p className={styles.eyebrow}>The bespoke studio</p>
+                <p className={styles.eyebrow}>Your invitation preview</p>
                 <h2 id="studio-title" className={styles.sectionTitle}>
                   See your invitation come to life.
                 </h2>
@@ -292,10 +291,7 @@ export default function BridalShowersLandingView() {
 
                 <div className={styles.formFooter}>
                   <p>Everything stays editable after sharing.</p>
-                  <Link className={`${styles.button} ${styles.buttonDark}`} href="?auth=signup">
-                    Create guest link
-                    <ArrowRight aria-hidden="true" />
-                  </Link>
+                  <Link className={`${styles.button} ${styles.buttonDark}`} href="#templates">Browse templates</Link>
                 </div>
               </form>
 
@@ -395,9 +391,7 @@ export default function BridalShowersLandingView() {
                   Guests get a polished mobile experience. You get a calm command center for
                   replies, links, and last-minute updates.
                 </p>
-                <Link className={`${styles.button} ${styles.buttonDark}`} href="?auth=signup">
-                  Start your invitation <ArrowRight aria-hidden="true" />
-                </Link>
+                <Link className={`${styles.button} ${styles.buttonDark}`} href="#templates">Browse templates</Link>
               </div>
               <div className={styles.guestFlowList}>
                 <article>
@@ -472,9 +466,7 @@ export default function BridalShowersLandingView() {
               actually want to open.
             </p>
             <div className={styles.finalActions}>
-              <Link className={`${styles.button} ${styles.buttonIvory}`} href="?auth=signup">
-                Begin your invitation <ArrowRight aria-hidden="true" />
-              </Link>
+              <Link className={`${styles.button} ${styles.buttonIvory}`} href="#templates">Browse templates</Link>
               <Link className={styles.finalTextLink} href="/snap">
                 Upload an existing invite
               </Link>

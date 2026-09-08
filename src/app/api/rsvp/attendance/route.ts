@@ -1,3 +1,4 @@
+import { isEventDraft } from "@/lib/event-draft-access";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
@@ -78,6 +79,7 @@ export async function POST(req: Request) {
     }
 
     const existing = await getEventHistoryById(eventId);
+    if (existing && isEventDraft(existing.data)) return NextResponse.json({ error: "Not found" }, { status: 404 });
     if (!existing) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }

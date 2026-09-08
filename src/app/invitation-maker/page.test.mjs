@@ -16,7 +16,7 @@ test("invitation maker owns the create-an-invite search intent", () => {
   assert.match(page, /"@type": "WebApplication"/);
   assert.match(page, /"@type": "FAQPage"/);
   assert.match(page, /"@type": "BreadcrumbList"/);
-  assert.match(page, /href="\/studio"/);
+  assert.match(page, /href="\/chat"/);
   assert.match(page, /href="\/snap"/);
   assert.match(page, /href="\/showcase"/);
 });

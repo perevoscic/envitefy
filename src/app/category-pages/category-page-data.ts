@@ -92,8 +92,8 @@ export const useCasePages = [
     heroImage: "/images/landing/hero/garden-vows-desktop.webp",
     heroImageAlt: "Wedding weekend event page preview",
     heroImagePosition: "center",
-    primaryCta: "Launch Bespoke Studio",
-    primaryHref: "/weddings?auth=signup",
+    primaryCta: "Browse Wedding Templates",
+    primaryHref: "/weddings#templates",
     secondaryCta: "View Collections",
     secondaryHref: "/weddings#collections",
     theme: {

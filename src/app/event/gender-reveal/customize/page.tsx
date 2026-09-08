@@ -1,7 +1,9 @@
 // @ts-nocheck
 "use client";
+import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
 import GenderRevealTemplateView from "@/components/GenderRevealTemplateView";
+import TemplateGalleryBackLink from "@/components/templates/TemplateGalleryBackLink";
 import { genderRevealDesigns, getGenderRevealDesign, genderRevealFont } from "@/lib/gender-reveal-designs";
 import { familyTemplateDate, getFamilyTemplateDesign } from "@/lib/family-template-designs";
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
@@ -13,7 +15,7 @@ import {
   useMemo,
   useEffect,
 } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
@@ -35,7 +37,7 @@ import {
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
-import { persistImageMediaValue } from "@/utils/media-upload-client";
+import { persistImageMediaValue as persistExistingImage } from "@/utils/media-upload-client";
 import {
   parseGenderRevealConfig,
   serializeGenderRevealConfig,
@@ -309,9 +311,10 @@ const INITIAL_DATA = {
 };
 
 const MenuCard = ({ title, icon, desc, onClick }) => (
-  <div
+  <button
+    type="button"
     onClick={onClick}
-    className="group bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex items-start gap-4"
+    className="w-full text-left group bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex items-start gap-4"
   >
     <div className="bg-slate-50 p-3 rounded-lg text-slate-600 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors">
       {icon}
@@ -326,13 +329,14 @@ const MenuCard = ({ title, icon, desc, onClick }) => (
       </div>
       <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
     </div>
-  </div>
+  </button>
 );
 
 const EditorLayout = ({ title, onBack, children }) => (
   <div className="animate-fade-in-right">
     <div className="flex items-center mb-6 pb-4 border-b border-slate-100">
       <button
+        aria-label="Back to details"
         onClick={onBack}
         className="mr-3 p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
       >
@@ -372,7 +376,9 @@ const InputGroup = ({
 );
 
 export default function GenderRevealTemplateCustomizePage() {
-  const search = useSearchParams();
+  const templateEditor = useTemplateEditor();
+  const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
+  const search = useTemplateSearchParams();
   const router = useRouter();
   const defaultDate = search?.get("d") ?? undefined;
   const editEventId = search?.get("edit") ?? undefined;
@@ -380,11 +386,11 @@ export default function GenderRevealTemplateCustomizePage() {
 
   const template = getTemplateById(templateId);
 
-  const [activeView, setActiveView] = useState("main");
+  const [activeView, setActiveView] = useTemplateState("activeView", "main");
   const [loadedTemplateId, setLoadedTemplateId] = useState<string | null>(null);
   const resolvedTemplateId = loadedTemplateId || template.id;
   const designDefaults = getFamilyTemplateDesign("gender-reveal", template.id);
-  const [data, setData] = useState(() => ({
+  const [data, setData] = useTemplateState("data", () => ({
     ...INITIAL_DATA,
     date: familyTemplateDate(defaultDate, INITIAL_DATA.date),
     theme: editEventId ? INITIAL_DATA.theme : { ...INITIAL_DATA.theme, themeId: designDefaults.themeId, font: designDefaults.font },
@@ -399,8 +405,8 @@ export default function GenderRevealTemplateCustomizePage() {
   const [designOpen, setDesignOpen] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [newHost, setNewHost] = useState({ name: "", role: "" });
-  const [newRegistry, setNewRegistry] = useState({ label: "", url: "" });
+  const [newHost, setNewHost] = useTemplateState("newHost", { name: "", role: "" });
+  const [newRegistry, setNewRegistry] = useTemplateState("newRegistry", { label: "", url: "" });
   const [loadingExisting, setLoadingExisting] = useState(false);
   const hasLoadedRef = useRef(false);
 
@@ -586,7 +592,7 @@ export default function GenderRevealTemplateCustomizePage() {
   const handleImageUpload = (field, e) => {
     const file = e.target.files[0];
     if (file) {
-      const imageUrl = URL.createObjectURL(file);
+      const imageUrl = (templateEditor ? templateEditor.previewPhoto(file) : URL.createObjectURL(file));
       setData((prev) => ({
         ...prev,
         images: { ...prev.images, [field]: imageUrl },
@@ -599,7 +605,7 @@ export default function GenderRevealTemplateCustomizePage() {
     if (!files.length) return;
     const newImages = files.map((file) => ({
       id: `${file.name}-${Date.now()}`,
-      url: URL.createObjectURL(file),
+      url: (templateEditor ? templateEditor.previewPhoto(file) : URL.createObjectURL(file)),
     }));
     setData((prev) => ({
       ...prev,
@@ -641,6 +647,7 @@ export default function GenderRevealTemplateCustomizePage() {
   const heroImageSrc = getGenderRevealDesign(resolvedTemplateId).heroImage;
 
   const handlePublish = useCallback(async () => {
+      if (templateEditor && !templateEditor.authenticated) { await templateEditor.requestSave(); return; }
     if (submitting) return;
     setSubmitting(true);
     try {
@@ -781,6 +788,8 @@ export default function GenderRevealTemplateCustomizePage() {
         imagesHeroLength: payload.data.images?.hero?.length || 0,
       });
 
+      if (templateEditor) { await templateEditor.persist(payload, "published"); return; }
+
       let id: string | undefined;
 
       if (editEventId) {
@@ -833,12 +842,21 @@ export default function GenderRevealTemplateCustomizePage() {
     } finally {
       setSubmitting(false);
     }
-  }, [submitting, data, resolvedTemplateId, editEventId, router, heroImageSrc]);
+  }, [templateEditor, submitting, data, resolvedTemplateId, editEventId, router, heroImageSrc]);
 
   // Render helpers instead of nested components so inputs keep focus across state updates.
   const renderMainMenu = () => (
     <div className="space-y-4 animate-fade-in pb-8 flex flex-col items-center">
       <div className="mb-6 w-full max-w-sm text-center">
+        {!editEventId && (
+          <TemplateGalleryBackLink
+            href={templateEditor
+              ? `/${templateEditor.category}/templates`
+              : `/event/gender-reveal${data.date ? `?${new URLSearchParams({ d: data.date })}` : ""}`}
+          >
+            All gender reveal designs
+          </TemplateGalleryBackLink>
+        )}
         <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
           Add your details
         </h2>
@@ -1653,7 +1671,7 @@ export default function GenderRevealTemplateCustomizePage() {
                   : "Publishing..."
                 : editEventId
                 ? "Save"
-                : "Publish"}
+                : templateEditor && !templateEditor.authenticated ? "Save and continue" : "Publish"}
             </button>
           </div>
         </div>

@@ -35,7 +35,7 @@ export default function GenderRevealScene({
     <section className={`${styles.scene} ${styles[design.composition]}`} data-reveal-scene={design.id}>
       {controls ? <div className={styles.controls}>{controls}</div> : null}
       <div className={styles.art}>
-        <img src={image} alt="" loading="lazy" decoding="async" width={1536} height={1024} />
+        <img src={image} alt="" loading="eager" decoding="async" width={1536} height={1024} />
       </div>
       <div className={styles.copy}>
         <p className={styles.eyebrow}>{announcement || "A little surprise is on the way"}</p>

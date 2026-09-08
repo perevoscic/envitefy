@@ -1,0 +1,17 @@
+.shell {
+  display: flex;
+  height: 100dvh;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.workspace {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.workspace > div:first-child {
+  height: 100%;
+  min-height: 0;
+}

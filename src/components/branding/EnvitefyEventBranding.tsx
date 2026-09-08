@@ -59,25 +59,16 @@ export default function EnvitefyEventBranding({
       : categoryLabel === "Weddings"
         ? "https://envitefy.com/weddings"
         : "https://envitefy.com";
-  const invitation =
-    categoryLabel === "Birthdays"
-      ? "Create your birthday invitation"
-      : categoryLabel === "Weddings"
-        ? "Create your wedding website"
-        : categoryLabel === "Anniversaries"
-          ? "Create your anniversary invitation"
-          : "Create your own event";
-
   return (
     <div
       data-envitefy-event-branding={categoryLabel}
-      className={`mx-auto max-w-sm px-4 pt-6 text-center font-sans text-sm font-normal not-italic normal-case tracking-normal ${inverse ? "text-white/85" : "text-slate-600"}`}
+      className={`mx-auto max-w-sm px-4 pt-2 text-center font-sans text-sm font-normal not-italic normal-case tracking-normal ${inverse ? "text-white/85" : "text-slate-600"}`}
     >
       <a
         href={destination}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex min-h-11 items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
+        className="mx-auto flex min-h-10 w-fit items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
         aria-label={`Envitefy ${categoryLabel} (opens in a new tab)`}
       >
         <EnvitefyWordmark
@@ -86,18 +77,20 @@ export default function EnvitefyEventBranding({
           tone={inverse ? "light" : "gradient"}
         />
       </a>
-      <p className="mt-2 text-xs font-medium">Created with Envitefy {categoryLabel}</p>
-      <a
-        href={destination}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-1 inline-flex min-h-11 items-center rounded-md text-xs underline decoration-current/40 underline-offset-4 transition-opacity hover:opacity-75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-      >
-        {invitation}{" "}
-        <span aria-hidden="true" className="ml-1">
-          ↗
-        </span>
-      </a>
+      <p className="text-[10px] font-medium tracking-[0.16em]">
+        CREATE | SHARE | ENJOY
+      </p>
+      <p className="mt-1 flex flex-wrap items-center justify-center gap-x-1 text-xs">
+        <strong className="font-bold">Created with Envitefy {categoryLabel}</strong>{" "}
+        <a
+          href="https://envitefy.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-6 items-center rounded-md underline decoration-current/40 underline-offset-4 transition-opacity hover:opacity-75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          Create now
+        </a>
+      </p>
       <EnvitefySocialLinks placement="event" inverse={inverse} />
     </div>
   );

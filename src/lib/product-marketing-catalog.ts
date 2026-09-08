@@ -81,6 +81,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Turn a plain-language event idea into an editable invitation and guest-ready live page without starting from a blank form.",
           proofPoints: [
             "Starts from the host's words or uploaded context and helps collect missing event details.",
+            "The public /envitefy-concierge page explains message and upload creation, preview and publishing steps, and example prompts; Live Card attribution links lead here, with signup and login continuing into /chat.",
             "A centered chat composer offers uploads and occasion suggestions through a plus menu, with product choices before the conversation starts and a compact Generate preview option beneath the latest reply when event details are ready.",
             "Prefills names, age, venue, and theme from messages containing several details, and keeps those facts through follow-up replies.",
             "Drafts event-specific guest copy and a polished live page for the host to review and edit before sharing.",
@@ -96,18 +97,19 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           sellWhen: [
             "The brief says create, plan, draft, write, or build an invitation/event from an idea or description.",
             "The host wants a guided starting point instead of a blank form.",
+            "A guest discovers Envitefy through a shared Live Card and wants to understand how to create their own.",
           ],
         },
         {
           id: "templates-manual-studio",
-          name: "Templates, manual creation, and Studio",
+          name: "Templates and manual creation",
           availability: "core",
           customerPromise:
             "Choose a structured event type or design direction, enter details manually, and customize the invitation and live card.",
           proofPoints: [
             "Template and manual creation remain available alongside Envitefy Snap and Envitefy Concierge.",
+            "Category pages such as /weddings and /birthdays offer templates; creation CTAs for Envitefy Concierge open /chat, while introductions link to /envitefy-concierge.",
             "Hosts can choose event-specific layouts, edit wording and details, and review the guest experience before publishing.",
-            "Studio supports polished invitation design for birthdays, weddings, showers, game days, field trips, open houses, housewarmings, anniversaries, and custom occasions.",
             "Generated live-card artwork focuses on the subject and title, while addresses, schedules, contact information, and other details stay in the buttons and detail panels below.",
           ],
           sellWhen: [
@@ -471,7 +473,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Birthday websites can combine household RSVP, adult/kid counts, allergies, directions, pickup/drop-off, gifts, calendar, and updates.",
             "Birthday hosts can set an explicit end time and add optional drop-off/pickup, sibling, parking/arrival, and food/allergy guidance that appears on the guest invitation.",
             "Birthday invitations integrate calendar saves into the date, directions into the venue, and sharing into each design’s invitation controls. Host guidance uses the theme’s existing notes layout; category-specific Envitefy branding and official social links remain in the footer.",
-            "Baby shower and gender reveal creation open with searchable design galleries. Choose a template to carry its artwork and starting style into the editor, then personalize the celebration details.",
+            "Baby shower creation includes 60 original designs with individually generated artwork, distinct names, compositions, palettes, locally bundled typefaces, and unique sample names, venues, and host notes. Square gallery previews show the same design used by the editor and published invitation. Sell this collection to hosts who want an individual baby shower style, from woodland and coastal to artisan, botanical, playful, and celestial celebrations. Gender reveal creation also opens with a searchable design gallery.",
             "Wedding, birthday, anniversary, baby shower, gender reveal, and gymnastics galleries use consistent square previews of the event layouts, helping hosts compare designs before choosing one.",
             "Baby and bridal shower pages can combine RSVP, registry links, host notes, guest questions, reminders, and maps.",
             "Gender reveals include 60 individually composed designs with original artwork, distinct names, locally loaded typefaces, and matching gallery, editor, and published invitations.",
@@ -488,6 +490,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           customerPromise:
             "Turn dense meet flyers, screenshots, schedules, and PDF packets into a parent-friendly meet information hub.",
           proofPoints: [
+            "Choose from 60 gymnastics meet designs with original artwork, distinct names, coordinated typography and layouts, and matching square previews in the gallery and editor.",
             "Gymnastics creation starts with a searchable meet template gallery. Choosing a design opens it directly in the editor. Hosts can upload a meet packet or paste a public meet link from the Add your details panel, or enter the details manually; the selected layout carries into the draft.",
             "Organizes sessions, levels, warmups, march-in, competition, awards, venues, maps, admission, parking, and coach notes.",
             "Supports calendar actions, parent responses, athlete availability, volunteer needs, and live changes where configured.",

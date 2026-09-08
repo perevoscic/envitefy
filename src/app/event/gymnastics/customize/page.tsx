@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
 import { type EventGuestPlanning, normalizeEventGuestPlanning, eventLocalDateParts, getEventEndLocal } from "@/lib/event-guest-planning";
@@ -13,7 +14,7 @@ import {
   Menu,
   Type,
 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 import {
@@ -36,7 +37,7 @@ import {
 } from "@/lib/discovery/event-data";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { buildEventPath } from "@/utils/event-url";
-import { persistImageMediaValue } from "@/utils/media-upload-client";
+import { persistImageMediaValue as persistExistingImage } from "@/utils/media-upload-client";
 
 type FieldSpec = {
   key: string;
@@ -291,19 +292,21 @@ const InputGroup = ({
       </label>
       {type === "textarea" ? (
         <textarea
+        aria-label={label}
           className={`${baseTextareaClass} ${toneClass}`}
           value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
+          onChange={(e) => { setLocalValue(e.target.value); onChange(e.target.value); }}
           onBlur={handleBlur}
           placeholder={placeholder}
           readOnly={readOnly}
         />
       ) : (
         <input
+        aria-label={label}
           type={type}
           className={`${baseInputClass} ${toneClass}`}
           value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
+          onChange={(e) => { setLocalValue(e.target.value); onChange(e.target.value); }}
           onBlur={handleBlur}
           placeholder={placeholder}
           readOnly={readOnly}
@@ -711,7 +714,8 @@ function GymnasticsEditorLayout({
               {showBack && (
                 <button
                   type="button"
-                  onClick={onBack}
+                  aria-label="Back to details"
+        onClick={onBack}
                   className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                 >
                   <ChevronLeft size={20} />
@@ -767,7 +771,9 @@ function GymnasticsEditorLayout({
 
 function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
-    const search = useSearchParams();
+    const templateEditor = useTemplateEditor();
+  const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
+  const search = useTemplateSearchParams();
     const router = useRouter();
     const editEventId = search?.get("edit") ?? undefined;
     const selectedTemplateId = search?.get("templateId");
@@ -798,7 +804,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       [config.advancedSections],
     );
 
-    const [data, setData] = useState(() => ({
+    const [data, setData] = useTemplateState("data", () => ({
       guestPlanning: {} as EventGuestPlanning,
       endTime: "",
       endDate: "",
@@ -834,11 +840,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       simpleDesignTokens: null as any,
       extra: Object.fromEntries(config.detailFields.map((f) => [f.key, ""])),
     }));
-    const [advancedState, setAdvancedState] = useState(() =>
+    const [advancedState, setAdvancedState] = useTemplateState("advancedState", () =>
       buildMinimalAdvancedState(config.advancedSections),
     );
-    const [themeId, setThemeId] = useState(config.themes[0]?.id ?? "default-theme");
-    const [activeView, setActiveView] = useState<string>("main");
+    const [themeId, setThemeId] = useTemplateState("themeId", config.themes[0]?.id ?? "default-theme");
+    const [activeView, setActiveView] = useTemplateState<string>("activeView", "main");
     const [_rsvpSubmitted, _setRsvpSubmitted] = useState(false);
     const [_rsvpAttending, _setRsvpAttending] = useState("yes");
     const [dismissedSuggestedExtraFields, setDismissedSuggestedExtraFields] = useState<
@@ -1257,7 +1263,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       [hasAnnouncementEntries, hasLogistics, hasMeet, data.rsvpEnabled],
     );
 
-    const [activeSection, setActiveSection] = useState<string>(navItems[0]?.id || "details");
+    const [activeSection, setActiveSection] = useTemplateState<string>("activeSection", navItems[0]?.id || "details");
 
     useEffect(() => {
       if (!navItems.length) return;
@@ -1776,7 +1782,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
-        const url = URL.createObjectURL(file);
+        const url = (templateEditor ? templateEditor.previewPhoto(file) : URL.createObjectURL(file));
         setData((prev) => ({ ...prev, hero: url }));
       }
     };
@@ -1794,6 +1800,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }, []);
 
     const handlePublish = useCallback(async () => {
+      if (templateEditor && !templateEditor.authenticated) { await templateEditor.requestSave(); return; }
       if (submitting) return;
       setSubmitting(true);
       try {
@@ -2017,6 +2024,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           },
         };
 
+      if (templateEditor) { await templateEditor.persist(payload, "published"); return; }
+
         if (editEventId) {
           // When updating, send the full data object with theme and font
           const updatePayload = {
@@ -2107,7 +2116,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       } finally {
         setSubmitting(false);
       }
-    }, [
+    }, [templateEditor, 
       submitting,
       data.date,
       data.time,
@@ -2282,7 +2291,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       <div className="space-y-4 animate-fade-in pb-8 flex flex-col items-center">
         <div className="mb-2 w-full max-w-sm text-center">
           {!editEventId ? (
-            <button type="button" onClick={() => router.push(`/event/gymnastics/customize?${new URLSearchParams({ ...(data.date ? { d: data.date } : {}), ...(demoMode ? { demo: "1" } : {}) }).toString()}`)} className="mb-5 inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-full border border-violet-200 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-violet-700 shadow-sm transition hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2">
+            <button type="button" onClick={() => router.push(templateEditor ? `/${templateEditor.category}/templates` : `/event/gymnastics/customize?${new URLSearchParams({ ...(data.date ? { d: data.date } : {}), ...(demoMode ? { demo: "1" } : {}) }).toString()}`)} className="mb-5 inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-full border border-violet-200 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-violet-700 shadow-sm transition hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2">
               <ChevronLeft size={15} aria-hidden="true" /> All gymnastics designs
             </button>
           ) : null}
@@ -2768,6 +2777,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     const handleDiscoverParse = useCallback(async () => {
+      if (templateEditor && !templateEditor.authenticated) { await templateEditor.requestSave(); return; }
       if (discoverBusy) return;
       setDiscoverError("");
       if (!discoverFile) {
@@ -3389,7 +3399,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   : "Publishing..."
                 : editEventId
                   ? "Save"
-                  : "Publish"}
+                  : templateEditor && !templateEditor.authenticated ? "Save and continue" : "Publish"}
             </button>
           </div>
         </div>
@@ -3572,7 +3582,7 @@ import { config } from "@/components/event-templates/GymnasticsTemplate";
 const GymnasticsEditor = createSimpleCustomizePage(config);
 
 export default function GymnasticsCustomizePage() {
-  const search = useSearchParams();
+  const search = useTemplateSearchParams();
   const templateId = search?.get("templateId");
   const hasExistingContext = Boolean(search?.get("edit")?.trim()) || search?.get("embed") === "1";
   if (!hasExistingContext && !isGymMeetTemplateId(templateId)) {

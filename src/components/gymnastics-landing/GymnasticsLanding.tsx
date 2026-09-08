@@ -1,4 +1,5 @@
 "use client";
+import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
 
 import {
   ArrowRight,
@@ -339,12 +340,12 @@ export default function GymnasticsLanding() {
         navLinks={[...publicUseCasePrimaryNavLinks]}
         mobileNavLinks={[...signedOutMobileMenuLinks]}
         variant="transparent-dark"
-        primaryCtaLabel="Let's create"
+        primaryCtaLabel="Browse templates"
         authenticatedPrimaryHref="/chat"
         brandHref="/"
         loginSuccessRedirectUrl="/"
         onGuestLoginAction={() => openAuth("login")}
-        onGuestPrimaryAction={() => openAuth("signup")}
+        onGuestPrimaryAction={() => document.getElementById("templates")?.scrollIntoView({ behavior: "smooth" })}
       />
 
       <section
@@ -376,8 +377,8 @@ export default function GymnasticsLanding() {
             <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-start">
               <CtaButton
                 label="Start Your Meet Page"
-                href={isAuthenticated ? "/event/gymnastics" : undefined}
-                onClick={isAuthenticated ? undefined : () => openAuth("signup")}
+                href="#templates"
+                
               />
               <CtaButton label="See How It Works" href="#how-it-works" light />
             </div>
@@ -457,6 +458,7 @@ export default function GymnasticsLanding() {
           </div>
         </div>
       </section>
+        <PublicTemplateGallery category="gymnastics" featured />
 
       <section id="features" className={gymnasticsSectionSpacingClass}>
         <div
@@ -698,8 +700,8 @@ export default function GymnasticsLanding() {
             <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
               <CtaButton
                 label="Start Your Meet Page"
-                href={isAuthenticated ? "/event/gymnastics" : undefined}
-                onClick={isAuthenticated ? undefined : () => openAuth("signup")}
+                href="#templates"
+                
               />
               <CtaButton label="See Snap" href="/snap" light />
             </div>

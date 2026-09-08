@@ -27,5 +27,15 @@ test("renderMagazineEmail rewrites loopback origins to envitefy.com", () => {
   assert.match(html, /https:\/\/envitefy\.com\/showcase\/garden-vows/i);
   assert.match(html, /https:\/\/envitefy\.com\/showcase\/elena-s-beary-sweet-shower/i);
   assert.match(html, /https:\/\/envitefy\.com\/showcase\/friday-night-lights-a/i);
-  assert.match(html, /https:\/\/envitefy\.com\/studio/i);
+  assert.match(html, /https:\/\/envitefy\.com\/chat/i);
+});
+
+test("magazine creation CTA opens Concierge and leaves showcase links intact", () => {
+  for (const baseUrl of ["http://localhost:3000", "https://envitefy.com", "https://preview.envitefy.com"]) {
+    const html = renderMagazineEmail({ baseUrl });
+    const origin = baseUrl.includes("localhost") ? "https://envitefy.com" : baseUrl;
+    assert.ok(html.includes(`<a href="${origin}/chat" class="btn">Try Envitefy Concierge</a>`));
+    assert.doesNotMatch(html, /href=["'][^"']*\/studio(?:[/?#"'])|Envitefy Studio|\{\{(?:STUDIO|CONCIERGE)_URL\}\}/i);
+    assert.ok(html.includes(`${origin}/showcase/garden-vows`));
+  }
 });

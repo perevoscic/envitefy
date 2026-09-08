@@ -8,5 +8,5 @@ export function getGenderRevealDesign(id?: string | null): GenderRevealDesign {
 }
 
 export function genderRevealFont(design: GenderRevealDesign): string {
-  return design.font === "allura" ? "var(--font-allura)" : `"Reveal ${design.font}", Georgia, serif`;
+  return `"Reveal ${design.font}", Georgia, serif`;
 }

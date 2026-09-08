@@ -1,3 +1,4 @@
+import { isEventDraft } from "@/lib/event-draft-access";
 import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import { revalidatePath } from "next/cache";
@@ -1086,6 +1087,7 @@ export default async function EventPage({
   );
   if (!row) return <DeletedEventNotice />;
   const isOwner = Boolean(userId && row.user_id && userId === row.user_id);
+  if (isOwner && isEventDraft(row.data) && row.data?.templateEditor) redirect(resolveEditHref(row.id, row.data, row.title));
   const ownerUserId = typeof row.user_id === "string" ? row.user_id : null;
   const ownerUser =
     !isOwner && ownerUserId
@@ -3360,7 +3362,7 @@ export default async function EventPage({
   }
 
   const isBabyShowerTemplate =
-    categoryNormalized === "baby showers" && templateId && createdVia === "template";
+    (categoryNormalized === "baby showers" || categoryNormalized === "bridal showers") && templateId && createdVia === "template";
   const isGenderRevealTemplate =
     isGenderRevealCategory &&
     (createdVia === "template" ||

@@ -1,3 +1,4 @@
+import { guardDraftRequest } from "@/lib/event-draft-access-server";
 import { NextRequest } from "next/server";
 import {
   getEventHistoryMediaDataUrlById,
@@ -27,6 +28,8 @@ export async function GET(
       variantParam === "signup-header"
         ? variantParam
         : null;
+    const draftDenied = await guardDraftRequest(identity.id);
+    if (draftDenied) return draftDenied;
     const imageDataUrl = await getEventHistoryMediaDataUrlById(identity.id, variant);
     return buildMediaResponse(imageDataUrl);
   } catch (error) {

@@ -203,3 +203,9 @@ export function buildSportEventCustomizeHref(sport: unknown, style?: string | nu
   if (style) params.set("style", style);
   return `/event/sport-events/customize?${params.toString()}`;
 }
+
+export function getSportStyleThemeIds(sport: SportEventPreset, style?: string | null): string[] {
+  if (style === "club") return ["victory_blue", "teal_tenacity", "forest_strong"];
+  if (style === "tournament") return ["championship_gold", "midnight_elite", "dynamic_orange"];
+  return sport.themeIds;
+}

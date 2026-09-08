@@ -1,3 +1,5 @@
+import { isEventDraft } from "@/lib/event-draft-access";
+import { resolveEditHref } from "@/utils/event-edit-route";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import Script from "next/script";
@@ -279,6 +281,7 @@ export default async function SignupPage({
   const userId = sessionEmail ? await getUserIdByEmail(sessionEmail) : null;
   const row = await getCachedSignupEventBySlugOrId(awaitedParams.id, userId);
   if (!row) return notFound();
+  if (row.user_id === userId && isEventDraft(row.data) && row.data?.templateEditor) redirect(resolveEditHref(row.id, row.data, row.title));
   const canonicalSegment = buildEventSlugSegment(row.id, row.title, row.public_slug);
   if (awaitedParams.id !== canonicalSegment) {
     redirect(`/smart-signup-form/${canonicalSegment}`);

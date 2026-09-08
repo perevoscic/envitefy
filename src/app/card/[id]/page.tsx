@@ -302,7 +302,7 @@ function resolveSharedCardMetaDescription(invitationData: Record<string, unknown
         eventDetails.message,
         eventDetails.detailsDescription,
       ),
-    ) || "View a shared Envitefy Studio card."
+    ) || "View a shared Envitefy Concierge Live Card."
   );
 }
 
@@ -381,7 +381,7 @@ export async function generateMetadata(props: {
   if (!sharedCard) {
     return {
       title: "Shared Card — Envitefy",
-      description: "View a shared Envitefy Studio card.",
+      description: "View a shared Envitefy Concierge Live Card.",
     };
   }
 

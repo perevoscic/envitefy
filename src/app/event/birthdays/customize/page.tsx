@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
 import { BIRTHDAY_SAMPLES, birthdaySampleHeadline } from "@/data/birthday-samples";
 
@@ -18,7 +19,7 @@ import {
   Upload,
   Users,
 } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { BIRTHDAY_GUEST_NOTE_FIELDS, birthdayLocalDateParts, getBirthdayEndLocal } from "@/lib/birthday-party-details";
 import BirthdayRenderer from "@/components/birthdays/BirthdayRenderer";
@@ -31,7 +32,7 @@ import { ANNIVERSARY_DESIGN_CATALOG, BIRTHDAY_DESIGN_BY_ID, BIRTHDAY_DESIGN_CATA
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { buildEventPath } from "@/utils/event-url";
-import { persistImageMediaValue } from "@/utils/media-upload-client";
+import { persistImageMediaValue as persistExistingImage } from "@/utils/media-upload-client";
 import { getRegistrySectionCopyForCategory } from "@/utils/registry-links";
 import BirthdayDesignThemes from "./_components/BirthdayDesignThemes";
 import { BIRTHDAY_THEMES } from "./birthdayThemes";
@@ -258,9 +259,10 @@ const INITIAL_DATA = {
 };
 
 const MenuCard = ({ title, icon, desc, onClick }) => (
-  <div
+  <button
+    type="button"
     onClick={onClick}
-    className="group bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex items-start gap-4"
+    className="w-full text-left group bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex items-start gap-4"
   >
     <div className="bg-slate-50 p-3 rounded-lg text-slate-600 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors">
       {icon}
@@ -275,13 +277,14 @@ const MenuCard = ({ title, icon, desc, onClick }) => (
       </div>
       <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
     </div>
-  </div>
+  </button>
 );
 
 const EditorLayout = ({ title, onBack, children }) => (
   <div className="animate-fade-in-right">
     <div className="sticky top-0 z-10 bg-white flex items-center mb-6 pb-4 border-b border-slate-100 relative">
       <button
+        aria-label="Back to details"
         onClick={onBack}
         className="mr-3 p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
       >
@@ -388,12 +391,14 @@ const _ThemeSwatch = ({
 );
 
 export default function BirthdayTemplateCustomizePage() {
-  const search = useSearchParams();
+  const templateEditor = useTemplateEditor();
+  const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
+  const search = useTemplateSearchParams();
   const router = useRouter();
   const defaultDateParam = search?.get("d") ?? undefined;
   const editEventId = search?.get("edit") ?? undefined;
   const pathname = usePathname();
-  const isAnniversaryRoute = pathname?.startsWith("/event/anniversaries") === true;
+  const isAnniversaryRoute = templateEditor?.category === "anniversaries" || pathname?.startsWith("/event/anniversaries") === true;
   const requestedTemplateId = search?.get("templateId");
   const templateIdParam = isAnniversaryRoute
     ? (BIRTHDAY_DESIGN_BY_ID.get(requestedTemplateId || "")?.occasion === "Anniversary"
@@ -412,16 +417,16 @@ export default function BirthdayTemplateCustomizePage() {
     (template) => template.id === templateIdParam,
   )?.id;
   const initialTemplateId = catalogTemplateId || birthdayTemplateCatalog[0]?.id;
-  const [activeTemplateId, setActiveTemplateId] = useState<string | undefined>(initialTemplateId);
-  const [activeVariationId, setActiveVariationId] = useState<string | undefined>(
+  const [activeTemplateId, setActiveTemplateId] = useTemplateState<string | undefined>("activeTemplateId", initialTemplateId);
+  const [activeVariationId, setActiveVariationId] = useTemplateState<string | undefined>("activeVariationId", 
     variationIdParam ||
       birthdayTemplateCatalog.find((t) => t.id === initialTemplateId)?.variations?.[0]?.id ||
       birthdayTemplateCatalog[0]?.variations?.[0]?.id,
   );
   const [loadingExisting, setLoadingExisting] = useState(false);
   const template = getTemplateById(activeTemplateId);
-  const [activeView, setActiveView] = useState("main");
-  const [data, setData] = useState(() => {
+  const [activeView, setActiveView] = useTemplateState("activeView", "main");
+  const [data, setData] = useTemplateState("data", () => {
     const selectedTheme = PROFESSIONAL_THEMES.find((theme) => theme.id === selectedThemeId);
     const selectedDesign = selectedTheme?.id ? BIRTHDAY_DESIGN_BY_ID.get(selectedTheme.id) : null;
     const selectedDate =
@@ -473,7 +478,7 @@ export default function BirthdayTemplateCustomizePage() {
   const previewRef = useRef<HTMLDivElement | null>(null);
   const fontListRef = useRef<HTMLDivElement | null>(null);
   const [fontScrollTop, _setFontScrollTop] = useState(0);
-  const [activeSection, setActiveSection] = useState<string>("details");
+  const [activeSection, setActiveSection] = useTemplateState<string>("activeSection", "details");
   const [submitting, setSubmitting] = useState(false);
   const [uploadingAssets, setUploadingAssets] = useState(false);
   const assetUploadTokenRef = useRef(
@@ -486,14 +491,15 @@ export default function BirthdayTemplateCustomizePage() {
     assetUploadCounterRef.current = Math.max(0, assetUploadCounterRef.current + delta);
     setUploadingAssets(assetUploadCounterRef.current > 0);
   }, []);
-  const [newHost, setNewHost] = useState({ name: "", role: "" });
-  const [newRegistry, setNewRegistry] = useState({ label: "", url: "" });
+  const [newHost, setNewHost] = useTemplateState("newHost", { name: "", role: "" });
+  const [newRegistry, setNewRegistry] = useTemplateState("newRegistry", { label: "", url: "" });
   const designGalleryHref = React.useMemo(() => {
+    if (templateEditor) return `/${templateEditor.category}/templates`;
     const params = new URLSearchParams();
     if (data.date) params.set("d", data.date);
     const query = params.toString();
     return `/event/${isAnniversaryRoute ? "anniversaries" : "birthdays"}${query ? `?${query}` : ""}`;
-  }, [data.date, isAnniversaryRoute]);
+  }, [data.date, isAnniversaryRoute, templateEditor]);
   const buildCalendarDetails = () => {
     const title = data.title || (isAnniversaryRoute ? `${data.childName}’s Anniversary` : "Birthday Event");
     let start: Date | null = null;
@@ -655,6 +661,7 @@ export default function BirthdayTemplateCustomizePage() {
   const uploadBirthdayAsset = useCallback(
     async (file: File) => {
       if (!file) return null;
+      if (templateEditor) return templateEditor.previewPhoto(file);
       bumpAssetUploadCounter(1);
       try {
         const formData = new FormData();
@@ -688,7 +695,7 @@ export default function BirthdayTemplateCustomizePage() {
     async (field, e) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      const previewUrl = URL.createObjectURL(file);
+      const previewUrl = (templateEditor ? templateEditor.previewPhoto(file) : URL.createObjectURL(file));
       setData((prev) => ({
         ...prev,
         images: { ...prev.images, [field]: previewUrl },
@@ -714,7 +721,7 @@ export default function BirthdayTemplateCustomizePage() {
       const files = Array.from(e.target.files || []);
       if (!files.length) return;
       const entries = files.map((file) => {
-        const previewUrl = URL.createObjectURL(file);
+        const previewUrl = (templateEditor ? templateEditor.previewPhoto(file) : URL.createObjectURL(file));
         return {
           file,
           id: `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -1084,6 +1091,7 @@ export default function BirthdayTemplateCustomizePage() {
   }, [editEventId]);
 
   const handlePublish = useCallback(async () => {
+      if (templateEditor && !templateEditor.authenticated) { await templateEditor.requestSave(); return; }
     if (submitting) return;
     setSubmitting(true);
     if (uploadingAssets) {
@@ -1228,6 +1236,8 @@ export default function BirthdayTemplateCustomizePage() {
         },
       };
 
+      if (templateEditor) { await templateEditor.persist(payload, "published"); return; }
+
       let id: string | undefined;
 
       if (editEventId) {
@@ -1286,7 +1296,7 @@ export default function BirthdayTemplateCustomizePage() {
     } finally {
       setSubmitting(false);
     }
-  }, [
+  }, [templateEditor, 
     submitting,
     uploadingAssets,
     data,
@@ -1912,7 +1922,7 @@ export default function BirthdayTemplateCustomizePage() {
                   : "Publishing..."
                 : editEventId
                   ? "Save"
-                  : "Publish"}
+                  : templateEditor && !templateEditor.authenticated ? "Save and continue" : "Publish"}
             </button>
           </div>
           {uploadingAssets && (

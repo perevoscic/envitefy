@@ -9,6 +9,9 @@ import SignupForm from "./SignupForm";
 
 export type AuthModalProps = {
   open: boolean;
+  description?: string;
+  allowGoogleAuth?: boolean;
+  onAuthenticated?: () => Promise<void>;
   mode: "login" | "signup";
   onClose: () => void;
   onModeChange?: (m: "login" | "signup") => void;
@@ -20,6 +23,9 @@ export type AuthModalProps = {
 
 export default function AuthModal({
   open,
+  description,
+  allowGoogleAuth = true,
+  onAuthenticated,
   mode,
   onClose,
   onModeChange,
@@ -35,6 +41,26 @@ export default function AuthModal({
   // can react when any auth modal is shown anywhere on the page.
   const openRef = useRef(open);
   const didMountRef = useRef(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const controls = () => Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), a[href], select, textarea, [tabindex="0"]') || []).filter((element) => !element.hidden && element.getClientRects().length > 0);
+    controls()[0]?.focus();
+    const keyboard = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { event.preventDefault(); closeRef.current(); }
+      if (event.key !== "Tab") return;
+      const items = controls();
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    document.addEventListener("keydown", keyboard);
+    return () => { document.removeEventListener("keydown", keyboard); previous?.focus(); };
+  }, [open]);
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!didMountRef.current) {
@@ -91,7 +117,7 @@ export default function AuthModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center auth-modal">
+    <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={isLogin ? "Log in" : "Create an account"} className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto py-6 auth-modal">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-[rgba(24,14,10,0.45)] backdrop-blur-[6px] backdrop-saturate-150"
@@ -110,15 +136,20 @@ export default function AuthModal({
               />
             </div>
           </div>
+          {description && <p className="mb-5 text-center text-sm text-muted-foreground">{description}</p>}
           {isLogin ? (
             <LoginForm
               onSuccess={onClose}
+              onAuthenticated={onAuthenticated}
+              allowGoogleAuth={allowGoogleAuth}
               successRedirectUrl={successRedirectUrl}
               onSwitchMode={allowSignupSwitch && onModeChange ? () => onModeChange("signup") : undefined}
             />
           ) : (
             <SignupForm
               onSuccess={onClose}
+              onAuthenticated={onAuthenticated}
+              allowGoogleAuth={allowGoogleAuth}
               onSwitchMode={onModeChange ? () => onModeChange("login") : undefined}
               successRedirectUrl={successRedirectUrl}
               signupSource={signupSource}

@@ -25,13 +25,13 @@ test("AI content hub exposes llms.txt and all guide URLs", () => {
 
   assert.match(
     llms,
-    /Envitefy turns invites, flyers, PDFs, schedules, and studio-created cards into hosted live event pages/,
+    /Envitefy turns invites, flyers, PDFs, schedules, and Concierge-created cards into hosted live event pages/,
   );
   assert.match(llms, /https:\/\/envitefy\.com\/snap/);
   assert.match(llms, /https:\/\/envitefy\.com\/chat/);
   assert.match(llms, /Envitefy Concierge/);
   assert.match(llms, /https:\/\/envitefy\.com\/gymnastics/);
-  assert.match(llms, /https:\/\/envitefy\.com\/studio/);
+  assert.match(llms, /https:\/\/envitefy\.com\/envitefy-concierge/);
   assert.match(llms, /https:\/\/envitefy\.com\/showcase/);
   assert.match(llms, /Not only an OCR-to-calendar utility/);
 
@@ -93,7 +93,7 @@ test("guide pages provide crawlable H1s, JSON-LD, and related product links", ()
   assert.match(content, /"@type": "BreadcrumbList"/);
   assert.match(content, /href: "\/snap"/);
   assert.match(content, /href: "\/gymnastics"/);
-  assert.match(content, /href: "\/studio"/);
+  assert.match(content, /href: "\/chat"/);
   assert.match(content, /href: "\/showcase"/);
 
   for (const route of guideRoutes) {

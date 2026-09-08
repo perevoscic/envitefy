@@ -129,7 +129,7 @@ export default function WeddingDesignGallery() {
               {visibleDesigns.length} curated designs
             </div>
             <p className="mt-1 text-xs text-[#7a6f66]">
-              Select a design to open it in the wedding studio.
+              Select a design to customize your wedding invitation.
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">

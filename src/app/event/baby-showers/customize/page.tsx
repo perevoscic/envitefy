@@ -1,11 +1,14 @@
 // @ts-nocheck
 "use client";
+import { BRIDAL_PRESETS } from "@/lib/public-template-catalog";
+import TemplateGalleryBackLink from "@/components/templates/TemplateGalleryBackLink";
+import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
+import BabyShowerTemplateView from "@/components/BabyShowerTemplateView";
+import { BABY_SHOWER_DESIGNS, getBabyShowerDesign, getBabyShowerTheme, resolveBabyShowerHero } from "@/lib/baby-shower-designs";
 import { familyTemplateDate, getFamilyTemplateDesign } from "@/lib/family-template-designs";
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
-import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
-import { parseEventGuestDate, normalizeEventGuestPlanning, type EventGuestPlanning } from "@/lib/event-guest-planning";
-import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
+import { normalizeEventGuestPlanning, type EventGuestPlanning } from "@/lib/event-guest-planning";
 import {
   useRef,
   useState,
@@ -13,8 +16,7 @@ import {
   useMemo,
   useEffect,
 } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
@@ -29,8 +31,6 @@ import {
   Upload,
   Trash2,
   Baby,
-  Check,
-  X as XIcon,
 } from "lucide-react";
 import {
   type BabyShowerTemplateDefinition,
@@ -39,15 +39,17 @@ import {
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
-import { persistImageMediaValue } from "@/utils/media-upload-client";
+import { persistImageMediaValue as persistExistingImage } from "@/utils/media-upload-client";
 
 // Import constants from wedding page (we'll reuse FONTS, FONT_SIZES, DESIGN_THEMES)
 // For now, let's create a simplified version with essential features
 
 function getTemplateById(id?: string | null): BabyShowerTemplateDefinition {
   if (!id) return babyShowerTemplateCatalog[0];
+  const bridal = BRIDAL_PRESETS.find((preset) => preset.id === id);
+  if (bridal) return { ...babyShowerTemplateCatalog[0], id: bridal.id, name: bridal.name, description: bridal.description };
   return (
-    babyShowerTemplateCatalog.find((template) => template.id === id) ??
+    babyShowerTemplateCatalog.find((template) => template.id === (getBabyShowerDesign(id)?.id || id)) ??
     babyShowerTemplateCatalog[0]
   );
 }
@@ -60,6 +62,7 @@ const FONTS = {
   dancing: { name: "Dancing Script", preview: "var(--font-dancing)" },
   allura: { name: "Allura", preview: "var(--font-allura)" },
   parisienne: { name: "Parisienne", preview: "var(--font-parisienne)" },
+  ...Object.fromEntries(BABY_SHOWER_DESIGNS.map((design) => [design.font, { name: design.displayFont, preview: `"${design.displayFont}", Georgia, serif` }])),
 };
 
 const FONT_SIZES = {
@@ -174,6 +177,7 @@ const DESIGN_THEMES = [
       backgroundImage: "linear-gradient(135deg, #fff7e5, #ffe1b8, #f8c089)",
     },
   },
+  ...BABY_SHOWER_DESIGNS.map(getBabyShowerTheme),
 ];
 
 const INITIAL_DATA = {
@@ -259,9 +263,10 @@ const INITIAL_DATA = {
 };
 
 const MenuCard = ({ title, icon, desc, onClick }) => (
-  <div
+  <button
+    type="button"
     onClick={onClick}
-    className="group bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex items-start gap-4"
+    className="w-full text-left group bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex items-start gap-4"
   >
     <div className="bg-slate-50 p-3 rounded-lg text-slate-600 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors">
       {icon}
@@ -276,13 +281,14 @@ const MenuCard = ({ title, icon, desc, onClick }) => (
       </div>
       <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
     </div>
-  </div>
+  </button>
 );
 
 const EditorLayout = ({ title, onBack, children }) => (
   <div className="animate-fade-in-right">
     <div className="flex items-center mb-6 pb-4 border-b border-slate-100">
       <button
+        aria-label="Back to details"
         onClick={onBack}
         className="mr-3 p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
       >
@@ -322,12 +328,15 @@ const InputGroup = ({
 );
 
 export default function BabyShowerTemplateCustomizePage() {
-  const search = useSearchParams();
+  const templateEditor = useTemplateEditor();
+  const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
+  const search = useTemplateSearchParams();
   const router = useRouter();
   const defaultDate = search?.get("d") ?? undefined;
   const editEventId = search?.get("edit") ?? undefined;
   const templateId = search?.get("templateId");
-  const [activeTemplateId, setActiveTemplateId] = useState<string | undefined>(
+  const isBridal = templateEditor?.category === "bridal-showers" || search?.get("occasion") === "bridal-shower";
+  const [activeTemplateId, setActiveTemplateId] = useTemplateState<string | undefined>("activeTemplateId", 
     templateId || undefined
   );
   const template = useMemo(
@@ -335,15 +344,31 @@ export default function BabyShowerTemplateCustomizePage() {
     [activeTemplateId]
   );
 
-  const [activeView, setActiveView] = useState("main");
-  const designDefaults = getFamilyTemplateDesign("baby-showers", template.id);
-  const [data, setData] = useState(() => ({
+  const [activeView, setActiveView] = useTemplateState("activeView", "main");
+  const selectedDesign = getBabyShowerDesign(template.id) ?? BABY_SHOWER_DESIGNS[0];
+  const bridalPreset = BRIDAL_PRESETS.find((preset) => preset.id === template.id) || BRIDAL_PRESETS[0];
+  const designDefaults = isBridal ? { heroImage: bridalPreset.heroImage, themeId: bridalPreset.themeId, font: "playfair" } : getFamilyTemplateDesign("baby-showers", template.id);
+  const [data, setData] = useTemplateState("data", () => ({
     ...INITIAL_DATA,
-    date: familyTemplateDate(defaultDate, INITIAL_DATA.date),
+    ...(!editEventId && !isBridal ? {
+      babyName: selectedDesign.sample.babyName,
+      momName: selectedDesign.sample.momName,
+      time: selectedDesign.sample.time,
+      address: selectedDesign.sample.venue,
+      city: selectedDesign.sample.city,
+      state: selectedDesign.sample.state,
+      babyDetails: { expectingDate: "", gender: "", notes: selectedDesign.sample.notes },
+      momDetails: { notes: selectedDesign.sample.hostNote },
+      hosts: [{ id: 1, name: selectedDesign.sample.host, role: "Your hosts" }],
+      registries: [],
+      gallery: [],
+      rsvp: { isEnabled: true, deadline: "" },
+    } : {}),
+
+    ...(isBridal ? { babyName: "", momName: "Sophia", eventTitle: "A toast to the bride", babyDetails: { expectingDate: "", gender: "", notes: "Join us for an afternoon of love, laughter, and a toast to the bride." }, momDetails: { notes: "" }, registries: [], hosts: [], images: { ...INITIAL_DATA.images, hero: bridalPreset.heroImage } } : {}),
+    date: familyTemplateDate(defaultDate, editEventId || isBridal ? INITIAL_DATA.date : selectedDesign.sample.date),
     theme: editEventId ? INITIAL_DATA.theme : { ...INITIAL_DATA.theme, themeId: designDefaults.themeId, font: designDefaults.font },
   }));
-  const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
-  const [rsvpAttending, setRsvpAttending] = useState<boolean | null>(null);
   const {
     mobileMenuOpen,
     openMobileMenu,
@@ -354,8 +379,8 @@ export default function BabyShowerTemplateCustomizePage() {
   const [designOpen, setDesignOpen] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [newHost, setNewHost] = useState({ name: "", role: "" });
-  const [newRegistry, setNewRegistry] = useState({ label: "", url: "" });
+  const [newHost, setNewHost] = useTemplateState("newHost", { name: "", role: "" });
+  const [newRegistry, setNewRegistry] = useTemplateState("newRegistry", { label: "", url: "" });
   const [_loadingExisting, setLoadingExisting] = useState(false);
   const updateData = (field, value) => {
     setData((prev) => ({ ...prev, [field]: value }));
@@ -385,7 +410,7 @@ export default function BabyShowerTemplateCustomizePage() {
   const handleImageUpload = (field, e) => {
     const file = e.target.files[0];
     if (file) {
-      const imageUrl = URL.createObjectURL(file);
+      const imageUrl = (templateEditor ? templateEditor.previewPhoto(file) : URL.createObjectURL(file));
       setData((prev) => ({
         ...prev,
         images: { ...prev.images, [field]: imageUrl },
@@ -398,7 +423,7 @@ export default function BabyShowerTemplateCustomizePage() {
     if (!files.length) return;
     const newImages = files.map((file) => ({
       id: `${file.name}-${Date.now()}`,
-      url: URL.createObjectURL(file),
+      url: (templateEditor ? templateEditor.previewPhoto(file) : URL.createObjectURL(file)),
     }));
     setData((prev) => ({
       ...prev,
@@ -416,42 +441,7 @@ export default function BabyShowerTemplateCustomizePage() {
   const currentTheme =
     DESIGN_THEMES.find((c) => c.id === data.theme.themeId) || DESIGN_THEMES[0];
   const currentFont = FONTS[data.theme.font] || FONTS.playfair;
-  const currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
-  const headingFontStyle = {
-    fontFamily: currentFont.preview || "var(--font-playfair)",
-  };
-
-  // Detect dark background for title color
-  const isDarkBackground = useMemo(() => {
-    if (typeof currentTheme?.isDark === "boolean") return currentTheme.isDark;
-    const bg = currentTheme?.bg?.toLowerCase() ?? "";
-    const darkTokens = [
-      "black",
-      "slate-9",
-      "stone-9",
-      "neutral-9",
-      "gray-9",
-      "grey-9",
-      "indigo-9",
-      "purple-9",
-      "violet-9",
-      "emerald-9",
-      "teal-9",
-      "blue-9",
-      "navy",
-      "midnight",
-    ];
-    const hasDarkToken = darkTokens.some((token) => bg.includes(token));
-    const hasDarkHex =
-      /#0[0-9a-f]{5,}/i.test(bg) ||
-      /#1[0-3][0-9a-f]{4}/i.test(bg) ||
-      /#2[0-3][0-9a-f]{4}/i.test(bg);
-    return hasDarkToken || hasDarkHex;
-  }, [currentTheme]);
-
-  const titleColor = isDarkBackground ? { color: "#f5e6d3" } : undefined;
-
-  const heroImageSrc = editEventId ? "/templates/hero-images/baby-shower-hero.jpeg" : designDefaults.heroImage;
+  const heroImageSrc = designDefaults.heroImage;
 
   // Keep template selection in sync with URL when not editing
   useEffect(() => {
@@ -534,7 +524,7 @@ export default function BabyShowerTemplateCustomizePage() {
           null;
 
         const normalizedHosts =
-          Array.isArray(existing.hosts) && existing.hosts.length > 0
+          Array.isArray(existing.hosts)
             ? existing.hosts.map((host: any, idx: number) => ({
                 id: host.id || idx + 1,
                 name: host.name || "",
@@ -543,7 +533,7 @@ export default function BabyShowerTemplateCustomizePage() {
             : INITIAL_DATA.hosts;
 
         const normalizedRegistries =
-          Array.isArray(existing.registries) && existing.registries.length > 0
+          Array.isArray(existing.registries)
             ? existing.registries.map((reg: any, idx: number) => ({
                 id: reg.id || idx + 1,
                 label: reg.label || "Registry",
@@ -603,7 +593,7 @@ export default function BabyShowerTemplateCustomizePage() {
           images: {
             ...prev.images,
             hero:
-              existing.heroImage || existing.images?.hero || prev.images.hero,
+              resolveBabyShowerHero(existing.heroImage || existing.images?.hero || prev.images.hero, getBabyShowerDesign(resolvedTemplateId)),
           },
           registries: normalizedRegistries,
           rsvp: {
@@ -629,6 +619,7 @@ export default function BabyShowerTemplateCustomizePage() {
   }, [editEventId, activeTemplateId, templateId]);
 
   const handlePublish = useCallback(async () => {
+      if (templateEditor && !templateEditor.authenticated) { await templateEditor.requestSave(); return; }
     if (submitting) return;
     setSubmitting(true);
     try {
@@ -690,9 +681,11 @@ export default function BabyShowerTemplateCustomizePage() {
       ];
 
       const payload: any = {
-        title: `${data.babyName}'s Baby Shower`,
+        title: isBridal ? data.eventTitle || `${data.momName}’s Bridal Shower` : `${data.babyName}'s Baby Shower`,
         data: {
-          category: "Baby Showers",
+          category: isBridal ? "Bridal Showers" : "Baby Showers",
+          occasion: isBridal ? "bridal-shower" : "baby-shower",
+          eventTitle: data.eventTitle,
           createdVia: "template",
           createdManually: true,
           date: data.date,
@@ -719,8 +712,8 @@ export default function BabyShowerTemplateCustomizePage() {
           numberOfGuests: 0,
           templateId: template.id,
           templateConfig: {
-            displayName: `${data.babyName}'s Baby Shower`,
-            categoryLabel: "Baby Shower",
+            displayName: isBridal ? `${data.momName}’s Bridal Shower` : `${data.babyName}'s Baby Shower`,
+            categoryLabel: isBridal ? "Bridal Shower" : "Baby Shower",
             detailFields,
             rsvpCopy: {
               editorTitle: "RSVP",
@@ -763,6 +756,8 @@ export default function BabyShowerTemplateCustomizePage() {
           heroImage: heroImageToSave,
         },
       };
+
+      if (templateEditor) { await templateEditor.persist(payload, "published"); return; }
 
       let id: string | undefined;
 
@@ -816,17 +811,28 @@ export default function BabyShowerTemplateCustomizePage() {
     } finally {
       setSubmitting(false);
     }
-  }, [submitting, data, template.id, editEventId, router, heroImageSrc]);
+  }, [templateEditor, submitting, data, template.id, editEventId, router, heroImageSrc]);
 
   // Render helpers instead of nested components so inputs keep focus across state updates.
   const renderMainMenu = () => (
     <div className="space-y-4 animate-fade-in pb-8 flex flex-col items-center">
       <div className="mb-6 w-full max-w-sm text-center">
+        {!editEventId && (
+          <TemplateGalleryBackLink
+            href={templateEditor
+              ? `/${templateEditor.category}/templates`
+              : isBridal
+                ? "/bridal-showers/templates"
+                : `/event/baby-showers${data.date ? `?${new URLSearchParams({ d: data.date })}` : ""}`}
+          >
+            {isBridal ? "All bridal shower designs" : "All baby shower designs"}
+          </TemplateGalleryBackLink>
+        )}
         <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
           Add your details
         </h2>
         <p className="text-slate-500 text-sm">
-          Customize every aspect of your baby shower website.
+          Customize your {isBridal ? "bridal" : "baby"} shower invitation.
         </p>
       </div>
 
@@ -834,7 +840,7 @@ export default function BabyShowerTemplateCustomizePage() {
         <MenuCard
           title="Headline"
           icon={<Type size={18} />}
-          desc="Baby's name, date, location."
+          desc={isBridal ? "Bride’s name, date, location." : "Baby’s name, date, location."}
           onClick={() => setActiveView("headline")}
         />
         <MenuCard
@@ -844,15 +850,15 @@ export default function BabyShowerTemplateCustomizePage() {
           onClick={() => setActiveView("images")}
         />
         <MenuCard
-          title="About Baby"
+          title={isBridal ? "Celebration details" : "About Baby"}
           icon={<Baby size={18} />}
-          desc="Expecting date, gender, notes."
+          desc={isBridal ? "Plans and host notes." : "Expecting date, gender, notes."}
           onClick={() => setActiveView("babyDetails")}
         />
         <MenuCard
-          title="About Mom"
+          title={isBridal ? "About the bride" : "About Mom"}
           icon={<Heart size={18} />}
-          desc="Share details about the mom-to-be."
+          desc={isBridal ? "A little about the bride." : "Share details about the mom-to-be."}
           onClick={() => setActiveView("momDetails")}
         />
         <MenuCard
@@ -887,16 +893,16 @@ export default function BabyShowerTemplateCustomizePage() {
     <EditorLayout title="Headline" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
         <InputGroup
-          label="Baby's Name"
-          value={data.babyName}
-          onChange={(v) => updateData("babyName", v)}
-          placeholder="Baby"
+          label={isBridal ? "Invitation title" : "Baby’s Name"}
+          value={isBridal ? data.eventTitle : data.babyName}
+          onChange={(v) => updateData(isBridal ? "eventTitle" : "babyName", v)}
+          placeholder={isBridal ? "A toast to the bride" : "Baby"}
         />
         <InputGroup
-          label="Mom's Name"
+          label={isBridal ? "Bride’s name" : "Mom’s name"}
           value={data.momName}
           onChange={(v) => updateData("momName", v)}
-          placeholder="Mom"
+          placeholder={isBridal ? "Bride" : "Mom"}
         />
         <div className="grid grid-cols-2 gap-4">
           <InputGroup
@@ -917,7 +923,7 @@ export default function BabyShowerTemplateCustomizePage() {
           <InputGroup label="End Time (optional)" type="time" value={data.endTime} onChange={(v) => updateData("endTime", v)} />
         </div>
         <p className="text-xs text-slate-500">Leave the end date blank for the same day. Leave the end time blank if it is not confirmed.</p>
-        <EventGuestPlanningEditor category="baby-showers" value={data.guestPlanning} onChange={(value) => updateData("guestPlanning", value)} />
+        <EventGuestPlanningEditor category={isBridal ? "bridal-showers" : "baby-showers"} value={data.guestPlanning} onChange={(value) => updateData("guestPlanning", value)} />
         <InputGroup
           label="Address"
           value={data.address}
@@ -1145,14 +1151,16 @@ export default function BabyShowerTemplateCustomizePage() {
   );
 
   const renderBabyDetailsEditor = () => (
-    <EditorLayout title="About Baby" onBack={() => setActiveView("main")}>
+    <EditorLayout title={isBridal ? "Celebration details" : "About Baby"} onBack={() => setActiveView("main")}>
       <div className="space-y-4">
+        {!isBridal && <>
         <InputGroup
           label="Expected Due Date"
           type="date"
           value={data.babyDetails.expectingDate}
           onChange={(v) => updateBabyDetails("expectingDate", v)}
         />
+        </>}
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
             Gender
@@ -1181,7 +1189,7 @@ export default function BabyShowerTemplateCustomizePage() {
             className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-h-[200px] text-slate-700 text-sm"
             value={data.babyDetails.notes}
             onChange={(e) => updateBabyDetails("notes", e.target.value)}
-            placeholder="Share any special details about the baby or shower..."
+            placeholder={isBridal ? "Share celebration plans and host notes…" : "Share any special details about the baby or shower..."}
           />
         </div>
       </div>
@@ -1189,7 +1197,7 @@ export default function BabyShowerTemplateCustomizePage() {
   );
 
   const renderMomDetailsEditor = () => (
-    <EditorLayout title="About Mom" onBack={() => setActiveView("main")}>
+    <EditorLayout title={isBridal ? "About the bride" : "About Mom"} onBack={() => setActiveView("main")}>
       <div className="space-y-4">
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
@@ -1199,7 +1207,7 @@ export default function BabyShowerTemplateCustomizePage() {
             className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-h-[200px] text-slate-700 text-sm"
             value={data.momDetails?.notes || ""}
             onChange={(e) => updateMomDetails("notes", e.target.value)}
-            placeholder="Share details about the mom-to-be, her journey, or what makes this special..."
+            placeholder={isBridal ? "Share a little about the bride and your celebration…" : "Share details about the mom-to-be, her journey, or what makes this special..."}
           />
         </div>
       </div>
@@ -1440,336 +1448,27 @@ export default function BabyShowerTemplateCustomizePage() {
           WebkitOverflowScrolling: "touch",
           overscrollBehavior: "contain",
         }}
-      >
-        <div className="w-full min-w-0 mb-4 md:mb-8 transition-all duration-500 ease-in-out">
-          <div
-            className={`min-h-[800px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${
-              currentTheme.bg || "bg-white"
-            } ${
-              currentFont.preview
-            } transition-colors duration-500 relative z-0`}
-            style={currentTheme.bgStyle}
-          >
-            <div className="relative z-10">
-              <div
-                className={`p-6 md:p-8 border-b border-white/10 flex justify-between items-start ${currentTheme.text}`}
-              >
-                <div>
-                  <h1
-                    className={`${currentSize.h1} mb-2 leading-tight`}
-                    style={{
-                      fontFamily: currentFont.preview || "var(--font-playfair)",
-                      ...(titleColor || {}),
-                    }}
-                  >
-                    {data.babyName}'s Baby Shower
-                  </h1>
-                  <div
-                    className={`flex flex-col md:flex-row md:items-center gap-2 md:gap-4 ${currentSize.body} font-medium opacity-90 tracking-wide`}
-                  >
-                    <span>
-                      {parseEventGuestDate(data.date).toLocaleDateString("en-US", {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </span>
-                    <span className="hidden md:inline-block w-1 h-1 rounded-full bg-current opacity-50"></span>
-                    <span>{data.time}{data.endTime ? ` – ${data.endDate && data.endDate !== data.date ? `${data.endDate} ` : ""}${data.endTime}` : ""}</span>
-                    {(data.city || data.state) && (
-                      <>
-                        <span className="hidden md:inline-block w-1 h-1 rounded-full bg-current opacity-50"></span>
-                        <span className="md:truncate">
-                          {[data.city, data.state].filter(Boolean).join(", ")}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <EventGuestPlanningNotes value={data.guestPlanning} inverse={isDarkBackground} />
-
-              <div className="relative w-full aspect-video">
-                {data.images.hero ? (
-                  <img
-                    src={data.images.hero}
-                    alt="Hero"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <Image
-                    src={heroImageSrc}
-                    alt="Hero"
-                    fill
-                    className="object-cover"
-                    sizes="100vw"
-                  />
-                )}
-              </div>
-
-              {data.hosts.length > 0 && (
-                <section className="text-center py-12 border-t border-white/10">
-                  <h2
-                    className={`text-2xl mb-6 ${currentTheme.accent}`}
-                    style={{ ...titleColor, ...headingFontStyle }}
-                  >
-                    Hosted By
-                  </h2>
-                  <div className="flex flex-wrap justify-center gap-6">
-                    {data.hosts.map((host) => (
-                      <div key={host.id} className="text-center">
-                        <div className="font-semibold text-lg mb-1">
-                          {host.name}
-                        </div>
-                        {host.role && (
-                          <div className="text-sm opacity-70">{host.role}</div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {(data.address || data.city || data.state) && (
-                <section className="text-center py-12 border-t border-white/10">
-                  <h2
-                    className={`text-2xl mb-4 ${currentTheme.accent}`}
-                    style={{ ...titleColor, ...headingFontStyle }}
-                  >
-                    Location
-                  </h2>
-                  {(data.address || data.city || data.state) && (
-                    <div className="opacity-80">
-                      {[data.address, data.city, data.state]
-                        .filter(Boolean)
-                        .join(", ")}
-                    </div>
-                  )}
-                </section>
-              )}
-
-              {data.babyDetails.notes && (
-                <section className="max-w-2xl mx-auto text-center p-6 md:p-8">
-                  <h2
-                    className={`${currentSize.h2} mb-4 ${currentTheme.accent}`}
-                    style={{ ...titleColor, ...headingFontStyle }}
-                  >
-                    About Baby
-                  </h2>
-                  <p
-                    className={`${currentSize.body} leading-relaxed opacity-90 whitespace-pre-wrap`}
-                  >
-                    {data.babyDetails.notes}
-                  </p>
-                </section>
-              )}
-
-              {data.momName && data.momDetails?.notes && (
-                <section className="max-w-2xl mx-auto text-center p-6 md:p-8">
-                  <h2
-                    className={`${currentSize.h2} mb-4 ${currentTheme.accent}`}
-                    style={{ ...titleColor, ...headingFontStyle }}
-                  >
-                    About {data.momName}
-                  </h2>
-                  <p
-                    className={`${currentSize.body} leading-relaxed opacity-90 whitespace-pre-wrap`}
-                  >
-                    {data.momDetails.notes}
-                  </p>
-                </section>
-              )}
-
-              {data.gallery.length > 0 && (
-                <section className="py-12 border-t border-white/10">
-                  <h2
-                    className={`text-2xl mb-6 text-center ${currentTheme.accent}`}
-                    style={{ ...titleColor, ...headingFontStyle }}
-                  >
-                    Photo Gallery
-                  </h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto px-4">
-                    {data.gallery.map((img) => (
-                      <div key={img.id} className="relative aspect-square">
-                        <img
-                          src={img.url}
-                          alt={img.caption || "Gallery"}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                        {img.caption && (
-                          <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-2 rounded-b-lg">
-                            {img.caption}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {data.registries.length > 0 && (
-                <section className="text-center py-12 border-t border-white/10">
-                  <h2
-                    className={`text-2xl mb-6 ${currentTheme.accent}`}
-                    style={{ ...titleColor, ...headingFontStyle }}
-                  >
-                    Registry
-                  </h2>
-                  <div className="flex flex-wrap justify-center gap-4">
-                    {data.registries.map((registry) => (
-                      <a
-                        key={registry.id}
-                        href={registry.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block px-6 py-3 bg-white/10 border border-white/20 rounded-full hover:bg-white/20 transition-colors"
-                      >
-                        <span className="uppercase tracking-widest text-sm font-semibold">
-                          {registry.label || "Registry"}
-                        </span>
-                      </a>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {data.rsvp.isEnabled && (
-                <section className="max-w-3xl mx-auto text-center px-4 md:px-0">
-                  <h2
-                    className={`${currentSize.h2} mb-6 ${currentTheme.accent}`}
-                    style={{ ...titleColor, ...headingFontStyle }}
-                  >
-                    RSVP
-                  </h2>
-                  <div className="bg-white/5 border border-white/10 p-8 md:p-10 rounded-xl text-left">
-                    {!rsvpSubmitted ? (
-                      <div className="space-y-6">
-                        <div className="text-center mb-4">
-                          <p className="opacity-80">
-                            {data.rsvp.deadline
-                              ? `Kindly respond by ${parseEventGuestDate(
-                                  data.rsvp.deadline
-                                ).toLocaleDateString()}`
-                              : "Please RSVP"}
-                          </p>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
-                            Full Name
-                          </label>
-                          <input
-                            className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
-                            placeholder="Guest Name"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-3">
-                            Will you be attending?
-                          </label>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <label className="group relative cursor-pointer">
-                              <input
-                                type="radio"
-                                name="baby-rsvp"
-                                className="peer sr-only"
-                                checked={rsvpAttending === true}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  setRsvpAttending(true);
-                                }}
-                              />
-                              <div className="p-5 rounded-xl border-2 border-white/20 bg-white/10 hover:bg-white/20 transition-all flex items-start gap-3 peer-checked:border-current peer-checked:bg-white/25">
-                                <div className="mt-0.5">
-                                  <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
-                                    <div className="w-3 h-3 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
-                                  </div>
-                                </div>
-                                <div className="text-left">
-                                  <div className="flex items-center gap-2 font-semibold text-base">
-                                    <Check size={18} className="text-current" />
-                                    Yes, I'll be there!
-                                  </div>
-                                  <p className="text-sm opacity-70">
-                                    We’ll celebrate with you.
-                                  </p>
-                                </div>
-                              </div>
-                            </label>
-                            <label className="group relative cursor-pointer">
-                              <input
-                                type="radio"
-                                name="baby-rsvp"
-                                className="peer sr-only"
-                                checked={rsvpAttending === false}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  setRsvpAttending(false);
-                                }}
-                              />
-                              <div className="p-5 rounded-xl border-2 border-white/20 bg-white/10 hover:bg-white/20 transition-all flex items-start gap-3 peer-checked:border-current peer-checked:bg-white/25">
-                                <div className="mt-0.5">
-                                  <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
-                                    <div className="w-3 h-3 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
-                                  </div>
-                                </div>
-                                <div className="text-left">
-                                  <div className="flex items-center gap-2 font-semibold text-base">
-                                    <XIcon size={18} className="text-current" />
-                                    Sorry, can't make it
-                                  </div>
-                                  <p className="text-sm opacity-70">
-                                    Sending love from afar.
-                                  </p>
-                                </div>
-                              </div>
-                            </label>
-                          </div>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (rsvpAttending !== null) {
-                              setRsvpSubmitted(true);
-                            }
-                          }}
-                          disabled={rsvpAttending === null}
-                          className={`w-full py-4 mt-2 font-bold uppercase tracking-widest text-sm rounded-lg transition-colors shadow-lg ${
-                            rsvpAttending !== null
-                              ? "bg-white text-slate-900 hover:bg-slate-200"
-                              : "bg-white/20 text-white/50 cursor-not-allowed"
-                          }`}
-                        >
-                          Send RSVP
-                        </button>
-
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <div className="text-4xl mb-4">🎉</div>
-                        <h3 className="text-2xl font-serif mb-2">Thank you!</h3>
-                        <p className="opacity-70">Preview response recorded. Publish your invitation to receive guest RSVPs.</p>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setRsvpSubmitted(false);
-                            setRsvpAttending(null);
-                          }}
-                          className="text-sm underline mt-6 opacity-50 hover:opacity-100"
-                        >
-                          Send another response
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </section>
-              )}
-
-              <footer className="text-center py-8 border-t border-white/10 mt-1">
-                <EnvitefyEventBranding category="Baby Showers" inverse={isDarkBackground} />
-              </footer>
-            </div>
-          </div>
+      ><div className="w-full min-w-0 mb-4 md:mb-8">
+          <BabyShowerTemplateView
+            eventId=""
+            eventTitle={isBridal ? data.eventTitle : `${data.babyName}'s Baby Shower`}
+            eventData={{
+              ...data,
+              occasion: isBridal ? "bridal-shower" : undefined,
+              location: [data.address, data.city, data.state].filter(Boolean).join(", "),
+              templateId: template.id,
+              heroImage: resolveBabyShowerHero(data.images.hero, selectedDesign),
+              themeId: data.theme.themeId,
+              theme: { ...currentTheme, fontFamily: currentFont.preview, fontSize: data.theme.fontSize },
+              fontFamily: currentFont.preview,
+              endISO: data.endTime && data.date ? `${data.endDate || data.date}T${data.endTime}:00` : undefined,
+            }}
+            shareUrl=""
+            isOwner={false}
+            isReadOnly
+            editHref=""
+            preview
+          />
         </div>
       </div>
 
@@ -1839,7 +1538,7 @@ export default function BabyShowerTemplateCustomizePage() {
                   : "Publishing..."
                 : editEventId
                 ? "Save"
-                : "Publish"}
+                : templateEditor && !templateEditor.authenticated ? "Save and continue" : "Publish"}
             </button>
           </div>
         </div>

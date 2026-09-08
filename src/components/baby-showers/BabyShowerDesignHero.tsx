@@ -1,4 +1,10 @@
-import type { CSSProperties, ReactNode } from "react";
+"use client";
+
+import { type CSSProperties, type ReactNode, useState } from "react";
+import AppleCalendarLink from "@/components/AppleCalendarLink";
+import { buildCalendarLinks } from "@/utils/calendar-links";
+import { buildGoogleMapsDirectionsHref } from "@/lib/directions";
+import { resolvePublicEventShareUrl } from "@/lib/event-guest-planning";
 import type { BabyShowerDesign } from "@/lib/baby-shower-designs";
 import "@/components/birthdays/redesign/birthday-fonts.css";
 import styles from "./baby-shower-designs.module.css";
@@ -22,7 +28,13 @@ export default function BabyShowerDesignHero({
   timeLabel,
   location,
   fontFamily,
-  actions,
+  eventId,
+  shareUrl,
+  start,
+  end,
+  preview = false,
+  thumbnail = false,
+  fontSize,
   ownerActions,
 }: {
   design: BabyShowerDesign;
@@ -34,9 +46,27 @@ export default function BabyShowerDesignHero({
   timeLabel: string | null;
   location?: string;
   fontFamily?: string;
-  actions?: ReactNode;
+  eventId: string;
+  shareUrl: string;
+  start?: string;
+  end?: string;
+  preview?: boolean;
+  thumbnail?: boolean;
+  fontSize?: string;
   ownerActions?: ReactNode;
 }) {
+  const [shareMessage, setShareMessage] = useState("");
+  const calendar = start ? buildCalendarLinks({ title: eventTitle, startIso: start, endIso: end || start, description: "", location: location || "", allDay: false, reminders: null, recurrence: null }) : null;
+  const share = async () => {
+    const url = resolvePublicEventShareUrl({ shareUrl, eventId, preview, origin: window.location.origin });
+    if (!url) { setShareMessage("Publish your event to get a shareable link."); return; }
+    try {
+      if (navigator.share) await navigator.share({ title: eventTitle, url });
+      else { await navigator.clipboard.writeText(url); setShareMessage("Invitation link copied."); }
+    } catch (error) {
+      if (!(error instanceof Error && error.name === "AbortError")) setShareMessage(url);
+    }
+  };
   return (
     <header className={styles.hero} data-baby-scene={design.id}>
       <div className={styles.art}>
@@ -45,7 +75,7 @@ export default function BabyShowerDesignHero({
       <div className={styles.copy}>
         <p className={styles.eyebrow}>You’re invited · Baby shower</p>
         <p className={styles.headline}>{design.sample.headline}</p>
-        <h1 className={styles.title} style={fontFamily ? { fontFamily } : undefined}>
+        <h1 className={styles.title} data-size={fontSize} style={fontFamily ? { fontFamily } : undefined}>
           {babyName ? <>Celebrating<br /><span>{babyName}</span></> : eventTitle}
         </h1>
         {momName && <p className={styles.dedication}>With love for {momName} and the little one</p>}
@@ -53,11 +83,18 @@ export default function BabyShowerDesignHero({
       </div>
       <div className={styles.facts}>
         <div className={styles.when}>
-          {dateLabel && <p>{dateLabel}</p>}
+          {dateLabel && (calendar && !thumbnail ? <details className={styles.calendar}>
+            <summary>{dateLabel}<small>Add to calendar</small></summary>
+            <div className={styles.calendarMenu}>
+              <a href={calendar.google} target="_blank" rel="noreferrer">Google Calendar</a>
+              <a href={calendar.outlook} target="_blank" rel="noreferrer">Outlook Calendar</a>
+              <AppleCalendarLink href={calendar.appleInline}>Apple Calendar</AppleCalendarLink>
+            </div>
+          </details> : <p>{dateLabel}</p>)}
           {timeLabel && <p>{timeLabel}</p>}
         </div>
-        {location && <p className={styles.where}>{location}</p>}
-        {actions && <div className={styles.actions}>{actions}</div>}
+        {location && <p className={styles.where}>{thumbnail ? location : <a href={buildGoogleMapsDirectionsHref(location)} target="_blank" rel="noreferrer">{location}<small>Get directions</small></a>}</p>}
+        {!thumbnail && <div className={styles.share}><button type="button" onClick={share}>Share invitation</button>{shareMessage && <p role="status">{shareMessage}</p>}</div>}
       </div>
     </header>
   );

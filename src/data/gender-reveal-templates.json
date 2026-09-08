@@ -2,7 +2,7 @@
   {
     "id": "petal-post",
     "name": "Petal Post",
-    "description": "An open handmade peach envelope overflowing with pressed anemones and a single ivory ribbon, botanical still life on rose paper, soft side light, editorial film photograph.",
+    "description": "An open handmade peach envelope overflowing with pressed anemones and a single ivory ribbon.",
     "style": "Botanical",
     "font": "cormorantgaramond",
     "paper": "#fcf3ed",
@@ -15,7 +15,7 @@
   {
     "id": "moonlit-menagerie",
     "name": "Moonlit Menagerie",
-    "description": "A tiny sleeping fawn and rabbit beneath a silver crescent in a midnight woodland, intricate gouache storybook illustration, indigo foliage, golden fireflies.",
+    "description": "A tiny sleeping fawn and rabbit beneath a silver crescent in a midnight woodland.",
     "style": "Storybook",
     "font": "amita",
     "paper": "#f3eedf",
@@ -28,7 +28,7 @@
   {
     "id": "citrus-secret",
     "name": "Citrus Secret",
-    "description": "A lush lemon branch laden with fruit above a striped linen picnic on a Mediterranean terrace, cobalt ceramic bowl, sunlit editorial still life.",
+    "description": "A lush lemon branch laden with fruit above a striped linen picnic on a Mediterranean terrace.",
     "style": "Botanical",
     "font": "breeserif",
     "paper": "#fff8dc",
@@ -41,7 +41,7 @@
   {
     "id": "velvet-curtain",
     "name": "Velvet Curtain",
-    "description": "A miniature theater with burgundy velvet curtains parted around an unmarked pearl gift box on a polished stage, dramatic warm spotlight, refined cinematic photograph.",
+    "description": "A miniature theater with burgundy velvet curtains parted around an unmarked pearl gift box on a polished stage.",
     "style": "Editorial",
     "font": "dmserifdisplay",
     "paper": "#f7e9df",
@@ -54,7 +54,7 @@
   {
     "id": "pearl-in-the-tide",
     "name": "Pearl in the Tide",
-    "description": "A giant sculptural mother-of-pearl shell cradling one luminous pearl at the edge of an aqua tide, pearlescent macro photography, wet sand and glancing sunlight.",
+    "description": "A giant sculptural mother-of-pearl shell cradling one luminous pearl at the edge of an aqua tide.",
     "style": "Coastal",
     "font": "cormorant",
     "paper": "#eff7f4",
@@ -67,7 +67,7 @@
   {
     "id": "paper-kite-parade",
     "name": "Paper Kite Parade",
-    "description": "Handmade folded coral saffron and teal paper kites with long ribbon tails ascending over miniature paper hills, tactile paper-cut diorama, cream sky.",
+    "description": "Handmade folded coral saffron and teal paper kites with long ribbon tails ascending over miniature paper hills.",
     "style": "Playful",
     "font": "fredoka",
     "paper": "#fff0dc",
@@ -80,7 +80,7 @@
   {
     "id": "fig-garden-gathering",
     "name": "Fig Garden Gathering",
-    "description": "Ripe purple figs split on a stone pedestal with huge velvety fig leaves in a Tuscan courtyard, warm analog editorial photography, no tablescape.",
+    "description": "Ripe purple figs split on a stone pedestal with huge velvety fig leaves in a Tuscan courtyard.",
     "style": "Botanical",
     "font": "librebaskerville",
     "paper": "#f2f1df",
@@ -93,7 +93,7 @@
   {
     "id": "stardust-telegram",
     "name": "Stardust Telegram",
-    "description": "A vintage brass telescope aimed through a circular observatory opening into a dense sapphire star field, theatrical cyan light, fine-grain cinematic still.",
+    "description": "A vintage brass telescope aimed through a circular observatory opening into a dense sapphire star field.",
     "style": "Celestial",
     "font": "spacegrotesk",
     "paper": "#f1e7d8",
@@ -106,7 +106,7 @@
   {
     "id": "gingham-goose",
     "name": "Gingham Goose",
-    "description": "A gentle white goose wearing a sage gingham neckerchief beside speckled eggs in a straw nest, warm colored-pencil and watercolor illustration on cream.",
+    "description": "A gentle white goose wearing a sage gingham neckerchief beside speckled eggs in a straw nest.",
     "style": "Storybook",
     "font": "quicksand",
     "paper": "#fff5e9",
@@ -119,7 +119,7 @@
   {
     "id": "cherry-soda-surprise",
     "name": "Cherry Soda Surprise",
-    "description": "Two old-fashioned cherry soda floats in fluted glasses beside glossy cherries on a mint diner counter, punchy flash food photography, frothy cream.",
+    "description": "Two old-fashioned cherry soda floats in fluted glasses beside glossy cherries on a mint diner counter.",
     "style": "Playful",
     "font": "lobster",
     "paper": "#fff1eb",
@@ -132,7 +132,7 @@
   {
     "id": "desert-lullaby",
     "name": "Desert Lullaby",
-    "description": "A single blooming desert cactus at dawn with distant layered terracotta mesas and apricot sky, painterly Southwest landscape, matte gouache texture.",
+    "description": "A single blooming desert cactus at dawn with distant layered terracotta mesas and apricot sky.",
     "style": "Landscape",
     "font": "satisfy",
     "paper": "#fae9d5",
@@ -145,7 +145,7 @@
   {
     "id": "porcelain-wishes",
     "name": "Porcelain Wishes",
-    "description": "A beautiful cobalt and white handpainted porcelain teacup with a closed tiny ivory parcel on its saucer, overhead photograph on embroidered white cloth, blue florals.",
+    "description": "A beautiful cobalt and white handpainted porcelain teacup with a closed tiny ivory parcel on its saucer.",
     "style": "Editorial",
     "font": "playfairdisplay",
     "paper": "#eff3fa",
@@ -158,7 +158,7 @@
   {
     "id": "firefly-meadow",
     "name": "Firefly Meadow",
-    "description": "Golden fireflies hovering over a field of white daisies at blue hour, dreamy close low-angle meadow photograph, olive stems against luminous forest bokeh.",
+    "description": "Golden fireflies hovering over a field of white daisies at blue hour.",
     "style": "Botanical",
     "font": "kaushanscript",
     "paper": "#f3efdb",
@@ -171,7 +171,7 @@
   {
     "id": "little-lunar-landing",
     "name": "Little Lunar Landing",
-    "description": "A whimsical tiny cream lunar lander on a mint moon with copper craters and Earth in the distance, retro-futurist handcrafted model photography, soft shadows.",
+    "description": "A whimsical tiny cream lunar lander on a mint moon with copper craters and Earth in the distance.",
     "style": "Celestial",
     "font": "orbitron",
     "paper": "#edf4ec",
@@ -184,7 +184,7 @@
   {
     "id": "apricot-atelier",
     "name": "Apricot Atelier",
-    "description": "A sculptural loop of apricot silk and a polished peach glass sphere balanced on pale plaster plinths, contemporary gallery still life, directional sun.",
+    "description": "A sculptural loop of apricot silk and a polished peach glass sphere balanced on pale plaster plinths.",
     "style": "Editorial",
     "font": "montserrat",
     "paper": "#fff0e5",
@@ -197,7 +197,7 @@
   {
     "id": "otterly-awaited",
     "name": "Otterly Awaited",
-    "description": "Two small river otters floating together holding a smooth river stone, lily pads and reflected willow leaves, delicate handpainted children's book watercolor.",
+    "description": "Two small river otters floating together holding a smooth river stone.",
     "style": "Storybook",
     "font": "fredoka",
     "paper": "#eff4e9",
@@ -210,7 +210,7 @@
   {
     "id": "wildflower-press",
     "name": "Wildflower Press",
-    "description": "An artist's botanical flower press opened to tiny pressed cornflowers poppies and chamomile on deckled paper, overhead natural-light museum-quality still life.",
+    "description": "An artist's botanical flower press opened to tiny pressed cornflowers poppies and chamomile on deckled paper.",
     "style": "Botanical",
     "font": "cormorantgaramond",
     "paper": "#f7f0dd",
@@ -223,7 +223,7 @@
   {
     "id": "carousel-whisper",
     "name": "Carousel Whisper",
-    "description": "One ivory wooden carousel horse with faded blush saddle and antique brass pole, empty historic carousel in soft morning light, romantic film photograph.",
+    "description": "One ivory wooden carousel horse with faded blush saddle and antique brass pole.",
     "style": "Storybook",
     "font": "arizonia",
     "paper": "#fff0e5",
@@ -236,7 +236,7 @@
   {
     "id": "seasalt-letter",
     "name": "Seasalt Letter",
-    "description": "A clear sea-glass bottle with rolled blank paper inside lying among pebbles at the waterline, sunlit ripples through glass, coastal travel photograph.",
+    "description": "A clear sea-glass bottle with rolled blank paper inside lying among pebbles at the waterline.",
     "style": "Coastal",
     "font": "librebaskerville",
     "paper": "#f3f0e6",
@@ -249,7 +249,7 @@
   {
     "id": "plum-orbit",
     "name": "Plum Orbit",
-    "description": "A plum velvet planet encircled by a brushed brass ring surrounded by tiny peach ceramic moons, tactile surreal sculpture against pale lavender studio space.",
+    "description": "A plum velvet planet encircled by a brushed brass ring surrounded by tiny peach ceramic moons.",
     "style": "Celestial",
     "font": "monoton",
     "paper": "#f8eee6",
@@ -262,7 +262,7 @@
   {
     "id": "marigold-courtyard",
     "name": "Marigold Courtyard",
-    "description": "Rich marigold garlands hanging over a pale sandstone courtyard with an antique wooden door and woven floor cushions, warm celebratory architectural photograph.",
+    "description": "Rich marigold garlands hanging over a pale sandstone courtyard with an antique wooden door and woven floor cushions.",
     "style": "Botanical",
     "font": "amita",
     "paper": "#fff2d7",
@@ -275,7 +275,7 @@
   {
     "id": "tiny-ticket",
     "name": "Tiny Ticket",
-    "description": "An old-fashioned miniature carnival Ferris wheel in faded coral blue and butter yellow with empty gondolas, playful clay model photographed against ivory.",
+    "description": "An old-fashioned miniature carnival Ferris wheel in faded coral blue and butter yellow with empty gondolas.",
     "style": "Playful",
     "font": "bangers",
     "paper": "#fff0d6",
@@ -288,7 +288,7 @@
   {
     "id": "origami-crane-club",
     "name": "Origami Crane Club",
-    "description": "Three large handcrafted origami cranes in rust cream and indigo hovering above textured handmade paper, strong graphic shadows, minimalist paper sculpture photograph.",
+    "description": "Three large handcrafted origami cranes in rust cream and indigo hovering above textured handmade paper.",
     "style": "Editorial",
     "font": "spacegrotesk",
     "paper": "#f4ede4",
@@ -301,7 +301,7 @@
   {
     "id": "maple-mitten",
     "name": "Maple Mitten",
-    "description": "A pair of tiny ochre knitted baby mittens beside a fallen maple leaf on a weathered wooden bench, cozy autumn lifestyle macro photograph.",
+    "description": "A pair of tiny ochre knitted baby mittens beside a fallen maple leaf on a weathered wooden bench.",
     "style": "Storybook",
     "font": "breeserif",
     "paper": "#f8e9d4",
@@ -314,7 +314,7 @@
   {
     "id": "lavender-lantern",
     "name": "Lavender Lantern",
-    "description": "A delicate lavender paper lantern suspended among flowering wisteria, a stone garden path at dusk, romantic medium-format photograph with gentle glowing light.",
+    "description": "A delicate lavender paper lantern suspended among flowering wisteria.",
     "style": "Botanical",
     "font": "greatvibes",
     "paper": "#f5eff8",
@@ -327,7 +327,7 @@
   {
     "id": "confetti-confidant",
     "name": "Confetti Confidant",
-    "description": "Sculptural curled confetti ribbons in tomato red butter yellow mint and cornflower exploding from a tiny cream cylinder, crisp playful stop-motion still life.",
+    "description": "Sculptural curled confetti ribbons in tomato red butter yellow mint and cornflower exploding from a tiny cream cylinder.",
     "style": "Playful",
     "font": "anton",
     "paper": "#fff1de",
@@ -340,7 +340,7 @@
   {
     "id": "bluebell-burrow",
     "name": "Bluebell Burrow",
-    "description": "A miniature hedgehog curled beside a mossy door in an old tree root with bluebells overhead, rich needle-felted storybook diorama, soft forest light.",
+    "description": "A miniature hedgehog curled beside a mossy door in an old tree root with bluebells overhead.",
     "style": "Storybook",
     "font": "quicksand",
     "paper": "#edf1e8",
@@ -353,7 +353,7 @@
   {
     "id": "saffron-supper",
     "name": "Saffron Supper",
-    "description": "A terracotta bowl of saffron pears on a long linen supper table with a sculptural amber vase, intimate candlelight food editorial, Mediterranean warmth.",
+    "description": "A terracotta bowl of saffron pears on a long linen supper table with a sculptural amber vase.",
     "style": "Editorial",
     "font": "dmserifdisplay",
     "paper": "#faf0db",
@@ -366,7 +366,7 @@
   {
     "id": "rainbow-ribbons",
     "name": "Rainbow Ribbons",
-    "description": "Long flowing satin ribbons in seven muted rainbow hues draped like a waterfall over a cream wooden spool, tactile craft studio photograph, clean white light.",
+    "description": "Long flowing satin ribbons in seven muted rainbow hues draped like a waterfall over a cream wooden spool.",
     "style": "Playful",
     "font": "pacifico",
     "paper": "#fff3ea",
@@ -379,7 +379,7 @@
   {
     "id": "snowdrop-secret",
     "name": "Snowdrop Secret",
-    "description": "Three small snowdrop flowers pushing through soft white snow beside a fallen feather, intimate winter botanical macro photograph, pale sage reflections.",
+    "description": "Three small snowdrop flowers pushing through soft white snow beside a fallen feather.",
     "style": "Botanical",
     "font": "cormorant",
     "paper": "#f0f4eb",
@@ -392,7 +392,7 @@
   {
     "id": "rocket-pocket",
     "name": "Rocket Pocket",
-    "description": "A charming red tin toy rocket trailing a billowing cotton cloud across a powder-blue backdrop, nostalgic 1950s product photograph, polished metal details.",
+    "description": "A charming red tin toy rocket trailing a billowing cotton cloud across a powder-blue backdrop.",
     "style": "Celestial",
     "font": "bebasneue",
     "paper": "#fff0e2",
@@ -405,7 +405,7 @@
   {
     "id": "rooftop-reverie",
     "name": "Rooftop Reverie",
-    "description": "A sunset city rooftop with blush linen draped over a cocktail-height pedestal and a cluster of amber glass candle holders, sophisticated urban editorial photograph.",
+    "description": "A sunset city rooftop with blush linen draped over a cocktail-height pedestal and a cluster of amber glass candle holders.",
     "style": "Editorial",
     "font": "montserrat",
     "paper": "#f7e9df",
@@ -418,7 +418,7 @@
   {
     "id": "pistachio-patisserie",
     "name": "Pistachio Patisserie",
-    "description": "A tower of pistachio cream puffs topped with delicate sugar flowers on a scalloped pink cake stand, charming Parisian patisserie food photograph.",
+    "description": "A tower of pistachio cream puffs topped with delicate sugar flowers on a scalloped pink cake stand.",
     "style": "Playful",
     "font": "lobster",
     "paper": "#f4f2de",
@@ -431,7 +431,7 @@
   {
     "id": "whale-song",
     "name": "Whale Song",
-    "description": "A majestic gentle whale and tiny calf swimming through deep blue sunbeams with drifting seaweed, richly textured watercolor and ink marine illustration.",
+    "description": "A majestic gentle whale and tiny calf swimming through deep blue sunbeams with drifting seaweed.",
     "style": "Coastal",
     "font": "satisfy",
     "paper": "#eaf2f3",
@@ -444,7 +444,7 @@
   {
     "id": "secret-greenhouse",
     "name": "Secret Greenhouse",
-    "description": "Inside a Victorian glasshouse lush fern fronds frame one tiny white wicker bassinet with folded linen, botanical editorial photograph, warm diffused sunlight.",
+    "description": "Inside a Victorian glasshouse lush fern fronds frame one tiny white wicker bassinet with folded linen.",
     "style": "Botanical",
     "font": "playfairdisplay",
     "paper": "#f5f0df",
@@ -457,7 +457,7 @@
   {
     "id": "sunbeam-studio",
     "name": "Sunbeam Studio",
-    "description": "A large ochre pleated paper sun sculpture casting radial shadows on creamy plaster, small ivory ceramic orb below, modern craft art photograph.",
+    "description": "A large ochre pleated paper sun sculpture casting radial shadows on creamy plaster.",
     "style": "Editorial",
     "font": "spacegrotesk",
     "paper": "#fff0d6",
@@ -470,7 +470,7 @@
   {
     "id": "balloon-cartographer",
     "name": "Balloon Cartographer",
-    "description": "A vintage hot-air balloon with patchwork cream ochre and slate canopy gliding above handpainted imaginary islands, antique storybook travel illustration without map lettering.",
+    "description": "A vintage hot-air balloon with patchwork cream ochre and slate canopy gliding above handpainted imaginary islands.",
     "style": "Storybook",
     "font": "pirataone",
     "paper": "#f7efde",
@@ -483,9 +483,9 @@
   {
     "id": "rosewater-ripple",
     "name": "Rosewater Ripple",
-    "description": "A floating damask rose reflected in rippled rosewater with a pale pink glass bowl and scattered single petals, fine-art macro still life, iridescent sunlight.",
+    "description": "A floating damask rose reflected in rippled rosewater with a pale pink glass bowl and scattered single petals.",
     "style": "Editorial",
-    "font": "allura",
+    "font": "arizonia",
     "paper": "#f8edf0",
     "ink": "#633c53",
     "accent": "#98606e",
@@ -496,7 +496,7 @@
   {
     "id": "little-acorn-almanac",
     "name": "Little Acorn Almanac",
-    "description": "One carved wooden squirrel holding an acorn beside oak leaves and a small mushroom, charming handmade forest toy still life on oat linen.",
+    "description": "One carved wooden squirrel holding an acorn beside oak leaves and a small mushroom.",
     "style": "Storybook",
     "font": "breeserif",
     "paper": "#f3edda",
@@ -509,7 +509,7 @@
   {
     "id": "midnight-macaron",
     "name": "Midnight Macaron",
-    "description": "Lavender macarons stacked on a dark plum ceramic platter beside one silver star charm, sumptuous midnight food photograph with narrow theatrical light.",
+    "description": "Lavender macarons stacked on a dark plum ceramic platter beside one silver star charm.",
     "style": "Editorial",
     "font": "cormorantgaramond",
     "paper": "#f4e8eb",
@@ -522,7 +522,7 @@
   {
     "id": "coral-cove",
     "name": "Coral Cove",
-    "description": "A peach coral sculpture under glass with small turquoise tide-pool stones and a sea fan, museum-inspired coastal still life, cream background and soft ocean light.",
+    "description": "A peach coral sculpture under glass with small turquoise tide-pool stones and a sea fan.",
     "style": "Coastal",
     "font": "quicksand",
     "paper": "#fff0e5",
@@ -535,7 +535,7 @@
   {
     "id": "storybook-suitcase",
     "name": "Storybook Suitcase",
-    "description": "An open miniature vintage caramel suitcase holding a knitted ivory baby blanket and a tiny wooden airplane, tactile storybook set photograph, warm travel nostalgia.",
+    "description": "An open miniature vintage caramel suitcase holding a knitted ivory baby blanket and a tiny wooden airplane.",
     "style": "Storybook",
     "font": "kaushanscript",
     "paper": "#f7eedc",
@@ -548,7 +548,7 @@
   {
     "id": "dahlia-daydream",
     "name": "Dahlia Daydream",
-    "description": "One magnificent dinner-plate dahlia in dusty coral photographed from the side with curling petals against deep sage foliage, floral fine-art photograph.",
+    "description": "One magnificent dinner-plate dahlia in dusty coral photographed from the side with curling petals against deep sage foliage.",
     "style": "Botanical",
     "font": "greatvibes",
     "paper": "#fff1e9",
@@ -561,7 +561,7 @@
   {
     "id": "terracotta-tidings",
     "name": "Terracotta Tidings",
-    "description": "Handmade terracotta and cream ceramic tiles arranged in a stepped sculptural wall with a little olive sprig, Mediterranean architectural still life, raking sun.",
+    "description": "Handmade terracotta and cream ceramic tiles arranged in a stepped sculptural wall with a little olive sprig.",
     "style": "Editorial",
     "font": "dmserifdisplay",
     "paper": "#f8ecdd",
@@ -574,7 +574,7 @@
   {
     "id": "juniper-cabin",
     "name": "Juniper Cabin",
-    "description": "A tiny cedar cabin under snow-dusted juniper trees with warm amber windows and a wool blanket on a porch chair, peaceful painted winter landscape.",
+    "description": "A tiny cedar cabin under snow-dusted juniper trees with warm amber windows and a wool blanket on a porch chair.",
     "style": "Landscape",
     "font": "librebaskerville",
     "paper": "#edf0e3",
@@ -587,7 +587,7 @@
   {
     "id": "little-record",
     "name": "Little Record",
-    "description": "A translucent peach vinyl record resting halfway out of a blank seafoam sleeve beside a tiny retro turntable, clean nostalgic product photograph.",
+    "description": "A translucent peach vinyl record resting halfway out of a blank seafoam sleeve beside a tiny retro turntable.",
     "style": "Playful",
     "font": "montserrat",
     "paper": "#fff0df",
@@ -600,7 +600,7 @@
   {
     "id": "butterfly-conservatory",
     "name": "Butterfly Conservatory",
-    "description": "One delicate copper and cream butterfly resting on a pale lilac scabiosa flower inside a sunlit conservatory, intimate natural macro photograph.",
+    "description": "One delicate copper and cream butterfly resting on a pale lilac scabiosa flower inside a sunlit conservatory.",
     "style": "Botanical",
     "font": "amita",
     "paper": "#f6f0e3",
@@ -613,7 +613,7 @@
   {
     "id": "honeyed-horizon",
     "name": "Honeyed Horizon",
-    "description": "A golden rolling wheat field beneath a giant soft apricot sun with a winding narrow path, contemporary gouache landscape with visible brush strokes.",
+    "description": "A golden rolling wheat field beneath a giant soft apricot sun with a winding narrow path.",
     "style": "Landscape",
     "font": "satisfy",
     "paper": "#fbefce",
@@ -626,7 +626,7 @@
   {
     "id": "cloud-nine-cinema",
     "name": "Cloud Nine Cinema",
-    "description": "A miniature open-air cinema with a blank ivory screen floating among sculpted white clouds and a striped popcorn carton, whimsical handcrafted model photograph.",
+    "description": "A miniature open-air cinema with a blank ivory screen floating among sculpted white clouds and a striped popcorn carton.",
     "style": "Playful",
     "font": "bebasneue",
     "paper": "#eff3f4",
@@ -639,7 +639,7 @@
   {
     "id": "raspberry-rendezvous",
     "name": "Raspberry Rendezvous",
-    "description": "A raspberry galette with folded flaky pastry on a cherry-red gingham picnic cloth, small bowl of fresh berries, bright summer food photograph.",
+    "description": "A raspberry galette with folded flaky pastry on a cherry-red gingham picnic cloth.",
     "style": "Editorial",
     "font": "lobster",
     "paper": "#fff0e9",
@@ -652,7 +652,7 @@
   {
     "id": "waterlily-wonder",
     "name": "Waterlily Wonder",
-    "description": "A creamy waterlily opening among broad lily pads with a single dragonfly and mirrored pastel sky, serene Japanese-inspired gouache painting.",
+    "description": "A creamy waterlily opening among broad lily pads with a single dragonfly and mirrored pastel sky.",
     "style": "Botanical",
     "font": "cormorant",
     "paper": "#edf2e5",
@@ -665,7 +665,7 @@
   {
     "id": "brass-compass",
     "name": "Brass Compass",
-    "description": "An antique brass compass opened on folded unmarked linen charts with a tiny cedar keepsake box, elegant exploration-themed still-life photograph.",
+    "description": "An antique brass compass opened on folded unmarked linen charts with a tiny cedar keepsake box.",
     "style": "Editorial",
     "font": "pirataone",
     "paper": "#f6eddc",
@@ -678,7 +678,7 @@
   {
     "id": "plush-panda-promise",
     "name": "Plush Panda Promise",
-    "description": "A hand-sewn linen panda holding one fresh bamboo shoot beside a tiny cream woven basket, premium plush-toy still life, pistachio studio backdrop.",
+    "description": "A hand-sewn linen panda holding one fresh bamboo shoot beside a tiny cream woven basket.",
     "style": "Storybook",
     "font": "fredoka",
     "paper": "#f5f1e3",
@@ -691,7 +691,7 @@
   {
     "id": "golden-ginkgo",
     "name": "Golden Ginkgo",
-    "description": "A single fan-shaped golden ginkgo leaf with intricate veins suspended above a textured ivory stone, minimalist autumn macro photograph, sharp elegant shadow.",
+    "description": "A single fan-shaped golden ginkgo leaf with intricate veins suspended above a textured ivory stone.",
     "style": "Botanical",
     "font": "spacegrotesk",
     "paper": "#faf1d8",
@@ -704,7 +704,7 @@
   {
     "id": "sherbet-skies",
     "name": "Sherbet Skies",
-    "description": "Soft apricot lavender and rose clouds swirling around a tiny silver star like scoops of sherbet, dreamy oil-painted celestial landscape, luminous creamy texture.",
+    "description": "Soft apricot lavender and rose clouds swirling around a tiny silver star like scoops of sherbet.",
     "style": "Celestial",
     "font": "pacifico",
     "paper": "#fff0ec",
@@ -717,7 +717,7 @@
   {
     "id": "storybook-swan",
     "name": "Storybook Swan",
-    "description": "A graceful white swan with a tiny cygnet on a lake of pale pink water framed by reeds, exquisite cut-paper storybook illustration with layered shadows.",
+    "description": "A graceful white swan with a tiny cygnet on a lake of pale pink water framed by reeds.",
     "style": "Storybook",
     "font": "arizonia",
     "paper": "#f8f1e7",
@@ -730,7 +730,7 @@
   {
     "id": "olive-branch-oath",
     "name": "Olive Branch Oath",
-    "description": "An ancient olive branch with silvery leaves and dark olives resting across an ivory travertine urn, Mediterranean fine-art still life, gentle morning light.",
+    "description": "An ancient olive branch with silvery leaves and dark olives resting across an ivory travertine urn.",
     "style": "Botanical",
     "font": "librebaskerville",
     "paper": "#f3efe0",
@@ -743,7 +743,7 @@
   {
     "id": "velvet-mushroom",
     "name": "Velvet Mushroom",
-    "description": "A cluster of fantastical velvet mushrooms in dusty rose copper and cream beneath fern fronds, handmade textile woodland diorama, softly glowing spores.",
+    "description": "A cluster of fantastical velvet mushrooms in dusty rose copper and cream beneath fern fronds.",
     "style": "Storybook",
     "font": "amita",
     "paper": "#f5e9df",
@@ -756,7 +756,7 @@
   {
     "id": "prism-keepsake",
     "name": "Prism Keepsake",
-    "description": "A faceted clear glass keepsake box tied with thin ivory silk casting a rainbow prism on chalk-white stone, luxury object still life with crisp sunlight.",
+    "description": "A faceted clear glass keepsake box tied with thin ivory silk casting a rainbow prism on chalk-white stone.",
     "style": "Editorial",
     "font": "montserrat",
     "paper": "#f1f1ee",
@@ -769,7 +769,7 @@
   {
     "id": "first-light-fable",
     "name": "First Light Fable",
-    "description": "Two small cranes standing in a misty wetland as the first copper sun rises above pale mountains, delicate Japanese woodblock-inspired landscape with textured paper.",
+    "description": "Two small cranes standing in a misty wetland as the first copper sun rises above pale mountains.",
     "style": "Landscape",
     "font": "cormorantgaramond",
     "paper": "#faf0de",

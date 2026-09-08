@@ -1,1 +1,6 @@
-{}
+{
+  "/icon.png/route": "app/icon.png/route.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/[category]/templates/page": "app/[category]/templates/page.js",
+  "/[category]/templates/[templateId]/customize/page": "app/[category]/templates/[templateId]/customize/page.js"
+}

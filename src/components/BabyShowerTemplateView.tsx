@@ -1,9 +1,13 @@
 "use client";
+import BridalShowerPreview from "@/components/templates/BridalShowerPreview";
 
 import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
 import { parseEventGuestDate, normalizeEventGuestPlanning } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
+import BabyShowerDesignHero, { babyShowerDesignStyle } from "@/components/baby-showers/BabyShowerDesignHero";
+import { getBabyShowerDesign, getBabyShowerTheme, isBabyShowerDesignDark, resolveBabyShowerHero } from "@/lib/baby-shower-designs";
+import babyStyles from "@/components/baby-showers/baby-shower-designs.module.css";
 import Link from "next/link";
 import { useState } from "react";
 import type { CSSProperties } from "react";
@@ -117,6 +121,8 @@ type Props = {
   canEdit?: boolean;
   isReadOnly: boolean;
   editHref: string;
+  preview?: boolean;
+  thumbnail?: boolean;
 };
 
 const detailSections = [
@@ -166,18 +172,19 @@ export default function BabyShowerTemplateView({
   canEdit: canEditProp,
   isReadOnly,
   editHref,
+  preview = false,
+  thumbnail = false,
 }: Props) {
+  const isBridal = eventData?.occasion === "bridal-shower";
   const canEdit = canEditProp ?? isOwner;
+  const design = isBridal ? undefined : getBabyShowerDesign(eventData?.templateId);
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
   const [rsvpAttending, setRsvpAttending] = useState<boolean | null>(null);
   const [rsvpName, setRsvpName] = useState("");
 
-  const heroImage =
-    typeof eventData?.heroImage === "string" && eventData.heroImage
-      ? eventData.heroImage
-      : DEFAULT_HERO_IMAGE;
+  const heroImage = isBridal ? eventData?.heroImage || DEFAULT_HERO_IMAGE : resolveBabyShowerHero(eventData?.heroImage, design);
   // Get theme from saved data - saved theme should have all properties (bg, text, accent, bgStyle, name, etc.)
-  const savedTheme = eventData?.theme || {};
+  const savedTheme = { ...(design ? getBabyShowerTheme(design) : {}), ...eventData?.theme };
   const themeId = eventData?.themeId || savedTheme?.themeId || savedTheme?.id;
 
   // If saved theme is missing critical properties, look it up from DESIGN_THEMES as fallback
@@ -235,8 +242,8 @@ export default function BabyShowerTemplateView({
   const locationLabel =
     customFields.location ||
     [eventData?.address, eventData?.city, eventData?.state].filter(Boolean).join(", ");
-  const expectingDate = customFields.expectingDate || eventData?.babyDetails?.expectingDate;
-  const gender = customFields.gender || eventData?.babyDetails?.gender;
+  const expectingDate = isBridal ? null : customFields.expectingDate || eventData?.babyDetails?.expectingDate;
+  const gender = isBridal ? null : customFields.gender || eventData?.babyDetails?.gender;
   const babyNote = customFields.aboutBaby || eventData?.babyDetails?.notes || "";
   const momNote = customFields.aboutMom || eventData?.momDetails?.notes || "";
   const rsvpDeadline = customFields.rsvpDeadline || (rsvp?.deadline && String(rsvp.deadline));
@@ -280,20 +287,45 @@ export default function BabyShowerTemplateView({
     .filter(Boolean) as typeof detailSections;
   const hasRsvpSection = Boolean(rsvp?.isEnabled || rsvpDeadline);
 
+  const inverse = design ? isBabyShowerDesignDark(design) : isDarkBackground(theme?.bg);
   return (
-    <main className="event-modern-page font-sans text-slate-900">
-      <div className="event-modern-container">
-        <div className="mx-auto flex w-full max-w-5xl flex-col py-6 md:py-10">
+    <main className={design ? babyStyles.page : "event-modern-page font-sans text-slate-900"} style={design ? babyShowerDesignStyle(design) : undefined}>
+      <div className={design ? "w-full" : "event-modern-container"}>
+        <div className={design ? "w-full" : "mx-auto flex w-full max-w-5xl flex-col py-6 md:py-10"}>
           <div
-            className={`relative overflow-hidden rounded-[32px] shadow-[0_35px_120px_rgba(15,23,42,0.25)] ${backgroundClass}`}
+            className={design ? babyStyles.shell : `relative overflow-hidden rounded-[32px] shadow-[0_35px_120px_rgba(15,23,42,0.25)] ${backgroundClass}`}
             style={backgroundStyle}
           >
+            {isBridal ? <BridalShowerPreview headerOnly templateId={eventData.templateId} data={{ ...eventData, images: { hero: heroImage } }} /> : design ? (
+              <BabyShowerDesignHero
+                design={design}
+                babyName={eventData?.babyName}
+                momName={eventData?.momName}
+                eventTitle={eventTitle}
+                heroImage={heroImage}
+                dateLabel={dateLabel}
+                timeLabel={timeLabel ? `${timeLabel}${endLabel ? ` – ${endLabel}` : ""}` : null}
+                location={locationLabel}
+                fontFamily={eventData?.fontFamily || theme?.fontFamily}
+                eventId={eventId}
+                shareUrl={shareUrl}
+                start={startDate && !Number.isNaN(startDate.getTime()) ? startDate.toISOString() : undefined}
+                end={eventData.endISO || eventData.end || eventData.endAt}
+                preview={preview}
+                thumbnail={thumbnail}
+                fontSize={eventData.fontSize || eventData.theme?.fontSize}
+                ownerActions={!isReadOnly && (canEdit || isOwner) ? <>
+                  {canEdit && <Link href={editHref} className="rounded-full border border-current px-4 py-2 text-xs">Edit</Link>}
+                  {isOwner && <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />}
+                </> : undefined}
+              />
+            ) : (<>
             {/* Header */}
             <div className={`px-6 md:px-10 pt-8 pb-4 border-b border-white/10 ${textClass}`}>
               <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div>
                   <h1 className={`font-semibold ${heroTitleClass}`} style={titleStyle}>
-                    {eventData?.babyName ? `${eventData.babyName}'s Baby Shower` : eventTitle}
+                    {isBridal ? eventTitle : eventData?.babyName ? `${eventData.babyName}'s Baby Shower` : eventTitle}
                   </h1>
                   <div className="flex flex-wrap gap-3 text-sm font-semibold uppercase tracking-[0.4em] opacity-80">
                     {dateLabel && <span>{dateLabel}</span>}
@@ -323,15 +355,17 @@ export default function BabyShowerTemplateView({
               <div className="absolute inset-0 bg-gradient-to-b from-black/0 to-black/30"></div>
             </div>
 
+            </>)}
+            <div className={design ? babyStyles.body : undefined} data-style={design?.style}>
             {/* Navigation */}
-            {navItems.length > 0 && (
-              <nav className="border-t border-white/10 bg-white/80 px-4 py-3 backdrop-blur-lg">
+            {!thumbnail && navItems.length > 0 && (
+              <nav className={design ? undefined : "border-t border-white/10 bg-white/80 px-4 py-3 backdrop-blur-lg"}>
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   {navItems.map((item) => (
                     <a
                       key={item.id}
                       href={`#${item.id}`}
-                      className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.4em] text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+                      className={design ? "underline underline-offset-4" : "rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.4em] text-slate-600 transition hover:border-slate-400 hover:text-slate-900"}
                       style={{ fontFamily: headingFont }}
                     >
                       {item.label}
@@ -341,8 +375,9 @@ export default function BabyShowerTemplateView({
               </nav>
             )}
 
-            <EventGuestPlanningNotes value={normalizeEventGuestPlanning(eventData.guestPlanning)} inverse={isDarkBackground(theme?.bg)} />
+            <EventGuestPlanningNotes value={normalizeEventGuestPlanning(eventData.guestPlanning)} inverse={inverse} />
 
+            <span id="details" />
             {/* Hosted By Section */}
             {hosts.length > 0 && (
               <section className={`text-center py-12 border-t border-white/10 ${textClass}`}>
@@ -402,7 +437,7 @@ export default function BabyShowerTemplateView({
               </div>
             )}
 
-            {/* About Baby Section */}
+            {/* {isBridal ? "Celebration details" : "About Baby"} Section */}
             {babyNote && (
               <section
                 className={`max-w-2xl mx-auto text-center p-6 md:p-8 border-t border-white/10 ${textClass}`}
@@ -414,7 +449,7 @@ export default function BabyShowerTemplateView({
                   )} mb-4 ${accentClass}`}
                   style={{ fontFamily: headingFont }}
                 >
-                  About Baby
+                  {isBridal ? "Celebration details" : "About Baby"}
                 </h2>
                 <p
                   className={`text-sm md:text-base leading-relaxed opacity-90 whitespace-pre-wrap`}
@@ -446,6 +481,7 @@ export default function BabyShowerTemplateView({
               </section>
             )}
 
+            <span id="gallery" />
             {/* Gallery Section */}
             {gallery.length > 0 && (
               <section className={`py-12 border-t border-white/10 ${textClass}`}>
@@ -474,6 +510,7 @@ export default function BabyShowerTemplateView({
               </section>
             )}
 
+            <span id="registry" />
             {/* Registry Section */}
             {registries.length > 0 && (
               <section className={`text-center py-12 border-t border-white/10 ${textClass}`}>
@@ -498,6 +535,7 @@ export default function BabyShowerTemplateView({
               </section>
             )}
 
+            <span id="rsvp" />
             {/* RSVP Section */}
             {hasRsvpSection && (
               <section
@@ -616,7 +654,7 @@ export default function BabyShowerTemplateView({
                     <div className="text-center py-12">
                       <div className="text-4xl mb-4">🎉</div>
                       <h3 className="text-2xl font-serif mb-2 opacity-90">Thank you!</h3>
-                      <p className="opacity-70">Your RSVP has been sent.</p>
+                      <p className="opacity-70">{preview ? "Preview response recorded. Publish your invitation to receive guest RSVPs." : "Your RSVP has been sent."}</p>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -638,8 +676,9 @@ export default function BabyShowerTemplateView({
             <footer
               className={`text-center text-xs uppercase tracking-[0.4em] px-6 md:px-10 py-8 border-t border-white/10  ${textClass}`}
             >
-              <EnvitefyEventBranding category="Baby Showers" inverse={isDarkBackground(theme?.bg)} />
+              <EnvitefyEventBranding category={isBridal ? "Bridal Showers" : "Baby Showers"} inverse={inverse} />
             </footer>
+            </div>
           </div>
         </div>
       </div>

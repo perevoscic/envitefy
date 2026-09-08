@@ -1,3 +1,4 @@
+import { isPublicTemplatePath, templateCategoryForPath } from "@/lib/template-categories";
 // src/middleware.ts
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -14,6 +15,7 @@ import {
 const PUBLIC_UNAUTH_PATHS = new Set([
   "/",
   "/studio",
+  "/envitefy-concierge",
   "/landing",
   "/invitation-maker",
   "/gymnastics",
@@ -39,6 +41,7 @@ const PUBLIC_UNAUTH_PATHS = new Set([
   "/signup-forms",
   "/gender-reveal",
   "/birthdays",
+  "/anniversaries",
   "/guides",
 ]);
 
@@ -96,7 +99,7 @@ const isLandingShowcasePath = (pathname: string) => {
 
 const isAllowedForUnauth = (pathname: string) => {
   const normalized = stripTrailingSlash(pathname);
-  if (PUBLIC_UNAUTH_PATHS.has(normalized)) return true;
+  if (PUBLIC_UNAUTH_PATHS.has(normalized) || isPublicTemplatePath(normalized)) return true;
   if (isEventSharePath(normalized)) return true;
   if (isSmartSignupSharePath(normalized)) return true;
   if (isStudioCardSharePath(normalized)) return true;
@@ -268,6 +271,7 @@ export async function middleware(req: NextRequest) {
     queryAuthMode === "signup" &&
     normalizedPathname !== "/snap" &&
     normalizedPathname !== "/chat" &&
+    normalizedPathname !== "/studio" &&
     !categorySignupIntent
   ) {
     const url = req.nextUrl.clone();
@@ -338,13 +342,18 @@ export async function middleware(req: NextRequest) {
 
   if (isAdminOnlyCreateEventPath(normalizedPathname)) {
     const authState = await resolveAuthState();
-    if (!authState.hasSession || !isAdminToken(authState.token)) {
+    const enabledEditor = /^\/event\/(weddings|birthdays|anniversaries|baby-showers|gender-reveal|gymnastics|sport-events)(?:\/customize)?$/.test(normalizedPathname);
+    if (!authState.hasSession || (!enabledEditor && !isAdminToken(authState.token))) {
       const url = req.nextUrl.clone();
       url.pathname = "/";
       url.search = "";
       return redirectWithMarker(url, 302);
     }
     return ok();
+  }
+
+  if (categorySignupIntent && templateCategoryForPath(normalizedPathname)) {
+    return attachSignupSourceCookie(ok(), signupSourceForIntent(categorySignupIntent), categorySignupIntent);
   }
 
   if (normalizedPathname === "/landing" || categorySignupIntent) {

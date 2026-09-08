@@ -110,7 +110,7 @@ export default function MeetPageContent({
 
   return (
     <div className={variant.pageClass}>
-      <div className="mx-auto max-w-7xl px-3 py-5 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1600px] px-3 py-5 sm:px-6 lg:px-8">
         {!isReadOnly && !hideOwnerActions && ownerToolbar ? (
           <div className="mb-4">{ownerToolbar}</div>
         ) : null}

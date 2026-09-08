@@ -16,7 +16,8 @@ for (const [route, view] of [
       assert.match(editor, /<GenderRevealTemplateView/);
       assert.match(editor, /\.\.\.data,/);
     } else {
-      assert.match(editor, /<EventGuestPlanningNotes value=\{data\.guestPlanning\}/);
+      assert.match(editor, /<BabyShowerTemplateView/);
+      assert.match(editor, /\.\.\.data,/);
     }
     assert.match(viewer, /<EventGuestPlanningNotes value=\{normalizeEventGuestPlanning\(eventData\.guestPlanning\)\}/);
   });

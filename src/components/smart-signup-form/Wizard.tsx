@@ -1,4 +1,5 @@
 "use client";
+import { useTemplateState, useTemplateEditor } from "@/components/templates/TemplateEditorContext";
 
 import React, { useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
@@ -57,7 +58,8 @@ export default function SmartSignupWizard({
   onSubmit,
   submitting,
 }: Props) {
-  const [step, setStep] = useState<StepKey>(0);
+  const templateEditor = useTemplateEditor();
+  const [step, setStep] = useTemplateState<StepKey>("signupStep", 0);
   const [showBasicsErrors, setShowBasicsErrors] = useState(false);
   useSession();
 
@@ -253,7 +255,7 @@ export default function SmartSignupWizard({
                 </>
               ) : (
                 <>
-                  Publish Sign-Up
+                  {templateEditor && !templateEditor.authenticated ? "Save and continue" : "Publish Sign-Up"}
                   <span className="text-base">🎉</span>
                 </>
               )}

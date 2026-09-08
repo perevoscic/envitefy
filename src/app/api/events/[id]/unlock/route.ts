@@ -1,3 +1,4 @@
+import { isEventDraft } from "@/lib/event-draft-access";
 import { NextResponse } from "next/server";
 import { getEventHistoryById } from "@/lib/db";
 import {
@@ -25,6 +26,7 @@ export async function POST(
   if (!row) {
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
+  if (isEventDraft(row.data)) return NextResponse.json({ error: "Event not found" }, { status: 404 });
   const accessControl = (row.data as any)?.accessControl;
   if (!accessControl || !accessControl.passcodeHash) {
     return NextResponse.json(

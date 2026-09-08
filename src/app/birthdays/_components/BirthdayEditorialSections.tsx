@@ -136,10 +136,7 @@ function HostDashboard({ primaryHref }: { primaryHref: string }) {
           <Link
             href={primaryHref}
             className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-full bg-[var(--birthday-yellow)] px-6 py-3 text-sm font-bold text-[var(--birthday-green)] transition hover:-translate-y-0.5"
-          >
-            Create your guest list
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
+          >Browse templates</Link>
         </div>
 
         <div className="overflow-hidden rounded-[2rem] border border-white/12 bg-white/[0.07] shadow-[0_32px_80px_rgba(7,18,12,0.2)]">
@@ -467,10 +464,7 @@ function FinalCta({ page, primaryHref }: { page: UseCasePage; primaryHref: strin
           <Link
             href={primaryHref}
             className="mt-8 inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-[var(--birthday-yellow)] px-7 py-4 text-sm font-bold text-[var(--birthday-green)] shadow-lg transition hover:-translate-y-0.5"
-          >
-            {page.primaryCta}
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
+          >Browse templates</Link>
         </div>
       </div>
     </section>

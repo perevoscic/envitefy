@@ -281,7 +281,7 @@ export const MAGAZINE_1_HTML = `<!DOCTYPE html>
               {{SHOWCASE_CARDS_HTML}}
               <div style="height:18px;"></div>
               <div style="text-align:center;">
-                <a href="{{STUDIO_URL}}" class="btn">Try Envitefy Studio</a>
+                <a href="{{CONCIERGE_URL}}" class="btn">Try Envitefy Concierge</a>
               </div>
             </td>
           </tr>
@@ -428,11 +428,11 @@ ${renderCardColumn(rightCard, 138, 28)}
 export function renderMagazineEmail(options: MagazineRenderOptions): string {
   const heroUrl = buildPublicAssetUrl(MAGAZINE_1_HERO_IMAGE_PATH, options.baseUrl);
   const wordmarkUrl = buildPublicAssetUrl(MAGAZINE_1_WORDMARK_IMAGE_PATH, options.baseUrl);
-  const studioUrl = buildPublicAssetUrl("/studio", options.baseUrl);
+  const conciergeUrl = buildPublicAssetUrl("/chat", options.baseUrl);
   return MAGAZINE_1_HTML
     .replace(/\{\{HERO_IMAGE_URL\}\}/g, heroUrl)
     .replace(/\{\{WORDMARK_IMAGE_URL\}\}/g, wordmarkUrl)
-    .replace(/\{\{STUDIO_URL\}\}/g, studioUrl)
+    .replace(/\{\{CONCIERGE_URL\}\}/g, conciergeUrl)
     .replace(/\{\{SOCIAL_FOOTER_HTML\}\}/g, renderMagazineSocialFooter(options))
     .replace(/\{\{SHOWCASE_CARDS_HTML\}\}/g, renderMagazineShowcaseCards(options));
 }

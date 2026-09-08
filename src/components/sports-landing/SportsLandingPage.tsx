@@ -1,4 +1,5 @@
 "use client";
+import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
 
 import {
   ArrowRight,
@@ -187,7 +188,7 @@ export default function SportsLandingPage() {
   const search = useSearchParams();
   const selectedSport = getSportEventPreset(search?.get("sport"));
   const selectedStyle = search?.get("style") || "stadium";
-  const primaryHref = `${buildSportEventCustomizeHref(selectedSport.key, selectedStyle)}&auth=signup`;
+  const primaryHref = "#templates";
 
   return (
     <div className="min-h-screen bg-[#f7f8f5] pb-24 text-[#121b2d] md:pb-0">
@@ -217,10 +218,7 @@ export default function SportsLandingPage() {
                 <Link
                   href={primaryHref}
                   className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#111a2c] shadow-[0_22px_54px_rgba(0,0,0,0.26)] transition hover:-translate-y-0.5"
-                >
-                  Build {selectedSport.routeLabel}
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Link>
+                >Browse templates</Link>
                 <Link
                   href="/snap?auth=signup"
                   className="inline-flex min-h-12 items-center rounded-full border border-white/32 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/18"
@@ -251,6 +249,7 @@ export default function SportsLandingPage() {
             </div>
           </div>
         </section>
+        <PublicTemplateGallery category="sport-events" featured />
 
         <section className="overflow-hidden bg-[#f7f8f5] px-5 py-20 sm:px-8 sm:py-28 lg:px-10">
           <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
@@ -491,10 +490,7 @@ export default function SportsLandingPage() {
                 <Link
                   href={primaryHref}
                   className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[#14233d] px-6 py-3 text-sm font-bold text-white shadow-[0_18px_50px_rgba(20,35,61,0.22)] transition hover:-translate-y-0.5"
-                >
-                  Build {selectedSport.routeLabel}
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Link>
+                >Browse templates</Link>
                 <Link
                   href="/event/gymnastics?auth=signup"
                   className="inline-flex min-h-12 items-center rounded-full border border-[#cfd7e1] bg-white px-6 py-3 text-sm font-bold text-[#334057]"
@@ -573,10 +569,7 @@ export default function SportsLandingPage() {
               <Link
                 href={primaryHref}
                 className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#111a2c] transition hover:-translate-y-0.5"
-              >
-                Build {selectedSport.routeLabel}
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
+              >Browse templates</Link>
               <Link
                 href="/snap?auth=signup"
                 className="inline-flex min-h-12 items-center rounded-full border border-white/35 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur"

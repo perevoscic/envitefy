@@ -9,6 +9,10 @@ const require = createRequire(import.meta.url);
 const dependencies = {
   "next-auth/jwt": { getToken: async () => ({ sub: "test-user" }) },
   "@/config/feature-visibility": { DISABLED_EVENT_ROUTE_PREFIXES: [] },
+  "@/lib/template-categories": {
+    isPublicTemplatePath: () => false,
+    templateCategoryForPath: () => null,
+  },
   "@/lib/signup-intent": {
     getCreateActionForSignupIntent: () => null,
     signupIntentForMarketingPath: () => null,
@@ -45,6 +49,18 @@ test("current chat, published cards, and current Concierge APIs do not enter the
     }));
     assert.equal(response.headers.get("location"), null, path);
     assert.equal(response.headers.get("x-middleware-next"), "1", path);
+  }
+});
+
+test("the Concierge introduction is public for guests and stays readable after sign-in", async () => {
+  for (const cookie of ["", "next-auth.session-token=test-session"]) {
+    for (const path of ["/envitefy-concierge", "/envitefy-concierge/"]) {
+      const response = await middleware(new NextRequest(`https://envitefy.test${path}`, {
+        headers: { cookie },
+      }));
+      assert.equal(response.headers.get("location"), null, path);
+      assert.equal(response.headers.get("x-middleware-next"), "1", path);
+    }
   }
 });
 

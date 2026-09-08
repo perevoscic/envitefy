@@ -917,8 +917,8 @@ export function useLeftSidebarController({
   const goStudioFromSidebar = useCallback(() => {
     resetSidebarToRoot();
     try {
-      if (pathname !== "/studio") {
-        router.push("/studio");
+      if (pathname !== "/chat") {
+        router.push("/chat");
       }
     } catch {}
   }, [pathname, resetSidebarToRoot, router]);
@@ -1150,7 +1150,7 @@ export function useLeftSidebarController({
         case "home":
           return pathname === "/" && sidebarPage === "root";
         case "studio":
-          return pathname === "/studio" && sidebarPage === "root";
+          return pathname === "/chat" && sidebarPage === "root";
         case "snap":
           return pathname === "/event" && sidebarPage === "root";
         case "create":

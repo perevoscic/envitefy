@@ -17,7 +17,7 @@ export const guestChatKnowledgeItems: GuestChatKnowledgeItem[] = [
     id: "product-overview",
     question: "What does Envitefy create?",
     answer:
-      "Envitefy helps hosts create polished hosted event pages with live invitations, RSVP flows, maps, calendar saves, registry links, smart sign-ups, updates, and guest-facing details from one shareable link. You can start with SNAP, Envitefy Concierge, Studio, or a template.",
+      "Envitefy helps hosts create polished hosted event pages with live invitations, RSVP flows, maps, calendar saves, registry links, smart sign-ups, updates, and guest-facing details from one shareable link. You can start with SNAP, Envitefy Concierge, or a category template.",
     keywords: ["envitefy", "what", "create", "event", "page", "invitation", "hosted", "host"],
   },
   {

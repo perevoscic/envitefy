@@ -1,3 +1,4 @@
+import { guardDraftRequest } from "@/lib/event-draft-access-server";
 import { NextRequest, NextResponse } from "next/server";
 import { listRegistryItemsByEventId } from "@/lib/db";
 
@@ -15,6 +16,8 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    const denied = await guardDraftRequest(eventId);
+    if (denied) return denied;
     const items = await listRegistryItemsByEventId(eventId);
     return NextResponse.json(items);
   } catch (err: any) {

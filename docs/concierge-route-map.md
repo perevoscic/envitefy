@@ -7,13 +7,14 @@ Updated September 6, 2026. Current `/chat` was verified against production. The 
 | Surface | Route | Implementation |
 | --- | --- | --- |
 | Event creator | `/chat` | `src/app/chat/ConciergeChatClient.tsx` |
+| Concierge introduction | `/envitefy-concierge` | Public explainer with example prompts, creation instructions, and authentication continuing to `/chat`. Live Card attribution links here. |
 | Draft preview | Preview tab inside `/chat` | `ChatProductPreview.tsx`; Live Cards use `StudioShowcaseLiveCard` with interactive preview controls. |
 | Intake and extraction | `/api/creation/intake`, `/api/creation/intake/stream` | `src/lib/concierge/intake.ts` and `extract.ts`; all supplied details are extracted on each message. |
 | Current Concierge messaging | `/api/concierge/message`, `/api/concierge/events/[id]/message` | Current creation and owner editing APIs; these were not V2 endpoints. |
 | Published Live Card | `/card/[slug-or-id]` | `SharedStudioCardPage` and `StudioLiveCardActionSurface` |
 | Public event / owner workspace | `/event/[slug-or-id]` | Existing event dispatcher, category renderers, and `ConciergeEventWebsite` |
 | Dynamic event pages | `/e/[slug]`, `/api/event-pages/*` | Independent blueprint renderer and `dynamic_event_pages` storage |
-| Studio | `/studio` | Separate customer editor |
+| Retired Studio entry | `/studio` | Permanent redirect to `/envitefy-concierge`; existing showcase bookmarks go to `/showcase/[slug]`, and owner edit bookmarks go to `/event/[id]`. Shared Studio-named rendering components remain in use by current cards. |
 | Retired V2 pages | `/concierge-v2` and every nested page | Middleware redirects permanently to `/chat`, dropping old draft IDs and invitation tokens. |
 
 Production `/chat` displays “What are we celebrating?”, celebration choices, Live Card / Flyer/Invitation / Event Page choices, and the Envitefy Concierge sidebar. Historical June 2026 documents that identify V2 as the primary creator are obsolete.

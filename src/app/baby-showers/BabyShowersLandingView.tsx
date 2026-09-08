@@ -1,3 +1,4 @@
+import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
 import {
   ArrowRight,
   Baby,
@@ -23,41 +24,26 @@ import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
 import { landingHeroGalleries } from "@/lib/landing-hero-galleries";
 import styles from "./BabyShowersLandingView.module.css";
 
-const createHref = "/baby-showers?auth=signup";
+const createHref = "#templates";
 
 const collections = [
   {
-    id: "gender-neutral-greenery",
-    badge: "Most loved",
-    eyebrow: "Fresh & modern",
-    title: "Botanical Sprout",
-    body: "Soft eucalyptus, warm ivory, and clean type for a relaxed, gender-neutral celebration.",
-    image: "/templates/baby-showers/gender-neutral-greenery.webp",
-    imageAlt: "Gender-neutral greenery baby shower setting",
-    accent: "#547867",
-    soft: "#edf4ef",
+    id: "pear-orchard-cradle", badge: "New collection", eyebrow: "Orchard & heirloom",
+    title: "Pear Orchard Cradle", body: "A hand-painted pear orchard, woven cradle, and arched invitation for a warm welcome.",
+    image: "/templates/baby-showers/pear-orchard-cradle.webp", imageAlt: "A woven baby cradle beneath a fruiting pear tree",
+    accent: "#354329", soft: "#faf5df",
   },
   {
-    id: "terracotta-bloom",
-    badge: "Trending",
-    eyebrow: "Warm & joyful",
-    title: "Terracotta Bloom",
-    body: "Earthy citrus tones, modern florals, and a sun-washed palette made for an easygoing shower.",
-    image: "/templates/baby-showers/terracotta-bloom.webp",
-    imageAlt: "Terracotta floral baby shower table setting",
-    accent: "#963b16",
-    soft: "#fff0e7",
+    id: "peach-patisserie", badge: "New collection", eyebrow: "Sweet & playful",
+    title: "Peach Patisserie", body: "Peach pastries, a scalloped shopfront, and a charming menu-inspired baby shower design.",
+    image: "/templates/baby-showers/peach-patisserie.webp", imageAlt: "Illustrated peach pastries in a charming French patisserie",
+    accent: "#713d39", soft: "#fff0e5",
   },
   {
-    id: "little-star-is-coming",
-    badge: "Classic",
-    eyebrow: "Dreamy & timeless",
-    title: "Moonlit Little Star",
-    body: "Deep navy, warm starlight, and celestial details for a magical welcome under the moon.",
-    image: "/templates/baby-showers/little-star-is-coming.webp",
-    imageAlt: "Moon and stars baby shower setting",
-    accent: "#224f79",
-    soft: "#eaf3fb",
+    id: "starlight-observatory", badge: "New collection", eyebrow: "Celestial & luminous",
+    title: "Starlight Observatory", body: "A brass telescope, glowing planets, and a midnight invitation for your brightest new discovery.",
+    image: "/templates/baby-showers/starlight-observatory.webp", imageAlt: "A brass telescope and planet mobile beneath a starry night sky",
+    accent: "#224f79", soft: "#eaf3fb",
   },
 ] as const;
 
@@ -224,10 +210,7 @@ function CollectionCard({ collection }: { collection: (typeof collections)[numbe
           <Link
             href={createHref}
             className="inline-flex items-center gap-1.5 text-sm font-bold text-[var(--baby-card-accent)] transition hover:gap-2.5"
-          >
-            Start designing
-            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-          </Link>
+          >Browse templates</Link>
         </div>
       </div>
     </article>
@@ -290,10 +273,7 @@ export default function BabyShowersLandingView() {
                 detail together.
               </p>
               <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
-                <Link href={createHref} className={styles.primaryCta}>
-                  Create your baby shower
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Link>
+                <Link href={createHref} className={styles.primaryCta}>Browse templates</Link>
                 <a href="#collections" className={styles.secondaryCta}>
                   Browse invitation styles
                 </a>
@@ -319,6 +299,7 @@ export default function BabyShowersLandingView() {
             </div>
           </div>
         </section>
+        <PublicTemplateGallery category="baby-showers" featured />
 
         <nav className="border-y border-[#e7edf2] bg-white" aria-label="Baby shower page sections">
           <div className="mx-auto flex max-w-5xl snap-x gap-2 overflow-x-auto px-5 py-4 sm:justify-center sm:px-8">
@@ -347,7 +328,7 @@ export default function BabyShowersLandingView() {
             <SectionHeading
               eyebrow="Invitation styles"
               title="Choose a look that feels like your celebration"
-              body="Start with a signature design, then personalize the wording, date, place, registry links, and guest details in the Envitefy studio."
+              body="Start with a signature design, then personalize the wording, date, place, registry links, and guest details in the baby shower editor."
             />
             <div className="mt-12 grid gap-8 md:grid-cols-3">
               {collections.map((collection) => (
@@ -355,10 +336,7 @@ export default function BabyShowersLandingView() {
               ))}
             </div>
             <div className="mt-10 text-center">
-              <Link href={createHref} className={styles.textLink}>
-                Create your baby shower invitation
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
+              <Link href={createHref} className={styles.textLink}>Browse templates</Link>
             </div>
           </div>
         </section>
@@ -646,10 +624,7 @@ export default function BabyShowersLandingView() {
                 Create your baby shower invitation, add the registry, and give every guest one
                 beautiful place for the details.
               </p>
-              <Link href={createHref} className={cx(styles.primaryCta, "mt-8")}>
-                Start your baby shower page
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
+              <Link href={createHref} className={cx(styles.primaryCta, "mt-8")}>Browse templates</Link>
             </div>
           </div>
         </section>

@@ -29,7 +29,7 @@ const faqItems: FaqPageItem[] = [
     id: "ways-to-create",
     question: "How can I create an event in Envitefy?",
     answer:
-      "Start with Envitefy Snap when you have a photo or file, describe the event to Envitefy Concierge, or use a template, manual creation, or Studio. Each path gives you event details and a guest experience to review before sharing.",
+      "Start with Envitefy Snap when you have a photo or file, describe the event to Envitefy Concierge, or choose a category template and enter the details manually. Each path gives you event details and a guest experience to review before sharing.",
   },
   {
     id: "snap-uploads",

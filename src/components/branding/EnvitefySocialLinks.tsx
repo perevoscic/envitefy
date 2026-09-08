@@ -14,13 +14,13 @@ export default function EnvitefySocialLinks({
     <nav
       aria-label="Follow Envitefy"
       className={
-        isEvent ? "mt-4" : placement === "menu" ? "text-[var(--nav-chrome-ink)]" : "text-[#62586a]"
+        isEvent ? "mt-1" : placement === "menu" ? "text-[var(--nav-chrome-ink)]" : "text-[#62586a]"
       }
     >
       {!isEvent ? (
         <p className="mb-3 text-xs font-semibold tracking-wide">Follow Envitefy</p>
       ) : null}
-      <ul className={`flex flex-wrap items-center gap-2 ${isEvent ? "justify-center" : ""}`}>
+      <ul className={`flex flex-wrap items-center ${isEvent ? "justify-center gap-1" : "gap-2"}`}>
         {ENVITEFY_SOCIAL_LINKS.map(({ name, href, iconSrc }) => (
           <li key={name}>
             <a
@@ -28,7 +28,7 @@ export default function EnvitefySocialLinks({
               target="_blank"
               rel="noopener noreferrer"
               title={`Envitefy on ${name} (opens in a new tab)`}
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md opacity-80 transition-opacity duration-150 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current active:opacity-60 motion-reduce:transition-none"
+              className={`inline-flex ${isEvent ? "h-8 w-8" : "h-11 w-11"} shrink-0 items-center justify-center rounded-md opacity-80 transition-opacity duration-150 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current active:opacity-60 motion-reduce:transition-none`}
             >
               <img
                 src={iconSrc}

@@ -1,4 +1,5 @@
 "use client";
+import { useTemplateEditor } from "@/components/templates/TemplateEditorContext";
 
 import { CalendarDays, Check, Link, Navigation, Share2 } from "lucide-react";
 import { useState } from "react";
@@ -43,6 +44,7 @@ export default function EventGuestActions({
 }) {
   const [message, setMessage] = useState("");
   const [copied, setCopied] = useState(false);
+  const templateEditor = useTemplateEditor();
   const [manualShareUrl, setManualShareUrl] = useState("");
   const destination = location || "";
   const validStart = start && !Number.isNaN(Date.parse(start));
@@ -66,6 +68,7 @@ export default function EventGuestActions({
   }
 
   const handleShare = async () => {
+    if (templateEditor) { await templateEditor.requestSave(); return; }
     setCopied(false);
     setManualShareUrl("");
     const shareUrl = resolvePublicEventShareUrl({

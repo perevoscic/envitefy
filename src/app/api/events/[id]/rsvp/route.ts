@@ -1,3 +1,4 @@
+import { guardDraftRequest } from "@/lib/event-draft-access-server";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { NextResponse } from "next/server";
@@ -418,6 +419,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (backendError) return backendError;
 
     const { id: eventId } = await timing.time("params", () => params);
+    const draftDenied = await guardDraftRequest(eventId, false);
+    if (draftDenied) return draftDenied;
 
     if (!eventId) {
       return jsonWithTiming(timing, { error: "Event ID required" }, { status: 400 });
@@ -643,6 +646,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     if (backendError) return backendError;
 
     const { id: eventId } = await timing.time("params", () => params);
+    const draftDenied = await guardDraftRequest(eventId, false);
+    if (draftDenied) return draftDenied;
 
     const statsRes = await timing.time("stats_query", () =>
       query(
@@ -751,6 +756,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (backendError) return backendError;
 
     const { id: eventId } = await timing.time("params", () => params);
+    const draftDenied = await guardDraftRequest(eventId, false);
+    if (draftDenied) return draftDenied;
     const session = (await timing.time("session", () =>
       getServerSession(authOptions),
     )) as SessionLike;
@@ -821,6 +828,8 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     if (backendError) return backendError;
 
     const { id: eventId } = await timing.time("params", () => params);
+    const draftDenied = await guardDraftRequest(eventId, false);
+    if (draftDenied) return draftDenied;
     const session = (await timing.time("session", () =>
       getServerSession(authOptions),
     )) as SessionLike;

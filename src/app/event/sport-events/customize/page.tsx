@@ -1,7 +1,9 @@
 // @ts-nocheck
 "use client";
+import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
 import EventGuestActions from "@/components/event-templates/EventGuestActions";
+import TemplateGalleryBackLink from "@/components/templates/TemplateGalleryBackLink";
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
 import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
 import { type EventGuestPlanning, normalizeEventGuestPlanning, eventLocalDateParts, getEventEndLocal } from "@/lib/event-guest-planning";
@@ -20,13 +22,13 @@ import {
   Type,
 } from "lucide-react";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { buildEventPath } from "@/utils/event-url";
-import { persistImageMediaValue } from "@/utils/media-upload-client";
+import { persistImageMediaValue as persistExistingImage } from "@/utils/media-upload-client";
 
 type FieldSpec = {
   key: string;
@@ -232,19 +234,21 @@ const InputGroup = ({
       </label>
       {type === "textarea" ? (
         <textarea
+        aria-label={label}
           className={baseTextareaClass}
           value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
+          onChange={(e) => { setLocalValue(e.target.value); onChange(e.target.value); }}
           onBlur={handleBlur}
           placeholder={placeholder}
           readOnly={readOnly}
         />
       ) : (
         <input
+        aria-label={label}
           type={type}
           className={baseInputClass}
           value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
+          onChange={(e) => { setLocalValue(e.target.value); onChange(e.target.value); }}
           onBlur={handleBlur}
           placeholder={placeholder}
           readOnly={readOnly}
@@ -318,12 +322,7 @@ function buildSportSpecificConfig(
   sportPreset: ReturnType<typeof getSportEventPreset>,
   style: string | null,
 ): SimpleTemplateConfig {
-  const styleThemeIds: Record<string, string[]> = {
-    stadium: sportPreset.themeIds,
-    club: ["victory_blue", "teal_tenacity", "forest_strong"],
-    tournament: ["championship_gold", "midnight_elite", "dynamic_orange"],
-  };
-  const preferredThemeIds = styleThemeIds[style || ""] || sportPreset.themeIds;
+  const preferredThemeIds = getSportStyleThemeIds(sportPreset, style);
   const themes = [
     ...preferredThemeIds
       .map((id) => baseConfig.themes.find((theme) => theme.id === id))
@@ -363,7 +362,9 @@ function buildSportSpecificConfig(
 
 function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
-    const search = useSearchParams();
+    const templateEditor = useTemplateEditor();
+  const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
+  const search = useTemplateSearchParams();
     const router = useRouter();
     const sportPreset = getSportEventPreset(search?.get("sport"));
     const style = search?.get("style");
@@ -389,7 +390,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       }
     }, [defaultDate]);
 
-    const [data, setData] = useState(() => ({
+    const [data, setData] = useTemplateState("data", () => ({
       guestPlanning: {} as EventGuestPlanning,
       endTime: "",
       endDate: "",
@@ -418,13 +419,13 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
         ]),
       ),
     }));
-    const [advancedState, setAdvancedState] = useState(() => {
+    const [advancedState, setAdvancedState] = useTemplateState("advancedState", () => {
       const entries =
         config.advancedSections?.map((section) => [section.id, section.initialState]) || [];
       return Object.fromEntries(entries);
     });
-    const [themeId, setThemeId] = useState(config.themes[0]?.id ?? "default-theme");
-    const [activeView, setActiveView] = useState<string>("main");
+    const [themeId, setThemeId] = useTemplateState("themeId", config.themes[0]?.id ?? "default-theme");
+    const [activeView, setActiveView] = useTemplateState<string>("activeView", "main");
     const existingEventDataRef = useRef<Record<string, any>>({});
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
     const [rsvpAttending, setRsvpAttending] = useState("yes");
@@ -618,7 +619,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
           <div className="mr-3 w-8">
             {showBack && (
               <button
-                onClick={onBack}
+                aria-label="Back to details"
+        onClick={onBack}
                 className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
               >
                 <ChevronLeft size={20} />
@@ -666,7 +668,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       [data.rsvpEnabled],
     );
 
-    const [activeSection, setActiveSection] = useState<string>(navItems[0]?.id || "details");
+    const [activeSection, setActiveSection] = useTemplateState<string>("activeSection", navItems[0]?.id || "details");
 
     useEffect(() => {
       if (!navItems.length) return;
@@ -720,7 +722,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
-        const url = URL.createObjectURL(file);
+        const url = (templateEditor ? templateEditor.previewPhoto(file) : URL.createObjectURL(file));
         setData((prev) => ({ ...prev, hero: url }));
       }
     };
@@ -733,6 +735,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
     }, []);
 
     const handlePublish = useCallback(async () => {
+      if (templateEditor && !templateEditor.authenticated) { await templateEditor.requestSave(); return; }
       if (submitting) return;
       setSubmitting(true);
       try {
@@ -825,6 +828,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
           },
         };
 
+      if (templateEditor) { await templateEditor.persist(payload, "published"); return; }
+
         if (editEventId) {
           const res = await fetch(`/api/history/${editEventId}`, {
             method: "PATCH",
@@ -879,7 +884,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       } finally {
         setSubmitting(false);
       }
-    }, [
+    }, [templateEditor, 
       submitting,
       data.date,
       data.time,
@@ -1026,6 +1031,11 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
     const renderMainMenu = () => (
       <div className="space-y-4 animate-fade-in pb-8 flex flex-col items-center">
         <div className="mb-2 w-full max-w-sm text-center">
+          {!editEventId && (
+            <TemplateGalleryBackLink href="/sport-events/templates">
+              All sports designs
+            </TemplateGalleryBackLink>
+          )}
           <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
             Add your details
           </h2>
@@ -1711,7 +1721,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                     : "Publishing..."
                   : editEventId
                     ? "Save"
-                    : "Publish"}
+                    : templateEditor && !templateEditor.authenticated ? "Save and continue" : "Publish"}
               </button>
             </div>
           </div>
@@ -1735,7 +1745,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
 }
 
 import { config } from "@/components/event-templates/SportEventsTemplate";
-import { getSportEventPreset } from "@/lib/sport-event-presets";
+import { getSportEventPreset, getSportStyleThemeIds } from "@/lib/sport-event-presets";
 
 const Page = createSimpleCustomizePage(config);
 export default Page;

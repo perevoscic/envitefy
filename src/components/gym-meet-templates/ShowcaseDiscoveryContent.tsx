@@ -21,7 +21,7 @@ import Image from "next/image";
 import React from "react";
 import StaticMap from "@/components/StaticMap";
 import { splitGuidanceSentences, stripLinkedDomainMentions } from "./displayText";
-import { ShowcaseThemeConfig } from "./showcaseThemes";
+import { ShowcaseThemeConfig } from "@/components/football-season-templates/showcaseThemes";
 import { GymMeetRenderModel } from "./types";
 
 const safeUrl = (value: unknown) => {

@@ -1,3 +1,4 @@
+import { guardDraftRequest } from "@/lib/event-draft-access-server";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { NextResponse } from "next/server";
@@ -128,6 +129,8 @@ export async function POST(
 ) {
   try {
   const { id } = await context.params;
+    const draftDenied = await guardDraftRequest(id, false);
+    if (draftDenied) return draftDenied;
   const session = await getServerSession(authOptions as NextAuthOptions);
   const sessionUser: Session["user"] | null = session?.user ?? null;
   const sessionEmail = (sessionUser?.email as string | undefined) || null;

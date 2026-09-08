@@ -20,7 +20,7 @@ test("bridal showers uses its dedicated luxury landing experience", () => {
   assert.match(viewSource, /<LandingHeroMedia/);
   assert.match(viewSource, /landingHeroGalleries\["bridal-showers"\]/);
   assert.match(viewSource, /A beautiful beginning/);
-  assert.match(viewSource, /The bespoke studio/);
+  assert.match(viewSource, /Your invitation preview/);
   assert.match(viewSource, /Curated design suites/);
   assert.match(stylesSource, /--bridal-champagne/);
   assert.match(stylesSource, /Cormorant Garamond/);

@@ -30,9 +30,8 @@ test("gym meet renderer sources do not reference model.description", () => {
   const files = [
     "src/components/gym-meet-templates/GymMeetDiscoveryContent.tsx",
     "src/components/gym-meet-templates/ShowcaseDiscoveryContent.tsx",
-    "src/components/gym-meet-templates/renderers/EditorialGymMeetTemplate.tsx",
-    "src/components/gym-meet-templates/renderers/DashboardGymMeetTemplate.tsx",
-    "src/components/gym-meet-templates/renderers/ShowcaseGymMeetTemplate.tsx",
+    "src/components/gym-meet-templates/GymnasticsScene.tsx",
+    "src/components/gym-meet-templates/renderers/MeetPageContent.tsx",
   ];
 
   for (const file of files) {
@@ -46,31 +45,22 @@ test("gym meet renderer sources do not reference model.description", () => {
 });
 
 test("discovery nav renderers use overflow chips instead of equal-width desktop grids", () => {
-  const files = [
-    "src/components/gym-meet-templates/GymMeetDiscoveryContent.tsx",
-    "src/components/gym-meet-templates/renderers/ShowcaseGymMeetTemplate.tsx",
-  ];
+  const source = readSource("src/components/gym-meet-templates/GymMeetDiscoveryContent.tsx");
 
-  for (const file of files) {
-    const source = readSource(file);
-    assert.equal(
-      source.includes("repeat(${"),
-      false,
-      `${file} still computes equal-width discovery grid columns`,
-    );
-    assert.equal(
-      source.includes("md:grid md:overflow-visible"),
-      false,
-      `${file} still switches the discovery rail to a desktop grid`,
-    );
-  }
+  assert.equal(
+    source.includes("repeat(${"),
+    false,
+    "GymMeetDiscoveryContent still computes equal-width discovery grid columns",
+  );
+  assert.equal(
+    source.includes("md:grid md:overflow-visible"),
+    false,
+    "GymMeetDiscoveryContent still switches the discovery rail to a desktop grid",
+  );
 });
 
 test("discovery nav keeps safe-edge padding and avoids naive center scrolling", () => {
   const source = readSource("src/components/gym-meet-templates/GymMeetDiscoveryContent.tsx");
-  const showcaseSource = readSource(
-    "src/components/gym-meet-templates/renderers/ShowcaseGymMeetTemplate.tsx",
-  );
 
   assert.equal(
     source.includes('inline: "center"'),
@@ -87,24 +77,12 @@ test("discovery nav keeps safe-edge padding and avoids naive center scrolling", 
     /const safeEdgeInset = isDesktop \? DESKTOP_NAV_SAFE_EDGE_PX : MOBILE_NAV_SAFE_EDGE_PX;/,
     "GymMeetDiscoveryContent no longer scrolls tabs into a safe visible region",
   );
-  assert.match(
-    showcaseSource,
-    /className="no-scrollbar flex gap-2 overflow-x-auto px-1 py-1 pr-12 md:pr-1"/,
-    "ShowcaseGymMeetTemplate is missing mobile-safe end padding on the tab rail",
-  );
-  assert.match(
-    showcaseSource,
-    /const safeEdgeInset = isDesktop \? DESKTOP_TAB_SAFE_EDGE_PX : MOBILE_TAB_SAFE_EDGE_PX;/,
-    "ShowcaseGymMeetTemplate no longer scrolls tabs into a safe visible region",
-  );
 });
 
 test("gymnastics renderers omit the redundant Quick Access section", () => {
   const files = [
-    "src/components/gym-meet-templates/renderers/BaseGymMeetTemplate.tsx",
-    "src/components/gym-meet-templates/renderers/DashboardGymMeetTemplate.tsx",
-    "src/components/gym-meet-templates/renderers/EditorialGymMeetTemplate.tsx",
-    "src/components/gym-meet-templates/renderers/ShowcaseGymMeetTemplate.tsx",
+    "src/components/gym-meet-templates/GymnasticsScene.tsx",
+    "src/components/gym-meet-templates/renderers/MeetPageContent.tsx",
   ];
 
   for (const file of files) {
@@ -139,19 +117,14 @@ test("both discovery renderers use the structured hotel card presentation", () =
 
 test("gymnastics renderers do not repeat header facts in a Meet Snapshot section", () => {
   const files = [
-    "src/components/gym-meet-templates/renderers/EditorialGymMeetTemplate.tsx",
-    "src/components/gym-meet-templates/renderers/DashboardGymMeetTemplate.tsx",
+    "src/components/gym-meet-templates/GymnasticsScene.tsx",
+    "src/components/gym-meet-templates/renderers/MeetPageContent.tsx",
   ];
 
   for (const file of files) {
     const source = readSource(file);
     assert.equal(source.includes('title="Meet Snapshot"'), false);
   }
-
-  const dashboardSource = readSource(
-    "src/components/gym-meet-templates/renderers/DashboardGymMeetTemplate.tsx",
-  );
-  assert.match(dashboardSource, /title="Team Contacts"/);
 });
 
 test("hero address rendering falls back to parsed and map addresses when eventData.address is blank", () => {
@@ -165,39 +138,37 @@ test("hero address rendering falls back to parsed and map addresses when eventDa
     "normalizeGymMeetEventData no longer falls back to parseResult.address/mapAddress",
   );
 
-  const rendererFiles = [
-    "src/components/gym-meet-templates/renderers/EditorialGymMeetTemplate.tsx",
-    "src/components/gym-meet-templates/renderers/DashboardGymMeetTemplate.tsx",
-    "src/components/gym-meet-templates/renderers/ShowcaseGymMeetTemplate.tsx",
-  ];
-
-  for (const file of rendererFiles) {
-    const source = readSource(file);
-    assert.match(
-      source,
-      /model\.address \|\| model\.mapAddress \|\| model\.headerLocation/,
-      `${file} no longer falls back to mapAddress in the hero address line`,
-    );
-  }
+  const sceneSource = readSource("src/components/gym-meet-templates/GymnasticsScene.tsx");
+  assert.match(
+    sceneSource,
+    /model\.address \|\| model\.mapAddress \|\| model\.headerLocation/,
+    "GymnasticsScene no longer falls back to mapAddress in the hero address line",
+  );
 });
 
-test("gym meet defaults use launchpad editorial for legacy and new drafts", () => {
+test("gym meet defaults use the 2026 collection for legacy and new drafts", () => {
   const registrySource = readSource("src/components/gym-meet-templates/registry.ts");
   const selectorSource = readSource("src/components/gym-meet-templates/TemplateSelector.tsx");
 
   assert.match(
     registrySource,
-    /DEFAULT_GYM_MEET_TEMPLATE_ID:\s*GymMeetTemplateId\s*=\s*"launchpad-editorial"/,
+    /DEFAULT_GYM_MEET_TEMPLATE_ID:\s*GymMeetTemplateId\s*=\s*"airborne-atlas"/,
     "registry.ts changed the legacy gym meet fallback unexpectedly",
   );
   assert.match(
     registrySource,
-    /DEFAULT_NEW_GYM_MEET_TEMPLATE_ID:\s*GymMeetTemplateId\s*=\s*"launchpad-editorial"/,
-    "registry.ts should pin new meet drafts to launchpad editorial",
+    /DEFAULT_NEW_GYM_MEET_TEMPLATE_ID:\s*GymMeetTemplateId\s*=\s*"airborne-atlas"/,
+    "registry.ts should pin new meet drafts to airborne atlas",
   );
-  assert.match(
-    selectorSource,
-    /const FEATURED_TEMPLATE_IDS: GymMeetTemplateId\[] = \[\s*"launchpad-editorial"/,
-    "TemplateSelector.tsx should lead featured picks with launchpad editorial",
-  );
+  assert.match(selectorSource, /GYM_MEET_TEMPLATE_LIBRARY\.filter/);
+  assert.match(selectorSource, /<GymnasticsPreview design=\{design\}/);
+});
+
+test("shared gym renderer no longer imports retired per-design template files", () => {
+  const source = readSource("src/components/gym-meet-templates/GymMeetTemplateRenderer.tsx");
+
+  assert.match(source, /GymnasticsScene/);
+  assert.match(source, /MeetPageContent/);
+  assert.doesNotMatch(source, /ArchitectCleanTemplate/);
+  assert.doesNotMatch(source, /EliteAthleteTemplate/);
 });

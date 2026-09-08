@@ -18,6 +18,8 @@ function cx(...parts: Array<string | false | null | undefined>) {
 
 export type SignupFormProps = {
   onSuccess?: () => void;
+  onAuthenticated?: () => Promise<void>;
+  allowGoogleAuth?: boolean;
   onSwitchMode?: (mode: "login" | "signup") => void;
   successRedirectUrl?: string;
   signupSource?: "snap" | "gymnastics";
@@ -28,6 +30,8 @@ export type SignupFormProps = {
 
 export default function SignupForm({
   onSuccess,
+  onAuthenticated,
+  allowGoogleAuth = true,
   onSwitchMode,
   successRedirectUrl = "/",
   signupSource,
@@ -186,6 +190,7 @@ export default function SignupForm({
         callbackUrl: successRedirectUrl,
       });
       if (result?.ok) {
+        if (onAuthenticated) { await onAuthenticated(); return; }
         try {
           localStorage.setItem("welcomeAfterSignup", "1");
         } catch {}
@@ -206,6 +211,7 @@ export default function SignupForm({
   };
 
   const onGoogleSignUp = async () => {
+    if (!allowGoogleAuth) return;
     setSubmitting(true);
     setMessage(null);
     setLegalError(null);
@@ -238,6 +244,7 @@ export default function SignupForm({
         <button
           type="button"
           onClick={onGoogleSignUp}
+          hidden={!allowGoogleAuth}
           disabled={submitting}
           className={cx(
             "btn btn-outline w-full justify-center gap-3",

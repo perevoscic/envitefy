@@ -998,11 +998,11 @@ export default function HomeOverviewDashboard({
                 </div>
                 <div className="mt-8 flex flex-wrap gap-4">
                   <Link
-                    href="/studio"
+                    href="/chat"
                     className="inline-flex min-h-[56px] min-w-[150px] flex-1 items-center justify-center gap-2 rounded-[20px] bg-slate-900 px-6 py-4 text-sm font-bold text-white shadow-xl transition-all hover:bg-indigo-600 sm:min-w-[170px] sm:px-8"
                   >
                     <WandSparkles size={16} />
-                    <span>Create in Studio</span>
+                    <span>Create with Concierge</span>
                   </Link>
                   <Link
                     href="/event"

@@ -25,6 +25,7 @@ export const ADMIN_EMAIL_GENERATION_GUIDE = {
     "For Snap, communicate the complete product story: source invitation/event image → saved event/live card → calendar + sharing → easy future access and less paper/message clutter.",
     "For Envitefy Concierge, communicate the complete creation story: the host's words → polished invitation/live event page → relevant guest tools such as RSVP, calendar, registry, directions, reminders, or sharing.",
     "Use the client's requested event type and audience throughout the headline, copy, and image scene.",
+    "Name the creation experience Envitefy Concierge. Link creation CTAs to https://envitefy.com/chat, introductions to https://envitefy.com/envitefy-concierge, and template CTAs to the matching category page. Studio and /studio are retired customer entry points; do not promote them.",
     "Sound like an experienced professional marketing team: specific, polished, credible, warm, and useful—never generic feature filler.",
   ] as const,
 

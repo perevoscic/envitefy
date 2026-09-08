@@ -1,3 +1,4 @@
+import { TEMPLATE_CATEGORIES } from "@/lib/template-categories";
 import type { MetadataRoute } from "next";
 
 type StaticEntry = {
@@ -17,7 +18,7 @@ const staticEntries: StaticEntry[] = [
   { path: "/", priority: 1, changeFrequency: "weekly" },
   { path: "/invitation-maker", priority: 0.95, changeFrequency: "weekly" },
   { path: "/snap", priority: 0.9, changeFrequency: "weekly" },
-  { path: "/chat", priority: 0.86, changeFrequency: "weekly" },
+  { path: "/envitefy-concierge", priority: 0.86, changeFrequency: "weekly" },
   { path: "/gymnastics", priority: 0.9, changeFrequency: "weekly" },
   { path: "/weddings", priority: 0.9, changeFrequency: "weekly" },
   { path: "/bridal-showers", priority: 0.82, changeFrequency: "weekly" },
@@ -26,7 +27,6 @@ const staticEntries: StaticEntry[] = [
   { path: "/gender-reveal", priority: 0.82, changeFrequency: "weekly" },
   { path: "/birthdays", priority: 0.84, changeFrequency: "weekly" },
   { path: "/showcase", priority: 0.85, changeFrequency: "weekly" },
-  { path: "/studio", priority: 0.8, changeFrequency: "weekly" },
   { path: "/guides", priority: 0.8, changeFrequency: "monthly" },
   { path: "/guides/pdf-to-event-page", priority: 0.75, changeFrequency: "monthly" },
   { path: "/guides/flyer-to-event-page", priority: 0.75, changeFrequency: "monthly" },
@@ -48,7 +48,7 @@ const staticEntries: StaticEntry[] = [
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return staticEntries.map(({ path, priority, changeFrequency }) => ({
+  return [...staticEntries, { path: "/anniversaries", priority: 0.84, changeFrequency: "weekly" as const }, ...TEMPLATE_CATEGORIES.map((category) => ({ path: `/${category.slug}/templates`, priority: 0.8, changeFrequency: "weekly" as const }))].map(({ path, priority, changeFrequency }) => ({
     url: `${baseUrl}${path}`,
     changeFrequency,
     priority,

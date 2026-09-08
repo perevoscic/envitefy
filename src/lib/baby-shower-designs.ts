@@ -1,11 +1,23 @@
 import catalog from "@/data/baby-shower-templates.json";
+import retiredDesigns from "@/data/baby-shower-retired-designs.json";
 
 export type BabyShowerDesign = (typeof catalog)[number];
 
 export const BABY_SHOWER_DESIGNS = catalog;
 
 export function getBabyShowerDesign(id?: string | null): BabyShowerDesign | undefined {
-  return BABY_SHOWER_DESIGNS.find((design) => design.id === id);
+  const replacement = id && id in retiredDesigns ? retiredDesigns[id as keyof typeof retiredDesigns] : id;
+  return BABY_SHOWER_DESIGNS.find((design) => design.id === replacement);
+}
+
+/** Upgrade retired bundled artwork while preserving uploaded and external images. */
+export function resolveBabyShowerHero(image: string | null | undefined, design?: BabyShowerDesign): string {
+  if (image) {
+    const retiredId = image.match(/^\/templates\/baby-showers\/([^/]+)\.webp$/)?.[1];
+    if (retiredId && retiredId in retiredDesigns) return (design ?? getBabyShowerDesign(retiredId) ?? BABY_SHOWER_DESIGNS[0]).heroImage;
+    return image;
+  }
+  return (design ?? BABY_SHOWER_DESIGNS[0]).heroImage;
 }
 
 export function getBabyShowerTheme(design: BabyShowerDesign) {

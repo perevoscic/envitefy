@@ -1,3 +1,4 @@
+import { guardDraftRequest } from "@/lib/event-draft-access-server";
 import { NextResponse } from "next/server";
 import { getEventHistoryById, updateEventHistoryData } from "@/lib/db";
 
@@ -17,6 +18,8 @@ export async function POST(
 ) {
   try {
     const { id } = await context.params;
+    const draftDenied = await guardDraftRequest(id, false);
+    if (draftDenied) return draftDenied;
     const body = (await req.json().catch(() => null)) as
       | VolunteerSignupPayload
       | null;

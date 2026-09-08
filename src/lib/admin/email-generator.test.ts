@@ -343,7 +343,7 @@ test("only model-selected scenario rows and assets are injected", () => {
     bodyHtml:
       '<p>{{greeting}}</p><h1>Back to school</h1><p>Plan parties easily.</p><p><a href="https://envitefy.com/snap">Turn a flyer into a live event card</a></p>',
     buttonText: "Create an event",
-    buttonUrl: "https://envitefy.com/studio",
+    buttonUrl: "https://envitefy.com/chat",
     notes: "",
     scenarioRows: [
       {

@@ -71,10 +71,7 @@ export default function BirthdayHero({
             <Link
               href={primaryHref}
               className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#21170f] shadow-[0_22px_54px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5"
-            >
-              {page.primaryCta}
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
+            >Browse templates</Link>
             <Link
               href="#birthday-prompt-studio"
               className="inline-flex min-h-12 items-center rounded-full border border-white/35 bg-black/15 px-6 py-3 text-sm font-bold text-white backdrop-blur-md transition hover:bg-black/25"

@@ -1,3 +1,4 @@
+import { guardDraftRequest } from "@/lib/event-draft-access-server";
 import { notFound } from "next/navigation";
 import { getEventHistoryById, listRegistryItemsByEventId } from "@/lib/db";
 import { decorateAmazonUrl } from "@/utils/affiliates";
@@ -31,6 +32,7 @@ type PageProps = {
 
 export default async function RegistryPage({ params }: PageProps) {
   const awaitedParams = await params;
+  if (await guardDraftRequest(awaitedParams.id)) return notFound();
   const row = await getEventHistoryById(awaitedParams.id);
   if (!row) return notFound();
 

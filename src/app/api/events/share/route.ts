@@ -1,3 +1,4 @@
+import { isEventDraft } from "@/lib/event-draft-access";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { absoluteUrl } from "@/lib/absolute-url";
@@ -93,6 +94,7 @@ export async function POST(request: NextRequest) {
 
     const existing = await getEventHistoryById(eventId);
     if (!existing) return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    if (isEventDraft(existing.data)) return NextResponse.json({ error: "Publish your event before sharing it." }, { status: 409 });
     if (existing.user_id && existing.user_id !== ownerUserId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }

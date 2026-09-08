@@ -1,5 +1,6 @@
 "use client";
 
+import { isPublicTemplatePath } from "@/lib/template-categories";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -50,6 +51,7 @@ type FooterGroup = {
 };
 
 const MARKETING_ROUTE_PATHS = new Set([
+  "/envitefy-concierge",
   "/about",
   "/contact",
   "/faq",
@@ -76,7 +78,7 @@ const MARKETING_FOOTER_GROUPS: FooterGroup[] = [
     title: "Create",
     links: [
       { label: "Invitation maker", href: "/invitation-maker" },
-      { label: "Concierge", href: "/#concierge" },
+      { label: "Concierge", href: "/envitefy-concierge" },
       { label: "Weddings", href: "/weddings" },
       { label: "Live cards", href: "/showcase" },
       { label: "Snap uploads", href: "/snap" },
@@ -169,7 +171,7 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
   }
 
   const isStudioPath = pathname === "/studio" || (pathname?.startsWith("/studio/") ?? false);
-  if (isStudioPath) {
+  if (isStudioPath || (pathname && isPublicTemplatePath(pathname) && pathname.endsWith("/customize"))) {
     return null;
   }
 

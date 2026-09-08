@@ -13,6 +13,8 @@ function cx(...parts: Array<string | false | null | undefined>) {
 
 export type LoginFormProps = {
   onSuccess?: () => void;
+  onAuthenticated?: () => Promise<void>;
+  allowGoogleAuth?: boolean;
   onSwitchMode?: (mode: "login" | "signup") => void;
   onInlineCancel?: () => void;
   successRedirectUrl?: string;
@@ -23,6 +25,8 @@ export type LoginFormProps = {
 
 export default function LoginForm({
   onSuccess,
+  onAuthenticated,
+  allowGoogleAuth = true,
   onSwitchMode,
   onInlineCancel,
   successRedirectUrl = "/",
@@ -52,6 +56,7 @@ export default function LoginForm({
         callbackUrl: successRedirectUrl,
       });
       if (result?.ok) {
+        if (onAuthenticated) { await onAuthenticated(); return; }
         // Keep the modal open until navigation so the current page does not flash.
         showAuthTransition("Loading ...");
         onSuccess?.();
@@ -90,7 +95,7 @@ export default function LoginForm({
       method="post"
       action="#"
     >
-      {showGoogleAuth ? (
+      {showGoogleAuth && allowGoogleAuth ? (
         <>
           <button
             type="button"

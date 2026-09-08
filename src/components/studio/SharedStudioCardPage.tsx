@@ -169,7 +169,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
       {posterFirstHeroCard ? (
         <div className="shrink-0 px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 text-center md:py-3">
           <Link
-            href="/studio"
+            href="/envitefy-concierge"
             className="inline-flex rounded-full border border-white/14 bg-white/8 px-4 py-2 text-[10px] font-medium uppercase tracking-[0.24em] text-white/70 backdrop-blur-md transition hover:border-white/22 hover:bg-white/12 hover:text-white/88"
           >
             Created by Envitefy Concierge
@@ -178,7 +178,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
       ) : (
         <footer className="shrink-0 border-t border-white/10 bg-neutral-950 px-4 py-3 text-center">
           <Link
-            href="/studio"
+            href="/envitefy-concierge"
             className="text-[10px] font-medium uppercase tracking-[0.24em] text-white/55 transition hover:text-white/80"
           >
             Created by Envitefy Concierge

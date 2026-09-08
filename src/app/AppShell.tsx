@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { isPublicTemplatePath, templateCategoryForPath } from "@/lib/template-categories";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
@@ -32,7 +33,7 @@ const MARKETING_PATHS = new Set([
 ]);
 
 function isMarketingPath(pathname: string) {
-  return MARKETING_PATHS.has(pathname);
+  return MARKETING_PATHS.has(pathname) || Boolean(templateCategoryForPath(pathname)) || isPublicTemplatePath(pathname);
 }
 
 function isStudioCardSharePath(pathname: string) {
@@ -82,9 +83,10 @@ export default function AppShell({
     (status === "loading" && wasAuthenticated.current);
   const onMarketing = isMarketingPath(pathname);
   const isStudioCardShare = isStudioCardSharePath(pathname);
+  const isConciergeLanding = pathname.replace(/\/+$/, "") === "/envitefy-concierge";
   const isChatPath = pathname.replace(/\/+$/, "") === "/chat";
-  const showAppChrome = isAuthenticated && !onMarketing && !isStudioCardShare;
-  const isRedirectingFromMarketing = onMarketing && isAuthenticated;
+  const showAppChrome = isAuthenticated && !onMarketing && !isStudioCardShare && !isConciergeLanding;
+  const isRedirectingFromMarketing = pathname === "/landing" && isAuthenticated;
   const isLightweightLanding = pathname === "/event" && !isAuthenticated;
 
   useEffect(() => {
@@ -115,7 +117,7 @@ export default function AppShell({
   }, [authTransitionMessage]);
 
   useEffect(() => {
-    if (!onMarketing || !isAuthenticated) return;
+    if (pathname !== "/landing" || !isAuthenticated) return;
     const createAction = getCreateActionForSignupIntent(signupIntentForMarketingPath(pathname));
     router.replace(pathname === "/landing" || !createAction ? "/" : createAction.href);
   }, [onMarketing, isAuthenticated, pathname, router]);

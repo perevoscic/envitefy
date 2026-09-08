@@ -93,7 +93,7 @@ export default function StudioShowcaseLiveCard({
       text:
         preview.invitationData.description ||
         preview.invitationData.subtitle ||
-        `${preview.title} on Envitefy Studio`,
+        `${preview.title} on Envitefy`,
       url: resolvedShareUrl,
     };
 

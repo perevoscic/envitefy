@@ -47,6 +47,7 @@ type Props = {
   editHref: string;
   calendarLinks?: CalendarLinkSet | null;
   preview?: boolean;
+  thumbnail?: boolean;
 };
 
 type RsvpStatsPayload = {
@@ -284,6 +285,7 @@ export default function GenderRevealTemplateView({
   isReadOnly,
   editHref,
   preview = false,
+  thumbnail = false,
 }: Props) {
   const canEdit = canEditProp ?? isOwner;
   const config = useMemo(() => parseGenderRevealConfig(eventData), [eventData]);
@@ -533,9 +535,9 @@ export default function GenderRevealTemplateView({
   const titleStyle: CSSProperties = { fontFamily: headingFont };
 
   return (
-    <main className="event-modern-page font-sans text-slate-900">
-      <div className="event-modern-container">
-        <div className="mx-auto flex w-full max-w-5xl flex-col py-6 md:py-10">
+    <main className={thumbnail ? "font-sans text-slate-900" : "event-modern-page font-sans text-slate-900"}>
+      <div className={thumbnail ? "" : "event-modern-container"}>
+        <div className={thumbnail ? "flex w-full flex-col" : "mx-auto flex w-full max-w-5xl flex-col py-6 md:py-10"}>
           {isOwner && !isReadOnly ? (
             <HostBar
               config={liveConfig}
@@ -624,7 +626,7 @@ export default function GenderRevealTemplateView({
               </section>
             ) : null}
 
-            {locationLabel ? (
+            {locationLabel && !thumbnail ? (
               <section id="map" className="border-t border-white/10 px-6 py-10 md:px-10">
                 <h2 className={`mb-4 text-center text-2xl ${accentClass}`} style={titleStyle}>
                   Map + calendar

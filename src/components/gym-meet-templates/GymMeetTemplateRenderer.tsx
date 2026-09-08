@@ -1,129 +1,44 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any */
-// @ts-nocheck
 "use client";
 
-import {
-  DEFAULT_GYM_MEET_TEMPLATE_ID,
-  resolveGymMeetTemplateId,
-} from "./registry";
-import LaunchpadEditorialTemplate from "./renderers/LaunchpadEditorialTemplate";
-import BentoBoxTemplate from "./renderers/BentoBoxTemplate";
-import BlueprintTechTemplate from "./renderers/BlueprintTechTemplate";
-import ChalkStrikeTemplate from "./renderers/ChalkStrikeTemplate";
-import ClubClassicTemplate from "./renderers/ClubClassicTemplate";
-import ConcreteGymTemplate from "./renderers/ConcreteGymTemplate";
-import AuroraLiftTemplate from "./renderers/AuroraLiftTemplate";
-import ArtDecoTemplate from "./renderers/ArtDecoTemplate";
-import CyberAthleteTemplate from "./renderers/CyberAthleteTemplate";
-import EcoMotionTemplate from "./renderers/EcoMotionTemplate";
-import EliteAthleteTemplate from "./renderers/EliteAthleteTemplate";
-import HeavyImpactTemplate from "./renderers/HeavyImpactTemplate";
-import HoloEliteTemplate from "./renderers/HoloEliteTemplate";
-import GlitchSportTemplate from "./renderers/GlitchSportTemplate";
-import OrganicFlowTemplate from "./renderers/OrganicFlowTemplate";
-import PixelArenaTemplate from "./renderers/PixelArenaTemplate";
-import ArchitectCleanTemplate from "./renderers/ArchitectCleanTemplate";
-import NoirSilhouetteTemplate from "./renderers/NoirSilhouetteTemplate";
-import JudgesSheetTemplate from "./renderers/JudgesSheetTemplate";
-import LuxeMagazineTemplate from "./renderers/LuxeMagazineTemplate";
-import MedalPosterTemplate from "./renderers/MedalPosterTemplate";
-import MidnightFrostTemplate from "./renderers/MidnightFrostTemplate";
-import ParentCommandTemplate from "./renderers/ParentCommandTemplate";
-import PaperProtoTemplate from "./renderers/PaperProtoTemplate";
-import PodiumLightsTemplate from "./renderers/PodiumLightsTemplate";
-import PopArtTemplate from "./renderers/PopArtTemplate";
-import RibbonEditorialTemplate from "./renderers/RibbonEditorialTemplate";
-import ScoutingReportTemplate from "./renderers/ScoutingReportTemplate";
-import SpringEnergyTemplate from "./renderers/SpringEnergyTemplate";
-import SunsetArenaTemplate from "./renderers/SunsetArenaTemplate";
-import ToxicKineticTemplate from "./renderers/ToxicKineticTemplate";
-import TravelBriefingTemplate from "./renderers/TravelBriefingTemplate";
-import VaporwaveGridTemplate from "./renderers/VaporwaveGridTemplate";
-import VaultGridTemplate from "./renderers/VaultGridTemplate";
-import VarsityClassicTemplate from "./renderers/VarsityClassicTemplate";
-import WeekendJourneyTemplate from "./renderers/WeekendJourneyTemplate";
-import SwissGridTemplate from "./renderers/SwissGridTemplate";
+import GymnasticsScene, { gymnasticsDesignStyle } from "./GymnasticsScene";
+import { getGymMeetTemplateMeta, resolveGymMeetTemplateId } from "./registry";
+import MeetPageContent from "./renderers/MeetPageContent";
+import type { GymMeetPageTemplateMeta, GymMeetTemplateRendererProps } from "./types";
+import gymnasticsStyles from "./gymnastics-collection.module.css";
 
-export default function GymMeetTemplateRenderer(props: any) {
-  const pageTemplateId =
-    props?.model?.pageTemplateId ||
-    resolveGymMeetTemplateId(props?.model || props?.eventData) ||
-    DEFAULT_GYM_MEET_TEMPLATE_ID;
+function gymMeetPageVariant(design: GymMeetPageTemplateMeta) {
+  return {
+    pageClass: gymnasticsStyles.page,
+    shellClass: gymnasticsStyles.shell,
+    titleClass: gymnasticsStyles.title,
+    titleStyle: { fontFamily: `"${design.displayFont}", Georgia, serif` },
+    mutedClass: gymnasticsStyles.muted,
+    heroPanelClass: gymnasticsStyles.heroPanel,
+    chipClass: gymnasticsStyles.chip,
+    navShellClass: gymnasticsStyles.navShell,
+    navActiveClass: gymnasticsStyles.navActive,
+    navIdleClass: gymnasticsStyles.navIdle,
+    navFadeClass: "color-mix(in srgb, var(--gym-paper) 82%, transparent)",
+    summaryCardClass: gymnasticsStyles.card,
+    sectionClass: gymnasticsStyles.section,
+    sectionMutedClass: gymnasticsStyles.sectionMuted,
+    sectionTitleClass: gymnasticsStyles.sectionTitle,
+    primaryButtonClass: gymnasticsStyles.primaryButton,
+    secondaryButtonClass: gymnasticsStyles.secondaryButton,
+    ledeClass: gymnasticsStyles.lede,
+  };
+}
 
-  switch (pageTemplateId) {
-    case "launchpad-editorial":
-      return <LaunchpadEditorialTemplate {...props} />;
-    case "bento-box":
-      return <BentoBoxTemplate {...props} />;
-    case "cyber-athlete":
-      return <CyberAthleteTemplate {...props} />;
-    case "paper-proto":
-      return <PaperProtoTemplate {...props} />;
-    case "sunset-arena":
-      return <SunsetArenaTemplate {...props} />;
-    case "pop-art":
-      return <PopArtTemplate {...props} />;
-    case "swiss-grid":
-      return <SwissGridTemplate {...props} />;
-    case "art-deco":
-      return <ArtDecoTemplate {...props} />;
-    case "concrete-gym":
-      return <ConcreteGymTemplate {...props} />;
-    case "midnight-frost":
-      return <MidnightFrostTemplate {...props} />;
-    case "eco-motion":
-      return <EcoMotionTemplate {...props} />;
-    case "holo-elite":
-      return <HoloEliteTemplate {...props} />;
-    case "glitch-sport":
-      return <GlitchSportTemplate {...props} />;
-    case "organic-flow":
-      return <OrganicFlowTemplate {...props} />;
-    case "pixel-arena":
-      return <PixelArenaTemplate {...props} />;
-    case "architect-clean":
-      return <ArchitectCleanTemplate {...props} />;
-    case "noir-silhouette":
-      return <NoirSilhouetteTemplate {...props} />;
-    case "vaporwave-grid":
-      return <VaporwaveGridTemplate {...props} />;
-    case "heavy-impact":
-      return <HeavyImpactTemplate {...props} />;
-    case "blueprint-tech":
-      return <BlueprintTechTemplate {...props} />;
-    case "toxic-kinetic":
-      return <ToxicKineticTemplate {...props} />;
-    case "luxe-magazine":
-      return <LuxeMagazineTemplate {...props} />;
-    case "chalk-strike":
-      return <ChalkStrikeTemplate {...props} />;
-    case "podium-lights":
-      return <PodiumLightsTemplate {...props} />;
-    case "judges-sheet":
-      return <JudgesSheetTemplate {...props} />;
-    case "spring-energy":
-      return <SpringEnergyTemplate {...props} />;
-    case "club-classic":
-      return <ClubClassicTemplate {...props} />;
-    case "aurora-lift":
-      return <AuroraLiftTemplate {...props} />;
-    case "ribbon-editorial":
-      return <RibbonEditorialTemplate {...props} />;
-    case "medal-poster":
-      return <MedalPosterTemplate {...props} />;
-    case "vault-grid":
-      return <VaultGridTemplate {...props} />;
-    case "travel-briefing":
-      return <TravelBriefingTemplate {...props} />;
-    case "parent-command":
-      return <ParentCommandTemplate {...props} />;
-    case "varsity-classic":
-      return <VarsityClassicTemplate {...props} />;
-    case "weekend-journey":
-      return <WeekendJourneyTemplate {...props} />;
-    case "scouting-report":
-      return <ScoutingReportTemplate {...props} />;
-    default:
-      return <EliteAthleteTemplate {...props} />;
-  }
+export default function GymMeetTemplateRenderer(props: GymMeetTemplateRendererProps) {
+  const design = getGymMeetTemplateMeta(resolveGymMeetTemplateId(props.model));
+
+  return (
+    <div style={gymnasticsDesignStyle(design)} data-gym-body={design.bodyStyle}>
+      <MeetPageContent
+        {...props}
+        hero={<GymnasticsScene model={props.model} design={design} />}
+        variant={gymMeetPageVariant(design)}
+      />
+    </div>
+  );
 }

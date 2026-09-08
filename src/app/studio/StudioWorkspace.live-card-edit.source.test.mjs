@@ -53,38 +53,10 @@ test("live card non-visual updates reuse the current image in the studio generat
   );
 });
 
-test("studio editEvent links hydrate the existing event before showing the create picker", () => {
+test("the retired Studio entry redirects instead of mounting the workspace", () => {
   const pageSource = readSource("src/app/studio/page.tsx");
-  const workspaceSource = readSource("src/app/studio/StudioWorkspace.tsx");
-
-  assert.match(
-    pageSource,
-    /const editEventId = readSearchParam\(awaitedSearchParams\?\.editEvent\);/,
-  );
-  assert.match(pageSource, /const userId = await resolveSessionUserId\(session\);/);
-  assert.match(pageSource, /const row = await getEventHistoryById\(editEventId\);/);
-  assert.match(pageSource, /initialEditEventRow = JSON\.parse\(JSON\.stringify\(row\)\);/);
-  assert.match(pageSource, /initialEditEventId=\{editEventId \|\| null\}/);
-  assert.match(pageSource, /initialEditEventRow=\{initialEditEventRow\}/);
-  assert.match(pageSource, /initialEditEventError=\{initialEditEventError\}/);
-  assert.match(
-    workspaceSource,
-    /const initialEditItem = createStudioMediaItemFromHistoryRow\(initialEditEventRow\);/,
-  );
-  assert.match(
-    workspaceSource,
-    /initialEditItem \? "details" : parseStudioCreateStep\(searchParams\.get\("step"\)\)/,
-  );
-  assert.match(
-    workspaceSource,
-    /const \[currentProject, setCurrentProject\] = useState<MediaItem \| null>\(\(\) => initialEditItem\);/,
-  );
-  assert.match(
-    workspaceSource,
-    /const \[activePage, setActivePage\] = useState<MediaItem \| null>\(\(\) => initialEditItem\);/,
-  );
-  assert.match(workspaceSource, /initialEditEventRowRef = useRef<unknown>\(initialEditEventRow\)/);
-  assert.match(workspaceSource, /initialEditEventIdRef = useRef\(clean\(initialEditEventId\)\)/);
+  assert.match(pageSource, /permanentRedirect\("\/envitefy-concierge"\)/);
+  assert.doesNotMatch(pageSource, /<StudioWorkspace/);
 });
 
 test("live card visual-direction edits force full regeneration instead of surgical image edit", () => {

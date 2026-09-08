@@ -1,4 +1,6 @@
 "use client";
+import { useTemplateEditor, useTemplateState } from "@/components/templates/TemplateEditorContext";
+import { getPublicTemplate } from "@/lib/public-template-catalog";
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -8,15 +10,17 @@ import { createDefaultSignupForm, sanitizeSignupForm } from "@/utils/signup";
 
 export default function SignupTemplatesPage() {
   const router = useRouter();
+  const templateEditor = useTemplateEditor();
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState<SignupForm>(() => createDefaultSignupForm());
+  const [form, setForm] = useTemplateState<SignupForm>("form", () => { const form = createDefaultSignupForm(); const template = templateEditor ? getPublicTemplate("signup-forms", templateEditor.templateId) : null; if (template) { form.title = template.name; form.header = { ...form.header, templateId: "header-1", backgroundImage: { name: template.name, type: "image/webp", dataUrl: template.heroImage } }; } return form; });
 
   useEffect(() => {
-    setForm(createDefaultSignupForm());
+    if (!templateEditor) setForm(createDefaultSignupForm());
   }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (templateEditor && !templateEditor.authenticated) { await templateEditor.requestSave(); return; }
     try {
       setSubmitting(true);
       const sanitized = sanitizeSignupForm({ ...form, enabled: true });
@@ -24,6 +28,7 @@ export default function SignupTemplatesPage() {
         title: form.title?.trim() || "Smart sign-up",
         data: { signupForm: sanitized },
       } as any;
+      if (templateEditor) { await templateEditor.persist(payload, "published"); return; }
       const res = await fetch("/api/history", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

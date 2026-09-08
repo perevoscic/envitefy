@@ -12,6 +12,19 @@
 .facts { grid-area: facts; align-self: end; position: relative; z-index: 1; min-width: 0; font-size: 13px; line-height: 1.8; }
 .when { font-weight: 600; }
 .where { margin-top: 8px; }
+.where a { text-decoration: none; }
+.where small, .calendar small { display: block; font-size: 10px; font-weight: 500; letter-spacing: .06em; text-decoration: underline; text-underline-offset: 3px; }
+.calendar { position: relative; }
+.calendar summary { cursor: pointer; list-style: none; }
+.calendar summary::-webkit-details-marker { display: none; }
+.calendarMenu { position: absolute; left: 0; top: 100%; min-width: 190px; z-index: 5; padding: 12px; background: var(--baby-paper); border: 1px solid var(--baby-ink); box-shadow: 0 12px 30px #0002; text-align: left; }
+.calendarMenu a { display: block; padding: 8px; text-decoration: underline; text-underline-offset: 3px; }
+.share { margin-top: 18px; font-size: 11px; }
+.share button { cursor: pointer; text-decoration: underline; text-underline-offset: 4px; padding-block: 8px; }
+.share p { overflow-wrap: anywhere; }
+.title[data-size="small"] { font-size: clamp(34px, 5cqi, 58px); }
+.title[data-size="large"] { font-size: clamp(48px, 7.2cqi, 88px); }
+.page :is(a, button, summary, input):focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
 .actions { margin-top: 14px; }
 .actions > div { justify-content: inherit; padding: 0; margin: 0; background: transparent; border: 0; }
 .ownerActions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; }
@@ -40,4 +53,379 @@
 .body[data-style="Seasonal"] > section:nth-of-type(2n) { border-inline: 1px solid var(--baby-accent); width: 88%; margin: 20px auto; }
 .body[data-style="Farm & Garden"] > section { border-block: 2px dashed var(--baby-accent); margin-top: 20px; }
 
-/* Individual scene compositions follow. Shared primitives do not select a layout. */
+/* Individual scene compositions follow. Each entry has its own layout. */
+
+/* Orchard arch folio */
+.hero[data-baby-scene="pear-orchard-cradle"] { grid-template-columns: .9fr 1.1fr; }
+.hero[data-baby-scene="pear-orchard-cradle"] .art { border-radius: 48% 48% 6px 6px; }
+.hero[data-baby-scene="pear-orchard-cradle"] .copy { padding: 10px 20px 0 0; }
+.hero[data-baby-scene="pear-orchard-cradle"] .facts { border-top: 1px solid var(--baby-accent); padding-top: 20px; }
+
+/* Riverbank panorama */
+.hero[data-baby-scene="otterly-loved"] { grid-template-areas: "art art" "copy facts"; grid-template-columns: 1.3fr 1fr; padding: 0 0 35px; gap: 24px; }
+.hero[data-baby-scene="otterly-loved"] .art { min-height: 400px; border-radius: 0 0 48% 0 / 0 0 12% 0; }
+.hero[data-baby-scene="otterly-loved"] .copy { padding: 0 40px; }
+.hero[data-baby-scene="otterly-loved"] .facts { padding: 15px 40px; border-left: 1px solid var(--baby-accent); }
+
+/* Observatory night window */
+.hero[data-baby-scene="starlight-observatory"] { grid-template-areas: "art copy" "art facts"; grid-template-columns: 1.2fr 1fr; padding: 38px; }
+.hero[data-baby-scene="starlight-observatory"] .art { border-radius: 50% 50% 0 0; border: 1px solid var(--baby-accent); }
+.hero[data-baby-scene="starlight-observatory"] .copy { padding: 22px; text-align: center; }
+.hero[data-baby-scene="starlight-observatory"] .facts { text-align: center; border-top: 1px solid var(--baby-accent); padding: 20px; }
+
+/* Patisserie menu */
+.hero[data-baby-scene="peach-patisserie"] { grid-template-areas: "copy art" "facts facts"; grid-template-columns: 1fr 1.25fr; padding: 34px; gap: 0; }
+.hero[data-baby-scene="peach-patisserie"] .art { border-radius: 140px 140px 0 0; margin: 20px; min-height: 400px; }
+.hero[data-baby-scene="peach-patisserie"] .copy { padding: 36px; border: 2px solid var(--baby-accent); border-right: 0; }
+.hero[data-baby-scene="peach-patisserie"] .facts { text-align: center; padding: 25px; border: 2px solid var(--baby-accent); }
+
+/* Ocean horizon letter */
+.hero[data-baby-scene="whale-song-bay"] { grid-template-areas: "art art" "copy facts"; grid-template-columns: 1.5fr 1fr; padding: 0; gap: 0; }
+.hero[data-baby-scene="whale-song-bay"] .art { min-height: 420px; }
+.hero[data-baby-scene="whale-song-bay"] .copy { padding: 35px 45px; border-radius: 0 60px 0 0; margin-top: -45px; background: var(--baby-paper); }
+.hero[data-baby-scene="whale-song-bay"] .facts { padding: 30px; align-self: center; }
+
+/* Courtyard gateway */
+.hero[data-baby-scene="marigold-courtyard"] { grid-template-areas: "art copy" "art facts"; grid-template-columns: 1fr 1fr; padding: 55px; gap: 40px; }
+.hero[data-baby-scene="marigold-courtyard"] .art { border-radius: 180px 180px 12px 12px; outline: 2px solid var(--baby-accent); outline-offset: 10px; }
+.hero[data-baby-scene="marigold-courtyard"] .copy { text-align: center; }
+.hero[data-baby-scene="marigold-courtyard"] .facts { padding: 24px 0 0; border-top: 3px double var(--baby-accent); text-align: center; }
+
+/* Burrow story circle */
+.hero[data-baby-scene="bunny-burrow-brunch"] { grid-template-areas: "art copy" "facts facts"; grid-template-columns: 1fr 1fr; gap: 32px; }
+.hero[data-baby-scene="bunny-burrow-brunch"] .art { border-radius: 50%; aspect-ratio: 1; align-self: center; min-height: 0; }
+.hero[data-baby-scene="bunny-burrow-brunch"] .copy { padding: 30px 0; }
+.hero[data-baby-scene="bunny-burrow-brunch"] .facts { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 15px; border-block: 1px dashed var(--baby-accent); padding: 20px; }
+
+/* Kite diagonal pennant */
+.hero[data-baby-scene="paper-kite-parade"] { grid-template-columns: 1fr 1.3fr; padding: 32px; gap: 24px; }
+.hero[data-baby-scene="paper-kite-parade"] .art { clip-path: polygon(18% 0,100% 0,100% 86%,0 100%); }
+.hero[data-baby-scene="paper-kite-parade"] .copy { padding: 28px 0 0 15px; }
+.hero[data-baby-scene="paper-kite-parade"] .facts { padding: 20px; background: color-mix(in srgb,var(--baby-accent) 10%,transparent); border-left: 5px solid var(--baby-accent); }
+
+/* Rosewater portrait seal */
+.hero[data-baby-scene="rosewater-hammam"] { grid-template-areas: "copy copy" "art facts"; grid-template-columns: 1.6fr 1fr; padding: 45px; }
+.hero[data-baby-scene="rosewater-hammam"] .art { border-radius: 140px 140px 0 0; min-height: 350px; }
+.hero[data-baby-scene="rosewater-hammam"] .copy { text-align: center; padding: 0 20% 15px; }
+.hero[data-baby-scene="rosewater-hammam"] .facts { align-self: center; text-align: center; padding: 26px; border-block: 3px double var(--baby-accent); }
+
+/* Patchwork stitched quilt */
+.hero[data-baby-scene="apricot-quilt-club"] { grid-template-columns: 1fr 1fr; padding: 28px; gap: 18px; }
+.hero[data-baby-scene="apricot-quilt-club"] .art { border: 8px solid var(--baby-paper); outline: 2px dashed var(--baby-accent); }
+.hero[data-baby-scene="apricot-quilt-club"] .copy { padding: 28px; border: 2px dashed var(--baby-accent); }
+.hero[data-baby-scene="apricot-quilt-club"] .facts { padding: 24px; background: color-mix(in srgb,var(--baby-accent) 14%,var(--baby-paper)); }
+
+/* Lighthouse coastal dispatch */
+.hero[data-baby-scene="little-lighthouse"] { grid-template-areas: "facts facts" "art copy"; grid-template-columns: 1.4fr 1fr; padding: 35px; gap: 30px; }
+.hero[data-baby-scene="little-lighthouse"] .art { border-radius: 8px; min-height: 480px; }
+.hero[data-baby-scene="little-lighthouse"] .copy { padding: 10px 25px; border-left: 6px solid var(--baby-accent); }
+.hero[data-baby-scene="little-lighthouse"] .facts { display: flex; justify-content: space-between; gap: 15px; flex-wrap: wrap; padding: 14px; border-block: 3px double var(--baby-accent); }
+
+/* Conservatory inset column */
+.hero[data-baby-scene="fig-and-fern"] { grid-template-columns: .85fr 1.15fr; padding: 58px 0 58px 58px; gap: 38px; }
+.hero[data-baby-scene="fig-and-fern"] .art { border-radius: 180px 0 0 0; }
+.hero[data-baby-scene="fig-and-fern"] .copy { padding-right: 24px; }
+.hero[data-baby-scene="fig-and-fern"] .facts { padding: 24px 15px 0 0; border-top: 1px solid var(--baby-accent); }
+
+/* Puddle story stamp */
+.hero[data-baby-scene="duckling-puddle-party"] { grid-template-areas: "art copy" "facts copy"; grid-template-columns: 1.1fr 1fr; padding: 42px; }
+.hero[data-baby-scene="duckling-puddle-party"] .art { border-radius: 30px 30px 100px 30px; min-height: 350px; }
+.hero[data-baby-scene="duckling-puddle-party"] .copy { padding: 40px 22px; border-radius: 100px 100px 24px 24px; background: color-mix(in srgb,var(--baby-accent) 9%,transparent); }
+.hero[data-baby-scene="duckling-puddle-party"] .facts { text-align: center; padding: 14px; }
+
+/* Swan oval invitation */
+.hero[data-baby-scene="swan-lake-serenade"] { grid-template-areas: "copy art" "facts art"; grid-template-columns: 1.1fr 1fr; padding: 48px; }
+.hero[data-baby-scene="swan-lake-serenade"] .art { border-radius: 50%; outline: 1px solid var(--baby-accent); outline-offset: 12px; margin: 12px; }
+.hero[data-baby-scene="swan-lake-serenade"] .copy { text-align: center; padding: 16px; }
+.hero[data-baby-scene="swan-lake-serenade"] .facts { text-align: center; padding: 20px 10px; border-top: 3px double var(--baby-accent); }
+
+/* Clementine breakfast newspaper */
+.hero[data-baby-scene="clementine-sunroom"] { grid-template-areas: "copy copy" "art facts"; grid-template-columns: 1.7fr 1fr; padding: 35px; gap: 25px; }
+.hero[data-baby-scene="clementine-sunroom"] .art { min-height: 365px; border-radius: 0 110px 0 0; }
+.hero[data-baby-scene="clementine-sunroom"] .copy { padding-bottom: 26px; border-bottom: 5px solid var(--baby-accent); }
+.hero[data-baby-scene="clementine-sunroom"] .facts { align-self: center; padding: 25px; border-left: 1px solid var(--baby-accent); }
+
+/* Hummingbird botanical specimen */
+.hero[data-baby-scene="hummingbird-haven"] { grid-template-areas: "art copy" "art facts"; grid-template-columns: 1.05fr 1fr; padding: 48px; }
+.hero[data-baby-scene="hummingbird-haven"] .art { border-radius: 45% 0 45% 0; }
+.hero[data-baby-scene="hummingbird-haven"] .copy { padding: 20px 0 0 20px; border-top: 1px solid var(--baby-accent); }
+.hero[data-baby-scene="hummingbird-haven"] .facts { padding: 20px; border-left: 1px solid var(--baby-accent); }
+
+/* Goose gingham picnic */
+.hero[data-baby-scene="gingham-goose"] { grid-template-areas: "copy art" "facts facts"; grid-template-columns: 1.1fr 1fr; padding: 40px; gap: 25px; }
+.hero[data-baby-scene="gingham-goose"] .art { border-radius: 42px; transform: rotate(2deg); min-height: 380px; }
+.hero[data-baby-scene="gingham-goose"] .copy { padding: 25px; border: 3px double var(--baby-accent); }
+.hero[data-baby-scene="gingham-goose"] .facts { padding: 20px; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 18px; border: 2px dashed var(--baby-accent); }
+
+/* Jellyfish midnight portal */
+.hero[data-baby-scene="moon-jelly-drift"] { grid-template-areas: "copy art" "facts art"; grid-template-columns: .9fr 1.2fr; padding: 40px; }
+.hero[data-baby-scene="moon-jelly-drift"] .art { border-radius: 45% 45% 45% 8px; box-shadow: 0 0 45px color-mix(in srgb,var(--baby-accent) 25%,transparent); }
+.hero[data-baby-scene="moon-jelly-drift"] .copy { padding: 24px 0; }
+.hero[data-baby-scene="moon-jelly-drift"] .facts { border-radius: 25px; padding: 20px; border: 1px solid var(--baby-accent); }
+
+/* Cherry dessert label */
+.hero[data-baby-scene="cherry-bow-social"] { grid-template-areas: "art copy" "art facts"; grid-template-columns: 1fr 1.05fr; padding: 28px; gap: 0; }
+.hero[data-baby-scene="cherry-bow-social"] .art { border-radius: 150px 0 0 150px; }
+.hero[data-baby-scene="cherry-bow-social"] .copy { text-align: center; padding: 40px; border: 2px solid var(--baby-accent); border-left: 0; }
+.hero[data-baby-scene="cherry-bow-social"] .facts { text-align: center; padding: 26px; border: 2px solid var(--baby-accent); border-left: 0; border-top: 0; }
+
+/* Alpine mountain postcard */
+.hero[data-baby-scene="alpine-fawn"] { grid-template-areas: "art art" "copy facts"; grid-template-columns: 1.2fr 1fr; padding: 30px; }
+.hero[data-baby-scene="alpine-fawn"] .art { min-height: 390px; clip-path: polygon(0 8%,35% 0,70% 6%,100% 0,100% 100%,0 100%); }
+.hero[data-baby-scene="alpine-fawn"] .copy { padding: 8px 20px; }
+.hero[data-baby-scene="alpine-fawn"] .facts { padding: 24px; border-left: 2px dashed var(--baby-accent); }
+
+/* Prism asymmetric gallery */
+.hero[data-baby-scene="rainbow-prism-studio"] { grid-template-areas: "art copy" "facts copy"; grid-template-columns: 1.2fr 1fr; padding: 36px; gap: 28px; }
+.hero[data-baby-scene="rainbow-prism-studio"] .art { min-height: 390px; border-radius: 0 100px 0 0; }
+.hero[data-baby-scene="rainbow-prism-studio"] .copy { border-left: 2px solid var(--baby-accent); padding: 32px; }
+.hero[data-baby-scene="rainbow-prism-studio"] .facts { padding: 15px; border-block: 1px solid var(--baby-accent); }
+
+/* Hibiscus tropical fan */
+.hero[data-baby-scene="hibiscus-hideaway"] { grid-template-columns: 1fr 1.2fr; padding: 46px; gap: 30px; }
+.hero[data-baby-scene="hibiscus-hideaway"] .art { border-radius: 0 50% 0 50%; }
+.hero[data-baby-scene="hibiscus-hideaway"] .copy { padding: 20px 0; }
+.hero[data-baby-scene="hibiscus-hideaway"] .facts { padding: 25px; border-radius: 0 35px 0 35px; background: color-mix(in srgb,var(--baby-accent) 12%,transparent); }
+
+/* Robot building blocks */
+.hero[data-baby-scene="pocket-robot"] { grid-template-areas: "copy art" "facts art"; grid-template-columns: 1.1fr 1fr; padding: 30px; gap: 20px; }
+.hero[data-baby-scene="pocket-robot"] .art { border-radius: 18px; border: 6px solid var(--baby-accent); }
+.hero[data-baby-scene="pocket-robot"] .copy { padding: 25px; border-radius: 18px; background: color-mix(in srgb,var(--baby-accent) 14%,transparent); }
+.hero[data-baby-scene="pocket-robot"] .facts { padding: 22px; border: 3px solid var(--baby-accent); border-radius: 18px; }
+
+/* Laundry line landscape */
+.hero[data-baby-scene="lavender-laundry"] { grid-template-areas: "copy facts" "art art"; grid-template-columns: 1.4fr 1fr; padding: 40px 0 0; gap: 30px; }
+.hero[data-baby-scene="lavender-laundry"] .art { min-height: 400px; border-radius: 15% 15% 0 0 / 8% 8% 0 0; }
+.hero[data-baby-scene="lavender-laundry"] .copy { padding: 5px 40px; }
+.hero[data-baby-scene="lavender-laundry"] .facts { align-self: center; padding: 20px 35px; border-left: 1px dashed var(--baby-accent); }
+
+/* Tidepool rounded shoreline */
+.hero[data-baby-scene="turtle-tidepool"] { grid-template-areas: "art copy" "art facts"; grid-template-columns: 1.25fr 1fr; padding: 0 42px 0 0; gap: 34px; }
+.hero[data-baby-scene="turtle-tidepool"] .art { border-radius: 0 45% 45% 0 / 0 20% 20% 0; }
+.hero[data-baby-scene="turtle-tidepool"] .copy { padding-top: 55px; }
+.hero[data-baby-scene="turtle-tidepool"] .facts { padding-bottom: 40px; border-top: 1px solid var(--baby-accent); padding-top: 20px; }
+
+/* Strawberry embroidery hoop */
+.hero[data-baby-scene="strawberry-stitch"] { grid-template-areas: "copy art" "facts facts"; grid-template-columns: 1fr 1.2fr; padding: 48px; }
+.hero[data-baby-scene="strawberry-stitch"] .art { border-radius: 50%; border: 10px solid color-mix(in srgb,var(--baby-accent) 20%,var(--baby-paper)); aspect-ratio: 1; min-height: 0; }
+.hero[data-baby-scene="strawberry-stitch"] .copy { padding: 20px 15px 20px 0; }
+.hero[data-baby-scene="strawberry-stitch"] .facts { padding: 20px 0; border-block: 2px dashed var(--baby-accent); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+
+/* Desert mesa blocks */
+.hero[data-baby-scene="desert-tortoise"] { grid-template-areas: "art copy" "facts copy"; grid-template-columns: 1.25fr 1fr; padding: 44px; gap: 20px; }
+.hero[data-baby-scene="desert-tortoise"] .art { border-radius: 100px 0 0 0; min-height: 390px; }
+.hero[data-baby-scene="desert-tortoise"] .copy { padding: 32px; border-radius: 0 0 100px 0; background: color-mix(in srgb,var(--baby-accent) 12%,transparent); }
+.hero[data-baby-scene="desert-tortoise"] .facts { padding: 20px 5px; }
+
+/* Crane folded letter */
+.hero[data-baby-scene="origami-crane-wishes"] { grid-template-columns: 1fr 1.1fr; padding: 50px; gap: 32px; }
+.hero[data-baby-scene="origami-crane-wishes"] .art { clip-path: polygon(0 0,80% 0,100% 18%,100% 100%,0 100%); }
+.hero[data-baby-scene="origami-crane-wishes"] .copy { padding: 25px 0; border-top: 5px solid var(--baby-accent); }
+.hero[data-baby-scene="origami-crane-wishes"] .facts { padding: 22px; border: 1px solid var(--baby-accent); border-right: 6px solid var(--baby-accent); }
+
+/* Blueberry breakfast placemat */
+.hero[data-baby-scene="blueberry-breakfast"] { grid-template-areas: "art copy" "art facts"; grid-template-columns: 1.1fr 1fr; padding: 34px; gap: 30px; }
+.hero[data-baby-scene="blueberry-breakfast"] .art { border-radius: 48% 48% 8px 8px; }
+.hero[data-baby-scene="blueberry-breakfast"] .copy { padding: 26px; border-block: 3px double var(--baby-accent); }
+.hero[data-baby-scene="blueberry-breakfast"] .facts { padding: 16px 26px; text-align: right; }
+
+/* Fairy hollow doorway */
+.hero[data-baby-scene="foxglove-fairy-door"] { grid-template-areas: "copy art" "facts art"; grid-template-columns: 1fr 1.25fr; padding: 40px; gap: 35px; }
+.hero[data-baby-scene="foxglove-fairy-door"] .art { border-radius: 50% 50% 18px 18px; box-shadow: 10px 10px 0 color-mix(in srgb,var(--baby-accent) 20%,transparent); }
+.hero[data-baby-scene="foxglove-fairy-door"] .copy { text-align: center; padding: 25px 0; }
+.hero[data-baby-scene="foxglove-fairy-door"] .facts { padding: 22px; text-align: center; border: 1px dashed var(--baby-accent); border-radius: 50px; }
+
+/* Puppy playful pocket */
+.hero[data-baby-scene="polka-dot-puppy"] { grid-template-areas: "copy art" "facts facts"; grid-template-columns: 1.1fr 1fr; padding: 35px; gap: 28px; }
+.hero[data-baby-scene="polka-dot-puppy"] .art { border-radius: 20px 120px 20px 20px; border: 4px solid var(--baby-ink); min-height: 400px; }
+.hero[data-baby-scene="polka-dot-puppy"] .copy { padding: 28px 15px; }
+.hero[data-baby-scene="polka-dot-puppy"] .facts { border-radius: 30px; border: 2px solid var(--baby-ink); padding: 22px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 15px; }
+
+/* Magnolia heirloom album */
+.hero[data-baby-scene="magnolia-morning"] { grid-template-areas: "art copy" "art facts"; grid-template-columns: 1.15fr 1fr; padding: 60px; gap: 44px; }
+.hero[data-baby-scene="magnolia-morning"] .art { outline: 1px solid var(--baby-accent); outline-offset: 10px; }
+.hero[data-baby-scene="magnolia-morning"] .copy { padding-top: 20px; border-top: 3px double var(--baby-accent); }
+.hero[data-baby-scene="magnolia-morning"] .facts { text-align: right; padding: 24px 0; border-bottom: 3px double var(--baby-accent); }
+
+/* Train boarding ticket */
+.hero[data-baby-scene="tiny-train-ticket"] { grid-template-areas: "art art" "copy facts"; grid-template-columns: 1.5fr 1fr; padding: 35px; gap: 0; }
+.hero[data-baby-scene="tiny-train-ticket"] .art { min-height: 370px; border-radius: 25px 25px 0 0; }
+.hero[data-baby-scene="tiny-train-ticket"] .copy { padding: 30px; border: 2px solid var(--baby-accent); }
+.hero[data-baby-scene="tiny-train-ticket"] .facts { align-self: stretch; display: flex; flex-direction: column; justify-content: center; padding: 25px; border: 2px solid var(--baby-accent); border-left: 2px dashed var(--baby-accent); }
+
+/* Lotus floating leaf */
+.hero[data-baby-scene="water-lily-welcome"] { grid-template-areas: "copy art" "facts art"; grid-template-columns: 1.05fr 1fr; padding: 50px; gap: 30px; }
+.hero[data-baby-scene="water-lily-welcome"] .art { border-radius: 50% 0 50% 50%; }
+.hero[data-baby-scene="water-lily-welcome"] .copy { text-align: center; padding: 30px 10px; }
+.hero[data-baby-scene="water-lily-welcome"] .facts { padding: 24px 0; border-block: 1px solid var(--baby-accent); text-align: center; }
+
+/* Cabin window journal */
+.hero[data-baby-scene="cocoa-cabin"] { grid-template-areas: "art copy" "facts copy"; grid-template-columns: 1.15fr 1fr; padding: 40px; gap: 24px; }
+.hero[data-baby-scene="cocoa-cabin"] .art { border: 8px solid var(--baby-accent); min-height: 390px; }
+.hero[data-baby-scene="cocoa-cabin"] .copy { padding: 30px; border-block: 2px solid var(--baby-accent); }
+.hero[data-baby-scene="cocoa-cabin"] .facts { padding: 18px; background: color-mix(in srgb,var(--baby-accent) 9%,transparent); }
+
+/* Carousel canopy */
+.hero[data-baby-scene="bubblegum-carousel"] { grid-template-areas: "copy copy" "art facts"; grid-template-columns: 1.45fr 1fr; padding: 35px; gap: 22px; }
+.hero[data-baby-scene="bubblegum-carousel"] .art { border-radius: 150px 150px 24px 24px; min-height: 370px; }
+.hero[data-baby-scene="bubblegum-carousel"] .copy { text-align: center; padding: 10px 18% 26px; border-bottom: 3px solid var(--baby-accent); }
+.hero[data-baby-scene="bubblegum-carousel"] .facts { padding: 30px; border-radius: 100px 100px 24px 24px; border: 2px solid var(--baby-accent); align-self: center; text-align: center; }
+
+/* Bambino trattoria folio */
+.hero[data-baby-scene="olive-oil-bambino"] { grid-template-columns: 1.1fr 1fr; padding: 45px; gap: 35px; }
+.hero[data-baby-scene="olive-oil-bambino"] .art { border-radius: 0 0 160px 0; }
+.hero[data-baby-scene="olive-oil-bambino"] .copy { border-left: 4px solid var(--baby-accent); padding: 25px; }
+.hero[data-baby-scene="olive-oil-bambino"] .facts { padding: 25px 0; border-top: 3px double var(--baby-accent); }
+
+/* Bookbindery open volume */
+.hero[data-baby-scene="little-bookbindery"] { grid-template-areas: "art copy" "art facts"; grid-template-columns: 1fr 1fr; padding: 38px; gap: 0; }
+.hero[data-baby-scene="little-bookbindery"] .art { border-radius: 12px 0 0 12px; border-right: 8px solid var(--baby-accent); }
+.hero[data-baby-scene="little-bookbindery"] .copy { padding: 38px; box-shadow: inset 12px 0 20px #00000008; }
+.hero[data-baby-scene="little-bookbindery"] .facts { padding: 25px 38px; border-top: 1px solid var(--baby-accent); }
+
+/* Dandelion correspondence */
+.hero[data-baby-scene="dandelion-post"] { grid-template-areas: "copy art" "facts art"; grid-template-columns: 1.05fr 1.2fr; padding: 60px 38px; gap: 32px; }
+.hero[data-baby-scene="dandelion-post"] .art { border-radius: 50% 50% 0 0; transform: rotate(2deg); }
+.hero[data-baby-scene="dandelion-post"] .copy { padding: 15px 0; border-bottom: 1px dashed var(--baby-accent); }
+.hero[data-baby-scene="dandelion-post"] .facts { padding: 18px; border-left: 3px solid var(--baby-accent); }
+
+/* Koala cuddle pouch */
+.hero[data-baby-scene="koala-eucalyptus-club"] { grid-template-areas: "art copy" "facts facts"; grid-template-columns: 1.1fr 1fr; padding: 44px; gap: 30px; }
+.hero[data-baby-scene="koala-eucalyptus-club"] .art { border-radius: 42% 42% 50% 50%; min-height: 410px; }
+.hero[data-baby-scene="koala-eucalyptus-club"] .copy { padding: 30px; border-radius: 50px 5px 50px 5px; background: color-mix(in srgb,var(--baby-accent) 10%,transparent); }
+.hero[data-baby-scene="koala-eucalyptus-club"] .facts { text-align: center; padding-top: 20px; border-top: 2px dashed var(--baby-accent); }
+
+/* Music box vignette */
+.hero[data-baby-scene="sugarplum-music-box"] { grid-template-columns: 1fr 1.15fr; padding: 48px; gap: 36px; }
+.hero[data-baby-scene="sugarplum-music-box"] .art { border-radius: 120px 120px 120px 12px; outline: 1px solid var(--baby-accent); outline-offset: 8px; }
+.hero[data-baby-scene="sugarplum-music-box"] .copy { text-align: center; padding: 26px 10px; }
+.hero[data-baby-scene="sugarplum-music-box"] .facts { text-align: center; border-block: 3px double var(--baby-accent); padding: 24px; }
+
+/* Tennis court scorecard */
+.hero[data-baby-scene="tiny-tennis-club"] { grid-template-areas: "copy art" "facts art"; grid-template-columns: 1.1fr 1fr; padding: 32px; gap: 20px; }
+.hero[data-baby-scene="tiny-tennis-club"] .art { border: 3px solid var(--baby-accent); border-radius: 140px 140px 0 0; }
+.hero[data-baby-scene="tiny-tennis-club"] .copy { padding: 30px; border: 2px solid var(--baby-accent); }
+.hero[data-baby-scene="tiny-tennis-club"] .facts { padding: 22px; border: 2px solid var(--baby-accent); background: color-mix(in srgb,var(--baby-accent) 8%,transparent); }
+
+/* Pumpkin harvest portrait */
+.hero[data-baby-scene="pumpkin-patch-promise"] { grid-template-areas: "art copy" "art facts"; grid-template-columns: 1.25fr 1fr; padding: 44px; gap: 35px; }
+.hero[data-baby-scene="pumpkin-patch-promise"] .art { border-radius: 50% 50% 40% 40% / 35% 35% 20% 20%; }
+.hero[data-baby-scene="pumpkin-patch-promise"] .copy { padding: 20px 0 20px 15px; }
+.hero[data-baby-scene="pumpkin-patch-promise"] .facts { padding: 25px 15px; border-top: 2px dashed var(--baby-accent); }
+
+/* Seahorse coral cove */
+.hero[data-baby-scene="sea-horse-garden"] { grid-template-areas: "art art" "facts copy"; grid-template-columns: 1fr 1.7fr; padding: 0 0 35px; gap: 25px; }
+.hero[data-baby-scene="sea-horse-garden"] .art { min-height: 390px; border-radius: 0 0 0 100px; }
+.hero[data-baby-scene="sea-horse-garden"] .copy { padding: 0 40px 0 10px; }
+.hero[data-baby-scene="sea-horse-garden"] .facts { align-self: center; padding: 20px 30px; border-right: 3px double var(--baby-accent); }
+
+/* Silk couture gatefold */
+.hero[data-baby-scene="silk-ribbon-atelier"] { grid-template-areas: "copy art" "facts art"; grid-template-columns: 1.05fr 1fr; padding: 62px; gap: 40px; }
+.hero[data-baby-scene="silk-ribbon-atelier"] .art { border-radius: 50% 50% 0 0; outline: 3px double var(--baby-accent); outline-offset: 14px; }
+.hero[data-baby-scene="silk-ribbon-atelier"] .copy { padding: 22px 0; border-bottom: 1px solid var(--baby-accent); }
+.hero[data-baby-scene="silk-ribbon-atelier"] .facts { padding: 12px 10px; text-align: center; }
+
+/* Airmail departure postcard */
+.hero[data-baby-scene="cloud-nine-airmail"] { grid-template-areas: "art copy" "facts copy"; grid-template-columns: 1.3fr 1fr; padding: 38px; gap: 25px; }
+.hero[data-baby-scene="cloud-nine-airmail"] .art { min-height: 395px; border-radius: 70px 0 70px 0; }
+.hero[data-baby-scene="cloud-nine-airmail"] .copy { padding: 30px; border-left: 3px dashed var(--baby-accent); }
+.hero[data-baby-scene="cloud-nine-airmail"] .facts { padding: 20px; border-block: 3px double var(--baby-accent); }
+
+/* Chrysanthemum tea scroll */
+.hero[data-baby-scene="chrysanthemum-tea"] { grid-template-areas: "copy art" "facts art"; grid-template-columns: 1fr 1.25fr; padding: 55px; gap: 40px; }
+.hero[data-baby-scene="chrysanthemum-tea"] .art { border-block: 10px solid var(--baby-accent); }
+.hero[data-baby-scene="chrysanthemum-tea"] .copy { padding: 25px 5px; border-left: 1px solid var(--baby-accent); padding-left: 25px; }
+.hero[data-baby-scene="chrysanthemum-tea"] .facts { text-align: right; padding: 20px 5px; }
+
+/* Maple acorn keepsake */
+.hero[data-baby-scene="maple-mouse-house"] { grid-template-areas: "art copy" "facts facts"; grid-template-columns: 1fr 1.1fr; padding: 48px; gap: 28px; }
+.hero[data-baby-scene="maple-mouse-house"] .art { border-radius: 45% 45% 10px 10px; min-height: 410px; }
+.hero[data-baby-scene="maple-mouse-house"] .copy { padding: 35px 20px; border-block: 1px dashed var(--baby-accent); }
+.hero[data-baby-scene="maple-mouse-house"] .facts { text-align: center; border-radius: 30px; padding: 20px; background: color-mix(in srgb,var(--baby-accent) 12%,transparent); }
+
+/* Snowdrop frost frame */
+.hero[data-baby-scene="snowdrop-first-light"] { grid-template-columns: 1.15fr 1fr; padding: 60px; gap: 44px; }
+.hero[data-baby-scene="snowdrop-first-light"] .art { border-radius: 0 150px 0 0; outline: 1px solid var(--baby-accent); outline-offset: 12px; }
+.hero[data-baby-scene="snowdrop-first-light"] .copy { text-align: right; padding: 20px 0; }
+.hero[data-baby-scene="snowdrop-first-light"] .facts { text-align: right; border-top: 1px solid var(--baby-accent); padding-top: 24px; }
+
+/* Clay sculptural blocks */
+.hero[data-baby-scene="confetti-clay-play"] { grid-template-areas: "copy art" "facts facts"; grid-template-columns: 1fr 1.3fr; padding: 34px; gap: 24px; }
+.hero[data-baby-scene="confetti-clay-play"] .art { border-radius: 80px 0 80px 0; min-height: 440px; }
+.hero[data-baby-scene="confetti-clay-play"] .copy { border-radius: 0 70px 0 0; padding: 32px; background: color-mix(in srgb,var(--baby-accent) 14%,transparent); }
+.hero[data-baby-scene="confetti-clay-play"] .facts { display: flex; flex-wrap: wrap; justify-content: space-around; gap: 20px; padding: 22px; border-bottom: 8px solid var(--baby-accent); }
+
+/* Pomegranate jewel salon */
+.hero[data-baby-scene="pomegranate-blessing"] { grid-template-areas: "art copy" "art facts"; grid-template-columns: 1.1fr 1fr; padding: 48px; gap: 38px; }
+.hero[data-baby-scene="pomegranate-blessing"] .art { border-radius: 140px 140px 0 0; border: 2px solid var(--baby-accent); }
+.hero[data-baby-scene="pomegranate-blessing"] .copy { padding: 25px 15px; border-top: 3px double var(--baby-accent); text-align: center; }
+.hero[data-baby-scene="pomegranate-blessing"] .facts { text-align: center; padding: 25px; border-bottom: 3px double var(--baby-accent); }
+
+/* Meadow pastoral pennant */
+.hero[data-baby-scene="meadow-lamb"] { grid-template-areas: "art art" "copy facts"; grid-template-columns: 1.45fr 1fr; padding: 35px; gap: 25px; }
+.hero[data-baby-scene="meadow-lamb"] .art { min-height: 380px; border-radius: 140px 140px 0 0; }
+.hero[data-baby-scene="meadow-lamb"] .copy { padding: 5px 25px; }
+.hero[data-baby-scene="meadow-lamb"] .facts { align-self: center; padding: 25px; border: 1px dashed var(--baby-accent); }
+
+/* Peony parasol fan */
+.hero[data-baby-scene="peony-parasol"] { grid-template-columns: 1fr 1.2fr; padding: 48px; gap: 35px; }
+.hero[data-baby-scene="peony-parasol"] .art { border-radius: 50% 50% 0 50%; }
+.hero[data-baby-scene="peony-parasol"] .copy { text-align: center; padding: 20px 10px; }
+.hero[data-baby-scene="peony-parasol"] .facts { text-align: center; padding: 24px; border-radius: 60px 0 60px 0; border: 1px solid var(--baby-accent); }
+
+/* Camper adventure pass */
+.hero[data-baby-scene="saffron-sunset-camper"] { grid-template-areas: "copy art" "facts art"; grid-template-columns: 1fr 1.2fr; padding: 35px; gap: 28px; }
+.hero[data-baby-scene="saffron-sunset-camper"] .art { border-radius: 90px 0 0 90px; border: 3px solid var(--baby-accent); }
+.hero[data-baby-scene="saffron-sunset-camper"] .copy { padding: 25px 10px; border-top: 5px solid var(--baby-accent); }
+.hero[data-baby-scene="saffron-sunset-camper"] .facts { padding: 24px; border: 2px dashed var(--baby-accent); border-radius: 16px; }
+
+/* Jasmine crescent alcove */
+.hero[data-baby-scene="jasmine-crescent"] { grid-template-areas: "art copy" "art facts"; grid-template-columns: 1.2fr 1fr; padding: 46px; gap: 40px; }
+.hero[data-baby-scene="jasmine-crescent"] .art { border-radius: 50% 50% 50% 0; border: 1px solid var(--baby-accent); }
+.hero[data-baby-scene="jasmine-crescent"] .copy { text-align: center; padding: 24px 10px; }
+.hero[data-baby-scene="jasmine-crescent"] .facts { text-align: center; padding: 22px; border-block: 1px solid var(--baby-accent); }
+
+/* Artichoke market ledger */
+.hero[data-baby-scene="little-artichoke"] { grid-template-areas: "copy copy" "art facts"; grid-template-columns: 1.65fr 1fr; padding: 40px; gap: 26px; }
+.hero[data-baby-scene="little-artichoke"] .art { min-height: 380px; border: 2px solid var(--baby-accent); }
+.hero[data-baby-scene="little-artichoke"] .copy { padding: 10px 0 26px; border-bottom: 2px dashed var(--baby-accent); }
+.hero[data-baby-scene="little-artichoke"] .facts { align-self: center; padding: 28px; border-left: 6px solid var(--baby-accent); }
+
+/* Penguin polar postcard */
+.hero[data-baby-scene="penguin-postcard"] { grid-template-areas: "art copy" "facts copy"; grid-template-columns: 1.25fr 1fr; padding: 36px; gap: 28px; }
+.hero[data-baby-scene="penguin-postcard"] .art { border-radius: 45% 45% 15px 15px; min-height: 410px; }
+.hero[data-baby-scene="penguin-postcard"] .copy { padding: 30px; border-radius: 80px 0 80px 0; background: color-mix(in srgb,var(--baby-accent) 10%,transparent); }
+.hero[data-baby-scene="penguin-postcard"] .facts { text-align: center; padding: 20px; border-top: 2px dashed var(--baby-accent); }
+
+/* Ginkgo specimen folio */
+.hero[data-baby-scene="golden-ginkgo"] { grid-template-columns: 1.1fr 1fr; padding: 55px; gap: 45px; }
+.hero[data-baby-scene="golden-ginkgo"] .art { border-radius: 50% 0 0 0; border-bottom: 12px solid var(--baby-accent); }
+.hero[data-baby-scene="golden-ginkgo"] .copy { padding: 25px 0; border-block: 1px solid var(--baby-accent); }
+.hero[data-baby-scene="golden-ginkgo"] .facts { text-align: right; padding: 20px; border-right: 4px solid var(--baby-accent); }
+
+/* Macaron moon orbit */
+.hero[data-baby-scene="macaron-moonwalk"] { grid-template-areas: "art copy" "facts facts"; grid-template-columns: 1.15fr 1fr; padding: 40px; gap: 30px; }
+.hero[data-baby-scene="macaron-moonwalk"] .art { border-radius: 50%; min-height: 420px; outline: 2px dashed var(--baby-accent); outline-offset: 9px; }
+.hero[data-baby-scene="macaron-moonwalk"] .copy { padding: 30px 20px; }
+.hero[data-baby-scene="macaron-moonwalk"] .facts { text-align: center; padding: 22px; border: 2px solid var(--baby-accent); border-radius: 70px; }
+
+/* Willow lakeside letter */
+.hero[data-baby-scene="willow-wishing-boat"] { grid-template-areas: "copy facts" "art art"; grid-template-columns: 1.5fr 1fr; padding: 45px 35px 30px; gap: 35px; }
+.hero[data-baby-scene="willow-wishing-boat"] .art { min-height: 405px; border-radius: 0 0 140px 0; }
+.hero[data-baby-scene="willow-wishing-boat"] .copy { padding: 0 20px; }
+.hero[data-baby-scene="willow-wishing-boat"] .facts { align-self: center; padding: 25px; border-left: 3px double var(--baby-accent); }
+
+@container baby (max-width: 650px) {
+  .hero[data-baby-scene] { grid-template-areas: "copy" "art" "facts"; grid-template-columns: minmax(0,1fr); padding: 28px 22px; gap: 26px; min-height: 0; }
+  .hero[data-baby-scene] .copy { padding: 15px 8px; margin: 0; text-align: center; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+  .hero[data-baby-scene] .art { height: auto; min-height: 250px; aspect-ratio: 4/3; margin: 0; transform: none; outline-offset: 4px; }
+  .hero[data-baby-scene] .facts { display: block; padding: 22px 12px; margin: 0; text-align: center; align-self: auto; border-width: 1px; }
+  .title { font-size: clamp(38px,11cqi,64px); }
+  .headline, .dedication { margin-inline: auto; }
+  .eyebrow { font-size: 10px; margin-bottom: 16px; }
+  .body { padding: 0 20px 30px; }
+  .body[data-style] > section, .body[data-style] > section:nth-of-type(2n) { width: 100%; margin-inline: 0; padding: 30px 18px; border-radius: 14px; }
+  .body h2 { font-size: 30px; }
+  .actions > div { justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) { .page * { scroll-behavior: auto; } }

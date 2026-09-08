@@ -104,7 +104,7 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
     /if \(\(isEventShare && hasNoSession\) \|\| isStudioCardShare \|\| isLandingShowcase\) \{/,
   );
   assert.match(sharedPageSource, /Created by Envitefy Concierge/);
-  assert.match(sharedPageSource, /href="\/studio"/);
+  assert.match(sharedPageSource, /href="\/envitefy-concierge"/);
   assert.match(sharedPageSource, /const shareData = \{\s*url: shareUrl,\s*\};/s);
   assert.doesNotMatch(sharedPageSource, /text: props\.title \|\| "Envitefy invitation"/);
   assert.match(pageSource, /function resolveSharedCardMetaDescription/);
