@@ -1,47 +1,49 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   createContext,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
-  type Dispatch,
-  type ReactNode,
-  type SetStateAction,
 } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
-import Link from "next/link";
+import AuthModal from "@/components/auth/AuthModal";
+import { getFamilyTemplateDesign } from "@/lib/family-template-designs";
+import { hasAnalyticsConsent } from "@/lib/privacy-preferences";
+import { BRIDAL_PRESETS, getPublicTemplate } from "@/lib/public-template-catalog";
+import { getSignupTemplateTheme } from "@/lib/signup-starters";
+import { createSignupAppearance } from "@/lib/signup-themes";
+import { getSportEventPreset, getSportStyleThemeIds } from "@/lib/sport-event-presets";
+import {
+  getTemplateCategory,
+  type TemplateCategory,
+  templateEditorHref,
+} from "@/lib/template-categories";
 import {
   saveTemplateDraftToAccount,
   type TemplateHistoryPayload,
 } from "@/lib/template-draft-handoff";
-import AuthModal from "@/components/auth/AuthModal";
+import { buildTemplateDraftPayload } from "@/lib/template-draft-payload";
 import {
-  getTemplateCategory,
-  templateEditorHref,
-  type TemplateCategory,
-} from "@/lib/template-categories";
-import {
+  type DraftValue,
   deleteTemplateDraft,
+  type EditorSnapshot,
   readTemplateDraft,
   replaceDraftMedia,
   retainDraftMedia,
-  writeTemplateDraft,
-  type DraftValue,
-  type EditorSnapshot,
   type TemplateDraft,
+  writeTemplateDraft,
 } from "@/lib/template-draft-storage";
-import { getPublicTemplate, BRIDAL_PRESETS } from "@/lib/public-template-catalog";
-import { getFamilyTemplateDesign } from "@/lib/family-template-designs";
-import { getSportEventPreset, getSportStyleThemeIds } from "@/lib/sport-event-presets";
-import { hasAnalyticsConsent } from "@/lib/privacy-preferences";
 import { validateClientUploadFile } from "@/utils/media-upload-client";
 import styles from "./template-editor.module.css";
-import { buildTemplateDraftPayload } from "@/lib/template-draft-payload";
 
 export function trackTemplateEvent(name: string, category: string, templateId?: string) {
   if (hasAnalyticsConsent() && typeof window.gtag === "function")
@@ -213,7 +215,13 @@ export default function TemplateEditorProvider({
             category,
             templateId,
             updatedAt: Date.now(),
-            snapshot: stored.snapshot || {},
+            snapshot: {
+              ...(stored.snapshot || {}),
+              ...(category === "signup-forms" && row.data?.signupForm
+                ? { form: row.data.signupForm }
+                : {}),
+            },
+            signupRevision: row.data?.signupForm?.revision,
             assets: {},
             eventId: editId,
           };
@@ -282,9 +290,13 @@ export default function TemplateEditorProvider({
         if (category === "signup-forms") {
           const form = current.snapshot.form;
           if (form && typeof form === "object" && !Array.isArray(form)) {
+            const theme = getSignupTemplateTheme(selected);
+            form.appearance = JSON.parse(JSON.stringify(createSignupAppearance(theme.id)));
             const header = form.header;
             form.header = {
               ...(header && typeof header === "object" && !Array.isArray(header) ? header : {}),
+              images: [],
+              templateId: theme.headerLayout,
               backgroundImage: {
                 name: selected.name,
                 type: "image/webp",
@@ -651,7 +663,11 @@ export default function TemplateEditorProvider({
         successRedirectUrl={returnUrl}
         signupIntent={info.intent}
         signupSource={category === "gymnastics" ? "gymnastics" : "snap"}
-        description="Create an account to save your invitation and keep editing."
+        description={
+          category === "signup-forms"
+            ? "Create an account to save your signup form and keep editing."
+            : "Create an account to save your invitation and keep editing."
+        }
         allowGoogleAuth={storageReady}
         onAuthenticated={async () => {
           await update();

@@ -656,20 +656,18 @@ test("/chat live-card preview preserves RSVP and registry action metadata", () =
   assert.match(preview, />Details</);
 });
 
-test("/chat preview updates reuse the preview progress overlay", () => {
+test("/chat preview uses real generation stages and keeps streamed artwork visible", () => {
   const client = readSource("src/app/chat/ConciergeChatClient.tsx");
   const preview = readSource("src/app/chat/ChatProductPreview.tsx");
 
-  assert.match(client, /const PREVIEW_UPDATE_STEPS = \[/);
+  assert.match(client, /GENERATION_STAGE_LABELS/);
   assert.match(client, /const isUpdatingPreview = isEditingGeneratedCard && isSending;/);
-  assert.match(
-    client,
-    /const activeBuildSteps = isUpdatingPreview \? PREVIEW_UPDATE_STEPS : BUILDING_STEPS;/,
-  );
-  assert.match(client, /if \(!isGeneratingCard && !isUpdatingPreview\) return;/);
+  assert.doesNotMatch(client, /BUILDING_STEPS|PREVIEW_UPDATE_STEPS|setBuildProgress/);
   assert.match(client, /isGenerating=\{isGeneratingCard \|\| isUpdatingPreview\}/);
-  assert.match(client, /currentBuildStep=\{activeBuildSteps\[currentBuildStep\]\}/);
-  assert.match(preview, /style=\{\{ width: `\$\{buildProgress\}%` \}\}/);
+  assert.match(client, /currentBuildStep=\{GENERATION_STAGE_LABELS\[generationStage\]\}/);
+  assert.match(client, /hasStreamingPreview=\{Boolean\(streamingPreviewImage\)\}/);
+  assert.match(preview, /hasStreamingPreview/);
+  assert.doesNotMatch(preview, /value=\{buildProgress\}/);
 });
 
 test("/cht typo route is not present", () => {

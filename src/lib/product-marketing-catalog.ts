@@ -87,6 +87,8 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Drafts event-specific guest copy and a polished live page for the host to review and edit before sharing.",
             "Hosts can review saved event details, correct titles and format choices in conversation, and generate a draft preview before a separate publish step.",
             "Generated draft previews and subsequent design edits are saved with the conversation, so hosts can reopen a draft with the same artwork without regenerating it.",
+            "Artwork previews appear during supported image generation, with status updates for drawing, checking, refining, and saving. Hosts review the completed draft before publishing.",
+            "For newly generated Live Cards with headline-only artwork, date, time, location, and RSVP changes update the event details while keeping the image. Changes to printed wording or the visual design still regenerate artwork.",
             "Hosts can preview an invitation while optional styling and RSVP details are unfinished; publishing checks the required event facts separately.",
             "Hosts can open a full-screen draft preview from the Preview action before publishing, while continuing edits in Concierge. Live-card draft previews include tappable overview, directions, calendar, and configured RSVP or gift-list actions on phones and larger screens. Hosts can try the RSVP form without submitting a guest response.",
             "Hosts can ask for planning suggestions and invitation wording before every detail is decided, and choose to collect guest replies themselves.",
@@ -113,7 +115,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Save and continue opens signup or login. Account saves create a private draft that the owner can reopen from My events and Continue creating; publishing is a separate action.",
             "Category pages such as /weddings and /birthdays offer templates; creation CTAs for Envitefy Concierge open /chat, while introductions link to /envitefy-concierge.",
             "Hosts can choose event-specific layouts, edit wording and details, and review the guest experience before publishing.",
-            "Generated live-card artwork focuses on the subject and title, while addresses, schedules, contact information, and other details stay in the buttons and detail panels below.",
+            "Generated Live Cards combine the subject, headline, names, and supplied milestone in full-canvas artwork. Guest action buttons overlay the bottom of the image, with addresses, schedules, and contact information in the detail panels.",
           ],
           sellWhen: [
             "A visitor wants to try an actual design and enter event details before registering.",
@@ -200,9 +202,9 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           customerPromise:
             "Download an invitation image that includes the event wording and supplied guest details.",
           proofPoints: [
-            "Digital flyer exports include supplied names, wording, date, time, venue and address in the image.",
+            "Digital invitation exports integrate supplied names, wording, date, time, venue and address into the complete artwork, preserving its composition and designed lettering.",
             "Printable flyer exports use a 5-by-7-inch PNG at 300 DPI with safe text margins.",
-            "The export checks text fit and asks for shorter wording when the supplied content cannot fit legibly.",
+            "Artwork checks compare visible wording with approved event details and inspect readability, framing, and adherence to the requested style. Failed checks receive one targeted repair; unavailable verification is disclosed for host review.",
           ],
           sellWhen: [
             "The host wants a self-contained invitation image to share or a printable 5-by-7 invitation.",
@@ -255,7 +257,9 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
                   "Signed-in owners can connect or disconnect Google Calendar and Outlook background sync from Settings; Apple Calendar uses a one-event ICS handoff.",
                   "Saved scans and uploads can automatically sync to a connected Google or Outlook calendar using the owner's calendar preference.",
                 ]
-              : ["Guests can manually save events with calendar links or ICS downloads; these actions do not require a connected calendar account."]),
+              : [
+                  "Guests can manually save events with calendar links or ICS downloads; these actions do not require a connected calendar account.",
+                ]),
             "Calendar entries can carry event timing, location, and available reminder information.",
             "Specialized schedule flows can expose the relevant event or session timing.",
           ],
@@ -308,16 +312,13 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Guests can respond without installing an app.",
             "RSVP deadlines, contact details, and guest messages can stay connected to the event.",
           ],
-          sellWhen: [
-            "The host needs attendance, a headcount, guest replies, or an RSVP deadline.",
-          ],
+          sellWhen: ["The host needs attendance, a headcount, guest replies, or an RSVP deadline."],
         },
         {
           id: "rsvp-households-headcount",
           name: "Household and party headcounts",
           availability: "event-dependent",
-          customerPromise:
-            "Plan from real attendance totals, not one name per household.",
+          customerPromise: "Plan from real attendance totals, not one name per household.",
           proofPoints: [
             "Supported RSVP flows can collect plus-ones, household members, adult counts, kid counts, and sibling attendance.",
             "Birthday experiences can keep family counts, total party headcount, capacity, and pending households visible.",
@@ -407,7 +408,10 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Settings can allow multiple slots, limit slots per person, lock full slots, and enable automatic waitlists.",
             "Guests can claim available needs from the shared form without installing an app.",
             "Hosts can see what is claimed, full, waitlisted, or still needed, then edit the live form after sharing.",
-            "Forms can be shared by link or QR code and can keep event details, updates, and reminders connected.",
+            "Six coordinated themes pair original editorial artwork with page colors, fonts, headers, and signup slots. Hosts can adjust colors, photos, crops, and spacing.",
+            "Every signup template has a square preview of the complete page with editable sample event details, hosts, signup needs, capacities, and questions.",
+            "A four-step editor starts with design, then details, signup slots, and review, with reusable starters and browser draft recovery.",
+            "Invited guests sign in to claim slots; the public preview shows availability without other participants’ contact information.",
           ],
           sellWhen: [
             "The brief mentions volunteers, helpers, potluck items, snacks, supplies, shifts, slots, capacity, or a waitlist.",

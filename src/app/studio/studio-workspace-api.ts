@@ -2,6 +2,7 @@
 
 import { isAllowedStudioReferenceImageUrl } from "@/lib/studio/reference-image-url";
 import type { StudioGenerateMode } from "@/lib/studio/types";
+import { readGenerationStream, type GenerationOptions } from "@/lib/studio/generation-progress";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
 import { buildStudioRequest } from "./studio-workspace-builders";
 import { sanitizeStudioGenerateResponse } from "./studio-workspace-sanitize";
@@ -93,11 +94,14 @@ export async function requestStudioGeneration(
   editPrompt?: string,
   sourceImageDataUrl?: string,
   previousDetails?: EventDetails,
+  options: GenerationOptions = {},
 ) {
+  options.onProgress?.({ type: "stage", stage: "preparing" });
   const preparedDetails = await prepareStudioDetailsForGeneration(details);
   const response = await fetch("/api/studio/generate", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(options.onProgress ? { Accept: "application/x-ndjson" } : {}) },
+    signal: options.signal,
     body: JSON.stringify(
       buildStudioRequest(
         preparedDetails,
@@ -111,13 +115,14 @@ export async function requestStudioGeneration(
   });
 
   let rawData: unknown = null;
-  try {
-    rawData = await response.json();
-  } catch {
-    rawData = null;
-  }
+  if (response.ok && response.headers.get("content-type")?.includes("application/x-ndjson") && response.body) {
+    rawData = await readGenerationStream(response.body, options.onProgress);
+  } else rawData = await response.json().catch(() => null);
 
   const data = sanitizeStudioGenerateResponse(rawData);
+  if (process.env.NODE_ENV === "development" && data?.ok && data.timings) {
+    console.info("studio_generation_client_run", JSON.stringify(data.timings));
+  }
 
   if (!response.ok || !data || !data.ok) {
     const errorMessage =

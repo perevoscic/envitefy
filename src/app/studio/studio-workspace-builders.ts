@@ -168,7 +168,7 @@ function buildBirthdayHeadline(details: EventDetails): string {
 
 export function getDisplayTitle(details: EventDetails) {
   if (details.category === "Birthday") {
-    return pickFirst(buildBirthdayHeadline(details), details.eventTitle, "Birthday Celebration");
+    return pickFirst(details.eventTitle, buildBirthdayHeadline(details), "Birthday Celebration");
   }
   if (details.category === "Wedding") {
     return pickFirst(
@@ -1080,7 +1080,7 @@ export function buildStudioRequest(
     ? `Selected image finish preset: ${imageFinishPreset.label}. Apply a ${imageFinishPreset.label} finish with ${imageFinishPreset.description}.`
     : "";
   const studioGuardrails =
-    "Preserve exact spelling from the event details when visible wording is baked into the generated invitation image. For live cards, the invitation text should feel like part of the designed image itself, not a detached app overlay. Keep the copy concentrated in the upper and middle portions of the card. Keep the lower zone decorative and art-led rather than empty or separated, but never place visible text, names, listing facts, contact details, faux buttons, icons, chips, circles, bars, logos, seals, signs, monograms, or device chrome in the bottom action-button area. Keep the top edge decorative too: no status bar, carrier text, clock text, battery icons, notches, camera cutouts, or phone chrome.";
+    "Preserve exact spelling from the approved event wording. Compose lettering, subjects, lighting and background together across the full canvas. Live-card actions overlay the bottom edge of the artwork; keep essential lettering and faces clear of them while continuing the scene behind the controls. Do not add a blank band or black footer. Respect the product contract for which wording belongs in the image. No faux buttons, interface elements, device frames, status bars, notches or phone chrome.";
   return {
     mode,
     surface,
@@ -1167,7 +1167,7 @@ export function buildStudioRequest(
           imageFinishPresetDirection,
           internalInstructions,
           refinement,
-          product === "live_card" ? studioGuardrails : "The product contract controls image text and safe zones. Event wording is typeset separately.",
+          product === "live_card" ? studioGuardrails : "The product contract controls approved image wording and print-safe margins. Compose the entire invitation; event-page heroes remain text-free.",
         ]
           .filter(Boolean)
           .join(". ") || null,
@@ -1287,6 +1287,8 @@ export function refreshLiveCardInvitationData(
     callToAction,
     socialCaption: publicSocialCaption,
     creativePlan: previous?.creativePlan,
+    artworkTextMode: previous?.artworkTextMode,
+    artworkNotice: previous?.artworkNotice,
     heroTextMode,
     theme: {
       primaryColor: clean(previous?.theme?.primaryColor) || fallbackTheme.primaryColor,

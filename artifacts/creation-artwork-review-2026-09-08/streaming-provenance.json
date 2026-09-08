@@ -1,0 +1,16 @@
+{
+  "creationSessionId": "session_mts1dzm3",
+  "model": "gpt-image-2",
+  "quality": "high",
+  "original": "event-media/upload-d2fac4d9-e15f-4d1a-9dad-2ef115da8afe/header/source/studio-generated-image.png",
+  "replacement": "event-media/upload-d2fac4d9-e15f-4d1a-9dad-2ef115da8afe/header/source/studio-generated-image.webp",
+  "local": "artifacts/creation-artwork-review-2026-09-08/04-streamed-concert.webp",
+  "width": 1024,
+  "height": 1536,
+  "sha256": "a079a754ca3d28a485bc9db477bfbe497b4060786695260ad4489ac72258a4ba",
+  "originalRemoved": true,
+  "encoder": "FFmpeg libwebp q85 compression6",
+  "observedPreviewWithinMs": 39055,
+  "renderWorkflowMs": 137368,
+  "qualityCheck": "unavailable"
+}

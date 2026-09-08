@@ -1,8 +1,30 @@
 # Signup forms: theme system and workflow plan
 
-Prepared September 7, 2026. This is a proposed implementation plan based on the current local workspace, including the template-gallery and shared-header changes present during review. It does not represent a shipped feature set.
+Prepared September 7, 2026; implementation checkpoint September 8, 2026. Sections 1–9 preserve the original audit and phased plan. The checkpoint below records what is now implemented locally and what still needs rollout work.
 
 **Recommendation:** turn signup forms into coordinated event pages with a complete visual theme, useful starting content, and a reliable path from creation to participation. Build on the existing slot, question, capacity, waitlist, and draft foundations.
+
+## Implementation checkpoint — September 8, 2026
+
+The first local release covers the coordinated theme system, original artwork collection, focused creator workflow, and the main reservation correctness fixes. It has not been deployed or exercised against production signup records.
+
+| Area | Implemented locally |
+|---|---|
+| Complete themes | Clean & Clear, Harvest Table, School Days, Game Day, Community Garden, Celebrate Together. Versioned appearance data includes palette, font pair, header layout, card/row layout, density, accent, and image focal point. Legacy header fields still render. |
+| Artwork | Six original editorial still-life covers, restrained natural lighting and tactile objects. Each is a verified 1536 × 1024 WebP, encoded with FFmpeg libwebp quality 85 and compression level 6. Exact generated PNG originals have been removed. Prompts, hashes, sizes, dimensions, and cleanup status are recorded in `docs/signup-artwork-provenance.json`. |
+| Creator flow | Design → Details → Build signup → Review & share, with six content starters, append/replace choice, theme undo, custom artwork/upload, local artwork search, date-only/timed events, online/in-person/TBA location, inline publish validation, and explicit invited-account participation copy. |
+| Demo templates | All 150 catalog designs open with editable fictional event details, hosts, dates, locations, arrival notes, four relevant signup slots with capacities and notes, and a follow-up question. Content covers 14 signup scenarios. New examples contain no guest responses or reservations; existing drafts retain their content when changing designs. |
+| Shared rendering | Gallery/editor/review/public pages share the same header and board composition. Every catalog design and editorial theme picker uses the same square, inert full-page thumbnail, with the selected artwork retained and the page filling the thumbnail viewport. Mobile editing has Edit/Preview controls; the styles load with the route even when the editor itself loads on the client. |
+| Drafts and duplicates | The direct entry route now opens the common template editor. Copies get new draft identities and empty responses; authentication handoff retains photos. Existing event edits load the authoritative form, and account saves carry the latest acknowledged definition revision. |
+| Reservation integrity | Definition edits and reservation mutations lock the event row and commit event JSON plus normalized form together. Host design saves retain current responses. Stale definition revisions and deletion/reduction of claimed slots are rejected. Capacity, per-person limits, opening/closing windows, and disabled state are enforced on the server. |
+| Privacy and ownership | Guest projections carry aggregate availability and only the signed-in guest’s own response. Public projections omit response records. Response edits/cancellations require ownership or organizer access; organizer edits preserve the participant’s identity. |
+| Participant/host tools | Honest saved-state confirmation, explicit availability refresh, protected waitlist promotion, participant search, CSV export with formula-safe cells, and organizer close/reopen controls. The form keeps its closed state when its design is edited. |
+
+**Verification completed:** 32 targeted tests pass, including complete demo content and rendered preview markup for every catalog entry, valid theme-preview button markup, all six themes and seven header choices, appearance roundtrip/contrast, theme changes preserving content, public projections, API access, last-place contention through the transaction helper with a simulated database client, rollback, waitlist promotion, signup windows/DST, repeated draft saves, and CSV escaping. Biome passes for the touched signup modules and integration files. Browser checks covered the full four-step flow, live theme/palette/header changes, draft restoration, the authentication dialog without submitting an account, desktop layout, and a 390px phone layout with no horizontal overflow. No real reservations, outbound messages, production records, or deployments were created for verification.
+
+The VS Code diagnostics command was attempted, but this host has no active Chat to CLI diagnostics bridge. Direct TypeScript checking was used as a fallback; the repository still has unrelated existing type errors. This release does not claim a clean full-repository build or complete WCAG certification.
+
+**Remaining rollout and follow-up work:** run the public participant/organizer lifecycle against a disposable database and controlled mailbox; reconcile pre-existing divergence between legacy JSON and the normalized table before production rollout; audit any older writers that bypass the signup service; expand the visual matrix to every theme/state at tablet widths, zoom, keyboard, and assistive technology; add durable confirmation/reminder/promotion jobs and delivery status; introduce optional open-link participation only as an explicit access mode. The legacy image catalog remains available alongside the new editorial collection. Customer-triggered artwork generation remains a separate feature.
 
 ## 1. What exists today
 
@@ -96,20 +118,20 @@ Encode approved originals directly with FFmpeg `libwebp`, quality 85, compressio
 
 ```mermaid
 flowchart LR
-  A[Choose signup type or gallery design] --> B[Details]
+  A[Choose gallery design or start a signup] --> D[Design]
+  D --> B[Details]
   B --> C[Build signup]
-  C --> D[Design]
-  D --> E[Review and share]
+  C --> E[Review and share]
   E --> F[Manage responses]
   F --> D
   F --> C
 ```
 
-The initial choice is a short starter screen outside the four-step editor. Gallery visitors arrive with a design selected and can choose a compatible signup type without losing it.
+Design comes first in the four-step editor. Gallery visitors arrive with their chosen design selected, then add details and build the signup. Content starters remain available in Details without replacing the visual theme. Drafts now store stable step IDs; earlier drafts start at Design once while retaining all form content.
 
-1. **Details.** Ask for title, organizer/group, date or an explicit date-not-set choice, timezone, and location mode: in person, online, or to be announced. Require a street address only when appropriate. Put parking, accessibility, arrival, audience, and safety guidance in optional groups. Consolidate overlapping arrival/parking fields through a documented mapping.
-2. **Build signup.** Start with editable example needs for the chosen type. Put capacity and selection rules beside the slots they affect. Support duplicate/reorder and a batch operation such as “create shifts every 30 minutes.” Keep keyboard move controls even if drag-and-drop is added. Use item quantity for potlucks and supplies; distinguish it from number of people for shifts. Add a visible count of sections, slots, and available units.
-3. **Design.** Put theme selection first, then Colors, Fonts, Header & images, and Layout. Give users a live full-page preview, a clear active theme, and an undo/reset action. Keep advanced options collapsed. On desktop, use editor controls beside a preview; on mobile, use an Edit / Preview switch with a reachable action bar. The preview must remain responsive to every change.
+1. **Design.** Put theme selection first, then Colors, Fonts, Header & images, and Layout. Give users a live full-page preview, a clear active theme, and an undo/reset action. Keep advanced options collapsed. On desktop, use editor controls beside a preview; on mobile, use an Edit / Preview switch with a reachable action bar. The preview must remain responsive to every change.
+2. **Details.** Ask for title, organizer/group, date or an explicit date-not-set choice, timezone, and location mode: in person, online, or to be announced. Require a street address only when appropriate. Put parking, accessibility, arrival, audience, and safety guidance in optional groups. Consolidate overlapping arrival/parking fields through a documented mapping.
+3. **Build signup.** Start with editable example needs for the chosen type. Put capacity and selection rules beside the slots they affect. Support duplicate/reorder and a batch operation such as “create shifts every 30 minutes.” Keep keyboard move controls even if drag-and-drop is added. Use item quantity for potlucks and supplies; distinguish it from number of people for shifts. Add a visible count of sections, slots, and available units.
 4. **Review and share.** Show the complete rendered page plus a short readiness list. Blocking items: missing title, no usable slots, invalid capacity/time range, conflicting open/close dates, invalid media, or missing required location details for the selected mode. Link each error to its field. Offer “Save draft” and “Publish” with distinct meanings. Display who can view and who can sign up before publishing. After success, show the canonical link, QR option using existing sharing components where available, and a route to Manage responses.
 
 Use step names and actual completion checks instead of implying a blank form is 25% done on entry or 100% ready merely because Launch is open. Preserve entered data when revisiting steps. This follows W3C guidance on logical grouping, optional stages, and navigable progress in [multi-page forms](https://www.w3.org/WAI/tutorials/forms/multi-page/).
@@ -205,7 +227,7 @@ Effort ranges are planning estimates for one experienced engineer with timely de
 |---|---|---|---|
 | 0. Correctness foundation | Common persistence service, response ownership/privacy, rule enforcement, transaction coverage | Concurrent last-slot requests are safe; design saves preserve claims; public clients receive no private response details | 3–5 |
 | 1. Theme vertical slice | Versioned appearance, legacy adapter, shared renderer, Clean & Clear / Harvest Table / Game Day | Gallery → preview → publish use the same design; legacy layouts/assets remain intact | 4–6 |
-| 2. Creator workflow | Starters, Details → Build → Design → Review, unified drafts, inline publish validation | A useful form can be created, resumed, themed, and published without raw design fields or blank-slot launch | 4–6 |
+| 2. Creator workflow | Starters, Design → Details → Build → Review, unified drafts, inline publish validation | A useful form can be created, resumed, themed, and published without raw design fields or blank-slot launch | 4–6 |
 | 3. Theme collection and gallery | Complete six themes, approved variants, image crop/focal point, metadata search, mobile refinement | Every shipped theme passes visual/state QA; no unrelated category fallback | 3–5 |
 | 4. Participant and host improvements | Explicit access modes, optional open-link participation, reliable confirmation/management, search/export, verified notifications | Full participant lifecycle works for the intended audience; access and indexing remain independent | 5–8 |
 | 5. Rollout and measurement | Migration checks, regression runs, production monitoring, catalog updates | Legacy forms remain usable, no response loss, verified customer-facing claims | 2–3 |

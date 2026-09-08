@@ -1,5 +1,6 @@
 import { CREATIVE_PLAN_SCHEMA, resolveStudioProduct, type StudioCreativePlan } from "@/lib/studio/product-contract";
 import { matchesSchema } from "@/lib/creation/source-evidence";
+import { GENERATION_STAGE_LABELS, type GenerationStage, type GenerationTimings } from "@/lib/studio/generation-progress";
 import {
   normalizeInvitationText,
   normalizeLiveCardMetadata,
@@ -463,6 +464,8 @@ export function sanitizeInvitationData(
       readString(value.socialCaption) ||
       readString(value.description) ||
       buildDescription(fallbackDetails),
+    artworkNotice: readString(value.artworkNotice) || undefined,
+    artworkTextMode: value.artworkTextMode === "headline" || value.artworkTextMode === "complete_invitation" || value.artworkTextMode === "none" ? value.artworkTextMode : undefined,
     heroTextMode:
       value.heroTextMode === "overlay" || value.heroTextMode === "image"
         ? value.heroTextMode
@@ -796,6 +799,19 @@ export function restoreHydratedMediaItems(items: MediaItem[]): MediaItem[] {
   });
 }
 
+function sanitizeGenerationTimings(value: unknown): GenerationTimings | undefined {
+  if (!isRecord(value) || !isRecord(value.stagesMs)) return undefined;
+  const validMs = (ms: unknown): ms is number => typeof ms === "number" && Number.isFinite(ms) && ms >= 0;
+  if (!validMs(value.totalMs) || !validMs(value.imageAttempts) || !Number.isInteger(value.imageAttempts)) return undefined;
+  const stagesMs: GenerationTimings["stagesMs"] = {};
+  for (const stage of Object.keys(GENERATION_STAGE_LABELS) as GenerationStage[]) {
+    const ms = value.stagesMs[stage];
+    if (validMs(ms)) stagesMs[stage] = ms;
+  }
+  return { totalMs: value.totalMs, stagesMs, imageAttempts: value.imageAttempts,
+    firstPreviewMs: validMs(value.firstPreviewMs) ? value.firstPreviewMs : undefined };
+}
+
 export function sanitizeStudioGenerateResponse(value: unknown): StudioGenerateApiResponse | null {
   if (!isRecord(value)) return null;
 
@@ -846,7 +862,9 @@ export function sanitizeStudioGenerateResponse(value: unknown): StudioGenerateAp
     ok: true,
     mode,
     product: resolveStudioProduct(value.product),
+    timings: sanitizeGenerationTimings(value.timings),
     qualityCheck: value.qualityCheck === "passed" || value.qualityCheck === "failed" || value.qualityCheck === "needs_review" ? value.qualityCheck : "unavailable",
+    artworkTextMode: value.artworkTextMode === "headline" || value.artworkTextMode === "complete_invitation" || value.artworkTextMode === "none" ? value.artworkTextMode : undefined,
     liveCard,
     invitation: invitation || liveCard?.invitation || null,
     imageDataUrl,

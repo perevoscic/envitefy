@@ -42,6 +42,29 @@ const catalog = loadTs("src/lib/public-template-catalog.ts");
 const access = loadTs("src/lib/event-draft-access.ts");
 const storage = loadTs("src/lib/template-draft-storage.ts");
 const handoff = loadTs("src/lib/template-draft-handoff.ts");
+test("every signup template opens with complete editable demo details and no guest records", () => {
+  const { createSignupTemplateForm } = loadTs("src/lib/signup-starters.ts");
+  const { validateSignupPublish } = loadTs("src/lib/signup-validation.ts");
+  const { sanitizeSignupForm } = loadTs("src/utils/signup.ts");
+  for (const template of catalog.getPublicTemplates("signup-forms")) {
+    const form = createSignupTemplateForm(template);
+    assert.deepEqual(validateSignupPublish(form), [], template.id);
+    assert.equal(form.header.backgroundImage.dataUrl, template.heroImage);
+    for (const field of [form.title, form.description, form.venue, form.location, form.start, form.end, form.timezone, form.header.groupName, form.header.creatorName, form.arrivalInstructions, form.parkingInfo]) assert.ok(field, template.id);
+    assert.ok(form.questions[0]?.prompt, template.id);
+    assert.ok(form.sections[0].slots.length >= 4, template.id);
+    for (const slot of form.sections.flatMap(section => section.slots)) {
+      assert.ok(slot.label && slot.notes && slot.capacity > 0, template.id);
+    }
+    assert.deepEqual(form.responses, []);
+    assert.equal(form.availability, undefined);
+    assert.equal(sanitizeSignupForm(form).title, form.title);
+    const another = createSignupTemplateForm(template);
+    assert.notEqual(another.sections[0].slots[0].id, form.sections[0].slots[0].id);
+    another.sections[0].slots[0].label = "My own label";
+    assert.notEqual(another.sections[0].slots[0].label, form.sections[0].slots[0].label);
+  }
+});
 const draftId = "8d608518-b721-4b15-940d-06e3418234e7";
 function draft() {
   return {

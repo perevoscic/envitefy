@@ -1,12 +1,12 @@
 "use client";
 
-import { isPublicTemplatePath } from "@/lib/template-categories";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import { PrivacyChoicesButton } from "@/components/PrivacyControls";
+import { isPublicTemplatePath } from "@/lib/template-categories";
 
 const RESERVED_EVENT_PATHS = new Set([
   "new",
@@ -171,7 +171,10 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
   }
 
   const isStudioPath = pathname === "/studio" || (pathname?.startsWith("/studio/") ?? false);
-  if (isStudioPath || (pathname && isPublicTemplatePath(pathname) && pathname.endsWith("/customize"))) {
+  if (
+    isStudioPath ||
+    (pathname && isPublicTemplatePath(pathname) && pathname.endsWith("/customize"))
+  ) {
     return null;
   }
 
@@ -198,11 +201,9 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
                 Create polished hosted event pages with live invitations, RSVP, registries, calendar
                 saves, maps, sign-ups, and guest updates from one shareable link.
               </p>
-              {hasNoSession ? (
-                <div className="mt-6">
-                  <EnvitefySocialLinks />
-                </div>
-              ) : null}
+              <div className="mt-6">
+                <EnvitefySocialLinks />
+              </div>
             </div>
 
             <div className="col-span-full grid grid-cols-2 gap-x-6 gap-y-8 lg:contents">

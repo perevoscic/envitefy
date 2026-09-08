@@ -2,6 +2,7 @@ import type { StudioProduct } from "./product-contract.ts";
 import { creationModelBudget, creationTimeoutMs, recordCreationModelRun } from "../creation/openai-workloads.ts";
 import OpenAI from "openai";
 import { toFile } from "openai/uploads";
+import { streamOpenAiImage, type ImageGenerationOptions } from "./openai-image-stream.ts";
 import { STUDIO_LIVE_CARD_RESPONSE_SCHEMA } from "@/lib/studio/live-card-schema";
 import {
   resolveStudioSourceImage,
@@ -82,8 +83,8 @@ function resolveImageSize(): "1024x1024" | "1536x1024" | "1024x1536" | "auto" {
 
 function resolveImageQuality(): "low" | "medium" | "high" | "auto" {
   const raw = safeString(process.env.STUDIO_OPENAI_IMAGE_QUALITY).toLowerCase();
-  if (raw === "low" || raw === "high" || raw === "auto") return raw;
-  return "medium";
+  if (raw === "low" || raw === "medium" || raw === "auto") return raw;
+  return "high";
 }
 
 function resolveImageBackground(model: string): "transparent" | "opaque" | "auto" {
@@ -204,6 +205,7 @@ async function postOpenAiImageGeneration(
   prompt: string,
   referenceImages?: StudioResolvedSourceImage[],
   product?: StudioProduct,
+  options: ImageGenerationOptions = {},
 ): Promise<
   | { ok: true; imageDataUrl: string; warnings: string[] }
   | { ok: false; error: StudioGenerationError; warnings: string[] }
@@ -221,6 +223,14 @@ async function postOpenAiImageGeneration(
           openAiStudioDeps.toUploadableImage(image, "studio-openai-reference", index),
         ),
       );
+      if (options.onPartialImage) return {
+        ok: true, warnings,
+        imageDataUrl: await streamOpenAiImage(client, {
+          model, image: uploadables, prompt,
+          size: product === "event_page" ? "1536x1024" : resolveImageSize(),
+          quality: resolveImageQuality(), background: resolveImageBackground(model), n: 1,
+        }, options),
+      };
       const response = await client.images.edit({
         model,
         image: uploadables,
@@ -229,7 +239,7 @@ async function postOpenAiImageGeneration(
         quality: resolveImageQuality(),
         background: resolveImageBackground(model),
         n: 1,
-      });
+      }, { signal: options.signal, timeout: 180_000, maxRetries: 0 });
       const imageData = response.data?.[0]?.b64_json || "";
       if (!imageData) {
         return {
@@ -265,6 +275,13 @@ async function postOpenAiImageGeneration(
 
   try {
     const client = openAiStudioDeps.getOpenAiClient();
+    if (options.onPartialImage) return {
+      ok: true, warnings,
+      imageDataUrl: await streamOpenAiImage(client, {
+        model, prompt, size: product === "event_page" ? "1536x1024" : resolveImageSize(),
+        quality: resolveImageQuality(), background: resolveImageBackground(model), n: 1,
+      }, options),
+    };
     const response = await client.images.generate({
       model,
       prompt,
@@ -274,7 +291,7 @@ async function postOpenAiImageGeneration(
       output_format: "png",
       moderation: "auto",
       n: 1,
-    });
+    }, { signal: options.signal, timeout: 180_000, maxRetries: 0 });
     const imageData = response.data?.[0]?.b64_json || "";
     if (!imageData) {
       return {
@@ -313,6 +330,7 @@ async function postOpenAiImageEdit(
   prompt: string,
   sourceImageDataUrl: string,
   referenceImages?: StudioResolvedSourceImage[],
+  options: ImageGenerationOptions = {},
 ): Promise<
   | { ok: true; imageDataUrl: string; warnings: string[] }
   | { ok: false; error: StudioGenerationError; warnings: string[] }
@@ -348,6 +366,13 @@ async function postOpenAiImageEdit(
 
   try {
     const client = openAiStudioDeps.getOpenAiClient();
+    if (options.onPartialImage) return {
+      ok: true, warnings,
+      imageDataUrl: await streamOpenAiImage(client, {
+        model, image: uploadables, prompt, size: resolveImageSize(),
+        quality: resolveImageQuality(), background: resolveImageBackground(model), n: 1,
+      }, options),
+    };
     const response = await client.images.edit({
       model,
       image: uploadables,
@@ -356,7 +381,7 @@ async function postOpenAiImageEdit(
       quality: resolveImageQuality(),
       background: resolveImageBackground(model),
       n: 1,
-    });
+    }, { signal: options.signal, timeout: 180_000, maxRetries: 0 });
     const imageData = response.data?.[0]?.b64_json || "";
     if (!imageData) {
       return {
@@ -428,19 +453,22 @@ export async function generateInvitationImageWithOpenAi(
   prompt: string,
   referenceImages?: StudioResolvedSourceImage[],
   product?: StudioProduct,
+  options: ImageGenerationOptions = {},
 ): Promise<OpenAiImageResult> {
-  return postOpenAiImageGeneration(resolveImageModel(), prompt, referenceImages, product);
+  return postOpenAiImageGeneration(resolveImageModel(), prompt, referenceImages, product, options);
 }
 
 export async function editInvitationImageWithOpenAi(
   prompt: string,
   sourceImageDataUrl: string,
   referenceImages?: StudioResolvedSourceImage[],
+  options: ImageGenerationOptions = {},
 ): Promise<OpenAiImageResult> {
   return postOpenAiImageEdit(
     resolveImageEditModel(),
     prompt,
     sourceImageDataUrl,
     referenceImages,
+    options,
   );
 }

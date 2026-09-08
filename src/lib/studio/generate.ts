@@ -1,7 +1,8 @@
 import { composeFlyerExport } from "./flyer-export.ts";
+import { createGenerationTracker, type GenerationOptions } from "./generation-progress.ts";
 import { applyVerifiedCopy, verifyStudioArtwork, type ArtworkCheck } from "./output-checks.ts";
 import { buildProductCopyPrompt, buildProductArtworkPrompt } from "./product-prompts.ts";
-import { validateCreativePlan, resolveStudioProduct } from "./product-contract.ts";
+import { validateCreativePlan, resolveStudioProduct, productContract } from "./product-contract.ts";
 import {
   editInvitationImageWithGemini,
   generateInvitationImageWithGemini,
@@ -95,17 +96,23 @@ export const studioGenerationDeps = {
 
 export async function generateStudioInvitation(
   request: StudioGenerateRequest,
+  options: GenerationOptions = {},
 ): Promise<StudioGenerateResponse> {
+  const tracker = createGenerationTracker(options);
+  const imageOptions = {
+    signal: options.signal,
+    onPartialImage: options.onProgress ? (url: string) => tracker.preview(url, true) : undefined,
+  };
   const provider = studioGenerationDeps.resolveStudioProvider();
   const mode = request.mode || "both";
   const surface = request.surface || (mode === "both" || mode === "text" ? "page" : "image");
   const product = resolveStudioProduct(request.product, surface);
   let qualityCheck: StudioGenerateResponse["qualityCheck"] = "unavailable";
-  const themeNormalization = await studioGenerationDeps.normalizeStudioTheme({
+  const themeNormalization = await tracker.measure("preparing", () => studioGenerationDeps.normalizeStudioTheme({
     provider,
     event: request.event,
     guidance: request.guidance,
-  });
+  }));
   const normalizedRequest =
     themeNormalization.riskLevel === "block"
       ? request
@@ -133,15 +140,16 @@ export async function generateStudioInvitation(
       themeNormalization,
       warnings: uniqueWarnings(warnings),
       errors,
+      timings: tracker.finish(),
     };
   }
 
   if (wantsText) {
     const textPrompt = buildProductCopyPrompt(normalizedRequest.event, normalizedRequest.guidance, product);
-    const textResult =
+    const textResult = await tracker.measure("planning", () =>
       provider === "openai"
-        ? await studioGenerationDeps.generateStudioLiveCardWithOpenAi(textPrompt)
-        : await studioGenerationDeps.generateStudioLiveCardWithGemini(textPrompt);
+        ? studioGenerationDeps.generateStudioLiveCardWithOpenAi(textPrompt)
+        : studioGenerationDeps.generateStudioLiveCardWithGemini(textPrompt));
     warnings.push(...textResult.warnings);
     if (textResult.ok) {
       liveCard = applyVerifiedCopy(normalizedRequest.event, sanitizeStudioLiveCardVisibleCopy(normalizedRequest.event, textResult.liveCard));
@@ -159,8 +167,8 @@ export async function generateStudioInvitation(
       ? undefined
       : getOrderedStudioReferenceImageUrls(normalizedRequest.event);
     const requestedRefCount = orderedReferenceImageUrls?.length ?? 0;
-    const referenceImages =
-      await studioGenerationDeps.resolveStudioReferenceImages(orderedReferenceImageUrls);
+    const referenceImages = await tracker.measure("preparing", () =>
+      studioGenerationDeps.resolveStudioReferenceImages(orderedReferenceImageUrls));
     if (requestedRefCount > 0 && referenceImages.length !== requestedRefCount) {
       errors.image = buildReferenceImageError(provider);
     } else {
@@ -168,13 +176,15 @@ export async function generateStudioInvitation(
       const imagePrompt = editingExistingImage
         ? product === "live_card"
           ? buildExistingInvitationImageEditPrompt(normalizedRequest.imageEdit?.editInstruction)
-          : ["Edit the supplied artwork. Remove all existing typography so the application can typeset the current event facts. Preserve the visual subject and apply the requested changes.", normalizedRequest.imageEdit?.editInstruction, artworkPrompt].filter(Boolean).join("\n")
+          : ["Edit the complete supplied invitation. Update lettering to the current approved wording, preserving the design and unrelated artwork. Apply the requested visual changes.", normalizedRequest.imageEdit?.editInstruction, artworkPrompt].filter(Boolean).join("\n")
         : artworkPrompt;
-      const imageResult = editingExistingImage
+      const imageResult = await tracker.measure("generating", async () => editingExistingImage
         ? provider === "openai"
           ? await studioGenerationDeps.editInvitationImageWithOpenAi(
               imagePrompt,
               normalizedRequest.imageEdit!.sourceImageDataUrl,
+              undefined,
+              imageOptions,
             )
           : await studioGenerationDeps.editInvitationImageWithGemini(
               imagePrompt,
@@ -185,17 +195,19 @@ export async function generateStudioInvitation(
               imagePrompt,
               referenceImages.length > 0 ? referenceImages : undefined,
               product,
+              imageOptions,
             )
           : await studioGenerationDeps.generateInvitationImageWithGemini(
               imagePrompt,
               referenceImages.length > 0 ? referenceImages : undefined,
               product,
-            );
+            ));
       warnings.push(...imageResult.warnings);
       if (imageResult.ok) {
         let artwork = imageResult.imageDataUrl;
-        const checkContext = { imageEdit: normalizedRequest.imageEdit, references: referenceImages };
-        let checked: ArtworkCheck = await studioGenerationDeps.verifyStudioArtwork(artwork, normalizedRequest.event, product, checkContext);
+        tracker.preview(artwork, false);
+        const checkContext = { imageEdit: normalizedRequest.imageEdit, references: referenceImages, liveCard, guidance: normalizedRequest.guidance };
+        let checked: ArtworkCheck = await tracker.measure("checking", () => studioGenerationDeps.verifyStudioArtwork(artwork, normalizedRequest.event, product, checkContext));
         if (checked.status === "failed" && !isLayoutReview(checked, product)) {
           const repairPrompt = [
             imagePrompt,
@@ -206,25 +218,26 @@ export async function generateStudioInvitation(
               : "Fix only these observed defects, retaining the approved facts, subject and design.",
           ].join("\n");
           const repairSource = normalizedRequest.imageEdit?.sourceImageDataUrl || artwork;
-          const repaired = provider === "openai"
-            ? await studioGenerationDeps.editInvitationImageWithOpenAi(repairPrompt, repairSource)
-            : await studioGenerationDeps.editInvitationImageWithGemini(repairPrompt, repairSource);
+          const repaired = await tracker.measure("repairing", () => provider === "openai"
+            ? studioGenerationDeps.editInvitationImageWithOpenAi(repairPrompt, repairSource, undefined, imageOptions)
+            : studioGenerationDeps.editInvitationImageWithGemini(repairPrompt, repairSource));
           if (repaired.ok) {
             artwork = repaired.imageDataUrl;
-            checked = await studioGenerationDeps.verifyStudioArtwork(artwork, normalizedRequest.event, product, checkContext);
+            tracker.preview(artwork, false);
+            checked = await tracker.measure("checking", () => studioGenerationDeps.verifyStudioArtwork(artwork, normalizedRequest.event, product, checkContext));
             // A failed image cannot be accepted merely because the repair verifier timed out.
             if (checked.status === "unavailable") checked = { status: "failed", issues: ["repair_unverified"] };
           }
         }
         const layoutReview = isLayoutReview(checked, product);
         qualityCheck = layoutReview ? "needs_review" : checked.status;
-        if (layoutReview) warnings.push("Preview ready. Check that the artwork sits well around the card buttons before saving.");
+        if (layoutReview) warnings.push("Preview ready. Check the artwork framing before saving.");
         if (checked.status === "failed" && !layoutReview) {
           errors.image = { code: "image_quality_failed", message: editingExistingImage ? "We couldn't finish your card change while keeping its text readable and correctly placed. Your original card is unchanged. Try Preview again." : "We couldn't create the artwork with readable, correctly placed text. Please try again.", provider, retryable: true };
         } else {
           if (checked.status === "unavailable") warnings.push("Automatic artwork verification was unavailable; review the preview before sharing.");
           try {
-            imageDataUrl = await studioGenerationDeps.composeFlyerExport(artwork, normalizedRequest.event, liveCard, product);
+            imageDataUrl = await tracker.measure("exporting", () => studioGenerationDeps.composeFlyerExport(artwork, normalizedRequest.event, liveCard, product));
           } catch (error) {
             errors.image = { code: "export_failed", message: error instanceof Error ? error.message : "Flyer export failed.", provider, retryable: false };
           }
@@ -251,11 +264,13 @@ export async function generateStudioInvitation(
     mode,
     product,
     qualityCheck,
+    artworkTextMode: !request.imageEdit ? productContract(product).imageText : undefined,
     liveCard,
     invitation,
     imageDataUrl,
     themeNormalization,
     warnings: uniqueWarnings(warnings),
     errors: hasErrors ? errors : undefined,
+    timings: tracker.finish(),
   };
 }

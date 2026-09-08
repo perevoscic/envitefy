@@ -9,6 +9,7 @@ import {
   getEventHistoryPublicRenderById,
   isEventSharedWithUser,
   listShareRecipientUserIdsForEvent,
+  mutateSignupEvent,
   updateEventHistoryData,
   updateEventHistoryDataMerge,
   updateEventHistoryTitle,
@@ -20,8 +21,15 @@ import {
   verifyEventAccessCookieValue,
 } from "@/lib/event-access";
 import { deleteEventHistoryWithCleanup } from "@/lib/event-cleanup";
+import { isEventDraft } from "@/lib/event-draft-access";
 import { findTransientEventMedia } from "@/lib/event-media";
 import { invalidateUserHistory } from "@/lib/history-cache";
+import {
+  readStoredSignup,
+  SignupMutationError,
+  updateSignupDefinition,
+} from "@/lib/signup-mutations";
+import { projectSignupForm } from "@/lib/signup-projection";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,6 +66,7 @@ function sanitizeHistoryPublicData(data: unknown): Record<string, any> {
   delete redacted.missingFields;
   delete redacted.ocrText;
   delete redacted.calendarSync;
+  if (redacted.signupForm) delete redacted.responses;
 
   if (isRecord(redacted.accessControl)) {
     redacted.accessControl = {
@@ -67,6 +76,12 @@ function sanitizeHistoryPublicData(data: unknown): Record<string, any> {
     };
   }
 
+  if (isRecord(redacted.signupForm)) {
+    try { redacted.signupForm = projectSignupForm(readStoredSignup(redacted.signupForm)); }
+    catch { delete redacted.signupForm; }
+  }
+  if (redacted.templateSnapshot) delete redacted.templateSnapshot;
+  if (redacted.templateEditor) delete redacted.templateEditor;
   return redacted;
 }
 
@@ -225,7 +240,40 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
         processedData.fontSize != null ||
         processedData.advancedSections != null);
 
-    if (isFullUpdate && processedData) {
+    if (isRecord(processedData) && ("signupForm" in processedData || existing.data?.signupForm)) {
+      try {
+        const saved = await mutateSignupEvent(id, (latest) => {
+          if (latest.user_id !== userId) throw new SignupMutationError("Forbidden", 403);
+          const nextData = { ...latest.data, ...processedData };
+          if (incomingCategory != null) nextData.category = String(incomingCategory);
+          if ("signupForm" in processedData) {
+            nextData.signupForm = updateSignupDefinition(
+              latest.data?.signupForm,
+              processedData.signupForm,
+              isEventDraft(nextData),
+            );
+          }
+          // Restoring a draft must never restore old reservations or revision numbers.
+          if (isRecord(nextData.templateEditor) && nextData.signupForm) {
+            nextData.templateEditor = {
+              ...nextData.templateEditor,
+              snapshot: {
+                ...nextData.templateEditor.snapshot,
+                form: { ...nextData.signupForm, responses: [] },
+              },
+            };
+          }
+          delete nextData.responses;
+          return { data: nextData, result: null };
+        });
+        if (!saved) return NextResponse.json({ error: "Not found" }, { status: 404 });
+        updatedRow = saved.row;
+      } catch (error) {
+        if (error instanceof SignupMutationError)
+          return NextResponse.json({ error: error.message }, { status: error.status });
+        throw error;
+      }
+    } else if (isFullUpdate && processedData) {
       // For full updates with theme/font, merge existing data with new data to preserve other fields
       // But ensure theme and font fields are fully replaced
       const existingData = existing.data || {};

@@ -17,7 +17,7 @@ test("studio generation fails image creation when any attached reference photo c
   assert.match(source, /const requestedRefCount = orderedReferenceImageUrls\?\.length \?\? 0;/);
   assert.match(
     source,
-    /const referenceImages =\s*await studioGenerationDeps\.resolveStudioReferenceImages\(\s*orderedReferenceImageUrls\s*\);/s,
+    /const referenceImages =\s*await tracker\.measure\("preparing", \(\) =>\s*studioGenerationDeps\.resolveStudioReferenceImages\(\s*orderedReferenceImageUrls\s*\)\);/s,
   );
   assert.match(source, /\.\.\.\(event\.propertyImageUrls \|\| \[\]\)/);
   assert.doesNotMatch(source, /\.\.\.\(event\.realtorImageUrls \|\| \[\]\)/);
@@ -60,7 +60,7 @@ test("studio generation normalizes risky themes before prompt building and retur
   );
   assert.match(
     source,
-    /const themeNormalization = await studioGenerationDeps\.normalizeStudioTheme\(\{\s*provider,\s*event: request\.event,\s*guidance: request\.guidance,\s*\}\);/s,
+    /const themeNormalization = await tracker\.measure\("preparing", \(\) => studioGenerationDeps\.normalizeStudioTheme\(\{\s*provider,\s*event: request\.event,\s*guidance: request\.guidance,\s*\}\)\);/s,
   );
   assert.match(
     source,

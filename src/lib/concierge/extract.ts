@@ -4,6 +4,7 @@ import { creationModelBudget, creationTimeoutMs, recordCreationModelRun } from "
 import OpenAI from "openai";
 import { hasRequiredCopyLanguages, provisionalInvitationCopy, requestsInvitationCopy } from "./copy-workflow.ts";
 import { normalizeHostBrief } from "./host-brief.ts";
+import { hasVisualChangeWords, stripArtworkPreservationInstructions } from "./visual-direction.ts";
 import { applyHostPrivacy } from "./host-privacy.ts";
 import { extractExplicitEventLocation, extractExplicitEventTitle, extractExplicitRsvpEnabled, extractNamedAge, hasExplicitEventSchedule, hasStalePreviewFacts, pairedHonorees } from "./conversation-edits.ts";
 import {
@@ -84,10 +85,12 @@ function firstDraftString(...values: unknown[]): string | null {
   return null;
 }
 
-function messageCannotAnswerVisualDirection(message: string, fallback: ConciergeEventDraft) {
+function messageCannotAnswerVisualDirection(message: string) {
+  const visualMessage = stripArtworkPreservationInstructions(message);
+  if (!hasVisualChangeWords(visualMessage) && (visualMessage !== message ||
+    /\b(?:change|move|update|set|shift)\b[\s\S]{0,40}\b(?:date|time|location|venue|rsvp|address)\b/i.test(visualMessage))) return true;
   const cleaned = cleanString(message.replace(/[.!?]+$/g, "")) || "";
   if (!cleaned) return false;
-  if (fallback.currentQuestion === "tone" || fallback.missingFields.includes("tone")) return false;
   if (/^\d{1,4}$/.test(cleaned)) return true;
   if (
     /^(yes|yep|yeah|sure|no|nope|skip|skip it|not needed|no rsvp|no rsvps|collect rsvps?|track rsvps?)$/i.test(
@@ -96,29 +99,27 @@ function messageCannotAnswerVisualDirection(message: string, fallback: Concierge
   ) {
     return true;
   }
-  if (fallback.currentQuestion === "numberOfGuests" || fallback.currentQuestion === "rsvpEnabled") {
-    return true;
-  }
+  // The fallback already points at the NEXT question. It cannot tell us what
+  // the current message answered; a complete brief often advances to guest count.
+  if (/^(?:about\s+)?\d{1,4}\s*(?:guests?|kids?|people|attendees)$/i.test(cleaned)) return true;
   return false;
 }
 
 function normalizeAiVisualDirection(
   value: string | null,
-  fallback: ConciergeEventDraft,
   message: string,
 ) {
   if (!value) return null;
-  if (messageCannotAnswerVisualDirection(message, fallback)) return null;
+  if (messageCannotAnswerVisualDirection(message)) return null;
   return value;
 }
 
 function mergeVisualDirection(
   value: string | null,
   fallbackValue: string | null | undefined,
-  fallback: ConciergeEventDraft,
   message: string,
 ) {
-  const normalized = normalizeAiVisualDirection(value, fallback, message);
+  const normalized = normalizeAiVisualDirection(value, message);
   const fallbackDirection = cleanString(fallbackValue);
   if (!normalized) return fallbackDirection;
   if (!fallbackDirection) return normalized;
@@ -419,13 +420,11 @@ export function normalizeConciergeDraft(
   const theme = mergeVisualDirection(
     firstDraftString(record.theme, eventData.theme),
     fallback.theme,
-    fallback,
     message,
   );
   const tone = mergeVisualDirection(
     firstDraftString(record.tone, eventData.tone),
     fallback.tone,
-    fallback,
     message,
   );
   const rsvpRecord =

@@ -1,7 +1,7 @@
 import { parseCalendarDateTimeToIso } from "./calendar-date-time";
 import { getTemplateCategory, type TemplateCategory } from "./template-categories";
-import type { EditorSnapshot } from "./template-draft-storage";
 import type { TemplateHistoryPayload } from "./template-draft-handoff";
+import type { EditorSnapshot } from "./template-draft-storage";
 
 /** Incomplete drafts retain their fields without inventing missing event times. */
 export function buildTemplateDraftPayload(
@@ -33,8 +33,15 @@ export function buildTemplateDraftPayload(
   return {
     title,
     data: {
-      ...data,
-      ...(category === "signup-forms" ? { signupForm: data } : {}),
+      ...(category === "signup-forms"
+        ? {
+            signupForm: { ...data, timezone },
+            venue: data.venue,
+            location: data.location,
+            description: data.description,
+            allDay: data.allDay,
+          }
+        : data),
       title,
       category: info.historyCategory,
       startAt: start,

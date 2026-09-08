@@ -138,33 +138,33 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
   assert.match(pageSource, /buildOwnerPreviewSearch\(returnHref\)/);
   assert.match(sharedPageSource, /returnHref\?: string \| null;/);
   assert.match(sharedPageSource, /aria-label="Close preview"/);
-  assert.match(sharedPageSource, /inline-flex h-12 w-12 items-center justify-center rounded-full/);
-  assert.match(sharedPageSource, /absolute right-3 top-5/);
-  assert.match(sharedPageSource, /max-md:h-\[100dvh\]/);
-  assert.match(sharedPageSource, /max-md:!h-auto max-md:!w-full max-md:flex-1/);
+  assert.match(sharedPageSource, /inline-flex min-h-11 items-center gap-2 rounded-full/);
+  assert.match(sharedPageSource, /placement="overlay"/);
+  assert.doesNotMatch(sharedPageSource, /max-md:h-\[100dvh\]/);
+  assert.match(sharedPageSource, /max-md:!w-full !rounded/);
   assert.match(sharedPageSource, /onClose=\{handleClose\}/);
   assert.doesNotMatch(sharedPageSource, /Back to dashboard/);
   assert.match(sharedPageSource, /export function SharedStudioCardFrame/);
-  assert.match(sharedPageSource, /relative flex min-h-\[100dvh\] w-full flex-col bg-neutral-950/);
+  assert.match(sharedPageSource, /usesPosterArtFrame \? "bg-slate-50" : "bg-neutral-950"/);
   assert.match(sharedPageSource, /<main className="relative z-0 flex min-h-0 flex-1 flex-col">/);
   assert.match(
     sharedPageSource,
     /const usesPosterArtFrame = invitationData\?\.heroTextMode === "image";/,
   );
   assert.match(sharedPageSource, /\* 2 \/ 3\)\)"/);
-  assert.match(sharedPageSource, /usesPosterArtFrame \? "aspect-\[2\/3\]" : "aspect-\[9\/16\]"/);
+  assert.match(sharedPageSource, /usesPosterArtFrame \? "aspect-\[2\/3\] overflow-hidden rounded/);
   assert.match(
     sharedPageSource,
     /style=\{\{ width: props\.style\?\.width \? undefined : cardFrameWidth \}\}/,
   );
   assert.match(
     sharedPageSource,
-    /className="absolute inset-0 h-full w-full object-cover object-center"/,
+    /usesPosterArtFrame \? "object-contain" : "object-cover"/,
   );
   assert.match(sharedPageSource, /LiveCardHeroTextOverlay/);
   assert.match(
     surfaceSource,
-    /absolute bottom-32 left-1\/2 z-50 w-\[calc\(100%-1rem\)\] max-w-\[22rem\] -translate-x-1\/2/,
+    /props\.previewMode \|\| actionsBelow/,
   );
   assert.match(surfaceSource, /pointer-events-none absolute inset-0 flex flex-col[\s\S]*md:p-8/);
   assert.match(
@@ -190,7 +190,7 @@ test("shared card route and page preserve overlay hero text mode for live cards"
   assert.match(sharedPageSource, /<LiveCardHeroTextOverlay invitationData=\{invitationData\} \/>/);
 });
 
-test("poster-first shared cards keep floating controls with overlay studio credit", () => {
+test("poster guest controls overlay artwork while creator attribution stays outside", () => {
   const sharedPageSource = readSource("src/components/studio/SharedStudioCardPage.tsx");
   const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
 
@@ -211,7 +211,9 @@ test("poster-first shared cards keep floating controls with overlay studio credi
     surfaceSource,
     /max-md:min-h-\[min\(14svh,4rem\)\] min-h-\[min\(8svh,2\.4rem\)\] md:min-h-\[min\(6svh,2rem\)\]/,
   );
-  assert.match(sharedPageSource, /<div className="shrink-0 px-4 py-3 text-center">/);
+  assert.match(sharedPageSource, /Created by Envitefy Concierge/);
+  assert.match(surfaceSource, /data-live-card-actions-placement/);
+  assert.match(surfaceSource, /actionsBelow \? "hidden" : posterFirstHeroCard/);
   assert.doesNotMatch(
     sharedPageSource,
     /absolute right-4 top-\[max\(0\.75rem,env\(safe-area-inset-top\)\)\] z-30/,

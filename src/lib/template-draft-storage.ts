@@ -16,6 +16,7 @@ export type TemplateDraft = {
   snapshot: EditorSnapshot;
   assets: Record<string, Blob>;
   eventId?: string;
+  signupRevision?: number;
   pendingSave?: boolean;
 };
 

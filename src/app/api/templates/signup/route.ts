@@ -4,8 +4,8 @@ import { NextRequest } from "next/server";
 export const runtime = "edge";
 
 const THEME_FOLDER_MAP: Record<string, string> = {
-  "Spring": "spring",
-  "Summer": "summer",
+  Spring: "spring",
+  Summer: "summer",
   "School & Education": "school-and-education",
   "Fall & Seasonal": "fall-and-seasonal",
   "Church & Community": "church-and-community",
@@ -16,11 +16,11 @@ const THEME_FOLDER_MAP: Record<string, string> = {
   "Parties & Events": "parties-and-events",
   "Health & Fitness": "health-and-fitness",
   "Clubs & Groups": "clubs-and-groups",
-  "General": "general",
+  General: "general",
   "Other / Special Interest": "other-special-interest",
 };
 
-type ManifestEntry = { name: string; tier: string; path: string };
+type ManifestEntry = { name: string; tier: string; path: string; artworkPath?: string };
 type Manifest = Record<string, ManifestEntry[]>;
 
 function slug(s: string): string {
@@ -56,24 +56,18 @@ export async function GET(req: NextRequest) {
 
     const categorySlug = slug(category);
     const mappedFolder = THEME_FOLDER_MAP[category] ?? category;
-    const candidates = [
-      category,
-      mappedFolder,
-      categorySlug,
-      slug(mappedFolder),
-      ...Object.keys(manifest),
-    ];
+    const candidates = [category, mappedFolder, categorySlug, slug(mappedFolder)];
 
     let images: string[] | null = null;
     for (const cand of candidates) {
       const entry = manifest[cand];
       if (Array.isArray(entry) && entry.length > 0) {
-        images = entry.map((e) => e.path);
+        images = entry.map((e) => e.artworkPath || e.path);
         break;
       }
       const bySlug = Object.keys(manifest).find((k) => slug(k) === slug(cand));
       if (bySlug && Array.isArray(manifest[bySlug])) {
-        images = manifest[bySlug].map((e) => e.path);
+        images = manifest[bySlug].map((e) => e.artworkPath || e.path);
         break;
       }
     }

@@ -1,3 +1,5 @@
+import { updateSignupDefinition, SignupMutationError } from "@/lib/signup-mutations";
+import { isEventDraft } from "@/lib/event-draft-access";
 import { isClientDraftId } from "@/lib/event-draft-access";
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
@@ -11,7 +13,7 @@ import {
   listDashboardHistoryWindowForUser,
   listHistoryForUser,
   listSidebarHistoryForUserFast,
-  upsertSignupForm,
+  mutateSignupEvent,
 } from "@/lib/db";
 import { normalizeAccessControlPayload } from "@/lib/event-access";
 import { findTransientEventMedia } from "@/lib/event-media";
@@ -369,6 +371,10 @@ export async function POST(req: Request) {
         payloadBytes: dataPayloadBytes,
       });
     }
+    if (data?.signupForm) {
+      try { data.signupForm = updateSignupDefinition(null, data.signupForm, isEventDraft(data)); }
+      catch (error) { if (error instanceof SignupMutationError) return NextResponse.json({ error: error.message }, { status: error.status }); throw error; }
+    }
     const row = await insertEventHistory({ userId, title, data, clientDraftId: body.clientDraftId });
 
     if (scanAttemptId) {
@@ -403,7 +409,7 @@ export async function POST(req: Request) {
         Array.isArray((sf as any).sections) &&
         typeof (sf as any).version === "number"
       ) {
-        await upsertSignupForm(row.id, sf);
+        await mutateSignupEvent(row.id, latest => ({ data: latest.data || {}, result: null }));
       }
     } catch {}
     if (HISTORY_DEBUG) {

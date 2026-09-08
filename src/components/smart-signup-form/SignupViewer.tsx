@@ -1,10 +1,15 @@
 "use client";
 
-import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
-import React, { useEffect, useMemo, useRef, useState, FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import EventDeleteModal from "@/components/EventDeleteModal";
+import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
+import { signupResponsesCsv } from "@/lib/signup-export";
+import { resolveSignupThemeStyle } from "@/lib/signup-themes";
+import { signupWindowMessage } from "@/lib/signup-validation";
 import type { SignupForm, SignupResponse } from "@/types/signup";
+import { resolveEditHref } from "@/utils/event-edit-route";
 import {
   countConfirmedForSlot,
   countWaitlistedForSlot,
@@ -13,8 +18,7 @@ import {
   normalizeSignupQuantity,
   remainingCapacityForSlot,
 } from "@/utils/signup";
-import Link from "next/link";
-import { resolveEditHref } from "@/utils/event-edit-route";
+import themeStyles from "./signup-theme.module.css";
 
 type ViewerKind = "owner" | "guest" | "readonly";
 
@@ -51,8 +55,7 @@ type SignupApiResponse = {
 
 type SlotSelectionMap = Record<string, number>;
 
-const slotKey = (sectionId: string, slotId: string) =>
-  `${sectionId}::${slotId}`;
+const slotKey = (sectionId: string, slotId: string) => `${sectionId}::${slotId}`;
 
 const formatTime = (value?: string | null): string | null => {
   if (!value) return null;
@@ -66,10 +69,7 @@ const formatTime = (value?: string | null): string | null => {
   return `${normalizedHour}:${paddedMinute} ${suffix}`;
 };
 
-const formatSlotRange = (
-  start?: string | null,
-  end?: string | null
-): string | null => {
+const formatSlotRange = (start?: string | null, end?: string | null): string | null => {
   const startLabel = formatTime(start);
   const endLabel = formatTime(end);
   if (startLabel && endLabel) return `${startLabel} – ${endLabel}`;
@@ -92,25 +92,18 @@ const formatUsDateTime = (value?: string | null): string => {
   });
 };
 
-const summarizeResponseSlots = (
-  form: SignupForm,
-  response: SignupResponse
-): string => {
+const summarizeResponseSlots = (form: SignupForm, response: SignupResponse): string => {
   const entries: string[] = [];
   for (const selection of response.slots || []) {
-    const section = form.sections.find(
-      (candidate) => candidate.id === selection.sectionId
-    );
-    const slot = section?.slots.find(
-      (candidate) => candidate.id === selection.slotId
-    );
+    const section = form.sections.find((candidate) => candidate.id === selection.sectionId);
+    const slot = section?.slots.find((candidate) => candidate.id === selection.slotId);
     if (!section || !slot) continue;
     const quantity = normalizeSignupQuantity(selection.quantity ?? 1);
     const range = formatSlotRange(slot.startTime, slot.endTime);
     entries.push(
       `${section.title}: ${slot.label}${quantity > 1 ? ` ×${quantity}` : ""}${
         range ? ` (${range})` : ""
-      }`
+      }`,
     );
   }
   return entries.join("; ");
@@ -156,13 +149,13 @@ const SignupViewer: React.FC<Props> = ({
   ownerEventData,
 }) => {
   const router = useRouter();
+  const SlotControl = eventId === "preview" ? "span" : "button";
   const [form, setForm] = useState<SignupForm>(initialForm);
   const [selectedSlots, setSelectedSlots] = useState<SlotSelectionMap>({});
   const [name, setName] = useState<string>(
-    (initialForm.responses.find((response) => response.userId === viewerId)
-      ?.name ||
+    (initialForm.responses.find((response) => response.userId === viewerId)?.name ||
       viewerName ||
-      "") as string
+      "") as string,
   );
   const [email, setEmail] = useState<string>(viewerEmail || "");
   const [phone, setPhone] = useState<string>("");
@@ -174,45 +167,58 @@ const SignupViewer: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
-  const [editingResponse, setEditingResponse] = useState<SignupResponse | null>(
-    null
-  );
-  const [removingResponseId, setRemovingResponseId] = useState<string | null>(
-    null
-  );
+  const [editingResponse, setEditingResponse] = useState<SignupResponse | null>(null);
+  const [removingResponseId, setRemovingResponseId] = useState<string | null>(null);
 
   const feedback = useStatusMessage(serverMessage, 4000);
-  const canInteract = viewerKind !== "readonly";
+  const windowMessage = signupWindowMessage(form);
+  const canInteract = viewerKind !== "readonly" && !windowMessage;
+  useEffect(() => {
+    setForm(initialForm);
+  }, [initialForm]);
+  const [refreshing, setRefreshing] = useState(false);
+  const refresh = async () => {
+    setRefreshing(true);
+    try {
+      const result = await fetch(`/api/history/${eventId}/signup`, { cache: "no-store" });
+      const data: SignupApiResponse = await result.json();
+      if (!result.ok || !data.signupForm)
+        throw new Error(data.error || "Unable to refresh availability.");
+      setForm(data.signupForm);
+      setServerMessage("Availability updated.");
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Unable to refresh availability.");
+    } finally {
+      setRefreshing(false);
+    }
+  };
   const maxGuests = form.settings.maxGuestsPerSignup || 1;
 
   // Board-level capacity: total, filled (confirmed), remaining
-  const { totalCapacity, filledCount, remainingCount, hasUnlimited } =
-    useMemo(() => {
-      let total = 0;
-      let filled = 0;
-      let unlimited = false;
-      for (const section of form.sections) {
-        for (const slot of section.slots) {
-          const capacity = getSlotCapacity(slot);
-          const confirmed = countConfirmedForSlot(form, section.id, slot.id);
-          filled += confirmed;
-          if (capacity === null) {
-            unlimited = true;
-          } else {
-            total += capacity;
-          }
+  const { totalCapacity, filledCount, remainingCount, hasUnlimited } = useMemo(() => {
+    let total = 0;
+    let filled = 0;
+    let unlimited = false;
+    for (const section of form.sections) {
+      for (const slot of section.slots) {
+        const capacity = getSlotCapacity(slot);
+        const confirmed = countConfirmedForSlot(form, section.id, slot.id);
+        filled += confirmed;
+        if (capacity === null) {
+          unlimited = true;
+        } else {
+          total += capacity;
         }
       }
-      const remaining = unlimited
-        ? Number.POSITIVE_INFINITY
-        : Math.max(0, total - filled);
-      return {
-        totalCapacity: total,
-        filledCount: filled,
-        remainingCount: remaining,
-        hasUnlimited: unlimited,
-      };
-    }, [form]);
+    }
+    const remaining = unlimited ? Number.POSITIVE_INFINITY : Math.max(0, total - filled);
+    return {
+      totalCapacity: total,
+      filledCount: filled,
+      remainingCount: remaining,
+      hasUnlimited: unlimited,
+    };
+  }, [form]);
 
   const myResponse = useMemo(
     () =>
@@ -220,9 +226,9 @@ const SignupViewer: React.FC<Props> = ({
         form,
         viewerId || undefined,
         viewerEmail || undefined,
-        undefined // phone not available in viewer props initially
+        undefined, // phone not available in viewer props initially
       ),
-    [form, viewerId, viewerEmail]
+    [form, viewerId, viewerEmail],
   );
 
   const lastResponseId = useRef<string | null | undefined>(undefined);
@@ -249,8 +255,9 @@ const SignupViewer: React.FC<Props> = ({
 
     const slotSelections: SlotSelectionMap = {};
     for (const selection of myResponse.slots || []) {
-      slotSelections[slotKey(selection.sectionId, selection.slotId)] =
-        normalizeSignupQuantity(selection.quantity ?? 1);
+      slotSelections[slotKey(selection.sectionId, selection.slotId)] = normalizeSignupQuantity(
+        selection.quantity ?? 1,
+      );
     }
     setSelectedSlots(slotSelections);
     setName(myResponse.name || viewerName || "");
@@ -348,10 +355,7 @@ const SignupViewer: React.FC<Props> = ({
     if (!canInteract || loading) return;
     setSelectedSlots((prev) => ({
       ...prev,
-      [key]: Math.max(
-        1,
-        Math.min(maxGuests, normalizeSignupQuantity(quantity))
-      ),
+      [key]: Math.max(1, Math.min(maxGuests, normalizeSignupQuantity(quantity))),
     }));
   };
 
@@ -387,12 +391,10 @@ const SignupViewer: React.FC<Props> = ({
       }
     }
 
-    const slotsPayload = Object.entries(selectedSlots).map(
-      ([key, quantity]) => {
-        const [sectionId, slotId] = key.split("::");
-        return { sectionId, slotId, quantity };
-      }
-    );
+    const slotsPayload = Object.entries(selectedSlots).map(([key, quantity]) => {
+      const [sectionId, slotId] = key.split("::");
+      return { sectionId, slotId, quantity };
+    });
 
     const answersPayload = form.questions
       .map((question) => ({
@@ -409,10 +411,8 @@ const SignupViewer: React.FC<Props> = ({
     if (note.trim()) payload.note = note.trim();
     if (guests > 0) payload.guests = guests;
     if (answersPayload.length > 0) payload.answers = answersPayload;
-    if (form.settings.collectEmail && email.trim())
-      payload.email = email.trim();
-    if (form.settings.collectPhone && phone.trim())
-      payload.phone = phone.trim();
+    if (form.settings.collectEmail && email.trim()) payload.email = email.trim();
+    if (form.settings.collectPhone && phone.trim()) payload.phone = phone.trim();
     if (myResponse?.id) payload.signupId = myResponse.id;
 
     setLoading(true);
@@ -424,8 +424,7 @@ const SignupViewer: React.FC<Props> = ({
       });
       const data = (await res.json().catch(() => ({}))) as SignupApiResponse;
       if (!res.ok || !data?.signupForm) {
-        const errorMessage =
-          (data?.error) || "Could not save your sign-up. Try again.";
+        const errorMessage = data?.error || "Could not save your sign-up. Try again.";
         setError(errorMessage);
         setErrorOpen(true);
         return;
@@ -437,10 +436,10 @@ const SignupViewer: React.FC<Props> = ({
           : (data?.response?.status as string | undefined);
       if (status === "waitlisted") {
         setServerMessage(
-          "You're on the waitlist. We'll promote you automatically if spots open up."
+          "You're on the waitlist. We'll promote you automatically if spots open up.",
         );
       } else {
-        setServerMessage("Saved! We'll send reminders before the event.");
+        setServerMessage("Your signup is confirmed. Your selected slots are saved below.");
       }
       setConfirmOpen(true);
     } catch (err: unknown) {
@@ -466,9 +465,7 @@ const SignupViewer: React.FC<Props> = ({
       });
       const data = (await res.json().catch(() => ({}))) as SignupApiResponse;
       if (!res.ok || !data?.signupForm) {
-        setError(
-          (data?.error) || "Couldn't cancel. Try again or refresh."
-        );
+        setError(data?.error || "Couldn't cancel. Try again or refresh.");
         return;
       }
       setForm(data.signupForm);
@@ -498,7 +495,7 @@ const SignupViewer: React.FC<Props> = ({
       });
       const data = (await res.json().catch(() => ({}))) as SignupApiResponse;
       if (!res.ok || !data?.signupForm) {
-        setError((data?.error) || "Couldn't remove sign-up. Try again.");
+        setError(data?.error || "Couldn't remove sign-up. Try again.");
         setErrorOpen(true);
         return;
       }
@@ -536,12 +533,10 @@ const SignupViewer: React.FC<Props> = ({
   const handleSaveEdit = async () => {
     if (!editingResponse || loading) return;
 
-    const slotsPayload = Object.entries(selectedSlots).map(
-      ([key, quantity]) => {
-        const [sectionId, slotId] = key.split("::");
-        return { sectionId, slotId, quantity };
-      }
-    );
+    const slotsPayload = Object.entries(selectedSlots).map(([key, quantity]) => {
+      const [sectionId, slotId] = key.split("::");
+      return { sectionId, slotId, quantity };
+    });
 
     if (slotsPayload.length === 0) {
       setError("Select at least one slot.");
@@ -565,10 +560,8 @@ const SignupViewer: React.FC<Props> = ({
     if (note.trim()) payload.note = note.trim();
     if (guests > 0) payload.guests = guests;
     if (answersPayload.length > 0) payload.answers = answersPayload;
-    if (form.settings.collectEmail && email.trim())
-      payload.email = email.trim();
-    if (form.settings.collectPhone && phone.trim())
-      payload.phone = phone.trim();
+    if (form.settings.collectEmail && email.trim()) payload.email = email.trim();
+    if (form.settings.collectPhone && phone.trim()) payload.phone = phone.trim();
 
     setLoading(true);
     setError(null);
@@ -580,8 +573,7 @@ const SignupViewer: React.FC<Props> = ({
       });
       const data = (await res.json().catch(() => ({}))) as SignupApiResponse;
       if (!res.ok || !data?.signupForm) {
-        const errorMessage =
-          (data?.error) || "Could not update sign-up. Try again.";
+        const errorMessage = data?.error || "Could not update sign-up. Try again.";
         setError(errorMessage);
         setErrorOpen(true);
         return;
@@ -606,34 +598,74 @@ const SignupViewer: React.FC<Props> = ({
     }
   };
 
+  const [participantSearch, setParticipantSearch] = useState("");
+  const visibleResponses = useMemo(
+    () =>
+      form.responses.filter(
+        (response) =>
+          !participantSearch.trim() ||
+          `${response.name} ${response.email || ""} ${summarizeResponseSlots(form, response)}`
+            .toLowerCase()
+            .includes(participantSearch.trim().toLowerCase()),
+      ),
+    [form, participantSearch],
+  );
+  const exportCsv = () => {
+    const url = URL.createObjectURL(
+      new Blob([signupResponsesCsv(form)], { type: "text/csv;charset=utf-8" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "signup-responses.csv";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const setOpen = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await fetch(`/api/history/${eventId}/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "set-open", enabled: !form.enabled }),
+      });
+      const data: SignupApiResponse = await result.json();
+      if (!result.ok || !data.signupForm)
+        throw new Error(data.error || "Unable to update this signup.");
+      setForm(data.signupForm);
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Unable to update this signup.");
+    } finally {
+      setLoading(false);
+    }
+  };
   const confirmedResponses = useMemo(
-    () => form.responses.filter((response) => response.status === "confirmed"),
-    [form.responses]
+    () => visibleResponses.filter((response) => response.status === "confirmed"),
+    [visibleResponses],
   );
   const waitlistedResponses = useMemo(
-    () => form.responses.filter((response) => response.status === "waitlisted"),
-    [form.responses]
+    () => visibleResponses.filter((response) => response.status === "waitlisted"),
+    [visibleResponses],
   );
   const cancelledResponses = useMemo(
-    () => form.responses.filter((response) => response.status === "cancelled"),
-    [form.responses]
+    () => visibleResponses.filter((response) => response.status === "cancelled"),
+    [visibleResponses],
   );
 
   if (!form.sections.length) return null;
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-5 shadow-sm">
+    <section
+      style={resolveSignupThemeStyle(form)}
+      className={`${themeStyles.board} rounded-2xl border border-[var(--signup-border)] bg-[var(--signup-surface)] p-5 sm:p-6 space-y-5 shadow-sm`}
+    >
       <header className="space-y-2">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-xl font-bold text-gray-900">Sign-up board</h2>
+          <h2 className="text-xl font-bold text-[var(--signup-text)]">Sign-up board</h2>
           {viewerKind === "owner" && ownerEventData && (
             <div className="flex items-center gap-2 text-sm font-medium">
               <Link
-                href={resolveEditHref(
-                  eventId,
-                  ownerEventData,
-                  ownerEventTitle || "Event"
-                )}
+                href={resolveEditHref(eventId, ownerEventData, ownerEventTitle || "Event")}
                 className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
                 title="Edit event"
               >
@@ -658,32 +690,27 @@ const SignupViewer: React.FC<Props> = ({
                   try {
                     const originalTitle = ownerEventTitle || "Smart sign-up";
                     const dataCopy: any = { ...(ownerEventData || {}) };
-                    if (
-                      dataCopy.signupForm &&
-                      typeof dataCopy.signupForm === "object"
-                    ) {
-                      dataCopy.signupForm = {
-                        ...dataCopy.signupForm,
-                        title: `Copy of ${
-                          dataCopy.signupForm.title || originalTitle
-                        }`,
-                        responses: [],
-                      };
-                    }
+                    dataCopy.signupForm = {
+                      ...form,
+                      responses: [],
+                      revision: 0,
+                      availability: undefined,
+                    };
                     if (dataCopy.shared) delete dataCopy.shared;
                     if (dataCopy.sharedOut) delete dataCopy.sharedOut;
-                    try {
-                      sessionStorage.setItem(
-                        "snapmydate:signup-duplicate",
-                        JSON.stringify({ originalTitle, dataCopy })
-                      );
-                    } catch {}
+                    sessionStorage.setItem(
+                      "snapmydate:signup-duplicate",
+                      JSON.stringify({ originalTitle, dataCopy }),
+                    );
                     router.push(`/smart-signup-form?duplicate=1`);
-                  } catch (err: any) {
-                    alert(String(err?.message || err || "Could not duplicate"));
+                  } catch {
+                    setError(
+                      "This browser could not retain the copy. Free some browser storage and try again.",
+                    );
+                    setErrorOpen(true);
                   }
                 }}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-[var(--signup-muted)] hover:text-[var(--signup-text)] hover:bg-[var(--signup-page)] rounded-lg transition-colors"
                 title="Duplicate form"
               >
                 <svg
@@ -701,16 +728,12 @@ const SignupViewer: React.FC<Props> = ({
                 </svg>
                 <span className="hidden sm:inline">Duplicate</span>
               </button>
-              <EventDeleteModal
-                eventId={eventId}
-                eventTitle={ownerEventTitle || "Event"}
-              />
+              <EventDeleteModal eventId={eventId} eventTitle={ownerEventTitle || "Event"} />
             </div>
           )}
         </div>
-        <p className="text-sm text-gray-600">
-          Claim a spot, bring supplies, or volunteer for a role. Slots update in
-          real time for everyone invited.
+        <p className="text-sm text-[var(--signup-muted)]">
+          Choose what you can bring or how you can help. Every contribution counts.
         </p>
       </header>
       <EventGuestPlanningNotes value={form.guestPlanning} />
@@ -721,13 +744,16 @@ const SignupViewer: React.FC<Props> = ({
         </div>
       )}
       {error && (
-        <div className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-600">
+        <div
+          role="alert"
+          className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-600"
+        >
           {error}
         </div>
       )}
 
       {editingResponse && (
-        <div className="rounded-md border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-sm text-blue-600 mb-4">
+        <div className="rounded-md border border-[var(--signup-accent)]/40 bg-blue-500/10 px-3 py-2 text-sm text-blue-600 mb-4">
           <div className="flex items-center justify-between">
             <span>
               Editing sign-up for <strong>{editingResponse.name}</strong>
@@ -752,87 +778,96 @@ const SignupViewer: React.FC<Props> = ({
         </div>
       )}
 
+      {eventId !== "preview" && (
+        <button
+          type="button"
+          onClick={refresh}
+          disabled={refreshing || loading}
+          className="text-sm underline text-[var(--signup-accent)]"
+        >
+          {refreshing ? "Refreshing…" : "Refresh availability"}
+        </button>
+      )}
+      {windowMessage && (
+        <p
+          role="status"
+          className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+        >
+          {windowMessage}
+        </p>
+      )}
+      {viewerKind === "readonly" && eventId !== "preview" && (
+        <p className="rounded-xl border border-[var(--signup-border)] p-4 text-sm">
+          Invited guests can{" "}
+          <Link
+            className="underline"
+            href={`/api/auth/signin?callbackUrl=${encodeURIComponent(`/smart-signup-form/${eventId}`)}`}
+          >
+            sign in
+          </Link>{" "}
+          to claim a slot after accepting their invitation.
+        </p>
+      )}
       <div className="space-y-5">
         {form.sections.map((section) => (
           <div key={section.id} className="space-y-3">
             <div>
-              <h3 className="text-base font-semibold text-gray-900">
-                {section.title}
-              </h3>
+              <h3 className="text-base font-semibold text-[var(--signup-text)]">{section.title}</h3>
               {section.description && (
-                <p className="text-sm text-gray-600 mt-1">
-                  {section.description}
-                </p>
+                <p className="text-sm text-[var(--signup-muted)] mt-1">{section.description}</p>
               )}
             </div>
-            <div className="space-y-3">
+            <div data-signup-slots data-layout={form.appearance?.slotLayout || "rows"}>
               {section.slots.map((slot) => {
                 const key = slotKey(section.id, slot.id);
                 const isSelected = Boolean(selectedSlots[key]);
                 const capacity = getSlotCapacity(slot);
-                const confirmed = countConfirmedForSlot(
-                  form,
-                  section.id,
-                  slot.id
-                );
-                const waitlisted = countWaitlistedForSlot(
-                  form,
-                  section.id,
-                  slot.id
-                );
+                const confirmed = countConfirmedForSlot(form, section.id, slot.id);
+                const waitlisted = countWaitlistedForSlot(form, section.id, slot.id);
                 const remaining = remainingCapacityForSlot(
                   form,
                   section.id,
                   slot.id,
-                  myResponse?.id
+                  myResponse?.id,
                 );
                 const range = formatSlotRange(slot.startTime, slot.endTime);
                 const selectedQuantity = selectedSlots[key] || 1;
-                const isFull =
-                  typeof capacity === "number" ? confirmed >= capacity : false;
+                const isFull = typeof capacity === "number" ? confirmed >= capacity : false;
 
                 return (
                   <div
                     key={slot.id}
+                    data-signup-slot
                     className={`rounded-xl border px-4 py-3.5 transition ${
                       isSelected
-                        ? "border-blue-300 bg-blue-50/50 shadow-sm"
-                        : "border-gray-200 bg-gray-50/50"
+                        ? "border-[var(--signup-accent)] bg-[var(--signup-soft)] shadow-sm"
+                        : "border-[var(--signup-border)] bg-[var(--signup-page)]"
                     }`}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="space-y-1.5">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-[var(--signup-text)]">
                           {slot.label}
                         </div>
-                        {range && (
-                          <div className="text-xs text-gray-600">{range}</div>
-                        )}
+                        {range && <div className="text-xs text-[var(--signup-muted)]">{range}</div>}
                         {slot.notes && (
-                          <div className="text-xs text-gray-600">
-                            {slot.notes}
-                          </div>
+                          <div className="text-xs text-[var(--signup-muted)]">{slot.notes}</div>
                         )}
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
-                          {typeof capacity === "number" ? (
-                            <span>
-                              {confirmed}/{capacity} claimed
-                              {remaining !== null && remaining >= 0
-                                ? ` · ${remaining} open`
-                                : ""}
-                            </span>
-                          ) : (
-                            <span>Unlimited capacity</span>
-                          )}
-                          {waitlisted > 0 && (
-                            <span>· Waitlist {waitlisted}</span>
-                          )}
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--signup-muted)]">
+                          {form.settings.showRemainingSpots &&
+                            (typeof capacity === "number" ? (
+                              <span>
+                                {confirmed}/{capacity} claimed
+                                {remaining !== null && remaining >= 0 ? ` · ${remaining} open` : ""}
+                              </span>
+                            ) : (
+                              <span>Unlimited capacity</span>
+                            ))}
+                          {waitlisted > 0 && <span>· Waitlist {waitlisted}</span>}
                           {myResponse?.slots?.some(
-                            (entry) =>
-                              entry.sectionId === section.id &&
-                              entry.slotId === slot.id
+                            (entry) => entry.sectionId === section.id && entry.slotId === slot.id,
                           ) && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--signup-soft)] px-2.5 py-0.5 text-xs font-medium text-[var(--signup-accent)]">
                               You&apos;re signed up
                             </span>
                           )}
@@ -853,25 +888,38 @@ const SignupViewer: React.FC<Props> = ({
                             onChange={(event) =>
                               handleQuantityChange(
                                 key,
-                                Number.parseInt(event.target.value, 10) || 1
+                                Number.parseInt(event.target.value, 10) || 1,
                               )
                             }
-                            className="w-16 rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            aria-label={`Quantity for ${slot.label}`}
+                            className="w-16 rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-2 py-1.5 text-sm text-[var(--signup-text)] transition focus:border-[var(--signup-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--signup-focus)]"
                             disabled={!canInteract || loading}
                           />
                         )}
-                        <button
+                        <SlotControl
                           type="button"
                           className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
                             isSelected
-                              ? "border-blue-500 bg-blue-500 text-white shadow-sm hover:bg-blue-600"
-                              : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                              ? "border-[var(--signup-accent)] bg-[var(--signup-accent)] text-[var(--signup-on-accent)] shadow-sm hover:opacity-90"
+                              : "border-[var(--signup-border)] bg-[var(--signup-surface)] text-[var(--signup-text)] hover:bg-[var(--signup-page)]"
                           }`}
                           onClick={() => handleToggleSlot(section.id, slot.id)}
-                          disabled={!canInteract || loading}
+                          aria-label={`${isSelected ? "Deselect" : "Select"} ${slot.label}`}
+                          aria-pressed={isSelected}
+                          disabled={
+                            !canInteract ||
+                            loading ||
+                            (!isSelected && remaining === 0 && !form.settings.waitlistEnabled)
+                          }
                         >
-                          {isSelected ? "Remove" : "Select"}
-                        </button>
+                          {isSelected
+                            ? "Selected ✓"
+                            : remaining === 0
+                              ? form.settings.waitlistEnabled
+                                ? "Join waitlist"
+                                : "Full"
+                              : "Select"}
+                        </SlotControl>
                       </div>
                     </div>
                   </div>
@@ -898,59 +946,63 @@ const SignupViewer: React.FC<Props> = ({
             Object.keys(selectedSlots).length > 0 ||
             myResponse ||
             editingResponse) && (
-            <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-5 space-y-4">
-              <h3 className="text-base font-semibold text-gray-900">
-                Your details
-              </h3>
+            <div className="rounded-xl border border-[var(--signup-border)] bg-[var(--signup-page)] p-5 space-y-4">
+              <h3 className="text-base font-semibold text-[var(--signup-text)]">Your details</h3>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[var(--signup-text)] mb-2">
                     Name
                   </label>
                   <input
+                    aria-label="Your name"
+                    autoComplete="name"
                     type="text"
                     value={name}
                     onChange={(event) => setName(event.target.value)}
-                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-4 py-2.5 text-sm text-[var(--signup-text)] placeholder:text-gray-400 transition focus:border-[var(--signup-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--signup-focus)]"
                     disabled={loading}
                   />
                 </div>
                 {form.settings.collectEmail && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-[var(--signup-text)] mb-2">
                       Email for reminders
                     </label>
                     <input
+                      aria-label="Email address"
                       name="email"
                       type="email"
                       autoComplete="email"
                       value={email}
                       onChange={(event) => setEmail(event.target.value)}
-                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="w-full rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-4 py-2.5 text-sm text-[var(--signup-text)] placeholder:text-gray-400 transition focus:border-[var(--signup-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--signup-focus)]"
                       disabled={loading}
                     />
                   </div>
                 )}
                 {form.settings.collectPhone && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-[var(--signup-text)] mb-2">
                       Mobile number
                     </label>
                     <input
+                      aria-label="Mobile number"
+                      autoComplete="tel"
                       type="tel"
                       value={phone}
                       onChange={(event) => setPhone(event.target.value)}
-                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="w-full rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-4 py-2.5 text-sm text-[var(--signup-text)] placeholder:text-gray-400 transition focus:border-[var(--signup-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--signup-focus)]"
                       disabled={loading}
                     />
                   </div>
                 )}
                 {maxGuests > 1 && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-[var(--signup-text)] mb-2">
                       Extra guests (for headcount)
                     </label>
                     <input
+                      aria-label="Extra guests"
                       type="number"
                       min={0}
                       max={maxGuests}
@@ -959,14 +1011,11 @@ const SignupViewer: React.FC<Props> = ({
                         setGuests(
                           Math.max(
                             0,
-                            Math.min(
-                              maxGuests,
-                              Number.parseInt(event.target.value, 10) || 0
-                            )
-                          )
+                            Math.min(maxGuests, Number.parseInt(event.target.value, 10) || 0),
+                          ),
                         )
                       }
-                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="w-full rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-4 py-2.5 text-sm text-[var(--signup-text)] placeholder:text-gray-400 transition focus:border-[var(--signup-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--signup-focus)]"
                       disabled={loading}
                     />
                   </div>
@@ -979,14 +1028,14 @@ const SignupViewer: React.FC<Props> = ({
                     const value = answers[question.id] || "";
                     return (
                       <div key={question.id}>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-[var(--signup-text)] mb-2">
                           {question.prompt}
-                          {question.required && (
-                            <span className="ml-1 text-red-500">*</span>
-                          )}
+                          {question.required && <span className="ml-1 text-red-500">*</span>}
                         </label>
                         {question.multiline ? (
                           <textarea
+                            aria-label={question.prompt}
+                            aria-required={question.required}
                             value={value}
                             onChange={(event) =>
                               setAnswers((prev) => ({
@@ -995,12 +1044,14 @@ const SignupViewer: React.FC<Props> = ({
                               }))
                             }
                             rows={3}
-                            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            className="w-full rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-4 py-2.5 text-sm text-[var(--signup-text)] placeholder:text-gray-400 transition focus:border-[var(--signup-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--signup-focus)]"
                             disabled={loading}
                           />
                         ) : (
                           <input
                             type="text"
+                            aria-label={question.prompt}
+                            aria-required={question.required}
                             value={value}
                             onChange={(event) =>
                               setAnswers((prev) => ({
@@ -1008,7 +1059,7 @@ const SignupViewer: React.FC<Props> = ({
                                 [question.id]: event.target.value,
                               }))
                             }
-                            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            className="w-full rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-4 py-2.5 text-sm text-[var(--signup-text)] placeholder:text-gray-400 transition focus:border-[var(--signup-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--signup-focus)]"
                             disabled={loading}
                           />
                         )}
@@ -1019,14 +1070,15 @@ const SignupViewer: React.FC<Props> = ({
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-[var(--signup-text)] mb-2">
                   Notes for the host (optional)
                 </label>
                 <textarea
+                  aria-label="Additional note"
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   rows={2}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-4 py-2.5 text-sm text-[var(--signup-text)] placeholder:text-gray-400 transition focus:border-[var(--signup-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--signup-focus)]"
                   disabled={loading}
                 />
               </div>
@@ -1034,28 +1086,15 @@ const SignupViewer: React.FC<Props> = ({
           )}
 
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            <div className="text-xs text-gray-600">
-              We'll auto-manage waitlists, notify you about updates, and remind
-              you{" "}
-              {form.settings.autoRemindersHoursBefore
-                .slice()
-                .sort((a, b) => a - b)
-                .map((hours) =>
-                  hours >= 24
-                    ? `${Math.round(hours / 24)} day${
-                        hours / 24 === 1 ? "" : "s"
-                      }`
-                    : `${hours} hour${hours === 1 ? "" : "s"}`
-                )
-                .join(", ")}{" "}
-              before the event.
+            <div className="text-xs text-[var(--signup-muted)]">
+              You can return to this page to view or update your signup.
             </div>
             <div className="flex items-center gap-2">
               {myResponse && !editingResponse && (
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                  className="rounded-lg border border-red-300 bg-[var(--signup-surface)] px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
                   disabled={loading}
                 >
                   Cancel my spot
@@ -1074,7 +1113,7 @@ const SignupViewer: React.FC<Props> = ({
                     setGuests(0);
                     setAnswers({});
                   }}
-                  className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+                  className="rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-4 py-2 text-sm font-semibold text-[var(--signup-text)] transition hover:bg-[var(--signup-page)] disabled:opacity-50"
                   disabled={loading}
                 >
                   Cancel
@@ -1082,7 +1121,7 @@ const SignupViewer: React.FC<Props> = ({
               )}
               <button
                 type="submit"
-                className="rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 px-5 py-2 text-sm font-bold text-white shadow-lg transition hover:shadow-xl disabled:opacity-60"
+                className="rounded-lg bg-[var(--signup-accent)] px-5 py-2 text-sm font-bold text-white shadow-lg transition hover:shadow-xl disabled:opacity-60"
                 disabled={loading}
               >
                 {loading
@@ -1090,8 +1129,8 @@ const SignupViewer: React.FC<Props> = ({
                     ? "Updating..."
                     : "Saving..."
                   : editingResponse
-                  ? "Update sign-up"
-                  : "Save my sign-up"}
+                    ? "Update sign-up"
+                    : "Save my sign-up"}
               </button>
             </div>
           </div>
@@ -1099,27 +1138,27 @@ const SignupViewer: React.FC<Props> = ({
       )}
 
       {myResponse && (
-        <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4">
-          <p className="text-sm font-semibold text-gray-900">
+        <div className="rounded-xl border border-[var(--signup-border)] bg-[var(--signup-page)] p-4">
+          <p className="text-sm font-semibold text-[var(--signup-text)]">
             Your status:{" "}
             <span
               className={
                 myResponse.status === "confirmed"
                   ? "text-emerald-600"
                   : myResponse.status === "waitlisted"
-                  ? "text-amber-600"
-                  : "text-gray-900"
+                    ? "text-amber-600"
+                    : "text-[var(--signup-text)]"
               }
             >
               {myResponse.status === "confirmed"
                 ? "Confirmed"
                 : myResponse.status === "waitlisted"
-                ? "Waitlisted"
-                : "Cancelled"}
+                  ? "Waitlisted"
+                  : "Cancelled"}
             </span>
           </p>
           {selectedEntries.length > 0 && (
-            <ul className="mt-2 text-sm text-gray-600 space-y-1">
+            <ul className="mt-2 text-sm text-[var(--signup-muted)] space-y-1">
               {selectedEntries.map((entry) => (
                 <li key={entry.key}>
                   {entry.sectionTitle}: {entry.slotLabel}
@@ -1133,15 +1172,15 @@ const SignupViewer: React.FC<Props> = ({
       )}
 
       {viewerKind === "owner" && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4 shadow-sm">
+        <div className="rounded-2xl border border-[var(--signup-border)] bg-[var(--signup-surface)] p-5 space-y-4 shadow-sm">
           <header className="flex flex-wrap items-center justify-between gap-4">
-            <h3 className="text-lg font-bold text-gray-900">Host dashboard</h3>
+            <h3 className="text-lg font-bold text-[var(--signup-text)]">Host dashboard</h3>
             <div className="flex items-end gap-6">
               <div className="text-center leading-none">
                 <div className="font-mono font-extrabold text-3xl sm:text-4xl text-sky-600">
                   {hasUnlimited ? "∞" : totalCapacity}
                 </div>
-                <div className="mt-1.5 text-xs uppercase tracking-wider font-semibold text-gray-600">
+                <div className="mt-1.5 text-xs uppercase tracking-wider font-semibold text-[var(--signup-muted)]">
                   Total
                 </div>
               </div>
@@ -1149,7 +1188,7 @@ const SignupViewer: React.FC<Props> = ({
                 <div className="font-mono font-extrabold text-3xl sm:text-4xl text-emerald-600">
                   {filledCount}
                 </div>
-                <div className="mt-1.5 text-xs uppercase tracking-wider font-semibold text-gray-600">
+                <div className="mt-1.5 text-xs uppercase tracking-wider font-semibold text-[var(--signup-muted)]">
                   Filled
                 </div>
               </div>
@@ -1157,41 +1196,68 @@ const SignupViewer: React.FC<Props> = ({
                 <div className="font-mono font-extrabold text-3xl sm:text-4xl text-violet-600">
                   {hasUnlimited ? "∞" : remainingCount}
                 </div>
-                <div className="mt-1.5 text-xs uppercase tracking-wider font-semibold text-gray-600">
+                <div className="mt-1.5 text-xs uppercase tracking-wider font-semibold text-[var(--signup-muted)]">
                   Remaining
                 </div>
               </div>
             </div>
           </header>
+          <div className="mb-5 flex flex-wrap items-center gap-3">
+            <input
+              aria-label="Search participants"
+              placeholder="Search name, email, or slot"
+              value={participantSearch}
+              onChange={(event) => setParticipantSearch(event.target.value)}
+              className="min-w-0 flex-1 rounded-lg border border-[var(--signup-border)] px-3 py-2"
+            />
+            <button
+              type="button"
+              onClick={exportCsv}
+              className="rounded-lg border border-[var(--signup-border)] px-3 py-2 text-sm"
+            >
+              Export CSV
+            </button>
+            <button
+              type="button"
+              onClick={setOpen}
+              disabled={loading}
+              className="rounded-lg border border-[var(--signup-border)] px-3 py-2 text-sm"
+            >
+              {form.enabled ? "Close signups" : "Reopen signups"}
+            </button>
+          </div>
+          {visibleResponses.length === 0 && (
+            <p className="text-sm text-[var(--signup-muted)]">
+              {participantSearch
+                ? "No participants match your search."
+                : "Your first signup will appear here."}
+            </p>
+          )}
           <div className="space-y-4">
             {confirmedResponses.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--signup-muted)] mb-2">
                   Confirmed
                 </h4>
                 <div className="space-y-2">
                   {confirmedResponses.map((response) => (
                     <div
                       key={response.id}
-                      className="rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm"
+                      className="rounded-xl border border-[var(--signup-border)] bg-[var(--signup-page)] px-4 py-3 text-sm"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-semibold text-gray-900">
+                        <span className="font-semibold text-[var(--signup-text)]">
                           {response.name}
                         </span>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-600">
-                            {formatUsDateTime(
-                              response.updatedAt || response.createdAt || ""
-                            )}
+                          <span className="text-xs text-[var(--signup-muted)]">
+                            {formatUsDateTime(response.updatedAt || response.createdAt || "")}
                           </span>
                           <button
                             type="button"
                             onClick={() => handleEditResponse(response)}
-                            disabled={
-                              loading || removingResponseId === response.id
-                            }
-                            className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={loading || removingResponseId === response.id}
+                            className="text-xs px-3 py-1.5 rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] text-[var(--signup-text)] hover:bg-[var(--signup-page)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Edit sign-up"
                           >
                             Edit
@@ -1199,23 +1265,18 @@ const SignupViewer: React.FC<Props> = ({
                           <button
                             type="button"
                             onClick={() => handleRemoveResponse(response.id)}
-                            disabled={
-                              loading || removingResponseId === response.id
-                            }
-                            className="text-xs px-3 py-1.5 rounded-lg border border-red-300 bg-white text-red-700 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={loading || removingResponseId === response.id}
+                            className="text-xs px-3 py-1.5 rounded-lg border border-red-300 bg-[var(--signup-surface)] text-red-700 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Remove sign-up"
                           >
-                            {removingResponseId === response.id
-                              ? "Removing..."
-                              : "Remove"}
+                            {removingResponseId === response.id ? "Removing..." : "Remove"}
                           </button>
                         </div>
                       </div>
-                      <div className="text-sm text-gray-600 mt-2">
-                        {summarizeResponseSlots(form, response) ||
-                          "No slots selected"}
+                      <div className="text-sm text-[var(--signup-muted)] mt-2">
+                        {summarizeResponseSlots(form, response) || "No slots selected"}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1.5 flex flex-wrap gap-3">
+                      <div className="text-xs text-[var(--signup-muted)] mt-1.5 flex flex-wrap gap-3">
                         {response.email && <span>{response.email}</span>}
                         {response.phone && <span>{response.phone}</span>}
                         {response.guests && response.guests > 0 && (
@@ -1223,9 +1284,8 @@ const SignupViewer: React.FC<Props> = ({
                         )}
                       </div>
                       {response.note && (
-                        <div className="mt-2 text-sm text-gray-600 bg-white rounded-lg px-3 py-2 border border-gray-200">
-                          <span className="font-medium">Note:</span>{" "}
-                          {response.note}
+                        <div className="mt-2 text-sm text-[var(--signup-muted)] bg-[var(--signup-surface)] rounded-lg px-3 py-2 border border-[var(--signup-border)]">
+                          <span className="font-medium">Note:</span> {response.note}
                         </div>
                       )}
                     </div>
@@ -1236,7 +1296,7 @@ const SignupViewer: React.FC<Props> = ({
 
             {waitlistedResponses.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--signup-muted)] mb-2">
                   Waitlist
                 </h4>
                 <div className="space-y-2">
@@ -1246,18 +1306,13 @@ const SignupViewer: React.FC<Props> = ({
                       className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-semibold text-amber-900">
-                          {response.name}
-                        </span>
+                        <span className="font-semibold text-amber-900">{response.name}</span>
                         <span className="text-xs text-amber-700">
-                          {formatUsDateTime(
-                            response.updatedAt || response.createdAt || ""
-                          )}
+                          {formatUsDateTime(response.updatedAt || response.createdAt || "")}
                         </span>
                       </div>
                       <div className="text-sm text-amber-800 mt-2">
-                        {summarizeResponseSlots(form, response) ||
-                          "No slots selected"}
+                        {summarizeResponseSlots(form, response) || "No slots selected"}
                       </div>
                     </div>
                   ))}
@@ -1267,19 +1322,17 @@ const SignupViewer: React.FC<Props> = ({
 
             {cancelledResponses.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--signup-muted)] mb-2">
                   Cancelled (for audit trail)
                 </h4>
-                <div className="space-y-2 text-sm text-gray-500">
+                <div className="space-y-2 text-sm text-[var(--signup-muted)]">
                   {cancelledResponses.map((response) => (
                     <div
                       key={response.id}
-                      className="rounded-lg bg-gray-50 px-3 py-2 border border-gray-200"
+                      className="rounded-lg bg-[var(--signup-page)] px-3 py-2 border border-[var(--signup-border)]"
                     >
                       {response.name} —{" "}
-                      {formatUsDateTime(
-                        response.updatedAt || response.createdAt || ""
-                      )}
+                      {formatUsDateTime(response.updatedAt || response.createdAt || "")}
                     </div>
                   ))}
                 </div>
@@ -1294,11 +1347,8 @@ const SignupViewer: React.FC<Props> = ({
           role="dialog"
           aria-modal="true"
         >
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setConfirmOpen(false)}
-          />
-          <div className="relative z-10 w-full max-w-md rounded-2xl border border-gray-200 bg-white shadow-2xl">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmOpen(false)} />
+          <div className="relative z-10 w-full max-w-md rounded-2xl border border-[var(--signup-border)] bg-[var(--signup-surface)] shadow-2xl">
             <div className="p-5 sm:p-6 space-y-4">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-0.5">
@@ -1317,33 +1367,21 @@ const SignupViewer: React.FC<Props> = ({
                   </svg>
                 </div>
                 <div className="flex-1 space-y-2">
-                  <h3 className="text-lg font-bold text-gray-900">
-                    {feedback?.includes("waitlist")
+                  <h3 className="text-lg font-bold text-[var(--signup-text)]">
+                    {myResponse?.status === "waitlisted"
                       ? "You're on the waitlist"
                       : "Sign-up confirmed!"}
                   </h3>
-                  <p className="text-sm text-gray-600">
-                    {feedback?.includes("waitlist") ? (
+                  <p className="text-sm text-[var(--signup-muted)]">
+                    {myResponse?.status === "waitlisted" ? (
                       <>
-                        Your sign-up went through successfully! We'll promote
-                        you automatically if spots open up.
+                        Your sign-up went through successfully! We'll promote you automatically if
+                        spots open up.
                       </>
                     ) : (
                       <>
-                        Your sign-up went through successfully!
-                        {form.settings.collectEmail &&
-                        (email?.trim() || myResponse?.email) ? (
-                          <>
-                            {" "}
-                            We'll send you an email with the details at{" "}
-                            <strong>
-                              {(email || myResponse?.email || "").trim()}
-                            </strong>
-                            .
-                          </>
-                        ) : (
-                          " Your sign-up has been saved."
-                        )}
+                        Your signup is confirmed. Your selected slots are saved below. You can
+                        return to this page to view or update them.
                       </>
                     )}
                   </p>
@@ -1352,7 +1390,7 @@ const SignupViewer: React.FC<Props> = ({
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-5 py-2.5 text-sm font-semibold text-[var(--signup-text)] hover:bg-[var(--signup-page)] transition-colors"
                   onClick={() => setConfirmOpen(false)}
                 >
                   Got it
@@ -1368,11 +1406,8 @@ const SignupViewer: React.FC<Props> = ({
           role="dialog"
           aria-modal="true"
         >
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setErrorOpen(false)}
-          />
-          <div className="relative z-10 w-full max-w-md rounded-2xl border border-red-300 bg-white shadow-2xl">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setErrorOpen(false)} />
+          <div className="relative z-10 w-full max-w-md rounded-2xl border border-red-300 bg-[var(--signup-surface)] shadow-2xl">
             <div className="p-5 sm:p-6 space-y-4">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-0.5">
@@ -1392,16 +1427,14 @@ const SignupViewer: React.FC<Props> = ({
                   </svg>
                 </div>
                 <div className="flex-1 space-y-2">
-                  <h3 className="text-lg font-bold text-gray-900">
-                    Sign-up failed
-                  </h3>
-                  <p className="text-sm text-gray-600">{error}</p>
+                  <h3 className="text-lg font-bold text-[var(--signup-text)]">Sign-up failed</h3>
+                  <p className="text-sm text-[var(--signup-muted)]">{error}</p>
                 </div>
               </div>
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-5 py-2.5 text-sm font-semibold text-[var(--signup-text)] hover:bg-[var(--signup-page)] transition-colors"
                   onClick={() => {
                     setErrorOpen(false);
                     setError(null);

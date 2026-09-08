@@ -135,6 +135,7 @@ type StudioLiveCardActionSurfaceProps = {
   onDragEnd?: (key: LiveCardButtonKey, position: LiveCardButtonPosition) => void;
   showExtendedDetails?: boolean;
   registryHelperText?: string | null;
+  placement?: "overlay" | "below";
 };
 
 const EMPTY_POSITIONS: Record<LiveCardButtonKey, LiveCardButtonPosition> = {
@@ -429,6 +430,7 @@ function LiveCardPreviewPanel({ children, enabled, onClose }: {
 
 export default function StudioLiveCardActionSurface(props: StudioLiveCardActionSurfaceProps) {
   const reducedMotion = useReducedMotion();
+  const actionsBelow = props.placement === "below";
   const invitationData = props.invitationData || null;
   const details = invitationData?.eventDetails || null;
   const [calendarTimeZone, setCalendarTimeZone] = useState<string | null>(null);
@@ -660,6 +662,13 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     };
 
     return [
+      ...(actionsBelow && props.onShare ? [{
+        key: "share" as const,
+        label: shareState === "pending" ? "Sharing..." : shareState === "success" ? "Copied!" : "Share",
+        icon: shareState === "pending" ? Loader2 : shareState === "success" ? CheckCircle2 : Share2,
+        visible: true,
+        onClick: () => { if (shareState !== "pending") { props.onActiveTabChange("none"); props.onShare?.(); } },
+      }] : []),
       ...(openHouseAgentCard
         ? [detailsButtonConfig, rsvpButtonConfig, logoButtonConfig]
         : [rsvpButtonConfig, detailsButtonConfig]),
@@ -689,6 +698,9 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       },
     ].filter((button) => button.visible);
   }, [
+    actionsBelow,
+    props.onShare,
+    shareState,
     props.activeTab,
     props.onActiveTabChange,
     calendarLinks,
@@ -706,7 +718,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   ]);
 
   const isActionRailClosed = props.activeTab === "none";
-  const shouldHideClosedRailLabels = props.showcaseMode;
+  const shouldHideClosedRailLabels = props.showcaseMode && !actionsBelow;
   const useExpandedActionButtons = !props.showcaseMode;
   const useCompactActionButtons = props.buttonChromeSize === "compact";
   const showcaseRailLayout = getLiveCardRailLayout({
@@ -720,7 +732,9 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   const actionRailWrapperClassName =
     showcaseRailLayout === "cluster" ? "flex w-full justify-center px-2" : "w-full";
   const actionRailClassName =
-    showcaseRailLayout === "cluster"
+    actionsBelow && buttonConfigs.length > 5
+      ? "grid w-full grid-cols-3 gap-2"
+      : showcaseRailLayout === "cluster"
       ? "grid w-fit max-w-full grid-flow-col auto-cols-max items-stretch justify-center gap-1.5 sm:gap-2"
       : showcaseRailLayout === "spread"
         ? "grid w-full min-w-0 grid-flow-col auto-cols-fr items-stretch justify-items-center gap-0 px-1.5"
@@ -768,8 +782,11 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   }`;
 
   return (
-    <div className={`pointer-events-none absolute inset-0 flex flex-col ${props.previewMode ? "px-0 pb-1 pt-6" : "px-0 pb-1 pt-6 sm:px-4 sm:pt-7 md:p-8 md:pb-2"}`}>
-      {props.onShare ? (
+    <div data-live-card-actions-placement={actionsBelow ? "below" : "overlay"} className={actionsBelow
+      ? "pointer-events-none flex flex-col bg-transparent px-1 pt-3 pb-1"
+      : `pointer-events-none absolute inset-0 flex flex-col ${props.previewMode ? "px-0 pb-1 pt-6" : "px-0 pb-1 pt-6 sm:px-4 sm:pt-7 md:p-8 md:pb-2"}`}>
+
+      {props.onShare && !actionsBelow ? (
         <button
           type="button"
           onClick={() => {
@@ -785,7 +802,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
           <ShareActionIcon className={shareActionIconClassName} />
         </button>
       ) : null}
-      {openHouseAgentCard && posterFirstHeroCard ? (
+      {openHouseAgentCard && posterFirstHeroCard && !actionsBelow ? (
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[32%] bg-gradient-to-t from-black/62 via-black/30 to-transparent"
@@ -794,7 +811,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       <div className="flex h-full min-h-0 flex-col justify-end">
         <AnimatePresence initial={false}>
           {props.activeTab !== "none" && props.activeTab !== "share" ? (
-            <LiveCardPreviewPanel enabled={Boolean(props.previewMode)} onClose={() => props.onActiveTabChange("none")}>
+            <LiveCardPreviewPanel enabled={Boolean(props.previewMode) || actionsBelow} onClose={() => props.onActiveTabChange("none")}>
             <motion.div
               initial={reducedMotion ? false : { opacity: 0, y: 10, scale: 0.94 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -802,11 +819,11 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
               data-live-card-panel
               role="region"
               aria-label={`${props.activeTab} details`}
-              className={`pointer-events-auto z-50 border border-neutral-200 bg-white/95 shadow-2xl backdrop-blur-2xl ${props.previewMode
+              className={`pointer-events-auto z-50 border border-neutral-200 bg-white/95 shadow-2xl backdrop-blur-2xl ${props.previewMode || actionsBelow
                 ? "relative min-h-0 max-h-full w-full max-w-[24rem] overflow-y-auto overscroll-contain rounded-2xl p-4 [&_button]:min-h-11 [&_button]:min-w-11 [&_a]:min-h-11 [&_a]:min-w-11 [&_input]:min-h-11 [&_input]:text-base [&_label]:text-xs [&_label]:text-neutral-600"
                 : "absolute bottom-32 left-1/2 h-auto max-h-[calc(100%-9rem)] w-[calc(100%-1rem)] max-w-[22rem] -translate-x-1/2 overflow-y-auto rounded-3xl p-6 sm:w-[calc(100%-2rem)]"}`}
             >
-              {props.previewMode ? <Dialog.Title className="sr-only">{props.activeTab} details</Dialog.Title> : null}
+              {props.previewMode || actionsBelow ? <Dialog.Title className="sr-only">{props.activeTab} details</Dialog.Title> : null}
               <div className="mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg bg-neutral-100 p-2 text-neutral-900">
@@ -1273,7 +1290,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
 
         <div
           className={`pointer-events-none shrink-0 ${
-            posterFirstHeroCard
+            actionsBelow ? "hidden" : posterFirstHeroCard
               ? "max-md:min-h-[min(14svh,4rem)] min-h-[min(8svh,2.4rem)] md:min-h-[min(6svh,2rem)]"
               : "max-md:min-h-[min(18svh,5.5rem)] min-h-[min(10svh,3rem)] md:min-h-[min(8svh,2.5rem)]"
           }`}
@@ -1294,12 +1311,12 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
             <div className={actionRailClassName}>
               {buttonConfigs.map((button) => {
                 const Icon = button.icon;
-                const position = props.positions?.[button.key] || EMPTY_POSITIONS[button.key];
+                const position = actionsBelow ? EMPTY_POSITIONS[button.key] : props.positions?.[button.key] || EMPTY_POSITIONS[button.key];
                 const isPressed = props.activeTab === button.key;
                 return (
                   <motion.div
                     key={button.key}
-                    drag={Boolean(props.onDragEnd) && props.isDesignMode}
+                    drag={!actionsBelow && Boolean(props.onDragEnd) && props.isDesignMode}
                     dragMomentum={false}
                     onDragEnd={(_, info: PanInfo) =>
                       props.onDragEnd?.(button.key, {
@@ -1317,6 +1334,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                         if (!props.isDesignMode) button.onClick();
                       }}
                       aria-pressed={isPressed}
+                      disabled={button.key === "share" && shareState === "pending"}
                       data-live-card-trigger
                       className={`group flex min-w-0 flex-col items-center justify-start ${
                         useCompactActionButtons ? "gap-0.5 py-0 md:gap-0.5" : "gap-1 py-1 md:gap-2"
@@ -1326,7 +1344,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                     >
                       <div
                         className={`rounded-full border backdrop-blur-md transition-all duration-200 ${
-                          props.previewMode
+                          props.previewMode || actionsBelow
                             ? "p-2.5"
                             : useCompactActionButtons
                             ? "p-2 md:p-2.5"
@@ -1336,7 +1354,11 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                                 ? "p-2 md:p-2.5"
                                 : "p-2.5 md:p-3"
                         } ${
-                          posterFirstHeroCard
+                          actionsBelow
+                            ? isPressed
+                              ? "border-violet-300 bg-violet-100 shadow-sm"
+                              : "border-slate-200 bg-white/90 shadow-sm group-hover:border-violet-300 group-hover:bg-violet-50"
+                            : posterFirstHeroCard
                             ? isPressed
                               ? "border-white/85 bg-white/92 shadow-[0_16px_34px_rgba(0,0,0,0.42),0_0_22px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.82)]"
                               : "border-white/28 bg-white/18 shadow-[0_12px_28px_rgba(0,0,0,0.34),0_0_16px_rgba(255,255,255,0.1),inset_0_1px_0_rgba(255,255,255,0.16)] group-hover:border-white/42 group-hover:bg-white/24"
@@ -1347,7 +1369,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                       >
                         <Icon
                           className={`${
-                            props.previewMode
+                            props.previewMode || actionsBelow
                               ? "h-5 w-5"
                               : useCompactActionButtons
                               ? "h-4 w-4 md:h-5 md:w-5"
@@ -1357,13 +1379,13 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                                   ? "h-4 w-4 md:h-5 md:w-5"
                                   : "h-5 w-5 md:h-6 md:w-6"
                           } ${
-                            isPressed ? "text-neutral-950" : "text-white"
+                            actionsBelow ? "text-slate-700" : isPressed ? "text-neutral-950" : "text-white"
                           }`}
                         />
                       </div>
                       <span
-                        className={`max-w-full text-center font-bold leading-tight text-white drop-shadow-md ${
-                          props.previewMode
+                        className={`max-w-full text-center font-bold leading-tight ${actionsBelow ? "text-slate-700" : "text-white drop-shadow-md"} ${
+                          props.previewMode || actionsBelow
                             ? "text-xs tracking-normal"
                             : useCompactActionButtons
                               ? "truncate text-[6px] uppercase tracking-[0.14em] sm:text-[7px] md:text-[8px]"

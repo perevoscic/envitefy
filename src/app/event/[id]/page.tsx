@@ -1,3 +1,4 @@
+import { projectSignupForm } from "@/lib/signup-projection";
 import { isEventDraft } from "@/lib/event-draft-access";
 import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
@@ -1699,7 +1700,7 @@ export default async function EventPage({
       try {
         const sanitized = sanitizeSignupForm({
           ...(raw as SignupForm),
-          enabled: true,
+          enabled: (raw as SignupForm).enabled !== false,
         });
         if (sanitized.sections.length > 0) {
           return sanitized;
@@ -2257,9 +2258,25 @@ export default async function EventPage({
       ? "readonly"
       : "guest";
 
+  const projectedSignupForm = signupForm ? projectSignupForm(signupForm, { isOwner: viewerKind === "owner", userId: viewerKind === "guest" ? userId : null }) : null;
+  const signupBoard = projectedSignupForm ? (
+    <SignupViewer
+      eventId={row.id}
+      initialForm={projectedSignupForm}
+      viewerKind={viewerKind}
+      viewerId={userId}
+      viewerName={(session?.user?.name as string | undefined) || null}
+      viewerEmail={sessionEmail}
+    />
+  ) : null;
   const clientSafeEventData = canManageCreatedEvent
     ? data
     : redactDiscoverySourceForPublicView(data);
+  if (!canManageCreatedEvent && clientSafeEventData.signupForm) {
+    clientSafeEventData.signupForm = projectedSignupForm;
+    delete clientSafeEventData.responses;
+    delete clientSafeEventData.templateEditor;
+  }
   const clientSafeEventDataWithRegistryLinks =
     registriesAllowed && registryLinks.length > 0
       ? {
@@ -3867,18 +3884,7 @@ export default async function EventPage({
               ) : null}
             </div>
           )}
-          {signupForm && (
-            <div className="mt-6">
-              <SignupViewer
-                eventId={row.id}
-                initialForm={signupForm}
-                viewerKind={viewerKind}
-                viewerId={userId}
-                viewerName={(session?.user?.name as string | undefined) || null}
-                viewerEmail={sessionEmail}
-              />
-            </div>
-          )}
+          {signupBoard && <div className="mt-6">{signupBoard}</div>}
 
           {/* Sponsored supplies block: show to owner right after creation */}
           {!isReadOnly && canManageCreatedEvent && createdParam && (

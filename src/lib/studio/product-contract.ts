@@ -43,9 +43,9 @@ export function productContract(product: StudioProduct) {
       height: 2100,
       dpi: 300,
       safeMargin: 90,
-      imageText: "none",
+      imageText: "complete_invitation" as const,
       description:
-        "5 × 7 inch printable flyer. The server typesets all event wording inside a 0.3 inch safe margin. Artwork is text-free, with no app-button zone.",
+        "5 × 7 inch printable invitation. Design the complete artwork and all approved wording together, keeping essential lettering inside a 0.3 inch print-safe margin. Use the full canvas; interactive actions sit outside the artwork.",
     };
   if (product === "digital_flyer")
     return {
@@ -54,9 +54,9 @@ export function productContract(product: StudioProduct) {
       height: 1800,
       dpi: 144,
       safeMargin: 84,
-      imageText: "none",
+      imageText: "complete_invitation" as const,
       description:
-        "Self-contained downloadable invitation. The server typesets event wording and logistics; generate text-free artwork with no app-button zone.",
+        "Self-contained downloadable invitation. Compose the complete artwork, approved wording, and supplied logistics together across the full canvas. Keep lettering comfortably inset for legibility. Interactive actions sit outside the artwork.",
     };
   if (product === "event_page")
     return {
@@ -65,7 +65,7 @@ export function productContract(product: StudioProduct) {
       height: 1024,
       dpi: 144,
       safeMargin: 72,
-      imageText: "none",
+      imageText: "none" as const,
       description:
         "Text-free website hero. Copy and supported sections are rendered by the event website. Never generate UI, navigation, HTML or unimplemented features.",
     };
@@ -75,9 +75,9 @@ export function productContract(product: StudioProduct) {
     height: 1536,
     dpi: 144,
     safeMargin: 72,
-    imageText: "title",
+    imageText: "headline" as const,
     description:
-      "Live card: only the approved subject/title in artwork. Keep the bottom 30% free of essential text and subjects for app actions; logistics live in the detail panels.",
+      "Live card: integrate the approved headline, names, and supplied milestone into the artwork. Use the entire canvas for composition. Interactive actions overlay the bottom edge of the artwork; continue the scene behind them, keeping essential lettering and faces above the controls. Do not add a blank band or black footer. Dates, addresses, and other logistics live in the detail panels.",
   };
 }
 
@@ -118,7 +118,7 @@ export function validateCreativePlan(
         : plan
           ? "single_scene"
           : defaults.layout,
-    textPlacement: defaults.textPlacement,
+    textPlacement: plan?.textPlacement?.trim() || defaults.textPlacement,
     sections: defaults.sections,
   };
 }

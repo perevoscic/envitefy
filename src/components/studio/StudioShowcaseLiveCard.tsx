@@ -140,11 +140,12 @@ export default function StudioShowcaseLiveCard({
   return (
     <div
       className={cx(
-        `relative ${usesPosterArtFrame ? "aspect-[2/3]" : "aspect-[9/16]"} overflow-hidden rounded-[2.2rem] border border-white/10 bg-neutral-950 shadow-[0_28px_80px_rgba(15,23,42,0.32)]`,
-        showcaseMode && "border-slate-300/70 bg-transparent shadow-none",
+        usesPosterArtFrame ? "relative bg-transparent" : "relative overflow-hidden rounded-[2.2rem] border border-white/10 bg-neutral-950 shadow-[0_28px_80px_rgba(15,23,42,0.32)]",
+        !usesPosterArtFrame && showcaseMode && "border-slate-300/70 bg-transparent shadow-none",
         className,
       )}
     >
+      <div data-live-card-artwork className={`relative ${usesPosterArtFrame ? "aspect-[2/3] overflow-hidden rounded-[1.5rem] shadow-[0_12px_40px_rgba(15,23,42,0.14)]" : "aspect-[9/16]"}`}>
       {canOptimizeImage ? (
         <Image
           src={preview.imageUrl}
@@ -153,7 +154,7 @@ export default function StudioShowcaseLiveCard({
           loading={imageLoading}
           fetchPriority={imageFetchPriority}
           sizes={showcaseMode ? "300px" : "(min-width: 768px) 420px, 92vw"}
-          className="object-cover object-center"
+          className={usesPosterArtFrame ? "object-contain object-center" : "object-cover object-center"}
         />
       ) : (
         <img
@@ -162,20 +163,21 @@ export default function StudioShowcaseLiveCard({
           loading={imageLoading}
           fetchPriority={imageFetchPriority}
           decoding="async"
-          className="absolute inset-0 h-full w-full object-cover object-center"
+          className={`absolute inset-0 h-full w-full ${usesPosterArtFrame ? "object-contain" : "object-cover"} object-center`}
         />
       )}
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.12),rgba(0,0,0,0.06)_26%,rgba(0,0,0,0.28)_100%)]" />
+      {!usesPosterArtFrame ? <div className="absolute inset-0 bg-black/20" /> : null}
       <LiveCardHeroTextOverlay invitationData={preview.invitationData} />
       <div
         className={cx(
           "absolute inset-0",
-          compactChrome &&
+          !usesPosterArtFrame && compactChrome &&
             (showcaseMode ? "origin-bottom scale-y-[0.92]" : "origin-bottom scale-[0.88]"),
           interactive ? "pointer-events-auto" : "pointer-events-none",
         )}
       >
         <StudioLiveCardActionSurface
+          placement="overlay"
           title={preview.title}
           invitationData={preview.invitationData}
           positions={preview.positions}
@@ -189,6 +191,7 @@ export default function StudioShowcaseLiveCard({
           buttonChromeSize={buttonChromeSize}
           previewMode={previewMode}
         />
+      </div>
       </div>
       {showcaseOverlay}
     </div>

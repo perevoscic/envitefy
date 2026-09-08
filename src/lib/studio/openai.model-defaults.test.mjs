@@ -16,6 +16,7 @@ registerHooks({
 });
 
 const ORIGINAL_OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const ORIGINAL_IMAGE_QUALITY = process.env.STUDIO_OPENAI_IMAGE_QUALITY;
 const ORIGINAL_IMAGE_MODEL = process.env.STUDIO_OPENAI_IMAGE_MODEL;
 const ORIGINAL_IMAGE_EDIT_MODEL = process.env.STUDIO_OPENAI_IMAGE_EDIT_MODEL;
 
@@ -35,6 +36,7 @@ function restoreEnvValue(key, value) {
 
 test.afterEach(() => {
   mock.restoreAll();
+  restoreEnvValue("STUDIO_OPENAI_IMAGE_QUALITY", ORIGINAL_IMAGE_QUALITY);
   restoreEnvValue("OPENAI_API_KEY", ORIGINAL_OPENAI_API_KEY);
   restoreEnvValue("STUDIO_OPENAI_IMAGE_MODEL", ORIGINAL_IMAGE_MODEL);
   restoreEnvValue("STUDIO_OPENAI_IMAGE_EDIT_MODEL", ORIGINAL_IMAGE_EDIT_MODEL);
@@ -42,6 +44,7 @@ test.afterEach(() => {
 
 test("OpenAI studio image generation defaults to gpt-image-2", async () => {
   let requestedModel = "";
+  delete process.env.STUDIO_OPENAI_IMAGE_QUALITY;
 
   process.env.OPENAI_API_KEY = "test-openai-key";
   delete process.env.STUDIO_OPENAI_IMAGE_MODEL;
@@ -51,6 +54,7 @@ test("OpenAI studio image generation defaults to gpt-image-2", async () => {
     images: {
       generate: async (request) => {
         requestedModel = request.model;
+        assert.equal(request.quality, "high");
         return { data: [{ b64_json: "R0VORVJBVEVE" }] };
       },
     },
@@ -64,6 +68,7 @@ test("OpenAI studio image generation defaults to gpt-image-2", async () => {
 
 test("OpenAI studio image edits default independently to gpt-image-2", async () => {
   let requestedModel = "";
+  delete process.env.STUDIO_OPENAI_IMAGE_QUALITY;
 
   process.env.OPENAI_API_KEY = "test-openai-key";
   process.env.STUDIO_OPENAI_IMAGE_MODEL = "gpt-image-1";
@@ -78,6 +83,7 @@ test("OpenAI studio image edits default independently to gpt-image-2", async () 
     images: {
       edit: async (request) => {
         requestedModel = request.model;
+        assert.equal(request.quality, "high");
         return { data: [{ b64_json: "RURJVEVE" }] };
       },
     },
@@ -90,4 +96,13 @@ test("OpenAI studio image edits default independently to gpt-image-2", async () 
 
   assert.equal(result.ok, true);
   assert.equal(requestedModel, "gpt-image-2");
+});
+
+test("explicit image quality override remains available", async () => {
+  process.env.STUDIO_OPENAI_IMAGE_QUALITY = "medium";
+  mock.method(openAiStudioDeps, "getOpenAiClient", () => ({ images: { generate: async (request) => {
+    assert.equal(request.quality, "medium");
+    return { data: [{ b64_json: "VEVTVA==" }] };
+  } } }));
+  assert.equal((await generateInvitationImageWithOpenAi("An invitation")).ok, true);
 });

@@ -85,7 +85,7 @@ test("studio live-card sanitizer and publish payload preserve heroTextMode", () 
   assert.match(builderSource, /address: location,/);
 });
 
-test("studio preview uses floating glass controls for poster-first live cards", () => {
+test("studio preview preserves full poster artwork with guest controls overlaid inside it", () => {
   const workspaceSource = readSource("src/app/studio/StudioWorkspace.tsx");
   const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
   const showcaseSource = readSource("src/components/studio/StudioShowcaseLiveCard.tsx");
@@ -121,11 +121,12 @@ test("studio preview uses floating glass controls for poster-first live cards", 
     showcaseSource,
     /const usesPosterArtFrame = preview\.invitationData\.heroTextMode === "image";/,
   );
-  assert.match(showcaseSource, /usesPosterArtFrame \? "aspect-\[2\/3\]" : "aspect-\[9\/16\]"/);
+  assert.match(showcaseSource, /usesPosterArtFrame \? "aspect-\[2\/3\] overflow-hidden rounded/);
   assert.match(
     showcaseSource,
-    /className="absolute inset-0 h-full w-full object-cover object-center"/,
+    /usesPosterArtFrame \? "object-contain" : "object-cover"/,
   );
+  assert.match(showcaseSource, /placement="overlay"/);
   assert.match(phonePaneSource, /aspect-\[2\/3\]/);
   assert.match(phonePaneSource, /isLiveCardPreview \? "object-cover" : "object-contain"/);
   assert.match(surfaceSource, /grid w-full min-w-0 grid-flow-col auto-cols-fr/);

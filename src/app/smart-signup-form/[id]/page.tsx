@@ -1,26 +1,27 @@
-import SignupTemplateHeader from "@/components/smart-signup-form/SignupTemplateHeader";
-import { isEventDraft } from "@/lib/event-draft-access";
-import { resolveEditHref } from "@/utils/event-edit-route";
-import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { notFound, redirect } from "next/navigation";
 import Script from "next/script";
 import { getServerSession } from "next-auth";
 import { cache } from "react";
-import EventGuestActions from "@/components/event-templates/EventGuestActions";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
+import EventGuestActions from "@/components/event-templates/EventGuestActions";
+import SignupPageRenderer from "@/components/smart-signup-form/SignupPageRenderer";
 import SignupViewer from "@/components/smart-signup-form/SignupViewer";
 import { absoluteUrl } from "@/lib/absolute-url";
 import { authOptions } from "@/lib/auth";
 import {
+  type EventHistoryPublicRow,
   getEventHistoryPublicRenderBySlugOrId,
   getUserIdByEmail,
   isEventSharedWithUser,
-  type EventHistoryPublicRow,
 } from "@/lib/db";
-import { isIndexablePublicSmartSignupData } from "@/lib/smart-signup-indexing";
+import { isEventDraft } from "@/lib/event-draft-access";
 import { combineVenueAndLocation } from "@/lib/mappers";
 import { toPublicShareMediaUrl } from "@/lib/share-image";
+import { projectSignupForm } from "@/lib/signup-projection";
+import { isIndexablePublicSmartSignupData } from "@/lib/smart-signup-indexing";
 import type { SignupForm } from "@/types/signup";
+import { resolveEditHref } from "@/utils/event-edit-route";
 import { buildEventSlugSegment } from "@/utils/event-url";
 import { sanitizeSignupForm } from "@/utils/signup";
 
@@ -57,9 +58,7 @@ function readDate(value: unknown): string | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
   const parsed = new Date(trimmed);
-  return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) || !Number.isNaN(parsed.getTime())
-    ? trimmed
-    : null;
+  return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) || !Number.isNaN(parsed.getTime()) ? trimmed : null;
 }
 
 function resolveSignupForm(row: EventHistoryPublicRow): SignupForm | null {
@@ -68,7 +67,7 @@ function resolveSignupForm(row: EventHistoryPublicRow): SignupForm | null {
   if (!rawForm) return null;
   return sanitizeSignupForm({
     ...(rawForm as SignupForm),
-    enabled: true,
+    enabled: rawForm.enabled !== false,
   });
 }
 
@@ -147,7 +146,10 @@ function buildSmartSignupJsonLd(params: {
     readDate(data.start) ||
     readDate(params.signupForm.start);
   const endDate =
-    readDate(data.endISO) || readDate(data.endAt) || readDate(data.end) || readDate(params.signupForm.end);
+    readDate(data.endISO) ||
+    readDate(data.endAt) ||
+    readDate(data.end) ||
+    readDate(params.signupForm.end);
   const itemListElement = params.signupForm.sections.map((section, index) =>
     compactJsonLd({
       "@type": "ListItem",
@@ -282,7 +284,8 @@ export default async function SignupPage({
   const userId = sessionEmail ? await getUserIdByEmail(sessionEmail) : null;
   const row = await getCachedSignupEventBySlugOrId(awaitedParams.id, userId);
   if (!row) return notFound();
-  if (row.user_id === userId && isEventDraft(row.data) && row.data?.templateEditor) redirect(resolveEditHref(row.id, row.data, row.title));
+  if (row.user_id === userId && isEventDraft(row.data) && row.data?.templateEditor)
+    redirect(resolveEditHref(row.id, row.data, row.title));
   const canonicalSegment = buildEventSlugSegment(row.id, row.title, row.public_slug);
   if (awaitedParams.id !== canonicalSegment) {
     redirect(`/smart-signup-form/${canonicalSegment}`);
@@ -290,7 +293,7 @@ export default async function SignupPage({
   const data = (row.data as any) || {};
   const signupForm = resolveSignupForm(row);
   if (!signupForm) return notFound();
-  const isPublicSignupPage = isIndexablePublicSmartSignupData(data) && signupForm.enabled;
+  const isPublicSignupPage = isIndexablePublicSmartSignupData(data);
   const canonicalUrl = await absoluteUrl(`/smart-signup-form/${canonicalSegment}`);
   const signupHeaderImageUrl = await resolveSignupHeaderImageUrl(row, signupForm);
   const smartSignupStructuredData = buildSmartSignupJsonLd({
@@ -322,67 +325,6 @@ export default async function SignupPage({
       ? "guest"
       : "readonly";
 
-  const header = signupForm.header || null;
-  const combinedLocation = combineVenueAndLocation(
-    (data?.venue as string | undefined) || null,
-    (data?.location as string | undefined) || null,
-  );
-  const pageBgStyle = {
-    backgroundColor: header?.backgroundColor || undefined,
-    backgroundImage: header?.backgroundCss || undefined,
-    backgroundSize: header?.backgroundCss ? "cover" : undefined,
-    backgroundPosition: header?.backgroundCss ? "center" : undefined,
-  } as React.CSSProperties;
-
-  const formatRangeLabel = (
-    startInput?: string | null,
-    endInput?: string | null,
-    options?: { timeZone?: string | null; allDay?: boolean | null },
-  ): string | null => {
-    const timeZone = options?.timeZone || undefined;
-    const allDay = Boolean(options?.allDay);
-    try {
-      if (!startInput) return null;
-      const start = new Date(startInput);
-      const end = endInput ? new Date(endInput) : null;
-      if (Number.isNaN(start.getTime())) return null;
-      const sameDay =
-        !!end &&
-        start.getFullYear() === end.getFullYear() &&
-        start.getMonth() === end.getMonth() &&
-        start.getDate() === end.getDate();
-      if (allDay) {
-        const dateFmt = new Intl.DateTimeFormat(undefined, {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-          timeZone,
-        });
-        const label =
-          end && !sameDay
-            ? `${dateFmt.format(start)} – ${dateFmt.format(end)}`
-            : dateFmt.format(start);
-        return `${label} (all day)`;
-      }
-      const dateFmt = new Intl.DateTimeFormat(undefined, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        timeZone,
-      });
-      if (end) {
-        if (sameDay) {
-          return `${dateFmt.format(start)}`;
-        }
-        return `${dateFmt.format(start)} – ${dateFmt.format(end)}`;
-      }
-      return dateFmt.format(start);
-    } catch {
-      return startInput || null;
-    }
-  };
-
   const authHref = `/api/auth/signin?callbackUrl=${encodeURIComponent(
     `/smart-signup-form/${row.id}`,
   )}`;
@@ -405,9 +347,9 @@ export default async function SignupPage({
             </a>
           </div>
           <footer className="border-t border-gray-200 py-8 text-center">
-          <EnvitefyEventBranding category="Smart Sign-up" />
-        </footer>
-      </main>
+            <EnvitefyEventBranding category="Smart Sign-up" />
+          </footer>
+        </main>
       </div>
     );
   }
@@ -428,115 +370,44 @@ export default async function SignupPage({
     );
   }
 
+  const visibleForm = projectSignupForm(signupForm, {
+    isOwner,
+    userId: recipientAccepted ? userId : null,
+  });
   return (
-    <div className="min-h-screen" style={pageBgStyle}>
+    <main>
       {smartSignupStructuredData ? (
         <Script id="ld-smart-signup-form" type="application/ld+json">
-          {JSON.stringify(smartSignupStructuredData)}
+          {JSON.stringify(smartSignupStructuredData).replace(/</g, "\\u003c")}
         </Script>
       ) : null}
-      <main className="mx-auto w-full max-w-3xl px-4 py-6 space-y-4">
-        <SignupTemplateHeader form={signupForm} fallbackTitle={row.title} actions={
-              <EventGuestActions
-                shareUrl={`/smart-signup-form/${canonicalSegment}`}
-                eventId={row.id}
-                title={signupForm.title || row.title || "Sign-up form"}
-                start={signupForm.start || data?.startISO || data?.start || null}
-                end={signupForm.end || data?.endISO || data?.end || null}
-                location={[signupForm.venue, signupForm.location].filter(Boolean).join(", ") || data?.location || ""}
-                description={signupForm.description || ""}
-                timezone={signupForm.timezone || data?.timezone || undefined}
-                allDay={signupForm.allDay ?? undefined}
-              />
-        }>
-                {(session?.user?.name as string | undefined) && (
-                  <div
-                    className="flex items-start gap-2 text-[0.95rem] opacity-85"
-                    style={{ color: header?.textColor1 || undefined }}
-                  >
-                    <span
-                      className="inline-grid place-items-center h-7 w-7 rounded-full"
-                      style={{
-                        background: header?.buttonColor || "#44AD3C",
-                        color: header?.buttonTextColor || "#FFF4C7",
-                      }}
-                    >
-                      {(() => {
-                        const name = (session?.user?.name as string) || "";
-                        return (
-                          name
-                            .trim()
-                            .split(/\s+/)
-                            .map((w) => (w ? w[0].toUpperCase() : ""))
-                            .slice(0, 2)
-                            .join("") || "?"
-                        );
-                      })()}
-                    </span>
-                    <span className="leading-tight">
-                      <div>Created by {(session?.user?.name as string) || ""}</div>
-                      <div className="opacity-90">
-                        {(() => {
-                          const label = formatRangeLabel(
-                            (data?.startISO as string | null) ||
-                              (data?.start as string | null) ||
-                              signupForm.start ||
-                              null,
-                            (data?.endISO as string | null) ||
-                              (data?.end as string | null) ||
-                              signupForm.end ||
-                              null,
-                            {
-                              timeZone:
-                                (data?.timezone as string | null) ||
-                                (signupForm.timezone as string | null) ||
-                                undefined,
-                              allDay:
-                                (data?.allDay as boolean | null) ||
-                                (signupForm.allDay as boolean | null) ||
-                                null,
-                            },
-                          );
-                          return label || "";
-                        })()}
-                      </div>
-                    </span>
-                  </div>
-                )}
-                {(() => {
-                  const text = combinedLocation || signupForm.location || "";
-                  if (!text) return null;
-                  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                    text,
-                  )}`;
-                  return (
-                    <a
-                      href={mapUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[0.95rem] underline text-foreground/70"
-                    >
-                      {signupForm.venue ? signupForm.venue : ""}
-                      {signupForm.venue && (signupForm.location || combinedLocation) ? ", " : ""}
-                      {signupForm.location || combinedLocation}
-                    </a>
-                  );
-                })()}
-        </SignupTemplateHeader>
-
-        <section>
-          <SignupViewer
+      <SignupPageRenderer
+        form={visibleForm}
+        actions={
+          <EventGuestActions
+            shareUrl={`/smart-signup-form/${canonicalSegment}`}
             eventId={row.id}
-            initialForm={signupForm}
-            viewerKind={viewerKind}
-            viewerId={userId}
-            viewerName={(session?.user?.name as string | undefined) || null}
-            viewerEmail={sessionEmail}
-            ownerEventTitle={(row.title as string) || "Smart sign-up"}
-            ownerEventData={data}
+            title={signupForm.title || row.title || "Signup form"}
+            start={signupForm.start || data?.startISO || data?.start || null}
+            end={signupForm.end || data?.endISO || data?.end || null}
+            location={[signupForm.venue, signupForm.location].filter(Boolean).join(", ")}
+            description={signupForm.description || ""}
+            timezone={signupForm.timezone || data?.timezone || undefined}
+            allDay={signupForm.allDay ?? undefined}
           />
-        </section>
-      </main>
-    </div>
+        }
+      >
+        <SignupViewer
+          eventId={row.id}
+          initialForm={visibleForm}
+          viewerKind={viewerKind}
+          viewerId={userId}
+          viewerName={session?.user?.name || null}
+          viewerEmail={sessionEmail}
+          ownerEventTitle={row.title || "Smart sign-up"}
+          ownerEventData={isOwner ? data : undefined}
+        />
+      </SignupPageRenderer>
+    </main>
   );
 }

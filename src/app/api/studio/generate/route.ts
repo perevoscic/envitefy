@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { generateStudioInvitation } from "@/lib/studio/generate";
+import { generateAndPersistInvitation, invitationResponseStream } from "@/lib/studio/generation-response";
 import { resolveStudioProvider } from "@/lib/studio/provider";
 import { parseStudioGenerateRequest, type StudioGenerateFailureResponse } from "@/lib/studio/types";
-import { processBufferUpload } from "@/lib/media-upload";
-import { parseDataUrlBase64 } from "@/utils/data-url";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 600;
 
 function buildFailureResponse(
   status: number,
@@ -59,49 +58,18 @@ export async function POST(request: Request) {
       return buildFailureResponse(400, "invalid_request", parsed.error, false);
     }
 
-    const result = await generateStudioInvitation(parsed.value);
-    if (!result.imageDataUrl) {
-      return NextResponse.json(result, { status: 200 });
+    if (request.headers.get("accept")?.includes("application/x-ndjson")) {
+      return new Response(invitationResponseStream(
+        (options) => generateAndPersistInvitation(parsed.value, options), request.signal,
+      ), { headers: {
+        "Content-Type": "application/x-ndjson; charset=utf-8",
+        "Cache-Control": "no-cache, no-transform",
+        "X-Accel-Buffering": "no",
+      } });
     }
+    const result = await generateAndPersistInvitation(parsed.value, { signal: request.signal });
+    return NextResponse.json(result);
 
-    const parsedImage = parseDataUrlBase64(result.imageDataUrl);
-    if (!parsedImage) {
-      return NextResponse.json(
-        {
-          ...result,
-          warnings: [...result.warnings, "Generated image could not be persisted; using inline image."],
-        },
-        { status: 200 },
-      );
-    }
-
-    try {
-      const uploaded = await processBufferUpload({
-        bytes: Buffer.from(parsedImage.base64Payload, "base64"),
-        fileName: "studio-generated-image.png",
-        mimeType: parsedImage.mimeType || "image/png",
-        usage: "header",
-      });
-
-      return NextResponse.json(
-        {
-          ...result,
-          imageUrl: result.product === "digital_flyer" || result.product === "printable_flyer"
-            ? uploaded.stored.source?.url || null
-            : uploaded.stored.display?.url || uploaded.stored.source?.url || null,
-          imageDataUrl: null,
-        },
-        { status: 200 },
-      );
-    } catch {
-      return NextResponse.json(
-        {
-          ...result,
-          warnings: [...result.warnings, "Generated image persistence failed; using inline image."],
-        },
-        { status: 200 },
-      );
-    }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error";
     return buildFailureResponse(500, "internal_error", message || "Internal server error", true);

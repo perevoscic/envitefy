@@ -81,21 +81,21 @@ export function requestedProductEdits(message: string): {
 /** Extract only the requested value, including apostrophes inside quoted names. */
 export function extractExplicitEventTitle(message: string): string | null {
   const titleContext =
-    /\b(?:title|rename|call (?:it|this|the event)|name (?:it|the event))\b/i.test(message);
+    /\b(?:title|headline|rename|call (?:it|this|the event)|name (?:it|the event))\b/i.test(message);
   const starts = [
     /\btitle\s+(?:it|this|the event)\s+(?:as\s+)?(?:exactly\s+)?/gi,
-    /\b(?:event\s+)?title\s+(?:must be|should be|to read)\s*(?:exactly\s*)?[:=]?\s*/gi,
-    /\b(?:rename\s+(?:this\s+event|the\s+event|it)|(?:set|change|fix|update|keep)\s+(?:the\s+)?(?:event\s+)?title)\s+(?:to|as)\s*(?:exactly\s*)?/gi,
+    /\b(?:event\s+)?(?:title|headline)\s+(?:must be|should be|to read)\s*(?:exactly\s*)?[:=]?\s*/gi,
+    /\b(?:rename\s+(?:this\s+event|the\s+event|it)|(?:set|change|fix|update|keep)\s+(?:the\s+)?(?:event\s+)?(?:title|headline))\s+(?:to|as)\s*(?:exactly\s*)?/gi,
     /\b(?:call\s+(?:it|this|the event)|name\s+(?:it|the event))\s+/gi,
-    ...(titleContext ? [/\b(?:it should be|use exactly|asked for|title\s*:)\s*/gi] : []),
-    /\b(?:event\s+)?title\s+is\s*(?:exactly\s*)?[:=]?\s*/gi,
+    ...(titleContext ? [/\b(?:it should be|use exactly|asked for|(?:title|headline)\s*:)\s*/gi] : []),
+    /\b(?:event\s+)?(?:title|headline)\s+is\s*(?:exactly\s*)?[:=]?\s*/gi,
   ];
   for (const start of starts) {
     const matches = [...message.matchAll(start)];
     for (const match of matches.reverse()) {
       const rest = message.slice((match.index || 0) + match[0].length).trim();
       const quoted = rest.match(/^["“‘'](.{1,140}?)["”’'](?=\s*(?:[.,;!?]|$|and\b|but\b))/);
-      const raw = quoted?.[1] || rest.split(/[.!?\n;:]|,\s*(?:and|with|on)\b/)[0];
+      const raw = quoted?.[1] || rest.match(/^[^.!?\n;:]+[!?]*/)?.[0]?.split(/,\s*(?:and|with|on)\b/)[0];
       const title = (quoted ? raw : raw?.replace(/^the\s+/i, "").replace(/["“”‘’']$/g, ""))?.trim();
       if (
         title &&

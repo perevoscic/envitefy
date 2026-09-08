@@ -155,7 +155,7 @@ const sanitizeReminders = (input: unknown): number[] => {
     .filter((n): n is number => typeof n === "number");
   const unique = Array.from(new Set(cleaned));
   unique.sort((a, b) => a - b);
-  return unique.length ? unique : [...DEFAULT_SIGNUP_SETTINGS.autoRemindersHoursBefore];
+  return unique;
 };
 
 const sanitizeQuestions = (questions: SignupQuestion[]): SignupQuestion[] => {
@@ -377,7 +377,7 @@ export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
     return {
       ...presentation,
       version: SIGNUP_FORM_VERSION,
-      enabled: false,
+      enabled: Boolean(form.enabled),
       title: (form.title || "").trim() || "Sign-up sheet",
       description: form.description?.trim() ? form.description.trim() : null,
       guestPlanning: normalizeEventGuestPlanning(form.guestPlanning),
@@ -638,6 +638,8 @@ export const rebalanceSignupWaitlist = (form: SignupForm): SignupForm => {
     .filter((response) => response.status !== "cancelled")
     .slice()
     .sort((a, b) => {
+      const priority = Number(a.status !== "confirmed") - Number(b.status !== "confirmed");
+      if (priority) return priority;
       const ta = new Date(a.createdAt || 0).getTime();
       const tb = new Date(b.createdAt || 0).getTime();
       return ta - tb;

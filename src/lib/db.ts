@@ -5190,6 +5190,46 @@ function isTableMissingError(err: unknown): boolean {
 }
 
 // Smart sign-up forms (normalized storage)
+/** Serialize signup definitions and reservations on the event row, then commit both stores. */
+export async function mutateSignupEvent<T>(
+  eventId: string,
+  mutate: (row: EventHistoryRow) => { data: Record<string, any>; result: T },
+): Promise<{ row: EventHistoryRow; result: T } | null> {
+  await ensureSignupFormsTable();
+  return withClient(async (client) => {
+    await client.query("begin");
+    try {
+      const locked = await client.query<EventHistoryRow>(
+        "select id, user_id, title, data, public_slug, created_at from event_history where id = $1 for update",
+        [eventId],
+      );
+      const current = locked.rows[0];
+      if (!current) { await client.query("rollback"); return null; }
+      const change = mutate(current);
+      const safeData = sanitizeJsonValueForPostgres(change.data);
+      normalizeCanonicalStartFields(safeData);
+      const updated = await client.query<EventHistoryRow>(
+        "update event_history set data = $2::jsonb where id = $1 returning id, user_id, title, data, public_slug, created_at",
+        [eventId, JSON.stringify(safeData)],
+      );
+      if (safeData.signupForm) {
+        await client.query(
+          `insert into signup_forms (event_id, form) values ($1, $2::jsonb)
+           on conflict (event_id) do update set form = excluded.form, updated_at = now()`,
+          [eventId, JSON.stringify(safeData.signupForm)],
+        );
+      } else {
+        await client.query("delete from signup_forms where event_id = $1", [eventId]);
+      }
+      await client.query("commit");
+      return { row: updated.rows[0], result: change.result };
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    }
+  });
+}
+
 export type SignupFormRow = {
   event_id: string;
   form: any;

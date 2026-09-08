@@ -1,14 +1,15 @@
-import { weddingDesignCatalog } from "@/lib/wedding-designs";
-import {
-  BIRTHDAY_DESIGN_CATALOG,
-  ANNIVERSARY_DESIGN_CATALOG,
-} from "@/data/birthday-design-catalog";
-import babyTemplates from "@/data/baby-shower-templates.json";
-import { genderRevealDesigns } from "@/lib/gender-reveal-designs";
-import { GYM_MEET_TEMPLATE_LIBRARY } from "@/components/gym-meet-templates/registry";
-import { SPORT_EVENT_PRESETS } from "@/lib/sport-event-presets";
 import { SIGNUP_TEMPLATES } from "@/assets/signup-templates";
+import { GYM_MEET_TEMPLATE_LIBRARY } from "@/components/gym-meet-templates/registry";
+import babyTemplates from "@/data/baby-shower-templates.json";
+import {
+  ANNIVERSARY_DESIGN_CATALOG,
+  BIRTHDAY_DESIGN_CATALOG,
+} from "@/data/birthday-design-catalog";
 import { getFamilyTemplateDesign } from "@/lib/family-template-designs";
+import { genderRevealDesigns } from "@/lib/gender-reveal-designs";
+import { SIGNUP_THEMES } from "@/lib/signup-themes";
+import { SPORT_EVENT_PRESETS } from "@/lib/sport-event-presets";
+import { weddingDesignCatalog } from "@/lib/wedding-designs";
 import type { TemplateCategory } from "./template-categories";
 
 export const BRIDAL_PRESETS = [
@@ -93,23 +94,32 @@ export function getPublicTemplates(category: TemplateCategory): PublicTemplate[]
         })),
       );
     case "signup-forms":
-      return Object.entries(SIGNUP_TEMPLATES)
-        .flatMap(([group, designs]) =>
-          designs.map((design) => ({
-            id: design.path
-              .replace("/templates/signup/", "")
-              .replace(/\.webp$/, "")
-              .replaceAll("/", "--"),
-            name: design.name,
-            description: `Make ${design.name.toLowerCase()} your own with signup sections, questions, and slots.`,
-            style: group,
-            heroImage: design.path,
-          })),
-        )
-        .filter(
-          (template, index, templates) =>
-            templates.findIndex((candidate) => candidate.id === template.id) === index,
-        );
+      return [
+        ...SIGNUP_THEMES.map((theme) => ({
+          id: `editorial--${theme.id}`,
+          name: theme.name,
+          description: theme.description,
+          style: "Editorial collection",
+          heroImage: theme.artwork,
+        })),
+        ...Object.entries(SIGNUP_TEMPLATES)
+          .flatMap(([group, designs]) =>
+            designs.map((design) => ({
+              id: design.path
+                .replace("/templates/signup/", "")
+                .replace(/\.webp$/, "")
+                .replaceAll("/", "--"),
+              name: design.name,
+              description: `Make ${design.name.toLowerCase()} your own with signup sections, questions, and slots.`,
+              style: group,
+              heroImage: design.artworkPath || design.path,
+            })),
+          )
+          .filter(
+            (template, index, templates) =>
+              templates.findIndex((candidate) => candidate.id === template.id) === index,
+          ),
+      ];
   }
 }
 export function getPublicTemplate(category: TemplateCategory, id: string) {

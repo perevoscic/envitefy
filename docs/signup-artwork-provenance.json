@@ -9,7 +9,15 @@
       "output": "public/templates/signup/editorial/clean-clear.webp",
       "generator": "built-in image_gen",
       "quality": 85,
-      "compressionLevel": 6
+      "compressionLevel": 6,
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 146728,
+      "sha256": "90f4ce81ef38871ade1a65e2884561b35a4317acdd66d809022450e26417eafe",
+      "originalDeleted": true
     },
     {
       "id": "harvest-table",
@@ -18,7 +26,15 @@
       "output": "public/templates/signup/editorial/harvest-table.webp",
       "generator": "built-in image_gen",
       "quality": 85,
-      "compressionLevel": 6
+      "compressionLevel": 6,
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 116246,
+      "sha256": "b0aa8d3dc29348b018b074bc5250e7cdf9433b945c085df3b684fd1aec5785bf",
+      "originalDeleted": true
     },
     {
       "id": "game-day",
@@ -27,7 +43,15 @@
       "output": "public/templates/signup/editorial/game-day.webp",
       "generator": "built-in image_gen",
       "quality": 85,
-      "compressionLevel": 6
+      "compressionLevel": 6,
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 153376,
+      "sha256": "458f7f8a71bf54f47674568a627d6b3b3a2b293a2d999197c7a7157372faa6ba",
+      "originalDeleted": true
     },
     {
       "id": "school-days",
@@ -36,7 +60,15 @@
       "output": "public/templates/signup/editorial/school-days.webp",
       "generator": "built-in image_gen",
       "quality": 85,
-      "compressionLevel": 6
+      "compressionLevel": 6,
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 107446,
+      "sha256": "b32743167295231f34e5c404f95e66450a35264334acf73da0cd3800ecb14df0",
+      "originalDeleted": true
     },
     {
       "id": "community-garden",
@@ -45,7 +77,15 @@
       "output": "public/templates/signup/editorial/community-garden.webp",
       "generator": "built-in image_gen",
       "quality": 85,
-      "compressionLevel": 6
+      "compressionLevel": 6,
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 224722,
+      "sha256": "38b9fea170c64864eecd68ba2913266bbbde0fb91ccd18e2c85ab646fee0d966",
+      "originalDeleted": true
     },
     {
       "id": "celebrate-together",
@@ -54,7 +94,16 @@
       "output": "public/templates/signup/editorial/celebrate-together.webp",
       "generator": "built-in image_gen",
       "quality": 85,
-      "compressionLevel": 6
+      "compressionLevel": 6,
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 111744,
+      "sha256": "481deb961ff31e216cb7c72c8a5b9d39292ce3606ad2ceacfaf0b5d8e0fcda91",
+      "originalDeleted": true
     }
-  ]
+  ],
+  "verification": "All six final files verified as decodable WebP at the original 1536 \u00d7 1024 dimensions. All six corresponding generated PNG originals are deleted."
 }

@@ -1,10 +1,10 @@
 import { getTemplateCategory, type TemplateCategory } from "./template-categories";
 import { buildTemplateDraftPayload } from "./template-draft-payload";
 import {
-  replaceDraftMedia,
-  retainDraftMedia,
   type DraftValue,
   type EditorSnapshot,
+  replaceDraftMedia,
+  retainDraftMedia,
   type TemplateDraft,
 } from "./template-draft-storage";
 
@@ -60,6 +60,15 @@ export async function saveTemplateDraftToAccount({
     category,
     Intl.DateTimeFormat().resolvedOptions().timeZone,
   );
+  const signup = data.signupForm;
+  if (
+    category === "signup-forms" &&
+    signup &&
+    typeof signup === "object" &&
+    !Array.isArray(signup) &&
+    draft.signupRevision != null
+  )
+    signup.revision = draft.signupRevision;
   const body = {
     title: payload.title,
     clientDraftId: draft.id,
@@ -87,7 +96,7 @@ export async function saveTemplateDraftToAccount({
     creating ? "/api/history" : `/api/history/${draft.eventId}`,
     creating ? "POST" : "PATCH",
   );
-  const row = await response.json();
+  let row = await response.json();
   if (!response.ok || typeof row.id !== "string")
     throw new Error(row.error || "Your event could not be saved. Please retry.");
   draft.eventId = row.id;
@@ -98,12 +107,25 @@ export async function saveTemplateDraftToAccount({
     (JSON.stringify(row.data?.templateEditor?.snapshot) !== JSON.stringify(savedSnapshot) ||
       row.data?.status !== status)
   ) {
+    if (
+      category === "signup-forms" &&
+      signup &&
+      typeof signup === "object" &&
+      !Array.isArray(signup)
+    )
+      signup.revision = Number(row.data?.signupForm?.revision || 0);
     const updated = await send(`/api/history/${row.id}`, "PATCH");
+    const updatedRow = await updated.json();
     if (!updated.ok)
       throw new Error(
-        "Your event was recovered, but the latest edits could not be saved. Please retry.",
+        updatedRow.error ||
+          "Your event was recovered, but the latest edits could not be saved. Please retry.",
       );
+    row = updatedRow;
   }
+
+  if (category === "signup-forms")
+    draft.signupRevision = Number(row.data?.signupForm?.revision || 0);
   draft.pendingSave = false;
   return row.id;
 }

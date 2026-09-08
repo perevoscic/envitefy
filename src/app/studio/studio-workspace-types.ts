@@ -153,6 +153,8 @@ export type ButtonPosition = {
 };
 
 export type InvitationData = {
+  artworkTextMode?: import("@/lib/concierge/artwork-change").ArtworkTextMode;
+  artworkNotice?: string;
   creativePlan?: import("@/lib/studio/product-contract").StudioCreativePlan;
   title: string;
   subtitle: string;

@@ -8,6 +8,7 @@ import { buildProductCopyPrompt, buildProductArtworkPrompt } from "./product-pro
 import { productContract, resolveStudioProduct, defaultCreativePlan } from "./product-contract.ts";
 import { normalizeLiveCardMetadata, parseStudioGenerateRequest } from "./types.ts";
 import { composeFlyerExport, flyerTextBlocks } from "./flyer-export.ts";
+import { approvedArtworkText, compareArtworkText } from "./artwork-copy.ts";
 registerHooks({
   resolve(specifier, context, next) {
     if (specifier.startsWith("@/"))
@@ -108,17 +109,20 @@ test("Astra plans and writes once with fact/private/output/wording boundaries", 
 });
 test("artwork contract selects exactly one composition and correct text policy", () => {
   const flyer = buildProductArtworkPrompt(event, undefined, copy, "digital_flyer", 0);
-  assert.match(flyer, /No visible words/);
+  assert.match(flyer, /APPROVED_ARTWORK_TEXT/);
+  assert.ok(flyer.includes(event.venueAddress));
+  assert.doesNotMatch(flyer, /upper 45%|typesets.*separately/);
   assert.doesNotMatch(flyer, /bottom 30% free/);
   const live = buildProductArtworkPrompt(event, undefined, copy, "live_card", 0);
-  assert.match(live, /complete visible-text whitelist/);
-  assert.match(live, /bottom 30%/);
+  assert.match(live, /APPROVED_ARTWORK_TEXT/);
+  assert.match(live, /actions overlay the bottom edge of the artwork/);
+  assert.doesNotMatch(live, /bottom 30%/);
   const property = { ...event, propertyImageUrls: ["one", "two"] };
   const collage = buildProductArtworkPrompt(property, undefined, null, "live_card", 2);
   assert.match(collage, /refined secondary property insets/);
   assert.doesNotMatch(collage, /no collage/);
 });
-test("standalone flyer typesets exact facts, multiple stops and print density", async () => {
+test("standalone flyer includes exact facts and multiple stops in the generation contract and preserves print density", async () => {
   const details = {
     ...event,
     additionalLocations: [{ label: "Reception", venue: "Rose Room", address: "9 Elm Street" }],
@@ -140,16 +144,21 @@ test("standalone flyer typesets exact facts, multiple stops and print density", 
   assert.equal(meta.height, 2100);
   assert.equal(meta.density, 300);
 });
-test("flyer rejects overflow rather than truncating approved wording", async () => {
-  await assert.rejects(
-    composeFlyerExport(
-      image,
-      { ...event, approvedWording: "All supplied details must remain. ".repeat(300) },
-      copy,
-      "digital_flyer",
-    ),
-    /more wording than fits legibly/,
-  );
+test("flyer export preserves the complete composition without cropping or painting a footer", async () => {
+  const pixels = Buffer.from([255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 0, 255, 0, 255, 0, 255, 255]);
+  const source = await sharp(pixels, { raw: { width: 2, height: 3, channels: 3 } }).resize(1200, 1800, { kernel: "nearest" }).png().toBuffer();
+  const output = await composeFlyerExport(`data:image/png;base64,${source.toString("base64")}`, event, copy, "digital_flyer");
+  const decoded = await sharp(Buffer.from(output.split(",")[1], "base64")).raw().toBuffer();
+  assert.deepEqual(decoded, await sharp(source).raw().toBuffer());
+});
+test("approved copy protects names, milestone, all stops and wording across typography layouts", () => {
+  const birthday = { ...event, title: "LIVIA", honoreeName: "Livia", ageOrMilestone: "10" };
+  assert.deepEqual(approvedArtworkText(birthday, "live_card"), ["LIVIA", "Turning 10!"]);
+  assert.deepEqual(compareArtworkText(["LIVIA IS TURNING 10!"], ["10!", "Livia", "is turning"]), []);
+  assert.deepEqual(compareArtworkText(["LIVIA IS TURNING 10!"], ["LIVIA IS TURNING 16!"]), ["missing_copy", "unexpected_text"]);
+  assert.deepEqual(compareArtworkText(["Livia", "123 Oak Street"], ["Livia"]), ["missing_copy"]);
+  assert.deepEqual(compareArtworkText([], ["unwanted signage"]), ["unexpected_text"]);
+  assert.deepEqual(approvedArtworkText(birthday, "event_page"), []);
 });
 test("one targeted repair is verified, then the complete flyer is returned", async () => {
   stub();
@@ -245,10 +254,11 @@ test("existing card verification protects words and faces without rejecting deco
   const { artworkCheckContract } = await import("./output-checks.ts");
   const edit = artworkCheckContract("live_card", true);
   assert.equal(edit.imageText, "preserve_source_except_requested_changes");
-  assert.match(edit.description, /Decorative toys.*may extend below/);
-  assert.match(edit.description, /essential text and faces above the bottom 30%/);
-  assert.equal(artworkCheckContract("live_card", false).imageText, "title");
-  assert.equal(artworkCheckContract("digital_flyer", true).imageText, "none");
+  assert.match(edit.description, /Decorative toys.*may extend to the edges/);
+  assert.match(edit.description, /controls overlay the bottom edge of the artwork/);
+  assert.match(edit.description, /continuing the scene behind them without a blank band or black footer/);
+  assert.equal(artworkCheckContract("live_card", false).imageText, "headline");
+  assert.equal(artworkCheckContract("digital_flyer", true).imageText, "complete_invitation");
 });
 
 test("live-card layout concerns return a reviewable preview without regeneration", async () => {
@@ -276,4 +286,23 @@ test("layout warnings do not override corrupted event text", async () => {
   assert.equal(result.ok, false);
   assert.equal(result.imageDataUrl, null);
   assert.equal(result.errors.image.code, "image_quality_failed");
+});
+
+test("style failures get one targeted repair with the original design brief", async () => {
+  stub();
+  let checks = 0;
+  mock.method(studioGenerationDeps, "verifyStudioArtwork", async (_image, _event, _product, context) => {
+    assert.ok(context.liveCard.creativePlan);
+    return ++checks === 1
+      ? { status: "failed", issues: ["style_mismatch"], repairInstructions: ["Remove balloons; the requested botanical design excludes them."] }
+      : { status: "passed", issues: [] };
+  });
+  mock.method(studioGenerationDeps, "editInvitationImageWithOpenAi", async (prompt) => {
+    assert.match(prompt, /Remove balloons/);
+    assert.match(prompt, /Botanical editorial/);
+    return { ok: true, imageDataUrl: image, warnings: [] };
+  });
+  const result = await generateStudioInvitation({ event, mode: "both", product: "live_card" });
+  assert.equal(result.ok, true);
+  assert.equal(checks, 2);
 });

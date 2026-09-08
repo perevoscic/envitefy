@@ -1,4 +1,5 @@
 import { CREATION_PROMPT_VERSION } from "../creation/source-evidence.ts";
+import { approvedArtworkText } from "./artwork-copy.ts";
 import { validateCreativePlan, productContract, type StudioProduct } from "./product-contract.ts";
 import type {
   StudioEventDetails,
@@ -48,6 +49,8 @@ export function buildProductCopyPrompt(
     "If rsvpEnabled is false, do not ask guests to RSVP or invent an RSVP button. Use View details as the action. Supplied manual reply instructions may remain in approved wording.",
     "When a user corrects a visual subject, carry that correction explicitly into creativePlan.focalSubject and concept. A named music group means the group members, and a named toy means that type of toy; do not substitute wordplay, unrelated animals, symbols, or generic party scenery for the requested subjects. The latest explicit visual correction takes priority over older theme descriptions.",
     "creativePlan is a brief design specification, not reasoning: concept, focalSubject, one layout, textPlacement, supported sections, exclusions. Use property_collage only with multiple property photos; otherwise single_scene. Preserve uploaded people's likeness and real property details. Honor requested photorealism and explicit visual exclusions.",
+    "Make the brief specific to this user's idea. In concept describe the visual treatment, materials, lighting, depth, and coordinated palette; in focalSubject describe the requested subjects, their number, expressions and poses when relevant. In textPlacement describe a distinctive, readable lettering treatment integrated into the composition. A neon toy concert may use dimensional holographic lettering, expressive performers and stage reflections; an elegant wedding may use fine calligraphy, tactile paper and botanical framing. These are examples, not defaults. User direction takes priority over generic template styling.",
+    "Compose across the full canvas. For Live Cards, real interactive controls overlay the bottom edge; continue the artwork behind them and keep essential lettering and faces clear of the controls. Do not add a blank band, black footer, or upper-picture/lower-cream-text split. Give the headline and focal subject a clear visual hierarchy, with readable supporting wording on standalone invitations.",
     "Event-page sections may only be details, schedule, location, rsvp (if enabled), registry (if supplied); these select existing renderers. Never promise unavailable actions. For other products return sections [].",
     "Use three six-digit hex palette colors and a short themeStyle. Titles must remain grounded in the provided title and honoree. Keep scheduleLine for date/time and locationLine for venue/location. Flyer location includes the supplied address; live-card details can hold the full address separately.",
     JSON.stringify(promptInputs(event, guidance, product)),
@@ -63,15 +66,14 @@ export function buildProductArtworkPrompt(
 ): string {
   const plan = validateCreativePlan(event, product, liveCard?.creativePlan);
   const contract = productContract(product);
+  const approvedText = approvedArtworkText(event, product, liveCard);
   return [
     "Create premium event invitation artwork following this output contract. Priority: source accuracy and privacy; explicit wording; product layout; user visual direction; category defaults.",
     contract.description,
-    product === "live_card"
-      ? `The complete visible-text whitelist is ${JSON.stringify(event.title)}. Preserve every character. No subtitles, dates, times, venue names, addresses, contacts, price, signage or other readable words. Integrate this title elegantly above the lower 30%.`
-      : "No visible words, letters, numbers, signage, logos or typography anywhere. The application typesets the supplied event copy separately.",
-    product === "digital_flyer" || product === "printable_flyer"
-      ? "Place the main artwork in the upper 45% and continue its atmosphere through a quiet lower background. No fake blank form fields or drawn text panels."
-      : "Keep the focal subject inset at least 7% from the edges. Fill the full canvas without letterboxing.",
+    product === "event_page"
+      ? "No visible words, letters, numbers, signage, logos or typography anywhere. The event website renders its own headings and details."
+      : `APPROVED_ARTWORK_TEXT: ${JSON.stringify(approvedText)}. Render every supplied block exactly once, preserving names, ages, dates, times, addresses, contact punctuation, languages and wording. You may vary line breaks, capitalization, type sizes and lettering materials. No other readable wording. Design lettering as part of the artwork, with a strong headline and readable supporting details; the exporter will preserve your complete composition without adding text.`,
+    "Use the entire canvas with one intentional composition. Integrate typography, focal subjects, atmosphere and lighting; choose the visual density and lettering treatment for the requested style. Essential text must stay comfortably inset and unobscured, while scenery and decorative elements may extend to the edges. No blank button band, black or cream footer, fake blank form fields or device frame.",
     plan.layout === "property_collage"
       ? "Use one dominant property photo with refined secondary property insets, consistent lighting, and a coherent composition."
       : "Use one continuous scene; no collage, duplicate subjects, stacked scenes or segmented panels.",
@@ -82,6 +84,7 @@ export function buildProductArtworkPrompt(
       ...promptInputs(event, guidance, product),
       creativePlan: plan,
       palette: liveCard?.palette || null,
+      approvedArtworkText: approvedText,
     }),
   ].join("\n");
 }

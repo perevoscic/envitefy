@@ -1,0 +1,36 @@
+{
+  "creationSessionId": "session_mtrzi8fu",
+  "model": "gpt-image-2",
+  "quality": "high",
+  "encoder": "FFmpeg libwebp, quality 85, compression level 6",
+  "finalDraftImageUrl": "/api/blob/event-media/upload-c212e9ad-5921-4c8f-a226-cb1ef1044f40/header/source/studio-generated-image.webp",
+  "artworks": [
+    {
+      "original": "event-media/upload-1355b005-1f3e-4bc6-ac62-84d485358b9d/header/source/studio-generated-image.png",
+      "replacement": "event-media/upload-1355b005-1f3e-4bc6-ac62-84d485358b9d/header/source/studio-generated-image.webp",
+      "local": "artifacts/creation-artwork-review-2026-09-08/01-rejected-generic.webp",
+      "width": 1024,
+      "height": 1536,
+      "sha256": "6e508b2e247ae6f3bf2fff552fcf7c17c44d25e997459c65ae958656aa92ac18",
+      "originalRemoved": true
+    },
+    {
+      "original": "event-media/upload-d0b4d191-0e8e-4d1a-9973-01639a02ba58/header/source/studio-generated-image.png",
+      "replacement": "event-media/upload-d0b4d191-0e8e-4d1a-9973-01639a02ba58/header/source/studio-generated-image.webp",
+      "local": "artifacts/creation-artwork-review-2026-09-08/02-concert-dolls.webp",
+      "width": 1024,
+      "height": 1536,
+      "sha256": "a9fec618c895edc21b3c1478f97435c9997e531e4b7250dc18ba3a6c3cdb2f06",
+      "originalRemoved": true
+    },
+    {
+      "original": "event-media/upload-c212e9ad-5921-4c8f-a226-cb1ef1044f40/header/source/studio-generated-image.png",
+      "replacement": "event-media/upload-c212e9ad-5921-4c8f-a226-cb1ef1044f40/header/source/studio-generated-image.webp",
+      "local": "artifacts/creation-artwork-review-2026-09-08/03-livia-toy-concert.webp",
+      "width": 1024,
+      "height": 1536,
+      "sha256": "9a510a8d3ab054eb378b052096a5cb0d6c14bb1d96f70dea5a5f727db8bd772a",
+      "originalRemoved": true
+    }
+  ]
+}

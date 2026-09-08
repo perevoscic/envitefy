@@ -2,7 +2,6 @@
 
 import {
   CalendarDays,
-  CheckCircle2,
   CloudSun,
   Copy,
   ExternalLink,
@@ -36,8 +35,9 @@ type ChatProductPreviewProps = {
   summary: ChatPreviewSummary;
   selectedOutput: RequestedOutput;
   previewImageUrl: string;
+  artworkNotice?: string;
   isGenerating: boolean;
-  buildProgress: number;
+  hasStreamingPreview?: boolean;
   currentBuildStep: string;
   liveEventId: string | null;
   publicHref: string | null;
@@ -180,8 +180,9 @@ export default function ChatProductPreview({
   summary,
   selectedOutput,
   previewImageUrl,
+  artworkNotice,
   isGenerating,
-  buildProgress,
+  hasStreamingPreview = false,
   currentBuildStep,
   liveEventId,
   publicHref,
@@ -344,7 +345,9 @@ export default function ChatProductPreview({
                 {isGenerating ? (
                   <div
                     role="status"
-                    className="absolute inset-0 flex items-center justify-center gap-3 rounded-[1.5rem] bg-white/85 p-6 text-sm font-bold text-[#3b2468] backdrop-blur-sm"
+                    className={hasStreamingPreview
+                      ? "mt-3 flex items-center justify-center gap-3 rounded-2xl bg-violet-50 px-4 py-3 text-sm font-bold text-[#3b2468]"
+                      : "absolute inset-0 flex items-center justify-center gap-3 rounded-[1.5rem] bg-white/85 p-6 text-sm font-bold text-[#3b2468] backdrop-blur-sm"}
                   >
                     <Loader2
                       className="size-6 animate-spin motion-reduce:animate-none"
@@ -358,58 +361,24 @@ export default function ChatProductPreview({
                 </p>
               </section>
             ) : (
-              <section className="relative overflow-hidden rounded-[1.55rem] border border-white/80 bg-white/78 p-3 shadow-[0_22px_60px_rgba(35,24,72,0.09)] ring-1 ring-[#edf0f7]">
-                <div className="grid gap-4 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:items-center">
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-[1.25rem] bg-[#eee8f6] shadow-[0_16px_36px_rgba(35,24,72,0.12)]">
-                    <img
-                      src={previewImageUrl}
-                      alt=""
-                      aria-hidden="true"
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(20,15,35,0.08),rgba(20,15,35,0.48))]" />
-                    <div className="absolute inset-x-3 bottom-3">
-                      <p className="line-clamp-2 text-sm font-black leading-4 text-white drop-shadow">
-                        {summary.headline}
-                      </p>
-                    </div>
+              <section aria-label="Invitation artwork" className="relative overflow-hidden rounded-[1.5rem] bg-white shadow-[0_22px_60px_rgba(35,24,72,0.12)]">
+                <img
+                  src={previewImageUrl}
+                  alt={summary.headline}
+                  className="block h-auto w-full object-contain"
+                />
+                {isGenerating ? (
+                  <div role="status" className={hasStreamingPreview
+                    ? "flex items-center justify-center gap-3 bg-violet-50 p-4 text-[#3b2468]"
+                    : "absolute inset-0 flex flex-col items-center justify-center gap-4 bg-white/85 p-6 text-[#3b2468] backdrop-blur-sm"}>
+                    <Loader2 className="size-8 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                    <p className="text-sm font-bold">{currentBuildStep}</p>
                   </div>
-                  {isGenerating ? (
-                    <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 bg-white/82 text-[#8b8298] backdrop-blur-[3px]">
-                      <Loader2 className="size-10 animate-spin text-[#5c5be5]" aria-hidden="true" />
-                      <div className="w-full max-w-[17rem] px-4 text-center">
-                        <p className="text-sm font-bold text-[#2d1b36]">{currentBuildStep}</p>
-                        <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#eadfff]">
-                          <div
-                            className="h-full rounded-full bg-[#5c5be5] transition-[width] duration-300"
-                            style={{ width: `${buildProgress}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      {hasGeneratedProduct ? (
-                        <CheckCircle2 className="size-5 text-[#18956f]" aria-hidden="true" />
-                      ) : null}
-                      <p className="text-[0.65rem] font-black uppercase tracking-[0.18em] text-[#8a819b]">
-                        Generated artwork
-                      </p>
-                    </div>
-                    <p className="mt-2 text-sm font-bold leading-6 text-[#24183e]">
-                      Visual is ready. Use the event details below as the source of truth before
-                      saving or sharing.
-                    </p>
-                    <p className="mt-3 text-xs font-semibold leading-5 text-[#7a708b]">
-                      Want different colors, layout, copy, or imagery? Tap Edit and tell the
-                      concierge what to change.
-                    </p>
-                  </div>
-                </div>
+                ) : null}
               </section>
             )}
 
+            {artworkNotice ? <p role="status" className="rounded-2xl bg-amber-50 px-4 py-3 text-sm leading-5 text-amber-900">{artworkNotice}</p> : null}
             <section className="grid gap-3" aria-label="Saved event details">
               <DetailRow
                 icon={<CalendarDays className="size-4" aria-hidden="true" />}
@@ -531,7 +500,7 @@ export default function ChatProductPreview({
               {isLiveCard ? (
                 <div
                   className="w-full"
-                  style={{ maxWidth: `calc((100dvh - 8rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * ${liveCardPreview.invitationData.heroTextMode === "image" ? "2 / 3" : "9 / 16"})` }}
+                  style={{ maxWidth: `calc((100dvh - 15rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * ${liveCardPreview.invitationData.heroTextMode === "image" ? "2 / 3" : "9 / 16"})` }}
                 >
                   <StudioShowcaseLiveCard
                     preview={liveCardPreview}

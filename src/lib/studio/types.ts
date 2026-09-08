@@ -136,6 +136,8 @@ export type StudioGenerationError = {
 };
 
 export type StudioGenerateResponse = {
+  artworkTextMode?: import("../concierge/artwork-change.ts").ArtworkTextMode;
+  timings?: import("./generation-progress.ts").GenerationTimings;
   product?: StudioProduct;
   qualityCheck?: "passed" | "failed" | "unavailable" | "needs_review";
   ok: boolean;

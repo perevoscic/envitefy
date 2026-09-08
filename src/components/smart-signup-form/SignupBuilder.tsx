@@ -4728,50 +4728,7 @@ const SignupBuilder: React.FC<Props> = ({
               </div>
             </label>
 
-            {/* Lock when full */}
-            <label className="flex items-start gap-4 group cursor-pointer">
-              <div className="relative flex-shrink-0 mt-0.5">
-                <input
-                  type="checkbox"
-                  checked={settings.lockWhenFull}
-                  onChange={(event) =>
-                    setSettings({ lockWhenFull: event.target.checked })
-                  }
-                  className="sr-only"
-                />
-                <div
-                  className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center ${
-                    settings.lockWhenFull
-                      ? "bg-gradient-to-br from-purple-500 to-pink-500 border-transparent shadow-lg shadow-purple-500/30"
-                      : "border-gray-300 bg-white group-hover:border-gray-400"
-                  }`}
-                >
-                  {settings.lockWhenFull && (
-                    <svg
-                      className="w-3.5 h-3.5 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={3}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  )}
-                </div>
-              </div>
-              <div className="flex-1">
-                <div className="font-semibold text-gray-900 mb-0.5">
-                  Lock slots once capacity is met
-                </div>
-                <p className="text-sm text-gray-600">
-                  Prevents overbooking. Waitlist still collects interest.
-                </p>
-              </div>
-            </label>
+            <p className="text-sm text-gray-600">Slot capacities are always enforced. Full slots accept a waitlist only when you enable it.</p>
 
             {/* Show remaining spots */}
             <label className="flex items-start gap-4 group cursor-pointer">
@@ -4818,52 +4775,7 @@ const SignupBuilder: React.FC<Props> = ({
               </div>
             </label>
 
-            {/* Hide participant names */}
-            <label className="flex items-start gap-4 group cursor-pointer">
-              <div className="relative flex-shrink-0 mt-0.5">
-                <input
-                  type="checkbox"
-                  checked={Boolean(settings.hideParticipantNames)}
-                  onChange={(event) =>
-                    setSettings({
-                      hideParticipantNames: event.target.checked,
-                    })
-                  }
-                  className="sr-only"
-                />
-                <div
-                  className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center ${
-                    settings.hideParticipantNames
-                      ? "bg-gradient-to-br from-purple-500 to-pink-500 border-transparent shadow-lg shadow-purple-500/30"
-                      : "border-gray-300 bg-white group-hover:border-gray-400"
-                  }`}
-                >
-                  {settings.hideParticipantNames && (
-                    <svg
-                      className="w-3.5 h-3.5 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={3}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  )}
-                </div>
-              </div>
-              <div className="flex-1">
-                <div className="font-semibold text-gray-900 mb-0.5">
-                  Hide names from participants
-                </div>
-                <p className="text-sm text-gray-600">
-                  Only the host can see who signed up.
-                </p>
-              </div>
-            </label>
+            <p className="text-sm text-gray-600">Participant names, contact details, and answers are visible to the organizer. Guests can view their own signup.</p>
 
             {/* Collect phone */}
             <label className="flex items-start gap-4 group cursor-pointer">
@@ -4950,7 +4862,7 @@ const SignupBuilder: React.FC<Props> = ({
                   Collect alternate email
                 </div>
                 <p className="text-sm text-gray-600">
-                  Guests can route reminders to a personal inbox if needed.
+                  Guests can use a personal inbox for signup confirmations.
                 </p>
               </div>
             </label>

@@ -1,266 +1,296 @@
 "use client";
-import { useTemplateState, useTemplateEditor } from "@/components/templates/TemplateEditorContext";
 
-import React, { useMemo, useState } from "react";
-import { useSession } from "next-auth/react";
+import React, { useState } from "react";
+import { useTemplateEditor, useTemplateState } from "@/components/templates/TemplateEditorContext";
+import { applySignupStarter, SIGNUP_STARTERS } from "@/lib/signup-starters";
+import { type SignupIssue, validateSignupPublish } from "@/lib/signup-validation";
 import type { SignupForm } from "@/types/signup";
-import SignupBuilder from "@/components/smart-signup-form/SignupBuilder";
-import { getEventTheme } from "@/lib/event-theme";
-import SignupViewer from "@/components/smart-signup-form/SignupViewer";
+import SignupBuilder from "./SignupBuilder";
+import SignupDesignPanel from "./SignupDesignPanel";
+import SignupDetailsEditor from "./SignupDetailsEditor";
+import SignupPageRenderer from "./SignupPageRenderer";
+import styles from "./signup-editor.module.css";
 
 type Props = {
   form: SignupForm;
-  onChange: (next: SignupForm) => void;
-  onSubmit: (e: React.FormEvent) => Promise<void> | void;
+  onChange: (form: SignupForm) => void;
+  onSubmit: (event: React.FormEvent) => Promise<void> | void;
   submitting?: boolean;
 };
-
-const STEP_CONFIG = [
+const STEPS = [
   {
-    id: "basics",
-    title: "Event Basics",
-    subtitle: "Tell us about your event",
-    description: "Start with the essentials—what, when, and where",
-    color: "from-cyan-400 to-blue-500",
-    lightBg: "bg-gradient-to-br from-cyan-50 to-blue-50",
+    id: "design",
+    name: "Design",
+    title: "Make it yours",
+    description: "Choose a theme to start. You can adjust it any time.",
   },
   {
-    id: "settings",
-    title: "Smart Settings",
-    subtitle: "Configure your sign-up",
-    description: "Set capacity, deadlines, and preferences",
-    color: "from-purple-400 to-pink-500",
-    lightBg: "bg-gradient-to-br from-purple-50 to-pink-50",
+    id: "details",
+    name: "Details",
+    title: "Bring people together",
+    description: "Add the details your guests need. You can keep the rest simple.",
   },
   {
-    id: "sections",
-    title: "Build Form",
-    subtitle: "Create sections & questions",
-    description: "Customize what information you need to collect",
-    color: "from-amber-400 to-orange-500",
-    lightBg: "bg-gradient-to-br from-amber-50 to-orange-50",
+    id: "build",
+    name: "Build signup",
+    title: "A place for everyone to help",
+    description: "Add what you need, how many, and any useful details.",
   },
   {
-    id: "preview",
-    title: "Launch",
-    subtitle: "Preview & publish",
-    description: "Review your sign-up form before sharing it",
-    color: "from-emerald-400 to-teal-500",
-    lightBg: "bg-gradient-to-br from-emerald-50 to-teal-50",
+    id: "review",
+    name: "Review & share",
+    title: "Ready for your guests",
+    description: "Review the full page and check the details before publishing.",
   },
 ] as const;
-
-type StepKey = 0 | 1 | 2 | 3;
-
-export default function SmartSignupWizard({
-  form,
-  onChange,
-  onSubmit,
-  submitting,
-}: Props) {
-  const templateEditor = useTemplateEditor();
-  const [step, setStep] = useTemplateState<StepKey>("signupStep", 0);
-  const [showBasicsErrors, setShowBasicsErrors] = useState(false);
-  useSession();
-
-  const _theme = useMemo(
-    () => getEventTheme((form.description || form.title || "") as string),
-    [form.title, form.description]
+export default function SmartSignupWizard({ form, onChange, onSubmit, submitting }: Props) {
+  const editor = useTemplateEditor();
+  // Store a stable step ID so reordering the flow never changes a saved step's meaning.
+  // Earlier drafts without this key enter the new flow at Design, keeping their form data.
+  const [activeStep, setActiveStep] = useTemplateState<(typeof STEPS)[number]["id"]>(
+    "signupWizardStep",
+    "design",
   );
-
-  const currentStep = STEP_CONFIG[step];
-  const progress = ((step + 1) / STEP_CONFIG.length) * 100;
-
-  const next = () => {
-    if (step === 0) {
-      const address = (form as any).location as string | undefined;
-      const missingAddress = !address || !address.trim();
-      if (missingAddress) {
-        setShowBasicsErrors(true);
-        return;
-      }
-      setShowBasicsErrors(false);
+  const step = Math.max(
+    0,
+    STEPS.findIndex((item) => item.id === activeStep),
+  );
+  const [showErrors, setShowErrors] = useState(false);
+  const [pendingStarter, setPendingStarter] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState("");
+  const current = STEPS[step] || STEPS[0];
+  const issues = validateSignupPublish(form);
+  const go = (next: number) => {
+    setActiveStep(STEPS[Math.max(0, Math.min(STEPS.length - 1, next))].id);
+    setShowErrors(false);
+  };
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (step !== 3) {
+      go(step + 1);
+      return;
     }
-    setStep((s) => (s < 3 ? ((s + 1) as StepKey) : s));
+    if (issues.length) {
+      setShowErrors(true);
+      return;
+    }
+    try {
+      setSubmitError("");
+      await onSubmit(event);
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : "Your form could not be saved. Please try again.",
+      );
+    }
   };
-
-  const prev = () => setStep((s) => (s > 0 ? ((s - 1) as StepKey) : s));
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const chooseStarter = (id: string) => {
+    if (form.sections.some((section) => section.slots.some((slot) => slot.label.trim())))
+      setPendingStarter(id);
+    else onChange(applySignupStarter(form, id));
   };
-
+  const focusIssue = (field: string, targetStep: SignupIssue["step"]) => {
+    setActiveStep(targetStep);
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const target = document.getElementById(field);
+        if (target instanceof HTMLDetailsElement) {
+          target.open = true;
+          target.querySelector("summary")?.focus();
+        } else target?.focus();
+      }),
+    );
+  };
   return (
-    <div className="relative">
-      {/* Subtle gradient background */}
-      <div className="absolute inset-0 -z-10 overflow-hidden rounded-3xl">
-        <div
-          className={`absolute inset-0 opacity-[0.03] transition-all duration-700 ${currentStep.lightBg}`}
-        />
+    <div className={styles.editor}>
+      <ol className={styles.steps} aria-label="Signup creation steps">
+        {STEPS.map((item, index) => (
+          <li key={item.name}>
+            <button
+              type="button"
+              aria-current={step === index ? "step" : undefined}
+              onClick={() => go(index)}
+            >
+              <span className={styles.stepNumber}>{index + 1}</span>
+              {item.name}
+            </button>
+          </li>
+        ))}
+      </ol>
+      <div className={styles.intro}>
+        <div>
+          <h2>{current.title}</h2>
+          <p>{current.description}</p>
+        </div>
+        <span className={styles.help}>Step {step + 1} of 4</span>
       </div>
-
-      <form className="space-y-6" onSubmit={handleSubmit}>
-        {/* Compact header with progress */}
-        <div className="space-y-3">
-          {/* Step indicator and percentage */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-gray-900">
-              Step {step + 1} of {STEP_CONFIG.length}
-            </span>
-            <span className="text-xs font-medium text-gray-500">
-              {Math.round(progress)}% Complete
-            </span>
+      <form onSubmit={submit}>
+        {step === 0 && <SignupDesignPanel form={form} onChange={onChange} />}
+        {step === 1 && (
+          <div className="space-y-5">
+            <details className={styles.panel} open={!form.starterId}>
+              <summary className="cursor-pointer font-semibold">
+                Start with a little structure
+              </summary>
+              <p className={styles.help}>
+                Choose what you are organizing. Your visual theme stays yours.
+              </p>
+              <div className={styles.starterGrid}>
+                {SIGNUP_STARTERS.map((starter) => (
+                  <button
+                    className={styles.starter}
+                    type="button"
+                    key={starter.id}
+                    aria-pressed={form.starterId === starter.id}
+                    onClick={() => chooseStarter(starter.id)}
+                  >
+                    <strong>{starter.name}</strong>
+                    <span>{starter.description}</span>
+                  </button>
+                ))}
+              </div>
+              {pendingStarter && (
+                <div className={styles.notice} role="status">
+                  <p>You already have signup slots. How would you like to use this starter?</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className={styles.secondary}
+                      onClick={() => {
+                        onChange(applySignupStarter(form, pendingStarter, true));
+                        setPendingStarter(null);
+                      }}
+                    >
+                      Add its section
+                    </button>
+                    {!form.responses.length && (
+                      <button
+                        type="button"
+                        className={styles.secondary}
+                        onClick={() => {
+                          onChange(applySignupStarter(form, pendingStarter));
+                          setPendingStarter(null);
+                        }}
+                      >
+                        Replace current slots
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className={styles.secondary}
+                      onClick={() => setPendingStarter(null)}
+                    >
+                      Keep my form
+                    </button>
+                  </div>
+                </div>
+              )}
+            </details>
+            <SignupDetailsEditor form={form} onChange={onChange} />
           </div>
-
-          {/* Clean progress bar */}
-          <div className="relative h-1.5 overflow-hidden rounded-full bg-gray-100">
-            <div
-              className={`h-full bg-gradient-to-r ${currentStep.color} transition-all duration-500 ease-out`}
-              style={{ width: `${progress}%` }}
-            />
+        )}
+        {step === 2 && (
+          <div className="space-y-5">
+            <div id="signup-slots" tabIndex={-1}>
+              <SignupBuilder
+                form={form}
+                onChange={onChange}
+                panels={{ basics: false, settings: false, sections: true, questions: true }}
+              />
+            </div>
+            <details className={styles.panel} id="signup-rules">
+              <summary className="cursor-pointer font-semibold">
+                Signup rules & contact details
+              </summary>
+              <SignupBuilder
+                form={form}
+                onChange={onChange}
+                panels={{ basics: false, settings: true, sections: false, questions: false }}
+              />
+            </details>
           </div>
-
-          {/* Title */}
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 md:text-3xl">
-              {currentStep.title}
-            </h2>
-            <p className="mt-1 text-sm text-gray-600">
-              {currentStep.description}
-            </p>
+        )}
+        {step === 3 && (
+          <div className={styles.review}>
+            <div className={issues.length ? styles.error : styles.notice}>
+              <strong>
+                {issues.length
+                  ? "A few details need your attention"
+                  : "Your signup is ready to publish"}
+              </strong>
+              {issues.length ? (
+                <ul>
+                  {issues.map((issue) => (
+                    <li key={issue.message}>
+                      <button type="button" onClick={() => focusIssue(issue.field, issue.step)}>
+                        {issue.message}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>
+                  {form.sections.reduce((sum, section) => sum + section.slots.length, 0)} signup
+                  slots · {form.questions.length} follow-up questions
+                </p>
+              )}
+            </div>
+            <div className={styles.notice}>
+              <strong>Who can sign up?</strong>
+              <p>
+                Invited contacts can sign in and claim slots after accepting your invitation.
+                Sharing the page link alone does not grant signup access.
+              </p>
+              <p className={styles.help}>
+                Saving a draft keeps it private. Publishing keeps your existing sharing permissions.
+              </p>
+            </div>
+            <SignupPageRenderer form={form} />
           </div>
-        </div>
-        {/* Direct content - no extra wrapper */}
-        <div className="min-h-[400px]">
-          {step === 0 && (
-            <SignupBuilder
-              form={form}
-              onChange={onChange}
-              showBasicsErrors={showBasicsErrors}
-              panels={{
-                basics: true,
-                settings: false,
-                sections: false,
-                questions: false,
-              }}
-            />
-          )}
-          {step === 1 && (
-            <SignupBuilder
-              form={form}
-              onChange={onChange}
-              panels={{
-                basics: false,
-                settings: true,
-                sections: false,
-                questions: false,
-              }}
-            />
-          )}
-          {step === 2 && (
-            <SignupBuilder
-              form={form}
-              onChange={onChange}
-              panels={{
-                basics: false,
-                settings: false,
-                sections: true,
-                questions: true,
-              }}
-            />
-          )}
-          {step === 3 && (
-            <SignupViewer
-              eventId="preview"
-              initialForm={form as SignupForm}
-              viewerKind="readonly"
-            />
-          )}
-        </div>
-        {/* Clean action buttons */}
-        <div className="flex items-center justify-between gap-4 border-t border-gray-200 pt-6">
+        )}
+        {showErrors && issues.length > 0 && (
+          <div role="alert" className={`${styles.error} mt-4`}>
+            Complete the highlighted details before publishing.
+          </div>
+        )}
+        {submitError && (
+          <p role="alert" className={styles.error}>
+            {submitError}
+          </p>
+        )}
+        <div className={styles.footer}>
           <button
             type="button"
-            onClick={prev}
-            disabled={step === 0}
-            className="group inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+            className={styles.secondary}
+            disabled={step === 0 || submitting}
+            onClick={() => go(step - 1)}
           >
-            <svg
-              className="h-4 w-4 transition-transform group-hover:-translate-x-0.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
             Back
           </button>
-
-          {step < 3 ? (
-            <button
-              type="button"
-              onClick={next}
-              className={`group inline-flex items-center gap-2 rounded-lg bg-gradient-to-r ${currentStep.color} px-6 py-2.5 text-sm font-bold text-white shadow-lg transition hover:shadow-xl`}
-            >
-              Continue
-              <svg
-                className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
+          <div className="flex flex-wrap gap-2">
+            {editor?.authenticated && (
+              <button
+                type="button"
+                className={styles.secondary}
+                disabled={submitting}
+                onClick={() => void editor.requestSave()}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={onSubmit as any}
-              disabled={submitting}
-              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg transition hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {submitting ? (
-                <>
-                  <svg
-                    className="h-4 w-4 animate-spin"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Publishing...
-                </>
-              ) : (
-                <>
-                  {templateEditor && !templateEditor.authenticated ? "Save and continue" : "Publish Sign-Up"}
-                  <span className="text-base">🎉</span>
-                </>
-              )}
-            </button>
-          )}
+                Save draft
+              </button>
+            )}
+            {step < 3 ? (
+              <button type="button" className={styles.primary} onClick={() => go(step + 1)}>
+                Continue <span aria-hidden="true">→</span>
+              </button>
+            ) : (
+              <button type="submit" className={styles.primary} disabled={submitting}>
+                {submitting
+                  ? "Saving…"
+                  : editor && !editor.authenticated
+                    ? "Save and continue"
+                    : "Publish signup"}
+              </button>
+            )}
+          </div>
         </div>
       </form>
     </div>

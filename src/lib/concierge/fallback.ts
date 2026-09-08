@@ -1,6 +1,7 @@
 import { attachCreationReadiness, getCreationReadiness } from "./readiness.ts";
 import * as chrono from "chrono-node";
 import { extractExplicitEventLocation, extractExplicitEventTitle, extractExplicitRsvpEnabled, extractNamedAge, hasStalePreviewFacts, normalizeEventScheduleText, pairedHonorees, possessiveBirthdayMilestone } from "./conversation-edits.ts";
+import { extractVisualDirection, stripArtworkPreservationInstructions } from "./visual-direction.ts";
 import { conciergeCapabilityAnswer } from "./capabilities.ts";
 import { copyRequirementsChanged, provisionalInvitationCopy, requestsInvitationCopy } from "./copy-workflow.ts";
 import { updateHostBrief } from "./host-brief.ts";
@@ -608,8 +609,11 @@ function birthdayHonoreeCandidatesFromDraft(draft: ConciergeEventDraft) {
 }
 
 function detectTheme(text: string, previous?: ConciergeEventDraft | null) {
+  text = stripArtworkPreservationInstructions(text);
   const labeledTheme = findLabeledDetailValue(text, ["theme"]);
   if (labeledTheme && !isInstructionFragment(labeledTheme)) return labeledTheme;
+  const explicitDirection = extractVisualDirection(text);
+  if (explicitDirection) return explicitDirection;
 
   const compactParts = text.split(/[,;\n]+/);
   const compactTheme = compactParts.length > 1 ? compactParts.map((part) => part.trim()).find((part) =>
@@ -1131,7 +1135,7 @@ function detectTone(text: string, previous?: ConciergeEventDraft | null) {
   );
   const raw = explicit?.[1] || (known ? known[0] : null);
   const cleanedRaw = raw ? cleanString(raw.replace(/[.!?]+$/g, "")) : null;
-  if (cleanedRaw && !isInstructionFragment(cleanedRaw)) return cleanedRaw;
+  if (cleanedRaw && !/^(?:unpublished|private|a?\s*(?:verification|test)\s+draft)$/i.test(cleanedRaw) && !isInstructionFragment(cleanedRaw)) return cleanedRaw;
   if (expectsTone) {
     const cleaned = cleanString(text.replace(/[.!?]+$/g, ""));
     if (

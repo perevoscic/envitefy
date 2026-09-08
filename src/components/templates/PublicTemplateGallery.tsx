@@ -2,31 +2,32 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import BabyShowerDesignPreview from "@/components/baby-showers/BabyShowerDesignPreview";
+import BirthdayDesignPreview from "@/components/birthdays/BirthdayDesignPreview";
+import { config as sportsConfig } from "@/components/event-templates/SportEventsTemplate";
 import {
   TemplateThumbnailFrame,
   TemplateThumbnailPreview,
 } from "@/components/events/TemplateThumbnail";
-import WeddingDesignPreview from "@/components/weddings/WeddingDesignPreview";
-import BirthdayDesignPreview from "@/components/birthdays/BirthdayDesignPreview";
-import BabyShowerDesignPreview from "@/components/baby-showers/BabyShowerDesignPreview";
 import GenderRevealTemplateView from "@/components/GenderRevealTemplateView";
-import SimpleTemplateView from "@/components/SimpleTemplateView";
 import GymnasticsPreview from "@/components/gym-meet-templates/GymnasticsPreview";
 import { GYM_MEET_TEMPLATE_LIBRARY } from "@/components/gym-meet-templates/registry";
-import { config as sportsConfig } from "@/components/event-templates/SportEventsTemplate";
-import { readTemplateDraft, type TemplateDraft } from "@/lib/template-draft-storage";
-import { weddingDesignCatalog } from "@/lib/wedding-designs";
+import SimpleTemplateView from "@/components/SimpleTemplateView";
+import SignupTemplatePreview from "@/components/smart-signup-form/SignupTemplatePreview";
+import WeddingDesignPreview from "@/components/weddings/WeddingDesignPreview";
 import { BIRTHDAY_DESIGN_BY_ID } from "@/data/birthday-design-catalog";
+import { getFamilyTemplateDesign } from "@/lib/family-template-designs";
 import { getPublicTemplates, type PublicTemplate } from "@/lib/public-template-catalog";
+import { getSportEventPreset, getSportStyleThemeIds } from "@/lib/sport-event-presets";
 import {
   getTemplateCategory,
-  templateEditorHref,
   type TemplateCategory,
+  templateEditorHref,
 } from "@/lib/template-categories";
-import { getFamilyTemplateDesign } from "@/lib/family-template-designs";
-import { getSportEventPreset, getSportStyleThemeIds } from "@/lib/sport-event-presets";
-import { trackTemplateEvent } from "./TemplateEditorContext";
+import { readTemplateDraft, type TemplateDraft } from "@/lib/template-draft-storage";
+import { weddingDesignCatalog } from "@/lib/wedding-designs";
 import BridalShowerPreview from "./BridalShowerPreview";
+import { trackTemplateEvent } from "./TemplateEditorContext";
 
 export function PublicTemplatePreview({
   category,
@@ -97,12 +98,7 @@ export function PublicTemplatePreview({
       </TemplateThumbnailPreview>
     );
   }
-  if (category === "signup-forms")
-    return (
-      <TemplateThumbnailPreview scaled={false}>
-        <img src={template.heroImage} alt="" className="h-full w-full object-cover" />
-      </TemplateThumbnailPreview>
-    );
+  if (category === "signup-forms") return <SignupTemplatePreview template={template} />;
   if (category === "gymnastics")
     return (
       <TemplateThumbnailPreview>
@@ -222,6 +218,7 @@ export default function PublicTemplateGallery({
             </Heading>
             <p className="mt-4 text-sm text-[#746775]">
               Customize freely. An account is required to save and share.
+              {category === "signup-forms" && " Each preview includes sample details you can edit."}
             </p>
           </div>
           {featured && (

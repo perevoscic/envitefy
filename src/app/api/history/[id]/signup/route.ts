@@ -1,551 +1,133 @@
-import { guardDraftRequest } from "@/lib/event-draft-access-server";
-import { invalidateUserHistory } from "@/lib/history-cache";
-import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import type { NextAuthOptions, Session } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { absoluteUrl } from "@/lib/absolute-url";
+import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import {
   getEventHistoryById,
-  getUserIdByEmail,
   isEventSharedWithUser,
-  updateEventHistoryData,
-  getSignupFormByEventId,
-  upsertSignupForm,
+  listShareRecipientUserIdsForEvent,
+  mutateSignupEvent,
 } from "@/lib/db";
-import {
-  sanitizeSignupForm,
-  generateSignupId,
-  findSignupSlot,
-  findSignupResponseForUser,
-  normalizeSignupQuantity,
-  remainingCapacityForSlot,
-  rebalanceSignupWaitlist,
-} from "@/utils/signup";
-import type {
-  SignupForm,
-  SignupResponse,
-  SignupResponseSlot,
-} from "@/types/signup";
 import { sendSignupConfirmationEmail } from "@/lib/email";
-import { absoluteUrl } from "@/lib/absolute-url";
+import { guardDraftRequest } from "@/lib/event-draft-access-server";
+import { invalidateUserHistory } from "@/lib/history-cache";
+import {
+  mutateSignupReservation,
+  readStoredSignup,
+  SignupMutationError,
+} from "@/lib/signup-mutations";
+import { projectSignupForm } from "@/lib/signup-projection";
+import { isIndexablePublicSmartSignupData } from "@/lib/smart-signup-indexing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type ReservePayload = {
-  action: "reserve";
-  slots: Array<{
-    sectionId: string;
-    slotId: string;
-    quantity?: number;
-  }>;
-  name?: string;
-  email?: string;
-  phone?: string;
-  guests?: number;
-  note?: string;
-  answers?: Array<{ questionId?: string; id?: string; value?: string }>;
-  signupId?: string;
-};
-
-type CancelPayload = {
-  action: "cancel";
-  signupId?: string;
-};
-
-type RequestPayload = ReservePayload | CancelPayload;
-
-const normalizeSlots = (
-  form: SignupForm,
-  raw: ReservePayload["slots"]
-): SignupResponseSlot[] => {
-  if (!Array.isArray(raw)) return [];
-  const seen = new Set<string>();
-  const slots: SignupResponseSlot[] = [];
-  for (const entry of raw) {
-    const sectionId =
-      typeof entry?.sectionId === "string" ? entry.sectionId.trim() : "";
-    const slotId = typeof entry?.slotId === "string" ? entry.slotId.trim() : "";
-    if (!sectionId || !slotId) continue;
-    if (!findSignupSlot(form, sectionId, slotId)) continue;
-    const key = `${sectionId}::${slotId}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    slots.push({
-      sectionId,
-      slotId,
-      quantity: normalizeSignupQuantity(entry?.quantity ?? 1),
-    });
-  }
-  return slots;
-};
-
-const normalizeAnswers = (
-  form: SignupForm,
-  raw: ReservePayload["answers"]
-): Array<{ questionId: string; value: string }> => {
-  if (!Array.isArray(raw)) return [];
-  const validIds = new Set(form.questions.map((question) => question.id));
-  const answers: Array<{ questionId: string; value: string }> = [];
-  for (const entry of raw) {
-    const questionId =
-      typeof entry?.questionId === "string"
-        ? entry.questionId.trim()
-        : typeof entry?.id === "string"
-        ? entry.id.trim()
-        : "";
-    if (!questionId || !validIds.has(questionId)) continue;
-    const value =
-      typeof entry?.value === "string" ? entry.value.trim() : "";
-    if (!value) continue;
-    answers.push({ questionId, value });
-  }
-  return answers;
-};
-
-const buildDefaultName = (
-  sessionUser: Session["user"] | null | undefined
-): string => {
-  const baseName =
-    (typeof sessionUser?.name === "string" && sessionUser.name.trim()) || "";
-  if (baseName) return baseName;
-  const email = (sessionUser?.email as string | undefined) || "";
-  if (email?.includes("@")) {
-    return email.split("@")[0] || "Guest";
-  }
-  return "Guest";
-};
-
-const clampGuests = (maxGuests: number, value?: number | null): number | null => {
-  if (typeof value !== "number" || !Number.isFinite(value)) return null;
-  const normalized = Math.max(0, Math.min(maxGuests, Math.round(value)));
-  return normalized > 0 ? normalized : null;
-};
-
-export async function POST(
-  req: Request,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(_req: Request, context: { params: Promise<{ id: string }> }) {
   try {
-  const { id } = await context.params;
-    const draftDenied = await guardDraftRequest(id, false);
-    if (draftDenied) return draftDenied;
-  const session = await getServerSession(authOptions as NextAuthOptions);
-  const sessionUser: Session["user"] | null = session?.user ?? null;
-  const sessionEmail = (sessionUser?.email as string | undefined) || null;
-  const userId = sessionEmail ? await getUserIdByEmail(sessionEmail) : null;
-
-  if (!sessionEmail || !userId) {
-    return NextResponse.json(
-      {
-        error:
-          "Sign in with the email (or phone-linked account) the organizer invited to continue.",
-      },
-      { status: 401 }
-    );
-  }
-
-  const body = (await req.json().catch(() => null)) as RequestPayload | null;
-  if (!body || typeof body.action !== "string") {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
-  }
-
+    const { id } = await context.params;
+    const denied = await guardDraftRequest(id, false);
+    if (denied) return denied;
     const row = await getEventHistoryById(id);
-    if (!row) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-
-    // Check access: must be owner or accepted shared recipient
-    const ownerId = row.user_id || null;
-    const isOwner = Boolean(ownerId && ownerId === userId);
-    let allowed = isOwner;
-    if (!allowed) {
-      const shared = await isEventSharedWithUser(id, userId);
-      allowed = shared === true;
-    }
-    if (!allowed) {
+    if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const session = await getServerSession(authOptions);
+    const userId = await resolveSessionUserId(session);
+    const isOwner = Boolean(userId && userId === row.user_id);
+    const shared = userId ? await isEventSharedWithUser(id, userId) : false;
+    if (!isOwner && !shared && !isIndexablePublicSmartSignupData(row.data))
       return NextResponse.json(
-        {
-          error:
-            "Access is limited to invited contacts. Ask the organizer to share this event with your account.",
-        },
-        { status: 403 }
+        { error: "Access is limited to invited contacts." },
+        { status: 403 },
       );
-    }
+    const form = readStoredSignup(row.data?.signupForm);
+    return NextResponse.json(
+      { signupForm: projectSignupForm(form, { isOwner, userId: shared ? userId : null }) },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
+  } catch (error) {
+    return signupError(error);
+  }
+}
 
-    const existingData = (row.data ?? null) as Record<string, unknown> | null;
-    const tableRow = await getSignupFormByEventId(id);
-    const rawFormSource = tableRow?.form || (existingData?.signupForm as any);
-    if (!rawFormSource || typeof rawFormSource !== "object") {
+export async function POST(req: Request, context: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await context.params;
+    const denied = await guardDraftRequest(id, false);
+    if (denied) return denied;
+    const session = await getServerSession(authOptions);
+    const userId = await resolveSessionUserId(session);
+    const email = session?.user?.email;
+    if (!userId || !email)
       return NextResponse.json(
-        { error: "Sign-up form is not enabled for this event." },
-        { status: 400 }
+        { error: "Sign in with the account the organizer invited to continue." },
+        { status: 401 },
       );
-    }
-    const form = sanitizeSignupForm({
-      ...(rawFormSource as SignupForm),
-      enabled: true,
-    });
-    // Best-effort backfill to normalized table only when legacy JSON exists and looks valid
-    if (!tableRow && Array.isArray((rawFormSource as any).sections) && typeof (rawFormSource as any).version === "number") {
-      try {
-        await upsertSignupForm(id, form);
-      } catch {}
-    }
-    if (!form.sections.length) {
-      return NextResponse.json(
-        { error: "Sign-up form is missing sections." },
-        { status: 400 }
-      );
-    }
-
-    if (body.action === "reserve") {
-      const settings = form.settings;
-      const normalizedSlots = normalizeSlots(form, body.slots);
-      if (!normalizedSlots.length) {
-        return NextResponse.json(
-          { error: "Pick at least one slot." },
-          { status: 400 }
+    const body: unknown = await req.json().catch(() => null);
+    const shared = await isEventSharedWithUser(id, userId);
+    const saved = await mutateSignupEvent(id, (row) => {
+      const isOwner = row.user_id === userId;
+      if (!isOwner && !shared)
+        throw new SignupMutationError(
+          "Access is limited to invited contacts. Ask the organizer to share this event with your account.",
+          403,
         );
-      }
-      if (
-        !settings.allowMultipleSlotsPerPerson &&
-        normalizedSlots.length > 1
-      ) {
-        return NextResponse.json(
-          {
-            error:
-              "This form allows one slot per person. Deselect extra slots and try again.",
-          },
-          { status: 400 }
-        );
-      }
-
-      const providedName =
-        typeof body.name === "string" ? body.name.trim() : "";
-      const defaultName = buildDefaultName(sessionUser);
-      const name = providedName || defaultName;
-      if (!name) {
-        return NextResponse.json(
-          { error: "Tell us who is signing up." },
-          { status: 400 }
-        );
-      }
-
-      const answers = normalizeAnswers(form, body.answers);
-      const requiredIds = form.questions
-        .filter((question) => question.required)
-        .map((question) => question.id);
-      const missingRequired = requiredIds.filter(
-        (id) => !answers.some((answer) => answer.questionId === id)
-      );
-      if (missingRequired.length > 0) {
-        return NextResponse.json(
-          { error: "Answer the required questions before submitting." },
-          { status: 400 }
-        );
-      }
-
-      const signupId =
-        typeof body.signupId === "string" ? body.signupId.trim() : "";
-      // For unauthenticated users, use email from body; for authenticated, prefer session email
-      const lookupEmail = 
-        sessionEmail || 
-        (settings.collectEmail && typeof body.email === "string" && body.email.trim()
-          ? body.email.trim()
-          : null);
-      const lookupPhone = 
-        settings.collectPhone && typeof body.phone === "string" && body.phone.trim()
-          ? body.phone.trim()
-          : null;
-      
-      // Find existing response by signupId first (allows updates), then by email/phone/userId
-      const existingResponse =
-        (signupId
-          ? form.responses.find((response) => response.id === signupId)
-          : null) ||
-        findSignupResponseForUser(form, userId, lookupEmail, lookupPhone);
-      
-      // Prevent duplicate sign-ups: if an existing active response is found and it's not the one being updated
-      if (existingResponse && !signupId && existingResponse.status !== "cancelled") {
-        const emailMatch = lookupEmail && existingResponse.email && 
-          existingResponse.email.toLowerCase() === lookupEmail.toLowerCase();
-        const phoneMatch = lookupPhone && existingResponse.phone && 
-          existingResponse.phone.trim().replace(/\D/g, "") === lookupPhone.trim().replace(/\D/g, "");
-        return NextResponse.json(
-          { 
-            error: emailMatch
-              ? "You've already signed up for this event with this email address."
-              : phoneMatch
-              ? "You've already signed up for this event with this phone number."
-              : "You've already signed up for this event."
-          },
-          { status: 409 }
-        );
-      }
-
-      const remainingBaseForm: SignupForm = {
-        ...form,
-        responses: existingResponse
-          ? form.responses.filter((response) => response.id !== existingResponse.id)
-          : [...form.responses],
-      };
-
-      let shouldWaitlist = false;
-      for (const slotSelection of normalizedSlots) {
-        const slotMeta = findSignupSlot(
-          form,
-          slotSelection.sectionId,
-          slotSelection.slotId
-        );
-        if (!slotMeta) {
-          return NextResponse.json(
-            { error: "One of the selected slots no longer exists." },
-            { status: 400 }
-          );
-        }
-        const capacity = remainingCapacityForSlot(
-          remainingBaseForm,
-          slotSelection.sectionId,
-          slotSelection.slotId
-        );
-        if (capacity === null) continue; // unlimited
-        if (slotSelection.quantity > capacity) {
-          if (settings.waitlistEnabled) {
-            shouldWaitlist = true;
-          } else if (settings.lockWhenFull) {
-            return NextResponse.json(
-              {
-                error:
-                  "That slot is already full. Pick a different slot or try again later.",
-              },
-              { status: 409 }
-            );
-          } else {
-            shouldWaitlist = true;
-          }
-        }
-      }
-
-      const nowIso = new Date().toISOString();
-      const guests = clampGuests(settings.maxGuestsPerSignup, body.guests);
-      const email =
-        settings.collectEmail &&
-        typeof body.email === "string" &&
-        body.email.trim()
-          ? body.email.trim()
-          : settings.collectEmail
-          ? sessionEmail
-          : null;
-      const phone = settings.collectPhone
-        ? typeof body.phone === "string" && body.phone.trim()
-          ? body.phone.trim()
-          : existingResponse?.phone || null
-        : null;
-      const note =
-        typeof body.note === "string" && body.note.trim()
-          ? body.note.trim()
-          : null;
-
-      const newResponse: SignupResponse = {
-        id: existingResponse?.id || generateSignupId(),
+      const form = readStoredSignup(row.data?.signupForm);
+      const change = mutateSignupReservation(form, body, {
         userId,
-        name,
-        email: email || null,
-        phone: phone || null,
-        guests,
-        note,
-        slots: normalizedSlots,
-        answers,
-        status: shouldWaitlist ? "waitlisted" : "confirmed",
-        createdAt: existingResponse?.createdAt || nowIso,
-        updatedAt: nowIso,
-      };
-
-      const responsesNext = existingResponse
-        ? [
-            ...form.responses.filter(
-              (response) => response.id !== existingResponse.id
-            ),
-            newResponse,
-          ]
-        : [...form.responses, newResponse];
-
-      const nextForm: SignupForm = rebalanceSignupWaitlist({
-        ...form,
-        responses: responsesNext,
+        email,
+        name: session?.user?.name,
+        isOwner,
       });
-      const normalizedNext = sanitizeSignupForm({
-        ...nextForm,
-        enabled: true,
-      });
-
-      const mergedData: Record<string, unknown> = {
-        ...(existingData ?? {}),
-        signupForm: normalizedNext,
-      };
-      
-      // Update both stores; if normalized table fails, log error but continue
-      // The legacy JSON is authoritative for backward compatibility
-      const updatedRow = await updateEventHistoryData(id, mergedData);
-      if (ownerId) { invalidateUserHistory(ownerId); invalidateUserDashboard(ownerId); }
-      let normalizedUpdateSuccess = false;
+      return { data: { ...row.data, signupForm: change.form }, result: { ...change, isOwner } };
+    });
+    if (!saved) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const viewers = new Set([
+      saved.row.user_id,
+      userId,
+      ...(await listShareRecipientUserIdsForEvent(id).catch(() => [])),
+    ]);
+    for (const viewer of viewers)
+      if (viewer) {
+        invalidateUserHistory(viewer);
+        invalidateUserDashboard(viewer);
+      }
+    const { form, response, isOwner } = saved.result;
+    // Await the attempt so the runtime cannot discard it after the response. A mail failure
+    // never turns a committed reservation into a failed request that guests would retry.
+    if (response?.email) {
       try {
-        const normalizedResult = await upsertSignupForm(id, normalizedNext);
-        normalizedUpdateSuccess = !!normalizedResult;
-      } catch (normalizedErr: any) {
-        // Log error but don't fail the request - legacy JSON is updated
-        console.error("[signup] Failed to sync to normalized table:", {
+        await sendSignupConfirmationEmail({
+          toEmail: response.email,
+          userName: response.name,
+          eventTitle: form.title || saved.row.title || "Signup",
+          eventUrl: await absoluteUrl(`/smart-signup-form/${id}`),
+          form,
+          response,
+        });
+      } catch (error) {
+        console.error("[signup] Confirmation delivery failed", {
           eventId: id,
-          error: normalizedErr?.message || String(normalizedErr),
+          error: error instanceof Error ? error.message : "Mail error",
         });
       }
-      
-      // If normalized update failed, log warning but use legacy data
-      if (!normalizedUpdateSuccess) {
-        console.warn("[signup] Normalized table update failed, using legacy JSON data");
-      }
-      
-      const updatedData = (updatedRow?.data ?? null) as
-        | Record<string, unknown>
-        | null;
-      const persistedCandidate = updatedData?.signupForm;
-      const persistedForm =
-        persistedCandidate && typeof persistedCandidate === "object"
-          ? sanitizeSignupForm({
-              ...(persistedCandidate as SignupForm),
-              enabled: true,
-            })
-          : normalizedNext;
-      const latestResponse =
-        persistedForm.responses.find(
-          (response) => response.id === newResponse.id
-        ) || newResponse;
-      const signupFormUrl = await absoluteUrl(`/smart-signup-form/${id}`);
-      // Fire-and-forget: email confirmation to participant when we have an email
-      (async () => {
-        try {
-          const toEmail = (latestResponse.email || (sessionEmail as string | null)) as string | undefined;
-          if (toEmail) {
-            console.log("[signup] Sending confirmation email", {
-              toEmail: `${toEmail.substring(0, 3)}***@${toEmail.split("@")[1]}`,
-              eventId: id,
-              userName: latestResponse.name || null,
-            });
-            await sendSignupConfirmationEmail({
-              toEmail,
-              userName: latestResponse.name || null,
-              eventTitle: row.title || "Smart sign-up",
-              eventUrl: signupFormUrl,
-              form: persistedForm,
-              response: latestResponse,
-            });
-            console.log("[signup] Confirmation email sent successfully", {
-              toEmail: `${toEmail.substring(0, 3)}***@${toEmail.split("@")[1]}`,
-            });
-          } else {
-            console.log("[signup] No email address available for confirmation", {
-              hasResponseEmail: !!latestResponse.email,
-              hasSessionEmail: !!sessionEmail,
-              collectEmail: persistedForm.settings.collectEmail,
-            });
-          }
-        } catch (err) {
-          console.error("[signup] failed to send confirmation email", {
-            error: err instanceof Error ? err.message : String(err),
-            eventId: id,
-          });
-        }
-      })();
-
-      return NextResponse.json({
-        ok: true,
-        status: latestResponse.status,
-        signupForm: persistedForm,
-        response: latestResponse,
-      });
     }
-
-    if (body.action === "cancel") {
-      const signupId =
-        typeof body.signupId === "string" ? body.signupId.trim() : "";
-      if (!signupId) {
-        return NextResponse.json(
-          { error: "Missing signup ID." },
-          { status: 400 }
-        );
-      }
-
-      const target = form.responses.find(
-        (response) => response.id === signupId
-      );
-      if (!target) {
-        return NextResponse.json(
-          { error: "Sign-up entry not found." },
-          { status: 404 }
-        );
-      }
-      
-      // Check ownership: owners can cancel any, others can only cancel their own
-      const ownerId = row.user_id || null;
-      const isOwner = Boolean(ownerId && ownerId === userId);
-      if (!isOwner && target.userId && target.userId !== userId) {
-        return NextResponse.json(
-          {
-            error: "You can only cancel your own sign-up.",
-          },
-          { status: 403 }
-        );
-      }
-
-      const nowIso = new Date().toISOString();
-      const responsesNext = form.responses.map((response) =>
-        response.id === signupId
-          ? { ...response, status: "cancelled" as "cancelled", updatedAt: nowIso }
-          : response
-      );
-      const nextForm: SignupForm = rebalanceSignupWaitlist({
-        ...form,
-        responses: responsesNext,
-      });
-      const normalizedNext = sanitizeSignupForm({
-        ...nextForm,
-        enabled: true,
-      });
-
-      const cancelMerged: Record<string, unknown> = {
-        ...(existingData ?? {}),
-        signupForm: normalizedNext,
-      };
-      const updatedRow = await updateEventHistoryData(id, cancelMerged);
-      if (ownerId) { invalidateUserHistory(ownerId); invalidateUserDashboard(ownerId); }
-      try {
-        await upsertSignupForm(id, normalizedNext);
-      } catch {}
-      const updatedData = (updatedRow?.data ?? null) as
-        | Record<string, unknown>
-        | null;
-      const persistedCandidate = updatedData?.signupForm;
-      const persistedForm =
-        persistedCandidate && typeof persistedCandidate === "object"
-          ? sanitizeSignupForm({
-              ...(persistedCandidate as SignupForm),
-              enabled: true,
-            })
-          : normalizedNext;
-      return NextResponse.json({
-        ok: true,
-        signupForm: persistedForm,
-      });
-    }
-
-    return NextResponse.json({ error: "Unsupported action" }, { status: 400 });
-  } catch (error: unknown) {
-    console.error("[signup] API error", error);
-    return NextResponse.json(
-      { error: "Unexpected error processing signup request." },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      ok: true,
+      status: response?.status,
+      signupForm: projectSignupForm(form, { isOwner, userId }),
+      response,
+    });
+  } catch (error) {
+    return signupError(error);
   }
+}
+
+function signupError(error: unknown) {
+  if (error instanceof SignupMutationError)
+    return NextResponse.json({ error: error.message }, { status: error.status });
+  console.error("[signup] Request failed", error);
+  return NextResponse.json(
+    { error: "Unable to save your signup right now. Please try again." },
+    { status: 500 },
+  );
 }
