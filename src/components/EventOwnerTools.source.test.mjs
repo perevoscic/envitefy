@@ -84,7 +84,6 @@ test("owner workspace keeps public actions in the header and not duplicated unde
   assert.match(previewBlock[0], /const autoHeight = heightMode === "auto";/);
   assert.match(previewBlock[0], /"flex h-full w-full items-center justify-center"/);
   assert.match(previewBlock[0], /"flex w-full items-center justify-center"/);
-  assert.match(previewBlock[0], /!h-full !w-auto !max-w-full !rounded-\[28px\]/);
   assert.match(previewBlock[0], /!w-full !max-w-full !rounded-\[28px\]/);
   assert.doesNotMatch(previewBlock[0], /\bp-3\b/);
 });

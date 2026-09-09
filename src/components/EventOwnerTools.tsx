@@ -940,6 +940,7 @@ export default function EventOwnerTools({
             preview={effectivePreview}
             publicUrl={publicUrl}
             embeddedPreviewUrl={embeddedPreviewHref}
+            className="w-full"
           />
         </aside>
       </div>
@@ -1090,6 +1091,7 @@ function EventProductPreview({
   heightMode?: "fixed" | "auto";
 }) {
   const autoHeight = heightMode === "auto";
+  const cardAspectRatio = preview.invitationData?.heroTextMode === "image" ? 2 / 3 : 9 / 16;
 
   return (
     <section
@@ -1123,9 +1125,13 @@ function EventProductPreview({
             frameClassName={
               autoHeight
                 ? "!aspect-[9/17] !w-full !max-w-full !rounded-[28px] !border-0 shadow-none sm:!aspect-[9/16]"
-                : "!h-full !w-auto !max-w-full !rounded-[28px] !border-0 shadow-none"
+                : "!w-full !max-w-full !rounded-[28px] !border-0 shadow-none"
             }
-            style={autoHeight ? undefined : { width: "100%", height: "100%" }}
+            style={autoHeight ? undefined : {
+              width: "100%",
+              height: "100%",
+              maxWidth: `calc(min(760px, 100dvh - 2.5rem) * ${cardAspectRatio})`,
+            }}
           />
         ) : publicUrl ? (
           <div
