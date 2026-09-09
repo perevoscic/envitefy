@@ -1,0 +1,16 @@
+{
+  "status": "awaiting-user-authorization-for-reference-audio-analysis",
+  "original": "C:/Users/rjosan/Downloads/envitefy.wav",
+  "originalSha256": "04655c5247cf95d075555868e6213b1f12f0772f94ab64ef7933f7661d6a31f6",
+  "decodedLocalReference": "out/john-space-disco/user-envitefy-pronunciation-reference.wav",
+  "durationSeconds": 2.005436,
+  "detectedSourceCodec": "aac",
+  "userRequest": "try this, hear it",
+  "intendedAnalysisDestination": "Google Gemini audio understanding",
+  "analysisStatus": "Not performed. Automatic approval review rejected external upload because destination-specific disclosure was not authorized.",
+  "currentVideoExports": [
+    "out/john-space-disco/john-space-disco-9x16-v9.mp4",
+    "out/john-space-disco/john-space-disco-16x9-v7.mp4"
+  ],
+  "nextStep": "Obtain explicit permission to send this supplied two-second clip to Google Gemini for pronunciation analysis, then compare/match the videos. Do not imply the recording has been heard."
+}

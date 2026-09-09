@@ -13,7 +13,9 @@ Brand identity, voice, messaging, asset management, and consistency frameworks.
 
 ## Envitefy spoken name
 
-The spoken name is **Inviteefy**, exact IPA **/ɪnˈvaɪtiˌfaɪ/**. Use `<phoneme alphabet="ipa" ph="ɪnˈvaɪtiˌfaɪ">Envitefy</phoneme>` in SSML-capable speech engines. Preserve primary stress on VY and secondary stress on fy; do not add the old vowel-length mark or discard the secondary stress. Speak it as one word. Written branding remains Envitefy. Apply this to all narration, TTS, generated dialogue and voice briefs. Use the shared pronunciation helper documented in [the studio guide](../../../video-studio/STUDIO-GUIDE.md). This exact user-supplied IPA supersedes earlier phonetic spellings and stress directions.
+Read the mandatory [Envitefy Brand Name & Pronunciation Standard](../../../ENVITEFY_BRAND.md) before producing branded speech. The current target is **en-VITE-fy**, approximately **/ɛnˈvaɪtfaɪ/**: short “en” as in “enter,” stressed “VITE” rhyming with “bite,” then “fy” rhyming with “fly,” spoken continuously with no extra syllable. This supersedes earlier Inviteefy / in-VY-tee-fy guidance.
+
+Apply the standard's complete model direction through supported pronunciation controls for every spoken occurrence. Review generated audio against the standard; transcription alone does not establish pronunciation. Visible text remains **Envitefy** and locked wordmark/domain assets remain unchanged. The studio's [shared audio helper](../../../video-studio/scripts/brand-pronunciation.mjs) implements these controls.
 
 ## When to Use
 

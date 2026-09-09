@@ -1,0 +1,232 @@
+[
+  {
+    "start": 0.0,
+    "end": 3.28,
+    "text": " My birthday needs dinosaurs in space, with a disco!",
+    "words": [
+      {
+        "word": " My",
+        "start": 0.0,
+        "end": 0.32
+      },
+      {
+        "word": " birthday",
+        "start": 0.32,
+        "end": 0.6
+      },
+      {
+        "word": " needs",
+        "start": 0.6,
+        "end": 1.0
+      },
+      {
+        "word": " dinosaurs",
+        "start": 1.0,
+        "end": 1.32
+      },
+      {
+        "word": " in",
+        "start": 1.32,
+        "end": 1.92
+      },
+      {
+        "word": " space,",
+        "start": 1.92,
+        "end": 2.2
+      },
+      {
+        "word": " with",
+        "start": 2.7,
+        "end": 2.82
+      },
+      {
+        "word": " a",
+        "start": 2.82,
+        "end": 2.94
+      },
+      {
+        "word": " disco!",
+        "start": 2.94,
+        "end": 3.28
+      }
+    ]
+  },
+  {
+    "start": 4.679999999999995,
+    "end": 8.16,
+    "text": " Bring their birthday ideas to life with Envitfi Kumsierge.",
+    "words": [
+      {
+        "word": " Bring",
+        "start": 4.679999999999995,
+        "end": 5.2399999999999975
+      },
+      {
+        "word": " their",
+        "start": 5.2399999999999975,
+        "end": 5.8
+      },
+      {
+        "word": " birthday",
+        "start": 5.8,
+        "end": 5.96
+      },
+      {
+        "word": " ideas",
+        "start": 5.96,
+        "end": 6.44
+      },
+      {
+        "word": " to",
+        "start": 6.44,
+        "end": 6.62
+      },
+      {
+        "word": " life",
+        "start": 6.62,
+        "end": 6.8
+      },
+      {
+        "word": " with",
+        "start": 6.8,
+        "end": 7.0
+      },
+      {
+        "word": " Envitfi",
+        "start": 7.0,
+        "end": 7.42
+      },
+      {
+        "word": " Kumsierge.",
+        "start": 7.42,
+        "end": 8.16
+      }
+    ]
+  },
+  {
+    "start": 19.12,
+    "end": 21.38,
+    "text": " Small change, we're starting at three.",
+    "words": [
+      {
+        "word": " Small",
+        "start": 19.12,
+        "end": 19.68
+      },
+      {
+        "word": " change,",
+        "start": 19.68,
+        "end": 19.96
+      },
+      {
+        "word": " we're",
+        "start": 20.54,
+        "end": 20.64
+      },
+      {
+        "word": " starting",
+        "start": 20.64,
+        "end": 20.88
+      },
+      {
+        "word": " at",
+        "start": 20.88,
+        "end": 21.12
+      },
+      {
+        "word": " three.",
+        "start": 21.12,
+        "end": 21.38
+      }
+    ]
+  },
+  {
+    "start": 22.36,
+    "end": 25.24,
+    "text": " Change the plans, your live card updates, no resending needed.",
+    "words": [
+      {
+        "word": " Change",
+        "start": 22.36,
+        "end": 22.5
+      },
+      {
+        "word": " the",
+        "start": 22.5,
+        "end": 22.74
+      },
+      {
+        "word": " plans,",
+        "start": 22.74,
+        "end": 22.86
+      },
+      {
+        "word": " your",
+        "start": 23.36,
+        "end": 23.42
+      },
+      {
+        "word": " live",
+        "start": 23.42,
+        "end": 23.6
+      },
+      {
+        "word": " card",
+        "start": 23.6,
+        "end": 23.82
+      },
+      {
+        "word": " updates,",
+        "start": 23.82,
+        "end": 24.1
+      },
+      {
+        "word": " no",
+        "start": 24.52,
+        "end": 24.64
+      },
+      {
+        "word": " resending",
+        "start": 24.64,
+        "end": 25.0
+      },
+      {
+        "word": " needed.",
+        "start": 25.0,
+        "end": 25.24
+      }
+    ]
+  },
+  {
+    "start": 27.82,
+    "end": 29.5,
+    "text": " That's my kind of birthday.",
+    "words": [
+      {
+        "word": " That's",
+        "start": 27.82,
+        "end": 28.48
+      },
+      {
+        "word": " my",
+        "start": 28.48,
+        "end": 28.72
+      },
+      {
+        "word": " kind",
+        "start": 28.72,
+        "end": 29.12
+      },
+      {
+        "word": " of",
+        "start": 29.12,
+        "end": 29.24
+      },
+      {
+        "word": " birthday.",
+        "start": 29.24,
+        "end": 29.5
+      }
+    ]
+  }
+]

@@ -11,11 +11,16 @@ import { LogIn } from "lucide-react";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default async function AdminAnalyticsPage() {
+export default async function AdminAnalyticsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ analyticsAuth?: string }>;
+}) {
+  const { analyticsAuth } = await searchParams;
   const analytics = await getAdminAnalyticsSnapshot();
   const ga4ReportAvailable = analytics.ga4Report.status === "available";
   const ga4ConfigPresent = analytics.ga4.connected;
-  const ga4StatusTone = ga4ReportAvailable ? "success" : ga4ConfigPresent ? "warning" : "warning";
+  const ga4StatusTone = ga4ReportAvailable ? "success" : "warning";
   const ga4StatusLabel = ga4ReportAvailable
     ? "Connected"
     : ga4ConfigPresent
@@ -29,6 +34,23 @@ export default async function AdminAnalyticsPage() {
   const googleAnalyticsAuthHref = `/api/google/auth?consent=1&analytics=1&next=${encodeURIComponent(
     "/admin/analytics",
   )}`;
+  const googleAccountConnected = analytics.ga4.credentialsSource === "oauth";
+  const connectionNotices: Record<string, string> = {
+    connected: "Google account saved. Analytics reporting now uses the account shown below.",
+    cancelled: "Google connection cancelled. Your previous Analytics connection is unchanged.",
+    "missing-scope":
+      "Allow Google Analytics read access when connecting your account. Your previous connection is unchanged.",
+    "missing-refresh-token":
+      "Google did not provide ongoing access. Try connecting again and approve access. Your previous connection is unchanged.",
+    "identity-error":
+      "We could not verify the selected Google email. Please try again. Your previous connection is unchanged.",
+    failed:
+      "We could not save the Google connection. Please try again. Your previous connection is unchanged.",
+  };
+  const connectionNotice =
+    analyticsAuth && Object.hasOwn(connectionNotices, analyticsAuth)
+      ? connectionNotices[analyticsAuth]
+      : null;
 
   return (
     <div className="space-y-6">
@@ -38,20 +60,31 @@ export default async function AdminAnalyticsPage() {
         description="GA4 server configuration state and the v1 first-party tracking plan. No broad analytics event warehouse is introduced here."
       />
 
+      {connectionNotice ? (
+        <p
+          role="status"
+          className={`rounded-md border px-4 py-3 text-sm ${
+            analyticsAuth === "connected"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+              : "border-amber-200 bg-amber-50 text-amber-900"
+          }`}
+        >
+          {connectionNotice}
+        </p>
+      ) : null}
+
       <AdminPanel
         title="Google Analytics"
         description={ga4Description}
         action={
           <div className="flex flex-wrap items-center gap-2">
-            {!ga4ReportAvailable ? (
-              <a
-                href={googleAnalyticsAuthHref}
-                className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-sm transition hover:border-violet-300 hover:text-violet-700"
-              >
-                <LogIn className="h-3.5 w-3.5" aria-hidden="true" />
-                Connect Google
-              </a>
-            ) : null}
+            <a
+              href={googleAnalyticsAuthHref}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-sm transition hover:border-violet-300 hover:text-violet-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
+            >
+              <LogIn className="h-3.5 w-3.5" aria-hidden="true" />
+              {googleAccountConnected ? "Change Google account" : "Connect Google"}
+            </a>
             <AdminStatusBadge tone={ga4StatusTone}>{ga4StatusLabel}</AdminStatusBadge>
           </div>
         }

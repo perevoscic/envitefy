@@ -115,3 +115,7 @@ The shared helper now exports the exact SSML and IPA. All three TTS entry points
 V7 stock Jessica / eleven_flash_v2 request contains exactly the user-supplied IPA tag. Provider alignment is stored as returned and is not used to infer acoustic stress. The voice ends at 8.425 seconds on the master timeline. The full video is a copy of the V6 video stream with the new mix; packet hashes confirm frame identity and the fixed unmirrored ending. Both streams are exactly 30 seconds. Full decode passed; -15.39 LUFS, -1.43 dBTP.
 
 Nine functional tests, syntax checks for 13 related scripts, video skill validation, changed-file ESLint/Biome and TypeScript pass. The optional editor bridge was previously unavailable; standalone checks completed. Source: prepare-john-vertical-v7.mjs; review: verify-john-vertical-v7.mjs and vertical-v7-verification.json. Earlier exports remain archived; no user audio approval is inferred.
+
+## September 9, 2026 — final reference-based pronunciation
+
+Completed the mandatory en-VITE-fy update after the user rejected the initial direct-TTS sample. The new reference-to-Jessica take passes audio review in the isolated narration and both final mixes; all animation packets remain identical. Final file: out/john-space-disco/john-space-disco-9x16-v9.mp4. See [current revision and verification](revision-brand-standard-2026-09-09.md). Assistant-reviewed; no user approval inferred.

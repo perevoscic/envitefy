@@ -84,3 +84,7 @@ Master: wide-final-mix-v5.wav. Final MP4 copies the V4 video stream exactly, ret
 Nine shared speech/caption tests passed. Actual returned alignment was tested against official caption spelling. ESLint passed with Node globals for scripts; TypeScript and Biome passed for touched composition sources. The optional editor diagnostics bridge remains unavailable as previously recorded. Full media checks are in wide-export-checks-v5.json.
 
 Reproduce with scripts/john-wide-voice.mjs create v5, scripts/package-john-wide-audio.mjs v5, and scripts/verify-john-wide-v5.mjs. Default output: john-space-disco/john-space-disco-16x9-v5. Latest assistant-reviewed file: out/john-space-disco/john-space-disco-16x9-v5.mp4. No publishing or user approval of the completed media is implied.
+
+## September 9, 2026 — final reference-based pronunciation
+
+Completed the mandatory en-VITE-fy update after the user rejected the initial direct-TTS sample. The new reference-to-Jessica take passes audio review in the isolated narration and both final mixes; all animation packets remain identical. Final file: out/john-space-disco/john-space-disco-16x9-v7.mp4. See [current revision and verification](revision-brand-standard-2026-09-09.md). Assistant-reviewed; no user approval inferred.

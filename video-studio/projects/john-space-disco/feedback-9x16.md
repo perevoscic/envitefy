@@ -25,3 +25,9 @@ V6 completed: saved in-VY-tee-fy with primary stress on VY and regenerated the C
 V7: user supplied exact Inviteefy pronunciation <phoneme alphabet="ipa" ph="ɪnˈvaɪtiˌfaɪ">Envitefy</phoneme> for all audio. Applied globally and replacing the current vertical narration while preserving the video stream.
 
 V7 completed: exact user IPA tag saved as the global standard and used for the new current-video narration. Shared helper propagation and legacy-setup protection checked. Previous video frames preserved exactly; no user approval inferred.
+
+2026-09-09: User rejected the mixed pronunciation sample from the provisional V8 vertical / V6 horizontal exports: "No, it still sounds wrong." These exports are NOT accepted. Revision continues against the mandatory en-VITE-fy standard. All animation streams remain preserved.
+
+## September 9, 2026 — final reference-based pronunciation
+
+Completed the mandatory en-VITE-fy update after the user rejected the initial direct-TTS sample. The new reference-to-Jessica take passes audio review in the isolated narration and both final mixes; all animation packets remain identical. Final file: out/john-space-disco/john-space-disco-9x16-v9.mp4. See [current revision and verification](revision-brand-standard-2026-09-09.md). Assistant-reviewed; no user approval inferred.

@@ -30,7 +30,16 @@
   "audio": {
     "dialogue": "Native character speech, exact requested lines",
     "narration": "Natural adult female voice, auditioned before full generation",
-    "music": "Original upbeat playful disco-funk instrumental with orchestral sparkle"
+    "music": "Original upbeat playful disco-funk instrumental with orchestral sparkle",
+    "brandPronunciation": {
+      "standard": "../../../ENVITEFY_BRAND.md",
+      "spoken": "en-VITE-fy",
+      "ipa": "ɛnˈvaɪtfaɪ",
+      "visibleSpelling": "Envitefy",
+      "selectedTake": "vo-create-jessica-reference-v1.mp3",
+      "method": "Exact IPA local synthetic reference converted to stock Jessica",
+      "review": "Both final mixed occurrences passed audio pronunciation review"
+    }
   },
   "claims": [
     "Concierge creates custom birthday Live Cards",

@@ -3,6 +3,8 @@ import { daysAgo, tableExists, toNumber } from "./data-utils";
 import {
   getGa4DashboardSnapshot,
   getGa4ReportingConfigStatus,
+  getGa4ReportingConfigStatusForRequest,
+  type AdminGa4ReportingConfigStatus,
   type AdminGa4CredentialSource,
   type AdminGa4DashboardSnapshot as Ga4DashboardSnapshot,
 } from "./ga4-reporting";
@@ -51,8 +53,9 @@ export type AdminAnalyticsOverviewSnapshot = Pick<
   "ga4" | "ga4Report" | "trackingGaps"
 >;
 
-export function getAdminGa4Status(): AdminGa4Status {
-  const config = getGa4ReportingConfigStatus();
+export function getAdminGa4Status(
+  config: AdminGa4ReportingConfigStatus = getGa4ReportingConfigStatus(),
+): AdminGa4Status {
   const connected = config.ready;
 
   return {
@@ -69,7 +72,7 @@ export function getAdminGa4Status(): AdminGa4Status {
       ? "Google Analytics Data API reporting is connected."
       : "Google Analytics is not connected.",
     setupHint:
-      "Set GOOGLE_ANALYTICS_PROPERTY_ID plus either Google service-account credentials or GOOGLE_ANALYTICS_OAUTH_EMAIL. Then use Connect Google to store an Analytics refresh token, or set GOOGLE_ANALYTICS_REFRESH_TOKEN directly.",
+      "Set GOOGLE_ANALYTICS_PROPERTY_ID, then use Connect Google to choose an account with access to that property. Use Change Google account to switch emails. The selected account is saved for Analytics reporting. Service-account credentials remain an alternative setup option.",
     configurationError: config.configurationError,
   };
 }
@@ -106,7 +109,7 @@ export function getAdminTrackingGaps(): AdminTrackingGap[] {
 
 export async function getAdminAnalyticsOverviewSnapshot(): Promise<AdminAnalyticsOverviewSnapshot> {
   return {
-    ga4: getAdminGa4Status(),
+    ga4: getAdminGa4Status(await getGa4ReportingConfigStatusForRequest()),
     ga4Report: await getGa4DashboardSnapshot(),
     trackingGaps: getAdminTrackingGaps(),
   };
@@ -168,7 +171,7 @@ export async function getAdminAnalyticsSnapshot(): Promise<AdminAnalyticsSnapsho
   ]);
 
   return {
-    ga4: getAdminGa4Status(),
+    ga4: getAdminGa4Status(await getGa4ReportingConfigStatusForRequest()),
     ga4Report,
     firstParty: {
       eventsLast30Days: toNumber(events.rows[0]?.n),

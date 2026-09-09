@@ -1,3 +1,4 @@
+import {ENVITEFY_IPA as CURRENT_IPA, ENVITEFY_SSML as CURRENT_SSML, ENVITEFY_SPOKEN_NAME as CURRENT_SPOKEN_NAME} from "./brand-pronunciation.mjs";
 import fs from 'node:fs';
 import {spawnSync,execFileSync} from 'node:child_process';
 // Archive the exact submitted pronunciation so later shared-default edits cannot change this export.
@@ -10,10 +11,11 @@ if(!/^out\/john-space-disco\/john-space-disco-16x9-v[0-9]+\.mp4$/.test(latest)||
 function ff(args){const r=spawnSync('ffmpeg',['-y','-hide_banner','-loglevel','error',...args],{stdio:'inherit',windowsHide:true});if(r.status)throw Error('FFmpeg failed');}
 const name='vo-create-wide-'+version+'.mp3';
 const request=JSON.parse(fs.readFileSync(p+'voice-create-wide-'+version+'-request.json','utf8'));
-const phoneme=request.body.text.match(/<phoneme alphabet="ipa" ph="([^"]+)">Envitefy<\/phoneme>/);
-if(!phoneme)throw Error('Completed request must contain an explicit IPA tag');
-const ENVITEFY_IPA=phoneme[1],ENVITEFY_SSML=phoneme[0],ENVITEFY_SPOKEN_NAME='Inviteefy';
-if(request.status!=='completed'||!request.body.text.includes(ENVITEFY_SSML))throw Error('Narration must use the exact current IPA tag');
+const isCurrent=request.body.text.includes(CURRENT_SSML);
+const phoneme=isCurrent?[CURRENT_SSML,CURRENT_IPA]:request.body.text.match(/<phoneme alphabet="ipa" ph="([^"]+)">Envitefy<\/phoneme>/);
+if(!phoneme)throw Error('Completed request must contain supported pronunciation controls');
+const ENVITEFY_IPA=phoneme[1],ENVITEFY_SSML=phoneme[0],ENVITEFY_SPOKEN_NAME=isCurrent?CURRENT_SPOKEN_NAME:'Archived pronunciation';
+if(request.status!=='completed'||!request.body.text.includes(ENVITEFY_SSML))throw Error('Narration request must have completed with explicit pronunciation controls');
 const alignment=JSON.parse(fs.readFileSync(p+'voice-create-wide-'+version+'-alignment.json','utf8'));
 const duration=Number(execFileSync('ffprobe',['-v','error','-show_entries','format=duration','-of','default=noprint_wrappers=1:nokey=1',b+name],{encoding:'utf8'}).trim());
 if(duration>6.4||duration<2)throw Error('Narration duration needs review');

@@ -1,7 +1,7 @@
 {
   "status": "reviewed",
   "latestReviewedExport": {
-    "version": 7,
+    "version": 9,
     "composition": "EnvitefyJohnSpaceDisco",
     "aspectRatio": "9:16",
     "width": 1080,
@@ -9,13 +9,13 @@
     "fps": 30,
     "durationSeconds": 30,
     "frames": 900,
-    "path": "out/john-space-disco/john-space-disco-9x16-v7.mp4",
-    "bytes": 22283653,
-    "sha256": "d09190eb05166801522a2e37156e99c2f8aa8165fcc97ddbd8300655c231f761",
+    "path": "out/john-space-disco/john-space-disco-9x16-v9.mp4",
+    "bytes": 22283857,
+    "sha256": "af2cf9bb692538aab6d9a6c9338e073f07bb7a201d44953a250f7276459b7e5a",
     "reviewStatus": "assistant-reviewed",
     "userApproved": false,
-    "reviewedAt": "2026-09-08T22:06:03.312Z",
-    "reviewNotes": "Exact user IPA ɪnˈvaɪtiˌfaɪ sent in the supplied SSML tag for the new narration. Global helper, all three TTS paths, eight base native-video generators, brand/video skills and guide updated. V7 video stream exactly matches V6, preserving the original unmirrored ending. Exact 30-second streams and full decode verified."
+    "reviewedAt": "2026-09-09T13:48:18.098Z",
+    "reviewNotes": "Replaced the rejected direct-TTS take with exact-IPA synthetic-reference-to-Jessica voice conversion. Local reference, converted take and both final mixed brand occurrences passed audio review as en-VITE-fy /ɛnˈvaɪtfaɪ/: three continuous syllables, correct initial vowel and VITE stress, no extra vowel, clear over music. Every animation packet matches the previously corrected version. Exact 30-second streams, full decode, sound levels, complete dialogue, source tests and lint/type checks passed."
   },
   "previousReviewedExports": [
     {
@@ -102,6 +102,23 @@
       "userApproved": false,
       "reviewedAt": "2026-09-08T21:48:09.121Z",
       "reviewNotes": "Audio-only pronunciation update to in-VY-tee-fy, primary stress on VY. New stock Jessica take uses CMU IH0 N V AY1 T IY0 F AY0. Video stream matches V5 exactly, preserving the unmirrored ending. Audio and video are exactly 30 seconds, complete decode and sound checks pass."
+    },
+    {
+      "version": 7,
+      "composition": "EnvitefyJohnSpaceDisco",
+      "aspectRatio": "9:16",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30,
+      "durationSeconds": 30,
+      "frames": 900,
+      "path": "out/john-space-disco/john-space-disco-9x16-v7.mp4",
+      "bytes": 22283653,
+      "sha256": "d09190eb05166801522a2e37156e99c2f8aa8165fcc97ddbd8300655c231f761",
+      "reviewStatus": "assistant-reviewed",
+      "userApproved": false,
+      "reviewedAt": "2026-09-08T22:06:03.312Z",
+      "reviewNotes": "Exact user IPA ɪnˈvaɪtiˌfaɪ sent in the supplied SSML tag for the new narration. Global helper, all three TTS paths, eight base native-video generators, brand/video skills and guide updated. V7 video stream exactly matches V6, preserving the original unmirrored ending. Exact 30-second streams and full decode verified."
     }
   ]
 }

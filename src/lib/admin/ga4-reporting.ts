@@ -3,6 +3,7 @@ import path from "node:path";
 import { google, type analyticsdata_v1beta } from "googleapis";
 import type { JWTInput } from "google-auth-library";
 import { getGoogleRefreshToken } from "@/lib/db";
+import { getSavedGa4Connection, type SavedGa4Connection } from "./ga4-connection";
 
 const GA4_READONLY_SCOPE = "https://www.googleapis.com/auth/analytics.readonly";
 const GA4_DATE_RANGE = [{ startDate: "30daysAgo", endDate: "today" }];
@@ -110,7 +111,7 @@ function isServiceAccountCredentials(value: unknown): value is JWTInput {
   );
 }
 
-function resolveCredentialConfig(): Pick<
+function resolveCredentialConfig(savedConnection: SavedGa4Connection | null): Pick<
   ResolvedGa4ReportingConfig,
   | "credentialsConfigured"
   | "credentialsValid"
@@ -122,7 +123,9 @@ function resolveCredentialConfig(): Pick<
   | "oauthRefreshToken"
   | "oauthRefreshTokenFromStore"
 > & { error: string | null } {
-  const oauthRefreshToken = process.env.GOOGLE_ANALYTICS_REFRESH_TOKEN?.trim();
+  // An explicit admin connection supersedes the environment's bootstrap account.
+  const oauthRefreshToken =
+    savedConnection?.refreshToken || process.env.GOOGLE_ANALYTICS_REFRESH_TOKEN?.trim();
   if (oauthRefreshToken) {
     const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
@@ -135,7 +138,8 @@ function resolveCredentialConfig(): Pick<
       credentialsValid: missingOAuthConfig.length === 0,
       credentialsSource: "oauth",
       serviceAccountEmail: null,
-      oauthEmail: process.env.GOOGLE_ANALYTICS_OAUTH_EMAIL?.trim().toLowerCase() || null,
+      oauthEmail:
+        savedConnection?.email || process.env.GOOGLE_ANALYTICS_OAUTH_EMAIL?.trim().toLowerCase() || null,
       credentials: null,
       keyFile: null,
       oauthRefreshToken,
@@ -243,11 +247,13 @@ function resolveCredentialConfig(): Pick<
   };
 }
 
-function resolveGa4ReportingConfig(): ResolvedGa4ReportingConfig {
+function resolveGa4ReportingConfig(
+  savedConnection: SavedGa4Connection | null = null,
+): ResolvedGa4ReportingConfig {
   const propertyId = process.env.GOOGLE_ANALYTICS_PROPERTY_ID?.trim() || null;
   const propertyIdConfigured = Boolean(propertyId);
   const propertyIdFormatValid = Boolean(propertyId && /^\d+$/.test(propertyId));
-  const credentialConfig = resolveCredentialConfig();
+  const credentialConfig = resolveCredentialConfig(savedConnection);
   const configurationErrors = [
     !propertyIdConfigured ? "Set GOOGLE_ANALYTICS_PROPERTY_ID to the numeric GA4 property ID." : null,
     propertyIdConfigured && !propertyIdFormatValid
@@ -275,7 +281,7 @@ function resolveGa4ReportingConfig(): ResolvedGa4ReportingConfig {
 }
 
 async function resolveGa4ReportingConfigForRequest(): Promise<ResolvedGa4ReportingConfig> {
-  const config = resolveGa4ReportingConfig();
+  const config = resolveGa4ReportingConfig(await getSavedGa4Connection());
   if (!config.oauthRefreshTokenFromStore || !config.oauthEmail || config.oauthRefreshToken) {
     return config;
   }
@@ -291,12 +297,14 @@ async function resolveGa4ReportingConfigForRequest(): Promise<ResolvedGa4Reporti
   return {
     ...config,
     ready: false,
-    configurationError: `Authorize ${config.oauthEmail} through /api/google/auth?consent=1&analytics=1 so Envitefy can store a Google refresh token with Analytics read access.`,
+    configurationError:
+      "Use Connect Google or Change Google account to choose an account and allow Analytics read access.",
   };
 }
 
-export function getGa4ReportingConfigStatus(): AdminGa4ReportingConfigStatus {
-  const config = resolveGa4ReportingConfig();
+export function getGa4ReportingConfigStatus(
+  config: AdminGa4ReportingConfigStatus = resolveGa4ReportingConfig(),
+): AdminGa4ReportingConfigStatus {
   return {
     propertyId: config.propertyId,
     propertyIdConfigured: config.propertyIdConfigured,
@@ -309,6 +317,10 @@ export function getGa4ReportingConfigStatus(): AdminGa4ReportingConfigStatus {
     ready: config.ready,
     configurationError: config.configurationError,
   };
+}
+
+export async function getGa4ReportingConfigStatusForRequest(): Promise<AdminGa4ReportingConfigStatus> {
+  return getGa4ReportingConfigStatus(await resolveGa4ReportingConfigForRequest());
 }
 
 function createAnalyticsDataClient(config: ResolvedGa4ReportingConfig) {
@@ -363,7 +375,11 @@ function toGa4ErrorMessage(error: unknown, config: ResolvedGa4ReportingConfig): 
         ? `Google user ${config.oauthEmail}`
       : "configured service account";
     const property = config.propertyId ? `GA4 property ${config.propertyId}` : "this GA4 property";
-    return `GA4 access denied. Add ${account} as a Viewer or Analyst in ${property}'s Property access management, then refresh this page.`;
+    const switchAccount =
+      config.credentialsSource === "oauth"
+        ? " Or use Change Google account to connect an account that already has access."
+        : "";
+    return `GA4 access denied. Add ${account} as a Viewer or Analyst in ${property}'s Property access management, then refresh this page.${switchAccount}`;
   }
   return message ? `GA4 Data API request failed: ${message}` : "GA4 Data API request failed.";
 }

@@ -9,7 +9,7 @@ ENV NODE_ENV=production
 # Required for sharp native deps
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-    python3 make g++ libc6 libvips-dev ca-certificates \
+    python3 make g++ libc6 libvips-dev ca-certificates qpdf \
     && rm -rf /var/lib/apt/lists/*
 
 

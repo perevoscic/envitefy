@@ -1,0 +1,21 @@
+{
+  "source": "out/john-space-disco/user-envitefy-pronunciation-reference.wav",
+  "original": "C:/Users/rjosan/Downloads/envitefy.wav",
+  "originalSha256": "04655c5247cf95d075555868e6213b1f12f0772f94ab64ef7933f7661d6a31f6",
+  "sourceSha256": "1928dcbc953b06be3127604532759585276d2ae7fca7eb3ff54d5fb745d1dce8",
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "The user supplied this short recording as the authoritative pronunciation reference for a brand and explicitly asked us to hear it. Listen closely. Transcribe exactly what is audibly said, describe the sound using IPA, syllables, primary stress and a plain English sound-alike. Count audible syllables from the audio itself, without inferring from spelling. Report where the spoken word starts and ends. Do not compare against or assume any prior written target. Describe audible voice tone and pacing only, without identifying the speaker or inferring personal traits. Return concise JSON with transcript,ipa,syllables,stress,plainPronunciation,speechStartSeconds,speechEndSeconds,delivery,uncertainty.",
+  "scope": "Only the exact pronunciation recording explicitly supplied for listening by the user.",
+  "status": "completed",
+  "review": {
+    "transcript": "Invitify.",
+    "ipa": "ɪnˈvaɪtɪfaɪ",
+    "syllables": 4,
+    "stress": 2,
+    "plainPronunciation": "in-VY-tih-fy",
+    "speechStartSeconds": 0,
+    "speechEndSeconds": 0.8,
+    "delivery": "A clear, moderately paced, and neutral enunciation.",
+    "uncertainty": null
+  }
+}

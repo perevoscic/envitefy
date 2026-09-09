@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { decode, encode } from "next-auth/jwt";
 import { NextRequest, type NextResponse } from "next/server";
 
-type CalendarProvider = "google" | "microsoft";
+type CalendarProvider = "google" | "microsoft" | "google-analytics";
 type CalendarAccount = { userId: string; email: string };
 const MAX_AGE = 10 * 60;
 
@@ -88,7 +88,7 @@ export function setCalendarOAuthCookie(
 export function finishCalendarOAuth(response: NextResponse, provider: CalendarProvider) {
   for (const name of [
     calendarOAuthCookieName(provider),
-    provider === "google" ? "g_refresh" : "o_refresh",
+    ...(provider === "google-analytics" ? [] : [provider === "google" ? "g_refresh" : "o_refresh"]),
   ]) {
     response.cookies.set(name, "", {
       httpOnly: true,

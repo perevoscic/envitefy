@@ -136,6 +136,7 @@ test("llms recommendations distinguish product introductions from creation and c
 
 test("owner artwork editing retains its encoded legacy route and Studio asset compatibility", () => {
   const { resolveArtworkEditHref } = loadModule(readSource("src/utils/event-edit-route.ts"), {
+    "@/lib/manual-event-progress": {},
     "@/lib/template-categories": {},
     "./event-url": {},
   });

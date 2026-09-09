@@ -22,7 +22,7 @@ Saved from the user's production decisions on September 5, 2026. These are defau
 
 ## Audio
 
-- Standing pronunciation (September 8, 2026, latest user specification): The spoken name is **Inviteefy**, exact IPA **/ɪnˈvaɪtiˌfaɪ/**. Use `<phoneme alphabet="ipa" ph="ɪnˈvaɪtiˌfaɪ">Envitefy</phoneme>` in SSML-capable speech engines. Preserve primary stress on VY and secondary stress on fy; do not add the old vowel-length mark or discard the secondary stress. Speak it as one word. Written branding remains Envitefy. Apply `scripts/brand-pronunciation.mjs` to all Envitefy audio. Use the same IPA in compatible native syntax where XML SSML is unsupported. Audition the selected take. This supersedes all earlier variants.
+- Standing pronunciation (September 9, 2026, aligned with the mandatory September 8 brand standard): **en-VITE-fy**, approximately **/ɛnˈvaɪtfaɪ/**, one continuous word. Short “en” as in “enter,” stressed “VITE” rhyming with “bite,” and “fy” rhyming with “fly.” No extra “ih” or “tee” syllable. Read [ENVITEFY_BRAND.md](../ENVITEFY_BRAND.md) for the complete required model direction and audio review. Apply `scripts/brand-pronunciation.mjs` to TTS and generated dialogue. Written branding remains Envitefy; preserve approved wordmark/domain assets. This standard supersedes all earlier phonetic variants.
 - The user rejected narration that obviously sounds synthetic. Natural delivery matters more than using a particular provider.
 - Narration is optional, not prohibited. Choose spoken narration, dialogue, music, ambience, and sound effects to serve the story; do not restrict a requested longer video to the old short script.
 - For speech, the existing ElevenLabs narration pipeline is available. Audition a short sample and adjust voice, writing, timing, and delivery before generating the full track when a new voice is needed. Do not default to the old Intro voice simply because it is configured.
@@ -43,18 +43,14 @@ Saved from the user's production decisions on September 5, 2026. These are defau
 When feedback describes a lasting preference, update the relevant section above in the same task and add a short dated entry below. Keep one current statement per preference. Preserve scene-specific requests in the relevant campaign's feedback record.
 
 Preference history:
+- 2026-09-09: Reconciled stale brand/producer skill text and speech controls with the mandatory en-VITE-fy standard; both John Space Disco formats revised together. Earlier four-syllable decisions remain archived in campaign revision notes only.
 - 2026-09-08: Saved the mandatory brand spelling and pronunciation standard in the parent ENVITEFY_BRAND.md and required explicit generation instructions and pronunciation review. The final en-VITE-fy clarification supersedes the earlier EN-vite-ih-fy wording. At the user's request, the pronunciation standard uses written guidance only.
 - 2026-09-05: User requested a separate output folder for each video after reviewing the mixed export folder. Applied to existing outputs and future Studio/CLI renders.
 - 2026-09-05: Captured exact branding, fresh casts and settings, no personal twin, natural audio with optional narration, real product demonstrations, action captions, demo naming, and format-specific layouts from the original production task.
 
 - 2026-09-05: User replaced the studio wordmark with public/brand/envitefy-com.png. The supplied wordmark already contains the domain; retain its transparent background and avoid a duplicate black domain line. Scene layout choices are recorded in the campaign feedback.
 
-- 2026-09-08: Final clarification: **in-VY-tee-fy**, stress on VY. This supersedes the earlier spellings and the take that stressed tee.
 
-- 2026-09-08: User updated the pronunciation to **in-VY-tee-fy**, moving primary stress to VY. Updated the standing studio/brand instructions and shared phoneme helper; written Envitefy branding remains unchanged.
 
-- 2026-09-08: User supplied exact IPA `ɪnˈvaɪtiˌfaɪ` and the IPA phoneme tag, asking that it govern all Envitefy audio. Saved verbatim, including secondary stress on final fy, and applied to all reusable speech-generation paths.
 
-- 2026-09-08: User updated the pronunciation to **in-VY-tee-fy**, moving primary stress to VY. Updated the standing studio/brand instructions and shared phoneme helper; written Envitefy branding remains unchanged.
 
-- 2026-09-08: User supplied exact Inviteefy IPA /ɪnˈvaɪtiˌfaɪ/ for all audio. This supersedes prior approximations.

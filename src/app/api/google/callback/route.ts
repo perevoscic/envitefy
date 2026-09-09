@@ -8,6 +8,7 @@ import { absoluteUrl } from "@/lib/absolute-url";
 import { resolveSourceIntent } from "@/lib/concierge/creation-intent";
 import { saveGoogleRefreshToken, updatePreferredProviderByEmail, insertEventHistory } from "@/lib/db";
 import { hasGoogleCalendarEventWriteScope } from "@/lib/google-calendar-oauth";
+import { completeGa4OAuth } from "@/lib/admin/ga4-oauth";
 
 export const runtime = "nodejs";
 
@@ -52,6 +53,8 @@ export async function GET(request: Request) {
     if (!account.ok) {
       return NextResponse.json({ error: "Sign in before connecting a calendar" }, { status: 401 });
     }
+    const analyticsResponse = await completeGa4OAuth(request, account);
+    if (analyticsResponse) return analyticsResponse;
     const connection = await readCalendarOAuthState(request, account, "google");
     if (!connection) {
       return NextResponse.json({ error: "Calendar connection expired or account changed. Reconnect from Settings." }, { status: 400 });

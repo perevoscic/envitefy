@@ -68,9 +68,26 @@
       "userApproved": false,
       "reviewedAt": "2026-09-08T22:06:38.863Z",
       "reviewNotes": "Creation narration regenerated with the exact user IPA tag <phoneme alphabet=\"ipa\" ph=\"ɪnˈvaɪtiˌfaɪ\">Envitefy</phoneme>. The global speech helper, compatible-model routing, dialogue prompts and standing brand guidance use that pronunciation. Exact request, complete spoken line, full decode, 30-second format, audio levels and unchanged video-stream hash verified."
+    },
+    {
+      "version": 7,
+      "composition": "EnvitefyJohnSpaceDiscoWide",
+      "aspectRatio": "16:9",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "durationSeconds": 30,
+      "frames": 900,
+      "path": "out/john-space-disco/john-space-disco-16x9-v7.mp4",
+      "bytes": 39272263,
+      "sha256": "c62e46fc1811a52d12e5e63854c77ebe4ac820dd26d44e2f440076e691062ff1",
+      "reviewStatus": "assistant-reviewed",
+      "userApproved": false,
+      "reviewedAt": "2026-09-09T13:48:18.098Z",
+      "reviewNotes": "Replaced the rejected direct-TTS take with exact-IPA synthetic-reference-to-Jessica voice conversion. Local reference, converted take and both final mixed brand occurrences passed audio review as en-VITE-fy /ɛnˈvaɪtfaɪ/: three continuous syllables, correct initial vowel and VITE stress, no extra vowel, clear over music. Every animation packet matches the previously corrected version. Exact 30-second streams, full decode, sound levels, complete dialogue, source tests and lint/type checks passed."
     }
   ],
   "latestReviewedByAspect": {
-    "16:9": "out/john-space-disco/john-space-disco-16x9-v5.mp4"
+    "16:9": "out/john-space-disco/john-space-disco-16x9-v7.mp4"
   }
 }

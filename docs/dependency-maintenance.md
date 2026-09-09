@@ -1,5 +1,7 @@
 # Dependency maintenance
 
+The September 9 Windows installation now uses Node 24.21.0 and npm 11.19.0, with both npm projects matching the committed lockfiles. Git, FFmpeg, QPDF, and Playwright Chromium were also installed or updated. See [the Windows update and verification record](dependency-updates-windows-2026-09-09.md) for versions, results, and remaining optional migrations.
+
 The application and `video-studio/` have separate npm manifests and lockfiles. Run checks from the repository, not the home directory:
 
 ```sh

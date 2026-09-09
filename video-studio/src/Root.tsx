@@ -134,7 +134,7 @@ export const RemotionRoot: React.FC = () => {
         calculateMetadata={async () => {
           await loadBrandFonts();
           return {
-            defaultOutName: "john-space-disco/john-space-disco-16x9-v5",
+            defaultOutName: "john-space-disco/john-space-disco-16x9-v7",
           };
         }}
       />
@@ -146,7 +146,7 @@ export const RemotionRoot: React.FC = () => {
         fps={30}
         durationInFrames={900}
         calculateMetadata={() => ({
-          defaultOutName: "john-space-disco/john-space-disco-9x16-v7",
+          defaultOutName: "john-space-disco/john-space-disco-9x16-v9",
         })}
       />
       <Composition

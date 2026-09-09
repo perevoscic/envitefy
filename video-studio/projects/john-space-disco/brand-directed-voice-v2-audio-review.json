@@ -1,0 +1,24 @@
+{
+  "source": "public/projects/john-space-disco/vo-create-brand-standard-v2.wav",
+  "sha256": "d022667c19cea1c9e7f63daf4dfbda8baf970de1047ba91ed333baa31082acb8",
+  "bytes": 202170,
+  "scope": "Only a freshly generated stock Aoede adult TTS voice saying the user-provided promotional sentence. No personal recordings, child/parent dialogue, soundtrack, customer data or video included.",
+  "model": "gemini-3.1-pro-preview",
+  "destination": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent",
+  "prompt": "Act as a careful English phonetics reviewer. Distinguish what you can hear from uncertainty; the spelling of a made-up brand is not evidence of its pronunciation. Listen to the attached short synthetic adult narrator audio. First transcribe the words you actually hear and report the audible pronunciation of the brand before Concierge in IPA and plain syllables. Then judge whether it matches this written standard: en-VITE-fy, /ɛnˈvaɪtfaɪ/, short en as in enter, stressed VITE rhyming with bite, final fy rhyming with fly. It must be a continuous THREE-syllable word; there must be no extra ee/ih/tee syllable between VITE and fy and no unnatural pause. Do not assume the sound matches the target. Report initial vowel, syllable count, strongest syllable, extra vowel or pause if any, complete intelligible sentence, natural delivery, any defect or uncertainty, and matchesStandard as a boolean. Base your judgment on the audio, not on the expected spelling. Return concise JSON.",
+  "status": "completed",
+  "review": {
+    "transcription": "Bring their birthday ideas to life with Invitefy Concierge.",
+    "brandPronunciationIPA": "/ɪnˈvaɪtɪfaɪ/",
+    "brandPronunciationSyllables": "in-VITE-ih-fy",
+    "initialVowel": "/ɪ/",
+    "syllableCount": 4,
+    "strongestSyllable": "VITE",
+    "extraVowelOrPause": "Yes, there is an extra vowel sound (/ɪ/ or /ə/) between VITE and fy.",
+    "completeIntelligibleSentence": true,
+    "naturalDelivery": true,
+    "defectOrUncertainty": "The brand name is pronounced with four syllables instead of the requested three, and the initial vowel is /ɪ/ (as in 'in') rather than the requested /ɛ/ (as in 'enter').",
+    "matchesStandard": false
+  },
+  "reviewedAt": "2026-09-09T13:25:27.987Z"
+}

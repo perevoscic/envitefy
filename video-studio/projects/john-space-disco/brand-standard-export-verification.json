@@ -1,0 +1,117 @@
+{
+  "date": "2026-09-09T13:45:11.729Z",
+  "reports": [
+    {
+      "aspectRatio": "9:16",
+      "path": "out/john-space-disco/john-space-disco-9x16-v9.mp4",
+      "base": "out/john-space-disco/john-space-disco-9x16-v7.mp4",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1080,
+            "height": 1920,
+            "r_frame_rate": "30/1",
+            "duration": "30.000000",
+            "nb_read_frames": "900",
+            "side_data_list": [
+              {}
+            ]
+          },
+          {
+            "codec_name": "aac",
+            "sample_rate": "48000",
+            "channels": 2,
+            "r_frame_rate": "0/0",
+            "duration": "30.000000",
+            "nb_read_frames": "1407"
+          }
+        ],
+        "format": {
+          "duration": "30.000000",
+          "size": "22283857"
+        }
+      },
+      "videoStreamUnchanged": true,
+      "videoPacketSha256": "SHA256=5ba920a3bdf85571f0a6f90e709f11412083629f775ca110ace94f357ba39bb9",
+      "fullDecodePassed": true,
+      "bytes": 22283857,
+      "sha256": "af2cf9bb692538aab6d9a6c9338e073f07bb7a201d44953a250f7276459b7e5a",
+      "loudness": {
+        "input_i": "-15.42",
+        "input_tp": "-1.40",
+        "input_lra": "10.10",
+        "input_thresh": "-25.84",
+        "output_i": "-15.20",
+        "output_tp": "-1.50",
+        "output_lra": "7.70",
+        "output_thresh": "-25.51",
+        "normalization_type": "dynamic",
+        "target_offset": "0.20"
+      },
+      "voice": "public/projects/john-space-disco/vo-create-jessica-reference-v1.mp3",
+      "voiceSha256": "d1d7dfeda93b0075122a391f9782d5ca502f303fb3855ae7283092c666865212",
+      "voiceStartSeconds": 5.5,
+      "voiceDurationSeconds": 4.257959,
+      "pronunciationAudioReview": "projects/john-space-disco/brand-jessica-reference-v1-audio-review.json"
+    },
+    {
+      "aspectRatio": "16:9",
+      "path": "out/john-space-disco/john-space-disco-16x9-v7.mp4",
+      "base": "out/john-space-disco/john-space-disco-16x9-v5.mp4",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080,
+            "r_frame_rate": "30/1",
+            "duration": "30.000000",
+            "nb_read_frames": "900",
+            "side_data_list": [
+              {}
+            ]
+          },
+          {
+            "codec_name": "aac",
+            "sample_rate": "48000",
+            "channels": 2,
+            "r_frame_rate": "0/0",
+            "duration": "30.000000",
+            "nb_read_frames": "1407"
+          }
+        ],
+        "format": {
+          "duration": "30.000000",
+          "size": "39272263"
+        }
+      },
+      "videoStreamUnchanged": true,
+      "videoPacketSha256": "SHA256=efdd11095985993f9e2ed09f8aabe78d0e5195852658a729e768da0ab5e82bf6",
+      "fullDecodePassed": true,
+      "bytes": 39272263,
+      "sha256": "c62e46fc1811a52d12e5e63854c77ebe4ac820dd26d44e2f440076e691062ff1",
+      "loudness": {
+        "input_i": "-15.13",
+        "input_tp": "-1.41",
+        "input_lra": "6.30",
+        "input_thresh": "-25.55",
+        "output_i": "-14.83",
+        "output_tp": "-1.50",
+        "output_lra": "5.50",
+        "output_thresh": "-25.20",
+        "normalization_type": "dynamic",
+        "target_offset": "-0.17"
+      },
+      "voice": "public/projects/john-space-disco/vo-create-jessica-reference-v1.mp3",
+      "voiceSha256": "d1d7dfeda93b0075122a391f9782d5ca502f303fb3855ae7283092c666865212",
+      "voiceStartSeconds": 5.35,
+      "voiceDurationSeconds": 4.257959,
+      "pronunciationAudioReview": "projects/john-space-disco/brand-jessica-reference-v1-audio-review.json"
+    }
+  ]
+}
