@@ -17,6 +17,7 @@ import {
   Globe,
   IdCard,
   Loader2,
+  type LucideIcon,
   Mic,
   Plus,
   Sparkles,
@@ -56,7 +57,6 @@ import {
   PromptInputActions,
   PromptInputTextarea,
 } from "@/components/ui/ai-prompt-box";
-import BottomNavBar, { type BottomNavItem } from "@/components/ui/bottom-nav-bar";
 import { useVisualViewportInsets } from "@/hooks/useVisualViewportInsets";
 import { isExternalPlatformActionRequest as isUnsupportedExternalConciergeRequest } from "@/lib/concierge/creation-intent";
 import { skinLabelForCategoryName, skinLabelForConciergeDraft } from "@/lib/concierge/skins";
@@ -80,6 +80,7 @@ import { buildEventPath, buildEventSlug } from "@/utils/event-url";
 import {
   createObjectUrlPreview,
   persistImageMediaValue,
+  uploadMediaFile,
   revokeObjectUrl,
   validateClientUploadFile,
 } from "@/utils/media-upload-client";
@@ -98,7 +99,7 @@ type ProductOption = {
   output: RequestedOutput;
   description: string;
   prompt: string;
-  icon: BottomNavItem["icon"];
+  icon: LucideIcon;
 };
 
 type StarterIconComponent = ComponentType<{ className?: string }>;
@@ -318,15 +319,6 @@ const PRODUCT_OPTIONS: ProductOption[] = [
     icon: Globe,
   },
 ];
-
-function chatProductNavItem(option: ProductOption): BottomNavItem {
-  return {
-    label: option.label,
-    value: option.output,
-    icon: option.icon,
-    labelWidth: Math.max(72, Math.ceil(option.label.length * 7)),
-  };
-}
 
 const CREATION_INTAKE_URL = "/api/creation/intake";
 const CREATION_INTAKE_STREAM_URL = "/api/creation/intake/stream";
@@ -1443,6 +1435,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     document.addEventListener("pointerdown", dismissSuggestions);
     return () => document.removeEventListener("pointerdown", dismissSuggestions);
   }, []);
+  const unsentDraftId = useRef<string | null>(null);
   const [input, setInput] = useState("");
   const [selectedProductOutput, setSelectedProductOutput] = useState<RequestedOutput | null>(null);
   const [selectedStarterCategory, setSelectedStarterCategory] =
@@ -1529,12 +1522,11 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   });
   const isBusy = isSending || isUploading || isGeneratingCard || isPublishingCard;
   const progress = useEventProgress({
-    snapshot: { draft, studioInvite: draftStudioInvite, messages: chatMessagesForPersistence(messages), input, selectedProductOutput, pendingUpload: pendingChatUpload?.file.name },
+    snapshot: { draft, studioInvite: draftStudioInvite, messages: chatMessagesForPersistence(messages), input, selectedProductOutput, pendingUpload: pendingChatUpload ? { name: pendingChatUpload.file.name, size: pendingChatUpload.file.size, modified: pendingChatUpload.file.lastModified, source: pendingChatUpload.source } : null },
     ready: !restoringProgress,
-    enabled: !liveCardEventId,
+    enabled: !liveCardEventId && Boolean(draft || input.trim() || selectedProductOutput || pendingChatUpload || messages.some((message) => message.role === "user")),
     busy: isBusy,
     save: async () => {
-      if (pendingChatUpload) throw new Error("Send your selected upload before saving, or keep editing to remove it.");
       await saveChatProgress();
     },
     discard: () => { resetConversation(); },
@@ -1603,20 +1595,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const canSubmitComposer = Boolean(input.trim() || hasComposerSelection || pendingChatUpload);
   const selectedSkinLabel =
     skinLabelForCategoryName(selectedCategoryLabel) || skinLabelForDraft(draft);
-  const hasInitialEventContext =
-    Boolean(draft) || visibleMessages.some((message) => message.role === "user");
-  const isWaitingForEventPurpose =
-    draft?.currentQuestion === "what_are_we_celebrating" ||
-    draft?.missingFields[0] === "eventPurpose";
-  const shouldShowProductFormatTiles =
-    !liveCardEventId &&
-    Boolean(draft) &&
-    !isReceivedInviteDraft(draft) &&
-    !draft?.requestedOutputs.length &&
-    !isWaitingForEventPurpose &&
-    !isBusy &&
-    !isEmptyState &&
-    hasInitialEventContext;
   const rsvpResponseNames = rsvpPreview.responses.map(
     (response) => response.name || response.email || "Guest",
   );
@@ -1644,6 +1622,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   }
 
   function resetConversation() {
+    unsentDraftId.current = null;
     conversationVersionRef.current += 1;
     responseAbortRef.current?.abort();
     generationAbortRef.current?.abort();
@@ -1750,12 +1729,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setInput(nextValue);
   }
 
-  function handleProductChoice(option: ProductOption) {
-    if (isBusy) return;
-    setSelectedProductOutput(option.output);
-    updateComposerSelection();
-  }
-
   function removeSelectedStarterCategory() {
     if (isBusy || !selectedStarterCategory) return;
     updateComposerSelection();
@@ -1842,6 +1815,20 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
           .catch(() => null)) as CreationSessionResumeResponse | null;
         if (cancelled || !response.ok || !json?.ok || !json.draft) return;
 
+        const metadata = json.creationSession?.metadata;
+        const pending = metadata?.pendingUpload;
+        setPendingChatUpload(null);
+        if (pending && typeof pending === "object" && !Array.isArray(pending)) {
+          const file = pending as Record<string, unknown>;
+          if (typeof file.url === "string" && typeof file.name === "string" && typeof file.type === "string") {
+            const response = await fetch(file.url);
+            if (!response.ok) throw new Error("Your saved upload could not be opened. Please retry opening this draft.");
+            const blob = await response.blob();
+            if (cancelled) return;
+            setPendingChatUpload({ file: new File([blob], file.name, { type: file.type }), source: file.source === "camera" ? "camera" : "upload" });
+          }
+        }
+        setUploadedPreviewImageUrl(typeof metadata?.sourceImageUrl === "string" ? metadata.sourceImageUrl : null);
         const restoredDraft = normalizeDraftProductOutputs(json.draft);
         const savedEventId = json.savedEventId || null;
         const invitationData = json.studioInvite
@@ -2054,6 +2041,18 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
 
   async function saveChatProgress(draftToSave = draft) {
     const snapshotDraft = draftToSave || fallbackExtractConciergeDraft({ message: "", requestedOutputs: selectedProductOutput ? [selectedProductOutput] : null });
+    if (!draftToSave) {
+      unsentDraftId.current ||= snapshotDraft.creationSessionId;
+      snapshotDraft.creationSessionId = unsentDraftId.current;
+    }
+    let pendingUpload = null;
+    if (pendingChatUpload) {
+      const uploaded = await uploadMediaFile({ file: pendingChatUpload.file, usage: "attachment" });
+      const stored = uploaded.stored.source || uploaded.stored.display;
+      if (!stored?.url) throw new Error("Your selected upload could not be saved. Please retry.");
+      pendingUpload = { url: stored.url, name: pendingChatUpload.file.name, type: stored.mimeType, source: pendingChatUpload.source };
+    }
+    const sourceImageUrl = uploadedPreviewImageUrl ? await persistImageMediaValue({ value: uploadedPreviewImageUrl, fileName: uploadedPreviewFileName || "event-source" }) : null;
     const response = await fetch("/api/creation/draft", {
       method: "PUT",
       credentials: "include",
@@ -2062,6 +2061,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         draft: snapshotDraft,
         studioInvite: draftStudioInvite,
         composerText: input,
+        pendingUpload,
+        sourceImageUrl,
         chatMessages: chatMessagesForPersistence(messages),
       }),
     });
@@ -3114,30 +3115,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
               </button>
             </div>
           </div>
-        </motion.div>
-      ) : null}
-
-      {shouldShowProductFormatTiles ? (
-        <motion.div
-          initial={{ opacity: 0, y: 10, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          className="w-full max-w-full self-start"
-        >
-          <BottomNavBar
-            items={PRODUCT_OPTIONS.map(chatProductNavItem)}
-            activeValue={selectedProductOutput}
-            defaultIndex={-1}
-            spreadItems
-            autoOpenOnMount
-            autoOpenIntervalMs={2000}
-            autoOpenCycles={3}
-            ariaLabel="Choose product format"
-            className="w-full !min-w-0 !border !border-white/70 !bg-white/62 !shadow-[0_18px_46px_rgba(92,91,229,0.12)] !backdrop-blur-xl"
-            onValueChange={(value) => {
-              const option = PRODUCT_OPTIONS.find((item) => item.output === value);
-              if (option) handleProductChoice(option);
-            }}
-          />
         </motion.div>
       ) : null}
 

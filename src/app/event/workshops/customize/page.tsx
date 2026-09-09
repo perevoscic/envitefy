@@ -531,6 +531,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             theme: (savedEventData.themeId || savedEventData.theme?.id || savedEventData.theme?.themeId) === themeId ? savedEventData.theme || currentTheme : currentTheme,
           },
         };
+        payload.data.status = "published";
+        payload.data.draftStatus = "published";
+        payload.data.manualEditor = null;
+
 
         const res = await fetch(editEventId ? `/api/history/${editEventId}` : "/api/history", {
           method: editEventId ? "PATCH" : "POST",

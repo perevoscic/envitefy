@@ -1,5 +1,6 @@
 "use client";
 
+import { sanitizePersistedMediaUrl } from "@/lib/public-asset-url";
 import { useManualEventProgress } from "@/hooks/useManualEventProgress";
 
 import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
@@ -649,6 +650,8 @@ export default function EventCreateWysiwyg({ defaultDate, initialCategoryKey }: 
           })
         : null;
       const mediaPatch = mergeUploadedEventMedia({
+        existingAttachment: attachment?.dataUrl && sanitizePersistedMediaUrl(attachment.dataUrl) ? attachment : null,
+        existingThumbnail: attachment?.type.startsWith("image/") ? sanitizePersistedMediaUrl(attachment.dataUrl) : null,
         attachmentUpload,
       });
 
@@ -676,6 +679,7 @@ export default function EventCreateWysiwyg({ defaultDate, initialCategoryKey }: 
         },
       };
 
+      payload.data.manualEditor = null;
       payload.data.status = "published";
       payload.data.draftStatus = "published";
       payload.data.ownership = "owned";

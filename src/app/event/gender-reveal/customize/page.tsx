@@ -779,6 +779,10 @@ export default function GenderRevealTemplateCustomizePage() {
           }),
         },
       };
+        payload.data.status = "published";
+        payload.data.draftStatus = "published";
+        payload.data.manualEditor = null;
+
 
       console.log(
         "[Gender Reveal Publish] Payload data keys:",
@@ -798,7 +802,7 @@ export default function GenderRevealTemplateCustomizePage() {
       let id: string | undefined;
 
       if (editEventId) {
-        await fetch(`/api/history/${editEventId}`, {
+        const response = await fetch(`/api/history/${editEventId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -807,6 +811,7 @@ export default function GenderRevealTemplateCustomizePage() {
             data: payload.data,
           }),
         });
+        if (!response.ok) throw new Error("Unable to publish this event. Your changes are still here.");
         id = editEventId;
       } else {
         const r = await fetch("/api/history", {
@@ -816,7 +821,8 @@ export default function GenderRevealTemplateCustomizePage() {
           body: JSON.stringify(payload),
         });
         const j = await r.json().catch(() => ({}));
-        id = (j as any)?.id as string | undefined;
+        if (!r.ok || !j.id) throw new Error(j.error || "Unable to publish this event. Your changes are still here.");
+        id = j.id;
       }
 
       if (id) {

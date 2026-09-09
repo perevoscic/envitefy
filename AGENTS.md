@@ -12,6 +12,13 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 - Dashboard Drive tile preference (September 7, 2026): show total route distance in miles and drive duration in hours/minutes. Keep departure times, arrival buffers, traffic notes, and drive update timestamps out of this tile.
 - Dashboard panel preference (September 7, 2026): keep Guest responses beside Continue creating. Do not restore the large Needs attention panel; use separate compact Schedule conflicts (second summary tile) and Needs attention tiles with clickable details.
 
+## Explicit Draft Saves
+
+- Standing preference (September 8, 2026): keep new event progress in memory until the person explicitly saves. Do not create a draft when an editor opens, after every chat turn, after generating artwork, on pagehide, or when switching tabs.
+- Use `UnsavedProgressProvider` for Save and leave, Discard and leave, and Keep editing across Concierge, template editors, signup forms, and manual event creators. Native reload/tab close uses the browser's unsaved-changes warning.
+- Discard abandons changes since the last explicit save; it must preserve previously saved drafts. Save failures keep the editor open. Untouched demo content and loading saved content must not trigger a warning.
+- Keep publishing separate from saving progress. Preserve the chosen destination after saving, and resume each saved draft in its matching editor with its artwork and form fields.
+
 ## Template Gallery Standard
 
 - Standing preference (September 7, 2026): use the wedding gallery's square thumbnails for all event template lists and design pickers, including birthdays, anniversaries, weddings, baby showers, gender reveals, and gymnastics.
@@ -92,6 +99,8 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
   Start with `rg` on symbols, then use targeted `sed -n` slices.
 
 ## Feature Maps
+
+- Chat product selector preference (September 8, 2026): keep the Live Card, Flyer/Invitation, and Event Page choices on the empty starting screen only. Do not render the old product navigation bar between conversation messages, including when a draft has no requested output.
 
 - Live Card button placement (September 8, 2026): keep RSVP, Overview, Location, Calendar, and other guest action buttons overlaid inside the bottom of the artwork, as in the original design. Do not move them into a separate row below the image or add a solid black footer. Continue the artwork behind the controls; keep essential lettering and faces clear of the button area.
 

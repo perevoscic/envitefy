@@ -86,7 +86,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Prefills names, age, venue, theme, and RSVP contacts from messages containing several details, and keeps those facts through follow-up replies. An explicit RSVP contact instruction resolves the RSVP choice without asking again, while respecting an explicit off choice.",
             "Drafts event-specific guest copy and a polished live page for the host to review and edit before sharing.",
             "Hosts can review saved event details, correct titles and format choices in conversation, and generate a draft preview before a separate publish step.",
-            "Generated draft previews and subsequent design edits are saved with the conversation, so hosts can reopen a draft with the same artwork without regenerating it.",
+            "Hosts choose when to save conversation progress and generated artwork. Leaving with unsaved changes offers Save and leave, Discard and leave, or Keep editing; saved drafts reopen with the same artwork.",
             "Artwork previews appear during supported image generation, with status updates for drawing, checking, refining, and saving. Hosts review the completed draft before publishing.",
             "For newly generated Live Cards with headline-only artwork, date, time, location, and RSVP changes update the event details while keeping the image. Changes to printed wording or the visual design still regenerate artwork.",
             "Artwork edits recognize subject-removal and headline-font requests, including common typing mistakes, and check that requested visual changes were applied. Each artwork action allows one initial image attempt and at most one automatic repair; opening a preview or publishing reuses the saved image.",
@@ -112,7 +112,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           proofPoints: [
             "Template and manual creation remain available alongside Envitefy Snap and Envitefy Concierge.",
             "Public landing pages and searchable template galleries cover weddings, birthdays, anniversaries, baby showers, bridal showers, gender reveals, gymnastics, sports, and signup forms.",
-            "Visitors can edit manual details and preview their own photos. Temporary drafts stay in the same browser for seven days after the last edit, with a clear recovery message if browser storage fails.",
+            "Visitors can edit manual details and preview their own photos without automatically creating drafts. Leaving an event editor with unsaved changes prompts them to save, discard, or keep editing. Explicitly saved browser drafts remain available for seven days.",
             "Save and continue opens signup or login. Account saves create a private draft that the owner can reopen from My events and Continue creating; publishing is a separate action.",
             "Category pages such as /weddings and /birthdays offer templates; creation CTAs for Envitefy Concierge open /chat, while introductions link to /envitefy-concierge.",
             "Hosts can choose event-specific layouts, edit wording and details, and review the guest experience before publishing.",
@@ -413,7 +413,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Hosts can keep the original template composition or customize its header, fonts, colors, photos, crops, and spacing. The same saved design appears in the editor, review, and shared signup page.",
             "All 150 signup designs include original photographic artwork, covering seasonal events, community groups, sports, celebrations, classes, and hobbies.",
             "All 150 signup templates have artwork-focused square thumbnails with readable names and coordinated design colors and typography in the gallery. Opening a template provides editable sample event details, hosts, signup needs, capacities, and questions.",
-            "A four-step editor starts with customizing the chosen design's colors, typography, header, and photos in a separate sidebar beside the live preview, then details, signup slots, and review, with reusable starters and browser draft recovery.",
+            "A four-step editor starts with customizing the chosen design's colors, typography, header, and photos in a separate sidebar beside the live preview, then details, signup slots, and review, with reusable starters and recovery for explicitly saved drafts.",
             "Invited guests sign in to claim slots; the public preview shows availability without other participants’ contact information.",
           ],
           sellWhen: [

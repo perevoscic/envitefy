@@ -1,3 +1,4 @@
+import { sanitizePersistedMediaUrl } from "@/lib/public-asset-url";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { insertEventHistory, query } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
@@ -25,6 +26,7 @@ import {
 import { buildConciergeHistoryPayload } from "./history-payload.ts";
 import type {
   ConciergeEventDraft,
+  ConciergeConversationState,
   ConciergeMessageResponse,
   ConciergeStudioInvite,
   CreationChatMessageSnapshot,
@@ -226,6 +228,33 @@ function chatMessagesMetadata(messages: CreationChatMessageSnapshot[]): Record<s
   return messages.length ? { chatMessages: messages } : {};
 }
 
+function isSavedConversationState(value: unknown): value is ConciergeConversationState {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const state = value as Record<string, unknown>;
+  for (const key of ["missingFields", "confirmedFields", "inferredFields", "lowConfidenceFields"]) {
+    if (!Array.isArray(state[key]) || !state[key].every((field) => typeof field === "string")) return false;
+  }
+  if (!state.alreadyAskedFields || typeof state.alreadyAskedFields !== "object" || Array.isArray(state.alreadyAskedFields) || !Object.values(state.alreadyAskedFields).every((count) => typeof count === "number" && Number.isFinite(count))) return false;
+  for (const key of ["locationTentative", "registrySkipped", "rsvpRequired", "finalSummaryShown", "readyToGenerate"]) {
+    if (state[key] !== undefined && typeof state[key] !== "boolean") return false;
+  }
+  for (const key of ["eventType", "productType", "honoreeRole", "lastUserMessageHash", "lastAssistantMessageHash", "lastCompletedAction", "currentStep"]) {
+    if (state[key] !== undefined && typeof state[key] !== "string") return false;
+  }
+  for (const key of ["title", "date", "time", "location", "honoree", "momToBe", "parentsToBe", "babyName", "graduateName", "birthdayPerson", "coupleNames", "registryLink"]) {
+    const field = state[key];
+    if (field === undefined) continue;
+    if (!field || typeof field !== "object" || Array.isArray(field)) return false;
+    const record = field as Record<string, unknown>;
+    const list = key === "parentsToBe" || key === "coupleNames";
+    if (list ? !Array.isArray(record.value) || !record.value.every((item) => typeof item === "string") : typeof record.value !== "string") return false;
+    if (typeof record.confidence !== "number" || !Number.isFinite(record.confidence)) return false;
+    if (record.sourceText !== undefined && typeof record.sourceText !== "string") return false;
+    if (!["inferred", "confirmed", "needsConfirmation"].every((flag) => typeof record[flag] === "boolean")) return false;
+  }
+  return true;
+}
+
 /** Keep the complete current snapshot only after an explicit Save action. */
 export async function saveCreationDraft(userId: string, input: Record<string, unknown>): Promise<CreationSession> {
   const raw = input.draft;
@@ -240,11 +269,36 @@ export async function saveCreationDraft(userId: string, input: Record<string, un
     message: "",
     requestedOutputs: normalizeRequestedOutputs(record.requestedOutputs),
   });
+  fallback.titleConfirmed = record.titleConfirmed === true;
+  fallback.explicitlyClearedFields = Array.isArray(record.explicitlyClearedFields)
+    ? record.explicitlyClearedFields.filter((field): field is string => typeof field === "string") : [];
+  fallback.contextStartMessage = typeof record.contextStartMessage === "string" ? record.contextStartMessage : undefined;
+  fallback.copyStatus = record.copyStatus === "ready" || record.copyStatus === "needs_update" ? record.copyStatus : "provisional";
+  if (record.previewCopy && typeof record.previewCopy === "object" && !Array.isArray(record.previewCopy)) {
+    const preview = record.previewCopy as Record<string, unknown>;
+    for (const key of Object.keys(fallback.previewCopy) as Array<keyof typeof fallback.previewCopy>) {
+      if (typeof preview[key] === "string") fallback.previewCopy[key] = preview[key];
+    }
+  }
   const draft = normalizeConciergeDraft(record, fallback);
+  draft.titleConfirmed = fallback.titleConfirmed;
+  if (isSavedConversationState(record.conversationState)) draft.conversationState = record.conversationState;
+  if (record.sourceResolutions && typeof record.sourceResolutions === "object" && !Array.isArray(record.sourceResolutions)) {
+    draft.sourceResolutions = Object.fromEntries(Object.entries(record.sourceResolutions).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+  }
+  const pendingReply = record.pendingReply;
+  if (pendingReply && typeof pendingReply === "object" && "message" in pendingReply && typeof pendingReply.message === "string") draft.pendingReply = { message: pendingReply.message };
   // Preserve conversation state which is not extracted from invitation copy.
   const messages = normalizeChatMessages(input.chatMessages);
   const studioInvite = input.studioInvite == null ? null : parseCreationGeneratedPreview(input.studioInvite);
   if (input.studioInvite != null && !studioInvite) throw new Error("Your preview could not be saved. Please try again.");
+  let pendingUpload = null;
+  if (input.pendingUpload && typeof input.pendingUpload === "object" && !Array.isArray(input.pendingUpload)) {
+    const file = input.pendingUpload as Record<string, unknown>;
+    const url = typeof file.url === "string" ? sanitizePersistedMediaUrl(file.url) : null;
+    if (!url || !/^https?:\/\//i.test(url) || typeof file.name !== "string" || typeof file.type !== "string") throw new Error("Your selected upload could not be saved.");
+    pendingUpload = { url, name: file.name.slice(0, 255), type: file.type.slice(0, 100), source: file.source === "camera" ? "camera" : "upload" };
+  }
   return upsertCreationSession({
     userId,
     draft,
@@ -252,6 +306,8 @@ export async function saveCreationDraft(userId: string, input: Record<string, un
       explicitlySaved: true,
       ...chatMessagesMetadata(messages),
       generatedPreview: studioInvite,
+      pendingUpload,
+      sourceImageUrl: typeof input.sourceImageUrl === "string" && /^https?:\/\//i.test(input.sourceImageUrl) ? sanitizePersistedMediaUrl(input.sourceImageUrl) : null,
       composerText: typeof input.composerText === "string" ? input.composerText.slice(0, 12000) : "",
     },
   });

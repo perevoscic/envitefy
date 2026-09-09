@@ -332,7 +332,7 @@ export default function TemplateEditorProvider({
     });
     return () => {
       cancelled = true;
-      };
+    };
   }, [category, templateId, requestedDraft, editId, router, loadAttempt]);
 
   useEffect(
@@ -659,7 +659,6 @@ export default function TemplateEditorProvider({
         onClose={() => {
           setAuthOpen(false);
           if (draft.current) draft.current.pendingSave = false;
-
         }}
         onModeChange={setAuthMode}
         successRedirectUrl={returnUrl}

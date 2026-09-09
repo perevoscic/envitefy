@@ -761,13 +761,17 @@ export default function BabyShowerTemplateCustomizePage() {
           heroImage: heroImageToSave,
         },
       };
+        payload.data.status = "published";
+        payload.data.draftStatus = "published";
+        payload.data.manualEditor = null;
+
 
       if (templateEditor) { await templateEditor.persist(payload, "published"); return; }
 
       let id: string | undefined;
 
       if (editEventId) {
-        await fetch(`/api/history/${editEventId}`, {
+        const response = await fetch(`/api/history/${editEventId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -776,6 +780,7 @@ export default function BabyShowerTemplateCustomizePage() {
             data: payload.data,
           }),
         });
+        if (!response.ok) throw new Error("Unable to publish this event. Your changes are still here.");
         id = editEventId;
       } else {
         const r = await fetch("/api/history", {
@@ -785,7 +790,8 @@ export default function BabyShowerTemplateCustomizePage() {
           body: JSON.stringify(payload),
         });
         const j = await r.json().catch(() => ({}));
-        id = (j as any)?.id as string | undefined;
+        if (!r.ok || !j.id) throw new Error(j.error || "Unable to publish this event. Your changes are still here.");
+        id = j.id;
       }
 
       if (id) {

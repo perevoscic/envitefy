@@ -863,6 +863,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               : {}),
           },
         };
+        payload.data.status = "published";
+        payload.data.draftStatus = "published";
+        payload.data.manualEditor = null;
+
 
         if (editEventId) {
           const res = await fetch(`/api/history/${editEventId}`, {

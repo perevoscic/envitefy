@@ -2091,12 +2091,16 @@ const App = () => {
     setSubmitting(true);
     try {
       const payload = await buildHistoryPayload("published");
+        payload.data.status = "published";
+        payload.data.draftStatus = "published";
+        payload.data.manualEditor = null;
+
       let id: string | undefined;
 
       if (templateEditor) { await templateEditor.persist(payload, "published"); return; }
 
       if (editEventId) {
-        await fetch(`/api/history/${editEventId}`, {
+        const response = await fetch(`/api/history/${editEventId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -2105,6 +2109,7 @@ const App = () => {
             data: payload.data,
           }),
         });
+        if (!response.ok) throw new Error("Unable to publish this event. Your changes are still here.");
         id = editEventId;
       } else {
         const r = await fetch("/api/history", {
@@ -2114,7 +2119,8 @@ const App = () => {
           body: JSON.stringify(payload),
         });
         const j = await r.json().catch(() => ({}));
-        id = (j as any)?.id as string | undefined;
+        if (!r.ok || !j.id) throw new Error(j.error || "Unable to publish this event. Your changes are still here.");
+        id = j.id;
       }
 
       if (id) {

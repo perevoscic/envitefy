@@ -2027,6 +2027,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 : {}),
           },
         };
+        payload.data.status = "published";
+        payload.data.draftStatus = "published";
+        payload.data.manualEditor = null;
+
 
       if (templateEditor) { await templateEditor.persist(payload, "published"); return; }
 

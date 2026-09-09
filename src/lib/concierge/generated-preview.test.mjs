@@ -75,11 +75,13 @@ function fixture() {
   });
   const intake = loadModule("./intake.ts", {
     "@/lib/dashboard-cache": {},
+    "@/lib/public-asset-url": {},
     "@/lib/db": {},
     "@/lib/history-cache": {},
     "./assets.ts": {},
     "./event-storage.ts": storage,
     "./extract.ts": {},
+    "./creation-intent.ts": {},
     "./generated-preview.ts": { parseCreationGeneratedPreview },
     "./fallback.ts": {
       buildAssistantMessage: () => "Ready to continue.",

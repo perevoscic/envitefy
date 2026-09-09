@@ -1,5 +1,6 @@
 "use client";
 
+import { sanitizePersistedMediaUrl } from "@/lib/public-asset-url";
 import { useManualEventProgress } from "@/hooks/useManualEventProgress";
 
 import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
@@ -455,6 +456,8 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           : Promise.resolve(null),
       ]);
       const mediaPatch = mergeUploadedEventMedia({
+        existingAttachment: attachment?.dataUrl && sanitizePersistedMediaUrl(attachment.dataUrl) ? attachment : null,
+        existingThumbnail: sanitizePersistedMediaUrl(headerPreviewUrl),
         headerUpload,
         attachmentUpload,
       });
@@ -566,6 +569,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
         },
       };
 
+      payload.data.manualEditor = null;
       payload.data.status = "published";
       payload.data.draftStatus = "published";
       payload.data.ownership = "owned";

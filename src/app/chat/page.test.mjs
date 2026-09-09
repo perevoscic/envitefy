@@ -159,39 +159,6 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /"What kind of product would you like to create\?"/);
   assert.doesNotMatch(client, /const shouldShowComposerProductOptions = !liveCardEventId/);
   assert.doesNotMatch(client, /shouldShowComposerProductOptions/);
-  assert.match(client, /shouldShowProductFormatTiles/);
-  assert.match(client, /hasInitialEventContext/);
-  assert.match(client, /isWaitingForEventPurpose/);
-  assert.match(client, /!draft\?\.requestedOutputs\.length/);
-  assert.match(client, /!isWaitingForEventPurpose/);
-  assert.doesNotMatch(
-    client,
-    /const shouldShowProductFormatTiles =[\s\S]{0,180}!selectedProductOutput/,
-  );
-  assert.match(client, /BottomNavBar/);
-  assert.match(client, /ariaLabel="Choose product format"/);
-  assert.match(client, /activeValue=\{selectedProductOutput\}/);
-  assert.match(client, /defaultIndex=\{-1\}/);
-  assert.match(client, /spreadItems/);
-  assert.doesNotMatch(client, /activeValue=\{selectedProductOutput \?\? undefined\}/);
-  assert.match(client, /autoOpenOnMount/);
-  assert.match(client, /autoOpenIntervalMs=\{2000\}/);
-  assert.match(client, /autoOpenCycles=\{3\}/);
-  assert.match(client, /const isSelected = selectedProductOutput === option\.output/);
-  assert.doesNotMatch(
-    client,
-    /const isSelected = effectiveSelectedProductOutput === option\.output/,
-  );
-  assert.match(client, /function chatProductNavItem\(option: ProductOption\): BottomNavItem/);
-  assert.match(client, /labelWidth: Math\.max\(72, Math\.ceil\(option\.label\.length \* 7\)\)/);
-  assert.match(client, /items=\{PRODUCT_OPTIONS\.map\(chatProductNavItem\)\}/);
-  assert.match(client, /className="w-full max-w-full self-start"/);
-  assert.match(
-    client,
-    /className="w-full !min-w-0 !border !border-white\/70 !bg-white\/62/,
-  );
-  assert.match(client, /onValueChange=\{\(value\) =>/);
-  assert.match(client, /function handleProductChoice\(option: ProductOption\)/);
   assert.match(client, /setSelectedProductOutput\(option\.output\)/);
   assert.match(client, /function updateComposerSelection/);
   assert.match(client, /function selectionPrefix/);
@@ -672,4 +639,17 @@ test("/chat preview uses real generation stages and keeps streamed artwork visib
 
 test("/cht typo route is not present", () => {
   assert.equal(fs.existsSync(path.join(repoRoot, "src/app/cht/page.tsx")), false);
+});
+
+
+test("/chat keeps product format choices on the starting screen", () => {
+  const client = readSource("src/app/chat/ConciergeChatClient.tsx");
+  const thread = client.slice(client.indexOf("  const chatThread = ("), client.indexOf("  const composer = ("));
+  const composer = client.slice(client.indexOf("  const composer = ("), client.indexOf("  const readyActions = ("));
+  assert.doesNotMatch(client, /BottomNavBar|shouldShowProductFormatTiles|chatProductNavItem/);
+  assert.doesNotMatch(thread, /PRODUCT_OPTIONS|Choose product format/);
+  assert.match(composer, /isEmptyState \? \([\s\S]*?aria-label="Choose product format"/);
+  assert.match(composer, /PRODUCT_OPTIONS\.map/);
+  assert.match(composer, /const isSelected = selectedProductOutput === option\.output/);
+  assert.match(composer, /handleStarterProductChoice\(option\)/);
 });

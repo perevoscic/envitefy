@@ -1174,6 +1174,10 @@ export default function SpecialEventsCustomizePage() {
           theme: data.theme,
         },
       };
+        payload.data.status = "published";
+        payload.data.draftStatus = "published";
+        payload.data.manualEditor = null;
+
 
       let id: string | undefined;
 
