@@ -83,7 +83,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Starts from the host's words or uploaded context and helps collect missing event details.",
             "The public /envitefy-concierge page explains message and upload creation, preview and publishing steps, and example prompts; Live Card attribution links lead here, with signup and login continuing into /chat.",
             "A centered chat composer offers uploads and occasion suggestions through a plus menu, with product choices before the conversation starts and a compact Generate preview option beneath the latest reply when event details are ready.",
-            "Prefills names, age, venue, and theme from messages containing several details, and keeps those facts through follow-up replies.",
+            "Prefills names, age, venue, theme, and RSVP contacts from messages containing several details, and keeps those facts through follow-up replies. An explicit RSVP contact instruction resolves the RSVP choice without asking again, while respecting an explicit off choice.",
             "Drafts event-specific guest copy and a polished live page for the host to review and edit before sharing.",
             "Hosts can review saved event details, correct titles and format choices in conversation, and generate a draft preview before a separate publish step.",
             "Generated draft previews and subsequent design edits are saved with the conversation, so hosts can reopen a draft with the same artwork without regenerating it.",

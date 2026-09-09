@@ -21,6 +21,11 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 - Signup form thumbnail preference (September 8, 2026): use dedicated artwork-focused thumbnails with readable template names and the design's colors, typography, and photo framing. Keep the shared square frame with `scaled={false}` in the gallery; do not shrink complete signup pages or their form fields into thumbnails.
 - Signup form editor preference (September 8, 2026): the design is already chosen in the gallery. On desktop, keep the larger template preview and wizard in the main left column, with customization controls in a separate right sidebar outside the form. Align the sidebar's top edge with the form preview, below the step navigation and introduction. Start the design controls at Color palette, followed by Typography, Header layout, Photos & artwork, and Fine-tune the design. Do not restore the "Make it feel like your event" introduction, "Explore all 150 designs" link, or another theme-selection grid inside the editor.
 
+## Envitefy Brand Name and Pronunciation
+
+- Read [ENVITEFY_BRAND.md](ENVITEFY_BRAND.md) for the mandatory spelling, pronunciation, model instructions, and audio/video quality checks. Visible copy uses **Envitefy**; preserve the locked wordmark below.
+- Standing preference (September 8, 2026): pronounce the brand **en-VITE-fy** as one continuous word. This final clarification supersedes the earlier “EN-vite-ih-fy” wording. Before generating speech containing the name, explicitly direct the generation model using the written standard in `ENVITEFY_BRAND.md` and verify every spoken occurrence against that guidance before accepting the asset.
+
 ## Envitefy Logo Brand Lock
 
 The lowercase `envitefy` wordmark is a locked brand asset. Do not change any of the settings below unless the user explicitly asks to change the logo itself.

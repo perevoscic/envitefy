@@ -6,6 +6,7 @@ import { hasRequiredCopyLanguages, provisionalInvitationCopy, requestsInvitation
 import { normalizeHostBrief } from "./host-brief.ts";
 import { hasVisualChangeWords, stripArtworkPreservationInstructions } from "./visual-direction.ts";
 import { applyHostPrivacy } from "./host-privacy.ts";
+import { extractRsvpContactDetails } from "./rsvp-details.ts";
 import { extractExplicitEventLocation, extractExplicitEventTitle, extractExplicitRsvpEnabled, extractNamedAge, hasExplicitEventSchedule, hasStalePreviewFacts, pairedHonorees } from "./conversation-edits.ts";
 import {
   createCreationSessionId,
@@ -435,9 +436,11 @@ export function normalizeConciergeDraft(
     eventData.rsvp && typeof eventData.rsvp === "object" && !Array.isArray(eventData.rsvp)
       ? (eventData.rsvp as Record<string, unknown>)
       : {};
+  const suppliedRsvp = extractRsvpContactDetails(message);
   const rsvpEnabled = extractExplicitRsvpEnabled(message) ?? (
     fallback.rsvpEnabled === false
       ? false
+      : suppliedRsvp ? true
       : (booleanOrNull(
           record.rsvpEnabled,
           record.isRsvpEnabled,
@@ -464,11 +467,11 @@ export function normalizeConciergeDraft(
     fallback.rsvpDeadline ||
     null;
   const rsvpName =
-    rsvpEnabled === false ? null : firstDraftString(record.rsvpName, eventData.rsvpName, rsvpRecord.name, eventRsvpRecord.name) ||
+    rsvpEnabled === false ? null : suppliedRsvp?.name || firstDraftString(record.rsvpName, eventData.rsvpName, rsvpRecord.name, eventRsvpRecord.name) ||
     fallback.rsvpName ||
     null;
   const rsvpContact =
-    rsvpEnabled === false ? null : firstDraftString(
+    rsvpEnabled === false ? null : suppliedRsvp?.contact || firstDraftString(
       record.rsvpContact,
       eventData.rsvpContact,
       rsvpRecord.contact,

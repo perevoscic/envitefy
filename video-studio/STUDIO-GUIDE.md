@@ -22,6 +22,7 @@ Saved from the user's production decisions on September 5, 2026. These are defau
 
 ## Audio
 
+- Follow [ENVITEFY_BRAND.md](../ENVITEFY_BRAND.md) for the mandatory brand spelling and pronunciation standard (September 8, 2026). Before generating speech containing Envitefy, include the document's explicit model instruction. The authoritative written target is **en-VITE-fy** as one continuous word; phonetic spelling is internal metadata only. Verify every spoken occurrence against that guidance and regenerate or replace incorrect audio before accepting the asset.
 - The user rejected narration that obviously sounds synthetic. Natural delivery matters more than using a particular provider.
 - Narration is optional, not prohibited. Choose spoken narration, dialogue, music, ambience, and sound effects to serve the story; do not restrict a requested longer video to the old short script.
 - For speech, the existing ElevenLabs narration pipeline is available. Audition a short sample and adjust voice, writing, timing, and delivery before generating the full track when a new voice is needed. Do not default to the old Intro voice simply because it is configured.
@@ -42,6 +43,7 @@ Saved from the user's production decisions on September 5, 2026. These are defau
 When feedback describes a lasting preference, update the relevant section above in the same task and add a short dated entry below. Keep one current statement per preference. Preserve scene-specific requests in the relevant campaign's feedback record.
 
 Preference history:
+- 2026-09-08: Saved the mandatory brand spelling and pronunciation standard in the parent ENVITEFY_BRAND.md and required explicit generation instructions and pronunciation review. The final en-VITE-fy clarification supersedes the earlier EN-vite-ih-fy wording. At the user's request, the pronunciation standard uses written guidance only.
 - 2026-09-05: User requested a separate output folder for each video after reviewing the mixed export folder. Applied to existing outputs and future Studio/CLI renders.
 - 2026-09-05: Captured exact branding, fresh casts and settings, no personal twin, natural audio with optional narration, real product demonstrations, action captions, demo naming, and format-specific layouts from the original production task.
 

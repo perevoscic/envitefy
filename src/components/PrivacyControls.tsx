@@ -45,7 +45,11 @@ export default function PrivacyControls() {
 
   const initializeAnalytics = useCallback(() => {
     window.dataLayer = window.dataLayer || [];
-    window.gtag = (...args: unknown[]) => window.dataLayer?.push(args);
+    window.gtag = function gtag() {
+      // Google interprets Arguments objects as gtag commands; plain arrays are ignored.
+      // biome-ignore lint/complexity/noArguments: Google's command queue requires the native Arguments object.
+      window.dataLayer?.push(arguments);
+    };
     window.gtag("js", new Date());
     window.gtag("config", GOOGLE_ANALYTICS_MEASUREMENT_ID, {
       send_page_view: false,

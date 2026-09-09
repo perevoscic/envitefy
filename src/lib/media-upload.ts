@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { put } from "@vercel/blob";
-import sharp from "sharp";
+import sharp, { type Metadata } from "sharp";
 import { optimizePdfWithQpdf } from "./pdf-optimize.ts";
 import { rasterizePdfPageToPng } from "./pdf-raster.ts";
 import { buildPublicAssetUrl } from "./public-asset-url.ts";
@@ -260,7 +260,7 @@ async function uploadWebpAsset(params: {
   };
 }
 
-function getImageMetadata(meta: sharp.Metadata): { width?: number; height?: number } {
+function getImageMetadata(meta: Metadata): { width?: number; height?: number } {
   return {
     width: Number.isFinite(meta.width) ? meta.width : undefined,
     height: Number.isFinite(meta.height) ? meta.height : undefined,

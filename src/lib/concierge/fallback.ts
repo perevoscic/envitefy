@@ -1,6 +1,7 @@
 import { attachCreationReadiness, getCreationReadiness } from "./readiness.ts";
 import * as chrono from "chrono-node";
 import { extractExplicitEventLocation, extractExplicitEventTitle, extractExplicitRsvpEnabled, extractNamedAge, hasStalePreviewFacts, normalizeEventScheduleText, pairedHonorees, possessiveBirthdayMilestone } from "./conversation-edits.ts";
+import { extractRsvpContactDetails, RSVP_PHONE_PATTERN } from "./rsvp-details.ts";
 import { extractVisualDirection, stripArtworkPreservationInstructions } from "./visual-direction.ts";
 import { conciergeCapabilityAnswer } from "./capabilities.ts";
 import { copyRequirementsChanged, provisionalInvitationCopy, requestsInvitationCopy } from "./copy-workflow.ts";
@@ -728,6 +729,7 @@ function detectRsvpEnabled(
 ): boolean | null {
   const explicitChoice = extractExplicitRsvpEnabled(text);
   if (explicitChoice !== null) return explicitChoice;
+  if (extractRsvpContactDetails(text)) return previous?.rsvpEnabled !== false;
   const nestedRsvp =
     fieldsGuess.rsvp && typeof fieldsGuess.rsvp === "object" && !Array.isArray(fieldsGuess.rsvp)
       ? (fieldsGuess.rsvp as Record<string, unknown>)
@@ -791,7 +793,6 @@ function detectRsvpEnabled(
   return previous?.rsvpEnabled ?? null;
 }
 
-const RSVP_PHONE_PATTERN = /(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}/;
 const RSVP_GUEST_COUNT_UNIT_PATTERN =
   "guests?|kids?|children|peoples?|attendees|invitees|famil(?:y|ies)";
 
@@ -843,6 +844,8 @@ function detectRsvpName(
   fieldsGuess: Record<string, unknown>,
   previous?: ConciergeEventDraft | null,
 ) {
+  const suppliedName = extractRsvpContactDetails(text)?.name;
+  if (suppliedName) return suppliedName;
   if (isLocationCorrectionMessage(text)) return previous?.rsvpName || null;
   const rsvpContactCorrectionName = text.match(/\brsvp\s+contact\s+should\s+be\s+([^@\d,.;]+?)(?:\s+at\s+|\s+\d|[,.;]|$)/i)?.[1];
   if (rsvpContactCorrectionName) return cleanString(rsvpContactCorrectionName);
@@ -883,6 +886,8 @@ function detectRsvpContact(
   fieldsGuess: Record<string, unknown>,
   previous?: ConciergeEventDraft | null,
 ) {
+  const suppliedContact = extractRsvpContactDetails(text)?.contact;
+  if (suppliedContact) return suppliedContact;
   if (isLocationCorrectionMessage(text)) return previous?.rsvpContact || null;
   const direct = firstString(fieldsGuess.rsvpContact, fieldsGuess.rsvpEmail, fieldsGuess.rsvpPhone);
   if (direct) return extractRsvpIdentityParts(direct).contact || direct;
@@ -1565,6 +1570,7 @@ function stripLeadingTimeFromLocation(value: string | null) {
     "",
   );
   const withoutTrailingIntent = withoutTime
+    .replace(/\s*[,;]?\s+\b(?:and\s+)?rsvps?\b[\s\S]*$/i, "")
     .replace(
       /\s+(?:for|with)\s+(?:about\s+)?\d{1,4}\s*(?:guests?|kids?|children|peoples?|attendees|invitees)\b[\s\S]*$/i,
       "",
@@ -1680,8 +1686,10 @@ function detectVenueOrLocation(text: string, ocrContext?: ConciergeOcrContext | 
   const afterTimeLocation = stripLeadingTimeFromLocation(afterTimeMatch?.[1] || null);
   if (afterTimeLocation) return afterTimeLocation;
 
-  const atMatches = Array.from(text.matchAll(/\b(?:at|@)\s+([^.\n]{2,120})(?:[.\n]|$)/gi));
+  const atMatches = Array.from(text.matchAll(/(?=\b(?:at|@)\s+([^.\n]{2,120})(?:[.\n]|$))/gi));
   for (let index = atMatches.length - 1; index >= 0; index -= 1) {
+    const prefix = text.slice(0, atMatches[index].index);
+    if (/\brsvps?\b[^.;\n]*$/i.test(prefix)) continue;
     const location = stripLeadingTimeFromLocation(atMatches[index]?.[1] || null);
     if (location) return location;
   }
@@ -1711,7 +1719,7 @@ function eventFactTextForLocationExtraction(value: string) {
   return (
     cleanString(
       text
-        .replace(/\b(?:she|he|they|[A-Z][a-z]+)\s+likes\b[\s\S]*$/i, "")
+        .replace(/\b(?:she|he|they|[A-Z][a-z]+)\s+likes?\b[^.;\n]*/gi, "")
         .replace(/\b(?:theme|style|scene|visual\s+direction)\s*:[\s\S]*$/i, "")
         .replace(
           /(?:^|[,.]\s*)have\s+the\s+[^.\n,]{1,80}?\b(?:drinking|hugging|eating|holding|wearing|playing)\b[\s\S]*$/i,

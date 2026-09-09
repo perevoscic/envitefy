@@ -132,6 +132,7 @@ export function extractExplicitRsvpEnabled(message: string): boolean | null {
     [`\\bset\\s+${subject}\\s+to\\s+(?:off|on)\\b`, null],
     [`\\b(?:disable|remove|skip|without|no)\\s+${subject}\\b`, false],
     [`\\b(?:enable|add)\\s+${subject}\\b`, true],
+    ["\\brsvps?\\s+(?:by|via)\\s+(?:phone|text|email|call)\\s+only\\b", false],
   ] as const) {
     for (const match of message.matchAll(new RegExp(pattern, "gi"))) {
       const before = message.slice(Math.max(0, (match.index || 0) - 25), match.index);

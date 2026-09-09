@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # 1) Base image for all stages
-FROM node:20-slim AS base
+FROM node:24-slim AS base
 
 # Ensure production-like environment and faster installs
 ENV NODE_ENV=production
