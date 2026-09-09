@@ -1,7 +1,18 @@
+import { AdaptivePortrait } from "./AdaptiveScenes";
+import { useVideoConfig } from "remotion";
 import { Video } from "@remotion/media";
 import { AbsoluteFill, Sequence, staticFile } from "remotion";
 
 function Moment({ clip, label }: { clip: string; label: string }) {
+  const { width, height } = useVideoConfig();
+  if (width >= height)
+    return (
+      <AdaptivePortrait
+        clip={clip}
+        title={label}
+        eyebrow="Every wedding has its characters."
+      />
+    );
   return (
     <AbsoluteFill>
       <Video

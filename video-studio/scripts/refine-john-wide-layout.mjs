@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+let p='src/john-space-disco-wide/Create.tsx';
+let t=fs.readFileSync(p,'utf8');
+const start=t.indexOf('          <div\n            style={{\n              position: "absolute",\n              left: 1007,');
+if(start<0)throw Error('Create label block not found');
+const end=t.indexOf('\n          </div>',start);
+t=t.slice(0,start)+t.slice(end+'\n          </div>'.length);
+fs.writeFileSync(p,t);
+p='src/john-space-disco-wide/Update.tsx';t=fs.readFileSync(p,'utf8').replace('left: -450,','left: interpolate(f, [0, 75], [-180, -450], clamp),');fs.writeFileSync(p,t);
+p='src/john-space-disco-wide/Hook.tsx';t=fs.readFileSync(p,'utf8').replace('top: 82,','top: 58,').replace('fontSize: 73,','fontSize: 58,').replace('Their birthday.\n        <br />\n        Their imagination.','Their birthday. Their imagination.').replace('top: 267,','top: 147,').replace('fontSize: 31,','fontSize: 29,\n          opacity: f < 30 ? 1 : 0,');fs.writeFileSync(p,t);

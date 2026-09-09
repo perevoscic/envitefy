@@ -1,3 +1,4 @@
+import {withBrandPronunciationDirection} from "./brand-pronunciation.mjs";
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -65,17 +66,17 @@ if(mode==='lyria') {
   const stateFile=path.join(project,`${mode}-job.json`);
   let state=await readJson(stateFile);
   if(!state){
-    const body={model:'gemini-omni-1.1-flash',input:brief.shots[mode],background:true,store:true,response_format:{type:'video',aspect_ratio:'9:16',resolution:'720p',delivery:'uri'}};
+    const body={model:'gemini-omni-1.1-flash',input:withBrandPronunciationDirection(brief.shots[mode]),background:true,store:true,response_format:{type:'video',aspect_ratio:'9:16',resolution:'720p',delivery:'uri'}};
     if(mode==='bowl-single-hand'){
       const edit=await readJson(path.join(project,'bowl-single-hand-edit.json'));
       const data=(await fs.readFile(path.join(out,edit.sourceVideo))).toString('base64');
-      body.input=[{type:'user_input',content:[{type:'video',mime_type:'video/mp4',data},{type:'text',text:edit.prompt}]}];
+      body.input=[{type:'user_input',content:[{type:'video',mime_type:'video/mp4',data},{type:'text',text:withBrandPronunciationDirection(edit.prompt)}]}];
     }
     if(mode==='party-single-hand'){
       const edit=await readJson(path.join(project,'party-single-hand-edit.json'));
       const previous=await readJson(path.join(project,edit.source));
       if(previous?.status!=='completed')throw new Error('Complete the party clip before editing it.');
-      body.input=edit.prompt;
+      body.input=withBrandPronunciationDirection(edit.prompt);
       body.previous_interaction_id=previous.id;
     }
     if(mode==='party'){

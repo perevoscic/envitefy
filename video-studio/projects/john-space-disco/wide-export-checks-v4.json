@@ -1,0 +1,47 @@
+{
+  "probe": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1920,
+        "height": 1080,
+        "r_frame_rate": "30/1",
+        "nb_read_frames": "900",
+        "side_data_list": [
+          {}
+        ]
+      },
+      {
+        "codec_name": "aac",
+        "sample_rate": "48000",
+        "channels": 2,
+        "r_frame_rate": "0/0",
+        "nb_read_frames": "1407"
+      }
+    ],
+    "format": {
+      "duration": "30.000000",
+      "size": "39275301"
+    }
+  },
+  "fullDecodePassed": true,
+  "videoStreamUnchanged": true,
+  "videoStreamHash": "SHA256=efdd11095985993f9e2ed09f8aabe78d0e5195852658a729e768da0ab5e82bf6",
+  "visualReviewInheritedFrom": "projects/john-space-disco/wide-export-checks-v3.json",
+  "pronunciation": {
+    "spokenName": "in-VY-tee-fy",
+    "cmu": "IH0 N V AY1 T IY0 F AY0",
+    "primaryStress": "VY",
+    "sourceDurationSeconds": 3.004082,
+    "mixStartSeconds": 5.35,
+    "mixEndSeconds": 8.354082,
+    "providerAlignedText": " Bring their birthday ideas to life with @ih0@n@v@ay1@t@iy0@f@ay0 Concierge. ",
+    "source": "vo-create-wide-v4.mp3",
+    "writtenBrand": "Envitefy",
+    "reference": "https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices"
+  },
+  "loudnessSummary": "Summary:\r\n\r\n  Integrated loudness:\r\n    I:         -15.1 LUFS\r\n    Threshold: -25.6 LUFS\r\n\r\n  Loudness range:\r\n    LRA:         7.2 LU\r\n    Threshold: -35.7 LUFS\r\n    LRA low:   -19.4 LUFS\r\n    LRA high:  -12.2 LUFS\r\n\r\n  True peak:\r\n    Peak:       -1.5 dBFS\r\n[out#0/null @ 000002b12fb5ed00] video:0KiB audio:5628KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown\r\nsize=N/A time=00:00:30.01 bitrate=N/A speed= 276x    \r\n",
+  "localTranscript": "projects/john-space-disco/wide-v4-final-voice-review-local-transcript.json"
+}

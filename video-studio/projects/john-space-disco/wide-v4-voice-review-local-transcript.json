@@ -1,0 +1,54 @@
+[
+  {
+    "start": 0.0,
+    "end": 2.78,
+    "text": " Bring their birthday ideas to life with Invitify concierge.",
+    "words": [
+      {
+        "word": " Bring",
+        "start": 0.0,
+        "end": 0.14
+      },
+      {
+        "word": " their",
+        "start": 0.14,
+        "end": 0.3
+      },
+      {
+        "word": " birthday",
+        "start": 0.3,
+        "end": 0.5
+      },
+      {
+        "word": " ideas",
+        "start": 0.5,
+        "end": 0.92
+      },
+      {
+        "word": " to",
+        "start": 0.92,
+        "end": 1.14
+      },
+      {
+        "word": " life",
+        "start": 1.14,
+        "end": 1.32
+      },
+      {
+        "word": " with",
+        "start": 1.32,
+        "end": 1.52
+      },
+      {
+        "word": " Invitify",
+        "start": 1.52,
+        "end": 1.98
+      },
+      {
+        "word": " concierge.",
+        "start": 1.98,
+        "end": 2.78
+      }
+    ]
+  }
+]

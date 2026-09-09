@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {build} from 'esbuild';
 const p='projects/john-space-disco',out='out/john-space-disco';
-await build({entryPoints:[p+'/demo.jsx'],outfile:out+'/fixture.js',bundle:true,platform:'browser',format:'iife',jsx:'automatic',define:{'process.env':'{}','process.env.NODE_ENV':'"production"'},alias:{'@':path.resolve('../src'),'react':path.resolve('node_modules/react'),'react-dom':path.resolve('node_modules/react-dom'),'next/navigation':path.resolve(p+'/navigation.jsx'),'next/image':path.resolve(p+'/image.jsx')},loader:{'.css':'local-css'},logLevel:'warning'});
+await build({entryPoints:[p+'/demo.jsx'],outfile:out+'/fixture.js',bundle:true,platform:'browser',format:'iife',jsx:'automatic',define:{'process.env':'{}','process.env.NODE_ENV':'"production"'},alias:{'@':path.resolve('../src'),'react':path.resolve('node_modules/react'),'react-dom':path.resolve('node_modules/react-dom'),'next/navigation':path.resolve(p+'/navigation.jsx'),'next/image':path.resolve(p+'/image.jsx')},loader:{'.css':'local-css','.png':'dataurl','.webp':'dataurl','.svg':'dataurl'},logLevel:'warning'});
 const html=await (await fetch('http://localhost:3000/envitefy-concierge')).text();
 const css=[...html.matchAll(/<link[^>]+rel="stylesheet"[^>]*>/g)].map(m=>m[0]).join('');
 if(!css)throw Error('No application CSS');

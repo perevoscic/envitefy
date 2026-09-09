@@ -1,0 +1,31 @@
+import fs from 'node:fs';
+import {spawnSync,execFileSync} from 'node:child_process';
+// Archive the exact submitted pronunciation so later shared-default edits cannot change this export.
+const version=process.argv[2];
+if(!/^v[0-9]+$/.test(version))throw Error('Specify a new audio revision such as v5');
+const b='public/projects/john-space-disco/',o='out/john-space-disco/',p='projects/john-space-disco/';
+const output=o+'john-space-disco-16x9-'+version+'.mp4';
+const latest=JSON.parse(fs.readFileSync(p+'deliverables-16x9.json','utf8')).latestReviewedByAspect['16:9'];
+if(!/^out\/john-space-disco\/john-space-disco-16x9-v[0-9]+\.mp4$/.test(latest)||latest===output)throw Error('Choose a new version after the latest reviewed export');
+function ff(args){const r=spawnSync('ffmpeg',['-y','-hide_banner','-loglevel','error',...args],{stdio:'inherit',windowsHide:true});if(r.status)throw Error('FFmpeg failed');}
+const name='vo-create-wide-'+version+'.mp3';
+const request=JSON.parse(fs.readFileSync(p+'voice-create-wide-'+version+'-request.json','utf8'));
+const phoneme=request.body.text.match(/<phoneme alphabet="ipa" ph="([^"]+)">Envitefy<\/phoneme>/);
+if(!phoneme)throw Error('Completed request must contain an explicit IPA tag');
+const ENVITEFY_IPA=phoneme[1],ENVITEFY_SSML=phoneme[0],ENVITEFY_SPOKEN_NAME='Inviteefy';
+if(request.status!=='completed'||!request.body.text.includes(ENVITEFY_SSML))throw Error('Narration must use the exact current IPA tag');
+const alignment=JSON.parse(fs.readFileSync(p+'voice-create-wide-'+version+'-alignment.json','utf8'));
+const duration=Number(execFileSync('ffprobe',['-v','error','-show_entries','format=duration','-of','default=noprint_wrappers=1:nokey=1',b+name],{encoding:'utf8'}).trim());
+if(duration>6.4||duration<2)throw Error('Narration duration needs review');
+const line=fs.readFileSync('scripts/mix-john-wide-v3.mjs','utf8').split('\n').find(s=>s.startsWith('const filter=')).trim();
+const filter=JSON.parse(line.slice('const filter='.length,-1));
+ff(['-i',b+'music.mp3','-i',b+'wide-edit-hook-v3.mp4','-i',b+'wide-edit-update.mp4','-i',b+'wide-edit-payoff.mp4','-i',b+name,'-i',b+'vo-update.mp3','-i',b+'wide-effects.wav','-filter_complex',filter,'-map','[a]','-ar','48000','-ac','2','-c:a','pcm_s16le',b+'wide-final-mix-'+version+'.wav']);
+ff(['-i',latest,'-i',b+'wide-final-mix-'+version+'.wav','-map','0:v:0','-map','1:a:0','-c:v','copy','-c:a','aac','-b:a','192k','-af','atrim=duration=30','-t','30','-movflags','+faststart',output]);
+ff(['-i',b+name,'-ac','1','-ar','16000',o+'wide-'+version+'-voice-review.wav']);
+ff(['-ss','5.35','-i',output,'-t',String(duration+.3),'-vn','-ac','1','-ar','16000',o+'wide-'+version+'-final-voice-review.wav']);
+const main='src/JohnSpaceDiscoWide.tsx';
+fs.writeFileSync(main,fs.readFileSync(main,'utf8').replace(/wide-final-mix-v[0-9]+\.wav/,'wide-final-mix-'+version+'.wav'));
+const root='src/Root.tsx';
+fs.writeFileSync(root,fs.readFileSync(root,'utf8').replace(/john-space-disco\/john-space-disco-16x9-v[0-9]+/,'john-space-disco/john-space-disco-16x9-'+version));
+fs.writeFileSync(p+'wide-'+version+'-voice-production.json',JSON.stringify({spokenName:ENVITEFY_SPOKEN_NAME,ipa:ENVITEFY_IPA,ssml:ENVITEFY_SSML,sourceDurationSeconds:duration,mixStartSeconds:5.35,mixEndSeconds:5.35+duration,providerAlignedText:alignment.characters.join(''),source:name,writtenBrand:'Envitefy',baseVideo:latest,output,reference:'https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices'},null,2)+'\n');
+console.log(JSON.stringify({output,duration,providerAlignedText:alignment.characters.join('')}));

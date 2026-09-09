@@ -1,3 +1,4 @@
+import { toSpeechText, toDisplayText, speechModelForText } from "./brand-pronunciation.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -84,9 +85,10 @@ if (process.argv.includes("--voices")) {
       scene.narration.length > 4500
     )
       throw new Error("Invalid scene id or narration text.");
+    const modelId = speechModelForText(scene.narration, brief.modelId);
     const request = {
-      text: scene.narration,
-      model_id: brief.modelId,
+      text: toSpeechText(scene.narration, modelId),
+      model_id: modelId,
       voice_settings: brief.voiceSettings,
     };
     const cacheKey = narrationCacheKey({ voiceId, outputFormat: "mp3_44100_128", ...request });
@@ -108,7 +110,7 @@ if (process.argv.includes("--voices")) {
       );
       if (typeof result.audio_base64 !== "string" || !result.audio_base64)
         throw new Error("ElevenLabs returned no audio.");
-      const captions = alignmentToCaptions(result.normalized_alignment || result.alignment);
+      const captions = alignmentToCaptions(result.normalized_alignment || result.alignment).map((caption) => ({...caption, text: toDisplayText(caption.text)}));
       await fs.writeFile(audioFile, Buffer.from(result.audio_base64, "base64"));
       cached = { captions };
       await fs.writeFile(timingFile, `${JSON.stringify(cached, null, 2)}\n`);

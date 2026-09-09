@@ -1,3 +1,5 @@
+import { AdaptiveDemo } from "./AdaptiveScenes";
+import { useVideoConfig } from "remotion";
 import { Video } from "@remotion/media";
 import {
   AbsoluteFill,
@@ -12,6 +14,8 @@ export function InvitationInsert({
   kind: "rsvp" | "calendar" | "quick-rsvp";
 }) {
   const frame = useCurrentFrame();
+  const { width, height } = useVideoConfig();
+  if (width >= height) return <AdaptiveDemo kind={kind} />;
   const calendar = kind === "calendar";
   const quick = kind === "quick-rsvp";
   return (

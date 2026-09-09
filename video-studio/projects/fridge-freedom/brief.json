@@ -1,7 +1,12 @@
 {
   "campaign": "fridge-freedom",
   "request": "ONE 30-second vertical YouTube Short: overloaded fridge, child hands Mom birthday flyer and asks Can I go?, paper avalanche, Mom says There has to be a better way; Google query turn paper birthday invite into a digital invitation; Envitefy snap, review date time location, share with other parent, Add to Calendar, birthday in own calendar; digitize flyers, retain child drawing; Keep the memories. Lose the paper clutter. Envitefy.com.",
-  "format": {"width":1080,"height":1920,"fps":30,"durationSeconds":30},
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "durationSeconds": 30
+  },
   "concept": "The refrigerator has reached capacity. Warm naturalistic parenting comedy, real moving footage and actual product UI.",
   "audience": "Busy parents receiving paper school and birthday invitations",
   "cast": "New fictional mother, age 36, warm medium-brown skin, dark curly bob, mustard cardigan and cream shirt; her 8-year-old daughter with two short curly pigtails, dusty-blue school polo, coral backpack.",
@@ -13,5 +18,39 @@
     "opening": "Create an EXACTLY 8 second vertical 9:16 realistic cinematic LIVE-ACTION video with natural recorded dialogue. This is a continuous moving commercial scene, NOT photographs, NOT a slideshow. Warm afternoon light in lived-in kitchen with sage cabinets, oak counter and cream retro fridge utterly covered with overlapping school notes and colorful event flyers. One rainbow crayon family drawing at top under red round magnet. New fictional mother age 36, warm medium-brown skin, dark curly bob, mustard cardigan over cream shirt, navy jeans. Daughter age 8, same complexion, two curly pigtails, dusty blue school polo, coral school backpack. TIMING: 0-2.4 seconds daughter enters kitchen already unzipping backpack, pulls out a cream birthday flyer with coral and teal balloon decorations and hands it to Mom, looks up and asks naturally, exactly: 'Can I go?' 2.4-4.8 seconds Mom takes flyer to crowded fridge, tries to pin it using a teal magnet, slides one existing sheet a little and several loose notes physically flutter and cascade to the floor. Grounded realistic paper physics, amused relatable mess, papers actually fall. 4.8-7.3 seconds camera tilts down to fallen papers then Mom looks down with a dry amused half-sigh and says clearly, exactly: 'There has to be a better way.' Finish the sentence before 7.3 seconds. Realistic hands and grasping, each person only two hands, keep cast and kitchen coherent. Close-medium framing designed for a phone screen; no blank opening frames. Natural room tone, backpack zipper, crisp falling-paper rustles, NO music, NO narration, NO subtitles or generated text overlays. Only those two spoken lines. Flyer fine print need not be legible; do not render huge false text.",
     "phone": "Create a NEW exactly 6 second vertical 9:16 LIVE-ACTION INSERT using the exact same mother, mustard cardigan, cream shirt, oak counter, sage kitchen and afternoon light as the previous scene. Do not repeat or append prior footage. Over-shoulder close-up of Mom holding one black smartphone, using thumb to type a short search and tap. Phone screen bright neutral plain screen deliberately defocused, all real UI will be composited separately. First 3 seconds tight hands and phone, then 3-6 seconds she places the cream birthday flyer with coral and teal balloon decorations flat on oak counter and aims phone camera down at it, takes one clear photo, subtle satisfied nod. Realistic phone geometry, one phone only, no duplicated fingers, no logos, no visible invented UI, NO speech or music. Natural room ambience and a clean camera click.",
     "cleanup": "Create a NEW exactly 8 second vertical 9:16 realistic LIVE-ACTION continuation, using the identical mother with mustard cardigan, dark curly bob, cream retro refrigerator, sage cabinets, oak counter and warm afternoon light from the reference. Do NOT repeat or append opening scene. A satisfying three-shot mini montage: 0-2 seconds close-up Mom takes smartphone photo of a colorful school event flyer on oak counter, physically taps shutter; 2-4 seconds medium shot Mom removes a small stack of overlapping flyers from fridge and gathers them neatly, NOT falling or throwing, quick satisfying physical movement; 4-6 seconds she removes final event flyer, leaving ONLY one colorful child's rainbow family crayon drawing proudly held with one red round magnet on otherwise totally clear fridge; 6-8 seconds slow gentle camera push on the pristine cream fridge and cherished drawing, Mom and daughter share a small pleased smile at edge. Keep drawing and magnet exactly consistent, use motivated clean straight cuts, no magical morphs, no dissolving paper, no disappearing objects, no phone handed between people, anatomically correct hands. NO dialogue, no music, no subtitles, no generated interface. Subtle paper peel and magnet clicks, quiet warm room tone. Fridge should be fully uncluttered by 5.5 seconds. Actual continuous moving video, not still photography."
-  }
+  },
+  "revisions": [
+    {
+      "version": 2,
+      "date": "2026-09-08",
+      "request": "Remove first-second human flip and make fridge acting natural at opening and ending.",
+      "approach": "Steady handoff, single-action inserts, restrained reaction, real-time cleanup and drawing-only camera payoff.",
+      "composition": "EnvitefyFridgeFreedomV2",
+      "export": "out/fridge-freedom/fridge-freedom-9x16-v2.mp4"
+    },
+    {
+      "version": 3,
+      "date": "2026-09-08",
+      "request": "Contain search box inside phone (or extend symmetrically); show Envitefy.com search result and click, then explain Snap; make photographed flyer clearly visible.",
+      "approach": "Contained phone search demonstration with exact query, result, tap and actual public Snap landing capture; enlarged full-flyer camera screen over new real-time phone footage in both snap appearances.",
+      "composition": "EnvitefyFridgeFreedomV3",
+      "export": "out/fridge-freedom/fridge-freedom-9x16-v3.mp4"
+    },
+    {
+      "version": 4,
+      "date": "2026-09-08",
+      "request": "The photo is taken before the finger presses the shutter in both photo appearances.",
+      "approach": "Use the visible thumb contact as the shared timing reference for button depression, flash, shutter sound and new thumbnail. Re-trim cleanup photo to show approach, contact and response.",
+      "composition": "EnvitefyFridgeFreedomV4",
+      "export": "out/fridge-freedom/fridge-freedom-9x16-v4.mp4"
+    },
+    {
+      "version": 5,
+      "date": "2026-09-08",
+      "request": "Remove the second snap; it is unnecessary.",
+      "approach": "Remove the cleanup camera shot and its shutter sound. Extend the saved-calendar shot by one second, then cut directly to paper removal. Preserve the full 30-second duration.",
+      "composition": "EnvitefyFridgeFreedomV5",
+      "export": "out/fridge-freedom/fridge-freedom-9x16-v5.mp4"
+    }
+  ]
 }

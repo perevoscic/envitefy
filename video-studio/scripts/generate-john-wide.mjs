@@ -1,3 +1,4 @@
+import {withBrandPronunciationDirection} from "./brand-pronunciation.mjs";
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -24,7 +25,7 @@ async function generate(mode){
  const stateFile=path.join(project,`${mode}-wide-job.json`);
  let state=await readJson(stateFile);
  if(!state){
-  const body={model:music?'lyria-3-clip-preview':'gemini-omni-1.1-flash',input:music?brief.musicPrompt:brief.shots[mode],background:true,store:true};
+  const body={model:music?'lyria-3-clip-preview':'gemini-omni-1.1-flash',input:music?brief.musicPrompt:withBrandPronunciationDirection(brief.shots[mode]),background:true,store:true};
   if(!music)body.response_format={type:'video',aspect_ratio:'16:9',resolution:'1080p',delivery:'uri'};
   if(['create','update','payoff'].includes(mode)){const prev=await readJson(path.join(project,'hook-wide-job.json'));if(prev?.status!=='completed'){console.log('payoff: waiting for hook reference');return;}body.previous_interaction_id=prev.id;}
   await fs.writeFile(stateFile,JSON.stringify({status:'submitting',body},null,2));

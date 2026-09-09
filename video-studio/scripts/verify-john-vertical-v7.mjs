@@ -1,0 +1,16 @@
+import fs from 'node:fs';import {execFileSync,spawnSync} from 'node:child_process';
+const file='out/john-space-disco/john-space-disco-9x16-v7.mp4',previous='out/john-space-disco/john-space-disco-9x16-v6.mp4';
+const metadata=JSON.parse(execFileSync('ffprobe',['-v','error','-show_entries','stream=codec_name,width,height,r_frame_rate,nb_frames,sample_rate,channels,duration:format=duration,size','-of','json',file],{encoding:'utf8',windowsHide:true}));
+const v=metadata.streams.find(s=>s.codec_name==='h264'),a=metadata.streams.find(s=>s.codec_name==='aac');
+if(!v||v.width!==1080||v.height!==1920||v.r_frame_rate!=='30/1'||Number(v.nb_frames)!==900||Number(metadata.format.duration)!==30||!a||a.sample_rate!=='48000'||a.channels!==2||Number(a.duration)!==30)throw Error('Export format mismatch');
+const hash=f=>execFileSync('ffmpeg',['-hide_banner','-loglevel','error','-i',f,'-map','0:v:0','-c:v','copy','-f','hash','-hash','sha256','-'],{encoding:'utf8',windowsHide:true}).trim();
+const currentHash=hash(file);if(currentHash!==hash(previous))throw Error('Video frames changed');
+execFileSync('ffmpeg',['-hide_banner','-loglevel','error','-i',file,'-f','null','-'],{windowsHide:true});
+const sound=spawnSync('ffmpeg',['-hide_banner','-i',file,'-af','loudnorm=I=-15:TP=-1.5:LRA=9:print_format=json','-f','null','-'],{encoding:'utf8',windowsHide:true});if(sound.status)throw Error('Sound check failed');
+const match=sound.stderr.match(/\{\s*"input_i"[\s\S]*?\}/);
+const req=JSON.parse(fs.readFileSync('projects/john-space-disco/voice-create-v7-request.json','utf8'));
+const exact='<phoneme alphabet="ipa" ph="ɪnˈvaɪtiˌfaɪ">Envitefy</phoneme>';
+if(req.body.text!=='Bring their birthday ideas to life with '+exact+' Concierge.')throw Error('Request did not use exact user tag');
+const align=JSON.parse(fs.readFileSync('projects/john-space-disco/voice-create-v7-alignment.json','utf8'));
+const result={...metadata,status:'assistant-reviewed',decodedEntireVideo:true,videoMatchesV6Exactly:true,videoPacketSha256:currentHash,visualReview:'Verified V5/V6 video frames preserved exactly, including the unmirrored ending.',loudness:match?JSON.parse(match[0]):null,pronunciation:{spokenName:'Inviteefy',exactUserIPA:'ɪnˈvaɪtiˌfaɪ',exactUserTag:exact,requestUsedExactTag:true,providerAlignedText:align.characters.join(''),masterVoiceEndSeconds:5.5+Math.max(...align.character_end_times_seconds),reviewNote:'Provider alignment is recorded as returned; exact acoustic stress is not inferred from its transcription.',userApproved:false}};
+fs.writeFileSync('projects/john-space-disco/vertical-v7-verification.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));

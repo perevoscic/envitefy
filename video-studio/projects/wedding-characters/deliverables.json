@@ -17,6 +17,38 @@
       "sha256": "f58c62083a9863de3b5996e42b450332813f81af2e64228b1e85d0abd5ba8d6b",
       "reviewStatus": "assistant-reviewed",
       "userApproved": false
+    },
+    {
+      "composition": "EnvitefyWeddingCharactersSquare",
+      "aspectRatio": "1:1",
+      "width": 1080,
+      "height": 1080,
+      "fps": 30,
+      "durationSeconds": 25,
+      "frames": 750,
+      "version": 1,
+      "basedOnVerticalVersion": 4,
+      "file": "out/wedding-characters/wedding-characters-1x1-v1.mp4",
+      "bytes": "7306220",
+      "sha256": "e1695180acfe42e5214146278ec6a9a93f2b10d4734a44e79ca099051d902d1e",
+      "reviewStatus": "assistant-reviewed",
+      "userApproved": false
+    },
+    {
+      "composition": "EnvitefyWeddingCharactersWide",
+      "aspectRatio": "16:9",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "durationSeconds": 25,
+      "frames": 750,
+      "version": 1,
+      "basedOnVerticalVersion": 4,
+      "file": "out/wedding-characters/wedding-characters-16x9-v1.mp4",
+      "bytes": "8220107",
+      "sha256": "12866e19599b1f0a6f2df895bf44062912902feded29bc4cb907a81cab001fe8",
+      "reviewStatus": "assistant-reviewed",
+      "userApproved": false
     }
   ],
   "review": {
@@ -74,5 +106,38 @@
       "userApproved": false,
       "availableLocally": true
     }
-  ]
+  ],
+  "socialCopy": {
+    "file": "projects/wedding-characters/social-posts-v1.md",
+    "version": 1,
+    "videoVersion": 4,
+    "platforms": [
+      "Facebook",
+      "Instagram",
+      "YouTube Shorts",
+      "TikTok",
+      "Reddit"
+    ],
+    "status": "draft-not-published",
+    "date": "2026-09-08",
+    "compatibleAspectRatios": [
+      "9:16",
+      "1:1",
+      "16:9"
+    ]
+  },
+  "formatReviews": {
+    "1:1": {
+      "contactSheet": "out/wedding-characters/1x1-v1-contact.jpg",
+      "cuts": "out/wedding-characters/1x1-v1-cuts.jpg",
+      "technical": "out/wedding-characters/1x1-v1-technical-review.json",
+      "notes": "projects/wedding-characters/production-notes.md"
+    },
+    "16:9": {
+      "contactSheet": "out/wedding-characters/16x9-v1-contact.jpg",
+      "cuts": "out/wedding-characters/16x9-v1-cuts.jpg",
+      "technical": "out/wedding-characters/16x9-v1-technical-review.json",
+      "notes": "projects/wedding-characters/production-notes.md"
+    }
+  }
 }

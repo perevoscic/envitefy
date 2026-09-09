@@ -1,3 +1,5 @@
+import { AdaptiveEndCard } from "./AdaptiveScenes";
+import { useVideoConfig } from "remotion";
 import {
   AbsoluteFill,
   CanvasImage,
@@ -8,6 +10,8 @@ import {
 
 export function CharactersEndCard() {
   const frame = useCurrentFrame();
+  const { width, height } = useVideoConfig();
+  if (width >= height) return <AdaptiveEndCard />;
   return (
     <AbsoluteFill
       style={{

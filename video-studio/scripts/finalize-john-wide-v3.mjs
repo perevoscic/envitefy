@@ -1,0 +1,25 @@
+import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
+const dir='projects/john-space-disco',out='out/john-space-disco';
+const file=out+'/john-space-disco-16x9-v3.mp4';
+const qa=JSON.parse(await fs.readFile(dir+'/wide-export-checks-v3.json','utf8'));
+const bytes=await fs.readFile(file);
+if(!qa.fullDecodePassed||Number(qa.probe.format.size)!==bytes.length||Number(qa.probe.format.duration)!==30||qa.blackEvents.length||!qa.allHalfSecondIntervalsMovingBeforeBrand)throw Error('Final QA does not match V3 export');
+const entry={version:3,composition:'EnvitefyJohnSpaceDiscoWide',aspectRatio:'16:9',width:1920,height:1080,fps:30,durationSeconds:30,frames:900,path:file,bytes:bytes.length,sha256:crypto.createHash('sha256').update(bytes).digest('hex'),reviewStatus:'assistant-reviewed',userApproved:false,reviewedAt:new Date().toISOString(),reviewNotes:'Mom remains visible throughout the corrected opening, and the dinosaur stays on John’s anatomical right (screen left). Creation shot shows an opaque lavender laptop back throughout. Jessica narration uses invitee-fy; Live Cards sits below the official closing logo. Full decode, format, duration, frame count, motion, first frames, cuts, corrected props/positions, product readability, complete dialogue and audio levels reviewed locally.'};
+for(const name of ['deliverables-16x9.json','deliverables.json']){
+  const record=JSON.parse(await fs.readFile(dir+'/'+name,'utf8'));
+  record.status='reviewed';
+  record.exports=[...(record.exports||[]).filter(e=>!(e.aspectRatio==='16:9'&&e.version===3)),entry];
+  record.latestReviewedByAspect={...record.latestReviewedByAspect,'16:9':file};
+  await fs.writeFile(dir+'/'+name,JSON.stringify(record,null,2)+'\n');
+}
+const update=`\n## V3 user revision completed — September 8, 2026\n\n- The user explicitly authorized sending the two cartoon clips to the configured Google video editor after the earlier automatic-review block. The saved two-shot jobs completed and their outputs were downloaded; no external review upload was used.\n- The six-second opening edit preserves Mom on screen right and the dinosaur on John’s anatomical right, screen left, through the last frame. It was normalized to five seconds using a 1.2 playback factor and pitch-preserving native audio. Local transcription confirms the full requested sentence, ending at 3.60 seconds, followed by the natural laugh.\n- The seven-second creation edit preserves the cast and framing while showing the lavender outer laptop cover throughout. The actual product overlays remain intact.\n- The master soundtrack uses the completed Jessica vo-create-v4.mp3 recording with the audio-only alias invitee-fy. The pronunciation is permanently saved in STUDIO-GUIDE.md and scripts/brand-pronunciation.mjs. Written copy retains Envitefy.\n- Live Cards is centered immediately below the unchanged official closing logo.\n- Revised sources: wide-hook-fixed-v3.mp4, wide-create-fixed-v3.mp4; normalized edit files wide-edit-hook-v3.mp4 and wide-edit-create-v3.mp4; master wide-final-mix-v3.wav. Reproduction: scripts/edit-john-wide-v3.mjs, scripts/assemble-john-wide-v3.mjs and scripts/verify-john-wide-v3.mjs.\n- Final: ${file}; exact 1920 × 1080, 30 fps, 900 frames, 30.000 seconds, H.264/AAC stereo. V2 remains available. Default output is john-space-disco/john-space-disco-16x9-v3.\n- ESLint, TypeScript and Biome passed. The optional editor diagnostics bridge remains unavailable. Local final media checks, measured loudness and review-frame index are recorded in wide-export-checks-v3.json.\n\nV3 is assistant-reviewed; no user approval of the finished export or publishing is implied.\n`;
+await fs.appendFile(dir+'/production-notes-16x9.md',update);
+await fs.appendFile(dir+'/feedback-16x9.md','\n2026-09-08 V3: Completed the user’s four corrections: Mom remains visible and dinosaur stays at screen left in the opening; laptop shows its back cover; narration uses invitee-fy, saved as a standing preference; closing logo includes Live Cards. Revised two moving shots with the user’s explicit upload authorization. Final reviewed export: '+file+'.\n');
+await fs.writeFile(dir+'/revision-16x9-v3.md','# Horizontal V3 revision — completed\n'+update);
+let index=await fs.readFile('projects/README.md','utf8');
+const shared=JSON.parse(await fs.readFile(dir+'/deliverables.json','utf8'));
+const vertical=shared.latestReviewedByAspect?.['9:16'];
+index=index.split('\n').map(line=>line.startsWith('| [John’s Space Dino Disco]')?`| [John’s Space Dino Disco](john-space-disco/brief.json) | 30-second 3D birthday fantasy with John, dancing dinosaur, real Concierge/actions and same-link updates. Horizontal V3 fixes character continuity, laptop cover, invitee-fy narration and the Live Cards end card. | Horizontal: \`${file}\`; vertical: \`${vertical}\`. See [deliverables](john-space-disco/deliverables.json), [widescreen notes](john-space-disco/production-notes-16x9.md), and [vertical notes](john-space-disco/production-notes-9x16.md). |`:line).join('\n');
+await fs.writeFile('projects/README.md',index);
+console.log(JSON.stringify(entry,null,2));

@@ -1,0 +1,20 @@
+import fs from 'node:fs';import {spawnSync} from 'node:child_process';
+const out='out/fridge-freedom/',file=out+'fridge-freedom-9x16-v5.mp4';
+function run(command,args){const r=spawnSync(command,args,{encoding:'utf8',maxBuffer:12e6});if(r.status!==0)throw Error(r.stderr||command+' failed');return r;}
+const ff=args=>run('ffmpeg',['-y','-hide_banner','-loglevel','error',...args]);
+ff(['-i',out+'fridge-freedom-9x16-v5-render.mp4','-map','0:v','-map','0:a','-c:v','copy','-c:a','aac','-b:a','256k','-af','atrim=0:30','-t','30','-movflags','+faststart',file]);
+const info=JSON.parse(run('ffprobe',['-v','error','-show_entries','stream=codec_name,width,height,r_frame_rate,duration,nb_frames,sample_rate,channels','-show_entries','format=duration,size','-of','json',file]).stdout);
+if(info.format.duration!=='30.000000'||info.streams[0].nb_frames!=='900'||info.streams[0].width!==1080||info.streams[0].height!==1920)throw Error('Export specification mismatch');
+ff(['-i',file,'-f','null','NUL']);
+ff(['-i',file,'-vf',"select='between(n,0,29)',scale=216:384,tile=6x5",'-frames:v','1',out+'v5-first-second-review.jpg']);
+ff(['-i',file,'-vf','fps=1,scale=216:384,tile=6x5','-frames:v','1',out+'v5-final-contact.jpg']);
+const frames=[209,210,252,253,257,258,295,296,303,304,359,360,395,396,398,399,419,420,452,453,503,504,557,558,593,594,617,618,659,660,671,672,688,689,690,691,719,720,809,810,899];
+ff(['-i',file,'-vf',`select='${frames.map(n=>'eq(n,'+n+')').join('+')}',scale=240:426,tile=7x6`,'-frames:v','1',out+'v5-boundaries-review.jpg']);
+ff(['-ss','7','-i',file,'-t','7','-vf','fps=4,scale=240:426,tile=7x4','-frames:v','1',out+'v5-search-and-camera-review.jpg']);
+ff(['-ss','22','-i',file,'-vf','fps=4,scale=240:426,tile=8x4','-frames:v','1',out+'v5-ending-review.jpg']);
+for(const [name,sec]of [['search-box',8.35],['result',9.7],['click',10.0],['landing',11.1],['camera',12.8],['camera-tap',13.4],['payoff',29.3]])ff(['-ss',String(sec),'-i',file,'-vf','scale=540:960','-frames:v','1',out+'v5-final-'+name+'.jpg']);
+const loud=run('ffmpeg',['-hide_banner','-i',file,'-af','loudnorm=I=-15:TP=-1.5:LRA=8:print_format=json','-f','null','NUL']).stderr;
+fs.writeFileSync(out+'v5-loudness-report.txt',loud);const match=loud.match(/\{\s*"input_i"[\s\S]+?\}/);const loudness=match?JSON.parse(match[0]):null;
+const blacks=run('ffmpeg',['-hide_banner','-i',file,'-vf','blackdetect=d=0.08:pix_th=0.10','-an','-f','null','NUL']).stderr;fs.writeFileSync(out+'v5-black-frame-report.txt',blacks);if(blacks.includes('black_start:'))throw Error('Review detected black intervals');
+fs.writeFileSync(out+'v5-technical-verification.json',JSON.stringify({...info,fullDecode:'passed',blackFrames:'none',loudness},null,2));
+console.log(JSON.stringify({path:file,duration:info.format.duration,frames:info.streams[0].nb_frames,bytes:info.format.size,decode:'passed',blackFrames:'none',loudness},null,2));

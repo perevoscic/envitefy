@@ -11,6 +11,10 @@ metadata:
 
 Brand identity, voice, messaging, asset management, and consistency frameworks.
 
+## Envitefy spoken name
+
+The spoken name is **Inviteefy**, exact IPA **/ɪnˈvaɪtiˌfaɪ/**. Use `<phoneme alphabet="ipa" ph="ɪnˈvaɪtiˌfaɪ">Envitefy</phoneme>` in SSML-capable speech engines. Preserve primary stress on VY and secondary stress on fy; do not add the old vowel-length mark or discard the secondary stress. Speak it as one word. Written branding remains Envitefy. Apply this to all narration, TTS, generated dialogue and voice briefs. Use the shared pronunciation helper documented in [the studio guide](../../../video-studio/STUDIO-GUIDE.md). This exact user-supplied IPA supersedes earlier phonetic spellings and stress directions.
+
 ## When to Use
 
 - Brand voice definition and content tone guidance

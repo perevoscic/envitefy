@@ -1,0 +1,16 @@
+import fs from 'node:fs';
+import {execFileSync,spawnSync} from 'node:child_process';
+const file='out/john-space-disco/john-space-disco-9x16-v6.mp4';
+const previous='out/john-space-disco/john-space-disco-9x16-v5.mp4';
+const metadata=JSON.parse(execFileSync('ffprobe',['-v','error','-show_entries','stream=codec_name,width,height,r_frame_rate,nb_frames,sample_rate,channels:format=duration,size','-of','json',file],{encoding:'utf8',windowsHide:true}));
+const v=metadata.streams.find(s=>s.codec_name==='h264'),a=metadata.streams.find(s=>s.codec_name==='aac');
+if(!v||v.width!==1080||v.height!==1920||v.r_frame_rate!=='30/1'||Number(v.nb_frames)!==900||Number(metadata.format.duration)!==30||!a||a.sample_rate!=='48000'||a.channels!==2)throw Error('Export format mismatch');
+const hash=f=>execFileSync('ffmpeg',['-hide_banner','-loglevel','error','-i',f,'-map','0:v:0','-c:v','copy','-f','hash','-hash','sha256','-'],{encoding:'utf8',windowsHide:true}).trim();
+const priorHash=hash(previous),currentHash=hash(file);if(priorHash!==currentHash)throw Error('Video frames changed');
+execFileSync('ffmpeg',['-hide_banner','-loglevel','error','-i',file,'-f','null','-'],{windowsHide:true});
+const sound=spawnSync('ffmpeg',['-hide_banner','-i',file,'-af','loudnorm=I=-15:TP=-1.5:LRA=9:print_format=json','-f','null','-'],{encoding:'utf8',windowsHide:true});if(sound.status)throw Error('Sound check failed');
+const match=sound.stderr.match(/\{\s*"input_i"[\s\S]*?\}/);
+const align=JSON.parse(fs.readFileSync('projects/john-space-disco/voice-create-v6-alignment.json','utf8'));
+if(!align.characters.join('').includes('@ih0@n@v@ay1@t@iy0@f@ay0'))throw Error('Incorrect pronunciation phonemes');
+const result={...metadata,decodedEntireVideo:true,videoMatchesV5Exactly:true,videoPacketSha256:currentHash,visualReview:'Inherited verified V5 frames. Dinosaur remains left and John right throughout the original unmirrored ending.',loudness:match?JSON.parse(match[0]):null,pronunciation:{spelling:'in-VY-tee-fy',primaryStress:'VY',CMU:'IH0 N V AY1 T IY0 F AY0',IPA:'ɪnˈvaɪtiːfaɪ',providerAlignedPhonemes:align.characters.join(''),masterVoiceEndSeconds:5.5+Math.max(...align.character_end_times_seconds),userApproved:false},status:'assistant-reviewed'};
+fs.writeFileSync('projects/john-space-disco/vertical-v6-verification.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));

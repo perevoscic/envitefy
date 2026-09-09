@@ -9,6 +9,18 @@
       "width": 1080,
       "height": 1920,
       "fps": 30
+    },
+    {
+      "aspectRatio": "1:1",
+      "width": 1080,
+      "height": 1080,
+      "fps": 30
+    },
+    {
+      "aspectRatio": "16:9",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30
     }
   ],
   "audience": "Engaged couples planning a wedding and their delightfully individual guests",
@@ -72,5 +84,22 @@
       "wordmark": "public/brand/envitefy-com.png",
       "secondRow": "weddings"
     }
+  },
+  "associatedCopy": {
+    "request": "Need posts for Facebook, Instagram, YouTube, TikTok and Reddit.",
+    "file": "projects/wedding-characters/social-posts-v1.md",
+    "status": "draft-not-published"
+  },
+  "formatAdaptations": {
+    "date": "2026-09-08",
+    "request": "Also a 1:1 aspect ratio version and 16:9 as well.",
+    "basedOnVerticalVersion": 4,
+    "status": "assistant-reviewed",
+    "durationSeconds": 25,
+    "layouts": "Separate character/caption panel with shot-specific framing and complete dance moves, large product captures with side explanations, format-specific wedding end cards retaining exact wordmark and weddings second row.",
+    "exports": [
+      "out/wedding-characters/wedding-characters-1x1-v1.mp4",
+      "out/wedding-characters/wedding-characters-16x9-v1.mp4"
+    ]
   }
 }

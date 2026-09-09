@@ -19,13 +19,17 @@ export function FridgeCleanup() {
     </AbsoluteFill>
   );
 }
-export function FridgePayoff() {
+export function FridgePayoff({
+  source = "payoff-edit.mp4",
+  trimBefore = 0,
+}: { source?: string; trimBefore?: number } = {}) {
   const frame = useCurrentFrame();
   return (
     <AbsoluteFill>
       <Video
         objectFit="cover"
-        src={asset("payoff-edit.mp4")}
+        src={asset(source)}
+        trimBefore={trimBefore}
         muted
         style={{ width: "100%", height: "100%" }}
       />

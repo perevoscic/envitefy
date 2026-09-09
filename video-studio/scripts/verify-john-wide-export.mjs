@@ -1,0 +1,24 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {spawnSync,execFileSync} from 'node:child_process';
+import sharp from '../../node_modules/sharp/lib/index.js';
+const dir='out/john-space-disco',file=dir+'/john-space-disco-16x9-v2.mp4';
+const probe=JSON.parse(execFileSync('ffprobe',['-v','error','-count_frames','-show_entries','stream=codec_name,width,height,r_frame_rate,nb_read_frames,sample_rate,channels:format=duration,size','-of','json',file],{encoding:'utf8'}));
+const v=probe.streams.find(s=>s.width),a=probe.streams.find(s=>s.channels);
+if(v.width!==1920||v.height!==1080||v.r_frame_rate!=='30/1'||Number(v.nb_read_frames)!==900||Math.abs(Number(probe.format.duration)-30)>.05||!a)throw Error('Export format mismatch');
+const decode=spawnSync('ffmpeg',['-v','error','-xerror','-i',file,'-f','null','-'],{encoding:'utf8',windowsHide:true});if(decode.status)throw Error(decode.stderr);
+const lev=spawnSync('ffmpeg',['-hide_banner','-i',file,'-vn','-af','ebur128=peak=true','-f','null','-'],{encoding:'utf8',windowsHide:true});fs.writeFileSync(dir+'/wide-loudness.txt',lev.stderr);
+const black=spawnSync('ffmpeg',['-hide_banner','-i',file,'-vf','blackdetect=d=0.08:pix_th=0.05','-an','-f','null','-'],{encoding:'utf8',windowsHide:true});const blackEvents=black.stderr.split('\n').filter(s=>s.includes('black_start:'));
+const raw=execFileSync('ffmpeg',['-v','error','-i',file,'-t','28','-vf','fps=2,scale=96:54,format=gray','-f','rawvideo','-'],{maxBuffer:2000000});
+const size=96*54,motion=[];for(let i=1;i<raw.length/size;i++){let d=0;for(let n=0;n<size;n++)d+=Math.abs(raw[i*size+n]-raw[(i-1)*size+n]);motion.push({timeSeconds:i/2,meanPixelDelta:Number((d/size).toFixed(3))});}
+const frames=[0,1,2,3,4,5,6,40,148,149,150,151,152,190,275,300,340,358,359,360,361,362,380,435,503,550,568,569,570,571,572,591,615,650,710,767,778,779,780,781,782,801,832,833,834,835,842,843,844,872,899];
+fs.mkdirSync(dir+'/wide-final-review',{recursive:true});
+const selection=frames.map(n=>'eq(n\\,'+n+')').join('+');
+const shots=spawnSync('ffmpeg',['-y','-hide_banner','-loglevel','error','-i',file,'-vf','select='+selection+',scale=960:540','-fps_mode','vfr',dir+'/wide-final-review/frame-%03d.jpg'],{encoding:'utf8',windowsHide:true});if(shots.status)throw Error(shots.stderr);
+fs.writeFileSync(dir+'/wide-final-review/index.json',JSON.stringify(frames.map((f,i)=>({frame:f,path:'frame-'+String(i+1).padStart(3,'0')+'.jpg'})),null,2));
+const selected=[0,40,190,275,300,380,435,503,550,591,615,650,710,801,872];
+const tiles=await Promise.all(selected.map(async(f,i)=>({input:await sharp(dir+'/wide-final-review/frame-'+String(frames.indexOf(f)+1).padStart(3,'0')+'.jpg').resize(480,270).toBuffer(),left:(i%3)*480,top:Math.floor(i/3)*270})));
+await sharp({create:{width:1440,height:1350,channels:3,background:'#211533'}}).composite(tiles).jpeg({quality:90}).toFile(dir+'/wide-final-contact.jpg');
+const report={probe,fullDecodePassed:true,blackEvents,motion,allHalfSecondIntervalsMovingBeforeBrand:motion.every(m=>m.meanPixelDelta>.2),localAudioTranscript:'projects/john-space-disco/wide-final-review-local-transcript.json',reviewFrameIndex:dir+'/wide-final-review/index.json',loudnessSummary:lev.stderr.slice(lev.stderr.lastIndexOf('Summary:'))};
+fs.writeFileSync('projects/john-space-disco/wide-export-checks.json',JSON.stringify(report,null,2));
+console.log(JSON.stringify({probe,fullDecodePassed:true,blackEvents,motionMinimum:Math.min(...motion.map(m=>m.meanPixelDelta)),loudness:report.loudnessSummary},null,2));

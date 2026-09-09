@@ -2,7 +2,7 @@ import fs from 'node:fs';import {spawnSync} from 'node:child_process';
 const out='out/fridge-freedom/',p='projects/fridge-freedom/',file=out+'fridge-freedom-9x16-v1.mp4';
 function run(command,args){const r=spawnSync(command,args,{encoding:'utf8',maxBuffer:8e6});if(r.status!==0)throw Error(r.stderr||command+' failed');return {stdout:r.stdout,stderr:r.stderr};}
 const ff=args=>run('ffmpeg',['-y','-hide_banner','-loglevel','error',...args]);
-ff(['-i',out+'fridge-freedom-9x16-v1-render.mp4','-map','0:v','-map','0:a','-c:v','copy','-c:a','aac','-b:a','256k','-af','atrim=0:30','-t','30','-movflags','+faststart',file]);
+ff(['-i',out+'fridge-freedom-9x16-v1-render.mp4','-filter_complex','[0:v]split[main][reference];[main][reference]freezeframes=first=338:last=359:replace=335[v]','-map','[v]','-map','0:a','-c:v','libx264','-preset','fast','-crf','16','-pix_fmt','yuv420p','-c:a','aac','-b:a','256k','-af','atrim=0:30','-t','30','-movflags','+faststart',file]);
 const info=JSON.parse(run('ffprobe',['-v','error','-show_entries','stream=codec_name,width,height,r_frame_rate,duration,nb_frames,sample_rate,channels','-show_entries','format=duration,size','-of','json',file]).stdout);
 if(info.format.duration!=='30.000000'||info.streams[0].nb_frames!=='900'||info.streams[0].width!==1080||info.streams[0].height!==1920)throw Error('Export spec mismatch');
 ff(['-i',file,'-f','null','NUL']);fs.writeFileSync(out+'technical-verification.json',JSON.stringify({...info,fullDecode:'passed'},null,2));

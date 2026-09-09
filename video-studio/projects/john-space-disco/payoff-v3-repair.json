@@ -1,0 +1,10 @@
+{
+  "requestedFix": "Keep dinosaur screen left and John screen right at 28 and 29 seconds.",
+  "source": "public/projects/john-space-disco/vertical-payoff.mp4",
+  "method": "Mirror the second camera shot from local frame 60 onward before adding brand and CTA overlays.",
+  "cutTimeInSource": 2,
+  "cutTimeInMaster": 28,
+  "output": "public/projects/john-space-disco/vertical-payoff-v3.mp4",
+  "voice": "Original native closing dialogue preserved.",
+  "providerEditAttempt": "The queued provider repair was content-blocked; no resubmission. Used local video editing."
+}

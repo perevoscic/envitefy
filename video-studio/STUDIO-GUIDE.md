@@ -22,7 +22,7 @@ Saved from the user's production decisions on September 5, 2026. These are defau
 
 ## Audio
 
-- Follow [ENVITEFY_BRAND.md](../ENVITEFY_BRAND.md) for the mandatory brand spelling and pronunciation standard (September 8, 2026). Before generating speech containing Envitefy, include the document's explicit model instruction. The authoritative written target is **en-VITE-fy** as one continuous word; phonetic spelling is internal metadata only. Verify every spoken occurrence against that guidance and regenerate or replace incorrect audio before accepting the asset.
+- Standing pronunciation (September 8, 2026, latest user specification): The spoken name is **Inviteefy**, exact IPA **/ɪnˈvaɪtiˌfaɪ/**. Use `<phoneme alphabet="ipa" ph="ɪnˈvaɪtiˌfaɪ">Envitefy</phoneme>` in SSML-capable speech engines. Preserve primary stress on VY and secondary stress on fy; do not add the old vowel-length mark or discard the secondary stress. Speak it as one word. Written branding remains Envitefy. Apply `scripts/brand-pronunciation.mjs` to all Envitefy audio. Use the same IPA in compatible native syntax where XML SSML is unsupported. Audition the selected take. This supersedes all earlier variants.
 - The user rejected narration that obviously sounds synthetic. Natural delivery matters more than using a particular provider.
 - Narration is optional, not prohibited. Choose spoken narration, dialogue, music, ambience, and sound effects to serve the story; do not restrict a requested longer video to the old short script.
 - For speech, the existing ElevenLabs narration pipeline is available. Audition a short sample and adjust voice, writing, timing, and delivery before generating the full track when a new voice is needed. Do not default to the old Intro voice simply because it is configured.
@@ -48,3 +48,13 @@ Preference history:
 - 2026-09-05: Captured exact branding, fresh casts and settings, no personal twin, natural audio with optional narration, real product demonstrations, action captions, demo naming, and format-specific layouts from the original production task.
 
 - 2026-09-05: User replaced the studio wordmark with public/brand/envitefy-com.png. The supplied wordmark already contains the domain; retain its transparent background and avoid a duplicate black domain line. Scene layout choices are recorded in the campaign feedback.
+
+- 2026-09-08: Final clarification: **in-VY-tee-fy**, stress on VY. This supersedes the earlier spellings and the take that stressed tee.
+
+- 2026-09-08: User updated the pronunciation to **in-VY-tee-fy**, moving primary stress to VY. Updated the standing studio/brand instructions and shared phoneme helper; written Envitefy branding remains unchanged.
+
+- 2026-09-08: User supplied exact IPA `ɪnˈvaɪtiˌfaɪ` and the IPA phoneme tag, asking that it govern all Envitefy audio. Saved verbatim, including secondary stress on final fy, and applied to all reusable speech-generation paths.
+
+- 2026-09-08: User updated the pronunciation to **in-VY-tee-fy**, moving primary stress to VY. Updated the standing studio/brand instructions and shared phoneme helper; written Envitefy branding remains unchanged.
+
+- 2026-09-08: User supplied exact Inviteefy IPA /ɪnˈvaɪtiˌfaɪ/ for all audio. This supersedes prior approximations.

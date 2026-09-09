@@ -1,0 +1,29 @@
+{
+  "search": {
+    "mode": "Illustrative search demonstration; labelled in video",
+    "query": "turn paper birthday invite into a digital invitation",
+    "resultTitle": "Envitefy Snap | Turn invites, flyers, and PDFs into event pages",
+    "displayedUrl": "https://envitefy.com/snap",
+    "sources": [
+      "https://envitefy.com/snap",
+      "https://envitefy.com/guides/flyer-to-event-page"
+    ],
+    "googleCapture": "Public Google search returned CAPTCHA. No bypass or real ranking claim. Actual Google-owned logo used from its public asset."
+  },
+  "destination": {
+    "mode": "Actual public Envitefy Snap page recording",
+    "url": "https://envitefy.com/snap",
+    "file": "public/projects/fridge-freedom/v3-snap-landing.mp4"
+  },
+  "camera": {
+    "mode": "Moving generated hands/phone shot with editable camera-screen replacement",
+    "source": "v3-insert-camera.mp4",
+    "screen": "flyer.webp",
+    "output": "v3-camera-ready.mp4",
+    "duration": 2,
+    "sourceStart": 1.35,
+    "shutterInClip": 1.2,
+    "display": "Same fictional Mia birthday flyer and verified date/time/place as saved digital event"
+  },
+  "localReviewOnly": true
+}

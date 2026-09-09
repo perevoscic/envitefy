@@ -1,0 +1,108 @@
+{
+  "programs": [],
+  "stream_groups": [],
+  "streams": [
+    {
+      "codec_name": "h264",
+      "width": 1080,
+      "height": 1920,
+      "r_frame_rate": "30/1",
+      "nb_frames": "900",
+      "side_data_list": [
+        {}
+      ]
+    },
+    {
+      "codec_name": "aac",
+      "sample_rate": "48000",
+      "channels": 2,
+      "r_frame_rate": "0/0",
+      "nb_frames": "1408"
+    }
+  ],
+  "format": {
+    "duration": "30.000000",
+    "size": "22278043"
+  },
+  "decodedEntireVideo": true,
+  "loudness": {
+    "input_i": "-15.39",
+    "input_tp": "-1.43",
+    "input_lra": "11.40",
+    "input_thresh": "-25.89",
+    "output_i": "-15.22",
+    "output_tp": "-1.50",
+    "output_lra": "7.90",
+    "output_thresh": "-25.52",
+    "normalization_type": "dynamic",
+    "target_offset": "0.22"
+  },
+  "checkedCutFrames": [
+    0,
+    1,
+    2,
+    147,
+    148,
+    149,
+    150,
+    151,
+    358,
+    359,
+    360,
+    361,
+    568,
+    569,
+    570,
+    571,
+    778,
+    779,
+    780,
+    781,
+    898,
+    899
+  ],
+  "status": "assistant-reviewed",
+  "endingReview": {
+    "firstFrame": 780,
+    "lastFrame": 899,
+    "framesInspected": 120,
+    "result": "Dinosaur left and John right in every exported ending frame. Reversing second shot completely excluded; no horizontal flip used.",
+    "source": "public/projects/john-space-disco/payoff.mp4",
+    "sourceStartSeconds": 4.5,
+    "sourceFrames": 110,
+    "playbackRate": 0.9166666666666666,
+    "output": "public/projects/john-space-disco/vertical-payoff-v5-uncut.mp4",
+    "evidence": [
+      "out/john-space-disco/vertical-v5-second-26-all-frames.jpg",
+      "out/john-space-disco/vertical-v5-second-27-all-frames.jpg",
+      "out/john-space-disco/vertical-v5-second-28-all-frames.jpg",
+      "out/john-space-disco/vertical-v5-second-29-all-frames.jpg"
+    ]
+  },
+  "audioReview": {
+    "brandTake": "public/projects/john-space-disco/vo-create-v5.mp3",
+    "pronunciation": "invitee-fy / 1nvitee-fy",
+    "model": "eleven_flash_v2",
+    "CMU": "IH0 N V AY2 T IY1 F AY0",
+    "providerAlignment": "voice-create-v5-alignment.json",
+    "pronunciationSampleShared": true,
+    "userPronunciationConfirmation": "not received as of export",
+    "closingLine": "Complete closing line detected from the final exported last 2.1 seconds.",
+    "closingTranscript": "vertical-v5-closing-dialogue-local-transcript.json",
+    "timing": {
+      "sourceStart": 6.3333333333,
+      "speechRate": 0.96,
+      "masterOffset": 28,
+      "predictedLastSpokenSound": 29.9653
+    },
+    "reviewLimit": "Automatic transcription is not treated as proof of exact brand pronunciation. Phoneme-directed take supplied for user review."
+  },
+  "sourceValidation": {
+    "tests": "8 passed",
+    "ESLint": "Changed files passed",
+    "Biome": "Changed files passed",
+    "TypeScript": "Passed",
+    "videoSkill": "Validator passed",
+    "editorDiagnostics": "Chat to CLI bridge unavailable"
+  }
+}

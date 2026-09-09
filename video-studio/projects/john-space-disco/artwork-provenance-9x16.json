@@ -1,0 +1,23 @@
+{
+  "generator": "Built-in ImageGen",
+  "conversion": "FFmpeg libwebp quality 85 compression_level 6; original dimensions preserved; codec and full decode verified",
+  "images": [
+    {
+      "path": "public/projects/john-space-disco/card-art.webp",
+      "width": 1086,
+      "height": 1448,
+      "original": "C:/Users/rjosan/.codex/generated_images/01a08282-13fd-7211-bac7-bb728a8641bb/exec-c824d0bb-1f0b-476f-aa64-d7c15e29d653.png",
+      "role": "First design, preserved for provenance and other aspect-ratio task",
+      "originalDeleted": true
+    },
+    {
+      "path": "public/projects/john-space-disco/card-art-vertical.webp",
+      "width": 1024,
+      "height": 1536,
+      "original": "C:/Users/rjosan/.codex/generated_images/01a08282-13fd-7211-bac7-bb728a8641bb/exec-c786dc62-3271-4a9b-868a-ab3ea3415a08.png",
+      "role": "Final portrait design used in all vertical product captures",
+      "originalDeleted": true
+    }
+  ],
+  "finalPrompt": "Create ONE finished portrait birthday invitation illustration, exact canvas aspect ratio 2:3 (for example 1024 by 1536), full bleed, no border or phone. Premium cinematic 3D cartoon style, cobalt blue and violet magical space, friendly small rounded mint-teal T-rex with cream belly, tiny violet bumps, tiny purple birthday hat with yellow pompom, earnestly doing a disco dance. Ringed planets, mirrored disco ball, dancing gold stars. Huge joyful perfectly legible headline in upper half exactly JOHN and giant 10, and smaller SPACE DINO DISCO above. Keep ALL text inside middle 75 percent of image width with generous left/right padding. Dinosaur in middle, adorable expressive face. Bottom 25 percent is pure continuing colorful cosmic dance floor with soft blue-violet lighting, no characters or text, clear area for real app controls added later. Tactile materials, polished joyful family animation artwork. No dates, time, address, RSVP text, other wording, logos, watermarks, UI, or blank margins. Critical exact 2:3 portrait composition."
+}

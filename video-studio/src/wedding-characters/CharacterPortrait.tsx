@@ -1,3 +1,5 @@
+import { AdaptivePortrait } from "./AdaptiveScenes";
+import { useVideoConfig } from "remotion";
 import { Video } from "@remotion/media";
 import { AbsoluteFill, useCurrentFrame, staticFile } from "remotion";
 
@@ -11,6 +13,11 @@ export function CharacterPortrait({
   dialogue?: boolean;
 }) {
   const frame = useCurrentFrame();
+  const { width, height } = useVideoConfig();
+  if (width >= height)
+    return (
+      <AdaptivePortrait clip={clip} title={character} dialogue={dialogue} />
+    );
   return (
     <AbsoluteFill>
       <Video

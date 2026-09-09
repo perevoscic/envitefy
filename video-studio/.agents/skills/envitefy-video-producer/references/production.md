@@ -27,6 +27,10 @@ Add script/storyboard, captions, or social-copy files when useful. Store private
 
 The planning template at `templates/campaign-brief.json` is independent of the older Intro narration schema and Host Mode generator schema. Adapt the renderer/generator explicitly to new creative structures. The user does not need to fill out a form: populate the brief from their natural-language request and reasonable choices.
 
+## Spoken brand name
+
+The spoken name is **Inviteefy**, exact IPA **/ɪnˈvaɪtiˌfaɪ/**. Use `<phoneme alphabet="ipa" ph="ɪnˈvaɪtiˌfaɪ">Envitefy</phoneme>` in SSML-capable speech engines. Preserve primary stress on VY and secondary stress on fy; do not add the old vowel-length mark or discard the secondary stress. Speak it as one word. Written branding remains Envitefy. The shared helper sends this exact IPA tag to Flash v2 and the identical IPA in slash syntax to Eleven v3. The narration pipeline selects a compatible model if the requested model ignores phoneme tags. All three TTS entry points and the base native-video generators use the helper. Keep phoneme tokens out of captions. See [STUDIO-GUIDE.md](../../../../STUDIO-GUIDE.md).
+
 ## Available pipeline
 
 | Need | Existing implementation | Important scope |

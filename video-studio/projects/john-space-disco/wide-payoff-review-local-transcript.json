@@ -1,0 +1,46 @@
+[
+  {
+    "start": 0.0,
+    "end": 1.66,
+    "text": " That's my kind of birthday!",
+    "words": [
+      {
+        "word": " That's",
+        "start": 0.0,
+        "end": 0.46
+      },
+      {
+        "word": " my",
+        "start": 0.46,
+        "end": 0.68
+      },
+      {
+        "word": " kind",
+        "start": 0.68,
+        "end": 1.04
+      },
+      {
+        "word": " of",
+        "start": 1.04,
+        "end": 1.2
+      },
+      {
+        "word": " birthday!",
+        "start": 1.2,
+        "end": 1.66
+      }
+    ]
+  },
+  {
+    "start": 2.44,
+    "end": 3.36,
+    "text": " Hahaha!",
+    "words": [
+      {
+        "word": " Hahaha!",
+        "start": 2.44,
+        "end": 3.36
+      }
+    ]
+  }
+]

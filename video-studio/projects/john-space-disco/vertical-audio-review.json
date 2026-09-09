@@ -1,0 +1,51 @@
+```json
+{
+  "transcription": [
+    {
+      "speaker": "John",
+      "line": "My birthday needs dinosaurs in space with a disco!",
+      "start_time": "00:00",
+      "end_time": "00:04"
+    },
+    {
+      "speaker": "Narrator",
+      "line": "Bring their birthday ideas to life with Onvitefy Concierge.",
+      "start_time": "00:05",
+      "end_time": "00:08"
+    },
+    {
+      "speaker": "Parent",
+      "line": "Small change, we're starting at three.",
+      "start_time": "00:19",
+      "end_time": "00:21"
+    },
+    {
+      "speaker": "Narrator",
+      "line": "Change the plans, your live card updates, no resending needed.",
+      "start_time": "00:22",
+      "end_time": "00:26"
+    },
+    {
+      "speaker": "John",
+      "line": "That's my kind of birthday!",
+      "start_time": "00:26",
+      "end_time": "00:28"
+    }
+  ],
+  "analysis": {
+    "cut_off_or_clipped_words": "None",
+    "missing_or_repeated_words": "None",
+    "verifications": {
+      "john_dinosaur_line": "Yes, John says the full line: 'My birthday needs dinosaurs in space with a disco!'",
+      "parent_start_time_line": "The parent says 'Small change, we're starting at three.' (using the contraction 'we're' instead of 'we are').",
+      "john_finish_line": "John says 'That's my kind of birthday!' (using the contraction 'That's' instead of 'That is').",
+      "narrator_lines": "Yes, the narrator speaks both complete lines clearly, pronouncing the brand name as 'Onvitefy' (matching the on-screen spelling 'onvitefy')."
+    },
+    "audio_assessment": {
+      "intelligibility_over_music": "Excellent; the background music is well-leveled and does not interfere with the speech.",
+      "voice_naturalness": "Highly natural, enthusiastic, and appropriate character/narrator voices.",
+      "clipping_or_defects": "None detected; the audio is clean with no clipping or abrupt cuts."
+    }
+  }
+}
+```
