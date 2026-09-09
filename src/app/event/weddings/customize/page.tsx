@@ -1,5 +1,7 @@
 // @ts-nocheck
 "use client";
+
+import { useEventProgress, useProgressNavigation } from "@/components/UnsavedProgressProvider";
 import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
 import { parseEventGuestDate, eventLocalDateParts, normalizeEventGuestPlanning, type EventGuestPlanning } from "@/lib/event-guest-planning";
@@ -1554,9 +1556,9 @@ const App = () => {
   const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
   const search = useTemplateSearchParams();
   const router = useRouter();
+  const { allowNavigation } = useProgressNavigation();
   const editEventId = search?.get("edit") ?? undefined;
   const templateIdParam = search?.get("templateId") ?? undefined;
-  const variationIdParam = search?.get("variationId") ?? undefined;
   const [activeView, setActiveView] = useTemplateState("activeView", "main");
   const [data, setData] = useTemplateState("data", INITIAL_DATA);
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
@@ -1573,6 +1575,7 @@ const App = () => {
   const designGridRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(Boolean(editEventId));
   const [newEvent, setNewEvent] = useTemplateState("newEvent", {
     title: "",
     date: "",
@@ -1597,7 +1600,7 @@ const App = () => {
     code: "",
     distance: "",
   });
-  const [creatingDraft, setCreatingDraft] = useState(false);
+
   const designGalleryHref = useMemo(() => {
     if (templateEditor) return `/${templateEditor.category}/templates`;
     const params = new URLSearchParams();
@@ -1605,82 +1608,6 @@ const App = () => {
     const query = params.toString();
     return `/event/weddings${query ? `?${query}` : ""}`;
   }, [data.date, templateEditor]);
-
-  // When no editEventId is present, create a draft event_history row
-  // so the builder always has an id to attach nested data (registry, etc.).
-  useEffect(() => {
-    if (templateEditor || editEventId || creatingDraft) return;
-
-    let cancelled = false;
-
-    (async () => {
-      try {
-        setCreatingDraft(true);
-        const draftThemeId =
-          (templateIdParam && TEMPLATE_CONFIGS[templateIdParam]
-            ? templateIdParam
-            : null) ||
-          INITIAL_DATA.theme.themeId ||
-          DEFAULT_TEMPLATE_ID;
-        const draftCouple = getPreviewCouple(draftThemeId);
-        const draftTitle = buildDraftTitle(
-          draftThemeId,
-          draftCouple.partner1,
-          draftCouple.partner2
-        );
-        const res = await fetch("/api/history", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            title: draftTitle,
-            data: {
-              category: "Weddings",
-              createdVia: "template",
-              createdManually: true,
-              status: "draft",
-              templateId: "wedding",
-              variationId: draftThemeId,
-              title: draftTitle,
-              templateName: getTemplateTitle(draftThemeId),
-              coupleNames: getCoupleNames(draftCouple.partner1, draftCouple.partner2),
-              partner1: draftCouple.partner1,
-              partner2: draftCouple.partner2,
-              theme: {
-                ...INITIAL_DATA.theme,
-                themeId: draftThemeId,
-                font: TEMPLATE_CONFIGS[draftThemeId]?.family === "atelier" ? "template" : INITIAL_DATA.theme.font,
-              },
-            },
-          }),
-        });
-        if (!res.ok) {
-          return;
-        }
-        const row = await res.json().catch(() => null);
-        const id = (row as any)?.id as string | undefined;
-        if (!id || cancelled) return;
-
-        const params = new URLSearchParams(search?.toString() || "");
-        params.set("edit", id);
-        // templateId/variationId are baked into the draft; keep URL clean
-        params.delete("templateId");
-        params.delete("variationId");
-        const qs = params.toString();
-        router.replace(`/event/weddings/customize${qs ? `?${qs}` : ""}`);
-      } catch {
-        // If draft creation fails, fall back to old behavior (create on publish)
-      } finally {
-        if (!cancelled) {
-          setCreatingDraft(false);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [editEventId, creatingDraft, templateIdParam, variationIdParam, search, router]);
 
   // When an editEventId is present, hydrate the builder from the
   // corresponding event_history row so drafts and published weddings
@@ -1757,7 +1684,7 @@ const App = () => {
       } catch {
         // If hydration fails, keep using INITIAL_DATA defaults
       }
-    })();
+    })().finally(() => { if (!cancelled) setLoadingProgress(false); });
 
     return () => {
       cancelled = true;
@@ -1927,17 +1854,6 @@ const App = () => {
       const designTop = designGridRef.current?.scrollTop ?? null;
       updateTheme("themeId", themeId);
 
-      if (editEventId && !templateEditor) {
-        try {
-          await fetch(`/api/events/${editEventId}/update-theme`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ templateId: themeId }),
-          });
-        } catch (err) {
-          console.error("Failed to save theme selection", err);
-        }
-      }
 
       requestAnimationFrame(() => {
         if (previewTop !== null && previewRef.current) {
@@ -2217,7 +2133,7 @@ const App = () => {
           );
         }
         const params = editEventId ? { updated: true } : { created: true };
-        router.push(buildEventPath(id, payload.title, params));
+        allowNavigation(() => router.push(buildEventPath(id, payload.title, params)));
       } else {
         throw new Error(
           editEventId ? "Failed to update event" : "Failed to create event"
@@ -2231,16 +2147,25 @@ const App = () => {
     }
   }, [templateEditor, buildHistoryPayload, editEventId, router, submitting]);
 
-  const handleSaveDraft = useCallback(async () => {
+  const weddingProgress = useEventProgress({
+    snapshot: { data, newEvent, newItem, tempHotel, tempAirport },
+    ready: !loadingProgress,
+    enabled: !templateEditor,
+    busy: savingDraft || submitting,
+    save: async () => { await handleSaveDraft(true); },
+  });
+
+  const handleSaveDraft = useCallback(async (leaving = false) => {
     if (templateEditor) { await templateEditor.requestSave(); return; }
     if (savingDraft || submitting) return;
     setSavingDraft(true);
     try {
       const payload = await buildHistoryPayload("draft");
+      payload.data.templateEditor = { category: "weddings", templateId: data.theme.themeId, snapshot: { data, newEvent, newItem, tempHotel, tempAirport } };
       let id: string | undefined = editEventId;
 
       if (id) {
-        await fetch(`/api/history/${id}`, {
+        const response = await fetch(`/api/history/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -2249,6 +2174,7 @@ const App = () => {
             data: payload.data,
           }),
         });
+        if (!response.ok) throw new Error("Unable to save your draft. Please retry.");
         if (typeof window !== "undefined") {
           window.dispatchEvent(
             new CustomEvent("history:updated", {
@@ -2283,14 +2209,16 @@ const App = () => {
           params.delete("templateId");
           params.delete("variationId");
           const qs = params.toString();
-          router.replace(`/event/weddings/customize${qs ? `?${qs}` : ""}`);
+          if (!leaving) allowNavigation(() => router.replace(`/event/weddings/customize${qs ? `?${qs}` : ""}`));
         }
       }
 
       if (!id) {
         throw new Error("Failed to save draft");
       }
+      weddingProgress.markSaved();
     } catch (err: any) {
+      if (leaving) throw err;
       const msg = String(err?.message || err || "Failed to save draft");
       alert(msg);
     } finally {
@@ -2397,7 +2325,7 @@ const App = () => {
             </button>
           )}
           <button
-            onClick={handleSaveDraft}
+            onClick={() => void handleSaveDraft()}
             disabled={savingDraft || submitting}
             className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
           >

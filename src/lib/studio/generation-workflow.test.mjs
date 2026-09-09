@@ -64,6 +64,27 @@ test("failed artwork gets one visible repair and never becomes the saved result"
   assert.equal(events.filter((event) => event.type === "stage" && event.stage === "repairing").length, 1);
   assert.equal(events.filter((event) => event.type === "preview" && !event.partial).length, 2);
 });
+test("an unapplied no-members/cursive edit gets at most two image attempts and reports the actual failure", async () => {
+  setup();
+  const prompts = [];
+  mock.method(deps, "editInvitationImageWithOpenAi", async (prompt) => {
+    prompts.push(prompt);
+    return { ok: true, imageDataUrl: image, warnings: [] };
+  });
+  mock.method(deps, "verifyStudioArtwork", async () => ({ status: "failed", issues: ["requested_change_not_applied"], repairInstructions: ["Remove all band member portraits and restyle the entire headline in cursive."] }));
+  const result = await generateStudioInvitation({ ...request, imageEdit: { ...request.imageEdit, editInstruction: "NO band memebrer, maket erhe text to bu cursvie in Livia is trunin 10" } });
+  assert.equal(result.ok, false);
+  assert.equal(result.imageDataUrl, null);
+  assert.equal(result.timings.imageAttempts, 2);
+  assert.equal(prompts.length, 2);
+  for (const prompt of prompts) {
+    assert.match(prompt, /Remove every band member/);
+    assert.match(prompt, /entire birthday headline.*cursive/);
+  }
+  assert.match(result.errors.image.message, /did not match the requested visual changes/);
+  assert.match(result.errors.image.message, /previous image is unchanged/);
+  assert.doesNotMatch(result.errors.image.message, /Try Preview/);
+});
 test("persistence follows generation checks and publishes a final durable URL with timings", async () => {
   let uploaded = false;
   mock.method(generationResponseDeps, "generateStudioInvitation", async (_request, options) => {

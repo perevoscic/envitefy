@@ -1,5 +1,7 @@
 // @ts-nocheck
 "use client";
+
+import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
 import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
@@ -776,6 +778,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
   const search = useTemplateSearchParams();
     const router = useRouter();
+  const { allowNavigation } = useProgressNavigation();
     const editEventId = search?.get("edit") ?? undefined;
     const selectedTemplateId = search?.get("templateId");
     const demoMode = search?.get("demo") === "1";
@@ -2087,7 +2090,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             } catch {}
             return;
           }
-          router.push(redirectUrl);
+          allowNavigation(() => router.push(redirectUrl));
         } else {
           const res = await fetch("/api/history", {
             method: "POST",
@@ -2110,7 +2113,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               }),
             );
           }
-          router.push(buildEventPath(id, payload.title, { created: true }));
+          allowNavigation(() => router.push(buildEventPath(id, payload.title, { created: true })));
         }
       } catch (err: any) {
         alert(String(err?.message || err || "Failed to create event"));
@@ -3387,7 +3390,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 Cancel
               </button>
             )}
-            {!templateEditor && <LegacyTemplateDraftButton category={"gymnastics"} templateId={data.pageTemplateId} eventId={editEventId} snapshot={{ data, activeView, advancedState, themeId, activeSection }} disabled={submitting} />}
+            {!templateEditor && <LegacyTemplateDraftButton category={"gymnastics"} templateId={data.pageTemplateId} eventId={editEventId} snapshot={{ data, activeView, advancedState, themeId, activeSection }} disabled={submitting} ready={!loadingExisting} />}
             <button
               onClick={handlePublish}
               disabled={submitting || (!(templateEditor && !templateEditor.authenticated) && missingEssentials.length > 0)}

@@ -1,4 +1,5 @@
 import { sanitizeGuestCopy, sanitizeGuestTitle } from "@/lib/concierge/public-copy";
+import { normalizeArtworkEditLanguage, requestedArtworkRequirements } from "../concierge/visual-direction.ts";
 import { resolveStudioImageFinishPreset } from "@/lib/studio/image-finish-presets";
 import type {
   StudioEventDetails,
@@ -1235,11 +1236,13 @@ function buildApprovedVisibleCopySection(event: StudioEventDetails, subjectTitle
 }
 
 export function buildExistingInvitationImageEditPrompt(editInstruction?: string | null): string {
-  const instruction = trimOrEmpty(editInstruction);
+  const instruction = normalizeArtworkEditLanguage(trimOrEmpty(editInstruction));
 
   return [
     "You are editing the attached existing live-card raster image.",
     instruction || "Preserve the existing image exactly.",
+    ...requestedArtworkRequirements(instruction),
+    "Apply every requested change. Explicit subject exclusions and font changes override all preservation instructions. A request for no band members excludes their photographs, illustrations and silhouettes, including within posters or album artwork. A cursive headline request changes the letterforms across the whole headline while preserving its words and age. Do not return an unchanged source image as a completed edit.",
     "Interpret corrective feedback in context: 'that is X, NOT Y' or 'you gave me X instead of Y' reports that X is the wrong existing subject and requests Y. Replace X and its associated names, logos, album/song titles, and imagery with Y. Do not interpret the NOT as a request to exclude the intended Y. By contrast, 'use X, not Y' requests X. A subject correction requires a visible replacement, even without the word redo. Preservation rules do not apply to the rejected subject or its associated text. Do not merely relabel the rejected artist while retaining their album covers or song titles. Rebuild the requested music display around the intended artist; remove rejected catalog items entirely. If you cannot confidently identify an accurate replacement title, omit that item instead of retaining the wrong title or inventing one. Use explicitly supplied replacement titles when available.",
     "Match the scope of the requested change: a text correction is localized; a theme or style change may redesign the background, imagery, palette, lighting, and decorative elements across the card.",
     "Return the full image with the requested edit applied. For localized edits, do not regenerate or redesign the card. For a requested theme change, preserve the event wording and facts while applying the new visual theme.",

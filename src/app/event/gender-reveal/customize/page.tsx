@@ -1,5 +1,7 @@
 // @ts-nocheck
 "use client";
+
+import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
 import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
@@ -381,6 +383,7 @@ export default function GenderRevealTemplateCustomizePage() {
   const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
   const search = useTemplateSearchParams();
   const router = useRouter();
+  const { allowNavigation } = useProgressNavigation();
   const defaultDate = search?.get("d") ?? undefined;
   const editEventId = search?.get("edit") ?? undefined;
   const templateId = search?.get("templateId");
@@ -832,7 +835,7 @@ export default function GenderRevealTemplateCustomizePage() {
           );
         }
         const params = editEventId ? { updated: true } : { created: true };
-        router.push(buildEventPath(id, payload.title, params));
+        allowNavigation(() => router.push(buildEventPath(id, payload.title, params)));
       } else {
         throw new Error(
           editEventId ? "Failed to update event" : "Failed to create event"
@@ -1661,7 +1664,7 @@ export default function GenderRevealTemplateCustomizePage() {
                 Cancel
               </button>
             )}
-            {!templateEditor && <LegacyTemplateDraftButton category={"gender-reveal"} templateId={resolvedTemplateId} eventId={editEventId} snapshot={{ data, activeView, newHost, newRegistry }} disabled={submitting} />}
+            {!templateEditor && <LegacyTemplateDraftButton category={"gender-reveal"} templateId={resolvedTemplateId} eventId={editEventId} snapshot={{ data, activeView, newHost, newRegistry }} disabled={submitting} ready={!loadingExisting} />}
             <button
               onClick={handlePublish}
               disabled={submitting}

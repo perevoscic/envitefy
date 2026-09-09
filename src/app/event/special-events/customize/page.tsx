@@ -1,6 +1,9 @@
 // @ts-nocheck
 "use client";
 
+import { useManualEventProgress } from "@/hooks/useManualEventProgress";
+import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
+
 import EventGuestActions from "@/components/event-templates/EventGuestActions";
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
 import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
@@ -608,6 +611,7 @@ const EditorLayout = ({ title, onBack, children }) => (
 export default function SpecialEventsCustomizePage() {
   const search = useSearchParams();
   const router = useRouter();
+  const { allowNavigation } = useProgressNavigation();
   const defaultDate = search?.get("d") ?? undefined;
   const editEventId = search?.get("edit") ?? undefined;
 
@@ -680,6 +684,13 @@ export default function SpecialEventsCustomizePage() {
         const row = await response.json();
         if (cancelled) return;
         const existing = row.data || {};
+          if (existing.manualEditor?.snapshot) {
+            const saved = existing.manualEditor.snapshot;
+            if (saved.data !== undefined) setData(saved.data);
+            setLoadingExisting(false);
+            return;
+          }
+
         const start = eventLocalDateParts(existing.startISO || existing.startAt || existing.start);
         const end = eventLocalDateParts(existing.endISO || existing.endAt || existing.end);
         setSavedEventData(existing);
@@ -1086,6 +1097,12 @@ export default function SpecialEventsCustomizePage() {
     .filter(Boolean)
     .join(", ");
 
+  useManualEventProgress({
+    snapshot: { data },
+    category: "Special Events", templateId: "special-events", eventId: editEventId,
+    ready: !loadingExisting, busy: submitting,
+  });
+
   const handlePublish = useCallback(async () => {
     if (submitting || loadingExisting || loadError) return;
     setSubmitting(true);
@@ -1214,7 +1231,7 @@ export default function SpecialEventsCustomizePage() {
           );
         }
         const params = editEventId ? { updated: true } : { created: true };
-        router.push(buildEventPath(id, payload.title, params));
+        allowNavigation(() => router.push(buildEventPath(id, payload.title, params)));
       } else {
         throw new Error(
           editEventId ? "Failed to update event" : "Failed to create event"

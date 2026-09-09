@@ -15,6 +15,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useUnsavedProgress } from "@/components/UnsavedProgressProvider";
 import AuthModal from "@/components/auth/AuthModal";
 import { getFamilyTemplateDesign } from "@/lib/family-template-designs";
 import { hasAnalyticsConsent } from "@/lib/privacy-preferences";
@@ -148,10 +149,11 @@ export default function TemplateEditorProvider({
   const [editorReady, setEditorReady] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const draft = useRef<TemplateDraft | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const savedFields = useRef<Record<string, string>>({});
+  const interacted = useRef(false);
   const busyRef = useRef(false);
   const pendingHandled = useRef(false);
-  const mounted = useRef(true);
   const mediaUrls = useRef<Record<string, string>>({});
   const remoteMedia = useRef<Record<string, string>>({});
   const firstEdit = useRef(false);
@@ -162,7 +164,6 @@ export default function TemplateEditorProvider({
 
   const flush = useCallback(async () => {
     if (!draft.current) return;
-    if (timer.current) clearTimeout(timer.current);
     const current = {
       ...draft.current,
       snapshot: structuredClone(draft.current.snapshot),
@@ -182,7 +183,6 @@ export default function TemplateEditorProvider({
   }, []);
 
   useEffect(() => {
-    mounted.current = true;
     let cancelled = false;
     async function initialize() {
       let saved: TemplateDraft | null = null;
@@ -321,6 +321,9 @@ export default function TemplateEditorProvider({
         Object.entries(current.assets).map(([key, blob]) => [replacements[key] || key, blob]),
       );
       draft.current = current;
+      savedFields.current = {};
+      interacted.current = false;
+      setDirty(false);
       setInitial(current.snapshot);
       trackTemplateEvent("template_editor_view", category, templateId);
     }
@@ -329,9 +332,7 @@ export default function TemplateEditorProvider({
     });
     return () => {
       cancelled = true;
-      mounted.current = false;
-      if (timer.current) clearTimeout(timer.current);
-    };
+      };
   }, [category, templateId, requestedDraft, editId, router, loadAttempt]);
 
   useEffect(
@@ -345,7 +346,10 @@ export default function TemplateEditorProvider({
     (key: string, value: DraftValue) => {
       const current = draft.current;
       if (key === "data" || key === "form") setEditorReady(true);
-      if (!current || JSON.stringify(current.snapshot[key]) === JSON.stringify(value)) return;
+      if (!current) return;
+      const editable = ["data", "form", "themeId", "advancedState", "activeTemplateId", "activeVariationId", "newHost", "newRegistry", "newEvent", "newItem", "tempHotel", "tempAirport"].includes(key);
+      if (editable && (!interacted.current || !Object.hasOwn(savedFields.current, key))) savedFields.current[key] = JSON.stringify(value);
+      if (JSON.stringify(current.snapshot[key]) === JSON.stringify(value)) return;
       const wasPresent = Object.hasOwn(current.snapshot, key);
       current.snapshot = { ...current.snapshot, [key]: value };
       current.updatedAt = Date.now();
@@ -357,37 +361,17 @@ export default function TemplateEditorProvider({
         firstEdit.current = true;
         trackTemplateEvent("template_first_edit", category, templateId);
       }
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => {
-        flush().catch(() => {
-          if (mounted.current) {
-            setStorageReady(false);
-            setError(
-              "Your latest changes could not be retained in this browser. Keep this tab open and save with email signup, or retry.",
-            );
-          }
-        });
-      }, 0);
+      if (editable) {
+        if (!Object.hasOwn(savedFields.current, key)) savedFields.current[key] = JSON.stringify(value);
+        setDirty(Object.entries(savedFields.current).some(([field, saved]) => JSON.stringify(current.snapshot[field]) !== saved));
+      }
     },
-    [category, templateId, flush],
+    [category, templateId],
   );
-
-  useEffect(() => {
-    const retain = () => {
-      void flush().catch(() => {});
-    };
-    window.addEventListener("pagehide", retain);
-    document.addEventListener("visibilitychange", retain);
-    return () => {
-      retain();
-      window.removeEventListener("pagehide", retain);
-      document.removeEventListener("visibilitychange", retain);
-    };
-  }, [flush]);
 
   const persist = useCallback(
     async (payload: TemplateHistoryPayload, nextStatus: "draft" | "published") => {
-      if (busyRef.current) return;
+      if (busyRef.current) throw new Error("Your progress is still saving. Please wait.");
       if (!draft.current) throw new Error("Your editor is still loading.");
       if (!authenticated) throw new Error("Sign in to save your event.");
       busyRef.current = true;
@@ -405,6 +389,8 @@ export default function TemplateEditorProvider({
           authenticated,
           remoteMedia: remoteMedia.current,
         });
+        savedFields.current = Object.fromEntries(Object.keys(savedFields.current).map((key) => [key, JSON.stringify(current.snapshot[key])]));
+        setDirty(false);
         window.dispatchEvent(new CustomEvent("history:updated", { detail: { id: eventId } }));
         trackTemplateEvent(
           nextStatus === "draft" ? "template_draft_saved" : "template_published",
@@ -423,9 +409,9 @@ export default function TemplateEditorProvider({
         );
         if (nextStatus === "published") {
           await deleteTemplateDraft(current.id).catch(() => {});
-          router.push(
+          progress.allowNavigation(() => router.push(
             category === "signup-forms" ? `/smart-signup-form/${eventId}` : `/event/${eventId}`,
-          );
+          ));
         }
       } finally {
         busyRef.current = false;
@@ -445,6 +431,20 @@ export default function TemplateEditorProvider({
       "draft",
     );
   }, [persist, category, info.name]);
+
+  const progress = useUnsavedProgress({
+    dirty,
+    busy,
+    save: async () => {
+      if (authenticated) await saveDraft();
+      else await flush();
+      setDirty(false);
+    },
+    discard: async () => {
+      await writeQueue.current.catch(() => {});
+      setDirty(false);
+    },
+  });
 
   const requestSave = useCallback(async () => {
     trackTemplateEvent("template_save_attempt", category, templateId);
@@ -513,12 +513,6 @@ export default function TemplateEditorProvider({
           <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-3">
             <Link
               href={`/${category}/templates`}
-              onClick={(event) => {
-                event.preventDefault();
-                void flush()
-                  .catch(() => {})
-                  .then(() => router.push(`/${category}/templates`));
-              }}
               className="text-sm font-semibold text-[#59405c]"
             >
               ← {info.name} templates
@@ -550,7 +544,7 @@ export default function TemplateEditorProvider({
           {!authenticated && (
             <p className="mx-auto mt-2 max-w-[1500px] text-xs text-[#746775]">
               {storageReady
-                ? "Temporary browser drafts expire 7 days after your last edit."
+                ? "Progress is saved only when you choose Save. Browser drafts are kept for 7 days."
                 : "Browser storage is unavailable. Keep this tab open until your draft is saved to your account."}
             </p>
           )}
@@ -576,8 +570,7 @@ export default function TemplateEditorProvider({
                   type="button"
                   className="rounded-full bg-[#59405c] px-4 py-2 text-sm text-white"
                   onClick={async () => {
-                    if (timer.current) clearTimeout(timer.current);
-                    await writeQueue.current.catch(() => {});
+                                    await writeQueue.current.catch(() => {});
                     if (draft.current) await deleteTemplateDraft(draft.current.id).catch(() => {});
                     draft.current = {
                       version: 1,
@@ -596,6 +589,9 @@ export default function TemplateEditorProvider({
                     setMessage("");
                     setError("");
                     firstEdit.current = false;
+                    savedFields.current = {};
+                    interacted.current = false;
+                    setDirty(false);
                     pendingHandled.current = false;
                     setResetOpen(false);
                   }}
@@ -630,6 +626,10 @@ export default function TemplateEditorProvider({
         {initial ? (
           <div
             className={styles.workspace}
+            onInputCapture={() => { interacted.current = true; }}
+            onChangeCapture={() => { interacted.current = true; }}
+            onPointerDownCapture={() => { interacted.current = true; }}
+            onKeyDownCapture={() => { interacted.current = true; }}
             key={generation}
             inert={busy || authOpen || resetOpen ? true : undefined}
           >
@@ -659,7 +659,7 @@ export default function TemplateEditorProvider({
         onClose={() => {
           setAuthOpen(false);
           if (draft.current) draft.current.pendingSave = false;
-          void flush().catch(() => {});
+
         }}
         onModeChange={setAuthMode}
         successRedirectUrl={returnUrl}

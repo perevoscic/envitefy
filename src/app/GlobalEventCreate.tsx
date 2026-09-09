@@ -1,5 +1,6 @@
 "use client";
 
+import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
@@ -9,6 +10,7 @@ const EventCreateModal = dynamic(() => import("@/components/EventCreateModal"), 
 });
 
 export default function GlobalEventCreate() {
+  const { requestLeave } = useProgressNavigation();
   const [open, setOpen] = useState(false);
   const [defaultDate, setDefaultDate] = useState<Date | undefined>(undefined);
 
@@ -38,7 +40,7 @@ export default function GlobalEventCreate() {
     // Expose a global closer so other modals can close this one
     (window as any).__closeCreateEvent = () => {
       try {
-        setOpen(false);
+        requestLeave(() => setOpen(false));
       } catch {}
     };
     try {

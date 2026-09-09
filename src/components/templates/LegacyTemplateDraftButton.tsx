@@ -1,5 +1,6 @@
 "use client";
 
+import { useEventProgress } from "@/components/UnsavedProgressProvider";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -21,12 +22,14 @@ export default function LegacyTemplateDraftButton({
   eventId,
   snapshot,
   disabled = false,
+  ready = true,
 }: {
   category: TemplateCategory;
   templateId?: string;
   eventId?: string;
   snapshot: object;
   disabled?: boolean;
+  ready?: boolean;
 }) {
   const { status } = useSession();
   const router = useRouter();
@@ -35,8 +38,15 @@ export default function LegacyTemplateDraftButton({
   const saving = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const save = async () => {
-    if (saving.current || status !== "authenticated") return;
+  const progress = useEventProgress({
+    snapshot: Object.fromEntries(Object.entries(snapshot).filter(([key]) => !["activeView", "activeSection"].includes(key))),
+    ready,
+    busy: disabled || busy,
+    save: async () => { await save(true); },
+  });
+  const save = async (leaving = false) => {
+    if (saving.current) throw new Error("Your progress is still saving. Please wait.");
+    if (status !== "authenticated") throw new Error("Sign in to save your progress.");
     saving.current = true;
     setBusy(true);
     setError("");
@@ -74,8 +84,10 @@ export default function LegacyTemplateDraftButton({
       });
       await writeTemplateDraft(current).catch(() => {});
       window.dispatchEvent(new CustomEvent("history:updated", { detail: { id } }));
-      router.replace(`${templateEditorHref(category, selected.id)}?edit=${encodeURIComponent(id)}`);
+      progress.markSaved();
+      if (!leaving) progress.allowNavigation(() => router.replace(`${templateEditorHref(category, selected.id)}?edit=${encodeURIComponent(id)}`));
     } catch (failure) {
+      if (leaving) throw failure;
       setError(
         failure instanceof Error
           ? failure.message

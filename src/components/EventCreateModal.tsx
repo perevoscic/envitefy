@@ -1,5 +1,7 @@
 "use client";
 
+import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
+
 import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -77,6 +79,7 @@ function toLocalTimeValue(d: Date | null): string {
 }
 
 export default function EventCreateModal({ open, onClose, defaultDate }: Props) {
+  const { requestLeave } = useProgressNavigation();
   const router = useRouter();
   const DOW = [
     { code: "SU", label: "Sun" },
@@ -576,7 +579,7 @@ export default function EventCreateModal({ open, onClose, defaultDate }: Props) 
       role="dialog"
       aria-modal="true"
       className="fixed inset-0 z-[400] flex items-center justify-center"
-      onClick={() => !submitting && onClose()}
+      onClick={() => !submitting && requestLeave(onClose)}
     >
       <div className="absolute inset-0 bg-black/40" />
       <div

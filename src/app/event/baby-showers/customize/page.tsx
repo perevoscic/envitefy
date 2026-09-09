@@ -1,5 +1,7 @@
 // @ts-nocheck
 "use client";
+
+import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
 import { BRIDAL_PRESETS } from "@/lib/public-template-catalog";
 import TemplateGalleryBackLink from "@/components/templates/TemplateGalleryBackLink";
@@ -333,6 +335,7 @@ export default function BabyShowerTemplateCustomizePage() {
   const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
   const search = useTemplateSearchParams();
   const router = useRouter();
+  const { allowNavigation } = useProgressNavigation();
   const defaultDate = search?.get("d") ?? undefined;
   const editEventId = search?.get("edit") ?? undefined;
   const templateId = search?.get("templateId");
@@ -801,7 +804,7 @@ export default function BabyShowerTemplateCustomizePage() {
           );
         }
         const params = editEventId ? { updated: true } : { created: true };
-        router.push(buildEventPath(id, payload.title, params));
+        allowNavigation(() => router.push(buildEventPath(id, payload.title, params)));
       } else {
         throw new Error(
           editEventId ? "Failed to update event" : "Failed to create event"
@@ -1528,7 +1531,7 @@ export default function BabyShowerTemplateCustomizePage() {
                 Cancel
               </button>
             )}
-            {!templateEditor && <LegacyTemplateDraftButton category={isBridal ? "bridal-showers" : "baby-showers"} templateId={activeTemplateId} eventId={editEventId} snapshot={{ data, activeView, activeTemplateId, newHost, newRegistry }} disabled={submitting} />}
+            {!templateEditor && <LegacyTemplateDraftButton category={isBridal ? "bridal-showers" : "baby-showers"} templateId={activeTemplateId} eventId={editEventId} snapshot={{ data, activeView, activeTemplateId, newHost, newRegistry }} disabled={submitting} ready={!_loadingExisting} />}
             <button
               onClick={handlePublish}
               disabled={submitting}

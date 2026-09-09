@@ -13,7 +13,8 @@ import {
   saveCreationSessionPreview,
   upsertCreationSession,
 } from "./event-storage.ts";
-import { extractConciergeDraft } from "./extract.ts";
+import { normalizeRequestedOutputs } from "./creation-intent.ts";
+import { extractConciergeDraft, normalizeConciergeDraft } from "./extract.ts";
 import { parseCreationGeneratedPreview } from "./generated-preview.ts";
 import {
   buildAssistantMessage,
@@ -223,6 +224,37 @@ function appendAssistantChatMessage(
 
 function chatMessagesMetadata(messages: CreationChatMessageSnapshot[]): Record<string, unknown> {
   return messages.length ? { chatMessages: messages } : {};
+}
+
+/** Keep the complete current snapshot only after an explicit Save action. */
+export async function saveCreationDraft(userId: string, input: Record<string, unknown>): Promise<CreationSession> {
+  const raw = input.draft;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Draft progress is required.");
+  const record = raw as Record<string, unknown>;
+  const sessionId = typeof record.creationSessionId === "string" ? record.creationSessionId.trim() : "";
+  if (!sessionId || sessionId.length > 200) throw new Error("A valid draft id is required.");
+  const existing = await getCreationSession({ userId, sessionId });
+  if (existing && (getSavedEventId(existing) || ["publishing", "published"].includes(existing.status)))
+    throw new Error("This event is already published. Open it to make changes.");
+  const fallback = fallbackExtractConciergeDraft({
+    message: "",
+    requestedOutputs: normalizeRequestedOutputs(record.requestedOutputs),
+  });
+  const draft = normalizeConciergeDraft(record, fallback);
+  // Preserve conversation state which is not extracted from invitation copy.
+  const messages = normalizeChatMessages(input.chatMessages);
+  const studioInvite = input.studioInvite == null ? null : parseCreationGeneratedPreview(input.studioInvite);
+  if (input.studioInvite != null && !studioInvite) throw new Error("Your preview could not be saved. Please try again.");
+  return upsertCreationSession({
+    userId,
+    draft,
+    metadata: {
+      explicitlySaved: true,
+      ...chatMessagesMetadata(messages),
+      generatedPreview: studioInvite,
+      composerText: typeof input.composerText === "string" ? input.composerText.slice(0, 12000) : "",
+    },
+  });
 }
 
 export async function saveCreationPreview(params: {
@@ -464,7 +496,7 @@ export async function finalizeCreationIntake(params: {
     };
   }
   const shouldPersistSession =
-    request.persistSession !== false &&
+    request.persistSession === true &&
     !isSaveAction &&
     (draft.canPersist || draft.requestedOutputs.length > 0 || Boolean(request.ocrContext));
   const chatMessagesForUpsert = requestChatMessages.length

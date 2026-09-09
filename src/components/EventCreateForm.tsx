@@ -1,9 +1,11 @@
 "use client";
 
+import { useManualEventProgress } from "@/hooks/useManualEventProgress";
+
 import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import RegistryLinksEditor, { type RegistryFormEntry } from "@/components/RegistryLinksEditor";
 import Toggle from "@/components/Toggle";
 import type { NormalizedEvent } from "@/lib/mappers";
@@ -70,6 +72,7 @@ function toLocalTimeValue(d: Date | null): string {
 
 export default function EventCreateForm({ defaultDate, onCancel }: Props) {
   const router = useRouter();
+  const search = useSearchParams();
 
   const DOW = [
     { code: "SU", label: "Sun" },
@@ -327,9 +330,61 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
   const allowsRegistrySection = registryCopy.allowsLinks;
   const showRsvpField = true;
 
+  const editProgressId = search?.get("edit") || undefined;
+  const [restoringProgress, setRestoringProgress] = useState(Boolean(editProgressId));
+  const [progressLoadError, setProgressLoadError] = useState("");
+  const progressSnapshot = { title, whenDate, fullDay, startTime, endDate, endTime, location, venue, description, rsvp, numberOfGuests, registryLinks, imageColors, repeat, repeatFrequency, repeatDays, selectedCalendars, category, customCategory, accessCode, accessCodeHint, headerPreviewUrl, attachment: attachment ? { ...attachment, dataUrl: attachmentPreviewUrl || attachment.dataUrl } : null };
+  const progress = useManualEventProgress({
+    snapshot: progressSnapshot,
+    category: category || "General",
+    eventId: editProgressId,
+    path: "/event/manual",
+    ready: !restoringProgress && !progressLoadError,
+    busy: submitting,
+  });
+  useEffect(() => {
+    if (!editProgressId) return;
+    let active = true;
+    setRestoringProgress(true);
+    fetch(`/api/history/${encodeURIComponent(editProgressId)}`, { credentials: "include" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Your saved progress could not be opened. Please reload to try again.");
+        const row = await response.json();
+        const saved = row.data?.manualEditor?.snapshot as typeof progressSnapshot | undefined;
+        if (!active) return;
+        if (!saved) throw new Error("This event uses a different editor.");
+        if (saved.title !== undefined) setTitle(saved.title);
+        if (saved.whenDate !== undefined) setWhenDate(saved.whenDate);
+        if (saved.fullDay !== undefined) setFullDay(saved.fullDay);
+        if (saved.startTime !== undefined) setStartTime(saved.startTime);
+        if (saved.endDate !== undefined) setEndDate(saved.endDate);
+        if (saved.endTime !== undefined) setEndTime(saved.endTime);
+        if (saved.location !== undefined) setLocation(saved.location);
+        if (saved.venue !== undefined) setVenue(saved.venue);
+        if (saved.description !== undefined) setDescription(saved.description);
+        if (saved.rsvp !== undefined) setRsvp(saved.rsvp);
+        if (saved.numberOfGuests !== undefined) setNumberOfGuests(saved.numberOfGuests);
+        if (saved.registryLinks !== undefined) setRegistryLinks(saved.registryLinks);
+        if (saved.imageColors !== undefined) setImageColors(saved.imageColors);
+        if (saved.repeat !== undefined) setRepeat(saved.repeat);
+        if (saved.repeatFrequency !== undefined) setRepeatFrequency(saved.repeatFrequency);
+        if (saved.repeatDays !== undefined) setRepeatDays(saved.repeatDays);
+        if (saved.selectedCalendars !== undefined) setSelectedCalendars(saved.selectedCalendars);
+        if (saved.category !== undefined) setCategory(saved.category);
+        if (saved.customCategory !== undefined) setCustomCategory(saved.customCategory);
+        if (saved.accessCode !== undefined) setAccessCode(saved.accessCode);
+        if (saved.accessCodeHint !== undefined) setAccessCodeHint(saved.accessCodeHint);
+        if (saved.headerPreviewUrl !== undefined) setHeaderPreviewUrl(saved.headerPreviewUrl);
+        if (saved.attachment) { setAttachment(saved.attachment); setAttachmentPreviewUrl(saved.attachment.dataUrl); }
+      })
+      .catch((error: Error) => { if (active) setProgressLoadError(error.message); })
+      .finally(() => { if (active) setRestoringProgress(false); });
+    return () => { active = false; };
+  }, [editProgressId]);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (submitting) return;
+    if (submitting || restoringProgress || progressLoadError) return;
 
     const invalidRegistries = registryLinks.filter((entry) => {
       const trimmedUrl = entry.url.trim();
@@ -511,14 +566,18 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
         },
       };
 
-      const r = await fetch("/api/history", {
-        method: "POST",
+      payload.data.status = "published";
+      payload.data.draftStatus = "published";
+      payload.data.ownership = "owned";
+      const r = await fetch(editProgressId ? `/api/history/${encodeURIComponent(editProgressId)}` : "/api/history", {
+        method: editProgressId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(payload),
       });
       const j = await r.json().catch(() => ({}));
       const id = (j as any)?.id as string | undefined;
+      if (!r.ok || !id) throw new Error(j?.error || "Your event could not be saved. Please try again.");
 
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
       const normalizedDescription = trimmedRsvp
@@ -609,9 +668,10 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
       if (id) {
         const eventTitle =
           (typeof (j as any)?.title === "string" && (j as any).title) || payload.title;
-        router.push(buildEventPath(id, eventTitle, { created: true }));
+        progress.markSaved();
+        progress.allowNavigation(() => router.push(buildEventPath(id, eventTitle, { created: true })));
       }
-      if (onCancel) onCancel();
+      if (onCancel) progress.allowNavigation(onCancel);
     } catch (err: any) {
       const msg = String(err?.message || err || "Failed to create event");
       alert(msg);
@@ -619,6 +679,9 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
       setSubmitting(false);
     }
   };
+
+  if (progressLoadError) return <p role="alert" className="p-4 text-red-700">{progressLoadError}</p>;
+  if (restoringProgress) return <p role="status" className="p-4">Opening your saved progress…</p>;
 
   return (
     <form
@@ -1188,7 +1251,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
         <button
           type="button"
           onClick={() => {
-            if (onCancel) onCancel();
+            if (onCancel) progress.requestLeave(onCancel);
             else router.back();
           }}
           className="px-4 py-2 text-sm text-foreground border border-border rounded-md hover:bg-surface"

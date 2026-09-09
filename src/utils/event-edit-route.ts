@@ -1,3 +1,4 @@
+import { manualEventEditHref } from "@/lib/manual-event-progress";
 import { getTemplateCategory, templateEditorHref } from "@/lib/template-categories";
 import { buildEventPath } from "./event-url";
 
@@ -99,6 +100,8 @@ export function resolveArtworkEditHref(eventId: string, eventData: unknown): str
  */
 export const buildEditLink = (eventId: string, eventData: any, eventTitle: string): string => {
   try {
+    const manualHref = manualEventEditHref(eventId, eventData);
+    if (manualHref) return manualHref;
     const editor = eventData?.templateEditor;
     const templateCategory = getTemplateCategory(editor?.category);
     if (templateCategory && typeof editor?.templateId === "string") return `${templateEditorHref(templateCategory.slug, editor.templateId)}?edit=${encodeURIComponent(eventId)}`;
@@ -149,6 +152,8 @@ export const buildEditLink = (eventId: string, eventData: any, eventTitle: strin
 };
 
 export const resolveEditHref = (eventId: string, eventData: any, eventTitle: string): string => {
+  const manualHref = manualEventEditHref(eventId, eventData);
+  if (manualHref) return manualHref;
   const editor = eventData?.templateEditor;
   const category = editor && getTemplateCategory(editor.category);
   if (category && typeof editor.templateId === "string") return `${templateEditorHref(category.slug, editor.templateId)}?edit=${encodeURIComponent(eventId)}`;

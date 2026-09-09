@@ -1,5 +1,7 @@
 // @ts-nocheck
 "use client";
+
+import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
 import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
@@ -367,6 +369,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
   const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
   const search = useTemplateSearchParams();
     const router = useRouter();
+  const { allowNavigation } = useProgressNavigation();
     const sportPreset = getSportEventPreset(search?.get("sport"));
     const style = search?.get("style");
     const config = useMemo(
@@ -850,12 +853,12 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
               }),
             );
           }
-          router.push(
+          allowNavigation(() => router.push(
             buildEventPath(editEventId, payload.title, {
               updated: true,
               t: Date.now(),
             }),
-          );
+          ));
         } else {
           const res = await fetch("/api/history", {
             method: "POST",
@@ -878,7 +881,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
               }),
             );
           }
-          router.push(buildEventPath(id, payload.title, { created: true }));
+          allowNavigation(() => router.push(buildEventPath(id, payload.title, { created: true })));
         }
       } catch (err: any) {
         alert(String(err?.message || err || "Failed to create event"));
@@ -1710,7 +1713,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                   Cancel
                 </button>
               )}
-              {!templateEditor && <LegacyTemplateDraftButton category={"sport-events"} templateId={`${data.extra.sport || "football"}--${search?.get("style") || "stadium"}`} eventId={editEventId} snapshot={{ data, activeView, advancedState, themeId, activeSection }} disabled={submitting} />}
+              {!templateEditor && <LegacyTemplateDraftButton category={"sport-events"} templateId={`${data.extra.sport || "football"}--${search?.get("style") || "stadium"}`} eventId={editEventId} snapshot={{ data, activeView, advancedState, themeId, activeSection }} disabled={submitting} ready={!_loadingExisting} />}
             <button
                 onClick={handlePublish}
                 disabled={submitting}

@@ -154,6 +154,8 @@ export async function upsertCreationSession(params: {
            metadata = creation_sessions.metadata || excluded.metadata,
            updated_at = now()
      where creation_sessions.user_id = excluded.user_id
+       and creation_sessions.status not in ('publishing', 'published')
+       and not (creation_sessions.metadata ? 'savedEventId')
      returning id, user_id, status, draft, active_context, source_context, metadata, created_at, updated_at`,
     [
       sessionId,

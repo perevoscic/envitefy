@@ -17,6 +17,7 @@ import GlobalSmartSignup from "./GlobalSmartSignup";
 import GoogleAnalyticsRouteTracker from "@/components/GoogleAnalyticsRouteTracker";
 import PrivacyControls from "@/components/PrivacyControls";
 import PwaInstallToast from "@/components/PwaInstallToast";
+import UnsavedProgressProvider from "@/components/UnsavedProgressProvider";
 import ThemeColorSync from "@/components/ThemeColorSync";
 import { ThemeKey, ThemeVariant, resolveThemeCssVariables } from "@/themes";
 
@@ -93,6 +94,7 @@ export default function Providers({
       session={session}
       refetchOnWindowFocus={process.env.NODE_ENV === "production"}
     >
+      <UnsavedProgressProvider>
       <SidebarProvider>
         <ThemeProvider>
           <RegisterServiceWorker />
@@ -106,6 +108,7 @@ export default function Providers({
           <GlobalSmartSignup />
         </ThemeProvider>
       </SidebarProvider>
+      </UnsavedProgressProvider>
     </SessionProvider>
   );
 }

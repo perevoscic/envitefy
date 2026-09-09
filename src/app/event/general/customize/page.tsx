@@ -1,6 +1,9 @@
 // @ts-nocheck
 "use client";
 
+import { useManualEventProgress } from "@/hooks/useManualEventProgress";
+import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
+
 import EventGuestActions from "@/components/event-templates/EventGuestActions";
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
 import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
@@ -216,6 +219,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
     const search = useSearchParams();
     const router = useRouter();
+  const { allowNavigation } = useProgressNavigation();
     const editEventId = search?.get("edit") ?? undefined;
     const defaultDate = search?.get("d") ?? undefined;
     const initialDate = useMemo(() => {
@@ -323,6 +327,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         const row = await response.json();
         if (cancelled) return;
         const existing = row.data || {};
+          if (existing.manualEditor?.snapshot) {
+            const saved = existing.manualEditor.snapshot;
+            if (saved.data !== undefined) setData(saved.data);
+            if (saved.advancedState !== undefined) setAdvancedState(saved.advancedState);
+            if (saved.themeId !== undefined) setThemeId(saved.themeId);
+            setLoadingExisting(false);
+            return;
+          }
+
         const start = eventLocalDateParts(existing.startISO || existing.startAt || existing.start);
         const end = eventLocalDateParts(existing.endISO || existing.endAt || existing.end);
         setSavedEventData(existing);
@@ -466,6 +479,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }));
     }, []);
 
+  useManualEventProgress({
+    snapshot: { data, advancedState, themeId },
+    category: config.category, templateId: config.slug, eventId: editEventId,
+    ready: !loadingExisting, busy: submitting,
+  });
+
     const handlePublish = useCallback(async () => {
       if (submitting || loadingExisting || loadError) return;
       setSubmitting(true);
@@ -568,7 +587,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             })
           );
         }
-        router.push(buildEventPath(id, payload.title, editEventId ? { updated: true } : { created: true }));
+        allowNavigation(() => router.push(buildEventPath(id, payload.title, editEventId ? { updated: true } : { created: true })));
       } catch (err: any) {
         alert(String(err?.message || err || "Failed to create event"));
       } finally {

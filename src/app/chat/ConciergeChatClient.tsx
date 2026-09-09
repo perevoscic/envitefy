@@ -1,7 +1,10 @@
 "use client";
 
+import { useEventProgress } from "@/components/UnsavedProgressProvider";
+import { fallbackExtractConciergeDraft } from "@/lib/concierge/fallback";
 import { isArtworkRedesignRequest } from "@/lib/concierge/artwork-redesign-intent";
 import { shouldRegenerateGeneratedDraftImageForEdit } from "@/lib/concierge/artwork-change";
+import { normalizeArtworkEditLanguage, requestedArtworkRequirements } from "@/lib/concierge/visual-direction";
 import { GENERATION_STAGE_LABELS, type GenerationStage } from "@/lib/studio/generation-progress";
 import { getCreationReadiness } from "@/lib/concierge/readiness";
 import { resolveStudioProduct } from "@/lib/studio/product-contract";
@@ -66,7 +69,6 @@ import type {
   ConciergeOcrContext,
   ConciergeWeatherContext,
   CreationChatMessageSnapshot,
-  CreationPreviewSaveRequest,
   CreationSessionResumeResponse,
   RequestedOutput,
 } from "@/lib/concierge/types";
@@ -83,7 +85,6 @@ import {
 } from "@/utils/media-upload-client";
 import { getAmazonRegistryCreateUrlForCategory } from "@/utils/registry-links";
 import ChatProductPreview from "./ChatProductPreview";
-import { persistDraftPreview } from "./draft-preview-storage";
 
 type ChatMessage = {
   id: string;
@@ -1296,13 +1297,15 @@ function buildGeneratedDraftImageEditPrompt(args: {
     );
   }
 
-  const requestedEdit = stringValue(args.userMessage);
+  const requestedEdit = stringValue(normalizeArtworkEditLanguage(args.userMessage));
   if (requestedEdit) instructions.push(`User requested: ${requestedEdit}.`);
+  instructions.push(...requestedArtworkRequirements(args.userMessage));
+  instructions.push("The latest requested subject removals and lettering changes take priority over the source image and preservation rules. Apply every part of the request before returning the edited image.");
   instructions.push(
     "Treat this as a localized correction to the current generated card, not a new design request.",
   );
   instructions.push(
-    "If the old and new visible text differ by only one or two characters, modify only those characters inside the existing label.",
+    "If the old and new visible text differ by only one or two characters, modify only those characters inside the existing label, unless a new lettering style was requested; then restyle the full requested headline.",
   );
   instructions.push(
     "Keep all unrelated artwork, characters, props, colors, typography style, layout, chips, icons, and text exactly the same.",
@@ -1461,8 +1464,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const [liveCardSummary, setLiveCardSummary] = useState<LiveCardSummary | null>(null);
   const [generatedInviteImageUrl, setGeneratedInviteImageUrl] = useState<string | null>(null);
   const [draftStudioInvite, setDraftStudioInvite] = useState<GeneratedInvitePayload | null>(null);
-  const [failedPreviewSave, setFailedPreviewSave] = useState<CreationPreviewSaveRequest | null>(null);
-  const [isSavingPreview, setIsSavingPreview] = useState(false);
+  const [restoringProgress, setRestoringProgress] = useState(Boolean(searchParams.get("thread")));
   const [uploadedPreviewImageUrl, setUploadedPreviewImageUrl] = useState<string | null>(null);
   const [uploadedPreviewFileName, setUploadedPreviewFileName] = useState<string | null>(null);
   const [pendingChatUpload, setPendingChatUpload] = useState<PendingChatUpload | null>(null);
@@ -1525,7 +1527,18 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       isOpeningAssistantPrompt(message.text, initialAssistantPrompt)
     );
   });
-  const isBusy = isSending || isUploading || isGeneratingCard || isPublishingCard || isSavingPreview;
+  const isBusy = isSending || isUploading || isGeneratingCard || isPublishingCard;
+  const progress = useEventProgress({
+    snapshot: { draft, studioInvite: draftStudioInvite, messages: chatMessagesForPersistence(messages), input, selectedProductOutput, pendingUpload: pendingChatUpload?.file.name },
+    ready: !restoringProgress,
+    enabled: !liveCardEventId,
+    busy: isBusy,
+    save: async () => {
+      if (pendingChatUpload) throw new Error("Send your selected upload before saving, or keep editing to remove it.");
+      await saveChatProgress();
+    },
+    discard: () => { resetConversation(); },
+  });
   const busyLabel = isUploading
     ? chatUploadStage === "creating_event"
       ? "Creating event"
@@ -1648,8 +1661,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setLiveCardSummary(null);
     setGeneratedInviteImageUrl(null);
     setDraftStudioInvite(null);
-    setFailedPreviewSave(null);
-    setIsSavingPreview(false);
     setUploadedPreviewImageUrl(null);
     setUploadedPreviewFileName(null);
     setPendingChatUpload(null);
@@ -1783,14 +1794,18 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
 
   useEffect(() => {
     function handleNewChatSession() {
-      resetConversation();
+      progress.requestLeave(() => {
+        resetConversation();
+        progress.markSaved();
+        progress.allowNavigation(() => router.replace("/chat"));
+      });
     }
 
     window.addEventListener("envitefy:chat:new", handleNewChatSession);
     return () => {
       window.removeEventListener("envitefy:chat:new", handleNewChatSession);
     };
-  }, []);
+  }, [progress.requestLeave, progress.allowNavigation, progress.markSaved, router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1803,11 +1818,14 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
 
     if (!threadId) {
       resetConversation();
+      setRestoringProgress(false);
+      progress.markSaved();
       return () => {
         cancelled = true;
       };
     }
     const targetThreadId = threadId;
+    setRestoringProgress(true);
 
     async function restoreThread() {
       setError(null);
@@ -1837,14 +1855,13 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
           restoredDraft.requestedOutputs
             .map(visibleProductOutput)
             .find((output) => PRODUCT_OPTIONS.some((option) => option.output === output)) || null;
+        setInput(typeof json.creationSession?.metadata.composerText === "string" ? json.creationSession.metadata.composerText : "");
         setDraft(restoredDraft);
         setSelectedProductOutput(restoredOutput);
         setSelectedStarterCategory(null);
         setDraftStudioInvite(savedEventId ? null : restoredPreview);
         setGeneratedInviteImageUrl(restoredPreview?.imageUrl || null);
-        setFailedPreviewSave(null);
-        setIsSavingPreview(false);
-        setLiveCardEventId(savedEventId);
+                setLiveCardEventId(savedEventId);
         setLiveCardTitle(hasPreview ? draftHeadline(restoredDraft) : null);
         setLiveCardSummary(
           liveCardSummaryFromDraft(restoredDraft, restoredOutput || effectiveSelectedProductOutput),
@@ -1877,7 +1894,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
           setError(err instanceof Error ? err.message : "Unable to open AI thread.");
         }
       } finally {
-        if (!cancelled) setIsSending(false);
+        if (!cancelled) { setIsSending(false); setRestoringProgress(false); }
       }
     }
 
@@ -2035,21 +2052,23 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     });
   }
 
-  async function saveGeneratedPreview(
-    snapshot: CreationPreviewSaveRequest,
-    conversationVersion = conversationVersionRef.current,
-  ) {
-    if (conversationVersion === conversationVersionRef.current) setIsSavingPreview(true);
-    try {
-      await persistDraftPreview(snapshot);
-      if (conversationVersion === conversationVersionRef.current) setFailedPreviewSave(null);
-      notifyCreationThreadsChanged();
-    } catch {
-      // Keep the generated image available so saving can be retried without regenerating it.
-      if (conversationVersion === conversationVersionRef.current) setFailedPreviewSave(snapshot);
-    } finally {
-      if (conversationVersion === conversationVersionRef.current) setIsSavingPreview(false);
-    }
+  async function saveChatProgress(draftToSave = draft) {
+    const snapshotDraft = draftToSave || fallbackExtractConciergeDraft({ message: "", requestedOutputs: selectedProductOutput ? [selectedProductOutput] : null });
+    const response = await fetch("/api/creation/draft", {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        draft: snapshotDraft,
+        studioInvite: draftStudioInvite,
+        composerText: input,
+        chatMessages: chatMessagesForPersistence(messages),
+      }),
+    });
+    const result = await response.json();
+    if (!response.ok || !result.ok) throw new Error(result.error || "Unable to save your progress.");
+    if (!draftToSave) setDraft(snapshotDraft);
+    notifyCreationThreadsChanged();
   }
 
   async function generateProductForDraft(draftToGenerate: ConciergeEventDraft) {
@@ -2076,12 +2095,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         "assistant",
         `Your ${effectiveSelectedProductLabel.toLowerCase()} is generated. You can review it in the preview or tell me what to change.`,
       );
-      setGenerationStage("saving");
-      await saveGeneratedPreview({
-        creationSessionId: productDraft.creationSessionId,
-        studioInvite,
-        chatMessages: chatMessagesForPersistence(messages, [generatedMessage]),
-      }, conversationVersion);
       await preloadGeneratedPreviewImage(studioInvite.imageUrl);
       if (conversationVersion !== conversationVersionRef.current) return;
       setDraft(productDraft);
@@ -2117,6 +2130,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setPhase("publishing_card");
 
     try {
+      await saveChatProgress(productDraft);
       const response = await fetch("/api/creation/intake", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -2138,8 +2152,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       }
       const savedEventId = json.savedEventId;
       if (!savedEventId) throw new Error("Invite was published without an event id.");
-      setFailedPreviewSave(null);
-
+  
       setDraft(json.draft);
       setLiveCardEventId(savedEventId);
       setLiveCardTitle(draftHeadline(json.draft || productDraft));
@@ -2248,12 +2261,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             : "I updated the artwork in the draft preview. Review it, then keep chatting or save/publish when it looks right.",
       );
       if (conversationVersion !== conversationVersionRef.current) return;
-      setGenerationStage("saving");
-      await saveGeneratedPreview({
-        creationSessionId: updatedDraft.creationSessionId,
-        studioInvite,
-        chatMessages: chatMessagesForPersistence(messages, [userMessage, updatedMessage]),
-      }, conversationVersion);
       if (!canReuseCurrentImage) {
         await preloadGeneratedPreviewImage(studioInvite.imageUrl);
       }
@@ -2416,6 +2423,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             : null);
       const action = params.action || "message";
       const requestBody = {
+        persistSession: false,
         message,
         draft,
         ocrContext: params.ocrContext || null,
@@ -2581,6 +2589,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         ),
       );
     }
+    await saveChatProgress(params.draft);
     const response = await fetch("/api/creation/intake", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -3027,20 +3036,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             {isGeneratingCard ? "Generating preview…" : "Generate preview"}
           </button>
         </motion.div>
-      ) : null}
-
-      {failedPreviewSave ? (
-        <div role="alert" className="ml-10 self-start rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <p>Your preview is ready, but it couldn’t be saved to this draft. Retry before leaving.</p>
-          <button
-            type="button"
-            disabled={isBusy}
-            onClick={() => void saveGeneratedPreview(failedPreviewSave)}
-            className="mt-2 min-h-11 rounded-full border border-amber-300 bg-white px-4 font-semibold hover:bg-amber-100 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
-          >
-            {isSavingPreview ? "Saving preview…" : "Retry saving preview"}
-          </button>
-        </div>
       ) : null}
 
       {draft?.pendingReply && !failedRequest ? (

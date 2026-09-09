@@ -1,6 +1,9 @@
 // @ts-nocheck
 "use client";
 
+import { useManualEventProgress } from "@/hooks/useManualEventProgress";
+import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
+
 import EventGuestActions from "@/components/event-templates/EventGuestActions";
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
 import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
@@ -455,6 +458,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
     const search = useSearchParams();
     const router = useRouter();
+  const { allowNavigation } = useProgressNavigation();
     const editEventId = search?.get("edit") ?? undefined;
     const isEmbed = search?.get("embed") === "1";
     const isNewDraft = search?.get("new") === "1";
@@ -475,6 +479,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     }, [defaultDate]);
 
+    const [progressLoading, setProgressLoading] = useState(Boolean(editEventId));
     const [data, setData] = useState(() => ({
       guestPlanning: {} as EventGuestPlanning,
       endTime: "",
@@ -559,6 +564,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           if (!res.ok) return;
           const json = await res.json();
           const existing = json?.data || {};
+          if (existing.manualEditor?.snapshot) {
+            const saved = existing.manualEditor.snapshot;
+            if (saved.data !== undefined) setData(saved.data);
+            if (saved.advancedState !== undefined) setAdvancedState(saved.advancedState);
+            if (saved.pageTemplateId !== undefined) setPageTemplateId(saved.pageTemplateId);
+            setProgressLoading(false);
+            return;
+          }
+
           const existingCreatedVia = String(existing?.createdVia || "")
             .toLowerCase()
             .trim();
@@ -641,6 +655,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         } catch {
           // ignore to keep edit usable
         } finally {
+          setProgressLoading(false);
           setInitializingEdit(false);
         }
       };
@@ -966,6 +981,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         "The attendance card in the preview updates with these settings.",
     };
 
+  useManualEventProgress({
+    snapshot: { data, advancedState, pageTemplateId },
+    category: config.category, templateId: config.slug, eventId: editEventId,
+    ready: !progressLoading, busy: submitting,
+  });
+
     const handlePublish = useCallback(async () => {
       if (submitting) return;
       setSubmitting(true);
@@ -1125,7 +1146,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             } catch {}
             return;
           }
-          router.push(redirectUrl);
+          allowNavigation(() => router.push(redirectUrl));
         } else {
           const res = await fetch("/api/history", {
             method: "POST",
@@ -1148,7 +1169,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               }),
             );
           }
-          router.push(buildEventPath(id, payload.title, { created: true }));
+          allowNavigation(() => router.push(buildEventPath(id, payload.title, { created: true })));
         }
       } catch (err: any) {
         alert(String(err?.message || err || "Failed to save event"));

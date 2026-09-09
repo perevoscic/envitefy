@@ -1,5 +1,7 @@
 // @ts-nocheck
 "use client";
+
+import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
 import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
@@ -396,6 +398,7 @@ export default function BirthdayTemplateCustomizePage() {
   const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
   const search = useTemplateSearchParams();
   const router = useRouter();
+  const { allowNavigation } = useProgressNavigation();
   const defaultDateParam = search?.get("d") ?? undefined;
   const editEventId = search?.get("edit") ?? undefined;
   const pathname = usePathname();
@@ -1290,7 +1293,7 @@ export default function BirthdayTemplateCustomizePage() {
           );
         }
         const params = editEventId ? { updated: true, t: Date.now() } : { created: true };
-        router.push(buildEventPath(id, payload.title, params));
+        allowNavigation(() => router.push(buildEventPath(id, payload.title, params)));
       } else {
         throw new Error(editEventId ? "Failed to update event" : "Failed to create event");
       }
@@ -1914,7 +1917,7 @@ export default function BirthdayTemplateCustomizePage() {
                 Cancel
               </button>
             )}
-            {!templateEditor && <LegacyTemplateDraftButton category={isAnniversaryDesign ? "anniversaries" : "birthdays"} templateId={data.theme.professionalThemeId} eventId={editEventId} snapshot={{ data, activeView, activeTemplateId, activeVariationId, activeSection, newHost, newRegistry }} disabled={submitting} />}
+            {!templateEditor && <LegacyTemplateDraftButton category={isAnniversaryDesign ? "anniversaries" : "birthdays"} templateId={data.theme.professionalThemeId} eventId={editEventId} snapshot={{ data, activeView, activeTemplateId, activeVariationId, activeSection, newHost, newRegistry }} disabled={submitting} ready={!loadingExisting} />}
             <button
               onClick={handlePublish}
               disabled={submitting || uploadingAssets}

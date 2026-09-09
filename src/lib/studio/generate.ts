@@ -35,6 +35,16 @@ function isLayoutReview(check: ArtworkCheck, product: StudioGenerateResponse["pr
     check.issues.length > 0 && check.issues.every((issue) => issue === "unsafe_placement");
 }
 
+function artworkFailureMessage(check: ArtworkCheck, editing: boolean): string {
+  const visualChangeFailed = check.issues.some((issue) =>
+    ["requested_change_not_applied", "style_mismatch", "reference_mismatch"].includes(issue),
+  );
+  const problem = visualChangeFailed
+    ? "The artwork did not match the requested visual changes after one repair attempt."
+    : "The artwork did not pass its lettering and layout checks after one repair attempt.";
+  return `${problem} ${editing ? "Your previous image is unchanged. Retry the artwork edit." : "Please try generating again."}`;
+}
+
 function uniqueWarnings(list: string[]): string[] {
   return Array.from(new Set(list.map((item) => item.trim()).filter(Boolean)));
 }
@@ -233,7 +243,7 @@ export async function generateStudioInvitation(
         qualityCheck = layoutReview ? "needs_review" : checked.status;
         if (layoutReview) warnings.push("Preview ready. Check the artwork framing before saving.");
         if (checked.status === "failed" && !layoutReview) {
-          errors.image = { code: "image_quality_failed", message: editingExistingImage ? "We couldn't finish your card change while keeping its text readable and correctly placed. Your original card is unchanged. Try Preview again." : "We couldn't create the artwork with readable, correctly placed text. Please try again.", provider, retryable: true };
+          errors.image = { code: "image_quality_failed", message: artworkFailureMessage(checked, editingExistingImage), provider, retryable: true };
         } else {
           if (checked.status === "unavailable") warnings.push("Automatic artwork verification was unavailable; review the preview before sharing.");
           try {
