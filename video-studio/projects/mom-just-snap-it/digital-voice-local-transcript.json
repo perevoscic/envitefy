@@ -1,0 +1,69 @@
+[
+  {
+    "start": 6.039999999999999,
+    "end": 9.36,
+    "text": " directions RSVP and you can share it with share it with dad",
+    "words": [
+      {
+        "word": " directions",
+        "start": 6.039999999999999,
+        "end": 6.3999999999999995
+      },
+      {
+        "word": " RSVP",
+        "start": 6.3999999999999995,
+        "end": 6.76
+      },
+      {
+        "word": " and",
+        "start": 6.76,
+        "end": 7.6
+      },
+      {
+        "word": " you",
+        "start": 7.6,
+        "end": 7.78
+      },
+      {
+        "word": " can",
+        "start": 7.78,
+        "end": 7.92
+      },
+      {
+        "word": " share",
+        "start": 7.92,
+        "end": 8.16
+      },
+      {
+        "word": " it",
+        "start": 8.16,
+        "end": 8.3
+      },
+      {
+        "word": " with",
+        "start": 8.3,
+        "end": 8.42
+      },
+      {
+        "word": " share",
+        "start": 8.42,
+        "end": 8.58
+      },
+      {
+        "word": " it",
+        "start": 8.58,
+        "end": 8.76
+      },
+      {
+        "word": " with",
+        "start": 8.76,
+        "end": 8.82
+      },
+      {
+        "word": " dad",
+        "start": 8.82,
+        "end": 9.36
+      }
+    ]
+  }
+]

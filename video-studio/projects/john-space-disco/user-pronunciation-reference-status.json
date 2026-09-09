@@ -1,16 +1,28 @@
 {
-  "status": "awaiting-user-authorization-for-reference-audio-analysis",
-  "original": "C:/Users/rjosan/Downloads/envitefy.wav",
-  "originalSha256": "04655c5247cf95d075555868e6213b1f12f0772f94ab64ef7933f7661d6a31f6",
-  "decodedLocalReference": "out/john-space-disco/user-envitefy-pronunciation-reference.wav",
-  "durationSeconds": 2.005436,
-  "detectedSourceCodec": "aac",
-  "userRequest": "try this, hear it",
-  "intendedAnalysisDestination": "Google Gemini audio understanding",
-  "analysisStatus": "Not performed. Automatic approval review rejected external upload because destination-specific disclosure was not authorized.",
+  "status": "assistant-reviewed",
+  "updatedAt": "2026-09-09T14:20:28.858Z",
+  "acousticReference": "assets/brand/audio/envitefy-approved-pronunciation-reference.wav",
+  "originalReference": "C:/Users/rjosan/Downloads/envitefy.wav",
+  "userAuthorizedGeminiAnalysis": true,
+  "pronunciation": "in-VY-tih-fy",
+  "ipa": "ɪnˈvaɪtɪfaɪ",
   "currentVideoExports": [
-    "out/john-space-disco/john-space-disco-9x16-v9.mp4",
-    "out/john-space-disco/john-space-disco-16x9-v7.mp4"
+    "out/john-space-disco/john-space-disco-9x16-v11.mp4",
+    "out/john-space-disco/john-space-disco-16x9-v9.mp4"
   ],
-  "nextStep": "Obtain explicit permission to send this supplied two-second clip to Google Gemini for pronunciation analysis, then compare/match the videos. Do not imply the recording has been heard."
+  "selectedTake": "vo-create-jessica-user-reference-v1.mp3",
+  "finalComparison": "user-reference-final-mixes-audio-review.json",
+  "userApprovedFinishedVideos": false,
+  "pronunciationUserApproved": true,
+  "pronunciationApproval": {
+    "date": "2026-09-09",
+    "scope": "Brand pronunciation and the accepted narration take",
+    "userStatement": "Great that is pereferct pronouneation. store this audio or how it is pronounce.",
+    "phoneticApproximation": "in-VY-tih-fy",
+    "ipaApproximation": "ɪnˈvaɪtɪfaɪ",
+    "acousticReferenceTakesPrecedence": true
+  },
+  "approvedAudioManifest": "assets/brand/audio/pronunciation.json",
+  "approvedNarration": "assets/brand/audio/envitefy-approved-jessica-concierge.mp3",
+  "latestSharingNarrationReview": "share-narration-audio-review.json"
 }

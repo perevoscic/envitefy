@@ -13,9 +13,11 @@ Brand identity, voice, messaging, asset management, and consistency frameworks.
 
 ## Envitefy spoken name
 
-Read the mandatory [Envitefy Brand Name & Pronunciation Standard](../../../ENVITEFY_BRAND.md) before producing branded speech. The current target is **en-VITE-fy**, approximately **/ɛnˈvaɪtfaɪ/**: short “en” as in “enter,” stressed “VITE” rhyming with “bite,” then “fy” rhyming with “fly,” spoken continuously with no extra syllable. This supersedes earlier Inviteefy / in-VY-tee-fy guidance.
+Read the mandatory [Envitefy Brand Name & Pronunciation Standard](../../../ENVITEFY_BRAND.md). The current acoustic reference is the user's September 9 recording, approximately **in-VY-tih-fy**, **/ɪnˈvaɪtɪfaɪ/**: four syllables joined naturally, with primary stress on VY. This recording supersedes the earlier written three-syllable en-VITE-fy approximation.
 
-Apply the standard's complete model direction through supported pronunciation controls for every spoken occurrence. Review generated audio against the standard; transcription alone does not establish pronunciation. Visible text remains **Envitefy** and locked wordmark/domain assets remain unchanged. The studio's [shared audio helper](../../../video-studio/scripts/brand-pronunciation.mjs) implements these controls.
+Use the standard's model direction or supported phoneme controls, then compare the resulting audio with the reference. Pronunciation markup and transcription alone do not prove a match. Visible text remains **Envitefy**; preserve locked wordmark/domain assets. The [shared speech helper](../../../video-studio/scripts/brand-pronunciation.mjs) supplies internal controls and caption normalization.
+
+The pronunciation is user-approved as of September 9, 2026. Durable audio and approval hashes are in the [brand audio manifest](../../../video-studio/assets/brand/audio/pronunciation.json). Reuse the approved narration when its script is unchanged; compare new spoken occurrences to the saved audio.
 
 ## When to Use
 

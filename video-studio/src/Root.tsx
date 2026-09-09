@@ -1,3 +1,6 @@
+import { SmallShower } from "./small-shower/SmallShower";
+import { SnapAnime } from "./mom-just-snap-it/SnapAnime";
+import { JohnSpaceDiscoSquare } from "./JohnSpaceDiscoSquare";
 import { FridgeFreedomV5 } from "./FridgeFreedomV5";
 import { FridgeFreedomV4 } from "./FridgeFreedomV4";
 import { FridgeCameraScreenV4 } from "./fridge-freedom/CameraScreenV4";
@@ -58,6 +61,64 @@ const calculateMetadata: CalculateMetadataFunction<VideoProps> = async ({
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      <Composition
+        id="EnvitefySmallShowerWide"
+        component={SmallShower}
+        width={1920}
+        height={1080}
+        fps={30}
+        durationInFrames={900}
+        calculateMetadata={async () => {
+          await loadBrandFonts();
+          return { defaultOutName: "small-shower/small-shower-16x9-v1" };
+        }}
+      />
+      <Composition
+        id="EnvitefySmallShowerVertical"
+        component={SmallShower}
+        width={1080}
+        height={1920}
+        fps={30}
+        durationInFrames={900}
+        calculateMetadata={async () => {
+          await loadBrandFonts();
+          return { defaultOutName: "small-shower/small-shower-9x16-v1" };
+        }}
+      />
+      <Composition
+        id="EnvitefySnapAnimeWide"
+        component={SnapAnime}
+        width={1920}
+        height={1080}
+        fps={30}
+        durationInFrames={1050}
+        calculateMetadata={() => ({
+          defaultOutName: "mom-just-snap-it/envitefy-snap-anime-16x9",
+        })}
+      />
+      <Composition
+        id="EnvitefySnapAnimeVertical"
+        component={SnapAnime}
+        width={1080}
+        height={1920}
+        fps={30}
+        durationInFrames={1050}
+        calculateMetadata={() => ({
+          defaultOutName: "mom-just-snap-it/envitefy-snap-anime-9x16",
+        })}
+      />
+      <Composition
+        id="EnvitefyJohnSpaceDiscoSquare"
+        component={JohnSpaceDiscoSquare}
+        width={1080}
+        height={1080}
+        fps={30}
+        durationInFrames={900}
+        calculateMetadata={async () => {
+          await loadBrandFonts();
+          return { defaultOutName: "john-space-disco/john-space-disco-1x1-v2" };
+        }}
+      />
       <Composition
         id="EnvitefyFridgeFreedomV5"
         component={FridgeFreedomV5}
@@ -134,7 +195,7 @@ export const RemotionRoot: React.FC = () => {
         calculateMetadata={async () => {
           await loadBrandFonts();
           return {
-            defaultOutName: "john-space-disco/john-space-disco-16x9-v7",
+            defaultOutName: "john-space-disco/john-space-disco-16x9-v9",
           };
         }}
       />
@@ -146,7 +207,7 @@ export const RemotionRoot: React.FC = () => {
         fps={30}
         durationInFrames={900}
         calculateMetadata={() => ({
-          defaultOutName: "john-space-disco/john-space-disco-9x16-v9",
+          defaultOutName: "john-space-disco/john-space-disco-9x16-v11",
         })}
       />
       <Composition

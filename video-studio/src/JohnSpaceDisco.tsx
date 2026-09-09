@@ -11,7 +11,7 @@ export function JohnSpaceDisco() {
     <AbsoluteFill
       style={{ background: "#211439", fontFamily: "Arial, sans-serif" }}
     >
-      <Audio src={asset("vertical-final-mix-v9.wav")} />
+      <Audio src={asset("vertical-final-mix-v11.wav")} />
       <Sequence durationInFrames={150} name="John’s imagination">
         <JohnHook />
       </Sequence>

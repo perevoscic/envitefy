@@ -1,0 +1,7 @@
+import fs from 'node:fs/promises';
+const p='src/mom-just-snap-it/SnapAnime.tsx';let s=await fs.readFile(p,'utf8');
+s=s.replace('f < 64','f < 42').replace('f < 108','f < 84').replace('f < 135','f < 102').replace('f < 155','f < 126').replace('f < 163','f < 140').replace('f < 181','f < 155').replace('f < 211','f < 187').replace('f < 244','f < 219');
+s=s.replace('[65 + i * 8, 82 + i * 8]','[44 + i * 6, 56 + i * 6]').replace('[155, 163]','[126, 140]').replace('at={146}','at={116}').replace('at={192}','at={163}').replace('at={219}','at={194}').replace('at={250}','at={231}').replace('f < 257','f < 240').replace('[267, 279]','[253, 266]');
+await fs.writeFile(p,s);
+const a='scripts/prepare-snap-anime-edit.mjs';let t=await fs.readFile(a,'utf8');t=t.replace("for(const name of ['discovery','digital','payoff'])", "for(const name of ['discovery','digital'])");t=t.replace('// Native audio and generated effects',"ff(['-ss','0.36','-i',a+'/payoff.mp4','-vn','-af','apad','-t','9','-ar','48000','-ac','2','-c:a','pcm_s16le',out+'/payoff-edited-voice.wav']);\n// Native audio and generated effects");t=t.replace("lt(t,5.7)","lt(t,4.6)");await fs.writeFile(a,t);
+const c='src/mom-just-snap-it/captions.json';let captions=JSON.parse(await fs.readFile(c,'utf8'));captions[5].startMs=21150;captions[5].endMs=22950;captions[6].startMs=23200;captions[6].endMs=25000;captions[7].startMs=28300;captions[7].endMs=31000;await fs.writeFile(c,JSON.stringify(captions,null,2));

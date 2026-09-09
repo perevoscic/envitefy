@@ -1,0 +1,53 @@
+{
+  "dialogue": [
+    {
+      "start": 0.0,
+      "end": 3.0,
+      "text": "Just a small baby shower, maybe a teddy bear theme?"
+    },
+    {
+      "start": 3.0,
+      "end": 4.5,
+      "text": "Small? Absolutely."
+    },
+    {
+      "start": 6.0,
+      "end": 7.5,
+      "text": "I thought we said small."
+    },
+    {
+      "start": 8.0,
+      "end": 9.5,
+      "text": "It was on sale."
+    }
+  ],
+  "cuts": [
+    {
+      "start": 0.0,
+      "end": 4.0,
+      "description": "Two women talking in a cafe."
+    },
+    {
+      "start": 4.0,
+      "end": 6.0,
+      "description": "Woman entering a room with a giant teddy bear."
+    },
+    {
+      "start": 6.0,
+      "end": 7.5,
+      "description": "Two women standing by the giant bear."
+    },
+    {
+      "start": 7.5,
+      "end": 11.0,
+      "description": "Close-up of the friend speaking and laughing."
+    },
+    {
+      "start": 11.0,
+      "end": 12.0,
+      "description": "Group celebration around the giant bear."
+    }
+  ],
+  "issues": "None detected.",
+  "audioQuality": "Clear, natural, and highly intelligible speech."
+}

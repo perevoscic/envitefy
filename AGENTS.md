@@ -31,7 +31,7 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 ## Envitefy Brand Name and Pronunciation
 
 - Read [ENVITEFY_BRAND.md](ENVITEFY_BRAND.md) for the mandatory spelling, pronunciation, model instructions, and audio/video quality checks. Visible copy uses **Envitefy**; preserve the locked wordmark below.
-- Standing preference (September 8, 2026): pronounce the brand **en-VITE-fy** as one continuous word. This final clarification supersedes the earlier “EN-vite-ih-fy” wording. Before generating speech containing the name, explicitly direct the generation model using the written standard in `ENVITEFY_BRAND.md` and verify every spoken occurrence against that guidance before accepting the asset.
+- Standing preference (September 9, 2026): match the user's supplied audio reference, approximately **in-VY-tih-fy**, **/ɪnˈvaɪtɪfaɪ/**, as one continuous four-syllable word with VY stress. The recording supersedes the earlier three-syllable en-VITE-fy approximation. Read `ENVITEFY_BRAND.md` for the reference, model direction and required comparison of every spoken occurrence. Visible spelling remains Envitefy.
 
 ## Envitefy Logo Brand Lock
 

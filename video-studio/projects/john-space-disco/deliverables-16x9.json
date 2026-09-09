@@ -85,9 +85,47 @@
       "userApproved": false,
       "reviewedAt": "2026-09-09T13:48:18.098Z",
       "reviewNotes": "Replaced the rejected direct-TTS take with exact-IPA synthetic-reference-to-Jessica voice conversion. Local reference, converted take and both final mixed brand occurrences passed audio review as en-VITE-fy /ɛnˈvaɪtfaɪ/: three continuous syllables, correct initial vowel and VITE stress, no extra vowel, clear over music. Every animation packet matches the previously corrected version. Exact 30-second streams, full decode, sound levels, complete dialogue, source tests and lint/type checks passed."
+    },
+    {
+      "version": 8,
+      "composition": "EnvitefyJohnSpaceDiscoWide",
+      "aspectRatio": "16:9",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "durationSeconds": 30,
+      "frames": 900,
+      "path": "out/john-space-disco/john-space-disco-16x9-v8.mp4",
+      "bytes": 39273221,
+      "sha256": "941213413f981393d599eb28cdc0402da330bf8f5ebf0233e593883b103957fa",
+      "reviewStatus": "assistant-reviewed",
+      "userApproved": false,
+      "reviewedAt": "2026-09-09T14:05:46.489Z",
+      "reviewNotes": "Narration matches the user-supplied envitefy.wav reference, approximately /ɪnˈvaɪtɪfaɪ/, four connected syllables with VY stress. The isolated narrator and both final mixes passed direct audio comparison with the recording. All animation packets match the previous corrected export. Exact 30-second streams, full decode, sound levels, shared speech/caption tests, TypeScript, ESLint and Biome passed."
+    },
+    {
+      "version": 9,
+      "composition": "EnvitefyJohnSpaceDiscoWide",
+      "aspectRatio": "16:9",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "durationSeconds": 30,
+      "frames": 900,
+      "path": "out/john-space-disco/john-space-disco-16x9-v9.mp4",
+      "bytes": 39269695,
+      "sha256": "47379667fb1928b87ec04011c4ac6d4e7e4dca29ef9fe5a62e5c38ba5e47c103",
+      "reviewStatus": "assistant-reviewed",
+      "userApproved": false,
+      "pronunciationUserApproved": true,
+      "approvedPronunciationManifest": "assets/brand/audio/pronunciation.json",
+      "reviewedAt": "2026-09-09T14:20:28.858Z",
+      "reviewNotes": "Added One easy link. All the party details. at 12.25 seconds with smooth music ducking. Preserved the user-approved brand narration asset and every animation packet. Both final sharing clips pass audio review for complete exact wording, intelligibility, natural delivery, and clean transitions. Exact 30-second streams, full decode, levels, TypeScript, ESLint, Biome and video-skill validation pass.",
+      "verification": "projects/john-space-disco/share-narration-verification.json",
+      "audioReview": "projects/john-space-disco/share-narration-audio-review.json"
     }
   ],
   "latestReviewedByAspect": {
-    "16:9": "out/john-space-disco/john-space-disco-16x9-v7.mp4"
+    "16:9": "out/john-space-disco/john-space-disco-16x9-v9.mp4"
   }
 }

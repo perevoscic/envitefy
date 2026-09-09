@@ -1,0 +1,78 @@
+{
+  "draft": {
+    "intent": "create_event",
+    "creationSessionId": "demo-maya-thread",
+    "requestedOutputs": [
+      "live_card"
+    ],
+    "sourceContext": {
+      "type": "none",
+      "hasUsableContext": false,
+      "ambiguity": "none"
+    },
+    "eventPurpose": "A sage-and-cream baby shower with teddy bears",
+    "eventType": "baby_shower",
+    "title": "Maya’s Baby Shower",
+    "ownership": "owned",
+    "draftStatus": "preview_ready",
+    "currentQuestion": null,
+    "canPersist": true,
+    "honoreeName": "Maya",
+    "relationship": "best friend",
+    "ageOrMilestone": null,
+    "dateText": "Saturday, October 17",
+    "timeText": "2:00 PM",
+    "startISO": "2026-10-17T14:00:00-05:00",
+    "endISO": "2026-10-17T17:00:00-05:00",
+    "timezone": "America/Chicago",
+    "location": "The Garden Room, 1100 S Congress Ave, Austin, TX",
+    "venue": "The Garden Room",
+    "additionalLocations": [],
+    "rsvpEnabled": true,
+    "rsvpName": "Zoe",
+    "rsvpContact": "shower-demo@envitefy.com",
+    "numberOfGuests": 12,
+    "registryLink": "https://www.babylist.com/",
+    "giftRegistryLink": "https://www.babylist.com/",
+    "theme": "Sage-and-cream teddy bears",
+    "tone": "playful",
+    "outputs": [
+      "live_card"
+    ],
+    "missingFields": [],
+    "previewCopy": {
+      "headline": "Maya’s Baby Shower",
+      "subheadline": "A little one is on the way",
+      "body": "A sage-and-cream celebration with teddy bears.",
+      "scheduleLine": "Saturday, October 17 · 2:00–5:00 PM",
+      "locationLine": "The Garden Room · Austin",
+      "cta": "RSVP"
+    },
+    "source": "text"
+  },
+  "invitationData": {
+    "title": "Maya’s Baby Shower",
+    "subtitle": "A little one is on the way",
+    "heroTextMode": "image",
+    "description": "Join us for an intimate baby shower celebrating Maya.",
+    "eventDetails": {
+      "category": "baby_shower",
+      "occasion": "baby_shower",
+      "eventDate": "2026-10-17",
+      "startTime": "14:00",
+      "endTime": "17:00",
+      "calendarStartISO": "2026-10-17T14:00:00-05:00",
+      "calendarEndISO": "2026-10-17T17:00:00-05:00",
+      "venueName": "The Garden Room",
+      "location": "The Garden Room, 1100 S Congress Ave, Austin, TX",
+      "eventTitle": "Maya’s Baby Shower",
+      "rsvpEnabled": true,
+      "rsvpMode": "envitefy",
+      "eventId": "demo-maya-shower",
+      "rsvpName": "Zoe",
+      "rsvpContact": "shower-demo@envitefy.com",
+      "registryLink": "https://www.babylist.com/",
+      "detailsDescription": "Join Maya for a cozy afternoon with friends, sweet treats and teddy bears. Sage and cream, with love."
+    }
+  }
+}

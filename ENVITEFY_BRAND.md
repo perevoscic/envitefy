@@ -1,6 +1,6 @@
 # Envitefy — Brand Name & Pronunciation Standard
 
-Effective September 8, 2026. This is the mandatory source of truth for the written brand name and spoken pronunciation across Envitefy content and production tools.
+Effective September 8, 2026; pronunciation updated from the user-supplied recording on September 9, 2026. This is the mandatory source of truth for the written brand name and spoken pronunciation across Envitefy content and production tools.
 
 ## Brand name and spelling
 
@@ -14,32 +14,28 @@ The existing locked lowercase `envitefy` wordmark and approved `envitefy.com` ar
 
 ## Official pronunciation
 
-**Target: en-VITE-fy**  
-**Approximate IPA: /ɛnˈvaɪtfaɪ/**
+**Target: in-VY-tih-fy**  
+**Approximate IPA: /ɪnˈvaɪtɪfaɪ/**
 
-- Say the name naturally and conversationally as one continuous word, without pauses between syllables.
-- The first syllable is the short “en” sound at the beginning of “enter.”
-- The middle syllable, “VITE,” rhymes with “bite” and receives the stress. It sounds like “invite” without the initial “in.”
-- The final syllable, “fy,” rhymes with “fly.”
-- Do not insert an extra “ih” or “tih” syllable.
+The user's supplied **envitefy.wav** recording (September 9, 2026) is the acoustic reference. A decoded local copy is [saved with the approved brand audio](video-studio/assets/brand/audio/envitefy-approved-pronunciation-reference.wav). The original supplied file has SHA-256 04655c5247cf95d075555868e6213b1f12f0772f94ab64ef7933f7661d6a31f6.
 
-The final **en-VITE-fy** clarification supersedes the earlier written “EN-vite-ih-fy” / “ih-fy” guidance. This written pronunciation standard is authoritative and overrides any pronunciation inferred from spelling.
+- Use a short initial **in**.
+- Stress **VY**, rhyming with **eye**.
+- Follow it with a short, unstressed **tih** syllable.
+- Finish with **fy**, rhyming with **fly**.
+- Join all four syllables naturally into one word.
 
-Phonetic spellings, syllable guidance, and IPA are internal pronunciation metadata only. Never display them to customers.
+This recording replaces the earlier written three-syllable en-VITE-fy approximation for the current audio standard. Use the recording as the acoustic reference; IPA and phonetic spellings describe it approximately. Do not remove the short unstressed vowel heard between VY and fy.
 
-Do not pronounce the brand as:
+Phonetic spellings and IPA are internal production metadata only. Speech recognition may transcribe the sound as “Invitify”; visible brand text must still be **Envitefy**.
 
-- “Invitify”
-- “and-vite-fy”
-- “E-N-vite-fy”
-- “en-vih-tih-fy”
-- “invite-ify”
+The user explicitly approved the pronunciation on September 9, 2026. Preserve the [approved Jessica narration](video-studio/assets/brand/audio/envitefy-approved-jessica-concierge.mp3) when reusing that line. The [audio manifest](video-studio/assets/brand/audio/pronunciation.json) records the approval, provenance, and file hashes. Use the recording as the authority when written approximations differ.
 
 ## Voice and video model instruction
 
 Before generating any dialogue, narration, voice-over, advertisement, social-media video, podcast, or other audio containing the brand name, explicitly include the following instruction for every scene or generation request that speaks the brand. Do not let a TTS engine independently guess its pronunciation.
 
-> The company name Envitefy must be pronounced en-VITE-fy, approximately /ɛnˈvaɪtfaɪ/. Do not infer its pronunciation from its spelling. Say it naturally as one continuous word. Use the short “en” in “enter,” stress “VITE” to rhyme with “bite,” and end with “fy” rhyming with “fly.” Do not pause between syllables or insert an extra syllable. Keep all visible text spelled exactly “Envitefy”; pronunciation guidance is internal metadata only.
+> The company name Envitefy must match the user-supplied pronunciation recording: approximately /ɪnˈvaɪtɪfaɪ/, in-VY-tih-fy. Say it naturally as one continuous four-syllable word. Use a short initial in, stress VY to rhyme with eye, follow it with a short unstressed tih, and end with fy rhyming with fly. Preserve the short vowel heard between VY and fy. Do not infer pronunciation from spelling. Keep all visible text spelled exactly Envitefy; phonetic spelling and IPA are internal pronunciation metadata only.
 
 Keep pronunciation instructions in model direction or supported pronunciation controls, separate from visible copy and captions. Check generated or automatically transcribed captions for spelling errors.
 
@@ -48,7 +44,7 @@ Keep pronunciation instructions in model direction or supported pronunciation co
 Before accepting a generated video or audio asset:
 
 1. Confirm visible brand text is spelled exactly **Envitefy**, while preserving approved wordmark/domain assets as described above.
-2. Listen to every spoken occurrence of the brand name. Confirm the sounds, stress, and continuous delivery match **en-VITE-fy** and the pronunciation guidance above.
+2. Listen to every spoken occurrence of the brand name. Confirm the sounds, stress, and continuous delivery match the **user-supplied recording** and its pronunciation guidance above.
 3. If the pronunciation is incorrect, regenerate or replace the affected audio and review the resulting asset again.
 4. Never approve or deliver an asset containing a mispronounced brand name.
 

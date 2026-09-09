@@ -22,7 +22,8 @@ Saved from the user's production decisions on September 5, 2026. These are defau
 
 ## Audio
 
-- Standing pronunciation (September 9, 2026, aligned with the mandatory September 8 brand standard): **en-VITE-fy**, approximately **/ɛnˈvaɪtfaɪ/**, one continuous word. Short “en” as in “enter,” stressed “VITE” rhyming with “bite,” and “fy” rhyming with “fly.” No extra “ih” or “tee” syllable. Read [ENVITEFY_BRAND.md](../ENVITEFY_BRAND.md) for the complete required model direction and audio review. Apply `scripts/brand-pronunciation.mjs` to TTS and generated dialogue. Written branding remains Envitefy; preserve approved wordmark/domain assets. This standard supersedes all earlier phonetic variants.
+- Standing pronunciation (September 9, 2026, user audio reference): match the supplied recording, approximately **in-VY-tih-fy**, **/ɪnˈvaɪtɪfaɪ/**, four connected syllables with primary stress on VY. Preserve the short unstressed tih sound. The recording supersedes the earlier written three-syllable en-VITE-fy approximation. Read [ENVITEFY_BRAND.md](../ENVITEFY_BRAND.md) for the audio reference and complete model direction; use `scripts/brand-pronunciation.mjs` for internal speech controls and caption normalization. Compare generated audio with the recording. Visible branding remains Envitefy.
+- Pronunciation approval (September 9, 2026): the user confirmed the current audio is perfect. Preserve the approved take for unchanged lines. Durable references, file hashes, and the approval are in [assets/brand/audio/pronunciation.json](assets/brand/audio/pronunciation.json); this audio takes precedence over earlier written approximations.
 - The user rejected narration that obviously sounds synthetic. Natural delivery matters more than using a particular provider.
 - Narration is optional, not prohibited. Choose spoken narration, dialogue, music, ambience, and sound effects to serve the story; do not restrict a requested longer video to the old short script.
 - For speech, the existing ElevenLabs narration pipeline is available. Audition a short sample and adjust voice, writing, timing, and delivery before generating the full track when a new voice is needed. Do not default to the old Intro voice simply because it is configured.
@@ -38,11 +39,17 @@ Saved from the user's production decisions on September 5, 2026. These are defau
 - Review the actual first frames and cuts, not only contact-sheet samples. Prior problems included a one-frame kitchen mismatch and two hands placing the same bowl.
 - Deliver a locally playable MP4, a direct file link, and a concise description of the change. Add captions, thumbnails, or platform copy when requested or needed for that deliverable.
 
+## Social post copy
+
+- Standing preference (September 9, 2026): include the most popular relevant tags and hashtags when generating posts for each requested platform. Check current popularity when drafting; tailor the tags to the post’s topic, audience, and platform. Describe a tag as “most popular” or “trending” only when current evidence supports it, and use platform-appropriate formatting.
+
 ## Keeping preferences current
 
 When feedback describes a lasting preference, update the relevant section above in the same task and add a short dated entry below. Keep one current statement per preference. Preserve scene-specific requests in the relevant campaign's feedback record.
 
 Preference history:
+- 2026-09-09: User requested popular tags/hashtags with all future generated post copy; check current popularity and relevance for each platform.
+- 2026-09-09: User supplied envitefy.wav as the pronunciation reference. Direct comparison identifies in-VY-tih-fy, approximately /ɪnˈvaɪtɪfaɪ/. Both videos were matched to it; the audio reference supersedes the previous written three-syllable approximation.
 - 2026-09-09: Reconciled stale brand/producer skill text and speech controls with the mandatory en-VITE-fy standard; both John Space Disco formats revised together. Earlier four-syllable decisions remain archived in campaign revision notes only.
 - 2026-09-08: Saved the mandatory brand spelling and pronunciation standard in the parent ENVITEFY_BRAND.md and required explicit generation instructions and pronunciation review. The final en-VITE-fy clarification supersedes the earlier EN-vite-ih-fy wording. At the user's request, the pronunciation standard uses written guidance only.
 - 2026-09-05: User requested a separate output folder for each video after reviewing the mixed export folder. Applied to existing outputs and future Studio/CLI renders.

@@ -1,7 +1,7 @@
 {
   "status": "reviewed",
   "latestReviewedExport": {
-    "version": 9,
+    "version": 11,
     "composition": "EnvitefyJohnSpaceDisco",
     "aspectRatio": "9:16",
     "width": 1080,
@@ -9,13 +9,17 @@
     "fps": 30,
     "durationSeconds": 30,
     "frames": 900,
-    "path": "out/john-space-disco/john-space-disco-9x16-v9.mp4",
-    "bytes": 22283857,
-    "sha256": "af2cf9bb692538aab6d9a6c9338e073f07bb7a201d44953a250f7276459b7e5a",
+    "path": "out/john-space-disco/john-space-disco-9x16-v11.mp4",
+    "bytes": 22272026,
+    "sha256": "7ff87fdfc3756064e0af63679ee00ee3c0cce20f2bb5e015fbd2758bd1460656",
     "reviewStatus": "assistant-reviewed",
     "userApproved": false,
-    "reviewedAt": "2026-09-09T13:48:18.098Z",
-    "reviewNotes": "Replaced the rejected direct-TTS take with exact-IPA synthetic-reference-to-Jessica voice conversion. Local reference, converted take and both final mixed brand occurrences passed audio review as en-VITE-fy /ɛnˈvaɪtfaɪ/: three continuous syllables, correct initial vowel and VITE stress, no extra vowel, clear over music. Every animation packet matches the previously corrected version. Exact 30-second streams, full decode, sound levels, complete dialogue, source tests and lint/type checks passed."
+    "pronunciationUserApproved": true,
+    "approvedPronunciationManifest": "assets/brand/audio/pronunciation.json",
+    "reviewedAt": "2026-09-09T14:20:28.858Z",
+    "reviewNotes": "Added One easy link. All the party details. at 12.25 seconds with smooth music ducking. Preserved the user-approved brand narration asset and every animation packet. Both final sharing clips pass audio review for complete exact wording, intelligibility, natural delivery, and clean transitions. Exact 30-second streams, full decode, levels, TypeScript, ESLint, Biome and video-skill validation pass.",
+    "verification": "projects/john-space-disco/share-narration-verification.json",
+    "audioReview": "projects/john-space-disco/share-narration-audio-review.json"
   },
   "previousReviewedExports": [
     {
@@ -119,6 +123,40 @@
       "userApproved": false,
       "reviewedAt": "2026-09-08T22:06:03.312Z",
       "reviewNotes": "Exact user IPA ɪnˈvaɪtiˌfaɪ sent in the supplied SSML tag for the new narration. Global helper, all three TTS paths, eight base native-video generators, brand/video skills and guide updated. V7 video stream exactly matches V6, preserving the original unmirrored ending. Exact 30-second streams and full decode verified."
+    },
+    {
+      "version": 9,
+      "composition": "EnvitefyJohnSpaceDisco",
+      "aspectRatio": "9:16",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30,
+      "durationSeconds": 30,
+      "frames": 900,
+      "path": "out/john-space-disco/john-space-disco-9x16-v9.mp4",
+      "bytes": 22283857,
+      "sha256": "af2cf9bb692538aab6d9a6c9338e073f07bb7a201d44953a250f7276459b7e5a",
+      "reviewStatus": "assistant-reviewed",
+      "userApproved": false,
+      "reviewedAt": "2026-09-09T13:48:18.098Z",
+      "reviewNotes": "Replaced the rejected direct-TTS take with exact-IPA synthetic-reference-to-Jessica voice conversion. Local reference, converted take and both final mixed brand occurrences passed audio review as en-VITE-fy /ɛnˈvaɪtfaɪ/: three continuous syllables, correct initial vowel and VITE stress, no extra vowel, clear over music. Every animation packet matches the previously corrected version. Exact 30-second streams, full decode, sound levels, complete dialogue, source tests and lint/type checks passed."
+    },
+    {
+      "version": 10,
+      "composition": "EnvitefyJohnSpaceDisco",
+      "aspectRatio": "9:16",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30,
+      "durationSeconds": 30,
+      "frames": 900,
+      "path": "out/john-space-disco/john-space-disco-9x16-v10.mp4",
+      "bytes": 22273895,
+      "sha256": "f3c25c06f324dc82c7f8b72a9527bd54f23ac38cf8581601ea4b1ed51c61ca6b",
+      "reviewStatus": "assistant-reviewed",
+      "userApproved": false,
+      "reviewedAt": "2026-09-09T14:05:46.489Z",
+      "reviewNotes": "Narration matches the user-supplied envitefy.wav reference, approximately /ɪnˈvaɪtɪfaɪ/, four connected syllables with VY stress. The isolated narrator and both final mixes passed direct audio comparison with the recording. All animation packets match the previous corrected export. Exact 30-second streams, full decode, sound levels, shared speech/caption tests, TypeScript, ESLint and Biome passed."
     }
   ]
 }

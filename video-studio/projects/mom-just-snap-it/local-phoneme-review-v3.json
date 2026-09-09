@@ -1,0 +1,518 @@
+{
+  "method": "Offline Wav2Vec2 phoneme recognition using ONNX CPU. No audio uploads. Phonetic labels are acoustic estimates, not listening approval.",
+  "model": "facebook/wav2vec2-lv-60-espeak-cv-ft (ONNX int8)",
+  "results": [
+    {
+      "name": "user_acoustic_reference",
+      "file": "assets/brand/audio/envitefy-approved-pronunciation-reference.wav",
+      "sha256": "1928dcbc953b06be3127604532759585276d2ae7fca7eb3ff54d5fb745d1dce8",
+      "phonemes": "ɪ n v aɪ d ə f aɪ",
+      "tokens": [
+        {
+          "phoneme": "ɪ",
+          "start": 0.26,
+          "end": 0.28
+        },
+        {
+          "phoneme": "n",
+          "start": 0.36,
+          "end": 0.4
+        },
+        {
+          "phoneme": "v",
+          "start": 0.54,
+          "end": 0.56
+        },
+        {
+          "phoneme": "aɪ",
+          "start": 0.6,
+          "end": 0.62
+        },
+        {
+          "phoneme": "d",
+          "start": 0.76,
+          "end": 0.78
+        },
+        {
+          "phoneme": "ə",
+          "start": 0.78,
+          "end": 0.8
+        },
+        {
+          "phoneme": "f",
+          "start": 0.9,
+          "end": 0.92
+        },
+        {
+          "phoneme": "aɪ",
+          "start": 1.0,
+          "end": 1.02
+        }
+      ]
+    },
+    {
+      "name": "approved_synthetic_reference",
+      "file": "assets/brand/audio/envitefy-approved-jessica-concierge.mp3",
+      "sha256": "998e444775b292b467c75607e44750f5ae482d4a430632f50986480dd5ce7edc",
+      "phonemes": "b ɹ ɪ ŋ ð ɛɹ b ɜː θ d eɪ aɪ d ɪ z t ə l aɪ f w ɪ ð ɪ n v aɪ ɾ ɚ v aɪ k ɑː n s i ɛ ʒ",
+      "tokens": [
+        {
+          "phoneme": "b",
+          "start": 0.12,
+          "end": 0.14
+        },
+        {
+          "phoneme": "ɹ",
+          "start": 0.16,
+          "end": 0.2
+        },
+        {
+          "phoneme": "ɪ",
+          "start": 0.2,
+          "end": 0.22
+        },
+        {
+          "phoneme": "ŋ",
+          "start": 0.3,
+          "end": 0.32
+        },
+        {
+          "phoneme": "ð",
+          "start": 0.38,
+          "end": 0.4
+        },
+        {
+          "phoneme": "ɛɹ",
+          "start": 0.42,
+          "end": 0.44
+        },
+        {
+          "phoneme": "b",
+          "start": 0.58,
+          "end": 0.6
+        },
+        {
+          "phoneme": "ɜː",
+          "start": 0.64,
+          "end": 0.66
+        },
+        {
+          "phoneme": "θ",
+          "start": 0.76,
+          "end": 0.78
+        },
+        {
+          "phoneme": "d",
+          "start": 0.84,
+          "end": 0.86
+        },
+        {
+          "phoneme": "eɪ",
+          "start": 0.9,
+          "end": 0.92
+        },
+        {
+          "phoneme": "aɪ",
+          "start": 1.06,
+          "end": 1.08
+        },
+        {
+          "phoneme": "d",
+          "start": 1.18,
+          "end": 1.2
+        },
+        {
+          "phoneme": "ɪ",
+          "start": 1.22,
+          "end": 1.24
+        },
+        {
+          "phoneme": "z",
+          "start": 1.4,
+          "end": 1.42
+        },
+        {
+          "phoneme": "t",
+          "start": 1.48,
+          "end": 1.5
+        },
+        {
+          "phoneme": "ə",
+          "start": 1.52,
+          "end": 1.54
+        },
+        {
+          "phoneme": "l",
+          "start": 1.62,
+          "end": 1.64
+        },
+        {
+          "phoneme": "aɪ",
+          "start": 1.68,
+          "end": 1.7
+        },
+        {
+          "phoneme": "f",
+          "start": 1.82,
+          "end": 1.84
+        },
+        {
+          "phoneme": "w",
+          "start": 1.92,
+          "end": 1.94
+        },
+        {
+          "phoneme": "ɪ",
+          "start": 1.94,
+          "end": 1.96
+        },
+        {
+          "phoneme": "ð",
+          "start": 2.02,
+          "end": 2.04
+        },
+        {
+          "phoneme": "ɪ",
+          "start": 2.06,
+          "end": 2.08
+        },
+        {
+          "phoneme": "n",
+          "start": 2.12,
+          "end": 2.14
+        },
+        {
+          "phoneme": "v",
+          "start": 2.2,
+          "end": 2.22
+        },
+        {
+          "phoneme": "aɪ",
+          "start": 2.24,
+          "end": 2.26
+        },
+        {
+          "phoneme": "ɾ",
+          "start": 2.36,
+          "end": 2.38
+        },
+        {
+          "phoneme": "ɚ",
+          "start": 2.38,
+          "end": 2.4
+        },
+        {
+          "phoneme": "v",
+          "start": 2.48,
+          "end": 2.5
+        },
+        {
+          "phoneme": "aɪ",
+          "start": 2.54,
+          "end": 2.56
+        },
+        {
+          "phoneme": "k",
+          "start": 2.7,
+          "end": 2.72
+        },
+        {
+          "phoneme": "ɑː",
+          "start": 2.78,
+          "end": 2.8
+        },
+        {
+          "phoneme": "n",
+          "start": 2.88,
+          "end": 2.9
+        },
+        {
+          "phoneme": "s",
+          "start": 2.94,
+          "end": 2.96
+        },
+        {
+          "phoneme": "i",
+          "start": 3.02,
+          "end": 3.04
+        },
+        {
+          "phoneme": "ɛ",
+          "start": 3.14,
+          "end": 3.16
+        },
+        {
+          "phoneme": "ʒ",
+          "start": 3.38,
+          "end": 3.4
+        }
+      ]
+    },
+    {
+      "name": "candidate_clean_dialogue",
+      "file": "out/mom-just-snap-it/discovery-edited-voice.wav",
+      "sha256": "78072d577169845fd4cb61dc8642e0e68e544ad9b06b81800f9517c9010de33e",
+      "phonemes": "m ɑː m aɪ l ɜː n d ɐ b aʊ t ɪ n v aɪ ɾ ə f aɪ æ t s k uː",
+      "tokens": [
+        {
+          "phoneme": "m",
+          "start": 0.24,
+          "end": 0.26
+        },
+        {
+          "phoneme": "ɑː",
+          "start": 0.3,
+          "end": 0.32
+        },
+        {
+          "phoneme": "m",
+          "start": 0.56,
+          "end": 0.58
+        },
+        {
+          "phoneme": "aɪ",
+          "start": 0.8,
+          "end": 0.82
+        },
+        {
+          "phoneme": "l",
+          "start": 0.94,
+          "end": 0.96
+        },
+        {
+          "phoneme": "ɜː",
+          "start": 0.98,
+          "end": 1.0
+        },
+        {
+          "phoneme": "n",
+          "start": 1.08,
+          "end": 1.12
+        },
+        {
+          "phoneme": "d",
+          "start": 1.12,
+          "end": 1.14
+        },
+        {
+          "phoneme": "ɐ",
+          "start": 1.16,
+          "end": 1.18
+        },
+        {
+          "phoneme": "b",
+          "start": 1.22,
+          "end": 1.24
+        },
+        {
+          "phoneme": "aʊ",
+          "start": 1.26,
+          "end": 1.28
+        },
+        {
+          "phoneme": "t",
+          "start": 1.38,
+          "end": 1.4
+        },
+        {
+          "phoneme": "ɪ",
+          "start": 1.44,
+          "end": 1.46
+        },
+        {
+          "phoneme": "n",
+          "start": 1.5,
+          "end": 1.54
+        },
+        {
+          "phoneme": "v",
+          "start": 1.6,
+          "end": 1.62
+        },
+        {
+          "phoneme": "aɪ",
+          "start": 1.64,
+          "end": 1.66
+        },
+        {
+          "phoneme": "ɾ",
+          "start": 1.76,
+          "end": 1.78
+        },
+        {
+          "phoneme": "ə",
+          "start": 1.78,
+          "end": 1.8
+        },
+        {
+          "phoneme": "f",
+          "start": 1.88,
+          "end": 1.9
+        },
+        {
+          "phoneme": "aɪ",
+          "start": 1.92,
+          "end": 1.94
+        },
+        {
+          "phoneme": "æ",
+          "start": 2.06,
+          "end": 2.08
+        },
+        {
+          "phoneme": "t",
+          "start": 2.14,
+          "end": 2.18
+        },
+        {
+          "phoneme": "s",
+          "start": 2.2,
+          "end": 2.22
+        },
+        {
+          "phoneme": "k",
+          "start": 2.3,
+          "end": 2.32
+        },
+        {
+          "phoneme": "uː",
+          "start": 2.38,
+          "end": 2.4
+        }
+      ]
+    },
+    {
+      "name": "candidate_final_mix",
+      "file": "public/projects/mom-just-snap-it/final-mix-v2.wav",
+      "sha256": "1b9ec9f50a25c2c365d16ca2fb5132218209c9bf1fd2093ad4fba6af33f3903f",
+      "phonemes": "m ɑː m aɪ l ɜː n d ɐ b aʊ t ɪ n v aɪ ɾ ə f aɪ t s k uː l",
+      "tokens": [
+        {
+          "phoneme": "m",
+          "start": 7.24,
+          "end": 7.26
+        },
+        {
+          "phoneme": "ɑː",
+          "start": 7.3,
+          "end": 7.32
+        },
+        {
+          "phoneme": "m",
+          "start": 7.54,
+          "end": 7.58
+        },
+        {
+          "phoneme": "aɪ",
+          "start": 7.8,
+          "end": 7.82
+        },
+        {
+          "phoneme": "l",
+          "start": 7.94,
+          "end": 7.96
+        },
+        {
+          "phoneme": "ɜː",
+          "start": 7.98,
+          "end": 8.0
+        },
+        {
+          "phoneme": "n",
+          "start": 8.08,
+          "end": 8.12
+        },
+        {
+          "phoneme": "d",
+          "start": 8.12,
+          "end": 8.16
+        },
+        {
+          "phoneme": "ɐ",
+          "start": 8.16,
+          "end": 8.18
+        },
+        {
+          "phoneme": "b",
+          "start": 8.22,
+          "end": 8.24
+        },
+        {
+          "phoneme": "aʊ",
+          "start": 8.26,
+          "end": 8.28
+        },
+        {
+          "phoneme": "t",
+          "start": 8.38,
+          "end": 8.4
+        },
+        {
+          "phoneme": "ɪ",
+          "start": 8.44,
+          "end": 8.46
+        },
+        {
+          "phoneme": "n",
+          "start": 8.5,
+          "end": 8.54
+        },
+        {
+          "phoneme": "v",
+          "start": 8.58,
+          "end": 8.6
+        },
+        {
+          "phoneme": "aɪ",
+          "start": 8.64,
+          "end": 8.66
+        },
+        {
+          "phoneme": "ɾ",
+          "start": 8.76,
+          "end": 8.78
+        },
+        {
+          "phoneme": "ə",
+          "start": 8.78,
+          "end": 8.8
+        },
+        {
+          "phoneme": "f",
+          "start": 8.88,
+          "end": 8.9
+        },
+        {
+          "phoneme": "aɪ",
+          "start": 8.92,
+          "end": 8.94
+        },
+        {
+          "phoneme": "t",
+          "start": 9.16,
+          "end": 9.18
+        },
+        {
+          "phoneme": "s",
+          "start": 9.2,
+          "end": 9.22
+        },
+        {
+          "phoneme": "k",
+          "start": 9.3,
+          "end": 9.32
+        },
+        {
+          "phoneme": "uː",
+          "start": 9.38,
+          "end": 9.4
+        },
+        {
+          "phoneme": "l",
+          "start": 9.54,
+          "end": 9.56
+        }
+      ]
+    }
+  ]
+}

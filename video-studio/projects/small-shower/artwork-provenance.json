@@ -1,0 +1,14 @@
+{
+  "mode": "built-in ImageGen",
+  "asset": "invitation.webp",
+  "use": "Artwork in actual Envitefy Live Card demonstration",
+  "prompt": "Finished portrait baby shower invitation, 2:3, warm ivory handmade paper, sage eucalyptus watercolor botanicals, fine taupe serif stationery typography. Honey plush teddy, cream booties, sage ribbon. Exact type: A LITTLE ONE IS ON THE WAY / Maya’s / Baby Shower / Saturday, October 17 / 2:00–5:00 PM / The Garden Room · Austin. Keep lower 18 percent mostly cream for real action controls. No brand, device, watermark or exterior border.",
+  "original": "C:/Users/rjosan/.codex/generated_images/01a0874b-311d-7ab2-bc12-e1a19559aa61/exec-b75da447-eda9-4a45-95ae-e790f50425b0.png",
+  "final": "public/projects/small-shower/invitation.webp",
+  "encoding": "FFmpeg libwebp quality 85 compression_level 6",
+  "width": 1024,
+  "height": 1536,
+  "decodeVerified": true,
+  "originalRemoved": true,
+  "sha256": "0ac4c2bd708a7d4fff82263474f3b1de1b9a25da4c5a74d18cac8fb345e3aae9"
+}

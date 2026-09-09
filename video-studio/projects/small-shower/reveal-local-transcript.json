@@ -1,0 +1,135 @@
+[
+  {
+    "start": 0.0,
+    "end": 2.72,
+    "text": " Just a small baby shower, maybe a teddy bear theme?",
+    "words": [
+      {
+        "word": " Just",
+        "start": 0.0,
+        "end": 0.28
+      },
+      {
+        "word": " a",
+        "start": 0.28,
+        "end": 0.44
+      },
+      {
+        "word": " small",
+        "start": 0.44,
+        "end": 0.68
+      },
+      {
+        "word": " baby",
+        "start": 0.68,
+        "end": 0.94
+      },
+      {
+        "word": " shower,",
+        "start": 0.94,
+        "end": 1.22
+      },
+      {
+        "word": " maybe",
+        "start": 1.7,
+        "end": 2.0
+      },
+      {
+        "word": " a",
+        "start": 2.0,
+        "end": 2.1
+      },
+      {
+        "word": " teddy",
+        "start": 2.1,
+        "end": 2.28
+      },
+      {
+        "word": " bear",
+        "start": 2.28,
+        "end": 2.5
+      },
+      {
+        "word": " theme?",
+        "start": 2.5,
+        "end": 2.72
+      }
+    ]
+  },
+  {
+    "start": 3.3,
+    "end": 4.3,
+    "text": " Small, absolutely.",
+    "words": [
+      {
+        "word": " Small,",
+        "start": 3.3,
+        "end": 3.3
+      },
+      {
+        "word": " absolutely.",
+        "start": 3.76,
+        "end": 4.3
+      }
+    ]
+  },
+  {
+    "start": 6.82,
+    "end": 7.68,
+    "text": " I thought we said small.",
+    "words": [
+      {
+        "word": " I",
+        "start": 6.82,
+        "end": 6.96
+      },
+      {
+        "word": " thought",
+        "start": 6.96,
+        "end": 7.1
+      },
+      {
+        "word": " we",
+        "start": 7.1,
+        "end": 7.24
+      },
+      {
+        "word": " said",
+        "start": 7.24,
+        "end": 7.4
+      },
+      {
+        "word": " small.",
+        "start": 7.4,
+        "end": 7.68
+      }
+    ]
+  },
+  {
+    "start": 8.5,
+    "end": 9.08,
+    "text": " It was on sale.",
+    "words": [
+      {
+        "word": " It",
+        "start": 8.5,
+        "end": 8.56
+      },
+      {
+        "word": " was",
+        "start": 8.56,
+        "end": 8.66
+      },
+      {
+        "word": " on",
+        "start": 8.66,
+        "end": 8.8
+      },
+      {
+        "word": " sale.",
+        "start": 8.8,
+        "end": 9.08
+      }
+    ]
+  }
+]

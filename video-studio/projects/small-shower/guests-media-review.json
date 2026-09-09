@@ -1,0 +1,31 @@
+{
+  "dialogue": [],
+  "cuts": [
+    {
+      "startTime": "00:00",
+      "endTime": "00:03",
+      "description": "Young Asian woman using a smartphone near a window."
+    },
+    {
+      "startTime": "00:03",
+      "endTime": "00:05",
+      "description": "Middle-aged man with glasses using a smartphone in a kitchen."
+    },
+    {
+      "startTime": "00:05",
+      "endTime": "00:08",
+      "description": "Older woman with grey hair using a smartphone on a porch."
+    }
+  ],
+  "issues": [
+    {
+      "type": "AI Artifacts",
+      "description": "Minor AI-generated rendering details on hands and backgrounds."
+    }
+  ],
+  "audioQuality": {
+    "naturalnessScore": 3,
+    "intelligibilityScore": 3,
+    "explanation": "No speech is present in the video."
+  }
+}

@@ -1,0 +1,36 @@
+```json
+{
+  "dialogue": [
+    {
+      "start": "00:00",
+      "end": "00:02",
+      "text": "Just a small baby shower. Maybe a teddy-bear theme?"
+    },
+    {
+      "start": "00:02",
+      "end": "00:03",
+      "text": "Small. Absolutely."
+    },
+    {
+      "start": "00:22",
+      "end": "00:23",
+      "text": "I thought we said small."
+    },
+    {
+      "start": "00:24",
+      "end": "00:25",
+      "text": "It was on sale."
+    }
+  ],
+  "music": "The background music noticeably pauses during the dry punchline dialogue between 00:22 and 00:25, then resumes with a cheerful chime at 00:26.",
+  "screens": "The product screens shown are highly readable, displaying a clean digital invitation interface ('Maya's Baby Shower') with options for RSVP, Gift Registry, Add to Calendar, and Directions. The screens use realistic fictional demo data.",
+  "realism": {
+    "voices": "Natural and highly intelligible.",
+    "visuals": "People, hands, and framing are realistic and well-composed. No clipped or obstructed text, and no missing or black frames are present.",
+    "finalCTA": "The final call-to-action and logo ('envitefy.com') are clear, centered, and highly legible."
+  },
+  "captionAlignment": "The captions are perfectly synchronized with the spoken dialogue throughout the video.",
+  "defects": "No technical defects, visual glitches, or audio issues were observed.",
+  "overall": "This is a high-quality, polished 30-second commercial. It effectively demonstrates the product's features (RSVP, registry, calendar integration, directions) through clear UI mockups while maintaining a lighthearted, relatable narrative about planning a baby shower. Visible guest actions include tapping 'Yes' to RSVP, viewing the registry link, adding the event to a calendar, and looking up directions."
+}
+```

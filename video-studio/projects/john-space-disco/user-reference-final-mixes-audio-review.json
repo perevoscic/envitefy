@@ -1,0 +1,49 @@
+{
+  "reference": "out/john-space-disco/user-envitefy-pronunciation-reference.wav",
+  "originalHash": "04655c5247cf95d075555868e6213b1f12f0772f94ab64ef7933f7661d6a31f6",
+  "clips": [
+    {
+      "label": "vertical",
+      "source": "out/john-space-disco/vertical-v10-final-voice-review.wav",
+      "sha256": "cb7687fb5c7d462b04fcc0f502c149c3e381caf1460a0a3d16e41dfd5bbd8807",
+      "bytes": 143400
+    },
+    {
+      "label": "horizontal",
+      "source": "out/john-space-disco/wide-v8-final-voice-review.wav",
+      "sha256": "c040de0159ac3092b36c4bae85e4abb0fc56bdf713366d6fb87574ce99557a4c",
+      "bytes": 143348
+    }
+  ],
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "Use the first recording as the authoritative pronunciation. Compare the brand name spoken before Concierge in EACH of the two final narrator/music clips directly against that recording. Ignore voice identity differences. Judge audible vowel/consonant sounds, all syllables, primary stress, and continuous delivery from the actual audio, not brand spelling. Also check intelligibility over music and complete sentence endings. Return JSON with referenceIPA and clips array; each clip must have label (vertical or horizontal), transcript, brandIPA, syllableCount, stressMatchesReference, pronunciationMatchesReference, intelligible, naturalDelivery, issues. If a mismatch is audible, describe it clearly. Do not assume a previous written standard.",
+  "scope": "User explicitly approved the reference upload to Gemini. Final clips contain only newly generated stock adult narrator speech, instrumental music and effects; no native character dialogue or full videos.",
+  "status": "completed",
+  "review": {
+    "referenceIPA": "ɪnˈvaɪtɪfaɪ",
+    "clips": [
+      {
+        "label": "vertical",
+        "transcript": "Bring their birthday ideas to life with invitify concierge.",
+        "brandIPA": "ɪnˈvaɪtɪfaɪ",
+        "syllableCount": 4,
+        "stressMatchesReference": true,
+        "pronunciationMatchesReference": true,
+        "intelligible": true,
+        "naturalDelivery": true,
+        "issues": "None"
+      },
+      {
+        "label": "horizontal",
+        "transcript": "Bring their birthday ideas to life with invitify concierge.",
+        "brandIPA": "ɪnˈvaɪtɪfaɪ",
+        "syllableCount": 4,
+        "stressMatchesReference": true,
+        "pronunciationMatchesReference": true,
+        "intelligible": true,
+        "naturalDelivery": true,
+        "issues": "None"
+      }
+    ]
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "date": "2026-09-09T14:44:12.175Z",
+  "path": "out/john-space-disco/john-space-disco-1x1-v1.mp4",
+  "composition": "EnvitefyJohnSpaceDiscoSquare",
+  "probe": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1080,
+        "height": 1080,
+        "r_frame_rate": "30/1",
+        "duration": "30.000000",
+        "nb_read_frames": "900",
+        "side_data_list": [
+          {}
+        ]
+      },
+      {
+        "codec_name": "aac",
+        "sample_rate": "48000",
+        "channels": 2,
+        "r_frame_rate": "0/0",
+        "duration": "30.000000",
+        "nb_read_frames": "1407"
+      }
+    ],
+    "format": {
+      "duration": "30.000000",
+      "size": "13156659"
+    }
+  },
+  "sha256": "73cd49338f4766085c62a02020f6734d0b5cfc7062ac39f74b41d6d210b41542",
+  "bytes": 13156659,
+  "fullDecodePassed": true,
+  "audioSource": "out/john-space-disco/john-space-disco-9x16-v11.mp4",
+  "audioPacketsIdentical": true,
+  "audioPacketSha256": "SHA256=36dc8683c1d6845d16b24c369e97c1621fc2ba235b49e04d48f6246e3dc92e50",
+  "loudness": {
+    "input_i": "-15.35",
+    "input_tp": "-1.40",
+    "input_lra": "9.90",
+    "input_thresh": "-25.80",
+    "output_i": "-15.21",
+    "output_tp": "-1.50",
+    "output_lra": "7.50",
+    "output_thresh": "-25.54",
+    "normalization_type": "dynamic",
+    "target_offset": "0.21"
+  },
+  "approvedPronunciationPreserved": true,
+  "shareNarrationPreserved": true,
+  "status": "awaiting-final-visual-review"
+}

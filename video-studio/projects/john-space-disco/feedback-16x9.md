@@ -17,3 +17,11 @@ Final V2 is assistant-reviewed. No user approval or publishing is implied.
 ## September 9, 2026 — final reference-based pronunciation
 
 Completed the mandatory en-VITE-fy update after the user rejected the initial direct-TTS sample. The new reference-to-Jessica take passes audio review in the isolated narration and both final mixes; all animation packets remain identical. Final file: out/john-space-disco/john-space-disco-16x9-v7.mp4. See [current revision and verification](revision-brand-standard-2026-09-09.md). Assistant-reviewed; no user approval inferred.
+
+## September 9, 2026 — user audio reference matched
+
+Matched the narrator to the supplied envitefy.wav recording after the user authorized its Gemini analysis. Both final narration mixes pass direct reference comparison, approximately in-VY-tih-fy /ɪnˈvaɪtɪfaɪ/. Every animation packet remains identical to the prior version. Final file: out/john-space-disco/john-space-disco-16x9-v8.mp4. See [current revision](revision-user-audio-reference-2026-09-09.md). Assistant-reviewed; no approval of the finished video is inferred.
+
+## September 9, 2026 — approved pronunciation preserved; sharing narration added
+
+The user confirmed the current pronunciation is perfect. Saved the approved reference and Jessica take under assets/brand/audio/ with approval and hashes. Added “One easy link. All the party details.” at 12.25 seconds, with smooth music ducking. The accepted brand audio is unchanged, and every animation packet matches the previous version. Final export: out/john-space-disco/john-space-disco-16x9-v9.mp4. Exact 30 seconds, full decode, levels and final sharing audio review pass. Source and skill checks pass. See [revision notes](revision-share-narration-2026-09-09.md). Pronunciation is user-approved; this completed video is assistant-reviewed.

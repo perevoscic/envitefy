@@ -1,0 +1,57 @@
+```json
+{
+  "dialogue": [
+    {
+      "speaker": "Pregnant Woman",
+      "text": "Just a small baby shower.",
+      "start": "00:00",
+      "end": "00:01"
+    },
+    {
+      "speaker": "Pregnant Woman",
+      "text": "Maybe a teddy-bear theme?",
+      "start": "00:01",
+      "end": "00:02"
+    },
+    {
+      "speaker": "Friend",
+      "text": "Small. Absolutely.",
+      "start": "00:02",
+      "end": "00:03"
+    },
+    {
+      "speaker": "Pregnant Woman",
+      "text": "I thought we said small.",
+      "start": "00:23",
+      "end": "00:24"
+    },
+    {
+      "speaker": "Friend",
+      "text": "It was on sale.",
+      "start": "00:24",
+      "end": "00:25"
+    }
+  ],
+  "music": {
+    "description": "The background music is a light, upbeat acoustic instrumental track that plays throughout the commercial. It noticeably stops completely at 00:24 for the dry punchline ('It was on sale') to emphasize the comedic timing, and then a soft, warm musical resolution plays during the final logo screen.",
+    "natural_voices": true,
+    "intelligible_voices": true
+  },
+  "screens": {
+    "legibility": "All product screens, including the Envitefy Concierge chat interface, invitation preview, RSVP prompt, gift registry, calendar integration, and directions, are highly legible and clear.",
+    "guest_actions": "Fictional guests are shown interacting with the invitation: one guest taps 'YES' to RSVP, another views the gift registry, a third adds the event to their calendar, and directions are shown being accessed with one tap.",
+    "final_cta_legibility": "The final call-to-action screen displaying 'envitefy.com' and 'Create yours with Envitefy Concierge' is clean, centered, and highly legible."
+  },
+  "realism": {
+    "people_and_hands": "The actors, their expressions, and their hand movements interacting with devices look completely natural and realistic.",
+    "framing": "The framing is professional, with well-balanced shots of the characters and clear overlays of the mobile interface.",
+    "missing_frames": "There are no black, gray, or missing frames detected in the video."
+  },
+  "captionAlignment": {
+    "status": "Excellent",
+    "details": "The on-screen captions are perfectly synchronized with the spoken dialogue throughout the video."
+  },
+  "defects": [],
+  "overall": "This is a highly polished, professional 30-second commercial with excellent audio-visual quality, clear product demonstrations, great comedic timing with the music pause, and no technical defects."
+}
+```

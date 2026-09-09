@@ -1,0 +1,16 @@
+{
+  "provider": "OpenAI Images API",
+  "model": "gpt-image-2.5-flare",
+  "quality": "high",
+  "input": "public/projects/mom-just-snap-it/cast-kitchen.webp",
+  "output": "public/projects/mom-just-snap-it/cast-flare-v2.webp",
+  "prompt": "projects/mom-just-snap-it/flare-reference-v2-prompt.txt",
+  "execution": "bundled image_gen.py edit",
+  "dimensions": [
+    1671,
+    941
+  ],
+  "conversion": "FFmpeg libwebp quality85 compression6",
+  "originalsDeleted": true,
+  "date": "2026-09-09"
+}

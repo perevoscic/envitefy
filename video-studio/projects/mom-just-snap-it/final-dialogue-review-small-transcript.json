@@ -1,0 +1,227 @@
+[
+  {
+    "start": 0.0,
+    "end": 1.66,
+    "text": " Mom, can I go?",
+    "words": [
+      {
+        "word": " Mom,",
+        "start": 0.0,
+        "end": 0.5
+      },
+      {
+        "word": " can",
+        "start": 1.0,
+        "end": 1.14
+      },
+      {
+        "word": " I",
+        "start": 1.14,
+        "end": 1.32
+      },
+      {
+        "word": " go?",
+        "start": 1.32,
+        "end": 1.66
+      }
+    ]
+  },
+  {
+    "start": 6.82,
+    "end": 9.54,
+    "text": " Mom, I learned about Inviteify at school.",
+    "words": [
+      {
+        "word": " Mom,",
+        "start": 6.82,
+        "end": 7.44
+      },
+      {
+        "word": " I",
+        "start": 7.74,
+        "end": 7.9
+      },
+      {
+        "word": " learned",
+        "start": 7.9,
+        "end": 8.1
+      },
+      {
+        "word": " about",
+        "start": 8.1,
+        "end": 8.42
+      },
+      {
+        "word": " Inviteify",
+        "start": 8.42,
+        "end": 8.92
+      },
+      {
+        "word": " at",
+        "start": 8.92,
+        "end": 9.18
+      },
+      {
+        "word": " school.",
+        "start": 9.18,
+        "end": 9.54
+      }
+    ]
+  },
+  {
+    "start": 10.72,
+    "end": 14.36,
+    "text": " Snap the invite, make it digital, and save it to your calendar.",
+    "words": [
+      {
+        "word": " Snap",
+        "start": 10.72,
+        "end": 10.76
+      },
+      {
+        "word": " the",
+        "start": 10.76,
+        "end": 11.02
+      },
+      {
+        "word": " invite,",
+        "start": 11.02,
+        "end": 11.36
+      },
+      {
+        "word": " make",
+        "start": 11.78,
+        "end": 11.98
+      },
+      {
+        "word": " it",
+        "start": 11.98,
+        "end": 12.16
+      },
+      {
+        "word": " digital,",
+        "start": 12.16,
+        "end": 12.58
+      },
+      {
+        "word": " and",
+        "start": 13.06,
+        "end": 13.2
+      },
+      {
+        "word": " save",
+        "start": 13.2,
+        "end": 13.46
+      },
+      {
+        "word": " it",
+        "start": 13.46,
+        "end": 13.6
+      },
+      {
+        "word": " to",
+        "start": 13.6,
+        "end": 13.74
+      },
+      {
+        "word": " your",
+        "start": 13.74,
+        "end": 13.88
+      },
+      {
+        "word": " calendar.",
+        "start": 13.88,
+        "end": 14.36
+      }
+    ]
+  },
+  {
+    "start": 21.18,
+    "end": 24.82,
+    "text": " Directions, RSVP, and you can share it with Dad.",
+    "words": [
+      {
+        "word": " Directions,",
+        "start": 21.18,
+        "end": 21.8
+      },
+      {
+        "word": " RSVP,",
+        "start": 22.26,
+        "end": 22.78
+      },
+      {
+        "word": " and",
+        "start": 23.4,
+        "end": 23.7
+      },
+      {
+        "word": " you",
+        "start": 23.7,
+        "end": 23.82
+      },
+      {
+        "word": " can",
+        "start": 23.82,
+        "end": 23.98
+      },
+      {
+        "word": " share",
+        "start": 23.98,
+        "end": 24.18
+      },
+      {
+        "word": " it",
+        "start": 24.18,
+        "end": 24.34
+      },
+      {
+        "word": " with",
+        "start": 24.34,
+        "end": 24.44
+      },
+      {
+        "word": " Dad.",
+        "start": 24.44,
+        "end": 24.82
+      }
+    ]
+  },
+  {
+    "start": 28.06,
+    "end": 31.02,
+    "text": " Finally, room for the important stuff.",
+    "words": [
+      {
+        "word": " Finally,",
+        "start": 28.06,
+        "end": 28.9
+      },
+      {
+        "word": " room",
+        "start": 29.66,
+        "end": 29.76
+      },
+      {
+        "word": " for",
+        "start": 29.76,
+        "end": 30.0
+      },
+      {
+        "word": " the",
+        "start": 30.0,
+        "end": 30.14
+      },
+      {
+        "word": " important",
+        "start": 30.14,
+        "end": 30.5
+      },
+      {
+        "word": " stuff.",
+        "start": 30.5,
+        "end": 31.02
+      }
+    ]
+  }
+]

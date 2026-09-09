@@ -1,14 +1,28 @@
 {
   "status": "assistant-reviewed",
-  "date": "2026-09-09T13:48:18.098Z",
-  "pronunciation": "en-VITE-fy",
-  "ipa": "ɛnˈvaɪtfaɪ",
-  "files": [
-    "out/john-space-disco/john-space-disco-9x16-v9.mp4",
-    "out/john-space-disco/john-space-disco-16x9-v7.mp4"
+  "updatedAt": "2026-09-09T14:20:28.858Z",
+  "acousticReference": "assets/brand/audio/envitefy-approved-pronunciation-reference.wav",
+  "originalReference": "C:/Users/rjosan/Downloads/envitefy.wav",
+  "userAuthorizedGeminiAnalysis": true,
+  "pronunciation": "in-VY-tih-fy",
+  "ipa": "ɪnˈvaɪtɪfaɪ",
+  "currentVideoExports": [
+    "out/john-space-disco/john-space-disco-9x16-v11.mp4",
+    "out/john-space-disco/john-space-disco-16x9-v9.mp4"
   ],
-  "selectedTake": "vo-create-jessica-reference-v1.mp3",
-  "finalMixedReview": "brand-reference-final-clips-audio-review.json",
-  "rejectedPriorTake": "vo-create-v12.mp3",
-  "userApproved": false
+  "selectedTake": "vo-create-jessica-user-reference-v1.mp3",
+  "finalComparison": "user-reference-final-mixes-audio-review.json",
+  "userApprovedFinishedVideos": false,
+  "pronunciationUserApproved": true,
+  "pronunciationApproval": {
+    "date": "2026-09-09",
+    "scope": "Brand pronunciation and the accepted narration take",
+    "userStatement": "Great that is pereferct pronouneation. store this audio or how it is pronounce.",
+    "phoneticApproximation": "in-VY-tih-fy",
+    "ipaApproximation": "ɪnˈvaɪtɪfaɪ",
+    "acousticReferenceTakesPrecedence": true
+  },
+  "approvedAudioManifest": "assets/brand/audio/pronunciation.json",
+  "approvedNarration": "assets/brand/audio/envitefy-approved-jessica-concierge.mp3",
+  "latestSharingNarrationReview": "share-narration-audio-review.json"
 }

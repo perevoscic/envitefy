@@ -1,0 +1,33 @@
+{
+  "id": "john-space-disco",
+  "title": "John is 10: Space Dinosaur Disco",
+  "request": "Create a 1:1 square version of the finished John Space Disco promotional video.",
+  "duration": 30,
+  "fps": 30,
+  "formats": [
+    {
+      "aspectRatio": "1:1",
+      "width": 1080,
+      "height": 1080
+    }
+  ],
+  "date": "2026-09-09",
+  "sourceVertical": "out/john-space-disco/john-space-disco-9x16-v11.mp4",
+  "sourceWide": "out/john-space-disco/john-space-disco-16x9-v9.mp4",
+  "audio": {
+    "master": "public/projects/john-space-disco/vertical-final-mix-v11.wav",
+    "pronunciation": "Preserve the user-approved narration and new One easy link. All the party details. line without regeneration."
+  },
+  "continuity": "Use vertical-payoff-v5-uncut.mp4 unmirrored: dinosaur left, John right. Preserve existing dialogue timing.",
+  "layout": "Dedicated square titles, full-width URL, enlarged product crops, guest reaction panel, and reframed moving character footage.",
+  "claims": [
+    "Concierge creates custom birthday Live Cards",
+    "Configured RSVP, gift links, directions, calendar actions",
+    "Editing source details preserves shared Live Card URL",
+    "Updated details shown when guests reopen same link; no claim of automatic external calendar changes"
+  ],
+  "status": "completed",
+  "finalExport": "out/john-space-disco/john-space-disco-1x1-v2.mp4",
+  "productionNotes": "production-notes-1x1.md",
+  "verification": "square-v2-verification.json"
+}

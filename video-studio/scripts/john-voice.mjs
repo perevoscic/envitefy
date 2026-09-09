@@ -6,7 +6,8 @@ dotenv.config({path:'../.env',quiet:true});dotenv.config({path:'../.env.local',o
 const mode=process.argv[2]||'sample';
 const version=process.argv[3]||'v8';
 if(!/^v[0-9]+$/.test(version))throw Error('Invalid voice version');
-const texts={sample:'Bring their birthday ideas to life.',create:'Bring their birthday ideas to life with Envitefy Concierge.',update:'Change the plans. Your live card updates. No resending needed.'};
+const texts={share:'One easy link. All the party details.',sample:'Bring their birthday ideas to life.',create:'Bring their birthday ideas to life with Envitefy Concierge.',update:'Change the plans. Your live card updates. No resending needed.'};
+if(!Object.hasOwn(texts,mode))throw Error("Unsupported voice mode");
 const file=`public/projects/john-space-disco/vo-${mode}-${version}.mp3`,record=`projects/john-space-disco/voice-${mode}-${version}-request.json`;
 if(await fs.stat(file).catch(()=>null)){console.log('Saved voice reused');process.exit(0);}
 if(await fs.stat(record).catch(()=>null))throw Error('Prior request exists: inspect before resubmitting');

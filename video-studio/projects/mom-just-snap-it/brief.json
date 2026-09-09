@@ -1,0 +1,91 @@
+{
+  "id": "mom-just-snap-it",
+  "title": "Envitefy — Mom, Just Snap It!",
+  "requestDate": "2026-09-09",
+  "status": "V3 exports technically and visually reviewed; one shared production with two responsive layouts.",
+  "durationSeconds": 35,
+  "fps": 30,
+  "totalFrames": 1050,
+  "formats": [
+    {
+      "id": "16x9",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "9x16",
+      "width": 1080,
+      "height": 1920
+    }
+  ],
+  "sharedMedia": "One selected source per shot, one common final audio WAV, shared product captures, editable text and official logo. Both compositions use the same scene component and timing data.",
+  "direction": "Premium cinematic hand-drawn 2D anime; warm peach afternoon light in a cream-and-terracotta family kitchen. Mother: warm brown skin, chestnut wavy shoulder-length hair, teal knit top and ivory apron. Daughter: same family complexion, dark brown high ponytail, coral school cardigan over white shirt, navy skirt, lavender backpack. Expressive, charming, family friendly, continuous character motion.",
+  "framingPlan": "16:9 original animated clips: faces, hands, invitation and fridge actions inside central 45 percent. Horizontal uses full wider kitchen and a side-by-side large demo. Vertical uses shot-specific close reframes in tall story windows; product phone takes most of vertical frame. No flattened character repositioning or whole-export crops. Lettering, captions, interface and branding are separate editor layers.",
+  "event": {
+    "title": "Mia’s 8th Birthday",
+    "date": "2026-10-17",
+    "time": "2–4 PM",
+    "timezone": "America/Chicago",
+    "venue": "Maple Park",
+    "address": "820 W 7th Street, Austin, TX",
+    "rsvp": "Host email extracted from invitation: birthday-demo@envitefy.com (fictional demo contact)"
+  },
+  "timeline": [
+    {
+      "id": "overload",
+      "from": 0,
+      "duration": 210,
+      "dialogue": "Mom! Can I go?",
+      "action": "Girl arrives and hands Mom invitation. Magnet moves; papers slide; mother scrambles with a brief comic anime reaction."
+    },
+    {
+      "id": "discovery",
+      "from": 210,
+      "duration": 270,
+      "dialogue": "Mom, I learned about Envitefy at school! Snap the invite, make it digital, and save it to your calendar!",
+      "action": "Daughter explains; Mom is intrigued; open actual Envitefy Snap together."
+    },
+    {
+      "id": "digital",
+      "from": 480,
+      "duration": 300,
+      "dialogue": "Directions, RSVP—and you can share it with Dad!",
+      "action": "Photo, animated detail extraction, actual review/save/calendar confirmation, followed by Directions, RSVP and Share."
+    },
+    {
+      "id": "payoff",
+      "from": 780,
+      "duration": 150,
+      "dialogue": "Finally—room for the important stuff!",
+      "action": "Quick flyer digitizing/removal montage; daughter's drawing remains; daughter beams."
+    },
+    {
+      "id": "finish",
+      "from": 930,
+      "duration": 120,
+      "copy": [
+        "Snapped. Saved. Ready to celebrate.",
+        "Envitefy.com"
+      ],
+      "action": "Clean fridge, saved invitation, official supplied logo; rearrange same layers for both formats."
+    }
+  ],
+  "audio": "Shared native character dialogue or single selected stock-voice recordings, gentle playful instrumental music, paper/magnet/shutter/tap/chime effects. Match every spoken Envitefy to the user audio pronunciation reference.",
+  "deliverables": [
+    "out/mom-just-snap-it/envitefy-snap-anime-16x9.mp4",
+    "out/mom-just-snap-it/envitefy-snap-anime-9x16.mp4"
+  ],
+  "externalPublishing": false,
+  "revision2": {
+    "requestedFixes": [
+      "Printed birthday invitation",
+      "Audible mother",
+      "Magnet stays on fridge",
+      "Match character brightness and design"
+    ],
+    "imageModel": "gpt-image-2.5-flare",
+    "reference": "public/projects/mom-just-snap-it/cast-flare-v2.webp",
+    "invitationLettering": "Complete in opening and discovery; same shared editable layers in both layouts"
+  },
+  "version": 3
+}

@@ -1,0 +1,15 @@
+import fs from 'node:fs/promises';
+import {spawnSync} from 'node:child_process';
+import path from 'node:path';
+const out='out/mom-just-snap-it',dest=out+'/editable-project';
+const pkg=JSON.parse(await fs.readFile(dest+'/package.json','utf8'));
+pkg.scripts['render:all']='node scripts/render-snap-anime-v3.mjs';
+await fs.writeFile(dest+'/package.json',JSON.stringify(pkg,null,2));
+const renderer=dest+'/scripts/render-snap-anime-v3.mjs';
+await fs.writeFile(renderer,(await fs.readFile(renderer,'utf8')).replaceAll('-v3.mp4','.mp4'));
+await fs.appendFile(dest+'/README.md','\nFor delivery-exact exports, run `npm run render:all` with FFmpeg installed. This renders both full-resolution layouts, encodes the shared audio once, and muxes each MP4 to exactly 35 seconds under the requested filenames. The individual Remotion commands remain available for editing previews.\n');
+await fs.copyFile('projects/mom-just-snap-it/v3-audio-final-review-local-transcript.json',dest+'/production/v3-audio-final-review-local-transcript.json');
+const zip=path.resolve(out+'/envitefy-snap-anime-editable-v3.zip');
+const r=spawnSync('powershell.exe',['-NoProfile','-Command',`Compress-Archive -LiteralPath '${path.resolve(dest)}' -DestinationPath '${zip}' -Force`],{encoding:'utf8'});if(r.status)throw Error(r.stderr);
+await fs.copyFile(zip,out+'/envitefy-snap-anime-editable.zip');
+console.log('Portable project includes one command for both exact 35-second exports.');

@@ -1,0 +1,27 @@
+{
+  "dialogue": [
+    {
+      "start": 0.0,
+      "end": 2.5,
+      "text": "Just a small baby shower, maybe a teddy bear theme?"
+    },
+    {
+      "start": 2.5,
+      "end": 4.0,
+      "text": "Small? Absolutely."
+    }
+  ],
+  "cuts": [
+    {
+      "start": 0.0,
+      "end": 4.0,
+      "description": "Continuous medium shot of two women conversing at a round table in a cafe."
+    }
+  ],
+  "issues": [],
+  "audioQuality": {
+    "naturalness": 4,
+    "intelligibility": 4,
+    "explanation": "The speech is clear and easily understood with natural pacing."
+  }
+}

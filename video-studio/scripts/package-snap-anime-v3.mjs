@@ -1,0 +1,17 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {spawnSync} from 'node:child_process';
+const out='out/mom-just-snap-it',dest=out+'/editable-project';
+let base=await fs.readFile('scripts/package-snap-anime-project.mjs','utf8');
+base=base.replace("'opening-tracking.json']","'opening-tracking.json','opening-tracking-v3.json']");
+base=base.replace('Pronunciation comparison against the supplied acoustic reference remains pending approval for that external review. Offline checks confirm the full requested dialogue and no duplicate lines.','Pronunciation was compared locally with the supplied acoustic reference using an offline phoneme-recognition model; no audio was uploaded. Offline checks confirm the complete dialogue and the intended four-syllable brand pronunciation.');
+await fs.writeFile(out+'/package-stage-v3.mjs',base);
+const stage=spawnSync(process.execPath,[out+'/package-stage-v3.mjs'],{encoding:'utf8'});if(stage.status)throw Error(stage.stderr);console.log(stage.stdout.trim());
+for(const name of ['deliverables.json','feedback.md','export-verification-v3.json','local-phoneme-review-v3.json','opening-v3-composite.json','opening-v3-request.json','payoff-v3-request.json','digital-v3-request.json'])await fs.copyFile('projects/mom-just-snap-it/'+name,dest+'/production/'+name);
+await fs.mkdir(dest+'/scripts',{recursive:true});
+for(const name of ['composite-snap-opening-v3.py','letter-snap-opening-v3.py','conform-snap-revisions-v3.mjs','render-snap-anime-v3.mjs'])await fs.copyFile('scripts/'+name,dest+'/scripts/'+name);
+const zip=path.resolve(out+'/envitefy-snap-anime-editable-v3.zip');
+const result=spawnSync('powershell.exe',['-NoProfile','-Command',`Compress-Archive -LiteralPath '${path.resolve(dest)}' -DestinationPath '${zip}' -Force`],{encoding:'utf8'});if(result.status)throw Error(result.stderr);
+await fs.copyFile(zip,out+'/envitefy-snap-anime-editable.zip');
+await fs.writeFile(out+'/delivery.json',await fs.readFile('projects/mom-just-snap-it/deliverables.json'));
+console.log('Editable V3 project ZIP packaged with shared original and selected sources.');

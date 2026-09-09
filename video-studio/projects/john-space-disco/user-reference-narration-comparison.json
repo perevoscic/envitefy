@@ -1,0 +1,21 @@
+{
+  "reference": "out/john-space-disco/user-envitefy-pronunciation-reference.wav",
+  "originalHash": "04655c5247cf95d075555868e6213b1f12f0772f94ab64ef7933f7661d6a31f6",
+  "candidate": "public/projects/john-space-disco/vo-create-jessica-user-reference-v1.mp3",
+  "candidateHash": "998e444775b292b467c75607e44750f5ae482d4a430632f50986480dd5ce7edc",
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "Compare the pronunciation of the brand in these two audio files. REFERENCE is the user-supplied authoritative pronunciation, explicitly provided for this check. CANDIDATE is a stock narrator sentence that should say the same brand name before Concierge. Judge only what you hear; do not infer pronunciation from brand spelling or any previous written standard. Ignore speaker identity/timbre differences. Compare initial vowel, each syllable including the unstressed vowel after VY, stress, last fy vowel, continuity and pacing. Give referenceIPA, candidateIPA, referenceSyllables, candidateSyllables, stressMatch, phoneticMatch, naturalCandidateDelivery, completeCandidateSentence, audibleDifferences and any uncertainty. Return JSON.",
+  "status": "completed",
+  "review": {
+    "referenceIPA": "/ɪnˈvaɪtɪfaɪ/",
+    "candidateIPA": "/ɪnˈvaɪtɪfaɪ/",
+    "referenceSyllables": "in-VI-ti-fy",
+    "candidateSyllables": "in-VI-ti-fy",
+    "stressMatch": true,
+    "phoneticMatch": true,
+    "naturalCandidateDelivery": true,
+    "completeCandidateSentence": true,
+    "audibleDifferences": "None. The candidate pronunciation matches the reference perfectly in terms of vowels, consonants, and stress.",
+    "uncertainty": "None"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "dialogue": [
+    {
+      "start": 0.0,
+      "end": 3.0,
+      "text": "Just a small baby shower. Maybe a teddy bear theme?"
+    },
+    {
+      "start": 3.0,
+      "end": 5.0,
+      "text": "Small? Absolutely."
+    }
+  ],
+  "cuts": [
+    {
+      "time": 5.0,
+      "description": "Cut from the cafe conversation to the woman typing on her laptop at home."
+    }
+  ],
+  "issues": [],
+  "audioQuality": {
+    "naturalness": 4,
+    "intelligibility": 4,
+    "explanation": "The dialogue is highly intelligible and sounds natural with clear pronunciation."
+  }
+}

@@ -45,7 +45,7 @@ export function JohnSpaceDiscoWide() {
       >
         <WidePayoff />
       </Sequence>
-      <Audio src={asset("wide-final-mix-v7.wav")} />
+      <Audio src={asset("wide-final-mix-v9.wav")} />
     </AbsoluteFill>
   );
 }

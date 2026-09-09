@@ -1,0 +1,64 @@
+{
+  "fps": 30,
+  "duration": 30,
+  "opening": {
+    "sourceStart": 0.15,
+    "sourceDuration": 4.6,
+    "targetDuration": 4.3
+  },
+  "trunk": {
+    "sourceStart": 5.75,
+    "duration": 0.7
+  },
+  "reveal": {
+    "sourceStart": 5.041666666666667,
+    "timelineStart": 21,
+    "duration": 6
+  },
+  "musicSilence": [
+    24.2,
+    25.6
+  ],
+  "product": [
+    {
+      "name": "chat",
+      "from": 5.8,
+      "to": 8.2
+    },
+    {
+      "name": "card",
+      "from": 8.2,
+      "to": 10
+    },
+    {
+      "name": "details",
+      "from": 10,
+      "to": 11.8
+    },
+    {
+      "name": "share",
+      "from": 11.8,
+      "to": 14
+    },
+    {
+      "name": "rsvp",
+      "from": 14,
+      "to": 16.2
+    },
+    {
+      "name": "gift",
+      "from": 16.2,
+      "to": 17.8
+    },
+    {
+      "name": "calendar",
+      "from": 17.8,
+      "to": 19.5
+    },
+    {
+      "name": "directions",
+      "from": 19.5,
+      "to": 21
+    }
+  ]
+}

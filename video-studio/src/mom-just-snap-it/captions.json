@@ -1,0 +1,58 @@
+[
+  {
+    "text": "Mom! Can I go?",
+    "startMs": 0,
+    "endMs": 1800,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "Mom, I learned about\nEnvitefy at school!",
+    "startMs": 7000,
+    "endMs": 9680,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "Snap the invite,",
+    "startMs": 10650,
+    "endMs": 11480,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "make it digital,",
+    "startMs": 11650,
+    "endMs": 12750,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "and save it to your calendar!",
+    "startMs": 13000,
+    "endMs": 14500,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "Directions. RSVP.",
+    "startMs": 21150,
+    "endMs": 22950,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "And you can share it with Dad!",
+    "startMs": 23200,
+    "endMs": 25000,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "Finally—room for\nthe important stuff!",
+    "startMs": 27950,
+    "endMs": 31000,
+    "timestampMs": null,
+    "confidence": null
+  }
+]

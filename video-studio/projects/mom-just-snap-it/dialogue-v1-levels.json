@@ -1,0 +1,26 @@
+[
+  {
+    "line": "Girl opening",
+    "stereoRMSdb": -22.65,
+    "monoRMSdb": -22.65,
+    "correlation": 1.0
+  },
+  {
+    "line": "Girl discovery",
+    "stereoRMSdb": -25.23,
+    "monoRMSdb": -25.23,
+    "correlation": 1.0
+  },
+  {
+    "line": "Girl actions",
+    "stereoRMSdb": -25.46,
+    "monoRMSdb": -25.46,
+    "correlation": 1.0
+  },
+  {
+    "line": "Mom payoff",
+    "stereoRMSdb": -23.85,
+    "monoRMSdb": -23.85,
+    "correlation": 1.0
+  }
+]

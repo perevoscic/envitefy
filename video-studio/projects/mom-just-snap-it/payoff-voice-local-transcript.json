@@ -1,0 +1,39 @@
+[
+  {
+    "start": 2.7199999999999993,
+    "end": 5.32,
+    "text": " Finally, room for the important stuff!",
+    "words": [
+      {
+        "word": " Finally,",
+        "start": 2.7199999999999993,
+        "end": 3.4
+      },
+      {
+        "word": " room",
+        "start": 3.82,
+        "end": 4.06
+      },
+      {
+        "word": " for",
+        "start": 4.06,
+        "end": 4.32
+      },
+      {
+        "word": " the",
+        "start": 4.32,
+        "end": 4.44
+      },
+      {
+        "word": " important",
+        "start": 4.44,
+        "end": 4.62
+      },
+      {
+        "word": " stuff!",
+        "start": 4.62,
+        "end": 5.32
+      }
+    ]
+  }
+]
