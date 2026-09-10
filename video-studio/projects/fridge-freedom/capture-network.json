@@ -1,9 +1,0 @@
-{
-  "allExternalWritesBlocked": true,
-  "network": [
-    {
-      "action": "fictional OCR response",
-      "externalWrite": false
-    }
-  ]
-}

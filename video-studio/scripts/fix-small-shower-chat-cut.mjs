@@ -1,6 +1,0 @@
-import fs from 'node:fs/promises';import {execFileSync} from 'node:child_process';
-const out='out/small-shower',pub='public/projects/small-shower';const m=JSON.parse(await fs.readFile('projects/small-shower/capture-timing.json','utf8'));const duration=m.chatEnd-m.chat-.25;
-execFileSync('ffmpeg',['-y','-hide_banner','-loglevel','error','-ss',String(m.chat),'-t',String(duration),'-i',m.video,'-an','-vf',`setpts=PTS-STARTPTS,setpts=${2.4/duration}*PTS,fps=30,setsar=1`,'-frames:v','72','-c:v','libx264','-preset','fast','-crf','16','-pix_fmt','yuv420p',pub+'/ui-chat.mp4'],{stdio:'inherit'});
-let src=await fs.readFile('scripts/prepare-small-shower-ui.mjs','utf8');src=src.replace("const len=m[name+'End']-m[name];", "const len=m[name+'End']-m[name]-(name==='chat'?.25:0);");await fs.writeFile('scripts/prepare-small-shower-ui.mjs',src);
-for(const a of ['16x9','9x16'])await fs.copyFile(out+'/small-shower-'+a+'-v1.mp4',out+'/small-shower-'+a+'-v1-preqa.mp4');
-await fs.appendFile('projects/small-shower/production-notes.md','\nFinal cut-boundary inspection caught one blank browser frame at the end of the chat insert. Trimmed the capture 0.25 seconds earlier and retimed that stable interval to the same 2.4-second slot. Source, voice, music, other actions and overall timing remain unchanged. Pre-QA exports retained in the same output folder.\n');

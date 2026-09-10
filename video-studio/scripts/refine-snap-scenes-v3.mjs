@@ -1,8 +1,0 @@
-import fs from 'node:fs/promises';
-const file='src/mom-just-snap-it/SnapAnime.tsx';let s=await fs.readFile(file,'utf8');
-s=s.replace('[44 + i * 6, 56 + i * 6]','[43 + i * 3, 50 + i * 3]').replace('[126, 140], [0.2, 1]','[117, 123], [0.5, 1]');await fs.writeFile(file,s);
-const original=await fs.readFile('scripts/finish-snap-anime-v3.mjs','utf8');
-const prompt='Edit this previously generated nine-second anime payoff video. Preserve every original frame of character motion, camera, timing, warm painterly style, faces, skin, hair, phone, hand positions, fridge drawing, clean fridge after the paper removal, native dialogue, voice, lip sync and all scene cuts. Make ONLY this wardrobe correction: mother wears the exact solid teal knit top with an ivory WAIST APRON tied at her waist. Remove the apron BIB and its shoulder/neck straps from every frame, revealing uninterrupted teal fabric across her chest and shoulders. The waist apron remains below the waist. Her teal sleeves and wavy chestnut hair remain unchanged. Do not change anything else, add text, introduce a new character or extend the clip. Keep original nine-second duration.';
-const newScript=original.replace(/const prompt = `[\s\S]*?`;/,'const prompt = '+JSON.stringify(prompt)+';').replaceAll("const name='opening-v3'","const name='payoff-v3'").replace("read(project+'opening-job.json')","read(project+'payoff-clean-job.json')").replaceAll('Opening V3','Payoff V3').replaceAll('original opening','original payoff');
-await fs.writeFile('scripts/generate-snap-payoff-v3.mjs',newScript);
-console.log('Extraction and confirmation timing refined; payoff wardrobe correction prepared.');

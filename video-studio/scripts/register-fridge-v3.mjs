@@ -1,2 +1,0 @@
-import fs from 'node:fs/promises';
-const p='src/Root.tsx';let s=await fs.readFile(p,'utf8');if(!s.includes('import { FridgeFreedomV3 }'))s='import { FridgeFreedomV3 } from "./FridgeFreedomV3";\n'+s;if(!s.includes('id="EnvitefyFridgeFreedomV3"'))s=s.replace('    <>','    <>\n      <Composition id="EnvitefyFridgeFreedomV3" component={FridgeFreedomV3} width={1080} height={1920} fps={30} durationInFrames={900} calculateMetadata={() => ({defaultOutName:"fridge-freedom/fridge-freedom-9x16-v3"})} />');await fs.writeFile(p,s);

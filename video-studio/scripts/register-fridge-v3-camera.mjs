@@ -1,2 +1,0 @@
-import fs from 'node:fs/promises';
-const p='src/Root.tsx';let s=await fs.readFile(p,'utf8');if(!s.includes('import { FridgeCameraScreen }'))s='import { FridgeCameraScreen } from "./fridge-freedom/CameraScreenV3";\n'+s;if(!s.includes('id="FridgeCameraScreenV3"'))s=s.replace('    <>','    <>\n      <Composition id="FridgeCameraScreenV3" component={FridgeCameraScreen} width={360} height={700} fps={30} durationInFrames={60} calculateMetadata={() => ({defaultOutName:"fridge-freedom/v3-camera-screen"})} />');await fs.writeFile(p,s);

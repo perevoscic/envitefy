@@ -1,4 +1,0 @@
-import fs from 'node:fs/promises';import {bundle} from '@remotion/bundler';import {selectComposition,renderStill} from '@remotion/renderer';
-const out='out/small-shower';const url=await bundle({entryPoint:'src/index.ts',onProgress:p=>{if(p===100)console.log('Bundle ready')}});await fs.writeFile(out+'/bundle-path.txt',url);
-const frames=[30,105,139,170,213,270,323,382,450,510,562,613,646,678,704,758,790,825,868];
-for(const id of ['EnvitefySmallShowerWide','EnvitefySmallShowerVertical']){const comp=await selectComposition({serveUrl:url,id});const format=id.endsWith('Wide')?'16x9':'9x16';for(const frame of frames)await renderStill({serveUrl:url,composition:comp,output:out+'/review-'+format+'-'+frame+'.jpg',frame,scale:.4,imageFormat:'jpeg',logLevel:'error'});console.log(format+' scenes ready');}

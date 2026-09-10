@@ -14,7 +14,7 @@ npm-debug.log
 .idea
 coverage
 qa-artifacts
-video-studio/build
+video-studio
 .env
 .env.*
 snap-my-date-*.json

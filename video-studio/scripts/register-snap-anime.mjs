@@ -1,3 +1,0 @@
-import fs from 'node:fs/promises';
-const p='src/Root.tsx';let s=await fs.readFile(p,'utf8');
-if(!s.includes('EnvitefySnapAnimeWide')){s='import {SnapAnime} from "./mom-just-snap-it/SnapAnime";\n'+s;s=s.replace('    <>','    <>\n      <Composition id="EnvitefySnapAnimeWide" component={SnapAnime} width={1920} height={1080} fps={30} durationInFrames={1050} calculateMetadata={() => ({defaultOutName:"mom-just-snap-it/envitefy-snap-anime-16x9"})}/>\n      <Composition id="EnvitefySnapAnimeVertical" component={SnapAnime} width={1080} height={1920} fps={30} durationInFrames={1050} calculateMetadata={() => ({defaultOutName:"mom-just-snap-it/envitefy-snap-anime-9x16"})}/>');await fs.writeFile(p,s);}
