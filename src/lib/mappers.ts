@@ -1,6 +1,6 @@
 import type { SignupForm } from "@/types/signup";
+import { compactCalendarDescription } from "./calendar-description";
 import { formatCalendarDateTimeInTimeZone } from "@/lib/calendar-date-time";
-import { buildCalendarDescription } from "./calendar-description.ts";
 
 export type NormalizedEvent = {
   title: string;
@@ -69,7 +69,7 @@ export function toGoogleEvent(event: NormalizedEvent) {
 
   const requestBody: any = {
     summary: event.title,
-    description: buildCalendarDescription(event),
+    description: compactCalendarDescription(event),
     location: combineVenueAndLocation(event.venue, event.location),
     start,
     end,
@@ -84,10 +84,10 @@ export function toMicrosoftEvent(event: NormalizedEvent) {
     event.allDay
       ? `${value.slice(0, 10)}T00:00:00`
       : formatCalendarDateTimeInTimeZone(value, event.timezone) || value.slice(0, 19);
-  const bodyContent = buildCalendarDescription(event);
+  const bodyContent = compactCalendarDescription(event);
   const graphEvent: any = {
     subject: event.title || "Event",
-    body: { contentType: "text", content: bodyContent },
+    body: { contentType: "HTML", content: bodyContent },
     location: {
       displayName: combineVenueAndLocation(event.venue, event.location),
     },
@@ -118,7 +118,7 @@ export function toIcsFields(event: NormalizedEvent) {
     start: event.start,
     end: event.end,
     location: combineVenueAndLocation(event.venue, event.location),
-    description: buildCalendarDescription(event),
+    description: compactCalendarDescription(event),
     timezone: event.timezone,
     allDay: Boolean(event.allDay),
     recurrence: event.recurrence || null,

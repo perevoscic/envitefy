@@ -424,8 +424,17 @@
 
 .nav-chrome-sidebar-surface {
   background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.76), transparent 28%),
-    linear-gradient(180deg, #f7f5ff 0%, #f1effd 100%);
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.3), transparent 28%),
+    linear-gradient(180deg, rgba(247, 245, 255, 0.84) 0%, rgba(241, 239, 253, 0.82) 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Keep nested navigation panels from stacking translucent backgrounds. */
+.nav-chrome-sidebar-surface .nav-chrome-sidebar-surface {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .nav-chrome-sidebar-scroll-region {

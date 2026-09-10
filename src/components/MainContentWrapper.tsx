@@ -65,7 +65,6 @@ export function MainContentWrapper({
   const shellBgClass = isStudioCardShare ? "bg-neutral-950" : "bg-transparent";
 
   const showProjectGradientBackground = enableProjectBackground && !usesOwnLandingBackground;
-  const backgroundLeft = reserveSidebarSpace && isDesktop ? SIDEBAR_WIDTH_REM : "0px";
 
   return (
     <div
@@ -78,14 +77,13 @@ export function MainContentWrapper({
         paddingTop,
         paddingBottom: "max(0px, env(safe-area-inset-bottom))",
         paddingLeft,
-        ["--event-background-left" as string]: backgroundLeft,
         transition: "padding-left 200ms ease-out",
         ...(isEventSharePage ? { [EVENT_SKIN_TOP_OFFSET_VAR]: eventSkinTopOffset } : null),
       }}
       data-static-illustration="true"
     >
       {showProjectGradientBackground ? (
-        <GradientBackgroundLayer style={{ left: backgroundLeft }} />
+        <GradientBackgroundLayer />
       ) : null}
       {showProjectGradientBackground ? (
         <div className="relative z-10 flex min-h-0 flex-1 flex-col">{children}</div>

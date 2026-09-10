@@ -63,17 +63,50 @@ describe("automatic calendar payload", () => {
     expect(result.value.event.description).toContain("Host: The Johnson family");
     expect(result.value.event.description).toContain("RSVP: 3125550100");
     expect(result.value.event.description).toContain("Flyer / invite:");
+    expect(result.value.event.description).not.toContain("Category:");
     expect(
-      result.value.event.description?.endsWith(
-        "https://envitefy.com/event/mayas-birthday-123",
-      ),
+      result.value.event.description?.endsWith("https://envitefy.com/event/mayas-birthday-123"),
     ).toBe(true);
     expect(result.value.flyer?.previewUrl).toContain("variant=thumbnail");
-    expect(toGoogleEvent(result.value.event).description).toBe(result.value.event.description);
-    expect(toMicrosoftEvent(result.value.event).body).toEqual({
-      contentType: "text", content: result.value.event.description,
+  });
+
+  test("sync keeps unique appointment details and exports the same clean body to providers", () => {
+    const data = {
+      startISO: "2026-11-02T08:10:00",
+      endISO: "2026-11-02T09:10:00",
+      timezone: "America/Chicago",
+      category: "Medical Appointments",
+      location: "123 Main St",
+      description:
+        "Event details\nEvent: ENT appointment\nDate: Monday, November 2, 2026\nStarts: 8:10 AM CST\nLocation: 123 Main St\nPatient: Sam Example\n\nContacts\nPhone: 555-555-0100",
+      ocrFacts: [
+        { label: "Patient", value: "Sam Example" },
+        { label: "Phone", value: "555-555-0100" },
+        { label: "Date", value: "November 2, 2026" },
+        { label: "Clinician", value: "Dr. Example" },
+      ],
+    };
+    const originalDescription = data.description;
+    const result = buildAutoCalendarEvent({
+      title: "ENT appointment",
+      data,
+      envitefyUrl: "https://envitefy.com/event/example-appointment",
     });
-    expect(toIcsFields(result.value.event).description).toBe(result.value.event.description);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const { event } = result.value;
+    expect(event.description).toBe(
+      "Patient: Sam Example\n\nContacts\nPhone: 555-555-0100\n\nClinician: Dr. Example\n\nView on Envitefy:\nhttps://envitefy.com/event/example-appointment",
+    );
+    expect(data.description).toBe(originalDescription);
+    const rawEvent = { ...event, description: originalDescription };
+    const expectedBody = "Patient: Sam Example\n\nContacts\nPhone: 555-555-0100";
+    expect(toGoogleEvent(rawEvent).description).toBe(expectedBody);
+    expect(toMicrosoftEvent(rawEvent).body.content).toBe(expectedBody);
+    expect(toIcsFields(rawEvent).description).toBe(expectedBody);
+    expect(toGoogleEvent(event).summary).toBe("ENT appointment");
+    expect(toGoogleEvent(event).location).toBe("123 Main St");
+    expect(event.start).toBe("2026-11-02T14:10:00.000Z");
   });
 
   test("creates a one-day all-day event when the scan has a date but no visible time", () => {

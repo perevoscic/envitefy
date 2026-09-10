@@ -44,3 +44,31 @@ test("all-day links carry dates and the all-day flag without timezone shifts", (
   assert.equal(apple.get("allDay"), "true");
   assert.equal(apple.get("start"), "2026-09-26");
 });
+
+test("Google, Outlook, and Apple links omit repeated fields while preserving useful notes", () => {
+  const links = buildCalendarLinks({
+    title: "ENT appointment",
+    description:
+      "Event details\nEvent: ENT appointment\nDate: Monday, November 2, 2026\nStarts: 8:10 AM CST\nLocation: 123 Main St\nCategory: Medical Appointments\n\nPatient: Sam Example\nBring your referral.\n\nView on Envitefy:\nhttps://envitefy.com/event/example-appointment",
+    location: "123 Main St",
+    startIso: "2026-11-02T08:10:00-06:00",
+    endIso: "2026-11-02T09:10:00-06:00",
+    timezone: "America/Chicago",
+    allDay: false,
+    reminders: null,
+    recurrence: null,
+  });
+  const expected =
+    "Patient: Sam Example\nBring your referral.\n\nView on Envitefy:\nhttps://envitefy.com/event/example-appointment";
+  assert.equal(new URL(links.google).searchParams.get("details"), expected);
+  assert.equal(new URL(links.outlook).searchParams.get("body"), expected);
+  for (const link of [links.appleInline, links.appleDownload]) {
+    assert.equal(new URL(link, "http://localhost").searchParams.get("description"), expected);
+  }
+  assert.equal(new URL(links.google).searchParams.get("text"), "ENT appointment");
+  assert.equal(new URL(links.google).searchParams.get("location"), "123 Main St");
+  assert.equal(
+    new URL(links.google).searchParams.get("dates"),
+    "20261102T141000Z/20261102T151000Z",
+  );
+});
