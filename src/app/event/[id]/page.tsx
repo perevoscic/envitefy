@@ -10,7 +10,8 @@ import { notFound, redirect } from "next/navigation";
 import Script from "next/script";
 import { getServerSession } from "next-auth";
 import type { CSSProperties, ReactNode } from "react";
-import { cache } from "react";
+import { cache, cloneElement, isValidElement } from "react";
+import { generatedScanHero, resolveScanMediaPolicy } from "@/lib/ocr/scan-media";
 import AccessCodeGate from "@/components/AccessCodeGate";
 import AppleCalendarLink from "@/components/AppleCalendarLink";
 import BabyShowerSkin from "@/components/BabyShowerSkin";
@@ -34,6 +35,9 @@ import EventViewTracker from "@/components/EventViewTracker";
 import FirstScanCalendarPrompt from "@/components/FirstScanCalendarPrompt";
 import FootballSkin from "@/components/FootballSkin";
 import GenericEventSkin from "@/components/GenericEventSkin";
+import ScanArtworkProvider from "@/components/ScanArtworkProvider";
+import { normalizeScanArtwork } from "@/lib/ocr/scan-artwork-state";
+import { personalizedScanTitle, resolveSavedScanPersonalization, resolveSavedScanPresentation } from "@/lib/ocr/personalization";
 import GraduationSkin from "@/components/GraduationSkin";
 import { isGymMeetTemplateId } from "@/components/football-season-templates/registry";
 import LocationLink from "@/components/LocationLink";
@@ -273,6 +277,10 @@ function sanitizeScannedOcrDisplayTitle(value: string, data: Record<string, unkn
   const createdVia = typeof data.createdVia === "string" ? data.createdVia : "";
   const isOcr = createdVia.startsWith("ocr") || Boolean(data.ocrFacts) || Boolean(data.scan);
   if (!isOcr) return value;
+  const personal = resolveSavedScanPersonalization(data, value);
+  if (personal?.medical && personal.personFirstName && !value.toLowerCase().includes(personal.personFirstName.toLowerCase())) {
+    return personalizedScanTitle(value, personal);
+  }
   const parts = value
     .split(/\s+[—–-]\s+/)
     .map((part) => part.trim())
@@ -1158,6 +1166,10 @@ export default async function EventPage({
     return typeof row.data === "object" ? (row.data as any) : {};
   })();
   const title = sanitizeScannedOcrDisplayTitle(row.title as string, data);
+  const scanMediaPolicy = resolveScanMediaPolicy(data, title);
+  const scanOriginal = scanMediaPolicy && data.attachment && (!scanMediaPolicy.medical || isOwner)
+    ? { name: String(data.attachment.name || "Original document"), viewUrl: `/api/events/${row.id}/original`, displayUrl: `/api/events/${row.id}/original?display=1`, downloadUrl: `/api/events/${row.id}/original?download=1`, ownerOnly: scanMediaPolicy.medical }
+    : null;
   const media = row.media;
   const buildMediaUrl = (
     variant?: "thumbnail" | "attachment" | "profile" | "hero" | "signup-header",
@@ -1257,7 +1269,24 @@ export default async function EventPage({
           category={typeof (data as any)?.category === "string" ? (data as any).category : null}
         />
       ) : null}
-      {children}
+      <ScanArtworkProvider
+        eventId={row.id}
+        initialArtwork={normalizeScanArtwork(data.scanArtwork)}
+        canManage={isOwner}
+        available={Boolean(resolveSavedScanPersonalization(data, title))}
+        policy={scanMediaPolicy}
+        original={scanOriginal}
+        originalPlacement={isValidElement(children) && (
+          children.type === GenericEventSkin || children.type === BirthdaySkin ||
+          children.type === ScannedWeddingInviteView || children.type === OpenHouseSkin ||
+          children.type === BabyShowerSkin || children.type === GraduationSkin ||
+          children.type === BasketballSkin || children.type === FootballSkin ||
+          children.type === PickleballSkin
+        ) ? "before-footer" : "after-content"}
+      >
+        {scanMediaPolicy && isValidElement<{ imageUrl?: string | null }>(children) && "imageUrl" in children.props && (scanMediaPolicy.heroMode === "generated" || scanMediaPolicy.medical)
+          ? cloneElement(children, { imageUrl: generatedScanHero(data) }) : children}
+      </ScanArtworkProvider>
     </EventPageBackgroundStyle>
   );
 
@@ -1502,7 +1531,7 @@ export default async function EventPage({
         );
     return { name, type, dataUrl: previewUrl };
   })();
-  const categoryRaw = typeof data?.category === "string" ? data.category : "";
+  const categoryRaw = resolveSavedScanPresentation(data, title).category || "";
   const categoryNormalized = categoryRaw.toLowerCase();
   const isBabyShowerCategory =
     categoryNormalized === "baby showers" || categoryNormalized === "baby shower";
@@ -2227,18 +2256,21 @@ export default async function EventPage({
 
   if (
     isOwner &&
-    createdParam &&
-    (calendarSetupProvider ||
+    (createdParam || /^ocr(?:-|$)/.test(String(data.createdVia || ""))) &&
+    (calendarSetupProvider || /^ocr(?:-|$)/.test(String(data.createdVia || "")) ||
       calendarSyncNoticeStatus === "needs_reconnect" ||
       calendarSyncNoticeStatus === "failed" ||
       (calendarSyncNoticeStatus === "needs_connection" && calendarLinks))
   ) {
     calendarConnectionNotice = (
       <FirstScanCalendarPrompt
+        key={row.id}
         userId={userId || "signed-in-owner"}
         eventId={row.id}
         returnPath={ownerEventHref}
         syncStatus={calendarSyncNoticeStatus}
+        backgroundSync={!calendarSetupProvider && /^ocr(?:-|$)/.test(String(data.createdVia || ""))}
+        announceSyncCompletion={createdParam}
         syncProvider={
           calendarSyncProvider === "google" || calendarSyncProvider === "microsoft"
             ? calendarSyncProvider
@@ -3303,6 +3335,9 @@ export default async function EventPage({
     const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, categoryRaw, undefined, {
       title,
     });
+    const savedScanDetailCopy = [data.goodToKnow, data.thingsToDo, data.description]
+      .find((value): value is string => typeof value === "string" && Boolean(value.trim()))
+      ?.replaceAll(row.title, title) || null;
     return renderWithEventPageBackground(
       <GenericEventSkin
         eventId={row.id}
@@ -3324,12 +3359,7 @@ export default async function EventPage({
         rsvpUrl={publicRsvpUrl}
         rsvpSenderName={userName || null}
         rsvpSenderEmail={sessionEmail}
-        detailCopy={
-          (typeof data?.goodToKnow === "string" && data.goodToKnow.trim()) ||
-          (typeof data?.thingsToDo === "string" && data.thingsToDo.trim()) ||
-          (typeof data?.description === "string" && data.description.trim()) ||
-          null
-        }
+        detailCopy={savedScanDetailCopy}
         activities={
           Array.isArray((data as any)?.activities)
             ? ((data as any).activities as unknown[])

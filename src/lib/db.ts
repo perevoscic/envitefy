@@ -1,4 +1,8 @@
 import { canReadEventDraft } from "@/lib/event-draft-access";
+import { resolveScanMediaPolicy, withoutMedicalSourceMedia } from "@/lib/ocr/scan-media";
+import { resolveSavedScanPersonalization } from "@/lib/ocr/personalization";
+import { withMissingContactNumbers } from "@/lib/ocr/contact-numbers";
+import { normalizeOcrFacts } from "@/lib/ocr/facts";
 import { scanCounterUpdates } from "@/lib/scan-counters";
 import {
   createHash,
@@ -720,7 +724,7 @@ export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
         coalesce(sum(case when lower(data->>'category') like '%wedding%' then 1 else 0 end), 0)::text as events_weddings,
         coalesce(sum(case when lower(data->>'category') like '%sport%' then 1 else 0 end), 0)::text as events_sport_events,
         coalesce(sum(case when lower(data->>'category') = 'appointments' or lower(data->>'category') like '%appointment%' then 1 else 0 end), 0)::text as events_appointments,
-        coalesce(sum(case when lower(data->>'category') like '%doctor%' then 1 else 0 end), 0)::text as events_doctor_appointments,
+        coalesce(sum(case when (lower(data->>'category') like '%doctor%' or lower(data->>'category') like '%medical%') then 1 else 0 end), 0)::text as events_doctor_appointments,
         coalesce(sum(case when lower(data->>'category') like '%play%' then 1 else 0 end), 0)::text as events_play_days,
         coalesce(sum(case when lower(data->>'category') like '%general%' then 1 else 0 end), 0)::text as events_general_events,
         coalesce(sum(case when lower(data->>'category') like '%car%' or lower(data->>'category') like '%pool%' then 1 else 0 end), 0)::text as events_car_pool
@@ -1831,6 +1835,15 @@ async function withStatementTimeout<T>(
   });
 }
 
+function buildScanPatientFactsSql(dataSql: string): string {
+  // Lists need the patient name for the title, not DOB, identifiers or the source document.
+  return `(select coalesce(jsonb_agg(fact), '[]'::jsonb)
+    from jsonb_array_elements(case
+      when jsonb_typeof(${dataSql}->'ocrFacts') = 'array' then ${dataSql}->'ocrFacts'
+      else '[]'::jsonb end) as fact
+    where lower(trim(fact->>'label')) in ('patient', 'patient name'))`;
+}
+
 function buildHistoryDataProjectionSql(params: {
   view: HistoryView;
   dataSql: string;
@@ -1866,6 +1879,11 @@ function buildHistoryDataProjectionSql(params: {
   if (view === "sidebar") {
     return `jsonb_build_object(
       'category', ${categorySql},
+      'scanPersonalization', ${dataSql}->'scanPersonalization',
+      'scanArtwork', ${dataSql}->'scanArtwork',
+      'scanSourceKind', ${dataSql}->'scanSourceKind',
+      'scanHeroMode', ${dataSql}->'scanHeroMode',
+      'ocrFacts', ${buildScanPatientFactsSql(dataSql)},
       'shared', ${sharedSql},
       'sharedOut', ${sharedOutSql},
       'ownership', ${ownershipSql},
@@ -2078,6 +2096,11 @@ function _buildDashboardDataProjectionSql(
   shareStatusSql: string,
 ): string {
   return `jsonb_build_object(
+    'scanPersonalization', ${dataSql}->'scanPersonalization',
+    'scanArtwork', ${dataSql}->'scanArtwork',
+    'scanSourceKind', ${dataSql}->'scanSourceKind',
+    'scanHeroMode', ${dataSql}->'scanHeroMode',
+    'ocrFacts', ${buildScanPatientFactsSql(dataSql)},
     'startAt', ${dataSql}->'startAt',
     'startISO', ${dataSql}->'startISO',
     'start', ${dataSql}->'start',
@@ -2163,6 +2186,11 @@ function _buildDashboardDataProjectionSql(
 }
 
 type DashboardProjectionQueryRow = {
+  scan_personalization: unknown;
+  scan_artwork: unknown;
+  scan_source_kind: unknown;
+  scan_hero_mode: unknown;
+  patient_facts: unknown;
   template_editor: { category: string; templateId: string } | null;
   id: string;
   user_id?: string | null;
@@ -2225,6 +2253,11 @@ type DashboardProjectionQueryRow = {
 };
 
 type SidebarProjectionQueryRow = {
+  scan_personalization: unknown;
+  scan_artwork: unknown;
+  scan_source_kind: unknown;
+  scan_hero_mode: unknown;
+  patient_facts: unknown;
   template_editor: { category: string; templateId: string } | null;
   id: string;
   user_id?: string | null;
@@ -2295,6 +2328,11 @@ function mapDashboardProjectionRowToEventHistoryRow(
     public_slug: row.public_slug || null,
     created_at: row.created_at || undefined,
     data: {
+      scanPersonalization: row.scan_personalization ?? null,
+      scanArtwork: row.scan_artwork ?? null,
+      scanSourceKind: row.scan_source_kind ?? null,
+      scanHeroMode: row.scan_hero_mode ?? null,
+      ocrFacts: row.patient_facts ?? [],
       startAt: row.start_at ?? null,
       startISO: row.start_iso ?? null,
       start: row.start ?? null,
@@ -2367,6 +2405,11 @@ function mapSidebarProjectionRowToEventHistoryRow(row: SidebarProjectionQueryRow
     public_slug: row.public_slug || null,
     created_at: row.created_at || undefined,
     data: {
+      scanPersonalization: row.scan_personalization ?? null,
+      scanArtwork: row.scan_artwork ?? null,
+      scanSourceKind: row.scan_source_kind ?? null,
+      scanHeroMode: row.scan_hero_mode ?? null,
+      ocrFacts: row.patient_facts ?? [],
       category: row.category ?? null,
       shared: Boolean(row.shared),
       sharedOut: Boolean(row.shared_out),
@@ -2507,6 +2550,11 @@ async function listProjectedDashboardHistoryRowsByIds(
        eh.title,
        eh.public_slug,
        eh.created_at,
+       eh.data->'scanPersonalization' as scan_personalization,
+       eh.data->'scanArtwork' as scan_artwork,
+       eh.data->'scanSourceKind' as scan_source_kind,
+       eh.data->'scanHeroMode' as scan_hero_mode,
+       ${buildScanPatientFactsSql("eh.data")} as patient_facts,
        coalesce(eh.data, '{}'::jsonb)->'startAt' as start_at,
        coalesce(eh.data, '{}'::jsonb)->'startISO' as start_iso,
        coalesce(eh.data, '{}'::jsonb)->'start' as start,
@@ -2630,6 +2678,11 @@ async function listProjectedSidebarHistoryRowsByIds(
        eh.title,
        eh.public_slug,
        eh.created_at,
+       eh.data->'scanPersonalization' as scan_personalization,
+       eh.data->'scanArtwork' as scan_artwork,
+       eh.data->'scanSourceKind' as scan_source_kind,
+       eh.data->'scanHeroMode' as scan_hero_mode,
+       ${buildScanPatientFactsSql("eh.data")} as patient_facts,
        case
          when r.requested_shared then to_jsonb('Shared events'::text)
          else coalesce(eh.data, '{}'::jsonb)->'category'
@@ -3272,7 +3325,18 @@ export async function getEventHistoryPublicRenderById(
      limit 1`,
     [id, viewerId || null],
   );
-  return mapEventHistoryPublicRow(res.rows[0]);
+  const publicRow = mapEventHistoryPublicRow(res.rows[0]);
+  if (publicRow && resolveScanMediaPolicy(slugReadyRow.data, slugReadyRow.title)?.medical) {
+    publicRow.data.ocrFacts = withMissingContactNumbers(
+      normalizeOcrFacts(publicRow.data.ocrFacts),
+      typeof slugReadyRow.data.ocrText === "string" ? slugReadyRow.data.ocrText : "",
+    );
+  }
+  if (publicRow && (!viewerId || viewerId !== publicRow.user_id) && resolveScanMediaPolicy(slugReadyRow.data, slugReadyRow.title)?.medical) {
+    publicRow.data = withoutMedicalSourceMedia({ ...publicRow.data, scanPersonalization: resolveSavedScanPersonalization(slugReadyRow.data, slugReadyRow.title) }, slugReadyRow.title);
+    publicRow.media = { ...publicRow.media, thumbnailInline: false, attachmentInline: false, heroImageInline: false, customHeroImageInline: false, profileImageInline: false, signupHeaderInline: false };
+  }
+  return publicRow;
 }
 
 export async function updateEventHistoryTitle(

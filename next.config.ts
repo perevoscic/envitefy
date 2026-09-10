@@ -28,6 +28,10 @@ const nextConfig = (phase: string): NextConfig => ({
   ...(phase === PHASE_DEVELOPMENT_SERVER ? {} : { output: "standalone" }),
   outputFileTracingRoot: process.cwd(),
   outputFileTracingIncludes: {
+    "/api/history": ["./node_modules/ffmpeg-static/ffmpeg*"],
+    "/api/scan/event-page": ["./node_modules/ffmpeg-static/ffmpeg*"],
+    "/api/events/*/scan-artwork": ["./node_modules/ffmpeg-static/ffmpeg*"],
+    "/api/events/*/original": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/*": [
       "./public/fonts/Josefin_Sans/static/JosefinSans-Regular.ttf",
       "./node_modules/@napi-rs/canvas/**/*",
@@ -48,6 +52,7 @@ const nextConfig = (phase: string): NextConfig => ({
     "pdfjs-dist",
     "googleapis",
     "sharp",
+    "ffmpeg-static",
     "@aws-sdk/client-sesv2",
   ],
 

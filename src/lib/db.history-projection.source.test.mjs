@@ -5,7 +5,7 @@ import test from "node:test";
 
 const repoRoot = process.cwd();
 
-const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
+const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8").replace(/\r\n/g, "\n");
 
 test("sidebar history projections preserve product routing fields for My Events", () => {
   const source = readSource("src/lib/db.ts");

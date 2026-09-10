@@ -1,3 +1,5 @@
+import { buildScanPersonalization, resolveSavedScanPresentation } from "../lib/ocr/personalization.ts";
+
 export type CalendarProviderKey = "google" | "microsoft" | "apple";
 
 export type SidebarPage =
@@ -136,7 +138,7 @@ export const CATEGORY_DEFAULT_COLOR_MAP: Record<string, string> = {
   "Open House": "teal",
   "Car Pool": "cyan",
   "Play Days": "lime",
-  "Doctor Appointments": "rose",
+  "Medical Appointments": "rose",
   Meetings: "sky",
   Education: "teal",
   Concerts: "blue",
@@ -222,8 +224,8 @@ const CATEGORY_LABEL_OVERRIDES: Record<string, string> = {
   general_event: "General Event",
   workshop_class: "Workshop / Class",
   gender_reveal: "Gender Reveal",
-  dr_appointment: "Doctor Appointments",
-  doctor_appointment: "Doctor Appointments",
+  dr_appointment: "Medical Appointments",
+  doctor_appointment: "Medical Appointments",
   special_event: "Special Events",
   open_house: "Open House",
   "open-house": "Open House",
@@ -258,7 +260,7 @@ export function createSidebarIconLookup(icons: Record<string, any>) {
     "Dance / Ballet": icons.Footprints,
     Soccer: icons.Trophy,
     "Sport Events": icons.Trophy,
-    "Doctor Appointments": icons.Stethoscope,
+    "Medical Appointments": icons.Stethoscope,
     "Workshops / Classes": icons.GraduationCap,
     "Workshop / Class": icons.GraduationCap,
     "General Events": icons.CalendarDays,
@@ -308,7 +310,7 @@ export function normalizeCategoryLabel(raw: string | null | undefined): string |
     /^(doctor|dr|medical|dental)\s*appointment(s)?$/.test(lowered) ||
     /\b(doctor|dr|medical|dental)\b.*\bappointment(s)?\b/.test(lowered)
   ) {
-    return "Doctor Appointments";
+    return "Medical Appointments";
   }
   if (/^appointment(s)?$/.test(lowered)) return "Appointments";
   if (/gymnastic(s)?/.test(lowered)) return "Gymnastics";
@@ -344,8 +346,8 @@ export function guessCategoryFromText(text: string): string | null {
   if (/\b(baby[-\s]?shower|sprinkle)\b/.test(source)) {
     return "Baby Showers";
   }
-  if (/doctor|dentist|appointment|check[- ]?up|clinic/.test(source)) {
-    return "Doctor Appointments";
+  if (buildScanPersonalization({ sourceText: source }).medical || /doctor|dentist|clinic/.test(source)) {
+    return "Medical Appointments";
   }
   if (/game|match|vs\.|at\s+[A-Z]|tournament|championship|league/.test(source)) {
     return "Sport Events";
@@ -935,8 +937,9 @@ export function buildGroupedEventLists(args: {
 
     const targetList: EventListPage = "myEvents";
     const isDraft = String(data?.status || "").toLowerCase() === "draft";
+    const presentation = resolveSavedScanPresentation(data, row.title || "");
     const normalizedCategoryRaw = normalizeCategoryLabel(
-      (data?.category as string | null) ||
+      presentation.category ||
         guessCategoryFromText(`${row.title || ""} ${String(data?.description || "")}`),
     );
     const normalizedCategory =
@@ -992,7 +995,7 @@ export function buildGroupedEventLists(args: {
       isInvited,
       openMode,
       showQuickActions: isInvited || isSnappedOrUploaded,
-      title: row.title || "Untitled event",
+      title: presentation.title || "Untitled event",
       dateLabel,
       dateMs,
       shareStatus,

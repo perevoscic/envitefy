@@ -78,6 +78,7 @@ export function MainContentWrapper({
         paddingTop,
         paddingBottom: "max(0px, env(safe-area-inset-bottom))",
         paddingLeft,
+        ["--event-background-left" as string]: backgroundLeft,
         transition: "padding-left 200ms ease-out",
         ...(isEventSharePage ? { [EVENT_SKIN_TOP_OFFSET_VAR]: eventSkinTopOffset } : null),
       }}

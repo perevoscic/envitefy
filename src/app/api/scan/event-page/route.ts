@@ -1,10 +1,14 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
+import { prepareSavedScanDisplay } from "@/lib/ocr/original-display-state";
+import { generateSavedScanArtwork, prepareSavedScanArtwork } from "@/lib/ocr/scan-artwork";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { insertEventHistory } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { processPublicUpload } from "@/lib/media-upload";
+import { processPrivateScanUpload } from "@/lib/ocr/private-original";
+import { buildScanPersonalization } from "@/lib/ocr/personalization";
 import { normalizeOcrLocationFields } from "@/lib/ocr/field-normalization";
 import { handleOcrRequest } from "@/lib/ocr/pipeline";
 import { enrichOcrVenueAddress } from "@/lib/ocr/place-enrichment";
@@ -18,7 +22,7 @@ import { buildEventPath } from "@/utils/event-url";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 function jsonError(error: string, status = 400) {
   return NextResponse.json({ ok: false, error }, { status });
@@ -120,7 +124,7 @@ export async function POST(request: Request) {
 
     const ocr = await runScanOcr({ requestUrl: request.url, file, scanAttemptId });
     if (!ocr.ok) return ocr.response;
-    scanAttemptId = normalizeScanAttemptId(ocr.payload.scanAttemptId) || scanAttemptId;
+    scanAttemptId = normalizeScanAttemptId(ocr.payload.scanAttemptId ?? null) || scanAttemptId;
     const { fieldsGuess, context: locationContext } = buildOcrLocationContext(ocr.payload);
     const normalizedLocation = normalizeOcrLocationFields({
       venue: fieldsGuess.venue,
@@ -137,7 +141,9 @@ export async function POST(request: Request) {
       context: locationContext,
     });
 
-    const media = await processPublicUpload({
+    const medical = buildScanPersonalization({ title: String(fieldsGuess.title || ""), category: String(ocr.payload.category || ""), sourceText: ocr.payload.ocrText || "" }).medical;
+    if (medical && !userId) return jsonError("Sign in to save a private medical document", 401);
+    const media = medical && userId ? await processPrivateScanUpload(file, userId) : await processPublicUpload({
       file,
       usage: "attachment",
       scanAttemptId,
@@ -150,10 +156,17 @@ export async function POST(request: Request) {
       source,
       locationEnrichment,
     });
+    const needsScanArtwork = userId ? prepareSavedScanArtwork(payload.data) : false;
+    const needsScanDisplay = userId ? prepareSavedScanDisplay(payload.data) : false;
     const row = await insertEventHistory({
       userId: userId || null,
       title: payload.title,
       data: payload.data,
+    });
+    if (needsScanArtwork && userId) after(() => generateSavedScanArtwork(row.id, userId));
+    if (needsScanDisplay && userId) after(async () => {
+      const { generateSavedScanDisplay } = await import("@/lib/ocr/original-display");
+      await generateSavedScanDisplay(row.id, userId);
     });
 
     if (scanAttemptId) {

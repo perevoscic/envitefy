@@ -8,6 +8,20 @@ import {
   normalizeOcrFacts,
 } from "./facts.ts";
 
+test("medical detail cards retain their roles even when the values are rendered elsewhere", () => {
+  const facts = [
+    { label: "Patient", value: "Maya Sample" },
+    { label: "Patient ID", value: "TEST-123" },
+    { label: "Clinician", value: "Jane Example, PA" },
+    { label: "Fax", value: "(555) 010-0101" },
+    { label: "Appointment provider", value: "Sample Clinic" },
+  ];
+  assert.deepEqual(filterRenderedOcrFacts(facts, facts.map((fact) => fact.value)), facts);
+  assert.deepEqual(filterRenderedOcrFacts([
+    { label: "Details", value: "Sample Clinic" },
+  ], ["Sample Clinic"]), []);
+});
+
 test("normalizeOcrFacts keeps abbreviated host names intact", () => {
   const facts = normalizeOcrFacts([
     { label: "Host", value: "U.S. Gold Gymnastics" },

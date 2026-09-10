@@ -9,7 +9,7 @@ const EVENT_TYPE_LABELS = {
   scans_weddings: "Weddings",
   scans_sport_events: "Sports",
   scans_appointments: "Appointments",
-  scans_doctor_appointments: "Doctor",
+  scans_doctor_appointments: "Medical",
   scans_play_days: "Play days",
   scans_general_events: "General",
   scans_car_pool: "Car pool",

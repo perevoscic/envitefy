@@ -62,6 +62,8 @@ test("dashboard prepares oversized image scans before OCR upload", () => {
 
   assert.match(source, /prepareOcrUploadFile/);
   assert.match(source, /const preparedUpload = await prepareOcrUploadFile\(incoming\);/);
+  assert.match(source, /setUploadedFile\(incoming\)/);
+  assert.match(source, /sourceFile: incoming/);
   assert.match(source, /form\.append\("file", fileToUpload\);/);
   assert.match(uploadClient, /LIVE_MULTIPART_IMAGE_TARGET_BYTES = 3\.75 \* 1024 \* 1024/);
   assert.match(uploadClient, /preparePickedImage\(file, step\)/);

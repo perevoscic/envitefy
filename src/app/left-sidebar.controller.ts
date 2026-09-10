@@ -41,7 +41,7 @@ import {
   SIDEBAR_WIDTH_REM,
   SidebarPage,
 } from "./left-sidebar.model";
-import type { EventContextTab } from "./sidebar-context";
+import type { EventContextTab, EventRouteAlias } from "./sidebar-context";
 
 const MOBILE_SIDEBAR_SCROLL_LOCK_CLASS = "sidebar-mobile-open";
 const CREATED_EVENT_CONTEXT_STORAGE_KEY = "envitefy:created-event-context:v1";
@@ -81,6 +81,7 @@ type LeftSidebarControllerArgs = {
   };
   historySidebarItems: HistoryRow[];
   sidebar: {
+    eventRouteAlias: EventRouteAlias | null;
     isCollapsed: boolean;
     setIsCollapsed: (value: boolean) => void;
     selectedEventId: string | null;
@@ -301,6 +302,7 @@ export function useLeftSidebarController({
   } = menu;
   const {
     isCollapsed,
+    eventRouteAlias,
     setIsCollapsed,
     selectedEventId,
     setSelectedEventId,
@@ -1287,7 +1289,11 @@ export function useLeftSidebarController({
 
   const findEventListItemFromPath = useCallback(
     (currentPath: string | null): InferredEventListItem | null => {
-      const routePath = String(currentPath || "").trim();
+      const requestedPath = String(currentPath || "").trim();
+      const routePath =
+        eventRouteAlias?.pathname === requestedPath
+          ? readPathnameFromHref(eventRouteAlias.eventHref)
+          : requestedPath;
       if (
         !routePath ||
         (!routePath.startsWith("/event/") && !routePath.startsWith("/smart-signup-form/"))
@@ -1321,6 +1327,7 @@ export function useLeftSidebarController({
       return null;
     },
     [
+      eventRouteAlias,
       invitedEventsGrouped.past,
       invitedEventsGrouped.upcoming,
       myEventsGrouped.past,

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { processPublicUpload } from "@/lib/media-upload";
 import { isUploadUsage } from "@/lib/upload-config";
+import { getServerSession } from "next-auth";
+import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { processPrivateScanUpload } from "@/lib/ocr/private-original";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,6 +30,11 @@ export async function POST(request: Request) {
       return badRequest('Invalid usage. Expected "attachment" or "header".');
     }
 
+    if (formData.get("privateScan") === "true") {
+      const userId = await resolveSessionUserId(await getServerSession(authOptions));
+      if (!userId) return badRequest("Sign in to save a private document", 401);
+      return NextResponse.json(await processPrivateScanUpload(file, userId));
+    }
     const response = await processPublicUpload({
       file,
       usage: usageRaw,

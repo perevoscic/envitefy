@@ -1,3 +1,5 @@
+import { contactNumberLabel } from "./contact-numbers.ts";
+
 export type OcrFact = {
   label: string;
   value: string;
@@ -53,6 +55,8 @@ const DUPLICATE_STOP_WORDS = new Set([
 ]);
 
 const SEMANTIC_TIMING_FACT_LABELS = /^(?:check[-\s]?in|games?\s+start)$/i;
+const SEMANTIC_APPOINTMENT_FACT_LABELS =
+  /^(?:patient(?:\s+(?:name|id|identifier|number))?|clinician|appointment\s+provider|fax)$/i;
 const REGISTRY_FACT_LABEL =
   /\b(?:gift\s*(?:list|registry)|registry|registries|wishlist|wish\s*list)\b/i;
 const REGISTRY_FACT_VALUE =
@@ -89,6 +93,8 @@ function stripFactLabelPrefix(label: string, value: string): string {
 
 function normalizeFactLabel(label: string, value: string): string {
   const normalizedLabel = cleanText(label) || "Details";
+  const contactLabel = contactNumberLabel(normalizedLabel);
+  if (contactLabel) return contactLabel;
   const combined = `${normalizedLabel} ${value}`.toLowerCase();
   if (
     /\b(?:entry\s+fee|registration\s+fee|admission|cost|fee)\b/.test(combined) ||
@@ -220,7 +226,7 @@ export function mergeOcrFacts(...groups: Array<OcrFact[] | null | undefined>): O
         !key ||
         !canonicalValue ||
         seen.has(key) ||
-        seenValues.some((seenValue) => isNearDuplicateValue(canonicalValue, seenValue))
+        (!contactNumberLabel(label) && seenValues.some((seenValue) => isNearDuplicateValue(canonicalValue, seenValue)))
       ) {
         continue;
       }
@@ -257,11 +263,15 @@ export function filterRenderedOcrFacts(
   const seenValues: string[] = [];
   return (facts || []).filter((fact) => {
     const value = valueKey(fact.value);
+    if (value && contactNumberLabel(fact.label)) return true;
     if (!value || seenValues.some((seenValue) => isNearDuplicateValue(value, seenValue))) {
       return false;
     }
     seenValues.push(value);
     if (SEMANTIC_TIMING_FACT_LABELS.test(cleanText(fact.label))) return true;
+    // These labels explain each person's role and each contact's purpose even
+    // when their values also appear in the heading, venue or preparation notes.
+    if (SEMANTIC_APPOINTMENT_FACT_LABELS.test(cleanText(fact.label))) return true;
     return !rendered.some((renderedValue) => isNearDuplicateValue(value, renderedValue));
   });
 }

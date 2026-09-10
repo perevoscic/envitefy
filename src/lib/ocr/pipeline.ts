@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 import { normalizeBirthdayTemplateHint } from "@/lib/birthday-ocr-template";
 import { corsJson } from "@/lib/cors";
 import { resolveOcrBirthdayTitle } from "@/lib/ocr/birthday-age";
+import { buildScanPersonalization, personalizedScanTitle, withoutMedicalIdentityLines } from "@/lib/ocr/personalization";
 import {
   clampTimeoutMs,
   OCR_SKIN_TIMEOUT_MS,
@@ -665,7 +666,7 @@ export async function handleOcrRequest(request: Request) {
     const title = pickTitle(lines, raw);
     const rawHasExplicitTime = hasExplicitTimeText(raw);
 
-    const parsed = chrono.parse(raw, new Date(), { forwardDate: true });
+    const parsed = chrono.parse(withoutMedicalIdentityLines(raw), new Date(), { forwardDate: true });
     const timeLike = /\b(\d{1,2}(:\d{2})?\s?(am|pm))\b/i;
     const rangeLike =
       /\b(\d{1,2}(:\d{2})?\s?(am|pm))\b\s*[-–—]\s*\b(\d{1,2}(:\d{2})?\s?(am|pm))\b/i;
@@ -1019,9 +1020,7 @@ export async function handleOcrRequest(request: Request) {
       finalTitle = finalTitle.replace(/__AGE__(\d+)(st|nd|rd|th)__/gi, ageOrdinal);
     }
 
-    const isMedicalAppointment =
-      /(appointment|appt)/i.test(raw) &&
-      /(doctor|dr\.|dentist|dental|clinic|hospital|ascension|sacred\s*heart)/i.test(raw);
+    const isMedicalAppointment = buildScanPersonalization({ title: finalTitle, sourceText: raw }).medical;
 
     if (isMedicalAppointment) {
       const appIdx = lines.findIndex((line) => /^\s*appointment\s*$/i.test(line));
@@ -1542,8 +1541,20 @@ export async function handleOcrRequest(request: Request) {
       rsvpDeadline: deferredRsvpDeadline,
       sourceText: raw,
     });
+    const scanPersonalization = buildScanPersonalization({
+      title: finalTitle,
+      category: llmImage?.category,
+      sourceText: raw,
+      start: toLocalNoZ(finalStart),
+      personName: llmImage?.personName || llmImage?.birthdayName,
+      personBirthDate: llmImage?.personBirthDate,
+      personAge: llmImage?.personAge ?? llmImage?.birthdayAge,
+    });
+    finalTitle = personalizedScanTitle(finalTitle, scanPersonalization);
     const fieldsGuess = {
       title: finalTitle,
+      scanPersonalization,
+      scanSourceKind: llmImage?.scanSourceKind || "unknown",
       start: toLocalNoZ(finalStart),
       end: toLocalNoZ(finalEnd),
       timeFound: rawHasExplicitTime || parsedHadExplicitTime,

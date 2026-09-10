@@ -3,6 +3,7 @@ import { multipartFormRequestOptions, type Uploadable } from "openai/core";
 import type { Stream } from "openai/streaming";
 
 export type ImageGenerationOptions = {
+  size?: "1024x1024" | "1536x1024" | "1024x1536" | "auto";
   onPartialImage?: (imageDataUrl: string) => void;
   signal?: AbortSignal;
 };

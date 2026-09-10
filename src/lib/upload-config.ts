@@ -1,4 +1,5 @@
 import { sanitizePersistedMediaUrl } from "./public-asset-url.ts";
+import { generatedScanHero, resolveScanMediaPolicy } from "./ocr/scan-media.ts";
 
 export const IMAGE_UPLOAD_MIME_TYPES = [
   "image/jpeg",
@@ -92,7 +93,7 @@ export type UploadResponse = {
       thumbnailHeight?: number;
       thumbnailMimeType?: "image/webp";
       thumbnailSizeBytes?: number;
-      storageKind: "blob";
+      storageKind: "blob" | "encrypted-blob";
       optimizedFromMimeType?: string;
       originalName?: string;
       originalType?: string;
@@ -211,6 +212,8 @@ export function resolveAttachmentPreviewUrl(
     return sanitizePersistedMediaUrl(fallbackThumbnail);
   }
 
+  if (attachment.storageKind === "encrypted-blob") return null;
+
   const type = String(attachment.type || "").trim().toLowerCase();
   const dataUrl = typeof attachment.dataUrl === "string" ? attachment.dataUrl : null;
   const previewImageUrl =
@@ -229,6 +232,8 @@ export function resolveAttachmentPreviewUrl(
 
 export function resolveCoverImageUrlFromEventData(data: Record<string, any> | null | undefined): string | null {
   if (!data || typeof data !== "object") return null;
+  const scanPolicy = resolveScanMediaPolicy(data, String(data.title || ""));
+  if (scanPolicy && (scanPolicy.heroMode === "generated" || scanPolicy.medical)) return generatedScanHero(data);
 
   const explicitCover =
     typeof data.coverImageUrl === "string" && data.coverImageUrl.trim() ? data.coverImageUrl : null;

@@ -342,8 +342,8 @@ async function handleLegacyIngest(request: Request) {
           fullText,
         );
       const hasAppt = /(appointment|appt)/i.test(fullText);
-      if (isDoctorLike && hasAppt) return "Doctor Appointments";
-      if (isDoctorLike) return "Doctor Appointments";
+      if (isDoctorLike && hasAppt) return "Medical Appointments";
+      if (isDoctorLike) return "Medical Appointments";
       if (hasAppt) return "Appointments";
       if (
         /(schedule|game|vs\.|tournament|league)/i.test(fullText) &&

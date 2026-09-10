@@ -148,9 +148,14 @@ test("cleanGraduationVenueName removes graduation honoree suffixes from venue-li
 });
 
 test("detectCategory recognizes medical and sports text", () => {
+  assert.equal(detectCategory("North Florida Surgeons\nEmerald ENT Estab Pt\nUpcoming Appointments"), "Medical Appointments");
+  assert.equal(detectCategory("Physical therapy appointment"), "Medical Appointments");
+  assert.equal(detectCategory("Haircut appointment"), "Appointments");
+  assert.equal(detectCategory("Car service appointment"), "Appointments");
+  assert.equal(detectCategory("Parent-teacher appointment"), "Appointments");
   assert.equal(
     detectCategory("Dental cleaning appointment with Sacred Heart"),
-    "Doctor Appointments",
+    "Medical Appointments",
   );
   assert.equal(detectCategory("Volleyball practice schedule Monday 4:30"), "Sport Events");
   assert.equal(detectCategory("Basketball league game vs Central at 6 PM"), "Sport Events");
@@ -249,7 +254,7 @@ test("extractGuestAttendanceFactsFromFlyerText keeps sports eligibility and fee 
   assert.equal(facts, "All Skill Levels Welcome. Ages 16+. Free to Play");
 });
 
-test("extractCommonOcrFactsFromFlyerText keeps flyer facts but skips question footer", () => {
+test("extractCommonOcrFactsFromFlyerText keeps the contact number without question-footer prose", () => {
   const facts = extractCommonOcrFactsFromFlyerText(
     [
       "All Skill Levels Welcome",
@@ -261,6 +266,7 @@ test("extractCommonOcrFactsFromFlyerText keeps flyer facts but skips question fo
   );
 
   assert.deepEqual(facts, [
+    { label: "Phone", value: "(555) 014-2277" },
     { label: "Good to Know", value: "All Skill Levels Welcome" },
     { label: "Good to Know", value: "Ages 16+" },
     { label: "Good to Know", value: "Free to Play" },

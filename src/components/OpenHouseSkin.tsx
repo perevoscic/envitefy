@@ -27,6 +27,7 @@ import {
 } from "@/components/event-skin-layout";
 import OcrFactCards from "@/components/OcrFactCards";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
+import { ScanOriginalDocumentSection } from "@/components/ScanArtworkProvider";
 import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
 import { filterRenderedOcrFacts, normalizeOcrFacts, type OcrFact } from "@/lib/ocr/facts";
 import type { OcrSkinBackground } from "@/lib/ocr/skin-background";
@@ -576,6 +577,8 @@ export default function OpenHouseSkin({
             ) : null}
           </aside>
         </section>
+
+        <ScanOriginalDocumentSection />
 
         <div className={EVENT_SKIN_FOOTER_CLASS}>
           <div

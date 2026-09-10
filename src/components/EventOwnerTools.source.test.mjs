@@ -7,11 +7,11 @@ const repoRoot = process.cwd();
 
 const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
-test("owner workspace keeps public actions in the header and not duplicated under live product", () => {
+test("owner workspace keeps sharing in the header and previews from the card", () => {
   const source = readSource("src/components/EventOwnerTools.tsx");
   const globals = readSource("src/app/globals.css");
   const previewBlock = source.match(
-    /function EventProductPreview[\s\S]*?(?=\nfunction OwnerWorkspaceHeader)/,
+    /function EventProductPreview[\s\S]*?(?=\nfunction OwnerPreviewButton)/,
   );
   assert.ok(previewBlock, "expected EventProductPreview block");
 
@@ -25,7 +25,7 @@ test("owner workspace keeps public actions in the header and not duplicated unde
   assert.match(source, /flex flex-wrap items-center justify-between gap-3/);
   assert.match(source, /flex shrink-0 flex-wrap items-center justify-end gap-2/);
   assert.match(source, /aria-label="Share"/);
-  assert.match(source, /viewCurrentLabel=\{`View current \$\{productName\}`\}/);
+  assert.match(source, /previewLabel=\{`Preview \$\{productName\}`\}/);
   assert.match(source, /aria-label="Edit"/);
   assert.match(
     source,
@@ -35,7 +35,7 @@ test("owner workspace keeps public actions in the header and not duplicated unde
     source,
     /className="inline-flex h-10 w-10 items-center justify-center gap-0 rounded-full px-0 text-sm font-semibold text-slate-950/,
   );
-  assert.match(source, /<Eye size=\{20\}/);
+  assert.match(source, /<Eye size=\{24\}/);
   assert.match(source, /<Share2 size=\{21\}/);
   assert.match(
     source,
@@ -47,7 +47,7 @@ test("owner workspace keeps public actions in the header and not duplicated unde
   assert.match(source, /onCloseAutoFocus=/);
   assert.match(source, /preview=\{productViewerMode === "changes" \? effectivePreview : currentProduct\}/);
   assert.match(source, /<span className="hidden sm:inline">Share<\/span>/);
-  assert.match(source, /<span>\{viewCurrentLabel\}<\/span>/);
+  assert.doesNotMatch(source, /View current|viewCurrentLabel/);
   assert.doesNotMatch(source, /<span className="hidden sm:inline">Edit<\/span>/);
   const headerBlock = source.match(
     /function OwnerWorkspaceHeader[\s\S]*?(?=\nfunction OwnerTabContent)/,
@@ -57,6 +57,7 @@ test("owner workspace keeps public actions in the header and not duplicated unde
     headerBlock[0],
     /href=\{editHref\}[\s\S]*onClick=\{onShare\}[\s\S]*onClick=\{onViewCurrent\}/,
   );
+  assert.match(headerBlock[0], /<OwnerPreviewButton[\s\S]*lg:hidden/);
   assert.doesNotMatch(headerBlock[0], /rounded-2xl border border-slate-200 bg-white/);
   assert.doesNotMatch(headerBlock[0], /rounded-2xl bg-slate-950 text-white/);
   assert.doesNotMatch(headerBlock[0], /Edit card/);
@@ -67,9 +68,9 @@ test("owner workspace keeps public actions in the header and not duplicated unde
     source,
     /hidden min-w-0 lg:sticky lg:top-5 lg:flex lg:h-\[calc\(100dvh-2\.5rem\)\] lg:translate-x-6 lg:items-start lg:justify-end lg:self-start xl:translate-x-10/,
   );
-  assert.match(source, /className="mx-auto w-full max-w-\[430px\]"/);
-  assert.match(source, /heightMode="auto"/);
-  assert.match(source, /flex min-h-full items-center justify-center/);
+  assert.match(source, /className="mx-auto w-full"/);
+  assert.match(source, /heightMode="fullscreen"/);
+  assert.match(source, /flex items-center justify-center overflow-hidden outline-none/);
 
   assert.doesNotMatch(previewBlock[0], /onCopy/);
   assert.doesNotMatch(previewBlock[0], /onShare/);
@@ -79,9 +80,15 @@ test("owner workspace keeps public actions in the header and not duplicated unde
   assert.doesNotMatch(previewBlock[0], />\s*Share\s*</);
   assert.doesNotMatch(previewBlock[0], />\s*Live product\s*</);
   assert.match(previewBlock[0], /aria-label="Product preview"/);
+  assert.match(previewBlock[0], /topRightAction=\{previewAction\}/);
+  assert.match(previewBlock[0], /isStudioCard\s*\? "h-auto min-h-0"/);
+  assert.doesNotMatch(previewBlock[0], /!h-full|!aspect-auto/);
+  assert.doesNotMatch(previewBlock[0], /owner-workspace-glass/);
+  const frameSource = readSource("src/components/studio/SharedStudioCardPage.tsx");
+  assert.match(frameSource, /onShare=\{props\.topRightAction \? undefined : \(\) => void handleShare\(\)\}/);
   assert.match(previewBlock[0], /lg:h-\[min\(760px,calc\(100dvh-2\.5rem\)\)\]/);
-  assert.match(previewBlock[0], /heightMode\?: "fixed" \| "auto";/);
-  assert.match(previewBlock[0], /const autoHeight = heightMode === "auto";/);
+  assert.match(previewBlock[0], /heightMode\?: "fixed" \| "fullscreen";/);
+  assert.match(previewBlock[0], /const fullscreen = heightMode === "fullscreen";/);
   assert.match(previewBlock[0], /"flex h-full w-full items-center justify-center"/);
   assert.match(previewBlock[0], /"flex w-full items-center justify-center"/);
   assert.match(previewBlock[0], /!w-full !max-w-full !rounded-\[28px\]/);
@@ -267,8 +274,10 @@ test("owner Design tab previews card edits before saving them", () => {
   assert.match(source, /import OwnerPreviewMobileTopbarSuppressor/);
   assert.match(source, /productViewerMode !== null \? <OwnerPreviewMobileTopbarSuppressor \/> : null/);
   assert.match(source, /fixed inset-0 z-\[7001\]/);
-  assert.match(source, /"Back to editing" : "Back to dashboard"/);
-  assert.match(source, /<ArrowLeft size=\{20\}/);
+  assert.doesNotMatch(source, /Back to editing|Back to dashboard|The saved version your guests can open/);
+  assert.match(source, /<Dialog.Title className="sr-only">\{heading\}<\/Dialog.Title>/);
+  assert.match(source, /fixed inset-0 z-\[7000\] bg-slate-950/);
+  assert.match(source, /closeButtonPlacement="overlay"/);
   assert.match(source, /grid grid-cols-2 gap-3 md:grid-cols-3/);
   assert.match(source, /text-slate-500 md:col-span-3/);
   assert.match(source, /text-slate-500 md:col-span-2/);

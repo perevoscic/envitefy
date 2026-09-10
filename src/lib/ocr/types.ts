@@ -5,6 +5,11 @@ import type { ThumbnailFocus } from "@/lib/thumbnail-focus";
 export type EventOcrLlmResult = {
   sourceEvidence?: SourceEvidence;
   title?: string;
+  /** The patient, honoree, student or participant, never the provider/organizer. */
+  personName?: string | null;
+  personBirthDate?: string | null;
+  personAge?: number | null;
+  scanSourceKind?: "paperwork" | "designed" | "unknown";
   start?: string | null;
   end?: string | null;
   address?: string;

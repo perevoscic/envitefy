@@ -20,11 +20,8 @@ const ORIGINAL_IMAGE_QUALITY = process.env.STUDIO_OPENAI_IMAGE_QUALITY;
 const ORIGINAL_IMAGE_MODEL = process.env.STUDIO_OPENAI_IMAGE_MODEL;
 const ORIGINAL_IMAGE_EDIT_MODEL = process.env.STUDIO_OPENAI_IMAGE_EDIT_MODEL;
 
-const {
-  editInvitationImageWithOpenAi,
-  generateInvitationImageWithOpenAi,
-  openAiStudioDeps,
-} = await import("./openai.ts");
+const { editInvitationImageWithOpenAi, generateInvitationImageWithOpenAi, openAiStudioDeps } =
+  await import("./openai.ts");
 
 function restoreEnvValue(key, value) {
   if (typeof value === "undefined") {
@@ -100,9 +97,28 @@ test("OpenAI studio image edits default independently to gpt-image-2.5-flare", a
 
 test("explicit image quality override remains available", async () => {
   process.env.STUDIO_OPENAI_IMAGE_QUALITY = "medium";
-  mock.method(openAiStudioDeps, "getOpenAiClient", () => ({ images: { generate: async (request) => {
-    assert.equal(request.quality, "medium");
-    return { data: [{ b64_json: "VEVTVA==" }] };
-  } } }));
+  mock.method(openAiStudioDeps, "getOpenAiClient", () => ({
+    images: {
+      generate: async (request) => {
+        assert.equal(request.quality, "medium");
+        return { data: [{ b64_json: "VEVTVA==" }] };
+      },
+    },
+  }));
   assert.equal((await generateInvitationImageWithOpenAi("An invitation")).ok, true);
+});
+
+test("scan heroes request portrait dimensions without changing landscape page defaults", async () => {
+  const sizes = [];
+  mock.method(openAiStudioDeps, "getOpenAiClient", () => ({
+    images: {
+      generate: async (request) => {
+        sizes.push(request.size);
+        return { data: [{ b64_json: "VEVTVA==" }] };
+      },
+    },
+  }));
+  await generateInvitationImageWithOpenAi("Background", undefined, "event_page");
+  await generateInvitationImageWithOpenAi("Hero", undefined, "event_page", { size: "1024x1536" });
+  assert.deepEqual(sizes, ["1536x1024", "1024x1536"]);
 });

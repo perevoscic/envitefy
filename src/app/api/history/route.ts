@@ -2,9 +2,13 @@ import { updateSignupDefinition, SignupMutationError } from "@/lib/signup-mutati
 import { isEventDraft } from "@/lib/event-draft-access";
 import { isClientDraftId } from "@/lib/event-draft-access";
 import { createHash } from "node:crypto";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
+import { generateSavedScanArtwork, prepareSavedScanArtwork } from "@/lib/ocr/scan-artwork";
+import { prepareSavedScanDisplay } from "@/lib/ocr/original-display-state";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { absoluteUrl } from "@/lib/absolute-url";
+import { prepareScanCalendarSync, runSavedCalendarSync } from "@/lib/calendar-sync-background";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import {
   insertEventHistory,
@@ -298,6 +302,8 @@ export async function GET(req: Request) {
   }
 }
 
+export const maxDuration = 300;
+
 export async function POST(req: Request) {
   let scanAttemptId: string | null = null;
   try {
@@ -375,7 +381,25 @@ export async function POST(req: Request) {
       try { data.signupForm = updateSignupDefinition(null, data.signupForm, isEventDraft(data)); }
       catch (error) { if (error instanceof SignupMutationError) return NextResponse.json({ error: error.message }, { status: error.status }); throw error; }
     }
+    const needsScanArtwork = prepareSavedScanArtwork(data);
+    const needsScanDisplay = prepareSavedScanDisplay(data);
+    const needsCalendarSync = prepareScanCalendarSync(data, scanAttemptId);
+    const calendarOrigin = needsCalendarSync ? await absoluteUrl("/") : "";
     const row = await insertEventHistory({ userId, title, data, clientDraftId: body.clientDraftId });
+    if (needsCalendarSync) {
+      after(async () => {
+        try {
+          await runSavedCalendarSync({ eventId: row.id, userId, email: String(sessionUser.email || "").trim().toLowerCase(), origin: calendarOrigin });
+        } catch {
+          console.error("[calendar-sync] saved job deferred", { eventId: row.id });
+        }
+      });
+    }
+    if (needsScanArtwork) after(() => generateSavedScanArtwork(row.id, userId));
+    if (needsScanDisplay) after(async () => {
+      const { generateSavedScanDisplay } = await import("@/lib/ocr/original-display");
+      await generateSavedScanDisplay(row.id, userId);
+    });
 
     if (scanAttemptId) {
       try {

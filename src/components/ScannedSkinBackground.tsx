@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useScanArtwork } from "@/components/ScanArtworkProvider";
 import {
   type OcrSkinBackground,
   type OcrSkinBackgroundObjectKind,
@@ -2271,6 +2272,8 @@ export default function ScannedSkinBackground({
   background,
   darkMode = false,
 }: Props) {
+  const artwork = useScanArtwork();
+  const [failedImage, setFailedImage] = useState<string | null>(null);
   const spec = useMemo(
     () =>
       resolveOcrSkinBackground(background, {
@@ -2285,6 +2288,27 @@ export default function ScannedSkinBackground({
   const items = useMemo(() => buildItems(spec, darkMode), [darkMode, spec]);
   const textureStyle = getTextureStyle(spec.texture, darkMode);
   const textureColor = darkMode ? "#ffffff" : palette?.text || "#111827";
+
+  if (artwork?.status === "ready" && artwork.imageUrl && failedImage !== artwork.imageUrl) {
+    return (
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
+        data-scan-artwork="ready"
+        style={{
+          left: "var(--event-background-left, 0px)",
+          backgroundImage: `url(${JSON.stringify(artwork.imageUrl)})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          backgroundColor: darkMode ? "#080f18" : "#faf9f0",
+        }}
+      >
+        <img src={artwork.imageUrl} alt="" onError={() => setFailedImage(artwork.imageUrl || null)} className="hidden" />
+        <div className="absolute inset-0" style={{ backgroundColor: darkMode ? "rgba(8, 15, 24, 0.82)" : "rgba(255, 255, 255, 0.22)" }} />
+      </div>
+    );
+  }
 
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">

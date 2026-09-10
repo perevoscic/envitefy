@@ -7,6 +7,7 @@ import { AlertTriangle, CalendarClock, CheckCircle2, LoaderCircle, X } from "luc
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
+import { readCalendarSyncState } from "@/lib/calendar-sync-state";
 
 type AutomaticCalendarProvider = "google" | "microsoft";
 type CalendarSyncStatus = "needs_connection" | "needs_reconnect" | "failed";
@@ -17,6 +18,7 @@ type FeedbackState = {
 };
 
 const PROMPT_STORAGE_KEY = "envitefy:first-scan-calendar-prompt:v1";
+const SYNC_NOTICE_STORAGE_KEY = "envitefy:calendar-sync-notice:v1";
 const FLOATING_NOTICE_CLASS =
   "fixed left-1/2 z-[13010] w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 rounded-2xl border px-4 py-3 pr-14 text-sm shadow-[0_18px_55px_rgba(44,28,18,0.2)] backdrop-blur-md animate-in fade-in slide-in-from-top-2 motion-reduce:animate-none";
 
@@ -46,8 +48,10 @@ export default function FirstScanCalendarPrompt({
   userId,
   eventId,
   returnPath,
-  syncStatus,
-  syncProvider,
+  syncStatus: initialSyncStatus,
+  syncProvider: initialSyncProvider,
+  backgroundSync = false,
+  announceSyncCompletion = false,
   calendarSetupProvider,
   calendarSetupStatus,
   calendarSetupFailureReason,
@@ -58,6 +62,8 @@ export default function FirstScanCalendarPrompt({
   returnPath: string;
   syncStatus?: CalendarSyncStatus;
   syncProvider?: AutomaticCalendarProvider | null;
+  backgroundSync?: boolean;
+  announceSyncCompletion?: boolean;
   calendarSetupProvider?: AutomaticCalendarProvider | null;
   calendarSetupStatus?: OAuthConnectionStatus;
   calendarSetupFailureReason?: string | null;
@@ -68,10 +74,15 @@ export default function FirstScanCalendarPrompt({
   const [syncing, setSyncing] = useState(
     Boolean(calendarSetupProvider && calendarSetupStatus !== "not-stored"),
   );
+  const [syncStatus, setSyncStatus] = useState(initialSyncStatus);
+  const [syncProvider, setSyncProvider] = useState(initialSyncProvider);
+  const [monitorSync, setMonitorSync] = useState(backgroundSync);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [noticeDismissed, setNoticeDismissed] = useState(false);
   const syncStartedRef = useRef(false);
   const promptKey = useMemo(() => `${PROMPT_STORAGE_KEY}:${userId}`, [userId]);
+  const syncNoticeKey = useMemo(() => `${SYNC_NOTICE_STORAGE_KEY}:${userId}:${eventId}`, [userId, eventId]);
+  const announcedCompletionRef = useRef<string | null>(null);
 
   const showFeedback = useCallback((nextFeedback: FeedbackState) => {
     setNoticeDismissed(false);
@@ -85,6 +96,93 @@ export default function FirstScanCalendarPrompt({
       // A storage failure should not block calendar setup or event access.
     }
   }, [promptKey]);
+
+  useEffect(() => {
+    if (!CONNECTED_CALENDAR_SYNC_ENABLED || !backgroundSync || !announceSyncCompletion) return;
+    // Creation is a one-time transition. Preserve the event URL, other options and hash.
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("created")) return;
+    url.searchParams.delete("created");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+  }, [announceSyncCompletion, backgroundSync]);
+
+  useEffect(() => {
+    if (!CONNECTED_CALENDAR_SYNC_ENABLED || !monitorSync) return;
+    const controller = new AbortController();
+    const deadline = Date.now() + 8 * 60_000;
+    const navigation = window.performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+    const revisitedDocument = navigation &&
+      (navigation.type === "reload" || navigation.type === "back_forward") &&
+      new URL(navigation.name).pathname === window.location.pathname;
+    const announceCreation = announceSyncCompletion && !revisitedDocument;
+    let observedPending = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = async () => {
+      try {
+        const response = await fetch(`/api/events/calendar/auto?eventId=${encodeURIComponent(eventId)}`, {
+          credentials: "include",
+          cache: "no-store",
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]),
+        });
+        if (controller.signal.aborted) return;
+        if (response.status === 401 || response.status === 403 || response.status === 404) {
+          setSyncing(false);
+          return;
+        }
+        if (response.ok) {
+          const payload: unknown = await response.json();
+          if (controller.signal.aborted) return;
+          const state = readCalendarSyncState(payload);
+          const provider = state.provider;
+          setSyncProvider(provider);
+          if (state.status !== "pending" && state.status !== "syncing") {
+            setSyncing(false);
+            setMonitorSync(false);
+            if (state.status === "synced") {
+              setSyncStatus(undefined);
+              setDialogOpen(false);
+              const completion = `${provider || "calendar"}:${state.updatedAt || "synced"}`;
+              const noticeId = `${syncNoticeKey}:${completion}`;
+              let alreadyAnnounced = announcedCompletionRef.current === noticeId;
+              try {
+                alreadyAnnounced ||= window.localStorage.getItem(syncNoticeKey) === completion;
+              } catch {
+                // URL cleanup and the mounted ref still prevent ordinary reload/effect replays.
+              }
+              if (!alreadyAnnounced) {
+                announcedCompletionRef.current = noticeId;
+                try {
+                  window.localStorage.setItem(syncNoticeKey, completion);
+                } catch {
+                  // Notification storage must never interfere with calendar syncing.
+                }
+                if (announceCreation || observedPending) {
+                  showFeedback({ kind: "success", message: `Added to ${provider ? providerLabel(provider) : "your calendar"}.` });
+                }
+              }
+            } else if (state.status === "needs_connection" || state.status === "needs_reconnect" || state.status === "failed") {
+              setSyncStatus(state.status);
+            } else if (state.status === "skipped") {
+              showFeedback({ kind: "error", message: "Your event was saved. Add a valid date and time before syncing it to your calendar." });
+            }
+            return;
+          }
+          observedPending = true;
+          setSyncing(true);
+        }
+      } catch {
+        if (controller.signal.aborted) return;
+      }
+      if (Date.now() >= deadline) {
+        setSyncing(false);
+        showFeedback({ kind: "error", message: "Your event was saved, but we could not confirm its calendar sync. Check Calendar settings." });
+        return;
+      }
+      timer = setTimeout(poll, 3000);
+    };
+    void poll();
+    return () => { controller.abort(); clearTimeout(timer); };
+  }, [announceSyncCompletion, eventId, monitorSync, showFeedback, syncNoticeKey]);
 
   useEffect(() => {
     if (!CONNECTED_CALENDAR_SYNC_ENABLED) return;
@@ -147,6 +245,8 @@ export default function FirstScanCalendarPrompt({
             kind: "success",
             message: `Connected and added to ${providerLabel(calendarSetupProvider)}. Future scanned events will sync automatically.`,
           });
+        } else if (payload.status === "syncing" || payload.status === "pending") {
+          setMonitorSync(true);
         } else if (payload.status === "needs_connection") {
           showFeedback({
             kind: "error",

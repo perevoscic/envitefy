@@ -79,6 +79,7 @@ export function revokeObjectUrl(url: string | null | undefined): void {
 }
 
 export async function uploadMediaFile(params: {
+  privateScan?: boolean;
   file: File;
   usage: UploadUsage;
   eventId?: string | null;
@@ -89,6 +90,7 @@ export async function uploadMediaFile(params: {
   const formData = new FormData();
   formData.set("file", params.file);
   formData.set("usage", params.usage);
+  if (params.privateScan) formData.set("privateScan", "true");
   if (params.eventId) formData.set("eventId", params.eventId);
   if (params.uploadToken) formData.set("uploadToken", params.uploadToken);
   if (params.scanAttemptId) formData.set("scanAttemptId", params.scanAttemptId);

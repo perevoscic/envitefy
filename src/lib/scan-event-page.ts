@@ -1,4 +1,5 @@
 import * as chrono from "chrono-node";
+import { buildScanPersonalization, normalizeScanPersonalization, personalizedScanCategory, personalizedScanTitle, withoutMedicalIdentityLines } from "./ocr/personalization.ts";
 import type { ConciergeEventType, DetectedSourceIntent } from "./concierge/types.ts";
 import { sanitizeConciergePublicEventData } from "./concierge/public-copy.ts";
 import {
@@ -726,7 +727,7 @@ export function buildScanEventPageHistoryPayload(params: {
   const venue = normalizedLocation.venue;
   const location = normalizedLocation.location;
   const locationLine = normalizedLocation.locationLine || "Location TBD";
-  const title = appendVenueToVendorVisitTitle(normalizedBaseTitle, venue, rescueText);
+  let title = appendVenueToVendorVisitTitle(normalizedBaseTitle, venue, rescueText);
   const rsvpDetails = extractRsvpDetails(rescueText);
   const normalizedRsvp = normalizeOcrRsvpFields({
     rsvp: firstSpecificString(fieldsGuess.rsvp, fieldsGuess.rsvpText),
@@ -751,7 +752,7 @@ export function buildScanEventPageHistoryPayload(params: {
     inferTimezoneFromAddress([venue, location, ocrText].filter(Boolean).join(" ")) ||
     Intl.DateTimeFormat().resolvedOptions().timeZone ||
     "UTC";
-  const rescuedDate = parseScanDateTimeText(rescueText, timezone);
+  const rescuedDate = parseScanDateTimeText(withoutMedicalIdentityLines(rescueText), timezone);
   const fieldStartText = firstString(fieldsGuess.start, fieldsGuess.startISO, fieldsGuess.startAt);
   const fieldEndText = firstString(fieldsGuess.end, fieldsGuess.endISO, fieldsGuess.endAt);
   const fieldDateTimeText = [fieldStartText, fieldsGuess.timeText].filter(Boolean).join(" ");
@@ -760,6 +761,10 @@ export function buildScanEventPageHistoryPayload(params: {
   const fieldHasExplicitTime = Boolean(normalizeIso(fieldStartText)) || hasExplicitTimeText(fieldDateTimeText);
   const preferRescuedDate = Boolean(rescuedDate.startISO && rescuedDate.timeFound && !fieldHasExplicitTime);
   const startISO = preferRescuedDate ? rescuedDate.startISO : fieldStartISO || rescuedDate.startISO;
+  const scanPersonalization = normalizeScanPersonalization(fieldsGuess.scanPersonalization) || buildScanPersonalization({
+    title, category: categoryRaw, sourceText: rawOcrText, start: firstString(fieldStartText, startISO),
+  });
+  title = personalizedScanTitle(title, scanPersonalization);
   const endISO =
     (preferRescuedDate ? rescuedDate.endISO : fieldEndISO) ||
     rescuedDate.endISO ||
@@ -796,7 +801,7 @@ export function buildScanEventPageHistoryPayload(params: {
     ocrSkin,
     openHouse,
   });
-  const category = skinRouting.category;
+  const category = personalizedScanCategory(skinRouting.category, scanPersonalization) || skinRouting.category;
   const sourceIntent = inferScanSourceIntent({
     category,
     title,
@@ -894,6 +899,8 @@ export function buildScanEventPageHistoryPayload(params: {
         ? ocrSkin.palette
         : undefined,
     fieldsGuess,
+    scanPersonalization,
+    scanSourceKind: fieldsGuess.scanSourceKind || "unknown",
     ocrFacts: ocrFacts.length ? ocrFacts : undefined,
     rsvp: rsvpText || undefined,
     rsvpUrl: rsvpUrl || undefined,

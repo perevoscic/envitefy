@@ -23,7 +23,7 @@ const payload = Buffer.from(
 
 function harness({ account = accountA, grant = eventScope } = {}) {
   const stored = new Map();
-  const calls = { exchanges: 0, writes: [], revocations: 0, validations: 0 };
+  const calls = { exchanges: 0, writes: [], revocations: 0, validations: 0, appleDisconnections: [] };
   const context = {
     account,
     stored,
@@ -70,6 +70,9 @@ function harness({ account = accountA, grant = eventScope } = {}) {
     const mocks = {
       "@/lib/auth": { getAuthenticatedRequestUser: async () => context.account },
       "@/lib/db": db,
+      "@/lib/apple-calendar-subscription": {
+        disconnectAppleCalendarSubscription: async (userId) => calls.appleDisconnections.push(userId),
+      },
       "@/lib/calendar-sync-pause": { getCalendarSyncPauseResponse: () => null },
       "@/lib/absolute-url": { absoluteUrl: async (path) => `https://envitefy.com${path}` },
       "@/lib/concierge/creation-intent": {},
@@ -415,6 +418,15 @@ test("disconnecting one account preserves another account's tokens and does not 
   assert.equal(h.calls.revocations, 0);
   assert.equal(response.cookies.get("next-auth.session-token"), undefined);
   assert.equal(response.cookies.get("envitefy_calendar_oauth_google").value, "");
+});
+
+test("the privacy disconnect revokes the current account's Apple subscription too", async () => {
+  const h = harness();
+  const response = await h.load("src/app/api/oauth/disconnect/route.ts").POST(
+    new Request("https://envitefy.com/api/oauth/disconnect", { method: "POST", body: "{}" }),
+  );
+  assert.equal(response.status, 200);
+  assert.deepEqual(h.calls.appleDisconnections, [accountA.userId]);
 });
 
 for (const routeName of ["events/google", "events/google/bulk"]) {

@@ -5,7 +5,7 @@ export function scanCounterUpdates(category?: string | null): string[] {
   if (cat.includes("birthday")) columns.push("scans_birthdays");
   if (cat.includes("wedding")) columns.push("scans_weddings");
   if (cat.includes("sport")) columns.push("scans_sport_events");
-  if (["doctor", "dr ", "dr."].some((word) => cat.includes(word)))
+  if (["doctor", "medical", "dr ", "dr."].some((word) => cat.includes(word)))
     columns.push("scans_doctor_appointments");
   if (cat.includes("appointment")) columns.push("scans_appointments");
   if (["play day", "playday", "playdate"].some((word) => cat.includes(word)))

@@ -36,6 +36,9 @@ const evidenceKeys = [
   "activities",
   "attire",
   "goodToKnow",
+  "personName",
+  "personBirthDate",
+  "personAge",
 ];
 export const EVENT_EXTRACTION_SCHEMA = strictObject({
   ...strings([
@@ -51,6 +54,8 @@ export const EVENT_EXTRACTION_SCHEMA = strictObject({
     "registryUrl",
     "birthdayName",
     "goodToKnow",
+    "personName",
+    "personBirthDate",
   ]),
   ...Object.fromEntries(
     ["title", "address", "description", "category"].map((key) => [key, { type: "string" }]),
@@ -59,6 +64,8 @@ export const EVENT_EXTRACTION_SCHEMA = strictObject({
   birthdaySignals: stringList,
   birthdayAudience: { type: ["string", "null"], enum: ["girl", "boy", "neutral", null] },
   birthdayAge: { type: ["integer", "null"] },
+  personAge: { type: ["integer", "null"] },
+  scanSourceKind: { type: "string", enum: ["paperwork", "designed", "unknown"] },
   yearVisible: { type: ["boolean", "null"] },
   ocrFacts: { type: "array", items: fact },
   thumbnailFocus: {

@@ -6,6 +6,10 @@ import {
   type EventHistoryMediaVariant,
 } from "@/lib/db";
 import { buildMediaResponse } from "@/lib/media-response";
+import { getServerSession } from "next-auth";
+import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { getEventHistoryById } from "@/lib/db";
+import { resolveScanMediaPolicy } from "@/lib/ocr/scan-media";
 
 export const runtime = "nodejs";
 
@@ -36,6 +40,12 @@ export async function GET(
 
     const draftDenied = await guardDraftRequest(identity.id);
     if (draftDenied) return draftDenied;
+    const row = await getEventHistoryById(identity.id);
+    if (row && (resolveScanMediaPolicy(row.data, row.title)?.medical || row.data?.attachment?.storageKind === "encrypted-blob")) {
+      const userId = await resolveSessionUserId(await getServerSession(authOptions));
+      if (!userId || userId !== row.user_id) return new Response("Not found", { status: 404, headers: { "Cache-Control": "private, no-store" } });
+      return new Response(null, { status: 307, headers: { Location: `/api/events/${identity.id}/original`, "Cache-Control": "private, no-store" } });
+    }
     const imageDataUrl = await getEventHistoryMediaDataUrlById(
       identity.id,
       variant

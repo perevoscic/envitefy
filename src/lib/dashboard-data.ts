@@ -1,5 +1,6 @@
 import { normalizeThumbnailFocus, type ThumbnailFocus } from "./thumbnail-focus.ts";
 import { resolveCoverImageUrlFromEventData } from "./upload-config.ts";
+import { resolveSavedScanPresentation } from "./ocr/personalization.ts";
 
 export type DashboardEventOwnership = "owned" | "invited";
 export type DashboardEventShareStatus = "accepted" | "pending" | null;
@@ -198,7 +199,8 @@ function isStudioOnlyCardRecord(data: any, createdVia: string | null): boolean {
 }
 
 function normalizeDashboardEventCategory(data: any, row: HistoryRow): string | null {
-  const category = firstString(data?.category, row?.data?.category);
+  const category = resolveSavedScanPresentation(data, row.title || "").category ||
+    firstString(data?.category, row?.data?.category);
   const normalizedCategory = String(category || "")
     .trim()
     .toLowerCase();
@@ -390,15 +392,17 @@ export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
 
   return {
     id: row.id,
-    title:
+    title: resolveSavedScanPresentation(
+      data,
       firstString(row.title, data?.title, data?.fieldsGuess?.title, data?.event?.title) || "Event",
+    ).title,
     startAt,
     endAt: getEventEndIso(data),
     tz: firstString(data?.tz, data?.timezone, data?.fieldsGuess?.timezone, data?.event?.timezone),
     locationText,
     locationLat,
     locationLng,
-    coverImageUrl: resolveCoverImageUrlFromEventData(data),
+    coverImageUrl: resolveCoverImageUrlFromEventData({ ...data, title: row.title }),
     thumbnailFocus: normalizeThumbnailFocus(data?.thumbnailFocus),
     status: normalizeStatus(data?.status),
     category: normalizeDashboardEventCategory(data, row),

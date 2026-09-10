@@ -14,7 +14,7 @@ test("scanned invite skin uses full-width prose Good to Know tiles", () => {
   assert.match(source, /label="Good to Know"/);
   assert.match(source, /fullWidth/);
   assert.match(source, /tone="prose"/);
-  assert.match(source, /md:col-span-2/);
+  assert.match(source, /fullWidth \? "col-span-2"/);
   assert.match(source, /text-base font-semibold leading-relaxed md:text-lg/);
   assert.match(source, /tone="compact"/);
   assert.match(source, /label="Parking"/);

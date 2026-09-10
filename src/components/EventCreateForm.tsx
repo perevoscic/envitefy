@@ -371,7 +371,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
         if (saved.repeatFrequency !== undefined) setRepeatFrequency(saved.repeatFrequency);
         if (saved.repeatDays !== undefined) setRepeatDays(saved.repeatDays);
         if (saved.selectedCalendars !== undefined) setSelectedCalendars(saved.selectedCalendars);
-        if (saved.category !== undefined) setCategory(saved.category);
+        if (saved.category !== undefined) setCategory(/^(?:doctor|medical)[ _-]+appointments?$/i.test(saved.category) ? "Medical Appointments" : saved.category);
         if (saved.customCategory !== undefined) setCustomCategory(saved.customCategory);
         if (saved.accessCode !== undefined) setAccessCode(saved.accessCode);
         if (saved.accessCodeHint !== undefined) setAccessCodeHint(saved.accessCodeHint);
@@ -844,7 +844,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
             <option value="Weddings">Weddings</option>
             <option value="Baby Showers">Baby Showers</option>
             <option value="Appointments">Appointments</option>
-            <option value="Doctor Appointments">Doctor Appointments</option>
+            <option value="Medical Appointments">Medical Appointments</option>
             <option value="Sport Events">Sport Events</option>
             <option value="General Events">General Events</option>
             <option value="__custom__">+ Add your own...</option>

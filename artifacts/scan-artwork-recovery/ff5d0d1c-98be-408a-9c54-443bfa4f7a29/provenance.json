@@ -1,0 +1,30 @@
+{
+  "generator": "Existing application OpenAI image service",
+  "model": "gpt-image-2.5-flare",
+  "quality": "high",
+  "createdAt": "2026-09-10",
+  "conversion": "FFmpeg libwebp, quality 85, compression level 6, image2pipe output",
+  "variationNote": "The original opaque variation UUID was not retained when conversion failed. Recovery reused those image bytes with a new upload claim; prompt files preserve all other prompt content.",
+  "assets": [
+    {
+      "role": "background",
+      "path": "artifacts/scan-artwork-recovery/ff5d0d1c-98be-408a-9c54-443bfa4f7a29/background.webp",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 61362,
+      "format": "webp",
+      "originalDeleted": true,
+      "promptFile": "artifacts/scan-artwork-recovery/ff5d0d1c-98be-408a-9c54-443bfa4f7a29/background-prompt.txt"
+    },
+    {
+      "role": "hero",
+      "path": "artifacts/scan-artwork-recovery/ff5d0d1c-98be-408a-9c54-443bfa4f7a29/hero.webp",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 89276,
+      "format": "webp",
+      "originalDeleted": true,
+      "promptFile": "artifacts/scan-artwork-recovery/ff5d0d1c-98be-408a-9c54-443bfa4f7a29/hero-prompt.txt"
+    }
+  ]
+}

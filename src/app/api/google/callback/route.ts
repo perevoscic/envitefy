@@ -186,7 +186,7 @@ export async function GET(request: Request) {
             } else if (/baby[-\s]?shower|sprinkle/.test(combined)) {
               category = "Baby Showers";
             } else if (/(doctor|dentist|appointment|check[- ]?up|clinic)/i.test(combined)) {
-              category = "Doctor Appointments";
+              category = "Medical Appointments";
             } else if (/(appointment|meeting|consult)/i.test(combined)) {
               category = "Appointments";
             }

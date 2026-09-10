@@ -227,7 +227,7 @@ async function postOpenAiImageGeneration(
         ok: true, warnings,
         imageDataUrl: await streamOpenAiImage(client, {
           model, image: uploadables, prompt,
-          size: product === "event_page" ? "1536x1024" : resolveImageSize(),
+          size: options.size ?? (product === "event_page" ? "1536x1024" : resolveImageSize()),
           quality: resolveImageQuality(), background: resolveImageBackground(model), n: 1,
         }, options),
       };
@@ -235,7 +235,7 @@ async function postOpenAiImageGeneration(
         model,
         image: uploadables,
         prompt,
-        size: product === "event_page" ? "1536x1024" : resolveImageSize(),
+        size: options.size ?? (product === "event_page" ? "1536x1024" : resolveImageSize()),
         quality: resolveImageQuality(),
         background: resolveImageBackground(model),
         n: 1,
@@ -278,14 +278,14 @@ async function postOpenAiImageGeneration(
     if (options.onPartialImage) return {
       ok: true, warnings,
       imageDataUrl: await streamOpenAiImage(client, {
-        model, prompt, size: product === "event_page" ? "1536x1024" : resolveImageSize(),
+        model, prompt, size: options.size ?? (product === "event_page" ? "1536x1024" : resolveImageSize()),
         quality: resolveImageQuality(), background: resolveImageBackground(model), n: 1,
       }, options),
     };
     const response = await client.images.generate({
       model,
       prompt,
-      size: product === "event_page" ? "1536x1024" : resolveImageSize(),
+      size: options.size ?? (product === "event_page" ? "1536x1024" : resolveImageSize()),
       quality: resolveImageQuality(),
       background: resolveImageBackground(model),
       output_format: "png",

@@ -68,11 +68,12 @@ test("Google Calendar reconnect forces offline consent and returns to calendar s
 });
 
 test("only connected calendars can be selected and persisted as the default", () => {
-  assert.match(source, /if \(!connectedCalendars\[provider\]\) return/);
-  assert.match(source, /const isDisabled = !item\.connected/);
-  assert.match(source, /const isDefault = preferredProvider === item\.key && !isDisabled/);
-  assert.doesNotMatch(source, /item\.key !== "apple" && !item\.connected/);
-  assert.match(source, /Apple Calendar remains available as a one-event/);
+  assert.match(source, /if \(provider && !connectedCalendars\[provider\]\) return/);
+  assert.match(source, /const isDefault = preferredProvider === item\.key && item\.connected/);
+  assert.match(source, /item\.connected && CONNECTED_CALENDAR_SYNC_ENABLED \? \(/);
+  assert.match(source, /role="switch"\s+aria-checked=\{isDefault\}/);
+  assert.match(source, /saveCalendarDefault\(isDefault \? null : item\.key\)/);
+  assert.doesNotMatch(source, /Save calendar default|Clear default|togglePreferredProvider/);
 
   assert.match(profileRouteSource, /if \(preferredProvider === "apple"\)/);
   assert.match(profileRouteSource, /getGoogleCalendarRefreshToken\(email\)/);
@@ -80,7 +81,7 @@ test("only connected calendars can be selected and persisted as the default", ()
   assert.match(profileRouteSource, /Connect this calendar before setting it as your default/);
 });
 
-test("Apple remains an event-by-event action and never saves a default", () => {
+test("Apple one-event downloads remain available alongside subscription setup", () => {
   assert.match(eventActionsSource, /Remember a connected provider as my default calendar/);
   assert.doesNotMatch(eventActionsSource, /if \(provider === "apple"\) return true/);
   assert.match(firstScanPromptSource, /Add this event to Apple Calendar/);
@@ -90,7 +91,8 @@ test("Apple remains an event-by-event action and never saves a default", () => {
 
 test("calendar cards expose honest sync and disconnect states", () => {
   assert.doesNotMatch(source, /How Apple Calendar works/);
-  assert.match(source, /Background sync unavailable/);
+  assert.doesNotMatch(source, /Background sync unavailable|Add per event/);
+  assert.match(source, /<AppleCalendarConnection/);
   assert.match(source, /<RefreshCw/);
   assert.match(source, /"Disconnect"/);
   assert.doesNotMatch(source, /window\.confirm/);

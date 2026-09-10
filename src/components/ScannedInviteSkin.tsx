@@ -28,8 +28,12 @@ import {
 import OcrFactCards from "@/components/OcrFactCards";
 import RsvpIdentityModal from "@/components/RsvpIdentityModal";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
+import { ScanOriginalDocumentSection, useScanArtwork, useScanMedia } from "@/components/ScanArtworkProvider";
 import { buildPreferredDirectionsHref } from "@/lib/directions";
 import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
+import { appointmentDisplayDetails } from "@/lib/ocr/appointment-details";
+import { contactNumberLabel } from "@/lib/ocr/contact-numbers";
+import { isMedicalAppointmentCategory } from "@/lib/medical-appointments";
 import {
   coalesceFactValues,
   filterRegistryOcrFacts,
@@ -300,7 +304,7 @@ export default function ScannedInviteSkin({
   timeLabel,
   venueName,
   location,
-  imageUrl,
+  imageUrl: originalImageUrl,
   shareUrl,
   calendarLinks,
   skinId,
@@ -326,6 +330,11 @@ export default function ScannedInviteSkin({
   previewMode = false,
   actions,
 }: Props) {
+  const artwork = useScanArtwork();
+  const scanMedia = useScanMedia();
+  const generatedHero = artwork?.heroImageUrl || (artwork?.status === "ready" ? artwork.imageUrl : null);
+  const useGeneratedHero = scanMedia?.policy?.heroMode === "generated" || (scanMedia?.policy?.medical && !scanMedia.canManage);
+  const imageUrl = useGeneratedHero ? generatedHero || null : originalImageUrl;
   const [showCalendarMenu, setShowCalendarMenu] = useState(false);
   const [showImageLightbox, setShowImageLightbox] = useState(false);
   const [showRsvpIdentityModal, setShowRsvpIdentityModal] = useState(false);
@@ -395,9 +404,14 @@ export default function ScannedInviteSkin({
       !/^location\s+tbd$/i.test(displayLocation) &&
       (!displayVenueName || displayLocation.toLowerCase() !== displayVenueName.toLowerCase()),
   );
-  const rawDetailCopy = String(detailCopy || "").trim();
+  const { detailCopy: rawDetailCopy, facts: normalizedOcrFacts } = appointmentDisplayDetails({
+    title: displayTitle,
+    category: categoryLabel,
+    detailCopy,
+    facts: normalizeOcrFacts(ocrFacts),
+  });
+  const combineAppointmentContacts = isMedicalAppointmentCategory(categoryLabel);
   const isPickleballSkin = String(sportKind || "").toLowerCase() === "pickleball";
-  const normalizedOcrFacts = normalizeOcrFacts(ocrFacts);
   const vendorFact = normalizedOcrFacts.find((fact) => /^vendor$/i.test(fact.label));
   const displayVendorName = String(vendorFact?.value || "").trim();
   const parkingFact = normalizedOcrFacts.find((fact) => /^parking$/i.test(fact.label));
@@ -514,7 +528,8 @@ export default function ScannedInviteSkin({
   const factsForCards = filterRegistryOcrFacts(
     normalizedOcrFacts.filter(
       (fact) =>
-        !/\b(?:phone|email|website|site|contact)\b/i.test(fact.label) &&
+        (Boolean(combineAppointmentContacts && contactNumberLabel(fact.label)) ||
+          !/\b(?:phone|email|website|site|contact)\b/i.test(fact.label)) &&
         !/^vendor$/i.test(fact.label) &&
         !(displayParking && /^parking$/i.test(fact.label)) &&
         !(
@@ -642,8 +657,8 @@ export default function ScannedInviteSkin({
             {imageUrl ? (
               <img
                 src={imageUrl}
-                alt={`${title} invitation`}
-                className="h-full w-full object-cover transition-all duration-700 group-hover:scale-[1.02]"
+                alt={`${title} ${useGeneratedHero ? "artwork" : "invitation"}`}
+                className={`h-full w-full ${useGeneratedHero ? "object-contain bg-[#faf9f0]" : "object-cover"} transition-all duration-700 group-hover:scale-[1.02]`}
               />
             ) : (
               <div
@@ -900,7 +915,7 @@ export default function ScannedInviteSkin({
               </div>
             </motion.section>
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="grid auto-rows-fr grid-cols-2 gap-3 sm:gap-6">
               {displayDetailCopy ? (
                 <HubDetailCard
                   label="Good to Know"
@@ -1018,9 +1033,12 @@ export default function ScannedInviteSkin({
 
               <OcrFactCards
                 facts={[...leftColumnOcrFacts, ...rightColumnOcrFacts]}
-                cardClassName="rounded-[2rem] border border-white/60 bg-white p-7 shadow-sm"
+                compact
+                combinePhoneAndFax={combineAppointmentContacts}
+                cardClassName="min-h-[8.5rem] min-w-0 rounded-[2rem] border border-white/60 bg-white p-4 shadow-sm sm:p-7"
                 accentColor="var(--theme-primary)"
               />
+              <ScanOriginalDocumentSection className="min-w-0" />
             </div>
           </div>
 
@@ -1200,7 +1218,7 @@ function InfoBlock({
           <div className="text-[10px] font-black uppercase tracking-widest text-black/30">
             {label}
           </div>
-          <div className="text-2xl font-bold text-black/90 md:text-3xl">{title}</div>
+          <div className="text-lg font-bold leading-snug text-black/90 md:text-3xl md:leading-9">{title}</div>
           {subtitle ? <div className="text-base text-black/50 md:text-lg">{subtitle}</div> : null}
         </div>
       </div>
@@ -1239,9 +1257,9 @@ function HubDetailCard({
       animate={{ y: 0, opacity: 1 }}
       transition={{ delay: 0.4 }}
       className={[
-        "flex justify-between gap-6 rounded-[2rem] border border-white/60 p-7 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md",
+        "flex min-w-0 justify-between gap-3 rounded-[2rem] border border-white/60 p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:gap-6 sm:p-7",
         isProse || isCompact ? "items-start" : "min-h-[10rem] items-center",
-        fullWidth ? "md:col-span-2" : "",
+        fullWidth ? "col-span-2" : "",
       ]
         .filter(Boolean)
         .join(" ")}

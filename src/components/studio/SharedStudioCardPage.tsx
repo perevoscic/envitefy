@@ -2,7 +2,7 @@
 
 import { X } from "lucide-react";
 import Link from "next/link";
-import { type CSSProperties, useCallback, useState } from "react";
+import { type CSSProperties, type ReactNode, useCallback, useState } from "react";
 import EventCelebrationOverlay from "@/components/EventCelebrationOverlay";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface, {
@@ -29,7 +29,10 @@ type SharedStudioCardProps = {
 type SharedStudioCardFrameProps = SharedStudioCardProps & {
   className?: string;
   frameClassName?: string;
+  artworkClassName?: string;
+  topRightAction?: ReactNode;
   onClose?: () => void;
+  closeButtonPlacement?: "below" | "overlay";
   style?: CSSProperties;
 };
 
@@ -86,7 +89,7 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
         }`}
         style={{ width: props.style?.width ? undefined : cardFrameWidth }}
       >
-        <div data-live-card-artwork className={`relative ${usesPosterArtFrame ? "aspect-[2/3] overflow-hidden rounded-[1.5rem] shadow-xl" : "aspect-[9/16]"}`}>
+        <div data-live-card-artwork className={`relative ${usesPosterArtFrame ? "aspect-[2/3] overflow-hidden rounded-[1.5rem] shadow-xl" : "aspect-[9/16]"} ${props.artworkClassName || ""}`}>
         <img
           src={props.imageUrl}
           alt={props.title}
@@ -104,11 +107,23 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
           shareUrl={props.shareUrl}
           fallbackShareUrlToWindowLocation
           sharePosition={props.onClose ? "left" : "right"}
-          onShare={() => void handleShare()}
+          onShare={props.topRightAction ? undefined : () => void handleShare()}
           shareState={shareState}
         />
+        {props.topRightAction}
+        {props.onClose && props.closeButtonPlacement === "overlay" ? (
+          <button
+            type="button"
+            onClick={props.onClose}
+            aria-label="Close preview"
+            title="Close preview"
+            className="absolute right-3 top-5 z-30 inline-flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-white/30 bg-black/40 text-white shadow-lg backdrop-blur-md transition-colors hover:bg-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:right-5 sm:top-6 md:right-8 md:top-8 md:h-16 md:w-16"
+          >
+            <X className="h-6 w-6 md:h-7 md:w-7" aria-hidden="true" />
+          </button>
+        ) : null}
         </div>
-        {props.onClose ? (
+        {props.onClose && props.closeButtonPlacement !== "overlay" ? (
           <div className={`flex justify-end px-1 pt-2 ${usesPosterArtFrame ? "bg-transparent" : "bg-neutral-950"}`}>
             <button type="button" onClick={props.onClose} aria-label="Close preview"
               className={`inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 ${usesPosterArtFrame ? "text-slate-700 hover:bg-white/70 focus-visible:ring-violet-500" : "text-white/80 hover:bg-white/10 focus-visible:ring-white"}`}>

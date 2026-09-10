@@ -3,7 +3,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   AlertCircle,
-  ArrowLeft,
   CalendarDays,
   CheckCircle2,
   Clock3,
@@ -883,7 +882,7 @@ export default function EventOwnerTools({
             dateLine={effectivePreview.dateLine}
             timeLine={effectivePreview.timeLine}
             locationLine={effectivePreview.locationLine}
-            viewCurrentLabel={`View current ${productName}`}
+            previewLabel={`Preview ${productName}`}
             editHref={primaryEditHref}
             detailsEditHref={resolvedArtworkEditHref ? resolvedEditHref : null}
             onViewCurrent={() => openProductViewer("current")}
@@ -941,14 +940,13 @@ export default function EventOwnerTools({
             publicUrl={publicUrl}
             embeddedPreviewUrl={embeddedPreviewHref}
             className="w-full"
+            onViewCurrent={() => openProductViewer("current")}
           />
         </aside>
       </div>
       <OwnerProductViewer
         open={productViewerMode !== null}
-        heading={productViewerMode === "changes" ? "Proposed changes" : `Current ${productName}`}
-        description={productViewerMode === "changes" ? "Review your changes before saving." : "The saved version your guests can open."}
-        returnLabel={activeOwnerTab === "design" ? "Back to editing" : "Back to dashboard"}
+        heading={productViewerMode === "changes" ? "Preview changes" : `Preview ${productName}`}
         eventId={eventId}
         eventTitle={productViewerMode === "changes" ? currentEventTitle : savedProductOverride?.title || eventTitle}
         preview={productViewerMode === "changes" ? effectivePreview : currentProduct}
@@ -1081,6 +1079,8 @@ function EventProductPreview({
   embeddedPreviewUrl,
   className = "",
   heightMode = "fixed",
+  onViewCurrent,
+  onClose,
 }: {
   eventId: string;
   eventTitle: string;
@@ -1088,23 +1088,39 @@ function EventProductPreview({
   publicUrl: string;
   embeddedPreviewUrl: string;
   className?: string;
-  heightMode?: "fixed" | "auto";
+  heightMode?: "fixed" | "fullscreen";
+  onViewCurrent?: () => void;
+  onClose?: () => void;
 }) {
-  const autoHeight = heightMode === "auto";
+  const fullscreen = heightMode === "fullscreen";
+  const isStudioCard = preview.surface === "studio-card" && Boolean(preview.imageUrl);
   const cardAspectRatio = preview.invitationData?.heroTextMode === "image" ? 2 / 3 : 9 / 16;
+  const previewAction = onViewCurrent ? (
+    <OwnerPreviewButton
+      label={`Preview ${isStudioCard ? "card" : "event"}`}
+      onClick={onViewCurrent}
+      className="absolute right-3 top-5 z-30 h-12 w-12 border border-white/30 bg-black/40 text-white shadow-lg backdrop-blur-md hover:bg-black/60 focus-visible:ring-white sm:right-5 sm:top-6 md:right-8 md:top-8 md:h-14 md:w-14"
+    />
+  ) : null;
 
   return (
     <section
-      className={`owner-workspace-glass relative overflow-hidden rounded-[28px] border border-white/70 bg-slate-950 shadow-[0_24px_70px_rgba(79,70,128,0.16)] backdrop-blur-xl ${
-        autoHeight
-          ? "h-auto min-h-0 !border-0 !bg-transparent !shadow-none !backdrop-blur-none before:!hidden"
+      className={`relative ${
+        isStudioCard
+          ? "h-auto min-h-0"
+          : fullscreen ? "h-[100dvh] min-h-0"
           : "h-[min(680px,calc(100dvh-5rem))] min-h-[480px] lg:h-[min(760px,calc(100dvh-2.5rem))] lg:max-h-[760px]"
       } ${className}`.trim()}
+      style={isStudioCard ? {
+        maxWidth: fullscreen
+          ? `min(calc(100vw - 1.5rem), calc((100dvh - 1.5rem) * ${cardAspectRatio}))`
+          : `calc(min(760px, 100dvh - 2.5rem) * ${cardAspectRatio})`,
+      } : undefined}
       aria-label="Product preview"
     >
       <div
         className={
-          autoHeight
+          isStudioCard
             ? "flex w-full items-center justify-center"
             : "flex h-full w-full items-center justify-center"
         }
@@ -1117,27 +1133,21 @@ function EventProductPreview({
             invitationData={preview.invitationData as any}
             positions={preview.positions as any}
             shareUrl={publicUrl}
-            className={
-              autoHeight
-                ? "flex w-full items-center justify-center"
-                : "flex h-full w-full items-center justify-center"
-            }
-            frameClassName={
-              autoHeight
-                ? "!aspect-[9/17] !w-full !max-w-full !rounded-[28px] !border-0 shadow-none sm:!aspect-[9/16]"
-                : "!w-full !max-w-full !rounded-[28px] !border-0 shadow-none"
-            }
-            style={autoHeight ? undefined : {
-              width: "100%",
-              height: "100%",
-              maxWidth: `calc(min(760px, 100dvh - 2.5rem) * ${cardAspectRatio})`,
-            }}
+            topRightAction={previewAction}
+            onClose={onClose}
+            closeButtonPlacement="overlay"
+            className="w-full"
+            frameClassName={fullscreen
+              ? "!w-full !max-w-full !rounded-[28px] !border-0 !bg-transparent !shadow-[0_24px_80px_rgba(0,0,0,0.65),0_0_48px_rgba(139,92,246,0.18)]"
+              : "!w-full !max-w-full !rounded-[28px] !border-0 shadow-none"}
+            artworkClassName={fullscreen ? "overflow-hidden !rounded-[28px] !shadow-none" : undefined}
+            style={{ width: "100%" }}
           />
         ) : publicUrl ? (
           <div
             className={
-              autoHeight
-                ? "relative aspect-[9/17] w-full overflow-hidden rounded-[28px] bg-white shadow-2xl sm:aspect-[9/16]"
+              fullscreen
+                ? "relative h-full w-full overflow-hidden bg-white"
                 : "relative h-full w-auto max-w-full aspect-[9/16] overflow-hidden rounded-[28px] bg-white shadow-2xl"
             }
           >
@@ -1170,8 +1180,32 @@ function EventProductPreview({
             </div>
           </div>
         )}
+        {!isStudioCard ? previewAction : null}
       </div>
     </section>
+  );
+}
+
+function OwnerPreviewButton({
+  label,
+  onClick,
+  className,
+}: {
+  label: string;
+  onClick: () => void;
+  className: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      aria-haspopup="dialog"
+      className={`inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${className}`}
+    >
+      <Eye size={24} strokeWidth={2.2} aria-hidden="true" />
+    </button>
   );
 }
 
@@ -1208,7 +1242,7 @@ function OwnerWorkspaceHeader({
   dateLine,
   timeLine,
   locationLine,
-  viewCurrentLabel,
+  previewLabel,
   editHref,
   detailsEditHref,
   onViewCurrent,
@@ -1219,7 +1253,7 @@ function OwnerWorkspaceHeader({
   dateLine: string;
   timeLine: string;
   locationLine: string;
-  viewCurrentLabel: string;
+  previewLabel: string;
   editHref: string;
   detailsEditHref: string | null;
   onViewCurrent: () => void;
@@ -1262,6 +1296,11 @@ function OwnerWorkspaceHeader({
               <Share2 size={21} strokeWidth={2.3} aria-hidden="true" />
               <span className="hidden sm:inline">Share</span>
             </button>
+            <OwnerPreviewButton
+              label={previewLabel}
+              onClick={onViewCurrent}
+              className="h-11 w-11 text-violet-700 hover:bg-violet-50 focus-visible:ring-violet-400 lg:hidden"
+            />
           </div>
         </div>
         <div className="min-w-0">
@@ -1293,15 +1332,6 @@ function OwnerWorkspaceHeader({
             ) : null}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={onViewCurrent}
-          aria-haspopup="dialog"
-          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-violet-700 px-4 py-3 text-sm font-bold text-white shadow-[0_8px_20px_rgba(109,40,217,0.16)] transition hover:bg-violet-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300 sm:w-auto sm:px-6"
-        >
-          <Eye size={20} strokeWidth={2.2} aria-hidden="true" />
-          <span>{viewCurrentLabel}</span>
-        </button>
       </div>
     </header>
   );
@@ -1505,8 +1535,6 @@ function OwnerTabContent({
 function OwnerProductViewer({
   open,
   heading,
-  description,
-  returnLabel,
   eventId,
   eventTitle,
   preview,
@@ -1517,8 +1545,6 @@ function OwnerProductViewer({
 }: {
   open: boolean;
   heading: string;
-  description: string;
-  returnLabel: string;
   eventId: string;
   eventTitle: string;
   preview: ProductPreviewModel;
@@ -1527,40 +1553,53 @@ function OwnerProductViewer({
   onClose: () => void;
   onReturnFocus: () => void;
 }) {
+  useEffect(() => {
+    if (!open) return;
+    const root = document.documentElement;
+    const previousOverflow = root.style.getPropertyValue("overflow");
+    const previousPriority = root.style.getPropertyPriority("overflow");
+    root.style.setProperty("overflow", "hidden", "important");
+    return () => {
+      if (previousOverflow) {
+        root.style.setProperty("overflow", previousOverflow, previousPriority);
+      } else {
+        root.style.removeProperty("overflow");
+      }
+    };
+  }, [open]);
+
   return (
     <Dialog.Root open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[7000] bg-slate-950/40 backdrop-blur-sm" />
+        <Dialog.Overlay className="fixed inset-0 z-[7000] bg-slate-950" />
         <Dialog.Content
-          className="fixed inset-0 z-[7001] flex flex-col bg-[#f5f3ff] pt-[env(safe-area-inset-top)] shadow-2xl outline-none sm:inset-x-auto sm:inset-y-4 sm:left-1/2 sm:w-[min(560px,calc(100%-2rem))] sm:-translate-x-1/2 sm:rounded-[28px]"
+          className="fixed inset-0 z-[7001] flex items-center justify-center overflow-hidden outline-none"
+          aria-describedby={undefined}
           onCloseAutoFocus={(event) => { event.preventDefault(); onReturnFocus(); }}
         >
-          <div className="shrink-0 border-b border-violet-100 px-4 pb-4 pt-2">
+          <Dialog.Title className="sr-only">{heading}</Dialog.Title>
+          <EventProductPreview
+            eventId={eventId}
+            eventTitle={eventTitle}
+            preview={preview}
+            publicUrl={publicUrl}
+            embeddedPreviewUrl={embeddedPreviewUrl}
+            className="mx-auto w-full"
+            heightMode="fullscreen"
+            onClose={onClose}
+          />
+          {preview.surface !== "studio-card" || !preview.imageUrl ? (
             <Dialog.Close asChild>
               <button
                 type="button"
-                className="-ml-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-3 text-sm font-bold text-violet-700 transition hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+                aria-label="Close preview"
+                title="Close preview"
+                className="absolute right-3 top-5 z-30 inline-flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-white/30 bg-black/60 text-white backdrop-blur-md transition-colors hover:bg-black/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:right-5 sm:top-6"
               >
-                <ArrowLeft size={20} strokeWidth={2.4} aria-hidden="true" />
-                <span>{returnLabel}</span>
+                <X size={24} aria-hidden="true" />
               </button>
             </Dialog.Close>
-            <Dialog.Title className="mt-1 text-xl font-semibold text-slate-950">{heading}</Dialog.Title>
-            <Dialog.Description className="mt-1 text-sm text-slate-600">{description}</Dialog.Description>
-          </div>
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
-            <div className="flex min-h-full items-center justify-center">
-              <EventProductPreview
-                eventId={eventId}
-                eventTitle={eventTitle}
-                preview={preview}
-                publicUrl={publicUrl}
-                embeddedPreviewUrl={embeddedPreviewUrl}
-                className="mx-auto w-full max-w-[430px]"
-                heightMode="auto"
-              />
-            </div>
-          </div>
+          ) : null}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

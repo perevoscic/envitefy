@@ -1196,7 +1196,7 @@ export default function EventCreateWysiwyg({ defaultDate, initialCategoryKey }: 
               if (cat === "birthdays") return <BirthdaysTemplate editor={editor} />;
               if (cat === "weddings") return <WeddingsTemplate editor={editor} />;
               if (cat === "baby showers") return <BabyShowersTemplate editor={editor} />;
-              if (cat === "appointments" || cat === "doctor appointments")
+              if (cat === "appointments" || cat === "doctor appointments" || cat === "medical appointments")
                 return <EventTemplateBase editor={editor} />;
               if (cat === "sport events") return <EventTemplateBase editor={editor} />;
               return <EventTemplateBase editor={editor} />;

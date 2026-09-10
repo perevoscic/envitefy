@@ -4,6 +4,17 @@ import test from "node:test";
 import { EVENT_EXTRACTION_SCHEMA } from "./extraction-contract.ts";
 import { buildEventExtractionPrompt } from "./prompts.ts";
 
+test("appointment extraction keeps printed patient details without DOB cards or invented reminders", () => {
+  const { system } = buildEventExtractionPrompt("2026-09-10");
+  assert.match(system, /Patient, Patient ID, Appointment Provider, Fax and Host/);
+  assert.match(system, /Appointment Provider fact is the individual clinician/);
+  assert.match(system, /Host fact and hostName identify the clinic, practice or organization/);
+  assert.match(system, /Do not assume a clinician is a doctor or invent credentials/);
+  assert.match(system, /A short title does not replace the full Patient fact/);
+  assert.match(system, /Do not put DOB in title, description, goodToKnow or ocrFacts/);
+  assert.match(system, /leave goodToKnow null when the source has no practical instructions/);
+});
+
 test("event OCR prompt includes dashboard thumbnail focus contract", () => {
   const promptSource = readFileSync(new URL("./extraction-prompt.ts", import.meta.url), "utf8");
   const typesSource = readFileSync(new URL("./types.ts", import.meta.url), "utf8");

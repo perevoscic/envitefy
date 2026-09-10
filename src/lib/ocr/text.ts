@@ -1,3 +1,6 @@
+import { buildScanPersonalization } from "./personalization.ts";
+import { contactNumberLabel, extractLabeledContactNumbers } from "./contact-numbers.ts";
+
 export function detectSpelledTime(
   raw: string,
 ): { hour: number; minute: number; meridiem: "am" | "pm" | null } | null {
@@ -964,7 +967,7 @@ export function extractCommonOcrFactsFromFlyerText(
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, " ")
       .trim();
-    if (!key || !valueKey || seen.has(key) || seenValues.has(valueKey)) return;
+    if (!key || !valueKey || seen.has(key) || (!contactNumberLabel(label) && seenValues.has(valueKey))) return;
     seen.add(key);
     seenValues.add(valueKey);
     facts.push({
@@ -1020,12 +1023,15 @@ export function extractCommonOcrFactsFromFlyerText(
   if (printedPerks.length) addFact("Perks", printedPerks.join(", "));
   if (menuPriceMatches.length >= 2) addFact("Menu Prices", menuPriceMatches.join("; "));
   if (printedFlavors.length >= 2) addFact("Flavors", printedFlavors.join(", "));
-  const contactPhone = compact.match(
-    /\b(?:\+?1[-.\s]?)?(?:\(\s*\d{3}\s*\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}\b/,
-  )?.[0];
+  const labeledContacts = extractLabeledContactNumbers(compact);
+  const contactPhone = labeledContacts.find((fact) => fact.label === "Phone")?.value ||
+    (!labeledContacts.length && !/\b(?:patient\s*(?:id|identifier|number)|d\.?o\.?b\.?|date\s+of\s+birth)\b/i.test(compact) ? compact.match(
+      /(?<!\d)(?:\+?1[-.\s]?)?(?:\(\s*\d{3}\s*\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}\b/,
+    )?.[0] : null);
   const contactEmail = compact.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
   const contactWebsite = compact.match(/\b(?:https?:\/\/|www\.)[^\s,;]+/i)?.[0];
   if (contactPhone) addFact("Phone", contactPhone);
+  for (const fact of labeledContacts) addFact(fact.label, fact.value);
   if (contactEmail) addFact("Email", contactEmail);
   if (contactWebsite) addFact("Website", contactWebsite);
   addFact("Good to Know", compact.match(/\ball\s+skills?\s+levels?\s+welcome\b/i)?.[0]);
@@ -1242,13 +1248,14 @@ export function pickTitle(lines: string[], _raw: string): string {
 
 export function detectCategory(fullText: string): string | null {
   try {
+    if (buildScanPersonalization({ sourceText: fullText }).medical) return "Medical Appointments";
     const isDoctorLike =
       /(doctor|dr\.|dentist|dental|orthodont|clinic|hospital|pediatric|dermatolog|cardiolog|optomet|eye\s+exam|ascension|sacred\s*heart)/i.test(
         fullText,
       );
     const hasAppt = /(appointment|appt)/i.test(fullText);
-    if (isDoctorLike && hasAppt) return "Doctor Appointments";
-    if (isDoctorLike) return "Doctor Appointments";
+    if (isDoctorLike && hasAppt) return "Medical Appointments";
+    if (isDoctorLike) return "Medical Appointments";
     if (hasAppt) return "Appointments";
 
     if (/\bbridal\s*shower\b/i.test(fullText)) return "Bridal Showers";

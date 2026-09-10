@@ -1,6 +1,5 @@
 "use client";
 
-import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
 
 import * as chrono from "chrono-node";
 import { Eye, Mail, Pencil, Share2, UserPlus } from "lucide-react";
@@ -21,6 +20,7 @@ import { resolveSourceIntent } from "@/lib/concierge/creation-intent";
 import { resolveDashboardBrowserOrigin } from "@/lib/dashboard-origin";
 import { normalizeOcrLocationFields, normalizeOcrRsvpFields } from "@/lib/ocr/field-normalization";
 import { normalizeOcrFacts, type OcrFact } from "@/lib/ocr/facts";
+import { buildScanPersonalization, normalizeScanPersonalization, type ScanPersonalization } from "@/lib/ocr/personalization";
 import {
   isBasketballOcrSkinCandidate,
   isFootballOcrSkinCandidate,
@@ -110,6 +110,8 @@ type SubmitScannedEventParams = {
   sourceFile?: File | null;
   scanAttemptId?: string | null;
   ocrMeta?: {
+    scanPersonalization?: ScanPersonalization | null;
+    scanSourceKind?: "paperwork" | "designed" | "unknown";
     category?: string | null;
     birthdayTemplateHint?: BirthdayTemplateHint | null;
     ocrSkin?: OcrSkinSelection | null;
@@ -126,11 +128,6 @@ type SaveHistoryResult =
       ownership: "owned" | "invited";
       savedTitle?: string;
       publicSlug?: string;
-      calendarSync?: {
-        status?: string;
-        provider?: "google" | "microsoft" | null;
-        reason?: string;
-      } | null;
     }
   | {
       ok: false;
@@ -1251,15 +1248,17 @@ export default function Dashboard({
         await finishScanUi();
         setScanStatus("creating");
         setOcrText(data.ocrText || "");
-        setUploadedFile(fileToUpload);
+        setUploadedFile(incoming);
         setOcrCategory(data?.category || null);
         setOcrBirthdayTemplateHint(data?.birthdayTemplateHint || null);
         if (adjusted) {
           const created = await submitScannedEventRef.current({
             eventInput: adjusted,
-            sourceFile: fileToUpload,
+            sourceFile: incoming,
             scanAttemptId,
             ocrMeta: {
+              scanPersonalization: normalizeScanPersonalization(data?.fieldsGuess?.scanPersonalization),
+              scanSourceKind: data?.fieldsGuess?.scanSourceKind || "unknown",
               category: data?.category || null,
               birthdayTemplateHint: data?.birthdayTemplateHint || null,
               ocrSkin: data?.ocrSkin || null,
@@ -1451,6 +1450,7 @@ export default function Dashboard({
       try {
         const timezone =
           eventInput.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+        const scanPersonalization = normalizeScanPersonalization(ocrMeta?.scanPersonalization) || buildScanPersonalization({ title: eventInput.title, category: ocrMeta?.category || ocrCategory });
 
         let thumbnail: string | undefined;
         let attachment: Record<string, unknown> | undefined;
@@ -1461,6 +1461,7 @@ export default function Dashboard({
               file: fileForUpload,
               usage: "attachment",
               scanAttemptId,
+              privateScan: scanPersonalization.medical,
             });
             thumbnail = upload.eventMedia.thumbnail;
             attachment = upload.eventMedia.attachment;
@@ -1697,6 +1698,8 @@ export default function Dashboard({
                           : "ocr",
             thumbnail,
             thumbnailFocus: normalizedThumbnailFocus || undefined,
+            scanPersonalization,
+            scanSourceKind: ocrMeta?.scanSourceKind || "unknown",
             attachment: attachment || undefined,
             ocrSkin: isInviteOcrEvent ? normalizedOcrSkin || undefined : undefined,
             openHouse: isOpenHouseOcrEvent ? normalizedOpenHouse || undefined : undefined,
@@ -1771,63 +1774,7 @@ export default function Dashboard({
           };
         }
 
-        // Wait for the provider request before navigating. A fire-and-forget request could be
-        // lost during the immediate route transition and gave the user no useful sync outcome.
-        let calendarSync: {
-          status?: string;
-          provider?: "google" | "microsoft" | null;
-          reason?: string;
-        } | null = null;
-        if (CONNECTED_CALENDAR_SYNC_ENABLED) {
-          try {
-            const calendarSyncResponse = await fetch("/api/events/calendar/auto", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
-              cache: "no-store",
-              body: JSON.stringify({ eventId }),
-            });
-            const calendarSyncPayload = await calendarSyncResponse.json().catch(() => ({}));
-            calendarSync = {
-              status:
-                typeof calendarSyncPayload?.status === "string"
-                  ? calendarSyncPayload.status
-                  : undefined,
-              provider:
-                calendarSyncPayload?.provider === "google" ||
-                calendarSyncPayload?.provider === "microsoft"
-                  ? calendarSyncPayload.provider
-                  : null,
-              reason:
-                typeof calendarSyncPayload?.reason === "string"
-                  ? calendarSyncPayload.reason
-                  : undefined,
-            };
-            reportClientLog({
-              area: "snap-upload",
-              stage: "calendar-sync-complete",
-              scanAttemptId,
-              details: {
-                eventId,
-                ok: calendarSyncResponse.ok && calendarSyncPayload?.ok !== false,
-                status: calendarSync.status || null,
-                provider: calendarSync.provider || null,
-                reason: calendarSync.reason || null,
-              },
-            });
-          } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            calendarSync = { status: "failed", reason: "request_failed" };
-            console.warn("Automatic calendar sync could not be completed:", message);
-            reportClientLog({
-              area: "snap-upload",
-              stage: "calendar-sync-failed",
-              scanAttemptId,
-              details: { eventId, message },
-            });
-          }
-        }
-
+        // Calendar work is queued with the save and runs after the server response.
         if (typeof window !== "undefined") {
           window.dispatchEvent(
             new CustomEvent("history:created", {
@@ -1853,7 +1800,6 @@ export default function Dashboard({
           ownership: historyOwnership,
           savedTitle,
           publicSlug,
-          calendarSync,
         };
       } catch (err) {
         console.error("Failed to save to Envitefy history:", err);
@@ -1904,16 +1850,10 @@ export default function Dashboard({
           );
           return false;
         }
-        const { eventId, ownership, savedTitle, publicSlug, calendarSync } = saveResult;
+        const { eventId, ownership, savedTitle, publicSlug } = saveResult;
 
         const eventTitle = savedTitle || eventInput.title || "Event";
         const ownerEventHref = buildEventPath(eventId, eventTitle, undefined, publicSlug);
-        const calendarSyncStatus =
-          calendarSync?.status === "needs_connection" ||
-          calendarSync?.status === "needs_reconnect" ||
-          calendarSync?.status === "failed"
-            ? calendarSync.status
-            : undefined;
         const eventHref = buildEventPath(
           eventId,
           eventTitle,
@@ -1921,13 +1861,9 @@ export default function Dashboard({
             ? {
                 created: true,
                 tab: "dashboard",
-                calendarSync: calendarSyncStatus,
-                calendarProvider: calendarSync?.provider || undefined,
               }
             : {
                 created: true,
-                calendarSync: calendarSyncStatus,
-                calendarProvider: calendarSync?.provider || undefined,
               },
           publicSlug,
         );

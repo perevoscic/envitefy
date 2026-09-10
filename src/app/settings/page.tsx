@@ -5,6 +5,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import {
   CalendarDays,
   Camera,
+  Check,
   ChevronRight,
   RefreshCw,
   Settings2,
@@ -49,6 +50,7 @@ import {
 import { notifyFeatureVisibilityChanged } from "@/hooks/useFeatureVisibility";
 import { PROFILE_AVATAR_ACCEPT, validateProfileAvatarMeta } from "@/lib/profile-avatar";
 import { MobileActionBar } from "@/components/ui/MobileActionBar";
+import AppleCalendarConnection, { type AppleCalendarStatus } from "@/components/AppleCalendarConnection";
 
 type CalendarProvider = "google" | "microsoft" | "apple";
 type ConnectedCalendarProvider = Exclude<CalendarProvider, "apple">;
@@ -105,6 +107,8 @@ export default function SettingsPage() {
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const avatarPreviewObjectUrlRef = useRef<string | null>(null);
   const [preferredProvider, setPreferredProvider] = useState<string>("");
+  const [calendarDefaultLoading, setCalendarDefaultLoading] = useState(true);
+  const calendarDefaultSavingRef = useRef(false);
   const [profileState, setProfileState] = useState<ApiState<{ ok?: boolean }>>({
     loading: false,
     error: null,
@@ -119,6 +123,15 @@ export default function SettingsPage() {
     apple: false,
   });
   const autoClearedProviderRef = useRef<CalendarProvider | null>(null);
+  const [appleSubscriptionStatus, setAppleSubscriptionStatus] = useState<AppleCalendarStatus>({ ready: false, connected: false });
+  const appleStatusVersionRef = useRef(0);
+  const handleAppleStatusChange = useCallback((status: AppleCalendarStatus) => {
+    appleStatusVersionRef.current++;
+    setAppleSubscriptionStatus(status);
+  }, []);
+  const [calendarAccountEmails, setCalendarAccountEmails] = useState<
+    Record<ConnectedCalendarProvider, string | null>
+  >({ google: null, microsoft: null });
   const [connectionsLoading, setConnectionsLoading] = useState(false);
   const [connectionsVerified, setConnectionsVerified] = useState(false);
   const calendarRequestRef = useRef(0);
@@ -160,7 +173,7 @@ export default function SettingsPage() {
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
     return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
   }, [settingsDisplayName]);
-  const connectedCalendarCount = Object.values(connectedCalendars).filter(Boolean).length;
+  const connectedCalendarCount = Object.values(connectedCalendars).filter(Boolean).length + Number(appleSubscriptionStatus.connected);
   const primarySportLabel = getSportCreationLabel(sportPreferences.primarySport);
   const displayedAvatarUrl = avatarPreviewUrl || avatarUrl;
 
@@ -291,26 +304,35 @@ export default function SettingsPage() {
     normalizedPreferredProvider && !connectedCalendars[normalizedPreferredProvider],
   );
 
-  const togglePreferredProvider = (provider: CalendarProvider) => {
-    if (!connectedCalendars[provider]) return;
-    setPreferredProvider((prev) => (prev === provider ? "" : provider));
-    setCalendarState((prev) => ({ ...prev, error: null, data: undefined }));
-  };
-
   const fetchConnectedCalendars = useCallback(async () => {
     const requestId = ++calendarRequestRef.current;
+    const appleStatusVersion = appleStatusVersionRef.current;
     setConnectionsLoading(true);
+    setCalendarAccountEmails({ google: null, microsoft: null });
     try {
-      const res = await fetch("/api/calendars", { credentials: "include", cache: "no-store" });
+      const res = await fetch("/api/calendars?includeAccounts=1", { credentials: "include", cache: "no-store" });
       if (!res.ok) {
         throw new Error("Calendar connections could not be verified");
       }
       const json = await res.json();
       if (requestId !== calendarRequestRef.current) return;
+      // A setup/disconnect completed while this request was pending; keep its newer status.
+      if (appleStatusVersion === appleStatusVersionRef.current && json?.appleSubscription) {
+        setAppleSubscriptionStatus({
+          ready: Boolean(json.appleSubscription.ready),
+          connected: Boolean(json.appleSubscription.connected),
+        });
+      }
       setConnectedCalendars({
         google: Boolean(json?.google),
         microsoft: Boolean(json?.microsoft),
         apple: Boolean(json?.apple),
+      });
+      setCalendarAccountEmails({
+        google: json?.google && typeof json?.accountEmails?.google === "string"
+          ? json.accountEmails.google : null,
+        microsoft: json?.microsoft && typeof json?.accountEmails?.microsoft === "string"
+          ? json.accountEmails.microsoft : null,
       });
       setConnectionsVerified(true);
     } catch {
@@ -389,6 +411,7 @@ export default function SettingsPage() {
       }
 
       setConnectedCalendars((current) => ({ ...current, [provider]: false }));
+      setCalendarAccountEmails((current) => ({ ...current, [provider]: null }));
       if (preferredProvider === provider) {
         setPreferredProvider("");
         mirrorLocalCalendarDefault(null);
@@ -411,35 +434,32 @@ export default function SettingsPage() {
     }
   }
 
-  async function saveCalendarDefault() {
-    if (preferredProviderInvalid) {
-      setCalendarState({
-        loading: false,
-        error: "Select a connected provider or clear the default.",
-      });
-      return;
-    }
+  async function saveCalendarDefault(provider: ConnectedCalendarProvider | null) {
+    if (calendarDefaultSavingRef.current || calendarState.loading || calendarDefaultLoading || connectionsLoading || !connectionsVerified || disconnectingProvider) return;
+    if (provider && !connectedCalendars[provider]) return;
+    calendarDefaultSavingRef.current = true;
     setCalendarState({ loading: true, error: null });
-    const normalized = normalizeProvider(preferredProvider);
     try {
       const res = await fetch("/api/user/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          preferredProvider: normalized || null,
+          preferredProvider: provider,
         }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(json.error || "Failed to save calendar default");
       }
-      mirrorLocalCalendarDefault(normalized);
-      setPreferredProvider(normalized || "");
+      mirrorLocalCalendarDefault(provider);
+      setPreferredProvider(provider || "");
       autoClearedProviderRef.current = null;
       setCalendarState({ loading: false, error: null, data: { ok: true } });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to save calendar default";
       setCalendarState({ loading: false, error: message });
+    } finally {
+      calendarDefaultSavingRef.current = false;
     }
   }
 
@@ -457,6 +477,8 @@ export default function SettingsPage() {
         setPreferredProvider(normalizeProvider(json.preferredProvider) || "");
       } catch {
         // no-op; page still renders
+      } finally {
+        if (!ignore) setCalendarDefaultLoading(false);
       }
     }
     loadProfile();
@@ -501,6 +523,9 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setConnectedCalendars({ google: false, microsoft: false, apple: false });
+    appleStatusVersionRef.current++;
+    setAppleSubscriptionStatus({ ready: false, connected: false });
+    setCalendarAccountEmails({ google: null, microsoft: null });
     setConnectionsVerified(false);
     if (sessionStatus === "authenticated") void fetchConnectedCalendars();
     return () => { calendarRequestRef.current++; };
@@ -951,7 +976,7 @@ export default function SettingsPage() {
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {CONNECTED_CALENDAR_SYNC_ENABLED
-                    ? "Connect Google or Outlook for background sync and choose your default calendar."
+                    ? "Connect your calendars and choose where new scanned events are saved."
                     : CALENDAR_SYNC_PAUSED_MESSAGE}
                 </p>
               </div>
@@ -996,12 +1021,15 @@ export default function SettingsPage() {
                   connected: connectedCalendars.microsoft,
                 },
               ].map((item) => {
-                const disconnecting =
-                  item.key !== "apple" && disconnectingProvider === item.key;
+                if (item.key === "apple") {
+                  return <AppleCalendarConnection key={userEmail || "apple"} accountKey={userEmail} status={appleSubscriptionStatus} onStatusChange={handleAppleStatusChange} />;
+                }
+                const disconnecting = disconnectingProvider === item.key;
+                const isDefault = preferredProvider === item.key && item.connected;
                 return (
                   <div
                     key={item.key}
-                    className="space-y-3 rounded-2xl border border-[#e5dcff] bg-[linear-gradient(145deg,#fff,#fbf9ff)] p-4 shadow-[0_8px_24px_rgba(80,61,121,0.05)]"
+                    className="min-w-0 space-y-3 rounded-2xl border border-[#e5dcff] bg-[linear-gradient(145deg,#fff,#fbf9ff)] p-4 shadow-[0_8px_24px_rgba(80,61,121,0.05)]"
                   >
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium text-[#2f1d47]">{item.label}</p>
@@ -1012,29 +1040,25 @@ export default function SettingsPage() {
                             : "bg-[#f1edff] text-[#6f5ba3]"
                         }`}
                       >
-                        {item.connected
-                          ? "Connected"
-                          : item.key === "apple"
-                            ? "Add per event"
-                            : "Not connected"}
+                        {item.connected ? "Connected" : "Not connected"}
                       </span>
                     </div>
 
-                    {item.key === "apple" ? (
-                      <button
-                        type="button"
-                        disabled
-                        className="inline-flex min-h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-[#e6e0f4] bg-[#f6f4fa] px-3 py-2 text-xs font-semibold text-[#a29aae]"
-                      >
-                        <RefreshCw className="h-4 w-4" aria-hidden="true" />
-                        Background sync unavailable
-                      </button>
-                    ) : item.connected ? (
+                    {item.connected ? (
+                      <p className="text-sm leading-5 text-[#59466f] [overflow-wrap:anywhere]">
+                        <span className="block text-xs font-medium text-[#6f5ba3]">Synced account</span>
+                        {connectionsLoading
+                          ? "Checking email…"
+                          : calendarAccountEmails[item.key] || "Email unavailable — try Refresh"}
+                      </p>
+                    ) : null}
+
+                    {item.connected ? (
                       <div className="grid grid-cols-2 gap-2">
                         <button
                           type="button"
                           onClick={() => handleCalendarConnect(item.key)}
-                          disabled={disconnecting || !CONNECTED_CALENDAR_SYNC_ENABLED}
+                          disabled={disconnecting || calendarState.loading || !CONNECTED_CALENDAR_SYNC_ENABLED}
                           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#d9cdfa] bg-white px-3 py-2 text-xs font-semibold text-[#4f3f7a] transition hover:bg-[#f5eeff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67be] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
                         >
                           <RefreshCw className="h-4 w-4" aria-hidden="true" />
@@ -1046,7 +1070,7 @@ export default function SettingsPage() {
                               setDisconnectPromptError(null);
                               setDisconnectPromptProvider(item.key);
                             }}
-                          disabled={disconnecting}
+                          disabled={disconnecting || calendarState.loading}
                           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
                         >
                           <Unplug className="h-4 w-4" aria-hidden="true" />
@@ -1063,129 +1087,38 @@ export default function SettingsPage() {
                         {CONNECTED_CALENDAR_SYNC_ENABLED ? `Connect ${item.label}` : "Sync paused"}
                       </button>
                     )}
+                    {item.connected && CONNECTED_CALENDAR_SYNC_ENABLED ? (
+                      <div className="border-t border-[#e5dcff] pt-2">
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={isDefault}
+                          aria-label={`Use ${item.label} as default calendar`}
+                          disabled={calendarDefaultLoading || calendarState.loading || connectionsLoading || !connectionsVerified || Boolean(disconnectingProvider)}
+                          onClick={() => void saveCalendarDefault(isDefault ? null : item.key)}
+                          className="flex min-h-11 w-full items-center justify-between gap-3 rounded-lg text-left text-xs font-medium text-[#4f3f7a] transition hover:text-[#33264c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67be] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <span>Default calendar</span>
+                          <span
+                            aria-hidden="true"
+                            className={`flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition-colors motion-reduce:transition-none ${isDefault ? "bg-[#7254ae]" : "bg-[#dcd4ed]"}`}
+                          >
+                            <span className={`flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm transition-transform motion-reduce:transition-none ${isDefault ? "translate-x-5" : "translate-x-0"}`}>
+                              {isDefault ? <Check className="h-3 w-3 text-[#7254ae]" /> : null}
+                            </span>
+                          </span>
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 );
               })}
             </div>
 
-            <div hidden={!CONNECTED_CALENDAR_SYNC_ENABLED} className="space-y-4 rounded-2xl border border-[#e5dcff] bg-white p-4 sm:p-5">
-              <p className="text-sm font-medium text-[#2f1d47]">Default calendar</p>
-              <p className="text-xs text-[#7a6ca8]">
-                Choose a connected provider. Apple Calendar remains available as a one-event
-                add until a connection is available.
-              </p>
-              <div className="flex items-start gap-4">
-                {[
-                  {
-                    key: "google" as const,
-                    label: "Google",
-                    connected: connectedCalendars.google,
-                    glyph: "G",
-                  },
-                  {
-                    key: "apple" as const,
-                    label: "Apple",
-                    connected: connectedCalendars.apple,
-                    glyph: "A",
-                  },
-                  {
-                    key: "microsoft" as const,
-                    label: "Outlook",
-                    connected: connectedCalendars.microsoft,
-                    glyph: "O",
-                  },
-                ].map((item) => {
-                  const isDisabled = !item.connected;
-                  const isDefault = preferredProvider === item.key && !isDisabled;
-                  return (
-                    <div key={item.key} className="flex flex-col items-center gap-1">
-                      <button
-                        type="button"
-                        aria-pressed={isDefault}
-                        disabled={isDisabled}
-                        onClick={() => togglePreferredProvider(item.key)}
-                        title={
-                          isDisabled
-                            ? item.key === "apple"
-                              ? "Apple Calendar is available from each event, but is not connected as a default"
-                              : `${item.label} is not connected`
-                            : isDefault
-                            ? `Default is ${item.label}. Click to clear default`
-                            : `Set ${item.label} as default`
-                        }
-                        className={`relative flex h-12 w-12 items-center justify-center rounded-full border-2 text-sm font-semibold transition ${
-                          isDefault
-                            ? "border-[#b9a7ea] bg-[#f7f3ff] text-[#5a4699] shadow-[0_6px_16px_rgba(119,92,191,0.22)] ring-1 ring-[#d8ccf6]"
-                            : isDisabled
-                              ? "border-[#ebe5fb] bg-[#f8f6ff] text-[#b2a8d1]"
-                              : "border-[#ddd3f5] bg-white text-[#8677b4] hover:border-[#c7b7ee] hover:bg-[#f8f5ff]"
-                        }`}
-                      >
-                        {item.glyph}
-                        {isDefault && (
-                          <div className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-[#7c67be] flex items-center justify-center border-2 border-white shadow-sm">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 12 12"
-                              fill="none"
-                              className="h-2.5 w-2.5 text-white"
-                              aria-hidden="true"
-                            >
-                              <path
-                                d="M10 3L4.5 8.5L2 6"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          </div>
-                        )}
-                      </button>
-                      <span
-                        className={`text-[11px] ${isDefault ? "text-[#4b3f72]" : "text-[#8f86b3]"}`}
-                      >
-                        {item.label}
-                      </span>
-                      {isDefault ? (
-                        <span className="rounded-full bg-[#efe9ff] px-1.5 py-0.5 text-[10px] font-medium leading-none text-[#5a4699]">
-                          Default
-                        </span>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {preferredProviderInvalid && (
-                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                  Current default is disconnected. Clear or choose a connected provider.
-                </div>
-              )}
-
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPreferredProvider("")}
-                  className="inline-flex items-center rounded-xl border border-[#d9cdfa] bg-[#fcfaff] px-3 py-2 text-xs font-semibold text-[#4f3f7a] transition hover:bg-[#f5eeff]"
-                >
-                  Clear default
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void saveCalendarDefault()}
-                  disabled={calendarState.loading}
-                  className="inline-flex items-center rounded-xl bg-[#33264c] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#473460] disabled:opacity-60"
-                >
-                  {calendarState.loading ? "Saving..." : "Save calendar default"}
-                </button>
-              </div>
-
-              {calendarState.error && <p className="text-xs text-red-600">{calendarState.error}</p>}
-              {calendarState.data?.ok && (
-                <p className="text-xs text-green-600">Calendar default saved.</p>
-              )}
-            </div>
+            {calendarState.error ? <p role="alert" className="text-xs text-red-600">{calendarState.error}</p> : null}
+            <p role="status" className="sr-only">
+              {calendarState.loading ? "Saving calendar default…" : calendarState.data?.ok ? "Calendar default saved." : ""}
+            </p>
           </section>
 
           {/* Security */}

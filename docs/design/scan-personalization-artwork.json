@@ -1,0 +1,25 @@
+{
+  "createdAt": "2026-09-10",
+  "generator": "Built-in image_gen",
+  "use": "Example of a unique pediatric ENT background; production scans generate their own artwork.",
+  "prompt": "Use case: illustration-story. Asset type: wide decorative background for a child's ENT appointment page in Envitefy, landscape 1536x1024. Create an original, gentle editorial illustration appropriate for a seven-year-old child. Light warm ivory and pale mint paper background. At the outer corners and edges, a friendly rounded teal otoscope, a small softly drawn ear with curved listening waves, simple colorful building blocks, a few small stars and a paper airplane. Medical objects must feel reassuring and recognizable, with no procedure, needles, sharp tools, clinical distress or anatomical detail. Sophisticated soft gouache with subtle paper grain, teal, sage, butter yellow and soft blue accents; no gender stereotypes, no baby imagery. Keep the broad center and upper-left middle extremely quiet and light so large dark event text and white logistics cards remain readable. No people, names, numbers, letters, logos, dates, documents or text anywhere. This is only the background artwork, no UI, no cards or buttons.",
+  "finalPath": "public/examples/scan-artwork/pediatric-ent.webp",
+  "format": "WebP",
+  "dimensions": {
+    "width": 1536,
+    "height": 1024
+  },
+  "conversion": "FFmpeg libwebp, quality 85, compression level 6",
+  "verified": "WebP codec and original dimensions confirmed with ffprobe; successfully decoded with FFmpeg. Generated PNG original deleted after verification.",
+  "originalDeleted": true,
+  "hero": {
+    "createdAt": "2026-09-10",
+    "generator": "Built-in image_gen",
+    "prompt": "Use case: illustration-story. Create a polished portrait 3:4 hero illustration for a seven-year-old child's ENT appointment, a real raster art asset, not a card or webpage mockup. Reassuring rounded teal otoscope as the central full recognizable object, small abstract ear and gentle listening waves, playful small stars, folded paper airplane, and a few colorful wooden building blocks. Soft gouache and subtle paper grain, warm ivory and pale mint background, sage, teal, soft blue and butter yellow palette. Keep complete central objects with comfortable breathing room within a portrait crop, modest decorative corners, no huge empty center. Child-friendly, not babyish. No human portrait or inferred gender. No needles, surgery, distress, or detailed anatomy. No words, letters, numbers, logos, names, dates, documents, borders, buttons, text or UI. Coordinate with a light ivory/sage pediatric ENT background.",
+    "finalPath": "public/examples/scan-artwork/pediatric-ent-hero.webp",
+    "dimensions": { "width": 1086, "height": 1448 },
+    "conversion": "FFmpeg libwebp, quality 85, compression level 6",
+    "verified": "ffprobe confirmed actual WebP and preserved dimensions; FFmpeg decoded it successfully. Exact generated PNG removed after verification; user-supplied originals retained.",
+    "originalDeleted": true
+  }
+}

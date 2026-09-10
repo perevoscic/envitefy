@@ -185,6 +185,8 @@ export const resolveEditHref = (eventId: string, eventData: any, eventTitle: str
       "general",
       "general_event",
       "doctor_appointment",
+      "medical_appointment",
+      "medical appointments",
       "appointments",
       "appointment",
       "workshop",

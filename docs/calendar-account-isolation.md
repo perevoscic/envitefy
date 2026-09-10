@@ -39,3 +39,22 @@ Outlook connection guards, Settings guards, calendar sync guards, and privacy gu
 The local API smoke check also verified the affected account with the configured
 database and Google's permission response without writing events or changing
 connection records.
+
+September 10, 2026: Calendar settings display a **Synced account** email beneath
+each connected Google or Outlook provider. The optional
+`/api/calendars?includeAccounts=1` response resolves Google's profile email or the
+Outlook default calendar owner's address using the saved calendar credential,
+never the Envitefy login email. Existing connections work without a migration or
+additional permission request. Other consumers retain the lightweight boolean
+response. Email lookup failures leave connection status intact, and Settings can
+retry with Refresh. Lookups are briefly cached by credential digest and recheck
+stored tokens before responding so disconnects and reconnects cannot expose an
+old account email. Coverage: `src/lib/calendar-account-email.test.mjs`.
+
+## Default calendar controls
+
+Connected Google and Outlook tiles contain a Default calendar switch. Changes
+save immediately; only one provider can be the default, and turning its switch
+off clears the preference. Failed saves retain the previous selection. The
+separate default picker and Save button have been removed. Apple subscriptions
+continue independently of this destination preference.

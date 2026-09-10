@@ -66,7 +66,12 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Accepts camera photos and uploads of invitations, flyers, screenshots, schedules, PDFs, and other event images.",
             "Extracts useful details such as title, date, time, place, host information, RSVP details, schedules, and relevant links for review.",
             "Creates a saved event record and polished live event card/page; it is more than OCR or a static scan.",
+            "Uses supported person and event context for concise appointment titles. Saved appointment slips, schedules and paperwork receive a unique hero illustration and coordinated background that stays fixed as the details scroll; artwork reflects the occasion and supported age, with a fallback and retry if generation fails. Identifying details and source documents stay out of artwork prompts.",
+            "Designed invitations and flyers keep their original artwork by default, with an owner option to generate artwork. Original uploads are preserved in a compact Original document tile at the end of the details, above the scanned-page footer. View opens an in-page document popup with Share, Download and Close controls; supported devices share the original file, and medical originals remain owner-only by default.",
+            "Saved image scans prepare a smaller viewing copy in the background for quicker opening on phones, while downloads and device sharing preserve the exact uploaded document. Medical viewing copies remain encrypted and owner-only.",
+            "Recognizes clinical visits such as ENT and dental appointments and groups them under Medical Appointments, separately from general appointments. Medical details distinguish the individual Clinician from the clinic or organization shown as Appointment provider.",
             "Received social invitation cards can be kept with Invited events, while source material for events the customer owns belongs with My events.",
+            "Saved scans open immediately after saving while connected Google or Outlook calendars sync in the background. The event page confirms the result or shows when calendar setup needs attention.",
           ],
           sellWhen: [
             "The brief mentions snapping, scanning, photographing, uploading, a printed invitation, flyer, screenshot, schedule, or PDF.",
@@ -255,13 +260,16 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Live Cards interpret times without a timezone in the guest's local browser timezone; calendar links preserve the resolved date and time across Google, Apple, and Outlook.",
             ...(CONNECTED_CALENDAR_SYNC_ENABLED
               ? [
-                  "Signed-in owners can connect or disconnect Google Calendar and Outlook background sync from Settings; Apple Calendar uses a one-event ICS handoff.",
+                  "Signed-in owners can connect or disconnect Google Calendar and Outlook background sync from Settings.",
+                  "Calendar settings show the connected Google or Outlook email so owners can confirm which account receives synced events.",
+                  "Set or clear the default calendar directly from its connected Google or Outlook tile; changes save immediately.",
                   "Saved scans and uploads can automatically sync to a connected Google or Outlook calendar using the owner's calendar preference.",
                 ]
               : [
                   "Guests can manually save events with calendar links or ICS downloads; these actions do not require a connected calendar account.",
                 ]),
             "Calendar entries can carry event timing, location, and available reminder information.",
+            "Connect Apple Calendar from Settings with a private calendar subscription for saved events; updates appear when Apple Calendar refreshes. One-event Apple/ICS downloads remain available.",
             "Specialized schedule flows can expose the relevant event or session timing.",
           ],
           sellWhen: [

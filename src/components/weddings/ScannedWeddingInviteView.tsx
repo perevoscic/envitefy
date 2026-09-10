@@ -13,6 +13,7 @@ import {
 } from "@/components/event-skin-layout";
 import OcrFactCards from "@/components/OcrFactCards";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
+import { ScanOriginalDocumentSection } from "@/components/ScanArtworkProvider";
 import {
   filterRegistryOcrFacts,
   filterRenderedOcrFacts,
@@ -701,6 +702,8 @@ export default function ScannedWeddingInviteView({
           </section>
         </aside>
       </div>
+
+      <ScanOriginalDocumentSection className="relative z-10 mx-auto mt-8 w-full max-w-md px-5 lg:px-8" />
 
       <div className={`relative z-10 ${EVENT_SKIN_FOOTER_CLASS}`}>
         <div

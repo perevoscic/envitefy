@@ -10,6 +10,8 @@ import React, {
 } from "react";
 
 interface SidebarContextType {
+  eventRouteAlias: EventRouteAlias | null;
+  setEventRouteAlias: (alias: EventRouteAlias | null) => void;
   isCollapsed: boolean;
   setIsCollapsed: (collapsed: boolean) => void;
   toggleSidebar: () => void;
@@ -33,6 +35,8 @@ interface SidebarContextType {
 export type EventContextTab = "dashboard" | "rsvps" | "messages" | "design";
 
 export type EventListPage = "myEvents" | "invitedEvents";
+
+export type EventRouteAlias = { pathname: string; eventHref: string };
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 export const SIDEBAR_STORAGE_KEY = "sidebar:collapsed";
@@ -91,6 +95,7 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({ children }) =>
   const [selectedEventEditHref, setSelectedEventEditHref] = useState<string | null>(null);
   const [activeEventTab, setActiveEventTab] = useState<EventContextTab>("dashboard");
   const [eventContextSourcePage, setEventContextSourcePage] = useState<EventListPage>("myEvents");
+  const [eventRouteAlias, setEventRouteAlias] = useState<EventRouteAlias | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -157,6 +162,8 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({ children }) =>
   return (
     <SidebarContext.Provider
       value={{
+        eventRouteAlias,
+        setEventRouteAlias,
         isCollapsed,
         setIsCollapsed: setIsCollapsedAndPersist,
         toggleSidebar,

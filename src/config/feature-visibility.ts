@@ -105,7 +105,7 @@ const ALL_TEMPLATE_DEFINITIONS: TemplateDef[] = [
   },
   {
     key: "appointments",
-    label: "Doctor Appointments",
+    label: "Medical Appointments",
     href: "/event/appointments/customize",
     icon: "🩺",
     section: "appointments_general",

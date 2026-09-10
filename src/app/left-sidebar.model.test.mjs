@@ -1,20 +1,37 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { stripTypeScriptTypes } from "node:module";
 import path from "node:path";
 import test from "node:test";
 
 const repoRoot = process.cwd();
 
-const loadModelModule = async () => {
-  const source = fs.readFileSync(
-    path.join(repoRoot, "src/app/left-sidebar.model.ts"),
-    "utf8"
-  );
-  const compiled = stripTypeScriptTypes(source);
-  const moduleUrl = `data:text/javascript;base64,${Buffer.from(compiled).toString("base64")}`;
-  return import(moduleUrl);
-};
+const loadModelModule = () => import("./left-sidebar.model.ts");
+
+test("saved ENT scans get the doctor group and patient title while general appointments stay separate", async () => {
+  const { buildGroupedEventLists, guessCategoryFromText } = await loadModelModule();
+  const history = [
+    { id: "medical", title: "Emerald ENT Estab Pt Appointment", public_slug: "original-ent-slug", data: {
+      createdVia: "ocr", category: "Appointments", startISO: "2030-11-02T08:10:00",
+      ocrFacts: [{ label: "Patient", value: "MAYA SAMPLE" }],
+    } },
+    { id: "general", title: "Haircut appointment", data: {
+      createdVia: "ocr", category: "Appointments", startISO: "2030-11-03T08:10:00",
+    } },
+  ];
+  const grouped = buildGroupedEventLists({ history,
+    getEventStartIso: (data) => data.startISO,
+    buildEventPath: (id, _title, _params, slug) => `/event/${slug || id}`,
+    isSportsPreviewFirstEvent: () => false,
+    isInvitedEventLikeRecord: () => false,
+    canShowOwnerRsvpDashboard: () => false,
+  });
+  const medical = grouped.myEvents.upcoming.find((group) => group.category === "Medical Appointments");
+  assert.equal(medical.items[0].title, "Maya ENT appointment");
+  assert.equal(medical.items[0].href, "/event/original-ent-slug");
+  assert.equal(grouped.myEvents.upcoming.find((group) => group.category === "Appointments").items[0].row.id, "general");
+  assert.equal(history[0].data.category, "Appointments");
+  assert.equal(guessCategoryFromText("Haircut appointment"), "Appointments");
+});
 
 test("buildGroupedEventLists ports invited rows into My Events, prioritizes drafts, splits past events, and excludes owned signup forms", async () => {
   const { buildGroupedEventLists } = await loadModelModule();

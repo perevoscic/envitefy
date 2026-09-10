@@ -9,6 +9,19 @@ import {
   toDashboardEvent,
 } from "./dashboard-data.ts";
 
+test("dashboard presents legacy clinical scans under Medical Appointments with the patient title", () => {
+  const event = toDashboardEvent({ id: "medical-scan", title: "Emerald ENT Estab Pt Appointment", data: {
+    createdVia: "ocr", category: "Appointments", startISO: "2030-11-02T08:10:00",
+    ocrFacts: [{ label: "Patient", value: "MAYA SAMPLE" }],
+  } });
+  assert.equal(event?.category, "Medical Appointments");
+  assert.equal(event?.title, "Maya ENT appointment");
+  const general = toDashboardEvent({ id: "general-scan", title: "Haircut appointment", data: {
+    createdVia: "ocr", category: "Appointments", startISO: "2030-11-02T08:10:00",
+  } });
+  assert.equal(general?.category, "Appointments");
+});
+
 test("normalizeDashboardEventOwnership treats explicit invited ownership as invited", () => {
   assert.equal(normalizeDashboardEventOwnership("invited"), "invited");
 });

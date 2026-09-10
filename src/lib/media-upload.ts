@@ -530,7 +530,7 @@ async function processPdfUpload(params: {
     }),
     uploadBlobAsset({
       pathname: `event-media/${params.scopeId}/attachment/source.pdf`,
-      bytes: pdfBytes,
+      bytes: params.validated.bytes,
       contentType: "application/pdf",
       access: "public",
     }),
@@ -563,7 +563,7 @@ async function processPdfUpload(params: {
         url: source.url,
         mimeType: "application/pdf",
         sizeBytes: source.sizeBytes,
-        optimizedByQpdf: optimized.optimizedByQpdf,
+        optimizedByQpdf: false,
       },
     },
     eventMedia: {
@@ -589,7 +589,7 @@ async function processPdfUpload(params: {
         originalName: params.validated.fileName,
         originalType: params.validated.mimeType,
         originalSizeBytes: params.validated.sizeBytes,
-        optimizedByQpdf: optimized.optimizedByQpdf,
+        optimizedByQpdf: false,
       },
     },
   };

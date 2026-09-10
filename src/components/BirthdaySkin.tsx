@@ -22,6 +22,7 @@ import {
 import OcrFactCards from "@/components/OcrFactCards";
 import RsvpIdentityModal from "@/components/RsvpIdentityModal";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
+import { ScanOriginalDocumentSection } from "@/components/ScanArtworkProvider";
 import { buildPreferredDirectionsHref } from "@/lib/directions";
 import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
 import {
@@ -735,6 +736,8 @@ export default function BirthdaySkin({
             </div>
           </div>
         </div>
+
+        <ScanOriginalDocumentSection />
 
         <div className={EVENT_SKIN_FOOTER_CLASS}>
           <div

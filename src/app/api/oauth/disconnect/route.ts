@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedRequestUser } from "@/lib/auth";
 import { finishCalendarOAuth } from "@/lib/calendar-oauth-state";
+import { disconnectAppleCalendarSubscription } from "@/lib/apple-calendar-subscription";
 import {
   deleteStoredOAuthTokens,
   getGoogleRefreshToken,
@@ -55,6 +56,7 @@ export async function POST(request: Request) {
   // the explicit all-provider privacy disconnect retains global revocation.
   if (!provider) {
     await revokeGoogleToken(await getGoogleRefreshToken(authUser.email));
+    await disconnectAppleCalendarSubscription(authUser.userId);
   }
   const deleted = await deleteStoredOAuthTokens(authUser.email, provider);
   const user = await getUserByEmail(authUser.email);
