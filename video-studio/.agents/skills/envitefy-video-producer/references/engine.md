@@ -23,11 +23,14 @@ Each resume invocation makes at most one status poll per active Google task. Pen
 
 ## Executable production contract
 
+New production plans and briefs default to `gpt-image-2.5-flare` for artwork. Status reports this image model. Generated raster import tasks must include `config.generated: true` and `config.model: "gpt-image-2.5-flare"`; validation rejects missing or different model provenance. Existing sources and previously approved assets do not need regeneration merely to adopt the engine.
+
 `projects/<id>/production.json` uses schemaVersion 1:
 
 ```json
 {
   "schemaVersion": 1,
+  "imageModel": "gpt-image-2.5-flare",
   "id": "birthday-film",
   "title": "Birthday, together",
   "fps": 30,
@@ -62,6 +65,14 @@ The example source must be selected and exist before execution. Formats are `9x1
 Scene options: `audioTask`, `audioOffsetFrames`, `volume` (narration), `sourceVolume` (footage), `playbackRate`, `caption` (supporting copy), `background`, `showBrand`, and `captions` containing `{text,startMs,endMs}` relative to the scene. Speech task timings supply captions unless explicitly overridden. Top-level `musicTask` and `musicVolume` add a full-length soundtrack with a closing fade. The engine refuses cuts beyond available footage, clipped speech, and short music beds. Assemble custom SFX or elaborate mixes as local media and import them.
 
 ## Task adapters
+
+### Explicit image model
+
+The user's September 10 request pins new raster artwork and edits to **gpt-image-2.5-flare**. [OpenAI's model reference](https://developers.openai.com/api/docs/models/gpt-image-2.5-flare) identifies it as an image-generation/editing model. This is the model used for visual source assets before the motion stage.
+
+Use the installed ImageGen skill. When its built-in tool does not expose explicit model selection, this user-requested model control authorizes its bundled CLI/model path. Read that skill's CLI reference and run `scripts/image_gen.py generate` or `edit` with `--model gpt-image-2.5-flare`; never rely on its default model. Do not modify the bundled CLI or create a replacement SDK runner. `--dry-run` verifies the exact request without an API call. If the exact model is unavailable, report that limitation rather than switching models.
+
+Save the generation request/provenance privately with the campaign, complete FFmpeg WebP conversion and exact-original cleanup, then import the final WebP with `generated: true`, `model: "gpt-image-2.5-flare"`, and provenance pointing to the actual request record. The engine validates the declaration; the producing agent must verify it against the actual request. An image prompt merely mentioning Flare is not proof of model selection.
 
 | kind | config | Behavior |
 | --- | --- | --- |

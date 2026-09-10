@@ -16,6 +16,8 @@ Saved from the user's production decisions on September 5, 2026. These are defau
 
 ## Creative direction
 
+- Standing image-model preference (September 10, 2026): use **`gpt-image-2.5-flare`** for newly generated video artwork, storyboards, cast/reference frames, and image edits. The user's “imagine-2.5-flare” refers to this exact API model, already used in the Mom, Just Snap It campaign. Select it explicitly and record the actual model in provenance; do not silently fall back to another image model. This applies to the still-image stage. Reuse previously selected assets when the requested revision does not change them.
+
 - Give each new video a fresh look: new fictional people, setting, wardrobe, composition, and story treatment where people are used. Keep identity and setting consistent within that video's connected scenes.
 - The user does not want a digital twin of themselves or a fixed HeyGen-style personal presenter. Do not reuse the Host Mode woman as a permanent spokesperson.
 - Build a strong opening, a concrete relatable situation, a readable product moment, and an ending that earns its CTA. Choose the structure and pacing for the request; the 22-second Host Mode cut is a precedent, not a fixed template.
@@ -54,6 +56,7 @@ Saved from the user's production decisions on September 5, 2026. These are defau
 When feedback describes a lasting preference, update the relevant section above in the same task and add a short dated entry below. Keep one current statement per preference. Preserve scene-specific requests in the relevant campaign's feedback record.
 
 Preference history:
+- 2026-09-10: User required Flare for video artwork. Canonical API ID is gpt-image-2.5-flare; new campaign defaults and generated-artwork import validation now record this selection.
 - 2026-09-10: Added persistent static upper-left official branding, independent landscape/portrait placements with interface and content clearance, subtle contrast backing, and an exclusive final three-second centered brand card with the exact new tagline and Envitefy.com.
 - 2026-09-10: User clarified that GitHub should retain the studio's reusable guidance and skills while generated media and local production files remain ignored.
 - 2026-09-09: User requested popular tags/hashtags with all future generated post copy; check current popularity and relevance for each platform.

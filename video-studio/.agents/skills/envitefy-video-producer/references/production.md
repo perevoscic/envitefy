@@ -4,6 +4,8 @@ Read for actual video production or revisions. Paths and commands below are rela
 
 For new reusable production plans, use [the campaign engine](engine.md). This reference preserves the specialized legacy pipeline and campaign-specific repairs; those scripts are not the default interface for a new engine campaign.
 
+Current image selection (September 10, 2026): new generated artwork and image edits require `gpt-image-2.5-flare`, explicitly selected through the [image-model workflow](engine.md#explicit-image-model). Historical video/music model names below describe separate modalities.
+
 ## Workspace and campaign records
 
 The studio remains inside the Envitefy repository because it uses parent brand assets, credentials, product sources, and Playwright. Use the saved local checkout for existing media; a fresh Git worktree may not contain uncommitted or ignored assets. Do not relocate the studio or create a nested Git repository to give it a separate Codex sidebar entry.

@@ -13,6 +13,7 @@
   "concept": "",
   "tone": "",
   "artDirection": {
+    "imageModel": "gpt-image-2.5-flare",
     "cast": "",
     "setting": "",
     "wardrobe": "",

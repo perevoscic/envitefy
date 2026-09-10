@@ -15,6 +15,8 @@ For existing work, load only that campaign's brief, notes, feedback, and deliver
 
 ## Choose the production path
 
+The required model for new raster artwork and image edits is **`gpt-image-2.5-flare`** (user preference, September 10, 2026). Select the exact model explicitly, including for cast/reference frames used by the video provider. Follow the [explicit image-model workflow](references/engine.md#explicit-image-model) and record actual request provenance. Do not claim model enforcement from prompt text alone or silently substitute another model. Motion footage, narration and music retain their respective providers.
+
 - For a new film, read [creative direction](references/creative-direction.md), then [the campaign engine](references/engine.md). Develop the story before selecting generation tools. The agent directs and reviews; the engine runs repeatable operations and records their state.
 - For an engine campaign, start with `node engine/cli.mjs status <campaign>`. Read its `production.json` and current feedback before changing a shot. Resume known jobs; retain unchanged assets and approved speech.
 - For an older campaign without `production.json`, use [the existing production reference](references/production.md) and its campaign-specific scripts. Adopt it only when useful, with `init --existing`; that creates a separate production plan and preserves existing briefs and compositions. Do not feed a legacy brief directly into the new engine.

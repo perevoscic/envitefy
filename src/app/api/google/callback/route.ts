@@ -166,7 +166,7 @@ export async function GET(request: Request) {
         }
 
         const calendar = google.calendar({ version: "v3", auth: oAuth2Client as any });
-        const requestBody = toGoogleEvent(normalized);
+        const requestBody = toGoogleEvent({ ...decoded, ...normalized });
         const created = await calendar.events.insert({ calendarId: "primary", requestBody });
         const link = created.data.htmlLink || "/";
 

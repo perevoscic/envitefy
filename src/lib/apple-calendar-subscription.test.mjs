@@ -59,7 +59,7 @@ function harness() {
           throw new Error(`Unexpected SQL: ${sql}`);
         } };
         if (name.startsWith("@/")) return load(`src/${name.slice(2)}.ts`);
-        if (name.startsWith(".")) return load(path.resolve(path.dirname(filename), `${name}.ts`));
+        if (name.startsWith(".")) return load(path.resolve(path.dirname(filename), name.endsWith(".ts") ? name : `${name}.ts`));
         return require(name);
       },
     });
@@ -160,4 +160,28 @@ test("feed skips drafts, cancelled and undated events and preserves timed and al
   assert.doesNotMatch(text, /UID:(draft|cancelled|undated)@/);
   assert.doesNotMatch(text, /\r\nLOCATION:injected/);
   assert.equal((text.match(/BEGIN:VEVENT/g) || []).length, 3);
+});
+
+test("subscription feeds export organized appointment facts with real ICS line breaks", async () => {
+  const h = harness();
+  h.events.set("owner-a", [row("appointment", {
+    category: "Medical Appointments",
+    description: "SAMPLE PATIENT DOB: 01/01/2000 Patient ID: 123 Date Time Appointment",
+    ocrFacts: [
+      { label: "Patient", value: "SAMPLE PATIENT" },
+      { label: "Appointment Provider", value: "JAMIE SAMPLE, PA-C" },
+      { label: "Phone", value: "(212) 555-0100" },
+      { label: "Fax", value: "(212) 555-0101" },
+    ],
+  })]);
+  const prepared = await h.prepare();
+  const response = await h.readFeed(prepared.feedUrl.split("/").at(-1));
+  const ics = (await response.text()).replace(/\r\n[ \t]/g, "");
+  assert.match(ics, /DESCRIPTION:Event details\\n/);
+  assert.ok(ics.includes("Patient: SAMPLE PATIENT\\nClinician: JAMIE SAMPLE\\, PA-C"));
+  assert.ok(ics.includes("Contacts\\nPhone: (212) 555-0100\\nFax: (212) 555-0101"));
+  assert.doesNotMatch(ics, /DOB|Date Time Appointment/);
+  const query = h.queries.find(({ sql }) => sql.includes("FROM event_history")).sql;
+  assert.match(query, /'category', data->>'category', 'ocrFacts', data->'ocrFacts'/);
+  assert.doesNotMatch(query, /ocrText|sourceEvidence|attachment|rsvp_responses/);
 });

@@ -4,7 +4,7 @@ import {
   formatCalendarDateTimeInTimeZone,
   parseCalendarDateTimeToIso,
 } from "./calendar-date-time.ts";
-import { toMicrosoftEvent } from "./mappers.ts";
+import { toGoogleEvent, toIcsFields, toMicrosoftEvent } from "./mappers.ts";
 
 describe("calendar date handling", () => {
   test("interprets a local OCR timestamp in the event time zone", () => {
@@ -69,6 +69,11 @@ describe("automatic calendar payload", () => {
       ),
     ).toBe(true);
     expect(result.value.flyer?.previewUrl).toContain("variant=thumbnail");
+    expect(toGoogleEvent(result.value.event).description).toBe(result.value.event.description);
+    expect(toMicrosoftEvent(result.value.event).body).toEqual({
+      contentType: "text", content: result.value.event.description,
+    });
+    expect(toIcsFields(result.value.event).description).toBe(result.value.event.description);
   });
 
   test("creates a one-day all-day event when the scan has a date but no visible time", () => {

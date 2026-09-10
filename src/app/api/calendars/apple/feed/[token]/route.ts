@@ -13,7 +13,7 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
   try {
     const userId = await resolveAppleCalendarSubscriber(token);
     if (!userId) return new NextResponse("Calendar subscription is unavailable.", { status: 404, headers });
-    // Export the subscriber's saved events only, with no draft, artwork, RSVP or account data.
+    // Select only calendar details for this subscriber; never export source files or guest responses.
     const result = await query<AppleCalendarEvent>(
       `SELECT id, title, jsonb_build_object(
         'startAt', coalesce(nullif(data->>'startAt', ''), nullif(data->>'startISO', ''), data->>'start'),
@@ -23,6 +23,13 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
         'status', data->>'status', 'draftStatus', data->>'draftStatus',
         'location', coalesce(data->>'location', data->>'address'),
         'venue', data->>'venue', 'description', data->>'description',
+        'category', data->>'category', 'ocrFacts', data->'ocrFacts',
+        'hostName', data->>'hostName', 'goodToKnow', data->>'goodToKnow',
+        'thingsToDo', data->>'thingsToDo', 'attire', data->>'attire',
+        'activities', data->'activities', 'additionalLocations', data->'additionalLocations',
+        'registries', data->'registries', 'registryUrl', data->>'registryUrl',
+        'rsvp', data->'rsvp', 'rsvpUrl', data->>'rsvpUrl',
+        'rsvpName', data->>'rsvpName', 'rsvpDeadline', data->>'rsvpDeadline',
         'recurrence', data->>'recurrence', 'reminders', data->'reminders'
       ) AS data FROM event_history WHERE user_id = $1 ORDER BY created_at, id`,
       [userId],

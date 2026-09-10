@@ -6,6 +6,15 @@ type CalendarData = Record<string, unknown>;
 type Fact = { label: string; value: string };
 type DescriptionOptions = { envitefyUrl?: string; flyerUrl?: string };
 
+const MEDICAL_FACT_LABELS: Record<string, string> = {
+  patient: "Patient",
+  "patient name": "Patient",
+  "patient id": "Patient ID",
+  "appointment provider": "Clinician",
+  clinician: "Clinician",
+  host: "Appointment provider",
+};
+
 function record(value: unknown): CalendarData {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as CalendarData)
@@ -33,7 +42,7 @@ function plainText(value: string): string {
     .replace(/<\/(?:div|li|h[1-6]|ul|ol)\s*>/gi, "\n")
     .replace(/<li\b[^>]*>/gi, "• ")
     .replace(/<a\b[^>]*href=["'](https?:\/\/[^"']+)["'][^>]*>(.*?)<\/a>/gi, "$2 ($1)")
-    .replace(/<[^>]+>/g, "")
+    .replace(/<\/?(?:a|b|strong|i|em|u|s|span|p|div|li|ul|ol|h[1-6])\b[^>]*>/gi, "")
     .replace(/&nbsp;/gi, " ")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
@@ -133,10 +142,7 @@ export function buildCalendarDescription(data: CalendarData, options: Descriptio
       contacts.push(`${contact}: ${fact.value}`);
       continue;
     }
-    const label = medical
-      ? ({ "patient": "Patient", "patient name": "Patient", "patient id": "Patient ID",
-          "appointment provider": "Clinician", "clinician": "Clinician", "host": "Appointment provider" }[key] || fact.label)
-      : fact.label;
+    const label = medical ? MEDICAL_FACT_LABELS[key] || fact.label : fact.label;
     const formatted = `${label}: ${fact.value}`;
     if (medical && /^(?:Patient|Patient ID|Clinician|Appointment provider)$/.test(label)) {
       details.push(formatted);
@@ -156,7 +162,12 @@ export function buildCalendarDescription(data: CalendarData, options: Descriptio
 
   // Legacy appointment descriptions sometimes contain the entire flattened medical slip.
   // Use its labelled facts instead; identity metadata and the transcript stay in the source.
-  const medicalTranscript = medical && /\b(?:DOB|date\s+of\s+birth|patient\s*(?:ID|number)|Date\s+Time\s+Appointment)\b/i.test(description);
+  const identityLabels = description.match(/\b(?:DOB|date\s+of\s+birth|patient\s*(?:ID|number))\s*[:#]/gi) || [];
+  const medicalTranscript = medical && (
+    identityLabels.length >= 2 ||
+    /\bDate\s+Time\s+Appointment\b/i.test(description) ||
+    (facts.length > 0 && Boolean(text(data.ocrText)) && line(description) === line(data.ocrText))
+  );
   if (description && !medicalTranscript) addSection("About this event", [description]);
 
   const rsvp = record(data.rsvp);
@@ -165,7 +176,8 @@ export function buildCalendarDescription(data: CalendarData, options: Descriptio
     ...(rsvpValue ? [`RSVP${text(data.rsvpName) ? ` (${line(data.rsvpName)})` : ""}: ${line(rsvpValue)}`] : []),
     ...(text(data.rsvpDeadline) ? [`RSVP by: ${line(data.rsvpDeadline)}`] : []),
   ]);
-  const notes = [first(data.goodToKnow, data.thingsToDo, data.notes)].filter(Boolean);
+  const notes = unique([text(data.goodToKnow), text(data.thingsToDo), text(data.notes)])
+    .filter((note) => !medical || !/^Bring your appointment details with you\.?$/i.test(note));
   if (text(data.attire)) notes.push(`Attire: ${line(data.attire)}`);
   if (Array.isArray(data.activities)) {
     const activities = unique(data.activities.map(line));

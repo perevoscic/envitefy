@@ -148,6 +148,8 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
 
 ## Route And Runtime Quirks
 
+- Calendar description preference (September 10, 2026): use the shared `src/lib/calendar-description.ts` formatter for calendar sync, manual calendar links and ICS exports. Group available event details, contacts, RSVP, notes and links with labels and blank lines; preserve authored paragraphs. Medical saves use Patient, Patient ID, Clinician and Appointment provider facts, with Phone before Fax, instead of the flattened source transcript or DOB. Keep formatting idempotent across adapters and the saved event link intact at the end.
+
 - Scan calendar timing preference (September 10, 2026): save the pending calendar sync with the scanned event and run provider work after the history response. Open the event immediately after saving; never await calendar sync in Dashboard before navigation. Keep Google/Outlook enabled, preserve duplicate prevention, and show owner-only sync status on the event page. Pending or interrupted work resumes through authenticated status reads.
 
 - Standing preference (September 5, 2026): Google/Outlook calendar syncing must remain enabled. Keep `CONNECTED_CALENDAR_SYNC_ENABLED = true` in `src/config/calendar-sync.ts`; do not pause it for verification or maintenance unless the user explicitly requests that change. The earlier verification pause is superseded; see `docs/calendar-sync-pause-2026-09-05.md`.
