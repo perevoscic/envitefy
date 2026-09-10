@@ -1,0 +1,16 @@
+node_modules
+dist
+build
+.DS_Store
+.env
+
+# The parent .gitignore allows only reusable guidance and skill files.
+# Generated media and campaign records stay local.
+/out/
+/projects/
+/public/audio/
+/public/images/
+/public/projects/
+*.log
+__pycache__/
+*.py[cod]

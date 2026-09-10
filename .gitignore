@@ -63,10 +63,24 @@ public/DEBUG/
 .codex-re
 client_secret_envitefy_835611267543-h29p0hgqs3od4g94ogqo34lbh0birvfd.apps.googleusercontent.com.json
 
-# Video Studio stays local; only the producer skill is versioned.
+# Keep Video Studio's reusable guidance; production files stay local.
 /video-studio/*
+!/video-studio/.gitignore
+!/video-studio/README.md
+!/video-studio/AGENTS.md
+!/video-studio/STUDIO-GUIDE.md
 !/video-studio/.agents/
 /video-studio/.agents/*
 !/video-studio/.agents/skills/
 /video-studio/.agents/skills/*
 !/video-studio/.agents/skills/envitefy-video-producer/
+!/video-studio/templates/
+/video-studio/templates/*
+!/video-studio/templates/campaign-brief.json
+!/video-studio/assets/
+/video-studio/assets/*
+!/video-studio/assets/brand/
+/video-studio/assets/brand/*
+!/video-studio/assets/brand/audio/
+/video-studio/assets/brand/audio/*
+!/video-studio/assets/brand/audio/pronunciation.json
