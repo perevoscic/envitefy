@@ -9,6 +9,7 @@ import { encodeScanArtworkWebp } from "./artwork-webp.ts";
 import * as personal from "./personalization.ts";
 import { normalizeScanArtwork } from "./scan-artwork-state.ts";
 import * as scanMedia from "./scan-media.ts";
+import * as ticket from "./scan-artwork-ticket.ts";
 
 const require = createRequire(import.meta.url);
 function harness({ fail = false, conversionFails = false } = {}) {
@@ -62,20 +63,26 @@ function harness({ fail = false, conversionFails = false } = {}) {
     },
     "./personalization": personal,
     "./scan-media": scanMedia,
+    "./scan-artwork-ticket": ticket,
   };
-  const source = readFileSync(new URL("./scan-artwork.ts", import.meta.url), "utf8");
-  const { outputText } = ts.transpileModule(source, {
-    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
-  });
-  const module = { exports: {} };
-  vm.runInNewContext(outputText, {
-    module,
-    exports: module.exports,
-    require: (name) => mocks[name] || require(name),
-    Buffer,
-    AbortSignal,
-    console: { error: () => {} },
-  });
+  function load(name) {
+    const source = readFileSync(new URL(name, import.meta.url), "utf8");
+    const { outputText } = ts.transpileModule(source, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+    });
+    const module = { exports: {} };
+    vm.runInNewContext(outputText, {
+      module,
+      exports: module.exports,
+      require: (name) => mocks[name] || require(name),
+      Buffer,
+      AbortSignal,
+      console: { error: () => {} },
+    });
+    return module.exports;
+  }
+  mocks["./scan-artwork-render"] = load("./scan-artwork-render.ts");
+  const module = { exports: load("./scan-artwork.ts") };
   return Object.assign(h, module.exports);
 }
 
@@ -138,6 +145,26 @@ test("state validation rejects executable URLs and invalid ready states", () => 
   );
 });
 
+test("expired early work exposes retry without changing read-only status behavior", () => {
+  assert.equal(
+    normalizeScanArtwork({
+      version: 1,
+      status: "generating",
+      earlyExpiresAt: new Date(Date.now() - 1000).toISOString(),
+    }).status,
+    "failed",
+  );
+  assert.equal(
+    normalizeScanArtwork({
+      version: 1,
+      status: "generating",
+      earlyExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+    }).status,
+    "generating",
+  );
+  assert.equal(normalizeScanArtwork({ version: 1, status: "generating" }).status, "generating");
+});
+
 test("designed invitations retain their original artwork without starting generation", () => {
   const h = harness();
   const data = {
@@ -166,14 +193,19 @@ test("runtime FFmpeg output decodes as WebP and preserves dimensions and transpa
 });
 
 test("full-size artwork piped from FFmpeg has a finalized RIFF header and decodes", async () => {
-  for (const [width, height] of [[1536, 1024], [1024, 1536]]) {
+  for (const [width, height] of [
+    [1536, 1024],
+    [1024, 1536],
+  ]) {
     const pixels = Buffer.alloc(width * height * 3);
     let seed = 42;
     for (let index = 0; index < pixels.length; index++) {
       seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
       pixels[index] = seed >>> 24;
     }
-    const original = await sharp(pixels, { raw: { width, height, channels: 3 } }).png().toBuffer();
+    const original = await sharp(pixels, { raw: { width, height, channels: 3 } })
+      .png()
+      .toBuffer();
     const output = await encodeScanArtworkWebp(original);
     assert.ok(output.length > 32768, "exercise output larger than the muxer's seek buffer");
     assert.equal(output.toString("ascii", 0, 4), "RIFF");

@@ -1,5 +1,6 @@
 import type { EventSection } from "../schemas/eventBlueprint.schema";
 import type { ReactNode } from "react";
+import EventDetailText from "@/components/EventDetailText";
 
 export function readItemText(
   item: Record<string, string | boolean | number | null>,
@@ -56,7 +57,7 @@ export function SectionFrame({
         ) : null}
         {section.body ? (
           <p className="mt-3 max-w-3xl text-base leading-7 text-[var(--event-page-muted)]">
-            {section.body}
+            <EventDetailText text={section.body} />
           </p>
         ) : null}
         <div className={section.title || section.body ? "mt-5" : ""}>{children}</div>

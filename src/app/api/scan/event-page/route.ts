@@ -1,6 +1,6 @@
 import { after, NextResponse } from "next/server";
 import { prepareSavedScanDisplay } from "@/lib/ocr/original-display-state";
-import { generateSavedScanArtwork, prepareSavedScanArtwork } from "@/lib/ocr/scan-artwork";
+import { adoptEarlyScanArtwork, generateSavedScanArtwork, prepareSavedScanArtwork } from "@/lib/ocr/scan-artwork";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
@@ -134,21 +134,22 @@ export async function POST(request: Request) {
       hostName: fieldsGuess.hostName,
       context: locationContext,
     });
-    const locationEnrichment = await enrichOcrVenueAddress({
+
+    const medical = buildScanPersonalization({ title: String(fieldsGuess.title || ""), category: String(ocr.payload.category || ""), sourceText: ocr.payload.ocrText || "" }).medical;
+    if (medical && !userId) return jsonError("Sign in to save a private medical document", 401);
+    const locationEnrichmentWork = enrichOcrVenueAddress({
       venue: normalizedLocation.venue,
       location: normalizedLocation.location,
       hostName: fieldsGuess.hostName,
       context: locationContext,
     });
-
-    const medical = buildScanPersonalization({ title: String(fieldsGuess.title || ""), category: String(ocr.payload.category || ""), sourceText: ocr.payload.ocrText || "" }).medical;
-    if (medical && !userId) return jsonError("Sign in to save a private medical document", 401);
-    const media = medical && userId ? await processPrivateScanUpload(file, userId) : await processPublicUpload({
+    const mediaWork = medical && userId ? processPrivateScanUpload(file, userId) : processPublicUpload({
       file,
       usage: "attachment",
       scanAttemptId,
     });
 
+    const [locationEnrichment, media] = await Promise.all([locationEnrichmentWork, mediaWork]);
     const payload = buildScanEventPageHistoryPayload({
       ocr: ocr.payload,
       media,
@@ -157,13 +158,16 @@ export async function POST(request: Request) {
       locationEnrichment,
     });
     const needsScanArtwork = userId ? prepareSavedScanArtwork(payload.data) : false;
+    const earlyEventId = needsScanArtwork && userId
+      ? adoptEarlyScanArtwork(payload.data, userId, ocr.payload.scanArtworkTicket) : undefined;
     const needsScanDisplay = userId ? prepareSavedScanDisplay(payload.data) : false;
     const row = await insertEventHistory({
+      clientDraftId: earlyEventId,
       userId: userId || null,
       title: payload.title,
       data: payload.data,
     });
-    if (needsScanArtwork && userId) after(() => generateSavedScanArtwork(row.id, userId));
+    if (needsScanArtwork && userId) after(() => generateSavedScanArtwork(row.id, userId, Boolean(earlyEventId)));
     if (needsScanDisplay && userId) after(async () => {
       const { generateSavedScanDisplay } = await import("@/lib/ocr/original-display");
       await generateSavedScanDisplay(row.id, userId);

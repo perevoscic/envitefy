@@ -16,6 +16,7 @@ import {
   Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import EventDetailText from "./EventDetailText";
 import { coalesceFactValues, type OcrFact } from "@/lib/ocr/facts";
 import {
   combinePhoneAndFaxCards,
@@ -34,6 +35,7 @@ type Props = {
   accentColor?: string;
   compact?: boolean;
   combinePhoneAndFax?: boolean;
+  interactive?: boolean;
 };
 
 function iconForFactLabel(label: string): ReactNode {
@@ -70,6 +72,7 @@ export default function OcrFactCards({
   accentColor = "var(--theme-primary)",
   compact = false,
   combinePhoneAndFax = false,
+  interactive = true,
 }: Props) {
   const displayFacts = Array.isArray(facts) ? facts.filter((fact) => fact.label && fact.value) : [];
   const groupedFacts = displayFacts.reduce<OcrFactCard[]>((groups, fact) => {
@@ -136,7 +139,7 @@ export default function OcrFactCards({
                         >
                           {contact.label}
                         </dt>
-                        <dd className="mt-0.5">{contact.value}</dd>
+                        <dd className="mt-0.5"><EventDetailText text={contact.value} label={contact.label} interactive={interactive} /></dd>
                       </div>
                     ))}
                   </dl>
@@ -149,11 +152,11 @@ export default function OcrFactCards({
                     }
                   >
                     {fact.values.map((value) => (
-                      <li key={value}>{value}</li>
+                      <li key={value}><EventDetailText text={value} label={fact.label} interactive={interactive} /></li>
                     ))}
                   </ul>
                 ) : (
-                  fact.values[0]
+                  <EventDetailText text={fact.values[0]} label={fact.label} interactive={interactive} />
                 )}
               </div>
             </div>

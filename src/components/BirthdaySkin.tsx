@@ -20,6 +20,7 @@ import {
   EVENT_SKIN_FOOTER_TEXT_CLASS,
 } from "@/components/event-skin-layout";
 import OcrFactCards from "@/components/OcrFactCards";
+import EventDetailText from "@/components/EventDetailText";
 import RsvpIdentityModal from "@/components/RsvpIdentityModal";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
 import { ScanOriginalDocumentSection } from "@/components/ScanArtworkProvider";
@@ -526,6 +527,7 @@ export default function BirthdaySkin({
                     swatchColor={detailIconSwatchColor}
                     label="Venue"
                     title={displayVenueName}
+                    interactive={!previewMode}
                   />
                 ) : null}
 
@@ -534,6 +536,7 @@ export default function BirthdaySkin({
                   swatchColor={detailIconSwatchColor}
                   label="Where"
                   title={displayLocation}
+                  interactive={!previewMode}
                 />
 
                 {rsvpName || rsvpPhone || rsvpEmail ? (
@@ -565,6 +568,7 @@ export default function BirthdaySkin({
             </motion.section>
 
             <OcrFactCards
+              interactive={!previewMode}
               facts={leftColumnOcrFacts}
               className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-1"
               cardClassName="rounded-[2rem] border border-black/5 bg-white p-6 shadow-sm"
@@ -730,6 +734,7 @@ export default function BirthdaySkin({
                 </motion.section>
               ) : null}
               <OcrFactCards
+                interactive={!previewMode}
                 facts={rightColumnOcrFacts}
                 cardClassName="col-span-1 rounded-[2.2rem] border border-black/5 bg-white p-6 shadow-sm md:col-span-1"
               />
@@ -882,6 +887,7 @@ function InfoBlock({
   title,
   subtitle,
   divider = false,
+  interactive = true,
 }: {
   icon: ReactNode;
   swatchColor: string;
@@ -889,6 +895,7 @@ function InfoBlock({
   title: string;
   subtitle?: string;
   divider?: boolean;
+  interactive?: boolean;
 }) {
   return (
     <div className={divider ? "border-t border-black/5 pt-6" : ""}>
@@ -906,7 +913,7 @@ function InfoBlock({
           <div className="text-[10px] font-black uppercase tracking-widest text-black/30">
             {label}
           </div>
-          <div className="text-2xl font-bold text-black/90 md:text-3xl">{title}</div>
+          <div className="text-2xl font-bold text-black/90 md:text-3xl"><EventDetailText text={title} label={label} interactive={interactive} /></div>
           {subtitle ? <div className="text-base text-black/50 md:text-lg">{subtitle}</div> : null}
         </div>
       </div>

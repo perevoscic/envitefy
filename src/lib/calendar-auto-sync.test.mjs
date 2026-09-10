@@ -96,7 +96,7 @@ describe("automatic calendar payload", () => {
     if (!result.ok) return;
     const { event } = result.value;
     expect(event.description).toBe(
-      "Patient: Sam Example\n\nContacts\nPhone: 555-555-0100\n\nClinician: Dr. Example\n\nView on Envitefy:\nhttps://envitefy.com/event/example-appointment",
+      "Patient: Sam Example\nClinician: Dr. Example\n\nContacts\nPhone: 555-555-0100\n\nView on Envitefy:\nhttps://envitefy.com/event/example-appointment",
     );
     expect(data.description).toBe(originalDescription);
     const rawEvent = { ...event, description: originalDescription };

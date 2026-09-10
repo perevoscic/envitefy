@@ -12,13 +12,14 @@
       "generatedOriginal": "/Users/rj/.codex/generated_images/01a08d54-bcfa-7cb1-9305-a4bd8dd3f5bd/exec-a81d0f17-32e4-40b6-a842-030be7b15998.png",
       "finalImage": "/Users/rj/Local_Dev/envitefy/output/imagegen/appointment-samples-2026-09-10/maya-bennett-age-10.webp",
       "prompt": "Use case: photorealistic-natural.\nCreate ONE portrait raster image of a fictional printed medical appointment sheet, photographed casually in a clinic, closely matching the supplied reference's everyday smartphone photograph style and black-and-white printed document layout.\nInput image role: reference for composition, paper texture, lighting, typography and appointment-table layout only. Replace ALL patient, practice, doctor, address, contact, date and time details with the exact new fictional data below. Do not reuse any identifying information from the reference.\nScene: light oak reception table and beige office wall; a thumb gently holds the lower left edge of the paper. White letter-size paper with subtle folds, natural indoor light, slight handheld perspective, clean readable black sans-serif print. The full width of the table and all its columns must fit inside the photograph. A thin blue hand-drawn oval circles ONLY the address in the Dept./Address cell, without obscuring letters. Keep substantial blank paper below the table as in the reference. Crop closer than the reference for readable type while preserving portrait orientation and the paper-photo look.\nDocument layout: large bold practice name at top, practice address and phone/fax below, patient block below that including explicit age and DOB, then bold 'Upcoming Appointments', then one wide outlined appointment table with five labeled columns and one tall data row. Column widths should accommodate all text. All required text must be spelled accurately, sharp and legible. No extra appointment rows, no collage, no duplicate sheets.\nExact document text and table content (the explanatory labels 'Table headers', 'Single table row', and field keys are instructions, not text to print):\nPinecrest Ear, Nose & Throat\n417 WILLOW BEND DRIVE STE 204\nGAINESVILLE, FL 32608\nPhone: (352) 555-0146   Fax: (352) 555-0147\n\nMAYA BENNETT\nDOB: 02/14/2016   Age: 10\nPatient ID: 5821047\n\nUpcoming Appointments\n\nTable headers: Date | Time | Appointment | Dept./Address | Phone\nSingle table row:\nDate: 11/09/2026\nTime: 09:30 AM\nAppointment: Pediatric ENT Follow-up\nDR. ELENA BROOKS, MD\nDept./Address: Pinecrest Ear, Nose & Throat\n417 WILLOW BEND DRIVE\nSTE 204\nGAINESVILLE, FL 32608\nPhone: (352) 555-0146\nAll people, practices, and street addresses here are invented sample data. Produce only the single photograph.",
-      "originalRemoved": false,
+      "originalRemoved": true,
       "verification": {
         "codec_name": "webp",
         "width": 941,
         "height": 1672,
         "bytes": 78920,
-        "decodedSuccessfully": true
+        "decodedSuccessfully": true,
+        "visuallyReviewed": true
       }
     },
     {
@@ -26,13 +27,14 @@
       "generatedOriginal": "/Users/rj/.codex/generated_images/01a08d54-bcfa-7cb1-9305-a4bd8dd3f5bd/exec-04c42ab7-f042-4088-b48d-21f862fa2c6c.png",
       "finalImage": "/Users/rj/Local_Dev/envitefy/output/imagegen/appointment-samples-2026-09-10/darius-coleman-age-38.webp",
       "prompt": "Use case: photorealistic-natural.\nCreate ONE portrait raster image of a fictional printed medical appointment sheet, photographed casually in a clinic, closely matching the supplied reference's everyday smartphone photograph style and black-and-white printed document layout.\nInput image role: reference for composition, paper texture, lighting, typography and appointment-table layout only. Replace ALL patient, practice, doctor, address, contact, date and time details with the exact new fictional data below. Do not reuse any identifying information from the reference.\nScene: walnut reception table and light gray office wall; a thumb gently holds the lower left edge of the paper. White letter-size paper with subtle folds, natural indoor light, slight handheld perspective, clean readable black sans-serif print. The full width of the table and all its columns must fit inside the photograph. A thin blue hand-drawn oval circles ONLY the address in the Dept./Address cell, without obscuring letters. Keep substantial blank paper below the table as in the reference. Crop closer than the reference for readable type while preserving portrait orientation and the paper-photo look.\nDocument layout: large bold practice name at top, practice address and phone/fax below, patient block below that including explicit age and DOB, then bold 'Upcoming Appointments', then one wide outlined appointment table with five labeled columns and one tall data row. Column widths should accommodate all text. All required text must be spelled accurately, sharp and legible. No extra appointment rows, no collage, no duplicate sheets.\nExact document text and table content (the explanatory labels 'Table headers', 'Single table row', and field keys are instructions, not text to print):\nHarborview Skin Center\n286 SEAGRASS AVENUE STE 110\nCLEARWATER, FL 33755\nPhone: (727) 555-0123   Fax: (727) 555-0124\n\nDARIUS COLEMAN\nDOB: 06/18/1988   Age: 38\nPatient ID: 6918302\n\nUpcoming Appointments\n\nTable headers: Date | Time | Appointment | Dept./Address | Phone\nSingle table row:\nDate: 11/18/2026\nTime: 01:45 PM\nAppointment: Dermatology Consultation\nDR. MARCUS CHEN, MD\nDept./Address: Harborview Skin Center\n286 SEAGRASS AVENUE\nSTE 110\nCLEARWATER, FL 33755\nPhone: (727) 555-0123\nAll people, practices, and street addresses here are invented sample data. Produce only the single photograph.",
-      "originalRemoved": false,
+      "originalRemoved": true,
       "verification": {
         "codec_name": "webp",
         "width": 941,
         "height": 1672,
         "bytes": 80536,
-        "decodedSuccessfully": true
+        "decodedSuccessfully": true,
+        "visuallyReviewed": true
       }
     },
     {
@@ -40,13 +42,14 @@
       "generatedOriginal": "/Users/rj/.codex/generated_images/01a08d54-bcfa-7cb1-9305-a4bd8dd3f5bd/exec-2421b4db-a9b9-41a7-aaa3-ef2137a084fd.png",
       "finalImage": "/Users/rj/Local_Dev/envitefy/output/imagegen/appointment-samples-2026-09-10/sofia-reyes-age-64.webp",
       "prompt": "Use case: photorealistic-natural.\nCreate ONE portrait raster image of a fictional printed medical appointment sheet, photographed casually in a clinic, closely matching the supplied reference's everyday smartphone photograph style and black-and-white printed document layout.\nInput image role: reference for composition, paper texture, lighting, typography and appointment-table layout only. Replace ALL patient, practice, doctor, address, contact, date and time details with the exact new fictional data below. Do not reuse any identifying information from the reference.\nScene: pale maple reception table and soft sage office wall; a thumb gently holds the lower left edge of the paper. White letter-size paper with subtle folds, natural indoor light, slight handheld perspective, clean readable black sans-serif print. The full width of the table and all its columns must fit inside the photograph. A thin blue hand-drawn oval circles ONLY the address in the Dept./Address cell, without obscuring letters. Keep substantial blank paper below the table as in the reference. Crop closer than the reference for readable type while preserving portrait orientation and the paper-photo look.\nDocument layout: large bold practice name at top, practice address and phone/fax below, patient block below that including explicit age and DOB, then bold 'Upcoming Appointments', then one wide outlined appointment table with five labeled columns and one tall data row. Column widths should accommodate all text. All required text must be spelled accurately, sharp and legible. No extra appointment rows, no collage, no duplicate sheets.\nExact document text and table content (the explanatory labels 'Table headers', 'Single table row', and field keys are instructions, not text to print):\nMaple Grove Heart Clinic\n935 CYPRESS MEADOW ROAD STE 305\nTALLAHASSEE, FL 32308\nPhone: (850) 555-0168   Fax: (850) 555-0169\n\nSOFIA REYES\nDOB: 01/30/1962   Age: 64\nPatient ID: 7402956\n\nUpcoming Appointments\n\nTable headers: Date | Time | Appointment | Dept./Address | Phone\nSingle table row:\nDate: 12/03/2026\nTime: 10:15 AM\nAppointment: Cardiology Follow-up\nDR. PRIYA SHAH, MD\nDept./Address: Maple Grove Heart Clinic\n935 CYPRESS MEADOW ROAD\nSTE 305\nTALLAHASSEE, FL 32308\nPhone: (850) 555-0168\nAll people, practices, and street addresses here are invented sample data. Produce only the single photograph.",
-      "originalRemoved": false,
+      "originalRemoved": true,
       "verification": {
         "codec_name": "webp",
         "width": 941,
         "height": 1672,
         "bytes": 73746,
-        "decodedSuccessfully": true
+        "decodedSuccessfully": true,
+        "visuallyReviewed": true
       }
     }
   ]

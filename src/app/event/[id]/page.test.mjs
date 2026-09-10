@@ -28,12 +28,12 @@ test("newly saved events offer accurate calendar setup choices", () => {
   assert.doesNotMatch(promptSource, /Auto-sync this event and future scans/);
   assert.doesNotMatch(promptSource, /Apple uses a one-event handoff/);
   assert.match(promptSource, /calendarSetupStatus === "not-stored"/);
-  assert.match(promptSource, /was not connected to your Envitefy account/);
+  assert.match(promptSource, /was not connected\. Try again in Settings/);
   assert.doesNotMatch(promptSource, /connected, but this event was not added/);
-  assert.match(promptSource, /const FLOATING_NOTICE_CLASS =/);
-  assert.match(promptSource, /fixed left-1\/2/);
+  assert.match(promptSource, /const CALENDAR_TOAST_CLASS =/);
+  assert.match(promptSource, /fixed inset-x-4/);
   assert.match(promptSource, /aria-label="Dismiss calendar notice"/);
-  assert.match(promptSource, /setTimeout\(\(\) => setNoticeDismissed\(true\), 5_000\)/);
+  assert.match(promptSource, /setTimeout\(dismissNotice, toastDuration\)/);
   assert.doesNotMatch(promptSource, /relative z-\[80\] mx-auto mt-4/);
   assert.match(promptSource, /Not now/);
   assert.match(promptSource, /\/api\/events\/calendar\/auto/);

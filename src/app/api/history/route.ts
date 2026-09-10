@@ -3,7 +3,7 @@ import { isEventDraft } from "@/lib/event-draft-access";
 import { isClientDraftId } from "@/lib/event-draft-access";
 import { createHash } from "node:crypto";
 import { after, NextResponse } from "next/server";
-import { generateSavedScanArtwork, prepareSavedScanArtwork } from "@/lib/ocr/scan-artwork";
+import { adoptEarlyScanArtwork, generateSavedScanArtwork, prepareSavedScanArtwork } from "@/lib/ocr/scan-artwork";
 import { prepareSavedScanDisplay } from "@/lib/ocr/original-display-state";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
@@ -382,10 +382,12 @@ export async function POST(req: Request) {
       catch (error) { if (error instanceof SignupMutationError) return NextResponse.json({ error: error.message }, { status: error.status }); throw error; }
     }
     const needsScanArtwork = prepareSavedScanArtwork(data);
+    const earlyEventId = needsScanArtwork && !body.clientDraftId
+      ? adoptEarlyScanArtwork(data, userId, body.scanArtworkTicket) : undefined;
     const needsScanDisplay = prepareSavedScanDisplay(data);
     const needsCalendarSync = prepareScanCalendarSync(data, scanAttemptId);
     const calendarOrigin = needsCalendarSync ? await absoluteUrl("/") : "";
-    const row = await insertEventHistory({ userId, title, data, clientDraftId: body.clientDraftId });
+    const row = await insertEventHistory({ userId, title, data, clientDraftId: earlyEventId || body.clientDraftId });
     if (needsCalendarSync) {
       after(async () => {
         try {
@@ -395,7 +397,7 @@ export async function POST(req: Request) {
         }
       });
     }
-    if (needsScanArtwork) after(() => generateSavedScanArtwork(row.id, userId));
+    if (needsScanArtwork) after(() => generateSavedScanArtwork(row.id, userId, Boolean(earlyEventId)));
     if (needsScanDisplay) after(async () => {
       const { generateSavedScanDisplay } = await import("@/lib/ocr/original-display");
       await generateSavedScanDisplay(row.id, userId);

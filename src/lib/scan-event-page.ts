@@ -35,6 +35,7 @@ import type { UploadResponse } from "./upload-config.ts";
 export type ScanEventPageSource = "camera" | "upload";
 
 export type ScanEventPageOcrResult = {
+  scanArtworkTicket?: string | null;
   ocrText?: string | null;
   fieldsGuess?: Record<string, unknown> | null;
   category?: string | null;

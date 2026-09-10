@@ -28,6 +28,7 @@ const nextConfig = (phase: string): NextConfig => ({
   ...(phase === PHASE_DEVELOPMENT_SERVER ? {} : { output: "standalone" }),
   outputFileTracingRoot: process.cwd(),
   outputFileTracingIncludes: {
+    "/api/ocr": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/history": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/scan/event-page": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/events/*/scan-artwork": ["./node_modules/ffmpeg-static/ffmpeg*"],

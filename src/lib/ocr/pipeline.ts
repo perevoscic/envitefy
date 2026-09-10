@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
 import * as chrono from "chrono-node";
 import { getServerSession } from "next-auth";
+import { after } from "next/server";
 import sharp from "sharp";
-import { authOptions } from "@/lib/auth";
+import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { startEarlyScanArtwork, type EarlyScanArtwork } from "@/lib/ocr/scan-artwork-early";
 import { normalizeBirthdayTemplateHint } from "@/lib/birthday-ocr-template";
 import { corsJson } from "@/lib/cors";
 import { resolveOcrBirthdayTitle } from "@/lib/ocr/birthday-age";
@@ -343,6 +345,7 @@ function buildCleanDescription(
 
 export async function handleOcrRequest(request: Request) {
   let scanAttemptId: string | null = null;
+  let earlyArtwork: EarlyScanArtwork | null = null;
   try {
     const debug = process.env.NODE_ENV !== "production";
     const log = (...args: any[]) => {
@@ -1550,6 +1553,21 @@ export async function handleOcrRequest(request: Request) {
       personBirthDate: llmImage?.personBirthDate,
       personAge: llmImage?.personAge ?? llmImage?.birthdayAge,
     });
+    // The reliable brief is ready before deep schedules, location enrichment and skin work.
+    scanAttemptId = scanAttemptId || `scan-${randomUUID()}`;
+    const sessionStartedAt = Date.now();
+    const session = await getServerSession(authOptions);
+    const artworkUserId = await resolveSessionUserId(session);
+    stage.sessionMs = Date.now() - sessionStartedAt;
+    earlyArtwork = startEarlyScanArtwork({
+      userId: artworkUserId, scanAttemptId, title: finalTitle,
+      sourceKind: llmImage?.scanSourceKind || "unknown", profile: scanPersonalization,
+    });
+    if (earlyArtwork) {
+      const work = earlyArtwork.done;
+      // Start immediately; after keeps the running promise alive after the OCR response.
+      after(() => work);
+    }
     finalTitle = personalizedScanTitle(finalTitle, scanPersonalization);
     const fieldsGuess = {
       title: finalTitle,
@@ -2000,10 +2018,6 @@ export async function handleOcrRequest(request: Request) {
     }
     const thumbnailFocus = normalizeThumbnailFocus(llmImage?.thumbnailFocus);
 
-    scanAttemptId = scanAttemptId || `scan-${randomUUID()}`;
-    const sessionStartedAt = Date.now();
-    const session = await getServerSession(authOptions);
-    stage.sessionMs = Date.now() - sessionStartedAt;
     const email = session?.user?.email;
     if (typeof email === "string" && email.trim()) {
       const accountingStartedAt = Date.now();
@@ -2041,6 +2055,7 @@ export async function handleOcrRequest(request: Request) {
       fastMode,
       enableRewrites,
       enableSkinInference,
+      earlyArtworkStarted: Boolean(earlyArtwork),
       skinInferenceTimedOut,
       skinTimeoutMs,
       turboMode,
@@ -2061,6 +2076,7 @@ export async function handleOcrRequest(request: Request) {
 
     const responseBody: any = {
       intakeId: null,
+      scanArtworkTicket: earlyArtwork?.ticket || null,
       ocrText: raw,
       sourceEvidence: llmImage?.sourceEvidence || null,
       fieldsGuess,
@@ -2088,6 +2104,7 @@ export async function handleOcrRequest(request: Request) {
       },
     });
   } catch (error: unknown) {
+    earlyArtwork?.cancel();
     const message = error instanceof Error ? error.message : String(error);
     console.error("[ocr] failed", {
       scanAttemptId,

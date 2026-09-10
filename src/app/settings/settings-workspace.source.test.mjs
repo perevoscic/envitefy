@@ -85,7 +85,7 @@ test("Apple one-event downloads remain available alongside subscription setup", 
   assert.match(eventActionsSource, /Remember a connected provider as my default calendar/);
   assert.doesNotMatch(eventActionsSource, /if \(provider === "apple"\) return true/);
   assert.match(firstScanPromptSource, /Add this event to Apple Calendar/);
-  assert.match(firstScanPromptSource, /Apple events are added one at a time/);
+  assert.match(firstScanPromptSource, /Opening Apple Calendar\. Add this event to finish/);
   assert.doesNotMatch(firstScanPromptSource, /preferredProvider:\s*"apple"/);
 });
 

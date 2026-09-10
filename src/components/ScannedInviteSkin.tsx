@@ -26,6 +26,7 @@ import {
   EVENT_SKIN_FOOTER_TEXT_CLASS,
 } from "@/components/event-skin-layout";
 import OcrFactCards from "@/components/OcrFactCards";
+import EventDetailText from "@/components/EventDetailText";
 import RsvpIdentityModal from "@/components/RsvpIdentityModal";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
 import { ScanOriginalDocumentSection, useScanArtwork, useScanMedia } from "@/components/ScanArtworkProvider";
@@ -845,6 +846,7 @@ export default function ScannedInviteSkin({
                     swatchColor={detailIconSwatchColor}
                     label="Venue"
                     title={displayVenueName}
+                    interactive={!previewMode}
                   />
                 ) : null}
 
@@ -854,6 +856,7 @@ export default function ScannedInviteSkin({
                     swatchColor={detailIconSwatchColor}
                     label="Where"
                     title={displayLocation}
+                    interactive={!previewMode}
                   />
                 ) : null}
 
@@ -920,6 +923,7 @@ export default function ScannedInviteSkin({
                 <HubDetailCard
                   label="Good to Know"
                   title={displayDetailCopy}
+                  interactive={!previewMode}
                   icon={<Sparkles className="h-5 w-5" />}
                   backgroundColor={detailCardBackground}
                   textColor={detailCardTextColor}
@@ -934,6 +938,7 @@ export default function ScannedInviteSkin({
                 <HubDetailCard
                   label="Parking"
                   title={displayParking}
+                  interactive={!previewMode}
                   icon={<Car className="h-5 w-5" />}
                   backgroundColor="#ffffff"
                   textColor="#111827"
@@ -947,6 +952,7 @@ export default function ScannedInviteSkin({
                 <HubDetailCard
                   label="Entry Fee"
                   title={displayEntryFee}
+                  interactive={!previewMode}
                   icon={<CircleDollarSign className="h-5 w-5" />}
                   backgroundColor="#ffffff"
                   textColor="#111827"
@@ -960,6 +966,7 @@ export default function ScannedInviteSkin({
                 <HubDetailCard
                   label="Dress Code"
                   title={displayAttire}
+                  interactive={!previewMode}
                   icon={<Shirt className="h-5 w-5" />}
                   backgroundColor="#ffffff"
                   textColor="#111827"
@@ -1032,6 +1039,7 @@ export default function ScannedInviteSkin({
               ) : null}
 
               <OcrFactCards
+                interactive={!previewMode}
                 facts={[...leftColumnOcrFacts, ...rightColumnOcrFacts]}
                 compact
                 combinePhoneAndFax={combineAppointmentContacts}
@@ -1194,6 +1202,7 @@ function InfoBlock({
   title,
   subtitle,
   divider = false,
+  interactive = true,
 }: {
   icon: ReactNode;
   swatchColor: string;
@@ -1201,6 +1210,7 @@ function InfoBlock({
   title: string;
   subtitle?: string;
   divider?: boolean;
+  interactive?: boolean;
 }) {
   return (
     <div className={divider ? "border-t border-black/5 pt-6" : ""}>
@@ -1218,7 +1228,7 @@ function InfoBlock({
           <div className="text-[10px] font-black uppercase tracking-widest text-black/30">
             {label}
           </div>
-          <div className="text-lg font-bold leading-snug text-black/90 md:text-3xl md:leading-9">{title}</div>
+          <div className="text-lg font-bold leading-snug text-black/90 md:text-3xl md:leading-9"><EventDetailText text={title} label={label} interactive={interactive} /></div>
           {subtitle ? <div className="text-base text-black/50 md:text-lg">{subtitle}</div> : null}
         </div>
       </div>
@@ -1237,6 +1247,7 @@ function HubDetailCard({
   fullWidth = false,
   tone = "display",
   action,
+  interactive = true,
 }: {
   label: string;
   title: string;
@@ -1248,6 +1259,7 @@ function HubDetailCard({
   fullWidth?: boolean;
   tone?: "display" | "prose" | "compact";
   action?: ReactNode;
+  interactive?: boolean;
 }) {
   const isProse = tone === "prose";
   const isCompact = tone === "compact";
@@ -1284,7 +1296,7 @@ function HubDetailCard({
                 : "break-words text-xl font-bold leading-tight md:text-2xl"
           }
         >
-          {title}
+          <EventDetailText text={title} label={label} interactive={interactive} />
         </div>
         {action}
       </div>

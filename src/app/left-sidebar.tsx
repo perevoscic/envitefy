@@ -7,8 +7,10 @@ import {
   Cake,
   CalendarDays,
   Camera,
+  Car,
   ChevronLeft,
   ChevronRight,
+  Clock,
   FileEdit,
   Footprints,
   Gauge,
@@ -46,6 +48,7 @@ import {
   type MouseEvent,
   type RefObject,
   type SetStateAction,
+  Fragment,
   useEffect,
   useState,
 } from "react";
@@ -66,9 +69,11 @@ import {
   GroupedEventItem,
   GroupedEventSection,
   getCreateMenuActiveAccent,
+  getChronologicalEventItems,
   getSidebarPrimaryActiveAccent,
   SIDEBAR_BADGE_CLASS,
   SIDEBAR_DIVIDER_CLASS,
+  SIDEBAR_EVENT_LIST_PANEL_CLASS,
   SIDEBAR_EVENT_PANEL_CLASS,
   SIDEBAR_FOOTER_TRIGGER_CLASS,
   SIDEBAR_ICON_CHIP_ACCENT_CLASS,
@@ -284,6 +289,8 @@ const sidebarIconLookup = createSidebarIconLookup({
   Cake,
   CalendarDays,
   Camera,
+  Car,
+  Clock,
   FileEdit,
   Footprints,
   GraduationCap,
@@ -925,34 +932,81 @@ function EventListPanel({
     );
   };
 
+  const getMonthLabel = (item: GroupedEventItem) =>
+    Number.isFinite(item.dateMs)
+      ? new Date(item.dateMs).toLocaleDateString(undefined, { month: "short", year: "numeric" })
+      : "Draft";
+
   const renderRows = (items: GroupedEventItem[], muted: boolean) =>
-    items.map((item) => {
+    items.map((item, index) => {
       const isActive = isHistoryRowActive(item.row.id);
+      const CategoryIcon =
+        sidebarIconLookup[item.category as keyof typeof sidebarIconLookup] || PartyPopper;
+      const monthLabel = getMonthLabel(item);
+      const dateLabel = Number.isFinite(item.dateMs)
+        ? `${item.dateLabel}${item.isDraft ? " · Draft" : ""}`
+        : "Draft";
+      const showMonthDivider = index === 0 || monthLabel !== getMonthLabel(items[index - 1]);
       return (
-        <div
-          key={item.row.id}
-          className={`${SIDEBAR_SUBMENU_ROW_CLASS} items-start px-2 py-2.5 ${
-            isActive ? SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS : SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS
-          } ${muted ? pastRowOpacityClass : ""}`}
-        >
-          <button
-            type="button"
-            onClick={() => onRowClick(item)}
-            className="flex min-w-0 flex-1 items-start gap-3 text-left"
-            aria-current={isActive ? "page" : undefined}
+        <Fragment key={item.row.id}>
+          {showMonthDivider ? (
+            <div className={`flex items-center gap-2 px-3 pb-1 ${index === 0 ? "pt-1" : "pt-4"}`}>
+              <p className="font-[var(--font-josefin-sans)] shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] leading-none text-[#9188bd]">
+                {monthLabel}
+              </p>
+              <span aria-hidden="true" className="h-px flex-1 bg-[#ded8f0]/70" />
+            </div>
+          ) : null}
+          <div
+            className={`${SIDEBAR_SUBMENU_ROW_CLASS} items-start px-2 py-2.5 ${
+              isActive ? SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS : SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS
+            } ${muted ? pastRowOpacityClass : ""}`}
           >
-            <span
-              className={`${SIDEBAR_SUBMENU_ICON_CLASS} mt-0.5 ${
-                isActive
-                  ? SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS
-                  : `${item.tintClass} ${SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS}`
-              }`}
+            <button
+              type="button"
+              onClick={() => onRowClick(item)}
+              className="flex min-w-0 flex-1 items-start gap-3 text-left"
+              aria-current={isActive ? "page" : undefined}
             >
-              <CalendarDays size={16} />
-            </span>
-            <span className="min-w-0 flex-1">
-              {showPendingBadge || item.isInvited ? (
-                <span className="flex items-center gap-2">
+              <span
+                className={`${SIDEBAR_SUBMENU_ICON_CLASS} mt-0.5 ${
+                  isActive
+                    ? SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS
+                    : `${item.tintClass} ${SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS}`
+                }`}
+                aria-hidden="true"
+                title={item.category}
+              >
+                <CategoryIcon
+                  size={18}
+                  className={
+                    CategoryIcon === SidebarGymnasticsMenuIcon ||
+                    CategoryIcon === SidebarFootballMenuIcon
+                      ? "!bg-current"
+                      : undefined
+                  }
+                />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="sr-only">{item.category}: </span>
+                {showPendingBadge || item.isInvited ? (
+                  <span className="flex items-center gap-2">
+                    <span
+                      className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-snug md:text-[1.02rem] ${
+                        isActive
+                          ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
+                          : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
+                      }`}
+                    >
+                      {item.title}
+                    </span>
+                    {item.shareStatus === "pending" ? (
+                      <span className="shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-amber-700">
+                        Pending
+                      </span>
+                    ) : null}
+                  </span>
+                ) : (
                   <span
                     className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-snug md:text-[1.02rem] ${
                       isActive
@@ -962,65 +1016,40 @@ function EventListPanel({
                   >
                     {item.title}
                   </span>
-                  {item.shareStatus === "pending" ? (
-                    <span className="shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-amber-700">
-                      Pending
-                    </span>
-                  ) : null}
-                </span>
-              ) : (
+                )}
                 <span
-                  className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-snug md:text-[1.02rem] ${
+                  className={`mt-0.5 block truncate text-xs ${
                     isActive
-                      ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
-                      : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
+                      ? "text-[#9d95db]"
+                      : "text-[#c1bcf0] group-hover:text-[#b0aae4]"
                   }`}
                 >
-                  {item.title}
+                  {dateLabel}
                 </span>
-              )}
-              <span
-                className={`mt-0.5 block truncate text-xs ${
-                  isActive
-                    ? "text-[#9d95db]"
-                    : "text-[#c1bcf0] group-hover:text-[#b0aae4]"
-                }`}
-              >
-                {item.dateLabel}
               </span>
-            </span>
-          </button>
-          {renderRowActions(item)}
-        </div>
+            </button>
+            {renderRowActions(item)}
+          </div>
+        </Fragment>
       );
     });
 
-  const renderGroupSections = (sections: GroupedEventSection[], muted: boolean) =>
-    sections.map((group, index) => (
-      <section
-        key={`${muted ? "past" : "upcoming"}-${group.category}-${index}`}
-        className="space-y-1"
-      >
-        <div className="px-1 pt-1">
-          <p className="font-[var(--font-josefin-sans)] text-[0.82rem] font-bold uppercase tracking-[0.13em] leading-none text-[#6b5fc2]">
-            {group.category}
-          </p>
-          <div className={`mt-1 ${SIDEBAR_DIVIDER_CLASS}`} />
-        </div>
-        {renderRows(group.items, muted)}
-      </section>
-    ));
-
   return (
-    <div className="space-y-4 pt-2">
-      <div className={SUBPAGE_STICKY_HEADER_CLASS}>
+    <div className="flex h-full min-h-0 flex-col gap-4 pt-2">
+      <div className="shrink-0 px-5 pb-4 pt-2">
         <PanelBackButton onClick={onBack} />
         <div className="px-2 pb-1 pt-1">
           <p className={SIDEBAR_SUBPAGE_TITLE_CLASS}>{title}</p>
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div
+        className="nav-chrome-sidebar-scroll-region no-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto px-5 pb-36 touch-pan-y lg:pb-40"
+        role="region"
+        aria-label={`${title} list`}
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: the scrollable event list needs focus for keyboard scrolling.
+        tabIndex={0}
+      >
         {grouped.upcoming.length === 0 && grouped.past.length === 0 ? (
           <div
             className={`${SIDEBAR_SUBMENU_CARD_CLASS} rounded-[24px] border-dashed px-4 py-6 text-center text-sm text-[#7e76b9]`}
@@ -1036,7 +1065,9 @@ function EventListPanel({
                 No upcoming events.
               </div>
             ) : (
-              renderGroupSections(grouped.upcoming, false)
+              <div className="space-y-1">
+                {renderRows(getChronologicalEventItems(grouped.upcoming), false)}
+              </div>
             )}
 
             {grouped.past.length > 0 ? (
@@ -1066,7 +1097,9 @@ function EventListPanel({
                       {emptyPastCopy}
                     </div>
                   ) : (
-                    renderGroupSections(grouped.past, true)
+                    <div className="space-y-1">
+                      {renderRows(getChronologicalEventItems(grouped.past, "past"), true)}
+                    </div>
                   )
                 ) : null}
               </section>
@@ -1664,7 +1697,7 @@ export default function LeftSidebar() {
                   </div>
 
                   <div
-                    className={`${SIDEBAR_PANEL_CLASS} z-[15]`}
+                    className={`${SIDEBAR_EVENT_LIST_PANEL_CLASS} z-[15]`}
                     style={panelStyle(myEventsPanelTransform, showOwnerEventsPanel)}
                     aria-hidden={!showOwnerEventsPanel}
                   >
@@ -1686,7 +1719,7 @@ export default function LeftSidebar() {
                   </div>
 
                   <div
-                    className={`${SIDEBAR_PANEL_CLASS} z-[20]`}
+                    className={`${SIDEBAR_EVENT_LIST_PANEL_CLASS} z-[20]`}
                     style={panelStyle(
                       invitedEventsPanelTransform,
                       viewModel.sidebarPage === "invitedEvents",

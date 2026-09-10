@@ -1,4 +1,5 @@
 import type { EventSection } from "../schemas/eventBlueprint.schema";
+import EventDetailText from "@/components/EventDetailText";
 import { readItemText, SectionFrame } from "./section-utils";
 
 export function QuickDetailsSection({ section }: { section: EventSection }) {
@@ -13,7 +14,7 @@ export function QuickDetailsSection({ section }: { section: EventSection }) {
           return (
             <div key={`${label}-${index}`} className="rounded-[calc(var(--event-page-radius)*0.7)] bg-[var(--event-page-bg-soft)] p-4">
               {label ? <dt className="text-xs font-black uppercase tracking-[0.16em] text-[var(--event-page-primary)]">{label}</dt> : null}
-              {value ? <dd className="mt-1 text-base font-bold">{value}</dd> : null}
+              {value ? <dd className="mt-1 text-base font-bold"><EventDetailText text={value} label={label} /></dd> : null}
             </div>
           );
         })}

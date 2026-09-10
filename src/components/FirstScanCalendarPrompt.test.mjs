@@ -124,6 +124,7 @@ function harness({
     storage, requests, replacements, historyState, render,
     get url() { return location.href; },
     notices: () => descendants().filter(node => node.type === "aside").map(textContent),
+    toast: () => descendants().find(node => node.type === "aside"),
     dismiss() {
       descendants().find(node => node.type?.name === "NoticeCloseButton").props.onDismiss();
       render();
@@ -186,7 +187,7 @@ test("pending work still shows progress on reload and announces its new completi
   const h = harness({ navigationType: "reload", states: [{ status: "pending" }, { status: "syncing" }, synced] });
   h.render();
   await h.flush();
-  assert.match(h.notices().join(""), /Adding this event/);
+  assert.match(h.notices().join(""), /Syncing calendar/);
   await h.tick(3000);
   await h.tick(3000);
   assert.deepEqual(h.notices(), ["Added to Outlook."]);
@@ -245,12 +246,60 @@ test("effect replay cannot duplicate completion feedback or retain aborted reque
   h.dispose();
 });
 
-test("reconnect and failure notices remain visible when revisiting an event", async () => {
+test("reconnect and failure show a brief settings toast when revisiting an event", async () => {
   for (const status of ["needs_reconnect", "failed"]) {
     const h = harness({ navigationType: "reload", states: [{ ...synced, status }] });
     h.render();
     await h.flush();
-    assert.match(h.notices().join(""), status === "failed" ? /not updated/ : /Outlook needs to be reconnected/);
+    assert.match(h.notices().join(""), status === "failed" ? /Calendar sync failed/ : /Reconnect Outlook/);
     h.dispose();
   }
+});
+
+
+test("calendar failure uses a polite compact toast with a settings action and expires", async () => {
+  const h = harness({ states: [{ ...synced, status: "failed" }] });
+  h.render();
+  await h.flush();
+  assert.equal(h.toast().props.role, "status");
+  assert.equal(h.toast().props["aria-live"], "polite");
+  assert.equal(h.toast().props["data-calendar-toast"], "error");
+  const action = h.toast().props.children.find(child => child?.props?.href);
+  assert.equal(action.props.href, "/settings#calendars");
+  assert.equal(action.props["aria-label"], "Open calendar settings");
+  await h.tick(8000);
+  assert.deepEqual(h.notices(), []);
+  assert.equal(h.requests.length, 1, "dismissing feedback never retries calendar insertion");
+  h.dispose();
+});
+
+test("toast dismissal pauses for pointer and keyboard interaction", async () => {
+  const h = harness({ states: [{ ...synced, status: "failed" }] });
+  h.render();
+  await h.flush();
+  h.toast().props.onMouseEnter(); h.render();
+  await h.tick(8000);
+  assert.ok(h.toast());
+  h.toast().props.onFocusCapture(); h.render();
+  h.toast().props.onMouseLeave(); h.render();
+  await h.tick(8000);
+  assert.ok(h.toast(), "keyboard focus keeps the action available after the pointer leaves");
+  h.toast().props.onBlurCapture({ currentTarget: { contains: () => false }, relatedTarget: null }); h.render();
+  await h.tick(8000);
+  assert.deepEqual(h.notices(), []);
+  h.dispose();
+});
+
+test("dismissing progress keeps syncing and still shows the final result", async () => {
+  const h = harness({ states: [{ status: "pending" }, { ...synced, status: "failed" }] });
+  h.render();
+  await h.flush();
+  h.toast().props.onMouseEnter(); h.render();
+  h.dismiss();
+  assert.deepEqual(h.notices(), []);
+  await h.tick(3000);
+  assert.match(h.notices().join(""), /Calendar sync failed/);
+  await h.tick(8000);
+  assert.deepEqual(h.notices(), [], "a dismissed progress toast does not leave interaction paused");
+  h.dispose();
 });

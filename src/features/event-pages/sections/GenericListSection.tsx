@@ -1,4 +1,5 @@
 import { ActionGroup } from "../renderer/ActionRenderer";
+import EventDetailText from "@/components/EventDetailText";
 import type { EventSection } from "../schemas/eventBlueprint.schema";
 import { readItemText, SectionFrame } from "./section-utils";
 
@@ -15,7 +16,7 @@ export function GenericListSection({ section, id }: { section: EventSection; id?
             return (
               <article key={`${label}-${index}`} className="rounded-[calc(var(--event-page-radius)*0.75)] bg-[var(--event-page-bg-soft)] p-4">
                 {label ? <h3 className="text-base font-black">{label}</h3> : null}
-                {value ? <p className="mt-1 text-sm leading-6 text-[var(--event-page-muted)]">{value}</p> : null}
+                {value ? <p className="mt-1 text-sm leading-6 text-[var(--event-page-muted)]"><EventDetailText text={value} label={label} /></p> : null}
               </article>
             );
           })}

@@ -7,6 +7,39 @@ const repoRoot = process.cwd();
 
 const loadModelModule = () => import("./left-sidebar.model.ts");
 
+test("sidebar chronology crosses category boundaries and keeps undated events last", async () => {
+  const { buildGroupedEventLists, getChronologicalEventItems } = await loadModelModule();
+  const history = [
+    { id: "far-birthday", title: "Future birthday", data: { category: "birthdays", startISO: "2207-06-01T12:00:00Z" } },
+    { id: "near-wedding", title: "Wedding", data: { category: "weddings", startISO: "2030-06-01T12:00:00Z" } },
+    { id: "appointment", title: "Checkup", data: { category: "medical appointments", startISO: "2030-06-02T12:00:00Z" } },
+    { id: "draft", title: "Birthday draft", data: { category: "birthdays", status: "draft", startISO: "2030-06-03T12:00:00Z" } },
+    { id: "undated", title: "No date yet", created_at: "2020-01-01T00:00:00Z", data: { category: "weddings" } },
+    { id: "invalid", title: "Invalid date", data: { startISO: "invalid" } },
+    { id: "older", title: "Old birthday", data: { category: "birthdays", startISO: "2020-01-01T12:00:00Z" } },
+    { id: "recent", title: "Recent wedding", data: { category: "weddings", startISO: "2025-01-01T12:00:00Z" } },
+  ];
+  const grouped = buildGroupedEventLists({
+    history,
+    getEventStartIso: (data) => data?.startISO,
+    buildEventPath: (id) => `/event/${id}`,
+    isSportsPreviewFirstEvent: () => false,
+    isInvitedEventLikeRecord: () => false,
+    canShowOwnerRsvpDashboard: () => false,
+  });
+  const originalGroupOrder = grouped.myEvents.upcoming.flatMap((group) => group.items.map((item) => item.row.id));
+  const upcoming = getChronologicalEventItems(grouped.myEvents.upcoming);
+  assert.deepEqual(upcoming.map((item) => item.row.id), [
+    "near-wedding", "appointment", "draft", "far-birthday", "invalid", "undated",
+  ]);
+  assert.equal(upcoming[1].category, "Medical Appointments");
+  assert.equal(upcoming[2].category, "Birthdays");
+  assert.equal(upcoming[2].isDraft, true);
+  assert.equal(upcoming.at(-1).dateLabel, "No date");
+  assert.deepEqual(getChronologicalEventItems(grouped.myEvents.past, "past").map((item) => item.row.id), ["recent", "older"]);
+  assert.deepEqual(grouped.myEvents.upcoming.flatMap((group) => group.items.map((item) => item.row.id)), originalGroupOrder);
+});
+
 test("saved ENT scans get the doctor group and patient title while general appointments stay separate", async () => {
   const { buildGroupedEventLists, guessCategoryFromText } = await loadModelModule();
   const history = [

@@ -12,6 +12,7 @@ import {
   EVENT_SKIN_HERO_TOP_PADDING_CLASS,
 } from "@/components/event-skin-layout";
 import OcrFactCards from "@/components/OcrFactCards";
+import EventDetailText from "@/components/EventDetailText";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
 import { ScanOriginalDocumentSection } from "@/components/ScanArtworkProvider";
 import {
@@ -365,6 +366,7 @@ export default function ScannedWeddingInviteView({
                     icon={<MapPin className="h-5 w-5" />}
                     label="Venue"
                     title={displayVenueName}
+                    interactive={!previewMode}
                     colors={colors}
                     darkMode={isNoirModern}
                   />
@@ -373,6 +375,7 @@ export default function ScannedWeddingInviteView({
                   icon={<MapPin className="h-5 w-5" />}
                   label="Where"
                   title={displayLocation}
+                  interactive={!previewMode}
                   colors={colors}
                   darkMode={isNoirModern}
                 />
@@ -621,6 +624,7 @@ export default function ScannedWeddingInviteView({
           ) : null}
 
           <OcrFactCards
+            interactive={!previewMode}
             facts={displayOcrFacts}
             className="grid grid-cols-1 gap-5 md:grid-cols-2"
             cardClassName="rounded-[2rem] p-6 shadow-[0_18px_58px_rgba(37,26,10,0.08)] backdrop-blur"
@@ -846,6 +850,7 @@ function DetailItem({
   icon,
   label,
   title,
+  interactive = true,
   subtitle,
   colors,
   darkMode = false,
@@ -853,6 +858,7 @@ function DetailItem({
   icon: ReactNode;
   label: string;
   title: string;
+  interactive?: boolean;
   subtitle?: string;
   colors: ReturnType<typeof normalizeWeddingFlyerColors>;
   darkMode?: boolean;
@@ -877,7 +883,7 @@ function DetailItem({
           letterSpacing: darkMode ? "0.04em" : undefined,
         }}
       >
-        {title}
+        <EventDetailText text={title} label={label} interactive={interactive} />
       </div>
       {subtitle ? (
         <div

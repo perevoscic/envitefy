@@ -66,6 +66,8 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Accepts camera photos and uploads of invitations, flyers, screenshots, schedules, PDFs, and other event images.",
             "Extracts useful details such as title, date, time, place, host information, RSVP details, schedules, and relevant links for review.",
             "Creates a saved event record and polished live event card/page; it is more than OCR or a static scan.",
+            "Saved scans keep the original document available in a popup that fits the image, with overlaid controls to download the exact file or share it through supported device sharing. Medical source documents remain owner-only.",
+            "For recognized paperwork and appointments, unique hero and background artwork can begin while the remaining scan details are processed. Saving reuses that work and opens the event without waiting for the artwork.",
             "Received social invitation cards can be kept with Invited events, while source material for events the customer owns belongs with My events.",
           ],
           sellWhen: [
@@ -134,6 +136,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "My events holds events the customer creates and owns, including uploaded source material used to author an event.",
             "Invited events holds classic received-invitation cases such as birthdays, weddings, gender reveals, and similar social invite cards.",
             "Saved events keep important details and actions available after the original paper, screenshot, or message is hard to find.",
+            "The sidebar lists upcoming events across categories from nearest to latest, with a category icon beside each event and subtle month-and-year dividers. Undated entries follow dated events under Draft, with Draft beneath each title, and past events expand separately with the most recent first.",
           ],
           sellWhen: [
             "The pain point is lost invitations, scattered screenshots, fridge clutter, or remembering whether the customer is hosting or attending.",
@@ -188,6 +191,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Give guests one polished, mobile-friendly event home instead of a static flyer or a chain of follow-up messages.",
           proofPoints: [
             "Public event pages open in phone and desktop browsers.",
+            "Displayed phone numbers, emails, and addresses in scanned event facts and shared detail sections link directly to calling, email, and maps.",
             "Guests do not need to install an app or create an account just to use a shared event page.",
             "The page keeps the latest event details and available actions together.",
             "Owners can open the current saved card or event from a labeled workspace action, then return to editing. Proposed card changes have a separate view before saving.",
@@ -257,12 +261,14 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
               ? [
                   "Signed-in owners can connect or disconnect Google Calendar and Outlook background sync from Settings; Apple Calendar uses a one-event ICS handoff.",
                   "Saved scans and uploads can automatically sync to a connected Google or Outlook calendar using the owner's calendar preference.",
+                  "Owners receive brief calendar-sync toasts with access to Calendar settings while the saved event stays visible.",
                 ]
               : [
                   "Guests can manually save events with calendar links or ICS downloads; these actions do not require a connected calendar account.",
                 ]),
             "Calendar entries can carry event timing, location, and available reminder information.",
             "Calendar descriptions omit repeated event fields and category labels while keeping useful notes and contact details; automatically synced entries include a link back to Envitefy.",
+            "Medical appointment calendar saves organize patient, clinician, provider, phone and fax details into readable lines, leaving the raw scan transcript and date of birth out of the description.",
             "Specialized schedule flows can expose the relevant event or session timing.",
           ],
           sellWhen: [

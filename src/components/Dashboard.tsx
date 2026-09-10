@@ -110,6 +110,7 @@ type SubmitScannedEventParams = {
   sourceFile?: File | null;
   scanAttemptId?: string | null;
   ocrMeta?: {
+    scanArtworkTicket?: string | null;
     scanPersonalization?: ScanPersonalization | null;
     scanSourceKind?: "paperwork" | "designed" | "unknown";
     category?: string | null;
@@ -1257,6 +1258,7 @@ export default function Dashboard({
             sourceFile: incoming,
             scanAttemptId,
             ocrMeta: {
+              scanArtworkTicket: typeof data?.scanArtworkTicket === "string" ? data.scanArtworkTicket : null,
               scanPersonalization: normalizeScanPersonalization(data?.fieldsGuess?.scanPersonalization),
               scanSourceKind: data?.fieldsGuess?.scanSourceKind || "unknown",
               category: data?.category || null,
@@ -1746,7 +1748,7 @@ export default function Dashboard({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ ...payload, scanAttemptId }),
+          body: JSON.stringify({ ...payload, scanAttemptId, scanArtworkTicket: ocrMeta?.scanArtworkTicket }),
         });
 
         const historyData: any = await historyRes.json().catch(() => ({}));

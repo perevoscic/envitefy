@@ -19,10 +19,16 @@ export function normalizeScanArtwork(value: unknown): ScanArtworkState | null {
     (/^https:\/\//.test(row.imageUrl) || /^\/(?!\/)/.test(row.imageUrl))
       ? row.imageUrl
       : undefined;
+  const earlyExpired =
+    row.status === "generating" &&
+    typeof row.earlyExpiresAt === "string" &&
+    Date.parse(row.earlyExpiresAt) <= Date.now();
   return {
     version: 1,
     status:
-      row.status === "ready" && !imageUrl ? "failed" : (row.status as ScanArtworkState["status"]),
+      (row.status === "ready" && !imageUrl) || earlyExpired
+        ? "failed"
+        : (row.status as ScanArtworkState["status"]),
     imageUrl,
     heroImageUrl:
       typeof row.heroImageUrl === "string" &&

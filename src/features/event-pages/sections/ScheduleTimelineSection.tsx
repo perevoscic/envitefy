@@ -1,4 +1,5 @@
 import type { EventSection } from "../schemas/eventBlueprint.schema";
+import EventDetailText from "@/components/EventDetailText";
 import { formatScheduleTime, SectionFrame } from "./section-utils";
 
 export function ScheduleTimelineSection({ section }: { section: EventSection }) {
@@ -13,8 +14,8 @@ export function ScheduleTimelineSection({ section }: { section: EventSection }) 
               <div className="text-sm font-black text-[var(--event-page-primary)]">{time || item.group || "Schedule"}</div>
               <div>
                 <h3 className="text-lg font-black">{item.title}</h3>
-                {item.locationText ? <p className="mt-1 text-sm font-bold text-[var(--event-page-muted)]">{item.locationText}</p> : null}
-                {item.notes ? <p className="mt-2 text-sm leading-6 text-[var(--event-page-muted)]">{item.notes}</p> : null}
+                {item.locationText ? <p className="mt-1 text-sm font-bold text-[var(--event-page-muted)]"><EventDetailText text={item.locationText} label="Location" /></p> : null}
+                {item.notes ? <p className="mt-2 text-sm leading-6 text-[var(--event-page-muted)]"><EventDetailText text={item.notes} /></p> : null}
               </div>
             </article>
           );

@@ -19,8 +19,10 @@ type FeedbackState = {
 
 const PROMPT_STORAGE_KEY = "envitefy:first-scan-calendar-prompt:v1";
 const SYNC_NOTICE_STORAGE_KEY = "envitefy:calendar-sync-notice:v1";
-const FLOATING_NOTICE_CLASS =
-  "fixed left-1/2 z-[13010] w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 rounded-2xl border px-4 py-3 pr-14 text-sm shadow-[0_18px_55px_rgba(44,28,18,0.2)] backdrop-blur-md animate-in fade-in slide-in-from-top-2 motion-reduce:animate-none";
+const CALENDAR_TOAST_CLASS =
+  "fixed inset-x-4 z-[13010] flex items-center gap-2 rounded-2xl border border-stone-200/90 bg-white/95 py-2 pl-3 pr-1 text-sm text-stone-800 shadow-[0_8px_30px_rgba(44,28,18,0.14)] backdrop-blur-md animate-in fade-in slide-in-from-bottom-2 motion-reduce:animate-none sm:left-auto sm:right-6 sm:w-96";
+const TOAST_ACTION_CLASS =
+  "inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg px-2 text-xs font-semibold text-violet-700 underline underline-offset-4 transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500";
 
 function addSearchParams(path: string, values: Record<string, string>): string {
   const separator = path.includes("?") ? "&" : "?";
@@ -37,7 +39,7 @@ function NoticeCloseButton({ onDismiss }: { onDismiss: () => void }) {
       type="button"
       onClick={onDismiss}
       aria-label="Dismiss calendar notice"
-      className="absolute right-1.5 top-1.5 inline-flex h-11 w-11 items-center justify-center rounded-full text-current opacity-60 transition hover:bg-black/5 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current focus-visible:ring-offset-2"
+      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-current opacity-60 transition hover:bg-black/5 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current focus-visible:ring-offset-2"
     >
       <X className="h-4 w-4" aria-hidden="true" />
     </button>
@@ -79,10 +81,18 @@ export default function FirstScanCalendarPrompt({
   const [monitorSync, setMonitorSync] = useState(backgroundSync);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [noticeDismissed, setNoticeDismissed] = useState(false);
+  const [toastHovered, setToastHovered] = useState(false);
+  const [toastFocused, setToastFocused] = useState(false);
   const syncStartedRef = useRef(false);
   const promptKey = useMemo(() => `${PROMPT_STORAGE_KEY}:${userId}`, [userId]);
   const syncNoticeKey = useMemo(() => `${SYNC_NOTICE_STORAGE_KEY}:${userId}:${eventId}`, [userId, eventId]);
   const announcedCompletionRef = useRef<string | null>(null);
+
+  const dismissNotice = useCallback(() => {
+    setNoticeDismissed(true);
+    setToastHovered(false);
+    setToastFocused(false);
+  }, []);
 
   const showFeedback = useCallback((nextFeedback: FeedbackState) => {
     setNoticeDismissed(false);
@@ -163,7 +173,7 @@ export default function FirstScanCalendarPrompt({
             } else if (state.status === "needs_connection" || state.status === "needs_reconnect" || state.status === "failed") {
               setSyncStatus(state.status);
             } else if (state.status === "skipped") {
-              showFeedback({ kind: "error", message: "Your event was saved. Add a valid date and time before syncing it to your calendar." });
+              showFeedback({ kind: "error", message: "Event saved. Add a date and time to sync." });
             }
             return;
           }
@@ -175,7 +185,7 @@ export default function FirstScanCalendarPrompt({
       }
       if (Date.now() >= deadline) {
         setSyncing(false);
-        showFeedback({ kind: "error", message: "Your event was saved, but we could not confirm its calendar sync. Check Calendar settings." });
+        showFeedback({ kind: "error", message: "Event saved. Calendar sync could not be confirmed." });
         return;
       }
       timer = setTimeout(poll, 3000);
@@ -213,8 +223,8 @@ export default function FirstScanCalendarPrompt({
       showFeedback({
         kind: "error",
         message: permissionDenied
-          ? `${providerLabel(calendarSetupProvider)} access was not granted. Connect again and allow calendar event access.`
-          : `${providerLabel(calendarSetupProvider)} was not connected to your Envitefy account. Try connecting again from Calendar settings.`,
+          ? `${providerLabel(calendarSetupProvider)} needs calendar access. Reconnect in Settings.`
+          : `${providerLabel(calendarSetupProvider)} was not connected. Try again in Settings.`,
       });
       window.history.replaceState(window.history.state, "", returnPath);
       return;
@@ -243,36 +253,36 @@ export default function FirstScanCalendarPrompt({
         ) {
           showFeedback({
             kind: "success",
-            message: `Connected and added to ${providerLabel(calendarSetupProvider)}. Future scanned events will sync automatically.`,
+            message: `Connected. Added to ${providerLabel(calendarSetupProvider)}.`,
           });
         } else if (payload.status === "syncing" || payload.status === "pending") {
           setMonitorSync(true);
         } else if (payload.status === "needs_connection") {
           showFeedback({
             kind: "error",
-            message: `${providerLabel(calendarSetupProvider)} was not connected to your Envitefy account. Try connecting again from Calendar settings.`,
+            message: `${providerLabel(calendarSetupProvider)} was not connected. Try again in Settings.`,
           });
         } else if (payload.status === "needs_reconnect") {
           showFeedback({
             kind: "error",
-            message: `${providerLabel(calendarSetupProvider)} needs to be reconnected before this event can be added.`,
+            message: `Reconnect ${providerLabel(calendarSetupProvider)} to sync this event.`,
           });
         } else if (payload.status === "skipped") {
           showFeedback({
             kind: "error",
-            message: `${providerLabel(calendarSetupProvider)} connected, but this event needs a valid date and time before it can be added.`,
+            message: "Calendar connected. Add a date and time to sync.",
           });
         } else {
           showFeedback({
             kind: "error",
-            message: `${providerLabel(calendarSetupProvider)} connected, but this event could not be added. Try again from Calendar settings.`,
+            message: "Calendar connected. This event could not sync.",
           });
         }
       } catch {
         if (!cancelled) {
           showFeedback({
             kind: "error",
-            message: `We could not finish syncing this event to ${providerLabel(calendarSetupProvider)}. Try again from Calendar settings.`,
+            message: `Event saved. Could not sync to ${providerLabel(calendarSetupProvider)}.`,
           });
         }
       } finally {
@@ -297,11 +307,28 @@ export default function FirstScanCalendarPrompt({
     showFeedback,
   ]);
 
+  const toast = syncing
+    ? { kind: "syncing" as const, message: "Event saved. Syncing calendar…" }
+    : feedback || (decisionLoaded && syncStatus === "needs_connection"
+      ? { kind: "setup" as const, message: "Event saved. Connect a calendar to sync." }
+      : syncStatus === "needs_reconnect" || syncStatus === "failed"
+        ? { kind: "error" as const, message: syncStatus === "needs_reconnect"
+          ? `Event saved. Reconnect ${providerLabel(syncProvider || null)} to sync.`
+          : "Event saved. Calendar sync failed." }
+        : null);
+  const toastKey = toast ? `${eventId}:${toast.kind}:${toast.message}` : null;
+  const toastDuration = toast?.kind === "error" || toast?.kind === "setup" ? 8_000 : 5_000;
+
   useEffect(() => {
-    if (!feedback || feedback.kind === "error" || noticeDismissed) return;
-    const timeoutId = window.setTimeout(() => setNoticeDismissed(true), 5_000);
+    // A final result gets its own toast even if the progress toast was dismissed.
+    setNoticeDismissed(false);
+  }, [toastKey]);
+
+  useEffect(() => {
+    if (!toastKey || noticeDismissed || toastHovered || toastFocused || dialogOpen) return;
+    const timeoutId = window.setTimeout(dismissNotice, toastDuration);
     return () => window.clearTimeout(timeoutId);
-  }, [feedback, noticeDismissed]);
+  }, [toastKey, toastDuration, noticeDismissed, toastHovered, toastFocused, dialogOpen, dismissNotice]);
 
   const connectHref = (provider: AutomaticCalendarProvider) => {
     const nextPath = addSearchParams(returnPath, {
@@ -327,110 +354,51 @@ export default function FirstScanCalendarPrompt({
     showFeedback({
       kind: "apple",
       message:
-        "This event is ready for Apple Calendar. Apple events are added one at a time rather than synced in the background.",
+        "Opening Apple Calendar. Add this event to finish.",
     });
     openAppleCalendarIcs(appleCalendarHref);
   };
 
   if (!CONNECTED_CALENDAR_SYNC_ENABLED) return null;
 
-  const reconnectCopy =
-    syncStatus === "needs_reconnect"
-      ? `${providerLabel(syncProvider || null)} needs to be reconnected before events can sync.`
-      : "Your calendar was not updated. You can retry from Calendar settings.";
-
   return (
     <>
-      {!noticeDismissed ? (
-        syncing ? (
-          <aside
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            style={{ top: "max(1rem, env(safe-area-inset-top))" }}
-            className={`${FLOATING_NOTICE_CLASS} flex items-center gap-3 border-violet-200 bg-violet-50/95 text-violet-950`}
-          >
-            <LoaderCircle className="h-5 w-5 shrink-0 animate-spin" aria-hidden="true" />
-            <p>
-              Adding this event to your calendar in the background…
-            </p>
-            <NoticeCloseButton onDismiss={() => setNoticeDismissed(true)} />
-          </aside>
-        ) : feedback ? (
-          <aside
-            role={feedback.kind === "error" ? "alert" : "status"}
-            aria-live={feedback.kind === "error" ? "assertive" : "polite"}
-            aria-atomic="true"
-            style={{ top: "max(1rem, env(safe-area-inset-top))" }}
-            className={`${FLOATING_NOTICE_CLASS} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${
-              feedback.kind === "error"
-                ? "border-amber-200 bg-amber-50/95 text-amber-950"
-                : "border-emerald-200 bg-emerald-50/95 text-emerald-950"
-            }`}
-          >
-            <div className="flex min-w-0 items-start gap-3">
-              {feedback.kind === "error" ? (
-                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
-              ) : (
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
-              )}
-              <p>{feedback.message}</p>
-            </div>
-            {feedback.kind === "error" ? (
-              <Link
-                href="/settings#calendars"
-                className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-amber-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-950 focus-visible:ring-offset-2"
-              >
-                Calendar settings
-              </Link>
-            ) : null}
-            <NoticeCloseButton onDismiss={() => setNoticeDismissed(true)} />
-          </aside>
-        ) : decisionLoaded && syncStatus === "needs_connection" && !dialogOpen ? (
-          <aside
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            style={{ top: "max(1rem, env(safe-area-inset-top))" }}
-            className={`${FLOATING_NOTICE_CLASS} flex flex-col gap-3 border-amber-200 bg-amber-50/95 text-amber-950 sm:flex-row sm:items-center sm:justify-between`}
-          >
-            <p>
-              <span className="font-semibold">Your Envitefy event was saved.</span>{" "}
-              Calendar syncing is not set up yet.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setNoticeDismissed(true);
-                setDialogOpen(true);
-              }}
-              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-amber-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-950 focus-visible:ring-offset-2"
-            >
-              Set up calendar
-            </button>
-            <NoticeCloseButton onDismiss={() => setNoticeDismissed(true)} />
-          </aside>
-        ) : syncStatus === "needs_reconnect" || syncStatus === "failed" ? (
-          <aside
-            role="alert"
-            aria-live="assertive"
-            aria-atomic="true"
-            style={{ top: "max(1rem, env(safe-area-inset-top))" }}
-            className={`${FLOATING_NOTICE_CLASS} flex flex-col gap-3 border-amber-200 bg-amber-50/95 text-amber-950 sm:flex-row sm:items-center sm:justify-between`}
-          >
-            <p>
-              <span className="font-semibold">Your Envitefy event was saved.</span>{" "}
-              {reconnectCopy}
-            </p>
-            <Link
-              href="/settings#calendars"
-              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-amber-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-950 focus-visible:ring-offset-2"
-            >
-              Calendar settings
+      {!noticeDismissed && toast && !dialogOpen ? (
+        <aside
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          data-calendar-toast={toast.kind}
+          style={{ bottom: "max(1rem, calc(env(safe-area-inset-bottom) + 1rem))" }}
+          className={CALENDAR_TOAST_CLASS}
+          onMouseEnter={() => setToastHovered(true)}
+          onMouseLeave={() => setToastHovered(false)}
+          onFocusCapture={() => setToastFocused(true)}
+          onBlurCapture={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) setToastFocused(false);
+          }}
+        >
+          {toast.kind === "syncing" ? (
+            <LoaderCircle className="h-4 w-4 shrink-0 animate-spin text-violet-600 motion-reduce:animate-none" aria-hidden="true" />
+          ) : toast.kind === "error" ? (
+            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" aria-hidden="true" />
+          ) : toast.kind === "setup" ? (
+            <CalendarClock className="h-4 w-4 shrink-0 text-violet-600" aria-hidden="true" />
+          ) : (
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
+          )}
+          <p className="min-w-0 flex-1 text-[13px] leading-5">{toast.message}</p>
+          {toast.kind === "error" ? (
+            <Link href="/settings#calendars" aria-label="Open calendar settings" className={TOAST_ACTION_CLASS}>
+              Settings
             </Link>
-            <NoticeCloseButton onDismiss={() => setNoticeDismissed(true)} />
-          </aside>
-        ) : null
+          ) : toast.kind === "setup" ? (
+            <button type="button" onClick={() => setDialogOpen(true)} className={TOAST_ACTION_CLASS}>
+              Connect
+            </button>
+          ) : null}
+          <NoticeCloseButton onDismiss={dismissNotice} />
+        </aside>
       ) : null}
 
       <Dialog.Root open={dialogOpen} onOpenChange={handleDialogChange}>

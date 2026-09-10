@@ -1,4 +1,5 @@
 import { ActionGroup } from "../renderer/ActionRenderer";
+import EventDetailText from "@/components/EventDetailText";
 import type { EventAction, EventSection } from "../schemas/eventBlueprint.schema";
 import { readItemText } from "./section-utils";
 
@@ -25,7 +26,7 @@ export function HeroSection({
           </h1>
           {section.body ? (
             <p className="mt-5 max-w-2xl text-lg leading-8 text-[var(--event-page-muted)]">
-              {section.body}
+              <EventDetailText text={section.body} />
             </p>
           ) : null}
           <div className="mt-7">
@@ -43,7 +44,7 @@ export function HeroSection({
                     className="rounded-[calc(var(--event-page-radius)*0.75)] border border-[var(--event-page-border)] bg-white/70 p-4"
                   >
                     {label ? <dt className="text-xs font-black uppercase tracking-[0.16em] text-[var(--event-page-primary)]">{label}</dt> : null}
-                    {value ? <dd className="mt-1 text-base font-bold text-[var(--event-page-text)]">{value}</dd> : null}
+                    {value ? <dd className="mt-1 text-base font-bold text-[var(--event-page-text)]"><EventDetailText text={value} label={label} /></dd> : null}
                   </div>
                 );
               })}
