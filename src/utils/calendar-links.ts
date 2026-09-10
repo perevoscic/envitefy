@@ -1,3 +1,5 @@
+import { buildCalendarDescription } from "../lib/calendar-description.ts";
+
 export type CalendarLinkArgs = {
   title: string;
   description: string;
@@ -8,6 +10,8 @@ export type CalendarLinkArgs = {
   allDay: boolean;
   reminders: number[] | null;
   recurrence: string | null;
+  details?: Record<string, unknown>;
+  eventUrl?: string;
 };
 
 export type CalendarLinkSet = {
@@ -38,8 +42,12 @@ export function ensureEndIso(
 }
 
 export function buildCalendarLinks(args: CalendarLinkArgs): CalendarLinkSet {
-  const { title, description, location, startIso, endIso, timezone, allDay } =
+  const { title, location, startIso, endIso, timezone, allDay } =
     args;
+  const description = buildCalendarDescription(
+    { ...args.details, title, description: args.description, location, startIso, endIso, timezone, allDay },
+    { envitefyUrl: args.eventUrl },
+  );
   const google = buildGoogleCalendarUrl({
     title,
     description,

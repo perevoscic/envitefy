@@ -1,4 +1,5 @@
 import { getCalendarSyncPauseResponse } from "@/lib/calendar-sync-pause";
+import { buildCalendarDescription } from "@/lib/calendar-description";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
       subject: title || "Event",
       body: {
         contentType: "text",
-        content: description || ""
+        content: buildCalendarDescription({ ...body, title, description, location, start, end, timezone })
       },
       location: {
         displayName: location || ""

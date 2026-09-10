@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { NormalizedEvent } from "@/lib/mappers";
 import { randomUUID } from "node:crypto";
+import { buildCalendarDescription } from "@/lib/calendar-description";
 
 export const runtime = "nodejs";
 
@@ -93,7 +94,7 @@ function buildIcs(events: NormalizedEvent[]): string {
     }
 
     if (ev.title) lines.push(foldLine(`SUMMARY:${escapeText(ev.title)}`));
-    if (ev.description) lines.push(foldLine(`DESCRIPTION:${escapeText(ev.description)}`));
+    lines.push(foldLine(`DESCRIPTION:${escapeText(buildCalendarDescription(ev))}`));
     if (ev.location) lines.push(foldLine(`LOCATION:${escapeText(ev.location)}`));
 
     const reminders = Array.isArray(ev.reminders) ? ev.reminders : [];

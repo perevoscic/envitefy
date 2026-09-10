@@ -56,6 +56,7 @@ export default function EventGuestActions({
     const fallbackEnd = allDay ? end.toISOString().slice(0, 10) : start;
     links = buildCalendarLinks({
       title,
+      eventUrl: savedShareUrl || undefined,
       description,
       timezone,
       location: destination,

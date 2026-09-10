@@ -4,7 +4,9 @@ Saved from the user's production decisions on September 5, 2026. These are defau
 
 ## Brand and product
 
-- Use the exact new PNG wordmark: parent public/brand/envitefy-com.png. Studio copy: public/brand/envitefy-com.png. This supplied asset already reads envitefy.com; preserve its alpha transparency and do not add a separate black domain line. It supersedes the earlier email wordmark for new videos and requested revisions.
+- Use the exact supplied transparent PNG wordmark: parent public/brand/envitefy-com.png. Studio copy: public/brand/envitefy-com.png. This supplied asset already reads envitefy.com; preserve its alpha transparency. It supersedes the earlier email wordmark for new videos and requested revisions.
+- Persistent branding (September 10, 2026): show the official wordmark as a separate editing overlay in the upper-left from frame zero until the final three seconds. Preserve exact lettering, colors, transparency and proportions; keep it small but clearly readable and static, without bouncing, flashing or distracting animation. Set position and size independently for 16:9 and 9:16, leaving comfortable margins and checking platform interface overlays, faces, captions and important phone-screen details. Use a subtle background backing when contrast is poor; never modify the wordmark to compensate.
+- Final three seconds (September 10, 2026): remove the corner wordmark and show a larger centered official wordmark, followed by “The right details. The right celebration.” and “Envitefy.com”. Never show the corner and end-card logos simultaneously. The explicit separate domain line on this end card supersedes the earlier no-duplicate-domain preference; keep it in the campaign's supporting text color.
 - Use the exact chosen icon: parent `public/icons/apple-touch-icon-120.png`. Studio copy: `public/brand/apple-touch-icon-120.png`.
 - Preserve the assets' colors, artwork, transparency, and proportions. Resize to suit the composition; do not redraw the wordmark with a substitute font.
 - Use `envitefy.com` for the brand CTA. Product references in ordinary copy may say Envitefy; the supplied visual wordmark remains lowercase.
@@ -52,6 +54,7 @@ Saved from the user's production decisions on September 5, 2026. These are defau
 When feedback describes a lasting preference, update the relevant section above in the same task and add a short dated entry below. Keep one current statement per preference. Preserve scene-specific requests in the relevant campaign's feedback record.
 
 Preference history:
+- 2026-09-10: Added persistent static upper-left official branding, independent landscape/portrait placements with interface and content clearance, subtle contrast backing, and an exclusive final three-second centered brand card with the exact new tagline and Envitefy.com.
 - 2026-09-10: User clarified that GitHub should retain the studio's reusable guidance and skills while generated media and local production files remain ignored.
 - 2026-09-09: User requested popular tags/hashtags with all future generated post copy; check current popularity and relevance for each platform.
 - 2026-09-09: User supplied envitefy.wav as the pronunciation reference. Direct comparison identifies in-VY-tih-fy, approximately /ɪnˈvaɪtɪfaɪ/. Both videos were matched to it; the audio reference supersedes the previous written three-syllable approximation.

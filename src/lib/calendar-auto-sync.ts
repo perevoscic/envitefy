@@ -1,3 +1,4 @@
+import { buildCalendarDescription } from "./calendar-description.ts";
 import type { NormalizedEvent } from "./mappers";
 import {
   addCalendarDays,
@@ -40,107 +41,6 @@ function firstText(...values: unknown[]): string {
   return "";
 }
 
-function normalizeLine(value: unknown): string {
-  return readText(value).replace(/\s+/g, " ");
-}
-
-function pushUniqueLine(lines: string[], value: string) {
-  const normalized = value.trim();
-  if (!normalized) return;
-  const key = normalized.toLowerCase();
-  if (lines.some((line) => line.toLowerCase() === key)) return;
-  lines.push(normalized);
-}
-
-function readRsvp(value: unknown): string {
-  if (typeof value === "string") return normalizeLine(value);
-  if (!isRecord(value)) return "";
-  return firstText(value.url, value.link, value.contact, value.email, value.phone);
-}
-
-function readStringList(value: unknown, limit = 8): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.map(normalizeLine).filter(Boolean).slice(0, limit);
-}
-
-function buildAdditionalLocationLines(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  const lines: string[] = [];
-  for (const item of value.slice(0, 6)) {
-    if (!isRecord(item)) continue;
-    const label = firstText(item.label, item.venue, "Additional location");
-    const place = firstText(item.address, item.location);
-    const time = firstText(item.timeText, item.time);
-    const detail = [place, time].filter(Boolean).join(" — ");
-    if (detail) lines.push(`${label}: ${detail}`);
-  }
-  return lines;
-}
-
-function buildFactLines(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  const lines: string[] = [];
-  for (const item of value.slice(0, 8)) {
-    if (!isRecord(item)) continue;
-    const label = firstText(item.label, item.name);
-    const factValue = firstText(item.value, item.text, item.description);
-    if (factValue) lines.push(label ? `${label}: ${factValue}` : factValue);
-  }
-  return lines;
-}
-
-function buildRegistryLines(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  const lines: string[] = [];
-  for (const item of value.slice(0, 6)) {
-    if (!isRecord(item)) continue;
-    const url = firstText(item.url, item.link);
-    if (!url) continue;
-    const label = firstText(item.label, item.name, "Registry");
-    lines.push(`${label}: ${url}`);
-  }
-  return lines;
-}
-
-function buildDescription(data: JsonRecord, envitefyUrl: string, flyerUrl: string): string {
-  const sections: string[] = [];
-  const description = readText(data.description);
-  if (description) sections.push(description);
-
-  const details: string[] = [];
-  const category = normalizeLine(data.category);
-  const hostName = normalizeLine(data.hostName);
-  const rsvpName = normalizeLine(data.rsvpName);
-  const rsvp = readRsvp(data.rsvp);
-  const rsvpDeadline = normalizeLine(data.rsvpDeadline);
-  const attire = normalizeLine(data.attire);
-  const goodToKnow = firstText(data.goodToKnow, data.thingsToDo);
-
-  if (category) pushUniqueLine(details, `Category: ${category}`);
-  if (hostName) pushUniqueLine(details, `Host: ${hostName}`);
-  if (rsvp) {
-    pushUniqueLine(details, `RSVP${rsvpName ? ` (${rsvpName})` : ""}: ${rsvp}`);
-  }
-  if (rsvpDeadline) pushUniqueLine(details, `RSVP by: ${rsvpDeadline}`);
-  if (attire) pushUniqueLine(details, `Attire: ${attire}`);
-
-  const activities = readStringList(data.activities);
-  if (activities.length) pushUniqueLine(details, `Activities: ${activities.join(", ")}`);
-  if (goodToKnow) pushUniqueLine(details, `Good to know: ${goodToKnow}`);
-  for (const line of buildAdditionalLocationLines(data.additionalLocations)) {
-    pushUniqueLine(details, line);
-  }
-  for (const line of buildFactLines(data.ocrFacts)) pushUniqueLine(details, line);
-  for (const line of buildRegistryLines(data.registries)) pushUniqueLine(details, line);
-  if (details.length) sections.push(details.join("\n"));
-
-  if (flyerUrl) sections.push(`Flyer / invite: ${flyerUrl}`);
-  const footer = `View on Envitefy:\n${envitefyUrl}`;
-  const body = sections.join("\n\n");
-  const availableBodyLength = Math.max(0, 12_000 - footer.length - 2);
-  // The Envitefy event URL intentionally remains intact on the final line.
-  return body ? `${body.slice(0, availableBodyLength)}\n\n${footer}` : footer;
-}
 
 function buildLocation(data: JsonRecord): { venue?: string; location?: string } {
   const venue = firstText(data.venue, data.placeName);
@@ -229,7 +129,10 @@ export function buildAutoCalendarEvent(params: {
     allDay,
     timezone,
     ...location,
-    description: buildDescription(data, params.envitefyUrl, flyer?.sourceUrl || ""),
+    description: buildCalendarDescription(
+      { ...data, title: params.title, start, end, allDay, timezone, ...location },
+      { envitefyUrl: params.envitefyUrl, flyerUrl: flyer?.sourceUrl },
+    ),
     recurrence: firstText(data.recurrence) || null,
     reminders: buildReminders(data.reminders),
     attachment: flyer

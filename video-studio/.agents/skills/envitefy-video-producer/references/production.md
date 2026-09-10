@@ -2,6 +2,8 @@
 
 Read for actual video production or revisions. Paths and commands below are relative to the `video-studio` folder. Read the campaign's own notes before using its scripts.
 
+For new reusable production plans, use [the campaign engine](engine.md). This reference preserves the specialized legacy pipeline and campaign-specific repairs; those scripts are not the default interface for a new engine campaign.
+
 ## Workspace and campaign records
 
 The studio remains inside the Envitefy repository because it uses parent brand assets, credentials, product sources, and Playwright. Use the saved local checkout for existing media; a fresh Git worktree may not contain uncommitted or ignored assets. Do not relocate the studio or create a nested Git repository to give it a separate Codex sidebar entry.

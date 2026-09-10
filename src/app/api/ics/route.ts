@@ -1,6 +1,7 @@
 import ical from "ical-generator";
 import type { ICalAlarmType, ICalCalendarMethod } from "ical-generator";
 import { NextResponse } from "next/server";
+import { buildCalendarDescription } from "@/lib/calendar-description";
 
 export const runtime = "nodejs";
 
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
     allDay,
     summary: title,
     location,
-    description,
+    description: buildCalendarDescription({ title, description, location, start, end, timezone, allDay }),
     status: ("CONFIRMED" as unknown) as any,
   });
   if (floating) evt.floating(true);

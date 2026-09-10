@@ -1,4 +1,5 @@
 import { getCalendarSyncPauseResponse } from "@/lib/calendar-sync-pause";
+import { buildCalendarDescription } from "@/lib/calendar-description";
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
 
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
       end: { dateTime: string; timeZone: string };
     } = {
       summary: title || "Event",
-      description: description || "",
+      description: buildCalendarDescription({ ...body, title, description, location, start, end, timezone }),
       location: location || "",
       start: { dateTime: start, timeZone: timezone },
       end: { dateTime: end, timeZone: timezone }

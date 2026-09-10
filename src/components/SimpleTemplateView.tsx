@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import { buildCalendarDescription } from "@/lib/calendar-description";
 
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import { parseCalendarDateTimeToIso } from "@/lib/calendar-date-time";
@@ -869,7 +870,13 @@ export default function SimpleTemplateView({
     if (!guestStart || Number.isNaN(Date.parse(guestStart))) return null;
     const start = new Date(guestStart);
     const end = guestEnd && Date.parse(guestEnd) > start.getTime() ? new Date(guestEnd) : new Date(start);
-    return { title: eventTitle, start, end, location: fullLocation, description };
+    return {
+      title: eventTitle, start, end, location: fullLocation,
+      description: buildCalendarDescription(
+        { ...currentData, title: eventTitle, start: start.toISOString(), location: fullLocation, description },
+        { envitefyUrl: shareUrl || undefined },
+      ),
+    };
   };
 
   const buildIcsUrl = (details: NonNullable<ReturnType<typeof buildEventDetails>>) => {

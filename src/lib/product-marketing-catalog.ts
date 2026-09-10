@@ -269,6 +269,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
                   "Guests can manually save events with calendar links or ICS downloads; these actions do not require a connected calendar account.",
                 ]),
             "Calendar entries can carry event timing, location, and available reminder information.",
+            "Calendar descriptions group available event details, contacts, RSVP information, notes, and links into readable sections across Google, Outlook, and Apple/ICS. Scanned appointments use labelled patient and clinician facts instead of a flattened medical transcript.",
             "Connect Apple Calendar from Settings with a private calendar subscription for saved events; updates appear when Apple Calendar refreshes. One-event Apple/ICS downloads remain available.",
             "Specialized schedule flows can expose the relevant event or session timing.",
           ],

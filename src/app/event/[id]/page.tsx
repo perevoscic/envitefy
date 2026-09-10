@@ -2236,6 +2236,8 @@ export default async function EventPage({
     calendarStartIso && calendarEndIso
       ? buildCalendarLinks({
           title: title || (data?.title as string) || "Event",
+          details: data,
+          eventUrl: shareUrl,
           description: (data?.description as string | undefined) || "",
           location: (data?.location as string | undefined) || "",
           startIso: calendarStartIso,

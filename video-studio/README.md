@@ -2,6 +2,40 @@
 
 A local Remotion project for Envitefy marketing videos. **EnvitefyHostMode** is the current 22-second TikTok: fictional host footage, a real product demo, original music, and notification sound effects. **EnvitefyIntro** is the earlier 30-second narrated introduction with ImageGen photography and illustrative cards.
 
+## Reusable campaign engine
+
+New productions can use the local `engine/cli.mjs` runner and the shared `src/engine/` Remotion composition. The [producer skill](.agents/skills/envitefy-video-producer/SKILL.md) directs the creative work; the [engine reference](.agents/skills/envitefy-video-producer/references/engine.md) documents the executable production plan, adapters, budgets and recovery. Existing campaign scripts remain available for specialized edits.
+
+```powershell
+node engine/cli.mjs init new-film --title "New film" --formats 9x16,16x9
+node engine/cli.mjs status new-film
+node engine/cli.mjs resume new-film --dry-run
+node engine/cli.mjs resume new-film
+node engine/cli.mjs render new-film --format 9x16
+node engine/cli.mjs review new-film --format 9x16
+```
+
+After init, fill the creative brief and production.json with selected tasks, shots, timing and per-format layouts. Local imports and demo captures run without paid submissions. New provider jobs require the explicit `--allow-paid` execution option and declared cost reservations/budget within the user's authorized scope; known jobs resume without resubmission. The runner saves receipts, reuses unchanged assets, isolates shot revisions, versions exports and requires recorded review evidence before listing a reviewed deliverable. It does not write scripts or judge creative quality by itself.
+
+Run `node --test engine/engine.test.mjs` for recovery/cache/provider-contract tests and `node engine/validate-local.mjs` for three real format renders using local fixtures. The runtime, tests and renderer remain local and ignored; the reusable skill and engine documentation are retained under the existing Git policy. A fresh clone still needs the production files and assets restored separately.
+
+## Reusable campaign engine
+
+New productions can use the local `engine/cli.mjs` runner and the shared `src/engine/` Remotion composition. The [producer skill](.agents/skills/envitefy-video-producer/SKILL.md) directs the creative work; the [engine reference](.agents/skills/envitefy-video-producer/references/engine.md) documents the executable production plan, adapters, budgets and recovery. Existing campaign scripts remain available for specialized edits.
+
+```powershell
+node engine/cli.mjs init new-film --title "New film" --formats 9x16,16x9
+node engine/cli.mjs status new-film
+node engine/cli.mjs resume new-film --dry-run
+node engine/cli.mjs resume new-film
+node engine/cli.mjs render new-film --format 9x16
+node engine/cli.mjs review new-film --format 9x16
+```
+
+After init, fill the creative brief and production.json with selected tasks, shots, timing and per-format layouts. Local imports and demo captures run without paid submissions. New provider jobs require the explicit `--allow-paid` execution option and declared cost reservations/budget within the user's authorized scope; known jobs resume without resubmission. The runner saves receipts, reuses unchanged assets, isolates shot revisions, versions exports and requires recorded review evidence before listing a reviewed deliverable. It does not write scripts or judge creative quality by itself.
+
+Run `node --test engine/engine.test.mjs` for recovery/cache/provider-contract tests and `node engine/validate-local.mjs` for three real format renders using local fixtures. The runtime, tests and renderer remain local and ignored; the reusable skill and engine documentation are retained under the existing Git policy. A fresh clone still needs the production files and assets restored separately.
+
 ## Start a fresh production task
 
 Use this folder as the primary folder of a local Codex project named **Envitefy Video Studio**: `D:\Develop_local\envitefy\video-studio`. Keep it in place because the working scripts use the parent application's product sources, branding, credentials, and Playwright. For existing assets, use the saved local folder rather than a fresh worktree.

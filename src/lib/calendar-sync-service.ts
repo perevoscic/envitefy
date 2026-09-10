@@ -229,10 +229,6 @@ async function insertMicrosoftEvent(params: {
   const accessToken = await getMicrosoftAccessToken(params.refreshToken);
   const graphBody = {
     ...toMicrosoftEvent(params.event),
-    body: {
-      contentType: "text",
-      content: params.event.description || "",
-    },
     transactionId: `envitefy:${params.eventId}`,
   };
   const response = await fetch("https://graph.microsoft.com/v1.0/me/events", {

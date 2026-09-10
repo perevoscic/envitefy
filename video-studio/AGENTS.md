@@ -31,3 +31,9 @@ The parent `.env` and `.env.local` supply server-side provider credentials. Neve
 Remotion preview uses port 3100; the app's demo capture uses port 3000. Check existing servers before starting them. Video source and output belong here; edits to the live application require a task that calls for them.
 
 The skill contains the workflow and links to the scripts. Do not assume the existing Host Mode generator can accept a new campaign ID: its paths and shots are campaign-specific.
+
+## Campaign engine
+
+The reusable local runner is `engine/cli.mjs`; its contract and recovery rules are in the producer skill's [engine reference](.agents/skills/envitefy-video-producer/references/engine.md). New engine campaigns use `production.json` alongside the creative `brief.json`. Start revisions with status, retain unchanged assets, and resolve recorded provider jobs before submitting another take. The engine is local production code and remains ignored with the renderer in `src/engine/`.
+
+Run `node --test engine/engine.test.mjs` after functional engine changes. `node engine/validate-local.mjs` renders a local three-format validation under out/_studio/ without paid generation. A technical pass leaves creative review pending; use the [review reference](.agents/skills/envitefy-video-producer/references/review.md) and never treat editor review as user approval.

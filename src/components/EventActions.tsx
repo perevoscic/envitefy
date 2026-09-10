@@ -213,6 +213,8 @@ export default function EventActions({
       : null;
     return buildCalendarLinks({
       title: shareTitle,
+      details: safeEvent,
+      eventUrl: absoluteUrl,
       description: safeEvent.description || "",
       location: safeEvent.location || "",
       startIso: safeEvent.start,
@@ -222,7 +224,7 @@ export default function EventActions({
       reminders,
       recurrence: safeEvent.recurrence || null,
     });
-  }, [safeEvent, shareTitle]);
+  }, [safeEvent, shareTitle, absoluteUrl]);
 
   const readLocalCalendarDefault = useCallback(() => {
     if (typeof window === "undefined") return null;

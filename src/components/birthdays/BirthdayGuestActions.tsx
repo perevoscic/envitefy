@@ -51,6 +51,7 @@ export default function BirthdayGuestActionsProvider({
     const fallbackEnd = allDay ? end.toISOString().slice(0, 10) : event.date;
     links = buildCalendarLinks({
       title: event.headlineTitle || `${event.birthdayName || "Birthday"}'s celebration`,
+      eventUrl: event.shareUrl || undefined,
       description: event.story || "",
       location: destination,
       startIso: event.date,
