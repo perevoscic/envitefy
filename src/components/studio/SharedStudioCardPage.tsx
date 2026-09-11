@@ -34,7 +34,6 @@ type SharedStudioCardFrameProps = SharedStudioCardProps & {
   artworkClassName?: string;
   topRightAction?: ReactNode;
   onClose?: () => void;
-  closeButtonPlacement?: "below" | "overlay";
   style?: CSSProperties;
 };
 
@@ -113,25 +112,17 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
           shareState={shareState}
         />
         {props.topRightAction}
-        {props.onClose && props.closeButtonPlacement === "overlay" ? (
+        </LiveCardArtworkFrame>
+        {props.onClose ? (
           <button
             type="button"
             onClick={props.onClose}
             aria-label="Close preview"
             title="Close preview"
-            className="absolute right-3 top-5 z-30 inline-flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-white/30 bg-black/40 text-white shadow-lg backdrop-blur-md transition-colors hover:bg-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:right-5 sm:top-6 md:right-8 md:top-8 md:h-16 md:w-16"
+            className="absolute right-3 top-5 z-30 inline-flex size-11 cursor-pointer items-center justify-center rounded-full border border-white/40 bg-white/90 text-slate-950 shadow-lg backdrop-blur-md transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:right-5 sm:top-6 md:right-8 md:top-8"
           >
-            <X className="h-6 w-6 md:h-7 md:w-7" aria-hidden="true" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
-        ) : null}
-        </LiveCardArtworkFrame>
-        {props.onClose && props.closeButtonPlacement !== "overlay" ? (
-          <div className={`flex justify-end px-1 pt-2 ${usesPosterArtFrame ? "bg-transparent" : "bg-neutral-950"}`}>
-            <button type="button" onClick={props.onClose} aria-label="Close preview"
-              className={`inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 ${usesPosterArtFrame ? "text-slate-700 hover:bg-white/70 focus-visible:ring-violet-500" : "text-white/80 hover:bg-white/10 focus-visible:ring-white"}`}>
-              <X size={18} aria-hidden="true" /> Close
-            </button>
-          </div>
         ) : null}
       </div>
     </div>

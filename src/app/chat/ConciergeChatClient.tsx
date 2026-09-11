@@ -2964,7 +2964,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
 
   const chatThread = (
     <div
-      className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-start gap-5 px-4 py-8 sm:px-6"
+      className="flex min-h-full w-full min-w-0 flex-col justify-start gap-5 px-4 py-8 sm:px-6"
       role="log"
       aria-live="polite"
       aria-relevant="additions text"
@@ -3176,9 +3176,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const composer = (
     <div
       className={cn(
-        "pointer-events-none z-30 mx-auto flex w-full max-w-3xl shrink-0 flex-col items-stretch px-2 pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+0.75rem)] pt-4 sm:px-6 sm:pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+2rem)]",
+        "pointer-events-none z-30 mx-auto flex w-full min-w-0 shrink-0 flex-col items-stretch px-2 pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+0.75rem)] pt-4 sm:px-6 sm:pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+2rem)]",
         isEmptyState &&
-          "mb-auto !pb-6 !pt-0",
+          "mb-auto max-w-3xl !pb-6 !pt-0",
       )}
     >
       <div ref={composerCardRef} className="pointer-events-auto relative w-full">
@@ -3403,7 +3403,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   );
 
   const readyActions = (
-    <div className="pointer-events-none z-30 mx-auto flex w-full max-w-3xl shrink-0 flex-col items-stretch px-2 pt-2 sm:px-6">
+    <div className="pointer-events-none z-30 flex w-full min-w-0 shrink-0 flex-col items-stretch px-2 pt-2 sm:px-6">
       <div className="pointer-events-auto w-full">
         {shouldShowGiftRegistryPrompt ? (
           <div className="mb-2 rounded-[1.35rem] border border-[#ded2f5] bg-white/96 p-3 text-[#4f3a73] shadow-[0_14px_34px_rgba(93,63,155,0.12)] ring-1 ring-white/80 backdrop-blur">
@@ -3543,14 +3543,14 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             <div
               className={`grid h-full min-h-0 ${
                 shouldShowProductPanel
-                  ? "lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]"
+                  ? "lg:grid-cols-[minmax(0,3fr)_minmax(20rem,2fr)]"
                   : "grid-cols-1"
               }`}
             >
               <div
                 ref={chatPaneRef}
                 className={cn(
-                  "min-h-0 w-full flex-col overflow-hidden",
+                  "min-h-0 min-w-0 w-full flex-col overflow-hidden",
                   isEmptyState ? "bg-transparent" : "bg-white/28 backdrop-blur-sm",
                   mobileView === "chat" ? "flex" : "hidden lg:flex",
                 )}

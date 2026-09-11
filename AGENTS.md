@@ -100,6 +100,8 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
 
 ## Feature Maps
 
+- Live Card preview layout preference (September 10, 2026, updated): center the card in 90% of the available screen height, leaving 5% above and below. Place Share inside the upper-left corner and X Close inside the upper-right corner on mobile/Safari and desktop; keep both controls inside the card with 44px touch targets. This supersedes the earlier 80% height, adjacent top-right controls and Close placement below the card. Respect safe areas. Scale the artwork proportionally to cover the frame from top to bottom, cropping the sides as needed on narrow phones; do not add blurred filler bands. Keep guest actions inside the card.
+
 - Concierge sidebar icon preference (September 10, 2026): use `public/brand/concierge-chat.webp`, the tightly trimmed transparent version of the supplied `public/brand/concierge-chat.png`, for the Envitefy Concierge navigation item. Keep the supplied purple e/chat-bubble shape, existing active/hover treatment and accessible navigation label.
 
 - Live Card owner-view preference (September 10, 2026, clarified): saved Live Cards and flyers/invitations open directly in the existing Design editor, including sidebar, dashboard and card-share owner entry points. Only event pages open in the full event/device view. Card and flyer previews use a bounded artwork dialog with Close and their existing guest actions, without Desktop, Tablet or Mobile buttons, an iframe device frame, or fullscreen navigation suppression. Apply the same rule in Concierge. Keep the collapsible sidebar and explicit artwork saves. This supersedes the earlier standalone owner card view and shared device controls for cards.

@@ -268,7 +268,7 @@ export default function ChatProductPreview({
   return (
     <aside
       aria-label={`${panelOutputLabel} preview`}
-      className={`min-h-0 flex-col overflow-hidden bg-[#f8f7fb]/96 backdrop-blur-xl lg:static lg:border-l lg:border-[#e5dff0] lg:bg-white/58 ${
+      className={`min-h-0 min-w-0 flex-col overflow-hidden bg-[#f8f7fb]/96 backdrop-blur-xl lg:static lg:border-l lg:border-[#e5dff0] lg:bg-white/58 ${
         mobileView === "preview"
           ? "fixed inset-x-0 bottom-0 top-[calc(env(safe-area-inset-top)+3.25rem)] z-30 flex rounded-t-[1.75rem] shadow-[0_-24px_70px_rgba(35,24,72,0.18)] lg:rounded-none lg:shadow-none"
           : "hidden lg:flex"
@@ -334,7 +334,7 @@ export default function ChatProductPreview({
             {isLiveCard ? (
               <section aria-label="Interactive guest preview" className="relative">
                 <div
-                  className="mx-auto w-full max-w-[min(100%,max(16rem,calc((100svh-16rem)*2/3)))] lg:max-w-[26rem]"
+                  className="mx-auto w-full max-w-[min(100%,max(16rem,calc((100svh-16rem)*2/3)))] lg:max-w-full"
                   inert={isGenerating}
                 >
                   <StudioShowcaseLiveCard
@@ -509,7 +509,7 @@ export default function ChatProductPreview({
               className="!rounded-[1.5rem]"
             />
           ) : (
-            <img src={previewImageUrl} alt={summary.headline} className="max-h-[calc(100dvh-6rem)] w-full rounded-2xl object-contain" />
+            <img src={previewImageUrl} alt={summary.headline} className="h-full max-h-full w-full rounded-2xl object-contain" />
           )}
         </ArtworkPreviewDialog>
       )}

@@ -793,6 +793,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
 
       {props.onShare && !actionsBelow ? (
         <button
+          data-live-card-share
           type="button"
           onClick={() => {
             if (props.isDesignMode) return;

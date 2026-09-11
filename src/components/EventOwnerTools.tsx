@@ -905,7 +905,7 @@ export default function EventOwnerTools({
   return (
     <main className="min-h-[100dvh] w-full px-3 pb-5 pt-[calc(var(--app-mobile-topbar-offset,4rem)+1.35rem)] text-slate-950 sm:px-6 lg:px-8 lg:py-5">
       <div
-        className="mx-auto grid w-full max-w-[1380px] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,410px)] xl:grid-cols-[minmax(0,1fr)_430px]"
+        className="grid w-full min-w-0 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
       >
         <section className="min-w-0 space-y-3 sm:space-y-4">
           <div>
@@ -1146,7 +1146,7 @@ function EventProductPreview({
           : "h-[min(680px,calc(100dvh-5rem))] min-h-[480px] lg:h-[min(760px,calc(100dvh-2.5rem))] lg:max-h-[760px]"
       } ${className}`.trim()}
       style={isStudioCard ? {
-        maxWidth: `calc(min(760px, 100dvh - 2.5rem) * ${cardAspectRatio})`,
+        maxWidth: `var(--artwork-preview-width, calc((100dvh - 2.5rem) * ${cardAspectRatio}))`,
       } : undefined}
       aria-label="Product preview"
     >
@@ -1167,7 +1167,6 @@ function EventProductPreview({
             shareUrl={publicUrl}
             topRightAction={previewAction}
             onClose={onClose}
-            closeButtonPlacement="overlay"
             className="w-full"
             frameClassName="!w-full !max-w-full !rounded-[28px] !border-0 !bg-transparent"
             style={{ width: "100%" }}

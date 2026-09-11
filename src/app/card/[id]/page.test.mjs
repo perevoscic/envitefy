@@ -140,7 +140,8 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
   assert.doesNotMatch(pageSource, /EventPreviewViewport|fullscreen/);
   assert.match(sharedPageSource, /returnHref\?: string \| null;/);
   assert.match(sharedPageSource, /aria-label="Close preview"/);
-  assert.match(sharedPageSource, /inline-flex min-h-11 items-center gap-2 rounded-full/);
+  assert.match(sharedPageSource, /absolute right-3 top-5 z-30 inline-flex size-11/);
+  assert.doesNotMatch(sharedPageSource, /closeButtonPlacement|<X size=\{18\} aria-hidden="true" \/> Close/);
   assert.match(sharedPageSource, /placement="overlay"/);
   assert.doesNotMatch(sharedPageSource, /max-md:h-\[100dvh\]/);
   assert.match(sharedPageSource, /max-md:!w-full !rounded/);

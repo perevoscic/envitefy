@@ -1,0 +1,52 @@
+.content {
+  --artwork-preview-available-height: calc(
+    100dvh -
+    env(safe-area-inset-top, 0px) -
+    env(safe-area-inset-bottom, 0px)
+  );
+  --artwork-preview-height: calc(var(--artwork-preview-available-height) * 0.9);
+  --artwork-preview-width: min(
+    calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)),
+    calc(var(--artwork-preview-height) * var(--artwork-preview-ratio))
+  );
+  position: fixed;
+  top: calc(
+    env(safe-area-inset-top, 0px) +
+    (var(--artwork-preview-available-height) - var(--artwork-preview-height)) /
+    2
+  );
+  left: calc((100vw + env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) / 2);
+  z-index: 7001;
+  width: var(--artwork-preview-width);
+  height: var(--artwork-preview-height);
+  transform: translateX(-50%);
+  outline: none;
+}
+
+/* Fill the preview edge to edge while preserving the artwork's proportions. */
+.content [data-live-card-artwork] > div > img {
+  object-fit: cover;
+}
+
+.close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 100;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.content [data-live-card-share] {
+  top: 12px;
+  right: auto;
+  left: 12px;
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+}
+
+.content [data-live-card-share] > svg {
+  width: 21px;
+  height: 21px;
+}

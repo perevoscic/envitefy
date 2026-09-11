@@ -2,9 +2,10 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import styles from "./ArtworkPreviewDialog.module.css";
 
-/** Artwork keeps its own proportions; device simulation belongs to event pages. */
+/** Center artwork in the available screen, with Share and Close in opposite top corners. */
 export default function ArtworkPreviewDialog({
   open,
   title,
@@ -32,8 +33,8 @@ export default function ArtworkPreviewDialog({
         <Dialog.Content
           data-artwork-preview
           aria-describedby={undefined}
-          className="fixed left-1/2 top-1/2 z-[7001] max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 outline-none"
-          style={{ maxWidth: `min(32rem, calc((100dvh - 6rem) * ${aspectRatio}))` }}
+          className={styles.content}
+          style={{ "--artwork-preview-ratio": aspectRatio } as CSSProperties}
           onCloseAutoFocus={
             onReturnFocus
               ? (event) => {
@@ -44,7 +45,7 @@ export default function ArtworkPreviewDialog({
           }
         >
           <Dialog.Title className="sr-only">{title}</Dialog.Title>
-          <div className="mb-2 flex justify-end">
+          <div className={styles.close}>
             <Dialog.Close asChild>
               <button
                 type="button"

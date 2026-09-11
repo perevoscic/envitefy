@@ -276,7 +276,9 @@ test("owner Design tab previews card edits before saving them", () => {
   assert.doesNotMatch(source, /Back to editing|Back to dashboard|The saved version your guests can open/);
   assert.match(source, /<Dialog.Title className="sr-only">\{heading\}<\/Dialog.Title>/);
   assert.match(source, /fixed inset-0 z-\[7000\] bg-slate-950/);
-  assert.match(source, /closeButtonPlacement="overlay"/);
+  const cardFrame = readSource("src/components/studio/SharedStudioCardPage.tsx");
+  assert.doesNotMatch(cardFrame, /closeButtonPlacement/);
+  assert.match(cardFrame, /\{props\.onClose \? \([\s\S]*?aria-label="Close preview"[\s\S]*?absolute right-3 top-5/);
   assert.match(source, /grid grid-cols-2 gap-3 md:grid-cols-3/);
   assert.match(source, /text-slate-500 md:col-span-3/);
   assert.match(source, /text-slate-500 md:col-span-2/);

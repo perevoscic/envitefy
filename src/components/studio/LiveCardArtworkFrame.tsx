@@ -14,6 +14,8 @@ export default function LiveCardArtworkFrame({
 }: LiveCardArtworkFrameProps) {
   const style = {
     "--live-card-artwork": `url(${JSON.stringify(imageUrl)})`,
+    height: "var(--artwork-preview-height, auto)",
+    width: "var(--artwork-preview-width, 100%)",
   } as CSSProperties;
 
   return (
