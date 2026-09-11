@@ -94,6 +94,7 @@ export function MainContentWrapper({
         ...(isEventSharePage ? { [EVENT_SKIN_TOP_OFFSET_VAR]: eventSkinTopOffset } : null),
       }}
       data-static-illustration="true"
+      data-app-main-content="true"
     >
       {showProjectGradientBackground ? (
         <GradientBackgroundLayer />

@@ -39,7 +39,7 @@ export async function POST(_request: Request, context: RouteContext) {
   if (!resolveSavedScanPersonalization(result.row.data, result.row.title))
     return NextResponse.json({ error: "No scan artwork available" }, { status: 409 });
   const policy = resolveScanMediaPolicy(result.row.data, result.row.title);
-  const heroMode = policy?.sourceKind === "designed" ? "original" : "generated";
+  const heroMode = policy?.sourceKind === "paperwork" ? "generated" : "original";
   await query(
     `UPDATE event_history SET data = jsonb_set(data, '{scanHeroMode}', $3::jsonb) WHERE id = $1 AND user_id = $2`,
     [result.row.id, result.userId, JSON.stringify(heroMode)],
@@ -85,8 +85,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (
     !policy ||
     (mode !== "original" && mode !== "generated") ||
-    (policy.medical && mode === "original") ||
-    (policy.sourceKind === "designed" && mode === "generated")
+    mode !== policy.heroMode
   )
     return NextResponse.json({ error: "Invalid artwork choice" }, { status: 400 });
   if (mode === "generated" && !normalizeScanArtwork(result.row.data.scanArtwork)?.heroImageUrl)

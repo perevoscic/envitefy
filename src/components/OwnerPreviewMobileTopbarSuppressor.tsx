@@ -1,20 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
+import { suppressEventPreviewChrome } from "@/lib/event-preview-chrome";
 
+/** Suppress desktop and mobile navigation without unmounting the editor behind the preview. */
 export default function OwnerPreviewMobileTopbarSuppressor() {
-  useEffect(() => {
-    const root = document.documentElement;
-    root.dataset.mobileTopbarHidden = "true";
-    root.style.setProperty("--app-mobile-topbar-offset", "0px");
-
-    return () => {
-      if (root.dataset.mobileTopbarHidden === "true") {
-        delete root.dataset.mobileTopbarHidden;
-      }
-      root.style.removeProperty("--app-mobile-topbar-offset");
-    };
-  }, []);
+  useLayoutEffect(() => suppressEventPreviewChrome(document.documentElement), []);
 
   return null;
 }

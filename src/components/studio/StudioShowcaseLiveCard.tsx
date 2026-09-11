@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import LiveCardArtworkFrame from "@/components/studio/LiveCardArtworkFrame";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface, {
   type LiveCardActiveTab,
@@ -140,12 +141,12 @@ export default function StudioShowcaseLiveCard({
   return (
     <div
       className={cx(
-        usesPosterArtFrame ? "relative bg-transparent" : "relative overflow-hidden rounded-[2.2rem] border border-white/10 bg-neutral-950 shadow-[0_28px_80px_rgba(15,23,42,0.32)]",
-        !usesPosterArtFrame && showcaseMode && "border-slate-300/70 bg-transparent shadow-none",
+        usesPosterArtFrame ? "relative bg-transparent" : "relative rounded-[2.2rem] bg-neutral-950",
+        !usesPosterArtFrame && showcaseMode && "bg-transparent",
         className,
       )}
     >
-      <div data-live-card-artwork className={`relative ${usesPosterArtFrame ? "aspect-[2/3] overflow-hidden rounded-[1.5rem] shadow-[0_12px_40px_rgba(15,23,42,0.14)]" : "aspect-[9/16]"}`}>
+      <LiveCardArtworkFrame imageUrl={preview.imageUrl} className={usesPosterArtFrame ? "aspect-[2/3] rounded-[1.5rem]" : "aspect-[9/16] rounded-[inherit]"}>
       {canOptimizeImage ? (
         <Image
           src={preview.imageUrl}
@@ -192,7 +193,7 @@ export default function StudioShowcaseLiveCard({
           previewMode={previewMode}
         />
       </div>
-      </div>
+      </LiveCardArtworkFrame>
       {showcaseOverlay}
     </div>
   );

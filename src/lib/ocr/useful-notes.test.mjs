@@ -20,6 +20,13 @@ test("empty and generic messages do not create a Good to Know card", () => {
 test("printed reception plans, preparation, access and restrictions stay useful", () => {
   for (const value of [
     "Dinner and dancing to follow.",
+    "Reception to follow",
+    "Dinner & dancing after the ceremony.",
+    "Join us for dinner and dancing!",
+    "Refreshments provided.",
+    "Reception at the Garden Room from 6 PM.",
+    "Dinner and dancing to follow at the Garden Room.",
+    "Vegetarian meals available on request.",
     "Bring your insurance card.",
     "No food for 8 hours before arrival.",
     "Ages 16+",
@@ -39,6 +46,10 @@ test("remove repeated logistics sentence by sentence while keeping additional in
     usefulScanNotes("Arrive at Clinic One 15 minutes before Sam ENT appointment.", shown),
     "Arrive at Clinic One 15 minutes before Sam ENT appointment.",
   );
+  assert.equal(
+    usefulScanNotes("Dinner and dancing to follow. Use the side entrance after 6 PM."),
+    "Dinner and dancing to follow.\n\nUse the side entrance after 6 PM.",
+  );
 });
 
 test("legacy note facts cannot reintroduce filler or duplicate another rendered card", () => {
@@ -53,4 +64,5 @@ test("legacy note facts cannot reintroduce filler or duplicate another rendered 
     facts[3],
   ]);
   assert.equal(facts[0].value, "Have fun!", "saved source facts are not mutated");
+  assert.deepEqual(filterRenderedOcrFacts(facts, []), [facts[1], facts[2], facts[3]]);
 });

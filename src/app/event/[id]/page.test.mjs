@@ -52,7 +52,7 @@ test("generic OCR event pages expose owner share and delete actions", () => {
 
   assert.ok(fallbackOcrBranch, "expected the generic OCR fallback branch");
   assert.match(fallbackOcrBranch, /actions=\{/);
-  assert.match(fallbackOcrBranch, /!isReadOnly &&[\s\S]*isOwner/);
+  assert.match(fallbackOcrBranch, /!isReadOnly &&[\s\S]*showEventOwnerActions/);
   assert.match(fallbackOcrBranch, /<EventActions/);
   assert.doesNotMatch(fallbackOcrBranch, /showLabels/);
   assert.match(fallbackOcrBranch, /<EventDeleteModal/);
@@ -75,7 +75,7 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /pageTemplateId/);
   assert.match(source, /chrome=\{footballPublicChrome\}/);
   assert.match(source, /pageTemplateId=\{footballPageTemplateId\}/);
-  assert.match(source, /hideOwnerActions=\{Boolean\(discoveryEditConfig\)\}/);
+  assert.match(source, /hideOwnerActions=\{ownerPreviewMode \|\| Boolean\(discoveryEditConfig\)\}/);
   assert.ok(
     source.includes("const shouldRenderFootballPage ="),
     "football renderer gate is missing",
@@ -101,10 +101,10 @@ test("event route branches football discovery/template events into the football 
   );
   assert.match(
     source,
-    /if \(cardFirstCanonical && !ownerToolsTab\) \{\s*redirect\(cardFirstCanonical\);/,
+    /if \(cardFirstCanonical && !ownerToolsTab && !showOwnerEventView\) \{[\s\S]*cardPreviewSearch\.set\("preview", "owner"\)[\s\S]*redirect\(`\$\{cardFirstCanonical\}\$\{cardPreviewSearch\.size/,
   );
   assert.ok(
-    source.indexOf("if (cardFirstCanonical && !ownerToolsTab)") <
+    source.indexOf("if (cardFirstCanonical && !ownerToolsTab && !showOwnerEventView)") <
       source.indexOf("const discoveryWorkflow ="),
     "card-first event URLs should redirect before public renderer setup",
   );
@@ -340,42 +340,28 @@ test("event route shows deleted event copy for missing event rows", () => {
   assert.doesNotMatch(source, /if \(!row\) return notFound\(\);/);
 });
 
-test("event route owner preview mode includes a dashboard return control", () => {
+test("event previews share device controls and keep embedded content free of owner tools", () => {
   const source = readSource("src/app/event/[id]/page.tsx");
-  const suppressorSource = readSource("src/components/OwnerPreviewMobileTopbarSuppressor.tsx");
-
-  assert.match(source, /function OwnerPreviewReturnLink\(\{ href \}: \{ href: string \}\)/);
-  assert.match(source, /import \{ ArrowLeft \} from "lucide-react";/);
-  assert.match(
-    source,
-    /import OwnerPreviewMobileTopbarSuppressor from "@\/components\/OwnerPreviewMobileTopbarSuppressor";/,
-  );
-  assert.match(source, /<OwnerPreviewMobileTopbarSuppressor \/>/);
-  assert.match(source, /aria-label="Back to dashboard"/);
-  assert.match(source, /inline-flex h-11 items-center justify-center gap-2 rounded-full/);
-  assert.match(source, /<ArrowLeft size=\{18\}/);
-  assert.match(source, /<span>Dashboard<\/span>/);
-  assert.match(source, /lg:left-\[calc\(20rem\+/);
-  assert.doesNotMatch(source, /aria-label="Close preview"/);
-  assert.doesNotMatch(source, /<X size=\{18\}/);
-  assert.match(suppressorSource, /root\.dataset\.mobileTopbarHidden = "true";/);
-  assert.match(
-    suppressorSource,
-    /root\.style\.setProperty\("--app-mobile-topbar-offset", "0px"\);/,
-  );
-  assert.match(source, /function sanitizeInternalReturnHref\(value: string\): string/);
-  assert.match(
-    source,
-    /readRouteSearchParam\(\(awaitedSearchParams as any\)\?\.preview\) === "owner"/,
-  );
-  assert.match(source, /const ownerPreviewEmbedded =/);
-  assert.match(
-    source,
-    /readRouteSearchParam\(\(awaitedSearchParams as any\)\?\.embed\) === "dashboard-preview"/,
-  );
-  assert.match(source, /ownerPreviewMode && !ownerPreviewEmbedded/);
+  const viewport = readSource("src/components/EventPreviewViewport.tsx");
+  assert.match(source, /if \(ownerPreviewMode && !ownerPreviewEmbedded\)/);
+  assert.match(source, /<EventPreviewViewport/);
+  assert.match(source, /src=\{buildEmbeddedEventPreviewHref\(canonical\)\}/);
+  assert.match(source, /returnHref=\{ownerPreviewReturnHref\}/);
+  assert.match(source, /const showEventOwnerActions = isOwner && !ownerPreviewMode;/);
+  assert.match(source, /hideOwnerActions=\{ownerPreviewMode \|\| Boolean\(discoveryEditConfig\)\}/);
   assert.match(source, /ownerPreviewEmbedded \? <OwnerPreviewMobileTopbarSuppressor \/> : null/);
-  assert.match(source, /<OwnerPreviewReturnLink href=\{ownerPreviewReturnHref\} \/>/);
+  assert.match(viewport, /aria-label="Preview device"/);
+  assert.match(viewport, /aria-pressed=\{active\}/);
+  assert.match(viewport, /closeLabel = "Close preview"/);
+  assert.match(viewport, /aria-label=\{closeLabel\}/);
+});
+
+test("the owner event menu is separate from public and embedded previews", () => {
+  const source = readSource("src/app/event/[id]/page.tsx");
+  assert.match(source, /const showOwnerEventView = isOwner && requestedTab === "event" && !ownerPreviewMode;/);
+  assert.match(source, /if \(cardFirstCanonical && !ownerToolsTab && !showOwnerEventView\)/);
+  assert.match(source, /if \(showOwnerEventView && !editParam\)/);
+  assert.match(source, /<EventOwnerView[\s\S]*publicHref=\{publicEventHref\}/);
 });
 
 test("event route sanitizes stored RSVP names before host fallback", () => {

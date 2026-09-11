@@ -50,6 +50,7 @@ import {
   type SetStateAction,
   Fragment,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import { useEventCache } from "@/app/event-cache-context";
@@ -60,9 +61,13 @@ import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import EventSidebar from "@/components/navigation/EventSidebar";
 import { useMenu } from "@/contexts/MenuContext";
 import type { CreationThreadSummary, CreationThreadsResponse } from "@/lib/concierge/types";
+import { isInvitedEventLikeRecord } from "@/lib/dashboard-data";
+import { buildEditLink } from "@/utils/event-edit-route";
 import { secureSignOut } from "@/utils/secureSignOut";
 import { useLeftSidebarController } from "./left-sidebar.controller";
 import {
+  buildSidebarDraftItems,
+  type SidebarDraftItem,
   CREATE_SECTION_COLORS,
   createSidebarIconLookup,
   GroupedEventItem,
@@ -363,15 +368,17 @@ function animateSidebarPress(event: MouseEvent<HTMLDivElement>) {
     return;
   }
 
-  const pressSurface = control.matches("[data-sidebar-press-trigger]")
-    ? control.closest<HTMLElement>("[data-sidebar-press-surface]") || control
-    : control;
-  for (const animation of pressSurface.getAnimations()) {
+  for (const animation of control.getAnimations()) {
     if (animation.id === "sidebar-press-feedback") animation.cancel();
   }
-  const animation = pressSurface.animate(
+  const animation = control.animate(
     [
-      { transform: "translateY(2px) scale(0.95)", offset: 0 },
+      {
+        transform: "translateY(2px) scale(0.95)",
+        backgroundColor: "rgba(224, 215, 255, 0.78)",
+        boxShadow: "inset 0 2px 7px rgba(90, 71, 160, 0.24)",
+        offset: 0,
+      },
       { transform: "translateY(0) scale(1.01)", offset: 0.65 },
       { transform: "translateY(0) scale(1)", offset: 1 },
     ],
@@ -461,11 +468,13 @@ function RootNavigationPanel({
   isSnapUploadActive,
   isAdmin,
   createdEventsCount,
+  draftsCount,
   onHome,
   onSnapUpload,
   onAiThreads,
   onCreate,
   onMyEvents,
+  onDrafts,
   onAdmin,
 }: {
   pathname: string | null;
@@ -477,11 +486,13 @@ function RootNavigationPanel({
   isSnapUploadActive: boolean;
   isAdmin: boolean;
   createdEventsCount: number;
+  draftsCount: number;
   onHome: () => void;
   onSnapUpload: () => void;
   onAiThreads: () => void;
   onCreate: () => void;
   onMyEvents: () => void;
+  onDrafts: () => void;
   onAdmin: () => void;
 }) {
   const isHomeActive = pathname === "/" && sidebarPage === "root";
@@ -498,6 +509,7 @@ function RootNavigationPanel({
     (isViewingEventFromListInRoot && eventContextSourcePage === "myEvents");
   const isAdminActive =
     sidebarPage === "admin" || (Boolean(pathname?.startsWith("/admin")) && sidebarPage === "root");
+  const isDraftsActive = sidebarPage === "drafts";
   const mainActiveAccent = getSidebarPrimaryActiveAccent();
   const rootMenuActiveChipClass = "nav-chrome-sidebar-chip-active";
   const rootMenuChipClass = SIDEBAR_ICON_CHIP_ACCENT_CLASS;
@@ -647,6 +659,33 @@ function RootNavigationPanel({
           </span>
           {createdEventsCount > 0 ? (
             <span className={`ml-auto ${SIDEBAR_BADGE_CLASS}`}>{createdEventsCount}</span>
+          ) : null}
+        </button>
+
+        <button
+          type="button"
+          onClick={onDrafts}
+          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
+            isDraftsActive ? activeRowClass : inactiveRowClass
+          } py-3 pl-4 pr-4`}
+          style={isDraftsActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
+        >
+          <span
+            className={`${SIDEBAR_ICON_CHIP_CLASS} ${
+              isDraftsActive ? rootMenuActiveChipClass : rootMenuChipClass
+            } ${rootIconClass(isDraftsActive)}`}
+          >
+            <FileEdit size={17} strokeWidth={1.9} aria-hidden="true" />
+          </span>
+          <span
+            className={`truncate ${rootRowTextClass} ${
+              isDraftsActive ? rootActiveTextClass : `${rootInactiveTextClass} ${rootHoverTextClass}`
+            }`}
+          >
+            Drafts
+          </span>
+          {draftsCount > 0 ? (
+            <span className={`ml-auto ${SIDEBAR_BADGE_CLASS}`}>{draftsCount}</span>
           ) : null}
         </button>
       </div>
@@ -947,60 +986,40 @@ function EventListPanel({
               <span aria-hidden="true" className="h-px flex-1 bg-[#ded8f0]/70" />
             </div>
           ) : null}
-          <div
+          <button
+            type="button"
             data-sidebar-press-surface
-            className={`${SIDEBAR_SUBMENU_ROW_CLASS} relative items-start px-2 py-2.5 ${
+            onClick={() => onRowClick(item)}
+            aria-current={isActive ? "page" : undefined}
+            className={`${SIDEBAR_SUBMENU_ROW_CLASS} relative min-w-0 items-start px-2 py-2.5 ${
               isActive ? SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS : SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS
             } ${muted ? pastRowOpacityClass : ""}`}
           >
-            <button
-              type="button"
-              data-sidebar-press-trigger
-              onClick={() => onRowClick(item)}
-              className="flex min-w-0 flex-1 items-start gap-3 text-left"
-              aria-current={isActive ? "page" : undefined}
+            <span
+              className={`${SIDEBAR_SUBMENU_ICON_CLASS} mt-0.5 ${
+                isActive
+                  ? SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS
+                  : `${item.tintClass} ${SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS}`
+              }`}
+              aria-hidden="true"
+              title={item.category}
             >
-              <span
-                className={`${SIDEBAR_SUBMENU_ICON_CLASS} mt-0.5 ${
-                  isActive
-                    ? SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS
-                    : `${item.tintClass} ${SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS}`
-                }`}
-                aria-hidden="true"
-                title={item.category}
-              >
-                <CategoryIcon
-                  size={18}
-                  className={
-                    CategoryIcon === SidebarGymnasticsMenuIcon ||
-                    CategoryIcon === SidebarFootballMenuIcon
-                      ? "!bg-current"
-                      : undefined
-                  }
-                />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="sr-only">{item.category}: </span>
-                {showPendingBadge || item.isInvited ? (
-                  <span className="flex items-center gap-2">
-                    <span
-                      className={`font-[var(--font-josefin-sans)] min-w-0 flex-1 truncate text-[0.98rem] font-bold leading-snug md:text-[1.02rem] ${
-                        isActive
-                          ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
-                          : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
-                      }`}
-                    >
-                      {item.title}
-                    </span>
-                    {item.shareStatus === "pending" ? (
-                      <span className="shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-amber-700">
-                        Pending
-                      </span>
-                    ) : null}
-                  </span>
-                ) : (
+              <CategoryIcon
+                size={18}
+                className={
+                  CategoryIcon === SidebarGymnasticsMenuIcon ||
+                  CategoryIcon === SidebarFootballMenuIcon
+                    ? "!bg-current"
+                    : undefined
+                }
+              />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="sr-only">{item.category}: </span>
+              {showPendingBadge || item.isInvited ? (
+                <span className="flex items-center gap-2">
                   <span
-                    className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-snug md:text-[1.02rem] ${
+                    className={`font-[var(--font-josefin-sans)] min-w-0 flex-1 truncate text-[0.98rem] font-bold leading-snug md:text-[1.02rem] ${
                       isActive
                         ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
                         : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
@@ -1008,19 +1027,34 @@ function EventListPanel({
                   >
                     {item.title}
                   </span>
-                )}
+                  {item.shareStatus === "pending" ? (
+                    <span className="shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-amber-700">
+                      Pending
+                    </span>
+                  ) : null}
+                </span>
+              ) : (
                 <span
-                  className={`mt-0.5 block truncate text-xs ${
+                  className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-snug md:text-[1.02rem] ${
                     isActive
-                      ? "text-[#9d95db]"
-                      : "text-[#c1bcf0] group-hover:text-[#b0aae4]"
+                      ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
+                      : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
                   }`}
                 >
-                  {dateLabel}
+                  {item.title}
                 </span>
+              )}
+              <span
+                className={`mt-0.5 block truncate text-xs ${
+                  isActive
+                    ? "text-[#9d95db]"
+                    : "text-[#c1bcf0] group-hover:text-[#b0aae4]"
+                }`}
+              >
+                {dateLabel}
               </span>
-            </button>
-          </div>
+            </span>
+          </button>
         </Fragment>
       );
     });
@@ -1082,6 +1116,84 @@ function EventListPanel({
                 ) : null}
               </section>
             ) : null}
+          </div>
+        )}
+      </div>
+    </SidebarListPanel>
+  );
+}
+
+function DraftsPanel({
+  drafts,
+  onBack,
+  onNavigate,
+}: {
+  drafts: SidebarDraftItem[];
+  onBack: () => void;
+  onNavigate: () => void;
+}) {
+  const router = useRouter();
+  const [openingId, setOpeningId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function openDraft(draft: SidebarDraftItem) {
+    if (openingId) return;
+    setOpeningId(draft.id);
+    setError(null);
+    try {
+      let href = draft.href;
+      if (draft.eventId) {
+        // The sidebar projection omits some editor metadata. Resolve the saved
+        // record before navigating so manual and older template drafts resume correctly.
+        const response = await fetch(`/api/history/${encodeURIComponent(draft.eventId)}`, {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!response.ok) throw new Error("Unable to open this draft. Please try again.");
+        const row = (await response.json()) as { id: string; title: string; data: Record<string, unknown> };
+        href = buildEditLink(row.id, row.data, row.title);
+      }
+      onNavigate();
+      router.push(href);
+    } catch {
+      setError("Unable to open this draft. Please try again.");
+    } finally {
+      setOpeningId(null);
+    }
+  }
+
+  return (
+    <SidebarListPanel title="Drafts" onBack={onBack}>
+      <div className="space-y-1">
+        {error ? <p role="alert" className="px-4 py-2 text-sm text-red-600">{error}</p> : null}
+        {drafts.length ? drafts.map((draft) => (
+          <Link
+            key={draft.id}
+            href={draft.href}
+            onClick={(event) => {
+              if (!isPlainPrimaryLinkClick(event)) return;
+              event.preventDefault();
+              void openDraft(draft);
+            }}
+            aria-label={`Resume ${draft.title}`}
+            aria-busy={openingId === draft.id}
+            className={`${SIDEBAR_SUBMENU_ROW_CLASS} ${SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS}`}
+          >
+            <span className={`${SIDEBAR_SUBMENU_ICON_CLASS} text-[#beb9e8] group-hover:text-[#aba4e3]`}>
+              <FileEdit size={18} aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className={`${SIDEBAR_SUBMENU_LABEL_CLASS} ${SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS}`}>
+                {draft.title}
+              </span>
+              <span className="mt-0.5 block text-xs text-[#9d95db]">
+                {openingId === draft.id ? "Opening…" : "Continue editing"}
+              </span>
+            </span>
+          </Link>
+        )) : (
+          <div className={`${SIDEBAR_SUBMENU_CARD_CLASS} rounded-[24px] border-dashed px-4 py-6 text-center text-sm text-[#7e76b9]`}>
+            No saved drafts yet.
           </div>
         )}
       </div>
@@ -1358,6 +1470,12 @@ export default function LeftSidebar() {
   const activeAiThreadId = searchParams.get("thread")?.trim() || null;
   const isSnapUploadStartActive = (pathname || "").replace(/\/+$/, "") === "/snap";
   const [aiThreads, setAiThreads] = useState<CreationThreadSummary[]>([]);
+  const drafts = useMemo(() => buildSidebarDraftItems({
+    history: historySidebarItems,
+    threads: aiThreads,
+    buildEditLink,
+    isInvitedEventLikeRecord,
+  }), [historySidebarItems, aiThreads]);
 
   useEffect(() => {
     if (status !== "authenticated") {
@@ -1417,6 +1535,8 @@ export default function LeftSidebar() {
     viewModel.sidebarPage === "aiThreads" ? "translateX(0%)" : "translateX(100%)";
   const adminPanelTransform =
     viewModel.sidebarPage === "admin" ? "translateX(0%)" : "translateX(100%)";
+  const draftsPanelTransform =
+    viewModel.sidebarPage === "drafts" ? "translateX(0%)" : "translateX(100%)";
   const showOwnerEventsPanel =
     viewModel.sidebarPage === "myEvents" ||
     (viewModel.sidebarPage === "eventContext" &&
@@ -1473,6 +1593,7 @@ export default function LeftSidebar() {
     <>
       {showChatTopBarReveal ? (
         <button
+          data-app-navigation="reveal"
           type="button"
           className="nav-chrome-pill-secondary nav-chrome-motion fixed left-3 top-[max(0.35rem,env(safe-area-inset-top))] z-[6600] inline-flex h-10 w-10 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation items-center justify-center rounded-full lg:hidden"
           onClick={(event) => {
@@ -1488,6 +1609,7 @@ export default function LeftSidebar() {
       {!viewModel.isOpen ? (
         <header
           data-app-mobile-topbar="app"
+          data-app-navigation="topbar"
           className={`fixed inset-x-0 top-0 z-[6500] px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] transition-all duration-300 ease-in-out lg:hidden ${
             showFullMobileTopBar
               ? "translate-y-0 opacity-100 pointer-events-auto"
@@ -1538,6 +1660,7 @@ export default function LeftSidebar() {
       ) : null}
 
       <div
+        data-app-navigation="drawer-backdrop"
         className={`nav-chrome-mobile-drawer-backdrop nav-chrome-sidebar-backdrop fixed inset-0 z-[5999] transition-opacity duration-200 lg:hidden ${
           viewModel.isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
@@ -1551,6 +1674,7 @@ export default function LeftSidebar() {
       {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: the mobile condition assigns role=dialog with aria-modal together. */}
       <div
         ref={viewModel.asideRef}
+        data-app-navigation="sidebar"
         onClickCapture={animateSidebarPress}
         role={!viewModel.isDesktop && viewModel.isOpen ? "dialog" : undefined}
         aria-modal={!viewModel.isDesktop && viewModel.isOpen ? true : undefined}
@@ -1569,7 +1693,7 @@ export default function LeftSidebar() {
         <div className="relative h-full w-full transition-all duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]">
           <div className="relative h-full w-full overflow-hidden">
             <div className="nav-chrome-sidebar-surface absolute inset-0 z-[1] flex h-full flex-col">
-              <div className="relative z-10 flex-shrink-0 px-5 pb-4 pt-5">
+              <div className="relative z-10 flex-shrink-0 px-5 pb-4 pt-[calc(1.25rem+env(safe-area-inset-top,0px))] lg:pt-5">
                 <Link
                   href="/"
                   onClick={viewModel.goHomeFromSidebar}
@@ -1597,11 +1721,13 @@ export default function LeftSidebar() {
                       isSnapUploadActive={isSnapUploadStartActive}
                       isAdmin={viewModel.isAdmin}
                       createdEventsCount={viewModel.createdEventsCount}
+                      draftsCount={drafts.length}
                       onHome={viewModel.goHomeFromSidebar}
                       onSnapUpload={viewModel.handleRootSnapNavigate}
                       onAiThreads={viewModel.openAiThreadsPage}
                       onCreate={viewModel.openCreateEventPage}
                       onMyEvents={viewModel.openMyEventsPage}
+                      onDrafts={viewModel.openDraftsPage}
                       onAdmin={viewModel.openAdminPage}
                     />
                   </div>
@@ -1712,6 +1838,19 @@ export default function LeftSidebar() {
                       showPendingBadge
                       pastRowOpacityClass="opacity-70 saturate-75"
                       onBack={viewModel.backToRoot}
+                    />
+                  </div>
+
+                  <div
+                    className={`${SIDEBAR_LIST_PANEL_CLASS} z-[20]`}
+                    style={panelStyle(draftsPanelTransform, viewModel.sidebarPage === "drafts")}
+                    aria-hidden={viewModel.sidebarPage !== "drafts"}
+                    inert={viewModel.sidebarPage !== "drafts"}
+                  >
+                    <DraftsPanel
+                      drafts={drafts}
+                      onBack={viewModel.backToRoot}
+                      onNavigate={viewModel.onDraftNavigate}
                     />
                   </div>
 

@@ -14,6 +14,10 @@ export function useOriginalDocument(original: ScanOriginalDocument) {
   const [loadError, setLoadError] = useState(false);
   const [originalLoadError, setOriginalLoadError] = useState(false);
   const prepare = useCallback(() => setRequested(true), []);
+  const prepareForOpen = useCallback(() => {
+    setRequested(true);
+    if (loadError) setAttempt((value) => value + 1);
+  }, [loadError]);
   const retry = useCallback(() => {
     setRequested(true);
     setAttempt((value) => value + 1);
@@ -28,28 +32,51 @@ export function useOriginalDocument(original: ScanOriginalDocument) {
     setLoadError(false);
     setOriginalLoadError(false);
     const fetchFile = async (url: string) => {
-      const response = await fetch(url, {
-        credentials: "same-origin",
-        cache: "no-store",
-        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(30_000)]),
-      });
-      if (!response.ok) throw new Error("Document unavailable");
-      const blob = await response.blob();
-      if (controller.signal.aborted) return null;
-      const isDisplay = response.headers.get("X-Document-Variant") === "display";
-      const file = new File(
-        [blob],
-        isDisplay ? "Document preview.webp" : original.name || "Original document",
-        { type: blob.type },
-      );
-      const objectUrl = URL.createObjectURL(file);
-      objectUrls.push(objectUrl);
-      return { loaded: { file, url: objectUrl }, isDisplay };
+      // Avoid newer AbortSignal static methods so older Safari can load files too.
+      const requestController = new AbortController();
+      const abort = () => requestController.abort();
+      controller.signal.addEventListener("abort", abort, { once: true });
+      if (controller.signal.aborted) abort();
+      const timeout = setTimeout(abort, 30_000);
+      try {
+        const response = await fetch(url, {
+          credentials: "same-origin",
+          cache: "no-store",
+          signal: requestController.signal,
+        });
+        if (!response.ok) throw new Error("Document unavailable");
+        const blob = await response.blob();
+        if (controller.signal.aborted) return null;
+        const isDisplay = response.headers.get("X-Document-Variant") === "display";
+        const file = new File(
+          [blob],
+          isDisplay ? "Document preview.webp" : original.name || "Original document",
+          { type: blob.type },
+        );
+        const objectUrl = URL.createObjectURL(file);
+        objectUrls.push(objectUrl);
+        return { loaded: { file, url: objectUrl }, isDisplay };
+      } finally {
+        clearTimeout(timeout);
+        controller.signal.removeEventListener("abort", abort);
+      }
     };
     const load = async () => {
       let viewingCopy = false;
       try {
-        const result = await fetchFile(original.displayUrl || original.viewUrl);
+        let result: Awaited<ReturnType<typeof fetchFile>>;
+        try {
+          result = await fetchFile(original.displayUrl || original.viewUrl);
+        } catch (error) {
+          if (
+            controller.signal.aborted ||
+            !original.displayUrl ||
+            original.displayUrl === original.viewUrl
+          )
+            throw error;
+          // A failed optimized viewing request must not hide an available source.
+          result = await fetchFile(original.viewUrl);
+        }
         if (!result) return;
         setDisplayDocument(result.loaded);
         viewingCopy = result.isDisplay;
@@ -76,5 +103,5 @@ export function useOriginalDocument(original: ScanOriginalDocument) {
     };
   }, [requested, original.name, original.viewUrl, original.displayUrl, attempt]);
 
-  return { document, displayDocument, loadError, originalLoadError, prepare, retry };
+  return { document, displayDocument, loadError, originalLoadError, prepare, prepareForOpen, retry };
 }

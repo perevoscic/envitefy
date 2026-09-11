@@ -429,6 +429,7 @@ function LiveCardPreviewPanel({ children, enabled, onClose }: {
 }
 
 export default function StudioLiveCardActionSurface(props: StudioLiveCardActionSurfaceProps) {
+  const surfaceRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
   const actionsBelow = props.placement === "below";
   const invitationData = props.invitationData || null;
@@ -533,24 +534,28 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
 
   useEffect(() => {
     if (props.activeTab === "none" || props.activeTab === "share") return;
+    const ownerDocument = surfaceRef.current?.ownerDocument || document;
 
     const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target;
-      if (!(target instanceof HTMLElement)) return;
+      const target = event.target as Element | null;
+      if (!target || typeof target.closest !== "function") return;
       if (target.closest("[data-live-card-panel]") || target.closest("[data-live-card-trigger]")) {
         return;
       }
       props.onActiveTabChange("none");
     };
 
-    document.addEventListener("pointerdown", handlePointerDown);
+    ownerDocument.addEventListener("pointerdown", handlePointerDown);
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") props.onActiveTabChange("none");
+      if (event.key === "Escape") {
+        event.preventDefault();
+        props.onActiveTabChange("none");
+      }
     };
-    document.addEventListener("keydown", handleKeyDown);
+    ownerDocument.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
+      ownerDocument.removeEventListener("pointerdown", handlePointerDown);
+      ownerDocument.removeEventListener("keydown", handleKeyDown);
     };
   }, [props.activeTab, props.onActiveTabChange]);
 
@@ -782,7 +787,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   }`;
 
   return (
-    <div data-live-card-actions-placement={actionsBelow ? "below" : "overlay"} className={actionsBelow
+    <div ref={surfaceRef} data-live-card-actions-placement={actionsBelow ? "below" : "overlay"} className={actionsBelow
       ? "pointer-events-none flex flex-col bg-transparent px-1 pt-3 pb-1"
       : `pointer-events-none absolute inset-0 flex flex-col ${props.previewMode ? "px-0 pb-1 pt-6" : "px-0 pb-1 pt-6 sm:px-4 sm:pt-7 md:p-8 md:pb-2"}`}>
 

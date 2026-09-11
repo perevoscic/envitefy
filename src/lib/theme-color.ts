@@ -1,7 +1,9 @@
-const BRAND_THEME_COLOR = "#F3EEFF";
+// Native browser bars accept a solid color; CSS adds the wordmark's color clouds
+// to the mobile page surface and the safe areas that the browser exposes.
+const BRAND_THEME_COLOR = "#8998ED";
 const BRAND_BACKGROUND_COLOR = "#F3EEFF";
 const BRAND_NAVIGATION_BAR_COLOR = BRAND_THEME_COLOR;
-const IOS_BROWSER_CHROME_COLOR = "#8D7BE9";
+const IOS_BROWSER_CHROME_COLOR = BRAND_THEME_COLOR;
 const GYMNASTICS_THEME_COLOR = BRAND_THEME_COLOR;
 const EVENT_THEME_COLOR_FALLBACK = BRAND_THEME_COLOR;
 
@@ -140,7 +142,7 @@ function extractSolidColor(value: string): string | null {
 }
 
 function setThemeColorMeta(color: string): string | null {
-  if (typeof document === "undefined") return;
+  if (typeof document === "undefined") return null;
   const normalized = normalizeColor(extractSolidColor(color) || color);
   if (!normalized) return null;
 

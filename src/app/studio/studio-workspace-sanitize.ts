@@ -1,5 +1,6 @@
 import { CREATIVE_PLAN_SCHEMA, resolveStudioProduct, type StudioCreativePlan } from "@/lib/studio/product-contract";
 import { matchesSchema } from "@/lib/creation/source-evidence";
+import { readCardRegistryLink } from "@/lib/studio/card-registry";
 import { GENERATION_STAGE_LABELS, type GenerationStage, type GenerationTimings } from "@/lib/studio/generation-progress";
 import {
   normalizeInvitationText,
@@ -723,11 +724,7 @@ export function createStudioMediaItemFromHistoryRow(row: unknown): MediaItem | n
       data.tone,
       isRecord(rawInvitationData?.theme) ? rawInvitationData.theme.themeStyle : "",
     ),
-    registryLink:
-      firstHistoryString(rawEventDetails?.registryLink, data.registryLink) ||
-      (Array.isArray(data.registries) && isRecord(data.registries[0])
-        ? readString(data.registries[0].url)
-        : ""),
+    registryLink: readCardRegistryLink(data),
   });
   const invitationData =
     extractHistoryStudioInvitationData(row, details) ||

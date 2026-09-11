@@ -29,6 +29,10 @@ export default function DiscoveryEventEditLayout({
       }
       const nextUrl = new URL(window.location.href);
       nextUrl.searchParams.delete("edit");
+      nextUrl.searchParams.delete("tab");
+      nextUrl.searchParams.delete("embed");
+      nextUrl.searchParams.set("preview", "owner");
+      nextUrl.searchParams.set("returnTo", `${nextUrl.pathname}?tab=dashboard`);
       nextUrl.searchParams.set("updated", "true");
       nextUrl.searchParams.set("t", Date.now().toString());
       window.location.assign(nextUrl.toString());

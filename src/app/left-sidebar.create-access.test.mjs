@@ -178,8 +178,10 @@ test("left sidebar gives event titles the row width without inline action contro
   const source = readSource("src/app/left-sidebar.tsx");
   const eventList = source.slice(source.indexOf("function EventListPanel("), source.indexOf("function AiThreadsPanel("));
 
-  assert.match(eventList, /data-sidebar-press-trigger/);
-  assert.match(eventList, /className="flex min-w-0 flex-1 items-start gap-3 text-left"/);
+  assert.match(eventList, /<button\s+type="button"\s+data-sidebar-press-surface/);
+  assert.match(eventList, /SIDEBAR_SUBMENU_ROW_CLASS\} relative min-w-0 items-start px-2 py-2\.5/);
+  assert.match(source, /const SIDEBAR_SUBMENU_ROW_CLASS =\s*"[^"]*flex w-full/);
+  assert.doesNotMatch(eventList, /data-sidebar-press-trigger/);
   assert.match(eventList, /onClick=\{\(\) => onRowClick\(item\)\}/);
   assert.doesNotMatch(eventList, /renderRowActions|EventDeleteModal|Share2|Trash2/);
 });
@@ -202,7 +204,7 @@ test("left sidebar keeps My Events visible on owner event tab routes", () => {
   );
   assert.match(
     controllerSource,
-    /const openOwnerEventContext = useCallback\([\s\S]*?setEventContextSourcePage\("myEvents"\);[\s\S]*?setSidebarPage\("myEvents"\);[\s\S]*?const nextHref = buildEventOwnerHref/,
+    /const openOwnerEventContext = useCallback\([\s\S]*?setEventContextSourcePage\("myEvents"\);[\s\S]*?setSidebarPage\("myEvents"\);[\s\S]*?const nextHref = buildOwnerEventViewHref/,
   );
   assert.match(controllerSource, /const ownerNavigationPendingRef = useRef\(false\);/);
   assert.match(
@@ -219,7 +221,7 @@ test("left sidebar keeps My Events visible on owner event tab routes", () => {
   );
   assert.match(
     controllerSource,
-    /setSidebarPage\("myEvents"\);\s*const nextHref = buildEventOwnerHref\(ownerHref, row\.id, initialOwnerTab\);\s*const currentPath = typeof window !== "undefined" \? window\.location\.pathname : pathname;\s*if \(!String\(currentPath \|\| ""\)\.startsWith\("\/event\/"\)\) \{\s*ownerNavigationPendingRef\.current = true;\s*\}\s*router\.push\(nextHref\);/,
+    /setSidebarPage\("myEvents"\);\s*const nextHref = buildOwnerEventViewHref\(ownerHref\);\s*const currentPath = typeof window !== "undefined" \? window\.location\.pathname : pathname;\s*if \(!String\(currentPath \|\| ""\)\.startsWith\("\/event\/"\)\) \{\s*ownerNavigationPendingRef\.current = true;\s*\}\s*router\.push\(nextHref\);/,
   );
   assert.match(viewSource, /const showOwnerEventsPanel =/);
   assert.match(

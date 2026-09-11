@@ -22,14 +22,59 @@ test("paperwork generates artwork; designed invitations always retain their orig
       .heroMode,
     "generated",
   );
+  for (const title of ["Business card", "Soccer schedule", "Haircut appointment"]) {
+    assert.equal(
+      resolveScanMediaPolicy({ createdVia: "ocr", scanHeroMode: "original" }, title).heroMode,
+      "generated",
+      "a previous manual choice cannot replace generated paperwork artwork",
+    );
+  }
 });
 
 test("business cards use generated heroes and legacy flyer choices recover the original", () => {
-  assert.equal(resolveScanMediaPolicy({ createdVia: "ocr" }, "Business card").heroMode, "generated");
+  assert.equal(
+    resolveScanMediaPolicy({ createdVia: "ocr" }, "Business card").heroMode,
+    "generated",
+  );
   const data = { createdVia: "ocr", scanHeroMode: "generated", scanSourceKind: "unknown" };
   assert.equal(resolveScanMediaPolicy(data, "Wedding invitation").heroMode, "original");
-  assert.equal(resolveScanMediaPolicy({ ...data, fieldsGuess: { scanSourceKind: "designed" } }, "Wedding").heroMode, "original");
-  assert.equal(data.scanHeroMode, "generated", "legacy display recovery does not mutate saved data");
+  assert.equal(
+    resolveScanMediaPolicy({ ...data, fieldsGuess: { scanSourceKind: "designed" } }, "Wedding")
+      .heroMode,
+    "original",
+  );
+  assert.equal(
+    data.scanHeroMode,
+    "generated",
+    "legacy display recovery does not mutate saved data",
+  );
+});
+
+test("legacy wedding scans without classification retain their source despite a stored generated choice", () => {
+  for (const scanSourceKind of [undefined, null, "unknown"]) {
+    const data = {
+      createdVia: "ocr",
+      category: "Weddings",
+      scanSourceKind,
+      scanHeroMode: "generated",
+      fieldsGuess: { scanSourceKind: null },
+      attachment: { type: "image/webp" },
+      scanPersonalization: {
+        version: 1,
+        subject: "wedding celebration",
+        medical: false,
+        age: null,
+        personFirstName: null,
+        motifs: ["botanical florals", "silk ribbon"],
+      },
+    };
+    assert.deepEqual(resolveScanMediaPolicy(data, "Avery & Alex Wedding"), {
+      sourceKind: "unknown",
+      medical: false,
+      heroMode: "original",
+    });
+    assert.equal(data.scanHeroMode, "generated");
+  }
 });
 
 test("medical sources always use generated artwork, including legacy and manual categories", () => {

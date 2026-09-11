@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { isPublicTemplatePath, templateCategoryForPath } from "@/lib/template-categories";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import { EventCacheProvider } from "@/app/event-cache-context";
@@ -69,6 +69,7 @@ export default function AppShell({
   serverSession?: any;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { status } = useSession();
   const wasAuthenticated = useRef(false);
@@ -85,7 +86,8 @@ export default function AppShell({
   const isStudioCardShare = isStudioCardSharePath(pathname);
   const isConciergeLanding = pathname.replace(/\/+$/, "") === "/envitefy-concierge";
   const isChatPath = pathname.replace(/\/+$/, "") === "/chat";
-  const showAppChrome = isAuthenticated && !onMarketing && !isStudioCardShare && !isConciergeLanding;
+  const isEventPreview = searchParams?.get("preview") === "owner";
+  const showAppChrome = isAuthenticated && !onMarketing && !isStudioCardShare && !isConciergeLanding && !isEventPreview;
   const isRedirectingFromMarketing = pathname === "/landing" && isAuthenticated;
   const isLightweightLanding = pathname === "/event" && !isAuthenticated;
 
@@ -153,6 +155,7 @@ export default function AppShell({
       ) : (
         <MainContentWrapper
           isAuthenticated={false}
+          reserveSidebarSpace={false}
           enableProjectBackground={false}
           className={isChatPath ? "h-[100dvh] overflow-hidden" : ""}
         >
@@ -161,7 +164,7 @@ export default function AppShell({
           ) : (
             <>
               <div className="min-h-0 flex-1 min-w-0">{children}</div>
-              {isChatPath ? null : <ConditionalFooter />}
+              {isChatPath || isEventPreview ? null : <ConditionalFooter />}
             </>
           )}
         </MainContentWrapper>

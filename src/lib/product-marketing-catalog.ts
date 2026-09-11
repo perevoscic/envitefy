@@ -68,7 +68,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Creates a saved event record and polished live event card/page; it is more than OCR or a static scan.",
             "Saved scans keep the original document available in a popup that fits the image, with overlaid controls to download the exact file or share it through supported device sharing. Medical source documents remain owner-only.",
             "Designed flyers and invitations stay in the hero, including while an optional background is generated. Tap the flyer to view or save the original; paperwork and business cards keep a separate Original document tile beneath their generated artwork.",
-            "Good to know keeps useful extra instructions and plans, such as what to bring or a reception to follow, while omitting generic reminders and repeated event details.",
+            "Good to know keeps useful extra instructions and plans, such as what to bring, where to enter or dinner and dancing to follow, while omitting generic reminders and repeated event details.",
             "For recognized paperwork and appointments, unique hero and background artwork can begin while the remaining scan details are processed. Saving reuses that work and opens the event without waiting for the artwork.",
             "Received social invitation cards can be kept with Invited events, while source material for events the customer owns belongs with My events.",
           ],
@@ -120,7 +120,11 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Save and continue opens signup or login. Account saves create a private draft that the owner can reopen from My events and Continue creating; publishing is a separate action.",
             "Category pages such as /weddings and /birthdays offer templates; creation CTAs for Envitefy Concierge open /chat, while introductions link to /envitefy-concierge.",
             "Hosts can choose event-specific layouts, edit wording and details, and review the guest experience before publishing.",
+            "Event previews offer desktop, iPad/tablet, and mobile device icons to check responsive layouts before sharing. The controls are available in owner previews and Concierge, with Close returning to the workspace. Event previews extend the event background across the screen with a transparent device toolbar.",
+            "Opening an owned event from My Events shows the event directly with Edit, Share, and Delete controls, defaulting to desktop view on computers and mobile view on phones. Edit opens the event editor; deletion returns to My Events. Guest-response dashboards and Live Card artwork editing remain available.",
             "Generated Live Cards combine the subject, headline, names, and supplied milestone in full-canvas artwork. Guest action buttons overlay the bottom of the image, with addresses, schedules, and contact information in the detail panels.",
+            "Live Cards have a fine gradient border and soft surrounding glow that follow the colors of their artwork in previews and shared cards.",
+            "Owners can edit or remove a Live Card's Registry button link directly in Design and save without regenerating the artwork. Edit all details opens the event's full editor; unsaved changes offer save, discard, or keep editing.",
           ],
           sellWhen: [
             "A visitor wants to try an actual design and enter event details before registering.",
@@ -138,10 +142,12 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "My events holds events the customer creates and owns, including uploaded source material used to author an event.",
             "Invited events holds classic received-invitation cases such as birthdays, weddings, gender reveals, and similar social invite cards.",
             "Saved events keep important details and actions available after the original paper, screenshot, or message is hard to find.",
+            "Drafts sits directly below My Events in the sidebar, with a count and links to resume saved event, signup form, and Concierge drafts in their editors.",
             "The sidebar lists upcoming events across categories from nearest to latest, with a category icon beside each event and subtle month-and-year dividers. Undated entries follow dated events under Draft, with Draft beneath each title, and past events expand separately with the most recent first.",
           ],
           sellWhen: [
             "The pain point is lost invitations, scattered screenshots, fridge clutter, or remembering whether the customer is hosting or attending.",
+            "The customer wants to find saved work and continue creating an event later.",
           ],
         },
         {

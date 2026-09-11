@@ -8,6 +8,7 @@ import ts from "typescript";
 function harness(
   fetchDocument = async () =>
     new Response("exact bytes", { headers: { "Content-Type": "image/png" } }),
+  timers = { setTimeout, clearTimeout },
 ) {
   const slots = [];
   const effects = [];
@@ -57,7 +58,9 @@ function harness(
       require: () => react,
       File,
       AbortController,
-      AbortSignal,
+      // Older browsers have AbortController but neither of these static helpers.
+      AbortSignal: {},
+      ...timers,
       URL: {
         createObjectURL: () => `blob:document-${++nextUrl}`,
         revokeObjectURL: (url) => revoked.push(url),
@@ -126,6 +129,76 @@ test("failed preparation can be retried without keeping an error response as the
   assert.equal(h.render().loadError, false);
   assert.equal(await h.render().document.file.text(), "recovered");
   assert.equal(calls, 2);
+  h.dispose();
+});
+
+test("opening after a failed prefetch retries once without background retry loops", async () => {
+  let calls = 0;
+  const h = harness(async () =>
+    ++calls === 1 ? new Response("Unavailable", { status: 502 }) : new Response("recovered"),
+  );
+  h.render().prepare();
+  h.render();
+  await settle();
+  assert.equal(h.render().loadError, true);
+  h.render().prepare();
+  h.render();
+  await settle();
+  assert.equal(calls, 1, "viewport preparation must not retry in a loop");
+  h.render().prepareForOpen();
+  h.render();
+  await settle();
+  assert.equal(h.render().loadError, false);
+  assert.equal(await h.render().document.file.text(), "recovered");
+  h.render().prepareForOpen();
+  h.render();
+  assert.equal(calls, 2, "reopening a successful file reuses it");
+  h.dispose();
+});
+
+test("a failed viewing request falls back to exact source bytes for preview and file actions", async () => {
+  const h = harness((url) =>
+    url.includes("display=1")
+      ? new Response("Unavailable", { status: 502 })
+      : new Response("exact file", { headers: { "Content-Type": "image/webp" } }),
+  );
+  h.render({ name: "flyer.webp", viewUrl: "/original", displayUrl: "/original?display=1" }).prepareForOpen();
+  h.render();
+  await settle();
+  const state = h.render();
+  assert.equal(state.loadError, false);
+  assert.equal(state.document, state.displayDocument);
+  assert.equal(await state.document.file.text(), "exact file");
+  assert.deepEqual(h.requests.map(({ url }) => url), ["/original?display=1", "/original"]);
+  h.dispose();
+});
+
+test("request timeouts work without AbortSignal static methods and clear their timer", async () => {
+  let expire;
+  let cleared = false;
+  const h = harness(
+    (_url, { signal }) => new Promise((_resolve, reject) => {
+      signal.addEventListener("abort", () => reject(new Error("aborted")), { once: true });
+    }),
+    {
+      setTimeout(callback, ms) {
+        assert.equal(ms, 30_000);
+        expire = callback;
+        return 1;
+      },
+      clearTimeout(id) {
+        assert.equal(id, 1);
+        cleared = true;
+      },
+    },
+  );
+  h.render().prepare();
+  h.render();
+  expire();
+  await settle();
+  assert.equal(h.requests[0].options.signal.aborted, true);
+  assert.equal(h.render().loadError, true);
+  assert.equal(cleared, true);
   h.dispose();
 });
 

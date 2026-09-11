@@ -16,7 +16,7 @@ export default function OriginalDocumentCard({
 }) {
   const [open, setOpen] = useState(false);
   const tile = useRef<HTMLDivElement>(null);
-  const { document, displayDocument, loadError, originalLoadError, prepare, retry } =
+  const { document, displayDocument, loadError, originalLoadError, prepare, prepareForOpen, retry } =
     useOriginalDocument(original);
   useEffect(() => {
     if (!tile.current || typeof IntersectionObserver === "undefined") return;
@@ -35,7 +35,7 @@ export default function OriginalDocumentCard({
     <Dialog.Root
       open={open}
       onOpenChange={(nextOpen) => {
-        if (nextOpen) prepare();
+        if (nextOpen) prepareForOpen();
         setOpen(nextOpen);
       }}
     >

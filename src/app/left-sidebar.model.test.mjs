@@ -7,6 +7,47 @@ const repoRoot = process.cwd();
 
 const loadModelModule = () => import("./left-sidebar.model.ts");
 
+test("Drafts includes saved work across editors and dates without published, invited, or duplicate entries", async () => {
+  const { buildSidebarDraftItems } = await loadModelModule();
+  const history = [
+    { id: "manual", title: "Manual draft", created_at: "2026-09-01", data: { status: "draft", startISO: "2020-01-01", manualEditor: { path: "/event/manual" } } },
+    { id: "signup", title: "Signup draft", created_at: "2026-09-02", data: { status: " Draft ", signupForm: {}, templateEditor: { category: "signup-forms", templateId: "garden" } } },
+    { id: "concierge", title: "Saved chat", created_at: "2026-09-03", data: { status: "draft", conciergeDraft: { creationSessionId: "saved-thread" } } },
+    { id: "published", title: "Undated published event", data: { status: "published", creationSessionId: "published-thread" } },
+    { id: "invited", title: "Received draft", data: { status: "draft", ownership: "invited" } },
+    { id: "shared", title: "Shared draft", data: { status: "draft", shared: true } },
+    { id: "undated", title: "Undated event", data: {} },
+  ];
+  const threads = [
+    { id: "recent-thread", title: "Latest chat", status: "drafting", updatedAt: "2026-09-04" },
+    { id: "saved-thread", title: "Duplicate chat", status: "drafting" },
+    { id: "other-id", title: "Duplicate saved event", status: "drafting", savedEventId: "concierge" },
+    { id: "published-thread", title: "Stale draft thread", status: "drafting" },
+    { id: "published-chat", title: "Published chat", status: "published" },
+    { id: "publishing-chat", title: "Publishing chat", status: "publishing" },
+    { id: "archived-chat", title: "Archived chat", status: "archived" },
+  ].map((thread) => ({ createdAt: "2026-08-01", updatedAt: "2026-08-01", savedEventId: null, ...thread }));
+  const before = structuredClone({ history, threads });
+  const drafts = buildSidebarDraftItems({
+    history,
+    threads,
+    isInvitedEventLikeRecord: (data) => data.ownership === "invited",
+    buildEditLink: (id, data) => data.manualEditor
+      ? `${data.manualEditor.path}?edit=${id}`
+      : data.templateEditor
+        ? `/${data.templateEditor.category}/templates/${data.templateEditor.templateId}/customize?edit=${id}`
+        : `/chat?thread=${data.conciergeDraft.creationSessionId}`,
+  });
+  assert.deepEqual(drafts.map((draft) => draft.id), ["thread:recent-thread", "event:concierge", "event:signup", "event:manual"]);
+  assert.deepEqual(drafts.map((draft) => draft.href), [
+    "/chat?thread=recent-thread", "/chat?thread=saved-thread",
+    "/signup-forms/templates/garden/customize?edit=signup", "/event/manual?edit=manual",
+  ]);
+  assert.equal(drafts[0].eventId, null);
+  assert.equal(drafts[3].eventId, "manual");
+  assert.deepEqual({ history, threads }, before);
+});
+
 test("sidebar chronology crosses category boundaries and keeps undated events last", async () => {
   const { buildGroupedEventLists, getChronologicalEventItems } = await loadModelModule();
   const history = [
@@ -318,18 +359,14 @@ test("buildGroupedEventLists opens owner workspaces for created and owned upload
   assert.equal(byId.get("stored-media-rsvp")?.openMode, "dashboard");
 });
 
-test("left sidebar opens non-RSVP owner events on the design workspace tab", () => {
+test("left sidebar opens owner events directly rather than choosing a workspace tab", () => {
   const controllerSource = fs.readFileSync(
     path.join(repoRoot, "src/app/left-sidebar.controller.ts"),
     "utf8"
   );
 
-  assert.match(
-    controllerSource,
-    /const initialOwnerTab: EventContextTab = item\.hasOwnerRsvp \? "dashboard" : "design";/
-  );
-  assert.match(controllerSource, /setActiveEventTab\(initialOwnerTab\);/);
-  assert.match(controllerSource, /buildEventOwnerHref\(ownerHref, row\.id, initialOwnerTab\)/);
+  assert.match(controllerSource, /buildOwnerEventViewHref\(ownerHref\)/);
+  assert.doesNotMatch(controllerSource, /const initialOwnerTab:/);
 });
 
 test("left sidebar reopens My Events and selects newly created upload routes", () => {

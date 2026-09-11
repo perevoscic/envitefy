@@ -126,23 +126,22 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
     pageSource,
     /const explicitOwnerPreview = readSearchParam\(awaitedSearchParams\.preview\) === "owner";/,
   );
-  assert.match(pageSource, /canShowOwnerRsvpDashboard\(sharedCard\.row\.data as any\)/);
   assert.match(
     pageSource,
-    /const ownerWorkspaceHref = `\$\{buildEventPath\(\s*sharedCard\.row\.id,\s*sharedCard\.title,\s*undefined,\s*sharedCard\.row\.public_slug,\s*\)\}\?tab=\$\{ownerWorkspaceTab\}`;/,
+    /const ownerWorkspaceHref = `\$\{buildEventPath\(\s*sharedCard\.row\.id,\s*sharedCard\.title,\s*undefined,\s*sharedCard\.row\.public_slug,\s*\)\}\?tab=event`;/,
   );
   assert.match(
     pageSource,
     /if \(isOwner && !explicitOwnerPreview\) \{\s*redirect\(ownerWorkspaceHref\);\s*\}/s,
   );
-  assert.match(pageSource, /buildOwnerPreviewSearch\(returnHref\)/);
+  assert.match(pageSource, /buildOwnerPreviewSearch\(returnHref, ownerPreviewEmbedded\)/);
   assert.match(sharedPageSource, /returnHref\?: string \| null;/);
   assert.match(sharedPageSource, /aria-label="Close preview"/);
   assert.match(sharedPageSource, /inline-flex min-h-11 items-center gap-2 rounded-full/);
   assert.match(sharedPageSource, /placement="overlay"/);
   assert.doesNotMatch(sharedPageSource, /max-md:h-\[100dvh\]/);
   assert.match(sharedPageSource, /max-md:!w-full !rounded/);
-  assert.match(sharedPageSource, /onClose=\{handleClose\}/);
+  assert.match(sharedPageSource, /onClose=\{props\.embeddedPreview \? undefined : handleClose\}/);
   assert.doesNotMatch(sharedPageSource, /Back to dashboard/);
   assert.match(sharedPageSource, /export function SharedStudioCardFrame/);
   assert.match(sharedPageSource, /usesPosterArtFrame \? "bg-slate-50" : "bg-neutral-950"/);
@@ -152,7 +151,7 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
     /const usesPosterArtFrame = invitationData\?\.heroTextMode === "image";/,
   );
   assert.match(sharedPageSource, /\* 2 \/ 3\)\)"/);
-  assert.match(sharedPageSource, /usesPosterArtFrame \? "aspect-\[2\/3\] overflow-hidden rounded/);
+  assert.match(sharedPageSource, /usesPosterArtFrame \? "aspect-\[2\/3\] rounded/);
   assert.match(
     sharedPageSource,
     /style=\{\{ width: props\.style\?\.width \? undefined : cardFrameWidth \}\}/,

@@ -1,6 +1,11 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from "node:crypto";
 import { get } from "@vercel/blob";
 import { uploadPublicBinaryAsset } from "../media-upload";
+import {
+  ENVITEFY_PUBLIC_ORIGIN,
+  isLoopbackHost,
+  resolvePublicAssetOrigin,
+} from "../public-asset-url";
 import { type UploadResponse, validateUploadFileMeta } from "../upload-config";
 import { scanOriginalCache } from "./original-cache";
 
@@ -72,9 +77,32 @@ export async function readScanOriginalBytes(value: string): Promise<Buffer> {
     /^data:(?:image\/(?:jpeg|png|webp)|application\/pdf);base64,([\s\S]+)$/i,
   );
   if (inline) return Buffer.from(inline[1], "base64");
-  if (value.startsWith("/api/blob/")) {
-    const pathname = value.slice("/api/blob/".length).split("/").map(decodeURIComponent).join("/");
-    if (!/^(?:event-media|private-scan-originals)\//.test(pathname) || pathname.includes(".."))
+  let source = value.trim();
+  if (/^https?:\/\//i.test(source)) {
+    const url = new URL(source);
+    if (
+      !url.username &&
+      !url.password &&
+      (isLoopbackHost(url.hostname) ||
+        url.origin === ENVITEFY_PUBLIC_ORIGIN ||
+        url.origin === resolvePublicAssetOrigin())
+    ) {
+      // Older uploads saved the app origin. Read their blob key directly, never
+      // fetch the proxy host. Keep the raw path so traversal remains detectable.
+      source = source.replace(/^https?:\/\/[^/?#]+/i, "");
+    }
+  }
+  if (source.startsWith("/api/blob/")) {
+    const pathname = source.split(/[?#]/, 1)[0]
+      .slice("/api/blob/".length)
+      .split("/")
+      .map(decodeURIComponent)
+      .join("/");
+    if (
+      !/^(?:event-media|private-scan-originals)\//.test(pathname) ||
+      pathname.includes("..") ||
+      pathname.includes("\\")
+    )
       throw new Error("Invalid source path");
     return scanOriginalCache.read(`path:${pathname}`, async () => {
       const result = await get(pathname, { access: "private" });

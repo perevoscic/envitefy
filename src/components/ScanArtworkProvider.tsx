@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
 import { normalizeScanArtwork, type ScanArtworkState } from "@/lib/ocr/scan-artwork-state";
-import type { ScanHeroMode, ScanMediaPolicy, ScanOriginalDocument } from "@/lib/ocr/scan-media";
+import type { ScanMediaPolicy, ScanOriginalDocument } from "@/lib/ocr/scan-media";
 import OriginalDocumentCard from "./OriginalDocumentCard";
 import { ScanOriginalHeroProvider } from "./ScanOriginalHero";
 
@@ -55,7 +55,7 @@ export default function ScanArtworkProvider({
   const [stalled, setStalled] = useState(false);
   const active = artwork?.status === "pending" || artwork?.status === "generating";
   const failed = artwork?.status === "failed";
-  const backgroundOnly = policy?.sourceKind === "designed";
+  const backgroundOnly = Boolean(policy && policy.sourceKind !== "paperwork");
   const separateOriginal = originalInHero ? null : original;
   useEffect(() => {
     setArtwork(initialArtwork);
@@ -150,23 +150,6 @@ export default function ScanArtworkProvider({
     }
   }
 
-  async function chooseHero(mode: ScanHeroMode) {
-    setRetrying(true);
-    try {
-      const response = await fetch(`/api/events/${encodeURIComponent(eventId)}/scan-artwork`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ heroMode: mode }),
-      });
-      if (!response.ok) throw new Error("Could not change artwork");
-      router.refresh();
-    } catch {
-      setStalled(true);
-    } finally {
-      setRetrying(false);
-    }
-  }
-
   return (
     <ScanArtworkContext.Provider value={artwork}>
       <ScanMediaContext.Provider
@@ -221,39 +204,6 @@ export default function ScanArtworkProvider({
               )}
             </div>
           )}
-          {canManage &&
-            policy &&
-            !policy.medical &&
-            !backgroundOnly &&
-            artwork?.status === "ready" && (
-              <div className="relative z-20 flex flex-wrap justify-center gap-2 bg-white p-2">
-                {!policy.medical && (
-                  <button
-                    type="button"
-                    disabled={retrying || policy.heroMode === "original"}
-                    onClick={() => chooseHero("original")}
-                    className="min-h-11 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
-                  >
-                    Use original artwork
-                  </button>
-                )}
-                <button
-                  type="button"
-                  disabled={
-                    retrying || (policy.heroMode === "generated" && Boolean(artwork.heroImageUrl))
-                  }
-                  onClick={() => (artwork.heroImageUrl ? chooseHero("generated") : retry())}
-                  className="min-h-11 rounded-xl border border-teal-200 px-4 text-sm font-semibold text-teal-800 disabled:opacity-50"
-                >
-                  Use generated artwork
-                </button>
-                {stalled && (
-                  <span role="status" className="p-3 text-sm text-slate-700">
-                    Could not change the artwork. Please try again.
-                  </span>
-                )}
-              </div>
-            )}
           {children}
           {separateOriginal && originalPlacement === "after-content" && (
             <OriginalDocumentCard key={separateOriginal.viewUrl} original={separateOriginal} />

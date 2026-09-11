@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import SharedStudioCardPage from "@/components/studio/SharedStudioCardPage";
+import EventPreviewViewport from "@/components/EventPreviewViewport";
+import { buildEmbeddedEventPreviewHref } from "@/lib/event-preview-viewport";
 import { absoluteUrl } from "@/lib/absolute-url";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { sanitizeGuestCopy, sanitizeGuestTitle } from "@/lib/concierge/public-copy";
 import { getEventHistoryPublicRenderBySlugOrId } from "@/lib/db";
-import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
 import { resolveEventShareImage, toPublicShareMediaUrl } from "@/lib/share-image";
 import { resolveEventCelebrationKind } from "@/utils/event-celebration";
 import { buildEventPath, buildStudioCardPath } from "@/utils/event-url";
@@ -42,11 +43,12 @@ function sanitizeInternalReturnHref(value: string): string {
   }
 }
 
-function buildOwnerPreviewSearch(returnHref: string): string {
+function buildOwnerPreviewSearch(returnHref: string, embedded = false): string {
   if (!returnHref) return "";
   const params = new URLSearchParams();
   params.set("preview", "owner");
   params.set("returnTo", returnHref);
+  if (embedded) params.set("embed", "dashboard-preview");
   return `?${params.toString()}`;
 }
 
@@ -445,26 +447,28 @@ export default async function SharedCardPage(props: {
   const userId = await resolveSessionUserId(session);
   const isOwner = Boolean(userId && sharedCard.row.user_id && userId === sharedCard.row.user_id);
   const explicitOwnerPreview = readSearchParam(awaitedSearchParams.preview) === "owner";
-  const ownerWorkspaceTab = canShowOwnerRsvpDashboard(sharedCard.row.data as any)
-    ? "dashboard"
-    : "design";
+  const ownerPreviewEmbedded = explicitOwnerPreview && readSearchParam(awaitedSearchParams.embed) === "dashboard-preview";
   const ownerWorkspaceHref = `${buildEventPath(
     sharedCard.row.id,
     sharedCard.title,
     undefined,
     sharedCard.row.public_slug,
-  )}?tab=${ownerWorkspaceTab}`;
+  )}?tab=event`;
   const returnHref = explicitOwnerPreview
     ? sanitizeInternalReturnHref(readSearchParam(awaitedSearchParams.returnTo)) ||
       ownerWorkspaceHref
     : "";
 
   if (awaitedParams.id !== canonical.slice("/card/".length)) {
-    redirect(`${canonical}${buildOwnerPreviewSearch(returnHref)}`);
+    redirect(`${canonical}${buildOwnerPreviewSearch(returnHref, ownerPreviewEmbedded)}`);
   }
 
   if (isOwner && !explicitOwnerPreview) {
     redirect(ownerWorkspaceHref);
+  }
+
+  if (explicitOwnerPreview && !ownerPreviewEmbedded) {
+    return <EventPreviewViewport title={sharedCard.title} src={buildEmbeddedEventPreviewHref(canonical)} returnHref={returnHref} fullscreen />;
   }
 
   const shareUrl = await absoluteUrl(canonical);
@@ -481,6 +485,7 @@ export default async function SharedCardPage(props: {
       positions={sharedCard.positions as any}
       shareUrl={shareUrl}
       returnHref={returnHref}
+      embeddedPreview={ownerPreviewEmbedded}
       celebrationKind={celebrationKind}
     />
   );

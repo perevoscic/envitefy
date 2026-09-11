@@ -219,11 +219,11 @@ test("generated card artwork opens the dashboard Design tab without losing detai
   assert.match(ownerTools, /const designHref = buildOwnerTabHref\(ownerHref, eventId, "design"\);/);
   assert.match(
     ownerTools,
-    /const primaryEditHref = resolvedArtworkEditHref \? designHref : resolvedEditHref;/,
+    /const primaryEditHref = !isEventPage && resolvedArtworkEditHref \? designHref : resolvedEditHref;/,
   );
   assert.match(
     ownerTools,
-    /detailsEditHref=\{resolvedArtworkEditHref \? resolvedEditHref : null\}/,
+    /detailsEditHref=\{!isEventPage && resolvedArtworkEditHref \? resolvedEditHref : null\}/,
   );
   assert.match(ownerTools, /detailsEditHref=\{editHref\}/);
   assert.match(ownerTools, /href=\{detailsEditHref\}/);
@@ -268,7 +268,7 @@ test("owner Design tab previews card edits before saving them", () => {
   assert.match(source, /persisted: false/);
   assert.match(source, /async function handleSaveChanges\(\)/);
   assert.match(source, /action: "save"/);
-  assert.match(source, /imageDataUrl: candidate\.imageDataUrl/);
+  assert.match(source, /imageDataUrl: selectedCandidate\.imageDataUrl \|\| undefined/);
   assert.match(source, /setBaselineForm\(nextForm\)/);
   assert.match(source, /persisted: true/);
   assert.match(source, /import OwnerPreviewMobileTopbarSuppressor/);

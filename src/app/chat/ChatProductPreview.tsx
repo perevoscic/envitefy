@@ -13,7 +13,6 @@ import {
   Pencil,
   Share2,
   Users,
-  X,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import StudioShowcaseLiveCard from "@/components/studio/StudioShowcaseLiveCard";
@@ -23,6 +22,7 @@ import type {
   RequestedOutput,
 } from "@/lib/concierge/types";
 import { buildChatShowcasePreview, type ChatPreviewSummary } from "./chat-preview-adapters";
+import EventPreviewViewport from "@/components/EventPreviewViewport";
 
 type RsvpPreviewBadge = {
   count: number;
@@ -484,23 +484,12 @@ export default function ChatProductPreview({
         className="fixed inset-0 m-0 h-[100dvh] max-h-none w-screen max-w-none border-0 bg-[#f8f7fb] p-0 text-[#24183e] backdrop:bg-[#24183e]/50"
       >
         {isPreviewOpen ? (
-          <div className="flex h-full flex-col">
-            <header className="flex shrink-0 items-center justify-between gap-4 border-b border-[#e6e1ee] px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] sm:px-6">
-              <h2 className="truncate text-base font-bold">{summary.headline}</h2>
-              <button
-                type="button"
-                onClick={() => setIsPreviewOpen(false)}
-                className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-[#ded6ef] bg-white hover:bg-[#f3effb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
-                aria-label="Close preview"
-              >
-                <X className="size-5" aria-hidden="true" />
-              </button>
-            </header>
-            <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+          <EventPreviewViewport title={summary.headline} onClose={() => setIsPreviewOpen(false)}>
+            <div className="flex min-h-[100dvh] items-center justify-center bg-[#f8f7fb] p-4">
               {isLiveCard ? (
                 <div
                   className="w-full"
-                  style={{ maxWidth: `calc((100dvh - 15rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * ${liveCardPreview.invitationData.heroTextMode === "image" ? "2 / 3" : "9 / 16"})` }}
+                  style={{ maxWidth: `calc((100dvh - 2rem) * ${liveCardPreview.invitationData.heroTextMode === "image" ? "2 / 3" : "9 / 16"})` }}
                 >
                   <StudioShowcaseLiveCard
                     preview={liveCardPreview}
@@ -510,10 +499,10 @@ export default function ChatProductPreview({
                   />
                 </div>
               ) : (
-                <img src={previewImageUrl} alt={summary.headline} className="max-h-full max-w-full rounded-2xl object-contain" />
+                <img src={previewImageUrl} alt={summary.headline} className="max-h-[calc(100dvh-2rem)] max-w-full rounded-2xl object-contain" />
               )}
             </div>
-          </div>
+          </EventPreviewViewport>
         ) : null}
       </dialog>
     </aside>

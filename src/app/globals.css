@@ -27,9 +27,23 @@
 
 :root {
   --radius: 1rem;
-  --mobile-chrome-top: #f3eeff;
-  --mobile-chrome-bottom: #f3eeff;
-  --ios-browser-chrome-background: #8d7be9;
+  --mobile-chrome-top: #8998ed;
+  --mobile-chrome-bottom: #8998ed;
+  --ios-browser-chrome-background: #8998ed;
+  /* Soft, overlapping clouds from the locked wordmark's violet/blue/cyan palette. */
+  --mobile-chrome-top-clouds:
+    radial-gradient(ellipse at 92% 12%, rgba(55, 168, 255, 0.86), transparent 64%),
+    radial-gradient(ellipse at 8% 0%, rgba(107, 60, 255, 0.66), transparent 62%),
+    radial-gradient(ellipse at 48% 110%, rgba(90, 125, 255, 0.56), transparent 68%);
+  --mobile-chrome-bottom-clouds:
+    radial-gradient(ellipse at 5% 92%, rgba(55, 168, 255, 0.82), transparent 66%),
+    radial-gradient(ellipse at 94% 110%, rgba(107, 60, 255, 0.62), transparent 64%),
+    radial-gradient(ellipse at 55% -20%, rgba(103, 87, 255, 0.46), transparent 68%);
+  --mobile-browser-surface-gradient:
+    radial-gradient(ellipse 85vw 220px at 95% 0%, rgba(55, 168, 255, 0.55), transparent 72%),
+    radial-gradient(ellipse 75vw 200px at 0% 0%, rgba(107, 60, 255, 0.38), transparent 72%),
+    radial-gradient(ellipse 85vw 240px at 0% 100%, rgba(55, 168, 255, 0.5), transparent 72%),
+    radial-gradient(ellipse 75vw 210px at 100% 100%, rgba(103, 87, 255, 0.4), transparent 72%);
   --brand: #c65de9;
   --brand-glow: #08aeea;
   --envitefy-project-background: var(--background);
@@ -451,11 +465,12 @@
 
 @media (max-width: 1023px) {
   .nav-chrome-sidebar-surface {
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.9) 0%,
-      rgba(255, 255, 255, 0.88) 100%
-    );
+    background:
+      radial-gradient(ellipse 90% 190px at 100% 0%, rgba(55, 168, 255, 0.16), transparent 74%),
+      radial-gradient(ellipse 85% 170px at 0% 0%, rgba(107, 60, 255, 0.1), transparent 74%),
+      radial-gradient(ellipse 90% 200px at 0% 100%, rgba(55, 168, 255, 0.14), transparent 74%),
+      radial-gradient(ellipse 80% 180px at 100% 100%, rgba(103, 87, 255, 0.1), transparent 74%),
+      rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
   }
@@ -477,8 +492,7 @@
     :disabled,
     [aria-disabled="true"],
     [aria-label="Envitefy home"]
-  ),
-.nav-chrome-sidebar-surface [data-sidebar-press-surface] {
+  ) {
   transform-origin: center;
   -webkit-tap-highlight-color: transparent;
   transition:
@@ -491,12 +505,8 @@
 .nav-chrome-sidebar-surface :is(button, a[href]):not(
     :disabled,
     [aria-disabled="true"],
-    [aria-label="Envitefy home"],
-    [data-sidebar-press-trigger]
-  ):active,
-.nav-chrome-sidebar-surface [data-sidebar-press-surface]:has(
-    > [data-sidebar-press-trigger]:active
-  ) {
+    [aria-label="Envitefy home"]
+  ):active {
   transform: translateY(2px) scale(0.95);
   background-color: rgba(224, 215, 255, 0.78);
   /* Pressed depth must also override selected rows' inline elevation. */
@@ -505,47 +515,18 @@
   transition-duration: 65ms;
 }
 
-/* Event presses belong to the rounded card, including its padded edges. */
-.nav-chrome-sidebar-surface [data-sidebar-press-trigger] {
-  border-radius: inherit;
-  will-change: auto;
-}
-
-.nav-chrome-sidebar-surface [data-sidebar-press-trigger]::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-}
-
-.nav-chrome-sidebar-surface [data-sidebar-press-trigger]:active {
-  transform: none;
-  background-color: transparent;
-  box-shadow: none !important;
-  filter: none;
-}
-
-.nav-chrome-sidebar-surface [data-sidebar-press-trigger]:focus-visible {
-  outline: none;
-}
-
-.nav-chrome-sidebar-surface [data-sidebar-press-surface]:has(
-    > [data-sidebar-press-trigger]:focus-visible
-  ) {
+/* The event button itself owns the complete rounded row, including its padding. */
+.nav-chrome-sidebar-surface [data-sidebar-press-surface]:focus-visible {
   outline: 2px solid #7c76c7;
   outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nav-chrome-sidebar-surface :is(button, a[href]):not([aria-label="Envitefy home"]),
-  .nav-chrome-sidebar-surface [data-sidebar-press-surface] {
+  .nav-chrome-sidebar-surface :is(button, a[href]):not([aria-label="Envitefy home"]) {
     transition: none;
   }
 
-  .nav-chrome-sidebar-surface :is(button, a[href]):not([aria-label="Envitefy home"]):active,
-  .nav-chrome-sidebar-surface [data-sidebar-press-surface]:has(
-      > [data-sidebar-press-trigger]:active
-    ) {
+  .nav-chrome-sidebar-surface :is(button, a[href]):not([aria-label="Envitefy home"]):active {
     transform: none;
   }
 }
@@ -916,6 +897,35 @@ html[data-auth-transition="true"] {
   font-style: normal;
 }
 
+/* Keep Safari presses on the whole control instead of selecting its label. */
+:where(
+  button,
+  [role="button"],
+  .btn,
+  a.button,
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  .nav-chrome-sidebar-surface a[href],
+  [data-sidebar-press-surface]
+) {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+/* Editable fields inside custom controls still support selection and copy/paste. */
+:where(
+  input:not([type="button"], [type="submit"], [type="reset"]),
+  textarea,
+  [contenteditable]:not([contenteditable="false"])
+) {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
 /* Desktop cursor + press effects for interactive elements */
 @media (hover: hover) and (pointer: fine) {
   /* Make cursor clearly indicate interactivity on desktop */
@@ -1129,6 +1139,23 @@ html[data-mobile-topbar-hidden="true"] [data-app-mobile-topbar="app"] {
   display: none !important;
 }
 
+/* Open previews occupy the full browser viewport; inline workspace previews leave navigation intact. */
+html[data-owner-preview-open="true"] {
+  --app-mobile-topbar-offset: 0px !important;
+}
+
+html[data-owner-preview-open="true"] [data-app-navigation] {
+  display: none !important;
+}
+
+html[data-owner-preview-open="true"] [data-app-main-content="true"] {
+  --event-skin-topbar-offset: 0px !important;
+  padding-left: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  transition: none !important;
+}
+
 body.sidebar-mobile-open {
   position: fixed;
   inset: 0;
@@ -1171,10 +1198,38 @@ html[data-ios-browser-chrome="true"] {
 
 html[data-ios-browser-chrome="true"] body {
   background-color: var(--ios-browser-chrome-background);
-  background-image: none;
 }
 
-html[data-ios-browser-chrome="true"] body::after {
+@media (max-width: 1023px), (display-mode: standalone) and (pointer: coarse) {
+  html,
+  body {
+    background-image: var(--mobile-browser-surface-gradient);
+    background-repeat: no-repeat;
+  }
+
+  /* These layers paint only the OS safe areas, leaving page controls unobscured.
+     iOS browser tabs and installed iOS/Android apps share the same cloud palette. */
+  body::before,
+  body::after {
+    opacity: 1;
+    z-index: 2147483647;
+    pointer-events: none;
+  }
+
+  body::before {
+    bottom: auto;
+    height: max(env(safe-area-inset-top, 0px), 0px);
+    background: var(--mobile-chrome-top-clouds), var(--mobile-chrome-top);
+  }
+
+  body::after {
+    background: var(--mobile-chrome-bottom-clouds), var(--mobile-chrome-bottom);
+  }
+}
+
+/* Embedded event previews own their entire viewport. */
+html.embedded-editor body::before,
+html.embedded-editor body::after {
   display: none;
 }
 

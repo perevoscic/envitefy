@@ -25,7 +25,7 @@ test("root layout leaves head metadata to Next", () => {
 
 test("root metadata declares Envitefy as the install app name", () => {
   assert.match(layoutSource, /applicationName:\s*"Envitefy"/);
-  assert.match(layoutSource, /manifest:\s*"\/manifest\.webmanifest\?v=v13"/);
+  assert.match(layoutSource, /manifest:\s*"\/manifest\.webmanifest\?v=v14"/);
   assert.match(layoutSource, /"apple-mobile-web-app-capable":\s*"yes"/);
   assert.match(
     layoutSource,
@@ -42,8 +42,8 @@ test("web app manifest names the installed app Envitefy", () => {
   assert.equal(manifest.short_name, "Envitefy");
 });
 
-test("installed app chrome uses a consistent light browser surface", () => {
-  assert.equal(manifest.theme_color, "#F3EEFF");
+test("mobile chrome pairs blue-violet clouds with a matching native tint", () => {
+  assert.equal(manifest.theme_color, "#8998ED");
   assert.equal(manifest.background_color, "#F3EEFF");
   assert.match(layoutSource, /colorScheme:\s*"only light"/);
   assert.match(
@@ -70,35 +70,36 @@ test("installed app chrome uses a consistent light browser surface", () => {
   );
   assert.match(
     globalsSource,
-    /--mobile-chrome-top:\s*#f3eeff/,
+    /--mobile-chrome-top:\s*#8998ed/,
   );
   assert.match(
     globalsSource,
-    /--mobile-chrome-bottom:\s*#f3eeff/,
+    /--mobile-chrome-bottom:\s*#8998ed/,
   );
   assert.match(globalsSource, /body::after\s*\{[\s\S]*?background:\s*var\(--mobile-chrome-bottom\)/);
   assert.match(
     globalsSource,
-    /--ios-browser-chrome-background:\s*#8d7be9/,
+    /--ios-browser-chrome-background:\s*#8998ed/,
   );
   const iosBrowserBodyBlock =
     globalsSource.match(/html\[data-ios-browser-chrome="true"\]\s+body\s*\{([^}]*)\}/)?.[1] ||
     "";
   assert.match(iosBrowserBodyBlock, /background-color:\s*var\(--ios-browser-chrome-background\)/);
-  assert.match(iosBrowserBodyBlock, /background-image:\s*none/);
+  assert.doesNotMatch(iosBrowserBodyBlock, /background-image:\s*none/);
   assert.doesNotMatch(iosBrowserBodyBlock, /var\(--background\)/);
-  assert.match(
+  assert.doesNotMatch(
     globalsSource,
     /html\[data-ios-browser-chrome="true"\]\s+body::after\s*\{[\s\S]*?display:\s*none/,
   );
   assert.match(globalsSource, /height:\s*max\(env\(safe-area-inset-bottom,\s*0px\),\s*0px\)/);
-  assert.doesNotMatch(
+  assert.match(globalsSource, /height:\s*max\(env\(safe-area-inset-top,\s*0px\),\s*0px\)/);
+  assert.match(
     globalsSource,
     /background-image:\s*var\(--mobile-browser-surface-gradient\)/,
   );
   assert.match(
     themeColorSource,
-    /const BRAND_THEME_COLOR = "#F3EEFF"/,
+    /const BRAND_THEME_COLOR = "#8998ED"/,
   );
   assert.match(
     themeColorSource,
@@ -119,7 +120,13 @@ test("installed app chrome uses a consistent light browser surface", () => {
   assert.match(themeColorSyncSource, /MutationObserver/);
   assert.match(themeColorSource, /COLOR_SCHEME_SELECTOR/);
   assert.match(themeColorSource, /setLightColorSchemeMeta/);
-  assert.match(themeColorSource, /const IOS_BROWSER_CHROME_COLOR = "#8D7BE9"/);
+  assert.match(themeColorSource, /const IOS_BROWSER_CHROME_COLOR = BRAND_THEME_COLOR/);
+  for (const edge of ["top", "bottom"]) {
+    const clouds = globalsSource.match(new RegExp(`--mobile-chrome-${edge}-clouds:([^;]+);`))?.[1] || "";
+    assert.equal((clouds.match(/radial-gradient/g) || []).length, 3);
+    assert.doesNotMatch(clouds, /linear-gradient/);
+    assert.match(globalsSource, new RegExp(`background: var\\(--mobile-chrome-${edge}-clouds\\), var\\(--mobile-chrome-${edge}\\)`));
+  }
   assert.doesNotMatch(themeColorSource, /IOS_BROWSER_THEME_COLOR/);
   assert.doesNotMatch(themeColorSource, /IOS_BROWSER_PAGE_BACKGROUND_COLOR/);
   assert.doesNotMatch(themeColorSource, /IOS_BROWSER_NAVIGATION_BAR_COLOR/);

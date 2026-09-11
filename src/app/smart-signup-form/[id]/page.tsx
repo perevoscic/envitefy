@@ -4,6 +4,7 @@ import Script from "next/script";
 import { getServerSession } from "next-auth";
 import { cache } from "react";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
+import EventPreviewViewport from "@/components/EventPreviewViewport";
 import EventGuestActions from "@/components/event-templates/EventGuestActions";
 import SignupPageRenderer from "@/components/smart-signup-form/SignupPageRenderer";
 import SignupViewer from "@/components/smart-signup-form/SignupViewer";
@@ -16,6 +17,7 @@ import {
   isEventSharedWithUser,
 } from "@/lib/db";
 import { isEventDraft } from "@/lib/event-draft-access";
+import { buildEmbeddedEventPreviewHref, eventPreviewReturnHref } from "@/lib/event-preview-viewport";
 import { combineVenueAndLocation } from "@/lib/mappers";
 import { toPublicShareMediaUrl } from "@/lib/share-image";
 import { projectSignupForm } from "@/lib/signup-projection";
@@ -279,6 +281,9 @@ export default async function SignupPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const awaitedParams = await params;
+  const query = (await searchParams) || {};
+  const ownerPreviewMode = query.preview === "owner";
+  const ownerPreviewEmbedded = ownerPreviewMode && query.embed === "dashboard-preview";
   const session: any = await getServerSession(authOptions as any);
   const sessionEmail = (session?.user?.email as string | undefined) || null;
   const userId = sessionEmail ? await getUserIdByEmail(sessionEmail) : null;
@@ -287,8 +292,16 @@ export default async function SignupPage({
   if (row.user_id === userId && isEventDraft(row.data) && row.data?.templateEditor)
     redirect(resolveEditHref(row.id, row.data, row.title));
   const canonicalSegment = buildEventSlugSegment(row.id, row.title, row.public_slug);
+  const canonicalPath = `/smart-signup-form/${canonicalSegment}`;
+  const returnHref = eventPreviewReturnHref(query.returnTo, canonicalPath);
   if (awaitedParams.id !== canonicalSegment) {
-    redirect(`/smart-signup-form/${canonicalSegment}`);
+    const previewSearch = new URLSearchParams();
+    if (ownerPreviewMode) {
+      previewSearch.set("preview", "owner");
+      previewSearch.set("returnTo", returnHref);
+      if (ownerPreviewEmbedded) previewSearch.set("embed", "dashboard-preview");
+    }
+    redirect(`${canonicalPath}${previewSearch.size ? `?${previewSearch}` : ""}`);
   }
   const data = (row.data as any) || {};
   const signupForm = resolveSignupForm(row);
@@ -374,6 +387,16 @@ export default async function SignupPage({
     isOwner,
     userId: recipientAccepted ? userId : null,
   });
+  if (ownerPreviewMode && !ownerPreviewEmbedded) {
+    return (
+      <EventPreviewViewport
+        title={signupForm.title || row.title || "Signup form"}
+        src={buildEmbeddedEventPreviewHref(canonicalPath)}
+        returnHref={returnHref}
+        fullscreen
+      />
+    );
+  }
   return (
     <main>
       {smartSignupStructuredData ? (
@@ -401,6 +424,7 @@ export default async function SignupPage({
           eventId={row.id}
           initialForm={visibleForm}
           viewerKind={viewerKind}
+          hideOwnerTools={ownerPreviewMode}
           viewerId={userId}
           viewerName={session?.user?.name || null}
           viewerEmail={sessionEmail}

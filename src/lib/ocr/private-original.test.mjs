@@ -5,6 +5,7 @@ import test from "node:test";
 import vm from "node:vm";
 import ts from "typescript";
 import { createScanOriginalCache } from "./original-cache.ts";
+import * as publicAssetUrl from "../public-asset-url.ts";
 
 const require = createRequire(import.meta.url);
 
@@ -12,6 +13,7 @@ function harness({ fetchOriginal, getOriginal } = {}) {
   const uploads = [];
   const mocks = {
     "./original-cache": { scanOriginalCache: createScanOriginalCache() },
+    "../public-asset-url": publicAssetUrl,
     "@vercel/blob": {
       get:
         getOriginal ||
@@ -99,6 +101,22 @@ test("a replacement source URL loads its own bytes instead of the previous cache
   assert.deepEqual(reads, ["/old.png", "/new.png"]);
 });
 
+test("legacy app proxy URLs read exact blob bytes and share the relative path cache", async () => {
+  const reads = [];
+  const original = Buffer.from("exact invitation file");
+  const h = harness({
+    getOriginal: async (pathname, options) => {
+      reads.push({ pathname, access: options.access });
+      return { statusCode: 200, stream: new Response(original).body };
+    },
+  });
+  for (const origin of ["http://localhost:3000", "http://127.0.0.1:3000", "https://envitefy.com", ""]) {
+    const bytes = await h.readScanOriginalBytes(`${origin}/api/blob/event-media/invitation%20original.webp?v=1#preview`);
+    assert.deepEqual(bytes, original);
+  }
+  assert.deepEqual(reads, [{ pathname: "event-media/invitation original.webp", access: "private" }]);
+});
+
 test("medical upload stores only ciphertext and never a readable preview", async () => {
   const h = harness();
   const original = Buffer.from("exact original image bytes");
@@ -126,6 +144,11 @@ test("original reading accepts inline originals and rejects arbitrary network de
     "https://example.com/document",
     "/api/blob/private-scan-originals/../key",
     "/api/blob/secrets/key",
+    "https://example.com/api/blob/event-media/invitation.webp",
+    "http://localhost:3000/api/blob/private-scan-originals/../event-media/key",
+    "http://localhost:3000/api/blob/event-media/%2e%2e/private-scan-originals/key",
+    "http://localhost:3000/api/blob/event-media/%5c/key",
+    "http://user@localhost:3000/api/blob/event-media/key",
   ]) {
     await assert.rejects(h.readScanOriginalBytes(url));
   }

@@ -32,6 +32,7 @@ type Props = {
   viewerEmail?: string | null;
   ownerEventTitle?: string;
   ownerEventData?: any;
+  hideOwnerTools?: boolean;
 };
 
 type ReserveRequestPayload = {
@@ -148,6 +149,7 @@ const SignupViewer: React.FC<Props> = ({
   viewerEmail,
   ownerEventTitle,
   ownerEventData,
+  hideOwnerTools = false,
 }) => {
   const router = useRouter();
   const SlotControl = eventId === "preview" ? "span" : "button";
@@ -664,7 +666,7 @@ const SignupViewer: React.FC<Props> = ({
       <header className="space-y-2">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-xl font-bold text-[var(--signup-text)]">Sign-up board</h2>
-          {viewerKind === "owner" && ownerEventData && (
+          {viewerKind === "owner" && ownerEventData && !hideOwnerTools && (
             <div className="flex items-center gap-2 text-sm font-medium">
               <Link
                 href={resolveEditHref(eventId, ownerEventData, ownerEventTitle || "Event")}
@@ -1178,7 +1180,7 @@ const SignupViewer: React.FC<Props> = ({
         </div>
       )}
 
-      {viewerKind === "owner" && (
+      {viewerKind === "owner" && !hideOwnerTools && (
         <div className="rounded-2xl border border-[var(--signup-border)] bg-[var(--signup-surface)] p-5 space-y-4 shadow-sm">
           <header className="flex flex-wrap items-center justify-between gap-4">
             <h3 className="text-lg font-bold text-[var(--signup-text)]">Host dashboard</h3>

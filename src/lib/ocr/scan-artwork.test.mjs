@@ -178,20 +178,27 @@ test("designed invitations retain their original artwork without starting genera
 });
 
 test("requested flyer artwork generates and uploads only a background, including legacy generated mode", async () => {
-  const h = harness({ data: {
-    createdVia: "ocr", title: "Wedding invitation", scanSourceKind: "designed",
-    scanHeroMode: "generated",
-    scanPersonalization: personal.buildScanPersonalization({ title: "Wedding invitation" }),
-    attachment: { dataUrl: "https://example.com/original.webp" },
-  } });
-  await h.generateSavedScanArtwork("flyer-event", "owner-id");
-  assert.equal(h.generated, 1);
-  assert.equal(h.uploads.length, 1);
-  assert.equal(h.state.status, "ready");
-  assert.ok(h.state.imageUrl);
-  assert.equal(h.state.heroImageUrl, undefined);
-  assert.doesNotMatch(h.uploads[0].pathname, /-hero\.webp$/);
-  assert.equal(h.uploads[0].contentType, "image/webp");
+  for (const scanSourceKind of ["designed", null, "unknown"]) {
+    const h = harness({
+      data: {
+        createdVia: "ocr",
+        title: "Avery & Alex Wedding",
+        category: "Weddings",
+        scanSourceKind,
+        scanHeroMode: "generated",
+        scanPersonalization: personal.buildScanPersonalization({ title: "Avery & Alex Wedding" }),
+        attachment: { dataUrl: "https://example.com/original.webp" },
+      },
+    });
+    await h.generateSavedScanArtwork("flyer-event", "owner-id");
+    assert.equal(h.generated, 1);
+    assert.equal(h.uploads.length, 1);
+    assert.equal(h.state.status, "ready");
+    assert.ok(h.state.imageUrl);
+    assert.equal(h.state.heroImageUrl, undefined);
+    assert.doesNotMatch(h.uploads[0].pathname, /-hero\.webp$/);
+    assert.equal(h.uploads[0].contentType, "image/webp");
+  }
 });
 test("runtime FFmpeg output decodes as WebP and preserves dimensions and transparency", async () => {
   for (const alpha of [1, 0.4]) {

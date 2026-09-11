@@ -1,6 +1,5 @@
 import { projectSignupForm } from "@/lib/signup-projection";
 import { isEventDraft } from "@/lib/event-draft-access";
-import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import { revalidatePath } from "next/cache";
 import nextDynamic from "next/dynamic";
@@ -43,6 +42,10 @@ import { isGymMeetTemplateId } from "@/components/football-season-templates/regi
 import LocationLink from "@/components/LocationLink";
 import OpenHouseSkin from "@/components/OpenHouseSkin";
 import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileTopbarSuppressor";
+import EventPreviewViewport from "@/components/EventPreviewViewport";
+import EventOwnerView from "@/components/EventOwnerView";
+import { buildEmbeddedEventPreviewHref } from "@/lib/event-preview-viewport";
+import { GYM_EVENT_EDITOR_VIEWS } from "@/lib/event-page-workspace";
 import PickleballSkin from "@/components/PickleballSkin";
 import SponsoredSupplies from "@/components/SponsoredSupplies";
 import ThumbnailModal from "@/components/ThumbnailModal";
@@ -178,22 +181,6 @@ function sanitizeInternalReturnHref(value: string): string {
   } catch {
     return "";
   }
-}
-
-function OwnerPreviewReturnLink({ href }: { href: string }) {
-  return (
-    <>
-      <OwnerPreviewMobileTopbarSuppressor />
-      <Link
-        href={href}
-        aria-label="Back to dashboard"
-        className="fixed left-4 top-[max(0.75rem,env(safe-area-inset-top))] z-[7001] inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/70 bg-white/92 px-3 text-sm font-bold text-slate-950 shadow-[0_18px_44px_rgba(0,0,0,0.28)] backdrop-blur-xl transition hover:bg-white lg:left-[calc(20rem+(100vw-20rem)/2-min(calc(100vw-2rem),calc((100dvh-6.5rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))*2/3))/2+0.75rem)] lg:top-[max(1rem,env(safe-area-inset-top))]"
-      >
-        <ArrowLeft size={18} strokeWidth={2.4} aria-hidden="true" />
-        <span>Dashboard</span>
-      </Link>
-    </>
-  );
 }
 
 function DeletedEventNotice() {
@@ -1234,6 +1221,7 @@ export default async function EventPage({
     row.public_slug ||
     (typeof (data as any)?.publicSlug === "string" ? (data as any).publicSlug : null);
   const ownerPreviewMode = readRouteSearchParam((awaitedSearchParams as any)?.preview) === "owner";
+  const showEventOwnerActions = isOwner && !ownerPreviewMode;
   const ownerPreviewEmbedded =
     ownerPreviewMode &&
     readRouteSearchParam((awaitedSearchParams as any)?.embed) === "dashboard-preview";
@@ -1261,7 +1249,6 @@ export default async function EventPage({
         <EventCelebrationOverlay kind={guestCelebrationKind} />
       ) : null}
       {ownerPreviewEmbedded ? <OwnerPreviewMobileTopbarSuppressor /> : null}
-      {ownerPreviewReturnHref ? <OwnerPreviewReturnLink href={ownerPreviewReturnHref} /> : null}
       {calendarConnectionNotice}
       {!isOwner ? (
         <EventViewTracker
@@ -1325,8 +1312,15 @@ export default async function EventPage({
     output: primaryProductOutput,
     publicSlug,
   });
-  if (cardFirstCanonical && !ownerToolsTab) {
-    redirect(cardFirstCanonical);
+  const showOwnerEventView = isOwner && requestedTab === "event" && !ownerPreviewMode;
+  if (cardFirstCanonical && !ownerToolsTab && !showOwnerEventView) {
+    const cardPreviewSearch = new URLSearchParams();
+    if (ownerPreviewMode) {
+      cardPreviewSearch.set("preview", "owner");
+      if (ownerPreviewEmbedded) cardPreviewSearch.set("embed", "dashboard-preview");
+      if (ownerPreviewReturnHref) cardPreviewSearch.set("returnTo", ownerPreviewReturnHref);
+    }
+    redirect(`${cardFirstCanonical}${cardPreviewSearch.size ? `?${cardPreviewSearch}` : ""}`);
   }
   const discoveryWorkflow = isDiscoveryV2
     ? "gymnastics"
@@ -1381,6 +1375,9 @@ export default async function EventPage({
   const showHostDashboard =
     canManageCreatedEvent && !hideHostDashboard && ownerRsvpDashboardEnabled;
   const showOwnerWorkspace = canManageCreatedEvent && !isScannedOrUploadedEventData(data);
+  const requestedEditorView = GYM_EVENT_EDITOR_VIEWS.find(
+    (view) => view === readRouteSearchParam((awaitedSearchParams as any)?.view),
+  );
   const discoveryEditConfig: { customizeUrl: string; workflow: "gymnastics" } | null =
     editParam && canEditCreatedEvent
       ? (() => {
@@ -1388,7 +1385,7 @@ export default async function EventPage({
             return {
               customizeUrl: `/event/gymnastics/customize?edit=${encodeURIComponent(
                 row.id,
-              )}&embed=1`,
+              )}&embed=1${requestedEditorView ? `&view=${requestedEditorView}` : ""}`,
               workflow: "gymnastics",
             } as const;
           }
@@ -1402,6 +1399,17 @@ export default async function EventPage({
   if (editParam && canEditCreatedEvent && !discoveryEditConfig) {
     const editUrl = resolveEditHref(row.id, data, title);
     redirect(editUrl);
+  }
+
+  if (showOwnerEventView && !editParam) {
+    return (
+      <EventOwnerView
+        eventId={row.id}
+        title={title}
+        publicHref={publicEventHref}
+        editHref={cardFirstCanonical ? `${ownerEventHref}?tab=design` : resolveEditHref(row.id, data, title)}
+      />
+    );
   }
 
   const resolvedOwnerToolsTab: typeof ownerToolsTab =
@@ -1835,16 +1843,38 @@ export default async function EventPage({
     const next = buildEventPath(
       row.id,
       title,
-      createdParam
-        ? {
-            created: true,
-            calendarSync: calendarSyncNeedsAttention ? calendarSyncStatus : undefined,
-            calendarProvider: calendarSyncProvider || undefined,
-          }
-        : undefined,
+      {
+        ...(discoveryEditConfig
+          ? { edit: row.id, view: requestedEditorView }
+          : {}),
+        ...(createdParam
+          ? {
+              created: true,
+              calendarSync: calendarSyncNeedsAttention ? calendarSyncStatus : undefined,
+              calendarProvider: calendarSyncProvider || undefined,
+            }
+          : {}),
+        ...(ownerPreviewMode
+          ? {
+              preview: "owner",
+              embed: ownerPreviewEmbedded ? "dashboard-preview" : undefined,
+              returnTo: ownerPreviewReturnHref || undefined,
+            }
+          : {}),
+      },
       publicSlug,
     );
     redirect(next);
+  }
+  if (ownerPreviewMode && !ownerPreviewEmbedded) {
+    return (
+      <EventPreviewViewport
+        title={title}
+        src={buildEmbeddedEventPreviewHref(canonical)}
+        returnHref={ownerPreviewReturnHref}
+        fullscreen
+      />
+    );
   }
   const publicEventOgImageUrl =
     (await resolveAbsoluteEventShareImage(data))?.url || (await absoluteUrl("/og-default.jpg"));
@@ -2306,6 +2336,7 @@ export default async function EventPage({
       eventId={row.id}
       initialForm={projectedSignupForm}
       viewerKind={viewerKind}
+      hideOwnerTools={ownerPreviewMode}
       viewerId={userId}
       viewerName={(session?.user?.name as string | undefined) || null}
       viewerEmail={sessionEmail}
@@ -2587,7 +2618,7 @@ export default async function EventPage({
         ocrFacts={scannedInviteOcrFacts}
         actions={
           !isReadOnly &&
-          isOwner && (
+          showEventOwnerActions && (
             <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
               {canEditCreatedEvent && (
                 <Link
@@ -2676,7 +2707,7 @@ export default async function EventPage({
           rsvpDeadline: rsvpDeadline || undefined,
           numberOfGuests: data.numberOfGuests || 0,
         }}
-        isOwner={isOwner}
+        isOwner={showEventOwnerActions}
         showHostDashboard={showHostDashboard}
         calendarLinks={calendarLinks}
         coordinates={data?.coordinates || null}
@@ -2684,7 +2715,7 @@ export default async function EventPage({
         locationText={typeof data?.location === "string" ? data.location : null}
         actions={
           !isReadOnly &&
-          isOwner && (
+          showEventOwnerActions && (
             <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
               {canEditCreatedEvent && (
                 <Link
@@ -2736,8 +2767,8 @@ export default async function EventPage({
         eventTitle={title}
         templateId={templateId}
         variationId={variationId}
-        isOwner={isOwner}
-        canEdit={canEditCreatedEvent}
+        isOwner={showEventOwnerActions}
+        canEdit={canEditCreatedEvent && !ownerPreviewMode}
         isReadOnly={isReadOnly}
         viewerKind={viewerKind}
         shareUrl={shareUrl}
@@ -2752,7 +2783,7 @@ export default async function EventPage({
       attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl
         ? attachmentInfo.dataUrl
         : headerImageUrl;
-    const scannedWeddingActions = !isReadOnly && isOwner && (
+    const scannedWeddingActions = !isReadOnly && showEventOwnerActions && (
       <div className="flex items-center gap-2 text-sm font-medium sm:gap-3">
         <EventDeleteModal eventId={row.id} eventTitle={title} />
         <EventActions
@@ -2818,7 +2849,7 @@ export default async function EventPage({
         ? ((data as any).attire as string).trim()
         : null;
     const scannedInviteRegistryUrl = primaryRegistryUrl;
-    const scannedInviteActions = !isReadOnly && isOwner && (
+    const scannedInviteActions = !isReadOnly && showEventOwnerActions && (
       <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
         {canEditCreatedEvent && (
           <Link
@@ -2912,7 +2943,7 @@ export default async function EventPage({
         ? ((data as any).attire as string).trim()
         : null;
     const scannedInviteRegistryUrl = primaryRegistryUrl;
-    const scannedInviteActions = !isReadOnly && isOwner && (
+    const scannedInviteActions = !isReadOnly && showEventOwnerActions && (
       <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
         {canEditCreatedEvent && (
           <Link
@@ -3006,7 +3037,7 @@ export default async function EventPage({
         ? ((data as any).attire as string).trim()
         : null;
     const scannedInviteRegistryUrl = primaryRegistryUrl;
-    const scannedInviteActions = !isReadOnly && isOwner && (
+    const scannedInviteActions = !isReadOnly && showEventOwnerActions && (
       <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
         {canEditCreatedEvent && (
           <Link
@@ -3090,7 +3121,7 @@ export default async function EventPage({
       (typeof data?.thingsToDo === "string" && data.thingsToDo.trim()) ||
       (typeof data?.description === "string" && data.description.trim()) ||
       null;
-    const scannedInviteActions = !isReadOnly && isOwner && (
+    const scannedInviteActions = !isReadOnly && showEventOwnerActions && (
       <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
         <EventDeleteModal eventId={row.id} eventTitle={title} />
         <EventActions
@@ -3165,7 +3196,7 @@ export default async function EventPage({
     const isBasketballInvite = /\bbasketball\b|\bopen run\b|\bpickup\b|\b3v3\b|\b5v5\b/.test(
       basketballContextText,
     );
-    const scannedInviteActions = !isReadOnly && isOwner && (
+    const scannedInviteActions = !isReadOnly && showEventOwnerActions && (
       <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
         {canEditCreatedEvent && (
           <Link
@@ -3389,7 +3420,7 @@ export default async function EventPage({
         ocrFacts={scannedInviteOcrFacts}
         actions={
           !isReadOnly &&
-          isOwner && (
+          showEventOwnerActions && (
             <div
               className="flex min-h-11 items-center gap-2 text-sm font-medium sm:gap-3"
               role="group"
@@ -3435,8 +3466,8 @@ export default async function EventPage({
         eventTitle={title}
         eventData={clientSafeEventDataWithRegistryLinks}
         shareUrl={shareUrl}
-        isOwner={isOwner}
-        canEdit={canEditCreatedEvent}
+        isOwner={showEventOwnerActions}
+        canEdit={canEditCreatedEvent && !ownerPreviewMode}
         isReadOnly={isReadOnly}
         editHref={editHref}
       />,
@@ -3450,8 +3481,8 @@ export default async function EventPage({
         eventTitle={title}
         eventData={clientSafeEventDataWithRegistryLinks}
         shareUrl={shareUrl}
-        isOwner={isOwner}
-        canEdit={canEditCreatedEvent}
+        isOwner={showEventOwnerActions}
+        canEdit={canEditCreatedEvent && !ownerPreviewMode}
         isReadOnly={isReadOnly}
         editHref={editHref}
         calendarLinks={calendarLinks}
@@ -3468,10 +3499,10 @@ export default async function EventPage({
         pageTemplateId={footballPageTemplateId}
         shareUrl={shareUrl}
         sessionEmail={sessionEmail}
-        isOwner={isOwner}
+        isOwner={showEventOwnerActions}
         isReadOnly={isReadOnly}
         editHref={editHref}
-        hideOwnerActions={Boolean(discoveryEditConfig)}
+        hideOwnerActions={ownerPreviewMode || Boolean(discoveryEditConfig)}
         chrome={footballPublicChrome}
       />
     );
@@ -3492,12 +3523,12 @@ export default async function EventPage({
         eventId={row.id}
         eventData={clientSafeEventDataWithRegistryLinks}
         eventTitle={title}
-        isOwner={isOwner}
+        isOwner={showEventOwnerActions}
         isReadOnly={isReadOnly}
         viewerKind={viewerKind}
         shareUrl={shareUrl}
         sessionEmail={sessionEmail}
-        hideOwnerActions={Boolean(discoveryEditConfig)}
+        hideOwnerActions={ownerPreviewMode || Boolean(discoveryEditConfig)}
         disableThemeBackground={Boolean(discoveryEditConfig)}
       />
     );

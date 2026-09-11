@@ -43,7 +43,7 @@ function OriginalHeroViewer({
   const openOriginal = () => {
     returnFocus.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    loaded.prepare();
+    loaded.prepareForOpen();
     setOpen(true);
   };
   return (

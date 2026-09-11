@@ -17,6 +17,7 @@ import {
 } from "@/config/navigation-config";
 import { getEventStartIso, isInvitedEventLikeRecord } from "@/lib/dashboard-data";
 import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
+import { buildOwnerEventViewHref } from "@/lib/event-preview-viewport";
 import { normalizePrimarySignupSource } from "@/lib/product-scopes";
 import { getCreateActionForSignupIntent } from "@/lib/signup-intent";
 import type { SportPreferences } from "@/lib/sports-preferences";
@@ -168,6 +169,8 @@ export type LeftSidebarControllerViewModel = {
   openAiThread: (threadId: string) => void;
   startNewAiChat: () => void;
   openMyEventsPage: () => void;
+  openDraftsPage: () => void;
+  onDraftNavigate: () => void;
   openInvitedEventsPage: () => void;
   openAdminPage: () => void;
   backToRoot: () => void;
@@ -369,6 +372,7 @@ export function useLeftSidebarController({
   const ownerNavigationPendingRef = useRef(false);
   const invitedNavigationPendingRef = useRef(false);
   const prevSidebarPageRef = useRef<SidebarPage>("root");
+  const lastMobileRoutePathRef = useRef<string | null>(null);
   const lastAdminRouteSyncPathRef = useRef<string | null>(null);
   const lastChatRouteSyncPathRef = useRef<string | null>(null);
   const lastEventListRouteSyncPathRef = useRef<string | null>(null);
@@ -605,6 +609,9 @@ export function useLeftSidebarController({
   }, [menuOpen]);
 
   useEffect(() => {
+    // Clearing event context to open a submenu is not page navigation.
+    if (lastMobileRoutePathRef.current === pathname) return;
+    lastMobileRoutePathRef.current = pathname;
     setMenuOpen(false);
     try {
       const isNarrow =
@@ -1136,6 +1143,15 @@ export function useLeftSidebarController({
     () => openCompactEventsPage("myEvents"),
     [openCompactEventsPage],
   );
+  const openDraftsPage = useCallback(() => {
+    clearEventContext();
+    setIsCollapsed(false);
+    setSidebarPage("drafts");
+  }, [clearEventContext, setIsCollapsed]);
+  const onDraftNavigate = useCallback(() => {
+    clearEventContext();
+    collapseSidebarOnTouch();
+  }, [clearEventContext, collapseSidebarOnTouch]);
   const openInvitedEventsPage = useCallback(
     () => openCompactEventsPage("invitedEvents"),
     [openCompactEventsPage],
@@ -1601,12 +1617,11 @@ export function useLeftSidebarController({
       setSelectedEventHref(publicHref);
       setSelectedEventOwnerHref(ownerHref);
       setSelectedEventEditHref(resolveEditHref(row.id, row.data, title));
-      const initialOwnerTab: EventContextTab = item.hasOwnerRsvp ? "dashboard" : "design";
-      setActiveEventTab(initialOwnerTab);
+      setActiveEventTab("design");
       setEventSidebarMode("owner");
       setEventContextSourcePage("myEvents");
       setSidebarPage("myEvents");
-      const nextHref = buildEventOwnerHref(ownerHref, row.id, initialOwnerTab);
+      const nextHref = buildOwnerEventViewHref(ownerHref);
       const currentPath = typeof window !== "undefined" ? window.location.pathname : pathname;
       if (!String(currentPath || "").startsWith("/event/")) {
         ownerNavigationPendingRef.current = true;
@@ -1615,7 +1630,6 @@ export function useLeftSidebarController({
     },
     [
       blurActiveElement,
-      buildEventOwnerHref,
       clearEventContext,
       pathname,
       router,
@@ -1830,6 +1844,8 @@ export function useLeftSidebarController({
     openAiThread,
     startNewAiChat,
     openMyEventsPage,
+    openDraftsPage,
+    onDraftNavigate,
     openInvitedEventsPage,
     openAdminPage,
     backToRoot: () => setSidebarPage("root"),

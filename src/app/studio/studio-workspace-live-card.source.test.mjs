@@ -121,7 +121,7 @@ test("studio preview preserves full poster artwork with guest controls overlaid 
     showcaseSource,
     /const usesPosterArtFrame = preview\.invitationData\.heroTextMode === "image";/,
   );
-  assert.match(showcaseSource, /usesPosterArtFrame \? "aspect-\[2\/3\] overflow-hidden rounded/);
+  assert.match(showcaseSource, /usesPosterArtFrame \? "aspect-\[2\/3\] rounded/);
   assert.match(
     showcaseSource,
     /usesPosterArtFrame \? "object-contain" : "object-cover"/,

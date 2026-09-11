@@ -7,7 +7,13 @@ import { resolveSavedScanPersonalization } from "../../../../../lib/ocr/personal
 import { normalizeScanArtwork } from "../../../../../lib/ocr/scan-artwork-state.ts";
 import { resolveScanMediaPolicy } from "../../../../../lib/ocr/scan-media.ts";
 
-function harness(userId, ownerId = "owner", status = "ready", title = "ENT appointment", data = {}) {
+function harness(
+  userId,
+  ownerId = "owner",
+  status = "ready",
+  title = "ENT appointment",
+  data = {},
+) {
   const h = { mutations: [], jobs: [], calls: [] };
   const row = {
     id: "event",
@@ -84,7 +90,8 @@ test("flyer generation preserves the original and accepts a ready background wit
   assert.equal(ready.jobs.length, 0);
   assert.equal(ready.mutations.length, 1);
   const request = new Request("https://envitefy.test/artwork", {
-    method: "PATCH", body: JSON.stringify({ heroMode: "generated" }),
+    method: "PATCH",
+    body: JSON.stringify({ heroMode: "generated" }),
   });
   assert.equal((await ready.PATCH(request, ready.context)).status, 400);
 });
@@ -97,6 +104,27 @@ test("status reads and already-ready artwork never regenerate", async () => {
   await h.POST(null, h.context);
   assert.equal(h.jobs.length, 0);
   assert.equal(h.mutations.length, 1);
+});
+
+test("legacy unclassified weddings keep the original on requests and reject hero replacement", async () => {
+  for (const scanSourceKind of [undefined, null, "unknown"]) {
+    const data = { category: "Weddings", scanSourceKind, scanHeroMode: "generated" };
+    const h = harness("owner", "owner", "ready", "Avery & Alex Wedding", data);
+    const response = await h.POST(null, h.context);
+    assert.equal((await response.json()).artwork.status, "ready");
+    assert.equal(JSON.parse(h.mutations[0][1][2]), "original");
+    assert.equal(h.jobs.length, 0);
+    const replace = new Request("https://envitefy.test/artwork", {
+      method: "PATCH",
+      body: JSON.stringify({ heroMode: "generated" }),
+    });
+    assert.equal((await h.PATCH(replace, h.context)).status, 400);
+    assert.equal(h.mutations.length, 1);
+    const fresh = harness("owner", "owner", null, "Avery & Alex Wedding", data);
+    await fresh.POST(null, fresh.context);
+    assert.equal(JSON.parse(fresh.mutations[0][1][2]), "original");
+    assert.equal(fresh.jobs.length, 1);
+  }
 });
 test("retry publishes pending state before starting background work", async () => {
   const h = harness("owner", "owner", "failed");
@@ -117,7 +145,7 @@ test("existing scans initialize artwork only after the owner requests it", async
   assert.equal(h.jobs.length, 1);
 });
 
-test("artwork selection preserves the source and rejects original medical heroes", async () => {
+test("legacy artwork selection only accepts the hero mode for the source type", async () => {
   const request = (heroMode) =>
     new Request("https://envitefy.test/artwork", {
       method: "PATCH",
@@ -126,10 +154,17 @@ test("artwork selection preserves the source and rejects original medical heroes
   const medical = harness("owner");
   assert.equal((await medical.PATCH(request("original"), medical.context)).status, 400);
   assert.equal(medical.mutations.length, 0);
+  for (const title of ["Business card", "Soccer schedule"]) {
+    const paperwork = harness("owner", "owner", "ready", title, { scanHeroMode: "original" });
+    assert.equal((await paperwork.PATCH(request("original"), paperwork.context)).status, 400);
+    assert.equal(paperwork.mutations.length, 0);
+  }
   const invitation = harness("owner", "owner", "ready", "Birthday party");
   assert.equal((await invitation.PATCH(request("original"), invitation.context)).status, 200);
   assert.match(invitation.mutations[0][0], /scanHeroMode/);
   assert.doesNotMatch(invitation.mutations[0][0], /attachment|DELETE/i);
-  const missing = harness("owner", "owner", null, "Birthday party");
+  const missing = harness("owner", "owner", null, "Soccer schedule", {
+    scanSourceKind: "paperwork",
+  });
   assert.equal((await missing.PATCH(request("generated"), missing.context)).status, 409);
 });

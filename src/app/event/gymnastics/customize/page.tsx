@@ -6,6 +6,7 @@ import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraf
 import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
+import { GYM_EVENT_EDITOR_VIEWS } from "@/lib/event-page-workspace";
 import { type EventGuestPlanning, normalizeEventGuestPlanning, eventLocalDateParts, getEventEndLocal } from "@/lib/event-guest-planning";
 import {
   CheckSquare,
@@ -849,6 +850,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
     const [themeId, setThemeId] = useTemplateState("themeId", config.themes[0]?.id ?? "default-theme");
     const [activeView, setActiveView] = useTemplateState<string>("activeView", "main");
+    const openedWorkspaceView = useRef<string | null>(null);
     const [_rsvpSubmitted, _setRsvpSubmitted] = useState(false);
     const [_rsvpAttending, _setRsvpAttending] = useState("yes");
     const [dismissedSuggestedExtraFields, setDismissedSuggestedExtraFields] = useState<
@@ -1300,6 +1302,17 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         setActiveView("main");
       }
     }, [activeView, visibleAdvancedSectionIds]);
+
+    // Open the requested workspace section once saved fields have loaded.
+    useEffect(() => {
+      if ((!editEventId && !templateEditor) || loadingExisting) return;
+      const requestedView = search?.get("view");
+      const view = GYM_EVENT_EDITOR_VIEWS.find((item) => item === requestedView);
+      const key = `${editEventId || templateEditor?.templateId}:${view}`;
+      if (!view || openedWorkspaceView.current === key) return;
+      openedWorkspaceView.current = key;
+      openEditorView(view);
+    }, [editEventId, templateEditor, loadingExisting, search, openEditorView]);
 
     // Load existing event data when editing
     useEffect(() => {
@@ -2075,10 +2088,20 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             pageTemplateId: result?.data?.pageTemplateId,
           });
 
-          const redirectUrl = buildEventPath(editEventId, payload.title, {
-            updated: true,
-            t: Date.now(),
-          });
+          const savedPublicSlug =
+            typeof result?.public_slug === "string" ? result.public_slug : undefined;
+          const returnTo = buildEventPath(
+            editEventId,
+            payload.title,
+            { tab: "dashboard" },
+            savedPublicSlug,
+          );
+          const redirectUrl = buildEventPath(
+            editEventId,
+            payload.title,
+            { updated: true, t: Date.now(), preview: "owner", returnTo },
+            savedPublicSlug,
+          );
 
           // When embedded in event page iframe, tell parent to exit edit mode and navigate.
           if (typeof window !== "undefined" && (window as any).parent !== window) {

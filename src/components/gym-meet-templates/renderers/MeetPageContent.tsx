@@ -355,7 +355,12 @@ export default function MeetPageContent({
               </Section>
             ) : null}
 
-            <footer className="rounded-2xl bg-white px-2 py-6 text-center"><EnvitefyEventBranding category="Gymnastics" /></footer>
+            <footer
+              className="rounded-2xl border bg-transparent px-2 py-6 text-center"
+              style={{ borderColor: "color-mix(in srgb, var(--gym-ink) 12%, transparent)" }}
+            >
+              <EnvitefyEventBranding category="Gymnastics" />
+            </footer>
           </main>
         </div>
       </div>

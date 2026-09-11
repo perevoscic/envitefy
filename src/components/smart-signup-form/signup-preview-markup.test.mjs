@@ -44,6 +44,24 @@ const baseMocks = {
 };
 const { createSignupThemeForm } = load("src/lib/signup-starters.ts", baseMocks);
 
+test("device preview hides signup editing tools while preserving the sign-up board", () => {
+  const Viewer = load("src/components/smart-signup-form/SignupViewer.tsx", baseMocks).default;
+  const form = createSignupThemeForm("harvest-table");
+  const props = {
+    eventId: "school",
+    initialForm: form,
+    viewerKind: "owner",
+    ownerEventTitle: "School event",
+    ownerEventData: { signupForm: form },
+  };
+  const regular = renderToStaticMarkup(React.createElement(Viewer, props));
+  assert.match(regular, /Edit event/);
+  assert.match(regular, /Host dashboard/);
+  const preview = renderToStaticMarkup(React.createElement(Viewer, { ...props, hideOwnerTools: true }));
+  assert.match(preview, /Sign-up board/);
+  assert.doesNotMatch(preview, /Edit event|Duplicate form|Host dashboard/);
+});
+
 test("all 150 templates retain a distinct curated design through saving and rendering", () => {
   const { getPublicTemplates } = load("src/lib/public-template-catalog.ts", baseMocks);
   const { SIGNUP_DESIGNS, SIGNUP_DESIGN_PALETTES } = load("src/lib/signup-designs.ts", baseMocks);

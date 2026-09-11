@@ -46,19 +46,12 @@ export function resolveScanMediaPolicy(
     sourceKind = "paperwork";
   if (sourceKind === "unknown" && /\b(?:flyer|poster|invitation|invite)\b/i.test(title))
     sourceKind = "designed";
-  const chosen = data.scanHeroMode;
   return {
     sourceKind,
     medical,
-    heroMode: medical
-      ? "generated"
-      : sourceKind === "designed"
-        ? "original"
-        : chosen === "generated" || chosen === "original"
-          ? chosen
-          : sourceKind === "paperwork"
-            ? "generated"
-            : "original",
+    // Source type determines the hero. Older scans often lack classification;
+    // preserve those originals regardless of a previous manual hero choice.
+    heroMode: sourceKind === "paperwork" ? "generated" : "original",
   };
 }
 

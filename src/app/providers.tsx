@@ -89,6 +89,17 @@ export default function Providers({
   children: ReactNode;
   session?: any;
 }) {
+  useEffect(() => {
+    // iOS Safari needs a touch listener on the control or body to show :active
+    // while a finger is down. Keep it passive so scrolling and clicks stay native.
+    const enableActiveState = () => {
+      // The listener's presence enables Safari's native CSS press feedback.
+    };
+    const body = document.body;
+    body.addEventListener("touchstart", enableActiveState, { passive: true });
+    return () => body.removeEventListener("touchstart", enableActiveState);
+  }, []);
+
   return (
     <SessionProvider
       session={session}

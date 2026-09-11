@@ -26,10 +26,14 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { type EventContextTab, useSidebar } from "@/app/sidebar-context";
 import EventDeleteModal from "@/components/EventDeleteModal";
+import EventPreviewViewport from "@/components/EventPreviewViewport";
+import EventOwnerView from "@/components/EventOwnerView";
 import EventResponseDashboard from "@/components/EventResponseDashboard";
 import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileTopbarSuppressor";
+import { useUnsavedProgress } from "@/components/UnsavedProgressProvider";
 import { SharedStudioCardFrame } from "@/components/studio/SharedStudioCardPage";
 import { changedCardEditFields } from "@/lib/studio/card-edit-fields";
+import { isRegistryOnlyCardEdit, normalizeCardRegistryLink, readCardRegistryLink } from "@/lib/studio/card-registry";
 import { hasActionableRsvp } from "@/lib/dashboard-data";
 import { requestCardEdit } from "@/lib/card-edit-client";
 import {
@@ -68,6 +72,7 @@ type DesignFormState = {
   endTime: string;
   venueName: string;
   location: string;
+  registryLink: string;
   designIdea: string;
 };
 
@@ -78,6 +83,7 @@ type DesignEditFields = {
   endTime: string;
   venueName: string;
   location: string;
+  registryLink: string;
   theme?: string;
 };
 
@@ -329,11 +335,10 @@ function resolveProductPreviewSurface(
     publicEvent?.ownerDefaultSurface,
     data?.ownerDefaultSurface,
   ).toLowerCase();
-  if (ownerDefaultSurface === "card" && imageUrl) return "studio-card";
-  if (ownerDefaultSurface === "event" || ownerDefaultSurface === "signup") return "event-page";
-
   const primaryOutput = getPrimaryEventProductOutput(data);
   if (primaryOutput && !isCardFirstEventProduct(primaryOutput)) return "event-page";
+  if (ownerDefaultSurface === "card" && imageUrl) return "studio-card";
+  if (ownerDefaultSurface === "event" || ownerDefaultSurface === "signup") return "event-page";
 
   return imageUrl && (asRecord(data?.studioCard) || isCardFirstProduct(data))
     ? "studio-card"
@@ -405,10 +410,7 @@ function buildFallbackInvitationData(
       rsvpName: firstString(data.rsvpName, rsvp?.name),
       rsvpContact: firstString(data.rsvpContact, rsvp?.contact),
       rsvpDeadline: firstString(data.rsvpDeadline, rsvp?.deadline),
-      registryLink:
-        Array.isArray(data.registries) && asRecord(data.registries[0])
-          ? firstString(asRecord(data.registries[0])?.url)
-          : firstString(data.registryLink),
+      registryLink: readCardRegistryLink(data),
     },
   };
 }
@@ -567,6 +569,7 @@ function buildDesignEditFields(form: DesignFormState): DesignEditFields {
     endTime: form.endTime,
     venueName: splitLocation.venueName,
     location: splitLocation.location,
+    registryLink: form.registryLink.trim(),
   };
   const requestedCardChange = readString(form.designIdea);
   if (requestedCardChange) fields.theme = requestedCardChange;
@@ -643,6 +646,7 @@ function buildDesignFormState(
         preview.locationLine,
       ),
     ),
+    registryLink: readCardRegistryLink(eventData),
     designIdea: "",
   };
 }
@@ -730,7 +734,6 @@ export default function EventOwnerTools({
   );
   const ownerHref = eventOwnerHref || `/event/${encodeURIComponent(eventId)}`;
   const designHref = buildOwnerTabHref(ownerHref, eventId, "design");
-  const primaryEditHref = resolvedArtworkEditHref ? designHref : resolvedEditHref;
   const [currentEventTitle, setCurrentEventTitle] = useState(eventTitle);
   const [designPreviewOverride, setDesignPreviewOverride] =
     useState<Partial<ProductPreviewModel> | null>(null);
@@ -801,6 +804,9 @@ export default function EventOwnerTools({
     ? { ...preview, ...savedProductOverride.preview }
     : preview;
   const productName = preview.surface === "studio-card" ? "card" : "event";
+  const isEventPage = preview.surface === "event-page";
+  const isEventPageWorkspace = isEventPage && (!rsvpEnabled || activeOwnerTab === "design");
+  const primaryEditHref = !isEventPage && resolvedArtworkEditHref ? designHref : resolvedEditHref;
   const openProductViewer = (mode: "current" | "changes") => {
     productViewerTrigger.current = document.activeElement instanceof HTMLElement
       ? document.activeElement
@@ -870,12 +876,17 @@ export default function EventOwnerTools({
     } catch {}
   }
 
+  if (isEventPageWorkspace) {
+    return <EventOwnerView eventId={eventId} title={currentEventTitle} publicHref={publicUrl} editHref={resolvedEditHref} />;
+  }
+
   return (
     <main className="min-h-[100dvh] w-full px-3 pb-5 pt-[calc(var(--app-mobile-topbar-offset,4rem)+1.35rem)] text-slate-950 sm:px-6 lg:px-8 lg:py-5">
       <div
         className="mx-auto grid w-full max-w-[1380px] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,410px)] xl:grid-cols-[minmax(0,1fr)_430px]"
       >
         <section className="min-w-0 space-y-3 sm:space-y-4">
+          <div>
           <OwnerWorkspaceHeader
             eventId={eventId}
             title={currentEventTitle}
@@ -883,18 +894,22 @@ export default function EventOwnerTools({
             timeLine={effectivePreview.timeLine}
             locationLine={effectivePreview.locationLine}
             previewLabel={`Preview ${productName}`}
+            isEventPage={isEventPage}
             editHref={primaryEditHref}
-            detailsEditHref={resolvedArtworkEditHref ? resolvedEditHref : null}
+            detailsEditHref={!isEventPage && resolvedArtworkEditHref ? resolvedEditHref : null}
             onViewCurrent={() => openProductViewer("current")}
             onShare={sharePublicLink}
           />
+          </div>
           {ownerWorkspaceTabs.length > 1 ? (
+            <div>
             <OwnerWorkspaceTabs
               activeTab={activeOwnerTab}
               ownerHref={ownerHref}
               eventId={eventId}
               tabs={ownerWorkspaceTabs}
             />
+            </div>
           ) : null}
           {activeOwnerTab === "design" ? (
             <OwnerPublicLinkPanel
@@ -905,6 +920,7 @@ export default function EventOwnerTools({
               onUpdated={(nextPath) => setPublicUrlOverride(nextPath)}
             />
           ) : null}
+          <div>
           <OwnerTabContent
             activeTab={activeOwnerTab}
             eventId={eventId}
@@ -930,6 +946,7 @@ export default function EventOwnerTools({
               }
             }}
           />
+          </div>
         </section>
 
         <aside className="hidden min-w-0 lg:sticky lg:top-5 lg:flex lg:h-[calc(100dvh-2.5rem)] lg:translate-x-6 lg:items-start lg:justify-end lg:self-start xl:translate-x-10">
@@ -1137,10 +1154,8 @@ function EventProductPreview({
             onClose={onClose}
             closeButtonPlacement="overlay"
             className="w-full"
-            frameClassName={fullscreen
-              ? "!w-full !max-w-full !rounded-[28px] !border-0 !bg-transparent !shadow-[0_24px_80px_rgba(0,0,0,0.65),0_0_48px_rgba(139,92,246,0.18)]"
-              : "!w-full !max-w-full !rounded-[28px] !border-0 shadow-none"}
-            artworkClassName={fullscreen ? "overflow-hidden !rounded-[28px] !shadow-none" : undefined}
+            frameClassName="!w-full !max-w-full !rounded-[28px] !border-0 !bg-transparent"
+            artworkClassName={fullscreen ? "!rounded-[28px]" : undefined}
             style={{ width: "100%" }}
           />
         ) : publicUrl ? (
@@ -1243,6 +1258,7 @@ function OwnerWorkspaceHeader({
   timeLine,
   locationLine,
   previewLabel,
+  isEventPage,
   editHref,
   detailsEditHref,
   onViewCurrent,
@@ -1254,6 +1270,7 @@ function OwnerWorkspaceHeader({
   timeLine: string;
   locationLine: string;
   previewLabel: string;
+  isEventPage: boolean;
   editHref: string;
   detailsEditHref: string | null;
   onViewCurrent: () => void;
@@ -1267,7 +1284,7 @@ function OwnerWorkspaceHeader({
       <div className="space-y-3 sm:space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-[0.66rem] font-black uppercase tracking-[0.16em] text-[#786bd6]">
-            Owner workspace
+            {isEventPage ? "Event workspace" : "Owner workspace"}
           </p>
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
             {!detailsEditHref ? (
@@ -1343,12 +1360,14 @@ function OwnerPublicLinkPanel({
   publicSlug,
   publicUrl,
   onUpdated,
+  compact = false,
 }: {
   eventId: string;
   activeTab: EventContextTab;
   publicSlug: string;
   publicUrl: string;
   onUpdated: (nextPath: string) => void;
+  compact?: boolean;
 }) {
   const router = useRouter();
   const [slug, setSlug] = useState(publicSlug);
@@ -1425,15 +1444,16 @@ function OwnerPublicLinkPanel({
 
   return (
     <section className="owner-workspace-glass relative overflow-hidden rounded-[22px] border border-white/75 bg-white/92 p-3 shadow-[0_14px_38px_rgba(79,70,128,0.09)] backdrop-blur-xl sm:p-4">
-      <form className="grid gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]" onSubmit={handleSubmit}>
+      <form className={compact ? "grid min-w-0 gap-3" : "grid gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]"} onSubmit={handleSubmit}>
         <div className="flex items-center gap-2 text-[0.66rem] font-black uppercase tracking-[0.16em] text-[#786bd6]">
           <Link2 size={16} aria-hidden="true" />
           Public link
         </div>
         <label className="min-w-0">
           <span className="sr-only">Public link slug</span>
+          {compact ? <span className="mb-2 block truncate text-xs text-slate-500">{origin || "https://envitefy.com"}/{publicPathPrefix}/</span> : null}
           <div className="flex min-h-11 min-w-0 items-center overflow-hidden rounded-2xl border border-violet-900/20 bg-white/68 text-sm font-semibold text-slate-950 shadow-[inset_0_1px_3px_rgba(76,29,149,0.16)]">
-            <span className="hidden shrink-0 pl-3 pr-1 text-slate-400 sm:inline">
+            <span className={compact ? "hidden" : "hidden shrink-0 pl-3 pr-1 text-slate-400 sm:inline"}>
               {origin || "https://envitefy.com"}/{publicPathPrefix}/
             </span>
             <input
@@ -1506,6 +1526,9 @@ function OwnerTabContent({
   }) => void;
 }) {
   if (!rsvpEnabled || activeTab === "design") {
+    if (preview.surface === "event-page") {
+      return null;
+    }
     return (
       <OwnerDesignPanel
         eventId={eventId}
@@ -1578,28 +1601,23 @@ function OwnerProductViewer({
           onCloseAutoFocus={(event) => { event.preventDefault(); onReturnFocus(); }}
         >
           <Dialog.Title className="sr-only">{heading}</Dialog.Title>
-          <EventProductPreview
-            eventId={eventId}
-            eventTitle={eventTitle}
-            preview={preview}
-            publicUrl={publicUrl}
-            embeddedPreviewUrl={embeddedPreviewUrl}
-            className="mx-auto w-full"
-            heightMode="fullscreen"
+          <EventPreviewViewport
+            title={eventTitle}
+            src={preview.surface === "studio-card" && preview.imageUrl ? undefined : embeddedPreviewUrl}
             onClose={onClose}
-          />
-          {preview.surface !== "studio-card" || !preview.imageUrl ? (
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                aria-label="Close preview"
-                title="Close preview"
-                className="absolute right-3 top-5 z-30 inline-flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-white/30 bg-black/60 text-white backdrop-blur-md transition-colors hover:bg-black/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:right-5 sm:top-6"
-              >
-                <X size={24} aria-hidden="true" />
-              </button>
-            </Dialog.Close>
-          ) : null}
+          >
+            <div className="flex min-h-[100dvh] items-center justify-center bg-slate-950 p-3">
+              <EventProductPreview
+                eventId={eventId}
+                eventTitle={eventTitle}
+                preview={preview}
+                publicUrl={publicUrl}
+                embeddedPreviewUrl={embeddedPreviewUrl}
+                className="mx-auto w-full"
+                heightMode="fullscreen"
+              />
+            </div>
+          </EventPreviewViewport>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
@@ -1644,8 +1662,26 @@ function OwnerDesignPanel({
   const [error, setError] = useState("");
   const isBusy = status === "previewing" || status === "saving";
   const hasDesignChanges = !designFormsMatch(form, baselineForm);
+  const registryOnlyChanges = isRegistryOnlyCardEdit(
+    changedCardEditFields(buildDesignEditFields(form), buildDesignEditFields(baselineForm)),
+  );
+  const canSaveChanges = !isBusy && (Boolean(candidate) || registryOnlyChanges);
   const canCancelDesignChanges =
     !isBusy && (hasDesignChanges || Boolean(candidate) || Boolean(error));
+
+  useUnsavedProgress({
+    dirty: hasDesignChanges || Boolean(candidate),
+    busy: isBusy,
+    save: async () => {
+      if (!candidate && !registryOnlyChanges) {
+        throw new Error("Preview your artwork changes before saving them. Your edits are still here.");
+      }
+      if (!await handleSaveChanges()) {
+        throw new Error("The card changes could not be saved. Your edits are still here; keep editing and try again.");
+      }
+    },
+    discard: handleCancelChanges,
+  });
 
   const persistedDesignKey = JSON.stringify({ eventId, eventData });
   useEffect(() => {
@@ -1744,7 +1780,8 @@ function OwnerDesignPanel({
         endTime: formatDesignTimeInput(details?.endTime) || form.endTime,
         venueName: firstString(details?.venueName, form.venueName),
         location: firstString(details?.location, form.location),
-        designIdea: firstString(details?.theme, form.designIdea),
+        registryLink: typeof details?.registryLink === "string" ? details.registryLink : form.registryLink,
+        designIdea: form.designIdea,
       };
       const nextFields = buildDesignEditFields(nextForm);
       setForm(nextForm);
@@ -1780,44 +1817,56 @@ function OwnerDesignPanel({
   }
 
   async function handleSaveChanges() {
-    if (!candidate || isBusy) return;
+    if (!canSaveChanges) return false;
 
     setStatus("saving");
     setError("");
 
     try {
+      const selectedCandidate = candidate || {
+        imageDataUrl: "",
+        fields: { ...buildDesignEditFields(form), registryLink: normalizeCardRegistryLink(form.registryLink) },
+        title: form.title,
+        invitationData: currentInvitationData,
+        positions: currentPositions,
+        details: null,
+        dateLine: preview.dateLine,
+        timeLine: preview.timeLine,
+        locationLine: preview.locationLine,
+      };
       const json = await requestCardEdit(eventId, {
         action: "save",
-        fields: changedCardEditFields(candidate.fields, buildDesignEditFields(baselineForm)),
-        imageDataUrl: candidate.imageDataUrl,
+        fields: changedCardEditFields(selectedCandidate.fields, buildDesignEditFields(baselineForm)),
+        imageDataUrl: selectedCandidate.imageDataUrl || undefined,
       });
 
-      const details = asRecord(json?.details) || candidate.details;
-      const nextImageUrl = firstString(json?.imageUrl, candidate.imageDataUrl);
-      const nextInvitationData = asRecord(json?.invitationData) || candidate.invitationData;
-      const nextPositions = asRecord(json?.positions) || candidate.positions;
-      const nextTitle = firstString(details?.eventTitle, json?.title, candidate.title);
+      const details = asRecord(json?.details) || selectedCandidate.details;
+      const nextImageUrl = firstString(json?.imageUrl, selectedCandidate.imageDataUrl, currentImageUrl);
+      const nextInvitationData = asRecord(json?.invitationData) || selectedCandidate.invitationData;
+      const nextPositions = asRecord(json?.positions) || selectedCandidate.positions;
+      const nextTitle = firstString(details?.eventTitle, json?.title, selectedCandidate.title);
       const nextDateLine =
         formatOwnerDateChipValue(
-          details?.eventDate || candidate.fields.eventDate,
-          inferOwnerEventYear(details?.eventDate || candidate.fields.eventDate),
-        ) || candidate.dateLine;
+          details?.eventDate || selectedCandidate.fields.eventDate,
+          inferOwnerEventYear(details?.eventDate || selectedCandidate.fields.eventDate),
+        ) || selectedCandidate.dateLine;
       const nextTimeLine =
-        formatOwnerTimeChipValue(details?.startTime || candidate.fields.startTime) ||
-        candidate.timeLine;
+        formatOwnerTimeChipValue(details?.startTime || selectedCandidate.fields.startTime) ||
+        selectedCandidate.timeLine;
       const nextLocationLine = firstString(
         details?.venueName,
         details?.locationName,
         details?.location,
-        candidate.locationLine,
+        selectedCandidate.locationLine,
       );
       const nextForm = {
         title: nextTitle,
-        eventDate: formatDesignDateInput(details?.eventDate) || candidate.fields.eventDate,
-        startTime: formatDesignTimeInput(details?.startTime) || candidate.fields.startTime,
-        endTime: formatDesignTimeInput(details?.endTime) || candidate.fields.endTime,
-        venueName: firstString(details?.venueName, candidate.fields.venueName),
-        location: firstString(details?.location, candidate.fields.location),
+        eventDate: formatDesignDateInput(details?.eventDate) || selectedCandidate.fields.eventDate,
+        startTime: formatDesignTimeInput(details?.startTime) || selectedCandidate.fields.startTime,
+        endTime: formatDesignTimeInput(details?.endTime) || selectedCandidate.fields.endTime,
+        venueName: firstString(details?.venueName, selectedCandidate.fields.venueName),
+        location: firstString(details?.location, selectedCandidate.fields.location),
+        registryLink: typeof details?.registryLink === "string" ? details.registryLink : selectedCandidate.fields.registryLink,
         designIdea: "",
       };
 
@@ -1840,9 +1889,11 @@ function OwnerDesignPanel({
         },
         persisted: true,
       });
+      return true;
     } catch (err) {
-      setStatus("ready");
+      setStatus(candidate ? "ready" : "idle");
       setError(err instanceof Error ? err.message : "The card changes could not be saved.");
+      return false;
     }
   }
 
@@ -1854,12 +1905,16 @@ function OwnerDesignPanel({
             <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
               <Palette size={20} aria-hidden="true" />
             </span>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-[0.66rem] font-black uppercase tracking-[0.16em] text-[#786bd6]">
                 Design
               </p>
               <h3 className="text-2xl font-semibold text-slate-950">Edit card</h3>
             </div>
+            <Link href={detailsEditHref} className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-violet-700 hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
+              <Pencil size={16} aria-hidden="true" />
+              Edit all details
+            </Link>
           </div>
 
           {!currentImageUrl ? (
@@ -1936,6 +1991,25 @@ function OwnerDesignPanel({
             </label>
 
             <label className="col-span-2 block text-xs font-black uppercase tracking-[0.13em] text-slate-500 md:col-span-3">
+              Registry link
+              <input
+                type="text"
+                inputMode="url"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                value={form.registryLink}
+                onChange={(event) => updateField("registryLink", event.target.value)}
+                placeholder="https://your-registry.com/your-event"
+                aria-describedby="card-registry-help"
+                className="mt-2 min-h-11 w-full rounded-2xl border border-violet-900/20 bg-white/62 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 shadow-[inset_0_1px_3px_rgba(76,29,149,0.20)] outline-none backdrop-blur-md transition focus:border-violet-500/40 focus:bg-white/80 focus:ring-4 focus:ring-violet-200/60"
+              />
+              <span id="card-registry-help" className="mt-2 block text-xs font-normal normal-case tracking-normal text-slate-600">
+                Opens from the Registry button. Save directly, or leave blank to remove the button. To change a link printed in the artwork, describe it below.
+              </span>
+            </label>
+
+            <label className="col-span-2 block text-xs font-black uppercase tracking-[0.13em] text-slate-500 md:col-span-3">
               Enter your change
               <input
                 value={form.designIdea}
@@ -1988,7 +2062,7 @@ function OwnerDesignPanel({
             <button
               type="button"
               onClick={handleSaveChanges}
-              disabled={!candidate || isBusy}
+              disabled={!canSaveChanges}
               className="inline-flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-violet-700 px-4 text-sm font-bold text-white shadow-[0_14px_30px_rgba(109,40,217,0.18)] transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:bg-slate-300 sm:px-5"
             >
               {status === "saving" ? (
@@ -2002,7 +2076,7 @@ function OwnerDesignPanel({
 
           {status === "previewing" ? (
             <p role="status" className="text-sm font-medium text-slate-600">
-              Updating your card artwork. This can take a few minutes. Keep this page open.
+              {registryOnlyChanges ? "Updating your card preview." : "Updating your card artwork. This can take a few minutes. Keep this page open."}
             </p>
           ) : null}
           {candidate && previewNotice && !error ? (

@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import Link from "next/link";
 import { type CSSProperties, type ReactNode, useCallback, useState } from "react";
 import EventCelebrationOverlay from "@/components/EventCelebrationOverlay";
+import LiveCardArtworkFrame from "@/components/studio/LiveCardArtworkFrame";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface, {
   isPosterFirstHeroCard,
@@ -23,6 +24,7 @@ type SharedStudioCardProps = {
   positions?: LiveCardButtonPositions | null;
   shareUrl?: string | null;
   returnHref?: string | null;
+  embeddedPreview?: boolean;
   celebrationKind?: EventCelebrationKind | null;
 };
 
@@ -84,12 +86,12 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
   return (
     <div className={props.className || ""} style={props.style}>
       <div
-        className={`relative mx-auto ${usesPosterArtFrame ? "bg-transparent" : "overflow-hidden rounded-[3rem] border border-white/10 bg-neutral-900 shadow-2xl shadow-purple-500/20"} ${
+        className={`relative mx-auto ${usesPosterArtFrame ? "bg-transparent" : "rounded-[3rem] bg-neutral-900"} ${
           props.frameClassName || ""
         }`}
         style={{ width: props.style?.width ? undefined : cardFrameWidth }}
       >
-        <div data-live-card-artwork className={`relative ${usesPosterArtFrame ? "aspect-[2/3] overflow-hidden rounded-[1.5rem] shadow-xl" : "aspect-[9/16]"} ${props.artworkClassName || ""}`}>
+        <LiveCardArtworkFrame imageUrl={props.imageUrl} className={`${usesPosterArtFrame ? "aspect-[2/3] rounded-[1.5rem]" : "aspect-[9/16] rounded-[inherit]"} ${props.artworkClassName || ""}`}>
         <img
           src={props.imageUrl}
           alt={props.title}
@@ -122,7 +124,7 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
             <X className="h-6 w-6 md:h-7 md:w-7" aria-hidden="true" />
           </button>
         ) : null}
-        </div>
+        </LiveCardArtworkFrame>
         {props.onClose && props.closeButtonPlacement !== "overlay" ? (
           <div className={`flex justify-end px-1 pt-2 ${usesPosterArtFrame ? "bg-transparent" : "bg-neutral-950"}`}>
             <button type="button" onClick={props.onClose} aria-label="Close preview"
@@ -174,7 +176,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-0 pt-2 md:py-6">
           <SharedStudioCardFrame
             {...props}
-            onClose={handleClose}
+            onClose={props.embeddedPreview ? undefined : handleClose}
             className="w-full max-w-[30rem]"
             frameClassName="max-md:!w-full !rounded-[1.5rem]"
           />

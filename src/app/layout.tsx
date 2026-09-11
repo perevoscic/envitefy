@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     "OCR event capture",
     "Envitefy",
   ],
-  manifest: "/manifest.webmanifest?v=v13",
+  manifest: "/manifest.webmanifest?v=v14",
   other: {
     "apple-mobile-web-app-capable": "yes",
     "apple-mobile-web-app-status-bar-style": "black-translucent",

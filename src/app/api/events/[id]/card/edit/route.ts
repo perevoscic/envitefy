@@ -22,6 +22,7 @@ import {
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { processBufferUpload } from "@/lib/media-upload";
 import { prepareCardEditPreviewImage, streamCardEditPreview } from "@/lib/studio/card-edit-preview";
+import { buildCardRegistryDataPatch, normalizeCardRegistryLink } from "@/lib/studio/card-registry";
 import { generateStudioInvitation } from "@/lib/studio/generate";
 import { parseDataUrlBase64 } from "@/utils/data-url";
 
@@ -46,6 +47,7 @@ const DESIGN_FIELD_MAPPINGS: DesignFieldMapping[] = [
   { inputKey: "location", detailKey: "location", editLabel: "address" },
   { inputKey: "rsvpContact", detailKey: "rsvpContact", editLabel: "RSVP contact" },
   { inputKey: "rsvpDeadline", detailKey: "rsvpDeadline", editLabel: "RSVP deadline" },
+  { inputKey: "registryLink", detailKey: "registryLink", editLabel: null },
   { inputKey: "theme", detailKey: "theme", editLabel: "requested card change" },
 ];
 
@@ -260,6 +262,19 @@ async function previewCardEdit(item: MediaItem, fields: Record<string, unknown>)
     return NextResponse.json({ error: "No design changes requested." }, { status: 400 });
   }
 
+  if (changedFields.every((field) => field.editLabel === null)) {
+    return NextResponse.json({
+      ok: true,
+      action: "preview",
+      title: item.data?.title || nextDetails.eventTitle,
+      imageDataUrl: item.url,
+      invitationData: { ...item.data, eventDetails: nextDetails },
+      positions: item.positions || null,
+      details: nextDetails,
+      warnings: [],
+    });
+  }
+
   const editPrompt = buildExplicitEditPrompt({
     changedFields,
     nextDetails,
@@ -305,7 +320,48 @@ async function saveCardEdit(params: {
   fields: Record<string, unknown>;
   imageDataUrl: string;
 }) {
-  const { nextDetails } = buildNextDetails(params.item, params.fields);
+  const { nextDetails, changedFields } = buildNextDetails(params.item, params.fields);
+  if (changedFields.length === 0) {
+    return NextResponse.json({ error: "No card changes requested." }, { status: 400 });
+  }
+
+  if (changedFields.every((field) => field.editLabel === null)) {
+    const existing = isRecord(params.existingData) ? params.existingData : {};
+    const studioCard = isRecord(existing.studioCard) ? existing.studioCard : {};
+    const previousInvitation = isRecord(studioCard.invitationData)
+      ? studioCard.invitationData : params.item.data;
+    const previousDetails = isRecord(previousInvitation?.eventDetails)
+      ? previousInvitation.eventDetails : params.item.details;
+    const invitationData = {
+      ...previousInvitation,
+      eventDetails: { ...previousDetails, registryLink: nextDetails.registryLink },
+    };
+    const dataPatch = {
+      ...buildCardRegistryDataPatch(existing, nextDetails.registryLink),
+      studioCard: {
+        ...studioCard,
+        imageUrl: params.item.url,
+        invitationData,
+        ...(isRecord(studioCard.eventDetails)
+          ? { eventDetails: { ...studioCard.eventDetails, registryLink: nextDetails.registryLink } }
+          : {}),
+      },
+    };
+    const updatedRow = await updateEventHistoryDataMerge(params.id, dataPatch);
+    invalidateHistoryAndDashboardForUser(params.userId);
+    await invalidateSharedHistoryViewers(params.id);
+    return NextResponse.json({
+      ok: true,
+      action: "save",
+      title: params.item.data?.title || nextDetails.eventTitle,
+      imageUrl: params.item.url,
+      invitationData,
+      positions: params.item.positions || null,
+      details: nextDetails,
+      event: updatedRow,
+    });
+  }
+
   const parsedImage = parseDataUrlBase64(params.imageDataUrl);
   if (!parsedImage) {
     return NextResponse.json(
@@ -337,7 +393,11 @@ async function saveCardEdit(params: {
     status: "ready",
   };
   const payload = buildStudioPublishPayload(nextItem, imageUrl);
-  const dataPatch = buildCardEditHistoryDataPatch(payload.data, params.existingData);
+  const dataPatch = {
+    ...buildCardEditHistoryDataPatch(payload.data, params.existingData),
+    ...(Object.hasOwn(params.fields, "registryLink")
+      ? buildCardRegistryDataPatch(params.existingData, nextDetails.registryLink) : {}),
+  };
 
   await updateEventHistoryTitle(params.id, payload.title);
   const updatedRow = await updateEventHistoryDataMerge(params.id, dataPatch);
@@ -375,6 +435,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const body = await req.json().catch(() => null);
     const fields = isRecord(body) && isRecord(body.fields) ? body.fields : {};
+    if (Object.hasOwn(fields, "registryLink")) {
+      if (typeof fields.registryLink !== "string") {
+        return NextResponse.json({ error: "Enter a valid registry link." }, { status: 400 });
+      }
+      try {
+        fields.registryLink = normalizeCardRegistryLink(fields.registryLink);
+      } catch (error) {
+        return NextResponse.json({ error: error instanceof Error ? error.message : "Invalid registry link." }, { status: 400 });
+      }
+    }
     const action = isRecord(body) ? readAction(body.action) : "preview";
     const item = createStudioMediaItemFromHistoryRow(existing);
     if (!item?.url) {
@@ -386,9 +456,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     if (action === "save") {
       const imageDataUrl = isRecord(body) ? readString(body.imageDataUrl) : "";
-      if (!imageDataUrl) {
-        return NextResponse.json({ error: "No updated card preview to save." }, { status: 400 });
-      }
       return await saveCardEdit({
         id,
         item,

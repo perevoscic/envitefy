@@ -1,4 +1,6 @@
 import { buildScanPersonalization, resolveSavedScanPresentation } from "../lib/ocr/personalization.ts";
+import type { CreationThreadSummary } from "../lib/concierge/types.ts";
+import { isEventDraft } from "../lib/event-draft-access.ts";
 
 export type CalendarProviderKey = "google" | "microsoft" | "apple";
 
@@ -8,6 +10,7 @@ export type SidebarPage =
   | "createEventOther"
   | "aiThreads"
   | "myEvents"
+  | "drafts"
   | "invitedEvents"
   | "admin"
   | "eventContext";
@@ -31,9 +34,68 @@ export type HistoryRow = {
   id: string;
   title: string;
   public_slug?: string | null;
-  created_at?: string;
+  created_at?: string | null;
   data?: unknown;
 };
+
+export type SidebarDraftItem = {
+  id: string;
+  title: string;
+  href: string;
+  eventId: string | null;
+  savedAt: string | null;
+};
+
+export function buildSidebarDraftItems({
+  history,
+  threads,
+  buildEditLink,
+  isInvitedEventLikeRecord,
+}: {
+  history: HistoryRow[];
+  threads: CreationThreadSummary[];
+  buildEditLink: (id: string, data: Record<string, unknown>, title: string) => string;
+  isInvitedEventLikeRecord: (data: Record<string, unknown>) => boolean;
+}): SidebarDraftItem[] {
+  const items: SidebarDraftItem[] = [];
+  const eventIds = new Set<string>();
+  const threadIds = new Set<string>();
+  for (const row of history) {
+    const data = asSidebarRecord(row.data);
+    if (!data) continue;
+    eventIds.add(row.id);
+    const concierge = asSidebarRecord(data.conciergeDraft);
+    const threadId = concierge?.creationSessionId || data.creationSessionId;
+    if (typeof threadId === "string") threadIds.add(threadId);
+    if (!isEventDraft(data) || isInvitedHistoryEvent(data, isInvitedEventLikeRecord)) continue;
+    items.push({
+      id: `event:${row.id}`,
+      eventId: row.id,
+      title: row.title || "Untitled event",
+      href: buildEditLink(row.id, data, row.title),
+      savedAt: typeof data.updatedAt === "string" ? data.updatedAt : row.created_at || null,
+    });
+  }
+  for (const thread of threads) {
+    const status = thread.status.trim().toLowerCase();
+    if (
+      ["published", "publishing", "archived", "canceled", "cancelled"].includes(status) ||
+      threadIds.has(thread.id) ||
+      (thread.savedEventId && eventIds.has(thread.savedEventId))
+    ) continue;
+    items.push({
+      id: `thread:${thread.id}`,
+      eventId: null,
+      title: thread.title || "Untitled event",
+      href: `/chat?thread=${encodeURIComponent(thread.id)}`,
+      savedAt: thread.updatedAt || thread.createdAt || null,
+    });
+  }
+  const savedTime = (value: string | null) => Date.parse(value || "") || 0;
+  return items.sort(
+    (a, b) => savedTime(b.savedAt) - savedTime(a.savedAt) || a.title.localeCompare(b.title),
+  );
+}
 
 export type InlineStyle = Record<string, string | number>;
 
