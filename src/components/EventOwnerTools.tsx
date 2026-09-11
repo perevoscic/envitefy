@@ -971,7 +971,7 @@ export default function EventOwnerTools({
           </div>
         </section>
 
-        <aside className="hidden min-w-0 lg:sticky lg:top-5 lg:flex lg:h-[calc(100dvh-2.5rem)] lg:translate-x-6 lg:items-start lg:justify-end lg:self-start xl:translate-x-10">
+        <aside className="hidden min-w-0 lg:sticky lg:top-5 lg:flex lg:h-[calc(100dvh-2.5rem)] lg:items-start lg:justify-end lg:self-start">
           <EventProductPreview
             eventId={eventId}
             eventTitle={currentEventTitle}

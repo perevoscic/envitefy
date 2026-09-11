@@ -66,7 +66,7 @@ test("owner workspace keeps sharing in the header and previews from the card", (
   assert.doesNotMatch(headerBlock[0], /sm:order-3/);
   assert.match(
     source,
-    /hidden min-w-0 lg:sticky lg:top-5 lg:flex lg:h-\[calc\(100dvh-2\.5rem\)\] lg:translate-x-6 lg:items-start lg:justify-end lg:self-start xl:translate-x-10/,
+    /hidden min-w-0 lg:sticky lg:top-5 lg:flex lg:h-\[calc\(100dvh-2\.5rem\)\] lg:items-start lg:justify-end lg:self-start/,
   );
   assert.match(source, /className="mx-auto w-full"/);
   assert.match(source, /<ArtworkPreviewDialog/);
