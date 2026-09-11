@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import EventCanvas from "@/components/EventCanvas";
 
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
@@ -3530,7 +3531,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     return (
       <div className="relative flex min-h-screen h-[100dvh] w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
-        <div
+        <EventCanvas
           {...previewTouchHandlers}
           aria-hidden={mobileMenuOpen ? true : undefined}
           className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
@@ -3573,7 +3574,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               )}
             </div>
           </div>
-        </div>
+        </EventCanvas>
 
         {mobileMenuOpen && (
           <div

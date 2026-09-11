@@ -860,22 +860,22 @@ export default function BirthdayExperienceBody({
         {guestNotes.length ? <dl className="mt-5 space-y-5">{guestNotes.map(({ key, label, value }) => <div key={key}><dt className="font-bold">{label}</dt><dd className="mt-1 whitespace-pre-line break-words">{value}</dd></div>)}</dl> : null}
       </StoryCard>
     ) : null,
-    schedule: (
+    schedule: event.schedule?.length ? (
       <ExperienceSchedule items={event.schedule || []} treatment={profile.scheduleTreatment} />
-    ),
-    gallery: (
+    ) : null,
+    gallery: event.gallery?.length ? (
       <ExperienceGallery photos={event.gallery || []} treatment={profile.galleryTreatment} />
-    ),
-    hosts: <ExperienceHosts hosts={event.hosts || []} treatment={profile.hostTreatment} />,
-    registry: <ExperienceRegistry registries={registries} />,
-    rsvp: (
+    ) : null,
+    hosts: event.hosts?.length ? <ExperienceHosts hosts={event.hosts || []} treatment={profile.hostTreatment} /> : null,
+    registry: registries.length ? <ExperienceRegistry registries={registries} /> : null,
+    rsvp: event.rsvpEnabled ? (
       <ExperienceRsvp
         enabled={event.rsvpEnabled}
         response={userRsvpResponse}
         deadline={event.rsvpDeadline}
         onRsvpClick={onRsvpClick}
       />
-    ),
+    ) : null,
   };
 
   return (

@@ -105,6 +105,8 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
 
 ## Feature Maps
 
+- Event canvas standard (September 11, 2026): the rendered event's own background color fills the surrounding canvas, page gutters, navigation and safe areas across public events and creation previews. Use `EventCanvas` with the shared event color registration; read the actual rendered page so changing the selected design updates the color. Keep template artwork and section surfaces intact, exclude thumbnails and editor controls, and restore app chrome when leaving the event.
+
 - Gymnastics footer preference (September 11, 2026): footer copy, links and social icons inherit each template's foreground text color, including on dark backgrounds. Use the shared branding and social links' `inheritColor` option; preserve the canonical Envitefy wordmark.
 
 - Event guest action placement (September 11, 2026): place the gymnastics event's Share and Add to calendar controls above the hero on desktop and mobile. Below 640px show icons only, with 44px touch targets and accessible action names; retain desktop labels and the selected calendar provider's accessible name. In mobile gymnastics owner views and editor previews, put the Edit pencil immediately to the right of Add to calendar in this same row, with a matching 44px target. This supersedes the top-navbar pencil placement for gymnastics; keep the existing edit menu and protected return navigation.

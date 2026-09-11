@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import EventCanvas from "@/components/EventCanvas";
 
 import { useEventProgress, useProgressNavigation } from "@/components/UnsavedProgressProvider";
 import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
@@ -3224,7 +3225,7 @@ const App = () => {
 
   return (
     <div className="relative flex min-h-screen h-[100dvh] w-full bg-[#F8F5FF] font-sans text-slate-900 overflow-hidden">
-      <div
+      <EventCanvas
         ref={previewRef}
         {...previewTouchHandlers}
         className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide scroll-smooth bg-[#f0f2f5] flex justify-center"
@@ -3909,7 +3910,7 @@ const App = () => {
           </div>
           <div className="h-20"></div>
         </div>
-      </div>
+      </EventCanvas>
 
       {mobileMenuOpen && (
         <div

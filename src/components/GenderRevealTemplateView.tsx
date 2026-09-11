@@ -1,6 +1,8 @@
 "use client";
 
 import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
+import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
+import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
 import { parseEventGuestDate, normalizeEventGuestPlanning } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
@@ -570,6 +572,7 @@ export default function GenderRevealTemplateView({
 
             <EventGuestPlanningNotes value={normalizeEventGuestPlanning(eventData.guestPlanning)} inverse={textClass.includes("text-white")} />
 
+            <TemplateBodyLayout presentation={getTemplateBodyPresentation("gender-reveal", design.id)}>
             {detailItems.length > 0 ? (
               <section id="details" className="border-t border-white/10 px-6 py-10 md:px-10">
                 <h2 className={`mb-6 text-center text-2xl ${accentClass}`} style={titleStyle}>
@@ -862,6 +865,7 @@ export default function GenderRevealTemplateView({
               </section>
             ) : null}
 
+            </TemplateBodyLayout>
             <footer className="border-t border-white/10 px-6 py-8 text-center text-xs uppercase tracking-[0.28em] ">
               <EnvitefyEventBranding category="Gender Reveals" inverse={textClass.includes("text-white")} />
             </footer>

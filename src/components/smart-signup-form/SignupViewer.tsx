@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
+import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
+import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
 import { getSignupDesign } from "@/lib/signup-designs";
 import { signupResponsesCsv } from "@/lib/signup-export";
 import { resolveSignupThemeStyle } from "@/lib/signup-themes";
@@ -812,11 +814,11 @@ const SignupViewer: React.FC<Props> = ({
           to claim a slot after accepting their invitation.
         </p>
       )}
-      <div className="space-y-5">
+      <TemplateBodyLayout fallbackClassName="space-y-5" presentation={getTemplateBodyPresentation("signup-forms", form.appearance?.designId || (form.appearance?.themeId ? `editorial--${form.appearance.themeId}` : undefined))}>
         {form.sections.map((section) => (
           <div key={section.id} className="space-y-3" data-signup-section>
             <div>
-              <h3 className="text-base font-semibold text-[var(--signup-text)]">{section.title}</h3>
+              <h3 data-template-section-title className="text-base font-semibold text-[var(--signup-text)]">{section.title}</h3>
               {section.description && (
                 <p className="text-sm text-[var(--signup-muted)] mt-1">{section.description}</p>
               )}
@@ -937,7 +939,7 @@ const SignupViewer: React.FC<Props> = ({
             </div>
           </div>
         ))}
-      </div>
+      </TemplateBodyLayout>
 
       {canInteract && (!myResponse || editingResponse) && (
         <form

@@ -1,5 +1,7 @@
 // @ts-nocheck
 "use client";
+import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
+import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
 import { buildCalendarDescription } from "@/lib/calendar-description";
 
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
@@ -4920,6 +4922,7 @@ export default function SimpleTemplateView({
               </div>
 
               {/* Details Section */}
+              <TemplateBodyLayout presentation={normalizedCategory === "sport_event" || currentData?.templateEditor?.category === "sport-events" ? getTemplateBodyPresentation("sport-events", currentData?.bodyDesignId || currentData?.templateEditor?.templateId || `${currentData?.customFields?.sport || currentData?.activityProfile || "football"}--stadium`) : undefined}>
               <section
                 id="details"
                 className="py-10 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
@@ -5277,6 +5280,7 @@ export default function SimpleTemplateView({
               )}
 
               {/* Footer */}
+              </TemplateBodyLayout>
               <footer className={`text-center py-8 border-t border-white/10 mt-1 ${textClass}`}>
                 <EnvitefyEventBranding category={normalizedCategory} inverse={isDarkBackground} />
               </footer>

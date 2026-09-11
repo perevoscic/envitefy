@@ -1,0 +1,2430 @@
+{
+  "weddings": {},
+  "birthdays": {
+    "joyful-jamboree": {
+      "layout": "gallery",
+      "surface": "offset",
+      "heading": "ribbon",
+      "flow": "memories"
+    },
+    "whimsical-wonder": {
+      "layout": "book",
+      "surface": "bound",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "party-parade": {
+      "layout": "gallery",
+      "surface": "bracket",
+      "heading": "side",
+      "flow": "memories"
+    },
+    "happy-hooray": {
+      "layout": "poster",
+      "surface": "ticket",
+      "heading": "number",
+      "flow": "invitation"
+    },
+    "party-palooza": {
+      "layout": "gallery",
+      "surface": "frame",
+      "heading": "ribbon",
+      "flow": "memories"
+    },
+    "sweet-surprise": {
+      "layout": "columns",
+      "surface": "double",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "junior-baker-studio": {
+      "layout": "gallery",
+      "surface": "notch",
+      "heading": "side",
+      "flow": "memories"
+    },
+    "little-firehouse": {
+      "layout": "gallery",
+      "surface": "arch",
+      "heading": "masthead",
+      "flow": "memories"
+    },
+    "dinosaur-dig-lab": {
+      "layout": "book",
+      "surface": "double",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "enchanted-forest-tea": {
+      "layout": "stagger",
+      "surface": "petal",
+      "heading": "number",
+      "flow": "people"
+    },
+    "outer-space-mission-control": {
+      "layout": "rail",
+      "surface": "notch",
+      "heading": "underline",
+      "flow": "practical"
+    },
+    "rainbow-art-studio": {
+      "layout": "gallery",
+      "surface": "ticket",
+      "heading": "side",
+      "flow": "memories"
+    },
+    "construction-crew-yard": {
+      "layout": "gallery",
+      "surface": "petal",
+      "heading": "caption",
+      "flow": "memories"
+    },
+    "undersea-mermaid-cove": {
+      "layout": "islands",
+      "surface": "wave",
+      "heading": "caption",
+      "flow": "memories"
+    },
+    "soccer-goal-celebration": {
+      "layout": "mosaic",
+      "surface": "cut",
+      "heading": "ribbon",
+      "flow": "practical"
+    },
+    "ballet-rehearsal-party": {
+      "layout": "gallery",
+      "surface": "cut",
+      "heading": "number",
+      "flow": "memories"
+    },
+    "superhero-training-hq": {
+      "layout": "path",
+      "surface": "ticket",
+      "heading": "ribbon",
+      "flow": "practical"
+    },
+    "race-car-pit-stop": {
+      "layout": "mosaic",
+      "surface": "pennant",
+      "heading": "ribbon",
+      "flow": "practical"
+    },
+    "woodland-camping-night": {
+      "layout": "stagger",
+      "surface": "arch",
+      "heading": "side",
+      "flow": "people"
+    },
+    "ice-cream-parlor": {
+      "layout": "ledger",
+      "surface": "double",
+      "heading": "ribbon",
+      "flow": "people"
+    },
+    "farmyard-harvest": {
+      "layout": "editorial",
+      "surface": "outline",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "science-lab-spark": {
+      "layout": "gallery",
+      "surface": "capsule",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "princess-garden-ball": {
+      "layout": "stagger",
+      "surface": "stone",
+      "heading": "masthead",
+      "flow": "people"
+    },
+    "monster-truck-arena": {
+      "layout": "gallery",
+      "surface": "ruled",
+      "heading": "masthead",
+      "flow": "memories"
+    },
+    "mini-golf-clubhouse": {
+      "layout": "mosaic",
+      "surface": "bracket",
+      "heading": "underline",
+      "flow": "practical"
+    },
+    "teddy-bear-picnic": {
+      "layout": "book",
+      "surface": "frame",
+      "heading": "number",
+      "flow": "invitation"
+    },
+    "safari-expedition-camp": {
+      "layout": "book",
+      "surface": "outline",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "glow-dance-party": {
+      "layout": "gallery",
+      "surface": "double",
+      "heading": "caption",
+      "flow": "memories"
+    },
+    "train-station-adventure": {
+      "layout": "book",
+      "surface": "arch",
+      "heading": "ribbon",
+      "flow": "invitation"
+    },
+    "airplane-travel-club": {
+      "layout": "book",
+      "surface": "ticket",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "comic-book-creator": {
+      "layout": "book",
+      "surface": "petal",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "puppy-adoption-party": {
+      "layout": "book",
+      "surface": "cut",
+      "heading": "masthead",
+      "flow": "invitation"
+    },
+    "beach-surf-shack": {
+      "layout": "islands",
+      "surface": "oval",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "winter-snow-lodge": {
+      "layout": "islands",
+      "surface": "capsule",
+      "heading": "number",
+      "flow": "memories"
+    },
+    "pottery-playhouse": {
+      "layout": "gallery",
+      "surface": "wave",
+      "heading": "number",
+      "flow": "memories"
+    },
+    "friendship-bead-club": {
+      "layout": "mosaic",
+      "surface": "ticket",
+      "heading": "underline",
+      "flow": "practical"
+    },
+    "slime-squish-studio": {
+      "layout": "gallery",
+      "surface": "bound",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "magic-school-owls": {
+      "layout": "rail",
+      "surface": "facet",
+      "heading": "number",
+      "flow": "practical"
+    },
+    "roller-rink-rainbow": {
+      "layout": "mosaic",
+      "surface": "arch",
+      "heading": "number",
+      "flow": "practical"
+    },
+    "pixel-builder-world": {
+      "layout": "rail",
+      "surface": "frame",
+      "heading": "masthead",
+      "flow": "practical"
+    },
+    "plushie-sleepover": {
+      "layout": "editorial",
+      "surface": "ruled",
+      "heading": "masthead",
+      "flow": "invitation"
+    },
+    "kpop-stage-stars": {
+      "layout": "islands",
+      "surface": "arch",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "basketball-court-crew": {
+      "layout": "mosaic",
+      "surface": "frame",
+      "heading": "masthead",
+      "flow": "practical"
+    },
+    "skatepark-stickers": {
+      "layout": "mosaic",
+      "surface": "petal",
+      "heading": "side",
+      "flow": "practical"
+    },
+    "ninja-obstacle-dojo": {
+      "layout": "mosaic",
+      "surface": "capsule",
+      "heading": "caption",
+      "flow": "practical"
+    },
+    "detective-clue-club": {
+      "layout": "book",
+      "surface": "capsule",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "dragon-cloud-quest": {
+      "layout": "islands",
+      "surface": "ticket",
+      "heading": "masthead",
+      "flow": "memories"
+    },
+    "axolotl-lagoon": {
+      "layout": "islands",
+      "surface": "frame",
+      "heading": "side",
+      "flow": "memories"
+    },
+    "capybara-orange-spa": {
+      "layout": "gallery",
+      "surface": "oval",
+      "heading": "masthead",
+      "flow": "memories"
+    },
+    "bunny-carrot-garden": {
+      "layout": "stagger",
+      "surface": "scallop",
+      "heading": "number",
+      "flow": "people"
+    },
+    "pony-ribbon-rodeo": {
+      "layout": "mosaic",
+      "surface": "ruled",
+      "heading": "number",
+      "flow": "practical"
+    },
+    "butterfly-conservatory": {
+      "layout": "stagger",
+      "surface": "ticket",
+      "heading": "ribbon",
+      "flow": "people"
+    },
+    "pizza-chef-club": {
+      "layout": "book",
+      "surface": "ruled",
+      "heading": "ribbon",
+      "flow": "invitation"
+    },
+    "sushi-roll-studio": {
+      "layout": "gallery",
+      "surface": "terrace",
+      "heading": "ribbon",
+      "flow": "memories"
+    },
+    "lemonade-market-day": {
+      "layout": "gallery",
+      "surface": "scallop",
+      "heading": "caption",
+      "flow": "memories"
+    },
+    "cherry-picnic-bows": {
+      "layout": "gallery",
+      "surface": "pennant",
+      "heading": "number",
+      "flow": "memories"
+    },
+    "storybook-library": {
+      "layout": "book",
+      "surface": "bracket",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "board-game-bonanza": {
+      "layout": "poster",
+      "surface": "pennant",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "mini-olympics-field-day": {
+      "layout": "mosaic",
+      "surface": "offset",
+      "heading": "masthead",
+      "flow": "practical"
+    },
+    "garden-brunch-bloom": {
+      "layout": "stagger",
+      "surface": "frame",
+      "heading": "caption",
+      "flow": "people"
+    },
+    "parisian-patisserie-thirty": {
+      "layout": "book",
+      "surface": "offset",
+      "heading": "number",
+      "flow": "invitation"
+    },
+    "coastal-white-linen-fifty": {
+      "layout": "islands",
+      "surface": "petal",
+      "heading": "ribbon",
+      "flow": "memories"
+    },
+    "disco-cowgirl-night": {
+      "layout": "poster",
+      "surface": "offset",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "bookshop-candle-dinner-forty-five": {
+      "layout": "book",
+      "surface": "wave",
+      "heading": "masthead",
+      "flow": "invitation"
+    },
+    "spa-day-sage-forty": {
+      "layout": "stagger",
+      "surface": "cut",
+      "heading": "underline",
+      "flow": "people"
+    },
+    "mahogany-wine-table-fifty-five": {
+      "layout": "ledger",
+      "surface": "ruled",
+      "heading": "underline",
+      "flow": "people"
+    },
+    "sunset-pool-cabana-thirty-five": {
+      "layout": "islands",
+      "surface": "cut",
+      "heading": "caption",
+      "flow": "memories"
+    },
+    "sculptural-floral-forty": {
+      "layout": "stagger",
+      "surface": "capsule",
+      "heading": "masthead",
+      "flow": "people"
+    },
+    "emerald-cocktail-forty-five": {
+      "layout": "gallery",
+      "surface": "stone",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "pearl-dinner-fifty": {
+      "layout": "ledger",
+      "surface": "arch",
+      "heading": "underline",
+      "flow": "people"
+    },
+    "lavender-tea-sixty": {
+      "layout": "stagger",
+      "surface": "ruled",
+      "heading": "side",
+      "flow": "people"
+    },
+    "golden-jubilee-seventy": {
+      "layout": "book",
+      "surface": "oval",
+      "heading": "ribbon",
+      "flow": "invitation"
+    },
+    "whiskey-library-forty-five": {
+      "layout": "book",
+      "surface": "notch",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "vintage-garage-forty": {
+      "layout": "mosaic",
+      "surface": "double",
+      "heading": "side",
+      "flow": "practical"
+    },
+    "stadium-suite-fifty": {
+      "layout": "mosaic",
+      "surface": "wave",
+      "heading": "ribbon",
+      "flow": "practical"
+    },
+    "golf-club-forty-five": {
+      "layout": "mosaic",
+      "surface": "bound",
+      "heading": "caption",
+      "flow": "practical"
+    },
+    "backyard-bbq-fifty": {
+      "layout": "ledger",
+      "surface": "scallop",
+      "heading": "ribbon",
+      "flow": "people"
+    },
+    "craft-brew-hall-thirty": {
+      "layout": "gallery",
+      "surface": "facet",
+      "heading": "masthead",
+      "flow": "memories"
+    },
+    "black-tie-forty": {
+      "layout": "editorial",
+      "surface": "terrace",
+      "heading": "ribbon",
+      "flow": "invitation"
+    },
+    "bourbon-bluegrass-sixty": {
+      "layout": "poster",
+      "surface": "facet",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "coastal-sailing-fifty": {
+      "layout": "islands",
+      "surface": "ruled",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "modern-steakhouse-forty-five": {
+      "layout": "ledger",
+      "surface": "ticket",
+      "heading": "masthead",
+      "flow": "people"
+    },
+    "vinyl-listening-thirty-five": {
+      "layout": "gallery",
+      "surface": "outline",
+      "heading": "side",
+      "flow": "memories"
+    },
+    "mountain-lodge-fifty-five": {
+      "layout": "book",
+      "surface": "terrace",
+      "heading": "number",
+      "flow": "invitation"
+    },
+    "poker-night-forty": {
+      "layout": "stagger",
+      "surface": "bracket",
+      "heading": "ribbon",
+      "flow": "people"
+    },
+    "classic-roadster-seventy": {
+      "layout": "book",
+      "surface": "scallop",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "observatory-night-sixty-five": {
+      "layout": "rail",
+      "surface": "capsule",
+      "heading": "caption",
+      "flow": "practical"
+    },
+    "mediterranean-dinner-forty": {
+      "layout": "ledger",
+      "surface": "frame",
+      "heading": "side",
+      "flow": "people"
+    },
+    "rooftop-city-lights-thirty": {
+      "layout": "poster",
+      "surface": "arch",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "modern-minimal-fifty": {
+      "layout": "editorial",
+      "surface": "petal",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "tropical-sunset-forty-five": {
+      "layout": "islands",
+      "surface": "bracket",
+      "heading": "masthead",
+      "flow": "memories"
+    },
+    "art-gallery-cocktail-thirty-five": {
+      "layout": "path",
+      "surface": "offset",
+      "heading": "caption",
+      "flow": "memories"
+    },
+    "backyard-long-table-sixty": {
+      "layout": "stagger",
+      "surface": "offset",
+      "heading": "caption",
+      "flow": "people"
+    },
+    "eighties-retro-dance-forty": {
+      "layout": "poster",
+      "surface": "frame",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "black-white-photo-fifty": {
+      "layout": "book",
+      "surface": "pennant",
+      "heading": "masthead",
+      "flow": "invitation"
+    },
+    "night-market-thirty": {
+      "layout": "book",
+      "surface": "stone",
+      "heading": "side",
+      "flow": "invitation"
+    }
+  },
+  "anniversaries": {
+    "garden-vow-renewal-anniversary": {
+      "layout": "stagger",
+      "surface": "petal",
+      "heading": "number",
+      "flow": "people"
+    },
+    "linen-sunday-fourth-anniversary": {
+      "layout": "stagger",
+      "surface": "arch",
+      "heading": "side",
+      "flow": "people"
+    },
+    "iron-rose-sixth-anniversary": {
+      "layout": "stagger",
+      "surface": "stone",
+      "heading": "masthead",
+      "flow": "people"
+    },
+    "bronze-hour-eighth-anniversary": {
+      "layout": "editorial",
+      "surface": "outline",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "pottery-studio-ninth-anniversary": {
+      "layout": "stagger",
+      "surface": "scallop",
+      "heading": "number",
+      "flow": "people"
+    },
+    "lace-heirloom-thirteenth-anniversary": {
+      "layout": "stagger",
+      "surface": "ticket",
+      "heading": "ribbon",
+      "flow": "people"
+    },
+    "ivory-orchid-fourteenth-anniversary": {
+      "layout": "editorial",
+      "surface": "ruled",
+      "heading": "masthead",
+      "flow": "invitation"
+    },
+    "sapphire-evening-anniversary": {
+      "layout": "columns",
+      "surface": "double",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "emerald-conservatory-anniversary": {
+      "layout": "stagger",
+      "surface": "frame",
+      "heading": "caption",
+      "flow": "people"
+    },
+    "diamond-light-sixtieth-anniversary": {
+      "layout": "stagger",
+      "surface": "cut",
+      "heading": "underline",
+      "flow": "people"
+    },
+    "hydrangea-house-anniversary": {
+      "layout": "book",
+      "surface": "bound",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "vinyl-love-song-anniversary": {
+      "layout": "gallery",
+      "surface": "offset",
+      "heading": "ribbon",
+      "flow": "memories"
+    },
+    "champagne-midnight-anniversary": {
+      "layout": "poster",
+      "surface": "ticket",
+      "heading": "number",
+      "flow": "invitation"
+    }
+  },
+  "baby-showers": {
+    "marigold-courtyard": {
+      "layout": "stagger",
+      "surface": "petal",
+      "heading": "number",
+      "flow": "people"
+    },
+    "bunny-burrow-brunch": {
+      "layout": "stagger",
+      "surface": "arch",
+      "heading": "side",
+      "flow": "people"
+    },
+    "little-lighthouse": {
+      "layout": "islands",
+      "surface": "wave",
+      "heading": "caption",
+      "flow": "memories"
+    },
+    "fig-and-fern": {
+      "layout": "stagger",
+      "surface": "stone",
+      "heading": "masthead",
+      "flow": "people"
+    },
+    "duckling-puddle-party": {
+      "layout": "stagger",
+      "surface": "scallop",
+      "heading": "number",
+      "flow": "people"
+    },
+    "swan-lake-serenade": {
+      "layout": "stagger",
+      "surface": "ticket",
+      "heading": "ribbon",
+      "flow": "people"
+    },
+    "clementine-sunroom": {
+      "layout": "ledger",
+      "surface": "double",
+      "heading": "ribbon",
+      "flow": "people"
+    },
+    "hummingbird-haven": {
+      "layout": "stagger",
+      "surface": "frame",
+      "heading": "caption",
+      "flow": "people"
+    },
+    "moon-jelly-drift": {
+      "layout": "rail",
+      "surface": "notch",
+      "heading": "underline",
+      "flow": "practical"
+    },
+    "cherry-bow-social": {
+      "layout": "gallery",
+      "surface": "offset",
+      "heading": "ribbon",
+      "flow": "memories"
+    },
+    "alpine-fawn": {
+      "layout": "stagger",
+      "surface": "cut",
+      "heading": "underline",
+      "flow": "people"
+    },
+    "hibiscus-hideaway": {
+      "layout": "stagger",
+      "surface": "capsule",
+      "heading": "masthead",
+      "flow": "people"
+    },
+    "pocket-robot": {
+      "layout": "rail",
+      "surface": "facet",
+      "heading": "number",
+      "flow": "practical"
+    },
+    "lavender-laundry": {
+      "layout": "stagger",
+      "surface": "ruled",
+      "heading": "side",
+      "flow": "people"
+    },
+    "turtle-tidepool": {
+      "layout": "islands",
+      "surface": "oval",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "strawberry-stitch": {
+      "layout": "islands",
+      "surface": "capsule",
+      "heading": "number",
+      "flow": "memories"
+    },
+    "desert-tortoise": {
+      "layout": "stagger",
+      "surface": "bracket",
+      "heading": "ribbon",
+      "flow": "people"
+    },
+    "origami-crane-wishes": {
+      "layout": "book",
+      "surface": "bound",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "blueberry-breakfast": {
+      "layout": "ledger",
+      "surface": "ruled",
+      "heading": "underline",
+      "flow": "people"
+    },
+    "foxglove-fairy-door": {
+      "layout": "stagger",
+      "surface": "offset",
+      "heading": "caption",
+      "flow": "people"
+    },
+    "polka-dot-puppy": {
+      "layout": "editorial",
+      "surface": "outline",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "magnolia-morning": {
+      "layout": "gallery",
+      "surface": "bracket",
+      "heading": "side",
+      "flow": "memories"
+    },
+    "tiny-train-ticket": {
+      "layout": "path",
+      "surface": "ticket",
+      "heading": "ribbon",
+      "flow": "practical"
+    },
+    "water-lily-welcome": {
+      "layout": "stagger",
+      "surface": "double",
+      "heading": "number",
+      "flow": "people"
+    },
+    "bubblegum-carousel": {
+      "layout": "gallery",
+      "surface": "frame",
+      "heading": "ribbon",
+      "flow": "memories"
+    },
+    "olive-oil-bambino": {
+      "layout": "ledger",
+      "surface": "arch",
+      "heading": "underline",
+      "flow": "people"
+    },
+    "little-bookbindery": {
+      "layout": "stagger",
+      "surface": "wave",
+      "heading": "underline",
+      "flow": "people"
+    },
+    "dandelion-post": {
+      "layout": "stagger",
+      "surface": "bound",
+      "heading": "masthead",
+      "flow": "people"
+    },
+    "koala-eucalyptus-club": {
+      "layout": "stagger",
+      "surface": "oval",
+      "heading": "side",
+      "flow": "people"
+    },
+    "sugarplum-music-box": {
+      "layout": "poster",
+      "surface": "ticket",
+      "heading": "number",
+      "flow": "invitation"
+    },
+    "tiny-tennis-club": {
+      "layout": "poster",
+      "surface": "pennant",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "pumpkin-patch-promise": {
+      "layout": "islands",
+      "surface": "arch",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "sea-horse-garden": {
+      "layout": "stagger",
+      "surface": "notch",
+      "heading": "ribbon",
+      "flow": "people"
+    },
+    "silk-ribbon-atelier": {
+      "layout": "columns",
+      "surface": "double",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "cloud-nine-airmail": {
+      "layout": "rail",
+      "surface": "frame",
+      "heading": "masthead",
+      "flow": "practical"
+    },
+    "chrysanthemum-tea": {
+      "layout": "stagger",
+      "surface": "terrace",
+      "heading": "caption",
+      "flow": "people"
+    },
+    "maple-mouse-house": {
+      "layout": "stagger",
+      "surface": "pennant",
+      "heading": "underline",
+      "flow": "people"
+    },
+    "snowdrop-first-light": {
+      "layout": "islands",
+      "surface": "ticket",
+      "heading": "masthead",
+      "flow": "memories"
+    },
+    "confetti-clay-play": {
+      "layout": "gallery",
+      "surface": "notch",
+      "heading": "side",
+      "flow": "memories"
+    },
+    "pomegranate-blessing": {
+      "layout": "columns",
+      "surface": "arch",
+      "heading": "ribbon",
+      "flow": "invitation"
+    },
+    "meadow-lamb": {
+      "layout": "stagger",
+      "surface": "facet",
+      "heading": "side",
+      "flow": "people"
+    },
+    "peony-parasol": {
+      "layout": "stagger",
+      "surface": "outline",
+      "heading": "ribbon",
+      "flow": "people"
+    },
+    "saffron-sunset-camper": {
+      "layout": "book",
+      "surface": "double",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "jasmine-crescent": {
+      "layout": "rail",
+      "surface": "capsule",
+      "heading": "caption",
+      "flow": "practical"
+    },
+    "little-artichoke": {
+      "layout": "columns",
+      "surface": "petal",
+      "heading": "underline",
+      "flow": "people"
+    },
+    "penguin-postcard": {
+      "layout": "islands",
+      "surface": "frame",
+      "heading": "side",
+      "flow": "memories"
+    },
+    "golden-ginkgo": {
+      "layout": "columns",
+      "surface": "stone",
+      "heading": "side",
+      "flow": "people"
+    },
+    "macaron-moonwalk": {
+      "layout": "rail",
+      "surface": "arch",
+      "heading": "number",
+      "flow": "practical"
+    },
+    "willow-wishing-boat": {
+      "layout": "islands",
+      "surface": "petal",
+      "heading": "ribbon",
+      "flow": "memories"
+    },
+    "apricot-quilt-club": {
+      "layout": "book",
+      "surface": "scallop",
+      "heading": "caption",
+      "flow": "people"
+    },
+    "gingham-goose": {
+      "layout": "terraces",
+      "surface": "bound",
+      "heading": "side",
+      "flow": "memories"
+    }
+  },
+  "bridal-showers": {
+    "botanical-sage": {
+      "layout": "stagger",
+      "surface": "petal",
+      "heading": "number",
+      "flow": "people"
+    },
+    "rose-quartz": {
+      "layout": "book",
+      "surface": "bound",
+      "heading": "side",
+      "flow": "invitation"
+    }
+  },
+  "gender-reveal": {
+    "citrus-secret": {
+      "layout": "stagger",
+      "surface": "petal",
+      "heading": "number",
+      "flow": "people"
+    },
+    "fig-garden-gathering": {
+      "layout": "stagger",
+      "surface": "arch",
+      "heading": "side",
+      "flow": "people"
+    },
+    "gingham-goose": {
+      "layout": "stagger",
+      "surface": "stone",
+      "heading": "masthead",
+      "flow": "people"
+    },
+    "cherry-soda-surprise": {
+      "layout": "editorial",
+      "surface": "outline",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "porcelain-wishes": {
+      "layout": "ledger",
+      "surface": "double",
+      "heading": "ribbon",
+      "flow": "people"
+    },
+    "firefly-meadow": {
+      "layout": "stagger",
+      "surface": "scallop",
+      "heading": "number",
+      "flow": "people"
+    },
+    "little-lunar-landing": {
+      "layout": "rail",
+      "surface": "notch",
+      "heading": "underline",
+      "flow": "practical"
+    },
+    "apricot-atelier": {
+      "layout": "editorial",
+      "surface": "ruled",
+      "heading": "masthead",
+      "flow": "invitation"
+    },
+    "otterly-awaited": {
+      "layout": "book",
+      "surface": "bound",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "wildflower-press": {
+      "layout": "stagger",
+      "surface": "ticket",
+      "heading": "ribbon",
+      "flow": "people"
+    },
+    "carousel-whisper": {
+      "layout": "book",
+      "surface": "double",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "seasalt-letter": {
+      "layout": "islands",
+      "surface": "wave",
+      "heading": "caption",
+      "flow": "memories"
+    },
+    "plum-orbit": {
+      "layout": "rail",
+      "surface": "facet",
+      "heading": "number",
+      "flow": "practical"
+    },
+    "marigold-courtyard": {
+      "layout": "stagger",
+      "surface": "frame",
+      "heading": "caption",
+      "flow": "people"
+    },
+    "tiny-ticket": {
+      "layout": "editorial",
+      "surface": "terrace",
+      "heading": "ribbon",
+      "flow": "invitation"
+    },
+    "origami-crane-club": {
+      "layout": "book",
+      "surface": "frame",
+      "heading": "number",
+      "flow": "invitation"
+    },
+    "maple-mitten": {
+      "layout": "book",
+      "surface": "outline",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "lavender-lantern": {
+      "layout": "stagger",
+      "surface": "cut",
+      "heading": "underline",
+      "flow": "people"
+    },
+    "confetti-confidant": {
+      "layout": "stagger",
+      "surface": "capsule",
+      "heading": "masthead",
+      "flow": "people"
+    },
+    "bluebell-burrow": {
+      "layout": "book",
+      "surface": "arch",
+      "heading": "ribbon",
+      "flow": "invitation"
+    },
+    "saffron-supper": {
+      "layout": "ledger",
+      "surface": "ruled",
+      "heading": "underline",
+      "flow": "people"
+    },
+    "rainbow-ribbons": {
+      "layout": "islands",
+      "surface": "oval",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "snowdrop-secret": {
+      "layout": "stagger",
+      "surface": "ruled",
+      "heading": "side",
+      "flow": "people"
+    },
+    "rocket-pocket": {
+      "layout": "rail",
+      "surface": "frame",
+      "heading": "masthead",
+      "flow": "practical"
+    },
+    "rooftop-reverie": {
+      "layout": "editorial",
+      "surface": "petal",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "pistachio-patisserie": {
+      "layout": "stagger",
+      "surface": "bracket",
+      "heading": "ribbon",
+      "flow": "people"
+    },
+    "whale-song": {
+      "layout": "islands",
+      "surface": "capsule",
+      "heading": "number",
+      "flow": "memories"
+    },
+    "secret-greenhouse": {
+      "layout": "stagger",
+      "surface": "offset",
+      "heading": "caption",
+      "flow": "people"
+    },
+    "sunbeam-studio": {
+      "layout": "book",
+      "surface": "ticket",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "balloon-cartographer": {
+      "layout": "islands",
+      "surface": "arch",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "rosewater-ripple": {
+      "layout": "editorial",
+      "surface": "arch",
+      "heading": "masthead",
+      "flow": "invitation"
+    },
+    "little-acorn-almanac": {
+      "layout": "book",
+      "surface": "petal",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "midnight-macaron": {
+      "layout": "rail",
+      "surface": "capsule",
+      "heading": "caption",
+      "flow": "practical"
+    },
+    "coral-cove": {
+      "layout": "islands",
+      "surface": "ticket",
+      "heading": "masthead",
+      "flow": "memories"
+    },
+    "storybook-suitcase": {
+      "layout": "book",
+      "surface": "cut",
+      "heading": "masthead",
+      "flow": "invitation"
+    },
+    "dahlia-daydream": {
+      "layout": "stagger",
+      "surface": "double",
+      "heading": "number",
+      "flow": "people"
+    },
+    "terracotta-tidings": {
+      "layout": "editorial",
+      "surface": "ticket",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "juniper-cabin": {
+      "layout": "editorial",
+      "surface": "frame",
+      "heading": "ribbon",
+      "flow": "invitation"
+    },
+    "little-record": {
+      "layout": "islands",
+      "surface": "frame",
+      "heading": "side",
+      "flow": "memories"
+    },
+    "butterfly-conservatory": {
+      "layout": "stagger",
+      "surface": "wave",
+      "heading": "underline",
+      "flow": "people"
+    },
+    "honeyed-horizon": {
+      "layout": "columns",
+      "surface": "double",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "cloud-nine-cinema": {
+      "layout": "gallery",
+      "surface": "offset",
+      "heading": "ribbon",
+      "flow": "memories"
+    },
+    "raspberry-rendezvous": {
+      "layout": "editorial",
+      "surface": "cut",
+      "heading": "number",
+      "flow": "invitation"
+    },
+    "waterlily-wonder": {
+      "layout": "stagger",
+      "surface": "bound",
+      "heading": "masthead",
+      "flow": "people"
+    },
+    "brass-compass": {
+      "layout": "gallery",
+      "surface": "bracket",
+      "heading": "side",
+      "flow": "memories"
+    },
+    "plush-panda-promise": {
+      "layout": "book",
+      "surface": "capsule",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "golden-ginkgo": {
+      "layout": "stagger",
+      "surface": "oval",
+      "heading": "side",
+      "flow": "people"
+    },
+    "sherbet-skies": {
+      "layout": "rail",
+      "surface": "arch",
+      "heading": "number",
+      "flow": "practical"
+    },
+    "storybook-swan": {
+      "layout": "mosaic",
+      "surface": "cut",
+      "heading": "ribbon",
+      "flow": "practical"
+    },
+    "olive-branch-oath": {
+      "layout": "stagger",
+      "surface": "notch",
+      "heading": "ribbon",
+      "flow": "people"
+    },
+    "velvet-mushroom": {
+      "layout": "stagger",
+      "surface": "terrace",
+      "heading": "caption",
+      "flow": "people"
+    },
+    "prism-keepsake": {
+      "layout": "editorial",
+      "surface": "capsule",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "first-light-fable": {
+      "layout": "editorial",
+      "surface": "bracket",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "pearl-in-the-tide": {
+      "layout": "path",
+      "surface": "wave",
+      "heading": "ribbon",
+      "flow": "memories"
+    }
+  },
+  "gymnastics": {},
+  "sport-events": {
+    "football--club": {
+      "layout": "mosaic",
+      "surface": "cut",
+      "heading": "ribbon",
+      "flow": "practical"
+    },
+    "football--tournament": {
+      "layout": "mosaic",
+      "surface": "pennant",
+      "heading": "ribbon",
+      "flow": "practical"
+    },
+    "baseball--stadium": {
+      "layout": "mosaic",
+      "surface": "bracket",
+      "heading": "underline",
+      "flow": "practical"
+    },
+    "baseball--club": {
+      "layout": "poster",
+      "surface": "ticket",
+      "heading": "number",
+      "flow": "invitation"
+    },
+    "baseball--tournament": {
+      "layout": "editorial",
+      "surface": "outline",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "softball--stadium": {
+      "layout": "mosaic",
+      "surface": "ticket",
+      "heading": "underline",
+      "flow": "practical"
+    },
+    "softball--club": {
+      "layout": "poster",
+      "surface": "pennant",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "softball--tournament": {
+      "layout": "editorial",
+      "surface": "ruled",
+      "heading": "masthead",
+      "flow": "invitation"
+    },
+    "basketball--stadium": {
+      "layout": "mosaic",
+      "surface": "arch",
+      "heading": "number",
+      "flow": "practical"
+    },
+    "basketball--club": {
+      "layout": "mosaic",
+      "surface": "frame",
+      "heading": "masthead",
+      "flow": "practical"
+    },
+    "basketball--tournament": {
+      "layout": "mosaic",
+      "surface": "petal",
+      "heading": "side",
+      "flow": "practical"
+    },
+    "soccer--stadium": {
+      "layout": "mosaic",
+      "surface": "capsule",
+      "heading": "caption",
+      "flow": "practical"
+    },
+    "soccer--club": {
+      "layout": "mosaic",
+      "surface": "ruled",
+      "heading": "number",
+      "flow": "practical"
+    },
+    "soccer--tournament": {
+      "layout": "mosaic",
+      "surface": "offset",
+      "heading": "masthead",
+      "flow": "practical"
+    },
+    "volleyball--stadium": {
+      "layout": "mosaic",
+      "surface": "double",
+      "heading": "side",
+      "flow": "practical"
+    },
+    "volleyball--club": {
+      "layout": "ledger",
+      "surface": "double",
+      "heading": "ribbon",
+      "flow": "people"
+    },
+    "volleyball--tournament": {
+      "layout": "ledger",
+      "surface": "ruled",
+      "heading": "underline",
+      "flow": "people"
+    },
+    "hockey--stadium": {
+      "layout": "mosaic",
+      "surface": "wave",
+      "heading": "ribbon",
+      "flow": "practical"
+    },
+    "hockey--club": {
+      "layout": "ledger",
+      "surface": "arch",
+      "heading": "underline",
+      "flow": "people"
+    },
+    "hockey--tournament": {
+      "layout": "ledger",
+      "surface": "scallop",
+      "heading": "ribbon",
+      "flow": "people"
+    },
+    "tennis--stadium": {
+      "layout": "rail",
+      "surface": "notch",
+      "heading": "underline",
+      "flow": "practical"
+    },
+    "tennis--club": {
+      "layout": "rail",
+      "surface": "facet",
+      "heading": "number",
+      "flow": "practical"
+    },
+    "tennis--tournament": {
+      "layout": "rail",
+      "surface": "frame",
+      "heading": "masthead",
+      "flow": "practical"
+    },
+    "track-field--stadium": {
+      "layout": "mosaic",
+      "surface": "bound",
+      "heading": "caption",
+      "flow": "practical"
+    },
+    "track-field--club": {
+      "layout": "poster",
+      "surface": "offset",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "track-field--tournament": {
+      "layout": "editorial",
+      "surface": "terrace",
+      "heading": "ribbon",
+      "flow": "invitation"
+    },
+    "swimming--stadium": {
+      "layout": "islands",
+      "surface": "wave",
+      "heading": "caption",
+      "flow": "memories"
+    },
+    "swimming--club": {
+      "layout": "islands",
+      "surface": "oval",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "swimming--tournament": {
+      "layout": "islands",
+      "surface": "capsule",
+      "heading": "number",
+      "flow": "memories"
+    },
+    "wrestling--stadium": {
+      "layout": "rail",
+      "surface": "capsule",
+      "heading": "caption",
+      "flow": "practical"
+    },
+    "wrestling--club": {
+      "layout": "rail",
+      "surface": "arch",
+      "heading": "number",
+      "flow": "practical"
+    },
+    "wrestling--tournament": {
+      "layout": "rail",
+      "surface": "ticket",
+      "heading": "underline",
+      "flow": "practical"
+    },
+    "lacrosse--stadium": {
+      "layout": "mosaic",
+      "surface": "oval",
+      "heading": "number",
+      "flow": "practical"
+    },
+    "lacrosse--club": {
+      "layout": "ledger",
+      "surface": "ticket",
+      "heading": "masthead",
+      "flow": "people"
+    },
+    "lacrosse--tournament": {
+      "layout": "ledger",
+      "surface": "frame",
+      "heading": "side",
+      "flow": "people"
+    },
+    "cheerleading--stadium": {
+      "layout": "mosaic",
+      "surface": "notch",
+      "heading": "underline",
+      "flow": "practical"
+    },
+    "cheerleading--club": {
+      "layout": "poster",
+      "surface": "facet",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "cheerleading--tournament": {
+      "layout": "editorial",
+      "surface": "petal",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "dance--stadium": {
+      "layout": "mosaic",
+      "surface": "terrace",
+      "heading": "masthead",
+      "flow": "practical"
+    },
+    "dance--club": {
+      "layout": "poster",
+      "surface": "arch",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "dance--tournament": {
+      "layout": "poster",
+      "surface": "frame",
+      "heading": "underline",
+      "flow": "invitation"
+    }
+  },
+  "signup-forms": {
+    "editorial--game-day": {
+      "layout": "ledger",
+      "surface": "double",
+      "heading": "ribbon",
+      "flow": "people"
+    },
+    "editorial--community-garden": {
+      "layout": "stagger",
+      "surface": "petal",
+      "heading": "number",
+      "flow": "people"
+    },
+    "editorial--celebrate-together": {
+      "layout": "stagger",
+      "surface": "arch",
+      "heading": "side",
+      "flow": "people"
+    },
+    "fall-and-seasonal--fall-scene": {
+      "layout": "islands",
+      "surface": "wave",
+      "heading": "caption",
+      "flow": "memories"
+    },
+    "fall-and-seasonal--fall-fun-2": {
+      "layout": "islands",
+      "surface": "oval",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "fall-and-seasonal--harvest-table": {
+      "layout": "islands",
+      "surface": "capsule",
+      "heading": "number",
+      "flow": "memories"
+    },
+    "fall-and-seasonal--fall-forest": {
+      "layout": "stagger",
+      "surface": "stone",
+      "heading": "masthead",
+      "flow": "people"
+    },
+    "fall-and-seasonal--fall-food-drive": {
+      "layout": "islands",
+      "surface": "arch",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "fall-and-seasonal--fall-gathering": {
+      "layout": "islands",
+      "surface": "ticket",
+      "heading": "masthead",
+      "flow": "memories"
+    },
+    "fall-and-seasonal--corn-maze": {
+      "layout": "islands",
+      "surface": "frame",
+      "heading": "side",
+      "flow": "memories"
+    },
+    "fall-and-seasonal--autumn-blessings": {
+      "layout": "islands",
+      "surface": "petal",
+      "heading": "ribbon",
+      "flow": "memories"
+    },
+    "fall-and-seasonal--thanksgiving-feast": {
+      "layout": "islands",
+      "surface": "cut",
+      "heading": "caption",
+      "flow": "memories"
+    },
+    "fall-and-seasonal--friendsgiving": {
+      "layout": "islands",
+      "surface": "ruled",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "fall-and-seasonal--fall-food": {
+      "layout": "islands",
+      "surface": "bracket",
+      "heading": "masthead",
+      "flow": "memories"
+    },
+    "fall-and-seasonal--fall-leaves": {
+      "layout": "islands",
+      "surface": "offset",
+      "heading": "side",
+      "flow": "memories"
+    },
+    "fall-and-seasonal--fall-y-all": {
+      "layout": "islands",
+      "surface": "double",
+      "heading": "ribbon",
+      "flow": "memories"
+    },
+    "fall-and-seasonal--fall-festival": {
+      "layout": "islands",
+      "surface": "bound",
+      "heading": "number",
+      "flow": "memories"
+    },
+    "fall-and-seasonal--fall-pumpkins": {
+      "layout": "islands",
+      "surface": "notch",
+      "heading": "masthead",
+      "flow": "memories"
+    },
+    "church-and-community--service-project": {
+      "layout": "editorial",
+      "surface": "outline",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "church-and-community--community-picnic": {
+      "layout": "ledger",
+      "surface": "ruled",
+      "heading": "underline",
+      "flow": "people"
+    },
+    "church-and-community--bible-study": {
+      "layout": "editorial",
+      "surface": "ruled",
+      "heading": "masthead",
+      "flow": "invitation"
+    },
+    "church-and-community--mission-trip": {
+      "layout": "editorial",
+      "surface": "terrace",
+      "heading": "ribbon",
+      "flow": "invitation"
+    },
+    "church-and-community--church-gathering": {
+      "layout": "editorial",
+      "surface": "petal",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "church-and-community--volunteer-sign-up": {
+      "layout": "editorial",
+      "surface": "arch",
+      "heading": "masthead",
+      "flow": "invitation"
+    },
+    "church-and-community--worship-team": {
+      "layout": "ledger",
+      "surface": "arch",
+      "heading": "underline",
+      "flow": "people"
+    },
+    "church-and-community--sunday-school": {
+      "layout": "editorial",
+      "surface": "ticket",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "church-and-community--fundraiser": {
+      "layout": "editorial",
+      "surface": "frame",
+      "heading": "ribbon",
+      "flow": "invitation"
+    },
+    "church-and-community--food-drive": {
+      "layout": "ledger",
+      "surface": "scallop",
+      "heading": "ribbon",
+      "flow": "people"
+    },
+    "sports-and-recreation--swim-team": {
+      "layout": "mosaic",
+      "surface": "cut",
+      "heading": "ribbon",
+      "flow": "practical"
+    },
+    "sports-and-recreation--cheer-squad": {
+      "layout": "mosaic",
+      "surface": "pennant",
+      "heading": "ribbon",
+      "flow": "practical"
+    },
+    "sports-and-recreation--track-meet": {
+      "layout": "mosaic",
+      "surface": "bracket",
+      "heading": "underline",
+      "flow": "practical"
+    },
+    "sports-and-recreation--baseball-team": {
+      "layout": "mosaic",
+      "surface": "ticket",
+      "heading": "underline",
+      "flow": "practical"
+    },
+    "sports-and-recreation--sports-banquet": {
+      "layout": "mosaic",
+      "surface": "arch",
+      "heading": "number",
+      "flow": "practical"
+    },
+    "sports-and-recreation--gymnastics": {
+      "layout": "mosaic",
+      "surface": "frame",
+      "heading": "masthead",
+      "flow": "practical"
+    },
+    "sports-and-recreation--fitness-class": {
+      "layout": "mosaic",
+      "surface": "petal",
+      "heading": "side",
+      "flow": "practical"
+    },
+    "sports-and-recreation--soccer-game": {
+      "layout": "mosaic",
+      "surface": "capsule",
+      "heading": "caption",
+      "flow": "practical"
+    },
+    "sports-and-recreation--basketball-practice": {
+      "layout": "mosaic",
+      "surface": "ruled",
+      "heading": "number",
+      "flow": "practical"
+    },
+    "sports-and-recreation--golf-tournament": {
+      "layout": "mosaic",
+      "surface": "offset",
+      "heading": "masthead",
+      "flow": "practical"
+    },
+    "fundraising-and-food--car-wash": {
+      "layout": "ledger",
+      "surface": "ticket",
+      "heading": "masthead",
+      "flow": "people"
+    },
+    "fundraising-and-food--bake-sale": {
+      "layout": "ledger",
+      "surface": "frame",
+      "heading": "side",
+      "flow": "people"
+    },
+    "fundraising-and-food--charity-gala": {
+      "layout": "ledger",
+      "surface": "petal",
+      "heading": "ribbon",
+      "flow": "people"
+    },
+    "fundraising-and-food--restaurant-night": {
+      "layout": "ledger",
+      "surface": "cut",
+      "heading": "caption",
+      "flow": "people"
+    },
+    "fundraising-and-food--food-pantry": {
+      "layout": "ledger",
+      "surface": "capsule",
+      "heading": "number",
+      "flow": "people"
+    },
+    "fundraising-and-food--auction-event": {
+      "layout": "ledger",
+      "surface": "bracket",
+      "heading": "masthead",
+      "flow": "people"
+    },
+    "fundraising-and-food--donation-drive": {
+      "layout": "ledger",
+      "surface": "offset",
+      "heading": "side",
+      "flow": "people"
+    },
+    "fundraising-and-food--vendor-fair": {
+      "layout": "ledger",
+      "surface": "wave",
+      "heading": "caption",
+      "flow": "people"
+    },
+    "fundraising-and-food--raffle": {
+      "layout": "ledger",
+      "surface": "bound",
+      "heading": "number",
+      "flow": "people"
+    },
+    "fundraising-and-food--potluck-dinner": {
+      "layout": "ledger",
+      "surface": "oval",
+      "heading": "underline",
+      "flow": "people"
+    },
+    "family-and-personal--anniversary-celebration": {
+      "layout": "editorial",
+      "surface": "cut",
+      "heading": "number",
+      "flow": "invitation"
+    },
+    "family-and-personal--family-event": {
+      "layout": "editorial",
+      "surface": "capsule",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "family-and-personal--housewarming": {
+      "layout": "editorial",
+      "surface": "bracket",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "family-and-personal--birthday-party": {
+      "layout": "gallery",
+      "surface": "offset",
+      "heading": "ribbon",
+      "flow": "memories"
+    },
+    "family-and-personal--block-party": {
+      "layout": "gallery",
+      "surface": "bracket",
+      "heading": "side",
+      "flow": "memories"
+    },
+    "family-and-personal--wedding": {
+      "layout": "editorial",
+      "surface": "offset",
+      "heading": "ribbon",
+      "flow": "invitation"
+    },
+    "family-and-personal--baby-shower": {
+      "layout": "editorial",
+      "surface": "double",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "family-and-personal--game-night": {
+      "layout": "editorial",
+      "surface": "wave",
+      "heading": "number",
+      "flow": "invitation"
+    },
+    "family-and-personal--bridal-shower": {
+      "layout": "editorial",
+      "surface": "bound",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "family-and-personal--family-holiday": {
+      "layout": "ledger",
+      "surface": "notch",
+      "heading": "masthead",
+      "flow": "people"
+    },
+    "business-and-professional--conference-schedule": {
+      "layout": "editorial",
+      "surface": "oval",
+      "heading": "masthead",
+      "flow": "invitation"
+    },
+    "business-and-professional--client-meeting": {
+      "layout": "editorial",
+      "surface": "notch",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "business-and-professional--team-lunch": {
+      "layout": "ledger",
+      "surface": "terrace",
+      "heading": "side",
+      "flow": "people"
+    },
+    "business-and-professional--corporate-event": {
+      "layout": "editorial",
+      "surface": "scallop",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "business-and-professional--workshop": {
+      "layout": "gallery",
+      "surface": "frame",
+      "heading": "ribbon",
+      "flow": "memories"
+    },
+    "business-and-professional--networking-night": {
+      "layout": "editorial",
+      "surface": "pennant",
+      "heading": "number",
+      "flow": "invitation"
+    },
+    "business-and-professional--professional-gathering": {
+      "layout": "editorial",
+      "surface": "stone",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "business-and-professional--office-meeting": {
+      "layout": "editorial",
+      "surface": "facet",
+      "heading": "masthead",
+      "flow": "invitation"
+    },
+    "business-and-professional--training-session": {
+      "layout": "path",
+      "surface": "ticket",
+      "heading": "ribbon",
+      "flow": "practical"
+    },
+    "other-special-interest--tech-event": {
+      "layout": "stagger",
+      "surface": "outline",
+      "heading": "ribbon",
+      "flow": "memories"
+    },
+    "other-special-interest--political-campaign": {
+      "layout": "path",
+      "surface": "stone",
+      "heading": "masthead",
+      "flow": "practical"
+    },
+    "other-special-interest--gaming-tournament": {
+      "layout": "stagger",
+      "surface": "ruled",
+      "heading": "side",
+      "flow": "memories"
+    },
+    "other-special-interest--environment-and-cleanup": {
+      "layout": "stagger",
+      "surface": "terrace",
+      "heading": "caption",
+      "flow": "memories"
+    },
+    "other-special-interest--senior-services": {
+      "layout": "stagger",
+      "surface": "ticket",
+      "heading": "ribbon",
+      "flow": "memories"
+    },
+    "other-special-interest--travel-group": {
+      "layout": "path",
+      "surface": "bracket",
+      "heading": "ribbon",
+      "flow": "practical"
+    },
+    "other-special-interest--real-estate-open-house": {
+      "layout": "stagger",
+      "surface": "frame",
+      "heading": "caption",
+      "flow": "memories"
+    },
+    "other-special-interest--arts-and-culture": {
+      "layout": "gallery",
+      "surface": "notch",
+      "heading": "side",
+      "flow": "memories"
+    },
+    "other-special-interest--pets-and-animals": {
+      "layout": "stagger",
+      "surface": "cut",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "general--hoa-meeting": {
+      "layout": "stagger",
+      "surface": "capsule",
+      "heading": "masthead",
+      "flow": "memories"
+    },
+    "general--ad-hoc-meeting": {
+      "layout": "stagger",
+      "surface": "bracket",
+      "heading": "ribbon",
+      "flow": "memories"
+    },
+    "general--board-meeting": {
+      "layout": "stagger",
+      "surface": "offset",
+      "heading": "caption",
+      "flow": "memories"
+    },
+    "general--team-planning-session": {
+      "layout": "ledger",
+      "surface": "pennant",
+      "heading": "caption",
+      "flow": "people"
+    },
+    "general--volunteer-orientation": {
+      "layout": "stagger",
+      "surface": "double",
+      "heading": "number",
+      "flow": "memories"
+    },
+    "general--town-hall-meeting": {
+      "layout": "stagger",
+      "surface": "wave",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "general--community-discussion": {
+      "layout": "ledger",
+      "surface": "stone",
+      "heading": "number",
+      "flow": "people"
+    },
+    "general--staff-training": {
+      "layout": "path",
+      "surface": "bound",
+      "heading": "masthead",
+      "flow": "practical"
+    },
+    "general--committee-meeting": {
+      "layout": "stagger",
+      "surface": "bound",
+      "heading": "masthead",
+      "flow": "memories"
+    },
+    "general--monthly-meetup": {
+      "layout": "stagger",
+      "surface": "oval",
+      "heading": "side",
+      "flow": "memories"
+    },
+    "general--project-kickoff": {
+      "layout": "stagger",
+      "surface": "notch",
+      "heading": "ribbon",
+      "flow": "memories"
+    },
+    "general--workshop-registration": {
+      "layout": "gallery",
+      "surface": "arch",
+      "heading": "masthead",
+      "flow": "memories"
+    },
+    "parties-and-events--birthday-party": {
+      "layout": "gallery",
+      "surface": "ticket",
+      "heading": "side",
+      "flow": "memories"
+    },
+    "parties-and-events--wedding": {
+      "layout": "gallery",
+      "surface": "petal",
+      "heading": "caption",
+      "flow": "memories"
+    },
+    "parties-and-events--baby-shower": {
+      "layout": "gallery",
+      "surface": "cut",
+      "heading": "number",
+      "flow": "memories"
+    },
+    "parties-and-events--game-night": {
+      "layout": "gallery",
+      "surface": "capsule",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "parties-and-events--bridal-shower": {
+      "layout": "gallery",
+      "surface": "ruled",
+      "heading": "masthead",
+      "flow": "memories"
+    },
+    "parties-and-events--family-holiday": {
+      "layout": "gallery",
+      "surface": "double",
+      "heading": "caption",
+      "flow": "memories"
+    },
+    "parties-and-events--holiday-party": {
+      "layout": "gallery",
+      "surface": "wave",
+      "heading": "number",
+      "flow": "memories"
+    },
+    "parties-and-events--graduation-party": {
+      "layout": "gallery",
+      "surface": "bound",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "parties-and-events--retirement-party": {
+      "layout": "gallery",
+      "surface": "oval",
+      "heading": "masthead",
+      "flow": "memories"
+    },
+    "parties-and-events--engagement-party": {
+      "layout": "gallery",
+      "surface": "terrace",
+      "heading": "ribbon",
+      "flow": "memories"
+    },
+    "health-and-fitness--fitness-class": {
+      "layout": "stagger",
+      "surface": "scallop",
+      "heading": "number",
+      "flow": "memories"
+    },
+    "health-and-fitness--yoga-class": {
+      "layout": "stagger",
+      "surface": "pennant",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "health-and-fitness--pilates-class": {
+      "layout": "stagger",
+      "surface": "facet",
+      "heading": "side",
+      "flow": "memories"
+    },
+    "health-and-fitness--spin-class": {
+      "layout": "columns",
+      "surface": "outline",
+      "heading": "caption",
+      "flow": "practical"
+    },
+    "health-and-fitness--zumba-class": {
+      "layout": "columns",
+      "surface": "ruled",
+      "heading": "ribbon",
+      "flow": "practical"
+    },
+    "health-and-fitness--bootcamp-class": {
+      "layout": "path",
+      "surface": "arch",
+      "heading": "side",
+      "flow": "practical"
+    },
+    "health-and-fitness--dance-class": {
+      "layout": "poster",
+      "surface": "ticket",
+      "heading": "number",
+      "flow": "invitation"
+    },
+    "health-and-fitness--morning-run": {
+      "layout": "columns",
+      "surface": "terrace",
+      "heading": "number",
+      "flow": "practical"
+    },
+    "health-and-fitness--cycling-club": {
+      "layout": "poster",
+      "surface": "pennant",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "health-and-fitness--crossfit-session": {
+      "layout": "columns",
+      "surface": "petal",
+      "heading": "underline",
+      "flow": "practical"
+    },
+    "health-and-fitness--martial-arts-class": {
+      "layout": "gallery",
+      "surface": "scallop",
+      "heading": "caption",
+      "flow": "memories"
+    },
+    "health-and-fitness--boxing-class": {
+      "layout": "columns",
+      "surface": "arch",
+      "heading": "ribbon",
+      "flow": "practical"
+    },
+    "health-and-fitness--swimming-lessons": {
+      "layout": "columns",
+      "surface": "ticket",
+      "heading": "caption",
+      "flow": "practical"
+    },
+    "health-and-fitness--tennis-club": {
+      "layout": "poster",
+      "surface": "offset",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "health-and-fitness--basketball-league": {
+      "layout": "mosaic",
+      "surface": "double",
+      "heading": "side",
+      "flow": "practical"
+    },
+    "health-and-fitness--volleyball-league": {
+      "layout": "columns",
+      "surface": "frame",
+      "heading": "number",
+      "flow": "practical"
+    },
+    "health-and-fitness--wellness-workshop": {
+      "layout": "gallery",
+      "surface": "pennant",
+      "heading": "number",
+      "flow": "memories"
+    },
+    "clubs-and-groups--book-club": {
+      "layout": "book",
+      "surface": "bound",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--running-club": {
+      "layout": "poster",
+      "surface": "facet",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--bike-club": {
+      "layout": "poster",
+      "surface": "arch",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--hiking-club.png": {
+      "layout": "poster",
+      "surface": "frame",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--rock-climbing-club": {
+      "layout": "poster",
+      "surface": "petal",
+      "heading": "masthead",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--swim-club": {
+      "layout": "poster",
+      "surface": "cut",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--soccer-club": {
+      "layout": "mosaic",
+      "surface": "wave",
+      "heading": "ribbon",
+      "flow": "practical"
+    },
+    "clubs-and-groups--baseball-club": {
+      "layout": "poster",
+      "surface": "capsule",
+      "heading": "ribbon",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--basketball-club": {
+      "layout": "mosaic",
+      "surface": "bound",
+      "heading": "caption",
+      "flow": "practical"
+    },
+    "clubs-and-groups--football-club": {
+      "layout": "mosaic",
+      "surface": "oval",
+      "heading": "number",
+      "flow": "practical"
+    },
+    "clubs-and-groups--tennis-club": {
+      "layout": "poster",
+      "surface": "ruled",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--volleyball-club": {
+      "layout": "poster",
+      "surface": "bracket",
+      "heading": "number",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--golf-club": {
+      "layout": "mosaic",
+      "surface": "notch",
+      "heading": "underline",
+      "flow": "practical"
+    },
+    "clubs-and-groups--cheerleading-club": {
+      "layout": "poster",
+      "surface": "double",
+      "heading": "masthead",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--dance-club": {
+      "layout": "poster",
+      "surface": "wave",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--drive-group": {
+      "layout": "poster",
+      "surface": "bound",
+      "heading": "ribbon",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--fisherman-group": {
+      "layout": "poster",
+      "surface": "oval",
+      "heading": "caption",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--horseback-riding-group": {
+      "layout": "poster",
+      "surface": "notch",
+      "heading": "number",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--bird-watching-group.png": {
+      "layout": "poster",
+      "surface": "terrace",
+      "heading": "underline",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--gardening-group": {
+      "layout": "columns",
+      "surface": "stone",
+      "heading": "side",
+      "flow": "people"
+    },
+    "clubs-and-groups--reading-group": {
+      "layout": "poster",
+      "surface": "scallop",
+      "heading": "masthead",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--writing-group": {
+      "layout": "poster",
+      "surface": "stone",
+      "heading": "ribbon",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--cooking-group": {
+      "layout": "ledger",
+      "surface": "facet",
+      "heading": "underline",
+      "flow": "people"
+    },
+    "clubs-and-groups--baking-group": {
+      "layout": "ledger",
+      "surface": "outline",
+      "heading": "masthead",
+      "flow": "people"
+    },
+    "clubs-and-groups--painting-group": {
+      "layout": "poster",
+      "surface": "outline",
+      "heading": "number",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--pottery-group": {
+      "layout": "gallery",
+      "surface": "stone",
+      "heading": "underline",
+      "flow": "memories"
+    },
+    "clubs-and-groups--knitting-group": {
+      "layout": "mosaic",
+      "surface": "facet",
+      "heading": "number",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--crocheting-group": {
+      "layout": "mosaic",
+      "surface": "terrace",
+      "heading": "masthead",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--sewing-group": {
+      "layout": "mosaic",
+      "surface": "scallop",
+      "heading": "side",
+      "flow": "invitation"
+    },
+    "clubs-and-groups--quilting-group": {
+      "layout": "mosaic",
+      "surface": "stone",
+      "heading": "caption",
+      "flow": "invitation"
+    }
+  }
+}

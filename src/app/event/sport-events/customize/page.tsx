@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import EventCanvas from "@/components/EventCanvas";
 
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
@@ -29,6 +30,8 @@ import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
+import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
+import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { buildEventPath } from "@/utils/event-url";
 import { persistImageMediaValue as persistExistingImage } from "@/utils/media-upload-client";
@@ -809,6 +812,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
             rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
             numberOfGuests: 0,
             templateId: config.slug,
+            bodyDesignId: `${sportPreset.key}--${style || "stadium"}`,
             templateConfig: {
               displayName: config.displayName,
               categoryLabel: config.categoryLabel || config.displayName,
@@ -916,6 +920,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       config.rsvpCopy,
       router,
       themeId,
+      sportPreset.key,
+      style,
     ]);
 
     const rsvpCopy = {
@@ -1394,7 +1400,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
 
     return (
       <div className="relative flex min-h-screen h-[100dvh] w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
-        <div
+        <EventCanvas
           {...previewTouchHandlers}
           className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
           style={{
@@ -1474,6 +1480,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                   )}
                 </div>
 
+                <TemplateBodyLayout presentation={getTemplateBodyPresentation("sport-events", `${sportPreset.key}--${style || "stadium"}`)}>
                 <section id="details" className="py-10 border-t border-white/10 px-6 md:px-10">
                   <h2 className={`text-2xl mb-3 ${accentClass}`} style={headingFontStyle}>
                     Details
@@ -1658,13 +1665,14 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                   </section>
                 )}
 
+                </TemplateBodyLayout>
                 <footer className={`text-center py-8 border-t border-white/10 mt-1 ${textClass}`}>
                   <EnvitefyEventBranding category="Sports" inverse={isDarkBackground} />
                 </footer>
               </div>
             </div>
           </div>
-        </div>
+        </EventCanvas>
 
         {mobileMenuOpen && (
           <div

@@ -1,5 +1,7 @@
 "use client";
 import BridalShowerPreview from "@/components/templates/BridalShowerPreview";
+import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
+import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
 
 import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
 import { parseEventGuestDate, normalizeEventGuestPlanning } from "@/lib/event-guest-planning";
@@ -378,9 +380,10 @@ export default function BabyShowerTemplateView({
             <EventGuestPlanningNotes value={normalizeEventGuestPlanning(eventData.guestPlanning)} inverse={inverse} />
 
             <span id="details" />
+            <TemplateBodyLayout presentation={getTemplateBodyPresentation(isBridal ? "bridal-showers" : "baby-showers", isBridal ? eventData.templateId : design?.id)}>
             {/* Hosted By Section */}
             {hosts.length > 0 && (
-              <section className={`text-center py-12 border-t border-white/10 ${textClass}`}>
+              <section id="hosts" className={`text-center py-12 border-t border-white/10 ${textClass}`}>
                 <h2 className={`text-2xl mb-6 ${accentClass}`} style={{ fontFamily: headingFont }}>
                   Hosted By
                 </h2>
@@ -397,7 +400,7 @@ export default function BabyShowerTemplateView({
 
             {/* Location Section */}
             {locationLabel && (
-              <section className={`text-center py-12 border-t border-white/10 ${textClass}`}>
+              <section id="map" className={`text-center py-12 border-t border-white/10 ${textClass}`}>
                 <h2 className={`text-2xl mb-4 ${accentClass}`} style={{ fontFamily: headingFont }}>
                   Location
                 </h2>
@@ -408,6 +411,7 @@ export default function BabyShowerTemplateView({
             {/* Info Fields Section - Expected Arrival, Baby's Gender, RSVP By */}
             {(expectingDate || gender || rsvpDeadline) && (
               <div
+                id="arrival"
                 className={`px-6 md:px-10 py-6 md:py-8 border-t border-white/10 space-y-6 text-center ${textClass}`}
               >
                 {expectingDate && (
@@ -440,6 +444,7 @@ export default function BabyShowerTemplateView({
             {/* {isBridal ? "Celebration details" : "About Baby"} Section */}
             {babyNote && (
               <section
+                id="story"
                 className={`max-w-2xl mx-auto text-center p-6 md:p-8 border-t border-white/10 ${textClass}`}
               >
                 <h2
@@ -462,6 +467,7 @@ export default function BabyShowerTemplateView({
             {/* About Mom Section */}
             {momNote && (
               <section
+                id="notes"
                 className={`max-w-2xl mx-auto text-center p-6 md:p-8 border-t border-white/10 ${textClass}`}
               >
                 <h2
@@ -481,10 +487,9 @@ export default function BabyShowerTemplateView({
               </section>
             )}
 
-            <span id="gallery" />
             {/* Gallery Section */}
             {gallery.length > 0 && (
-              <section className={`py-12 border-t border-white/10 ${textClass}`}>
+              <section id="gallery" className={`py-12 border-t border-white/10 ${textClass}`}>
                 <h2
                   className={`text-2xl mb-6 text-center ${accentClass}`}
                   style={{ fontFamily: headingFont }}
@@ -510,10 +515,9 @@ export default function BabyShowerTemplateView({
               </section>
             )}
 
-            <span id="registry" />
             {/* Registry Section */}
             {registries.length > 0 && (
-              <section className={`text-center py-12 border-t border-white/10 ${textClass}`}>
+              <section id="registry" className={`text-center py-12 border-t border-white/10 ${textClass}`}>
                 <h2 className={`text-2xl mb-6 ${accentClass}`} style={{ fontFamily: headingFont }}>
                   Registry
                 </h2>
@@ -535,10 +539,10 @@ export default function BabyShowerTemplateView({
               </section>
             )}
 
-            <span id="rsvp" />
             {/* RSVP Section */}
             {hasRsvpSection && (
               <section
+                id="rsvp"
                 className={`max-w-3xl mx-auto text-center px-4 md:px-0 py-12 border-t border-white/10 ${textClass}`}
               >
                 <h2
@@ -673,6 +677,7 @@ export default function BabyShowerTemplateView({
             )}
 
             {/* Footer */}
+            </TemplateBodyLayout>
             <footer
               className={`text-center text-xs uppercase tracking-[0.4em] px-6 md:px-10 py-8 border-t border-white/10  ${textClass}`}
             >

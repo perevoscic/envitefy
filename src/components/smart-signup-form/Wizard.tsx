@@ -1,4 +1,5 @@
 "use client";
+import EventCanvas from "@/components/EventCanvas";
 
 import React, { useId, useState } from "react";
 import { useTemplateEditor, useTemplateState } from "@/components/templates/TemplateEditorContext";
@@ -152,7 +153,7 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
                   "Your design"}
               </span>
             </div>
-            <SignupPageRenderer form={form} />
+            <EventCanvas><SignupPageRenderer form={form} /></EventCanvas>
           </div>
         )}
         {step === 1 && (
@@ -274,7 +275,7 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
                 Saving a draft keeps it private. Publishing keeps your existing sharing permissions.
               </p>
             </div>
-            <SignupPageRenderer form={form} />
+            <EventCanvas><SignupPageRenderer form={form} /></EventCanvas>
           </div>
         )}
         {showErrors && issues.length > 0 && (

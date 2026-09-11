@@ -7,6 +7,7 @@ import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import EventPreviewViewport from "@/components/EventPreviewViewport";
 import EventGuestActions from "@/components/event-templates/EventGuestActions";
 import SignupPageRenderer from "@/components/smart-signup-form/SignupPageRenderer";
+import EventCanvas from "@/components/EventCanvas";
 import SignupViewer from "@/components/smart-signup-form/SignupViewer";
 import { absoluteUrl } from "@/lib/absolute-url";
 import { authOptions } from "@/lib/auth";
@@ -404,34 +405,36 @@ export default async function SignupPage({
           {JSON.stringify(smartSignupStructuredData).replace(/</g, "\\u003c")}
         </Script>
       ) : null}
-      <SignupPageRenderer
-        form={visibleForm}
-        actions={
-          <EventGuestActions
-            shareUrl={`/smart-signup-form/${canonicalSegment}`}
+      <EventCanvas className="min-h-screen">
+        <SignupPageRenderer
+          form={visibleForm}
+          actions={
+            <EventGuestActions
+              shareUrl={`/smart-signup-form/${canonicalSegment}`}
+              eventId={row.id}
+              title={signupForm.title || row.title || "Signup form"}
+              start={signupForm.start || data?.startISO || data?.start || null}
+              end={signupForm.end || data?.endISO || data?.end || null}
+              location={[signupForm.venue, signupForm.location].filter(Boolean).join(", ")}
+              description={signupForm.description || ""}
+              timezone={signupForm.timezone || data?.timezone || undefined}
+              allDay={signupForm.allDay ?? undefined}
+            />
+          }
+        >
+          <SignupViewer
             eventId={row.id}
-            title={signupForm.title || row.title || "Signup form"}
-            start={signupForm.start || data?.startISO || data?.start || null}
-            end={signupForm.end || data?.endISO || data?.end || null}
-            location={[signupForm.venue, signupForm.location].filter(Boolean).join(", ")}
-            description={signupForm.description || ""}
-            timezone={signupForm.timezone || data?.timezone || undefined}
-            allDay={signupForm.allDay ?? undefined}
+            initialForm={visibleForm}
+            viewerKind={viewerKind}
+            hideOwnerTools={ownerPreviewMode}
+            viewerId={userId}
+            viewerName={session?.user?.name || null}
+            viewerEmail={sessionEmail}
+            ownerEventTitle={row.title || "Smart sign-up"}
+            ownerEventData={isOwner ? data : undefined}
           />
-        }
-      >
-        <SignupViewer
-          eventId={row.id}
-          initialForm={visibleForm}
-          viewerKind={viewerKind}
-          hideOwnerTools={ownerPreviewMode}
-          viewerId={userId}
-          viewerName={session?.user?.name || null}
-          viewerEmail={sessionEmail}
-          ownerEventTitle={row.title || "Smart sign-up"}
-          ownerEventData={isOwner ? data : undefined}
-        />
-      </SignupPageRenderer>
+        </SignupPageRenderer>
+      </EventCanvas>
     </main>
   );
 }

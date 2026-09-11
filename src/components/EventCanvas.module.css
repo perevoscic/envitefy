@@ -1,0 +1,12 @@
+.canvas {
+  background-color: var(--event-canvas-color, var(--event-page-background-color, transparent));
+}
+
+/* These are page gutters, not artwork or the template's individual sections. */
+.canvas :global(.event-modern-page) {
+  background: transparent;
+}
+
+.canvas :global(.event-modern-mobile-bar) {
+  background: var(--event-canvas-color, var(--event-page-background-color, #fff));
+}

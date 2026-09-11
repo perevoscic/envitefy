@@ -1,0 +1,5705 @@
+[
+  {
+    "category": "weddings",
+    "id": "gilded-wedding",
+    "name": "Gilded Wedding",
+    "status": "preserved",
+    "original": "gilded-wedding"
+  },
+  {
+    "category": "weddings",
+    "id": "modern-editorial",
+    "name": "Modern Editorial Wedding",
+    "status": "preserved",
+    "original": "modern-editorial"
+  },
+  {
+    "category": "weddings",
+    "id": "rustic-boho",
+    "name": "Rustic Boho Wedding",
+    "status": "preserved",
+    "original": "rustic-boho"
+  },
+  {
+    "category": "weddings",
+    "id": "cinematic-wedding",
+    "name": "Cinematic Wedding",
+    "status": "preserved",
+    "original": "cinematic-wedding"
+  },
+  {
+    "category": "weddings",
+    "id": "celestial-wedding",
+    "name": "Celestial Wedding",
+    "status": "preserved",
+    "original": "celestial-wedding"
+  },
+  {
+    "category": "weddings",
+    "id": "ethereal-classic",
+    "name": "Ethereal Classic Wedding",
+    "status": "preserved",
+    "original": "ethereal-classic"
+  },
+  {
+    "category": "weddings",
+    "id": "museum-wedding",
+    "name": "Museum Wedding",
+    "status": "preserved",
+    "original": "museum-wedding"
+  },
+  {
+    "category": "weddings",
+    "id": "ethereal-wedding",
+    "name": "Ethereal Wedding",
+    "status": "preserved",
+    "original": "ethereal-wedding"
+  },
+  {
+    "category": "weddings",
+    "id": "noir-luxury",
+    "name": "Noir Luxury Wedding",
+    "status": "preserved",
+    "original": "noir-luxury"
+  },
+  {
+    "category": "weddings",
+    "id": "retro-70s",
+    "name": "Retro 70s Wedding",
+    "status": "preserved",
+    "original": "retro-70s"
+  },
+  {
+    "category": "weddings",
+    "id": "newspaper-wedding",
+    "name": "Newspaper Wedding",
+    "status": "preserved",
+    "original": "newspaper-wedding"
+  },
+  {
+    "category": "weddings",
+    "id": "bauhaus-wedding",
+    "name": "Bauhaus Wedding",
+    "status": "preserved",
+    "original": "bauhaus-wedding"
+  },
+  {
+    "category": "weddings",
+    "id": "europe-coastal-wedding",
+    "name": "Europe Coastal Wedding",
+    "status": "preserved",
+    "original": "europe-coastal-wedding"
+  },
+  {
+    "category": "weddings",
+    "id": "florida-coastal-wedding",
+    "name": "Florida Coastal Wedding",
+    "status": "preserved",
+    "original": "florida-coastal-wedding"
+  },
+  {
+    "category": "weddings",
+    "id": "california-coastal-wedding",
+    "name": "California Coastal Wedding",
+    "status": "preserved",
+    "original": "california-coastal-wedding"
+  },
+  {
+    "category": "weddings",
+    "id": "winter-wedding",
+    "name": "Winter Wedding",
+    "status": "preserved",
+    "original": "winter-wedding"
+  },
+  {
+    "category": "weddings",
+    "id": "industrial-wedding",
+    "name": "Industrial Wedding",
+    "status": "preserved",
+    "original": "industrial-wedding"
+  },
+  {
+    "category": "weddings",
+    "id": "library-wedding",
+    "name": "Library Wedding",
+    "status": "preserved",
+    "original": "library-wedding"
+  },
+  {
+    "category": "weddings",
+    "id": "garden-wedding",
+    "name": "Garden Wedding",
+    "status": "preserved",
+    "original": "garden-wedding"
+  },
+  {
+    "category": "weddings",
+    "id": "skyline-wedding",
+    "name": "Skyline Wedding",
+    "status": "preserved",
+    "original": "skyline-wedding"
+  },
+  {
+    "category": "weddings",
+    "id": "midnight-elegance",
+    "name": "Midnight Elegance",
+    "status": "preserved",
+    "original": "midnight-elegance"
+  },
+  {
+    "category": "weddings",
+    "id": "wild-rose-halo",
+    "name": "Wild Rose Halo",
+    "status": "preserved",
+    "original": "wild-rose-halo"
+  },
+  {
+    "category": "weddings",
+    "id": "golden-hour-promise",
+    "name": "Golden Hour Promise",
+    "status": "preserved",
+    "original": "golden-hour-promise"
+  },
+  {
+    "category": "weddings",
+    "id": "ivory-lace-crest",
+    "name": "Ivory Lace Crest",
+    "status": "preserved",
+    "original": "ivory-lace-crest"
+  },
+  {
+    "category": "weddings",
+    "id": "emerald-garden-vignette",
+    "name": "Emerald Garden Vignette",
+    "status": "preserved",
+    "original": "emerald-garden-vignette"
+  },
+  {
+    "category": "weddings",
+    "id": "blush-linen-romance",
+    "name": "Blush Linen Romance",
+    "status": "preserved",
+    "original": "blush-linen-romance"
+  },
+  {
+    "category": "weddings",
+    "id": "sapphire-moonlit-arch",
+    "name": "Sapphire Moonlit Arch",
+    "status": "preserved",
+    "original": "sapphire-moonlit-arch"
+  },
+  {
+    "category": "weddings",
+    "id": "rustic-oak-storybook",
+    "name": "Rustic Oak Storybook",
+    "status": "preserved",
+    "original": "rustic-oak-storybook"
+  },
+  {
+    "category": "weddings",
+    "id": "champagne-velvet",
+    "name": "Champagne Velvet",
+    "status": "preserved",
+    "original": "champagne-velvet"
+  },
+  {
+    "category": "weddings",
+    "id": "celestial-whisper",
+    "name": "Celestial Whisper",
+    "status": "preserved",
+    "original": "celestial-whisper"
+  },
+  {
+    "category": "weddings",
+    "id": "pearl-tide-horizon",
+    "name": "Pearl Tide Horizon",
+    "status": "preserved",
+    "original": "pearl-tide-horizon"
+  },
+  {
+    "category": "weddings",
+    "id": "crimson-orchard",
+    "name": "Crimson Orchard",
+    "status": "preserved",
+    "original": "crimson-orchard"
+  },
+  {
+    "category": "weddings",
+    "id": "opaline-crest",
+    "name": "Opaline Crest",
+    "status": "preserved",
+    "original": "opaline-crest"
+  },
+  {
+    "category": "weddings",
+    "id": "velvet-midnight-lily",
+    "name": "Velvet Midnight Lily",
+    "status": "preserved",
+    "original": "velvet-midnight-lily"
+  },
+  {
+    "category": "weddings",
+    "id": "lavender-mist-cascade",
+    "name": "Lavender Mist Cascade",
+    "status": "preserved",
+    "original": "lavender-mist-cascade"
+  },
+  {
+    "category": "weddings",
+    "id": "coral-sands-keepsake",
+    "name": "Coral Sands Keepsake",
+    "status": "preserved",
+    "original": "coral-sands-keepsake"
+  },
+  {
+    "category": "weddings",
+    "id": "eternal-marble",
+    "name": "Eternal Marble",
+    "status": "preserved",
+    "original": "eternal-marble"
+  },
+  {
+    "category": "weddings",
+    "id": "willow-fern-embrace",
+    "name": "Willow Fern Embrace",
+    "status": "preserved",
+    "original": "willow-fern-embrace"
+  },
+  {
+    "category": "weddings",
+    "id": "silver-frost-gala",
+    "name": "Silver Frost Gala",
+    "status": "preserved",
+    "original": "silver-frost-gala"
+  },
+  {
+    "category": "weddings",
+    "id": "autumn-ember-waltz",
+    "name": "Autumn Ember Waltz",
+    "status": "preserved",
+    "original": "autumn-ember-waltz"
+  },
+  {
+    "category": "weddings",
+    "id": "tuscan-lemon-grove",
+    "name": "Tuscan Lemon Grove",
+    "status": "preserved",
+    "original": "tuscan-lemon-grove"
+  },
+  {
+    "category": "weddings",
+    "id": "delft-blue-estate",
+    "name": "Delft Blue Estate",
+    "status": "preserved",
+    "original": "delft-blue-estate"
+  },
+  {
+    "category": "weddings",
+    "id": "meadow-reverie",
+    "name": "Meadow Reverie",
+    "status": "preserved",
+    "original": "meadow-reverie"
+  },
+  {
+    "category": "weddings",
+    "id": "desert-modernism",
+    "name": "Desert Modernism",
+    "status": "preserved",
+    "original": "desert-modernism"
+  },
+  {
+    "category": "weddings",
+    "id": "chateau-toile",
+    "name": "Chateau Toile",
+    "status": "preserved",
+    "original": "chateau-toile"
+  },
+  {
+    "category": "weddings",
+    "id": "riviera-stripes",
+    "name": "Riviera Stripes",
+    "status": "preserved",
+    "original": "riviera-stripes"
+  },
+  {
+    "category": "weddings",
+    "id": "japanese-ink",
+    "name": "Japanese Ink",
+    "status": "preserved",
+    "original": "japanese-ink"
+  },
+  {
+    "category": "weddings",
+    "id": "disco-afterglow",
+    "name": "Disco Afterglow",
+    "status": "preserved",
+    "original": "disco-afterglow"
+  },
+  {
+    "category": "weddings",
+    "id": "palm-springs-mod",
+    "name": "Palm Springs Mod",
+    "status": "preserved",
+    "original": "palm-springs-mod"
+  },
+  {
+    "category": "weddings",
+    "id": "highland-romance",
+    "name": "Highland Romance",
+    "status": "preserved",
+    "original": "highland-romance"
+  },
+  {
+    "category": "weddings",
+    "id": "terracotta-courtyard",
+    "name": "Terracotta Courtyard",
+    "status": "preserved",
+    "original": "terracotta-courtyard"
+  },
+  {
+    "category": "weddings",
+    "id": "lake-como-letter",
+    "name": "Lake Como Letter",
+    "status": "preserved",
+    "original": "lake-como-letter"
+  },
+  {
+    "category": "weddings",
+    "id": "cherry-blossom-silk",
+    "name": "Cherry Blossom Silk",
+    "status": "preserved",
+    "original": "cherry-blossom-silk"
+  },
+  {
+    "category": "weddings",
+    "id": "french-patisserie",
+    "name": "French Patisserie",
+    "status": "preserved",
+    "original": "french-patisserie"
+  },
+  {
+    "category": "weddings",
+    "id": "ocean-cyanotype",
+    "name": "Ocean Cyanotype",
+    "status": "preserved",
+    "original": "ocean-cyanotype"
+  },
+  {
+    "category": "weddings",
+    "id": "art-deco-soiree",
+    "name": "Art Deco Soiree",
+    "status": "preserved",
+    "original": "art-deco-soiree"
+  },
+  {
+    "category": "weddings",
+    "id": "prairie-wildflower",
+    "name": "Prairie Wildflower",
+    "status": "preserved",
+    "original": "prairie-wildflower"
+  },
+  {
+    "category": "weddings",
+    "id": "red-thread",
+    "name": "Red Thread",
+    "status": "preserved",
+    "original": "red-thread"
+  },
+  {
+    "category": "weddings",
+    "id": "moonstone-minimal",
+    "name": "Moonstone Minimal",
+    "status": "preserved",
+    "original": "moonstone-minimal"
+  },
+  {
+    "category": "weddings",
+    "id": "tropical-afterdark",
+    "name": "Tropical Afterdark",
+    "status": "preserved",
+    "original": "tropical-afterdark"
+  },
+  {
+    "category": "birthdays",
+    "id": "party-pop",
+    "name": "Party Pop",
+    "status": "preserved",
+    "original": "confetti"
+  },
+  {
+    "category": "birthdays",
+    "id": "candy-dreams",
+    "name": "Candy Dreams",
+    "status": "preserved",
+    "original": "confection"
+  },
+  {
+    "category": "birthdays",
+    "id": "rainbow-bash",
+    "name": "Rainbow Bash",
+    "status": "preserved",
+    "original": "festival"
+  },
+  {
+    "category": "birthdays",
+    "id": "playful-pals",
+    "name": "Playful Pals",
+    "status": "preserved",
+    "original": "journal"
+  },
+  {
+    "category": "birthdays",
+    "id": "birthday-burst",
+    "name": "Birthday Burst",
+    "status": "preserved",
+    "original": "dispatch"
+  },
+  {
+    "category": "birthdays",
+    "id": "sweet-celebration",
+    "name": "Sweet Celebration",
+    "status": "preserved",
+    "original": "menu"
+  },
+  {
+    "category": "birthdays",
+    "id": "super-star",
+    "name": "Super Star",
+    "status": "preserved",
+    "original": "mission"
+  },
+  {
+    "category": "birthdays",
+    "id": "happy-dance",
+    "name": "Happy Dance",
+    "status": "preserved",
+    "original": "stage"
+  },
+  {
+    "category": "birthdays",
+    "id": "magic-sparkle",
+    "name": "Magic Sparkle",
+    "status": "preserved",
+    "original": "storybook"
+  },
+  {
+    "category": "birthdays",
+    "id": "celebration-time",
+    "name": "Celebration Time",
+    "status": "preserved",
+    "original": "archive"
+  },
+  {
+    "category": "birthdays",
+    "id": "fun-fiesta",
+    "name": "Fun Fiesta",
+    "status": "preserved",
+    "original": "market"
+  },
+  {
+    "category": "birthdays",
+    "id": "joyful-jamboree",
+    "name": "Joyful Jamboree",
+    "status": "redesigned",
+    "original": "festival",
+    "layout": "gallery",
+    "surface": "offset",
+    "heading": "ribbon",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "whimsical-wonder",
+    "name": "Whimsical Wonder",
+    "status": "redesigned",
+    "original": "storybook",
+    "layout": "book",
+    "surface": "bound",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "cheerful-chaos",
+    "name": "Cheerful Chaos",
+    "status": "preserved",
+    "original": "atelier"
+  },
+  {
+    "category": "birthdays",
+    "id": "party-parade",
+    "name": "Party Parade",
+    "status": "redesigned",
+    "original": "dispatch",
+    "layout": "gallery",
+    "surface": "bracket",
+    "heading": "side",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "birthday-bliss",
+    "name": "Birthday Bliss",
+    "status": "preserved",
+    "original": "garden"
+  },
+  {
+    "category": "birthdays",
+    "id": "sparkle-splash",
+    "name": "Sparkle Splash",
+    "status": "preserved",
+    "original": "coast"
+  },
+  {
+    "category": "birthdays",
+    "id": "celebration-craze",
+    "name": "Celebration Craze",
+    "status": "preserved",
+    "original": "club"
+  },
+  {
+    "category": "birthdays",
+    "id": "happy-hooray",
+    "name": "Happy Hooray",
+    "status": "redesigned",
+    "original": "confetti",
+    "layout": "poster",
+    "surface": "ticket",
+    "heading": "number",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "party-palooza",
+    "name": "Party Palooza",
+    "status": "redesigned",
+    "original": "stage",
+    "layout": "gallery",
+    "surface": "frame",
+    "heading": "ribbon",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "birthday-bonanza",
+    "name": "Birthday Bonanza",
+    "status": "preserved",
+    "original": "workshop"
+  },
+  {
+    "category": "birthdays",
+    "id": "sweet-surprise",
+    "name": "Sweet Surprise",
+    "status": "redesigned",
+    "original": "confection",
+    "layout": "columns",
+    "surface": "double",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "party-perfect",
+    "name": "Party Perfect",
+    "status": "preserved",
+    "original": "salon"
+  },
+  {
+    "category": "birthdays",
+    "id": "birthday-bash",
+    "name": "Birthday Bash",
+    "status": "preserved",
+    "original": "scorecard"
+  },
+  {
+    "category": "birthdays",
+    "id": "backyard-bug-explorer",
+    "name": "Backyard Bug Explorer",
+    "status": "preserved",
+    "original": "specimen"
+  },
+  {
+    "category": "birthdays",
+    "id": "junior-baker-studio",
+    "name": "Junior Baker Studio",
+    "status": "redesigned",
+    "original": "menu",
+    "layout": "gallery",
+    "surface": "notch",
+    "heading": "side",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "little-firehouse",
+    "name": "Little Firehouse",
+    "status": "redesigned",
+    "original": "dispatch",
+    "layout": "gallery",
+    "surface": "arch",
+    "heading": "masthead",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "dinosaur-dig-lab",
+    "name": "Dinosaur Dig Lab",
+    "status": "redesigned",
+    "original": "journal",
+    "layout": "book",
+    "surface": "double",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "enchanted-forest-tea",
+    "name": "Enchanted Forest Tea",
+    "status": "redesigned",
+    "original": "storybook",
+    "layout": "stagger",
+    "surface": "petal",
+    "heading": "number",
+    "flow": "people"
+  },
+  {
+    "category": "birthdays",
+    "id": "outer-space-mission-control",
+    "name": "Mission Control",
+    "status": "redesigned",
+    "original": "mission",
+    "layout": "rail",
+    "surface": "notch",
+    "heading": "underline",
+    "flow": "practical"
+  },
+  {
+    "category": "birthdays",
+    "id": "rainbow-art-studio",
+    "name": "Rainbow Art Studio",
+    "status": "redesigned",
+    "original": "atelier",
+    "layout": "gallery",
+    "surface": "ticket",
+    "heading": "side",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "construction-crew-yard",
+    "name": "Construction Crew Yard",
+    "status": "redesigned",
+    "original": "workshop",
+    "layout": "gallery",
+    "surface": "petal",
+    "heading": "caption",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "undersea-mermaid-cove",
+    "name": "Mermaid Cove",
+    "status": "redesigned",
+    "original": "coast",
+    "layout": "islands",
+    "surface": "wave",
+    "heading": "caption",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "soccer-goal-celebration",
+    "name": "Soccer Goal Celebration",
+    "status": "redesigned",
+    "original": "scorecard",
+    "layout": "mosaic",
+    "surface": "cut",
+    "heading": "ribbon",
+    "flow": "practical"
+  },
+  {
+    "category": "birthdays",
+    "id": "ballet-rehearsal-party",
+    "name": "Ballet Rehearsal Party",
+    "status": "redesigned",
+    "original": "stage",
+    "layout": "gallery",
+    "surface": "cut",
+    "heading": "number",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "superhero-training-hq",
+    "name": "Superhero Training HQ",
+    "status": "redesigned",
+    "original": "dispatch",
+    "layout": "path",
+    "surface": "ticket",
+    "heading": "ribbon",
+    "flow": "practical"
+  },
+  {
+    "category": "birthdays",
+    "id": "race-car-pit-stop",
+    "name": "Race Car Pit Stop",
+    "status": "redesigned",
+    "original": "scorecard",
+    "layout": "mosaic",
+    "surface": "pennant",
+    "heading": "ribbon",
+    "flow": "practical"
+  },
+  {
+    "category": "birthdays",
+    "id": "woodland-camping-night",
+    "name": "Woodland Camping Night",
+    "status": "redesigned",
+    "original": "journal",
+    "layout": "stagger",
+    "surface": "arch",
+    "heading": "side",
+    "flow": "people"
+  },
+  {
+    "category": "birthdays",
+    "id": "ice-cream-parlor",
+    "name": "Ice Cream Parlor",
+    "status": "redesigned",
+    "original": "confection",
+    "layout": "ledger",
+    "surface": "double",
+    "heading": "ribbon",
+    "flow": "people"
+  },
+  {
+    "category": "birthdays",
+    "id": "farmyard-harvest",
+    "name": "Farmyard Harvest",
+    "status": "redesigned",
+    "original": "market",
+    "layout": "editorial",
+    "surface": "outline",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "science-lab-spark",
+    "name": "Science Lab Spark",
+    "status": "redesigned",
+    "original": "specimen",
+    "layout": "gallery",
+    "surface": "capsule",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "pirate-treasure-port",
+    "name": "Pirate Treasure Port",
+    "status": "preserved",
+    "original": "voyage"
+  },
+  {
+    "category": "birthdays",
+    "id": "princess-garden-ball",
+    "name": "Princess Garden Ball",
+    "status": "redesigned",
+    "original": "garden",
+    "layout": "stagger",
+    "surface": "stone",
+    "heading": "masthead",
+    "flow": "people"
+  },
+  {
+    "category": "birthdays",
+    "id": "monster-truck-arena",
+    "name": "Monster Truck Arena",
+    "status": "redesigned",
+    "original": "workshop",
+    "layout": "gallery",
+    "surface": "ruled",
+    "heading": "masthead",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "mini-golf-clubhouse",
+    "name": "Mini Golf Clubhouse",
+    "status": "redesigned",
+    "original": "scorecard",
+    "layout": "mosaic",
+    "surface": "bracket",
+    "heading": "underline",
+    "flow": "practical"
+  },
+  {
+    "category": "birthdays",
+    "id": "teddy-bear-picnic",
+    "name": "Teddy Bear Picnic",
+    "status": "redesigned",
+    "original": "journal",
+    "layout": "book",
+    "surface": "frame",
+    "heading": "number",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "safari-expedition-camp",
+    "name": "Safari Expedition Camp",
+    "status": "redesigned",
+    "original": "specimen",
+    "layout": "book",
+    "surface": "outline",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "glow-dance-party",
+    "name": "Glow Dance Party",
+    "status": "redesigned",
+    "original": "club",
+    "layout": "gallery",
+    "surface": "double",
+    "heading": "caption",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "train-station-adventure",
+    "name": "Train Station Adventure",
+    "status": "redesigned",
+    "original": "dispatch",
+    "layout": "book",
+    "surface": "arch",
+    "heading": "ribbon",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "airplane-travel-club",
+    "name": "Airplane Travel Club",
+    "status": "redesigned",
+    "original": "voyage",
+    "layout": "book",
+    "surface": "ticket",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "comic-book-creator",
+    "name": "Comic Book Creator",
+    "status": "redesigned",
+    "original": "atelier",
+    "layout": "book",
+    "surface": "petal",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "puppy-adoption-party",
+    "name": "Puppy Adoption Party",
+    "status": "redesigned",
+    "original": "journal",
+    "layout": "book",
+    "surface": "cut",
+    "heading": "masthead",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "beach-surf-shack",
+    "name": "Beach Surf Shack",
+    "status": "redesigned",
+    "original": "coast",
+    "layout": "islands",
+    "surface": "oval",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "winter-snow-lodge",
+    "name": "Winter Snow Lodge",
+    "status": "redesigned",
+    "original": "salon",
+    "layout": "islands",
+    "surface": "capsule",
+    "heading": "number",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "pottery-playhouse",
+    "name": "Clay Playhouse",
+    "status": "redesigned",
+    "original": "atelier",
+    "layout": "gallery",
+    "surface": "wave",
+    "heading": "number",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "friendship-bead-club",
+    "name": "Friendship Bead Club",
+    "status": "redesigned",
+    "original": "confetti",
+    "layout": "mosaic",
+    "surface": "ticket",
+    "heading": "underline",
+    "flow": "practical"
+  },
+  {
+    "category": "birthdays",
+    "id": "slime-squish-studio",
+    "name": "Slime & Squish Studio",
+    "status": "redesigned",
+    "original": "specimen",
+    "layout": "gallery",
+    "surface": "bound",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "magic-school-owls",
+    "name": "Moonbeam Magic School",
+    "status": "redesigned",
+    "original": "storybook",
+    "layout": "rail",
+    "surface": "facet",
+    "heading": "number",
+    "flow": "practical"
+  },
+  {
+    "category": "birthdays",
+    "id": "roller-rink-rainbow",
+    "name": "Roller Rink Replay",
+    "status": "redesigned",
+    "original": "club",
+    "layout": "mosaic",
+    "surface": "arch",
+    "heading": "number",
+    "flow": "practical"
+  },
+  {
+    "category": "birthdays",
+    "id": "pixel-builder-world",
+    "name": "Pixel Builder World",
+    "status": "redesigned",
+    "original": "mission",
+    "layout": "rail",
+    "surface": "frame",
+    "heading": "masthead",
+    "flow": "practical"
+  },
+  {
+    "category": "birthdays",
+    "id": "plushie-sleepover",
+    "name": "Cloud Nine Sleepover",
+    "status": "redesigned",
+    "original": "salon",
+    "layout": "editorial",
+    "surface": "ruled",
+    "heading": "masthead",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "kpop-stage-stars",
+    "name": "Pop Star Encore",
+    "status": "redesigned",
+    "original": "stage",
+    "layout": "islands",
+    "surface": "arch",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "basketball-court-crew",
+    "name": "Birthday Court Club",
+    "status": "redesigned",
+    "original": "scorecard",
+    "layout": "mosaic",
+    "surface": "frame",
+    "heading": "masthead",
+    "flow": "practical"
+  },
+  {
+    "category": "birthdays",
+    "id": "skatepark-stickers",
+    "name": "Skatepark Sticker Jam",
+    "status": "redesigned",
+    "original": "workshop",
+    "layout": "mosaic",
+    "surface": "petal",
+    "heading": "side",
+    "flow": "practical"
+  },
+  {
+    "category": "birthdays",
+    "id": "ninja-obstacle-dojo",
+    "name": "Ninja Challenge Dojo",
+    "status": "redesigned",
+    "original": "dispatch",
+    "layout": "mosaic",
+    "surface": "capsule",
+    "heading": "caption",
+    "flow": "practical"
+  },
+  {
+    "category": "birthdays",
+    "id": "detective-clue-club",
+    "name": "The Birthday Clue Bureau",
+    "status": "redesigned",
+    "original": "archive",
+    "layout": "book",
+    "surface": "capsule",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "dragon-cloud-quest",
+    "name": "Dragon Cloud Quest",
+    "status": "redesigned",
+    "original": "voyage",
+    "layout": "islands",
+    "surface": "ticket",
+    "heading": "masthead",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "axolotl-lagoon",
+    "name": "Axolotl Lagoon",
+    "status": "redesigned",
+    "original": "coast",
+    "layout": "islands",
+    "surface": "frame",
+    "heading": "side",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "capybara-orange-spa",
+    "name": "Capybara Citrus Club",
+    "status": "redesigned",
+    "original": "salon",
+    "layout": "gallery",
+    "surface": "oval",
+    "heading": "masthead",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "bunny-carrot-garden",
+    "name": "Bunny Garden Party",
+    "status": "redesigned",
+    "original": "garden",
+    "layout": "stagger",
+    "surface": "scallop",
+    "heading": "number",
+    "flow": "people"
+  },
+  {
+    "category": "birthdays",
+    "id": "pony-ribbon-rodeo",
+    "name": "Little Pony Ribbon Rodeo",
+    "status": "redesigned",
+    "original": "festival",
+    "layout": "mosaic",
+    "surface": "ruled",
+    "heading": "number",
+    "flow": "practical"
+  },
+  {
+    "category": "birthdays",
+    "id": "butterfly-conservatory",
+    "name": "Butterfly Glasshouse",
+    "status": "redesigned",
+    "original": "garden",
+    "layout": "stagger",
+    "surface": "ticket",
+    "heading": "ribbon",
+    "flow": "people"
+  },
+  {
+    "category": "birthdays",
+    "id": "jellyfish-glow-garden",
+    "name": "Jellyfish Glow Garden",
+    "status": "preserved",
+    "original": "lounge"
+  },
+  {
+    "category": "birthdays",
+    "id": "pizza-chef-club",
+    "name": "Little Pizza Club",
+    "status": "redesigned",
+    "original": "menu",
+    "layout": "book",
+    "surface": "ruled",
+    "heading": "ribbon",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "sushi-roll-studio",
+    "name": "Roll & Celebrate",
+    "status": "redesigned",
+    "original": "atelier",
+    "layout": "gallery",
+    "surface": "terrace",
+    "heading": "ribbon",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "lemonade-market-day",
+    "name": "Lemonade Market Day",
+    "status": "redesigned",
+    "original": "market",
+    "layout": "gallery",
+    "surface": "scallop",
+    "heading": "caption",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "cherry-picnic-bows",
+    "name": "Cherry Bow Picnic",
+    "status": "redesigned",
+    "original": "confection",
+    "layout": "gallery",
+    "surface": "pennant",
+    "heading": "number",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "storybook-library",
+    "name": "Once Upon a Birthday",
+    "status": "redesigned",
+    "original": "archive",
+    "layout": "book",
+    "surface": "bracket",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "board-game-bonanza",
+    "name": "Board Game Bonanza",
+    "status": "redesigned",
+    "original": "club",
+    "layout": "poster",
+    "surface": "pennant",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "mini-olympics-field-day",
+    "name": "Backyard Games Club",
+    "status": "redesigned",
+    "original": "scorecard",
+    "layout": "mosaic",
+    "surface": "offset",
+    "heading": "masthead",
+    "flow": "practical"
+  },
+  {
+    "category": "birthdays",
+    "id": "champagne-bow-soiree",
+    "name": "Champagne Bow Soirée",
+    "status": "preserved",
+    "original": "banquet"
+  },
+  {
+    "category": "birthdays",
+    "id": "garden-brunch-bloom",
+    "name": "Garden Brunch Bloom",
+    "status": "redesigned",
+    "original": "garden",
+    "layout": "stagger",
+    "surface": "frame",
+    "heading": "caption",
+    "flow": "people"
+  },
+  {
+    "category": "birthdays",
+    "id": "rose-gold-rooftop-forty",
+    "name": "Rose Gold Rooftop 40",
+    "status": "preserved",
+    "original": "gallery"
+  },
+  {
+    "category": "birthdays",
+    "id": "parisian-patisserie-thirty",
+    "name": "Parisian Patisserie 30",
+    "status": "redesigned",
+    "original": "menu",
+    "layout": "book",
+    "surface": "offset",
+    "heading": "number",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "coastal-white-linen-fifty",
+    "name": "Coastal White Linen 50",
+    "status": "redesigned",
+    "original": "coast",
+    "layout": "islands",
+    "surface": "petal",
+    "heading": "ribbon",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "disco-cowgirl-night",
+    "name": "Disco Cowgirl Night",
+    "status": "redesigned",
+    "original": "club",
+    "layout": "poster",
+    "surface": "offset",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "bookshop-candle-dinner-forty-five",
+    "name": "Bookshop Candle Dinner 45",
+    "status": "redesigned",
+    "original": "archive",
+    "layout": "book",
+    "surface": "wave",
+    "heading": "masthead",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "spa-day-sage-forty",
+    "name": "Sage Spa Day 40",
+    "status": "redesigned",
+    "original": "salon",
+    "layout": "stagger",
+    "surface": "cut",
+    "heading": "underline",
+    "flow": "people"
+  },
+  {
+    "category": "birthdays",
+    "id": "mahogany-wine-table-fifty-five",
+    "name": "Mahogany Wine Table 55",
+    "status": "redesigned",
+    "original": "menu",
+    "layout": "ledger",
+    "surface": "ruled",
+    "heading": "underline",
+    "flow": "people"
+  },
+  {
+    "category": "birthdays",
+    "id": "sunset-pool-cabana-thirty-five",
+    "name": "Sunset Pool Cabana 35",
+    "status": "redesigned",
+    "original": "coast",
+    "layout": "islands",
+    "surface": "cut",
+    "heading": "caption",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "sculptural-floral-forty",
+    "name": "Sculptural Floral 40",
+    "status": "redesigned",
+    "original": "gallery",
+    "layout": "stagger",
+    "surface": "capsule",
+    "heading": "masthead",
+    "flow": "people"
+  },
+  {
+    "category": "birthdays",
+    "id": "emerald-cocktail-forty-five",
+    "name": "Emerald Cocktail 45",
+    "status": "redesigned",
+    "original": "lounge",
+    "layout": "gallery",
+    "surface": "stone",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "pearl-dinner-fifty",
+    "name": "Pearl Dinner 50",
+    "status": "redesigned",
+    "original": "banquet",
+    "layout": "ledger",
+    "surface": "arch",
+    "heading": "underline",
+    "flow": "people"
+  },
+  {
+    "category": "birthdays",
+    "id": "lavender-tea-sixty",
+    "name": "Lavender Tea 60",
+    "status": "redesigned",
+    "original": "salon",
+    "layout": "stagger",
+    "surface": "ruled",
+    "heading": "side",
+    "flow": "people"
+  },
+  {
+    "category": "birthdays",
+    "id": "golden-jubilee-seventy",
+    "name": "Golden Jubilee 70",
+    "status": "redesigned",
+    "original": "archive",
+    "layout": "book",
+    "surface": "oval",
+    "heading": "ribbon",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "whiskey-library-forty-five",
+    "name": "Whiskey Library 45",
+    "status": "redesigned",
+    "original": "archive",
+    "layout": "book",
+    "surface": "notch",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "vintage-garage-forty",
+    "name": "Vintage Garage 40",
+    "status": "redesigned",
+    "original": "workshop",
+    "layout": "mosaic",
+    "surface": "double",
+    "heading": "side",
+    "flow": "practical"
+  },
+  {
+    "category": "birthdays",
+    "id": "stadium-suite-fifty",
+    "name": "Stadium Suite 50",
+    "status": "redesigned",
+    "original": "scorecard",
+    "layout": "mosaic",
+    "surface": "wave",
+    "heading": "ribbon",
+    "flow": "practical"
+  },
+  {
+    "category": "birthdays",
+    "id": "golf-club-forty-five",
+    "name": "Golf Club 45",
+    "status": "redesigned",
+    "original": "scorecard",
+    "layout": "mosaic",
+    "surface": "bound",
+    "heading": "caption",
+    "flow": "practical"
+  },
+  {
+    "category": "birthdays",
+    "id": "backyard-bbq-fifty",
+    "name": "Backyard BBQ 50",
+    "status": "redesigned",
+    "original": "market",
+    "layout": "ledger",
+    "surface": "scallop",
+    "heading": "ribbon",
+    "flow": "people"
+  },
+  {
+    "category": "birthdays",
+    "id": "craft-brew-hall-thirty",
+    "name": "Craft Brew Hall 30",
+    "status": "redesigned",
+    "original": "menu",
+    "layout": "gallery",
+    "surface": "facet",
+    "heading": "masthead",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "black-tie-forty",
+    "name": "Black Tie 40",
+    "status": "redesigned",
+    "original": "banquet",
+    "layout": "editorial",
+    "surface": "terrace",
+    "heading": "ribbon",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "bourbon-bluegrass-sixty",
+    "name": "Bourbon & Bluegrass 60",
+    "status": "redesigned",
+    "original": "stage",
+    "layout": "poster",
+    "surface": "facet",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "coastal-sailing-fifty",
+    "name": "Coastal Sailing 50",
+    "status": "redesigned",
+    "original": "voyage",
+    "layout": "islands",
+    "surface": "ruled",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "modern-steakhouse-forty-five",
+    "name": "Modern Steakhouse 45",
+    "status": "redesigned",
+    "original": "menu",
+    "layout": "ledger",
+    "surface": "ticket",
+    "heading": "masthead",
+    "flow": "people"
+  },
+  {
+    "category": "birthdays",
+    "id": "vinyl-listening-thirty-five",
+    "name": "Vinyl Listening 35",
+    "status": "redesigned",
+    "original": "lounge",
+    "layout": "gallery",
+    "surface": "outline",
+    "heading": "side",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "mountain-lodge-fifty-five",
+    "name": "Mountain Lodge 55",
+    "status": "redesigned",
+    "original": "journal",
+    "layout": "book",
+    "surface": "terrace",
+    "heading": "number",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "poker-night-forty",
+    "name": "Poker Night 40",
+    "status": "redesigned",
+    "original": "lounge",
+    "layout": "stagger",
+    "surface": "bracket",
+    "heading": "ribbon",
+    "flow": "people"
+  },
+  {
+    "category": "birthdays",
+    "id": "classic-roadster-seventy",
+    "name": "Classic Roadster 70",
+    "status": "redesigned",
+    "original": "workshop",
+    "layout": "book",
+    "surface": "scallop",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "observatory-night-sixty-five",
+    "name": "Observatory Night 65",
+    "status": "redesigned",
+    "original": "mission",
+    "layout": "rail",
+    "surface": "capsule",
+    "heading": "caption",
+    "flow": "practical"
+  },
+  {
+    "category": "birthdays",
+    "id": "mediterranean-dinner-forty",
+    "name": "Mediterranean Dinner 40",
+    "status": "redesigned",
+    "original": "banquet",
+    "layout": "ledger",
+    "surface": "frame",
+    "heading": "side",
+    "flow": "people"
+  },
+  {
+    "category": "birthdays",
+    "id": "rooftop-city-lights-thirty",
+    "name": "Rooftop City Lights 30",
+    "status": "redesigned",
+    "original": "club",
+    "layout": "poster",
+    "surface": "arch",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "modern-minimal-fifty",
+    "name": "Modern Minimal 50",
+    "status": "redesigned",
+    "original": "gallery",
+    "layout": "editorial",
+    "surface": "petal",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "tropical-sunset-forty-five",
+    "name": "Tropical Sunset 45",
+    "status": "redesigned",
+    "original": "coast",
+    "layout": "islands",
+    "surface": "bracket",
+    "heading": "masthead",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "art-gallery-cocktail-thirty-five",
+    "name": "Art Gallery Cocktail 35",
+    "status": "redesigned",
+    "original": "gallery",
+    "layout": "path",
+    "surface": "offset",
+    "heading": "caption",
+    "flow": "memories"
+  },
+  {
+    "category": "birthdays",
+    "id": "backyard-long-table-sixty",
+    "name": "Backyard Long Table 60",
+    "status": "redesigned",
+    "original": "garden",
+    "layout": "stagger",
+    "surface": "offset",
+    "heading": "caption",
+    "flow": "people"
+  },
+  {
+    "category": "birthdays",
+    "id": "eighties-retro-dance-forty",
+    "name": "Eighties Retro Dance 40",
+    "status": "redesigned",
+    "original": "club",
+    "layout": "poster",
+    "surface": "frame",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "black-white-photo-fifty",
+    "name": "Black & White Photo 50",
+    "status": "redesigned",
+    "original": "archive",
+    "layout": "book",
+    "surface": "pennant",
+    "heading": "masthead",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "night-market-thirty",
+    "name": "Night Market 30",
+    "status": "redesigned",
+    "original": "market",
+    "layout": "book",
+    "surface": "stone",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "birthdays",
+    "id": "desert-dusk-fifty-five",
+    "name": "Desert Dusk 55",
+    "status": "preserved",
+    "original": "dunes"
+  },
+  {
+    "category": "anniversaries",
+    "id": "paper-atelier-first-anniversary",
+    "name": "Paper Atelier — 1st",
+    "status": "preserved",
+    "original": "atelier"
+  },
+  {
+    "category": "anniversaries",
+    "id": "woodland-table-fifth-anniversary",
+    "name": "Woodland Table — 5th",
+    "status": "preserved",
+    "original": "garden"
+  },
+  {
+    "category": "anniversaries",
+    "id": "tin-copper-tenth-anniversary",
+    "name": "Tin & Copper — 10th",
+    "status": "preserved",
+    "original": "workshop"
+  },
+  {
+    "category": "anniversaries",
+    "id": "crystal-dinner-fifteenth-anniversary",
+    "name": "Crystal Dinner — 15th",
+    "status": "preserved",
+    "original": "banquet"
+  },
+  {
+    "category": "anniversaries",
+    "id": "porcelain-blue-twentieth-anniversary",
+    "name": "Porcelain Blue — 20th",
+    "status": "preserved",
+    "original": "salon"
+  },
+  {
+    "category": "anniversaries",
+    "id": "silver-night-twenty-fifth-anniversary",
+    "name": "Silver Night — 25th",
+    "status": "preserved",
+    "original": "gallery"
+  },
+  {
+    "category": "anniversaries",
+    "id": "pearl-supper-thirtieth-anniversary",
+    "name": "Pearl Supper — 30th",
+    "status": "preserved",
+    "original": "menu"
+  },
+  {
+    "category": "anniversaries",
+    "id": "ruby-gala-fortieth-anniversary",
+    "name": "Ruby Gala — 40th",
+    "status": "preserved",
+    "original": "stage"
+  },
+  {
+    "category": "anniversaries",
+    "id": "golden-dinner-fiftieth-anniversary",
+    "name": "Golden Dinner — 50th",
+    "status": "preserved",
+    "original": "archive"
+  },
+  {
+    "category": "anniversaries",
+    "id": "garden-vow-renewal-anniversary",
+    "name": "Garden Vow Renewal",
+    "status": "redesigned",
+    "original": "garden",
+    "layout": "stagger",
+    "surface": "petal",
+    "heading": "number",
+    "flow": "people"
+  },
+  {
+    "category": "anniversaries",
+    "id": "cotton-letter-second-anniversary",
+    "name": "Cotton Love Letters",
+    "status": "preserved",
+    "original": "journal"
+  },
+  {
+    "category": "anniversaries",
+    "id": "leather-passport-third-anniversary",
+    "name": "Our Next Adventure",
+    "status": "preserved",
+    "original": "voyage"
+  },
+  {
+    "category": "anniversaries",
+    "id": "linen-sunday-fourth-anniversary",
+    "name": "Sunday in Linen",
+    "status": "redesigned",
+    "original": "menu",
+    "layout": "stagger",
+    "surface": "arch",
+    "heading": "side",
+    "flow": "people"
+  },
+  {
+    "category": "anniversaries",
+    "id": "iron-rose-sixth-anniversary",
+    "name": "Iron & Roses",
+    "status": "redesigned",
+    "original": "garden",
+    "layout": "stagger",
+    "surface": "stone",
+    "heading": "masthead",
+    "flow": "people"
+  },
+  {
+    "category": "anniversaries",
+    "id": "copper-glow-seventh-anniversary",
+    "name": "Copper Afterglow",
+    "status": "preserved",
+    "original": "lounge"
+  },
+  {
+    "category": "anniversaries",
+    "id": "bronze-hour-eighth-anniversary",
+    "name": "The Bronze Hour",
+    "status": "redesigned",
+    "original": "gallery",
+    "layout": "editorial",
+    "surface": "outline",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "anniversaries",
+    "id": "pottery-studio-ninth-anniversary",
+    "name": "Made for Each Other",
+    "status": "redesigned",
+    "original": "atelier",
+    "layout": "stagger",
+    "surface": "scallop",
+    "heading": "number",
+    "flow": "people"
+  },
+  {
+    "category": "anniversaries",
+    "id": "steel-skyline-eleventh-anniversary",
+    "name": "City, After Dark",
+    "status": "preserved",
+    "original": "club"
+  },
+  {
+    "category": "anniversaries",
+    "id": "silk-moon-twelfth-anniversary",
+    "name": "Silk Moon",
+    "status": "preserved",
+    "original": "storybook"
+  },
+  {
+    "category": "anniversaries",
+    "id": "lace-heirloom-thirteenth-anniversary",
+    "name": "Lace & Heirlooms",
+    "status": "redesigned",
+    "original": "archive",
+    "layout": "stagger",
+    "surface": "ticket",
+    "heading": "ribbon",
+    "flow": "people"
+  },
+  {
+    "category": "anniversaries",
+    "id": "ivory-orchid-fourteenth-anniversary",
+    "name": "Ivory Orchid",
+    "status": "redesigned",
+    "original": "gallery",
+    "layout": "editorial",
+    "surface": "ruled",
+    "heading": "masthead",
+    "flow": "invitation"
+  },
+  {
+    "category": "anniversaries",
+    "id": "sapphire-evening-anniversary",
+    "name": "Sapphire Soirée",
+    "status": "redesigned",
+    "original": "banquet",
+    "layout": "columns",
+    "surface": "double",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "anniversaries",
+    "id": "emerald-conservatory-anniversary",
+    "name": "Emerald Conservatory",
+    "status": "redesigned",
+    "original": "garden",
+    "layout": "stagger",
+    "surface": "frame",
+    "heading": "caption",
+    "flow": "people"
+  },
+  {
+    "category": "anniversaries",
+    "id": "diamond-light-sixtieth-anniversary",
+    "name": "Diamond Light",
+    "status": "redesigned",
+    "original": "salon",
+    "layout": "stagger",
+    "surface": "cut",
+    "heading": "underline",
+    "flow": "people"
+  },
+  {
+    "category": "anniversaries",
+    "id": "hydrangea-house-anniversary",
+    "name": "Hydrangea House",
+    "status": "redesigned",
+    "original": "journal",
+    "layout": "book",
+    "surface": "bound",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "anniversaries",
+    "id": "amalfi-postcard-anniversary",
+    "name": "Amalfi, With Love",
+    "status": "preserved",
+    "original": "coast"
+  },
+  {
+    "category": "anniversaries",
+    "id": "stargazer-vows-anniversary",
+    "name": "Written in the Stars",
+    "status": "preserved",
+    "original": "mission"
+  },
+  {
+    "category": "anniversaries",
+    "id": "vinyl-love-song-anniversary",
+    "name": "Our Favorite Record",
+    "status": "redesigned",
+    "original": "lounge",
+    "layout": "gallery",
+    "surface": "offset",
+    "heading": "ribbon",
+    "flow": "memories"
+  },
+  {
+    "category": "anniversaries",
+    "id": "desert-sunrise-anniversary",
+    "name": "Desert, Together",
+    "status": "preserved",
+    "original": "dunes"
+  },
+  {
+    "category": "anniversaries",
+    "id": "champagne-midnight-anniversary",
+    "name": "Midnight Champagne",
+    "status": "redesigned",
+    "original": "stage",
+    "layout": "poster",
+    "surface": "ticket",
+    "heading": "number",
+    "flow": "invitation"
+  },
+  {
+    "category": "baby-showers",
+    "id": "pear-orchard-cradle",
+    "name": "Pear Orchard Cradle",
+    "status": "preserved",
+    "original": "Botanical"
+  },
+  {
+    "category": "baby-showers",
+    "id": "otterly-loved",
+    "name": "Otterly Loved",
+    "status": "preserved",
+    "original": "Woodland"
+  },
+  {
+    "category": "baby-showers",
+    "id": "starlight-observatory",
+    "name": "Starlight Observatory",
+    "status": "preserved",
+    "original": "Celestial"
+  },
+  {
+    "category": "baby-showers",
+    "id": "peach-patisserie",
+    "name": "Peach Patisserie",
+    "status": "preserved",
+    "original": "Food & Fun"
+  },
+  {
+    "category": "baby-showers",
+    "id": "whale-song-bay",
+    "name": "Whale Song Bay",
+    "status": "preserved",
+    "original": "Coastal"
+  },
+  {
+    "category": "baby-showers",
+    "id": "marigold-courtyard",
+    "name": "Marigold Courtyard",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "petal",
+    "heading": "number",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "bunny-burrow-brunch",
+    "name": "Bunny Burrow Brunch",
+    "status": "redesigned",
+    "original": "Woodland",
+    "layout": "stagger",
+    "surface": "arch",
+    "heading": "side",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "paper-kite-parade",
+    "name": "Paper Kite Parade",
+    "status": "preserved",
+    "original": "Playful"
+  },
+  {
+    "category": "baby-showers",
+    "id": "rosewater-hammam",
+    "name": "Rosewater Reverie",
+    "status": "preserved",
+    "original": "Elegant"
+  },
+  {
+    "category": "baby-showers",
+    "id": "apricot-quilt-club",
+    "name": "Apricot Quilt Club",
+    "status": "redesigned",
+    "original": "Artisan",
+    "layout": "book",
+    "surface": "scallop",
+    "heading": "caption",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "little-lighthouse",
+    "name": "Little Lighthouse",
+    "status": "redesigned",
+    "original": "Coastal",
+    "layout": "islands",
+    "surface": "wave",
+    "heading": "caption",
+    "flow": "memories"
+  },
+  {
+    "category": "baby-showers",
+    "id": "fig-and-fern",
+    "name": "Fig & Fern",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "stone",
+    "heading": "masthead",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "duckling-puddle-party",
+    "name": "Duckling Puddle Party",
+    "status": "redesigned",
+    "original": "Playful",
+    "layout": "stagger",
+    "surface": "scallop",
+    "heading": "number",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "swan-lake-serenade",
+    "name": "Swan Lake Serenade",
+    "status": "redesigned",
+    "original": "Elegant",
+    "layout": "stagger",
+    "surface": "ticket",
+    "heading": "ribbon",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "clementine-sunroom",
+    "name": "Clementine Sunroom",
+    "status": "redesigned",
+    "original": "Food & Fun",
+    "layout": "ledger",
+    "surface": "double",
+    "heading": "ribbon",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "hummingbird-haven",
+    "name": "Hummingbird Haven",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "frame",
+    "heading": "caption",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "gingham-goose",
+    "name": "Gingham Goose",
+    "status": "redesigned",
+    "original": "Farm & Garden",
+    "layout": "terraces",
+    "surface": "bound",
+    "heading": "side",
+    "flow": "memories"
+  },
+  {
+    "category": "baby-showers",
+    "id": "moon-jelly-drift",
+    "name": "Moon Jelly Drift",
+    "status": "redesigned",
+    "original": "Celestial",
+    "layout": "rail",
+    "surface": "notch",
+    "heading": "underline",
+    "flow": "practical"
+  },
+  {
+    "category": "baby-showers",
+    "id": "cherry-bow-social",
+    "name": "Cherry Bow Social",
+    "status": "redesigned",
+    "original": "Food & Fun",
+    "layout": "gallery",
+    "surface": "offset",
+    "heading": "ribbon",
+    "flow": "memories"
+  },
+  {
+    "category": "baby-showers",
+    "id": "alpine-fawn",
+    "name": "Alpine Fawn",
+    "status": "redesigned",
+    "original": "Woodland",
+    "layout": "stagger",
+    "surface": "cut",
+    "heading": "underline",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "rainbow-prism-studio",
+    "name": "Rainbow Prism Studio",
+    "status": "preserved",
+    "original": "Modern"
+  },
+  {
+    "category": "baby-showers",
+    "id": "hibiscus-hideaway",
+    "name": "Hibiscus Hideaway",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "capsule",
+    "heading": "masthead",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "pocket-robot",
+    "name": "Pocket Robot",
+    "status": "redesigned",
+    "original": "Playful",
+    "layout": "rail",
+    "surface": "facet",
+    "heading": "number",
+    "flow": "practical"
+  },
+  {
+    "category": "baby-showers",
+    "id": "lavender-laundry",
+    "name": "Lavender Laundry",
+    "status": "redesigned",
+    "original": "Artisan",
+    "layout": "stagger",
+    "surface": "ruled",
+    "heading": "side",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "turtle-tidepool",
+    "name": "Turtle Tidepool",
+    "status": "redesigned",
+    "original": "Coastal",
+    "layout": "islands",
+    "surface": "oval",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "baby-showers",
+    "id": "strawberry-stitch",
+    "name": "Strawberry Stitch",
+    "status": "redesigned",
+    "original": "Artisan",
+    "layout": "islands",
+    "surface": "capsule",
+    "heading": "number",
+    "flow": "memories"
+  },
+  {
+    "category": "baby-showers",
+    "id": "desert-tortoise",
+    "name": "Desert Tortoise",
+    "status": "redesigned",
+    "original": "Woodland",
+    "layout": "stagger",
+    "surface": "bracket",
+    "heading": "ribbon",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "origami-crane-wishes",
+    "name": "Origami Crane Wishes",
+    "status": "redesigned",
+    "original": "Artisan",
+    "layout": "book",
+    "surface": "bound",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "baby-showers",
+    "id": "blueberry-breakfast",
+    "name": "Blueberry Breakfast",
+    "status": "redesigned",
+    "original": "Food & Fun",
+    "layout": "ledger",
+    "surface": "ruled",
+    "heading": "underline",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "foxglove-fairy-door",
+    "name": "Foxglove Fairy Door",
+    "status": "redesigned",
+    "original": "Woodland",
+    "layout": "stagger",
+    "surface": "offset",
+    "heading": "caption",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "polka-dot-puppy",
+    "name": "Polka Dot Puppy",
+    "status": "redesigned",
+    "original": "Playful",
+    "layout": "editorial",
+    "surface": "outline",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "baby-showers",
+    "id": "magnolia-morning",
+    "name": "Magnolia Morning",
+    "status": "redesigned",
+    "original": "Elegant",
+    "layout": "gallery",
+    "surface": "bracket",
+    "heading": "side",
+    "flow": "memories"
+  },
+  {
+    "category": "baby-showers",
+    "id": "tiny-train-ticket",
+    "name": "Tiny Train Ticket",
+    "status": "redesigned",
+    "original": "Playful",
+    "layout": "path",
+    "surface": "ticket",
+    "heading": "ribbon",
+    "flow": "practical"
+  },
+  {
+    "category": "baby-showers",
+    "id": "water-lily-welcome",
+    "name": "Water Lily Welcome",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "double",
+    "heading": "number",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "cocoa-cabin",
+    "name": "Cocoa Cabin",
+    "status": "preserved",
+    "original": "Seasonal"
+  },
+  {
+    "category": "baby-showers",
+    "id": "bubblegum-carousel",
+    "name": "Bubblegum Carousel",
+    "status": "redesigned",
+    "original": "Playful",
+    "layout": "gallery",
+    "surface": "frame",
+    "heading": "ribbon",
+    "flow": "memories"
+  },
+  {
+    "category": "baby-showers",
+    "id": "olive-oil-bambino",
+    "name": "Olive Oil Bambino",
+    "status": "redesigned",
+    "original": "Food & Fun",
+    "layout": "ledger",
+    "surface": "arch",
+    "heading": "underline",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "little-bookbindery",
+    "name": "Little Bookbindery",
+    "status": "redesigned",
+    "original": "Artisan",
+    "layout": "stagger",
+    "surface": "wave",
+    "heading": "underline",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "dandelion-post",
+    "name": "Dandelion Post",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "bound",
+    "heading": "masthead",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "koala-eucalyptus-club",
+    "name": "Koala Eucalyptus Club",
+    "status": "redesigned",
+    "original": "Woodland",
+    "layout": "stagger",
+    "surface": "oval",
+    "heading": "side",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "sugarplum-music-box",
+    "name": "Sugarplum Music Box",
+    "status": "redesigned",
+    "original": "Elegant",
+    "layout": "poster",
+    "surface": "ticket",
+    "heading": "number",
+    "flow": "invitation"
+  },
+  {
+    "category": "baby-showers",
+    "id": "tiny-tennis-club",
+    "name": "Tiny Tennis Club",
+    "status": "redesigned",
+    "original": "Playful",
+    "layout": "poster",
+    "surface": "pennant",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "baby-showers",
+    "id": "pumpkin-patch-promise",
+    "name": "Pumpkin Patch Promise",
+    "status": "redesigned",
+    "original": "Seasonal",
+    "layout": "islands",
+    "surface": "arch",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "baby-showers",
+    "id": "sea-horse-garden",
+    "name": "Seahorse Garden",
+    "status": "redesigned",
+    "original": "Coastal",
+    "layout": "stagger",
+    "surface": "notch",
+    "heading": "ribbon",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "silk-ribbon-atelier",
+    "name": "Silk Ribbon Atelier",
+    "status": "redesigned",
+    "original": "Elegant",
+    "layout": "columns",
+    "surface": "double",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "baby-showers",
+    "id": "cloud-nine-airmail",
+    "name": "Cloud Nine Airmail",
+    "status": "redesigned",
+    "original": "Celestial",
+    "layout": "rail",
+    "surface": "frame",
+    "heading": "masthead",
+    "flow": "practical"
+  },
+  {
+    "category": "baby-showers",
+    "id": "chrysanthemum-tea",
+    "name": "Chrysanthemum Tea",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "terrace",
+    "heading": "caption",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "maple-mouse-house",
+    "name": "Maple Mouse House",
+    "status": "redesigned",
+    "original": "Woodland",
+    "layout": "stagger",
+    "surface": "pennant",
+    "heading": "underline",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "snowdrop-first-light",
+    "name": "Snowdrop First Light",
+    "status": "redesigned",
+    "original": "Seasonal",
+    "layout": "islands",
+    "surface": "ticket",
+    "heading": "masthead",
+    "flow": "memories"
+  },
+  {
+    "category": "baby-showers",
+    "id": "confetti-clay-play",
+    "name": "Confetti Clay Play",
+    "status": "redesigned",
+    "original": "Modern",
+    "layout": "gallery",
+    "surface": "notch",
+    "heading": "side",
+    "flow": "memories"
+  },
+  {
+    "category": "baby-showers",
+    "id": "pomegranate-blessing",
+    "name": "Pomegranate Blessing",
+    "status": "redesigned",
+    "original": "Elegant",
+    "layout": "columns",
+    "surface": "arch",
+    "heading": "ribbon",
+    "flow": "invitation"
+  },
+  {
+    "category": "baby-showers",
+    "id": "meadow-lamb",
+    "name": "Meadow Lamb",
+    "status": "redesigned",
+    "original": "Farm & Garden",
+    "layout": "stagger",
+    "surface": "facet",
+    "heading": "side",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "peony-parasol",
+    "name": "Peony Parasol",
+    "status": "redesigned",
+    "original": "Elegant",
+    "layout": "stagger",
+    "surface": "outline",
+    "heading": "ribbon",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "saffron-sunset-camper",
+    "name": "Saffron Sunset Camper",
+    "status": "redesigned",
+    "original": "Playful",
+    "layout": "book",
+    "surface": "double",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "baby-showers",
+    "id": "jasmine-crescent",
+    "name": "Jasmine Crescent",
+    "status": "redesigned",
+    "original": "Celestial",
+    "layout": "rail",
+    "surface": "capsule",
+    "heading": "caption",
+    "flow": "practical"
+  },
+  {
+    "category": "baby-showers",
+    "id": "little-artichoke",
+    "name": "Little Artichoke",
+    "status": "redesigned",
+    "original": "Farm & Garden",
+    "layout": "columns",
+    "surface": "petal",
+    "heading": "underline",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "penguin-postcard",
+    "name": "Penguin Postcard",
+    "status": "redesigned",
+    "original": "Seasonal",
+    "layout": "islands",
+    "surface": "frame",
+    "heading": "side",
+    "flow": "memories"
+  },
+  {
+    "category": "baby-showers",
+    "id": "golden-ginkgo",
+    "name": "Golden Ginkgo",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "columns",
+    "surface": "stone",
+    "heading": "side",
+    "flow": "people"
+  },
+  {
+    "category": "baby-showers",
+    "id": "macaron-moonwalk",
+    "name": "Macaron Moonwalk",
+    "status": "redesigned",
+    "original": "Celestial",
+    "layout": "rail",
+    "surface": "arch",
+    "heading": "number",
+    "flow": "practical"
+  },
+  {
+    "category": "baby-showers",
+    "id": "willow-wishing-boat",
+    "name": "Willow Wishing Boat",
+    "status": "redesigned",
+    "original": "Coastal",
+    "layout": "islands",
+    "surface": "petal",
+    "heading": "ribbon",
+    "flow": "memories"
+  },
+  {
+    "category": "bridal-showers",
+    "id": "champagne-gold",
+    "name": "Champagne Gold",
+    "status": "preserved",
+    "original": "shared"
+  },
+  {
+    "category": "bridal-showers",
+    "id": "botanical-sage",
+    "name": "Botanical Sage",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "stagger",
+    "surface": "petal",
+    "heading": "number",
+    "flow": "people"
+  },
+  {
+    "category": "bridal-showers",
+    "id": "rose-quartz",
+    "name": "Rose Quartz",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "book",
+    "surface": "bound",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "petal-post",
+    "name": "Petal Post",
+    "status": "preserved",
+    "original": "Botanical"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "moonlit-menagerie",
+    "name": "Moonlit Menagerie",
+    "status": "preserved",
+    "original": "Storybook"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "citrus-secret",
+    "name": "Citrus Secret",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "petal",
+    "heading": "number",
+    "flow": "people"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "velvet-curtain",
+    "name": "Velvet Curtain",
+    "status": "preserved",
+    "original": "Editorial"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "pearl-in-the-tide",
+    "name": "Pearl in the Tide",
+    "status": "redesigned",
+    "original": "Coastal",
+    "layout": "path",
+    "surface": "wave",
+    "heading": "ribbon",
+    "flow": "memories"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "paper-kite-parade",
+    "name": "Paper Kite Parade",
+    "status": "preserved",
+    "original": "Playful"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "fig-garden-gathering",
+    "name": "Fig Garden Gathering",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "arch",
+    "heading": "side",
+    "flow": "people"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "stardust-telegram",
+    "name": "Stardust Telegram",
+    "status": "preserved",
+    "original": "Celestial"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "gingham-goose",
+    "name": "Gingham Goose",
+    "status": "redesigned",
+    "original": "Storybook",
+    "layout": "stagger",
+    "surface": "stone",
+    "heading": "masthead",
+    "flow": "people"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "cherry-soda-surprise",
+    "name": "Cherry Soda Surprise",
+    "status": "redesigned",
+    "original": "Playful",
+    "layout": "editorial",
+    "surface": "outline",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "desert-lullaby",
+    "name": "Desert Lullaby",
+    "status": "preserved",
+    "original": "Landscape"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "porcelain-wishes",
+    "name": "Porcelain Wishes",
+    "status": "redesigned",
+    "original": "Editorial",
+    "layout": "ledger",
+    "surface": "double",
+    "heading": "ribbon",
+    "flow": "people"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "firefly-meadow",
+    "name": "Firefly Meadow",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "scallop",
+    "heading": "number",
+    "flow": "people"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "little-lunar-landing",
+    "name": "Little Lunar Landing",
+    "status": "redesigned",
+    "original": "Celestial",
+    "layout": "rail",
+    "surface": "notch",
+    "heading": "underline",
+    "flow": "practical"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "apricot-atelier",
+    "name": "Apricot Atelier",
+    "status": "redesigned",
+    "original": "Editorial",
+    "layout": "editorial",
+    "surface": "ruled",
+    "heading": "masthead",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "otterly-awaited",
+    "name": "Otterly Awaited",
+    "status": "redesigned",
+    "original": "Storybook",
+    "layout": "book",
+    "surface": "bound",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "wildflower-press",
+    "name": "Wildflower Press",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "ticket",
+    "heading": "ribbon",
+    "flow": "people"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "carousel-whisper",
+    "name": "Carousel Whisper",
+    "status": "redesigned",
+    "original": "Storybook",
+    "layout": "book",
+    "surface": "double",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "seasalt-letter",
+    "name": "Seasalt Letter",
+    "status": "redesigned",
+    "original": "Coastal",
+    "layout": "islands",
+    "surface": "wave",
+    "heading": "caption",
+    "flow": "memories"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "plum-orbit",
+    "name": "Plum Orbit",
+    "status": "redesigned",
+    "original": "Celestial",
+    "layout": "rail",
+    "surface": "facet",
+    "heading": "number",
+    "flow": "practical"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "marigold-courtyard",
+    "name": "Marigold Courtyard",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "frame",
+    "heading": "caption",
+    "flow": "people"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "tiny-ticket",
+    "name": "Tiny Ticket",
+    "status": "redesigned",
+    "original": "Playful",
+    "layout": "editorial",
+    "surface": "terrace",
+    "heading": "ribbon",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "origami-crane-club",
+    "name": "Origami Crane Club",
+    "status": "redesigned",
+    "original": "Editorial",
+    "layout": "book",
+    "surface": "frame",
+    "heading": "number",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "maple-mitten",
+    "name": "Maple Mitten",
+    "status": "redesigned",
+    "original": "Storybook",
+    "layout": "book",
+    "surface": "outline",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "lavender-lantern",
+    "name": "Lavender Lantern",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "cut",
+    "heading": "underline",
+    "flow": "people"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "confetti-confidant",
+    "name": "Confetti Confidant",
+    "status": "redesigned",
+    "original": "Playful",
+    "layout": "stagger",
+    "surface": "capsule",
+    "heading": "masthead",
+    "flow": "people"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "bluebell-burrow",
+    "name": "Bluebell Burrow",
+    "status": "redesigned",
+    "original": "Storybook",
+    "layout": "book",
+    "surface": "arch",
+    "heading": "ribbon",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "saffron-supper",
+    "name": "Saffron Supper",
+    "status": "redesigned",
+    "original": "Editorial",
+    "layout": "ledger",
+    "surface": "ruled",
+    "heading": "underline",
+    "flow": "people"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "rainbow-ribbons",
+    "name": "Rainbow Ribbons",
+    "status": "redesigned",
+    "original": "Playful",
+    "layout": "islands",
+    "surface": "oval",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "snowdrop-secret",
+    "name": "Snowdrop Secret",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "ruled",
+    "heading": "side",
+    "flow": "people"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "rocket-pocket",
+    "name": "Rocket Pocket",
+    "status": "redesigned",
+    "original": "Celestial",
+    "layout": "rail",
+    "surface": "frame",
+    "heading": "masthead",
+    "flow": "practical"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "rooftop-reverie",
+    "name": "Rooftop Reverie",
+    "status": "redesigned",
+    "original": "Editorial",
+    "layout": "editorial",
+    "surface": "petal",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "pistachio-patisserie",
+    "name": "Pistachio Patisserie",
+    "status": "redesigned",
+    "original": "Playful",
+    "layout": "stagger",
+    "surface": "bracket",
+    "heading": "ribbon",
+    "flow": "people"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "whale-song",
+    "name": "Whale Song",
+    "status": "redesigned",
+    "original": "Coastal",
+    "layout": "islands",
+    "surface": "capsule",
+    "heading": "number",
+    "flow": "memories"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "secret-greenhouse",
+    "name": "Secret Greenhouse",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "offset",
+    "heading": "caption",
+    "flow": "people"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "sunbeam-studio",
+    "name": "Sunbeam Studio",
+    "status": "redesigned",
+    "original": "Editorial",
+    "layout": "book",
+    "surface": "ticket",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "balloon-cartographer",
+    "name": "Balloon Cartographer",
+    "status": "redesigned",
+    "original": "Storybook",
+    "layout": "islands",
+    "surface": "arch",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "rosewater-ripple",
+    "name": "Rosewater Ripple",
+    "status": "redesigned",
+    "original": "Editorial",
+    "layout": "editorial",
+    "surface": "arch",
+    "heading": "masthead",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "little-acorn-almanac",
+    "name": "Little Acorn Almanac",
+    "status": "redesigned",
+    "original": "Storybook",
+    "layout": "book",
+    "surface": "petal",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "midnight-macaron",
+    "name": "Midnight Macaron",
+    "status": "redesigned",
+    "original": "Editorial",
+    "layout": "rail",
+    "surface": "capsule",
+    "heading": "caption",
+    "flow": "practical"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "coral-cove",
+    "name": "Coral Cove",
+    "status": "redesigned",
+    "original": "Coastal",
+    "layout": "islands",
+    "surface": "ticket",
+    "heading": "masthead",
+    "flow": "memories"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "storybook-suitcase",
+    "name": "Storybook Suitcase",
+    "status": "redesigned",
+    "original": "Storybook",
+    "layout": "book",
+    "surface": "cut",
+    "heading": "masthead",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "dahlia-daydream",
+    "name": "Dahlia Daydream",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "double",
+    "heading": "number",
+    "flow": "people"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "terracotta-tidings",
+    "name": "Terracotta Tidings",
+    "status": "redesigned",
+    "original": "Editorial",
+    "layout": "editorial",
+    "surface": "ticket",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "juniper-cabin",
+    "name": "Juniper Cabin",
+    "status": "redesigned",
+    "original": "Landscape",
+    "layout": "editorial",
+    "surface": "frame",
+    "heading": "ribbon",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "little-record",
+    "name": "Little Record",
+    "status": "redesigned",
+    "original": "Playful",
+    "layout": "islands",
+    "surface": "frame",
+    "heading": "side",
+    "flow": "memories"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "butterfly-conservatory",
+    "name": "Butterfly Conservatory",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "wave",
+    "heading": "underline",
+    "flow": "people"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "honeyed-horizon",
+    "name": "Honeyed Horizon",
+    "status": "redesigned",
+    "original": "Landscape",
+    "layout": "columns",
+    "surface": "double",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "cloud-nine-cinema",
+    "name": "Cloud Nine Cinema",
+    "status": "redesigned",
+    "original": "Playful",
+    "layout": "gallery",
+    "surface": "offset",
+    "heading": "ribbon",
+    "flow": "memories"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "raspberry-rendezvous",
+    "name": "Raspberry Rendezvous",
+    "status": "redesigned",
+    "original": "Editorial",
+    "layout": "editorial",
+    "surface": "cut",
+    "heading": "number",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "waterlily-wonder",
+    "name": "Waterlily Wonder",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "bound",
+    "heading": "masthead",
+    "flow": "people"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "brass-compass",
+    "name": "Brass Compass",
+    "status": "redesigned",
+    "original": "Editorial",
+    "layout": "gallery",
+    "surface": "bracket",
+    "heading": "side",
+    "flow": "memories"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "plush-panda-promise",
+    "name": "Plush Panda Promise",
+    "status": "redesigned",
+    "original": "Storybook",
+    "layout": "book",
+    "surface": "capsule",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "golden-ginkgo",
+    "name": "Golden Ginkgo",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "oval",
+    "heading": "side",
+    "flow": "people"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "sherbet-skies",
+    "name": "Sherbet Skies",
+    "status": "redesigned",
+    "original": "Celestial",
+    "layout": "rail",
+    "surface": "arch",
+    "heading": "number",
+    "flow": "practical"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "storybook-swan",
+    "name": "Storybook Swan",
+    "status": "redesigned",
+    "original": "Storybook",
+    "layout": "mosaic",
+    "surface": "cut",
+    "heading": "ribbon",
+    "flow": "practical"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "olive-branch-oath",
+    "name": "Olive Branch Oath",
+    "status": "redesigned",
+    "original": "Botanical",
+    "layout": "stagger",
+    "surface": "notch",
+    "heading": "ribbon",
+    "flow": "people"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "velvet-mushroom",
+    "name": "Velvet Mushroom",
+    "status": "redesigned",
+    "original": "Storybook",
+    "layout": "stagger",
+    "surface": "terrace",
+    "heading": "caption",
+    "flow": "people"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "prism-keepsake",
+    "name": "Prism Keepsake",
+    "status": "redesigned",
+    "original": "Editorial",
+    "layout": "editorial",
+    "surface": "capsule",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "gender-reveal",
+    "id": "first-light-fable",
+    "name": "First Light Fable",
+    "status": "redesigned",
+    "original": "Landscape",
+    "layout": "editorial",
+    "surface": "bracket",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "gymnastics",
+    "id": "airborne-atlas",
+    "name": "Airborne Atlas",
+    "status": "preserved",
+    "original": "airborne-atlas"
+  },
+  {
+    "category": "gymnastics",
+    "id": "neon-runway",
+    "name": "Neon Runway",
+    "status": "preserved",
+    "original": "neon-runway"
+  },
+  {
+    "category": "gymnastics",
+    "id": "petal-poise",
+    "name": "Petal & Poise",
+    "status": "preserved",
+    "original": "petal-poise"
+  },
+  {
+    "category": "gymnastics",
+    "id": "copper-grip",
+    "name": "Copper Grip",
+    "status": "preserved",
+    "original": "copper-grip"
+  },
+  {
+    "category": "gymnastics",
+    "id": "tidal-tumble",
+    "name": "Tidal Tumble",
+    "status": "preserved",
+    "original": "tidal-tumble"
+  },
+  {
+    "category": "gymnastics",
+    "id": "crimson-collegiate",
+    "name": "Crimson Collegiate",
+    "status": "preserved",
+    "original": "crimson-collegiate"
+  },
+  {
+    "category": "gymnastics",
+    "id": "moonbeam-balance",
+    "name": "Moonbeam Balance",
+    "status": "preserved",
+    "original": "moonbeam-balance"
+  },
+  {
+    "category": "gymnastics",
+    "id": "citrus-springboard",
+    "name": "Citrus Springboard",
+    "status": "preserved",
+    "original": "citrus-springboard"
+  },
+  {
+    "category": "gymnastics",
+    "id": "monochrome-flight",
+    "name": "Monochrome Flight",
+    "status": "preserved",
+    "original": "monochrome-flight"
+  },
+  {
+    "category": "gymnastics",
+    "id": "desert-dismount",
+    "name": "Desert Dismount",
+    "status": "preserved",
+    "original": "desert-dismount"
+  },
+  {
+    "category": "gymnastics",
+    "id": "prism-routine",
+    "name": "Prism Routine",
+    "status": "preserved",
+    "original": "prism-routine"
+  },
+  {
+    "category": "gymnastics",
+    "id": "maple-medal",
+    "name": "Maple Medal",
+    "status": "preserved",
+    "original": "maple-medal"
+  },
+  {
+    "category": "gymnastics",
+    "id": "electric-orchid",
+    "name": "Electric Orchid",
+    "status": "preserved",
+    "original": "electric-orchid"
+  },
+  {
+    "category": "gymnastics",
+    "id": "porcelain-podium",
+    "name": "Porcelain Podium",
+    "status": "preserved",
+    "original": "porcelain-podium"
+  },
+  {
+    "category": "gymnastics",
+    "id": "rally-pennants",
+    "name": "Rally Pennants",
+    "status": "preserved",
+    "original": "rally-pennants"
+  },
+  {
+    "category": "gymnastics",
+    "id": "rose-quartz-rise",
+    "name": "Rose Quartz Rise",
+    "status": "preserved",
+    "original": "rose-quartz-rise"
+  },
+  {
+    "category": "gymnastics",
+    "id": "velocity-blueprint",
+    "name": "Velocity Blueprint",
+    "status": "preserved",
+    "original": "velocity-blueprint"
+  },
+  {
+    "category": "gymnastics",
+    "id": "jungle-cartwheel",
+    "name": "Jungle Cartwheel",
+    "status": "preserved",
+    "original": "jungle-cartwheel"
+  },
+  {
+    "category": "gymnastics",
+    "id": "saffron-salute",
+    "name": "Saffron Salute",
+    "status": "preserved",
+    "original": "saffron-salute"
+  },
+  {
+    "category": "gymnastics",
+    "id": "silver-apparatus",
+    "name": "Silver Apparatus",
+    "status": "preserved",
+    "original": "silver-apparatus"
+  },
+  {
+    "category": "gymnastics",
+    "id": "aurora-chalk",
+    "name": "Aurora Chalk",
+    "status": "preserved",
+    "original": "aurora-chalk"
+  },
+  {
+    "category": "gymnastics",
+    "id": "peach-practice",
+    "name": "Peach Practice",
+    "status": "preserved",
+    "original": "peach-practice"
+  },
+  {
+    "category": "gymnastics",
+    "id": "grandstand-gold",
+    "name": "Grandstand Gold",
+    "status": "preserved",
+    "original": "grandstand-gold"
+  },
+  {
+    "category": "gymnastics",
+    "id": "indigo-ink",
+    "name": "Indigo Ink",
+    "status": "preserved",
+    "original": "indigo-ink"
+  },
+  {
+    "category": "gymnastics",
+    "id": "coral-clubhouse",
+    "name": "Coral Clubhouse",
+    "status": "preserved",
+    "original": "coral-clubhouse"
+  },
+  {
+    "category": "gymnastics",
+    "id": "alpine-ascent",
+    "name": "Alpine Ascent",
+    "status": "preserved",
+    "original": "alpine-ascent"
+  },
+  {
+    "category": "gymnastics",
+    "id": "confetti-kip",
+    "name": "Confetti Kip",
+    "status": "preserved",
+    "original": "confetti-kip"
+  },
+  {
+    "category": "gymnastics",
+    "id": "midnight-marquee",
+    "name": "Midnight Marquee",
+    "status": "preserved",
+    "original": "midnight-marquee"
+  },
+  {
+    "category": "gymnastics",
+    "id": "willow-warmup",
+    "name": "Willow Warmup",
+    "status": "preserved",
+    "original": "willow-warmup"
+  },
+  {
+    "category": "gymnastics",
+    "id": "studio-arc",
+    "name": "Studio Arc",
+    "status": "preserved",
+    "original": "studio-arc"
+  },
+  {
+    "category": "gymnastics",
+    "id": "cherry-blossom-vault",
+    "name": "Cherry Blossom Vault",
+    "status": "preserved",
+    "original": "cherry-blossom-vault"
+  },
+  {
+    "category": "gymnastics",
+    "id": "oceanic-rings",
+    "name": "Oceanic Rings",
+    "status": "preserved",
+    "original": "oceanic-rings"
+  },
+  {
+    "category": "gymnastics",
+    "id": "flame-focus",
+    "name": "Flame & Focus",
+    "status": "preserved",
+    "original": "flame-focus"
+  },
+  {
+    "category": "gymnastics",
+    "id": "lilac-leap",
+    "name": "Lilac Leap",
+    "status": "preserved",
+    "original": "lilac-leap"
+  },
+  {
+    "category": "gymnastics",
+    "id": "court-of-champions",
+    "name": "Court of Champions",
+    "status": "preserved",
+    "original": "court-of-champions"
+  },
+  {
+    "category": "gymnastics",
+    "id": "papaya-pop",
+    "name": "Papaya Pop",
+    "status": "preserved",
+    "original": "papaya-pop"
+  },
+  {
+    "category": "gymnastics",
+    "id": "obsidian-precision",
+    "name": "Obsidian Precision",
+    "status": "preserved",
+    "original": "obsidian-precision"
+  },
+  {
+    "category": "gymnastics",
+    "id": "bluebird-morning",
+    "name": "Bluebird Morning",
+    "status": "preserved",
+    "original": "bluebird-morning"
+  },
+  {
+    "category": "gymnastics",
+    "id": "terrazzo-team",
+    "name": "Terrazzo Team",
+    "status": "preserved",
+    "original": "terrazzo-team"
+  },
+  {
+    "category": "gymnastics",
+    "id": "amethyst-arena",
+    "name": "Amethyst Arena",
+    "status": "preserved",
+    "original": "amethyst-arena"
+  },
+  {
+    "category": "gymnastics",
+    "id": "golden-hour-gym",
+    "name": "Golden Hour Gym",
+    "status": "preserved",
+    "original": "golden-hour-gym"
+  },
+  {
+    "category": "gymnastics",
+    "id": "aqua-acrobat",
+    "name": "Aqua Acrobat",
+    "status": "preserved",
+    "original": "aqua-acrobat"
+  },
+  {
+    "category": "gymnastics",
+    "id": "red-clay-rotation",
+    "name": "Red Clay Rotation",
+    "status": "preserved",
+    "original": "red-clay-rotation"
+  },
+  {
+    "category": "gymnastics",
+    "id": "starfall-session",
+    "name": "Starfall Session",
+    "status": "preserved",
+    "original": "starfall-session"
+  },
+  {
+    "category": "gymnastics",
+    "id": "daisy-daybreak",
+    "name": "Daisy Daybreak",
+    "status": "preserved",
+    "original": "daisy-daybreak"
+  },
+  {
+    "category": "gymnastics",
+    "id": "metro-motion",
+    "name": "Metro Motion",
+    "status": "preserved",
+    "original": "metro-motion"
+  },
+  {
+    "category": "gymnastics",
+    "id": "velvet-victory",
+    "name": "Velvet Victory",
+    "status": "preserved",
+    "original": "velvet-victory"
+  },
+  {
+    "category": "gymnastics",
+    "id": "mint-condition",
+    "name": "Mint Condition",
+    "status": "preserved",
+    "original": "mint-condition"
+  },
+  {
+    "category": "gymnastics",
+    "id": "sunflower-salute",
+    "name": "Sunflower Salute",
+    "status": "preserved",
+    "original": "sunflower-salute"
+  },
+  {
+    "category": "gymnastics",
+    "id": "polar-parallel",
+    "name": "Polar Parallel",
+    "status": "preserved",
+    "original": "polar-parallel"
+  },
+  {
+    "category": "gymnastics",
+    "id": "sienna-scorebook",
+    "name": "Sienna Scorebook",
+    "status": "preserved",
+    "original": "sienna-scorebook"
+  },
+  {
+    "category": "gymnastics",
+    "id": "bubblegum-bounce",
+    "name": "Bubblegum Bounce",
+    "status": "preserved",
+    "original": "bubblegum-bounce"
+  },
+  {
+    "category": "gymnastics",
+    "id": "evergreen-elevation",
+    "name": "Evergreen Elevation",
+    "status": "preserved",
+    "original": "evergreen-elevation"
+  },
+  {
+    "category": "gymnastics",
+    "id": "cobalt-circuit",
+    "name": "Cobalt Circuit",
+    "status": "preserved",
+    "original": "cobalt-circuit"
+  },
+  {
+    "category": "gymnastics",
+    "id": "ruby-ribbonline",
+    "name": "Ruby Ribbonline",
+    "status": "preserved",
+    "original": "ruby-ribbonline"
+  },
+  {
+    "category": "gymnastics",
+    "id": "sandstone-spring",
+    "name": "Sandstone Spring",
+    "status": "preserved",
+    "original": "sandstone-spring"
+  },
+  {
+    "category": "gymnastics",
+    "id": "lavender-locker",
+    "name": "Lavender Locker",
+    "status": "preserved",
+    "original": "lavender-locker"
+  },
+  {
+    "category": "gymnastics",
+    "id": "solar-somersault",
+    "name": "Solar Somersault",
+    "status": "preserved",
+    "original": "solar-somersault"
+  },
+  {
+    "category": "gymnastics",
+    "id": "blackberry-beam",
+    "name": "Blackberry Beam",
+    "status": "preserved",
+    "original": "blackberry-beam"
+  },
+  {
+    "category": "gymnastics",
+    "id": "skyline-sendoff",
+    "name": "Skyline Sendoff",
+    "status": "preserved",
+    "original": "skyline-sendoff"
+  },
+  {
+    "category": "sport-events",
+    "id": "football--stadium",
+    "name": "Football · Stadium",
+    "status": "preserved",
+    "original": "shared"
+  },
+  {
+    "category": "sport-events",
+    "id": "football--club",
+    "name": "Football · Club",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "mosaic",
+    "surface": "cut",
+    "heading": "ribbon",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "football--tournament",
+    "name": "Football · Tournament",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "mosaic",
+    "surface": "pennant",
+    "heading": "ribbon",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "baseball--stadium",
+    "name": "Baseball · Stadium",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "mosaic",
+    "surface": "bracket",
+    "heading": "underline",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "baseball--club",
+    "name": "Baseball · Club",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "poster",
+    "surface": "ticket",
+    "heading": "number",
+    "flow": "invitation"
+  },
+  {
+    "category": "sport-events",
+    "id": "baseball--tournament",
+    "name": "Baseball · Tournament",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "editorial",
+    "surface": "outline",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "sport-events",
+    "id": "softball--stadium",
+    "name": "Softball · Stadium",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "mosaic",
+    "surface": "ticket",
+    "heading": "underline",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "softball--club",
+    "name": "Softball · Club",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "poster",
+    "surface": "pennant",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "sport-events",
+    "id": "softball--tournament",
+    "name": "Softball · Tournament",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "editorial",
+    "surface": "ruled",
+    "heading": "masthead",
+    "flow": "invitation"
+  },
+  {
+    "category": "sport-events",
+    "id": "basketball--stadium",
+    "name": "Basketball · Stadium",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "mosaic",
+    "surface": "arch",
+    "heading": "number",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "basketball--club",
+    "name": "Basketball · Club",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "mosaic",
+    "surface": "frame",
+    "heading": "masthead",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "basketball--tournament",
+    "name": "Basketball · Tournament",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "mosaic",
+    "surface": "petal",
+    "heading": "side",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "soccer--stadium",
+    "name": "Soccer · Stadium",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "mosaic",
+    "surface": "capsule",
+    "heading": "caption",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "soccer--club",
+    "name": "Soccer · Club",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "mosaic",
+    "surface": "ruled",
+    "heading": "number",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "soccer--tournament",
+    "name": "Soccer · Tournament",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "mosaic",
+    "surface": "offset",
+    "heading": "masthead",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "volleyball--stadium",
+    "name": "Volleyball · Stadium",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "mosaic",
+    "surface": "double",
+    "heading": "side",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "volleyball--club",
+    "name": "Volleyball · Club",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "ledger",
+    "surface": "double",
+    "heading": "ribbon",
+    "flow": "people"
+  },
+  {
+    "category": "sport-events",
+    "id": "volleyball--tournament",
+    "name": "Volleyball · Tournament",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "ledger",
+    "surface": "ruled",
+    "heading": "underline",
+    "flow": "people"
+  },
+  {
+    "category": "sport-events",
+    "id": "hockey--stadium",
+    "name": "Hockey · Stadium",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "mosaic",
+    "surface": "wave",
+    "heading": "ribbon",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "hockey--club",
+    "name": "Hockey · Club",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "ledger",
+    "surface": "arch",
+    "heading": "underline",
+    "flow": "people"
+  },
+  {
+    "category": "sport-events",
+    "id": "hockey--tournament",
+    "name": "Hockey · Tournament",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "ledger",
+    "surface": "scallop",
+    "heading": "ribbon",
+    "flow": "people"
+  },
+  {
+    "category": "sport-events",
+    "id": "tennis--stadium",
+    "name": "Tennis · Stadium",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "rail",
+    "surface": "notch",
+    "heading": "underline",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "tennis--club",
+    "name": "Tennis · Club",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "rail",
+    "surface": "facet",
+    "heading": "number",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "tennis--tournament",
+    "name": "Tennis · Tournament",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "rail",
+    "surface": "frame",
+    "heading": "masthead",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "track-field--stadium",
+    "name": "Track & Field · Stadium",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "mosaic",
+    "surface": "bound",
+    "heading": "caption",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "track-field--club",
+    "name": "Track & Field · Club",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "poster",
+    "surface": "offset",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "sport-events",
+    "id": "track-field--tournament",
+    "name": "Track & Field · Tournament",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "editorial",
+    "surface": "terrace",
+    "heading": "ribbon",
+    "flow": "invitation"
+  },
+  {
+    "category": "sport-events",
+    "id": "swimming--stadium",
+    "name": "Swimming · Stadium",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "islands",
+    "surface": "wave",
+    "heading": "caption",
+    "flow": "memories"
+  },
+  {
+    "category": "sport-events",
+    "id": "swimming--club",
+    "name": "Swimming · Club",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "islands",
+    "surface": "oval",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "sport-events",
+    "id": "swimming--tournament",
+    "name": "Swimming · Tournament",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "islands",
+    "surface": "capsule",
+    "heading": "number",
+    "flow": "memories"
+  },
+  {
+    "category": "sport-events",
+    "id": "wrestling--stadium",
+    "name": "Wrestling · Stadium",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "rail",
+    "surface": "capsule",
+    "heading": "caption",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "wrestling--club",
+    "name": "Wrestling · Club",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "rail",
+    "surface": "arch",
+    "heading": "number",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "wrestling--tournament",
+    "name": "Wrestling · Tournament",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "rail",
+    "surface": "ticket",
+    "heading": "underline",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "lacrosse--stadium",
+    "name": "Lacrosse · Stadium",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "mosaic",
+    "surface": "oval",
+    "heading": "number",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "lacrosse--club",
+    "name": "Lacrosse · Club",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "ledger",
+    "surface": "ticket",
+    "heading": "masthead",
+    "flow": "people"
+  },
+  {
+    "category": "sport-events",
+    "id": "lacrosse--tournament",
+    "name": "Lacrosse · Tournament",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "ledger",
+    "surface": "frame",
+    "heading": "side",
+    "flow": "people"
+  },
+  {
+    "category": "sport-events",
+    "id": "cheerleading--stadium",
+    "name": "Cheerleading · Stadium",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "mosaic",
+    "surface": "notch",
+    "heading": "underline",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "cheerleading--club",
+    "name": "Cheerleading · Club",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "poster",
+    "surface": "facet",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "sport-events",
+    "id": "cheerleading--tournament",
+    "name": "Cheerleading · Tournament",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "editorial",
+    "surface": "petal",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "sport-events",
+    "id": "dance--stadium",
+    "name": "Dance · Stadium",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "mosaic",
+    "surface": "terrace",
+    "heading": "masthead",
+    "flow": "practical"
+  },
+  {
+    "category": "sport-events",
+    "id": "dance--club",
+    "name": "Dance · Club",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "poster",
+    "surface": "arch",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "sport-events",
+    "id": "dance--tournament",
+    "name": "Dance · Tournament",
+    "status": "redesigned",
+    "original": "shared",
+    "layout": "poster",
+    "surface": "frame",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "editorial--clean-clear",
+    "name": "Clean & Clear",
+    "status": "preserved",
+    "original": "outline"
+  },
+  {
+    "category": "signup-forms",
+    "id": "editorial--harvest-table",
+    "name": "Harvest Table",
+    "status": "preserved",
+    "original": "menu"
+  },
+  {
+    "category": "signup-forms",
+    "id": "editorial--school-days",
+    "name": "School Days",
+    "status": "preserved",
+    "original": "tiles"
+  },
+  {
+    "category": "signup-forms",
+    "id": "editorial--game-day",
+    "name": "Game Day",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "ledger",
+    "surface": "double",
+    "heading": "ribbon",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "editorial--community-garden",
+    "name": "Community Garden",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "stagger",
+    "surface": "petal",
+    "heading": "number",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "editorial--celebrate-together",
+    "name": "Celebrate Together",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "stagger",
+    "surface": "arch",
+    "heading": "side",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fall-and-seasonal--apple-picking",
+    "name": "Apple Picking",
+    "status": "preserved",
+    "original": "ledger"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fall-and-seasonal--fall-scene",
+    "name": "Fall Scene",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "islands",
+    "surface": "wave",
+    "heading": "caption",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fall-and-seasonal--fall-fun-2",
+    "name": "Fall Fun 2",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "islands",
+    "surface": "oval",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fall-and-seasonal--harvest-table",
+    "name": "Harvest Table",
+    "status": "redesigned",
+    "original": "menu",
+    "layout": "islands",
+    "surface": "capsule",
+    "heading": "number",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fall-and-seasonal--pumpkin-patch",
+    "name": "Pumpkin Patch",
+    "status": "preserved",
+    "original": "tickets"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fall-and-seasonal--fall-forest",
+    "name": "Fall Forest",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "stagger",
+    "surface": "stone",
+    "heading": "masthead",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fall-and-seasonal--fall-food-drive",
+    "name": "Fall Food Drive",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "islands",
+    "surface": "arch",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fall-and-seasonal--fall-gathering",
+    "name": "Fall Gathering",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "islands",
+    "surface": "ticket",
+    "heading": "masthead",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fall-and-seasonal--corn-maze",
+    "name": "Corn Maze",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "islands",
+    "surface": "frame",
+    "heading": "side",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fall-and-seasonal--autumn-blessings",
+    "name": "Autumn Blessings",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "islands",
+    "surface": "petal",
+    "heading": "ribbon",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fall-and-seasonal--thanksgiving-feast",
+    "name": "Thanksgiving Feast",
+    "status": "redesigned",
+    "original": "menu",
+    "layout": "islands",
+    "surface": "cut",
+    "heading": "caption",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fall-and-seasonal--friendsgiving",
+    "name": "Friendsgiving",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "islands",
+    "surface": "ruled",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fall-and-seasonal--fall-food",
+    "name": "Fall Food",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "islands",
+    "surface": "bracket",
+    "heading": "masthead",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fall-and-seasonal--fall-leaves",
+    "name": "Fall Leaves",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "islands",
+    "surface": "offset",
+    "heading": "side",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fall-and-seasonal--fall-y-all",
+    "name": "Fall Y’all",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "islands",
+    "surface": "double",
+    "heading": "ribbon",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fall-and-seasonal--fall-festival",
+    "name": "Fall Festival",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "islands",
+    "surface": "bound",
+    "heading": "number",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fall-and-seasonal--fall-pumpkins",
+    "name": "Fall Pumpkins",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "islands",
+    "surface": "notch",
+    "heading": "masthead",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "church-and-community--service-project",
+    "name": "Service Project",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "editorial",
+    "surface": "outline",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "church-and-community--community-picnic",
+    "name": "Community Picnic",
+    "status": "redesigned",
+    "original": "menu",
+    "layout": "ledger",
+    "surface": "ruled",
+    "heading": "underline",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "church-and-community--bible-study",
+    "name": "Bible Study",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "editorial",
+    "surface": "ruled",
+    "heading": "masthead",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "church-and-community--mission-trip",
+    "name": "Mission Trip",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "editorial",
+    "surface": "terrace",
+    "heading": "ribbon",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "church-and-community--church-gathering",
+    "name": "Church Gathering",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "editorial",
+    "surface": "petal",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "church-and-community--volunteer-sign-up",
+    "name": "Volunteer Sign-Up",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "editorial",
+    "surface": "arch",
+    "heading": "masthead",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "church-and-community--worship-team",
+    "name": "Worship Team",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "ledger",
+    "surface": "arch",
+    "heading": "underline",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "church-and-community--sunday-school",
+    "name": "Sunday School",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "editorial",
+    "surface": "ticket",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "church-and-community--fundraiser",
+    "name": "Fundraiser",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "editorial",
+    "surface": "frame",
+    "heading": "ribbon",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "church-and-community--food-drive",
+    "name": "Food Drive",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "ledger",
+    "surface": "scallop",
+    "heading": "ribbon",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "sports-and-recreation--swim-team",
+    "name": "Swim Team",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "mosaic",
+    "surface": "cut",
+    "heading": "ribbon",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "sports-and-recreation--cheer-squad",
+    "name": "Cheer Squad",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "mosaic",
+    "surface": "pennant",
+    "heading": "ribbon",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "sports-and-recreation--track-meet",
+    "name": "Track Meet",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "mosaic",
+    "surface": "bracket",
+    "heading": "underline",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "sports-and-recreation--baseball-team",
+    "name": "Baseball Team",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "mosaic",
+    "surface": "ticket",
+    "heading": "underline",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "sports-and-recreation--sports-banquet",
+    "name": "Sports Banquet",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "mosaic",
+    "surface": "arch",
+    "heading": "number",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "sports-and-recreation--gymnastics",
+    "name": "Gymnastics",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "mosaic",
+    "surface": "frame",
+    "heading": "masthead",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "sports-and-recreation--fitness-class",
+    "name": "Fitness Class",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "mosaic",
+    "surface": "petal",
+    "heading": "side",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "sports-and-recreation--soccer-game",
+    "name": "Soccer Game",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "mosaic",
+    "surface": "capsule",
+    "heading": "caption",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "sports-and-recreation--basketball-practice",
+    "name": "Basketball Practice",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "mosaic",
+    "surface": "ruled",
+    "heading": "number",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "sports-and-recreation--golf-tournament",
+    "name": "Golf Tournament",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "mosaic",
+    "surface": "offset",
+    "heading": "masthead",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fundraising-and-food--car-wash",
+    "name": "Car Wash",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "ledger",
+    "surface": "ticket",
+    "heading": "masthead",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fundraising-and-food--bake-sale",
+    "name": "Bake Sale",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "ledger",
+    "surface": "frame",
+    "heading": "side",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fundraising-and-food--charity-gala",
+    "name": "Charity Gala",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "ledger",
+    "surface": "petal",
+    "heading": "ribbon",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fundraising-and-food--restaurant-night",
+    "name": "Restaurant Night",
+    "status": "redesigned",
+    "original": "menu",
+    "layout": "ledger",
+    "surface": "cut",
+    "heading": "caption",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fundraising-and-food--food-pantry",
+    "name": "Food Pantry",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "ledger",
+    "surface": "capsule",
+    "heading": "number",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fundraising-and-food--auction-event",
+    "name": "Auction Event",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "ledger",
+    "surface": "bracket",
+    "heading": "masthead",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fundraising-and-food--donation-drive",
+    "name": "Donation Drive",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "ledger",
+    "surface": "offset",
+    "heading": "side",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fundraising-and-food--vendor-fair",
+    "name": "Vendor Fair",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "ledger",
+    "surface": "wave",
+    "heading": "caption",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fundraising-and-food--raffle",
+    "name": "Raffle",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "ledger",
+    "surface": "bound",
+    "heading": "number",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "fundraising-and-food--potluck-dinner",
+    "name": "Potluck Dinner",
+    "status": "redesigned",
+    "original": "menu",
+    "layout": "ledger",
+    "surface": "oval",
+    "heading": "underline",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "family-and-personal--anniversary-celebration",
+    "name": "Anniversary Celebration",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "editorial",
+    "surface": "cut",
+    "heading": "number",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "family-and-personal--family-event",
+    "name": "Family Event",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "editorial",
+    "surface": "capsule",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "family-and-personal--housewarming",
+    "name": "Housewarming",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "editorial",
+    "surface": "bracket",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "family-and-personal--birthday-party",
+    "name": "Birthday Party",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "gallery",
+    "surface": "offset",
+    "heading": "ribbon",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "family-and-personal--block-party",
+    "name": "Block Party",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "gallery",
+    "surface": "bracket",
+    "heading": "side",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "family-and-personal--wedding",
+    "name": "Wedding",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "editorial",
+    "surface": "offset",
+    "heading": "ribbon",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "family-and-personal--baby-shower",
+    "name": "Baby Shower",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "editorial",
+    "surface": "double",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "family-and-personal--game-night",
+    "name": "Game Night",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "editorial",
+    "surface": "wave",
+    "heading": "number",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "family-and-personal--bridal-shower",
+    "name": "Bridal Shower",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "editorial",
+    "surface": "bound",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "family-and-personal--family-holiday",
+    "name": "Family Holiday",
+    "status": "redesigned",
+    "original": "menu",
+    "layout": "ledger",
+    "surface": "notch",
+    "heading": "masthead",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "business-and-professional--conference-schedule",
+    "name": "Conference Schedule",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "editorial",
+    "surface": "oval",
+    "heading": "masthead",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "business-and-professional--client-meeting",
+    "name": "Client Meeting",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "editorial",
+    "surface": "notch",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "business-and-professional--team-lunch",
+    "name": "Team Lunch",
+    "status": "redesigned",
+    "original": "menu",
+    "layout": "ledger",
+    "surface": "terrace",
+    "heading": "side",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "business-and-professional--corporate-event",
+    "name": "Corporate Event",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "editorial",
+    "surface": "scallop",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "business-and-professional--workshop",
+    "name": "Workshop",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "gallery",
+    "surface": "frame",
+    "heading": "ribbon",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "business-and-professional--networking-night",
+    "name": "Networking Night",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "editorial",
+    "surface": "pennant",
+    "heading": "number",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "business-and-professional--professional-gathering",
+    "name": "Professional Gathering",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "editorial",
+    "surface": "stone",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "business-and-professional--office-meeting",
+    "name": "Office Meeting",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "editorial",
+    "surface": "facet",
+    "heading": "masthead",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "business-and-professional--training-session",
+    "name": "Training Session",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "path",
+    "surface": "ticket",
+    "heading": "ribbon",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "other-special-interest--tech-event",
+    "name": "Tech Event",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "stagger",
+    "surface": "outline",
+    "heading": "ribbon",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "other-special-interest--political-campaign",
+    "name": "Political Campaign",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "path",
+    "surface": "stone",
+    "heading": "masthead",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "other-special-interest--gaming-tournament",
+    "name": "Gaming Tournament",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "stagger",
+    "surface": "ruled",
+    "heading": "side",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "other-special-interest--environment-and-cleanup",
+    "name": "Environment & Cleanup",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "stagger",
+    "surface": "terrace",
+    "heading": "caption",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "other-special-interest--senior-services",
+    "name": "Senior Services",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "stagger",
+    "surface": "ticket",
+    "heading": "ribbon",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "other-special-interest--travel-group",
+    "name": "Travel Group",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "path",
+    "surface": "bracket",
+    "heading": "ribbon",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "other-special-interest--real-estate-open-house",
+    "name": "Real Estate Open House",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "stagger",
+    "surface": "frame",
+    "heading": "caption",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "other-special-interest--arts-and-culture",
+    "name": "Arts & Culture",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "gallery",
+    "surface": "notch",
+    "heading": "side",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "other-special-interest--pets-and-animals",
+    "name": "Pets & Animals",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "stagger",
+    "surface": "cut",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "general--hoa-meeting",
+    "name": "HOA Meeting",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "stagger",
+    "surface": "capsule",
+    "heading": "masthead",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "general--ad-hoc-meeting",
+    "name": "Ad Hoc Meeting",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "stagger",
+    "surface": "bracket",
+    "heading": "ribbon",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "general--board-meeting",
+    "name": "Board Meeting",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "stagger",
+    "surface": "offset",
+    "heading": "caption",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "general--team-planning-session",
+    "name": "Team Planning Session",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "ledger",
+    "surface": "pennant",
+    "heading": "caption",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "general--volunteer-orientation",
+    "name": "Volunteer Orientation",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "stagger",
+    "surface": "double",
+    "heading": "number",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "general--town-hall-meeting",
+    "name": "Town Hall Meeting",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "stagger",
+    "surface": "wave",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "general--community-discussion",
+    "name": "Community Discussion",
+    "status": "redesigned",
+    "original": "menu",
+    "layout": "ledger",
+    "surface": "stone",
+    "heading": "number",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "general--staff-training",
+    "name": "Staff Training",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "path",
+    "surface": "bound",
+    "heading": "masthead",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "general--committee-meeting",
+    "name": "Committee Meeting",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "stagger",
+    "surface": "bound",
+    "heading": "masthead",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "general--monthly-meetup",
+    "name": "Monthly Meetup",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "stagger",
+    "surface": "oval",
+    "heading": "side",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "general--project-kickoff",
+    "name": "Project Kickoff",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "stagger",
+    "surface": "notch",
+    "heading": "ribbon",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "general--workshop-registration",
+    "name": "Workshop Registration",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "gallery",
+    "surface": "arch",
+    "heading": "masthead",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "parties-and-events--birthday-party",
+    "name": "Birthday Party",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "gallery",
+    "surface": "ticket",
+    "heading": "side",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "parties-and-events--wedding",
+    "name": "Wedding",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "gallery",
+    "surface": "petal",
+    "heading": "caption",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "parties-and-events--baby-shower",
+    "name": "Baby Shower",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "gallery",
+    "surface": "cut",
+    "heading": "number",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "parties-and-events--game-night",
+    "name": "Game Night",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "gallery",
+    "surface": "capsule",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "parties-and-events--bridal-shower",
+    "name": "Bridal Shower",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "gallery",
+    "surface": "ruled",
+    "heading": "masthead",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "parties-and-events--family-holiday",
+    "name": "Family Holiday",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "gallery",
+    "surface": "double",
+    "heading": "caption",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "parties-and-events--holiday-party",
+    "name": "Holiday Party",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "gallery",
+    "surface": "wave",
+    "heading": "number",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "parties-and-events--graduation-party",
+    "name": "Graduation Party",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "gallery",
+    "surface": "bound",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "parties-and-events--retirement-party",
+    "name": "Retirement Party",
+    "status": "redesigned",
+    "original": "menu",
+    "layout": "gallery",
+    "surface": "oval",
+    "heading": "masthead",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "parties-and-events--engagement-party",
+    "name": "Engagement Party",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "gallery",
+    "surface": "terrace",
+    "heading": "ribbon",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "health-and-fitness--fitness-class",
+    "name": "Fitness Class",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "stagger",
+    "surface": "scallop",
+    "heading": "number",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "health-and-fitness--yoga-class",
+    "name": "Yoga Class",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "stagger",
+    "surface": "pennant",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "health-and-fitness--pilates-class",
+    "name": "Pilates Class",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "stagger",
+    "surface": "facet",
+    "heading": "side",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "health-and-fitness--spin-class",
+    "name": "Spin Class",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "columns",
+    "surface": "outline",
+    "heading": "caption",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "health-and-fitness--zumba-class",
+    "name": "Zumba Class",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "columns",
+    "surface": "ruled",
+    "heading": "ribbon",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "health-and-fitness--bootcamp-class",
+    "name": "Bootcamp Class",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "path",
+    "surface": "arch",
+    "heading": "side",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "health-and-fitness--dance-class",
+    "name": "Dance Class",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "poster",
+    "surface": "ticket",
+    "heading": "number",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "health-and-fitness--morning-run",
+    "name": "Morning Run",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "columns",
+    "surface": "terrace",
+    "heading": "number",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "health-and-fitness--cycling-club",
+    "name": "Cycling Club",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "poster",
+    "surface": "pennant",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "health-and-fitness--crossfit-session",
+    "name": "CrossFit Session",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "columns",
+    "surface": "petal",
+    "heading": "underline",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "health-and-fitness--martial-arts-class",
+    "name": "Martial Arts Class",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "gallery",
+    "surface": "scallop",
+    "heading": "caption",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "health-and-fitness--boxing-class",
+    "name": "Boxing Class",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "columns",
+    "surface": "arch",
+    "heading": "ribbon",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "health-and-fitness--swimming-lessons",
+    "name": "Swimming Lessons",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "columns",
+    "surface": "ticket",
+    "heading": "caption",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "health-and-fitness--tennis-club",
+    "name": "Tennis Club",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "poster",
+    "surface": "offset",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "health-and-fitness--basketball-league",
+    "name": "Basketball League",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "mosaic",
+    "surface": "double",
+    "heading": "side",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "health-and-fitness--volleyball-league",
+    "name": "Volleyball League",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "columns",
+    "surface": "frame",
+    "heading": "number",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "health-and-fitness--wellness-workshop",
+    "name": "Wellness Workshop",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "gallery",
+    "surface": "pennant",
+    "heading": "number",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--book-club",
+    "name": "Book Club",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "book",
+    "surface": "bound",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--running-club",
+    "name": "Running Club",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "poster",
+    "surface": "facet",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--bike-club",
+    "name": "Bike Club",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "poster",
+    "surface": "arch",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--hiking-club.png",
+    "name": "Hiking Club",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "poster",
+    "surface": "frame",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--rock-climbing-club",
+    "name": "Rock Climbing Club",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "poster",
+    "surface": "petal",
+    "heading": "masthead",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--swim-club",
+    "name": "Swim Club",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "poster",
+    "surface": "cut",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--soccer-club",
+    "name": "Soccer Club",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "mosaic",
+    "surface": "wave",
+    "heading": "ribbon",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--baseball-club",
+    "name": "Baseball Club",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "poster",
+    "surface": "capsule",
+    "heading": "ribbon",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--basketball-club",
+    "name": "Basketball Club",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "mosaic",
+    "surface": "bound",
+    "heading": "caption",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--football-club",
+    "name": "Football Club",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "mosaic",
+    "surface": "oval",
+    "heading": "number",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--tennis-club",
+    "name": "Tennis Club",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "poster",
+    "surface": "ruled",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--volleyball-club",
+    "name": "Volleyball Club",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "poster",
+    "surface": "bracket",
+    "heading": "number",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--golf-club",
+    "name": "Golf Club",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "mosaic",
+    "surface": "notch",
+    "heading": "underline",
+    "flow": "practical"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--cheerleading-club",
+    "name": "Cheerleading Club",
+    "status": "redesigned",
+    "original": "tickets",
+    "layout": "poster",
+    "surface": "double",
+    "heading": "masthead",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--dance-club",
+    "name": "Dance Club",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "poster",
+    "surface": "wave",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--drive-group",
+    "name": "Drive Group",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "poster",
+    "surface": "bound",
+    "heading": "ribbon",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--fisherman-group",
+    "name": "Fisherman Group",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "poster",
+    "surface": "oval",
+    "heading": "caption",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--horseback-riding-group",
+    "name": "Horseback Riding Group",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "poster",
+    "surface": "notch",
+    "heading": "number",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--bird-watching-group.png",
+    "name": "Bird Watching Group",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "poster",
+    "surface": "terrace",
+    "heading": "underline",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--gardening-group",
+    "name": "Gardening Group",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "columns",
+    "surface": "stone",
+    "heading": "side",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--reading-group",
+    "name": "Reading Group",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "poster",
+    "surface": "scallop",
+    "heading": "masthead",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--writing-group",
+    "name": "Writing Group",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "poster",
+    "surface": "stone",
+    "heading": "ribbon",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--cooking-group",
+    "name": "Cooking Group",
+    "status": "redesigned",
+    "original": "menu",
+    "layout": "ledger",
+    "surface": "facet",
+    "heading": "underline",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--baking-group",
+    "name": "Baking Group",
+    "status": "redesigned",
+    "original": "menu",
+    "layout": "ledger",
+    "surface": "outline",
+    "heading": "masthead",
+    "flow": "people"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--painting-group",
+    "name": "Painting Group",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "poster",
+    "surface": "outline",
+    "heading": "number",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--pottery-group",
+    "name": "Pottery Group",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "gallery",
+    "surface": "stone",
+    "heading": "underline",
+    "flow": "memories"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--knitting-group",
+    "name": "Knitting Group",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "mosaic",
+    "surface": "facet",
+    "heading": "number",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--crocheting-group",
+    "name": "Crocheting Group",
+    "status": "redesigned",
+    "original": "outline",
+    "layout": "mosaic",
+    "surface": "terrace",
+    "heading": "masthead",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--sewing-group",
+    "name": "Sewing Group",
+    "status": "redesigned",
+    "original": "ledger",
+    "layout": "mosaic",
+    "surface": "scallop",
+    "heading": "side",
+    "flow": "invitation"
+  },
+  {
+    "category": "signup-forms",
+    "id": "clubs-and-groups--quilting-group",
+    "name": "Quilting Group",
+    "status": "redesigned",
+    "original": "tiles",
+    "layout": "mosaic",
+    "surface": "stone",
+    "heading": "caption",
+    "flow": "invitation"
+  }
+]

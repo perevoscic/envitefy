@@ -38,6 +38,7 @@ import LocationLink from "@/components/LocationLink";
 import OpenHouseSkin from "@/components/OpenHouseSkin";
 import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileTopbarSuppressor";
 import EventPreviewViewport from "@/components/EventPreviewViewport";
+import EventCanvas from "@/components/EventCanvas";
 import EventOwnerView from "@/components/EventOwnerView";
 import { buildEmbeddedEventPreviewHref } from "@/lib/event-preview-viewport";
 import { GYM_EVENT_EDITOR_VIEWS } from "@/lib/event-page-workspace";
@@ -156,10 +157,10 @@ const DiscoveryEventEditLayout = nextDynamic(
 
 function EventPageBackgroundStyle({ color, children }: { color: string; children: ReactNode }) {
   return (
-    <>
+    <EventCanvas initialColor={color} className="min-h-full">
       <style>{`:root{--event-page-background-color:${color};}`}</style>
       {children}
-    </>
+    </EventCanvas>
   );
 }
 

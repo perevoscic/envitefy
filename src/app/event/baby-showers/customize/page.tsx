@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import EventCanvas from "@/components/EventCanvas";
 
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
@@ -1452,7 +1453,7 @@ export default function BabyShowerTemplateCustomizePage() {
 
   return (
     <div className="relative flex min-h-screen h-[100dvh] w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
-      <div
+      <EventCanvas
         ref={previewRef}
         {...previewTouchHandlers}
         className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
@@ -1482,7 +1483,7 @@ export default function BabyShowerTemplateCustomizePage() {
             preview
           />
         </div>
-      </div>
+      </EventCanvas>
 
       {mobileMenuOpen && (
         <div

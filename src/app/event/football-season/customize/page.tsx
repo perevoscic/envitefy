@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import EventCanvas from "@/components/EventCanvas";
 
 import { useManualEventProgress } from "@/hooks/useManualEventProgress";
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
@@ -1828,7 +1829,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         }`}
       >
         {!isEmbed && (
-          <div
+          <EventCanvas
             {...previewTouchHandlers}
             className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
             style={{
@@ -1995,7 +1996,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 </FootballSeasonPreviewFrame>
               </div>
             </div>
-          </div>
+          </EventCanvas>
         )}
 
         {!isEmbed && mobileMenuOpen && (

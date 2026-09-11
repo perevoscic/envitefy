@@ -1,0 +1,423 @@
+.body {
+  --body-line: color-mix(in srgb, currentColor 28%, transparent);
+  --body-tint: color-mix(in srgb, currentColor 4%, transparent);
+  --body-gap: clamp(1.5rem, 3vw, 3.5rem);
+  min-width: 0;
+  padding: clamp(1.5rem, 4vw, 4rem) 0;
+}
+.sections {
+  display: grid;
+  gap: var(--body-gap);
+  align-items: start;
+  min-width: 0;
+}
+.panel {
+  position: relative;
+  min-width: 0;
+  padding: clamp(1.3rem, 3vw, 3rem);
+  border: 1px solid var(--body-line);
+  background: var(--body-tint);
+  overflow-wrap: anywhere;
+}
+.panel > :not(.index) {
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+}
+.panel > section {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  color: inherit;
+}
+.panel [data-birthday-body-card] > div:first-child {
+  color: inherit;
+}
+.panel :is(h2, [data-template-section-title]) {
+  margin-block: 0 1.4rem;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+.panel :is(img, video, iframe, input, select, textarea) {
+  max-width: 100%;
+}
+.panel :is(input, textarea, select) {
+  min-width: 0;
+}
+.panel :is(p, li, dd) {
+  overflow-wrap: anywhere;
+}
+.index {
+  display: none;
+}
+.panel:focus-within {
+  z-index: 1;
+}
+
+/* Each arrangement remains legible in DOM order; no dense grid or CSS order. */
+.body[data-template-body-layout="editorial"] .sections {
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+}
+.body[data-template-body-layout="editorial"] .panel:nth-child(3n) {
+  grid-column: 1 / -1;
+  margin-inline: 8%;
+}
+.body[data-template-body-layout="editorial"] .panel:nth-child(3n + 2) {
+  margin-top: 4rem;
+}
+.body[data-template-body-layout="stagger"] .panel {
+  width: 84%;
+}
+.body[data-template-body-layout="stagger"] .panel:nth-child(even) {
+  margin-left: 16%;
+}
+.body[data-template-body-layout="columns"] .sections {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 7%;
+}
+.body[data-template-body-layout="columns"] .panel:nth-child(even) {
+  margin-top: 5rem;
+}
+.body[data-template-body-layout="poster"] .sections {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-inline: 5%;
+}
+.body[data-template-body-layout="poster"] .panel:nth-child(3n + 1) {
+  grid-column: 1 / -1;
+  padding-block: 4rem;
+  text-align: center;
+}
+.body[data-template-body-layout="mosaic"] .sections {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.body[data-template-body-layout="mosaic"] .panel:nth-child(4n + 1),
+.body[data-template-body-layout="mosaic"] .panel:nth-child(4n) {
+  grid-column: span 2;
+}
+.body[data-template-body-layout="ledger"] .panel > section {
+  display: grid;
+  grid-template-columns: minmax(0, 0.65fr) minmax(0, 1.35fr);
+  column-gap: 8%;
+  align-items: start;
+}
+.body[data-template-body-layout="ledger"] .panel > section > :not(h2):not(:first-child) {
+  grid-column: 2;
+}
+.body[data-template-body-layout="gallery"] .sections {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4rem 8%;
+}
+.body[data-template-body-layout="gallery"] .panel:first-child {
+  grid-column: 1 / -1;
+  margin-inline: 12%;
+}
+.body[data-template-body-layout="path"] .sections {
+  border-left: 2px solid var(--body-line);
+  margin-left: 3%;
+  padding-left: 6%;
+}
+.body[data-template-body-layout="path"] .panel {
+  width: 85%;
+}
+.body[data-template-body-layout="path"] .panel:nth-child(even) {
+  margin-left: 15%;
+}
+.body[data-template-body-layout="path"] .panel::before {
+  content: "";
+  position: absolute;
+  left: -1.5rem;
+  top: 2rem;
+  width: 0.65rem;
+  height: 0.65rem;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+.body[data-template-body-layout="book"] .sections {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  border: 4px double var(--body-line);
+  padding: 1.25rem;
+}
+.body[data-template-body-layout="book"] .panel:nth-child(odd) {
+  margin-bottom: 3rem;
+}
+.body[data-template-body-layout="book"] .panel:nth-child(even) {
+  margin-top: 3rem;
+}
+.body[data-template-body-layout="terraces"] .panel {
+  width: 94%;
+}
+.body[data-template-body-layout="terraces"] .panel:nth-child(3n + 2) {
+  width: 85%;
+  margin-inline: auto;
+}
+.body[data-template-body-layout="terraces"] .panel:nth-child(3n) {
+  width: 76%;
+  margin-left: auto;
+}
+.body[data-template-body-layout="rail"] .sections {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr);
+  gap: 2.5rem 6%;
+}
+.body[data-template-body-layout="rail"] .panel:nth-child(3n + 1) {
+  grid-column: 1 / -1;
+  border-top-width: 6px;
+}
+.body[data-template-body-layout="islands"] .sections {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-inline: 4%;
+  gap: 5rem 9%;
+}
+.body[data-template-body-layout="islands"] .panel:nth-child(even) {
+  margin-top: 3rem;
+}
+.body[data-template-body-layout="islands"] .panel:nth-child(3n) {
+  grid-column: 1 / -1;
+  width: 72%;
+  justify-self: center;
+}
+
+/* Shapes use borders and padding, never clipping text, forms or focus rings. */
+.body[data-body-surface="arch"] .panel {
+  border-radius: 45% 45% 1rem 1rem / 3rem 3rem 1rem 1rem;
+  padding-top: 3.5rem;
+}
+.body[data-body-surface="ticket"] .panel {
+  border: 2px dashed var(--body-line);
+  border-radius: 0.5rem;
+  border-inline-width: 6px;
+}
+.body[data-body-surface="frame"] .panel {
+  border-radius: 0;
+  box-shadow:
+    inset 0 0 0 6px var(--body-tint),
+    inset 0 0 0 7px var(--body-line);
+  padding: clamp(1.75rem, 3vw, 3.5rem);
+}
+.body[data-body-surface="petal"] .panel {
+  border-radius: 3.5rem 0.5rem 3.5rem 0.5rem;
+  padding-block: 2.5rem;
+}
+.body[data-body-surface="cut"] .panel {
+  border: 0;
+  border-left: 8px solid currentColor;
+  border-bottom: 2px solid var(--body-line);
+  border-radius: 0 2rem 0 0;
+}
+.body[data-body-surface="capsule"] .panel {
+  border-radius: 3rem;
+  padding-block: 3rem;
+}
+.body[data-body-surface="ruled"] .panel {
+  border: 0;
+  border-block: 1px solid currentColor;
+  border-radius: 0;
+  background: transparent;
+  padding-inline: 1rem;
+}
+.body[data-body-surface="bracket"] .panel {
+  border-block: 1px dashed var(--body-line);
+  border-inline: 5px solid var(--body-line);
+  border-radius: 0;
+}
+.body[data-body-surface="offset"] .panel {
+  border: 1px solid currentColor;
+  box-shadow: 8px 8px 0 var(--body-line);
+  border-radius: 0.25rem;
+  margin-right: 8px;
+}
+.body[data-body-surface="double"] .panel {
+  border: 5px double var(--body-line);
+  border-radius: 1rem;
+}
+.body[data-body-surface="wave"] .panel {
+  border-radius: 2rem 2rem 45% 45% / 2rem 2rem 2.5rem 2.5rem;
+  border-bottom-width: 5px;
+  padding-bottom: 3rem;
+}
+.body[data-body-surface="bound"] .panel {
+  border-left: 10px double var(--body-line);
+  border-radius: 0 1.5rem 1.5rem 0;
+}
+.body[data-body-surface="oval"] .panel {
+  border-radius: 45% / 2.5rem;
+  padding-block: 3.25rem;
+}
+.body[data-body-surface="notch"] .panel {
+  border: 2px solid var(--body-line);
+  border-radius: 0 2.75rem 0 2.75rem;
+  padding-block: 2.5rem;
+}
+.body[data-body-surface="terrace"] .panel {
+  border: 0;
+  border-top: 6px double currentColor;
+  border-bottom: 1px solid var(--body-line);
+  border-radius: 2rem 0 0 0;
+}
+.body[data-body-surface="scallop"] .panel {
+  border: 3px dotted var(--body-line);
+  border-radius: 2rem;
+  padding-block: 2.75rem;
+}
+.body[data-body-surface="pennant"] .panel {
+  border: 1px solid var(--body-line);
+  border-top: 9px solid currentColor;
+  border-radius: 0 0 2.5rem 0.5rem;
+}
+.body[data-body-surface="stone"] .panel {
+  border-radius: 2.5rem 1.25rem 3rem 1rem;
+  border-width: 2px;
+  padding-block: 2.25rem;
+}
+.body[data-body-surface="facet"] .panel {
+  border-radius: 0 3rem 0.5rem 0;
+  border-left: 4px solid currentColor;
+  border-right-width: 3px;
+}
+.body[data-body-surface="outline"] .panel {
+  border: 1px solid var(--body-line);
+  background: transparent;
+  border-radius: 0;
+  padding: 2rem;
+}
+
+.body[data-template-body-layout][data-body-heading="masthead"]
+  .panel
+  :is(h2, [data-template-section-title]) {
+  font-size: clamp(1.8rem, 3vw, 3.3rem);
+  letter-spacing: -0.035em;
+}
+.body[data-template-body-layout][data-body-heading="side"]
+  .panel
+  :is(h2, [data-template-section-title]) {
+  text-align: left;
+  border-left: 4px solid currentColor;
+  padding-left: 1rem;
+  font-size: clamp(1.5rem, 2.5vw, 2.5rem);
+}
+.body[data-template-body-layout][data-body-heading="ribbon"]
+  .panel
+  :is(h2, [data-template-section-title]) {
+  padding: 0.8rem 1rem;
+  border-block: 2px solid var(--body-line);
+  font-size: clamp(1.5rem, 2.5vw, 2.5rem);
+}
+.body[data-template-body-layout][data-body-heading="caption"]
+  .panel
+  :is(h2, [data-template-section-title]) {
+  text-transform: uppercase;
+  font-size: 1.15rem;
+  letter-spacing: 0.12em;
+  line-height: 1.5;
+}
+.body[data-template-body-layout][data-body-heading="number"] .index {
+  display: block;
+  margin-bottom: 1.25rem;
+  font:
+    400 2.5rem / 1 ui-serif,
+    serif;
+}
+.body[data-template-body-layout][data-body-heading="number"]
+  .panel
+  :is(h2, [data-template-section-title]) {
+  font-size: clamp(1.6rem, 2.5vw, 2.4rem);
+}
+.body[data-template-body-layout][data-body-heading="underline"]
+  .panel
+  :is(h2, [data-template-section-title]) {
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 1rem;
+  font-size: clamp(1.5rem, 2.5vw, 2.6rem);
+}
+
+/* Guest forms need a full reading width, including within the narrower layouts. */
+.body[data-template-body-layout] .panel[data-body-section="rsvp"] {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+  .body {
+    --body-gap: 1.75rem;
+  }
+  .body[data-template-body-layout] .sections {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .body[data-template-body-layout] .panel:nth-child(n) {
+    grid-column: auto;
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+  .body[data-template-body-layout="editorial"] .panel:nth-child(3n) {
+    margin-inline: 4%;
+  }
+  .body[data-template-body-layout="stagger"] .panel {
+    width: 94%;
+  }
+  .body[data-template-body-layout="stagger"] .panel:nth-child(even) {
+    margin-left: 6%;
+  }
+  .body[data-template-body-layout="columns"] .panel:nth-child(even) {
+    margin-left: 3%;
+  }
+  .body[data-template-body-layout="poster"] .sections {
+    padding-inline: 3%;
+  }
+  .body[data-template-body-layout="poster"] .panel:nth-child(3n + 1) {
+    padding-block: 3.5rem;
+  }
+  .body[data-template-body-layout="mosaic"] .panel:nth-child(4n + 2) {
+    margin-right: 5%;
+  }
+  .body[data-template-body-layout="ledger"] .panel > section {
+    display: block;
+  }
+  .body[data-template-body-layout="gallery"] .panel:first-child {
+    margin-inline: 6%;
+  }
+  .body[data-template-body-layout="path"] .sections {
+    margin-left: 0;
+    padding-left: 1rem;
+  }
+  .body[data-template-body-layout="path"] .panel {
+    width: 97%;
+  }
+  .body[data-template-body-layout="path"] .panel:nth-child(even) {
+    margin-left: 3%;
+  }
+  .body[data-template-body-layout="path"] .panel::before {
+    left: -0.85rem;
+    width: 0.4rem;
+    height: 0.4rem;
+  }
+  .body[data-template-body-layout="book"] .sections {
+    padding: 0.5rem;
+  }
+  .body[data-template-body-layout="terraces"] .panel:nth-child(n) {
+    width: 100%;
+  }
+  .body[data-template-body-layout="terraces"] .panel:nth-child(3n + 2) {
+    width: 95%;
+  }
+  .body[data-template-body-layout="terraces"] .panel:nth-child(3n) {
+    width: 90%;
+  }
+  .body[data-template-body-layout="rail"] .panel:nth-child(3n + 2) {
+    margin-inline: 5%;
+  }
+  .body[data-template-body-layout="islands"] .sections {
+    padding-inline: 2%;
+    gap: 2.5rem;
+  }
+  .body[data-template-body-layout="islands"] .panel:nth-child(3n) {
+    width: 92%;
+  }
+  .body[data-template-body-layout] .panel[data-body-section="rsvp"] {
+    width: 100%;
+    margin: 0;
+  }
+}

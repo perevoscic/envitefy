@@ -1,10 +1,16 @@
 import type { ReactNode } from "react";
 import { BIRTHDAY_BODY_DIRECTIONS } from "./body-directions";
 import styles from "./birthday-scenes.module.css";
+import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
+import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
 
 type Props = { id: string; blocks: Record<string, ReactNode> };
 export default function BirthdayArtDirectedBody({ id, blocks }: Props) {
   const treatment = BIRTHDAY_BODY_DIRECTIONS[id];
+  const presentation = getTemplateBodyPresentation("birthdays", id) || getTemplateBodyPresentation("anniversaries", id);
+  if (presentation) {
+    return <div data-birthday-art-body={id} data-birthday-body-treatment={treatment}><TemplateBodyLayout presentation={presentation} sections={Object.entries(blocks).filter(([key]) => key !== "facts").map(([key, content]) => ({id:key,content}))} /></div>;
+  }
   const { story, notes, gallery, hosts, schedule, registry, rsvp } = blocks;
   const end = <div className={styles.response}>{registry}{rsvp}</div>;
   const memory = <div className={styles.memory}>{gallery}</div>;

@@ -15,6 +15,7 @@ import {
   initialEventPreviewDevice,
 } from "@/lib/event-preview-viewport";
 import OwnerPreviewMobileTopbarSuppressor from "./OwnerPreviewMobileTopbarSuppressor";
+import EventCanvas from "./EventCanvas";
 import { useEventPageColor } from "@/hooks/useEventPageChrome";
 import type { EventPreviewBackground } from "@/lib/event-preview-background";
 
@@ -341,7 +342,9 @@ export default function EventPreviewViewport({
                 }
               }}
             />
-            {mount ? createPortal(children, mount) : null}
+            {mount
+              ? createPortal(<EventCanvas className="min-h-full">{children}</EventCanvas>, mount)
+              : null}
           </div>
         </div>
       </div>
