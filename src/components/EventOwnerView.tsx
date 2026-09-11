@@ -2,10 +2,10 @@
 
 import { Pencil, Share2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
-import { useSidebar } from "@/app/sidebar-context";
-import { buildEmbeddedEventPreviewHref } from "@/lib/event-preview-viewport";
+import { useMemo, useState } from "react";
+import { useEventTopbarEdit } from "@/hooks/useEventPageChrome";
+import type { EventPreviewBackground } from "@/lib/event-preview-background";
+import { buildEmbeddedEventPreviewHref, buildOwnerEventEditHref } from "@/lib/event-preview-viewport";
 import { trackEventInteraction } from "@/utils/event-tracking-client";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventPreviewViewport from "./EventPreviewViewport";
@@ -15,18 +15,15 @@ type Props = {
   title: string;
   publicHref: string;
   editHref: string;
+  backgroundColor?: string;
 };
 
-export default function EventOwnerView({ eventId, title, publicHref, editHref }: Props) {
-  const router = useRouter();
-  const { clearEventContext, setEventContextSourcePage } = useSidebar();
+export default function EventOwnerView({ eventId, title, publicHref, editHref, backgroundColor }: Props) {
   const [copied, setCopied] = useState(false);
-  const backToEvents = useCallback(() => {
-    clearEventContext();
-    setEventContextSourcePage("myEvents");
-    window.dispatchEvent(new CustomEvent("envitefy:sidebar:open-my-events"));
-    router.push("/");
-  }, [clearEventContext, router, setEventContextSourcePage]);
+  const [background, setBackground] = useState<EventPreviewBackground>({ backgroundColor });
+  const editUrl = buildOwnerEventEditHref(editHref, publicHref, String(background.backgroundColor || ""));
+  const editAction = useMemo(() => ({ href: editUrl }), [editUrl]);
+  useEventTopbarEdit(editAction);
 
   async function shareEvent() {
     const url = new URL(publicHref, window.location.origin).href;
@@ -51,20 +48,20 @@ export default function EventOwnerView({ eventId, title, publicHref, editHref }:
   }
 
   const actionClassName =
-    "inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full px-3 text-sm font-semibold transition hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current";
+    "min-h-11 min-w-11 items-center justify-center gap-2 rounded-full px-3 text-sm font-semibold transition hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current";
 
   const actions = (
-    <div role="group" aria-label="Event actions" className="flex min-w-0 items-center gap-1">
-      <Link href={editHref} aria-label="Edit event" title="Edit event" className={actionClassName}>
+    <div role="group" aria-label="Event actions" className="flex min-w-0 items-center gap-2">
+      <Link href={editUrl} aria-label="Edit event" title="Edit event" className={`hidden lg:inline-flex ${actionClassName}`}>
         <Pencil size={19} aria-hidden="true" />
-        <span className="hidden sm:inline">Edit</span>
+        <span>Edit</span>
       </Link>
       <button
         type="button"
         onClick={shareEvent}
         aria-label="Share event"
         title="Share event"
-        className={actionClassName}
+        className={`inline-flex ${actionClassName}`}
       >
         <Share2 size={19} aria-hidden="true" />
         <span className="hidden sm:inline">{copied ? "Copied" : "Share"}</span>
@@ -73,7 +70,7 @@ export default function EventOwnerView({ eventId, title, publicHref, editHref }:
         eventId={eventId}
         eventTitle={title}
         ariaLabel="Delete event"
-        buttonClassName={actionClassName}
+        buttonClassName={`inline-flex ${actionClassName}`}
       />
       {copied ? (
         <span role="status" className="sr-only">
@@ -87,14 +84,14 @@ export default function EventOwnerView({ eventId, title, publicHref, editHref }:
     <section
       aria-label={`${title} owner view`}
       data-owner-event-view
-      className="fixed bottom-0 right-0 top-[var(--app-mobile-topbar-offset,6rem)] left-[var(--app-sidebar-width,0px)] flex min-w-0 flex-col overflow-hidden bg-slate-50 text-slate-950 lg:top-0"
+      className="fixed bottom-0 right-0 top-0 left-[var(--app-sidebar-width,0px)] flex min-w-0 flex-col overflow-hidden text-slate-950"
     >
       <EventPreviewViewport
         title={title}
         src={buildEmbeddedEventPreviewHref(publicHref)}
         preserveNavigation
-        onClose={backToEvents}
-        closeLabel="Back to My Events"
+        onBackgroundChange={setBackground}
+        initialBackground={background}
         actions={actions}
       />
     </section>

@@ -21,6 +21,10 @@ node engine/cli.mjs review birthday-film --format 9x16
 
 Each resume invocation makes at most one status poll per active Google task. Pending tasks remain recorded for another invocation. There is no hidden polling loop or automatic paid retry. CLI status reports missing sources, failed tasks, damaged artifacts and unresolved earlier takes; inspect that result before considering a stage complete.
 
+## Future-video release gate
+
+Producer review and release readiness are separate. For new videos use [quality.md](quality.md) after either the engine renderer or a custom campaign renderer. Commands prepare-release, release-status and release accept a campaign MP4 through --file; no engine render record or production-plan migration is needed. Render/record-review cannot grant readiness. New schema-2 packets record producer and independent AI review in the background, then the user's explicit final approval, all bound to exact file bytes. Internal completion reports ready-for-user-review; release requires user approval. Existing schema-1 packets retain their original human-review contract. Run node --test engine/release.test.mjs for its failure-path tests. It is a local workflow gate, not a social-platform upload interceptor or an automated measure of taste.
+
 ## Executable production contract
 
 New production plans and briefs default to `gpt-image-2.5-flare` for artwork. Status reports this image model. Generated raster import tasks must include `config.generated: true` and `config.model: "gpt-image-2.5-flare"`; validation rejects missing or different model provenance. Existing sources and previously approved assets do not need regeneration merely to adopt the engine.

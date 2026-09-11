@@ -2,9 +2,23 @@
 
 A local Remotion project for Envitefy marketing videos. **EnvitefyHostMode** is the current 22-second TikTok: fictional host footage, a real product demo, original music, and notification sound effects. **EnvitefyIntro** is the earlier 30-second narrated introduction with ImageGen photography and illustrative cards.
 
+## Ad creative and video production
+
+The [ad creative skill](.agents/skills/envitefy-ad-creative/SKILL.md) develops advertising angles, distinct concepts, scripts/storyboards, visual direction, and campaign copy. The [video producer](.agents/skills/envitefy-video-producer/SKILL.md) uses it for new campaigns and substantial story revisions, then continues through media generation, real product captures, Remotion, and the existing review workflow.
+
+`Request -> Ad creative -> brief.json -> Producer + production.json -> Media + Remotion -> Review/repairs -> Your finished preview`
+
+Product claims come from the parent marketing catalog and verified app behavior. Branding, pronunciation, and creative preferences come from [STUDIO-GUIDE.md](STUDIO-GUIDE.md). Concept alternatives, claim evidence, and critique live in `projects/<campaign>/creative-development.md`; the chosen script remains authoritative in the brief. Production-only revisions reuse the saved concept and unchanged assets.
+
+Use ordinary language for a finished video, or invoke `$envitefy-ad-creative` for written creative work:
+
+> Develop three distinct Envitefy birthday ad concepts and a timed storyboard for the strongest one. Keep this to written creative work.
+
+Ideas-only requests do not start media generation. Requested companion static ads use the existing brand/design skills with the same campaign direction. The [creative handoff](.agents/skills/envitefy-ad-creative/references/creative-handoff.md) maps directly to the existing brief fields; the engine schema stays separate.
+
 ## Reusable campaign engine
 
-New productions can use the local `engine/cli.mjs` runner and the shared `src/engine/` Remotion composition. The [producer skill](.agents/skills/envitefy-video-producer/SKILL.md) directs the creative work; the [engine reference](.agents/skills/envitefy-video-producer/references/engine.md) documents the executable production plan, adapters, budgets and recovery. Existing campaign scripts remain available for specialized edits.
+New productions can use the local `engine/cli.mjs` runner and the shared `src/engine/` Remotion composition. The [producer skill](.agents/skills/envitefy-video-producer/SKILL.md) turns the chosen creative brief into production; the [engine reference](.agents/skills/envitefy-video-producer/references/engine.md) documents the executable production plan, adapters, budgets and recovery. Existing campaign scripts remain available for specialized edits.
 
 ```powershell
 node engine/cli.mjs init new-film --title "New film" --formats 9x16,16x9
@@ -19,22 +33,9 @@ After init, fill the creative brief and production.json with selected tasks, sho
 
 Run `node --test engine/engine.test.mjs` for recovery/cache/provider-contract tests and `node engine/validate-local.mjs` for three real format renders using local fixtures. The runtime, tests and renderer remain local and ignored; the reusable skill and engine documentation are retained under the existing Git policy. A fresh clone still needs the production files and assets restored separately.
 
-## Reusable campaign engine
+## Quality review for future videos
 
-New productions can use the local `engine/cli.mjs` runner and the shared `src/engine/` Remotion composition. The [producer skill](.agents/skills/envitefy-video-producer/SKILL.md) directs the creative work; the [engine reference](.agents/skills/envitefy-video-producer/references/engine.md) documents the executable production plan, adapters, budgets and recovery. Existing campaign scripts remain available for specialized edits.
-
-```powershell
-node engine/cli.mjs init new-film --title "New film" --formats 9x16,16x9
-node engine/cli.mjs status new-film
-node engine/cli.mjs resume new-film --dry-run
-node engine/cli.mjs resume new-film
-node engine/cli.mjs render new-film --format 9x16
-node engine/cli.mjs review new-film --format 9x16
-```
-
-After init, fill the creative brief and production.json with selected tasks, shots, timing and per-format layouts. Local imports and demo captures run without paid submissions. New provider jobs require the explicit `--allow-paid` execution option and declared cost reservations/budget within the user's authorized scope; known jobs resume without resubmission. The runner saves receipts, reuses unchanged assets, isolates shot revisions, versions exports and requires recorded review evidence before listing a reviewed deliverable. It does not write scripts or judge creative quality by itself.
-
-Run `node --test engine/engine.test.mjs` for recovery/cache/provider-contract tests and `node engine/validate-local.mjs` for three real format renders using local fixtures. The runtime, tests and renderer remain local and ignored; the reusable skill and engine documentation are retained under the existing Git policy. A fresh clone still needs the production files and assets restored separately.
+The user reviews the finished videos. Codex handles concept development, source-shot review, independent AI critique, repairs, technical checks and records in the background using the [quality pilot](.agents/skills/envitefy-video-producer/references/quality.md). Present polished playable previews without intermediate approval steps or a freelance reviewer. Internal completion means ready-for-user-review; explicit user approval of each exact export is required before release. The same gate supports engine and custom renders. [User review handoff](.agents/skills/envitefy-video-producer/references/reviewer-brief.md).
 
 ## Start a fresh production task
 
@@ -52,7 +53,7 @@ The [project instructions](AGENTS.md) load the [saved preferences](STUDIO-GUIDE.
 
 ## Output folders
 
-GitHub preserves the studio's reusable knowledge: this README, [project rules](AGENTS.md), [saved preferences](STUDIO-GUIDE.md), the [producer skill and workflow reference](.agents/skills/envitefy-video-producer/SKILL.md), the [blank campaign brief](templates/campaign-brief.json), the [written pronunciation reference](assets/brand/audio/pronunciation.json), and ignore rules. Videos, images, audio recordings, campaign records, production source code, and scripts stay local and ignored. The entire studio is excluded from application container uploads. The commands and campaign links below describe the existing local studio; a fresh clone needs its production files restored separately to render videos.
+GitHub preserves the studio's reusable knowledge: this README, [project rules](AGENTS.md), [saved preferences](STUDIO-GUIDE.md), the [producer](.agents/skills/envitefy-video-producer/SKILL.md) and [ad creative](.agents/skills/envitefy-ad-creative/SKILL.md) skills and their references, the [blank campaign brief](templates/campaign-brief.json), the [written pronunciation reference](assets/brand/audio/pronunciation.json), and ignore rules. Videos, images, audio recordings, campaign records, production source code, and scripts stay local and ignored. The entire studio is excluded from application container uploads. The commands and campaign links below describe the existing local studio; a fresh clone needs its production files restored separately to render videos.
 
 Each video has its own folder under `out/`: `birthday-support/`, `birthday-second-job/`, `host-mode/`, and `intro/`. Keep its MP4 exports, earlier versions, alternate formats, intermediate renders, thumbnails, and review images together there. Shared tooling checks live in `out/_studio/`.
 

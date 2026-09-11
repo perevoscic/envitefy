@@ -8,6 +8,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import ts from "typescript";
 
 const nativeRequire = createRequire(import.meta.url);
+let editorSearch = "";
+const editorNavigations = [];
+const sidebarState = { eventEditAction: null };
 const mocks = {
   "@radix-ui/react-dialog": {
     Root: ({ open, children }) => open ? children : null,
@@ -18,8 +21,11 @@ const mocks = {
     Close: ({ children }) => children,
   },
   "lucide-react": new Proxy({}, { get: () => (props) => React.createElement("svg", props) }),
-  "next/navigation": { useRouter: () => ({}) },
-  "@/app/sidebar-context": { useSidebar: () => ({}) },
+  "next/navigation": {
+    useRouter: () => ({ push: (href) => editorNavigations.push(href) }),
+    useSearchParams: () => new URLSearchParams(editorSearch),
+  },
+  "@/app/sidebar-context": { useSidebar: () => sidebarState },
   "@/components/EventDeleteModal": {
     __esModule: true,
     default: (props) => React.createElement("button", { "aria-label": props.ariaLabel }, "Delete"),
@@ -56,8 +62,12 @@ function load(relative, cache = new Map()) {
       jsx: ts.JsxEmit.ReactJSX,
     },
   }).outputText;
-  if (file.endsWith("/EventOwnerTools.tsx")) code += "\nexports.TestProductViewer = OwnerProductViewer;";
+  if (path.basename(file) === "EventOwnerTools.tsx") code += "\nexports.TestProductViewer = OwnerProductViewer;";
   function require(name) {
+    if (name.endsWith(".png")) return { __esModule: true, default: { src: "/brand/envitefy-wordmark.png", width: 450, height: 120 } };
+    if (name.endsWith(".module.css")) {
+      return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
+    }
     if (name === "./OwnerPreviewMobileTopbarSuppressor") {
       return mocks["@/components/OwnerPreviewMobileTopbarSuppressor"];
     }
@@ -75,6 +85,8 @@ const OwnerTools = load("src/components/EventOwnerTools.tsx").default;
 const ProductViewer = load("src/components/EventOwnerTools.tsx").TestProductViewer;
 const PreviewViewport = load("src/components/EventPreviewViewport.tsx").default;
 const { withDirectRsvpInvitationData } = load("src/lib/studio/live-card-rsvp.ts");
+const { useMobileDrawer } = load("src/hooks/useMobileDrawer.ts");
+const MobileNavHeader = load("src/components/navigation/MobileNavHeader.tsx").default;
 const render = (data, initialTab = "design") =>
   renderToStaticMarkup(
     React.createElement(OwnerTools, {
@@ -104,7 +116,7 @@ test("event pages open directly with owner actions and responsive device control
     assert.match(html, /aria-label="Edit event"/);
     assert.match(html, /aria-label="Share event"/);
     assert.match(html, /aria-label="Delete event"/);
-    assert.match(html, /aria-label="Back to My Events"/);
+    assert.doesNotMatch(html, /aria-label="Back to My Events"|aria-label="Close preview"/);
     assert.match(html, /data-owner-event-view/);
     assert.match(html, /left-\[var\(--app-sidebar-width,0px\)\]/);
     assert.doesNotMatch(html, /data-navigation-suppressed/);
@@ -117,7 +129,58 @@ test("event pages open directly with owner actions and responsive device control
     assert.match(html, /aria-label="Mobile view"/);
     assert.match(html, /preview=owner&amp;(?:returnTo=[^"&]+&amp;)?embed=dashboard-preview/);
     assert.doesNotMatch(html, /Edit card|Add card artwork|Design idea|Card artwork/);
-    assert.match(html, /href="\/event\/meet\?edit=meet"/);
+    assert.match(html, /href="\/event\/meet\?edit=meet&amp;editor=menu&amp;returnTo=%2Fevent%2Fmeet%3Ftab%3Devent&amp;eventColor=[^"]+"/);
+    assert.match(html, /data-floating-event-toolbar="true"/);
+    assert.doesNotMatch(html, /nav-chrome-mobile-drawer-trigger|absolute bottom-/);
+    assert.match(html, /hidden lg:inline-flex/);
+  }
+});
+
+test("owner Edit opens the shared editing menu immediately while gallery previews stay closed", () => {
+  function EditorEntry() {
+    const { mobileMenuOpen } = useMobileDrawer();
+    return React.createElement("output", null, mobileMenuOpen ? "Editing menu" : "Preview");
+  }
+  try {
+    editorSearch = "";
+    assert.equal(renderToStaticMarkup(React.createElement(EditorEntry)), "<output>Preview</output>");
+    editorSearch = "edit=meet&editor=menu";
+    assert.equal(renderToStaticMarkup(React.createElement(EditorEntry)), "<output>Editing menu</output>");
+  } finally {
+    editorSearch = "";
+  }
+});
+
+test("the mobile navigation pencil opens the current event's editing menu", () => {
+  try {
+    sidebarState.eventEditAction = { href: "/event/gymnastics/customize?edit=meet&editor=menu" };
+    const html = renderToStaticMarkup(React.createElement(MobileNavHeader, {
+      visible: true, onOpenNavigation() {}, onHome() {}, menuIcon: "Menu",
+    }));
+    assert.match(html, /data-app-mobile-topbar="app"/);
+    assert.match(html, /aria-label="Edit event"/);
+    assert.match(html, /href="\/event\/gymnastics\/customize\?edit=meet&amp;editor=menu"/);
+    assert.doesNotMatch(html, /nav-chrome-mobile-drawer-trigger/);
+  } finally {
+    sidebarState.eventEditAction = null;
+  }
+});
+
+test("Back to preview returns through the guarded router to the owner event canvas", () => {
+  let backToPreview;
+  function EditorEntry() {
+    const drawer = useMobileDrawer();
+    backToPreview = drawer.closeMobileMenu;
+    return React.createElement("output", null, drawer.mobileMenuOpen ? "Editing menu" : "Preview");
+  }
+  try {
+    editorSearch = "edit=meet&editor=menu&returnTo=%2Fevent%2Ffright-invite%3Ftab%3Devent";
+    assert.equal(renderToStaticMarkup(React.createElement(EditorEntry)), "<output>Editing menu</output>");
+    backToPreview();
+    assert.deepEqual(editorNavigations, ["/event/fright-invite?tab=event"]);
+  } finally {
+    editorSearch = "";
+    editorNavigations.length = 0;
   }
 });
 

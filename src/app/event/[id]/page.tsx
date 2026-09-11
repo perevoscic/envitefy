@@ -12,16 +12,11 @@ import type { CSSProperties, ReactNode } from "react";
 import { cache, cloneElement, isValidElement } from "react";
 import { generatedScanHero, resolveScanMediaPolicy } from "@/lib/ocr/scan-media";
 import AccessCodeGate from "@/components/AccessCodeGate";
-import AppleCalendarLink from "@/components/AppleCalendarLink";
+import CalendarAction from "@/components/CalendarAction";
 import BabyShowerSkin from "@/components/BabyShowerSkin";
 import BasketballSkin from "@/components/BasketballSkin";
 import BirthdaySkin from "@/components/BirthdaySkin";
 import { BIRTHDAY_THEMES } from "@/components/birthdays/birthdayThemes";
-import {
-  CalendarIconApple,
-  CalendarIconGoogle,
-  CalendarIconOutlook,
-} from "@/components/CalendarIcons";
 import ConciergeEventWebsite from "@/components/concierge/ConciergeEventWebsite";
 import EventActions from "@/components/EventActions";
 import EventCelebrationOverlay from "@/components/EventCelebrationOverlay";
@@ -104,6 +99,7 @@ import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { findFirstEmail, findFirstUrl, normalizeUrlValue } from "@/utils/contact";
 import { resolveEventCelebrationKind } from "@/utils/event-celebration";
 import { buildEditLink, resolveEditHref } from "@/utils/event-edit-route";
+import { buildOwnerEventEditHref } from "@/lib/event-preview-viewport";
 import {
   buildEventProductPath,
   getPrimaryEventProductOutput,
@@ -1312,7 +1308,16 @@ export default async function EventPage({
     output: primaryProductOutput,
     publicSlug,
   });
-  const showOwnerEventView = isOwner && requestedTab === "event" && !ownerPreviewMode;
+  const showOwnerEventView =
+    isOwner &&
+    !ownerPreviewMode &&
+    (requestedTab === "event" ||
+      (!requestedTab &&
+        canManageCreatedEvent &&
+        !cardFirstCanonical &&
+        !createdParam &&
+        !autoAccept &&
+        !isScannedOrUploadedEventData(data)));
   if (cardFirstCanonical && !ownerToolsTab && !showOwnerEventView) {
     const cardPreviewSearch = new URLSearchParams();
     if (ownerPreviewMode) {
@@ -1396,6 +1401,14 @@ export default async function EventPage({
   if (editParam && canEditCreatedEvent && isFootballDiscoveryTemplate) {
     redirect("/event");
   }
+  if (editParam && canEditCreatedEvent && readRouteSearchParam((awaitedSearchParams as any)?.editor) === "menu") {
+    const editUrl = new URL(
+      discoveryEditConfig?.customizeUrl || resolveEditHref(row.id, data, title),
+      "https://envitefy.local",
+    );
+    editUrl.searchParams.delete("embed");
+    redirect(buildOwnerEventEditHref(`${editUrl.pathname}${editUrl.search}`, ownerEventHref, readRouteSearchParam((awaitedSearchParams as any)?.eventColor)));
+  }
   if (editParam && canEditCreatedEvent && !discoveryEditConfig) {
     const editUrl = resolveEditHref(row.id, data, title);
     redirect(editUrl);
@@ -1411,6 +1424,7 @@ export default async function EventPage({
         title={title}
         publicHref={publicEventHref}
         editHref={resolveEditHref(row.id, data, title)}
+        backgroundColor={eventPageBackgroundColor}
       />
     );
   }
@@ -3871,40 +3885,9 @@ export default async function EventPage({
             )}
             {calendarLinks && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
-                  Add to calendar
-                </dt>
-                <dd className="mt-1  space-y-1">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <AppleCalendarLink
-                      href={calendarLinks.appleInline}
-                      className="flex h-11 w-11 items-center justify-center rounded-full border border-[#d5c9f7] bg-white text-[#433468] shadow-sm transition hover:border-[#beaee8] hover:bg-[#f7f2ff]"
-                      aria-label="Add to Apple Calendar"
-                      title="Apple Calendar"
-                    >
-                      <CalendarIconApple className="h-5 w-5" />
-                    </AppleCalendarLink>
-                    <a
-                      href={calendarLinks.google}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex h-11 w-11 items-center justify-center rounded-full border border-[#d5c9f7] bg-white text-[#433468] shadow-sm transition hover:border-[#beaee8] hover:bg-[#f7f2ff]"
-                      aria-label="Add to Google Calendar"
-                      title="Google Calendar"
-                    >
-                      <CalendarIconGoogle className="h-5 w-5" />
-                    </a>
-                    <a
-                      href={calendarLinks.outlook}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex h-11 w-11 items-center justify-center rounded-full border border-[#d5c9f7] bg-white text-[#433468] shadow-sm transition hover:border-[#beaee8] hover:bg-[#f7f2ff]"
-                      aria-label="Add to Outlook Calendar"
-                      title="Outlook Calendar"
-                    >
-                      <CalendarIconOutlook className="h-5 w-5" />
-                    </a>
-                  </div>
+                <dt className="sr-only">Calendar</dt>
+                <dd className="mt-1">
+                  <CalendarAction links={calendarLinks} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#d5c9f7] bg-white px-4 py-2 text-sm font-medium text-[#433468] shadow-sm transition hover:border-[#beaee8] hover:bg-[#f7f2ff]" />
                 </dd>
               </div>
             )}

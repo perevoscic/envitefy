@@ -1,4 +1,5 @@
 "use client";
+import { writeLocalCalendarDefault } from "@/lib/calendar-preference";
 
 import { CONNECTED_CALENDAR_SYNC_ENABLED, CALENDAR_SYNC_PAUSED_MESSAGE } from "@/config/calendar-sync";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -88,7 +89,6 @@ type CalendarConnectionStatus = {
   apple: boolean;
 };
 
-const CALENDAR_DEFAULT_STORAGE_KEY = "envitefy:event-actions:calendar-default:v1";
 type ApiState<T> = { loading: boolean; error: string | null; data?: T };
 type CalendarConnectionMessage = { kind: "success" | "error"; text: string };
 
@@ -287,16 +287,7 @@ export default function SettingsPage() {
   };
 
   const mirrorLocalCalendarDefault = (provider: CalendarProvider | null) => {
-    if (typeof window === "undefined") return;
-    try {
-      if (!provider) {
-        window.localStorage.removeItem(CALENDAR_DEFAULT_STORAGE_KEY);
-        return;
-      }
-      window.localStorage.setItem(CALENDAR_DEFAULT_STORAGE_KEY, provider);
-    } catch {
-      // ignore storage failures
-    }
+    writeLocalCalendarDefault(provider);
   };
 
   const normalizedPreferredProvider = normalizeProvider(preferredProvider);

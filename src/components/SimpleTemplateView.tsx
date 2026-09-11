@@ -910,18 +910,13 @@ export default function SimpleTemplateView({
     }
   };
 
-  const buildAbsoluteIcsUrl = (details: NonNullable<ReturnType<typeof buildEventDetails>>) => {
-    const icsPath = buildIcsUrl(details);
-    return typeof window !== "undefined" ? `${window.location.origin}${icsPath}` : icsPath;
-  };
-
-  const buildWebcalUrl = (details: NonNullable<ReturnType<typeof buildEventDetails>>) => {
-    const absoluteIcs = buildAbsoluteIcsUrl(details);
-    return absoluteIcs.replace(/^https?/i, "webcal");
-  };
-
   const handleShare = async () => {
-    const publicShareUrl = resolvePublicEventShareUrl({ shareUrl, eventId, origin: window.location.origin, preview: eventId === "preview" });
+    const publicShareUrl = resolvePublicEventShareUrl({
+      shareUrl,
+      eventId,
+      origin: window.location.origin,
+      preview: eventId === "preview",
+    });
     if (!publicShareUrl) {
       alert("Publish your event to get a shareable link.");
       return;
@@ -985,47 +980,6 @@ export default function SimpleTemplateView({
     const details = buildEventDetails();
     if (!details) { alert("The host has not set the event date yet."); return; }
     openAppleCalendarIcs(buildIcsUrl(details));
-  };
-
-  const handleCalendar = () => {
-    if (typeof navigator === "undefined") {
-      handleAppleCalendar();
-      return;
-    }
-
-    const platform =
-      (
-        navigator as Navigator & {
-          userAgentData?: { platform?: string };
-        }
-      ).userAgentData?.platform ||
-      navigator.platform ||
-      "";
-    const userAgent = navigator.userAgent || "";
-    const isWindows = /win/i.test(platform) || /windows/i.test(userAgent);
-    const isAndroid = /android/i.test(userAgent);
-    const isIOS =
-      /iphone|ipad|ipod/i.test(userAgent) ||
-      (platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    const isMac = /mac/i.test(platform) || /macintosh|mac os x/i.test(userAgent);
-
-    if (isWindows) {
-      const details = buildEventDetails();
-    if (!details) { alert("The host has not set the event date yet."); return; }
-      const webcalUrl = buildWebcalUrl(details);
-      openWithFallback(webcalUrl, handleOutlookCalendar);
-      return;
-    }
-    if (isAndroid) {
-      handleGoogleCalendar();
-      return;
-    }
-    if (isIOS || isMac) {
-      handleAppleCalendar();
-      return;
-    }
-
-    handleOutlookCalendar();
   };
 
   const rosterAthletes = useMemo<NormalizedRosterAthlete[]>(
@@ -2765,7 +2719,6 @@ export default function SimpleTemplateView({
           hideOwnerActions={hideOwnerActions}
           suppressActionStrip={suppressActionStrip}
           onShare={handleShare}
-          onCalendar={handleCalendar}
           onGoogleCalendar={handleGoogleCalendar}
           onAppleCalendar={handleAppleCalendar}
           onOutlookCalendar={handleOutlookCalendar}

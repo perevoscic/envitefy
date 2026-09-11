@@ -1,4 +1,5 @@
 "use client";
+import { useCalendarAction } from "@/components/CalendarAction";
 
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -231,7 +232,7 @@ export default function BirthdaySkin({
   previewMode = false,
   actions,
 }: Props) {
-  const [showCalendarMenu, setShowCalendarMenu] = useState(false);
+  const calendar = useCalendarAction({ links: calendarLinks });
   const [showImageLightbox, setShowImageLightbox] = useState(false);
   const originalHero = useScanOriginalHero();
   const [showRsvpIdentityModal, setShowRsvpIdentityModal] = useState(false);
@@ -298,12 +299,7 @@ export default function BirthdaySkin({
     minContrast: 3,
   });
   const pageIsDark = getLuminance(colors.background) < 0.36;
-  const neutralSurface = "#ffffff";
-  const neutralSurfaceTextColor = ensureReadableTextColor(neutralSurface, colors.text, {
-    minContrast: 4.5,
-  });
-  const neutralSurfaceMutedTextColor =
-    mixHexColors(neutralSurfaceTextColor, neutralSurface, 0.38) || neutralSurfaceTextColor;
+
   const directionsButtonBackground = colors.primary;
   const directionsButtonTextColor = ensureReadableTextColor(directionsButtonBackground, "#ffffff", {
     minContrast: 3,
@@ -315,12 +311,7 @@ export default function BirthdaySkin({
   });
   const planCardMutedTextColor =
     mixHexColors(planCardTextColor, planCardBackground, 0.42) || planCardTextColor;
-  const calendarModalButtonBackground = colors.primary;
-  const calendarModalButtonTextColor = ensureReadableTextColor(
-    calendarModalButtonBackground,
-    "#ffffff",
-    { minContrast: 3 },
-  );
+
   const detailIconSwatchColor = "var(--theme-primary)";
   const displayOcrFacts = filterRenderedOcrFacts(
     filterRegistryOcrFacts(normalizeOcrFacts(ocrFacts), Boolean(displayRegistryUrl)),
@@ -626,10 +617,10 @@ export default function BirthdaySkin({
             <div className="grid grid-cols-2 gap-6">
               <ActionTile
                 icon={<CalendarPlus className="h-10 w-10" />}
-                label="Save to Calendar"
+                label={calendar.label}
                 backgroundColor="var(--theme-primary)"
                 textColor={primaryTileTextColor}
-                onClick={() => setShowCalendarMenu(true)}
+                onClick={calendar.open}
                 disabled={!calendarLinks || previewMode}
                 wide={!hasRsvpAction}
               />
@@ -766,79 +757,7 @@ export default function BirthdaySkin({
         </div>
       </div>
 
-      <AnimatePresence>
-        {showCalendarMenu && calendarLinks ? (
-          <div className="fixed inset-0 z-[7100] flex items-center justify-center p-6">
-            <motion.button
-              type="button"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowCalendarMenu(false)}
-              className="absolute inset-0 bg-black/75 backdrop-blur-md"
-            />
-            <motion.div
-              initial={{ scale: 0.5, y: 100, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.5, y: 100, opacity: 0 }}
-              className="relative w-full max-w-sm rounded-[3.5rem] p-10 text-center shadow-2xl"
-              style={{
-                backgroundColor: neutralSurface,
-                color: neutralSurfaceTextColor,
-              }}
-            >
-              <div
-                className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-3xl"
-                style={{
-                  backgroundColor: mixHexColors(colors.primary, "#ffffff", 0.82) || "#ffffff",
-                  color: colors.primary,
-                }}
-              >
-                <Calendar className="h-10 w-10" />
-              </div>
-              <h3 className="serif mb-8 text-2xl font-bold">Ready to Party?</h3>
-              <div className="space-y-4">
-                <CalendarModalLink
-                  href={calendarLinks.google}
-                  label="Google"
-                  tone={colors.primary}
-                  onChoose={() => setShowCalendarMenu(false)}
-                />
-                <CalendarModalLink
-                  href={calendarLinks.outlook}
-                  label="Outlook"
-                  tone={colors.secondary}
-                  onChoose={() => setShowCalendarMenu(false)}
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const url = calendarLinks.appleInline;
-                    setShowCalendarMenu(false);
-                    if (previewMode || !url) return;
-                    window.open(url, "_blank", "noopener,noreferrer");
-                  }}
-                  className="block w-full rounded-[1.8rem] py-5 text-xs font-bold uppercase tracking-widest transition-transform hover:scale-105"
-                  style={{
-                    backgroundColor: calendarModalButtonBackground,
-                    color: calendarModalButtonTextColor,
-                  }}
-                >
-                  Apple
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowCalendarMenu(false)}
-                className="mt-8 text-[10px] font-bold uppercase tracking-widest transition-opacity"
-                style={{ color: neutralSurfaceMutedTextColor }}
-              >
-                Maybe later
-              </button>
-            </motion.div>
-          </div>
-        ) : null}
-      </AnimatePresence>
+      {calendar.dialog}
 
       <AnimatePresence>
         {showImageLightbox && imageUrl ? (
@@ -1002,31 +921,5 @@ function ActionTile({
     >
       <div className={contentClassName}>{content}</div>
     </button>
-  );
-}
-
-function CalendarModalLink({
-  href,
-  label,
-  tone,
-  onChoose,
-}: {
-  href: string;
-  label: string;
-  tone: string;
-  onChoose: () => void;
-}) {
-  const textColor = ensureReadableTextColor(tone, "#ffffff", { minContrast: 3 });
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      onClick={onChoose}
-      className="block w-full rounded-[1.8rem] py-5 text-center text-xs font-bold uppercase tracking-widest transition-transform hover:scale-105"
-      style={{ backgroundColor: tone, color: textColor }}
-    >
-      {label}
-    </a>
   );
 }

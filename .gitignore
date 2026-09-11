@@ -74,6 +74,7 @@ client_secret_envitefy_835611267543-h29p0hgqs3od4g94ogqo34lbh0birvfd.apps.google
 !/video-studio/.agents/skills/
 /video-studio/.agents/skills/*
 !/video-studio/.agents/skills/envitefy-video-producer/
+!/video-studio/.agents/skills/envitefy-ad-creative/
 !/video-studio/templates/
 /video-studio/templates/*
 !/video-studio/templates/campaign-brief.json

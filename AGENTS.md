@@ -90,6 +90,7 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
 - Use Biome plus the VS Code diagnostics linter after TS/TSX edits. This repo will otherwise let type errors slip through.
 - Avoid using TypeScript `unknown` as an escape hatch. Use concrete types when the contract is known, use `void` for ignored return values, and reserve `unknown` for true untrusted boundaries like parsed JSON, external API payloads, dynamic imports, or generic utility inputs. Narrow `unknown` immediately with guards.
 - The codebase is intentionally mixed `ts`, `tsx`, `js`, and `mjs` with `allowJs: true`.
+- `SimpleTemplateView.tsx` uses `@ts-nocheck`, so a normal typecheck will not catch missing event action handlers. Run `src/components/SimpleTemplateView.actions.test.cjs` when changing those handlers; it renders the complete event component and exercises Share, beyond the child toolbar tests.
 - A lot of regression tests are not behavior tests; they are source-shape guards that assert specific strings or structure. If you refactor intentionally, expect to update the guard tests rather than assuming they are wrong.
 - Several core files are huge enough that opening them wholesale is a waste:
   - `src/lib/meet-discovery.ts` is about 10k lines.
@@ -99,6 +100,18 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
   Start with `rg` on symbols, then use targeted `sed -n` slices.
 
 ## Feature Maps
+
+- Event guest action placement (September 11, 2026): place the gymnastics event's Share and Add to calendar controls above the hero on desktop and mobile. Below 640px show icons only, with 44px touch targets and accessible action names; retain desktop labels and the selected calendar provider's accessible name.
+
+- Calendar action preference (September 11, 2026): event Calendar/Save to Calendar buttons say **Add to calendar** and open the shared Google, Apple, and Outlook chooser. When a valid default is selected, say **Add to Google Calendar**, **Add to Apple Calendar**, or **Add to Outlook Calendar** and open that provider directly. Reuse `CalendarAction` / `useCalendarAction` across event templates, scanned invitations, and Live Cards. Signed-in defaults come from the current account profile and must have a verified connection; never guess from the device or borrow another account's browser preference. Settings changes notify mounted controls, including preview iframes.
+
+- Preview hydration constraint (September 11, 2026): navigation mounting does not mean nested event content has hydrated; dynamic renderers can remain inside pending Suspense boundaries. Keep preview background overrides in an iframe stylesheet using structural selectors. Do not add background-marker attributes to React-rendered event surfaces or artwork, and do not suppress hydration warnings to hide the mismatch.
+
+- Saved event Cancel preference (September 11, 2026): Cancel in the gymnastics editor returns to the original event URL with `tab=event`, falling back to the saved event ID for older editor links. Preserve unsaved-change protection, including embedded editors; do not send saved events back to `/event/gymnastics`.
+
+- Desktop event toolbar preference (September 11, 2026): center the device selector and the Edit, Share, and Delete actions together as one floating group over the event canvas beside the sidebar. Do not center only the device selector while the action group extends to its right.
+
+- Event chrome preference (September 11, 2026): the actual event design's background color must fill the top navigation area, page inset, and mobile safe areas in both the owner view and edit screen, including after returning from Edit. Use the shared event page color registration; never restore app lavender clouds behind event navigation. Mobile Edit is a pencil in the top navbar; desktop Edit is a pencil beside the floating event controls. Remove the purple bottom-right Edit trigger when the mobile navbar is available. The pencil opens the edit menu directly, and Back to preview returns to the owner event view with its device and sharing controls, preserving unsaved-change protection. This supersedes the earlier bottom-right Edit preference.
 
 - Live Card preview layout preference (September 10, 2026, updated): center the card in 90% of the available screen height, leaving 5% above and below. Place Share inside the upper-left corner and X Close inside the upper-right corner on mobile/Safari and desktop; keep both controls inside the card with 44px touch targets. This supersedes the earlier 80% height, adjacent top-right controls and Close placement below the card. Respect safe areas. Scale the artwork proportionally to cover the frame from top to bottom, cropping the sides as needed on narrow phones; do not add blurred filler bands. Keep guest actions inside the card.
 
@@ -222,4 +235,5 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
 
 - The admin Content Studio at `/admin/marketing-images` was retired on September 5, 2026. Its dedicated APIs and Vercel reconciliation cron are removed; do not reintroduce them for local video production. See `docs/admin-content-studio.md`. The customer `/studio` entry was retired on September 7, 2026: it redirects to the public `/envitefy-concierge` explainer, whose creation and authentication actions lead to `/chat`. Live Card attribution links use `/envitefy-concierge`. Keep shared Studio-named renderers/assets used by current cards; the old URL is not the active creator.
 - Video production lives in `video-studio/`. For video creation, revisions, aspect-ratio adaptations, or copy accompanying a studio video, read `video-studio/AGENTS.md` and use `video-studio/.agents/skills/envitefy-video-producer/SKILL.md`.
+- Ad concepts, scripts, storyboards, visual direction, and campaign copy use `video-studio/.agents/skills/envitefy-ad-creative/SKILL.md`. The producer uses it for new campaigns and substantial story revisions, then continues production. Ideas-only requests stay within written creative work; simple production edits reuse the saved plan.
 - Standing video preferences are in `video-studio/STUDIO-GUIDE.md`; campaign history is indexed in `video-studio/projects/README.md`. Update these records when relevant feedback arrives so fresh tasks do not need the conversation repeated.

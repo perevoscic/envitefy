@@ -1,3 +1,5 @@
+import { getGymMeetTemplateMeta, isGymMeetTemplateId } from "../components/gym-meet-templates/registry.ts";
+
 // Native browser bars accept a solid color; CSS adds the wordmark's color clouds
 // to the mobile page surface and the safe areas that the browser exposes.
 const BRAND_THEME_COLOR = "#8998ED";
@@ -69,6 +71,12 @@ export function resolveEventThemeColor(input?: unknown): string {
 export function resolveEventPageBackgroundColor(input?: unknown): string {
   if (!input || typeof input !== "object") return BRAND_BACKGROUND_COLOR;
   const data = input as Record<string, unknown>;
+  const editor = data.templateEditor && typeof data.templateEditor === "object" ? data.templateEditor as Record<string, unknown> : null;
+  const discovery = data.discovery && typeof data.discovery === "object" ? data.discovery as Record<string, unknown> : null;
+  const gymDesign = [data.pageTemplateId, discovery?.pageTemplateId, editor?.templateId].find(isGymMeetTemplateId);
+  if (gymDesign || /gymnastics/.test(String(data.category || data.templateId || ""))) {
+    return getGymMeetTemplateMeta(gymDesign).background;
+  }
   const theme = typeof data.theme === "object" && data.theme ? (data.theme as Record<string, unknown>) : null;
   const themeColors =
     theme && typeof theme.colors === "object" && theme.colors

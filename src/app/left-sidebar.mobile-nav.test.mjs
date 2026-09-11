@@ -9,19 +9,22 @@ const readSource = (relativePath) =>
   fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
 test("left sidebar mobile header opens navigation from click without early touch handlers", () => {
-  const source = readSource("src/app/left-sidebar.tsx");
+  const sidebar = readSource("src/app/left-sidebar.tsx");
+  const source = readSource("src/components/navigation/MobileNavHeader.tsx");
+  assert.match(sidebar, /openButtonRef=\{viewModel\.openBarButtonRef\}/);
+  assert.match(sidebar, /onOpenNavigation=\{viewModel\.openSidebarFromTrigger\}/);
 
   assert.match(
     source,
-    /ref=\{viewModel\.openBarButtonRef\}[\s\S]*?onClick=\{\(event\) => \{\s*event\.preventDefault\(\);\s*event\.stopPropagation\(\);\s*viewModel\.openSidebarFromTrigger\(\);\s*\}\}[\s\S]*?aria-label="Open navigation"/s
+    /ref=\{openButtonRef\}[\s\S]*?onClick=\{\(event\) => \{\s*event\.preventDefault\(\);\s*event\.stopPropagation\(\);\s*onOpenNavigation\(\);\s*\}\}[\s\S]*?aria-label="Open navigation"/s
   );
   assert.doesNotMatch(
     source,
-    /ref=\{viewModel\.openBarButtonRef\}[\s\S]*?onPointerDown=/s
+    /ref=\{openButtonRef\}[\s\S]*?onPointerDown=/s
   );
   assert.doesNotMatch(
     source,
-    /ref=\{viewModel\.openBarButtonRef\}[\s\S]*?onTouchStart=/s
+    /ref=\{openButtonRef\}[\s\S]*?onTouchStart=/s
   );
 });
 

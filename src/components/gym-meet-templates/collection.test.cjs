@@ -47,7 +47,7 @@ function props(design, heroImage) {
       details: design.sampleNote, rsvpEnabled: true,
     }, navItems: [], rosterAthletes: [], headerLocation: design.sampleLocation }),
     rsvpProps, isOwner: false, isReadOnly: true,
-    onShare: noAction, onCalendar: noAction, onGoogleCalendar: noAction, onAppleCalendar: noAction, onOutlookCalendar: noAction,
+    onShare: noAction, onGoogleCalendar: noAction, onAppleCalendar: noAction, onOutlookCalendar: noAction,
   };
 }
 test('60 complete guest pages render unique artwork, titles, meet details, RSVP and calendar actions', () => {
@@ -56,7 +56,7 @@ test('60 complete guest pages render unique artwork, titles, meet details, RSVP 
   for (const design of designs) {
     const html = renderToStaticMarkup(React.createElement(Renderer, props(design)));
     assert.equal((html.match(/<h1\b/g) || []).length, 1, design.id);
-    for (const value of [design.artwork, design.previewTitle, design.sampleVenue, 'Send RSVP', 'Calendar', 'Share']) assert.ok(html.includes(escaped(value)), `${design.id}: ${value}`);
+    for (const value of [design.artwork, design.previewTitle, design.sampleVenue, 'Send RSVP', 'Add to calendar', 'Share']) assert.ok(html.includes(escaped(value)), `${design.id}: ${value}`);
     const raw = fs.readFileSync(path.join(process.cwd(), 'public', design.artwork));
     assert.equal(raw.toString('ascii', 8, 12), 'WEBP');
     hashes.add(crypto.createHash('sha256').update(raw).digest('hex'));

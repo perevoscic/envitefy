@@ -16,9 +16,7 @@ test("birthday sharing uses the published invitation and provides a copy fallbac
 });
 
 test("birthday calendar actions use real provider links and do not invent a party duration", () => {
-  for (const provider of ["appleInline", "google", "outlook"]) {
-    assert.ok(actions.includes(`href={links.${provider}}`));
-  }
+  assert.match(actions, /<CalendarAction links=\{links\}/);
   assert.match(actions, /startIso: event\.date/);
   assert.match(actions, /const fallbackEnd = allDay \? end\.toISOString\(\)\.slice\(0, 10\) : event\.date/);
   assert.match(actions, /\? event\.end : fallbackEnd/);

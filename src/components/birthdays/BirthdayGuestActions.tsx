@@ -2,7 +2,7 @@
 
 import { Check, Share2 } from "lucide-react";
 import { createContext, useContext, useState, type ReactNode } from "react";
-import AppleCalendarLink from "@/components/AppleCalendarLink";
+import CalendarAction from "@/components/CalendarAction";
 import { buildGoogleMapsDirectionsHref } from "@/lib/directions";
 import { buildCalendarLinks } from "@/utils/calendar-links";
 import type { EventData } from "./BirthdayRenderer";
@@ -117,16 +117,11 @@ export function BirthdayCalendarDate({ children }: { children: ReactNode }) {
   if (!actions?.links) return <>{children}</>;
   const { links } = actions;
   return (
-    <details className="basis-auto" data-birthday-calendar>
-      <summary aria-label="Add to calendar" className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 border-b border-current/30 py-2 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 [&::-webkit-details-marker]:hidden">
-        {children}
-      </summary>
-      <div className="flex flex-col gap-1 border-l border-current/30 pl-3 text-sm">
-        <AppleCalendarLink href={links.appleInline} className="py-3 underline underline-offset-4">Apple Calendar</AppleCalendarLink>
-        <a href={links.google} target="_blank" rel="noopener noreferrer" className="py-3 underline underline-offset-4">Google Calendar</a>
-        <a href={links.outlook} target="_blank" rel="noopener noreferrer" className="py-3 underline underline-offset-4">Outlook Calendar</a>
-      </div>
-    </details>
+    <span className="basis-auto" data-birthday-calendar>
+      <CalendarAction links={links} className="inline-flex min-h-11 flex-wrap items-center gap-2 border-b border-current/30 py-2 text-left underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2">
+        {(label) => <>{children}<small className="text-xs font-medium">{label}</small></>}
+      </CalendarAction>
+    </span>
   );
 }
 

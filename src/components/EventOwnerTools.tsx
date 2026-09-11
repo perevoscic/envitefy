@@ -1,4 +1,5 @@
 "use client";
+import { resolveEventPageBackgroundColor } from "@/lib/theme-color";
 
 import * as Dialog from "@radix-ui/react-dialog";
 import {
@@ -899,7 +900,7 @@ export default function EventOwnerTools({
   }
 
   if (isEventPageWorkspace) {
-    return <EventOwnerView eventId={eventId} title={currentEventTitle} publicHref={publicUrl} editHref={resolvedEditHref} />;
+    return <EventOwnerView eventId={eventId} title={currentEventTitle} publicHref={publicUrl} editHref={resolvedEditHref} backgroundColor={resolveEventPageBackgroundColor(eventData)} />;
   }
 
   return (

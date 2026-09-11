@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
+import CalendarAction from "@/components/CalendarAction";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
 import EventTrackedLink from "@/components/EventTrackedLink";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
@@ -240,12 +241,7 @@ export default function ConciergeEventWebsite({
                 </a>
               ) : null}
               {calendarLinks ? (
-                <a
-                  href="#schedule"
-                  className="inline-flex h-12 items-center rounded-full border border-white/26 bg-white/12 px-5 text-sm font-black uppercase tracking-[0.14em] text-white backdrop-blur transition hover:bg-white/18"
-                >
-                  Add to calendar
-                </a>
+                <CalendarAction links={calendarLinks} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/26 bg-white/12 px-5 py-3 text-sm font-black uppercase tracking-[0.14em] text-white backdrop-blur transition hover:bg-white/18" />
               ) : null}
             </div>
           </div>
@@ -303,26 +299,7 @@ export default function ConciergeEventWebsite({
               </div>
             </div>
             {calendarLinks ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-                <a
-                  className="rounded-full bg-slate-100 px-4 py-2 text-sm font-bold"
-                  href={calendarLinks.google}
-                >
-                  Google
-                </a>
-                <a
-                  className="rounded-full bg-slate-100 px-4 py-2 text-sm font-bold"
-                  href={calendarLinks.outlook}
-                >
-                  Outlook
-                </a>
-                <a
-                  className="rounded-full bg-slate-100 px-4 py-2 text-sm font-bold"
-                  href={calendarLinks.appleInline}
-                >
-                  Apple
-                </a>
-              </div>
+              <div className="mt-4"><CalendarAction links={calendarLinks} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm font-bold" /></div>
             ) : null}
             {visibleScheduleItems.length ? (
               <div className="mt-5 space-y-3 border-t border-slate-100 pt-4">

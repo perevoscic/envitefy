@@ -1,5 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ownerEventEditorReturnHref } from "@/lib/event-preview-viewport";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TouchEvent } from "react";
+import { useEventPageColor, useEventTopbarEdit } from "@/hooks/useEventPageChrome";
+import { normalizeEventPageColor } from "@/lib/event-page-chrome";
 
 type TouchPoint = { x: number; y: number } | null;
 
@@ -10,8 +14,13 @@ const MAX_VERTICAL_DRIFT = 40;
 const isMobileViewport = () =>
   typeof window !== "undefined" && window.innerWidth < 768;
 
-export function useMobileDrawer() {
-  const [open, setOpen] = useState(false);
+export function useMobileDrawer(initialOpen?: boolean) {
+  const search = useSearchParams();
+  const router = useRouter();
+  const returnHref = ownerEventEditorReturnHref(search);
+  const [open, setOpen] = useState(initialOpen ?? (search?.get("editor") === "menu"));
+  const [eventColor, setEventColor] = useState(() => normalizeEventPageColor(search?.get("eventColor")));
+  useEventPageColor(eventColor);
   const previewTouchStart = useRef<TouchPoint>(null);
   const drawerTouchStart = useRef<TouchPoint>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
@@ -23,8 +32,41 @@ export function useMobileDrawer() {
         : null;
     setOpen(true);
   }, []);
+  const editAction = useMemo(() => open ? null : { onClick: openDrawer }, [open, openDrawer]);
+  useEventTopbarEdit(editAction);
 
-  const closeDrawer = useCallback(() => setOpen(false), []);
+  useEffect(() => {
+    const root = document.documentElement;
+    const previous = root.getAttribute("data-event-editor-active");
+    root.setAttribute("data-event-editor-active", "true");
+    let frame = 0;
+    const sync = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        // Read the real design behind the menu, excluding design-picker thumbnails.
+        const surface = document.querySelector("#guide-preview-root [data-gym-body]");
+        if (!surface) return;
+        const color = normalizeEventPageColor(getComputedStyle(surface).getPropertyValue("--gym-paper"));
+        if (color) setEventColor(color);
+      });
+    };
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style"] });
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+      if (previous === null) root.removeAttribute("data-event-editor-active");
+      else root.setAttribute("data-event-editor-active", previous);
+    };
+  }, []);
+
+  const closeDrawer = useCallback(() => {
+    // The app router is guarded by UnsavedProgressProvider. Keep the menu open
+    // until navigation succeeds or the person resolves any unsaved edits.
+    if (returnHref) router.push(returnHref);
+    else setOpen(false);
+  }, [returnHref, router]);
 
   const handlePreviewTouchStart = useCallback(
     (event: TouchEvent<HTMLElement>) => {
@@ -91,7 +133,7 @@ export function useMobileDrawer() {
   );
 
   useEffect(() => {
-    if (!open || typeof document === "undefined") return;
+    if (!open || typeof document === "undefined" || !isMobileViewport()) return;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
@@ -108,12 +150,13 @@ export function useMobileDrawer() {
       }
     };
 
+    handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined" || typeof document === "undefined" || !open) return;
+    if (typeof window === "undefined" || typeof document === "undefined" || !open || !isMobileViewport()) return;
     const drawer = [...document.querySelectorAll<HTMLElement>(".nav-chrome-mobile-drawer")].find(
       (element) => getComputedStyle(element).display !== "none",
     );

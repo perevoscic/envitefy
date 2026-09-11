@@ -23,6 +23,10 @@ Use status `pass` or `not-applicable` with specific notes, plus the reviewer ide
 
 If a check fails, correct the affected shot/edit, render a new version and review that new file. Keep prior exports and their evidence. Do not fill checks based on intentions or mark an entire campaign finished while a requested format is still pending.
 
+## Release readiness for new videos
+
+The engine's record-review command records producer review only and leaves readyToPublish false. New videos, including custom renders, follow [quality.md](quality.md). Use prepare-release for the exact MP4, complete producer and independent AI inspection in the background, and present the polished file as ready for the user's review. Record their explicit approval in userApproval before release. Recheck release-status immediately before a ready-to-publish handoff. Missing inspection, absent user approval, changed media or serious defects prevent release. Previews remain available with truthful pending checks. Legacy campaign records retain their original requirements.
+
 ## Handoff
 
-Deliver the playable MP4 and direct absolute file link for each requested format. Include captions, thumbnails or post copy when requested. Update the campaign index, production notes and feedback with actual completion and remaining work. Track user approval only when explicitly given. Reusable preference changes go into STUDIO-GUIDE.md; scene-specific corrections stay with their campaign.
+Present the playable MP4 and direct absolute link for each requested format, with version/duration, one sentence of creative intent and any precise remaining limitation. Ask for approval or changes in ordinary language; Codex maintains the detailed review records. Use [reviewer-brief.md](reviewer-brief.md) for this handoff. Include requested captions, thumbnails or copy. Update campaign notes, feedback and index truthfully; record user approval only when explicitly given for the presented file(s). Reusable preferences go into STUDIO-GUIDE.md; scene-specific corrections stay with the campaign.

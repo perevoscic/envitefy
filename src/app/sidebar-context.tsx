@@ -10,6 +10,8 @@ import React, {
 } from "react";
 
 interface SidebarContextType {
+  eventEditAction: EventEditAction | null;
+  setEventEditAction: React.Dispatch<React.SetStateAction<EventEditAction | null>>;
   eventRouteAlias: EventRouteAlias | null;
   setEventRouteAlias: (alias: EventRouteAlias | null) => void;
   isCollapsed: boolean;
@@ -36,6 +38,7 @@ interface SidebarContextType {
 }
 
 export type EventContextTab = "dashboard" | "rsvps" | "messages" | "design";
+export type EventEditAction = { href: string } | { onClick: () => void };
 
 export type EventListPage = "myEvents" | "invitedEvents";
 
@@ -88,6 +91,7 @@ interface SidebarProviderProps {
 }
 
 export const SidebarProvider: React.FC<SidebarProviderProps> = ({ children }) => {
+  const [eventEditAction, setEventEditAction] = useState<EventEditAction | null>(null);
   const [mobileCollapsed, setMobileCollapsed] = useState<boolean>(
     readInitialMobileSidebarCollapsed,
   );
@@ -182,6 +186,8 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({ children }) =>
   return (
     <SidebarContext.Provider
       value={{
+        eventEditAction,
+        setEventEditAction,
         eventRouteAlias,
         setEventRouteAlias,
         isCollapsed,

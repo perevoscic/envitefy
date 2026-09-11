@@ -1,33 +1,32 @@
-# Creative direction and shot planning
+# Creative brief to production plan
 
-Use for a new concept or a substantial story revision. The goal is an engaging Envitefy film with truthful product proof and an achievable production plan.
+Use this reference when accepting a creative brief or applying a story revision. [Envitefy Ad Creative](../../envitefy-ad-creative/SKILL.md) is the source for concepts, critique, scripts, storyboards, and art direction. Its [handoff contract](../../envitefy-ad-creative/references/creative-handoff.md) maps the existing brief fields. Production-only edits use the saved brief and feedback directly.
 
-## Establish the creative brief
+## Accept the handoff
 
-Extract audience, purpose, platform/formats, duration, tone, featured benefit, and CTA from the request. Resolve routine choices from the studio guide. Ask only when a missing answer changes the deliverable or spending authorization; do useful independent planning while waiting.
+Read `projects/<campaign>/brief.json` and its `creative-development.md` when present. Check the audience, promise, opening, story turn, CTA, script/storyboard, product proof, asset direction, and requested formats. Verify remaining capability questions using the product catalog and actual UI before accepting dependent claims. Preserve the user's direction and feedback; resolve ordinary omissions without another approval step.
 
-Use the parent product marketing catalog and the actual demonstrated route to identify a concrete proof moment. Describe what the viewer will see happen, not just a benefit a narrator will claim. Treat saving, publishing, RSVP, sharing, and calendar actions as distinct product behaviors.
+Use the [quality workflow](quality.md) to record the concept review actually performed. A reviewed plan is not reviewed media or user approval. Keep unresolved capture requirements explicit and unobserved checks pending.
 
-Privately consider different hooks when the request leaves direction open: a recognizable human problem, a surprising visual, or a direct product payoff. Choose for the audience and intended response. Record the selected concept and why it fits; do not require the user to approve a menu of concepts unless requested.
+## Translate the plan
 
-Avoid letting available footage determine the story. The campaign index helps avoid accidentally repeating the previous cast, room, joke, or delivery. Reuse established brand assets and approved unchanged narration while giving each new campaign fresh art direction.
+The brief is authoritative for what the film says and shows. `production.json` specifies how it is made. Use the [engine reference](engine.md) for its schema; do not copy planning scene objects directly into engine tasks.
 
-## Build a shot plan
+- Preserve scene IDs where practical so beats, proof, asset tasks, and review findings remain traceable.
+- Choose existing footage, real captures, generated media, or editable graphics for each asset brief. Record continuity references and dependencies explicitly; verify requested models and provider availability before submissions.
+- Map provisional durations to frames at the chosen FPS, then reconcile with measured speech and actual product actions. Extend or rewrite deliberately rather than clipping or speeding up a line. Simplify the script when necessary to meet a fixed user runtime.
+- Keep exact wording, captions, logos, and controls in editable overlays or real captures. Maintain connected-shot identities, props, lighting, and geography, and the studio's stationary Live Card framing and synchronized explanations.
+- Translate format notes into deliberate framing and text/brand placement for every requested aspect ratio. A center crop is not a layout plan.
+- Apply the brand ending and corner-overlay timing from the studio guide; allow sufficient readability and dwell time.
 
-For each shot, record in the brief:
+Choose tools after the story, manage paid reservations/jobs, and complete artwork conversion/cleanup through the existing workflow. Run the engine's dry-run validation before production. A missing local runtime does not prevent written planning, but must be resolved before claiming a playable video exists.
 
-- The story beat and the one thing the viewer should notice.
-- Visible action, framing/camera movement, environment, and continuity anchors.
-- Dialogue or narration, on-screen copy, music/SFX, and intended emotional turn.
-- Required product state and its evidence, if this is a demonstration.
-- Approximate duration, source asset/generation task, and framing decisions for each requested format.
+## Revisions and delivery
 
-Keep identities, wardrobe, props, lighting, and scene geography consistent within connected shots. Represent continuity in explicit references and dependencies, not repeated vague adjectives. Model selection follows the shot: imported footage, a real UI capture, ImageGen stills, generated motion, or a composed graphic can each be appropriate.
+Reusing a concept does not freeze older branding or audio requirements. For requested revisions, apply the current studio rules according to their stated scope; newer explicit user instructions take precedence over older campaign defaults. A current request to preserve a particular treatment is itself an explicit instruction. Retain assets that still fit those requirements, and update affected overlays, copy, or audio without unnecessarily redeveloping the concept. An old no-narration default does not silently override a newer applicable spoken-demo requirement.
 
-Keep essential text editable in Remotion. Use image/video generation for the scene, not for precise logos, product controls, or long readable lettering. Maintain space for captions and the CTA. Real screenshots must remain recognizable and truthful when framed in a phone or composited scene.
+For retrieval-only requests, return the historical export with accurate status. For a revision, reuse an existing export only after checking that it satisfies both the request and applicable current rules; matching aspect ratio alone is insufficient. Ask about a conflict only when scope or precedence cannot resolve it.
 
-## Control time and revisions
+If production constraints change a claim, story beat, or spoken copy, update the authoritative brief and affected production fields together. Record the reason in campaign notes; return to ad creative only for substantive creative work. Edit affected task configuration for content changes; request another take with `revise <campaign> <task> --reason "..."` only when a new asset is needed. Editing-only changes retain unchanged footage and approved speech.
 
-Use rough durations during planning and measured speech durations during assembly. The engine refuses narration that exceeds a scene; extend or rewrite deliberately rather than clipping a line. Listen to a short sample before committing to a new narrator. Compare every brand occurrence to the approved pronunciation recording.
-
-Edit an affected task's config to change its content. Request another take with `revise <campaign> <task> --reason "..."` only when a new asset is needed. Change scene text, timing, or layouts directly for editing-only revisions; those should not regenerate footage. Keep one-off repairs in campaign feedback, lasting preferences in STUDIO-GUIDE.md, and user approval separate from editor review.
+Audition a short sample for a new narrator and compare every spoken Envitefy occurrence with the approved recording. Continue assembly and rendering through [quality](quality.md) and [review and delivery](review.md). Keep scene fixes in campaign feedback, lasting preferences in the studio guide, and user approval tied to the exact reviewed export.

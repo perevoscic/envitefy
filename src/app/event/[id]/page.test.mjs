@@ -40,7 +40,7 @@ test("newly saved events offer accurate calendar setup choices", () => {
   assert.match(promptSource, /openAppleCalendarIcs\(appleCalendarHref\)/);
   assert.match(
     eventActionsSource,
-    /defaultCalendarProvider[\s\S]*isProviderValid\(defaultCalendarProvider, connectedCalendars\)[\s\S]*openCalendarProvider\(defaultCalendarProvider\)/,
+    /<CalendarAction links=\{calendarLinks\}/,
   );
 });
 
@@ -358,7 +358,8 @@ test("event previews share device controls and keep embedded content free of own
 
 test("the owner event menu is separate from public and embedded previews", () => {
   const source = readSource("src/app/event/[id]/page.tsx");
-  assert.match(source, /const showOwnerEventView = isOwner && requestedTab === "event" && !ownerPreviewMode;/);
+  assert.match(source, /const showOwnerEventView =\s*isOwner &&\s*!ownerPreviewMode &&\s*\(requestedTab === "event" \|\|/);
+  assert.match(source, /!requestedTab &&\s*canManageCreatedEvent &&\s*!cardFirstCanonical &&\s*!createdParam &&\s*!autoAccept &&\s*!isScannedOrUploadedEventData\(data\)/);
   assert.match(source, /if \(cardFirstCanonical && !ownerToolsTab && !showOwnerEventView\)/);
   assert.match(source, /if \(showOwnerEventView && !editParam\)/);
   assert.match(source, /if \(showOwnerEventView && !editParam\) \{\s*if \(cardFirstCanonical\) \{\s*redirect\(`\$\{ownerEventHref\}\?tab=design`\);/);

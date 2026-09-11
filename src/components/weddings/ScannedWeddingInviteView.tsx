@@ -1,4 +1,5 @@
 "use client";
+import { useCalendarAction } from "@/components/CalendarAction";
 
 import { Calendar, Clock, Download, MapPin, Share2 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -122,7 +123,7 @@ export default function ScannedWeddingInviteView({
   showPublicShareAction = false,
   actions,
 }: Props) {
-  const [showCalendarMenu, setShowCalendarMenu] = useState(false);
+  const calendar = useCalendarAction({ links: calendarLinks });
   const [showImageLightbox, setShowImageLightbox] = useState(false);
   const originalHero = useScanOriginalHero();
   const [shareMessage, setShareMessage] = useState<"idle" | "copied" | "shared">("idle");
@@ -487,13 +488,13 @@ export default function ScannedWeddingInviteView({
             className={`grid grid-cols-1 gap-5 ${showPublicShareAction && !previewMode ? "md:grid-cols-4" : "md:grid-cols-3"}`}
           >
             <ActionCard
-              title="Save Event"
-              subtitle="Sync to calendar"
+              title={calendar.label}
+              subtitle="Keep the event on your calendar"
               icon={<Calendar className="h-6 w-6" />}
               colors={colors}
               darkMode={isNoirModern}
               disabled={!calendarLinks || previewMode}
-              onClick={() => setShowCalendarMenu(true)}
+              onClick={calendar.open}
             />
             <ActionCard
               title="Concierge"
@@ -727,60 +728,7 @@ export default function ScannedWeddingInviteView({
         </div>
       </div>
 
-      {showCalendarMenu && calendarLinks ? (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center px-5 py-8">
-          <button
-            type="button"
-            aria-label="Dismiss calendar menu"
-            onClick={() => setShowCalendarMenu(false)}
-            className="absolute inset-0 bg-[rgba(28,23,18,0.42)] backdrop-blur-sm"
-          />
-          <div
-            className="relative w-full max-w-sm overflow-hidden rounded-[2.5rem] border border-black/5 bg-white p-7 shadow-[0_28px_90px_rgba(37,26,10,0.24)]"
-            style={{
-              backgroundImage: `linear-gradient(135deg, ${colors.secondary} 0%, white 82%)`,
-            }}
-          >
-            <div
-              className="absolute right-0 top-0 h-24 w-24 rounded-bl-[2rem] opacity-50"
-              style={{ backgroundColor: colors.primary }}
-            />
-            <div
-              className="relative mb-6 text-[11px] font-semibold uppercase tracking-[0.34em]"
-              style={{ color: colors.accent }}
-            >
-              Select Calendar
-            </div>
-            <div className="relative space-y-3">
-              <CalendarLinkRow
-                href={calendarLinks.google}
-                label="Google Calendar"
-                tone="#2563eb"
-                onChoose={() => setShowCalendarMenu(false)}
-              />
-              <CalendarLinkRow
-                href={calendarLinks.outlook}
-                label="Outlook Web"
-                tone="#0891b2"
-                onChoose={() => setShowCalendarMenu(false)}
-              />
-              <CalendarLinkRow
-                href={calendarLinks.appleInline}
-                label="Apple"
-                tone="#111827"
-                onChoose={() => setShowCalendarMenu(false)}
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowCalendarMenu(false)}
-              className="relative mt-8 w-full py-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-black/35 transition hover:text-black/60"
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      ) : null}
+      {calendar.dialog}
 
       {showImageLightbox && imageUrl ? (
         <div className="fixed inset-0 z-[120] flex items-center justify-center px-4 py-6">
@@ -987,41 +935,5 @@ function ActionCard({
         {subtitle}
       </div>
     </button>
-  );
-}
-
-function CalendarLinkRow({
-  href,
-  label,
-  tone,
-  onChoose,
-}: {
-  href: string;
-  label: string;
-  tone: string;
-  onChoose: () => void;
-}) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      onClick={onChoose}
-      className="flex items-center gap-4 rounded-[1.35rem] px-3 py-4 transition hover:bg-black/[0.03]"
-    >
-      <div
-        className="flex h-11 w-11 items-center justify-center rounded-[1rem]"
-        style={{ backgroundColor: `${tone}12`, color: tone }}
-      >
-        {label === "Apple Calendar" ? (
-          <Download className="h-5 w-5" />
-        ) : (
-          <Calendar className="h-5 w-5" />
-        )}
-      </div>
-      <span className="text-[13px] font-semibold uppercase tracking-[0.2em] text-black/90">
-        {label}
-      </span>
-    </a>
   );
 }

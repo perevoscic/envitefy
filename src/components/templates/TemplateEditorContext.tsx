@@ -16,6 +16,7 @@ import {
   useState,
 } from "react";
 import { useUnsavedProgress } from "@/components/UnsavedProgressProvider";
+import { buildOwnerEventEditHref, ownerEventEditorReturnHref } from "@/lib/event-preview-viewport";
 import AuthModal from "@/components/auth/AuthModal";
 import { getFamilyTemplateDesign } from "@/lib/family-template-designs";
 import { hasAnalyticsConsent } from "@/lib/privacy-preferences";
@@ -97,10 +98,12 @@ export function useTemplateSearchParams() {
         const row = await response.json();
         const saved = row.data?.templateEditor;
         const category = saved && getTemplateCategory(saved.category);
-        if (active && category && typeof saved.templateId === "string")
-          router.replace(
-            `${templateEditorHref(category.slug, saved.templateId)}?edit=${encodeURIComponent(id || "")}`,
-          );
+        if (active && category && typeof saved.templateId === "string") {
+          const href = `${templateEditorHref(category.slug, saved.templateId)}?edit=${encodeURIComponent(id || "")}`;
+          router.replace(search.get("editor") === "menu"
+            ? buildOwnerEventEditHref(href, ownerEventEditorReturnHref(search) || undefined, search.get("eventColor") || undefined)
+            : href);
+        }
       })
       .catch(() => {});
     return () => {

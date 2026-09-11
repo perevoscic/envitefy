@@ -423,7 +423,6 @@ export type GymMeetTemplateRendererProps = {
   hideOwnerActions?: boolean;
   suppressActionStrip?: boolean;
   onShare: () => void;
-  onCalendar: () => void;
   onGoogleCalendar: () => void;
   onAppleCalendar: () => void;
   onOutlookCalendar: () => void;

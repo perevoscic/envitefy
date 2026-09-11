@@ -30,11 +30,10 @@ import {
 } from "lucide-react";
 import GuestRsvpModal, { type RsvpResponse } from "../GuestRsvpModal";
 import EventMap from "../EventMap";
-import AppleCalendarLink from "../AppleCalendarLink";
+import CalendarAction from "@/components/CalendarAction";
 import { getRegistrySectionCopyForCategory } from "@/utils/registry-links";
 import { formatMonthDayOrdinalEn } from "@/utils/format-month-day-ordinal";
 
-import { CalendarIconApple, CalendarIconGoogle, CalendarIconOutlook } from "../CalendarIcons";
 
 const UserRsvpContext = createContext<string | null>(null);
 const registryCopy = getRegistrySectionCopyForCategory("birthdays");
@@ -2293,32 +2292,8 @@ function EditorialFeatureLayout({
                 >
                   Save the Date
                 </h3>
-                <div className="mt-5 grid grid-cols-3 gap-1.5 sm:gap-3">
-                  <AppleCalendarLink
-                    href={chrome.calendarLinks.appleInline}
-                    className="flex min-w-0 items-center justify-center gap-1.5 rounded-2xl bg-white px-1.5 py-3 text-xs font-bold text-slate-700 shadow-sm sm:gap-3 sm:px-4 sm:py-4 sm:text-base"
-                  >
-                    <CalendarIconApple className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
-                    <span className="truncate">Apple</span>
-                  </AppleCalendarLink>
-                  <a
-                    href={chrome.calendarLinks.google}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex min-w-0 items-center justify-center gap-1.5 rounded-2xl bg-white px-1.5 py-3 text-xs font-bold text-slate-700 shadow-sm sm:gap-3 sm:px-4 sm:py-4 sm:text-base"
-                  >
-                    <CalendarIconGoogle className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
-                    <span className="truncate">Google</span>
-                  </a>
-                  <a
-                    href={chrome.calendarLinks.outlook}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex min-w-0 items-center justify-center gap-1.5 rounded-2xl bg-white px-1.5 py-3 text-xs font-bold text-slate-700 shadow-sm sm:gap-3 sm:px-4 sm:py-4 sm:text-base"
-                  >
-                    <CalendarIconOutlook className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
-                    <span className="truncate">Outlook</span>
-                  </a>
+                <div className="mt-5">
+                  <CalendarAction links={chrome.calendarLinks} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm sm:py-4 sm:text-base" />
                 </div>
               </div>
             ) : null}

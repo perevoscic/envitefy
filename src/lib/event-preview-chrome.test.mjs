@@ -45,7 +45,8 @@ test("opened previews hide navigation and remove its spacing; inline previews do
   const styles = read("src/app/globals.css");
   assert.match(viewport, /!preserveNavigation && \(fullscreen \|\| onClose\) \? <OwnerPreviewMobileTopbarSuppressor/);
   for (const surface of ["sidebar", "topbar", "reveal", "drawer-backdrop"]) {
-    assert.ok(sidebar.includes(`data-app-navigation="${surface}"`));
+    const mobileHeader = readFileSync(new URL("../components/navigation/MobileNavHeader.tsx", import.meta.url), "utf8");
+    assert.ok((sidebar + mobileHeader).includes(`data-app-navigation="${surface}"`));
   }
   assert.match(styles, /html\[data-owner-preview-open="true"\] \[data-app-navigation\] \{\s*display: none !important;/);
   assert.match(styles, /\[data-app-main-content="true"\] \{[^}]*padding-left: 0 !important;/);

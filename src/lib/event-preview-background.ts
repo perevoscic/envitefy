@@ -81,32 +81,23 @@ export function readEventPreviewBackground(doc: Document): EventPreviewBackgroun
   return resolveEventPreviewBackground(doc).background;
 }
 
-const surfaceAttribute = "data-event-preview-background-surface";
-const artworkAttribute = "data-event-preview-background-artwork";
+function previewElementSelector(element: Element, root: Element): string | null {
+  const segments: string[] = [];
+  let current = element;
+  while (current !== root) {
+    const parent = current.parentElement;
+    if (!parent) return null;
+    const index = Array.from(parent.children).indexOf(current);
+    if (index < 0) return null;
+    segments.unshift(`:nth-child(${index + 1})`);
+    current = parent;
+  }
+  return [":root", ...segments].join(" > ");
+}
 
-/** Paint artwork once on the outer canvas, with transparent page surfaces in this iframe only. */
-export function createEventPreviewBackgroundController(doc: Document) {
+/** Style only this iframe without changing React's server-rendered event attributes. */
+export function createEventPreviewBackgroundController(doc: Document, continuousSurface = false) {
   const style = doc.createElement("style");
-  style.textContent = `
-    [${surfaceAttribute}] {
-      background-color: transparent !important;
-      background-image: none !important;
-    }
-    [${artworkAttribute}] { visibility: hidden !important; }
-  `;
-  const marked = new Map<Element, { attribute: string; previous: string | null }>();
-
-  const restore = () => {
-    for (const [element, { attribute, previous }] of marked) {
-      if (previous === null) element.removeAttribute(attribute);
-      else element.setAttribute(attribute, previous);
-    }
-    marked.clear();
-  };
-  const mark = (element: Element, attribute: string) => {
-    marked.set(element, { attribute, previous: element.getAttribute(attribute) });
-    element.setAttribute(attribute, "");
-  };
 
   return {
     read(): EventPreviewBackground {
@@ -115,13 +106,22 @@ export function createEventPreviewBackgroundController(doc: Document) {
       style.disabled = true;
       try {
         const { background, surface, artwork } = resolveEventPreviewBackground(doc);
-        restore();
-        if (background.backgroundImage && background.backgroundImage !== "none") {
+        const selectors: string[] = [];
+        let artworkSelector: string | null = null;
+        if (continuousSurface || (background.backgroundImage && background.backgroundImage !== "none")) {
           for (let element = surface; element; element = element.parentElement || undefined) {
-            mark(element, surfaceAttribute);
+            const selector = previewElementSelector(element, doc.documentElement);
+            if (selector) selectors.push(selector);
           }
-          if (artwork) mark(artwork, artworkAttribute);
+          if (artwork) artworkSelector = previewElementSelector(artwork, doc.documentElement);
         }
+        // Nested Suspense content can still be hydrating after navigation mounts.
+        // Structural selectors keep those nodes untouched; rebuild after DOM changes.
+        const css = [
+          selectors.length ? `${selectors.join(",\n")} { background-color: transparent !important; background-image: none !important; }` : "",
+          artworkSelector ? `${artworkSelector} { visibility: hidden !important; }` : "",
+        ].join("\n");
+        if (style.textContent !== css) style.textContent = css;
         if (!style.isConnected) doc.head.append(style);
         return background;
       } finally {
@@ -129,7 +129,6 @@ export function createEventPreviewBackgroundController(doc: Document) {
       }
     },
     dispose() {
-      restore();
       style.remove();
     },
   };

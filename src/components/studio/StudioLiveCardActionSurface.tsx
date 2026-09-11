@@ -23,11 +23,7 @@ import {
 import type { FormEvent, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supportsStudioCategoryRsvp } from "@/app/studio/studio-workspace-field-config";
-import {
-  CalendarIconApple,
-  CalendarIconGoogle,
-  CalendarIconOutlook,
-} from "@/components/CalendarIcons";
+import { useCalendarAction } from "@/components/CalendarAction";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
 import { buildLiveCardCalendarLinks } from "@/lib/live-card-calendar";
 import { buildLiveCardDetailsWelcomeMessage } from "@/lib/live-card-event-details";
@@ -43,7 +39,6 @@ import {
   parseLiveCardRsvpContact,
   shouldShowLiveCardDescriptionSection,
 } from "@/lib/live-card-rsvp";
-import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import {
   formatTimeLabelEn,
   formatWeekdayMonthDayOrdinalEn,
@@ -245,41 +240,6 @@ function getOpenHouseRealtorLogoUrl(details: LiveCardEventDetails | null | undef
   return readString(urls[0]);
 }
 
-function openDefaultCalendarApp(href: string) {
-  if (typeof window === "undefined" || !href) return;
-
-  const absoluteHref = /^https?:\/\//i.test(href)
-    ? href
-    : new URL(href, window.location.origin).href;
-  const webcalHref = absoluteHref.replace(/^https?:\/\//i, "webcal://");
-  let settled = false;
-
-  const cleanup = () => {
-    settled = true;
-    window.clearTimeout(timer);
-    document.removeEventListener("visibilitychange", onVisibilityChange);
-  };
-  const onVisibilityChange = () => {
-    if (document.visibilityState === "hidden") {
-      cleanup();
-    }
-  };
-  const timer = window.setTimeout(() => {
-    if (settled) return;
-    cleanup();
-    openAppleCalendarIcs(absoluteHref);
-  }, 700);
-
-  document.addEventListener("visibilitychange", onVisibilityChange);
-
-  try {
-    window.location.href = webcalHref;
-  } catch {
-    cleanup();
-    openAppleCalendarIcs(absoluteHref);
-  }
-}
-
 function accentClassForRsvpChoice(choice: "yes" | "no" | "maybe") {
   if (choice === "yes") return "border-emerald-200 bg-emerald-50 text-emerald-700";
   if (choice === "no") return "border-rose-200 bg-rose-50 text-rose-700";
@@ -442,6 +402,8 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     () => buildLiveCardCalendarLinks(props.title, invitationData, calendarTimeZone),
     [props.title, invitationData, calendarTimeZone],
   );
+
+  const calendar = useCalendarAction({ links: calendarLinks });
   const posterFirstHeroCard = isPosterFirstHeroCard(invitationData);
   const categorySupportsRsvp = supportsStudioCategoryRsvp(readString(details?.category));
   const openHouseAgentCard = isOpenHouseLiveCard(details);
@@ -687,11 +649,10 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       },
       {
         key: "calendar" as const,
-        label: "Calendar",
+        label: calendar.label,
         icon: CalendarDays,
         visible: Boolean(calendarLinks),
-        onClick: () =>
-          props.onActiveTabChange(props.activeTab === "calendar" ? "none" : "calendar"),
+        onClick: () => { props.onActiveTabChange("none"); calendar.open(); },
       },
       {
         key: "registry" as const,
@@ -709,6 +670,8 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     props.activeTab,
     props.onActiveTabChange,
     calendarLinks,
+    calendar.label,
+    calendar.open,
     categorySupportsRsvp,
     details,
     directRsvpHref,
@@ -791,6 +754,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       ? "pointer-events-none flex flex-col bg-transparent px-1 pt-3 pb-1"
       : `pointer-events-none absolute inset-0 flex flex-col ${props.previewMode ? "px-0 pb-1 pt-6" : "px-0 pb-1 pt-6 sm:px-4 sm:pt-7 md:p-8 md:pb-2"}`}>
 
+      {calendar.dialog}
       {props.onShare && !actionsBelow ? (
         <button
           data-live-card-share
@@ -1220,53 +1184,6 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                   ) : null
                 ) : null}
 
-                {props.activeTab === "calendar" ? (
-                  <>
-                    <p className="text-sm font-medium text-neutral-900">Save the Date</p>
-                    <p className="text-xs text-neutral-500">
-                      {readString(details?.eventDate)
-                        ? formatCalendarSummary(
-                            readString(details?.eventDate),
-                            readString(details?.startTime),
-                          )
-                        : "Date TBD"}
-                    </p>
-                    {calendarLinks ? (
-                      <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-                        <button
-                          type="button"
-                          onClick={() => openDefaultCalendarApp(calendarLinks.appleInline)}
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700 shadow-sm transition hover:border-neutral-400 hover:bg-neutral-50"
-                          aria-label="Open in Apple Calendar"
-                          title="Apple Calendar"
-                        >
-                          <CalendarIconApple className="h-4 w-4" />
-                        </button>
-                        <a
-                          href={calendarLinks.google}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700 shadow-sm transition hover:border-neutral-400 hover:bg-neutral-50"
-                          aria-label="Open in Google Calendar"
-                          title="Google Calendar"
-                        >
-                          <CalendarIconGoogle className="h-4 w-4" />
-                        </a>
-                        <a
-                          href={calendarLinks.outlook}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700 shadow-sm transition hover:border-neutral-400 hover:bg-neutral-50"
-                          aria-label="Open in Outlook Calendar"
-                          title="Outlook Calendar"
-                        >
-                          <CalendarIconOutlook className="h-4 w-4" />
-                        </a>
-                      </div>
-                    ) : null}
-                  </>
-                ) : null}
-
                 {props.activeTab === "registry" ? (
                   <>
                     <p className="text-sm font-medium text-neutral-900">{registryPanelTitle}</p>
@@ -1339,7 +1256,9 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                       onClick={() => {
                         if (!props.isDesignMode) button.onClick();
                       }}
-                      aria-pressed={isPressed}
+                      aria-pressed={button.key === "calendar" ? undefined : isPressed}
+                      aria-haspopup={button.key === "calendar" && !calendar.hasDefault ? "dialog" : undefined}
+                      aria-expanded={button.key === "calendar" && !calendar.hasDefault ? calendar.isOpen : undefined}
                       disabled={button.key === "share" && shareState === "pending"}
                       data-live-card-trigger
                       className={`group flex min-w-0 flex-col items-center justify-start ${
@@ -1390,7 +1309,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                         />
                       </div>
                       <span
-                        className={`max-w-full text-center font-bold leading-tight ${actionsBelow ? "text-slate-700" : "text-white drop-shadow-md"} ${
+                        className={`${button.key === "calendar" ? "!whitespace-normal !overflow-visible" : ""} max-w-full text-center font-bold leading-tight ${actionsBelow ? "text-slate-700" : "text-white drop-shadow-md"} ${
                           props.previewMode || actionsBelow
                             ? "text-xs tracking-normal"
                             : useCompactActionButtons

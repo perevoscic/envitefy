@@ -1,7 +1,7 @@
 "use client";
 
 import { type CSSProperties, type ReactNode, useState } from "react";
-import AppleCalendarLink from "@/components/AppleCalendarLink";
+import CalendarAction from "@/components/CalendarAction";
 import { buildCalendarLinks } from "@/utils/calendar-links";
 import { buildGoogleMapsDirectionsHref } from "@/lib/directions";
 import { resolvePublicEventShareUrl } from "@/lib/event-guest-planning";
@@ -83,14 +83,9 @@ export default function BabyShowerDesignHero({
       </div>
       <div className={styles.facts}>
         <div className={styles.when}>
-          {dateLabel && (calendar && !thumbnail ? <details className={styles.calendar}>
-            <summary>{dateLabel}<small>Add to calendar</small></summary>
-            <div className={styles.calendarMenu}>
-              <a href={calendar.google} target="_blank" rel="noreferrer">Google Calendar</a>
-              <a href={calendar.outlook} target="_blank" rel="noreferrer">Outlook Calendar</a>
-              <AppleCalendarLink href={calendar.appleInline}>Apple Calendar</AppleCalendarLink>
-            </div>
-          </details> : <p>{dateLabel}</p>)}
+          {dateLabel && (calendar && !thumbnail ? <CalendarAction links={calendar} className={styles.calendar}>
+            {(label) => <>{dateLabel}<small>{label}</small></>}
+          </CalendarAction> : <p>{dateLabel}</p>)}
           {timeLabel && <p>{timeLabel}</p>}
         </div>
         {location && <p className={styles.where}>{thumbnail ? location : <a href={buildGoogleMapsDirectionsHref(location)} target="_blank" rel="noreferrer">{location}<small>Get directions</small></a>}</p>}

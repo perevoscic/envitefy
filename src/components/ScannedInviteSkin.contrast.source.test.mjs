@@ -69,7 +69,9 @@ test("scanned invite skin computes readable colors for variable dark and light s
   );
   assert.match(source, /facts=\{leftColumnOcrFacts\}/);
   assert.match(source, /facts=\{rightColumnOcrFacts\}/);
-  assert.match(source, />\s*Apple\s*<\/button>/);
+  assert.match(source, /useCalendarAction\(\{ links: calendarLinks \}\)/);
+  assert.match(source, /label=\{calendar.label\}/);
+  assert.match(source, /\{calendar.dialog\}/);
 
   assert.doesNotMatch(source, /style=\{\{ backgroundColor: "var\(--theme-text\)" \}\}/);
   assert.doesNotMatch(source, /flex flex-col justify-between rounded-\[3rem\]/);
@@ -113,7 +115,9 @@ test("birthday skin computes readable colors for variable dark and light skins",
   assert.match(source, /self-start rounded-\[2\.6rem\]/);
   assert.match(source, /facts=\{leftColumnOcrFacts\}/);
   assert.match(source, /facts=\{rightColumnOcrFacts\}/);
-  assert.match(source, />\s*Apple\s*<\/button>/);
+  assert.match(source, /useCalendarAction\(\{ links: calendarLinks \}\)/);
+  assert.match(source, /label=\{calendar.label\}/);
+  assert.match(source, /\{calendar.dialog\}/);
 
   assert.doesNotMatch(source, /style=\{\{ backgroundColor: "var\(--theme-text\)" \}\}/);
   assert.doesNotMatch(source, /flex flex-col justify-between rounded-\[3rem\]/);

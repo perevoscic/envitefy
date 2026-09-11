@@ -7,6 +7,7 @@ import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/
 
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
 import { GYM_EVENT_EDITOR_VIEWS } from "@/lib/event-page-workspace";
+import { ownerEventEditorReturnHref } from "@/lib/event-preview-viewport";
 import { type EventGuestPlanning, normalizeEventGuestPlanning, eventLocalDateParts, getEventEndLocal } from "@/lib/event-guest-planning";
 import {
   CheckSquare,
@@ -779,7 +780,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
   const search = useTemplateSearchParams();
     const router = useRouter();
-  const { allowNavigation } = useProgressNavigation();
+  const { allowNavigation, requestLeave } = useProgressNavigation();
     const editEventId = search?.get("edit") ?? undefined;
     const selectedTemplateId = search?.get("templateId");
     const demoMode = search?.get("demo") === "1";
@@ -3390,26 +3391,29 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     })();
                     return;
                   }
+                  const cancelHref = ownerEventEditorReturnHref(search) ||
+                    buildEventPath(editEventId, undefined, { tab: "event" });
                   if (isEmbed && typeof window !== "undefined") {
-                    try {
-                      window.parent?.postMessage(
-                        {
-                          type: "envitefy:discovery-preview-reset",
-                          eventId: editEventId,
-                        },
-                        "*",
-                      );
-                    } catch {
-                      // Best effort only for live preview reset.
-                    }
-                    const href = `${window.location.origin}${buildEventPath(editEventId, data.title || "Event")}`;
-                    try {
-                      (window as any).parent.location.href = href;
-                    } catch {
-                      router.push("/event/gymnastics");
-                    }
+                    requestLeave(() => {
+                      try {
+                        window.parent?.postMessage(
+                          {
+                            type: "envitefy:discovery-preview-reset",
+                            eventId: editEventId,
+                          },
+                          window.location.origin,
+                        );
+                      } catch {
+                        // Best effort only for live preview reset.
+                      }
+                      try {
+                        window.parent.location.assign(cancelHref);
+                      } catch {
+                        router.push(cancelHref);
+                      }
+                    });
                   } else {
-                    router.push("/event/gymnastics");
+                    router.push(cancelHref);
                   }
                 }}
                 className="min-h-11 flex-1 rounded-lg border border-slate-300 bg-white py-3 text-sm font-medium tracking-wide text-slate-700 shadow-sm transition-colors hover:bg-slate-50"

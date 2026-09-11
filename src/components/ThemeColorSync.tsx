@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { EVENT_PAGE_COLOR_ATTRIBUTE, normalizeEventPageColor } from "@/lib/event-page-chrome";
 import {
   HERO_THEME_COLOR_ATTRIBUTE,
   clearIosBrowserChromeColors,
@@ -20,6 +21,12 @@ export default function ThemeColorSync() {
     const syncChromeHints = () => {
       frameId = 0;
       setLightColorSchemeMeta();
+      const eventColor = normalizeEventPageColor(document.documentElement.getAttribute(EVENT_PAGE_COLOR_ATTRIBUTE));
+      if (eventColor) {
+        clearIosBrowserChromeColors();
+        setThemeColor(eventColor);
+        return;
+      }
       if (isIosBrowserChrome()) {
         setIosBrowserChromeColors();
         return;
@@ -37,7 +44,7 @@ export default function ThemeColorSync() {
     const observer = new MutationObserver(scheduleSyncChromeHints);
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: [HERO_THEME_COLOR_ATTRIBUTE],
+      attributeFilter: [HERO_THEME_COLOR_ATTRIBUTE, EVENT_PAGE_COLOR_ATTRIBUTE],
       childList: true,
       subtree: true,
     });

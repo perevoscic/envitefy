@@ -82,7 +82,9 @@ test("only connected calendars can be selected and persisted as the default", ()
 });
 
 test("Apple one-event downloads remain available alongside subscription setup", () => {
-  assert.match(eventActionsSource, /Remember a connected provider as my default calendar/);
+  assert.match(eventActionsSource, /<CalendarAction links=\{calendarLinks\}/);
+  const calendarActionSource = readFileSync(new URL("../../components/CalendarAction.tsx", import.meta.url), "utf8");
+  assert.match(calendarActionSource, /Remember a connected provider as my default calendar/);
   assert.doesNotMatch(eventActionsSource, /if \(provider === "apple"\) return true/);
   assert.match(firstScanPromptSource, /Add this event to Apple Calendar/);
   assert.match(firstScanPromptSource, /Opening Apple Calendar\. Add this event to finish/);

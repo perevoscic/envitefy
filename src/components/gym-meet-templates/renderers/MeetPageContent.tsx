@@ -63,7 +63,6 @@ export default function MeetPageContent({
   hideOwnerActions = false,
   suppressActionStrip = false,
   onShare,
-  onCalendar,
   onGoogleCalendar,
   onAppleCalendar,
   onOutlookCalendar,
@@ -116,20 +115,22 @@ export default function MeetPageContent({
         ) : null}
 
         <div className={variant.shellClass}>
-          {hero}
-          <EventGuestPlanningNotes value={model.guestPlanning} />
-
-          <div className="relative z-20 mt-5 px-3 sm:px-6">
-            {!suppressActionStrip ? (
+          {!suppressActionStrip ? (
+            <div className="relative z-20 mb-4 px-3 sm:px-6">
               <FloatingActionStrip
                 buttonClass={variant.secondaryButtonClass}
                 onShare={onShare}
-                onCalendar={onCalendar}
+                onGoogleCalendar={onGoogleCalendar}
+                onAppleCalendar={onAppleCalendar}
+                onOutlookCalendar={onOutlookCalendar}
               />
-            ) : null}
-          </div>
+            </div>
+          ) : null}
 
-          <main className="space-y-5 px-3 pb-5 pt-6 sm:px-6 sm:pb-6 sm:pt-7">
+          {hero}
+          <EventGuestPlanningNotes value={model.guestPlanning} />
+
+          <main className="space-y-5 px-3 pt-6 sm:px-6 sm:pt-7">
             <GymMeetDiscoveryContent model={model} variant={variant} />
 
             {model.rosterAthletes.length > 0 || practiceBlocks.length > 0 ? (

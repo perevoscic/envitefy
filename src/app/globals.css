@@ -1256,6 +1256,40 @@ html[data-ios-browser-chrome="true"] body {
   }
 }
 
+/* Event and editor navigation use the actual event paper color, including safe areas. */
+html[data-event-page-color],
+html[data-event-page-color] body {
+  background-color: var(--event-page-chrome-color) !important;
+  background-image: none !important;
+}
+
+html[data-event-page-color] [data-app-mobile-topbar="app"],
+html[data-event-page-color] body::before,
+html[data-event-page-color] body::after {
+  background: var(--event-page-chrome-color) !important;
+}
+
+html[data-event-page-color] [data-app-main-content="true"] {
+  background-color: var(--event-page-chrome-color) !important;
+}
+
+html[data-event-page-color] [data-app-main-content="true"] > [data-project-gradient-background="true"] {
+  display: none;
+}
+
+html[data-event-page-color] [data-app-mobile-topbar="app"] .nav-chrome-glass-header {
+  box-shadow: none;
+}
+
+html[data-event-editor-active="true"]:has([data-app-mobile-topbar="app"]) .nav-chrome-mobile-drawer-trigger {
+  display: none;
+}
+
+/* The editor scrim must not tint the event-colored space below mobile navigation. */
+html[data-event-editor-active="true"]:has([data-app-mobile-topbar="app"]) .nav-chrome-mobile-drawer-backdrop {
+  top: var(--app-mobile-topbar-offset, 6rem);
+}
+
 /* Embedded event previews own their entire viewport. */
 html.embedded-editor body::before,
 html.embedded-editor body::after {

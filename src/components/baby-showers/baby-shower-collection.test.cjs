@@ -57,7 +57,7 @@ test('all 60 full invitations retain unique artwork and integrated guest tools',
         rsvp:{isEnabled:true},guestPlanning:{parking:'Use the north entrance.'}},
       shareUrl:'https://envitefy.com/event/baby-collection-test',isOwner:false,isReadOnly:true,editHref:''
     }));
-    for(const text of ['Alexandra Rose','Jordan',d.heroImage,'Add to calendar','Google Calendar','Outlook Calendar','Apple Calendar','Get directions','Share invitation','Our wishlist','An afternoon of stories and sweet treats.','Use the north entrance.']) {
+    for(const text of ['Alexandra Rose','Jordan',d.heroImage,'Add to calendar','Get directions','Share invitation','Our wishlist','An afternoon of stories and sweet treats.','Use the north entrance.']) {
       assert.ok(html.includes(text),d.id+': '+text);
     }
     assert.equal((html.match(/<h1\b/g)||[]).length,1,d.id);

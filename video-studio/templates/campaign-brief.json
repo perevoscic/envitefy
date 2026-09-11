@@ -36,5 +36,30 @@
   },
   "budgetLimit": null,
   "assumptions": [],
-  "status": "draft"
+  "status": "draft",
+  "quality": {
+    "policy": "future-video-quality-pilot-2026-09-11",
+    "reviewMode": "background-ai-user-final",
+    "finalReviewer": "user",
+    "independentReviewerKind": "ai",
+    "referenceNotes": "",
+    "viewerProblem": "",
+    "promise": "",
+    "independentReviewer": "",
+    "conceptReview": {
+      "status": "pending",
+      "reviewer": "",
+      "reviewedAt": "",
+      "evidence": ""
+    },
+    "roughCutReview": {
+      "status": "pending",
+      "reviewer": "",
+      "reviewedAt": "",
+      "evidence": "",
+      "file": "",
+      "sha256": ""
+    },
+    "releaseStatus": "preview"
+  }
 }

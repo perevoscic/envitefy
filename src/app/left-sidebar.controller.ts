@@ -1,3 +1,4 @@
+import { writeLocalCalendarDefault } from "@/lib/calendar-preference";
 import {
   type Dispatch,
   type RefObject,
@@ -112,7 +113,6 @@ export type LeftSidebarControllerViewModel = {
   isHydrated: boolean;
   isReady: boolean;
   isEmbeddedEditMode: boolean;
-  showEditTopBar: boolean;
   showMobileTopBar: boolean;
   isDesktop: boolean;
   isOpen: boolean;
@@ -332,9 +332,6 @@ export function useLeftSidebarController({
   }, [profileEmail]);
 
   const isEmbeddedEditMode = searchParams?.get("embed") === "1";
-  const isEventPageWithEditSidebar = Boolean(
-    pathname?.startsWith("/event/") && searchParams?.get("edit"),
-  );
   const normalizedPathname = (pathname || "").replace(/\/+$/, "") || "/";
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -379,14 +376,7 @@ export function useLeftSidebarController({
   const lastEventListRouteSyncPathRef = useRef<string | null>(null);
 
   const mirrorLocalCalendarDefault = useCallback((provider: CalendarProviderKey | null) => {
-    if (typeof window === "undefined") return;
-    try {
-      if (!provider) {
-        window.localStorage.removeItem(CALENDAR_DEFAULT_STORAGE_KEY);
-        return;
-      }
-      window.localStorage.setItem(CALENDAR_DEFAULT_STORAGE_KEY, provider);
-    } catch {}
+    writeLocalCalendarDefault(provider);
   }, []);
 
   const saveCalendarDefault = useCallback(
@@ -421,7 +411,6 @@ export function useLeftSidebarController({
       ? "pointer-events-auto"
       : "pointer-events-none";
   const overflowClass = "overflow-hidden";
-  const showEditTopBar = isEventPageWithEditSidebar;
   const showMobileTopBar = !isDesktop && !isOpen;
   const isEventMenuActive = Boolean(selectedEventId);
 
@@ -1792,7 +1781,6 @@ export function useLeftSidebarController({
     isHydrated,
     isReady: status === "authenticated" && isHydrated,
     isEmbeddedEditMode,
-    showEditTopBar,
     showMobileTopBar,
     isDesktop,
     isOpen,

@@ -1,3 +1,5 @@
+import { normalizeEventPageColor } from "./event-page-chrome.ts";
+
 export const EVENT_PREVIEW_DEVICES = {
   desktop: { label: "Desktop view", width: 1440, height: 900 },
   tablet: { label: "iPad / tablet view", width: 820, height: 1180 },
@@ -16,7 +18,7 @@ export function buildOwnerEventViewHref(
   productKind: "card" | "event" | "signup" | "unknown" = "event",
 ): string {
   const url = new URL(eventHref, "https://envitefy.local");
-  for (const key of ["edit", "preview", "embed", "returnTo", "view", "updated", "created", "t"]) {
+  for (const key of ["edit", "editor", "eventColor", "preview", "embed", "returnTo", "view", "updated", "created", "t"]) {
     url.searchParams.delete(key);
   }
   url.searchParams.set("tab", productKind === "card" ? "design" : "event");
@@ -29,9 +31,40 @@ export function fitEventPreview(device: EventPreviewDevice, width: number, heigh
   return { scale, width: viewport.width * scale, height: viewport.height * scale };
 }
 
+/** A phone viewing Mobile uses its own CSS pixels, with no scaled device frame. */
+export function getEventPreviewLayout(
+  device: EventPreviewDevice,
+  width: number,
+  height: number,
+  nativeMobile = false,
+) {
+  if (nativeMobile && device === "mobile" && width > 0 && height > 0) {
+    return { viewport: { width, height }, fit: { scale: 1, width, height } };
+  }
+  return { viewport: EVENT_PREVIEW_DEVICES[device], fit: fitEventPreview(device, width, height) };
+}
+
+export function buildOwnerEventEditHref(editHref: string, eventHref?: string, backgroundColor?: string): string {
+  const url = new URL(editHref, "https://envitefy.local");
+  url.searchParams.set("editor", "menu");
+  if (eventHref) url.searchParams.set("returnTo", buildOwnerEventViewHref(eventHref));
+  const eventColor = normalizeEventPageColor(backgroundColor);
+  if (eventColor) url.searchParams.set("eventColor", eventColor);
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+/** Closing an owner editing menu returns to the event canvas, not its legacy inline preview. */
+export function ownerEventEditorReturnHref(search: Pick<URLSearchParams, "get"> | null): string | null {
+  if (search?.get("editor") !== "menu") return null;
+  const returnTo = eventPreviewReturnHref(search.get("returnTo") || undefined, "");
+  if (returnTo) return buildOwnerEventViewHref(returnTo);
+  const eventId = search.get("edit")?.trim();
+  return eventId ? buildOwnerEventViewHref(`/event/${encodeURIComponent(eventId)}`) : null;
+}
+
 export function buildEmbeddedEventPreviewHref(publicUrl: string): string {
   const url = new URL(publicUrl, "https://envitefy.local");
-  for (const key of ["edit", "tab", "returnTo", "updated", "created", "t"]) {
+  for (const key of ["edit", "editor", "eventColor", "tab", "returnTo", "updated", "created", "t"]) {
     url.searchParams.delete(key);
   }
   url.searchParams.set("preview", "owner");

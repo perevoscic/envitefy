@@ -1,9 +1,9 @@
 "use client";
 import { useTemplateEditor } from "@/components/templates/TemplateEditorContext";
 
-import { CalendarDays, Check, Link, Navigation, Share2 } from "lucide-react";
+import { Check, Link, Navigation, Share2 } from "lucide-react";
 import { useState } from "react";
-import AppleCalendarLink from "@/components/AppleCalendarLink";
+import CalendarAction from "@/components/CalendarAction";
 import { buildGoogleMapsDirectionsHref } from "@/lib/directions";
 import { resolvePublicEventShareUrl } from "@/lib/event-guest-planning";
 import { buildCalendarLinks } from "@/utils/calendar-links";
@@ -130,22 +130,7 @@ export default function EventGuestActions({
       ) : null}
       <div className="flex flex-wrap items-start justify-center gap-3">
         {links ? (
-          <details className="group relative">
-            <summary
-              className={`${buttonClass} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}
-            >
-              <CalendarDays className="h-4 w-4" aria-hidden="true" /> Add to calendar
-            </summary>
-            <div className={styles.menu}>
-              <AppleCalendarLink href={links.appleInline}>Apple Calendar</AppleCalendarLink>
-              <a href={links.google} target="_blank" rel="noopener noreferrer">
-                Google Calendar
-              </a>
-              <a href={links.outlook} target="_blank" rel="noopener noreferrer">
-                Outlook Calendar
-              </a>
-            </div>
-          </details>
+          <CalendarAction links={links} className={buttonClass} />
         ) : null}
         {destination ? (
           <a

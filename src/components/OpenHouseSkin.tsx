@@ -25,6 +25,7 @@ import {
   EVENT_SKIN_FOOTER_DIVIDER_CLASS,
   EVENT_SKIN_FOOTER_TEXT_CLASS,
 } from "@/components/event-skin-layout";
+import { useCalendarAction } from "@/components/CalendarAction";
 import OcrFactCards from "@/components/OcrFactCards";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
 import { ScanOriginalDocumentSection } from "@/components/ScanArtworkProvider";
@@ -202,7 +203,7 @@ export default function OpenHouseSkin({
   previewMode = false,
   actions,
 }: Props) {
-  const [showCalendarMenu, setShowCalendarMenu] = useState(false);
+  const calendar = useCalendarAction({ links: calendarLinks });
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const originalHero = useScanOriginalHero();
   const usefulDetailCopy = usefulScanNotes(detailCopy, [title, dateLabel, timeLabel, venueName, location]);
@@ -556,11 +557,11 @@ export default function OpenHouseSkin({
             />
             <ActionButton
               icon={<CalendarPlus className="h-5 w-5" />}
-              label="Add to Calendar"
+              label={calendar.label}
               backgroundColor={colors.secondary}
               textColor={secondaryText}
               disabled={!calendarLinks || previewMode}
-              onClick={() => setShowCalendarMenu(true)}
+              onClick={calendar.open}
             />
             {contactHref ? (
               <ActionLink
@@ -602,45 +603,7 @@ export default function OpenHouseSkin({
         </div>
       </div>
 
-      <AnimatePresence>
-        {showCalendarMenu && calendarLinks ? (
-          <ModalShell onClose={() => setShowCalendarMenu(false)}>
-            <div
-              className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl"
-              style={{ backgroundColor: colors.primary, color: primaryText }}
-            >
-              <Calendar className="h-8 w-8" />
-            </div>
-            <h3 className="serif mb-6 text-2xl font-bold">Add it to your calendar</h3>
-            <div className="space-y-3">
-              <CalendarLink
-                href={calendarLinks.google}
-                label="Google"
-                tone={colors.primary}
-                onChoose={() => setShowCalendarMenu(false)}
-              />
-              <CalendarLink
-                href={calendarLinks.outlook}
-                label="Outlook"
-                tone={colors.secondary}
-                onChoose={() => setShowCalendarMenu(false)}
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCalendarMenu(false);
-                  if (!previewMode)
-                    window.open(calendarLinks.appleInline, "_blank", "noopener,noreferrer");
-                }}
-                className="block w-full rounded-[1.1rem] py-4 text-xs font-bold uppercase tracking-widest transition-transform hover:scale-[1.02]"
-                style={{ backgroundColor: colors.accent, color: accentText }}
-              >
-                Apple
-              </button>
-            </div>
-          </ModalShell>
-        ) : null}
-      </AnimatePresence>
+      {calendar.dialog}
 
       <AnimatePresence>
         {lightboxImage ? (
@@ -815,55 +778,6 @@ function ActionLink({
       style={{ backgroundColor, color: textColor, opacity: disabled ? 0.6 : 1 }}
     >
       {icon}
-      {label}
-    </a>
-  );
-}
-
-function ModalShell({ children, onClose }: { children: ReactNode; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[7100] flex items-center justify-center p-6">
-      <motion.button
-        type="button"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="absolute inset-0 bg-black/75 backdrop-blur-md"
-      />
-      <motion.div
-        initial={{ scale: 0.94, y: 40, opacity: 0 }}
-        animate={{ scale: 1, y: 0, opacity: 1 }}
-        exit={{ scale: 0.94, y: 40, opacity: 0 }}
-        className="relative w-full max-w-sm rounded-[2rem] bg-white p-8 text-center text-black shadow-2xl"
-      >
-        {children}
-      </motion.div>
-    </div>
-  );
-}
-
-function CalendarLink({
-  href,
-  label,
-  tone,
-  onChoose,
-}: {
-  href: string;
-  label: string;
-  tone: string;
-  onChoose: () => void;
-}) {
-  const textColor = ensureReadableTextColor(tone, "#ffffff", { minContrast: 3 });
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      onClick={onChoose}
-      className="block w-full rounded-[1.1rem] py-4 text-center text-xs font-bold uppercase tracking-widest transition-transform hover:scale-[1.02]"
-      style={{ backgroundColor: tone, color: textColor }}
-    >
       {label}
     </a>
   );

@@ -4,9 +4,12 @@ import {
   EVENT_PREVIEW_DEVICES,
   buildEmbeddedEventPreviewHref,
   buildOwnerEventViewHref,
+  buildOwnerEventEditHref,
   eventPreviewReturnHref,
   fitEventPreview,
+  getEventPreviewLayout,
   initialEventPreviewDevice,
+  ownerEventEditorReturnHref,
 } from "./event-preview-viewport.ts";
 
 test("device previews use distinct real CSS viewport breakpoints", () => {
@@ -32,6 +35,48 @@ test("sidebar event links enter the owner view without stale editor or preview f
 test("owned Live Cards and flyers open Design while event pages keep the event viewer", () => {
   assert.equal(buildOwnerEventViewHref("/event/card?tab=event&preview=owner", "card"), "/event/card?tab=design");
   assert.equal(buildOwnerEventViewHref("/event/meet?tab=design", "event"), "/event/meet?tab=event");
+});
+
+test("Mobile on a real phone fills its available CSS viewport without scaling", () => {
+  for (const [width, height] of [[375, 716], [430, 836], [667, 279]]) {
+    assert.deepEqual(getEventPreviewLayout("mobile", width, height, true), {
+      viewport: { width, height },
+      fit: { scale: 1, width, height },
+    });
+  }
+  const tablet = getEventPreviewLayout("tablet", 375, 716, true);
+  assert.equal(tablet.viewport.width, 820);
+  assert.ok(tablet.fit.width <= 375 && tablet.fit.height <= 716);
+  assert.equal(getEventPreviewLayout("mobile", 1440, 900).viewport.width, 390);
+});
+
+test("owner Edit opens the editing menu while preserving the saved event and chosen design", () => {
+  const href = buildOwnerEventEditHref("/event/gymnastics/customize?edit=meet-123&templateId=airborne-atlas");
+  assert.equal(href, "/event/gymnastics/customize?edit=meet-123&templateId=airborne-atlas&editor=menu");
+  assert.equal(buildOwnerEventViewHref("/event/meet?editor=menu&edit=meet"), "/event/meet?tab=event");
+  assert.doesNotMatch(buildEmbeddedEventPreviewHref(href), /editor=|edit=/);
+});
+
+test("editing round trips retain the owner canvas and support already-open editor links", () => {
+  const editHref = buildOwnerEventEditHref(
+    "/gymnastics/templates/airborne-atlas/customize?edit=meet-123",
+    "/event/fright-invite?preview=owner&embed=dashboard-preview#schedule",
+  );
+  const search = new URL(editHref, "https://envitefy.local").searchParams;
+  assert.equal(ownerEventEditorReturnHref(search), "/event/fright-invite?tab=event#schedule");
+  assert.equal(ownerEventEditorReturnHref(new URLSearchParams("editor=menu&edit=meet-123")), "/event/meet-123?tab=event");
+  assert.equal(ownerEventEditorReturnHref(new URLSearchParams("editor=menu&edit=meet-123&returnTo=https%3A%2F%2Fexample.com")), "/event/meet-123?tab=event");
+  assert.equal(ownerEventEditorReturnHref(new URLSearchParams("edit=meet-123")), null);
+  assert.equal(ownerEventEditorReturnHref(new URLSearchParams("editor=menu")), null);
+  assert.equal(ownerEventEditorReturnHref(null), null);
+});
+
+test("the edit menu carries the event color without leaking editor state into public previews", () => {
+  const href = buildOwnerEventEditHref("/event/gymnastics/customize?edit=meet", "/event/fright-invite", "#f6f1e7");
+  assert.equal(new URL(href, "https://envitefy.local").searchParams.get("eventColor"), "#f6f1e7");
+  assert.doesNotMatch(buildEmbeddedEventPreviewHref(href), /eventColor/);
+  assert.doesNotMatch(buildOwnerEventViewHref(href), /eventColor/);
+  assert.doesNotMatch(buildOwnerEventEditHref("/edit", "/event/meet", "red;display:none"), /eventColor/);
 });
 
 test("Close keeps the requested workspace destination and rejects external redirects", () => {

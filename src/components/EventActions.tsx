@@ -1,14 +1,13 @@
 "use client";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useSession } from "next-auth/react";
+import { useEffect, useMemo } from "react";
+import CalendarAction from "@/components/CalendarAction";
 import { combineVenueAndLocation } from "@/lib/mappers";
 import { findFirstEmail } from "@/utils/contact";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
-import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { resolveNativeShareData } from "@/utils/native-share";
 import { trackEventInteraction } from "@/utils/event-tracking-client";
-import { useSession } from "next-auth/react";
 
 try {
   const globalObj = globalThis as typeof globalThis & {
@@ -38,19 +37,6 @@ type EventFields = {
   reminders?: { minutes: number }[] | null;
   rsvp?: string | null;
 };
-
-type CalendarProvider = "apple" | "google" | "microsoft";
-type CalendarConnectionStatus = {
-  google: boolean;
-  microsoft: boolean;
-  apple: boolean;
-};
-type CalendarPreference = {
-  provider: CalendarProvider;
-  remember: boolean;
-};
-
-const CALENDAR_DEFAULT_STORAGE_KEY = "envitefy:event-actions:calendar-default:v1";
 
 const isGenericPlaceholderTitle = (value: string) => /^event$/i.test(value.trim());
 
@@ -85,19 +71,6 @@ function resolveCalendarDisplayTitle(
   if (rawTitle) return rawTitle;
   return "";
 }
-
-const normalizeCalendarProvider = (value: unknown): CalendarProvider | null => {
-  if (typeof value !== "string") return null;
-  const provider = value.trim().toLowerCase();
-  if (
-    provider === "apple" ||
-    provider === "google" ||
-    provider === "microsoft"
-  ) {
-    return provider;
-  }
-  return null;
-};
 
 export default function EventActions({
   shareUrl,
@@ -146,16 +119,6 @@ export default function EventActions({
 
   // No visible inputs; infer contact targets from event details
   const { data: session } = useSession();
-  const isSignedIn = Boolean(session?.user?.email);
-  const [calendarModalOpen, setCalendarModalOpen] = useState(false);
-  const [portalReady, setPortalReady] = useState(false);
-  const [rememberCalendarDefault, setRememberCalendarDefault] = useState(true);
-  const [defaultCalendarProvider, setDefaultCalendarProvider] =
-    useState<CalendarProvider | null>(null);
-  const [connectedCalendars, setConnectedCalendars] =
-    useState<CalendarConnectionStatus | null>(null);
-  const firstCalendarOptionRef = useRef<HTMLButtonElement | null>(null);
-  const lastCalendarOpenRef = useRef<{ href: string; ts: number } | null>(null);
   const absoluteUrl = useMemo(() => {
     try {
       if (!shareUrl) return "";
@@ -226,93 +189,6 @@ export default function EventActions({
     });
   }, [safeEvent, shareTitle, absoluteUrl]);
 
-  const readLocalCalendarDefault = useCallback(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      const raw = window.localStorage.getItem(CALENDAR_DEFAULT_STORAGE_KEY);
-      return normalizeCalendarProvider(raw);
-    } catch {
-      return null;
-    }
-  }, []);
-
-  const writeLocalCalendarDefault = useCallback((provider: CalendarProvider | null) => {
-    if (typeof window === "undefined") return;
-    try {
-      if (!provider) {
-        window.localStorage.removeItem(CALENDAR_DEFAULT_STORAGE_KEY);
-        return;
-      }
-      window.localStorage.setItem(CALENDAR_DEFAULT_STORAGE_KEY, provider);
-    } catch {
-      // ignore storage failures
-    }
-  }, []);
-
-  const syncProfileCalendarDefault = useCallback(
-    async (provider: CalendarProvider | null) => {
-      if (!isSignedIn) return;
-      try {
-        await fetch("/api/user/profile", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ preferredProvider: provider }),
-        });
-      } catch {
-        // non-blocking fallback to local storage only
-      }
-    },
-    [isSignedIn]
-  );
-
-  const fetchConnectedCalendars = useCallback(async () => {
-    if (!isSignedIn) return null;
-    try {
-      const res = await fetch("/api/calendars", { credentials: "include" });
-      if (!res.ok) return null;
-      const json = await res.json().catch(() => ({}));
-      const next: CalendarConnectionStatus = {
-        google: Boolean(json?.google),
-        microsoft: Boolean(json?.microsoft),
-        apple: Boolean(json?.apple),
-      };
-      setConnectedCalendars(next);
-      return next;
-    } catch {
-      return null;
-    }
-  }, [isSignedIn]);
-
-  const isProviderValid = useCallback(
-    (
-      provider: CalendarProvider | null | undefined,
-      connections?: CalendarConnectionStatus | null
-    ) => {
-      if (!provider) return false;
-      if (!isSignedIn) return true;
-      return Boolean(connections?.[provider]);
-    },
-    [isSignedIn]
-  );
-
-  const hydrateDefaultFromProfile = useCallback(async () => {
-    if (!isSignedIn) return null;
-    try {
-      const res = await fetch("/api/user/profile", { cache: "no-store" });
-      if (!res.ok) return null;
-      const json = await res.json().catch(() => ({}));
-      const provider = normalizeCalendarProvider(json?.preferredProvider);
-      if (provider) {
-        setDefaultCalendarProvider(provider);
-        writeLocalCalendarDefault(provider);
-        return provider;
-      }
-    } catch {
-      // non-blocking fallback
-    }
-    return null;
-  }, [isSignedIn, writeLocalCalendarDefault]);
-
   const rsvpEmail = useMemo(() => {
     const candidates: unknown[] = [
       event?.rsvp ?? null,
@@ -350,66 +226,6 @@ export default function EventActions({
       detectedPhone: rsvpPhone,
     });
   }, [event, historyId, rsvpEmail, rsvpPhone]);
-
-  useEffect(() => {
-    setPortalReady(true);
-  }, []);
-
-  useEffect(() => {
-    const localProvider = readLocalCalendarDefault();
-    if (localProvider) {
-      setDefaultCalendarProvider(localProvider);
-      return;
-    }
-
-    if (!isSignedIn) {
-      return;
-    }
-
-    void hydrateDefaultFromProfile();
-  }, [hydrateDefaultFromProfile, isSignedIn, readLocalCalendarDefault]);
-
-  useEffect(() => {
-    if (!isSignedIn) {
-      setConnectedCalendars(null);
-      return;
-    }
-    void fetchConnectedCalendars();
-  }, [fetchConnectedCalendars, isSignedIn]);
-
-  useEffect(() => {
-    if (!isSignedIn) return;
-    if (!defaultCalendarProvider) return;
-    if (!connectedCalendars) return;
-    if (isProviderValid(defaultCalendarProvider, connectedCalendars)) return;
-    setDefaultCalendarProvider(null);
-    writeLocalCalendarDefault(null);
-    void syncProfileCalendarDefault(null);
-  }, [
-    connectedCalendars,
-    defaultCalendarProvider,
-    isProviderValid,
-    isSignedIn,
-    syncProfileCalendarDefault,
-    writeLocalCalendarDefault,
-  ]);
-
-  useEffect(() => {
-    if (!calendarModalOpen) return;
-    const onKeyDown = (evt: KeyboardEvent) => {
-      if (evt.key === "Escape") setCalendarModalOpen(false);
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [calendarModalOpen]);
-
-  useEffect(() => {
-    if (!calendarModalOpen) return;
-    setRememberCalendarDefault(true);
-    setTimeout(() => {
-      firstCalendarOptionRef.current?.focus();
-    }, 0);
-  }, [calendarModalOpen]);
 
   // Legacy RSVP logic used a phone lookup helper. Keep a stub so any stale bundles
   // referencing `findPhone` during hot reloads keep working without throwing.
@@ -580,76 +396,9 @@ export default function EventActions({
     } catch {}
   };
 
-  const getCalendarHref = (provider: CalendarProvider) => {
-    if (!calendarLinks) return "";
-    if (provider === "apple") return calendarLinks.appleInline;
-    if (provider === "google") return calendarLinks.google;
-    return calendarLinks.outlook;
-  };
-
-  const openCalendarProvider = (provider: CalendarProvider) => {
-    const href = getCalendarHref(provider);
-    if (!href) return;
-    const now = Date.now();
-    const previous = lastCalendarOpenRef.current;
-    if (previous && previous.href === href && now - previous.ts < 1200) {
-      return;
-    }
-    lastCalendarOpenRef.current = { href, ts: now };
-
-    if (provider === "apple") {
-      openAppleCalendarIcs(href);
-      return;
-    }
-    window.open(href, "_blank", "noopener,noreferrer");
-  };
-
-  const persistCalendarPreference = (preference: CalendarPreference) => {
-    if (preference.remember) {
-      setDefaultCalendarProvider(preference.provider);
-      writeLocalCalendarDefault(preference.provider);
-      void syncProfileCalendarDefault(preference.provider);
-      return;
-    }
-
-    setDefaultCalendarProvider(null);
-    writeLocalCalendarDefault(null);
-    void syncProfileCalendarDefault(null);
-  };
-
-  const openCalendarModal = () => {
-    setRememberCalendarDefault(true);
-    setCalendarModalOpen(true);
-  };
-
-  const onCalendarPrimaryClick = () => {
-    if (!calendarLinks) return;
-    if (
-      defaultCalendarProvider &&
-      isProviderValid(defaultCalendarProvider, connectedCalendars)
-    ) {
-      openCalendarProvider(defaultCalendarProvider);
-      return;
-    }
-    openCalendarModal();
-  };
-
-  const onCalendarProviderSelect = (provider: CalendarProvider) => {
-    const canRememberProvider = isProviderValid(provider, connectedCalendars);
-    const preference: CalendarPreference = {
-      provider,
-      remember: rememberCalendarDefault && canRememberProvider,
-    };
-    setCalendarModalOpen(false);
-    if (!rememberCalendarDefault || canRememberProvider) {
-      persistCalendarPreference(preference);
-    }
-    openCalendarProvider(provider);
-  };
-
   const innerClassName =
     variant === "compact"
-      ? "flex items-center gap-2"
+      ? "flex flex-wrap items-center gap-2"
       : "flex flex-wrap items-center justify-center gap-10";
 
   const buttonClassName =
@@ -667,35 +416,7 @@ export default function EventActions({
     <div className={className}>
       <div className={innerClassName}>
         {showCalendar && calendarLinks && (
-          <button
-            type="button"
-            onClick={onCalendarPrimaryClick}
-            className={buttonClassName}
-            aria-label="Add to calendar"
-            title="Add to calendar"
-            aria-haspopup="dialog"
-            aria-expanded={calendarModalOpen}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-4 w-4"
-              aria-hidden="true"
-            >
-              <rect x="3" y="4" width="18" height="18" rx="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-              <line x1="12" y1="14" x2="12" y2="20" />
-              <line x1="9" y1="17" x2="15" y2="17" />
-            </svg>
-            <span className={labelClassName}>Calendar</span>
-          </button>
+          <CalendarAction links={calendarLinks} className={buttonClassName} />
         )}
 
         <button
@@ -781,95 +502,6 @@ export default function EventActions({
           </button>
         )}
       </div>
-      {portalReady &&
-        calendarModalOpen &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[13000] flex items-center justify-center bg-black/50 p-4"
-            onClick={() => setCalendarModalOpen(false)}
-          >
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-label="Add to calendar"
-              className="w-full max-w-sm rounded-xl border border-[#ddd4f8] bg-white p-4 shadow-2xl"
-              onClick={(evt) => evt.stopPropagation()}
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-base font-semibold text-[#2f2550]">
-                  Add to calendar
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setCalendarModalOpen(false)}
-                  className="rounded-md p-1 text-[#6f5ba3] transition hover:bg-[#f7f2ff]"
-                  aria-label="Close"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-4 w-4"
-                    aria-hidden="true"
-                  >
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="space-y-2">
-                <button
-                  ref={firstCalendarOptionRef}
-                  type="button"
-                  onClick={() => void onCalendarProviderSelect("apple")}
-                  className="flex w-full items-center justify-between rounded-lg border border-[#ddd4f8] px-3 py-2 text-left text-sm font-medium text-[#4f3f7a] transition hover:bg-[#f7f2ff]"
-                >
-                  <span>Apple Calendar</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void onCalendarProviderSelect("google")}
-                  className="flex w-full items-center justify-between rounded-lg border border-[#ddd4f8] px-3 py-2 text-left text-sm font-medium text-[#4f3f7a] transition hover:bg-[#f7f2ff]"
-                >
-                  <span>Google Calendar</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void onCalendarProviderSelect("microsoft")}
-                  className="flex w-full items-center justify-between rounded-lg border border-[#ddd4f8] px-3 py-2 text-left text-sm font-medium text-[#4f3f7a] transition hover:bg-[#f7f2ff]"
-                >
-                  <span>Outlook</span>
-                </button>
-              </div>
-
-              <label className="mt-4 flex items-start gap-2 text-sm text-[#4f3f7a]">
-                <input
-                  type="checkbox"
-                  checked={rememberCalendarDefault}
-                  onChange={(evt) => setRememberCalendarDefault(evt.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-[#cdbff0] text-[#7f8cff]"
-                />
-                <span>Remember a connected provider as my default calendar</span>
-              </label>
-
-              <div className="mt-4 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setCalendarModalOpen(false)}
-                  className="rounded-lg border border-[#ddd4f8] px-3 py-1.5 text-sm font-medium text-[#4f3f7a] transition hover:bg-[#f7f2ff]"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )}
     </div>
   );
 }
