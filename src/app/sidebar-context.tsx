@@ -15,6 +15,9 @@ interface SidebarContextType {
   isCollapsed: boolean;
   setIsCollapsed: (collapsed: boolean) => void;
   toggleSidebar: () => void;
+  desktopPinned: boolean;
+  setDesktopPinned: (pinned: boolean) => void;
+  setDesktopPeek: (peek: boolean) => void;
   selectedEventId: string | null;
   setSelectedEventId: (eventId: string | null) => void;
   selectedEventTitle: string | null;
@@ -40,6 +43,7 @@ export type EventRouteAlias = { pathname: string; eventHref: string };
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 export const SIDEBAR_STORAGE_KEY = "sidebar:collapsed";
+export const DESKTOP_SIDEBAR_STORAGE_KEY = "sidebar:desktop-pinned";
 
 function isDesktopViewport() {
   return (
@@ -88,6 +92,8 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({ children }) =>
     readInitialMobileSidebarCollapsed,
   );
   const [isDesktop, setIsDesktop] = useState<boolean>(isDesktopViewport);
+  const [desktopPinned, setDesktopPinnedState] = useState(false);
+  const [desktopPeek, setDesktopPeek] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedEventTitle, setSelectedEventTitle] = useState<string | null>(null);
   const [selectedEventHref, setSelectedEventHref] = useState<string | null>(null);
@@ -98,10 +104,24 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({ children }) =>
   const [eventRouteAlias, setEventRouteAlias] = useState<EventRouteAlias | null>(null);
 
   useEffect(() => {
+    try {
+      setDesktopPinnedState(window.localStorage.getItem(DESKTOP_SIDEBAR_STORAGE_KEY) === "1");
+    } catch {}
+  }, []);
+
+  const setDesktopPinned = useCallback((pinned: boolean) => {
+    setDesktopPinnedState(pinned);
+    try {
+      window.localStorage.setItem(DESKTOP_SIDEBAR_STORAGE_KEY, pinned ? "1" : "0");
+    } catch {}
+  }, []);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     const mediaQuery = window.matchMedia("(min-width: 1024px)");
     const updateDesktop = (event: MediaQueryListEvent | MediaQueryList) => {
       setIsDesktop(event.matches);
+      setDesktopPeek(false);
     };
     updateDesktop(mediaQuery);
     const handler = (event: MediaQueryListEvent) => updateDesktop(event);
@@ -146,8 +166,8 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({ children }) =>
   }, [isDesktop]);
 
   const isCollapsed = useMemo(
-    () => (isDesktop ? false : mobileCollapsed),
-    [isDesktop, mobileCollapsed],
+    () => (isDesktop ? !(desktopPinned || desktopPeek) : mobileCollapsed),
+    [isDesktop, desktopPinned, desktopPeek, mobileCollapsed],
   );
 
   const clearEventContext = () => {
@@ -167,6 +187,9 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({ children }) =>
         isCollapsed,
         setIsCollapsed: setIsCollapsedAndPersist,
         toggleSidebar,
+        desktopPinned,
+        setDesktopPinned,
+        setDesktopPeek,
         selectedEventId,
         setSelectedEventId,
         selectedEventTitle,

@@ -1,8 +1,9 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { SIDEBAR_WIDTH_REM } from "@/app/left-sidebar.model";
+import { type CSSProperties, useEffect, useState } from "react";
+import { SIDEBAR_COLLAPSED_REM, SIDEBAR_WIDTH_REM } from "@/app/left-sidebar.model";
+import { useSidebar } from "@/app/sidebar-context";
 import { EVENT_SKIN_TOP_OFFSET_VAR } from "@/components/event-skin-layout";
 import { isCreateEventRoute } from "@/config/navigation-config";
 import { GradientBackgroundLayer } from "@/components/ui/gradient-backgrounds";
@@ -26,6 +27,7 @@ export function MainContentWrapper({
   className?: string;
 }) {
   const pathname = usePathname();
+  const { isCollapsed } = useSidebar();
   const [isDesktop, setIsDesktop] = useState(false);
 
   const normalizedPath = (pathname || "").replace(/\/+$/, "");
@@ -47,7 +49,9 @@ export function MainContentWrapper({
     return () => window.removeEventListener("resize", checkDesktop);
   }, []);
 
-  const paddingLeft = reserveSidebarSpace && isDesktop ? SIDEBAR_WIDTH_REM : "0";
+  const paddingLeft = reserveSidebarSpace && isDesktop
+    ? isCollapsed ? SIDEBAR_COLLAPSED_REM : SIDEBAR_WIDTH_REM
+    : "0";
 
   const eventSkinTopOffset =
     !isDesktop && isAuthenticated
@@ -89,10 +93,10 @@ export function MainContentWrapper({
         paddingTop: isSettingsRoute ? "0px" : paddingTop,
         paddingBottom: "max(0px, env(safe-area-inset-bottom))",
         paddingLeft,
-        transition: "padding-left 200ms ease-out",
+        "--app-sidebar-width": paddingLeft,
         ...(isSettingsRoute ? { "--app-content-top-inset": paddingTop } : null),
         ...(isEventSharePage ? { [EVENT_SKIN_TOP_OFFSET_VAR]: eventSkinTopOffset } : null),
-      }}
+      } as CSSProperties}
       data-static-illustration="true"
       data-app-main-content="true"
     >

@@ -8,14 +8,14 @@ const repoRoot = process.cwd();
 const readSource = (relativePath) =>
   fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
-test("sidebar context forces desktop expanded while preserving mobile drawer persistence", () => {
+test("sidebar context keeps desktop pin and peek separate from mobile persistence", () => {
   const source = readSource("src/app/sidebar-context.tsx");
 
   assert.match(source, /const \[mobileCollapsed, setMobileCollapsed\] = useState<boolean>\(\s*readInitialMobileSidebarCollapsed,/s);
   assert.match(source, /const \[isDesktop, setIsDesktop\] = useState<boolean>\(isDesktopViewport\);/);
   assert.match(
     source,
-    /const isCollapsed = useMemo\(\s*\(\) => \(isDesktop \? false : mobileCollapsed\),\s*\[isDesktop, mobileCollapsed\],\s*\);/s,
+    /const isCollapsed = useMemo\(\s*\(\) => \(isDesktop \? !\(desktopPinned \|\| desktopPeek\) : mobileCollapsed\),\s*\[isDesktop, desktopPinned, desktopPeek, mobileCollapsed\],\s*\);/s,
   );
   assert.match(
     source,
@@ -27,16 +27,16 @@ test("sidebar context forces desktop expanded while preserving mobile drawer per
   );
 });
 
-test("app layout reserves only the expanded desktop sidebar width", () => {
+test("app layout tracks the same compact and expanded widths as navigation", () => {
   const wrapperSource = readSource("src/components/MainContentWrapper.tsx");
   const controllerSource = readSource("src/app/left-sidebar.controller.ts");
 
   assert.match(
     wrapperSource,
-    /const paddingLeft =\s*reserveSidebarSpace && isDesktop \? SIDEBAR_WIDTH_REM : "0";/s,
+    /const paddingLeft =\s*reserveSidebarSpace && isDesktop\s*\? isCollapsed \? SIDEBAR_COLLAPSED_REM : SIDEBAR_WIDTH_REM\s*: "0";/s,
   );
-  assert.doesNotMatch(wrapperSource, /SIDEBAR_COLLAPSED_REM/);
-  assert.match(controllerSource, /const isCompact = false;/);
-  assert.match(controllerSource, /const sidebarWidth = SIDEBAR_WIDTH_REM;/);
+  assert.match(wrapperSource, /useSidebar\(\)/);
+  assert.match(controllerSource, /const isCompact = isDesktop && !isOpen;/);
+  assert.match(controllerSource, /const sidebarWidth = isCompact \? SIDEBAR_COLLAPSED_REM : SIDEBAR_WIDTH_REM;/);
   assert.match(controllerSource, /const showMobileTopBar = !isDesktop && !isOpen;/);
 });

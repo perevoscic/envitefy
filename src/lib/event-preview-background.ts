@@ -20,9 +20,13 @@ function hasColor(color: string) {
 }
 
 /** Read the page surface, never a hero or a detail card, from the actual device rendering. */
-export function readEventPreviewBackground(doc: Document): EventPreviewBackground {
+function resolveEventPreviewBackground(doc: Document): {
+  background: EventPreviewBackground;
+  surface?: Element;
+  artwork?: Element | null;
+} {
   const view = doc.defaultView;
-  if (!view) return DEFAULT_PREVIEW_BACKGROUND;
+  if (!view) return { background: DEFAULT_PREVIEW_BACKGROUND };
   const content = doc.querySelector("#event-preview-content, [data-app-main-content]") || doc.body;
   const width = doc.documentElement.clientWidth;
   const height = Math.min(doc.documentElement.scrollHeight, view.innerHeight);
@@ -70,5 +74,63 @@ export function readEventPreviewBackground(doc: Document): EventPreviewBackgroun
     background.backgroundPosition = artworkStyle.backgroundPosition;
     background.backgroundRepeat = artworkStyle.backgroundRepeat;
   }
-  return background;
+  return { background, surface: surface || content, artwork };
+}
+
+export function readEventPreviewBackground(doc: Document): EventPreviewBackground {
+  return resolveEventPreviewBackground(doc).background;
+}
+
+const surfaceAttribute = "data-event-preview-background-surface";
+const artworkAttribute = "data-event-preview-background-artwork";
+
+/** Paint artwork once on the outer canvas, with transparent page surfaces in this iframe only. */
+export function createEventPreviewBackgroundController(doc: Document) {
+  const style = doc.createElement("style");
+  style.textContent = `
+    [${surfaceAttribute}] {
+      background-color: transparent !important;
+      background-image: none !important;
+    }
+    [${artworkAttribute}] { visibility: hidden !important; }
+  `;
+  const marked = new Map<Element, { attribute: string; previous: string | null }>();
+
+  const restore = () => {
+    for (const [element, { attribute, previous }] of marked) {
+      if (previous === null) element.removeAttribute(attribute);
+      else element.setAttribute(attribute, previous);
+    }
+    marked.clear();
+  };
+  const mark = (element: Element, attribute: string) => {
+    marked.set(element, { attribute, previous: element.getAttribute(attribute) });
+    element.setAttribute(attribute, "");
+  };
+
+  return {
+    read(): EventPreviewBackground {
+      // Read the original styles on every update, including device changes and newly loaded art.
+      // Disabling the stylesheet does not mutate class/style attributes or retrigger the observer.
+      style.disabled = true;
+      try {
+        const { background, surface, artwork } = resolveEventPreviewBackground(doc);
+        restore();
+        if (background.backgroundImage && background.backgroundImage !== "none") {
+          for (let element = surface; element; element = element.parentElement || undefined) {
+            mark(element, surfaceAttribute);
+          }
+          if (artwork) mark(artwork, artworkAttribute);
+        }
+        if (!style.isConnected) doc.head.append(style);
+        return background;
+      } finally {
+        style.disabled = false;
+      }
+    },
+    dispose() {
+      restore();
+      style.remove();
+    },
+  };
 }

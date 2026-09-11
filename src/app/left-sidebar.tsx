@@ -24,6 +24,8 @@ import {
   Mail,
   Music,
   PartyPopper,
+  PanelLeftOpen,
+  Pin,
   Plus,
   Search,
   Settings,
@@ -35,6 +37,7 @@ import {
   User,
   Users,
   WandSparkles,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -51,14 +54,17 @@ import {
   Fragment,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useEventCache } from "@/app/event-cache-context";
-import conciergeMenuIcon from "@/assets/concierge-menu-icon.png";
+import conciergeMenuIcon from "../../public/brand/concierge-chat.webp";
+import sidebarBrandIcon from "../../public/brand/e-only.png";
+import sidebarBrandWordmark from "../../public/brand/envitefy-wordmark.png";
 import { adminNavItems, type AdminNavItemId } from "@/components/admin/nav";
 import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
-import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import EventSidebar from "@/components/navigation/EventSidebar";
+import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { useMenu } from "@/contexts/MenuContext";
 import type { CreationThreadSummary, CreationThreadsResponse } from "@/lib/concierge/types";
 import { isInvitedEventLikeRecord } from "@/lib/dashboard-data";
@@ -74,17 +80,15 @@ import {
   GroupedEventSection,
   getCreateMenuActiveAccent,
   getChronologicalEventItems,
-  getSidebarPrimaryActiveAccent,
   SIDEBAR_BADGE_CLASS,
+  SIDEBAR_COLLAPSED_REM,
   SIDEBAR_DIVIDER_CLASS,
   SIDEBAR_EVENT_PANEL_CLASS,
   SIDEBAR_FOOTER_TRIGGER_CLASS,
-  SIDEBAR_ICON_CHIP_ACCENT_CLASS,
   SIDEBAR_ICON_CHIP_CLASS,
-  SIDEBAR_ITEM_CARD_CLASS,
   SIDEBAR_LIST_PANEL_CLASS,
-  SIDEBAR_MENU_ROW_CLASS,
   SIDEBAR_PANEL_CLASS,
+  SIDEBAR_WIDTH_REM,
 } from "./left-sidebar.model";
 import { useSidebar } from "./sidebar-context";
 
@@ -159,15 +163,13 @@ function SidebarWeddingMenuIcon({
 function SidebarGymnasticsMenuIcon({
   size = 22,
   className,
-  active = false,
 }: {
   size?: number;
   className?: string;
-  active?: boolean;
 }) {
   return (
     <span
-      className={["inline-block shrink-0", active ? "bg-violet-600" : "bg-slate-500", className]
+      className={["inline-block shrink-0 bg-current", className]
         .filter(Boolean)
         .join(" ")}
       style={SIDEBAR_GYM_MASK_STYLE(size)}
@@ -325,7 +327,7 @@ const SIDEBAR_SUBMENU_ROW_CLASS =
 const SIDEBAR_SUBMENU_ICON_CLASS =
   "flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-[background-color,color,border-color,box-shadow]";
 const SIDEBAR_SUBMENU_LABEL_CLASS =
-  "font-[var(--font-josefin-sans)] flex-1 truncate text-[0.95rem] font-bold uppercase tracking-[0.13em] leading-none transition-colors";
+  "nav-chrome-menu-label flex-1 truncate transition-colors";
 const SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS =
   "bg-white/92 border-[rgba(236,231,255,0.98)] shadow-[0_16px_32px_rgba(103,88,160,0.12)]";
 const SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS = "text-[#beb9e8] hover:bg-white/28";
@@ -510,225 +512,27 @@ function RootNavigationPanel({
   const isAdminActive =
     sidebarPage === "admin" || (Boolean(pathname?.startsWith("/admin")) && sidebarPage === "root");
   const isDraftsActive = sidebarPage === "drafts";
-  const mainActiveAccent = getSidebarPrimaryActiveAccent();
-  const rootMenuActiveChipClass = "nav-chrome-sidebar-chip-active";
-  const rootMenuChipClass = SIDEBAR_ICON_CHIP_ACCENT_CLASS;
-
-  const activeRowClass = `${mainActiveAccent.buttonClass} group`;
-  const inactiveRowClass = "group";
-  const rootRowTextClass =
-    "min-w-0 flex-1 font-[var(--font-josefin-sans)] text-[0.95rem] font-bold uppercase tracking-[0.13em] leading-none";
-  const rootInactiveTextClass = "text-[#beb9e8]";
-  const rootActiveTextClass = "text-[#6e59db]";
-  const rootHoverTextClass = "group-hover:text-[#aba4e3]";
-  const rootIconClass = (isActive: boolean) =>
-    `transition-colors ${
-      isActive ? rootActiveTextClass : `${rootInactiveTextClass} ${rootHoverTextClass}`
-    }`;
 
   return (
-    <div className="space-y-7 pt-3">
-      <div className="space-y-2">
-        <Link
-          href="/"
-          onClick={onHome}
-          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
-            isHomeActive ? activeRowClass : inactiveRowClass
-          } py-3 pl-4 pr-4`}
-          style={isHomeActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
-        >
-          <span
-            className={`${SIDEBAR_ICON_CHIP_CLASS} ${
-              isHomeActive ? rootMenuActiveChipClass : rootMenuChipClass
-            } ${rootIconClass(isHomeActive)}`}
-          >
-            <Home size={17} strokeWidth={1.9} />
-          </span>
-          <span
-            className={`truncate ${rootRowTextClass} ${
-              isHomeActive ? rootActiveTextClass : `${rootInactiveTextClass} ${rootHoverTextClass}`
-            }`}
-          >
-            Home
-          </span>
-        </Link>
-
-        <button
-          type="button"
-          onClick={onSnapUpload}
-          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
-            isSnapUploadActive ? activeRowClass : inactiveRowClass
-          } py-3 pl-4 pr-4`}
-          style={isSnapUploadActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
-        >
-          <span
-            className={`${SIDEBAR_ICON_CHIP_CLASS} ${
-              isSnapUploadActive ? rootMenuActiveChipClass : rootMenuChipClass
-            } ${rootIconClass(isSnapUploadActive)}`}
-          >
-            <Upload size={17} strokeWidth={1.9} />
-          </span>
-          <span
-            className={`truncate ${rootRowTextClass} ${
-              isSnapUploadActive
-                ? rootActiveTextClass
-                : `${rootInactiveTextClass} ${rootHoverTextClass}`
-            }`}
-          >
-            Snap / Upload
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={onAiThreads}
-          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
-            isChatActive ? activeRowClass : inactiveRowClass
-          } py-3 pl-4 pr-4`}
-          style={isChatActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
-        >
-          <span
-            className={`${SIDEBAR_ICON_CHIP_CLASS} ${
-              isChatActive ? rootMenuActiveChipClass : rootMenuChipClass
-            } ${rootIconClass(isChatActive)}`}
-          >
-            <ConciergeLogoIcon isActive={isChatActive} />
-          </span>
-          <span
-            className={`truncate ${rootRowTextClass} ${
-              isChatActive ? rootActiveTextClass : `${rootInactiveTextClass} ${rootHoverTextClass}`
-            }`}
-          >
-            Envitefy Concierge
-          </span>
-        </button>
-
+    <nav aria-label="Main navigation" className="space-y-5 pt-2">
+      <div className="space-y-1.5">
+        <SidebarLink link={{ label: "Home", href: "/", icon: <Home />, onClick: onHome, active: isHomeActive }} />
+        <SidebarLink link={{ label: "Snap / Upload", icon: <Upload />, onClick: onSnapUpload, active: isSnapUploadActive }} />
+        <SidebarLink link={{ label: "Envitefy Concierge", icon: <ConciergeLogoIcon size={20} isActive={isChatActive} />, onClick: onAiThreads, active: isChatActive }} />
         {hasCreateEventAccess ? (
-          <button
-            type="button"
-            onClick={onCreate}
-            className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
-              isCreateEntryActive ? activeRowClass : inactiveRowClass
-            } py-3 pl-4 pr-4`}
-            style={
-              isCreateEntryActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined
-            }
-          >
-            <span
-              className={`${SIDEBAR_ICON_CHIP_CLASS} ${
-                isCreateEntryActive ? rootMenuActiveChipClass : rootMenuChipClass
-              } ${rootIconClass(isCreateEntryActive)}`}
-            >
-              <Plus size={17} strokeWidth={1.9} />
-            </span>
-            <span
-              className={`truncate ${rootRowTextClass} ${
-                isCreateEntryActive
-                  ? rootActiveTextClass
-                  : `${rootInactiveTextClass} ${rootHoverTextClass}`
-              }`}
-            >
-              {createEntryLabel}
-            </span>
-          </button>
+          <SidebarLink link={{ label: createEntryLabel, icon: <Plus />, onClick: onCreate, active: isCreateEntryActive }} />
         ) : null}
-
-        <button
-          type="button"
-          onClick={onMyEvents}
-          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
-            isMyEventsActive ? activeRowClass : inactiveRowClass
-          } py-3 pl-4 pr-4`}
-          style={isMyEventsActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
-        >
-          <span
-            className={`${SIDEBAR_ICON_CHIP_CLASS} ${
-              isMyEventsActive ? rootMenuActiveChipClass : rootMenuChipClass
-            } ${rootIconClass(isMyEventsActive)}`}
-          >
-            <SidebarMyEventsMenuIcon size={18} active={isMyEventsActive} />
-          </span>
-          <span
-            className={`truncate ${rootRowTextClass} ${
-              isMyEventsActive
-                ? rootActiveTextClass
-                : `${rootInactiveTextClass} ${rootHoverTextClass}`
-            }`}
-          >
-            My Events
-          </span>
-          {createdEventsCount > 0 ? (
-            <span className={`ml-auto ${SIDEBAR_BADGE_CLASS}`}>{createdEventsCount}</span>
-          ) : null}
-        </button>
-
-        <button
-          type="button"
-          onClick={onDrafts}
-          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
-            isDraftsActive ? activeRowClass : inactiveRowClass
-          } py-3 pl-4 pr-4`}
-          style={isDraftsActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
-        >
-          <span
-            className={`${SIDEBAR_ICON_CHIP_CLASS} ${
-              isDraftsActive ? rootMenuActiveChipClass : rootMenuChipClass
-            } ${rootIconClass(isDraftsActive)}`}
-          >
-            <FileEdit size={17} strokeWidth={1.9} aria-hidden="true" />
-          </span>
-          <span
-            className={`truncate ${rootRowTextClass} ${
-              isDraftsActive ? rootActiveTextClass : `${rootInactiveTextClass} ${rootHoverTextClass}`
-            }`}
-          >
-            Drafts
-          </span>
-          {draftsCount > 0 ? (
-            <span className={`ml-auto ${SIDEBAR_BADGE_CLASS}`}>{draftsCount}</span>
-          ) : null}
-        </button>
       </div>
-
+      <div className="space-y-1.5 border-t border-violet-200/40 pt-4">
+        <SidebarLink link={{ label: "My Events", icon: <SidebarMyEventsMenuIcon size={20} active={isMyEventsActive} />, onClick: onMyEvents, active: isMyEventsActive, badge: createdEventsCount }} />
+        <SidebarLink link={{ label: "Drafts", icon: <FileEdit />, onClick: onDrafts, active: isDraftsActive, badge: draftsCount }} />
+      </div>
       {isAdmin ? (
-        <div className="space-y-2">
-          <div className="px-4">
-            <div className="nav-chrome-divider h-px" />
-          </div>
-          <button
-            type="button"
-            onClick={onAdmin}
-            className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
-              isAdminActive ? activeRowClass : inactiveRowClass
-            } py-3 pl-4 pr-4`}
-            style={isAdminActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
-          >
-            <span
-              className={`${SIDEBAR_ICON_CHIP_CLASS} ${
-                isAdminActive ? rootMenuActiveChipClass : rootMenuChipClass
-              } ${rootIconClass(isAdminActive)}`}
-            >
-              <ShieldCheck size={17} strokeWidth={1.9} />
-            </span>
-            <span
-              className={`truncate ${rootRowTextClass} ${
-                isAdminActive
-                  ? rootActiveTextClass
-                  : `${rootInactiveTextClass} ${rootHoverTextClass}`
-              }`}
-            >
-              Admin
-            </span>
-            <ChevronRight
-              size={15}
-              className={`ml-auto transition-colors ${
-                isAdminActive ? "text-[#b4acef]" : "text-[#beb9e8] group-hover:text-[#aba4e3]"
-              }`}
-            />
-          </button>
+        <div className="border-t border-violet-200/40 pt-4">
+          <SidebarLink link={{ label: "Admin", icon: <ShieldCheck />, onClick: onAdmin, active: isAdminActive }} />
         </div>
       ) : null}
-    </div>
+    </nav>
   );
 }
 
@@ -835,7 +639,7 @@ function CreateMenuButton({
         }`}
       >
         {Icon === SidebarGymnasticsMenuIcon ? (
-          <SidebarGymnasticsMenuIcon size={18} active={isActive} />
+          <SidebarGymnasticsMenuIcon size={18} />
         ) : Icon === SidebarFootballMenuIcon ? (
           <SidebarFootballMenuIcon size={18} active={isActive} />
         ) : (
@@ -1007,8 +811,7 @@ function EventListPanel({
               <CategoryIcon
                 size={18}
                 className={
-                  CategoryIcon === SidebarGymnasticsMenuIcon ||
-                  CategoryIcon === SidebarFootballMenuIcon
+                    CategoryIcon === SidebarFootballMenuIcon
                     ? "!bg-current"
                     : undefined
                 }
@@ -1341,8 +1144,8 @@ function FooterProfileMenu({
 }) {
   return (
     <div
-      className={`absolute bottom-0 left-0 right-0 z-[40] bg-transparent px-5 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-6 ${
-        isCompact ? "pointer-events-none" : ""
+      className={`absolute bottom-0 left-0 right-0 z-[40] bg-transparent pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 ${
+        isCompact ? "px-[17px]" : "px-4"
       }`}
     >
       <div className="relative z-[900]">
@@ -1356,7 +1159,9 @@ function FooterProfileMenu({
           onMouseDown={(event) => event.stopPropagation()}
           onPointerDown={(event) => event.stopPropagation()}
           aria-expanded={menuOpen}
-          className={`${SIDEBAR_FOOTER_TRIGGER_CLASS} ${
+          aria-label={`Account menu for ${userTitleLabel}`}
+          title={isCompact ? userTitleLabel : undefined}
+          className={`${isCompact ? "inline-flex h-11 w-11 items-center justify-center rounded-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500" : SIDEBAR_FOOTER_TRIGGER_CLASS} ${
             menuOpen
               ? "ring-2 ring-[rgba(110,94,181,0.14)] shadow-[0_22px_40px_rgba(123,112,206,0.18)]"
               : ""
@@ -1377,16 +1182,16 @@ function FooterProfileMenu({
                 profileInitials
               )}
             </span>
-            <div className="min-w-0 flex-1 text-left">
+            <div className={isCompact ? "hidden" : "min-w-0 flex-1 text-left"}>
               <div className="truncate text-[13px] font-bold leading-tight text-[#5e54b7]">
                 {userTitleLabel}
               </div>
               {userEmail ? (
-                <div className="truncate text-[11px] text-[#b7b1e8]">{userEmail}</div>
+                <div className="truncate text-[11px] text-[#77718f]">{userEmail}</div>
               ) : null}
             </div>
           </div>
-          <span className="pr-1 text-[#8a80df]" aria-hidden="true">
+          <span className={isCompact ? "hidden" : "pr-1 text-[#8a80df]"} aria-hidden="true">
             <ChevronRight size={16} />
           </span>
         </button>
@@ -1463,6 +1268,8 @@ export default function LeftSidebar() {
   const menu = useMenu();
   const { historySidebarItems } = useEventCache();
   const sidebar = useSidebar();
+  const desktopHoverRef = useRef(false);
+  const desktopFocusRef = useRef(false);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -1515,14 +1322,23 @@ export default function LeftSidebar() {
     searchParams,
   });
 
+  useEffect(() => {
+    if (!viewModel.isDesktop) {
+      desktopHoverRef.current = false;
+      desktopFocusRef.current = false;
+      return;
+    }
+    sidebar.setDesktopPeek(viewModel.menuOpen || desktopHoverRef.current || desktopFocusRef.current);
+  }, [viewModel.isDesktop, viewModel.menuOpen, sidebar.setDesktopPeek]);
+
   if (!viewModel.isReady) return null;
   if (viewModel.isEmbeddedEditMode) return null;
 
   const panelTransitionStyle: CSSProperties = {
     transition: "transform 400ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 220ms ease-in-out",
   };
-  const rootPanelTransform =
-    viewModel.sidebarPage === "root" ? "translateX(0%)" : "translateX(-2rem)";
+  const showRootPanel = viewModel.isCompact || viewModel.sidebarPage === "root";
+  const rootPanelTransform = showRootPanel ? "translateX(0%)" : "translateX(-2rem)";
   const createEventPanelTransform =
     viewModel.sidebarPage === "createEvent"
       ? "translateX(0%)"
@@ -1590,7 +1406,7 @@ export default function LeftSidebar() {
   const showChatTopBarReveal = viewModel.showMobileTopBar && isChatPath;
 
   return (
-    <>
+    <Sidebar open={viewModel.isOpen}>
       {showChatTopBarReveal ? (
         <button
           data-app-navigation="reveal"
@@ -1648,11 +1464,9 @@ export default function LeftSidebar() {
                 href="/"
                 onClick={viewModel.goHomeFromSidebar}
                 className="flex h-11 shrink-0 items-center justify-end"
+                aria-label="Envitefy home"
               >
-                <EnvitefyWordmark
-                  className="text-[44px] leading-none"
-                  scaled={false}
-                />
+                <Image src={sidebarBrandWordmark} alt="" className="h-auto w-[150px] object-contain" priority />
               </Link>
             </div>
           </div>
@@ -1671,45 +1485,124 @@ export default function LeftSidebar() {
         aria-hidden="true"
       />
 
-      {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: the mobile condition assigns role=dialog with aria-modal together. */}
-      <div
+      <SidebarBody
         ref={viewModel.asideRef}
         data-app-navigation="sidebar"
+        data-sidebar-state={viewModel.isCompact ? "collapsed" : "expanded"}
+        data-sidebar-pinned={sidebar.desktopPinned}
+        width={viewModel.sidebarWidth}
+        onPointerEnter={(event) => {
+          if (!viewModel.isDesktop || event.pointerType !== "mouse") return;
+          desktopHoverRef.current = true;
+          sidebar.setDesktopPeek(true);
+        }}
+        onPointerLeave={() => {
+          if (!viewModel.isDesktop) return;
+          desktopHoverRef.current = false;
+          sidebar.setDesktopPeek(desktopFocusRef.current || viewModel.menuOpen);
+        }}
+        onFocusCapture={(event) => {
+          if (!viewModel.isDesktop || !event.target.matches(":focus-visible")) return;
+          desktopFocusRef.current = true;
+          sidebar.setDesktopPeek(true);
+        }}
+        onPointerDownCapture={() => {
+          desktopFocusRef.current = false;
+        }}
+        onKeyDownCapture={(event) => {
+          if (!viewModel.isDesktop || !["Tab", "Enter", " "].includes(event.key)) return;
+          desktopFocusRef.current = true;
+          sidebar.setDesktopPeek(true);
+        }}
+        onBlurCapture={(event) => {
+          if (!viewModel.isDesktop || event.currentTarget.contains(event.relatedTarget)) return;
+          // Switching a keyboard-selected menu makes its old panel inert.
+          // Move focus into the new panel before allowing the rail to close.
+          if (desktopFocusRef.current && !event.relatedTarget) {
+            window.requestAnimationFrame(() => {
+              const aside = viewModel.asideRef.current;
+              if (!aside) return;
+              if (document.activeElement === document.body) {
+                aside.querySelector<HTMLElement>('[data-sidebar-detail-panel]:not([inert]) button, [data-sidebar-root-panel]:not([inert]) a[href]')?.focus();
+              }
+              desktopFocusRef.current = aside.contains(document.activeElement);
+              sidebar.setDesktopPeek(desktopFocusRef.current || desktopHoverRef.current);
+            });
+            return;
+          }
+          desktopFocusRef.current = false;
+          sidebar.setDesktopPeek(desktopHoverRef.current);
+        }}
         onClickCapture={animateSidebarPress}
         role={!viewModel.isDesktop && viewModel.isOpen ? "dialog" : undefined}
         aria-modal={!viewModel.isDesktop && viewModel.isOpen ? true : undefined}
         aria-hidden={!viewModel.isDesktop && !viewModel.isOpen ? true : undefined}
+        inert={!viewModel.isDesktop && !viewModel.isOpen}
         tabIndex={-1}
-        className={`nav-chrome-sidebar-surface fixed left-0 top-0 z-[6000] flex h-full flex-col border-r border-[rgba(112,97,168,0.14)] ${viewModel.overflowClass} transition-[transform,opacity,width] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${viewModel.pointerClass} lg:flex`}
+        className={`nav-chrome-sidebar-surface fixed left-0 top-0 z-[6000] flex h-full max-w-[100vw] flex-col border-r border-[rgba(112,97,168,0.14)] ${viewModel.overflowClass} transition-[transform,opacity] duration-200 motion-reduce:transition-none ${viewModel.pointerClass} lg:flex`}
         style={{
-          width: viewModel.sidebarWidth,
           height: viewModel.isDesktop ? "100%" : "100dvh",
           transform: viewModel.sidebarTransform,
           opacity: viewModel.isDesktop ? 1 : viewModel.isOpen ? 1 : 0,
-          boxShadow: "0 24px 60px rgba(88, 71, 171, 0.18)",
+          boxShadow: viewModel.isCompact ? "none" : "8px 0 40px rgba(88, 71, 171, 0.06)",
         }}
         aria-label="Sidebar"
       >
         <div className="relative h-full w-full transition-all duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]">
-          <div className="relative h-full w-full overflow-hidden">
+          <div
+            className="relative h-full max-w-[100vw] overflow-hidden"
+            data-sidebar-content-canvas
+            style={{ width: viewModel.isDesktop ? SIDEBAR_WIDTH_REM : "100%" }}
+          >
             <div className="nav-chrome-sidebar-surface absolute inset-0 z-[1] flex h-full flex-col">
-              <div className="relative z-10 flex-shrink-0 px-5 pb-4 pt-[calc(1.25rem+env(safe-area-inset-top,0px))] lg:pt-5">
+              <div className={`relative z-10 flex h-[116px] shrink-0 items-start pt-[calc(1.25rem+env(safe-area-inset-top,0px))] lg:pt-5 ${viewModel.isCompact ? "px-[17px]" : "px-6"}`}>
                 <Link
                   href="/"
                   onClick={viewModel.goHomeFromSidebar}
-                  className="inline-flex min-h-11 max-w-full items-center"
+                  className="inline-flex h-14 max-w-full items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
                   aria-label="Envitefy home"
                 >
-                  <EnvitefyWordmark className="text-[3.6rem] leading-none" scaled={false} />
+                  {viewModel.isCompact ? (
+                    <Image src={sidebarBrandIcon} alt="" className="h-11 w-11 shrink-0 object-contain" priority />
+                  ) : (
+                    <Image src={sidebarBrandWordmark} alt="" className="h-auto w-[196px] object-contain" priority />
+                  )}
                 </Link>
+                {viewModel.isDesktop ? (
+                  <button
+                    type="button"
+                    aria-label={sidebar.desktopPinned ? "Collapse sidebar" : "Keep sidebar open"}
+                    aria-pressed={sidebar.desktopPinned}
+                    onClick={() => {
+                      const pinned = !sidebar.desktopPinned;
+                      sidebar.setDesktopPinned(pinned);
+                      if (!pinned) {
+                        desktopFocusRef.current = false;
+                        sidebar.setDesktopPeek(false);
+                      }
+                    }}
+                    className={`absolute inline-flex h-11 w-11 items-center justify-center rounded-xl transition-colors hover:bg-white hover:text-[#6b5fc2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${sidebar.desktopPinned ? "bg-white/70 text-[#6b5fc2]" : "text-[rgba(107,95,194,0.64)]"} ${viewModel.isCompact ? "bottom-0 left-[17px]" : "right-4 top-7"}`}
+                  >
+                    {viewModel.isCompact ? <PanelLeftOpen size={18} aria-hidden="true" /> : <Pin size={18} aria-hidden="true" className={sidebar.desktopPinned ? "fill-current" : undefined} />}
+                  </button>
+                ) : (
+                  <button type="button" aria-label="Close navigation" onClick={() => sidebar.setIsCollapsed(true)} className="absolute right-3 top-7 flex h-11 w-11 items-center justify-center rounded-xl text-[#77718f] hover:bg-white focus-visible:ring-2 focus-visible:ring-violet-500">
+                    <X size={20} aria-hidden="true" />
+                  </button>
+                )}
               </div>
 
               <div className="flex min-h-0 flex-1 flex-col">
                 <div className="relative min-h-0 flex-1 overflow-clip">
                   <div
-                    className={`${SIDEBAR_PANEL_CLASS} z-[5]`}
-                    style={panelStyle(rootPanelTransform, viewModel.sidebarPage === "root")}
-                    aria-hidden={viewModel.sidebarPage !== "root"}
+                    className={`${SIDEBAR_PANEL_CLASS} !px-3 z-[5]`}
+                    data-sidebar-root-panel
+                    style={{
+                      ...panelStyle(rootPanelTransform, showRootPanel),
+                      width: viewModel.isCompact ? SIDEBAR_COLLAPSED_REM : "100%",
+                    }}
+                    aria-hidden={!showRootPanel}
+                    inert={!showRootPanel}
                   >
                     <RootNavigationPanel
                       pathname={pathname}
@@ -1735,6 +1628,8 @@ export default function LeftSidebar() {
                   <div
                     className={`${SIDEBAR_LIST_PANEL_CLASS} z-[9]`}
                     style={panelStyle(adminPanelTransform, viewModel.sidebarPage === "admin")}
+                    data-sidebar-detail-panel
+                    inert={viewModel.isCompact || (viewModel.sidebarPage !== "admin")}
                     aria-hidden={viewModel.sidebarPage !== "admin"}
                   >
                     <AdminNavigationPanel pathname={pathname} onBack={viewModel.backToRoot} />
@@ -1746,6 +1641,8 @@ export default function LeftSidebar() {
                       aiThreadsPanelTransform,
                       viewModel.sidebarPage === "aiThreads",
                     )}
+                    data-sidebar-detail-panel
+                    inert={viewModel.isCompact || (viewModel.sidebarPage !== "aiThreads")}
                     aria-hidden={viewModel.sidebarPage !== "aiThreads"}
                   >
                     <AiThreadsPanel
@@ -1764,6 +1661,8 @@ export default function LeftSidebar() {
                       createEventPanelTransform,
                       viewModel.sidebarPage === "createEvent",
                     )}
+                    data-sidebar-detail-panel
+                    inert={viewModel.isCompact || (viewModel.sidebarPage !== "createEvent")}
                     aria-hidden={viewModel.sidebarPage !== "createEvent"}
                   >
                     <CreatePanel
@@ -1784,6 +1683,8 @@ export default function LeftSidebar() {
                       createEventOtherPanelTransform,
                       viewModel.sidebarPage === "createEventOther",
                     )}
+                    data-sidebar-detail-panel
+                    inert={viewModel.isCompact || (viewModel.sidebarPage !== "createEventOther")}
                     aria-hidden={viewModel.sidebarPage !== "createEventOther"}
                   >
                     <CreatePanel
@@ -1801,6 +1702,8 @@ export default function LeftSidebar() {
                   <div
                     className={`${SIDEBAR_LIST_PANEL_CLASS} z-[15]`}
                     style={panelStyle(myEventsPanelTransform, showOwnerEventsPanel)}
+                    data-sidebar-detail-panel
+                    inert={viewModel.isCompact || (!showOwnerEventsPanel)}
                     aria-hidden={!showOwnerEventsPanel}
                   >
                     <EventListPanel
@@ -1824,6 +1727,8 @@ export default function LeftSidebar() {
                       invitedEventsPanelTransform,
                       viewModel.sidebarPage === "invitedEvents",
                     )}
+                    data-sidebar-detail-panel
+                    inert={viewModel.isCompact || (viewModel.sidebarPage !== "invitedEvents")}
                     aria-hidden={viewModel.sidebarPage !== "invitedEvents"}
                   >
                     <EventListPanel
@@ -1844,8 +1749,9 @@ export default function LeftSidebar() {
                   <div
                     className={`${SIDEBAR_LIST_PANEL_CLASS} z-[20]`}
                     style={panelStyle(draftsPanelTransform, viewModel.sidebarPage === "drafts")}
+                    data-sidebar-detail-panel
+                    inert={viewModel.isCompact || (viewModel.sidebarPage !== "drafts")}
                     aria-hidden={viewModel.sidebarPage !== "drafts"}
-                    inert={viewModel.sidebarPage !== "drafts"}
                   >
                     <DraftsPanel
                       drafts={drafts}
@@ -1857,6 +1763,8 @@ export default function LeftSidebar() {
                   <div
                     className={`${SIDEBAR_EVENT_PANEL_CLASS} z-[30]`}
                     style={panelStyle(eventPanelTransform, showEventContextPanel)}
+                    data-sidebar-detail-panel
+                    inert={viewModel.isCompact || (!showEventContextPanel)}
                     aria-hidden={!showEventContextPanel}
                   >
                     <EventSidebar
@@ -1878,7 +1786,11 @@ export default function LeftSidebar() {
               <FooterProfileMenu
                 isOpen={viewModel.isOpen}
                 menuOpen={viewModel.menuOpen}
-                setMenuOpen={viewModel.setMenuOpen}
+                setMenuOpen={(next) => {
+                  const open = typeof next === "function" ? next(viewModel.menuOpen) : next;
+                  viewModel.setMenuOpen(open);
+                  if (viewModel.isDesktop) sidebar.setDesktopPeek(open || desktopHoverRef.current || desktopFocusRef.current);
+                }}
                 buttonRef={viewModel.buttonRef}
                 menuRef={viewModel.menuRef}
                 profileInitials={viewModel.profileInitials}
@@ -1891,7 +1803,7 @@ export default function LeftSidebar() {
             </div>
           </div>
         </div>
-      </div>
-    </>
+      </SidebarBody>
+    </Sidebar>
   );
 }

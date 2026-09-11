@@ -10,13 +10,16 @@ export function initialEventPreviewDevice(width: number): EventPreviewDevice {
   return width < 768 ? "mobile" : width < 1024 ? "tablet" : "desktop";
 }
 
-/** The owner opens the event itself; the editor and guest preview are separate destinations. */
-export function buildOwnerEventViewHref(eventHref: string): string {
+/** Cards open in Design; event pages open in the event viewer. */
+export function buildOwnerEventViewHref(
+  eventHref: string,
+  productKind: "card" | "event" | "signup" | "unknown" = "event",
+): string {
   const url = new URL(eventHref, "https://envitefy.local");
   for (const key of ["edit", "preview", "embed", "returnTo", "view", "updated", "created", "t"]) {
     url.searchParams.delete(key);
   }
-  url.searchParams.set("tab", "event");
+  url.searchParams.set("tab", productKind === "card" ? "design" : "event");
   return `${url.pathname}${url.search}${url.hash}`;
 }
 

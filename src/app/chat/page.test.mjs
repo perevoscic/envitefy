@@ -637,6 +637,18 @@ test("/chat preview uses real generation stages and keeps streamed artwork visib
   assert.doesNotMatch(preview, /value=\{buildProgress\}/);
 });
 
+test("/chat reserves fullscreen device previews for event pages", () => {
+  const preview = readSource("src/app/chat/ChatProductPreview.tsx");
+  assert.match(preview, /const isEventPagePreview = selectedOutput === "event_page";/);
+  assert.match(preview, /if \(!isPreviewOpen \|\| !isEventPagePreview\) return;/);
+  assert.match(preview, /isEventPagePreview \? \(\s*<dialog[\s\S]*?<EventPreviewViewport/);
+  const artworkPreview = preview.slice(preview.indexOf("<ArtworkPreviewDialog"));
+  assert.match(artworkPreview, /open=\{isPreviewOpen\}/);
+  assert.match(artworkPreview, /<StudioShowcaseLiveCard[\s\S]*?previewMode/);
+  assert.match(artworkPreview, /<img src=\{previewImageUrl\}/);
+  assert.doesNotMatch(artworkPreview, /EventPreviewViewport|<iframe|<dialog|fullscreen/);
+});
+
 test("/cht typo route is not present", () => {
   assert.equal(fs.existsSync(path.join(repoRoot, "src/app/cht/page.tsx")), false);
 });

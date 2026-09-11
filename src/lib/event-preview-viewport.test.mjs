@@ -29,6 +29,11 @@ test("sidebar event links enter the owner view without stale editor or preview f
   );
 });
 
+test("owned Live Cards and flyers open Design while event pages keep the event viewer", () => {
+  assert.equal(buildOwnerEventViewHref("/event/card?tab=event&preview=owner", "card"), "/event/card?tab=design");
+  assert.equal(buildOwnerEventViewHref("/event/meet?tab=design", "event"), "/event/meet?tab=event");
+});
+
 test("Close keeps the requested workspace destination and rejects external redirects", () => {
   const fallback = "/smart-signup-form/school";
   assert.equal(

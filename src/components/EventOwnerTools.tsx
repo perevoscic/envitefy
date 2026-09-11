@@ -26,12 +26,13 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { type EventContextTab, useSidebar } from "@/app/sidebar-context";
 import EventDeleteModal from "@/components/EventDeleteModal";
+import ArtworkPreviewDialog from "@/components/ArtworkPreviewDialog";
 import EventPreviewViewport from "@/components/EventPreviewViewport";
 import EventOwnerView from "@/components/EventOwnerView";
 import EventResponseDashboard from "@/components/EventResponseDashboard";
-import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileTopbarSuppressor";
 import { useUnsavedProgress } from "@/components/UnsavedProgressProvider";
 import { SharedStudioCardFrame } from "@/components/studio/SharedStudioCardPage";
+import { withDirectRsvpInvitationData } from "@/lib/studio/live-card-rsvp";
 import { changedCardEditFields } from "@/lib/studio/card-edit-fields";
 import { isRegistryOnlyCardEdit, normalizeCardRegistryLink, readCardRegistryLink } from "@/lib/studio/card-registry";
 import { hasActionableRsvp } from "@/lib/dashboard-data";
@@ -337,6 +338,7 @@ function resolveProductPreviewSurface(
   ).toLowerCase();
   const primaryOutput = getPrimaryEventProductOutput(data);
   if (primaryOutput && !isCardFirstEventProduct(primaryOutput)) return "event-page";
+  if (isCardFirstEventProduct(primaryOutput) && imageUrl) return "studio-card";
   if (ownerDefaultSurface === "card" && imageUrl) return "studio-card";
   if (ownerDefaultSurface === "event" || ownerDefaultSurface === "signup") return "event-page";
 
@@ -744,7 +746,27 @@ export default function EventOwnerTools({
   } | null>(null);
   const productViewerTrigger = useRef<HTMLElement | null>(null);
   const [publicUrlOverride, setPublicUrlOverride] = useState<string | null>(null);
-  const serverPreview = useMemo(() => buildProductPreviewModel(eventData), [eventData]);
+  const serverPreview = useMemo(() => {
+    const model = buildProductPreviewModel(eventData);
+    return {
+      ...model,
+      invitationData: model.invitationData
+        ? withDirectRsvpInvitationData({
+            invitationData: model.invitationData,
+            row: {
+              id: eventId,
+              data: eventData,
+              public_slug: firstString(
+                eventData?.publicSlug,
+                eventData?.public_slug,
+                readSlugFromHref(ownerHref),
+              ),
+            },
+            title: eventTitle,
+          })
+        : null,
+    };
+  }, [eventData, eventId, eventTitle, ownerHref]);
   const [savedPreview, setSavedPreview] = useState<{
     eventId: string;
     sourceImageUrl: string | null;
@@ -972,7 +994,6 @@ export default function EventOwnerTools({
         onClose={() => setProductViewerMode(null)}
         onReturnFocus={() => productViewerTrigger.current?.focus()}
       />
-      {productViewerMode !== null ? <OwnerPreviewMobileTopbarSuppressor /> : null}
     </main>
   );
 }
@@ -1095,7 +1116,6 @@ function EventProductPreview({
   publicUrl,
   embeddedPreviewUrl,
   className = "",
-  heightMode = "fixed",
   onViewCurrent,
   onClose,
 }: {
@@ -1105,11 +1125,9 @@ function EventProductPreview({
   publicUrl: string;
   embeddedPreviewUrl: string;
   className?: string;
-  heightMode?: "fixed" | "fullscreen";
   onViewCurrent?: () => void;
   onClose?: () => void;
 }) {
-  const fullscreen = heightMode === "fullscreen";
   const isStudioCard = preview.surface === "studio-card" && Boolean(preview.imageUrl);
   const cardAspectRatio = preview.invitationData?.heroTextMode === "image" ? 2 / 3 : 9 / 16;
   const previewAction = onViewCurrent ? (
@@ -1125,13 +1143,10 @@ function EventProductPreview({
       className={`relative ${
         isStudioCard
           ? "h-auto min-h-0"
-          : fullscreen ? "h-[100dvh] min-h-0"
           : "h-[min(680px,calc(100dvh-5rem))] min-h-[480px] lg:h-[min(760px,calc(100dvh-2.5rem))] lg:max-h-[760px]"
       } ${className}`.trim()}
       style={isStudioCard ? {
-        maxWidth: fullscreen
-          ? `min(calc(100vw - 1.5rem), calc((100dvh - 1.5rem) * ${cardAspectRatio}))`
-          : `calc(min(760px, 100dvh - 2.5rem) * ${cardAspectRatio})`,
+        maxWidth: `calc(min(760px, 100dvh - 2.5rem) * ${cardAspectRatio})`,
       } : undefined}
       aria-label="Product preview"
     >
@@ -1155,17 +1170,10 @@ function EventProductPreview({
             closeButtonPlacement="overlay"
             className="w-full"
             frameClassName="!w-full !max-w-full !rounded-[28px] !border-0 !bg-transparent"
-            artworkClassName={fullscreen ? "!rounded-[28px]" : undefined}
             style={{ width: "100%" }}
           />
         ) : publicUrl ? (
-          <div
-            className={
-              fullscreen
-                ? "relative h-full w-full overflow-hidden bg-white"
-                : "relative h-full w-auto max-w-full aspect-[9/16] overflow-hidden rounded-[28px] bg-white shadow-2xl"
-            }
-          >
+          <div className="relative h-full w-auto max-w-full aspect-[9/16] overflow-hidden rounded-[28px] bg-white shadow-2xl">
             <iframe
               src={embeddedPreviewUrl}
               title={`${eventTitle || "Event"} preview`}
@@ -1576,8 +1584,9 @@ function OwnerProductViewer({
   onClose: () => void;
   onReturnFocus: () => void;
 }) {
+  const isArtwork = preview.surface === "studio-card";
   useEffect(() => {
-    if (!open) return;
+    if (!open || isArtwork) return;
     const root = document.documentElement;
     const previousOverflow = root.style.getPropertyValue("overflow");
     const previousPriority = root.style.getPropertyPriority("overflow");
@@ -1589,7 +1598,28 @@ function OwnerProductViewer({
         root.style.removeProperty("overflow");
       }
     };
-  }, [open]);
+  }, [open, isArtwork]);
+
+  if (isArtwork) {
+    return (
+      <ArtworkPreviewDialog
+        open={open}
+        title={heading}
+        aspectRatio={preview.invitationData?.heroTextMode === "image" ? 2 / 3 : 9 / 16}
+        onClose={onClose}
+        onReturnFocus={onReturnFocus}
+      >
+        <EventProductPreview
+          eventId={eventId}
+          eventTitle={eventTitle}
+          preview={preview}
+          publicUrl={publicUrl}
+          embeddedPreviewUrl={embeddedPreviewUrl}
+          className="mx-auto w-full"
+        />
+      </ArtworkPreviewDialog>
+    );
+  }
 
   return (
     <Dialog.Root open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
@@ -1603,21 +1633,9 @@ function OwnerProductViewer({
           <Dialog.Title className="sr-only">{heading}</Dialog.Title>
           <EventPreviewViewport
             title={eventTitle}
-            src={preview.surface === "studio-card" && preview.imageUrl ? undefined : embeddedPreviewUrl}
+            src={embeddedPreviewUrl}
             onClose={onClose}
-          >
-            <div className="flex min-h-[100dvh] items-center justify-center bg-slate-950 p-3">
-              <EventProductPreview
-                eventId={eventId}
-                eventTitle={eventTitle}
-                preview={preview}
-                publicUrl={publicUrl}
-                embeddedPreviewUrl={embeddedPreviewUrl}
-                className="mx-auto w-full"
-                heightMode="fullscreen"
-              />
-            </div>
-          </EventPreviewViewport>
+          />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

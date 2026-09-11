@@ -2,13 +2,12 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import SharedStudioCardPage from "@/components/studio/SharedStudioCardPage";
-import EventPreviewViewport from "@/components/EventPreviewViewport";
-import { buildEmbeddedEventPreviewHref } from "@/lib/event-preview-viewport";
 import { absoluteUrl } from "@/lib/absolute-url";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { sanitizeGuestCopy, sanitizeGuestTitle } from "@/lib/concierge/public-copy";
 import { getEventHistoryPublicRenderBySlugOrId } from "@/lib/db";
 import { resolveEventShareImage, toPublicShareMediaUrl } from "@/lib/share-image";
+import { withDirectRsvpInvitationData } from "@/lib/studio/live-card-rsvp";
 import { resolveEventCelebrationKind } from "@/utils/event-celebration";
 import { buildEventPath, buildStudioCardPath } from "@/utils/event-url";
 
@@ -308,43 +307,6 @@ function resolveSharedCardMetaDescription(invitationData: Record<string, unknown
   );
 }
 
-function withDirectRsvpInvitationData(args: {
-  invitationData: Record<string, unknown>;
-  row: Awaited<ReturnType<typeof getEventHistoryPublicRenderBySlugOrId>>;
-  title: string;
-}) {
-  if (!args.row) return args.invitationData;
-  const data = isRecord(args.row.data) ? args.row.data : {};
-  const rsvp = isRecord(data.rsvp) ? data.rsvp : null;
-  const rsvpEnabled =
-    data.rsvpEnabled === true ||
-    rsvp?.isEnabled === true ||
-    rsvp?.enabled === true ||
-    rsvp?.direct === true ||
-    (typeof data.rsvpEnabled === "string" && data.rsvpEnabled.toLowerCase() === "true");
-  if (!rsvpEnabled) return args.invitationData;
-
-  const eventDetails = isRecord(args.invitationData.eventDetails)
-    ? args.invitationData.eventDetails
-    : {};
-  return {
-    ...args.invitationData,
-    eventDetails: {
-      ...eventDetails,
-      eventId: args.row.id,
-      rsvpEnabled: true,
-      rsvpMode: readFirstString(eventDetails.rsvpMode, "envitefy"),
-      rsvpName: readFirstString(eventDetails.rsvpName, data.rsvpName, data.hostName, "Host"),
-      rsvpUrl: `${buildEventPath(
-        args.row.id,
-        args.title,
-        undefined,
-        args.row.public_slug,
-      )}#event-rsvp`,
-    },
-  };
-}
-
 async function resolveSharedCard(value: string) {
   const row = await getEventHistoryPublicRenderBySlugOrId({ value, userId: undefined });
   if (!row) return null;
@@ -453,7 +415,7 @@ export default async function SharedCardPage(props: {
     sharedCard.title,
     undefined,
     sharedCard.row.public_slug,
-  )}?tab=event`;
+  )}?tab=design`;
   const returnHref = explicitOwnerPreview
     ? sanitizeInternalReturnHref(readSearchParam(awaitedSearchParams.returnTo)) ||
       ownerWorkspaceHref
@@ -465,10 +427,6 @@ export default async function SharedCardPage(props: {
 
   if (isOwner && !explicitOwnerPreview) {
     redirect(ownerWorkspaceHref);
-  }
-
-  if (explicitOwnerPreview && !ownerPreviewEmbedded) {
-    return <EventPreviewViewport title={sharedCard.title} src={buildEmbeddedEventPreviewHref(canonical)} returnHref={returnHref} fullscreen />;
   }
 
   const shareUrl = await absoluteUrl(canonical);

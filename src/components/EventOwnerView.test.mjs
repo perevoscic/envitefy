@@ -9,6 +9,14 @@ import ts from "typescript";
 
 const nativeRequire = createRequire(import.meta.url);
 const mocks = {
+  "@radix-ui/react-dialog": {
+    Root: ({ open, children }) => open ? children : null,
+    Portal: ({ children }) => children,
+    Overlay: () => null,
+    Content: ({ children, className, style, "data-artwork-preview": artwork }) => React.createElement("div", { role: "dialog", className, style, "data-artwork-preview": artwork }, children),
+    Title: ({ children }) => React.createElement("h2", null, children),
+    Close: ({ children }) => children,
+  },
   "lucide-react": new Proxy({}, { get: () => (props) => React.createElement("svg", props) }),
   "next/navigation": { useRouter: () => ({}) },
   "@/app/sidebar-context": { useSidebar: () => ({}) },
@@ -17,7 +25,10 @@ const mocks = {
     default: (props) => React.createElement("button", { "aria-label": props.ariaLabel }, "Delete"),
   },
   "@/components/EventResponseDashboard": { __esModule: true, default: () => "Guest responses" },
-  "@/components/OwnerPreviewMobileTopbarSuppressor": { __esModule: true, default: () => null },
+  "@/components/OwnerPreviewMobileTopbarSuppressor": {
+    __esModule: true,
+    default: () => React.createElement("span", { "data-navigation-suppressed": true }),
+  },
   "@/components/UnsavedProgressProvider": { useUnsavedProgress() {} },
   "@/components/studio/SharedStudioCardPage": { SharedStudioCardFrame: () => "Card artwork" },
   "@/lib/dashboard-data": { hasActionableRsvp: (data) => data?.rsvpEnabled === true },
@@ -37,7 +48,7 @@ function load(relative, cache = new Map()) {
   if (cache.has(file)) return cache.get(file).exports;
   const module = { exports: {} };
   cache.set(file, module);
-  const code = ts.transpileModule(readFileSync(file, "utf8"), {
+  let code = ts.transpileModule(readFileSync(file, "utf8"), {
     compilerOptions: {
       module: ts.ModuleKind.CommonJS,
       target: ts.ScriptTarget.ES2022,
@@ -45,7 +56,11 @@ function load(relative, cache = new Map()) {
       jsx: ts.JsxEmit.ReactJSX,
     },
   }).outputText;
+  if (file.endsWith("/EventOwnerTools.tsx")) code += "\nexports.TestProductViewer = OwnerProductViewer;";
   function require(name) {
+    if (name === "./OwnerPreviewMobileTopbarSuppressor") {
+      return mocks["@/components/OwnerPreviewMobileTopbarSuppressor"];
+    }
     if (name in mocks) return mocks[name];
     if (!name.startsWith(".") && !name.startsWith("@/")) return nativeRequire(name);
     const base = name.startsWith("@/")
@@ -57,7 +72,9 @@ function load(relative, cache = new Map()) {
   return module.exports;
 }
 const OwnerTools = load("src/components/EventOwnerTools.tsx").default;
+const ProductViewer = load("src/components/EventOwnerTools.tsx").TestProductViewer;
 const PreviewViewport = load("src/components/EventPreviewViewport.tsx").default;
+const { withDirectRsvpInvitationData } = load("src/lib/studio/live-card-rsvp.ts");
 const render = (data, initialTab = "design") =>
   renderToStaticMarkup(
     React.createElement(OwnerTools, {
@@ -88,7 +105,9 @@ test("event pages open directly with owner actions and responsive device control
     assert.match(html, /aria-label="Share event"/);
     assert.match(html, /aria-label="Delete event"/);
     assert.match(html, /aria-label="Back to My Events"/);
-    assert.match(html, /fixed inset-0/);
+    assert.match(html, /data-owner-event-view/);
+    assert.match(html, /left-\[var\(--app-sidebar-width,0px\)\]/);
+    assert.doesNotMatch(html, /data-navigation-suppressed/);
     assert.doesNotMatch(
       html,
       /Manage your event|Your event page|Event basics|data-event-page-editor/,
@@ -112,13 +131,73 @@ test("Live Cards retain artwork editing and RSVP dashboards remain available", (
   assert.doesNotMatch(dashboard, /data-event-page-editor/);
 });
 
+test("Live Cards and flyers open in Design without fullscreen or device controls", () => {
+  for (const primaryOutput of ["live_card", "digital_flyer", "invitation", "printable_flyer"]) {
+    const html = render({
+      primaryOutput,
+      coverImageUrl: "/card.webp",
+      publicEvent: { ownerDefaultSurface: "event" },
+    });
+    assert.match(html, /Card artwork/);
+    assert.match(html, /Edit card/);
+    assert.match(html, /Preview changes/);
+    assert.doesNotMatch(html, /<iframe|Preview device|data-navigation-suppressed|data-owner-event-view/);
+  }
+});
+
 test("guest previews keep device controls without the owner's event actions", () => {
   const html = renderToStaticMarkup(React.createElement(PreviewViewport, {
     title: "Event preview", src: "/event/test?preview=owner&embed=dashboard-preview", returnHref: "/", fullscreen: true,
   }));
   assert.match(html, /aria-label="Close preview"/);
   assert.match(html, /aria-label="Preview device"/);
+  assert.match(html, /data-navigation-suppressed/);
   assert.doesNotMatch(html, /Edit event|Delete event|Event actions/);
+});
+
+test("opening artwork previews keeps native cards in a bounded dialog; event previews retain devices", () => {
+  const props = {
+    open: true, heading: "Preview card", eventId: "meet", eventTitle: "Friday Night",
+    publicUrl: "/card/meet", embeddedPreviewUrl: "/event/meet?preview=owner&embed=dashboard-preview",
+    onClose() {}, onReturnFocus() {},
+  };
+  const card = renderToStaticMarkup(React.createElement(ProductViewer, {
+    ...props, preview: { surface: "studio-card", imageUrl: "/card.webp", invitationData: { heroTextMode: "image" } },
+  }));
+  assert.match(card, /data-artwork-preview/);
+  assert.match(card, /Card artwork/);
+  assert.match(card, /aria-label="Close preview"/);
+  assert.doesNotMatch(card, /<iframe|Preview device|data-navigation-suppressed|h-\[100dvh\]/);
+  const event = renderToStaticMarkup(React.createElement(ProductViewer, {
+    ...props, preview: { surface: "event-page", imageUrl: "/hero.webp" },
+  }));
+  assert.match(event, /aria-label="Preview device"/);
+  assert.match(event, /data-navigation-suppressed/);
+  assert.doesNotMatch(event, /data-artwork-preview/);
+});
+
+test("owner and public Live Cards share RSVP metadata without losing other guest details", () => {
+  const invitationData = {
+    eventDetails: { startTime: "19:00", location: "Panther Stadium", registryLink: "https://example.com/gifts" },
+  };
+  for (const data of [{ rsvpEnabled: true }, { rsvpEnabled: "true" }, { rsvp: { direct: true } }]) {
+    const result = withDirectRsvpInvitationData({
+      invitationData,
+      row: { id: "meet", data, public_slug: "friday-night" },
+      title: "Friday Night",
+    });
+    assert.deepEqual(result.eventDetails, {
+      ...invitationData.eventDetails,
+      eventId: "meet",
+      rsvpEnabled: true,
+      rsvpMode: "envitefy",
+      rsvpName: "Host",
+      rsvpUrl: "/event/friday-night#event-rsvp",
+    });
+  }
+  assert.equal(withDirectRsvpInvitationData({
+    invitationData, row: { id: "meet", data: {} }, title: "Friday Night",
+  }), invitationData);
 });
 
 test("gymnastics editor retains support for existing section links", () => {

@@ -1402,12 +1402,15 @@ export default async function EventPage({
   }
 
   if (showOwnerEventView && !editParam) {
+    if (cardFirstCanonical) {
+      redirect(`${ownerEventHref}?tab=design`);
+    }
     return (
       <EventOwnerView
         eventId={row.id}
         title={title}
         publicHref={publicEventHref}
-        editHref={cardFirstCanonical ? `${ownerEventHref}?tab=design` : resolveEditHref(row.id, data, title)}
+        editHref={resolveEditHref(row.id, data, title)}
       />
     );
   }

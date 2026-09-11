@@ -6,7 +6,7 @@ import { type ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom";
 import {
   DEFAULT_PREVIEW_BACKGROUND,
-  readEventPreviewBackground,
+  createEventPreviewBackgroundController,
 } from "@/lib/event-preview-background";
 import {
   EVENT_PREVIEW_DEVICES,
@@ -28,6 +28,7 @@ type Props = {
   onClose?: () => void;
   returnHref?: string;
   fullscreen?: boolean;
+  preserveNavigation?: boolean;
   initialDevice?: EventPreviewDevice;
   onExpand?: () => void;
   actions?: ReactNode;
@@ -42,6 +43,7 @@ export default function EventPreviewViewport({
   onClose,
   returnHref,
   fullscreen = false,
+  preserveNavigation = false,
   initialDevice,
   onExpand,
   actions,
@@ -125,11 +127,12 @@ export default function EventPreviewViewport({
 
   useEffect(() => {
     if (!frameDocument) return;
+    const backgroundController = createEventPreviewBackgroundController(frameDocument);
     let animationFrame = 0;
     const syncBackground = () => {
       cancelAnimationFrame(animationFrame);
       animationFrame = requestAnimationFrame(() => {
-        const next = readEventPreviewBackground(frameDocument);
+        const next = backgroundController.read();
         setBackground((previous) =>
           JSON.stringify(previous) === JSON.stringify(next) ? previous : next,
         );
@@ -148,6 +151,7 @@ export default function EventPreviewViewport({
     return () => {
       cancelAnimationFrame(animationFrame);
       observer.disconnect();
+      backgroundController.dispose();
       frameDocument.removeEventListener("load", syncBackground, true);
       frameDocument.defaultView?.removeEventListener("resize", syncBackground);
     };
@@ -180,7 +184,7 @@ export default function EventPreviewViewport({
       className={`${fullscreen ? "fixed inset-0 z-[7001] h-[100dvh]" : "h-full min-h-0"} flex w-full flex-col`}
       style={background}
     >
-      {fullscreen || onClose ? <OwnerPreviewMobileTopbarSuppressor /> : null}
+      {!preserveNavigation && (fullscreen || onClose) ? <OwnerPreviewMobileTopbarSuppressor /> : null}
       <header
         className={`relative z-10 grid shrink-0 ${actions ? "grid-cols-[1fr_auto] sm:grid-cols-[1fr_auto_1fr]" : "grid-cols-[1fr_auto_1fr]"} items-center gap-2 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-5`}
       >

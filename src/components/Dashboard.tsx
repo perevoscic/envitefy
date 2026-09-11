@@ -2094,7 +2094,7 @@ export default function Dashboard({
         </div>
       )}
       {scanStatus !== "idle" && (
-        <div className="fixed left-0 right-0 top-0 z-[7000] flex h-[100svh] items-start justify-center overflow-y-auto bg-[#f4eeff]/95 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-[calc(env(safe-area-inset-top)+5.75rem)] md:inset-y-0 md:h-auto md:items-center md:p-4 md:bg-[#f4eeff]/78 md:backdrop-blur-md lg:left-[20rem]">
+        <div className="fixed left-0 right-0 top-0 z-[7000] flex h-[100svh] items-start justify-center overflow-y-auto bg-[#f4eeff]/95 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-[calc(env(safe-area-inset-top)+5.75rem)] md:inset-y-0 md:h-auto md:items-center md:p-4 md:bg-[#f4eeff]/78 md:backdrop-blur-md lg:left-[var(--app-sidebar-width,20rem)]">
           <div role="status" aria-live="polite" className="w-full max-w-md">
             <SnapProcessingCard
               status={scanStatus}

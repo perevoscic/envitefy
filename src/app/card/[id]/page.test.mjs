@@ -66,11 +66,13 @@ test("shared card route carries direct RSVP metadata into live-card actions", ()
   const pageSource = readSource("src/app/card/[id]/page.tsx");
   const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
 
-  assert.match(pageSource, /function withDirectRsvpInvitationData/);
-  assert.match(pageSource, /eventId: args\.row\.id/);
-  assert.match(pageSource, /rsvpMode: readFirstString\(eventDetails\.rsvpMode, "envitefy"\)/);
+  const rsvpSource = readSource("src/lib/studio/live-card-rsvp.ts");
+  assert.match(pageSource, /import \{ withDirectRsvpInvitationData \} from "@\/lib\/studio\/live-card-rsvp"/);
+  assert.match(rsvpSource, /function withDirectRsvpInvitationData/);
+  assert.match(rsvpSource, /eventId: args\.row\.id/);
+  assert.match(rsvpSource, /rsvpMode: readFirstString\(eventDetails\.rsvpMode, "envitefy"\)/);
   assert.match(
-    pageSource,
+    rsvpSource,
     /rsvpUrl: `\$\{buildEventPath\(\s*args\.row\.id,\s*args\.title,\s*undefined,\s*args\.row\.public_slug,\s*\)\}#event-rsvp`/,
   );
   assert.match(surfaceSource, /eventId\?: string;/);
@@ -128,13 +130,14 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
   );
   assert.match(
     pageSource,
-    /const ownerWorkspaceHref = `\$\{buildEventPath\(\s*sharedCard\.row\.id,\s*sharedCard\.title,\s*undefined,\s*sharedCard\.row\.public_slug,\s*\)\}\?tab=event`;/,
+    /const ownerWorkspaceHref = `\$\{buildEventPath\(\s*sharedCard\.row\.id,\s*sharedCard\.title,\s*undefined,\s*sharedCard\.row\.public_slug,\s*\)\}\?tab=design`;/,
   );
   assert.match(
     pageSource,
     /if \(isOwner && !explicitOwnerPreview\) \{\s*redirect\(ownerWorkspaceHref\);\s*\}/s,
   );
   assert.match(pageSource, /buildOwnerPreviewSearch\(returnHref, ownerPreviewEmbedded\)/);
+  assert.doesNotMatch(pageSource, /EventPreviewViewport|fullscreen/);
   assert.match(sharedPageSource, /returnHref\?: string \| null;/);
   assert.match(sharedPageSource, /aria-label="Close preview"/);
   assert.match(sharedPageSource, /inline-flex min-h-11 items-center gap-2 rounded-full/);

@@ -72,11 +72,9 @@ test("left sidebar view still gates both root and compact create entries behind 
 
   assert.match(
     source,
-    /\{hasCreateEventAccess \? \(\s*<button\s+type="button"\s+onClick=\{onCreate\}[\s\S]*?\{createEntryLabel\}\s*<\/span>/s,
+    /\{hasCreateEventAccess \? \(\s*<SidebarLink link=\{\{ label: createEntryLabel,[\s\S]*?onClick: onCreate/s,
   );
-  assert.doesNotMatch(source, /CompactRail/);
-  assert.doesNotMatch(source, /Collapse navigation/);
-  assert.doesNotMatch(source, /Expand navigation/);
+  assert.match(source, /<Sidebar open=\{viewModel.isOpen\}>/);
 });
 
 test("left sidebar omits Studio and Snap Event from the always-open navigation", () => {
@@ -91,8 +89,8 @@ test("left sidebar exposes signed-in Envitefy Concierge entry", () => {
   const controllerSource = readSource("src/app/left-sidebar.controller.ts");
   const modelSource = readSource("src/app/left-sidebar.model.ts");
 
-  assert.match(source, /onClick=\{onAiThreads\}[\s\S]*?Envitefy Concierge/s);
-  assert.match(source, /@\/assets\/concierge-menu-icon\.png/);
+  assert.match(source, /label: "Envitefy Concierge",[\s\S]*?onClick: onAiThreads/s);
+  assert.match(source, /public\/brand\/concierge-chat\.webp/);
   assert.doesNotMatch(source, /Create with AI/);
   assert.match(
     source,
@@ -221,7 +219,7 @@ test("left sidebar keeps My Events visible on owner event tab routes", () => {
   );
   assert.match(
     controllerSource,
-    /setSidebarPage\("myEvents"\);\s*const nextHref = buildOwnerEventViewHref\(ownerHref\);\s*const currentPath = typeof window !== "undefined" \? window\.location\.pathname : pathname;\s*if \(!String\(currentPath \|\| ""\)\.startsWith\("\/event\/"\)\) \{\s*ownerNavigationPendingRef\.current = true;\s*\}\s*router\.push\(nextHref\);/,
+    /setSidebarPage\("myEvents"\);\s*const nextHref = buildOwnerEventViewHref\(ownerHref, item\.productKind\);\s*const currentPath = typeof window !== "undefined" \? window\.location\.pathname : pathname;\s*if \(!String\(currentPath \|\| ""\)\.startsWith\("\/event\/"\)\) \{\s*ownerNavigationPendingRef\.current = true;\s*\}\s*router\.push\(nextHref\);/,
   );
   assert.match(viewSource, /const showOwnerEventsPanel =/);
   assert.match(

@@ -23,6 +23,7 @@ import type {
 } from "@/lib/concierge/types";
 import { buildChatShowcasePreview, type ChatPreviewSummary } from "./chat-preview-adapters";
 import EventPreviewViewport from "@/components/EventPreviewViewport";
+import ArtworkPreviewDialog from "@/components/ArtworkPreviewDialog";
 
 type RsvpPreviewBadge = {
   count: number;
@@ -201,9 +202,10 @@ export default function ChatProductPreview({
 }: ChatProductPreviewProps) {
   const [shareState, setShareState] = useState<"idle" | "copied">("idle");
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const isEventPagePreview = selectedOutput === "event_page";
   const previewDialogRef = useRef<HTMLDialogElement>(null);
   useEffect(() => {
-    if (!isPreviewOpen) return;
+    if (!isPreviewOpen || !isEventPagePreview) return;
     const dialog = previewDialogRef.current;
     if (!dialog) return;
     const previousOverflow = document.body.style.overflow;
@@ -213,7 +215,7 @@ export default function ChatProductPreview({
       dialog.close();
       document.body.style.overflow = previousOverflow;
     };
-  }, [isPreviewOpen]);
+  }, [isPreviewOpen, isEventPagePreview]);
   const hasGeneratedProduct = Boolean(liveEventId || hasDraftProduct);
   const publicActionLabel = publicActionLabelForOutput(selectedOutput);
   const panelOutputLabel = outputLabelForPanel(selectedOutput);
@@ -477,34 +479,40 @@ export default function ChatProductPreview({
           </div>
         </div>
       </div>
-      <dialog
-        ref={previewDialogRef}
-        aria-label="Full-screen preview"
-        onClose={() => setIsPreviewOpen(false)}
-        className="fixed inset-0 m-0 h-[100dvh] max-h-none w-screen max-w-none border-0 bg-[#f8f7fb] p-0 text-[#24183e] backdrop:bg-[#24183e]/50"
-      >
-        {isPreviewOpen ? (
-          <EventPreviewViewport title={summary.headline} onClose={() => setIsPreviewOpen(false)}>
-            <div className="flex min-h-[100dvh] items-center justify-center bg-[#f8f7fb] p-4">
-              {isLiveCard ? (
-                <div
-                  className="w-full"
-                  style={{ maxWidth: `calc((100dvh - 2rem) * ${liveCardPreview.invitationData.heroTextMode === "image" ? "2 / 3" : "9 / 16"})` }}
-                >
-                  <StudioShowcaseLiveCard
-                    preview={liveCardPreview}
-                    previewMode
-                    imageLoading="eager"
-                    className="!rounded-[1.5rem]"
-                  />
-                </div>
-              ) : (
+      {isEventPagePreview ? (
+        <dialog
+          ref={previewDialogRef}
+          aria-label="Full-screen preview"
+          onClose={() => setIsPreviewOpen(false)}
+          className="fixed inset-0 m-0 h-[100dvh] max-h-none w-screen max-w-none border-0 bg-[#f8f7fb] p-0 text-[#24183e] backdrop:bg-[#24183e]/50"
+        >
+          {isPreviewOpen ? (
+            <EventPreviewViewport title={summary.headline} onClose={() => setIsPreviewOpen(false)}>
+              <div className="flex min-h-[100dvh] items-center justify-center bg-[#f8f7fb] p-4">
                 <img src={previewImageUrl} alt={summary.headline} className="max-h-[calc(100dvh-2rem)] max-w-full rounded-2xl object-contain" />
-              )}
-            </div>
-          </EventPreviewViewport>
-        ) : null}
-      </dialog>
+              </div>
+            </EventPreviewViewport>
+          ) : null}
+        </dialog>
+      ) : (
+        <ArtworkPreviewDialog
+          open={isPreviewOpen}
+          title={`${summary.headline} preview`}
+          aspectRatio={isLiveCard && liveCardPreview.invitationData.heroTextMode !== "image" ? 9 / 16 : 2 / 3}
+          onClose={() => setIsPreviewOpen(false)}
+        >
+          {isLiveCard ? (
+            <StudioShowcaseLiveCard
+              preview={liveCardPreview}
+              previewMode
+              imageLoading="eager"
+              className="!rounded-[1.5rem]"
+            />
+          ) : (
+            <img src={previewImageUrl} alt={summary.headline} className="max-h-[calc(100dvh-6rem)] w-full rounded-2xl object-contain" />
+          )}
+        </ArtworkPreviewDialog>
+      )}
     </aside>
   );
 }

@@ -40,6 +40,7 @@ import {
   MY_EVENTS_PAST_EXPANDED_STORAGE_KEY,
   normalizeCalendarProvider,
   SIDEBAR_WIDTH_REM,
+  SIDEBAR_COLLAPSED_REM,
   SidebarPage,
 } from "./left-sidebar.model";
 import type { EventContextTab, EventRouteAlias } from "./sidebar-context";
@@ -410,9 +411,9 @@ export function useLeftSidebarController({
   const createEntryLabel = defaultCreateAction?.ctaLabel || "Create Event";
   const useGymnasticsDirectCreate =
     !defaultCreateAction && effectivePrimarySignupSource === "gymnastics";
-  const isOpen = isDesktop ? true : !isCollapsed;
-  const isCompact = false;
-  const sidebarWidth = SIDEBAR_WIDTH_REM;
+  const isOpen = !isCollapsed;
+  const isCompact = isDesktop && !isOpen;
+  const sidebarWidth = isCompact ? SIDEBAR_COLLAPSED_REM : SIDEBAR_WIDTH_REM;
   const sidebarTransform = isDesktop ? "none" : isOpen ? "none" : "translateX(-100%)";
   const pointerClass = isDesktop
     ? "pointer-events-auto"
@@ -506,7 +507,7 @@ export function useLeftSidebarController({
   }, []);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (isDesktop || !isOpen) return;
     const isPhoneHiddenViewport = () =>
       typeof window !== "undefined" &&
       typeof window.matchMedia === "function" &&
@@ -542,7 +543,7 @@ export function useLeftSidebarController({
       }
       if (event.key !== "Tab" || !asideRef.current) return;
       const controls = [...asideRef.current.querySelectorAll<HTMLElement>(focusableSelector)].filter(
-        (control) => control.offsetParent !== null,
+        (control) => control.offsetParent !== null && !control.closest('[inert], [aria-hidden="true"]'),
       );
       if (controls.length === 0) {
         event.preventDefault();
@@ -568,7 +569,7 @@ export function useLeftSidebarController({
       document.removeEventListener("keydown", onKey);
       (openBarButtonRef.current || previouslyFocused)?.focus({ preventScroll: true });
     };
-  }, [isOpen, setIsCollapsed]);
+  }, [isDesktop, isOpen, setIsCollapsed]);
 
   useEffect(() => {
     const onOutside = (event: Event) => {
@@ -1621,7 +1622,7 @@ export function useLeftSidebarController({
       setEventSidebarMode("owner");
       setEventContextSourcePage("myEvents");
       setSidebarPage("myEvents");
-      const nextHref = buildOwnerEventViewHref(ownerHref);
+      const nextHref = buildOwnerEventViewHref(ownerHref, item.productKind);
       const currentPath = typeof window !== "undefined" ? window.location.pathname : pathname;
       if (!String(currentPath || "").startsWith("/event/")) {
         ownerNavigationPendingRef.current = true;

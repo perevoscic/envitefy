@@ -365,7 +365,7 @@ test("left sidebar opens owner events directly rather than choosing a workspace 
     "utf8"
   );
 
-  assert.match(controllerSource, /buildOwnerEventViewHref\(ownerHref\)/);
+  assert.match(controllerSource, /buildOwnerEventViewHref\(ownerHref, item\.productKind\)/);
   assert.doesNotMatch(controllerSource, /const initialOwnerTab:/);
 });
 

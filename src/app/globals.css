@@ -483,6 +483,35 @@
   -webkit-backdrop-filter: none;
 }
 
+/* A compact desktop rail shares the same event navigation and mobile drawer. */
+/* Keep menu typography identical to the category list's inherited app font. */
+.nav-chrome-menu-label {
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  line-height: 1;
+}
+
+[data-sidebar-state="collapsed"] [data-sidebar-detail-panel],
+[data-sidebar-root-panel][inert],
+[data-sidebar-detail-panel][inert] {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+[data-app-main-content="true"] {
+  transition: padding-left 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-app-main-content="true"],
+  [data-app-navigation="sidebar"] * {
+    transition: none !important;
+  }
+}
+
 .nav-chrome-sidebar-scroll-region {
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;

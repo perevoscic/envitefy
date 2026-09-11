@@ -43,7 +43,7 @@ test("opened previews hide navigation and remove its spacing; inline previews do
   const viewport = read("src/components/EventPreviewViewport.tsx");
   const sidebar = read("src/app/left-sidebar.tsx");
   const styles = read("src/app/globals.css");
-  assert.match(viewport, /fullscreen \|\| onClose \? <OwnerPreviewMobileTopbarSuppressor/);
+  assert.match(viewport, /!preserveNavigation && \(fullscreen \|\| onClose\) \? <OwnerPreviewMobileTopbarSuppressor/);
   for (const surface of ["sidebar", "topbar", "reveal", "drawer-backdrop"]) {
     assert.ok(sidebar.includes(`data-app-navigation="${surface}"`));
   }

@@ -173,6 +173,7 @@ export const SIDEBAR_ITEM_CARD_CLASS = "nav-chrome-motion rounded-full";
 export const SIDEBAR_BADGE_CLASS =
   "inline-flex min-w-[20px] items-center justify-center rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-[#7269dd] shadow-[0_8px_18px_rgba(126,111,233,0.14)]";
 export const SIDEBAR_WIDTH_REM = "20rem";
+export const SIDEBAR_COLLAPSED_REM = "5rem";
 export const SIDEBAR_DIVIDER_CLASS = "h-px w-full bg-transparent";
 export const SIDEBAR_MENU_ROW_CLASS =
   "flex w-full items-center gap-3 px-3 py-3 text-left text-[0.92rem] font-semibold uppercase tracking-[0.12em]";

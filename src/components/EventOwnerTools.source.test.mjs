@@ -69,7 +69,7 @@ test("owner workspace keeps sharing in the header and previews from the card", (
     /hidden min-w-0 lg:sticky lg:top-5 lg:flex lg:h-\[calc\(100dvh-2\.5rem\)\] lg:translate-x-6 lg:items-start lg:justify-end lg:self-start xl:translate-x-10/,
   );
   assert.match(source, /className="mx-auto w-full"/);
-  assert.match(source, /heightMode="fullscreen"/);
+  assert.match(source, /<ArtworkPreviewDialog/);
   assert.match(source, /flex items-center justify-center overflow-hidden outline-none/);
 
   assert.doesNotMatch(previewBlock[0], /onCopy/);
@@ -87,8 +87,7 @@ test("owner workspace keeps sharing in the header and previews from the card", (
   const frameSource = readSource("src/components/studio/SharedStudioCardPage.tsx");
   assert.match(frameSource, /onShare=\{props\.topRightAction \? undefined : \(\) => void handleShare\(\)\}/);
   assert.match(previewBlock[0], /lg:h-\[min\(760px,calc\(100dvh-2\.5rem\)\)\]/);
-  assert.match(previewBlock[0], /heightMode\?: "fixed" \| "fullscreen";/);
-  assert.match(previewBlock[0], /const fullscreen = heightMode === "fullscreen";/);
+  assert.doesNotMatch(previewBlock[0], /fullscreen|EventPreviewViewport/);
   assert.match(previewBlock[0], /"flex h-full w-full items-center justify-center"/);
   assert.match(previewBlock[0], /"flex w-full items-center justify-center"/);
   assert.match(previewBlock[0], /!w-full !max-w-full !rounded-\[28px\]/);
@@ -271,8 +270,8 @@ test("owner Design tab previews card edits before saving them", () => {
   assert.match(source, /imageDataUrl: selectedCandidate\.imageDataUrl \|\| undefined/);
   assert.match(source, /setBaselineForm\(nextForm\)/);
   assert.match(source, /persisted: true/);
-  assert.match(source, /import OwnerPreviewMobileTopbarSuppressor/);
-  assert.match(source, /productViewerMode !== null \? <OwnerPreviewMobileTopbarSuppressor \/> : null/);
+  assert.doesNotMatch(source, /OwnerPreviewMobileTopbarSuppressor/);
+  assert.match(source, /if \(isArtwork\) \{[\s\S]*?<ArtworkPreviewDialog/);
   assert.match(source, /fixed inset-0 z-\[7001\]/);
   assert.doesNotMatch(source, /Back to editing|Back to dashboard|The saved version your guests can open/);
   assert.match(source, /<Dialog.Title className="sr-only">\{heading\}<\/Dialog.Title>/);

@@ -361,6 +361,7 @@ test("the owner event menu is separate from public and embedded previews", () =>
   assert.match(source, /const showOwnerEventView = isOwner && requestedTab === "event" && !ownerPreviewMode;/);
   assert.match(source, /if \(cardFirstCanonical && !ownerToolsTab && !showOwnerEventView\)/);
   assert.match(source, /if \(showOwnerEventView && !editParam\)/);
+  assert.match(source, /if \(showOwnerEventView && !editParam\) \{\s*if \(cardFirstCanonical\) \{\s*redirect\(`\$\{ownerEventHref\}\?tab=design`\);/);
   assert.match(source, /<EventOwnerView[\s\S]*publicHref=\{publicEventHref\}/);
 });
 
