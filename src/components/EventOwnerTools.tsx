@@ -900,7 +900,21 @@ export default function EventOwnerTools({
   }
 
   if (isEventPageWorkspace) {
-    return <EventOwnerView eventId={eventId} title={currentEventTitle} publicHref={publicUrl} editHref={resolvedEditHref} backgroundColor={resolveEventPageBackgroundColor(eventData)} />;
+    const mobileEditInEvent =
+      ["gymnastics", "sport_gymnastics", "sport_gymnastics_schedule"].includes(
+        firstString(eventData?.category).toLowerCase(),
+      ) ||
+      ["gymnastics", "gymnastics-schedule"].includes(firstString(eventData?.templateId).toLowerCase());
+    return (
+      <EventOwnerView
+        eventId={eventId}
+        title={currentEventTitle}
+        publicHref={publicUrl}
+        editHref={resolvedEditHref}
+        backgroundColor={resolveEventPageBackgroundColor(eventData)}
+        mobileEditInEvent={mobileEditInEvent}
+      />
+    );
   }
 
   return (

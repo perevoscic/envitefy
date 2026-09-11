@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Gem, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Gem, Sparkles } from "lucide-react";
 import WeddingDesignPreview from "@/components/weddings/WeddingDesignPreview";
-import { TemplateThumbnailFrame } from "@/components/events/TemplateThumbnail";
+import TemplateAutoLoader from "@/components/events/TemplateAutoLoader";
+import { TemplateMasonryCard, TemplateMasonryGrid } from "@/components/events/TemplateMasonryGallery";
 import WeddingTemplateRunway from "@/components/weddings/WeddingTemplateRunway";
 import {
   type WeddingDesign,
@@ -61,6 +62,11 @@ export default function WeddingDesignGallery() {
   const [color, setColor] = useState("All colors");
   const [season, setSeason] = useState("All seasons");
   const [collection, setCollection] = useState("All designs");
+  const [visibleCount, setVisibleCount] = useState(12);
+
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [collection, color, season, style]);
 
   const visibleDesigns = useMemo(
     () =>
@@ -163,56 +169,13 @@ export default function WeddingDesignGallery() {
 
       <section className="mx-auto max-w-[1500px] px-5 py-10 sm:px-8 lg:px-12 lg:py-14">
         {visibleDesigns.length > 0 ? (
-          <div className="grid grid-cols-1 gap-x-7 gap-y-11 md:grid-cols-2 xl:grid-cols-3">
-            {visibleDesigns.map((design) => (
-              <article key={design.id} className="group relative rounded-[1.4rem]">
-                <Link
-                  href={buildCustomizeHref(design.id)}
-                  className="absolute inset-0 z-20 rounded-[1.4rem] outline-none focus-visible:ring-2 focus-visible:ring-[#9d7d54] focus-visible:ring-offset-4 focus-visible:ring-offset-[#f7f4ef]"
-                  aria-label={`Customize ${design.name}`}
-                >
-                  <span className="sr-only">Customize {design.name}</span>
-                </Link>
-                <TemplateThumbnailFrame>
-                  <WeddingDesignPreview design={design} />
-                </TemplateThumbnailFrame>
-                <div className="px-2 pt-5">
-                  {design.family === "atelier" && (
-                    <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#84653e]">
-                      New collection
-                    </p>
-                  )}
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h2 className='[font-family:var(--font-playfair),_"Times_New_Roman",_serif] text-2xl font-normal tracking-[-0.025em] text-[#2d2723]'>
-                        {design.name}
-                      </h2>
-                      <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#a07d51]">
-                        {design.signature}
-                      </p>
-                    </div>
-                    <span className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#d8cec2] bg-white text-[#3c332d] transition group-hover:border-[#3c332d] group-hover:bg-[#3c332d] group-hover:text-white">
-                      <ArrowRight className="h-4 w-4" />
-                    </span>
-                  </div>
-                  <p className="mt-3 text-sm leading-relaxed text-[#756a61]">
-                    {design.description}
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {[design.color, design.season].map((label) => (
-                      <span
-                        key={label}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-[#ded5ca] bg-white/65 px-3 py-1.5 text-[10px] font-semibold text-[#665c54]"
-                      >
-                        <Check className="h-3 w-3 text-[#9d7d54]" />
-                        {label}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </article>
+          <TemplateMasonryGrid>
+            {visibleDesigns.slice(0, visibleCount).map((design) => (
+              <TemplateMasonryCard key={design.id} designId={design.id} name={design.name} href={buildCustomizeHref(design.id)}>
+                <WeddingDesignPreview design={design} />
+              </TemplateMasonryCard>
             ))}
-          </div>
+          </TemplateMasonryGrid>
         ) : (
           <div className="rounded-[2rem] border border-dashed border-[#cfc3b6] bg-white/55 px-6 py-16 text-center">
             <h2 className='[font-family:var(--font-playfair),_"Times_New_Roman",_serif] text-3xl'>
@@ -233,6 +196,7 @@ export default function WeddingDesignGallery() {
             </button>
           </div>
         )}
+        <TemplateAutoLoader visibleCount={visibleCount} totalCount={visibleDesigns.length} setVisibleCount={setVisibleCount} />
       </section>
     </main>
   );

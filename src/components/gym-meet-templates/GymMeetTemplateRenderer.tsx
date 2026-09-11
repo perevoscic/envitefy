@@ -5,6 +5,8 @@ import { getGymMeetTemplateMeta, resolveGymMeetTemplateId } from "./registry";
 import MeetPageContent from "./renderers/MeetPageContent";
 import type { GymMeetPageTemplateMeta, GymMeetTemplateRendererProps } from "./types";
 import gymnasticsStyles from "./gymnastics-collection.module.css";
+import programStyles from "./gymnastics-program.module.css";
+import { GYMNASTICS_PRESENTATIONS } from "./gymnasticsPresentations";
 
 function gymMeetPageVariant(design: GymMeetPageTemplateMeta) {
   return {
@@ -19,8 +21,8 @@ function gymMeetPageVariant(design: GymMeetPageTemplateMeta) {
     navActiveClass: gymnasticsStyles.navActive,
     navIdleClass: gymnasticsStyles.navIdle,
     navFadeClass: "color-mix(in srgb, var(--gym-paper) 82%, transparent)",
-    summaryCardClass: gymnasticsStyles.card,
-    sectionClass: gymnasticsStyles.section,
+    summaryCardClass: programStyles.detailCard,
+    sectionClass: programStyles.panel,
     sectionMutedClass: gymnasticsStyles.sectionMuted,
     sectionTitleClass: gymnasticsStyles.sectionTitle,
     primaryButtonClass: gymnasticsStyles.primaryButton,
@@ -31,13 +33,26 @@ function gymMeetPageVariant(design: GymMeetPageTemplateMeta) {
 
 export default function GymMeetTemplateRenderer(props: GymMeetTemplateRendererProps) {
   const design = getGymMeetTemplateMeta(resolveGymMeetTemplateId(props.model));
+  const presentation = GYMNASTICS_PRESENTATIONS[design.id];
 
   return (
-    <div style={gymnasticsDesignStyle(design)} data-gym-body={design.bodyStyle}>
+    <div
+      style={gymnasticsDesignStyle(design)}
+      className={programStyles.design}
+      data-gym-body={design.bodyStyle}
+      data-gym-design={design.id}
+      data-layout={presentation.layout}
+      data-surface={presentation.surface}
+      data-heading={presentation.heading}
+      data-cards={presentation.cards}
+      data-navigation={presentation.navigation}
+      data-attendance={presentation.attendance}
+    >
       <MeetPageContent
         {...props}
         hero={<GymnasticsScene model={props.model} design={design} />}
         variant={gymMeetPageVariant(design)}
+        presentation={presentation}
       />
     </div>
   );

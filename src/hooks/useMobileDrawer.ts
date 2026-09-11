@@ -14,7 +14,10 @@ const MAX_VERTICAL_DRIFT = 40;
 const isMobileViewport = () =>
   typeof window !== "undefined" && window.innerWidth < 768;
 
-export function useMobileDrawer(initialOpen?: boolean) {
+export function useMobileDrawer(
+  initialOpen?: boolean,
+  editPlacement: "topbar" | "event-actions" = "topbar",
+) {
   const search = useSearchParams();
   const router = useRouter();
   const returnHref = ownerEventEditorReturnHref(search);
@@ -33,7 +36,7 @@ export function useMobileDrawer(initialOpen?: boolean) {
     setOpen(true);
   }, []);
   const editAction = useMemo(() => open ? null : { onClick: openDrawer }, [open, openDrawer]);
-  useEventTopbarEdit(editAction);
+  useEventTopbarEdit(editPlacement === "topbar" ? editAction : null);
 
   useEffect(() => {
     const root = document.documentElement;

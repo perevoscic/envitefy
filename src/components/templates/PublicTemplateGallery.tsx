@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import {
-  TemplateThumbnailFrame,
-} from "@/components/events/TemplateThumbnail";
+import TemplateAutoLoader from "@/components/events/TemplateAutoLoader";
+import { TemplateMasonryCard, TemplateMasonryGrid } from "@/components/events/TemplateMasonryGallery";
 import { getPublicTemplates } from "@/lib/public-template-catalog";
 import {
   getTemplateCategory,
@@ -150,43 +149,24 @@ export default function PublicTemplateGallery({
             </p>
           </div>
         )}
-        <div className="grid grid-cols-1 gap-x-7 gap-y-10 md:grid-cols-2 xl:grid-cols-3">
+        <TemplateMasonryGrid>
           {shown.map((template) => (
-            <article key={template.id} className="group relative">
-              <Link
-                prefetch={false}
-                href={templateEditorHref(category, template.id)}
-                onClick={() => trackTemplateEvent("template_selected", category, template.id)}
-                aria-label={`Make ${template.name} yours`}
-                className="absolute inset-0 z-20 rounded-[1.35rem] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#59405c]"
-              >
-                <span className="sr-only">Make {template.name} yours</span>
-              </Link>
-              <TemplateThumbnailFrame>
-                <PublicTemplatePreview category={category} template={template} />
-              </TemplateThumbnailFrame>
-              <div className="px-2 pt-5">
-                <p className="text-xs text-[#886488]">{template.style}</p>
-                <h3 className="mt-2 font-serif text-2xl">{template.name}</h3>
-                <p className="mt-2 text-sm leading-6 text-[#746775]">{template.description}</p>
-                <p className="mt-3 text-sm font-semibold text-[#59405c]">Make it yours →</p>
-              </div>
-            </article>
+            <TemplateMasonryCard
+              key={template.id}
+              designId={template.id}
+              name={template.name}
+              href={templateEditorHref(category, template.id)}
+              onClick={() => trackTemplateEvent("template_selected", category, template.id)}
+            >
+              <PublicTemplatePreview category={category} template={template} />
+            </TemplateMasonryCard>
           ))}
-        </div>
+        </TemplateMasonryGrid>
         {!shown.length && (
           <p className="py-12 text-center">No templates match. Try another style or search.</p>
         )}
-        {!featured && visible < filtered.length && (
-          <div className="mt-10 text-center">
-            <button
-              type="button"
-              onClick={() => setVisible((count) => count + 12)}
-              className="rounded-full border border-[#dcd0dc] bg-white px-7 py-3 font-semibold"
-            >
-              Load more templates
-            </button>
-          </div>
+        {!featured && (
+          <TemplateAutoLoader visibleCount={visible} totalCount={filtered.length} setVisibleCount={setVisible} itemLabel="templates" />
         )}
       </div>
     </section>

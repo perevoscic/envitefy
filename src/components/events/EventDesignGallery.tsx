@@ -1,9 +1,9 @@
 "use client";
 
-import { ArrowRight, Search, Sparkles } from "lucide-react";
-import Link from "next/link";
+import { Search, Sparkles } from "lucide-react";
 import { type ReactNode, useState } from "react";
-import { TemplateThumbnailFrame } from "./TemplateThumbnail";
+import TemplateAutoLoader from "./TemplateAutoLoader";
+import { TemplateMasonryCard, TemplateMasonryGrid } from "./TemplateMasonryGallery";
 
 export type EventGalleryDesign = {
   id: string;
@@ -73,27 +73,13 @@ export default function EventDesignGallery<Design extends EventGalleryDesign>({
       </section>
       <section aria-label={`${title} templates`} className="mx-auto max-w-[1500px] px-5 py-9 sm:px-8 lg:px-12">
         {filtered.length ? (
-          <div className="grid grid-cols-1 gap-x-7 gap-y-11 md:grid-cols-2 xl:grid-cols-3">
+          <TemplateMasonryGrid>
             {filtered.slice(0, visibleCount).map((design) => (
-              <article key={design.id} className="group relative rounded-[1.4rem]">
-                <Link prefetch={false} href={getHref(design)} aria-label={`Customize ${design.name}`} className="absolute inset-0 z-20 rounded-[1.4rem] outline-none focus-visible:ring-2 focus-visible:ring-[#926e93] focus-visible:ring-offset-4">
-                  <span className="sr-only">Customize {design.name}</span>
-                </Link>
-                <TemplateThumbnailFrame>
-                  {renderPreview(design)}
-                </TemplateThumbnailFrame>
-                <div className="px-2 pt-5">
-                  <p className="mb-2 text-xs font-semibold text-[#886488]">{design.style}</p>
-                  <div className="flex items-start justify-between gap-4">
-                    <h2 className='text-2xl font-normal tracking-tight [font-family:var(--font-playfair),Georgia,serif]'>{design.name}</h2>
-                    <ArrowRight className="mt-1 h-5 w-5 shrink-0 text-[#886488]" aria-hidden="true" />
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-[#746775]">{design.description}</p>
-                  <p className="mt-3 text-xs font-semibold text-[#886488]">Customize this design</p>
-                </div>
-              </article>
+              <TemplateMasonryCard key={design.id} designId={design.id} name={design.name} href={getHref(design)}>
+                {renderPreview(design)}
+              </TemplateMasonryCard>
             ))}
-          </div>
+          </TemplateMasonryGrid>
         ) : (
           <div className="rounded-3xl border border-dashed border-[#dcd0dc] bg-white p-12 text-center">
             <h2 className="text-xl font-semibold">No designs match</h2>
@@ -101,12 +87,7 @@ export default function EventDesignGallery<Design extends EventGalleryDesign>({
             <button type="button" onClick={() => { setQuery(""); setStyle("All styles"); setVisibleCount(12); }} className="mt-5 rounded-full bg-[#59405c] px-5 py-3 text-sm font-semibold text-white">Clear filters</button>
           </div>
         )}
-        {visibleCount < filtered.length ? (
-          <div className="mt-10 text-center">
-            <button type="button" onClick={() => setVisibleCount((count) => count + 12)} className="rounded-full border border-[#dcd0dc] bg-white px-7 py-3 text-sm font-semibold text-[#59405c] hover:bg-[#f2eaf2] focus-visible:outline-2 focus-visible:outline-offset-4">Load more designs</button>
-            <p className="mt-3 text-xs text-[#746775]">Showing {Math.min(visibleCount, filtered.length)} of {filtered.length}</p>
-          </div>
-        ) : null}
+        <TemplateAutoLoader visibleCount={visibleCount} totalCount={filtered.length} setVisibleCount={setVisibleCount} />
       </section>
     </main>
   );

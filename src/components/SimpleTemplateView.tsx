@@ -85,6 +85,8 @@ type SimpleTemplateViewProps = {
   hideOwnerActions?: boolean;
   /** When true, suppress shared compact action strips inside the template renderer. */
   suppressActionStrip?: boolean;
+  onMobileEdit?: () => void;
+  mobileEditHref?: string;
   /** When true, render a neutral page surface instead of theme background fills (used by editor previews). */
   disableThemeBackground?: boolean;
   /** Optional neutral preview tuning for editor surfaces. */
@@ -306,6 +308,8 @@ export default function SimpleTemplateView({
   protectedSectionFlags: protectedSectionFlagsProp = {},
   hideOwnerActions = false,
   suppressActionStrip = false,
+  onMobileEdit,
+  mobileEditHref,
   disableThemeBackground = false,
   neutralPreview,
 }: SimpleTemplateViewProps) {
@@ -2718,6 +2722,8 @@ export default function SimpleTemplateView({
           isReadOnly={isReadOnly}
           hideOwnerActions={hideOwnerActions}
           suppressActionStrip={suppressActionStrip}
+          onMobileEdit={onMobileEdit}
+          mobileEditHref={mobileEditHref}
           onShare={handleShare}
           onGoogleCalendar={handleGoogleCalendar}
           onAppleCalendar={handleAppleCalendar}

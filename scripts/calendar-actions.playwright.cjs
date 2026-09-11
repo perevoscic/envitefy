@@ -28,7 +28,9 @@ export function Fixture({ account = "" }) {
   return <SessionContext.Provider value={session}>
     <main className="mx-auto max-w-sm p-4 text-[#17293c]">
       <div id="generic"><CalendarAction links={links} /></div>
-      <div id="gym" className="mt-5"><FloatingActionStrip buttonClass="inline-flex items-center gap-2 rounded-full border border-current/20 px-4 py-2 text-xs" onShare={() => {}} onGoogleCalendar={() => choose("google")} onAppleCalendar={() => choose("apple")} onOutlookCalendar={() => choose("microsoft")} /></div>
+      <div id="gym" className="mt-5"><FloatingActionStrip buttonClass="inline-flex items-center justify-center gap-2 rounded-full border border-current/20 px-4 py-2 text-xs" onShare={() => {}} onGoogleCalendar={() => choose("google")} onAppleCalendar={() => choose("apple")} onOutlookCalendar={() => choose("microsoft")} onMobileEdit={() => choose("edit")} /></div>
+      <div id="owner" className="mt-5"><FloatingActionStrip buttonClass="inline-flex items-center justify-center gap-2 rounded-full border border-current/20 px-4 py-2 text-xs" onShare={() => {}} onGoogleCalendar={() => {}} onAppleCalendar={() => {}} onOutlookCalendar={() => {}} mobileEditHref="/event/gymnastics/customize?edit=meet&editor=menu" /></div>
+      <div id="guest" hidden><FloatingActionStrip buttonClass="" onShare={() => {}} onGoogleCalendar={() => {}} onAppleCalendar={() => {}} onOutlookCalendar={() => {}} /></div>
       <button id="settings" onClick={() => writeLocalCalendarDefault("microsoft")}>Change default in Settings</button>
       <button id="account" onClick={() => setEmail("second@example.test")}>Switch account</button>
     </main>
@@ -181,18 +183,23 @@ async function main() {
   });
   const base = `http://127.0.0.1:${server.address().port}`;
   const generic = () => page.locator("#generic button");
-  const gym = () => page.locator("#gym button").last();
+  const gym = () => page.locator("#gym").getByRole("button", { name: /^Add to / });
   const waitLabel = async (label) => {
     await page.waitForFunction(
       (value) =>
         document.querySelector("#generic button")?.textContent === value &&
-        document.querySelector("#gym button:last-child")?.textContent === value,
+        document.querySelector('#gym button[aria-label^="Add to "]')?.textContent === value,
       label,
     );
   };
   try {
     await page.goto(base);
     await waitLabel("Add to calendar");
+    const edit = page.locator("#gym").getByRole("button", { name: "Edit event" });
+    await edit.click();
+    assert.equal((await page.evaluate(() => window.launches)).at(-1), "edit");
+    assert.equal(await page.locator('#guest [aria-label="Edit event"]').count(), 0);
+    assert.equal(await page.locator('#owner a[aria-label="Edit event"]').getAttribute("target"), "_top");
     for (const [name, provider] of [
       ["Google Calendar", "google"],
       ["Apple Calendar", "apple"],
@@ -222,6 +229,26 @@ async function main() {
       );
       const buttonBox = await gym().boundingBox();
       assert.ok(buttonBox.x >= 0 && buttonBox.x + buttonBox.width <= width);
+      if (width < 768) {
+        const editBox = await edit.boundingBox();
+        assert.ok(editBox.width >= 44 && editBox.height >= 44);
+        assert.ok(editBox.x >= buttonBox.x + buttonBox.width + 7);
+        assert.ok(Math.abs(editBox.y - buttonBox.y) < 1, "Edit stays beside calendar");
+        assert.ok(editBox.x + editBox.width <= width);
+      } else {
+        assert.equal(await edit.isVisible(), false, "desktop editor keeps its sidebar");
+      }
+      const ownerEdit = page.locator('#owner a[aria-label="Edit event"]');
+      assert.equal(await ownerEdit.isVisible(), width < 1024);
+      if (width < 1024) {
+        const calendarBox = await page.locator("#owner").getByRole("button", { name: /^Add to / }).boundingBox();
+        const editBox = await ownerEdit.boundingBox();
+        assert.ok(editBox.x >= calendarBox.x + calendarBox.width + 7);
+        assert.ok(Math.abs(editBox.y - calendarBox.y) < 1);
+      }
+      if (width === 360) {
+        await page.locator("#gym").screenshot({ path: path.join(root, "tmp", "gymnastics-mobile-event-actions.png") });
+      }
     }
     await generic().click();
     await page.getByRole("checkbox").check();
@@ -287,7 +314,7 @@ async function main() {
     assert.equal(profile, null);
     assert.deepEqual(errors, [], "no client errors or hydration mismatches");
     console.log(
-      "Calendar browser checks passed: chooser providers, 320/360/768/1280px, focus restoration, remembered guest default, all account defaults, Settings updates, account switching, disconnected/default failures, and hydration.",
+      "Calendar browser checks passed: mobile Edit placement and callback, owner Edit link, guest controls, chooser providers, 320/360/768/1280px, focus restoration, remembered guest default, all account defaults, Settings updates, account switching, disconnected/default failures, and hydration.",
     );
   } catch (error) {
     console.error(

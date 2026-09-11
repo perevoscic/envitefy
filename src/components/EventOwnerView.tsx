@@ -16,14 +16,22 @@ type Props = {
   publicHref: string;
   editHref: string;
   backgroundColor?: string;
+  mobileEditInEvent?: boolean;
 };
 
-export default function EventOwnerView({ eventId, title, publicHref, editHref, backgroundColor }: Props) {
+export default function EventOwnerView({
+  eventId,
+  title,
+  publicHref,
+  editHref,
+  backgroundColor,
+  mobileEditInEvent = false,
+}: Props) {
   const [copied, setCopied] = useState(false);
   const [background, setBackground] = useState<EventPreviewBackground>({ backgroundColor });
   const editUrl = buildOwnerEventEditHref(editHref, publicHref, String(background.backgroundColor || ""));
   const editAction = useMemo(() => ({ href: editUrl }), [editUrl]);
-  useEventTopbarEdit(editAction);
+  useEventTopbarEdit(mobileEditInEvent ? null : editAction);
 
   async function shareEvent() {
     const url = new URL(publicHref, window.location.origin).href;

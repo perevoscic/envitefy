@@ -1334,15 +1334,17 @@ export default async function EventPage({
   const discoveryTemplateId = String((data as any)?.templateId || "").toLowerCase();
   const hasDiscoveryInput = isDiscoveryV2 || Boolean((data as any)?.discoverySource?.input);
   const isOcrEvent = isScannedInviteCreatedVia(discoveryCreatedVia);
+  const isGymnasticsTemplate =
+    discoveryCategory === "sport_gymnastics_schedule" ||
+    discoveryCategory === "sport_gymnastics" ||
+    discoveryCategory === "gymnastics" ||
+    discoveryTemplateId === "gymnastics-schedule" ||
+    discoveryTemplateId === "gymnastics";
   const isGymnasticsDiscoveryTemplate =
     (discoveryCreatedVia === "meet-discovery" ||
       discoveryWorkflow === "gymnastics" ||
       hasDiscoveryInput) &&
-    (discoveryCategory === "sport_gymnastics_schedule" ||
-      discoveryCategory === "sport_gymnastics" ||
-      discoveryCategory === "gymnastics" ||
-      discoveryTemplateId === "gymnastics-schedule" ||
-      discoveryTemplateId === "gymnastics");
+    isGymnasticsTemplate;
   const isFootballDiscoveryTemplate =
     (discoveryCreatedVia === "football-discovery" ||
       discoveryCreatedVia === "football-discovery-v2" ||
@@ -1424,6 +1426,7 @@ export default async function EventPage({
         title={title}
         publicHref={publicEventHref}
         editHref={resolveEditHref(row.id, data, title)}
+        mobileEditInEvent={isGymnasticsTemplate && canEditCreatedEvent}
         backgroundColor={eventPageBackgroundColor}
       />
     );
@@ -3547,6 +3550,15 @@ export default async function EventPage({
         sessionEmail={sessionEmail}
         hideOwnerActions={ownerPreviewMode || Boolean(discoveryEditConfig)}
         disableThemeBackground={Boolean(discoveryEditConfig)}
+        mobileEditHref={
+          isGymnasticsTemplate && canEditCreatedEvent && ownerPreviewEmbedded
+            ? buildOwnerEventEditHref(
+                resolveEditHref(row.id, data, title),
+                ownerEventHref,
+                eventPageBackgroundColor,
+              )
+            : undefined
+        }
       />
     );
     if (discoveryEditConfig) {

@@ -16,7 +16,6 @@ import {
   Edit2,
   Image as ImageIcon,
   Link as LinkIcon,
-  Menu,
   Type,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -880,17 +879,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     > | null>(null);
     const [discoveryEnrichmentBusy, setDiscoveryEnrichmentBusy] = useState(false);
     const [isDiscoveryEdit, setIsDiscoveryEdit] = useState(false);
-    const [isInIframe, setIsInIframe] = useState(false);
     const [loadVersion, setLoadVersion] = useState(0);
     const repairAttemptedRef = useRef(false);
     const enrichRequestStartedRef = useRef(false);
     const sidebarScrollRef = useRef<HTMLDivElement | null>(null);
-    useEffect(() => {
-      if (typeof window !== "undefined") {
-        setIsInIframe(window.self !== window.top);
-      }
-    }, []);
-
     useEffect(() => {
       setDismissedSuggestedExtraFields({});
     }, [editEventId]);
@@ -1009,7 +1001,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       closeMobileMenu,
       previewTouchHandlers,
       drawerTouchHandlers,
-    } = useMobileDrawer();
+    } = useMobileDrawer(undefined, "event-actions");
     const setAdvancedSectionState = useCallback((id: string, updater: any) => {
       setAdvancedState((prev: Record<string, any>) => {
         const current = prev?.[id];
@@ -3562,6 +3554,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               ) : (
                 <SimpleTemplateView
                   key={`preview-${previewEventId}`}
+                  onMobileEdit={openMobileMenu}
                   eventId={previewEventId}
                   eventData={previewEventData}
                   eventTitle={data.title || config.displayName}
@@ -3591,19 +3584,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         )}
 
         {sidebarPanel}
-
-        {!isEmbed && !isInIframe && !mobileMenuOpen && (
-          <div className="md:hidden fixed bottom-4 right-4 z-30">
-            <button
-              type="button"
-              onClick={openMobileMenu}
-              className="nav-chrome-mobile-drawer-trigger flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold"
-            >
-              <Menu size={18} />
-              Edit
-            </button>
-          </div>
-        )}
       </div>
     );
   };

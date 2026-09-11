@@ -1,15 +1,17 @@
 "use client";
 
-import { ArrowRight, HeartHandshake } from "lucide-react";
-import Link from "next/link";
+import { HeartHandshake } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 import BirthdayDesignPreview from "@/components/birthdays/BirthdayDesignPreview";
-import { TemplateThumbnailFrame } from "@/components/events/TemplateThumbnail";
+import TemplateAutoLoader from "@/components/events/TemplateAutoLoader";
+import { TemplateMasonryCard, TemplateMasonryGrid } from "@/components/events/TemplateMasonryGallery";
 import { ANNIVERSARY_DESIGN_CATALOG } from "@/data/birthday-design-catalog";
 import AnniversaryCustomizePage from "./customize/page";
 
 export default function AnniversariesPage() {
   const search = useSearchParams();
+  const [visibleCount, setVisibleCount] = useState(12);
 
   if (search?.get("edit")) return <AnniversaryCustomizePage />;
 
@@ -43,35 +45,14 @@ export default function AnniversariesPage() {
       </section>
 
       <section aria-label="Anniversary designs" className="mx-auto max-w-[1500px] px-5 py-10 sm:px-8 lg:px-12 lg:py-14">
-        <div className="grid grid-cols-1 gap-x-7 gap-y-11 md:grid-cols-2 xl:grid-cols-3">
-          {ANNIVERSARY_DESIGN_CATALOG.map((design) => (
-            <article key={design.id} className="group relative rounded-[1.4rem]">
-              <Link
-                href={customizeHref(design.id)}
-                aria-label={`Customize ${design.name}`}
-                className="absolute inset-0 z-20 rounded-[1.4rem] outline-none focus-visible:ring-2 focus-visible:ring-[#9b5268] focus-visible:ring-offset-4 focus-visible:ring-offset-[#fff9f1]"
-              >
-                <span className="sr-only">Customize {design.name}</span>
-              </Link>
-              <TemplateThumbnailFrame>
-                <BirthdayDesignPreview design={design} />
-              </TemplateThumbnailFrame>
-              <div className="px-2 pt-5">
-                <div className="flex items-start justify-between gap-4">
-                  <h2 className='text-2xl font-normal tracking-tight [font-family:var(--font-playfair),_"Times_New_Roman",_serif]'>
-                    {design.name}
-                  </h2>
-                  <ArrowRight className="mt-1 h-5 w-5 shrink-0 text-[#9b5268]" aria-hidden="true" />
-                </div>
-                <p className="mt-2 text-sm leading-6 text-[#725b4e]">{design.description}</p>
-                <p className="mt-4 text-xs font-semibold text-[#9b5268]">
-                  {design.milestone ? `${design.milestone} ${design.milestone === 1 ? "year" : "years"} together` : design.id === "garden-vow-renewal-anniversary" ? "Vow renewal" : "Every anniversary"}
-                  {" · "}{design.style}
-                </p>
-              </div>
-            </article>
+        <TemplateMasonryGrid>
+          {ANNIVERSARY_DESIGN_CATALOG.slice(0, visibleCount).map((design) => (
+            <TemplateMasonryCard key={design.id} designId={design.id} name={design.name} href={customizeHref(design.id)}>
+              <BirthdayDesignPreview design={design} />
+            </TemplateMasonryCard>
           ))}
-        </div>
+        </TemplateMasonryGrid>
+        <TemplateAutoLoader visibleCount={visibleCount} totalCount={ANNIVERSARY_DESIGN_CATALOG.length} setVisibleCount={setVisibleCount} />
       </section>
     </main>
   );

@@ -48,9 +48,11 @@ export function getEnvitefyEventCategory(category?: string) {
 export default function EnvitefyEventBranding({
   category = "Events",
   inverse = false,
+  inheritColor = false,
 }: {
   category?: string;
   inverse?: boolean;
+  inheritColor?: boolean;
 }) {
   const categoryLabel = getEnvitefyEventCategory(category);
   const destination =
@@ -62,7 +64,7 @@ export default function EnvitefyEventBranding({
   return (
     <div
       data-envitefy-event-branding={categoryLabel}
-      className={`mx-auto max-w-sm px-4 pt-2 text-center font-sans text-sm font-normal not-italic normal-case tracking-normal ${inverse ? "text-white/85" : "text-slate-600"}`}
+      className={`mx-auto max-w-sm px-4 pt-2 text-center font-sans text-sm font-normal not-italic normal-case tracking-normal ${inheritColor ? "text-inherit" : inverse ? "text-white/85" : "text-slate-600"}`}
     >
       <a
         href={destination}
@@ -91,7 +93,7 @@ export default function EnvitefyEventBranding({
           Create now
         </a>
       </p>
-      <EnvitefySocialLinks placement="event" inverse={inverse} />
+      <EnvitefySocialLinks placement="event" inverse={inverse} inheritColor={inheritColor} />
     </div>
   );
 }

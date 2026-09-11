@@ -2,7 +2,7 @@
 // @ts-nocheck
 "use client";
 
-import { ExternalLink, Share2 } from "lucide-react";
+import { ExternalLink, Pencil, Share2 } from "lucide-react";
 import CalendarAction from "@/components/CalendarAction";
 
 export default function FloatingActionStrip({
@@ -11,6 +11,8 @@ export default function FloatingActionStrip({
   onGoogleCalendar,
   onAppleCalendar,
   onOutlookCalendar,
+  onMobileEdit,
+  mobileEditHref,
   resourcesHref,
 }: {
   buttonClass: string;
@@ -18,6 +20,8 @@ export default function FloatingActionStrip({
   onGoogleCalendar: () => void;
   onAppleCalendar: () => void;
   onOutlookCalendar: () => void;
+  onMobileEdit?: () => void;
+  mobileEditHref?: string;
   resourcesHref?: string;
 }) {
   const resolvedButtonClass = `${buttonClass} min-h-11 bg-current/10 backdrop-blur-sm hover:bg-current/15 max-sm:size-11 max-sm:min-w-11 max-sm:gap-0! max-sm:p-0!`;
@@ -43,6 +47,27 @@ export default function FloatingActionStrip({
           else onOutlookCalendar();
         }}
       />
+      {onMobileEdit ? (
+        <button
+          type="button"
+          onClick={onMobileEdit}
+          className={`${resolvedButtonClass} size-11 min-w-11 gap-0! p-0! md:hidden`}
+          aria-label="Edit event"
+          title="Edit event"
+        >
+          <Pencil size={16} aria-hidden="true" />
+        </button>
+      ) : mobileEditHref ? (
+        <a
+          href={mobileEditHref}
+          target="_top"
+          className={`${resolvedButtonClass} size-11 min-w-11 gap-0! p-0! lg:hidden`}
+          aria-label="Edit event"
+          title="Edit event"
+        >
+          <Pencil size={16} aria-hidden="true" />
+        </a>
+      ) : null}
       {resourcesHref ? (
         <a
           href={resourcesHref}

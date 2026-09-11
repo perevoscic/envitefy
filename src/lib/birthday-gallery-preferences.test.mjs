@@ -17,14 +17,15 @@ test('heart toggles preserve the other saved templates without mutating them',()
  assert.deepEqual(toggleBirthdayFavorite(saved,'party-pop'),['candy-dreams']);
  assert.deepEqual(current,['party-pop']);
 });
-test('gallery searches the full catalog and progressively reveals results with a manual fallback',()=>{
+test('gallery searches the full catalog and progressively reveals results by scrolling',()=>{
  const gallery=readFileSync(new URL('../components/birthdays/BirthdayDesignGallery.tsx',import.meta.url),'utf8');
  assert.equal(BIRTHDAY_GALLERY_BATCH_SIZE,24);
  assert.doesNotMatch(gallery,/Featured mix|FEATURED_COUNT|selectFeaturedIds|featuredIdSet/);
  assert.match(gallery,/BIRTHDAY_DESIGN_CATALOG\.filter/);
  assert.match(gallery,/visibleDesigns\.slice\(0, visibleCount\)/);
- assert.match(gallery,/IntersectionObserver/);
- assert.match(gallery,/Load more designs/);
+ assert.match(gallery,/TemplateAutoLoader/);
+ assert.match(gallery,/batchSize=\{BIRTHDAY_GALLERY_BATCH_SIZE\}/);
+ assert.doesNotMatch(gallery,/Load more designs/);
  assert.match(gallery,/aria-pressed=\{favoriteIds.has\(design.id\)\}/);
  assert.match(gallery,/window.addEventListener\("storage", sync\)/);
 });

@@ -422,6 +422,8 @@ export type GymMeetTemplateRendererProps = {
   isReadOnly: boolean;
   hideOwnerActions?: boolean;
   suppressActionStrip?: boolean;
+  onMobileEdit?: () => void;
+  mobileEditHref?: string;
   onShare: () => void;
   onGoogleCalendar: () => void;
   onAppleCalendar: () => void;

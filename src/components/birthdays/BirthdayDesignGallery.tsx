@@ -1,15 +1,14 @@
 "use client";
 
-import { ArrowRight, Check, Heart, Search, Sparkles, X } from "lucide-react";
-import Link from "next/link";
+import { Heart, Search, Sparkles, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import BirthdayGalleryHero from "@/components/birthdays/BirthdayGalleryHero";
 import BirthdayDesignPreview from "@/components/birthdays/BirthdayDesignPreview";
-import { TemplateThumbnailFrame } from "@/components/events/TemplateThumbnail";
+import TemplateAutoLoader from "@/components/events/TemplateAutoLoader";
+import { TemplateMasonryCard, TemplateMasonryGrid } from "@/components/events/TemplateMasonryGallery";
 import { BIRTHDAY_DESIGN_CATALOG } from "@/data/birthday-design-catalog";
 import { BIRTHDAY_GALLERY_BATCH_SIZE, BIRTHDAY_FAVORITES_KEY, parseBirthdayFavorites, toggleBirthdayFavorite } from "@/lib/birthday-gallery-preferences";
-import type { BirthdayDesignTemplate } from "@/data/birthday-template-data";
 
 type CollectionFilter =
   | "All collections"
@@ -18,20 +17,6 @@ type CollectionFilter =
   | "Adult birthdays";
 
 const validDesignIds = new Set(BIRTHDAY_DESIGN_CATALOG.map((design) => design.id));
-
-const formatMilestone = (design: BirthdayDesignTemplate) => {
-  if (!design.milestone) return null;
-  const value = design.milestone;
-  const suffix =
-    value % 10 === 1 && value % 100 !== 11
-      ? "st"
-      : value % 10 === 2 && value % 100 !== 12
-        ? "nd"
-        : value % 10 === 3 && value % 100 !== 13
-          ? "rd"
-          : "th";
-  return `${value}${suffix}`;
-};
 
 function FilterSelect({
   label,
@@ -69,7 +54,6 @@ export default function BirthdayDesignGallery() {
   const [favoritesReady, setFavoritesReady] = useState(false);
   const [favoriteMessage, setFavoriteMessage] = useState("");
   const [visibleCount, setVisibleCount] = useState(BIRTHDAY_GALLERY_BATCH_SIZE);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
   const storageAvailable = useRef(true);
   const [collection, setCollection] = useState<CollectionFilter>("All collections");
   const [recipient, setRecipient] = useState("Everyone");
@@ -171,20 +155,6 @@ export default function BirthdayDesignGallery() {
     setVisibleCount(BIRTHDAY_GALLERY_BATCH_SIZE);
   }, [collection, recipient, milestone, style, query, favoritesOnly]);
 
-  const hasMore = visibleCount < visibleDesigns.length;
-  useEffect(() => {
-    const target = loadMoreRef.current;
-    if (!target || !hasMore || !("IntersectionObserver" in window)) return;
-    const observer = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) {
-        observer.disconnect();
-        setVisibleCount((count) => Math.min(count + BIRTHDAY_GALLERY_BATCH_SIZE, visibleDesigns.length));
-      }
-    }, { rootMargin: "500px 0px" });
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [hasMore, visibleCount, visibleDesigns.length]);
-
   const buildCustomizeHref = (templateId: string) => {
     const params = new URLSearchParams();
     params.set("templateId", templateId);
@@ -285,60 +255,23 @@ export default function BirthdayDesignGallery() {
 
       <section className="mx-auto max-w-[1500px] px-5 py-10 sm:px-8 lg:px-12 lg:py-14">
         {visibleDesigns.length > 0 ? (
-          <div className="grid grid-cols-1 gap-x-7 gap-y-11 md:grid-cols-2 xl:grid-cols-3">
-            {visibleDesigns.slice(0, visibleCount).map((design) => {
-              const milestoneLabel = formatMilestone(design);
-              return (
-                <article key={design.id} className="group relative rounded-[1.4rem]">
-                  <button type="button" disabled={!favoritesReady} aria-pressed={favoriteIds.has(design.id)} aria-label={`${favoriteIds.has(design.id) ? "Remove" : "Save"} ${design.name} ${favoriteIds.has(design.id) ? "from" : "to"} favorites`} onClick={() => saveFavorite(design.id, design.name)} className={`absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full border bg-white/95 shadow-sm transition hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 ${favoriteIds.has(design.id) ? "border-rose-300 text-rose-600" : "border-[#e4cdb6] text-[#725b4e] hover:text-rose-600"}`}>
+          <TemplateMasonryGrid>
+            {visibleDesigns.slice(0, visibleCount).map((design) => (
+              <TemplateMasonryCard
+                key={design.id}
+                designId={design.id}
+                name={design.name}
+                href={buildCustomizeHref(design.id)}
+                controls={
+                  <button type="button" disabled={!favoritesReady} aria-pressed={favoriteIds.has(design.id)} aria-label={`${favoriteIds.has(design.id) ? "Remove" : "Save"} ${design.name} ${favoriteIds.has(design.id) ? "from" : "to"} favorites`} onClick={() => saveFavorite(design.id, design.name)} className={`flex h-11 w-11 items-center justify-center rounded-full border bg-white/95 shadow-sm transition hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 ${favoriteIds.has(design.id) ? "border-rose-300 text-rose-600" : "border-[#e4cdb6] text-[#725b4e] hover:text-rose-600"}`}>
                     <Heart className="h-5 w-5" fill={favoriteIds.has(design.id) ? "currentColor" : "none"} aria-hidden="true" />
                   </button>
-                  <Link
-                    href={buildCustomizeHref(design.id)}
-                    className="absolute inset-0 z-20 rounded-[1.4rem] outline-none focus-visible:ring-2 focus-visible:ring-[#d87338] focus-visible:ring-offset-4 focus-visible:ring-offset-[#fff9f1]"
-                    aria-label={`Customize ${design.name}`}
-                  >
-                    <span className="sr-only">Customize {design.name}</span>
-                  </Link>
-                  <TemplateThumbnailFrame>
-                    <BirthdayDesignPreview design={design} />
-                  </TemplateThumbnailFrame>
-                  <div className="px-2 pt-5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h2 className='[font-family:var(--font-playfair),_"Times_New_Roman",_serif] text-2xl font-normal tracking-[-0.025em] text-[#3b281f]'>
-                          {design.name}
-                        </h2>
-                        <p className="mt-2 max-w-xl text-sm leading-6 text-[#725b4e]">
-                          {design.description}
-                        </p>
-                      </div>
-                      <span className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#e5cdb8] bg-white text-[#4a3023] transition group-hover:border-[#4a3023] group-hover:bg-[#4a3023] group-hover:text-white">
-                        <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                      </span>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {[
-                        design.recipient,
-                        milestoneLabel,
-                        design.style,
-                      ]
-                        .filter((label): label is string => Boolean(label))
-                        .map((label) => (
-                          <span
-                            key={label}
-                            className="inline-flex items-center gap-1.5 rounded-full border border-[#ead7c6] bg-white/70 px-3 py-1.5 text-[10px] font-semibold text-[#725b4e]"
-                          >
-                            <Check className="h-3 w-3 text-[#d87338]" aria-hidden="true" />
-                            {label}
-                          </span>
-                        ))}
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+                }
+              >
+                <BirthdayDesignPreview design={design} />
+              </TemplateMasonryCard>
+            ))}
+          </TemplateMasonryGrid>
         ) : (
           <div className="rounded-[2rem] border border-dashed border-[#dfc3aa] bg-white/60 px-6 py-16 text-center">
             <h2 className='[font-family:var(--font-playfair),_"Times_New_Roman",_serif] text-3xl'>
@@ -356,10 +289,7 @@ export default function BirthdayDesignGallery() {
             </button>
           </div>
         )}
-        {visibleDesigns.length > 0 ? <div ref={loadMoreRef} className="mt-12 flex flex-col items-center gap-4 text-center">
-          <p role="status" className="text-sm text-[#725b4e]">Showing {Math.min(visibleCount, visibleDesigns.length)} of {visibleDesigns.length} {favoritesOnly ? "favorite " : ""}designs{activeFilterCount > 0 ? " matching your filters" : ""}</p>
-          {hasMore ? <button type="button" onClick={() => setVisibleCount((count) => Math.min(count + BIRTHDAY_GALLERY_BATCH_SIZE, visibleDesigns.length))} className="min-h-11 rounded-full border border-[#482f23] bg-white px-7 py-3 text-sm font-semibold text-[#482f23] hover:bg-[#482f23] hover:text-white focus-visible:outline focus-visible:outline-2">Load more designs</button> : <p className="text-xs text-[#80695c]">You’ve seen every {favoritesOnly ? "favorite " : ""}design{activeFilterCount > 0 ? " matching these filters" : " in the collection"}.</p>}
-        </div> : null}
+        <TemplateAutoLoader visibleCount={visibleCount} totalCount={visibleDesigns.length} setVisibleCount={setVisibleCount} batchSize={BIRTHDAY_GALLERY_BATCH_SIZE} />
         <p role="status" className="sr-only">{favoriteMessage}</p>
       </section>
     </main>

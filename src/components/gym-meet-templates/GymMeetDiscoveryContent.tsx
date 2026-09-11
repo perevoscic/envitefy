@@ -18,6 +18,8 @@ import Image from "next/image";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import StaticMap from "@/components/StaticMap";
 import { splitGuidanceSentences } from "./displayText";
+import GymnasticsProgram from "./GymnasticsProgram";
+import type { GymnasticsPresentation } from "./gymnasticsPresentations";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2";
@@ -93,7 +95,7 @@ const getCollectionItemKey = (
 const MOBILE_NAV_SAFE_EDGE_PX = 48;
 const DESKTOP_NAV_SAFE_EDGE_PX = 8;
 
-export default function GymMeetDiscoveryContent({ model, variant }: { model: any; variant: any }) {
+export default function GymMeetDiscoveryContent({ model, variant, presentation }: { model: any; variant: any; presentation?: GymnasticsPresentation }) {
   const sections = useMemo(
     () =>
       (Array.isArray(model?.discovery?.sections) ? model.discovery.sections : []).filter(
@@ -285,6 +287,7 @@ export default function GymMeetDiscoveryContent({ model, variant }: { model: any
               </h4>
             ) : null}
             <div
+              data-program-cards={block.id === "hotel-cards" ? "hotels" : "details"}
               className={
                 block.id === "hotel-cards" ? hotelCardGridClass : gridClassForColumns(block.columns)
               }
@@ -620,6 +623,10 @@ export default function GymMeetDiscoveryContent({ model, variant }: { model: any
         return null;
     }
   };
+
+  if (presentation) {
+    return <GymnasticsProgram sections={sections} presentation={presentation} renderBlock={renderBlock} />;
+  }
 
   if (!sections.length) {
     return (
