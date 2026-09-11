@@ -719,7 +719,7 @@ export default function SettingsPage() {
       data-mobile-form-surface
       className="min-h-screen w-full bg-[radial-gradient(circle_at_12%_0%,rgba(235,228,255,0.9),transparent_31%),radial-gradient(circle_at_92%_6%,rgba(224,246,255,0.8),transparent_28%)] px-3 py-4 text-foreground sm:px-6 sm:py-7 lg:px-8"
     >
-      <section className="mx-auto w-full max-w-6xl">
+      <section className="mx-auto w-full max-w-6xl pt-[var(--app-content-top-inset,0px)]">
         <header className="relative overflow-hidden rounded-[1.5rem] border border-white/80 bg-[linear-gradient(118deg,#251b36_0%,#48357a_58%,#315d73_100%)] p-4 text-white shadow-[0_26px_80px_rgba(47,33,76,0.2)] sm:rounded-[2rem] sm:p-8">
           <div className="absolute -right-16 -top-24 h-64 w-64 rounded-full bg-[#8e7cff]/25 blur-3xl" />
           <div className="absolute -bottom-28 left-1/3 h-52 w-52 rounded-full bg-[#6cdbff]/20 blur-3xl" />

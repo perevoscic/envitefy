@@ -6,7 +6,7 @@ import {
   type ScanPersonalization,
 } from "./personalization";
 
-export type ScanArtworkImages = { background: Buffer; hero: Buffer };
+export type ScanArtworkImages = { background: Buffer; hero?: Buffer };
 
 export class ScanArtworkRenderError extends Error {
   constructor(
@@ -22,6 +22,7 @@ export async function renderScanArtwork(
   profile: ScanPersonalization,
   variation: string,
   signal = AbortSignal.timeout(120_000),
+  includeHero = true,
 ): Promise<ScanArtworkImages> {
   const render = async (kind: "background" | "hero") => {
     const result = await generateInvitationImageWithOpenAi(
@@ -44,7 +45,10 @@ export async function renderScanArtwork(
     }
   };
   // Settle both branches before releasing their memory / the request lifetime.
-  const [background, hero] = await Promise.allSettled([render("background"), render("hero")]);
+  const [background, hero] = await Promise.allSettled([
+    render("background"),
+    includeHero ? render("hero") : Promise.resolve(undefined),
+  ]);
   if (background.status === "rejected") throw background.reason;
   if (hero.status === "rejected") throw hero.reason;
   return { background: background.value, hero: hero.value };

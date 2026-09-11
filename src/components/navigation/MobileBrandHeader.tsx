@@ -69,7 +69,7 @@ export default function MobileBrandHeader({ onMenuClick }: MobileBrandHeaderProp
         <EnvitefyWordmark
           scaled={false}
           tone="light"
-          className="max-w-full text-[2.05rem] leading-none"
+          className="max-w-full text-[2.5rem] leading-none"
         />
       </Link>
 

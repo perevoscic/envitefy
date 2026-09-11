@@ -1,4 +1,5 @@
 import { contactNumberLabel } from "./contact-numbers.ts";
+import { usefulScanNotes } from "./useful-notes.ts";
 
 export type OcrFact = {
   label: string;
@@ -261,7 +262,13 @@ export function filterRenderedOcrFacts(
   if (combinedRendered) rendered.push(combinedRendered);
 
   const seenValues: string[] = [];
-  return (facts || []).filter((fact) => {
+  const usefulFacts = (facts || []).flatMap((fact) => {
+    if (!/^(?:good\s*to\s*know|notes?|details|overview|description)$/i.test(fact.label))
+      return [fact];
+    const value = usefulScanNotes(fact.value, renderedValues);
+    return value ? [{ ...fact, value }] : [];
+  });
+  return usefulFacts.filter((fact) => {
     const value = valueKey(fact.value);
     if (value && contactNumberLabel(fact.label)) return true;
     if (!value || seenValues.some((seenValue) => isNearDuplicateValue(value, seenValue))) {

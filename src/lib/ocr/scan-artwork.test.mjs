@@ -12,7 +12,7 @@ import * as scanMedia from "./scan-media.ts";
 import * as ticket from "./scan-artwork-ticket.ts";
 
 const require = createRequire(import.meta.url);
-function harness({ fail = false, conversionFails = false } = {}) {
+function harness({ fail = false, conversionFails = false, data = {} } = {}) {
   const h = {
     state: { version: 1, status: "pending" },
     generated: 0,
@@ -32,7 +32,7 @@ function harness({ fail = false, conversionFails = false } = {}) {
       if (!["pending", ...(args[3] ? ["failed"] : [])].includes(h.state.status))
         return { rows: [] };
       h.state = JSON.parse(args[2]);
-      return { rows: [{ data: { scanPersonalization: profile } }] };
+      return { rows: [{ data: { scanPersonalization: profile, ...data } }] };
     }
     if (h.state.token === args[3]) h.state = JSON.parse(args[2]);
     return { rows: [] };
@@ -175,6 +175,23 @@ test("designed invitations retain their original artwork without starting genera
   assert.equal(h.prepareSavedScanArtwork(data), false);
   assert.equal(data.scanHeroMode, "original");
   assert.equal(data.scanArtwork, undefined);
+});
+
+test("requested flyer artwork generates and uploads only a background, including legacy generated mode", async () => {
+  const h = harness({ data: {
+    createdVia: "ocr", title: "Wedding invitation", scanSourceKind: "designed",
+    scanHeroMode: "generated",
+    scanPersonalization: personal.buildScanPersonalization({ title: "Wedding invitation" }),
+    attachment: { dataUrl: "https://example.com/original.webp" },
+  } });
+  await h.generateSavedScanArtwork("flyer-event", "owner-id");
+  assert.equal(h.generated, 1);
+  assert.equal(h.uploads.length, 1);
+  assert.equal(h.state.status, "ready");
+  assert.ok(h.state.imageUrl);
+  assert.equal(h.state.heroImageUrl, undefined);
+  assert.doesNotMatch(h.uploads[0].pathname, /-hero\.webp$/);
+  assert.equal(h.uploads[0].contentType, "image/webp");
 });
 test("runtime FFmpeg output decodes as WebP and preserves dimensions and transparency", async () => {
   for (const alpha of [1, 0.4]) {

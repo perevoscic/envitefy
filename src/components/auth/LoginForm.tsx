@@ -89,7 +89,12 @@ export default function LoginForm({
     <form
       id="login-form"
       name="login"
-      className={cx("space-y-3", isInline && "space-y-2.5")}
+      className={cx(
+        "space-y-3",
+        isInline && "space-y-2.5",
+        // Global input and autofill rules must use this form's dark palette.
+        isInlineDark && "[--foreground:#fff] [--surface:#211338] [--secondary:#f0d58f]",
+      )}
       onSubmit={onEmailSubmit}
       autoComplete="on"
       method="post"
@@ -154,7 +159,7 @@ export default function LoginForm({
           isInlineLight &&
             "border-white/16 bg-white/92 shadow-[inset_0_1px_2px_rgba(15,8,29,0.06)]",
           isInlineDark &&
-            "!border-white/12 !bg-[#211338] !text-white !shadow-[inset_0_1px_2px_rgba(0,0,0,0.28)] placeholder:!text-white/62 focus-visible:!ring-[#f0d58f]",
+            "!border-white/12 !bg-[#211338] !text-white !shadow-[inset_0_1px_2px_rgba(0,0,0,0.28)] autofill:!shadow-[0_0_0_1000px_var(--surface)_inset] placeholder:!text-white/62 focus-visible:!ring-[#f0d58f]",
         )}
         placeholder="Email"
         value={email}
@@ -173,7 +178,7 @@ export default function LoginForm({
             isInlineLight &&
               "border-white/16 bg-white/92 shadow-[inset_0_1px_2px_rgba(15,8,29,0.06)]",
             isInlineDark &&
-              "!border-white/12 !bg-[#211338] !text-white !shadow-[inset_0_1px_2px_rgba(0,0,0,0.28)] placeholder:!text-white/62 focus-visible:!ring-[#f0d58f]",
+              "!border-white/12 !bg-[#211338] !text-white !shadow-[inset_0_1px_2px_rgba(0,0,0,0.28)] autofill:!shadow-[0_0_0_1000px_var(--surface)_inset] placeholder:!text-white/62 focus-visible:!ring-[#f0d58f]",
             message && "input-error",
             shake && "input-shake",
           )}

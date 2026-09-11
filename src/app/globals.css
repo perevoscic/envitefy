@@ -422,12 +422,43 @@
     linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 58%);
 }
 
+.nav-chrome-glass-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1.5px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    110deg,
+    rgba(129, 94, 255, 0.76) 0%,
+    rgba(107, 115, 255, 0.52) 45%,
+    rgba(62, 176, 236, 0.72) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
 .nav-chrome-sidebar-surface {
   background:
     radial-gradient(circle at top left, rgba(255, 255, 255, 0.1), transparent 28%),
     linear-gradient(180deg, rgba(247, 245, 255, 0.5) 0%, rgba(241, 239, 253, 0.46) 100%);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+}
+
+@media (max-width: 1023px) {
+  .nav-chrome-sidebar-surface {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(255, 255, 255, 0.88) 100%
+    );
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
 }
 
 /* Keep nested navigation panels from stacking translucent backgrounds. */
@@ -440,6 +471,83 @@
 .nav-chrome-sidebar-scroll-region {
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
+}
+
+.nav-chrome-sidebar-surface :is(button, a[href]):not(
+    :disabled,
+    [aria-disabled="true"],
+    [aria-label="Envitefy home"]
+  ),
+.nav-chrome-sidebar-surface [data-sidebar-press-surface] {
+  transform-origin: center;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    filter 160ms ease;
+}
+
+.nav-chrome-sidebar-surface :is(button, a[href]):not(
+    :disabled,
+    [aria-disabled="true"],
+    [aria-label="Envitefy home"],
+    [data-sidebar-press-trigger]
+  ):active,
+.nav-chrome-sidebar-surface [data-sidebar-press-surface]:has(
+    > [data-sidebar-press-trigger]:active
+  ) {
+  transform: translateY(2px) scale(0.95);
+  background-color: rgba(224, 215, 255, 0.78);
+  /* Pressed depth must also override selected rows' inline elevation. */
+  box-shadow: inset 0 2px 7px rgba(90, 71, 160, 0.24) !important;
+  filter: brightness(0.94);
+  transition-duration: 65ms;
+}
+
+/* Event presses belong to the rounded card, including its padded edges. */
+.nav-chrome-sidebar-surface [data-sidebar-press-trigger] {
+  border-radius: inherit;
+  will-change: auto;
+}
+
+.nav-chrome-sidebar-surface [data-sidebar-press-trigger]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.nav-chrome-sidebar-surface [data-sidebar-press-trigger]:active {
+  transform: none;
+  background-color: transparent;
+  box-shadow: none !important;
+  filter: none;
+}
+
+.nav-chrome-sidebar-surface [data-sidebar-press-trigger]:focus-visible {
+  outline: none;
+}
+
+.nav-chrome-sidebar-surface [data-sidebar-press-surface]:has(
+    > [data-sidebar-press-trigger]:focus-visible
+  ) {
+  outline: 2px solid #7c76c7;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-chrome-sidebar-surface :is(button, a[href]):not([aria-label="Envitefy home"]),
+  .nav-chrome-sidebar-surface [data-sidebar-press-surface] {
+    transition: none;
+  }
+
+  .nav-chrome-sidebar-surface :is(button, a[href]):not([aria-label="Envitefy home"]):active,
+  .nav-chrome-sidebar-surface [data-sidebar-press-surface]:has(
+      > [data-sidebar-press-trigger]:active
+    ) {
+    transform: none;
+  }
 }
 
 .nav-chrome-pill,
@@ -555,6 +663,12 @@
 .nav-chrome-mobile-drawer-backdrop {
   background: var(--nav-chrome-backdrop);
   backdrop-filter: blur(10px);
+}
+
+/* White frost keeps the page scrim from darkening the translucent sidebar. */
+.nav-chrome-sidebar-backdrop {
+  --nav-chrome-backdrop: rgba(255, 255, 255, 0.32);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .nav-chrome-mobile-drawer {

@@ -7,7 +7,7 @@ import { resolveSavedScanPersonalization } from "../../../../../lib/ocr/personal
 import { normalizeScanArtwork } from "../../../../../lib/ocr/scan-artwork-state.ts";
 import { resolveScanMediaPolicy } from "../../../../../lib/ocr/scan-media.ts";
 
-function harness(userId, ownerId = "owner", status = "ready", title = "ENT appointment") {
+function harness(userId, ownerId = "owner", status = "ready", title = "ENT appointment", data = {}) {
   const h = { mutations: [], jobs: [], calls: [] };
   const row = {
     id: "event",
@@ -23,6 +23,7 @@ function harness(userId, ownerId = "owner", status = "ready", title = "ENT appoi
             heroImageUrl: status === "ready" ? "https://example.com/hero.webp" : undefined,
           }
         : undefined,
+      ...data,
     },
   };
   const mocks = {
@@ -67,6 +68,25 @@ test("only the owner can inspect or retry artwork", async () => {
     assert.equal(h.jobs.length, 0);
     assert.equal(h.mutations.length, 0);
   }
+});
+
+test("flyer generation preserves the original and accepts a ready background without a hero", async () => {
+  const h = harness("owner", "owner", null, "Wedding invitation", { scanSourceKind: "designed" });
+  await h.POST(null, h.context);
+  assert.equal(JSON.parse(h.mutations[0][1][2]), "original");
+  assert.equal(h.jobs.length, 1);
+  const ready = harness("owner", "owner", "ready", "Wedding invitation", {
+    scanSourceKind: "designed",
+    scanArtwork: { version: 1, status: "ready", imageUrl: "https://example.com/background.webp" },
+  });
+  const response = await ready.POST(null, ready.context);
+  assert.equal((await response.json()).artwork.status, "ready");
+  assert.equal(ready.jobs.length, 0);
+  assert.equal(ready.mutations.length, 1);
+  const request = new Request("https://envitefy.test/artwork", {
+    method: "PATCH", body: JSON.stringify({ heroMode: "generated" }),
+  });
+  assert.equal((await ready.PATCH(request, ready.context)).status, 400);
 });
 test("status reads and already-ready artwork never regenerate", async () => {
   const h = harness("owner");

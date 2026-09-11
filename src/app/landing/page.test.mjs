@@ -614,7 +614,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(mobileBrandHeader, /<EnvitefyWordmark/);
   assert.match(mobileBrandHeader, /scaled=\{false\}/);
   assert.match(mobileBrandHeader, /tone="light"/);
-  assert.match(mobileBrandHeader, /text-\[2\.05rem\] leading-none/);
+  assert.match(mobileBrandHeader, /text-\[2\.5rem\] leading-none/);
   assert.doesNotMatch(mobileBrandHeader, /\/logo\.png/);
   assert.doesNotMatch(mobileBrandHeader, /brightness-0 invert/);
   assert.doesNotMatch(mobileBrandHeader, /envitefy-wordmark-white\.svg/);

@@ -32,7 +32,7 @@ async function generateUntilSaved(
       AbortSignal.any([signal, AbortSignal.timeout(120_000)]),
     );
     // Bound retained bytes while waiting for an explicit save.
-    if (images.background.length + images.hero.length > 16 * 1024 * 1024) images = null;
+    if (images.background.length + (images.hero?.length || 0) > 16 * 1024 * 1024) images = null;
   } catch (error) {
     if (!signal.aborted)
       console.error("[scan-artwork] early generation failed", {

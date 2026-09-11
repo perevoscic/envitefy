@@ -38,9 +38,11 @@ export async function POST(_request: Request, context: RouteContext) {
   if (result.error) return result.error;
   if (!resolveSavedScanPersonalization(result.row.data, result.row.title))
     return NextResponse.json({ error: "No scan artwork available" }, { status: 409 });
+  const policy = resolveScanMediaPolicy(result.row.data, result.row.title);
+  const heroMode = policy?.sourceKind === "designed" ? "original" : "generated";
   await query(
-    `UPDATE event_history SET data = jsonb_set(data, '{scanHeroMode}', '"generated"'::jsonb) WHERE id = $1 AND user_id = $2`,
-    [result.row.id, result.userId],
+    `UPDATE event_history SET data = jsonb_set(data, '{scanHeroMode}', $3::jsonb) WHERE id = $1 AND user_id = $2`,
+    [result.row.id, result.userId, JSON.stringify(heroMode)],
   );
   let artwork = normalizeScanArtwork(result.row.data?.scanArtwork);
   if (!artwork) {
@@ -56,7 +58,10 @@ export async function POST(_request: Request, context: RouteContext) {
       ],
     );
   }
-  if (artwork.status === "failed" || (artwork.status === "ready" && !artwork.heroImageUrl)) {
+  if (
+    artwork.status === "failed" ||
+    (heroMode === "generated" && artwork.status === "ready" && !artwork.heroImageUrl)
+  ) {
     artwork = { version: 1, status: "pending", updatedAt: new Date().toISOString() };
     await query(
       `UPDATE event_history SET data = jsonb_set(data, '{scanArtwork}', $3::jsonb) WHERE id = $1 AND user_id = $2 AND data->'scanArtwork'->>'status' in ('failed', 'ready')`,
@@ -80,7 +85,8 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (
     !policy ||
     (mode !== "original" && mode !== "generated") ||
-    (policy.medical && mode === "original")
+    (policy.medical && mode === "original") ||
+    (policy.sourceKind === "designed" && mode === "generated")
   )
     return NextResponse.json({ error: "Invalid artwork choice" }, { status: 400 });
   if (mode === "generated" && !normalizeScanArtwork(result.row.data.scanArtwork)?.heroImageUrl)

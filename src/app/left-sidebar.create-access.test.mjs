@@ -174,17 +174,14 @@ test("left sidebar exposes signed-in Envitefy Concierge entry", () => {
   assert.match(modelSource, /\|\s*"aiThreads"/);
 });
 
-test("left sidebar gives My Events rows a hover delete affordance", () => {
+test("left sidebar gives event titles the row width without inline action controls", () => {
   const source = readSource("src/app/left-sidebar.tsx");
+  const eventList = source.slice(source.indexOf("function EventListPanel("), source.indexOf("function AiThreadsPanel("));
 
-  assert.match(
-    source,
-    /const renderRowActions = \(item: GroupedEventItem\) => \{[\s\S]*?<EventDeleteModal[\s\S]*?buttonClassName="inline-flex h-8 w-8[\s\S]*?ariaLabel=\{`\$\{resolvedDeleteActionVerb\} \$\{item\.title\}`\}/s,
-  );
-  assert.match(
-    source,
-    /group-hover:opacity-100 group-focus-within:opacity-100 hover:border-red-200 hover:bg-red-50 hover:text-red-600/,
-  );
+  assert.match(eventList, /data-sidebar-press-trigger/);
+  assert.match(eventList, /className="flex min-w-0 flex-1 items-start gap-3 text-left"/);
+  assert.match(eventList, /onClick=\{\(\) => onRowClick\(item\)\}/);
+  assert.doesNotMatch(eventList, /renderRowActions|EventDeleteModal|Share2|Trash2/);
 });
 
 test("left sidebar keeps My Events visible on owner event tab routes", () => {

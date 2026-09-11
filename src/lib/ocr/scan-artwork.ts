@@ -55,13 +55,13 @@ export async function finishClaimedScanArtwork(
         });
       const [background, hero] = await Promise.all([
         upload(images.background, ""),
-        upload(images.hero, "-hero"),
+        images.hero ? upload(images.hero, "-hero") : Promise.resolve(null),
       ]);
       state = {
         version: 1,
         status: "ready",
         imageUrl: background.url,
-        heroImageUrl: hero.url,
+        ...(hero ? { heroImageUrl: hero.url } : {}),
         updatedAt: new Date().toISOString(),
       };
     } catch {
@@ -138,7 +138,8 @@ export async function generateSavedScanArtwork(
   let images: ScanArtworkImages | null = null;
   try {
     if (!profile) throw new ScanArtworkRenderError("context");
-    images = await renderScanArtwork(profile, token);
+    const policy = resolveScanMediaPolicy(data, String(data.title || ""));
+    images = await renderScanArtwork(profile, token, undefined, policy?.heroMode !== "original");
   } catch (error) {
     // Log no source text, patient details, model prompt or provider response.
     console.error("[scan-artwork] generation failed", {

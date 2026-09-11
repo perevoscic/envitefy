@@ -461,8 +461,8 @@ export default function HeroTopNav({
                 className={cx(
                   "max-w-full leading-none transition-transform duration-300 group-hover:scale-[1.02]",
                   isTransparentOverHero
-                    ? "text-[2.05rem] sm:text-[2.28rem] md:text-[2.52rem]"
-                    : "text-[1.85rem] sm:text-[2.05rem] md:text-[2.18rem]",
+                    ? "text-[2.5rem] sm:text-[2.8rem] md:text-[3.1rem]"
+                    : "text-[2.25rem] sm:text-[2.5rem] md:text-[2.7rem]",
                   (mobileLogoOnly || !isDarkGlass) && "hero-top-nav-brand-light",
                 )}
               />

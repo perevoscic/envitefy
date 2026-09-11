@@ -30,6 +30,8 @@ import EventDetailText from "@/components/EventDetailText";
 import RsvpIdentityModal from "@/components/RsvpIdentityModal";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
 import { ScanOriginalDocumentSection, useScanArtwork, useScanMedia } from "@/components/ScanArtworkProvider";
+import { hasPracticalScanDetails, usefulScanNotes } from "@/lib/ocr/useful-notes";
+import { useScanOriginalHero } from "@/components/ScanOriginalHero";
 import { buildPreferredDirectionsHref } from "@/lib/directions";
 import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
 import { appointmentDisplayDetails } from "@/lib/ocr/appointment-details";
@@ -333,6 +335,7 @@ export default function ScannedInviteSkin({
 }: Props) {
   const artwork = useScanArtwork();
   const scanMedia = useScanMedia();
+  const originalHero = useScanOriginalHero();
   const generatedHero = artwork?.heroImageUrl || (artwork?.status === "ready" ? artwork.imageUrl : null);
   const useGeneratedHero = scanMedia?.policy?.heroMode === "generated" || (scanMedia?.policy?.medical && !scanMedia.canManage);
   const imageUrl = useGeneratedHero ? generatedHero || null : originalImageUrl;
@@ -499,19 +502,21 @@ export default function ScannedInviteSkin({
   );
   const shouldPromptForRsvpIdentity = isGeneratedOutboundRsvpHref && !hasKnownRsvpIdentity;
   const normalizedDetailCopy = normalizeInlineSentences(rawDetailCopy);
-  const baseDetailCopy =
-    (isPickleballSkin && isRedundantPickleballSummary(normalizedDetailCopy)) ||
-    isRedundantEventSummary(normalizedDetailCopy, {
+  const baseDetailCopy = normalizedDetailCopy.split(/(?<=[.!?])\s+/).filter((part) => hasPracticalScanDetails(part) || !(
+    (isPickleballSkin && isRedundantPickleballSummary(part)) ||
+    isRedundantEventSummary(part, {
       title: displayTitle,
       date: displayDate,
       time: displayTime,
       venue: displayVenueName,
       location: hasDisplayLocation ? displayLocation : "",
     })
-      ? ""
-      : normalizedDetailCopy;
+  )).join(" ");
   const displayEntryFee = isPickleballSkin ? String(entryFeeFact?.value || "").trim() : "";
-  const displayDetailCopy = baseDetailCopy;
+  const displayDetailCopy = usefulScanNotes(baseDetailCopy, [
+    displayTitle, displayDate, displayTime, displayVenueName, displayLocation,
+    displayParking, displayEntryFee, attire,
+  ]);
   const displayAttire = String(attire || "").trim();
   const displayRegistryUrl = String(registryUrl || "").trim();
   const displayRegistryName = String(registryName || "").trim();
@@ -649,8 +654,12 @@ export default function ScannedInviteSkin({
           whileHover={imageUrl ? { rotate: -1, y: -2 } : undefined}
           onClick={() => {
             if (!imageUrl) return;
+            if (originalHero) return originalHero.open();
             setShowImageLightbox(true);
           }}
+          onPointerEnter={originalHero?.prepare}
+          onFocus={originalHero?.prepare}
+          aria-label={originalHero ? "View original invitation" : "View event artwork"}
           disabled={!imageUrl}
           className="group relative block w-full rounded-[2rem] bg-white p-4 text-left shadow-xl transition-transform disabled:cursor-default"
         >
@@ -659,7 +668,7 @@ export default function ScannedInviteSkin({
               <img
                 src={imageUrl}
                 alt={`${title} ${useGeneratedHero ? "artwork" : "invitation"}`}
-                className={`h-full w-full ${useGeneratedHero ? "object-contain bg-[#faf9f0]" : "object-cover"} transition-all duration-700 group-hover:scale-[1.02]`}
+                className={`h-full w-full ${useGeneratedHero || originalHero ? "object-contain bg-[#faf9f0]" : "object-cover"} transition-all duration-700 group-hover:scale-[1.02]`}
               />
             ) : (
               <div

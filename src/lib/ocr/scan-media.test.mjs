@@ -7,7 +7,7 @@ import {
   withoutMedicalSourceMedia,
 } from "./scan-media.ts";
 
-test("paperwork generates artwork; designed invitations retain their original until chosen", () => {
+test("paperwork generates artwork; designed invitations always retain their original hero", () => {
   for (const title of ["Appointment", "Travel itinerary", "Soccer schedule"]) {
     assert.equal(resolveScanMediaPolicy({ createdVia: "ocr" }, title).heroMode, "generated");
   }
@@ -15,13 +15,21 @@ test("paperwork generates artwork; designed invitations retain their original un
   assert.equal(resolveScanMediaPolicy(invite, "Birthday party").heroMode, "original");
   assert.equal(
     resolveScanMediaPolicy({ ...invite, scanHeroMode: "generated" }, "Birthday party").heroMode,
-    "generated",
+    "original",
   );
   assert.equal(
     resolveScanMediaPolicy({ createdVia: "ocr", scanSourceKind: "paperwork" }, "School activities")
       .heroMode,
     "generated",
   );
+});
+
+test("business cards use generated heroes and legacy flyer choices recover the original", () => {
+  assert.equal(resolveScanMediaPolicy({ createdVia: "ocr" }, "Business card").heroMode, "generated");
+  const data = { createdVia: "ocr", scanHeroMode: "generated", scanSourceKind: "unknown" };
+  assert.equal(resolveScanMediaPolicy(data, "Wedding invitation").heroMode, "original");
+  assert.equal(resolveScanMediaPolicy({ ...data, fieldsGuess: { scanSourceKind: "designed" } }, "Wedding").heroMode, "original");
+  assert.equal(data.scanHeroMode, "generated", "legacy display recovery does not mutate saved data");
 });
 
 test("medical sources always use generated artwork, including legacy and manual categories", () => {

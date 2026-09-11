@@ -24,6 +24,8 @@ import EventDetailText from "@/components/EventDetailText";
 import RsvpIdentityModal from "@/components/RsvpIdentityModal";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
 import { ScanOriginalDocumentSection } from "@/components/ScanArtworkProvider";
+import { useScanOriginalHero } from "@/components/ScanOriginalHero";
+import { usefulScanNotes } from "@/lib/ocr/useful-notes";
 import { buildPreferredDirectionsHref } from "@/lib/directions";
 import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
 import {
@@ -231,6 +233,7 @@ export default function BirthdaySkin({
 }: Props) {
   const [showCalendarMenu, setShowCalendarMenu] = useState(false);
   const [showImageLightbox, setShowImageLightbox] = useState(false);
+  const originalHero = useScanOriginalHero();
   const [showRsvpIdentityModal, setShowRsvpIdentityModal] = useState(false);
 
   const colors = useMemo(
@@ -241,7 +244,7 @@ export default function BirthdaySkin({
   const displayName = extractHonoreeName(title, honoreeName);
   const displayDate = String(dateLabel || "").trim() || "Date TBD";
   const displayTime = String(timeLabel || "").trim();
-  const displayPlanCopy = String(planCopy || "").trim();
+  const displayPlanCopy = usefulScanNotes(planCopy, [title, dateLabel, timeLabel, venueName, location, attire]);
   const rawVenueName = String(venueName || "").trim();
   const rawLocation = String(location || "").trim();
   const splitLocation = rawVenueName ? null : splitVenueFromDisplayLocation(rawLocation);
@@ -465,8 +468,12 @@ export default function BirthdaySkin({
             whileHover={{ rotate: 5, scale: 1.05 }}
             onClick={() => {
               if (!imageUrl) return;
+              if (originalHero) return originalHero.open();
               setShowImageLightbox(true);
             }}
+            onPointerEnter={originalHero?.prepare}
+            onFocus={originalHero?.prepare}
+            aria-label={originalHero ? "View original invitation" : "View event artwork"}
             className="group relative block w-full max-w-[300px] rounded-[2.5rem] border-8 border-white bg-white p-3 text-left shadow-2xl transition-all duration-500 disabled:cursor-default lg:hidden"
             disabled={!imageUrl}
           >
@@ -481,7 +488,7 @@ export default function BirthdaySkin({
                 <img
                   src={imageUrl}
                   alt={`${title} invitation`}
-                  className="aspect-[3/4] h-full w-full object-cover transition-all duration-700"
+                  className={`aspect-[3/4] h-full w-full ${originalHero ? "object-contain" : "object-cover"} transition-all duration-700`}
                 />
               ) : (
                 <div
@@ -582,8 +589,12 @@ export default function BirthdaySkin({
               whileHover={imageUrl ? { rotate: 1.5, scale: 1.01 } : undefined}
               onClick={() => {
                 if (!imageUrl) return;
+                if (originalHero) return originalHero.open();
                 setShowImageLightbox(true);
               }}
+              onPointerEnter={originalHero?.prepare}
+              onFocus={originalHero?.prepare}
+              aria-label={originalHero ? "View original invitation" : "View event artwork"}
               className="group relative hidden w-full rounded-[2.5rem] border-8 border-white bg-white p-3 text-left shadow-2xl transition-all duration-500 disabled:cursor-default lg:block"
               disabled={!imageUrl}
             >

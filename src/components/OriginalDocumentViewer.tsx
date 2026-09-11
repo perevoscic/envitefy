@@ -7,8 +7,13 @@ import type { ScanOriginalDocument } from "@/lib/ocr/scan-media";
 import { shareOriginalDocument } from "@/utils/original-document-share";
 import type { LoadedOriginalDocument } from "./useOriginalDocument";
 
-const toolbarAction =
-  "inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-white/25 bg-black/35 px-3 text-sm font-semibold text-white shadow-lg backdrop-blur-md transition hover:bg-black/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-wait disabled:opacity-45 sm:px-4";
+const toolbarAction = [
+  "inline-flex min-h-11 min-w-11 appearance-none items-center justify-center gap-2 rounded-full border border-white/25 px-3 text-sm font-semibold text-white sm:px-4",
+  // Explicit alpha and WebKit blur keep the image visible through mobile Safari controls.
+  "bg-[rgba(18,15,12,0.18)] backdrop-blur-[6px] [-webkit-backdrop-filter:blur(6px)] shadow-[0_2px_10px_rgba(0,0,0,0.12)] [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]",
+  "sm:bg-[rgba(0,0,0,0.35)] sm:backdrop-blur-md sm:[-webkit-backdrop-filter:blur(12px)] sm:shadow-lg",
+  "transition hover:bg-[rgba(18,15,12,0.28)] sm:hover:bg-[rgba(0,0,0,0.5)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-wait disabled:opacity-45",
+].join(" ");
 
 export default function OriginalDocumentViewer({
   original,
@@ -18,6 +23,7 @@ export default function OriginalDocumentViewer({
   loadError,
   originalLoadError,
   onRetry,
+  onCloseAutoFocus,
 }: {
   original: ScanOriginalDocument;
   open: boolean;
@@ -26,6 +32,7 @@ export default function OriginalDocumentViewer({
   loadError: boolean;
   originalLoadError: boolean;
   onRetry: () => void;
+  onCloseAutoFocus?: (event: Event) => void;
 }) {
   const [displayError, setDisplayError] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -58,6 +65,7 @@ export default function OriginalDocumentViewer({
     <Dialog.Portal>
       <Dialog.Overlay className="fixed inset-0 z-[13100] bg-[rgba(18,15,12,0.78)] backdrop-blur-md" />
       <Dialog.Content
+        onCloseAutoFocus={onCloseAutoFocus}
         className="fixed left-1/2 top-1/2 z-[13101] h-auto w-max max-w-[calc(100vw-var(--document-margin))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl bg-[#242321] text-white shadow-[0_32px_120px_rgba(0,0,0,0.45)] [--document-margin:1rem] sm:[--document-margin:3rem]"
         onOpenAutoFocus={(event) => {
           event.preventDefault();

@@ -5,6 +5,7 @@ import { createContext, type ReactNode, useContext, useEffect, useState } from "
 import { normalizeScanArtwork, type ScanArtworkState } from "@/lib/ocr/scan-artwork-state";
 import type { ScanHeroMode, ScanMediaPolicy, ScanOriginalDocument } from "@/lib/ocr/scan-media";
 import OriginalDocumentCard from "./OriginalDocumentCard";
+import { ScanOriginalHeroProvider } from "./ScanOriginalHero";
 
 const ScanArtworkContext = createContext<ScanArtworkState | null>(null);
 export const useScanArtwork = () => useContext(ScanArtworkContext);
@@ -17,7 +18,9 @@ export const useScanMedia = () => useContext(ScanMediaContext);
 
 export function ScanOriginalDocumentSection({
   className = "relative z-10 mx-auto mt-8 w-full max-w-md",
-}: { className?: string }) {
+}: {
+  className?: string;
+}) {
   const original = useScanMedia()?.footerOriginal;
   return original ? (
     <OriginalDocumentCard key={original.viewUrl} original={original} className={className} />
@@ -32,6 +35,7 @@ export default function ScanArtworkProvider({
   policy = null,
   original = null,
   originalPlacement = "after-content",
+  originalInHero = false,
   children,
 }: {
   eventId: string;
@@ -41,6 +45,7 @@ export default function ScanArtworkProvider({
   policy?: ScanMediaPolicy | null;
   original?: ScanOriginalDocument | null;
   originalPlacement?: "after-content" | "before-footer";
+  originalInHero?: boolean;
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -50,6 +55,8 @@ export default function ScanArtworkProvider({
   const [stalled, setStalled] = useState(false);
   const active = artwork?.status === "pending" || artwork?.status === "generating";
   const failed = artwork?.status === "failed";
+  const backgroundOnly = policy?.sourceKind === "designed";
+  const separateOriginal = originalInHero ? null : original;
   useEffect(() => {
     setArtwork(initialArtwork);
   }, [initialArtwork]);
@@ -129,8 +136,6 @@ export default function ScanArtworkProvider({
     try {
       const response = await fetch(`/api/events/${encodeURIComponent(eventId)}/scan-artwork`, {
         method: "POST",
-        body: JSON.stringify({ heroMode: "generated" }),
-        headers: { "Content-Type": "application/json" },
       });
       if (!response.ok) throw new Error("Retry failed");
       const payload = await response.json();
@@ -164,76 +169,96 @@ export default function ScanArtworkProvider({
 
   return (
     <ScanArtworkContext.Provider value={artwork}>
-      <ScanMediaContext.Provider value={{ policy, canManage, footerOriginal: originalPlacement === "before-footer" ? original : null }}>
-        {canManage && available && !artwork && (
-          <div className="relative z-20 flex justify-center bg-white px-4 py-2">
-            <button
-              type="button"
-              onClick={retry}
-              disabled={retrying}
-              className="min-h-11 rounded-lg px-4 text-sm font-semibold text-teal-800 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-50"
-            >
-              {retrying ? "Creating artwork…" : "Generate event artwork"}
-            </button>
-            {stalled && (
-              <span role="status" className="p-3 text-sm text-slate-700">
-                Could not start the artwork. Please try again.
-              </span>
-            )}
-          </div>
-        )}
-        {canManage && artwork && artwork.status !== "ready" && (
-          <div className="relative z-20 flex flex-wrap items-center justify-center gap-3 bg-white px-4 py-2 text-sm text-slate-700">
-            <span role="status">
-              {artwork.status === "failed" || stalled
-                ? "Your event is saved. Its artwork is not ready yet."
-                : "Your event is saved. Creating its artwork…"}
-            </span>
-            {(artwork.status === "failed" || stalled) && (
+      <ScanMediaContext.Provider
+        value={{
+          policy,
+          canManage,
+          footerOriginal: originalPlacement === "before-footer" ? separateOriginal : null,
+        }}
+      >
+        <ScanOriginalHeroProvider original={originalInHero ? original : null}>
+          {canManage && available && !artwork && (
+            <div className="relative z-20 flex justify-center bg-white px-4 py-2">
               <button
                 type="button"
                 onClick={retry}
                 disabled={retrying}
-                className="min-h-11 rounded-lg px-4 font-semibold text-teal-800 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-50"
+                className="min-h-11 rounded-lg px-4 text-sm font-semibold text-teal-800 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-50"
               >
-                {retrying ? "Retrying…" : "Retry artwork"}
+                {retrying
+                  ? backgroundOnly
+                    ? "Creating background…"
+                    : "Creating artwork…"
+                  : backgroundOnly
+                    ? "Generate background"
+                    : "Generate event artwork"}
               </button>
-            )}
-          </div>
-        )}
-        {canManage && policy && !policy.medical && artwork?.status === "ready" && (
-          <div className="relative z-20 flex flex-wrap justify-center gap-2 bg-white p-2">
-            {!policy.medical && (
-              <button
-                type="button"
-                disabled={retrying || policy.heroMode === "original"}
-                onClick={() => chooseHero("original")}
-                className="min-h-11 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
-              >
-                Use original artwork
-              </button>
-            )}
-            <button
-              type="button"
-              disabled={
-                retrying || (policy.heroMode === "generated" && Boolean(artwork.heroImageUrl))
-              }
-              onClick={() => (artwork.heroImageUrl ? chooseHero("generated") : retry())}
-              className="min-h-11 rounded-xl border border-teal-200 px-4 text-sm font-semibold text-teal-800 disabled:opacity-50"
-            >
-              Use generated artwork
-            </button>
-            {stalled && (
-              <span role="status" className="p-3 text-sm text-slate-700">
-                Could not change the artwork. Please try again.
+              {stalled && (
+                <span role="status" className="p-3 text-sm text-slate-700">
+                  Could not start the artwork. Please try again.
+                </span>
+              )}
+            </div>
+          )}
+          {canManage && artwork && artwork.status !== "ready" && (
+            <div className="relative z-20 flex flex-wrap items-center justify-center gap-3 bg-white px-4 py-2 text-sm text-slate-700">
+              <span role="status">
+                {artwork.status === "failed" || stalled
+                  ? "Your event is saved. Its artwork is not ready yet."
+                  : backgroundOnly
+                    ? "Your event is saved. Creating its background…"
+                    : "Your event is saved. Creating its artwork…"}
               </span>
+              {(artwork.status === "failed" || stalled) && (
+                <button
+                  type="button"
+                  onClick={retry}
+                  disabled={retrying}
+                  className="min-h-11 rounded-lg px-4 font-semibold text-teal-800 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-50"
+                >
+                  {retrying ? "Retrying…" : backgroundOnly ? "Retry background" : "Retry artwork"}
+                </button>
+              )}
+            </div>
+          )}
+          {canManage &&
+            policy &&
+            !policy.medical &&
+            !backgroundOnly &&
+            artwork?.status === "ready" && (
+              <div className="relative z-20 flex flex-wrap justify-center gap-2 bg-white p-2">
+                {!policy.medical && (
+                  <button
+                    type="button"
+                    disabled={retrying || policy.heroMode === "original"}
+                    onClick={() => chooseHero("original")}
+                    className="min-h-11 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
+                  >
+                    Use original artwork
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={
+                    retrying || (policy.heroMode === "generated" && Boolean(artwork.heroImageUrl))
+                  }
+                  onClick={() => (artwork.heroImageUrl ? chooseHero("generated") : retry())}
+                  className="min-h-11 rounded-xl border border-teal-200 px-4 text-sm font-semibold text-teal-800 disabled:opacity-50"
+                >
+                  Use generated artwork
+                </button>
+                {stalled && (
+                  <span role="status" className="p-3 text-sm text-slate-700">
+                    Could not change the artwork. Please try again.
+                  </span>
+                )}
+              </div>
             )}
-          </div>
-        )}
-        {children}
-        {original && originalPlacement === "after-content" && (
-          <OriginalDocumentCard key={original.viewUrl} original={original} />
-        )}
+          {children}
+          {separateOriginal && originalPlacement === "after-content" && (
+            <OriginalDocumentCard key={separateOriginal.viewUrl} original={separateOriginal} />
+          )}
+        </ScanOriginalHeroProvider>
       </ScanMediaContext.Provider>
     </ScanArtworkContext.Provider>
   );

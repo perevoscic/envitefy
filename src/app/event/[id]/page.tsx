@@ -1276,6 +1276,14 @@ export default async function EventPage({
         available={Boolean(resolveSavedScanPersonalization(data, title))}
         policy={scanMediaPolicy}
         original={scanOriginal}
+        originalInHero={scanMediaPolicy?.heroMode === "original" &&
+          isValidElement<{ imageUrl?: string | null }>(children) && Boolean(children.props.imageUrl) && (
+            children.type === GenericEventSkin || children.type === BirthdaySkin ||
+            children.type === ScannedWeddingInviteView || children.type === OpenHouseSkin ||
+            children.type === BabyShowerSkin || children.type === GraduationSkin ||
+            children.type === BasketballSkin || children.type === FootballSkin ||
+            children.type === PickleballSkin
+          )}
         originalPlacement={isValidElement(children) && (
           children.type === GenericEventSkin || children.type === BirthdaySkin ||
           children.type === ScannedWeddingInviteView || children.type === OpenHouseSkin ||

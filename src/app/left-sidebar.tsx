@@ -27,7 +27,6 @@ import {
   Plus,
   Search,
   Settings,
-  Share2,
   ShieldCheck,
   Stethoscope,
   Trash2,
@@ -46,6 +45,7 @@ import {
   type CSSProperties,
   type Dispatch,
   type MouseEvent,
+  type ReactNode,
   type RefObject,
   type SetStateAction,
   Fragment,
@@ -57,7 +57,6 @@ import conciergeMenuIcon from "@/assets/concierge-menu-icon.png";
 import { adminNavItems, type AdminNavItemId } from "@/components/admin/nav";
 import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
-import EventDeleteModal from "@/components/EventDeleteModal";
 import EventSidebar from "@/components/navigation/EventSidebar";
 import { useMenu } from "@/contexts/MenuContext";
 import type { CreationThreadSummary, CreationThreadsResponse } from "@/lib/concierge/types";
@@ -73,15 +72,14 @@ import {
   getSidebarPrimaryActiveAccent,
   SIDEBAR_BADGE_CLASS,
   SIDEBAR_DIVIDER_CLASS,
-  SIDEBAR_EVENT_LIST_PANEL_CLASS,
   SIDEBAR_EVENT_PANEL_CLASS,
   SIDEBAR_FOOTER_TRIGGER_CLASS,
   SIDEBAR_ICON_CHIP_ACCENT_CLASS,
   SIDEBAR_ICON_CHIP_CLASS,
   SIDEBAR_ITEM_CARD_CLASS,
+  SIDEBAR_LIST_PANEL_CLASS,
   SIDEBAR_MENU_ROW_CLASS,
   SIDEBAR_PANEL_CLASS,
-  SUBPAGE_STICKY_HEADER_CLASS,
 } from "./left-sidebar.model";
 import { useSidebar } from "./sidebar-context";
 
@@ -350,6 +348,68 @@ function PanelBackButton({ onClick }: { onClick: () => void }) {
         Back
       </span>
     </button>
+  );
+}
+
+function animateSidebarPress(event: MouseEvent<HTMLDivElement>) {
+  if (!(event.target instanceof Element) || event.button !== 0) return;
+  const control = event.target.closest<HTMLButtonElement | HTMLAnchorElement>("button, a[href]");
+  if (
+    !control ||
+    !event.currentTarget.contains(control) ||
+    control.matches(':disabled, [aria-disabled="true"], [aria-label="Envitefy home"]') ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
+    return;
+  }
+
+  const pressSurface = control.matches("[data-sidebar-press-trigger]")
+    ? control.closest<HTMLElement>("[data-sidebar-press-surface]") || control
+    : control;
+  for (const animation of pressSurface.getAnimations()) {
+    if (animation.id === "sidebar-press-feedback") animation.cancel();
+  }
+  const animation = pressSurface.animate(
+    [
+      { transform: "translateY(2px) scale(0.95)", offset: 0 },
+      { transform: "translateY(0) scale(1.01)", offset: 0.65 },
+      { transform: "translateY(0) scale(1)", offset: 1 },
+    ],
+    { duration: 280, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+  );
+  animation.id = "sidebar-press-feedback";
+}
+
+function SidebarListPanel({
+  title,
+  titleClassName = "",
+  onBack,
+  children,
+}: {
+  title: string;
+  titleClassName?: string;
+  onBack: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-4 pt-2">
+      <div className="shrink-0 px-5 pb-4 pt-2">
+        <PanelBackButton onClick={onBack} />
+        <div className="px-2 pb-1 pt-1">
+          <p className={`${SIDEBAR_SUBPAGE_TITLE_CLASS} ${titleClassName}`}>{title}</p>
+        </div>
+      </div>
+
+      <div
+        className="nav-chrome-sidebar-scroll-region no-scrollbar min-h-0 flex-1 overflow-y-auto px-5 pb-36 touch-pan-y lg:pb-40"
+        role="region"
+        aria-label={`${title} list`}
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: the scrollable list needs focus for keyboard scrolling.
+        tabIndex={0}
+      >
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -663,14 +723,7 @@ function AdminNavigationPanel({
   onBack: () => void;
 }) {
   return (
-    <div className="space-y-4 pt-2">
-      <div className={SUBPAGE_STICKY_HEADER_CLASS}>
-        <PanelBackButton onClick={onBack} />
-        <div className="px-2 pb-1 pt-1">
-          <p className={SIDEBAR_SUBPAGE_TITLE_CLASS}>Admin</p>
-        </div>
-      </div>
-
+    <SidebarListPanel title="Admin" onBack={onBack}>
       <div className="space-y-2">
         {adminNavItems.map((item) => {
           const Icon = adminSidebarIcons[item.id];
@@ -705,7 +758,7 @@ function AdminNavigationPanel({
           );
         })}
       </div>
-    </div>
+    </SidebarListPanel>
   );
 }
 
@@ -787,13 +840,7 @@ function CreatePanel({
   onOpenOther: () => void;
 }) {
   return (
-    <div className="space-y-4 pt-2">
-      <div className={SUBPAGE_STICKY_HEADER_CLASS}>
-        <PanelBackButton onClick={onBack} />
-        <div className="px-2 pb-1 pt-1">
-          <p className={SIDEBAR_SUBPAGE_TITLE_CLASS}>{title}</p>
-        </div>
-      </div>
+    <SidebarListPanel title={title} onBack={onBack}>
       <div className="space-y-1.5">
         {items.map((item, index) => (
           <CreateMenuButton
@@ -846,7 +893,7 @@ function CreatePanel({
           </button>
         ) : null}
       </div>
-    </div>
+    </SidebarListPanel>
   );
 }
 
@@ -857,16 +904,9 @@ function EventListPanel({
   emptyPastCopy,
   isHistoryRowActive,
   onRowClick,
-  onShareRow,
-  onDeleteRow,
   pastExpanded,
   setPastExpanded,
   showPendingBadge,
-  showQuickActions = true,
-  showShareAction = true,
-  actionsAlwaysVisible = false,
-  deleteActionTitle = "Delete event",
-  deleteActionVerb = "Delete",
   pastRowOpacityClass,
   onBack,
 }: {
@@ -876,62 +916,12 @@ function EventListPanel({
   emptyPastCopy: string;
   isHistoryRowActive: (rowId: string) => boolean;
   onRowClick: (item: GroupedEventItem) => void;
-  onShareRow: (item: GroupedEventItem) => Promise<void> | void;
-  onDeleteRow: (item: GroupedEventItem) => Promise<void> | void;
   pastExpanded: boolean;
   setPastExpanded: Dispatch<SetStateAction<boolean>>;
   showPendingBadge: boolean;
-  showQuickActions?: boolean;
-  showShareAction?: boolean;
-  actionsAlwaysVisible?: boolean;
-  deleteActionTitle?: string;
-  deleteActionVerb?: string;
   pastRowOpacityClass: string;
   onBack: () => void;
 }) {
-  const rowActionVisibilityClass = actionsAlwaysVisible
-    ? "opacity-100"
-    : "opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100";
-
-  const renderRowActions = (item: GroupedEventItem) => {
-    if (!showQuickActions) return null;
-    const canShare = showShareAction && item.showQuickActions && !item.isInvited;
-    const resolvedDeleteActionVerb = item.isInvited ? "Remove" : deleteActionVerb;
-    return (
-      <span className={`ml-2 flex shrink-0 items-center gap-1 ${rowActionVisibilityClass}`}>
-        {canShare ? (
-          <button
-            type="button"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              void onShareRow(item);
-            }}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e5e0ff] bg-white/85 text-[#7a6fd1] transition hover:bg-white"
-            aria-label={`Share ${item.title}`}
-            title="Share event"
-          >
-            <Share2 size={13} />
-          </button>
-        ) : null}
-        <EventDeleteModal
-          eventId={item.row.id}
-          eventTitle={item.title || item.row.title || "Untitled event"}
-          deleteMode={item.isInvited ? "removeInvited" : "delete"}
-          eventData={item.row.data}
-          navigateAfterDelete={isHistoryRowActive(item.row.id)}
-          buttonClassName="inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-100 bg-white/90 text-red-500 shadow-[0_10px_20px_rgba(220,38,38,0.08)] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-          ariaLabel={`${resolvedDeleteActionVerb} ${item.title}`}
-        >
-          <Trash2 size={13} />
-          <span className="sr-only">
-            {resolvedDeleteActionVerb} {item.title}
-          </span>
-        </EventDeleteModal>
-      </span>
-    );
-  };
-
   const getMonthLabel = (item: GroupedEventItem) =>
     Number.isFinite(item.dateMs)
       ? new Date(item.dateMs).toLocaleDateString(undefined, { month: "short", year: "numeric" })
@@ -958,12 +948,14 @@ function EventListPanel({
             </div>
           ) : null}
           <div
-            className={`${SIDEBAR_SUBMENU_ROW_CLASS} items-start px-2 py-2.5 ${
+            data-sidebar-press-surface
+            className={`${SIDEBAR_SUBMENU_ROW_CLASS} relative items-start px-2 py-2.5 ${
               isActive ? SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS : SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS
             } ${muted ? pastRowOpacityClass : ""}`}
           >
             <button
               type="button"
+              data-sidebar-press-trigger
               onClick={() => onRowClick(item)}
               className="flex min-w-0 flex-1 items-start gap-3 text-left"
               aria-current={isActive ? "page" : undefined}
@@ -992,7 +984,7 @@ function EventListPanel({
                 {showPendingBadge || item.isInvited ? (
                   <span className="flex items-center gap-2">
                     <span
-                      className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-snug md:text-[1.02rem] ${
+                      className={`font-[var(--font-josefin-sans)] min-w-0 flex-1 truncate text-[0.98rem] font-bold leading-snug md:text-[1.02rem] ${
                         isActive
                           ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
                           : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
@@ -1028,28 +1020,14 @@ function EventListPanel({
                 </span>
               </span>
             </button>
-            {renderRowActions(item)}
           </div>
         </Fragment>
       );
     });
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 pt-2">
-      <div className="shrink-0 px-5 pb-4 pt-2">
-        <PanelBackButton onClick={onBack} />
-        <div className="px-2 pb-1 pt-1">
-          <p className={SIDEBAR_SUBPAGE_TITLE_CLASS}>{title}</p>
-        </div>
-      </div>
-
-      <div
-        className="nav-chrome-sidebar-scroll-region no-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto px-5 pb-36 touch-pan-y lg:pb-40"
-        role="region"
-        aria-label={`${title} list`}
-        // biome-ignore lint/a11y/noNoninteractiveTabindex: the scrollable event list needs focus for keyboard scrolling.
-        tabIndex={0}
-      >
+    <SidebarListPanel title={title} onBack={onBack}>
+      <div className="space-y-3">
         {grouped.upcoming.length === 0 && grouped.past.length === 0 ? (
           <div
             className={`${SIDEBAR_SUBMENU_CARD_CLASS} rounded-[24px] border-dashed px-4 py-6 text-center text-sm text-[#7e76b9]`}
@@ -1107,7 +1085,7 @@ function EventListPanel({
           </div>
         )}
       </div>
-    </div>
+    </SidebarListPanel>
   );
 }
 
@@ -1127,14 +1105,11 @@ function AiThreadsPanel({
   onDeleteThread: (thread: CreationThreadSummary) => void;
 }) {
   return (
-    <div className="space-y-4 pt-2">
-      <div className={SUBPAGE_STICKY_HEADER_CLASS}>
-        <PanelBackButton onClick={onBack} />
-        <div className="px-2 pb-1 pt-1">
-          <p className={`${SIDEBAR_SUBPAGE_TITLE_CLASS} !text-[1.1rem] !tracking-[0.06em]`}>Envitefy Concierge</p>
-        </div>
-      </div>
-
+    <SidebarListPanel
+      title="Envitefy Concierge"
+      titleClassName="!text-[1.1rem] !tracking-[0.06em]"
+      onBack={onBack}
+    >
       <div className="space-y-3">
         <Link
           href="/chat"
@@ -1218,7 +1193,7 @@ function AiThreadsPanel({
           )}
         </section>
       </div>
-    </div>
+    </SidebarListPanel>
   );
 }
 
@@ -1550,10 +1525,10 @@ export default function LeftSidebar() {
               <Link
                 href="/"
                 onClick={viewModel.goHomeFromSidebar}
-                className="flex h-11 min-w-0 items-center justify-end"
+                className="flex h-11 shrink-0 items-center justify-end"
               >
                 <EnvitefyWordmark
-                  className="text-[1.55rem] leading-none sm:text-[1.65rem]"
+                  className="text-[44px] leading-none"
                   scaled={false}
                 />
               </Link>
@@ -1563,7 +1538,7 @@ export default function LeftSidebar() {
       ) : null}
 
       <div
-        className={`nav-chrome-mobile-drawer-backdrop fixed inset-0 z-[5999] transition-opacity duration-200 lg:hidden ${
+        className={`nav-chrome-mobile-drawer-backdrop nav-chrome-sidebar-backdrop fixed inset-0 z-[5999] transition-opacity duration-200 lg:hidden ${
           viewModel.isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         onClick={() => {
@@ -1576,6 +1551,7 @@ export default function LeftSidebar() {
       {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: the mobile condition assigns role=dialog with aria-modal together. */}
       <div
         ref={viewModel.asideRef}
+        onClickCapture={animateSidebarPress}
         role={!viewModel.isDesktop && viewModel.isOpen ? "dialog" : undefined}
         aria-modal={!viewModel.isDesktop && viewModel.isOpen ? true : undefined}
         aria-hidden={!viewModel.isDesktop && !viewModel.isOpen ? true : undefined}
@@ -1631,7 +1607,7 @@ export default function LeftSidebar() {
                   </div>
 
                   <div
-                    className={`${SIDEBAR_PANEL_CLASS} z-[9]`}
+                    className={`${SIDEBAR_LIST_PANEL_CLASS} z-[9]`}
                     style={panelStyle(adminPanelTransform, viewModel.sidebarPage === "admin")}
                     aria-hidden={viewModel.sidebarPage !== "admin"}
                   >
@@ -1639,7 +1615,7 @@ export default function LeftSidebar() {
                   </div>
 
                   <div
-                    className={`${SIDEBAR_PANEL_CLASS} z-[9]`}
+                    className={`${SIDEBAR_LIST_PANEL_CLASS} z-[9]`}
                     style={panelStyle(
                       aiThreadsPanelTransform,
                       viewModel.sidebarPage === "aiThreads",
@@ -1657,7 +1633,7 @@ export default function LeftSidebar() {
                   </div>
 
                   <div
-                    className={`${SIDEBAR_PANEL_CLASS} z-[10]`}
+                    className={`${SIDEBAR_LIST_PANEL_CLASS} z-[10]`}
                     style={panelStyle(
                       createEventPanelTransform,
                       viewModel.sidebarPage === "createEvent",
@@ -1677,7 +1653,7 @@ export default function LeftSidebar() {
                   </div>
 
                   <div
-                    className={`${SIDEBAR_PANEL_CLASS} z-[12]`}
+                    className={`${SIDEBAR_LIST_PANEL_CLASS} z-[12]`}
                     style={panelStyle(
                       createEventOtherPanelTransform,
                       viewModel.sidebarPage === "createEventOther",
@@ -1697,7 +1673,7 @@ export default function LeftSidebar() {
                   </div>
 
                   <div
-                    className={`${SIDEBAR_EVENT_LIST_PANEL_CLASS} z-[15]`}
+                    className={`${SIDEBAR_LIST_PANEL_CLASS} z-[15]`}
                     style={panelStyle(myEventsPanelTransform, showOwnerEventsPanel)}
                     aria-hidden={!showOwnerEventsPanel}
                   >
@@ -1708,8 +1684,6 @@ export default function LeftSidebar() {
                       emptyPastCopy="No past events."
                       isHistoryRowActive={viewModel.isHistoryRowActive}
                       onRowClick={viewModel.openOwnerEventContext}
-                      onShareRow={viewModel.shareEventFromList}
-                      onDeleteRow={viewModel.deleteEventFromList}
                       pastExpanded={viewModel.showPastMyEvents}
                       setPastExpanded={viewModel.setShowPastMyEvents}
                       showPendingBadge={false}
@@ -1719,7 +1693,7 @@ export default function LeftSidebar() {
                   </div>
 
                   <div
-                    className={`${SIDEBAR_EVENT_LIST_PANEL_CLASS} z-[20]`}
+                    className={`${SIDEBAR_LIST_PANEL_CLASS} z-[20]`}
                     style={panelStyle(
                       invitedEventsPanelTransform,
                       viewModel.sidebarPage === "invitedEvents",
@@ -1733,14 +1707,9 @@ export default function LeftSidebar() {
                       emptyPastCopy="No past invited events."
                       isHistoryRowActive={viewModel.isHistoryRowActive}
                       onRowClick={viewModel.openGuestEventContext}
-                      onShareRow={viewModel.shareEventFromList}
-                      onDeleteRow={viewModel.removeInvitedEventFromList}
                       pastExpanded={viewModel.showPastInvitedEvents}
                       setPastExpanded={viewModel.setShowPastInvitedEvents}
                       showPendingBadge
-                      showShareAction={false}
-                      deleteActionTitle="Remove invited event"
-                      deleteActionVerb="Remove"
                       pastRowOpacityClass="opacity-70 saturate-75"
                       onBack={viewModel.backToRoot}
                     />

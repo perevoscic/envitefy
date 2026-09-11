@@ -111,8 +111,6 @@ export const SIDEBAR_ITEM_CARD_CLASS = "nav-chrome-motion rounded-full";
 export const SIDEBAR_BADGE_CLASS =
   "inline-flex min-w-[20px] items-center justify-center rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-[#7269dd] shadow-[0_8px_18px_rgba(126,111,233,0.14)]";
 export const SIDEBAR_WIDTH_REM = "20rem";
-export const SUBPAGE_STICKY_HEADER_CLASS =
-  "sticky top-0 z-20 -mx-5 bg-transparent px-5 pb-4 pt-2";
 export const SIDEBAR_DIVIDER_CLASS = "h-px w-full bg-transparent";
 export const SIDEBAR_MENU_ROW_CLASS =
   "flex w-full items-center gap-3 px-3 py-3 text-left text-[0.92rem] font-semibold uppercase tracking-[0.12em]";
@@ -123,7 +121,7 @@ export const SIDEBAR_ICON_CHIP_CLASS =
 export const SIDEBAR_ICON_CHIP_ACCENT_CLASS = "";
 export const SIDEBAR_PANEL_CLASS =
   "nav-chrome-sidebar-scroll-region absolute inset-0 overflow-y-auto no-scrollbar px-5 pb-36 touch-pan-y lg:pb-40";
-export const SIDEBAR_EVENT_LIST_PANEL_CLASS = "absolute inset-0 overflow-hidden";
+export const SIDEBAR_LIST_PANEL_CLASS = "absolute inset-0 overflow-hidden";
 export const SIDEBAR_EVENT_PANEL_CLASS =
   "absolute inset-0 overflow-hidden nav-chrome-sidebar-surface";
 export const SIDEBAR_FOOTER_TRIGGER_CLASS =

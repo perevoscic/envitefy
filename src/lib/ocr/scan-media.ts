@@ -29,26 +29,36 @@ export function resolveScanMediaPolicy(
   const medical =
     Boolean(profile?.medical) || isMedicalAppointmentCategory(String(data.category || ""));
   if (!profile && !medical) return null;
+  const fields = data.fieldsGuess;
+  const savedSourceKind =
+    fields && typeof fields === "object" && "scanSourceKind" in fields
+      ? fields.scanSourceKind
+      : undefined;
   let sourceKind = normalizeScanSourceKind(data.scanSourceKind);
+  if (sourceKind === "unknown") sourceKind = normalizeScanSourceKind(savedSourceKind);
   if (medical) sourceKind = "paperwork";
   if (
     sourceKind === "unknown" &&
-    /\b(?:schedule|itinerary|appointment|timetable|confirmation|receipt)\b/i.test(
+    /\b(?:schedule|itinerary|appointment|timetable|confirmation|receipt|business\s+card|contact\s+card)\b/i.test(
       `${title} ${String(data.category || "")}`,
     )
   )
     sourceKind = "paperwork";
+  if (sourceKind === "unknown" && /\b(?:flyer|poster|invitation|invite)\b/i.test(title))
+    sourceKind = "designed";
   const chosen = data.scanHeroMode;
   return {
     sourceKind,
     medical,
     heroMode: medical
       ? "generated"
-      : chosen === "generated" || chosen === "original"
-        ? chosen
-        : sourceKind === "paperwork"
-          ? "generated"
-          : "original",
+      : sourceKind === "designed"
+        ? "original"
+        : chosen === "generated" || chosen === "original"
+          ? chosen
+          : sourceKind === "paperwork"
+            ? "generated"
+            : "original",
   };
 }
 

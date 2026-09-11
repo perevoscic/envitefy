@@ -28,6 +28,8 @@ import {
 import OcrFactCards from "@/components/OcrFactCards";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
 import { ScanOriginalDocumentSection } from "@/components/ScanArtworkProvider";
+import { useScanOriginalHero } from "@/components/ScanOriginalHero";
+import { usefulScanNotes } from "@/lib/ocr/useful-notes";
 import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
 import { filterRenderedOcrFacts, normalizeOcrFacts, type OcrFact } from "@/lib/ocr/facts";
 import type { OcrSkinBackground } from "@/lib/ocr/skin-background";
@@ -202,6 +204,8 @@ export default function OpenHouseSkin({
 }: Props) {
   const [showCalendarMenu, setShowCalendarMenu] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const originalHero = useScanOriginalHero();
+  const usefulDetailCopy = usefulScanNotes(detailCopy, [title, dateLabel, timeLabel, venueName, location]);
 
   const colors = useMemo(
     () => normalizeScannedInvitePalette(palette as any, DEFAULT_PALETTE as any),
@@ -397,7 +401,14 @@ export default function OpenHouseSkin({
 
           <button
             type="button"
-            onClick={() => heroImage && setLightboxImage(heroImage)}
+            onClick={() => {
+              if (!heroImage) return;
+              if (originalHero) return originalHero.open();
+              setLightboxImage(heroImage);
+            }}
+            onPointerEnter={originalHero?.prepare}
+            onFocus={originalHero?.prepare}
+            aria-label={originalHero ? "View original flyer" : "View event artwork"}
             disabled={!heroImage}
             className="group relative overflow-hidden rounded-[2rem] border-8 border-white bg-white text-left shadow-2xl disabled:cursor-default"
           >
@@ -567,12 +578,12 @@ export default function OpenHouseSkin({
                 disabled={previewMode}
               />
             ) : null}
-            {detailCopy ? (
+            {usefulDetailCopy ? (
               <section
                 className="rounded-[1.5rem] border border-black/5 p-5 text-sm font-semibold shadow-sm"
                 style={{ backgroundColor: surface, color: surfaceText }}
               >
-                {detailCopy}
+                {usefulDetailCopy}
               </section>
             ) : null}
           </aside>

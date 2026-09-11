@@ -8,13 +8,12 @@ const repoRoot = process.cwd();
 const readSource = (relativePath) =>
   fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
-test("invited events render a visible remove action without sharing controls", () => {
+test("invited events use the shared title-focused rows without inline actions", () => {
   const source = readSource("src/app/left-sidebar.tsx");
 
-  assert.match(source, /onDeleteRow=\{viewModel\.removeInvitedEventFromList\}/);
-  assert.match(source, /showShareAction=\{false\}/);
-  assert.doesNotMatch(source, /showShareAction=\{false\}\s+actionsAlwaysVisible/);
-  assert.match(source, /deleteActionTitle="Remove invited event"/);
+  assert.match(source, /<EventListPanel\s+title="Invited Events"/);
+  assert.match(source, /onRowClick=\{viewModel\.openGuestEventContext\}/);
+  assert.doesNotMatch(source, /onShareRow=|onDeleteRow=|deleteActionTitle=/);
 });
 
 test("invited event removal revokes shares before falling back to own history delete", () => {

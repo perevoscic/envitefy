@@ -15,6 +15,7 @@ import OcrFactCards from "@/components/OcrFactCards";
 import EventDetailText from "@/components/EventDetailText";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
 import { ScanOriginalDocumentSection } from "@/components/ScanArtworkProvider";
+import { useScanOriginalHero } from "@/components/ScanOriginalHero";
 import {
   filterRegistryOcrFacts,
   filterRenderedOcrFacts,
@@ -123,6 +124,7 @@ export default function ScannedWeddingInviteView({
 }: Props) {
   const [showCalendarMenu, setShowCalendarMenu] = useState(false);
   const [showImageLightbox, setShowImageLightbox] = useState(false);
+  const originalHero = useScanOriginalHero();
   const [shareMessage, setShareMessage] = useState<"idle" | "copied" | "shared">("idle");
   const colors = useMemo(
     () => normalizeWeddingFlyerColors(flyerColors || DEFAULT_WEDDING_SCAN_FLYER_COLORS),
@@ -222,8 +224,8 @@ export default function ScannedWeddingInviteView({
     if (previewMode || !imageUrl) return;
     if (!imageUrl) return;
     const link = document.createElement("a");
-    link.href = imageUrl;
-    link.download = "wedding-invitation";
+    link.href = originalHero?.downloadUrl || imageUrl;
+    link.download = originalHero?.fileName || "wedding-invitation";
     link.click();
   };
 
@@ -239,6 +241,7 @@ export default function ScannedWeddingInviteView({
 
   const handleOpenLightbox = () => {
     if (!imageUrl) return;
+    if (originalHero) return originalHero.open();
     setShowImageLightbox(true);
   };
 
@@ -649,6 +652,8 @@ export default function ScannedWeddingInviteView({
             <button
               type="button"
               onClick={handleOpenLightbox}
+              onPointerEnter={originalHero?.prepare}
+              onFocus={originalHero?.prepare}
               className="block w-full rounded-[1.8rem] border-0 p-3 text-left transition hover:scale-[1.01]"
               aria-label="Open invitation preview"
               style={{ backgroundColor: colors.primary }}

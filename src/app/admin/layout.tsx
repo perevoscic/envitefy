@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 function AdminAccessMessage({ title, description }: { title: string; description: string }) {
   return (
-    <div className="min-h-[100dvh] bg-slate-50 px-4 py-10 text-slate-950">
+    <div className="min-h-[100dvh] px-4 py-10 text-slate-950">
       <div className="mx-auto max-w-lg rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-700">Admin</p>
         <h1 className="mt-2 text-2xl font-semibold">{title}</h1>
@@ -26,7 +26,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   try {
     await requireAdminSession();
     return (
-      <div className="min-h-[100dvh] bg-slate-50 text-slate-950">
+      <div className="min-h-[100dvh] text-slate-950">
         <div className="mx-auto w-full max-w-[1600px] px-3 pb-3 pt-24 sm:px-5 sm:pb-5 sm:pt-28 lg:px-6 lg:pb-6">
           {children}
         </div>

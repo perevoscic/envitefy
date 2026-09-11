@@ -67,6 +67,8 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Extracts useful details such as title, date, time, place, host information, RSVP details, schedules, and relevant links for review.",
             "Creates a saved event record and polished live event card/page; it is more than OCR or a static scan.",
             "Saved scans keep the original document available in a popup that fits the image, with overlaid controls to download the exact file or share it through supported device sharing. Medical source documents remain owner-only.",
+            "Designed flyers and invitations stay in the hero, including while an optional background is generated. Tap the flyer to view or save the original; paperwork and business cards keep a separate Original document tile beneath their generated artwork.",
+            "Good to know keeps useful extra instructions and plans, such as what to bring or a reception to follow, while omitting generic reminders and repeated event details.",
             "For recognized paperwork and appointments, unique hero and background artwork can begin while the remaining scan details are processed. Saving reuses that work and opens the event without waiting for the artwork.",
             "Received social invitation cards can be kept with Invited events, while source material for events the customer owns belongs with My events.",
           ],
