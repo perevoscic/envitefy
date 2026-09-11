@@ -2,149 +2,20 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import BabyShowerDesignPreview from "@/components/baby-showers/BabyShowerDesignPreview";
-import BirthdayDesignPreview from "@/components/birthdays/BirthdayDesignPreview";
-import { config as sportsConfig } from "@/components/event-templates/SportEventsTemplate";
 import {
   TemplateThumbnailFrame,
-  TemplateThumbnailPreview,
 } from "@/components/events/TemplateThumbnail";
-import GenderRevealTemplateView from "@/components/GenderRevealTemplateView";
-import GymnasticsPreview from "@/components/gym-meet-templates/GymnasticsPreview";
-import { GYM_MEET_TEMPLATE_LIBRARY } from "@/components/gym-meet-templates/registry";
-import SimpleTemplateView from "@/components/SimpleTemplateView";
-import SignupTemplatePreview from "@/components/smart-signup-form/SignupTemplatePreview";
-import WeddingDesignPreview from "@/components/weddings/WeddingDesignPreview";
-import { BIRTHDAY_DESIGN_BY_ID } from "@/data/birthday-design-catalog";
-import { getFamilyTemplateDesign } from "@/lib/family-template-designs";
-import { getPublicTemplates, type PublicTemplate } from "@/lib/public-template-catalog";
-import { getSportEventPreset, getSportStyleThemeIds } from "@/lib/sport-event-presets";
+import { getPublicTemplates } from "@/lib/public-template-catalog";
 import {
   getTemplateCategory,
   type TemplateCategory,
   templateEditorHref,
 } from "@/lib/template-categories";
 import { readTemplateDraft, type TemplateDraft } from "@/lib/template-draft-storage";
-import { weddingDesignCatalog } from "@/lib/wedding-designs";
-import BridalShowerPreview from "./BridalShowerPreview";
+import PublicTemplatePreview from "./CategoryTemplateThumbnail";
 import { trackTemplateEvent } from "./TemplateEditorContext";
 
-export function PublicTemplatePreview({
-  category,
-  template,
-}: {
-  category: TemplateCategory;
-  template: PublicTemplate;
-}) {
-  if (category === "weddings") {
-    const design = weddingDesignCatalog.find((item) => item.id === template.id)!;
-    return <WeddingDesignPreview design={design} />;
-  }
-  if (category === "birthdays" || category === "anniversaries")
-    return <BirthdayDesignPreview design={BIRTHDAY_DESIGN_BY_ID.get(template.id)!} />;
-  if (category === "bridal-showers")
-    return (
-      <TemplateThumbnailPreview>
-        <BridalShowerPreview
-          templateId={template.id}
-          data={{
-            momName: "Sophia",
-            eventTitle: "A toast to the bride",
-            date: "2028-09-21",
-            time: "14:00",
-            location: "The Garden House",
-            images: { hero: template.heroImage },
-          }}
-        />
-      </TemplateThumbnailPreview>
-    );
-  if (category === "baby-showers")
-    return (
-      <TemplateThumbnailPreview>
-        <BabyShowerDesignPreview designId={template.id} />
-      </TemplateThumbnailPreview>
-    );
-  if (category === "gender-reveal") {
-    const defaults = getFamilyTemplateDesign(category, template.id);
-    const eventData = {
-      templateId: template.id,
-      babyName: "Emma",
-      momName: "Sarah",
-      parentsName: "Sarah & Michael",
-      eventTitle: "Our little surprise",
-      date: "2028-09-21",
-      time: "14:00",
-      city: "Chicago",
-      state: "IL",
-      location: "The Garden House",
-      heroImage: template.heroImage,
-      themeId: defaults.themeId,
-      theme: { themeId: defaults.themeId, fontFamily: `var(--font-${defaults.font})` },
-      rsvpEnabled: false,
-      hosts: [{ name: "Family & friends", role: "Your hosts" }],
-    };
-    const props = {
-      eventId: "preview",
-      eventTitle: template.name,
-      eventData,
-      shareUrl: "",
-      isOwner: false,
-      isReadOnly: true,
-      editHref: "",
-    };
-    return (
-      <TemplateThumbnailPreview>
-        <GenderRevealTemplateView {...props} preview />
-      </TemplateThumbnailPreview>
-    );
-  }
-  if (category === "signup-forms") return <SignupTemplatePreview template={template} />;
-  if (category === "gymnastics")
-    return (
-      <TemplateThumbnailPreview>
-        <GymnasticsPreview
-          design={GYM_MEET_TEMPLATE_LIBRARY.find((design) => design.id === template.id)!}
-        />
-      </TemplateThumbnailPreview>
-    );
-  const sport = getSportEventPreset(template.id.split("--")[0]);
-  const themeId = getSportStyleThemeIds(sport, template.id.split("--")[1])[0];
-  const eventData = {
-    category: "sport_event",
-    templateId: `sport-event-${sport.key}`,
-    title: sport.defaultTitle,
-    date: "2028-09-21",
-    time: "14:00",
-    timezone: "America/Chicago",
-    venue: sport.venuePlaceholder,
-    location: "Chicago, IL",
-    heroImage: sportsConfig.defaultHero,
-    theme: sportsConfig.themes.find((theme) => theme.id === themeId),
-    themeId,
-    fontId: "anton",
-    rsvpEnabled: false,
-    description: sport.defaultDetails,
-    startISO: "2028-09-21T14:00:00-05:00",
-    details: sport.defaultDetails,
-  };
-
-  return (
-    <TemplateThumbnailPreview>
-      <SimpleTemplateView
-        eventId="preview"
-        eventTitle={sport.defaultTitle}
-        eventData={eventData}
-        isOwner={false}
-        isReadOnly
-        viewerKind="readonly"
-        shareUrl=""
-        sessionEmail={null}
-        hideOwnerActions
-        suppressActionStrip
-      />
-    </TemplateThumbnailPreview>
-  );
-}
+export { default as PublicTemplatePreview } from "./CategoryTemplateThumbnail";
 
 export default function PublicTemplateGallery({
   category,

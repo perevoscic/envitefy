@@ -57,6 +57,19 @@ export type PublicTemplate = {
   sport?: string;
 };
 const styleNames = { stadium: "Stadium", club: "Club", tournament: "Tournament" };
+const sportGalleryArtwork: Record<string, string> = {
+  football: "/images/landing/sports/sports-editorial-football.webp",
+  baseball: "/images/landing/sports/sports-editorial-baseball.webp",
+  softball: "/templates/signup/photographic/sports-and-recreation/baseball-team.webp",
+  basketball: "/images/landing/sports/sports-editorial-basketball.webp",
+  soccer: "/templates/signup/photographic/sports-and-recreation/soccer-game.webp",
+  volleyball: "/templates/signup/photographic/health-and-fitness/volleyball-league.webp",
+  tennis: "/templates/signup/photographic/health-and-fitness/tennis-club.webp",
+  "track-field": "/templates/signup/photographic/sports-and-recreation/track-meet.webp",
+  swimming: "/templates/signup/photographic/sports-and-recreation/swim-team.webp",
+  cheerleading: "/templates/signup/photographic/sports-and-recreation/cheer-squad.webp",
+  dance: "/templates/signup/photographic/health-and-fitness/dance-class.webp",
+};
 export function getPublicTemplates(category: TemplateCategory): PublicTemplate[] {
   switch (category) {
     case "weddings":
@@ -90,7 +103,7 @@ export function getPublicTemplates(category: TemplateCategory): PublicTemplate[]
           style: label,
           sport: sport.label,
           description: sport.defaultDetails,
-          heroImage: "/images/landing/hero/friday-night-lights-desktop.webp",
+          heroImage: sportGalleryArtwork[sport.key] || "/templates/hero-images/general-sport-hero.jpeg",
         })),
       );
     case "signup-forms":

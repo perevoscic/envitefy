@@ -1,0 +1,121 @@
+.frame {
+  container-type: inline-size;
+}
+.cover {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 5cqw;
+  width: 100%;
+  height: 100%;
+  padding: 6cqw;
+  background-color: var(--art-page);
+  color: var(--art-ink);
+}
+.artwork {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+.artwork img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.caption {
+  position: relative;
+  min-width: 0;
+}
+.eyebrow {
+  margin: 0 0 2cqw;
+  font-family: system-ui, sans-serif;
+  font-size: 2.6cqw;
+  line-height: 1.3;
+  font-weight: 500;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+}
+.title {
+  margin: 0;
+  font-family: var(--art-font);
+  font-weight: 400;
+  font-size: 8.4cqw;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.cover[data-composition="editorial"] .artwork {
+  border-radius: 0 20cqw 0 0;
+}
+.cover[data-composition="arch"] {
+  padding: 7cqw 9cqw;
+  text-align: center;
+}
+.cover[data-composition="arch"] .artwork {
+  border-radius: 48% 48% 3cqw 3cqw;
+}
+.cover[data-composition="oval"] {
+  padding: 7cqw 9cqw;
+  text-align: center;
+}
+.cover[data-composition="oval"] .artwork {
+  border-radius: 50%;
+  margin-inline: 6cqw;
+}
+.cover[data-composition="organic"] .artwork {
+  border-radius: 44% 4% 45% 4%;
+}
+.cover[data-composition="framed"] {
+  outline: 1px solid var(--art-accent);
+  outline-offset: -3cqw;
+  padding: 7cqw;
+  text-align: center;
+}
+.cover[data-composition="framed"] .artwork {
+  border: 3px double var(--art-accent);
+  padding: 1.5cqw;
+}
+.cover[data-composition="postcard"] .artwork {
+  overflow: visible;
+  margin: 2cqw;
+  border: 2cqw solid #fffaf3;
+  transform: rotate(-3deg);
+  box-shadow: 0 1cqw 3cqw #0002;
+}
+.cover[data-composition="postcard"] .artwork::after {
+  content: "";
+  position: absolute;
+  top: -4cqw;
+  left: 34%;
+  width: 32%;
+  height: 5cqw;
+  background: var(--art-accent);
+  opacity: 0.65;
+  transform: rotate(6deg);
+}
+.cover[data-composition="poster"] {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.cover[data-composition="poster"] .caption {
+  grid-row: 1;
+  padding-bottom: 3cqw;
+  border-bottom: 2px solid var(--art-accent);
+}
+.cover[data-composition="poster"] .title {
+  font-size: 9cqw;
+}
+.cover[data-composition="poster"] .artwork {
+  clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
+}
+.cover[data-composition="journal"] .caption {
+  border-top: 3px double var(--art-accent);
+  padding-top: 4cqw;
+}
+.cover[data-composition="panorama"] {
+  padding: 0;
+  gap: 0;
+}
+.cover[data-composition="panorama"] .caption {
+  padding: 6cqw;
+}

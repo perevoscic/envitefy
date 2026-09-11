@@ -12,11 +12,11 @@ export function TemplateThumbnailFrame({ children }: { children: ReactNode }) {
   );
 }
 
-/** Render a passive, square thumbnail; scale real event pages to one quarter size. */
+/** Passive square artwork by default; scaling is reserved for the decorative hero runway. */
 export function TemplateThumbnailPreview({
   children,
   className = "",
-  scaled = true,
+  scaled = false,
   compact = false,
   ...props
 }: ComponentProps<"div"> & {

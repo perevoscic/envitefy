@@ -1,3 +1,4 @@
+import TemplateArtworkThumbnail, { artworkComposition, artworkInk } from "@/components/events/TemplateArtworkThumbnail";
 import WeddingRenderer from "@/components/weddings/WeddingRenderer";
 import { TemplateThumbnailPreview } from "@/components/events/TemplateThumbnail";
 import type { WeddingDesign } from "@/lib/wedding-designs";
@@ -15,6 +16,14 @@ export default function WeddingDesignPreview({
   names,
   compact = false,
 }: WeddingDesignPreviewProps) {
+  if (!compact) {
+    return <TemplateArtworkThumbnail className={className} design={{
+      id: design.id, name: design.name, artwork: design.heroImage, label: "Wedding",
+      background: design.primaryColor, ink: artworkInk(design.primaryColor, design.secondaryColor),
+      accent: design.secondaryColor, font: `"${design.headlineFont}", Georgia, serif`,
+      composition: artworkComposition(`${design.signature} ${design.style}`),
+    }} />;
+  }
   const resolvedNames = names || design.previewNames;
   const [partner1 = "Partner One", partner2 = "Partner Two"] = resolvedNames
     .split("&")
@@ -72,6 +81,7 @@ export default function WeddingDesignPreview({
       data-wedding-layout={design.layout}
       className={className}
       compact={compact}
+      scaled
       style={{ backgroundColor: design.primaryColor }}
     >
       <WeddingRenderer template={template} event={previewEvent} hideGuestTools />

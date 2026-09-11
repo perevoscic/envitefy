@@ -3,7 +3,7 @@
 import { ArrowRight, Search, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, useState } from "react";
-import { TemplateThumbnailFrame, TemplateThumbnailPreview } from "./TemplateThumbnail";
+import { TemplateThumbnailFrame } from "./TemplateThumbnail";
 
 export type EventGalleryDesign = {
   id: string;
@@ -80,7 +80,7 @@ export default function EventDesignGallery<Design extends EventGalleryDesign>({
                   <span className="sr-only">Customize {design.name}</span>
                 </Link>
                 <TemplateThumbnailFrame>
-                  <TemplateThumbnailPreview>{renderPreview(design)}</TemplateThumbnailPreview>
+                  {renderPreview(design)}
                 </TemplateThumbnailFrame>
                 <div className="px-2 pt-5">
                   <p className="mb-2 text-xs font-semibold text-[#886488]">{design.style}</p>

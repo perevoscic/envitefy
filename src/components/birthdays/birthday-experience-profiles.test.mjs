@@ -110,7 +110,7 @@ test("the complete birthday catalog is upgraded through the experience-profile c
   assert.match(catalogSource, /export type BirthdayCatalogDesign/);
 });
 
-test("birthday and wedding thumbnails render their real template compositions", () => {
+test("gallery covers use template artwork while full previews retain their event compositions", () => {
   const birthdayGallerySource = readSource(
     "src/components/birthdays/BirthdayDesignGallery.tsx",
   );
@@ -125,8 +125,12 @@ test("birthday and wedding thumbnails render their real template compositions", 
 
   assert.match(birthdayGallerySource, /<BirthdayDesignPreview design=\{design\}/);
   assert.doesNotMatch(birthdayGallerySource, /<Image\s/);
-  assert.match(birthdayPreviewSource, /<BirthdayExperienceHero/);
-  assert.match(birthdayPreviewSource, /<BirthdayExperienceBody/);
+  assert.match(birthdayPreviewSource, /<TemplateArtworkThumbnail/);
+  assert.match(birthdayPreviewSource, /artwork: design\.heroImage/);
+  assert.match(birthdayPreviewSource, /name: design\.name/);
+  assert.doesNotMatch(birthdayPreviewSource, /<BirthdayExperienceHero|<BirthdayExperienceBody/);
+  const thumbnailSource = readSource("src/components/events/TemplateArtworkThumbnail.tsx");
+  assert.match(thumbnailSource, /<TemplateThumbnailPreview scaled=\{false\}/);
   assert.match(birthdayRendererSource, /if \(theme\.experience\)/);
   assert.match(birthdayRendererSource, /data-birthday-experience=\{profile\.signature\}/);
   assert.match(birthdayRendererSource, /<BirthdayExperienceBody/);
@@ -146,6 +150,7 @@ test("birthday and wedding thumbnails render their real template compositions", 
     26,
   );
   assert.match(weddingPreviewSource, /<WeddingRenderer template=\{template\} event=\{previewEvent\}/);
+  assert.match(weddingPreviewSource, /if \(!compact\)[\s\S]*?<TemplateArtworkThumbnail/);
   assert.match(weddingPreviewSource, /background: design\.primaryColor/);
   assert.match(weddingPreviewSource, /data-wedding-layout=\{design\.layout\}/);
 });

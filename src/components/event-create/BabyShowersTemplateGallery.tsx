@@ -1,7 +1,7 @@
 "use client";
 
-import BabyShowerDesignPreview from "@/components/baby-showers/BabyShowerDesignPreview";
-import { TemplateThumbnailFrame, TemplateThumbnailPreview } from "@/components/events/TemplateThumbnail";
+import CategoryTemplateThumbnail from "@/components/templates/CategoryTemplateThumbnail";
+import { TemplateThumbnailFrame } from "@/components/events/TemplateThumbnail";
 import { BABY_SHOWER_DESIGNS, getBabyShowerDesign } from "@/lib/baby-shower-designs";
 import type { ResolvedTemplateVariation, TemplateGalleryTemplate } from "./TemplateGallery";
 
@@ -50,7 +50,7 @@ export default function BabyShowersTemplateGallery({ appliedTemplateId, onApplyT
         };
         return (
           <button key={template.id} type="button" className="group text-left" aria-label={`Select ${template.name}`} aria-pressed={appliedTemplateId === template.id} onClick={() => onApplyTemplate(template, variation)}>
-            <TemplateThumbnailFrame><TemplateThumbnailPreview><BabyShowerDesignPreview designId={template.id} /></TemplateThumbnailPreview></TemplateThumbnailFrame>
+            <TemplateThumbnailFrame><CategoryTemplateThumbnail category="baby-showers" template={design} /></TemplateThumbnailFrame>
             <span className="mt-4 block text-lg font-semibold">{template.name}</span>
             <span className="mt-1 block text-sm text-slate-600">{design.style}{appliedTemplateId === template.id ? " · Selected" : ""}</span>
           </button>

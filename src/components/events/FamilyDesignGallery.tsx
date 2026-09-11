@@ -1,9 +1,7 @@
 "use client";
 
-import { getGenderRevealDesign, genderRevealFont } from "@/lib/gender-reveal-designs";
 import { useSearchParams } from "next/navigation";
-import BabyShowerDesignPreview from "@/components/baby-showers/BabyShowerDesignPreview";
-import GenderRevealTemplateView from "@/components/GenderRevealTemplateView";
+import CategoryTemplateThumbnail from "@/components/templates/CategoryTemplateThumbnail";
 import { babyShowerTemplateCatalog } from "@/components/event-create/BabyShowersTemplateGallery";
 import { genderRevealTemplateCatalog } from "@/components/event-create/GenderRevealTemplateGallery";
 import { type FamilyTemplateCategory, getFamilyTemplateDesign } from "@/lib/family-template-designs";
@@ -26,30 +24,7 @@ export default function FamilyDesignGallery({ category }: { category: FamilyTemp
         if (date) params.set("d", date);
         return `/event/${category}/customize?${params.toString()}`;
       }}
-      renderPreview={(design) => {
-        if (isBaby) return <BabyShowerDesignPreview designId={design.id} />;
-        const defaults = getFamilyTemplateDesign(category, design.id);
-        const eventData = {
-          templateId: design.id,
-          babyName: "Emma",
-          momName: "Sarah",
-          parentsName: "Sarah & Michael",
-          eventTitle: "Our little surprise",
-          date: "2028-09-21",
-          time: "14:00",
-          city: "Chicago",
-          state: "IL",
-          location: "The Garden House",
-          heroImage: defaults.heroImage,
-          themeId: defaults.themeId,
-          theme: { themeId: defaults.themeId, fontFamily: isBaby ? `var(--font-${defaults.font})` : genderRevealFont(getGenderRevealDesign(design.id)) },
-          rsvpEnabled: false,
-          hosts: [{ name: "Family & friends", role: "Your hosts" }],
-          babyDetails: { notes: "Join us for an afternoon of little wishes, sweet treats, and so much love." },
-        };
-        const props = { eventId: "", eventTitle: isBaby ? design.name : "Our little surprise", eventData, shareUrl: "", isOwner: false, isReadOnly: true, editHref: "" };
-        return <GenderRevealTemplateView {...props} preview thumbnail />;
-      }}
+      renderPreview={(design) => <CategoryTemplateThumbnail category={category} template={{ id: design.id, name: design.name, heroImage: getFamilyTemplateDesign(category, design.id).heroImage }} />}
     />
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
-import { TemplateThumbnailFrame, TemplateThumbnailPreview } from "@/components/events/TemplateThumbnail";
+import TemplateArtworkThumbnail, { artworkComposition } from "@/components/events/TemplateArtworkThumbnail";
+import { TemplateThumbnailFrame } from "@/components/events/TemplateThumbnail";
 import styles from "./TemplateGallery.module.css";
 import {
   getFontToken,
@@ -170,7 +170,6 @@ export default function TemplateGallery({
   appliedVariationId,
   previewHeroImageUrl,
   forceBirthdayHero = false,
-  useTemplateThumbnailOnly = false,
   onApplyTemplate,
 }: TemplateGalleryProps) {
   return (
@@ -184,7 +183,6 @@ export default function TemplateGallery({
           resolvedVariations.find((v) => v.id === appliedVariationId) ??
           resolvedVariations[0];
         const previewFontFamily = activeVariation.titleFontFamily;
-        const previewInfo = { ...DEFAULT_PREVIEW, ...(template.preview ?? {}) };
         const previewTextColor = activeVariation.titleColor;
         const isBirthdayTemplate =
           forceBirthdayHero || !!(template.preview as any)?.birthdayName;
@@ -197,17 +195,6 @@ export default function TemplateGallery({
           (heroImageFile.startsWith("/") || heroImageFile.startsWith("http")
             ? heroImageFile
             : `${heroImageBasePath}${heroImageFile}`);
-        const birthdayOverlay =
-          "linear-gradient(180deg, rgba(18, 12, 36, 0.78) 0%, rgba(18, 12, 36, 0.55) 45%, rgba(18, 12, 36, 0.2) 100%)";
-        const headerBackgroundStyle = isBirthdayTemplate
-          ? {
-              backgroundImage: `${birthdayOverlay}, url(${heroImageSrc})`,
-              backgroundSize: "cover, cover",
-              backgroundPosition: "center, center",
-              backgroundRepeat: "no-repeat, no-repeat",
-            }
-          : { background: activeVariation.background };
-
         return (
           <article
             key={template.id}
@@ -216,87 +203,17 @@ export default function TemplateGallery({
           >
             <div className={styles.cardBody}>
               <TemplateThumbnailFrame>
-                <TemplateThumbnailPreview scaled={false}>
-                  {useTemplateThumbnailOnly ? (
-                    <Image
-                      src={heroImageSrc}
-                      alt={
-                        previewHeroImageUrl
-                          ? `Uploaded preview for ${template.name}`
-                          : `${template.name} placeholder`
-                      }
-                      width={640}
-                      height={360}
-                      className={styles.previewPhotoImage}
-                      priority={false}
-                      unoptimized={Boolean(previewHeroImageUrl)}
-                    />
-                  ) : (
-                    <div className="flex h-full flex-col">
-                      <div
-                        className={styles.previewHeader}
-                        style={headerBackgroundStyle}
-                        data-birthday={isBirthdayTemplate ? "true" : undefined}
-                      >
-                        <p
-                          className={styles.previewNames}
-                          style={{
-                            color: previewTextColor,
-                            fontFamily: previewFontFamily,
-                            fontWeight:
-                              activeVariation.titleWeight === "bold"
-                                ? 700
-                                : activeVariation.titleWeight === "semibold"
-                                ? 600
-                                : 400,
-                          }}
-                        >
-                          {(previewInfo as any).birthdayName
-                            ? `${(previewInfo as any).birthdayName}'s Birthday`
-                            : previewInfo.coupleName || "Event"}
-                        </p>
-                        <p
-                          className={styles.previewMeta}
-                          style={{ color: previewTextColor }}
-                        >
-                          {previewInfo.dateLabel}
-                          {previewInfo.timeLabel
-                            ? ` • ${previewInfo.timeLabel}`
-                            : ""}
-                        </p>
-                        <div
-                          className={styles.previewNav}
-                          style={{ color: previewTextColor }}
-                        >
-                          {template.menu.slice(0, 7).map((item) => (
-                            <span
-                              key={item}
-                              className={styles.previewNavItem}
-                              style={{ color: previewTextColor }}
-                            >
-                              {item}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <div className={styles.previewPhoto}>
-                        <Image
-                          src={heroImageSrc}
-                          alt={
-                            previewHeroImageUrl
-                              ? `Uploaded preview for ${template.name}`
-                              : `${template.name} placeholder`
-                          }
-                          width={640}
-                          height={360}
-                          className={styles.previewPhotoImage}
-                          priority={false}
-                          unoptimized={Boolean(previewHeroImageUrl)}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </TemplateThumbnailPreview>
+                <TemplateArtworkThumbnail design={{
+                  id: template.id,
+                  name: template.name,
+                  artwork: heroImageSrc,
+                  label: template.heroMood || "Event design",
+                  background: activeVariation.background,
+                  ink: previewTextColor,
+                  accent: activeVariation.swatches[1] || previewTextColor,
+                  font: previewFontFamily || "Georgia, serif",
+                  composition: artworkComposition(template.heroMood || template.name),
+                }} />
               </TemplateThumbnailFrame>
               <div className={styles.cardHeader}>
                 <div>

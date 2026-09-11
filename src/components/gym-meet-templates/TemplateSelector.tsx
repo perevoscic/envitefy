@@ -2,8 +2,8 @@
 
 import { Check, Search } from "lucide-react";
 import { useState } from "react";
-import { TemplateThumbnailFrame, TemplateThumbnailPreview } from "@/components/events/TemplateThumbnail";
-import GymnasticsPreview from "./GymnasticsPreview";
+import { TemplateThumbnailFrame } from "@/components/events/TemplateThumbnail";
+import GymnasticsThumbnail from "./GymnasticsThumbnail";
 import { GYM_MEET_TEMPLATE_LIBRARY, getGymMeetTemplateMeta } from "./registry";
 import type { GymMeetTemplateId } from "./types";
 
@@ -35,7 +35,7 @@ export default function TemplateSelector({ value, onChange }: {
             <button type="button" aria-label={`Select ${design.name}`} aria-pressed={design.id === value} onClick={() => onChange(design.id)} className="absolute inset-0 z-20 rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-slate-800 focus-visible:ring-offset-2"><span className="sr-only">Select {design.name}</span></button>
             <TemplateThumbnailFrame>
               {design.id === value ? <span className="absolute right-3 top-3 z-10 rounded-full bg-slate-900 p-2 text-white"><Check size={16} aria-hidden="true" /></span> : null}
-              <TemplateThumbnailPreview><GymnasticsPreview design={design} /></TemplateThumbnailPreview>
+              <GymnasticsThumbnail design={design} />
             </TemplateThumbnailFrame>
             <div className="px-2 pt-3"><p className="text-sm font-semibold text-slate-900">{design.name}</p><p className="mt-1 text-xs text-slate-500">{design.style}</p></div>
           </div>

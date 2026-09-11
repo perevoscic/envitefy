@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import EventDesignGallery from "@/components/events/EventDesignGallery";
-import GymnasticsPreview from "./GymnasticsPreview";
+import GymnasticsThumbnail from "./GymnasticsThumbnail";
 import { GYM_MEET_TEMPLATE_LIBRARY } from "./registry";
 
 export default function GymnasticsDesignGallery() {
@@ -19,7 +19,7 @@ export default function GymnasticsDesignGallery() {
         if (search?.get("demo") === "1") params.set("demo", "1");
         return `/event/gymnastics/customize?${params.toString()}`;
       }}
-      renderPreview={(design) => <GymnasticsPreview design={design} />}
+      renderPreview={(design) => <GymnasticsThumbnail design={design} />}
     />
   );
 }
