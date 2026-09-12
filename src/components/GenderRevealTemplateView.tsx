@@ -551,7 +551,7 @@ export default function GenderRevealTemplateView({
           ) : null}
 
           <div className={`${genderRevealStyles.page} ${readString(savedTheme.bg)}`} style={{ ...genderRevealPageStyle(design), ...(asRecord(savedTheme.bgStyle) || {}) }} data-reveal-body={design.style}>
-            <GenderRevealScene
+            <GenderRevealScene filterEnabled={eventData.heroImageFilterEnabled !== false}
               design={design}
               title={eventTitle}
               parents={parentsName}

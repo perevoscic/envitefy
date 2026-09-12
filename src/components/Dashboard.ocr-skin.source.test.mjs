@@ -80,7 +80,7 @@ test("dashboard OCR save derives ownership from source intent, not OCR category"
 
   assert.match(source, /resolveSourceIntent/);
   assert.match(source, /const sourceIntent = resolveSourceIntent/);
-  assert.match(source, /const detectedSourceIntent = sourceIntent\.detectedSourceIntent;/);
+  assert.match(source, /const detectedSourceIntent = ocrMeta\?\.scanSchedule \? "authoring_source" : sourceIntent\.detectedSourceIntent;/);
   assert.match(
     source,
     /const historyOwnership = detectedSourceIntent === "received_invite" \? "invited" : "owned";/,
@@ -99,11 +99,11 @@ test("dashboard OCR save returns owned uploads to My Events owner workspace", ()
   assert.match(source, /ownership: "owned" \| "invited";/);
   assert.match(
     source,
-    /return \{ ok: true, eventId, ownership: historyOwnership, savedTitle, publicSlug \};/,
+    /return \{\s*ok: true,\s*eventId,\s*ownership: historyOwnership,\s*savedTitle,\s*publicSlug,?\s*\};/,
   );
   assert.match(
     source,
-    /ownership === "owned" \? \{ created: true, tab: "dashboard" \} : \{ created: true \}/,
+    /ownership === "owned"\s*\? \{\s*created: true,\s*tab: "dashboard",?\s*\}\s*: \{\s*created: true,?\s*\}/,
   );
   assert.match(source, /setEventContextSourcePage\("myEvents"\);/);
   assert.match(source, /setEventContextSourcePage\("invitedEvents"\);/);

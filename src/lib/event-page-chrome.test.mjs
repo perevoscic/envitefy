@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { EVENT_PAGE_COLOR_ATTRIBUTE, EVENT_PAGE_COLOR_PROPERTY, normalizeEventPageColor, registerEventPageColor } from "./event-page-chrome.ts";
+import { EVENT_PAGE_COLOR_ATTRIBUTE, EVENT_PAGE_COLOR_PROPERTY, EVENT_PAGE_TONE_ATTRIBUTE, isDarkEventPageColor, normalizeEventPageColor, registerEventPageColor } from "./event-page-chrome.ts";
 import { resolveEventPageBackgroundColor } from "./theme-color.ts";
 
 function rootFixture() {
@@ -52,6 +52,38 @@ test("URL color hints accept solid colors and reject CSS declarations or images"
   for (const value of ["red;display:none", "url(https://example.com/image)", "linear-gradient(red, blue)", "transparent", null]) {
     assert.equal(normalizeEventPageColor(value), null);
   }
+});
+
+test("sidebar frost recognizes dark colors in the formats used by templates and computed styles", () => {
+  for (const color of ["#321c24", "#101321", "#123", "rgb(50, 28, 36)", "rgb(20% 11% 14%)", "rgba(50, 28, 36, 1)", "hsl(338 28% 15%)", "hsla(338, 28%, 15%, 100%)"]) {
+    assert.equal(isDarkEventPageColor(color), true, color);
+  }
+  for (const color of ["#fff", "#f6f1e7", "rgb(246, 241, 231)", "hsl(47, 45%, 94%)", "rgb(100% 100% 100%)", "rgba(0, 0, 0, 0)", "rgb(0 0 0 / 10%)", "transparent", "url(image.webp)"]) {
+    assert.equal(isDarkEventPageColor(color), false, color);
+  }
+});
+
+test("sidebar frost follows design changes and overlapping editor cleanup, then restores app chrome", () => {
+  const root = rootFixture();
+  const owner = registerEventPageColor(root, "#321c24");
+  assert.equal(root.getAttribute(EVENT_PAGE_TONE_ATTRIBUTE), "dark");
+  const editor = registerEventPageColor(root, "#f6f1e7");
+  assert.equal(root.getAttribute(EVENT_PAGE_TONE_ATTRIBUTE), "light");
+  owner.dispose();
+  assert.equal(root.getAttribute(EVENT_PAGE_TONE_ATTRIBUTE), "light");
+  editor.update("rgb(16, 19, 33)");
+  assert.equal(root.getAttribute(EVENT_PAGE_TONE_ATTRIBUTE), "dark");
+  const returningOwner = registerEventPageColor(root, "#f6f1e7");
+  editor.dispose();
+  editor.update("#000");
+  assert.equal(root.getAttribute(EVENT_PAGE_TONE_ATTRIBUTE), "light");
+  returningOwner.dispose();
+  assert.equal(root.getAttribute(EVENT_PAGE_TONE_ATTRIBUTE), null);
+
+  root.setAttribute(EVENT_PAGE_TONE_ATTRIBUTE, "light");
+  const preview = registerEventPageColor(root, "#000");
+  preview.dispose();
+  assert.equal(root.getAttribute(EVENT_PAGE_TONE_ATTRIBUTE), "light");
 });
 
 test("saved gymnastics designs supply the event paper color before the preview loads", () => {

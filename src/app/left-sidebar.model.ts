@@ -316,6 +316,7 @@ export function createSidebarIconLookup(icons: Record<string, any>) {
     "Baby Showers": icons.Baby,
     "Gender Reveal": icons.PartyPopper,
     "Football Season": icons.SidebarFootballMenuIcon,
+    Football: icons.SidebarFootballMenuIcon,
     "Sport Football Season": icons.SidebarFootballMenuIcon,
     "General Event": icons.CalendarDays,
     "Gymnastics Schedule": icons.SidebarGymnasticsMenuIcon,
@@ -346,7 +347,7 @@ export function normalizeCalendarProvider(value: unknown): CalendarProviderKey |
 }
 
 export function getCreateMenuActiveAccent(label: string) {
-  if (label === "Football Season") {
+  if (label === "Football Season" || label === "Football") {
     return SIDEBAR_FOOTBALL_ACTIVE_ACCENT;
   }
   return SIDEBAR_PRIMARY_ACTIVE_ACCENT;

@@ -38,7 +38,30 @@ export type GymMeetTemplateId =
   | "ribbon-editorial"
   | "medal-poster"
   | "vault-grid"
-  | "travel-briefing";
+  | "travel-briefing"
+  | "friday-night"
+  | "coastal-kickoff"
+  | "desert-gridiron"
+  | "mountain-league"
+  | "homecoming"
+  | "rain-game"
+  | "snow-bowl"
+  | "red-zone"
+  | "leather-linen"
+  | "chrome-league"
+  | "saturday-morning"
+  | "womens-gridiron"
+  | "pep-rally"
+  | "captains-band"
+  | "overtime"
+  | "tailgate-social"
+  | "bandstand"
+  | "goal-line"
+  | "retro-broadcast"
+  | "rivalry-week"
+  | "city-league"
+  | "sunday-ink"
+  | "pennant-club";
 
 export type GymMeetTemplateGroup =
   | "current"
@@ -85,4 +108,3 @@ export type GymMeetPageTemplateMeta = {
   titleTypographyId?: GymMeetTitleTypographyId;
   previewTitleClassName?: string;
 };
-

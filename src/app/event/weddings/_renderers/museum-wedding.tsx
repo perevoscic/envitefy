@@ -133,7 +133,7 @@ export default function MuseumWedding({ theme, event }: Props) {
         <section className="min-h-[90vh] flex flex-col justify-end p-6 border-b border-black relative overflow-hidden">
           <img
             src={heroImage}
-            className="absolute inset-0 w-full h-full object-cover grayscale opacity-20 z-0"
+            className="template-hero-image absolute inset-0 w-full h-full object-cover grayscale opacity-20 z-0"
             alt="Hero Art"
           />
 

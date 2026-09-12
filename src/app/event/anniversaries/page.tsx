@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import BirthdayDesignPreview from "@/components/birthdays/BirthdayDesignPreview";
 import TemplateAutoLoader from "@/components/events/TemplateAutoLoader";
+import CategoryGalleryBackdrop from "@/components/events/CategoryGalleryBackdrop";
+import { categoryGalleryPageClassName } from "@/components/events/category-gallery-page";
 import { TemplateMasonryCard, TemplateMasonryGrid } from "@/components/events/TemplateMasonryGallery";
 import { ANNIVERSARY_DESIGN_CATALOG } from "@/data/birthday-design-catalog";
 import AnniversaryCustomizePage from "./customize/page";
@@ -23,9 +25,10 @@ export default function AnniversariesPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#fff9f1] text-[#35251d]">
-      <section className="border-b border-[#eadbd9] bg-[#fff8f5] px-5 py-12 sm:px-8 lg:px-12 lg:py-16">
-        <div className="mx-auto max-w-[1500px]">
+    <main className={`${categoryGalleryPageClassName("anniversaries")} min-h-screen text-[#35251d]`}>
+      <section className="relative isolate overflow-hidden border-b border-[#eadbd9] bg-[#fff8f5] px-5 py-12 sm:px-8 lg:px-12 lg:py-16">
+        <CategoryGalleryBackdrop category="anniversaries" />
+        <div className="relative z-10 mx-auto max-w-[1500px]">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#e4c8b7] bg-white/80 px-4 py-2.5 text-xs font-semibold text-[#87562d]">
             <HeartHandshake className="h-4 w-4" aria-hidden="true" />
             {ANNIVERSARY_DESIGN_CATALOG.length} anniversary designs

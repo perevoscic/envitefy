@@ -1,5 +1,6 @@
 // @ts-nocheck
 import type { CSSProperties } from "react";
+import { getFootballDesign } from "@/components/football-season-templates/footballDesigns";
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
   getGymMeetTemplateMeta,
@@ -437,11 +438,20 @@ export const resolveFootballSeasonTemplateChrome = (
 
   const normalizedBase = normalizeBaseTheme(baseTheme || FALLBACK_SHOWCASE_THEME);
   const titleTypography = resolveFootballSeasonTemplateTypography(templateId);
+  const design = getFootballDesign(templateId);
 
   return {
     ...normalizedBase,
-    titleClass: normalizedBase.titleClass,
-    titleStyle: normalizedBase.titleStyle,
+    ...design,
+    id: meta.id,
+    name: design.name,
+    titleClass: `text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl ${design.textClass}`,
+    titleStyle: { color: design.ink, textShadow: "none" },
+    sectionTitleClass: design.textClass,
+    sectionTitleStyle: { color: design.ink, textShadow: "none" },
+    summaryCardClass: design.sectionCardClass,
+    heroBadgeClass: `inline-flex items-center gap-2 rounded-full border px-3 py-1 ${design.sectionMutedClass}`,
+    isDark: parseInt(design.ink.slice(1, 3), 16) > 180,
     titleTypography,
   };
 };

@@ -262,7 +262,7 @@ export default function IndustrialWedding({ theme, event }: Props) {
         <header className="h-[85vh] relative border-b border-[#404040]">
           <img
             src={heroImage}
-            className="w-full h-full object-cover opacity-80 grayscale contrast-125"
+            className="template-hero-image w-full h-full object-cover opacity-80 grayscale contrast-125"
             alt="Loft Venue"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent opacity-90"></div>

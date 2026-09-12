@@ -13,9 +13,9 @@ function tileStyle(id: string): CSSProperties & { "--tile-ratio": number } {
   return { "--tile-ratio": 0.64 + ((hash % 997) / 997) * 0.6 };
 }
 
-export function TemplateMasonryGrid({ children }: { children: ReactNode }) {
+export function TemplateMasonryGrid({ children, compact = false }: { children: ReactNode; compact?: boolean }) {
   return (
-    <div data-template-masonry-grid className={styles.masonry}>
+    <div data-template-masonry-grid data-compact={compact || undefined} className={styles.masonry}>
       {children}
     </div>
   );

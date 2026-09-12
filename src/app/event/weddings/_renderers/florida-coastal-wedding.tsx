@@ -279,7 +279,7 @@ export default function FloridaCoastalWedding({ theme, event }: Props) {
         <div className="relative z-0 h-[55svh] w-full shrink-0 md:absolute md:inset-0 md:h-auto">
           <img
             src={heroImage}
-            className="h-full w-full object-cover object-[68%_center] opacity-100 md:object-center md:opacity-90"
+            className="template-hero-image h-full w-full object-cover object-[68%_center] opacity-100 md:object-center md:opacity-90"
             alt="Florida Palm Trees"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-transparent md:from-white/20 md:to-white/90"></div>

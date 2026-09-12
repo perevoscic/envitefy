@@ -15,6 +15,21 @@ export function HeroSection({
   return (
     <section id="top" className="relative overflow-hidden bg-[var(--event-page-bg-soft)]">
       <div className="mx-auto grid min-h-[72vh] max-w-6xl gap-8 px-4 pb-10 pt-10 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <div className="relative min-h-64 overflow-hidden rounded-[var(--event-page-radius)] border border-white/70 bg-[var(--event-page-surface)] shadow-[0_28px_80px_rgba(31,34,51,0.18)]">
+          {image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={image.url} alt={image.alt || ""} className="h-full min-h-72 w-full object-cover" />
+          ) : (
+            <div className="flex min-h-72 items-center justify-center bg-[linear-gradient(135deg,var(--event-page-primary),var(--event-page-secondary))] p-8 text-center text-white">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.24em] opacity-80">Envitefy</p>
+                <p className="mt-4 font-[var(--event-page-heading-font)] text-4xl font-black leading-tight">
+                  {section.title || "Event page"}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
         <div className="relative z-10">
           {section.eyebrow ? (
             <p className="text-xs font-black uppercase tracking-[0.22em] text-[var(--event-page-primary)]">
@@ -50,21 +65,6 @@ export function HeroSection({
               })}
             </dl>
           ) : null}
-        </div>
-        <div className="relative min-h-64 overflow-hidden rounded-[var(--event-page-radius)] border border-white/70 bg-[var(--event-page-surface)] shadow-[0_28px_80px_rgba(31,34,51,0.18)]">
-          {image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={image.url} alt={image.alt || ""} className="h-full min-h-72 w-full object-cover" />
-          ) : (
-            <div className="flex min-h-72 items-center justify-center bg-[linear-gradient(135deg,var(--event-page-primary),var(--event-page-secondary))] p-8 text-center text-white">
-              <div>
-                <p className="text-sm font-black uppercase tracking-[0.24em] opacity-80">Envitefy</p>
-                <p className="mt-4 font-[var(--event-page-heading-font)] text-4xl font-black leading-tight">
-                  {section.title || "Event page"}
-                </p>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </section>

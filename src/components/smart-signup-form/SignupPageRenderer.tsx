@@ -11,12 +11,14 @@ export default function SignupPageRenderer({
   form,
   children,
   actions,
+  imageActions,
   className = "",
   imageLoading,
 }: {
   form: SignupForm;
   children?: ReactNode;
   actions?: ReactNode;
+  imageActions?: ReactNode;
   className?: string;
   imageLoading?: "eager" | "lazy";
 }) {
@@ -30,7 +32,12 @@ export default function SignupPageRenderer({
       data-signup-composition={design?.composition}
     >
       <div className={styles.sheet}>
-        <SignupTemplateHeader form={form} actions={actions} imageLoading={imageLoading} />
+        <SignupTemplateHeader
+          form={form}
+          actions={actions}
+          imageActions={imageActions}
+          imageLoading={imageLoading}
+        />
         {children || <SignupViewer eventId="preview" initialForm={form} viewerKind="readonly" />}
       </div>
     </div>

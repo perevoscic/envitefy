@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import BirthdayGalleryHero from "@/components/birthdays/BirthdayGalleryHero";
 import BirthdayDesignPreview from "@/components/birthdays/BirthdayDesignPreview";
 import TemplateAutoLoader from "@/components/events/TemplateAutoLoader";
+import { categoryGalleryPageClassName } from "@/components/events/category-gallery-page";
 import { TemplateMasonryCard, TemplateMasonryGrid } from "@/components/events/TemplateMasonryGallery";
 import { BIRTHDAY_DESIGN_CATALOG } from "@/data/birthday-design-catalog";
 import { BIRTHDAY_GALLERY_BATCH_SIZE, BIRTHDAY_FAVORITES_KEY, parseBirthdayFavorites, toggleBirthdayFavorite } from "@/lib/birthday-gallery-preferences";
@@ -164,10 +165,10 @@ export default function BirthdayDesignGallery() {
   };
 
   return (
-    <main className="min-h-screen bg-[#fff9f1] text-[#35251d]">
+    <main className={`${categoryGalleryPageClassName("birthdays")} min-h-screen text-[#35251d]`}>
       <BirthdayGalleryHero />
 
-      <section className="z-20 border-b border-[#efd8c2] bg-[#fff9f1]/95 px-5 py-5 backdrop-blur-xl sm:px-8 lg:px-12 xl:sticky xl:top-0">
+      <section className="z-20 border-b border-[#efd8c2] bg-[var(--category-gallery-background)] px-5 py-5 backdrop-blur-xl sm:px-8 lg:px-12 xl:sticky xl:top-0">
         <div className="mx-auto max-w-[1500px] space-y-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>

@@ -6,6 +6,8 @@ import { babyShowerTemplateCatalog } from "@/components/event-create/BabyShowers
 import { genderRevealTemplateCatalog } from "@/components/event-create/GenderRevealTemplateGallery";
 import { type FamilyTemplateCategory, getFamilyTemplateDesign } from "@/lib/family-template-designs";
 import EventDesignGallery from "./EventDesignGallery";
+import BabyShowerGalleryHeader from "./BabyShowerGalleryHeader";
+import GenderRevealGalleryHeader from "./GenderRevealGalleryHeader";
 
 export default function FamilyDesignGallery({ category }: { category: FamilyTemplateCategory }) {
   const search = useSearchParams();
@@ -16,7 +18,8 @@ export default function FamilyDesignGallery({ category }: { category: FamilyTemp
   return (
     <EventDesignGallery
       title={isBaby ? "Baby showers" : "Gender reveals"}
-      description={isBaby ? "A little one, a lot of love. Find your baby shower design, then add your celebration details, registry, and RSVP." : "Make the moment yours. Choose a reveal design, add your party details, and invite everyone to share the surprise."}
+      category={category}
+      header={isBaby ? <BabyShowerGalleryHeader count={designs.length} /> : <GenderRevealGalleryHeader count={designs.length} />}
       designs={designs}
       getHref={(design) => {
         const params = new URLSearchParams({ templateId: design.id });

@@ -11,6 +11,7 @@ import type { SignupForm } from "@/types/signup";
 import SignupBuilder from "./SignupBuilder";
 import SignupDesignPanel from "./SignupDesignPanel";
 import SignupDetailsEditor from "./SignupDetailsEditor";
+import SignupImageActions from "./SignupImageActions";
 import SignupPageRenderer from "./SignupPageRenderer";
 import styles from "./signup-editor.module.css";
 
@@ -153,7 +154,9 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
                   "Your design"}
               </span>
             </div>
-            <EventCanvas><SignupPageRenderer form={form} /></EventCanvas>
+            <EventCanvas>
+              <SignupPageRenderer form={form} imageActions={<SignupImageActions form={form} onChange={onChange} />} />
+            </EventCanvas>
           </div>
         )}
         {step === 1 && (

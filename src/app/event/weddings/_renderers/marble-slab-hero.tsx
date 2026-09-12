@@ -25,7 +25,7 @@ export default function MarbleSlabHero({
       style={{ fontFamily: theme.fonts.body }}
     >
       <section
-        className="h-[320px] flex items-center justify-center text-center"
+        className="template-hero-image h-[320px] flex items-center justify-center text-center"
         style={{
           backgroundImage: theme.decorations?.heroImage
             ? `url(${theme.decorations.heroImage})`

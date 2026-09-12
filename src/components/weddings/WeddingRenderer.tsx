@@ -1,3 +1,5 @@
+
+import TemplateImageTone from "@/components/events/TemplateImageTone";
 import EventGuestActions from "@/components/event-templates/EventGuestActions";
 import type { CSSProperties } from "react";
 import { getEventEndLocal } from "@/lib/event-guest-planning";
@@ -193,7 +195,8 @@ export default function WeddingRenderer({ template, event, renderMode = "default
   };
 
   return (
-    <div
+    <TemplateImageTone color={theme.colors.accent || theme.colors.secondary} enabled={event.heroImageFilterEnabled !== false}>
+<div
       className="w-full min-h-screen flex flex-col"
       style={{
         fontFamily: theme.fonts.body,
@@ -202,6 +205,7 @@ export default function WeddingRenderer({ template, event, renderMode = "default
     >
       {renderLayout(layout, theme, themedEvent)}
     </div>
+</TemplateImageTone>
   );
 }
 
@@ -324,7 +328,7 @@ function SplitHeroLayout({ theme, event }: { theme: ThemeConfig; event: EventDat
           <img
             src={theme.decorations?.heroImage}
             alt=""
-            className="absolute inset-0 w-full h-full object-cover opacity-60"
+            className="template-hero-image absolute inset-0 w-full h-full object-cover opacity-60"
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />

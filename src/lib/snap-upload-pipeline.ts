@@ -1,9 +1,11 @@
 "use client";
+import { scanScheduleFromOcr, type ScanSchedule } from "./scan-schedule.ts";
 
 import { normalizeSourceEvidence, type SourceEvidence } from "./creation/source-evidence.ts";
 import { prepareOcrUploadFile } from "@/utils/media-upload-client";
 
 export type SnapOcrUploadResult = {
+  scanSchedule?: ScanSchedule | null;
   ocrText?: string | null;
   sourceEvidence?: SourceEvidence | null;
   fieldsGuess?: Record<string, unknown> | null;
@@ -32,9 +34,10 @@ async function cloneFileForUpload(file: File): Promise<File> {
   }
 }
 
-function normalizeOcrUploadPayload(payload: unknown): SnapOcrUploadResult {
+export function normalizeOcrUploadPayload(payload: unknown): SnapOcrUploadResult {
   const record = asRecord(payload) || {};
   return {
+    scanSchedule: scanScheduleFromOcr(record),
     ocrText: typeof record.ocrText === "string" ? record.ocrText : null,
     sourceEvidence: normalizeSourceEvidence(record.sourceEvidence),
     fieldsGuess: asRecord(record.fieldsGuess),

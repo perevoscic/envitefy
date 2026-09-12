@@ -102,6 +102,9 @@ export default function Retro70s({ theme, event }: Props) {
 
           <div className="bg-[#A7C957] p-8 md:p-16 rounded-[3rem] rotate-2 shadow-[10px_10px_0px_0px_#386641] w-full text-center border-4 border-[#386641] relative z-10 hover:rotate-1 transition-transform duration-500">
             <div className="bg-[#F2E8CF] p-8 md:p-12 rounded-[2rem] -rotate-2 border-4 border-[#BC4749] h-full flex flex-col justify-center items-center">
+              {event.customHeroImage && (
+                <img src={event.customHeroImage} alt="Wedding artwork" className="template-hero-image mb-6 aspect-video max-h-72 w-full rounded-[1.5rem] object-cover" />
+              )}
               <div className="bg-[#BC4749] text-[#F2E8CF] px-4 py-1 rounded-full font-bold text-xs uppercase mb-6 animate-bounce">
                 We're Actually Doing It
               </div>

@@ -164,7 +164,8 @@ test("scan event page payload keeps Kona menu details out of location and RSVP",
   );
 });
 
-test("scan event page payload can rescue Kona title date and venue from OCR text", () => {
+test("scan event page payload can rescue Kona title date and venue from OCR text", (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: new Date("2026-05-01T12:00:00Z") });
   const payload = buildScanEventPageHistoryPayload({
     source: "upload",
     scanAttemptId: "scan-kona-raw-1",

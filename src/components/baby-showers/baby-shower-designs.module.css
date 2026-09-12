@@ -104,7 +104,7 @@
 .hero[data-baby-scene="paper-kite-parade"] .facts { padding: 20px; background: color-mix(in srgb,var(--baby-accent) 10%,transparent); border-left: 5px solid var(--baby-accent); }
 
 /* Rosewater portrait seal */
-.hero[data-baby-scene="rosewater-hammam"] { grid-template-areas: "copy copy" "art facts"; grid-template-columns: 1.6fr 1fr; padding: 45px; }
+.hero[data-baby-scene="rosewater-hammam"] { grid-template-areas: "art facts" "copy copy"; grid-template-columns: 1.6fr 1fr; padding: 45px; }
 .hero[data-baby-scene="rosewater-hammam"] .art { border-radius: 140px 140px 0 0; min-height: 350px; }
 .hero[data-baby-scene="rosewater-hammam"] .copy { text-align: center; padding: 0 20% 15px; }
 .hero[data-baby-scene="rosewater-hammam"] .facts { align-self: center; text-align: center; padding: 26px; border-block: 3px double var(--baby-accent); }
@@ -116,7 +116,7 @@
 .hero[data-baby-scene="apricot-quilt-club"] .facts { padding: 24px; background: color-mix(in srgb,var(--baby-accent) 14%,var(--baby-paper)); }
 
 /* Lighthouse coastal dispatch */
-.hero[data-baby-scene="little-lighthouse"] { grid-template-areas: "facts facts" "art copy"; grid-template-columns: 1.4fr 1fr; padding: 35px; gap: 30px; }
+.hero[data-baby-scene="little-lighthouse"] { grid-template-areas: "art copy" "facts facts"; grid-template-columns: 1.4fr 1fr; padding: 35px; gap: 30px; }
 .hero[data-baby-scene="little-lighthouse"] .art { border-radius: 8px; min-height: 480px; }
 .hero[data-baby-scene="little-lighthouse"] .copy { padding: 10px 25px; border-left: 6px solid var(--baby-accent); }
 .hero[data-baby-scene="little-lighthouse"] .facts { display: flex; justify-content: space-between; gap: 15px; flex-wrap: wrap; padding: 14px; border-block: 3px double var(--baby-accent); }
@@ -140,7 +140,7 @@
 .hero[data-baby-scene="swan-lake-serenade"] .facts { text-align: center; padding: 20px 10px; border-top: 3px double var(--baby-accent); }
 
 /* Clementine breakfast newspaper */
-.hero[data-baby-scene="clementine-sunroom"] { grid-template-areas: "copy copy" "art facts"; grid-template-columns: 1.7fr 1fr; padding: 35px; gap: 25px; }
+.hero[data-baby-scene="clementine-sunroom"] { grid-template-areas: "art facts" "copy copy"; grid-template-columns: 1.7fr 1fr; padding: 35px; gap: 25px; }
 .hero[data-baby-scene="clementine-sunroom"] .art { min-height: 365px; border-radius: 0 110px 0 0; }
 .hero[data-baby-scene="clementine-sunroom"] .copy { padding-bottom: 26px; border-bottom: 5px solid var(--baby-accent); }
 .hero[data-baby-scene="clementine-sunroom"] .facts { align-self: center; padding: 25px; border-left: 1px solid var(--baby-accent); }
@@ -194,7 +194,7 @@
 .hero[data-baby-scene="pocket-robot"] .facts { padding: 22px; border: 3px solid var(--baby-accent); border-radius: 18px; }
 
 /* Laundry line landscape */
-.hero[data-baby-scene="lavender-laundry"] { grid-template-areas: "copy facts" "art art"; grid-template-columns: 1.4fr 1fr; padding: 40px 0 0; gap: 30px; }
+.hero[data-baby-scene="lavender-laundry"] { grid-template-areas: "art art" "copy facts"; grid-template-columns: 1.4fr 1fr; padding: 40px 0 0; gap: 30px; }
 .hero[data-baby-scene="lavender-laundry"] .art { min-height: 400px; border-radius: 15% 15% 0 0 / 8% 8% 0 0; }
 .hero[data-baby-scene="lavender-laundry"] .copy { padding: 5px 40px; }
 .hero[data-baby-scene="lavender-laundry"] .facts { align-self: center; padding: 20px 35px; border-left: 1px dashed var(--baby-accent); }
@@ -266,7 +266,7 @@
 .hero[data-baby-scene="cocoa-cabin"] .facts { padding: 18px; background: color-mix(in srgb,var(--baby-accent) 9%,transparent); }
 
 /* Carousel canopy */
-.hero[data-baby-scene="bubblegum-carousel"] { grid-template-areas: "copy copy" "art facts"; grid-template-columns: 1.45fr 1fr; padding: 35px; gap: 22px; }
+.hero[data-baby-scene="bubblegum-carousel"] { grid-template-areas: "art facts" "copy copy"; grid-template-columns: 1.45fr 1fr; padding: 35px; gap: 22px; }
 .hero[data-baby-scene="bubblegum-carousel"] .art { border-radius: 150px 150px 24px 24px; min-height: 370px; }
 .hero[data-baby-scene="bubblegum-carousel"] .copy { text-align: center; padding: 10px 18% 26px; border-bottom: 3px solid var(--baby-accent); }
 .hero[data-baby-scene="bubblegum-carousel"] .facts { padding: 30px; border-radius: 100px 100px 24px 24px; border: 2px solid var(--baby-accent); align-self: center; text-align: center; }
@@ -386,7 +386,7 @@
 .hero[data-baby-scene="jasmine-crescent"] .facts { text-align: center; padding: 22px; border-block: 1px solid var(--baby-accent); }
 
 /* Artichoke market ledger */
-.hero[data-baby-scene="little-artichoke"] { grid-template-areas: "copy copy" "art facts"; grid-template-columns: 1.65fr 1fr; padding: 40px; gap: 26px; }
+.hero[data-baby-scene="little-artichoke"] { grid-template-areas: "art facts" "copy copy"; grid-template-columns: 1.65fr 1fr; padding: 40px; gap: 26px; }
 .hero[data-baby-scene="little-artichoke"] .art { min-height: 380px; border: 2px solid var(--baby-accent); }
 .hero[data-baby-scene="little-artichoke"] .copy { padding: 10px 0 26px; border-bottom: 2px dashed var(--baby-accent); }
 .hero[data-baby-scene="little-artichoke"] .facts { align-self: center; padding: 28px; border-left: 6px solid var(--baby-accent); }
@@ -410,13 +410,13 @@
 .hero[data-baby-scene="macaron-moonwalk"] .facts { text-align: center; padding: 22px; border: 2px solid var(--baby-accent); border-radius: 70px; }
 
 /* Willow lakeside letter */
-.hero[data-baby-scene="willow-wishing-boat"] { grid-template-areas: "copy facts" "art art"; grid-template-columns: 1.5fr 1fr; padding: 45px 35px 30px; gap: 35px; }
+.hero[data-baby-scene="willow-wishing-boat"] { grid-template-areas: "art art" "copy facts"; grid-template-columns: 1.5fr 1fr; padding: 45px 35px 30px; gap: 35px; }
 .hero[data-baby-scene="willow-wishing-boat"] .art { min-height: 405px; border-radius: 0 0 140px 0; }
 .hero[data-baby-scene="willow-wishing-boat"] .copy { padding: 0 20px; }
 .hero[data-baby-scene="willow-wishing-boat"] .facts { align-self: center; padding: 25px; border-left: 3px double var(--baby-accent); }
 
 @container baby (max-width: 650px) {
-  .hero[data-baby-scene] { grid-template-areas: "copy" "art" "facts"; grid-template-columns: minmax(0,1fr); padding: 28px 22px; gap: 26px; min-height: 0; }
+  .hero[data-baby-scene] { grid-template-areas: "art" "copy" "facts"; grid-template-columns: minmax(0,1fr); padding: 28px 22px; gap: 26px; min-height: 0; }
   .hero[data-baby-scene] .copy { padding: 15px 8px; margin: 0; text-align: center; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
   .hero[data-baby-scene] .art { height: auto; min-height: 250px; aspect-ratio: 4/3; margin: 0; transform: none; outline-offset: 4px; }
   .hero[data-baby-scene] .facts { display: block; padding: 22px 12px; margin: 0; text-align: center; align-self: auto; border-width: 1px; }

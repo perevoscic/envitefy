@@ -36,6 +36,11 @@ function load(relative, mocks, cache = new Map()) {
   return module.exports;
 }
 const baseMocks = {
+  "lucide-react": {
+    Upload: (props) => React.createElement("svg", props),
+    ImagePlus: (props) => React.createElement("svg", props),
+    RotateCcw: (props) => React.createElement("svg", props),
+  },
   "next/navigation": { useRouter: () => ({}) },
   "@/components/EventDeleteModal": { __esModule: true, default: () => null },
   "@/components/templates/TemplateEditorContext": { useTemplateEditor: () => null },
@@ -192,19 +197,11 @@ function verifyMarkup(html) {
     "Color palette",
     "Typography",
     "Header layout",
-    "Photos &amp; artwork",
     "Fine-tune the design",
   ]) {
     assert.ok(html.includes(label), label);
   }
-  const thumbnails = [
-    ...html.matchAll(/<div(?=[^>]*data-template-thumbnail-preview="true")[^>]*>/g),
-  ];
-  assert.ok(thumbnails.length >= 6);
-  for (const [tag] of thumbnails) {
-    assert.ok(tag.includes('aria-hidden="true"'));
-    assert.ok(tag.includes('inert=""'));
-  }
+  assert.doesNotMatch(html, /Photos &amp; artwork|Search artwork|Choose artwork/);
 }
 
 test("design editor retains customization controls without repeating template selection", () => {
@@ -214,6 +211,25 @@ test("design editor retains customization controls without repeating template se
       React.createElement(Panel, { form: createSignupThemeForm("harvest-table"), onChange() {} }),
     ),
   );
+});
+
+test("direct photo selection changes only the selected signup gallery image", () => {
+  const Actions = load("src/components/smart-signup-form/SignupImageActions.tsx", baseMocks).default;
+  const form = createSignupThemeForm("harvest-table");
+  form.appearance.headerLayout = "header-6";
+  form.header.images = [0, 1, 2].map((index) => ({
+    id: `photo-${index}`, name: `Photo ${index}`, type: "image/webp", dataUrl: `/photo-${index}.webp`,
+  }));
+  let updated;
+  const controls = Actions({ form, onChange: (value) => { updated = value; } }).props.children;
+  controls[1].props.onChange("data:image/png;base64,aW1hZ2U=");
+  assert.equal(updated.header.images[1].dataUrl, "data:image/png;base64,aW1hZ2U=");
+  assert.equal(updated.header.images[1].id, "photo-1");
+  assert.equal(updated.header.images[1].type, "image/png");
+  assert.deepEqual(updated.header.images[0], form.header.images[0]);
+  assert.deepEqual(updated.header.images[2], form.header.images[2]);
+  assert.equal(form.header.images[1].dataUrl, "/photo-1.webp");
+  assert.equal(updated.appearance.headerLayout, "header-6");
 });
 
 test("wizard keeps customization outside the form and connects the publish button to the form", () => {
@@ -242,9 +258,12 @@ test("wizard keeps customization outside the form and connects the publish butto
     if (step === "design") {
       verifyMarkup(html);
       assert.match(formContents, /Live page preview/);
+      assert.match(formContents, /aria-label="Change hero image"/);
+      assert.match(formContents, /type="file"/);
       assert.match(html, /<aside aria-label="Design customization"/);
       assert.ok(html.indexOf("</form>") < html.indexOf("<aside"));
     } else {
+      assert.doesNotMatch(formContents, /Change hero image|Choose hero image/);
       assert.ok(html.includes(`type="submit" form="${formId}"`));
       assert.doesNotMatch(html, /<aside/);
     }

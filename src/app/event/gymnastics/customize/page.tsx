@@ -1,6 +1,15 @@
 // @ts-nocheck
 "use client";
+import { EventSectionBuilderProvider, EventSectionPalette, EventSectionsReadOnly, useSectionEditorClose } from "@/components/events/EventSectionBuilder";
+import { GYMNASTICS_SECTION_CATALOG, normalizeEventSectionLayout } from "@/lib/event-section-layout";
+
+import HeroImageEditor from "@/components/events/HeroImageEditor";
+import { DEFAULT_HERO_IMAGE_SETTINGS, normalizeHeroImageSettings } from "@/lib/hero-image-settings";
+import { normalizeGymnasticsPageText, type GymnasticsPageTextChange } from "@/lib/gymnastics-page-text";
+
+import FileUploadInput from "@/components/ui/FileUploadInput";
 import EventCanvas from "@/components/EventCanvas";
+import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileTopbarSuppressor";
 
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
@@ -11,13 +20,12 @@ import { GYM_EVENT_EDITOR_VIEWS } from "@/lib/event-page-workspace";
 import { ownerEventEditorReturnHref } from "@/lib/event-preview-viewport";
 import { type EventGuestPlanning, normalizeEventGuestPlanning, eventLocalDateParts, getEventEndLocal } from "@/lib/event-guest-planning";
 import {
-  CheckSquare,
   ChevronLeft,
   ChevronRight,
-  Edit2,
-  Image as ImageIcon,
+  Eye,
   Link as LinkIcon,
   Type,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -707,6 +715,8 @@ function GymnasticsEditorLayout({
   onBack: () => void;
   showBack?: boolean;
 }) {
+  const closeSectionEditor = useSectionEditorClose();
+  if (closeSectionEditor) return <>{children}</>;
   return (
     <div className="animate-fade-in-right min-h-0" style={{ pointerEvents: "auto" }}>
       <div
@@ -828,6 +838,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       venue: "",
       details: "",
       hero: "",
+      heroImageFilterEnabled: true,
+      heroImageSettings: { ...DEFAULT_HERO_IMAGE_SETTINGS },
+      gymnasticsPageText: normalizeGymnasticsPageText(undefined),
+      sectionLayout: normalizeEventSectionLayout({ version: 1 }),
       rsvpEnabled: false,
       rsvpDeadline:
         typeof config.defaultRsvpDeadlineDays === "number"
@@ -846,6 +860,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       simpleDesignTokens: null as any,
       extra: Object.fromEntries(config.detailFields.map((f) => [f.key, ""])),
     }));
+
     const [advancedState, setAdvancedState] = useTemplateState("advancedState", () =>
       buildMinimalAdvancedState(config.advancedSections),
     );
@@ -1000,9 +1015,44 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       mobileMenuOpen,
       openMobileMenu,
       closeMobileMenu,
+      dismissMobileMenu,
       previewTouchHandlers,
       drawerTouchHandlers,
     } = useMobileDrawer(undefined, "event-actions");
+    const [fullscreenPreviewOpen, setFullscreenPreviewOpen] = useState(false);
+    const handlePageTextChange = useCallback<GymnasticsPageTextChange>((key, value) => {
+      setData((prev) => {
+        if (key === "eventTitle") return { ...prev, title: value ?? "" };
+        if (key === "eventDetails") return { ...prev, details: value ?? "" };
+        const gymnasticsPageText = normalizeGymnasticsPageText(prev.gymnasticsPageText);
+        if (value === undefined) delete gymnasticsPageText[key];
+        else gymnasticsPageText[key] = value;
+        return { ...prev, gymnasticsPageText };
+      });
+    }, [setData]);
+    const fullscreenPreviewRef = useRef<HTMLDialogElement>(null);
+    const openFullscreenPreview = useCallback(() => {
+      dismissMobileMenu();
+      setFullscreenPreviewOpen(true);
+    }, [dismissMobileMenu]);
+    const closeFullscreenPreview = useCallback(() => {
+      fullscreenPreviewRef.current?.close();
+      setFullscreenPreviewOpen(false);
+      if (window.innerWidth < 768) openMobileMenu();
+    }, [openMobileMenu]);
+    useEffect(() => {
+      const dialog = fullscreenPreviewRef.current;
+      if (!dialog) return;
+      if (fullscreenPreviewOpen && !dialog.open) dialog.showModal();
+      else if (!fullscreenPreviewOpen && dialog.open) dialog.close();
+      if (!fullscreenPreviewOpen) return;
+      const root = document.documentElement;
+      const previousOverflow = root.style.overflow;
+      root.style.overflow = "hidden";
+      return () => {
+        root.style.overflow = previousOverflow;
+      };
+    }, [fullscreenPreviewOpen]);
     const setAdvancedSectionState = useCallback((id: string, updater: any) => {
       setAdvancedState((prev: Record<string, any>) => {
         const current = prev?.[id];
@@ -1203,28 +1253,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           advancedState?.meet?.awardsInfo,
       ),
     );
-    const detailsStatus: "not-started" | "in-progress" | "ready" = (() => {
-      const base = Boolean(data.details?.trim());
-      const extrasFilled = Object.values(data.extra || {}).filter((value) =>
-        String(value || "").trim(),
-      ).length;
-      if (!base && !hasStructuredDetailsContent && extrasFilled === 0) {
-        return "not-started";
-      }
-      if (hasStructuredDetailsContent || (base && extrasFilled >= 2)) {
-        return "ready";
-      }
-      return "in-progress";
-    })();
-
-    const advancedStatus = (enabled: boolean): "not-started" | "ready" =>
-      enabled ? "ready" : "not-started";
     const passcodeStatus: "not-started" | "in-progress" | "ready" = (() => {
       if (!data.passcodeRequired) return "not-started";
       if (!data.passcode?.trim()) return "in-progress";
       return data.passcode.trim().length >= 4 ? "ready" : "in-progress";
     })();
-    const rsvpStatus: "not-started" | "ready" = data.rsvpEnabled ? "ready" : "not-started";
 
     const missingEssentials = [
       !data.title?.trim() ? { label: "Event title", view: "headline" } : null,
@@ -1281,7 +1314,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }, [navItems]);
 
     useEffect(() => {
-      if (activeView === "main") return;
+      if ((activeView === "main" || activeView === "images")) return;
       const staticViews = new Set([
         "headline",
         "images",
@@ -1485,6 +1518,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             venue: effectiveExisting.venue || effectiveExisting.location || prev.venue,
             details: editableDetails,
             hero: effectiveExisting.heroImage || effectiveExisting.hero || prev.hero,
+            heroImageFilterEnabled: effectiveExisting.heroImageFilterEnabled !== false,
+            heroImageSettings: normalizeHeroImageSettings(effectiveExisting.heroImageSettings),
+            gymnasticsPageText: normalizeGymnasticsPageText(effectiveExisting.gymnasticsPageText ?? effectiveExisting.customFields?.gymnasticsPageText),
+            sectionLayout: normalizeEventSectionLayout(effectiveExisting.sectionLayout) || normalizeEventSectionLayout({ version: 1 }),
             pageTemplateId: resolveGymMeetTemplateId(effectiveExisting),
             rsvpEnabled:
               typeof effectiveExisting.rsvpEnabled === "boolean"
@@ -1790,14 +1827,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       return () => observer.disconnect();
     }, [navItems]);
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        const url = (templateEditor ? templateEditor.previewPhoto(file) : URL.createObjectURL(file));
-        if (url) setData((prev) => ({ ...prev, hero: url }));
-      }
-    };
-
     const updateExtra = useCallback((key: string, value: string) => {
       setDismissedSuggestedExtraFields((prev) => (prev[key] ? prev : { ...prev, [key]: true }));
       setData((prev) => ({
@@ -1888,6 +1917,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               advancedSections: advancedState,
             },
             heroImage: heroToSave,
+            heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
+            heroImageSettings: normalizeHeroImageSettings(data.heroImageSettings),
+            gymnasticsPageText: normalizeGymnasticsPageText(data.gymnasticsPageText),
+            sectionLayout: data.sectionLayout,
             time: data.time,
             date: data.date,
             ...(data.passcodeRequired && data.passcode
@@ -2012,6 +2045,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             },
             advancedSections: advancedState,
             heroImage: heroToSave,
+            heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
+            heroImageSettings: normalizeHeroImageSettings(data.heroImageSettings),
+            gymnasticsPageText: normalizeGymnasticsPageText(data.gymnasticsPageText),
+            sectionLayout: data.sectionLayout,
             time: data.time,
             date: data.date,
             ...(data.passcodeRequired && data.passcode
@@ -2141,7 +2178,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       } finally {
         setSubmitting(false);
       }
-    }, [templateEditor, 
+    }, [data.heroImageFilterEnabled, templateEditor,
       submitting,
       data.date,
       data.time,
@@ -2157,6 +2194,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.city,
       data.state,
       data.hero,
+      data.heroImageSettings,
+      data.gymnasticsPageText,
+      data.sectionLayout,
       data.pageTemplateId,
       data.fontId,
       data.fontSize,
@@ -2321,10 +2361,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             </button>
           ) : null}
           <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
-            Add your details
+            Event settings
           </h2>
           <p className="text-slate-500 text-sm">
-            Customize your gymnastics meet page.
+            Edit event basics and manage your page.
           </p>
         </div>
 
@@ -2357,63 +2397,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             onClick={() => setActiveView("headline")}
             showsOnEvent={SECTION_SHOWS_ON_EVENT.headline}
           />
-          <MenuCard
-            title="Details"
-            desc="Meet details, venue guidance, and attendee context."
-            icon={<Edit2 size={18} />}
-            status={detailsStatus}
-            onClick={() => setActiveView("details")}
-            showsOnEvent={SECTION_SHOWS_ON_EVENT.details}
-          />
-          <MenuCard
-            title="Images"
-            desc="Hero and header photo."
-            icon={<ImageIcon size={18} />}
-            status={data.hero ? "ready" : "not-started"}
-            onClick={() => setActiveView("images")}
-            showsOnEvent={SECTION_SHOWS_ON_EVENT.images}
-          />
-
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1 pt-2">
-            Operations
-          </p>
-          {visibleAdvancedSections
-            ?.filter((section) => section.id !== "announcements")
-            .map((section) => {
-              const sectionEnabled = (() => {
-                switch (section.id) {
-                  case "meet":
-                    return hasMeet;
-                  case "logistics":
-                    return hasLogistics;
-                  default:
-                    return Boolean(advancedState?.[section.id]);
-                }
-              })();
-              return (
-                <MenuCard
-                  key={section.id}
-                  title={section.menuTitle}
-                  desc={section.menuDesc}
-                  icon={<Edit2 size={18} />}
-                  status={advancedStatus(sectionEnabled)}
-                  onClick={() => setActiveView(section.id)}
-                  showsOnEvent={SECTION_SHOWS_ON_EVENT[section.id]}
-                />
-              );
-            })}
-
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1 pt-2">
-            Communication
-          </p>
-          <MenuCard
-            title={rsvpCopy.menuTitle}
-            desc={rsvpCopy.menuDesc}
-            icon={<CheckSquare size={18} />}
-            status={rsvpStatus}
-            onClick={() => setActiveView("rsvp")}
-            showsOnEvent={SECTION_SHOWS_ON_EVENT.rsvp}
-          />
+          <EventSectionPalette />
           <MenuCard
             title="Passcode"
             desc="Protect this page with an access code."
@@ -2422,19 +2406,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             onClick={() => setActiveView("passcode")}
             showsOnEvent={SECTION_SHOWS_ON_EVENT.passcode}
           />
-          {visibleAdvancedSections
-            ?.filter((section) => section.id === "announcements")
-            .map((section) => (
-              <MenuCard
-                key={section.id}
-                title={section.menuTitle}
-                desc={section.menuDesc}
-                icon={<Edit2 size={18} />}
-                status={advancedStatus(hasAnnouncementEntries)}
-                onClick={() => setActiveView(section.id)}
-                showsOnEvent={SECTION_SHOWS_ON_EVENT.announcements}
-              />
-            ))}
         </div>
       </div>
     );
@@ -2504,6 +2475,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         venue: "",
         details: "",
         hero: "",
+        heroImageFilterEnabled: true,
+        heroImageSettings: { ...DEFAULT_HERO_IMAGE_SETTINGS },
+        gymnasticsPageText: {},
         extra: Object.fromEntries(config.detailFields.map((f) => [f.key, ""])),
       }));
       setAdvancedState(buildMinimalAdvancedState(config.advancedSections));
@@ -2539,6 +2513,19 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 onChange={(v) => updateData("time", v)}
               />
             </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-sm font-medium text-slate-700">
+              End time (optional)
+              <input type="time" value={data.endTime} onChange={(event) => setData((prev) => ({ ...prev, endTime: event.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900" />
+            </label>
+            <label className="block text-sm font-medium text-slate-700">
+              End date (if different)
+              <input type="date" min={data.date || undefined} value={data.endDate} onChange={(event) => setData((prev) => ({ ...prev, endDate: event.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900" />
+            </label>
+          </div>
+          {data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate) ? (
+            <p role="alert" className="text-sm text-red-700">End time must be after the start. For an overnight event, choose the next end date.</p>
+          ) : null}
             <InputGroup
               label="Display Date"
               value={data.extra?.meetDateRangeLabel || ""}
@@ -2580,6 +2567,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         data.title,
         data.date,
         data.time,
+        data.endTime,
+        data.endDate,
         data.extra?.meetDateRangeLabel,
         data.timezone,
         data.hostGym,
@@ -2593,47 +2582,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       ],
     );
 
-    const renderImagesEditor = () => (
-      <GymnasticsEditorLayout
-        isEmbed={isEmbed}
-        title="Images"
-        onBack={() => setActiveView("main")}
-        showBack
-      >
-        <div className="space-y-4">
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-            Hero Image
-          </label>
-          <div className="border-2 border-dashed border-slate-300 rounded-xl p-5 text-center hover:bg-slate-50 transition-colors relative">
-            {data.hero ? (
-              <div className="relative w-full h-40 rounded-lg overflow-hidden">
-                <img src={data.hero} alt="Hero" className="w-full h-full object-cover" />
-                <button
-                  onClick={() => setData((p) => ({ ...p, hero: "" }))}
-                  className="absolute top-2 right-2 px-2 py-1 text-xs bg-white rounded-full shadow hover:bg-red-50 text-red-500"
-                >
-                  Remove
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
-                  <ImageIcon size={20} />
-                </div>
-                <p className="text-sm text-slate-600 mb-1">Upload header photo</p>
-                <p className="text-xs text-slate-400">Recommended: 1600x900px</p>
-              </>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              className="absolute inset-0 opacity-0 cursor-pointer"
-              onChange={handleFileUpload}
-            />
-          </div>
-        </div>
-      </GymnasticsEditorLayout>
-    );
+
 
     const renderDesignEditor = () => (
       <GymnasticsEditorLayout
@@ -2699,19 +2648,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         showBack
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block text-sm font-medium text-slate-700">
-              End time (optional)
-              <input type="time" value={data.endTime} onChange={(event) => setData((prev) => ({ ...prev, endTime: event.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900" />
-            </label>
-            <label className="block text-sm font-medium text-slate-700">
-              End date (if different)
-              <input type="date" min={data.date || undefined} value={data.endDate} onChange={(event) => setData((prev) => ({ ...prev, endDate: event.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900" />
-            </label>
-          </div>
-          {data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate) ? (
-            <p role="alert" className="text-sm text-red-700">End time must be after the start. For an overnight event, choose the next end date.</p>
-          ) : null}
           <EventGuestPlanningEditor category="gymnastics" value={data.guestPlanning} onChange={(guestPlanning) => setData((prev) => ({ ...prev, guestPlanning }))} />
 
           <div>
@@ -2893,21 +2829,19 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             Upload a PDF/JPG/PNG file. We will parse details and prefill your meet page builder.
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+            <label htmlFor="gymnastics-source-file" className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
               Upload File
             </label>
-            <input
-              type="file"
+            <FileUploadInput
+              id="gymnastics-source-file"
               accept=".pdf,image/png,image/jpeg,image/jpg"
+              disabled={discoverBusy}
+              selectedFileName={discoverFile?.name || ""}
               onChange={(e) => {
                 const picked = e.target.files?.[0] || null;
                 setDiscoverFile(picked);
               }}
-              className={baseInputClass}
             />
-            {discoverFile ? (
-              <p className="text-xs text-slate-500">Selected: {discoverFile.name}</p>
-            ) : null}
           </div>
           {discoverError ? (
             <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
@@ -3123,8 +3057,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         hostGym: data.hostGym || undefined,
         city: data.city || undefined,
         state: data.state || undefined,
-        details: previewDetails,
-        description: previewDetails,
+        title: data.title,
+        details: data.details,
+        description: data.details,
+        previewDetailsPlaceholder: data.details ? undefined : previewDetails,
         rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
         rsvpEnabled: data.rsvpEnabled,
         rsvpDeadline: data.rsvpDeadline || undefined,
@@ -3146,6 +3082,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         },
         advancedSections: advancedState,
         heroImage: data.hero || undefined,
+        heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
+        heroImageSettings: normalizeHeroImageSettings(data.heroImageSettings),
+        gymnasticsPageText: normalizeGymnasticsPageText(data.gymnasticsPageText),
+            sectionLayout: data.sectionLayout || { version: 1, order: [], hidden: [], added: [] },
         time: data.time,
         date: data.date,
         ...(data.passcodeRequired && data.passcode
@@ -3167,7 +3107,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               }
             : {}),
       };
-    }, [
+    }, [data.heroImageFilterEnabled,
       advancedState,
       config.category,
       config.categoryLabel,
@@ -3191,6 +3131,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.endDate,
       data.extra,
       data.hero,
+      data.heroImageSettings,
+      data.gymnasticsPageText,
+      data.sectionLayout,
       data.pageTemplateId,
       data.passcode,
       data.passcodeHint,
@@ -3201,6 +3144,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.state,
       data.time,
       data.timezone,
+      data.title,
       data.hostGym,
       data.venue,
       locationParts,
@@ -3268,6 +3212,24 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         ) : null
       ) : null;
 
+    const wrapSectionBuilder = (children: React.ReactNode) => (
+      <EventSectionBuilderProvider layout={data.sectionLayout}
+        onChange={(sectionLayout) => setData((previous) => ({ ...previous, sectionLayout }))}
+        catalog={GYMNASTICS_SECTION_CATALOG}
+        renderEditor={(id) => {
+          if (id === "rsvp") return renderRsvpEditor();
+          if (id === "details") return renderDetailsEditor();
+          if (id === "admission") return <InputGroup label="Admission" type="textarea" value={data.extra.admission || ""} onChange={(value) => updateExtra("admission", value)} placeholder="Adults: $15\nChildren: $10\nUnder 5: Free" />;
+          if (id === "venue") return <div className="space-y-4"><InputGroup label="Venue" value={data.venue || ""} onChange={(value) => updateData("venue", value)} /><InputGroup label="Address" value={data.address || ""} onChange={(value) => updateData("address", value)} /></div>;
+          if (id === "travel") return <div className="space-y-4"><InputGroup label="Parking & arrival" type="textarea" value={advancedState?.logistics?.parking || ""} onChange={(parking) => setAdvancedSectionState("logistics", (previous: { parking?: string; trafficAlerts?: string }) => ({ ...previous, parking }))} /><InputGroup label="Traffic & travel notes" type="textarea" value={advancedState?.logistics?.trafficAlerts || ""} onChange={(trafficAlerts) => setAdvancedSectionState("logistics", (previous: { parking?: string; trafficAlerts?: string }) => ({ ...previous, trafficAlerts }))} /></div>;
+          if (id === "support") return <>{config.advancedSections?.filter((section) => section.id === "gear" || section.id === "volunteers").map((section) => <React.Fragment key={section.id}>{renderAdvancedEditor(section)}</React.Fragment>)}</>;
+          const section = config.advancedSections?.find((item) => item.id === id);
+          return <>{id === "meet" ? renderDetailsEditor() : null}{section ? renderAdvancedEditor(section) : null}</>;
+        }}>
+        {children}
+      </EventSectionBuilderProvider>
+    );
+
     const sidebarPanel = (
       <div
         {...drawerTouchHandlers}
@@ -3293,12 +3255,19 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               <button
                 type="button"
                 onClick={closeMobileMenu}
-                className="nav-chrome-mobile-drawer-back-button flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold"
+                className="nav-chrome-mobile-drawer-back-button flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
               >
-                <ChevronLeft size={14} />
-                Back to preview
+                <ChevronLeft size={16} aria-hidden="true" />
+                Back to event
               </button>
-              <span className="text-sm font-semibold text-slate-700">Customize</span>
+              <button
+                type="button"
+                onClick={openFullscreenPreview}
+                className="nav-chrome-mobile-drawer-back-button flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
+              >
+                <Eye size={16} aria-hidden="true" />
+                Preview
+              </button>
             </div>
           )}
 
@@ -3308,7 +3277,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             style={{ pointerEvents: "auto" }}
           >
             {discoveryEnrichmentBanner}
-            <div hidden={activeView !== "main"}>
+            <div hidden={activeView !== "main" && activeView !== "images"}>
               {editEventId && loadingExisting ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <p className="text-sm font-medium text-slate-600">Loading event…</p>
@@ -3319,7 +3288,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               )}
             </div>
             {activeView === "headline" && renderHeadlineEditor}
-            {activeView === "images" && renderImagesEditor()}
+
             {activeView === "design" && renderDesignEditor()}
             {activeView === "details" && renderDetailsEditor()}
             {activeView === "discover" && renderDiscoverEditor()}
@@ -3360,7 +3329,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               </p>
             )}
           </div>
-          <div className="flex gap-3">
+          <div className="grid auto-cols-fr grid-flow-col items-start gap-3 [&_button]:h-12 [&_button]:w-full [&_button]:whitespace-nowrap">
             {editEventId && (
               <button
                 onClick={() => {
@@ -3418,9 +3387,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             <button
               onClick={handlePublish}
               disabled={submitting || (!(templateEditor && !templateEditor.authenticated) && missingEssentials.length > 0)}
-              className={`${
-                editEventId ? "flex-1" : "w-full"
-              } min-h-11 rounded-lg bg-slate-900 py-3 text-sm font-medium tracking-wide text-white shadow-lg transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60`}
+              className="min-h-11 w-full rounded-lg bg-slate-900 py-3 text-sm font-medium tracking-wide text-white shadow-lg transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting
                 ? editEventId
@@ -3522,14 +3489,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }
 
     if (isEmbed) {
-      return (
+      return wrapSectionBuilder(
         <div className="h-dvh min-h-0 w-full bg-white flex flex-col overflow-hidden">
           {sidebarPanel}
         </div>
       );
     }
 
-    return (
+    return wrapSectionBuilder(
       <div className="relative flex min-h-screen h-[100dvh] w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
         <EventCanvas
           {...previewTouchHandlers}
@@ -3555,7 +3522,27 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               ) : (
                 <SimpleTemplateView
                   key={`preview-${previewEventId}`}
-                  onMobileEdit={openMobileMenu}
+                  onMobileEdit={mobileMenuOpen ? undefined : openMobileMenu}
+                  onPreview={openFullscreenPreview}
+                  onPageTextChange={mobileMenuOpen ? undefined : handlePageTextChange}
+                  onHeroImagePositionChange={(positionY) => setData((prev) => ({
+                    ...prev,
+                    heroImageSettings: { ...normalizeHeroImageSettings(prev.heroImageSettings), positionY },
+                  }))}
+                  heroImageAction={
+                    <HeroImageEditor filterEnabled={data.heroImageFilterEnabled !== false} onFilterChange={(heroImageFilterEnabled) => setData((prev) => ({ ...prev, heroImageFilterEnabled }))}
+                      value={data.hero}
+                      onChange={(hero) => setData((prev) => ({
+                        ...prev,
+                        hero,
+                        heroImageSettings: hero
+                          ? { ...normalizeHeroImageSettings(prev.heroImageSettings), positionY: 50 }
+                          : { ...DEFAULT_HERO_IMAGE_SETTINGS },
+                      }))}
+                      settings={normalizeHeroImageSettings(data.heroImageSettings)}
+                      onSettingsChange={(heroImageSettings) => setData((prev) => ({ ...prev, heroImageSettings }))}
+                    />
+                  }
                   eventId={previewEventId}
                   eventData={previewEventData}
                   eventTitle={data.title || config.displayName}
@@ -3585,6 +3572,50 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         )}
 
         {sidebarPanel}
+        <dialog
+          ref={fullscreenPreviewRef}
+          aria-label="Event preview"
+          onCancel={(event) => {
+            event.preventDefault();
+            closeFullscreenPreview();
+          }}
+          onClose={() => setFullscreenPreviewOpen(false)}
+          className="fixed inset-0 m-0 h-[100dvh] max-h-none w-full max-w-none overflow-x-hidden overflow-y-auto overscroll-contain border-0 bg-transparent p-0"
+        >
+          {fullscreenPreviewOpen ? (
+            <EventSectionsReadOnly><EventCanvas
+              initialColor={getGymMeetTemplateMeta(resolveGymMeetTemplateId(data)).background}
+              className="min-h-full w-full pb-[env(safe-area-inset-bottom)]"
+              style={{ color: getGymMeetTemplateMeta(resolveGymMeetTemplateId(data)).foreground }}
+            >
+              <OwnerPreviewMobileTopbarSuppressor />
+              <div className="pointer-events-none sticky top-0 z-30 flex justify-end px-3 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-5">
+                <button
+                  type="button"
+                  onClick={closeFullscreenPreview}
+                  aria-label="Close preview"
+                  title="Close preview"
+                  className="pointer-events-auto inline-flex size-11 items-center justify-center rounded-full border border-current/15 bg-[var(--event-canvas-color)] text-inherit shadow-sm transition hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+                >
+                  <X size={21} aria-hidden="true" />
+                </button>
+              </div>
+              <SimpleTemplateView
+                eventId={previewEventId}
+                eventData={previewEventData}
+                eventTitle={data.title || config.displayName}
+                isOwner={false}
+                isReadOnly
+                viewerKind="readonly"
+                shareUrl=""
+                sessionEmail={null}
+                disableProtectedSectionLocks
+                hideOwnerActions
+                onMobileEdit={closeFullscreenPreview}
+              />
+            </EventCanvas></EventSectionsReadOnly>
+          ) : null}
+        </dialog>
       </div>
     );
   };

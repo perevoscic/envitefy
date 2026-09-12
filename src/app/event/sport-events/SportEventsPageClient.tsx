@@ -4,6 +4,8 @@ import { Sparkles, Trophy } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import SportCreationGate from "@/components/event-create/SportCreationGate";
 import SportsDiscoveryLauncher from "@/components/event-create/SportsDiscoveryLauncher";
+import CategoryGalleryBackdrop from "@/components/events/CategoryGalleryBackdrop";
+import { categoryGalleryPageClassName } from "@/components/events/category-gallery-page";
 import { getSportEventPreset } from "@/lib/sport-event-presets";
 
 export default function SportEventsPageClient() {
@@ -19,11 +21,15 @@ export default function SportEventsPageClient() {
     >
       {(activeSport) => {
         const selectedSport = getSportEventPreset(activeSport);
+        const galleryCategory = ["football", "soccer", "cheerleading", "dance"].includes(selectedSport.key)
+          ? selectedSport.key
+          : "sport-events";
         return (
-          <main className="min-h-screen bg-[radial-gradient(circle_at_12%_12%,#eeeaff_0,transparent_30%),radial-gradient(circle_at_88%_8%,#e9f7ff_0,transparent_28%),#f8f8fb] px-3 pb-5 pt-24 text-[#17111e] sm:px-6 sm:pb-8 sm:pt-24 lg:px-8 lg:pt-8">
+          <main className={`${categoryGalleryPageClassName(galleryCategory)} min-h-screen px-3 pb-5 pt-24 text-[#17111e] sm:px-6 sm:pb-8 sm:pt-24 lg:px-8 lg:pt-8`}>
             <section className="mx-auto w-full min-w-0 max-w-7xl">
-              <div className="flex min-w-0 flex-col gap-4 rounded-[1.5rem] border border-white/80 bg-white/75 p-4 shadow-[0_24px_90px_rgba(41,32,72,0.1)] backdrop-blur sm:gap-5 sm:rounded-[2rem] sm:p-7">
-                <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+              <div className="relative isolate flex min-w-0 flex-col gap-4 overflow-hidden rounded-[1.5rem] border border-white/80 bg-white/75 p-4 shadow-[0_24px_90px_rgba(41,32,72,0.1)] backdrop-blur sm:gap-5 sm:rounded-[2rem] sm:p-7">
+                <CategoryGalleryBackdrop category={galleryCategory} />
+                <div className="relative z-10 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
                   <div>
                     <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-[#5f55ff]">
                       <Sparkles className="h-4 w-4" /> Smart {selectedSport.shortLabel} builder
@@ -49,7 +55,7 @@ export default function SportEventsPageClient() {
                     </div>
                   </div>
                 </div>
-                <p className="rounded-xl bg-[#f2f0ff] px-4 py-3 text-xs leading-5 text-[#5046b5]">
+                <p className="relative z-10 rounded-xl bg-[#f2f0ff] px-4 py-3 text-xs leading-5 text-[#5046b5]">
                   We start with the recommended {selectedSport.shortLabel.toLowerCase()} theme. You
                   can change the theme, colors, and sections inside the visual builder.
                 </p>

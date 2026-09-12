@@ -236,7 +236,7 @@
   padding: 28px 0;
 }
 .composition[data-composition="gazette"] .headerContent {
-  grid-row: 1;
+  grid-row: auto;
 }
 .composition[data-composition="gazette"] .eyebrow {
   border-block: 1px solid var(--signup-text);
@@ -325,7 +325,7 @@
   font-size: clamp(2.5rem, 6.4cqi, 6.3rem);
 }
 .composition[data-composition="poster"] .headerContent {
-  grid-row: 1;
+  grid-row: auto;
 }
 .composition[data-composition="poster"] .eyebrow,
 .composition[data-composition="poster"] .description,
@@ -472,7 +472,7 @@
 }
 .composition[data-composition="studio"] .headerContent {
   padding: 18px 0;
-  grid-row: 1;
+  grid-row: auto;
 }
 .composition[data-composition="studio"] .heading {
   font-weight: 350;
@@ -498,7 +498,7 @@
   border: 1px solid var(--signup-secondary);
 }
 .composition[data-composition="marquee"] .headerContent {
-  grid-row: 1;
+  grid-row: auto;
 }
 .composition[data-composition="marquee"] .heading {
   text-transform: uppercase;
@@ -551,7 +551,7 @@
 }
 .composition[data-composition="ledger"] .headerContent {
   padding: 30px;
-  grid-row: 1;
+  grid-row: auto;
 }
 .composition[data-composition="ledger"] .heading {
   font-size: clamp(2.2rem, 5cqi, 4.7rem);

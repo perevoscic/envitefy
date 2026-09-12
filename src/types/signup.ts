@@ -160,6 +160,7 @@ export type SignupAppearance = {
   density: "comfortable" | "compact";
   accent?: string;
   imagePosition: { x: number; y: number };
+  imageFilterEnabled?: boolean;
 };
 
 export type SignupHeaderImageAsset = {

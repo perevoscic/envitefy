@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import HeroImageEditor from "@/components/events/HeroImageEditor";
 import EventCanvas from "@/components/EventCanvas";
 
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
@@ -183,6 +184,7 @@ const PROFESSIONAL_THEME_CLASSES: Record<string, SimpleTemplateThemeSnapshot> = 
 };
 
 const INITIAL_DATA = {
+  heroImageFilterEnabled: true,
   childName: "Emma",
   age: 5,
   date: (() => {
@@ -696,32 +698,7 @@ export default function BirthdayTemplateCustomizePage() {
     [bumpAssetUploadCounter],
   );
 
-  const handleImageUpload = useCallback(
-    async (field, e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const previewUrl = (templateEditor ? templateEditor.previewPhoto(file) : URL.createObjectURL(file));
-      if (!previewUrl) return;
-      setData((prev) => ({
-        ...prev,
-        images: { ...prev.images, [field]: previewUrl },
-      }));
-      if (templateEditor) return;
-      const uploadedUrl = await uploadBirthdayAsset(file);
-      if (!uploadedUrl) return;
-      setData((prev) => {
-        if (prev.images[field] !== previewUrl) return prev;
-        if (previewUrl.startsWith("blob:")) {
-          URL.revokeObjectURL(previewUrl);
-        }
-        return {
-          ...prev,
-          images: { ...prev.images, [field]: uploadedUrl },
-        };
-      });
-    },
-    [uploadBirthdayAsset],
-  );
+  
 
   const handleGalleryUpload = useCallback(
     async (e) => {
@@ -1050,6 +1027,7 @@ export default function BirthdayTemplateCustomizePage() {
             venue: existing.venue || existing.location || prev.venue,
             partyDetails: { ...prev.partyDetails, ...(existing.partyDetails || existing.party || {}) },
             hosts: existing.hosts || prev.hosts,
+            heroImageFilterEnabled: existing.heroImageFilterEnabled !== false,
             images: {
               ...prev.images,
               hero: existing.customHeroImage || existing.heroImage || prev.images.hero,
@@ -1233,6 +1211,7 @@ export default function BirthdayTemplateCustomizePage() {
               label: r.label.trim() || registryCopy.sectionLabel,
               url: r.url.trim(),
             })),
+          heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
           customHeroImage: heroToSave || undefined,
           heroImage: heroToSave || undefined,
           images: {
@@ -1378,12 +1357,7 @@ export default function BirthdayTemplateCustomizePage() {
           }
           onClick={() => setActiveView("headline")}
         />
-        <MenuCard
-          title="Images"
-          icon={<ImageIcon size={18} />}
-          desc="Hero & background photos."
-          onClick={() => setActiveView("images")}
-        />
+        
         <MenuCard
           title="Party Details"
           icon={<Cake size={18} />}
@@ -1470,91 +1444,7 @@ export default function BirthdayTemplateCustomizePage() {
     </EditorLayout>
   );
 
-  const renderImagesEditor = () => (
-    <EditorLayout title="Images" onBack={() => setActiveView("main")}>
-      <div className="space-y-8">
-        <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-3 tracking-wider">
-            Hero Image
-          </label>
-          <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition-colors relative">
-            {data.images.hero ? (
-              <div className="relative w-full h-48 rounded-lg overflow-hidden">
-                <img src={data.images.hero} alt="Hero" className="w-full h-full object-cover" />
-                <button
-                  onClick={() =>
-                    setData((prev) => ({
-                      ...prev,
-                      images: { ...prev.images, hero: null },
-                    }))
-                  }
-                  className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md hover:bg-red-50 text-red-500"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
-                  <Upload size={20} />
-                </div>
-                <p className="text-sm text-slate-600 mb-1">Upload main photo</p>
-                <p className="text-xs text-slate-400">Recommended: 1600x900px</p>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  onChange={(e) => handleImageUpload("hero", e)}
-                />
-              </>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-3 tracking-wider">
-            Headline Background
-          </label>
-          <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition-colors relative">
-            {data.images.headlineBg ? (
-              <div className="relative w-full h-32 rounded-lg overflow-hidden">
-                <img
-                  src={data.images.headlineBg}
-                  alt="Headline Bg"
-                  className="w-full h-full object-cover"
-                />
-                <button
-                  onClick={() =>
-                    setData((prev) => ({
-                      ...prev,
-                      images: { ...prev.images, headlineBg: null },
-                    }))
-                  }
-                  className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md hover:bg-red-50 text-red-500"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
-                  <ImageIcon size={20} />
-                </div>
-                <p className="text-sm text-slate-600 mb-1">Upload header texture</p>
-                <p className="text-xs text-slate-400">Optional pattern behind names</p>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  onChange={(e) => handleImageUpload("headlineBg", e)}
-                />
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </EditorLayout>
-  );
+  
 
   const renderDesignEditor = () => {
     return (
@@ -1844,7 +1734,8 @@ export default function BirthdayTemplateCustomizePage() {
       >
         <div className="w-full min-w-0 mb-4 md:mb-8 transition-all duration-500 ease-in-out">
           <div className="shadow-2xl md:rounded-xl overflow-hidden relative z-0">
-            <BirthdayRenderer
+            <HeroImageEditor filterEnabled={data.heroImageFilterEnabled !== false} onFilterChange={(heroImageFilterEnabled) => setData((prev) => ({ ...prev, heroImageFilterEnabled }))} value={data.images.hero} onChange={(hero) => setData((prev) => ({ ...prev, images: { ...prev.images, hero } }))} className="absolute left-4 top-4 z-30" />
+            <BirthdayRenderer heroImageFilterEnabled={data.heroImageFilterEnabled !== false}
               template={activeRenderTheme}
               heroImageUrl={data.images.hero || null}
               event={{
@@ -1900,9 +1791,9 @@ export default function BirthdayTemplateCustomizePage() {
             </div>
           )}
           <div className="p-6 pt-4 md:pt-6">
-            {activeView === "main" && renderMainMenu()}
+            {(activeView === "main" || activeView === "images") && renderMainMenu()}
             {activeView === "headline" && renderHeadlineEditor()}
-            {activeView === "images" && renderImagesEditor()}
+            
             {activeView === "design" && renderDesignEditor()}
             {activeView === "partyDetails" && renderPartyDetailsEditor()}
             {activeView === "hosts" && renderHostsEditor()}

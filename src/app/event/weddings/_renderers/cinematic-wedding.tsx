@@ -117,7 +117,7 @@ export default function CinematicWedding({ theme, event }: Props) {
         <div className="absolute inset-0 z-0">
           <img
             src={heroImage}
-            className={`w-full h-full object-cover transition-transform duration-[10s] ease-out ${
+            className={`template-hero-image w-full h-full object-cover transition-transform duration-[10s] ease-out ${
               visible ? "scale-100 opacity-60" : "scale-110 opacity-0"
             }`}
             alt="Hero"

@@ -63,6 +63,7 @@ export const ENABLED_TEMPLATE_KEYS: TemplateKey[] = [
   "gender_reveal",
   "sport_events",
   "gymnastics",
+  "football_season",
 ];
 
 const ENABLED_TEMPLATE_KEY_SET = new Set<TemplateKey>(ENABLED_TEMPLATE_KEYS);
@@ -112,7 +113,7 @@ const ALL_TEMPLATE_DEFINITIONS: TemplateDef[] = [
   },
   {
     key: "football_season",
-    label: "Football Season",
+    label: "Football",
     href: "/event/football",
     icon: "🏈",
     section: "sports",
@@ -267,7 +268,7 @@ export const PERSONA_PRESETS: Record<UserPersona, TemplateKey[]> = {
   general: [...TEMPLATE_KEYS],
 };
 
-const SPORTS_KEYS: TemplateKey[] = ["gymnastics", "sport_events"];
+const SPORTS_KEYS: TemplateKey[] = ["gymnastics", "sport_events", "football_season"];
 
 export function getTemplateDefByKey(key: TemplateKey): TemplateDef | null {
   return TEMPLATE_DEFINITIONS.find((d) => d.key === key) || null;

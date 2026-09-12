@@ -20,6 +20,8 @@ const staticEntries: StaticEntry[] = [
   { path: "/snap", priority: 0.9, changeFrequency: "weekly" },
   { path: "/envitefy-concierge", priority: 0.86, changeFrequency: "weekly" },
   { path: "/gymnastics", priority: 0.9, changeFrequency: "weekly" },
+  { path: "/football", priority: 0.9, changeFrequency: "weekly" },
+  { path: "/football/templates", priority: 0.8, changeFrequency: "weekly" },
   { path: "/weddings", priority: 0.9, changeFrequency: "weekly" },
   { path: "/bridal-showers", priority: 0.82, changeFrequency: "weekly" },
   { path: "/baby-showers", priority: 0.86, changeFrequency: "weekly" },

@@ -1,5 +1,7 @@
 # Studio production reference
 
+**September 12, 2026 override:** use OpenAI for generated assets and substantive AI work, and Remotion for animation, editing and rendering. Gemini is allowed only for small bounded text calls through `scripts/provider-policy.mjs`. Google video/image generation, Lyria music, uploaded-media reviews/transcription and bulk processing are blocked. The Google production and recovery commands below are historical only. See the [standing provider rule](../../../../STUDIO-GUIDE.md#openai-and-remotion-gemini-for-small-text-calls-only--september-12-2026).
+
 Read for actual video production or revisions. Paths and commands below are relative to the `video-studio` folder. Read the campaign's own notes before using its scripts.
 
 For new reusable production plans, use [the campaign engine](engine.md). This reference preserves the specialized legacy pipeline and campaign-specific repairs; those scripts are not the default interface for a new engine campaign.

@@ -1,0 +1,75 @@
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  background: var(--gallery-base);
+  color: var(--gallery-ink);
+}
+
+.wash {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 89% 39%, var(--gallery-wash), transparent 48%),
+    radial-gradient(ellipse at 69% 6%, var(--gallery-glow), transparent 43%);
+  mask-image: linear-gradient(90deg, transparent 28%, #000 73%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 28%, #000 73%);
+}
+
+.artwork {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: min(100%, 1120px);
+  height: auto;
+  max-height: 100%;
+  transform: translateY(-50%);
+  opacity: 0.8;
+  mask-image: linear-gradient(90deg, transparent 35%, #000 67%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 35%, #000 67%);
+}
+
+.fade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(0deg, var(--gallery-fade), transparent 28%),
+    linear-gradient(90deg, var(--gallery-base) 23%, transparent 72%);
+}
+
+@media (max-width: 767px) {
+  .wash {
+    bottom: auto;
+    height: 280px;
+    opacity: 0.75;
+    mask-image: linear-gradient(90deg, transparent 15%, #000 100%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 15%, #000 100%);
+  }
+
+  .artwork {
+    top: -25px;
+    right: -95px;
+    width: 560px;
+    max-width: none;
+    max-height: none;
+    transform: none;
+    opacity: 0.33;
+    mask-image: linear-gradient(90deg, transparent 43%, #000 88%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 43%, #000 88%);
+  }
+
+  .fade {
+    background:
+      linear-gradient(0deg, var(--gallery-fade), transparent 22%),
+      linear-gradient(90deg, var(--gallery-base), transparent 100%);
+  }
+}
+
+@media (forced-colors: active) {
+  .backdrop {
+    display: none;
+  }
+}

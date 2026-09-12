@@ -44,10 +44,21 @@ export default function NewspaperWedding({ theme, event }: Props) {
 
   return (
     <div
-      className="min-h-screen bg-[#f4f4f4] text-black font-serif p-4 md:p-8 flex items-center justify-center"
+      className="min-h-screen bg-[#f4f4f4] text-black font-serif p-4 md:p-8 flex flex-col items-center justify-center"
       style={{ fontFamily: theme.fonts.body }}
     >
       <div className="max-w-4xl w-full mx-auto bg-white p-6 md:p-12 shadow-xl border border-neutral-200">
+<div className="h-64 bg-neutral-100 mb-4 grayscale flex items-center justify-center border border-neutral-300 overflow-hidden">
+              {heroImage ? (
+                <img
+                  src={heroImage}
+                  alt={coupleNames}
+                  className="template-hero-image w-full h-full object-cover"
+                />
+              ) : (
+                <Camera className="w-12 h-12 opacity-20" />
+              )}
+            </div>
         <header className="border-b-4 border-black pb-4 mb-4 text-center">
           <div className="flex justify-between items-center border-b border-black pb-2 mb-2 text-xs uppercase font-sans font-bold tracking-[0.18em]">
             <span>Vol. 1</span>
@@ -67,17 +78,7 @@ export default function NewspaperWedding({ theme, event }: Props) {
             <h2 className="text-3xl md:text-5xl font-bold leading-none mb-4 uppercase tracking-tight">
               EXTRA! EXTRA! {coupleNames} MAKE IT OFFICIAL
             </h2>
-            <div className="h-64 bg-neutral-100 mb-4 grayscale flex items-center justify-center border border-neutral-300 overflow-hidden">
-              {heroImage ? (
-                <img
-                  src={heroImage}
-                  alt={coupleNames}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <Camera className="w-12 h-12 opacity-20" />
-              )}
-            </div>
+
             <p className="text-justify leading-snug text-sm md:text-base">
               <span className="text-4xl float-left mr-2 font-bold">
                 {event.story ? event.story[0] : "I"}

@@ -1,0 +1,95 @@
+.editable {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.editable:has(> input),
+.editable:has(> select) {
+  display: flex;
+  width: 100%;
+}
+
+.editable > input,
+.editable > select {
+  flex: 1;
+  min-width: 0;
+}
+
+.editing {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 26ch;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid currentColor;
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  font: inherit;
+  font-size: max(1em, 16px);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--inline-edit-ink, var(--gym-ink, #172033));
+  background: var(--inline-edit-paper, var(--gym-paper, #fff));
+}
+
+.actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+textarea.input {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.editable > .button {
+  border: 0;
+  border-radius: 0.25rem;
+}
+
+.editable > .button:hover {
+  background: transparent;
+  opacity: 0.75;
+}
+
+.button:focus-visible,
+.input:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}

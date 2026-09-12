@@ -55,6 +55,9 @@ export default function NoirLuxury({ theme, event }: Props) {
       <div className="fixed inset-6 border border-[#D4AF37]/10 pointer-events-none z-50 mix-blend-screen"></div>
 
       <header className="min-h-screen flex items-center justify-center relative px-8">
+        {event.customHeroImage && (
+          <img src={event.customHeroImage} alt="Wedding artwork" className="template-hero-image absolute inset-0 h-full w-full object-cover opacity-60" />
+        )}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/black-felt.png')] opacity-50"></div>
 
         <div

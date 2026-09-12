@@ -1,3 +1,5 @@
+import { extractSportsSchedule, hasSportsScheduleText } from "./sports-schedule.ts";
+import { scanScheduleFromOcr } from "../scan-schedule.ts";
 import { randomUUID } from "node:crypto";
 import * as chrono from "chrono-node";
 import { getServerSession } from "next-auth";
@@ -1613,8 +1615,8 @@ export async function handleOcrRequest(request: Request) {
       ) || [];
     const hasTimeRange =
       /\d{1,2}:\d{2}\s*[-–—]\s*\d{1,2}:\d{2}/.test(raw) || /\b\d{1,2}:\d{2}\b/.test(raw);
-    const hasPracticeKeyword = /(practice|training|schedule|team)/i.test(raw);
-    const looksLikePracticeSchedule = hasPracticeKeyword && hasTimeRange && dayMentions.length >= 4;
+    const hasPracticeKeyword = /\b(practice|training)\b/i.test(raw);
+    const looksLikePracticeSchedule = hasPracticeKeyword && hasTimeRange && dayMentions.length >= 1;
 
     if (looksLikePracticeSchedule) {
       let practiceTz = tz;
@@ -1622,7 +1624,7 @@ export async function handleOcrRequest(request: Request) {
       let practiceTimeframe: string | null = null;
       const practiceGroups: any[] = [];
 
-      if (allowDeepScheduleExtraction) {
+      if (allowDeepScheduleExtraction && !hasSportsScheduleText(raw)) {
         try {
           const scheduleStartedAt = Date.now();
           const scheduleTimeoutMs = clampTimeoutMs(
@@ -1881,7 +1883,6 @@ export async function handleOcrRequest(request: Request) {
     }
 
     if (practiceSchedule.detected) {
-      fieldsGuess.location = "";
       fieldsGuess.start = null;
       fieldsGuess.end = null;
       const schedLabel = [practiceSchedule.title, practiceSchedule.timeframe]
@@ -2074,7 +2075,16 @@ export async function handleOcrRequest(request: Request) {
       });
     }
 
+    let scanSchedule = scanScheduleFromOcr({ practiceSchedule, schedule, events, fieldsGuess });
+    if (hasSportsScheduleText(raw)) {
+      const scheduleTimeout = Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 1000));
+      const extractedSchedule = await extractSportsSchedule(raw, tz, scheduleTimeout);
+      if (extractedSchedule) scanSchedule = extractedSchedule;
+      if (!scanSchedule) throw new Error("We could not read the schedule rows. Please upload a clearer file or enter the schedule manually.");
+    }
+
     const responseBody: any = {
+      scanSchedule,
       intakeId: null,
       scanArtworkTicket: earlyArtwork?.ticket || null,
       ocrText: raw,

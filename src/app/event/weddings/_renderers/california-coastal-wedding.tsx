@@ -171,7 +171,7 @@ export default function CaliforniaCoastalWedding({ theme, event }: Props) {
         <div className="absolute inset-0 z-0">
           <img
             src={heroImage}
-            className="w-full h-full object-cover"
+            className="template-hero-image w-full h-full object-cover"
             alt="Big Sur Coast"
           />
           {/* Gradient Overlay for Text Readability */}

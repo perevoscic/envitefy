@@ -15,7 +15,7 @@ export default function AnniversaryScenes(props: BirthdaySceneProps) {
     <img
       src={src}
       alt=""
-      className={`${styles.art} ${className}`}
+      className={`template-hero-image ${styles.art} ${className}`}
       loading={preview ? "lazy" : "eager"}
       decoding="async"
     />
@@ -43,26 +43,23 @@ export default function AnniversaryScenes(props: BirthdaySceneProps) {
     case "cotton-letter-second-anniversary":
       composition = (
         <div className={styles.letter}>
+          <div className={styles.letterPhoto}>
+            {art()}
+            <span className={styles.caption}>with love, always</span>
+          </div>
           <div className={styles.letterPaper}>
             {label("A LOVE LETTER, TOGETHER")}
             {copy()}
             <div className={styles.rule} />
             {details}
           </div>
-          <div className={styles.letterPhoto}>
-            {art()}
-            <span className={styles.caption}>with love, always</span>
-          </div>
+
         </div>
       );
       break;
     case "leather-passport-third-anniversary":
       composition = (
         <div className={styles.passport}>
-          <div className={styles.passportHeading}>
-            {label("THE JOURNEY CONTINUES")}
-            {copy()}
-          </div>
           <div className={styles.passportSpread}>
             {art()}
             <div className={styles.passportPage}>
@@ -74,15 +71,21 @@ export default function AnniversaryScenes(props: BirthdaySceneProps) {
               </span>
             </div>
           </div>
+          <div className={styles.passportHeading}>
+            {label("THE JOURNEY CONTINUES")}
+            {copy()}
+          </div>
+
         </div>
       );
       break;
     case "linen-sunday-fourth-anniversary":
       composition = (
         <div className={styles.linen}>
+          {art(styles.linenPhoto)}
           {label("YOU HAVE A PLACE AT OUR TABLE")}
           {copy(styles.center)}
-          {art(styles.linenPhoto)}
+
           <div className={styles.linenDetails}>
             {facts}
             {rsvp}
@@ -125,23 +128,25 @@ export default function AnniversaryScenes(props: BirthdaySceneProps) {
             {label("A STUDY IN LASTING LOVE")}
             <span aria-hidden="true">○</span>
           </div>
-          {copy()}
           <div className={styles.bronzeGrid}>
             <div>{details}</div>
             {art()}
           </div>
+          {copy()}
+
         </div>
       );
       break;
     case "pottery-studio-ninth-anniversary":
       composition = (
         <div className={styles.pottery}>
+          {art(styles.potteryPhoto)}
           <div className={styles.potteryWords}>
             {label("SHAPED BY THE YEARS")}
             {copy()}
             <p className={styles.handwritten}>a life, made together</p>
           </div>
-          {art(styles.potteryPhoto)}
+
           <div className={styles.potteryFooter}>{details}</div>
         </div>
       );
@@ -174,12 +179,13 @@ export default function AnniversaryScenes(props: BirthdaySceneProps) {
       composition = (
         <div className={styles.lace}>
           <div className={styles.laceFrame}>
-            {label("A LOVE TO KEEP FOREVER")}
-            {copy(styles.center)}
             <div className={styles.laceSpread}>
               {art()}
               <div>{details}</div>
             </div>
+            {label("A LOVE TO KEEP FOREVER")}
+            {copy(styles.center)}
+
           </div>
         </div>
       );
@@ -187,21 +193,23 @@ export default function AnniversaryScenes(props: BirthdaySceneProps) {
     case "ivory-orchid-fourteenth-anniversary":
       composition = (
         <div className={styles.orchid}>
+          {art(styles.orchidPhoto)}
           <div className={styles.orchidWords}>
             {label("SIMPLY, US")}
             {copy()}
             {details}
           </div>
-          {art(styles.orchidPhoto)}
+
         </div>
       );
       break;
     case "sapphire-evening-anniversary":
       composition = (
         <div className={styles.sapphire}>
+          <div className={styles.sapphirePicture}>{art()}</div>
           {label("THE PLEASURE OF YOUR COMPANY")}
           {copy(styles.center)}
-          <div className={styles.sapphirePicture}>{art()}</div>
+
           {details}
         </div>
       );
@@ -222,25 +230,27 @@ export default function AnniversaryScenes(props: BirthdaySceneProps) {
     case "diamond-light-sixtieth-anniversary":
       composition = (
         <div className={styles.diamond}>
-          <div className={styles.diamondTop}>
-            {label("SIX DECADES. ONE EXTRAORDINARY LOVE.")}
-            {copy()}
-          </div>
           <div className={styles.diamondBottom}>
             {art()}
             <div>{details}</div>
           </div>
+          <div className={styles.diamondTop}>
+            {label("SIX DECADES. ONE EXTRAORDINARY LOVE.")}
+            {copy()}
+          </div>
+
         </div>
       );
       break;
     case "hydrangea-house-anniversary":
       composition = (
         <div className={styles.hydrangea}>
+          {art()}
           <div className={styles.hydrangeaHeader}>
             {label("THE HOME WE HAVE MADE")}
             {copy(styles.center)}
           </div>
-          {art()}
+
           <div className={styles.hydrangeaFooter}>{details}</div>
         </div>
       );
@@ -298,28 +308,30 @@ export default function AnniversaryScenes(props: BirthdaySceneProps) {
     case "desert-sunrise-anniversary":
       composition = (
         <div className={styles.desert}>
-          <div className={styles.desertHeading}>
-            {label("THE BEAUTY OF ANOTHER DAY")}
-            {copy()}
-          </div>
           <div className={styles.desertLandscape}>
             {art()}
             <div className={styles.desertCard}>{details}</div>
           </div>
+          <div className={styles.desertHeading}>
+            {label("THE BEAUTY OF ANOTHER DAY")}
+            {copy()}
+          </div>
+
         </div>
       );
       break;
     case "champagne-midnight-anniversary":
       composition = (
         <div className={styles.champagne}>
-          <div className={styles.champagneHeading}>
-            {label("GOOD COMPANY. GREAT LOVE.")}
-            {copy(styles.center)}
-          </div>
           <div className={styles.champagnePhoto}>
             {art()}
             <span aria-hidden="true">✦</span>
           </div>
+          <div className={styles.champagneHeading}>
+            {label("GOOD COMPANY. GREAT LOVE.")}
+            {copy(styles.center)}
+          </div>
+
           <div className={styles.champagneFooter}>
             {facts}
             {rsvp}

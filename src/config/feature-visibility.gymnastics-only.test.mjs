@@ -14,7 +14,7 @@ test("feature visibility is clamped to launched template keys", () => {
 
   assert.match(
     source,
-    /export const ENABLED_TEMPLATE_KEYS: TemplateKey\[] = \[\s*"birthdays",\s*"weddings",\s*"anniversaries",\s*"baby_showers",\s*"gender_reveal",\s*"sport_events",\s*"gymnastics",\s*\];/s
+    /export const ENABLED_TEMPLATE_KEYS: TemplateKey\[] = \[\s*"birthdays",\s*"weddings",\s*"anniversaries",\s*"baby_showers",\s*"gender_reveal",\s*"sport_events",\s*"gymnastics",\s*"football_season",\s*\];/s
   );
   assert.match(
     source,
@@ -26,7 +26,7 @@ test("feature visibility is clamped to launched template keys", () => {
   );
   assert.match(
     source,
-    /const SPORTS_KEYS: TemplateKey\[] = \["gymnastics", "sport_events"\];/
+    /const SPORTS_KEYS: TemplateKey\[] = \["gymnastics", "sport_events", "football_season"\];/
   );
   assert.match(source, /defaultCreateIntent: string \| null;/);
   assert.match(source, /sportPreferences: SportPreferences;/);

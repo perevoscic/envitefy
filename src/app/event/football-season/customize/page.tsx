@@ -1,29 +1,46 @@
 // @ts-nocheck
 "use client";
+import { EventSectionBuilderProvider, EventSectionPalette, EventSectionsReadOnly, useSectionEditorClose } from "@/components/events/EventSectionBuilder";
+import { normalizeEventSectionLayout } from "@/lib/event-section-layout";
+import HeroImageEditor from "@/components/events/HeroImageEditor";
+import CustomEventUrlField, { checkCustomEventUrl } from "@/components/events/CustomEventUrlField";
+import { validateCustomEventPublicSlug } from "@/utils/event-public-slug";
+import { suggestFootballPublicSlug } from "@/lib/football-custom-url";
+import FootballSeasonSectionNav, { useFootballSectionTabs } from "@/components/football-season-templates/FootballSectionTabs";
+import { resolveFootballTeamName, resolveFootballTitle } from "@/lib/football-team-name";
+import { hasFootballGame, mergeFootballGameDetails } from "@/lib/football-games";
+import { updateFootballGameDetails } from "@/lib/football-game-details-client";
+import { footballErrorMessage, readFootballResponse } from "@/lib/football-response";
+import { parseCalendarDateTimeToIso } from "@/lib/calendar-date-time";
+import { footballEditorFields } from "@/lib/football-editor-data";
+import { FOOTBALL_SECTION_LABELS, normalizeFootballHiddenSections, type FootballSectionId } from "@/lib/football-section-visibility";
 import EventCanvas from "@/components/EventCanvas";
+import { ownerEventEditorReturnHref } from "@/lib/event-preview-viewport";
 
 import { useManualEventProgress } from "@/hooks/useManualEventProgress";
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 
-import EventGuestActions from "@/components/event-templates/EventGuestActions";
+import FootballHero from "@/components/football-season-templates/FootballHero";
+import FootballPageContent from "@/components/football-season-templates/FootballPageContent";
+import { FootballPageTextProvider } from "@/components/football-season-templates/FootballPageText";
+import { normalizeFootballEventData } from "@/components/football-discovery/normalizeFootballEventData.mjs";
+import { normalizeFootballPageText, updateFootballPageText, type FootballPageText, type FootballPageTextChange } from "@/lib/football-page-text";
+import { resolveFootballHero } from "@/components/football-season-templates/footballDesigns";
+import FootballPageActions from "@/components/football-season-templates/FootballPageActions";
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
-import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
 import { type EventGuestPlanning, normalizeEventGuestPlanning, eventLocalDateParts, getEventEndLocal } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import {
-  CheckSquare,
   ChevronLeft,
   ChevronRight,
-  Edit2,
-  Image as ImageIcon,
+  Globe,
   Link as LinkIcon,
-  MapPin,
-  Menu,
   Type,
   Upload,
+  X,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
   getGymMeetTemplateMeta,
@@ -172,13 +189,15 @@ const InputGroup = ({
   type?: string;
   readOnly?: boolean;
 }) => {
+  const inputId = useId();
   return (
     <div className="space-y-2">
-      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+      <label htmlFor={inputId} className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
         {label}
       </label>
       {type === "textarea" ? (
         <textarea
+          id={inputId}
           className={baseTextareaClass}
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}
@@ -187,6 +206,7 @@ const InputGroup = ({
         />
       ) : (
         <input
+          id={inputId}
           type={type}
           className={baseInputClass}
           value={value || ""}
@@ -201,195 +221,6 @@ const InputGroup = ({
 
 InputGroup.displayName = "InputGroup";
 
-const FootballSeasonMutedBadge = ({
-  theme,
-  children,
-  className = "",
-}: {
-  theme: any;
-  children: React.ReactNode;
-  className?: string;
-}) => (
-  <span
-    className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${theme.sectionMutedClass} ${className}`}
-  >
-    {children}
-  </span>
-);
-
-const FootballSeasonSectionCard = ({
-  theme,
-  className = "",
-  children,
-}: {
-  theme: any;
-  className?: string;
-  children: React.ReactNode;
-}) => <div className={`${theme.sectionCardClass} ${className}`}>{children}</div>;
-
-const FootballSeasonSectionNav = ({
-  theme,
-  navItems,
-  activeSection,
-  onSelect,
-}: {
-  theme: any;
-  navItems: Array<{ id: string; label: string }>;
-  activeSection: string;
-  onSelect: (sectionId: string) => void;
-}) => (
-  <div className={`${theme.navShellClass} backdrop-blur-2xl`}>
-    <div className="overflow-x-auto pb-1">
-      <div className="flex min-w-max items-center justify-center gap-2">
-        {navItems.map((item) => {
-          const isActive = activeSection === item.id;
-          return (
-            <a
-              key={item.id}
-              href={`#${item.id}`}
-              onClick={(e) => {
-                e.preventDefault();
-                onSelect(item.id);
-              }}
-              className={`group relative inline-flex items-center gap-2 whitespace-nowrap ${
-                isActive ? theme.navActiveClass : theme.navIdleClass
-              }`}
-            >
-              <span
-                className={`h-1.5 w-1.5 rounded-full transition-all ${
-                  isActive ? "bg-current" : "bg-current opacity-40"
-                }`}
-              />
-              {item.label}
-            </a>
-          );
-        })}
-      </div>
-    </div>
-  </div>
-);
-
-const FootballSeasonHeader = ({
-  theme,
-  title,
-  infoLine,
-  addressLine,
-  heroSrc,
-  headingSizeClass,
-  headingFontStyle,
-  bodyShadow,
-  selectedSizeLabel,
-  templateName,
-  isDiscoveryEdit,
-}: {
-  theme: any;
-  title: string;
-  infoLine: React.ReactNode;
-  addressLine: string;
-  heroSrc: string;
-  headingSizeClass: string;
-  headingFontStyle?: React.CSSProperties;
-  bodyShadow?: React.CSSProperties;
-  selectedSizeLabel: string;
-  templateName: string;
-  isDiscoveryEdit: boolean;
-}) => (
-  <div className={`relative overflow-hidden px-5 py-6 md:px-8 md:py-8 ${theme.headerClass}`}>
-    <div className={`absolute inset-0 opacity-60 ${theme.headerOverlayClass}`} />
-    <div className="absolute -left-24 top-0 h-56 w-56 rounded-full bg-white/70 blur-3xl" />
-    <div className="absolute right-0 top-0 h-72 w-72 rounded-full bg-slate-200/60 blur-3xl" />
-    <div className="relative grid gap-6 md:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)] md:items-stretch">
-      <div className="space-y-4">
-        <div className="space-y-3">
-          <h1
-            className={`${headingSizeClass} leading-[0.92] ${theme.titleTypography.cardClassName} ${theme.titleClass}`}
-            style={headingFontStyle}
-          >
-            {title}
-          </h1>
-          <p
-            className={`max-w-2xl text-sm leading-relaxed md:text-base ${theme.mutedClass}`}
-            style={bodyShadow}
-          >
-            A gym-style builder shell with the same template selector pipeline and side-panel
-            editing flow as the gymnastics builder.
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          {infoLine}
-          {addressLine && (
-            <div
-              className={`flex items-center gap-2 text-sm opacity-80 ${theme.mutedClass}`}
-              style={bodyShadow}
-            >
-              <MapPin size={14} />
-              <span className="truncate">{addressLine}</span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <FootballSeasonMutedBadge theme={theme}>Theme: {templateName}</FootballSeasonMutedBadge>
-          <FootballSeasonMutedBadge theme={theme}>
-            Size: {selectedSizeLabel}
-          </FootballSeasonMutedBadge>
-          <FootballSeasonMutedBadge theme={theme}>
-            {isDiscoveryEdit ? "Discovery edit" : "Builder draft"}
-          </FootballSeasonMutedBadge>
-        </div>
-      </div>
-
-      <div className="relative">
-        <div className={`${theme.summaryCardClass} p-3 shadow-2xl backdrop-blur-xl`}>
-          <div
-            className={`relative aspect-[4/5] overflow-hidden rounded-[22px] ${theme.shellClass}`}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-white/35 via-transparent to-white/5" />
-            {heroSrc ? (
-              <img src={heroSrc} alt="Hero" className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full items-center justify-center bg-white/40">
-                <div className="text-center">
-                  <div className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-600">
-                    Hero preview
-                  </div>
-                  <div className="mt-2 text-xs text-slate-500">
-                    Upload a banner image to anchor the preview shell.
-                  </div>
-                </div>
-              </div>
-            )}
-            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white/55 to-transparent" />
-          </div>
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            <FootballSeasonSectionCard
-              theme={theme}
-              className="px-3 py-3 text-center text-xs font-semibold"
-            >
-              Theme
-              <div className="mt-1 text-[11px] font-medium text-slate-500">{templateName}</div>
-            </FootballSeasonSectionCard>
-            <FootballSeasonSectionCard
-              theme={theme}
-              className="px-3 py-3 text-center text-xs font-semibold"
-            >
-              Typography
-              <div className="mt-1 text-[11px] font-medium text-slate-500">{selectedSizeLabel}</div>
-            </FootballSeasonSectionCard>
-            <FootballSeasonSectionCard
-              theme={theme}
-              className="px-3 py-3 text-center text-xs font-semibold"
-            >
-              Preview
-              <div className="mt-1 text-[11px] font-medium text-slate-500">Live update</div>
-            </FootballSeasonSectionCard>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-);
 
 const FootballSeasonPreviewFrame = ({
   theme,
@@ -399,29 +230,12 @@ const FootballSeasonPreviewFrame = ({
   children: React.ReactNode;
 }) => (
   <div
-    className={`relative min-h-[780px] w-full overflow-hidden rounded-[32px] transition-all duration-500 ${theme.pageClass} ${theme.shellClass}`}
+    className={`relative min-h-[780px] w-full overflow-hidden rounded-[32px] ${theme.pageClass} ${theme.shellClass}`}
   >
-    <div className={`absolute inset-0 opacity-20 ${theme.headerOverlayClass}`} />
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.85),_transparent_38%)]" />
-    <div className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-white/80 blur-3xl" />
-    <div className="absolute right-0 top-0 h-72 w-72 rounded-full bg-slate-200/50 blur-3xl" />
     <div className="relative z-10">{children}</div>
   </div>
 );
 
-const FootballSeasonPreviewSection = ({
-  theme,
-  id,
-  children,
-}: {
-  theme: any;
-  id: string;
-  children: React.ReactNode;
-}) => (
-  <section id={id} className={`relative overflow-hidden scroll-mt-28 ${theme.sectionClass}`}>
-    <div className="relative">{children}</div>
-  </section>
-);
 
 const MenuCard = ({
   title,
@@ -455,11 +269,50 @@ const MenuCard = ({
   </button>
 );
 
+const EditorLayout = ({
+      title,
+      children,
+      onBack,
+      showBack = true,
+    }: {
+      title: string;
+      children: React.ReactNode;
+      onBack: () => void;
+      showBack?: boolean;
+    }) => {
+      const closeSectionEditor = useSectionEditorClose();
+      if (closeSectionEditor) return <>{children}</>;
+      return (
+      <div className="animate-fade-in-right">
+        <div className="flex items-center mb-6 pb-4 border-b border-slate-100">
+          <div className="mr-3 w-8">
+            {showBack && (
+              <button
+                type="button" aria-label="Back to customization"
+                onClick={onBack}
+                className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
+              >
+                <ChevronLeft size={20} />
+              </button>
+            )}
+          </div>
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mr-auto">
+            Customize
+          </span>
+          <h2 className="text-lg font-serif font-bold text-slate-800 ml-3 min-w-0 text-right">
+            {title}
+          </h2>
+        </div>
+        {children}
+      </div>
+    );
+};
+
 function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
     const search = useSearchParams();
     const router = useRouter();
-  const { allowNavigation } = useProgressNavigation();
+  const { allowNavigation, requestLeave } = useProgressNavigation();
     const editEventId = search?.get("edit") ?? undefined;
     const isEmbed = search?.get("embed") === "1";
     const isNewDraft = search?.get("new") === "1";
@@ -483,46 +336,65 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [progressLoading, setProgressLoading] = useState(Boolean(editEventId));
     const [data, setData] = useState(() => ({
       guestPlanning: {} as EventGuestPlanning,
+      footballHiddenSections: [] as FootballSectionId[],
+      sectionLayout: normalizeEventSectionLayout(undefined),
+      footballPageText: {} as FootballPageText,
       endTime: "",
       endDate: "",
-      title: config.prefill?.title || `${config.displayName}`,
-      date: config.prefill?.date || initialDate,
-      time: config.prefill?.time || "14:00",
-      city: config.prefill?.city || "Chicago",
-      state: config.prefill?.state || "IL",
-      venue: config.prefill?.venue || "",
-      details: config.prefill?.details || "Tell guests what to expect.",
-      hero: config.prefill?.hero || "",
-      rsvpEnabled: config.prefill?.rsvpEnabled ?? true,
-      rsvpDeadline:
-        config.prefill?.rsvpDeadline ||
-        (() => {
-          const d = new Date();
-          d.setDate(d.getDate() + 10);
-          return d.toISOString().split("T")[0];
-        })(),
+      title: config.displayName,
+      publicSlugInput: "",
+      date: defaultDate ? initialDate : "",
+      timezone: "",
+      time: "",
+      city: "",
+      state: "",
+      venue: "",
+      details: "",
+      heroImageFilterEnabled: false,
+      hero: "",
+      rsvpEnabled: false,
+      rsvpDeadline: "",
       fontSize: (config as any)?.prefill?.fontSize || "medium",
       passcodeRequired: false,
       passcode: "",
       extra: Object.fromEntries(
         config.detailFields.map((f) => [
           f.key,
-          config.prefill?.extra?.[f.key] ?? (f.placeholder || ""),
+          "",
         ]),
       ),
     }));
-    const [advancedState, setAdvancedState] = useState(() => {
-      const entries =
-        config.advancedSections?.map((section) => [section.id, section.initialState]) || [];
-      return Object.fromEntries(entries);
+    const [advancedState, setAdvancedState] = useState(() => ({
+      scores: { scorestreamWidgetUrl: "" },
+      games: { games: [] }, roster: { players: [] }, practice: { blocks: [] },
+      logistics: {}, gear: { items: [] }, volunteers: { slots: [] }, announcements: { items: [] },
+    }));
+    const [pageTemplateId, setPageTemplateId] = useState(() => {
+      const selected = search?.get("templateId");
+      return isGymMeetTemplateId(selected) ? selected : DEFAULT_GYM_MEET_TEMPLATE_ID;
     });
-    const [pageTemplateId, setPageTemplateId] = useState(DEFAULT_GYM_MEET_TEMPLATE_ID);
     const [activeView, setActiveView] = useState<string>("main");
-    const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
-    const [_rsvpAttending, setRsvpAttending] = useState("yes");
+    const [sectionPreviewOpen, setSectionPreviewOpen] = useState(false);
+    const sectionPreviewRef = useRef<HTMLDialogElement>(null);
+    useEffect(() => {
+      if (sectionPreviewOpen) sectionPreviewRef.current?.showModal();
+      else sectionPreviewRef.current?.close();
+    }, [sectionPreviewOpen]);
     const [submitting, setSubmitting] = useState(false);
-    const [didExplicitSave, setDidExplicitSave] = useState(false);
+    const [, setDidExplicitSave] = useState(false);
     const [initializingEdit, setInitializingEdit] = useState(Boolean(editEventId));
+    const [discoverMode, setDiscoverMode] = useState<"file" | "url">("file");
+    const discoverId = useId();
+    const discoverTabs = useRef<Partial<Record<"file" | "url", HTMLButtonElement | null>>>({});
+    const discoverFileInput = useRef<HTMLInputElement | null>(null);
+    const [discoverUrl, setDiscoverUrl] = useState("");
+    const [contextBusy, setContextBusy] = useState(false);
+    const [contextMessage, setContextMessage] = useState("");
+    const contextRequest = useRef<AbortController | null>(null);
+    const currentEditor = useRef({ data, advancedState });
+    currentEditor.current = { data, advancedState };
+    useEffect(() => () => contextRequest.current?.abort(), []);
+    const [discoverSuccess, setDiscoverSuccess] = useState("");
     const [discoverFile, setDiscoverFile] = useState<File | null>(null);
     const [discoverBusy, setDiscoverBusy] = useState(false);
     const [discoverError, setDiscoverError] = useState("");
@@ -536,7 +408,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       closeMobileMenu,
       previewTouchHandlers,
       drawerTouchHandlers,
-    } = useMobileDrawer();
+    } = useMobileDrawer(undefined, "event-actions");
     const updateData = useCallback((field: string, value: any) => {
       setData((prev) => {
         const next = cloneState(prev || {});
@@ -553,6 +425,45 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       });
     }, []);
 
+    const refreshGameContext = async (sourceGames = advancedState?.games?.games || [], sourceHome = { teamName: data.extra?.team, homeVenue: data.extra?.stadium || data.venue, homeAddress: data.extra?.stadiumAddress, timezone: data.timezone }) => {
+      if (!sourceGames.length) return;
+      contextRequest.current?.abort();
+      const request = new AbortController();
+      contextRequest.current = request;
+      setContextBusy(true); setContextMessage("");
+      try {
+        const homeKey = (home) => JSON.stringify([resolveFootballTeamName(home.teamName || "").toLowerCase(), home.homeVenue || "", home.homeAddress || "", home.timezone || ""]);
+        const result = await updateFootballGameDetails({
+          games: sourceGames, home: sourceHome, signal: request.signal,
+          onProgress: setContextMessage,
+          onUpdate: ({ games, home: resolvedHome, previous }) => {
+            const latest = currentEditor.current.data;
+            const latestKey = homeKey({ teamName: latest.extra?.team, homeVenue: latest.extra?.stadium || latest.venue, homeAddress: latest.extra?.stadiumAddress, timezone: latest.timezone });
+            if (latestKey !== homeKey(sourceHome) && latestKey !== homeKey(previous.home)) {
+              setContextMessage("Your home team or stadium changed. Find game details again for the updated team.");
+              request.abort();
+              return;
+            }
+            setData((current) => ({ ...current, venue: current.venue || resolvedHome.homeVenue || "", extra: { ...current.extra, stadium: current.extra?.stadium || resolvedHome.homeVenue || "", stadiumAddress: current.extra?.stadiumAddress || resolvedHome.homeAddress || "" } }));
+            setAdvancedState((current) => ({ ...current, games: { ...current.games, games: (current.games?.games || []).map((game) => {
+              const original = previous.games.find((candidate) => candidate.id === game.id);
+              const found = games.find((candidate) => candidate.id === game.id);
+              return original && found ? mergeFootballGameDetails(game, original, found) : game;
+            }) } }));
+          },
+        });
+        if (request.signal.aborted) return;
+        const ticketCount = result.games.filter((game) => game.ticketsLink).length;
+        const stadiumCount = result.games.filter((game) => game.address).length;
+        const driveCount = result.games.filter((game) => game.homeAway === "away" && game.context?.miles != null).length;
+        const summary = ticketCount || stadiumCount
+          ? `Found ticket links for ${ticketCount} games, ${stadiumCount} stadium addresses, and ${driveCount} away-game drives. Review the cards, then save to keep these details.`
+          : "We couldn't verify the hosting schools' details yet. Add your home stadium address or enter each stadium and ticket URL below.";
+        setContextMessage([summary, ...result.errors].join(" "));
+      } catch (error) { if (!request.signal.aborted) setContextMessage(footballErrorMessage(error, "The lookup failed. Select Find tickets, stadiums & miles to try again; your details are kept.")); }
+      finally { if (contextRequest.current === request) { setContextBusy(false); contextRequest.current = null; } }
+    };
+
     // Load existing event data when editing
     useEffect(() => {
       const loadExisting = async () => {
@@ -567,9 +478,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           const existing = json?.data || {};
           if (existing.manualEditor?.snapshot) {
             const saved = existing.manualEditor.snapshot;
-            if (saved.data !== undefined) setData(saved.data);
+            if (saved.data !== undefined) setData({ ...saved.data, footballPageText: normalizeFootballPageText(saved.data.footballPageText), publicSlugInput: saved.data.publicSlugInput ?? json.public_slug ?? existing.publicSlug ?? "" });
             if (saved.advancedState !== undefined) setAdvancedState(saved.advancedState);
             if (saved.pageTemplateId !== undefined) setPageTemplateId(saved.pageTemplateId);
+            if (saved.loadedDiscoverySource) setLoadedDiscoverySource(saved.loadedDiscoverySource);
+            if (saved.isDiscoveryEdit) setIsDiscoveryEdit(true);
             setProgressLoading(false);
             return;
           }
@@ -589,8 +502,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           );
 
           const startIso = existing.start || existing.startISO || existing.startIso;
-          let loadedDate = data.date;
-          let loadedTime = data.time;
+          let loadedDate = "";
+          let loadedTime = "";
           if (startIso) {
             const d = new Date(startIso);
             if (!Number.isNaN(d.getTime())) {
@@ -607,24 +520,29 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           setData((prev) => ({
             ...prev,
             title: json?.title || existing.title || prev.title,
+            publicSlugInput: json?.public_slug || existing.publicSlug || "",
             guestPlanning: normalizeEventGuestPlanning(existing.guestPlanning),
+            footballHiddenSections: normalizeFootballHiddenSections(existing.footballHiddenSections),
+            sectionLayout: normalizeEventSectionLayout(existing.sectionLayout),
+            footballPageText: normalizeFootballPageText(existing.footballPageText),
             endTime: existing.endTime || eventLocalDateParts(existing.endISO || existing.endAt || existing.end).time,
             endDate: existing.endDate || eventLocalDateParts(existing.endISO || existing.endAt || existing.end).date,
+            timezone: existing.timezone || "",
             date: existing.date || loadedDate,
             time: existing.time || loadedTime,
-            city: existing.city || prev.city,
-            state: existing.state || prev.state,
-            venue: existing.venue || existing.location || prev.venue,
-            details: existing.details || existing.description || prev.details,
+            city: existing.city || "",
+            state: existing.state || "",
+            venue: existing.venue || "",
+            details: existing.details || existing.description || "",
+            heroImageFilterEnabled: false,
             hero: existing.heroImage || existing.hero || prev.hero,
             rsvpEnabled:
-              typeof existing.rsvpEnabled === "boolean" ? existing.rsvpEnabled : prev.rsvpEnabled,
-            rsvpDeadline: existing.rsvpDeadline || prev.rsvpDeadline,
+              existing.rsvpEnabled === true,
+            rsvpDeadline: existing.rsvpDeadline || "",
             fontSize: existing.fontSize || prev.fontSize,
             passcodeRequired: hasPasscode,
             passcode: "", // Never load plain passcode for security
             extra: {
-              ...prev.extra,
               ...(existing.extra || {}),
               ...(existing.customFields || {}),
             },
@@ -637,10 +555,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             {};
           const normalizedAdvanced = normalizeAdvancedSectionsForStorage(incomingAdvanced);
           if (normalizedAdvanced && Object.keys(normalizedAdvanced).length) {
-            setAdvancedState((prev) => ({
-              ...prev,
-              ...normalizedAdvanced,
-            }));
+            setAdvancedState(normalizedAdvanced);
           }
 
           const incomingTemplateId =
@@ -664,6 +579,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [editEventId]);
 
+    const resolvedHero = resolveFootballHero(pageTemplateId, data.hero);
     const currentTemplate = useMemo(() => getGymMeetTemplateMeta(pageTemplateId), [pageTemplateId]);
     const templateTheme = useMemo(
       () => resolveFootballSeasonTemplateChrome(pageTemplateId),
@@ -685,17 +601,22 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             type: "envitefy:discovery-preview-patch",
             eventId: editEventId,
             patch: {
-              title: data.title,
+              title: resolveFootballTitle(data.title, data.extra?.team),
               description: data.details,
               details: data.details,
               guestPlanning: data.guestPlanning,
+              footballHiddenSections: normalizeFootballHiddenSections(data.sectionLayout?.hidden ?? data.footballHiddenSections),
+              sectionLayout: data.sectionLayout,
+              footballPageText: normalizeFootballPageText(data.footballPageText),
               endTime: data.endTime,
               endDate: data.endDate,
-              heroImage: data.hero || undefined,
-              hero: data.hero || undefined,
+              heroImageFilterEnabled: false,
+              heroImage: resolvedHero,
+              hero: resolvedHero,
               venue: data.venue || data.extra?.stadium || data.extra?.stadiumAddress,
               date: data.date,
               time: data.time,
+              timezone: data.timezone || undefined,
               rsvpEnabled: data.rsvpEnabled,
               rsvpDeadline: data.rsvpDeadline,
               pageTemplateId,
@@ -725,11 +646,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.date,
       data.details,
       data.guestPlanning,
+      data.footballHiddenSections,
+      data.sectionLayout,
+      data.footballPageText,
       data.endTime,
       data.endDate,
       data.extra,
       data.fontSize,
-      data.hero,
+      resolvedHero,
       data.rsvpDeadline,
       data.rsvpEnabled,
       data.time,
@@ -743,43 +667,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const isDarkBackground = templateTheme.isDark;
 
-    const EditorLayout = ({
-      title,
-      children,
-      onBack,
-      showBack = true,
-    }: {
-      title: string;
-      children: React.ReactNode;
-      onBack: () => void;
-      showBack?: boolean;
-    }) => (
-      <div className="animate-fade-in-right">
-        <div className="flex items-center mb-6 pb-4 border-b border-slate-100">
-          <div className="mr-3 w-8">
-            {showBack && (
-              <button
-                onClick={onBack}
-                className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
-              >
-                <ChevronLeft size={20} />
-              </button>
-            )}
-          </div>
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mr-auto">
-            Customize
-          </span>
-          <h2 className="text-lg font-serif font-bold text-slate-800 absolute left-1/2 transform -translate-x-1/2">
-            {title}
-          </h2>
-        </div>
-        {children}
-      </div>
-    );
-
     const textClass = templateTheme.textClass;
-    const accentClass =
-      templateTheme.accentClass || (isDarkBackground ? "text-white" : "text-slate-700");
     const usesLightText =
       /text-(white|slate-50|neutral-50|gray-50|amber-50|cyan-50|indigo-50|emerald-50|sky-50|stone-50|zinc-50)/.test(
         textClass,
@@ -793,180 +681,36 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       ...(headingShadow || {}),
       ...(titleColor || {}),
     };
-    const sectionHeadingFontStyle = {
-      ...templateTypography.fontStyle,
-      ...(templateTheme.sectionTitleStyle || {}),
-      ...(headingShadow || {}),
-    };
     const headingSizeClass = selectedSize?.className || FONT_SIZE_OPTIONS[1].className;
 
-    const advancedSectionPreviewContext = useMemo(
-      () => ({
-        textClass,
-        accentClass,
-        titleTypographyClassName: templateTypography.cardClassName,
-        sectionTitleClass: templateTheme.sectionTitleClass || accentClass,
-        sectionTitleStyle: templateTheme.sectionTitleStyle,
-        sectionCardClass: templateTheme.sectionCardClass,
-        sectionMutedClass: templateTheme.sectionMutedClass,
-        summaryCardClass: templateTheme.summaryCardClass,
-        headingShadow,
-        bodyShadow,
-        titleColor,
-        headingFontStyle: sectionHeadingFontStyle,
-      }),
-      [
-        accentClass,
-        bodyShadow,
-        headingShadow,
-        sectionHeadingFontStyle,
-        templateTheme.sectionCardClass,
-        templateTheme.sectionMutedClass,
-        templateTheme.sectionTitleClass,
-        templateTheme.sectionTitleStyle,
-        templateTheme.summaryCardClass,
-        templateTypography.cardClassName,
-        textClass,
-        titleColor,
-      ],
-    );
-
-    const advancedSectionPreviews = useMemo(
-      () =>
-        (config.advancedSections || [])
-          .map((section) => {
-            if (!section.renderPreview) return null;
-            const previewNode = section.renderPreview({
-              state: advancedState?.[section.id],
-              ...advancedSectionPreviewContext,
-            });
-            if (previewNode == null) return null;
-            return {
-              section,
-              previewNode,
-            };
-          })
-          .filter(
-            (
-              entry,
-            ): entry is {
-              section: AdvancedSectionSpec;
-              previewNode: React.ReactNode;
-            } => entry !== null,
-          ),
-      [advancedSectionPreviewContext, advancedState, config.advancedSections],
-    );
-
+    const displayTeamName = resolveFootballTeamName(data.extra?.team, data.title);
+    const hiddenSections = useMemo(() => normalizeFootballHiddenSections(data.sectionLayout?.hidden ?? data.footballHiddenSections), [data.sectionLayout, data.footballHiddenSections]);
+    const sectionLayout = data.sectionLayout || (hiddenSections.length ? { version: 1 as const, order: [], added: [], hidden: hiddenSections } : undefined);
     const locationParts = [data.venue, data.city, data.state].filter(Boolean).join(", ");
     const addressLine = data.extra?.stadiumAddress || data.extra?.address || "";
 
-    const hasGames = (advancedState?.games?.games?.length ?? 0) > 0;
-    const hasPractice = (advancedState?.practice?.blocks?.length ?? 0) > 0;
-    const hasRoster = (advancedState?.roster?.players?.length ?? 0) > 0;
-    const hasLogistics = Boolean(
-      advancedState?.logistics?.travelMode ||
-        advancedState?.logistics?.callTime ||
-        advancedState?.logistics?.weatherPolicy,
-    );
-    const hasGear = (advancedState?.gear?.items?.length ?? 0) > 0;
-    const hasVolunteers = (advancedState?.volunteers?.slots?.length ?? 0) > 0;
-    const hasRsvpSection = data.rsvpEnabled;
+    const hasGames = (advancedState?.games?.games || []).some(hasFootballGame);
 
-    const navItems = useMemo(
-      () =>
-        [
-          { id: "details", label: "Details", enabled: true },
-          { id: "games", label: "Game Schedule", enabled: hasGames },
-          { id: "practice", label: "Practice", enabled: hasPractice },
-          { id: "roster", label: "Roster", enabled: hasRoster },
-          { id: "logistics", label: "Logistics", enabled: hasLogistics },
-          { id: "gear", label: "Gear", enabled: hasGear },
-          { id: "volunteers", label: "Volunteers", enabled: hasVolunteers },
-          { id: "rsvp", label: "Attendance", enabled: hasRsvpSection },
-          { id: "passcode", label: "Passcode", enabled: true },
-        ].filter((item) => item.enabled),
-      [hasGames, hasGear, hasLogistics, hasPractice, hasRoster, hasRsvpSection, hasVolunteers],
-    );
+    const footballModel = useMemo(() => normalizeFootballEventData({
+      eventTitle: data.title,
+      eventData: {
+        ...data, description: data.details, customFields: data.extra,
+        advancedSections: advancedState, previewDetailsPlaceholder: "Add an event description",
+        accessControl: { requirePasscode: data.passcodeRequired },
+      },
+    }), [data, advancedState]);
+    const navItems = footballModel.navItems;
 
-    const [activeSection, setActiveSection] = useState<string>(navItems[0]?.id || "details");
-
-    useEffect(() => {
-      if (!navItems.length) return;
-      if (!navItems.some((i) => i.id === activeSection)) {
-        setActiveSection(navItems[0].id);
-      }
-    }, [activeSection, navItems]);
-
-    useEffect(() => {
-      if (typeof window === "undefined" || !navItems.length) return;
-
-      const hash = window.location.hash.replace("#", "");
-      if (hash && navItems.some((i) => i.id === hash)) {
-        setActiveSection(hash);
-      }
-    }, [navItems]);
-
-    useEffect(() => {
-      if (!navItems.length) return;
-
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              const id = entry.target.id;
-              if (id && navItems.some((i) => i.id === id)) {
-                setActiveSection(id);
-                if (typeof window !== "undefined" && window.location.hash !== `#${id}`) {
-                  window.history.replaceState(null, "", `#${id}`);
-                }
-              }
-            }
-          });
-        },
-        {
-          root: null,
-          rootMargin: "-25% 0px -60% 0px",
-          threshold: 0,
-        },
-      );
-
-      const targets = navItems
-        .map((item) => document.getElementById(item.id))
-        .filter(Boolean) as HTMLElement[];
-      targets.forEach((el) => {
-        observer.observe(el);
-      });
-
-      return () => observer.disconnect();
-    }, [navItems]);
-
-    const handleSectionSelect = useCallback((sectionId: string) => {
-      const el = document.getElementById(sectionId);
-      if (el) {
-        el.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }
-      setActiveSection(sectionId);
-      if (typeof window !== "undefined") {
-        window.history.replaceState(null, "", `#${sectionId}`);
-      }
+    const sectionTabs = useFootballSectionTabs(navItems);
+    const handlePageTextChange: FootballPageTextChange = useCallback((key, value) => {
+      setData((previous) => updateFootballPageText(previous, key, value));
     }, []);
-
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        const url = URL.createObjectURL(file);
-        setData((prev) => ({ ...prev, hero: url }));
-      }
-    };
 
     const updateExtra = useCallback((key: string, value: string) => {
       setData((prev) => {
         const next = cloneState(prev || {});
         const extra = next.extra && typeof next.extra === "object" ? next.extra : {};
-        next.extra = { ...extra, [key]: value };
+        next.extra = { ...extra, ...(key === "team" && value !== extra.team ? { teamMascot: "" } : {}), [key]: value };
         return next;
       });
     }, []);
@@ -983,36 +727,46 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     };
 
   useManualEventProgress({
-    snapshot: { data, advancedState, pageTemplateId },
+    snapshot: { data, advancedState, pageTemplateId, loadedDiscoverySource, isDiscoveryEdit },
     category: config.category, templateId: config.slug, eventId: editEventId,
-    ready: !progressLoading, busy: submitting,
+    ready: !progressLoading, busy: submitting || discoverBusy,
   });
 
     const handlePublish = useCallback(async () => {
       if (submitting) return;
       setSubmitting(true);
       try {
+        let publicSlug: string | undefined;
+        if (data.publicSlugInput?.trim()) {
+          const validation = validateCustomEventPublicSlug(data.publicSlugInput);
+          try {
+            if (validation.error) throw new Error(validation.error);
+            await checkCustomEventUrl(validation.slug, editEventId);
+            publicSlug = validation.slug;
+          } catch (error) {
+            setActiveView("url");
+            throw error;
+          }
+        }
         if (data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)) {
           throw new Error("End time must be after the start. For an overnight event, choose the next end date.");
         }
 
         let startISO: string | null = null;
         let endISO: string | null = null;
-        if (data.date) {
-          const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
+        if (data.date && data.time) {
           const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
-          const end = endLocal ? new Date(endLocal) : null;
-          startISO = start.toISOString();
-          endISO = end?.toISOString() || null;
+          startISO = parseCalendarDateTimeToIso(`${data.date}T${data.time}`, data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
+          endISO = endLocal ? parseCalendarDateTimeToIso(endLocal, data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone) : null;
         }
 
         const heroToSave =
           (await persistImageMediaValue({
-            value: data.hero,
+            value: resolvedHero,
             eventId: editEventId || undefined,
             fileName: `${config.slug}-hero.png`,
-            fallbackValue: config.defaultHero,
-          })) || config.defaultHero;
+            fallbackValue: resolvedHero,
+          })) || resolvedHero;
 
         const currentSelectedSize =
           FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) || FONT_SIZE_OPTIONS[1];
@@ -1041,9 +795,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
         const normalizedAdvancedSections =
           normalizeAdvancedSectionsForStorage(advancedState) || advancedState;
-        const isDiscoveryUpdate = Boolean(editEventId && isDiscoveryEdit);
+        const isDiscoveryUpdate = isDiscoveryEdit;
         const payload: any = {
-          title: data.title || config.displayName,
+          title: resolveFootballTitle(data.title, data.extra?.team) || config.displayName,
           data: {
             category: config.category,
             displayName: config.displayName,
@@ -1056,8 +810,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             endTime: data.endTime,
             endDate: data.endDate,
             guestPlanning: data.guestPlanning,
+            footballHiddenSections: hiddenSections,
+            sectionLayout: data.sectionLayout,
+            footballPageText: normalizeFootballPageText(data.footballPageText),
             date: data.date,
             time: data.time,
+            timezone: data.timezone || undefined,
             city: data.city,
             state: data.state,
             location: locationParts || undefined,
@@ -1085,11 +843,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             }),
             customFields: {
               ...data.extra,
+              team: resolveFootballTeamName(data.extra?.team, data.title),
               advancedSections: normalizedAdvancedSections,
             },
             advancedSections: normalizedAdvancedSections,
+            heroImageFilterEnabled: false,
             heroImage: heroToSave,
-            extra: data.extra,
+            extra: { ...data.extra, team: resolveFootballTeamName(data.extra?.team, data.title) },
             address: addressToSave,
             ...(data.passcodeRequired && data.passcode
               ? {
@@ -1112,7 +872,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         payload.data.status = "published";
         payload.data.draftStatus = "published";
         payload.data.manualEditor = null;
-
+        if (publicSlug) payload.publicSlug = publicSlug;
 
         if (editEventId) {
           const res = await fetch(`/api/history/${editEventId}`, {
@@ -1122,10 +882,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             body: JSON.stringify({
               title: payload.title,
               data: payload.data,
+              ...(publicSlug ? { publicSlug } : {}),
               ...(isNewDraft ? { claim: true } : {}),
             }),
           });
-          if (!res.ok) throw new Error("Failed to update event");
+          const saved = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            if (res.status === 409 && publicSlug) setActiveView("url");
+            throw new Error(saved.error || "Failed to update event");
+          }
           setDidExplicitSave(true);
           if (typeof window !== "undefined") {
             window.dispatchEvent(
@@ -1135,9 +900,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             );
           }
           const redirectUrl = buildEventPath(editEventId, payload.title, {
+            tab: "event",
             updated: true,
             t: Date.now(),
-          });
+          }, saved.public_slug || saved.data?.publicSlug);
           if (isEmbed && typeof window !== "undefined" && (window as any).parent !== window) {
             try {
               (window as any).parent.postMessage(
@@ -1160,6 +926,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             body: JSON.stringify(payload),
           });
           const json = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            if (res.status === 409 && publicSlug) setActiveView("url");
+            throw new Error(json.error || "Failed to create event");
+          }
           const id = (json as any)?.id as string | undefined;
           if (!id) throw new Error("Failed to create event");
           if (typeof window !== "undefined") {
@@ -1168,13 +938,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 detail: {
                   id,
                   title: payload.title,
+                  public_slug: json.public_slug,
                   created_at: (json as any)?.created_at || new Date().toISOString(),
-                  data: payload.data,
+                  data: json.data || payload.data,
                 },
               }),
             );
           }
-          allowNavigation(() => router.push(buildEventPath(id, payload.title, { created: true })));
+          allowNavigation(() => router.push(buildEventPath(id, payload.title, { created: true }, json.public_slug || json.data?.publicSlug)));
         }
       } catch (err: any) {
         alert(String(err?.message || err || "Failed to save event"));
@@ -1186,14 +957,17 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.date,
       data.time,
       data.title,
+      data.publicSlugInput,
       data.details,
       data.guestPlanning,
+      data.sectionLayout,
+      hiddenSections,
       data.endTime,
       data.endDate,
       data.venue,
       data.city,
       data.state,
-      data.hero,
+      resolvedHero,
       data.rsvpEnabled,
       data.rsvpDeadline,
       data.extra,
@@ -1325,81 +1099,56 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       openAppleCalendarIcs(buildIcsUrl(details));
     };
 
+    const handleBackToTemplates = () => {
+      const params = new URLSearchParams();
+      if (defaultDate) params.set("d", defaultDate);
+      const templatesHref = `/event/football${params.size ? `?${params.toString()}` : ""}`;
+      requestLeave(() => {
+        if (isEmbed && window.parent !== window) {
+          if (editEventId) {
+            window.parent.postMessage(
+              { type: "envitefy:discovery-preview-reset", eventId: editEventId },
+              window.location.origin,
+            );
+          }
+          window.parent.location.assign(templatesHref);
+        } else {
+          router.push(templatesHref);
+        }
+      });
+    };
+
     const renderMainMenu = () => (
       <div className="space-y-4 animate-fade-in pb-8 flex flex-col items-center">
+        {discoverSuccess ? <p role="status" className="w-full rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{discoverSuccess}</p> : null}
         <div className="mb-2 w-full max-w-sm text-center">
+          <button
+            type="button"
+            onClick={handleBackToTemplates}
+            disabled={submitting || progressLoading}
+            className="mb-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 shadow-sm transition-colors hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <ChevronLeft size={16} aria-hidden="true" />
+            Back to templates
+          </button>
           <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
-            {isDiscoveryEdit ? "Edit your football page" : "Build your football page"}
+            Event settings
           </h2>
-          <p className="text-slate-500 text-sm">
-            {isDiscoveryEdit
-              ? "Update the prefilled sections from your uploaded football source."
-              : `Customize every aspect of your ${config.displayName.toLowerCase()} site.`}
-          </p>
+          {isDiscoveryEdit ? <p className="text-slate-500 text-sm">Review the details from your imported football source.</p> : null}
         </div>
 
-        {!isDiscoveryEdit && (
-          <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-slate-50/70 p-3">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
-              Starter Mode
-            </div>
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => setActiveView("discover")}
-                className="w-full rounded-lg border border-[#d44f19] bg-[#d44f19] px-3 py-2 text-xs font-semibold text-white hover:bg-[#ba4313] flex items-center justify-center gap-2"
-              >
-                Upload & Prefill
-                <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">
-                  Recommended
-                </span>
-              </button>
-            </div>
-          </div>
-        )}
-
         <div className="grid grid-cols-1 gap-3 w-full max-w-sm">
-          {!isDiscoveryEdit && (
-            <MenuCard
-              title="Upload & Prefill"
-              desc="Prefill from a football packet, schedule, or roster file."
-              icon={<Upload size={18} />}
-              onClick={() => setActiveView("discover")}
-            />
-          )}
+          {renderDiscoverEditor()}
           <MenuCard
-            title="Headline"
+            title="Event basics"
             desc="Title, date, location."
             icon={<Type size={18} />}
             onClick={() => setActiveView("headline")}
           />
-          <MenuCard
-            title="Images"
-            desc="Hero & header photo."
-            icon={<ImageIcon size={18} />}
-            onClick={() => setActiveView("images")}
-          />
-          <MenuCard
-            title="Details"
-            desc="Description and category specifics."
-            icon={<Edit2 size={18} />}
-            onClick={() => setActiveView("details")}
-          />
-          {config.advancedSections?.map((section) => (
-            <MenuCard
-              key={section.id}
-              title={section.menuTitle}
-              desc={section.menuDesc}
-              icon={<Edit2 size={18} />}
-              onClick={() => setActiveView(section.id)}
-            />
-          ))}
-          <MenuCard
-            title={rsvpCopy.menuTitle}
-            desc={rsvpCopy.menuDesc}
-            icon={<CheckSquare size={18} />}
-            onClick={() => setActiveView("rsvp")}
-          />
+          <MenuCard title="Design" desc="Page style, typography, and colors." icon={<Type size={18} />} onClick={() => setActiveView("design")} />
+          <MenuCard title="Custom URL" desc="Choose your page's shareable web address." icon={<LinkIcon size={18} />} onClick={() => setActiveView("url")} />
+
+          <EventSectionPalette />
           <MenuCard
             title="Passcode"
             desc="Require access code to view event."
@@ -1416,7 +1165,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const renderHeadlineEditor = useMemo(
       () => (
-        <EditorLayout title="Headline" onBack={handleBackToMain} showBack>
+        <EditorLayout title="Event basics" onBack={handleBackToMain} showBack>
           <div className="space-y-6">
             <InputGroup
               key="title"
@@ -1425,6 +1174,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               onChange={(v) => updateData("title", v)}
               placeholder={`${config.displayName} title`}
             />
+            <p className="text-sm leading-relaxed text-slate-600">
+              Shown at the top of your page. The preview updates as you type.
+            </p>
 
             <div className="grid grid-cols-2 gap-4">
               <InputGroup
@@ -1443,6 +1195,20 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               />
             </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-sm font-medium text-slate-700">
+              End time (optional)
+              <input type="time" value={data.endTime} onChange={(event) => setData((prev) => ({ ...prev, endTime: event.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900" />
+            </label>
+            <label className="block text-sm font-medium text-slate-700">
+              End date (if different)
+              <input type="date" min={data.date || undefined} value={data.endDate} onChange={(event) => setData((prev) => ({ ...prev, endDate: event.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900" />
+            </label>
+          </div>
+          {data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate) ? (
+            <p role="alert" className="text-sm text-red-700">End time must be after the start. For an overnight event, choose the next end date.</p>
+          ) : null}
+            <InputGroup label="Timezone" value={data.timezone || ""} onChange={(value) => updateData("timezone", value)} placeholder="America/Chicago" />
             <InputGroup
               key="venue"
               label="Venue"
@@ -1457,6 +1223,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         data.title,
         data.date,
         data.time,
+        data.endTime,
+        data.endDate,
+        data.timezone,
         data.venue,
         data.city,
         data.state,
@@ -1466,46 +1235,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       ],
     );
 
-    const renderImagesEditor = () => (
-      <EditorLayout title="Images" onBack={() => setActiveView("main")} showBack>
-        <div className="space-y-4">
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-            Hero Image
-          </label>
-          <div className="border-2 border-dashed border-slate-300 rounded-xl p-5 text-center hover:bg-slate-50 transition-colors relative">
-            {data.hero ? (
-              <div className="relative w-full h-40 rounded-lg overflow-hidden">
-                <img src={data.hero} alt="Hero" className="w-full h-full object-cover" />
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    setData((p) => ({ ...p, hero: "" }));
-                  }}
-                  className="absolute top-2 right-2 px-2 py-1 text-xs bg-white rounded-full shadow hover:bg-red-50 text-red-500 z-10"
-                >
-                  Remove
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
-                  <ImageIcon size={20} />
-                </div>
-                <p className="text-sm text-slate-600 mb-1">Upload header photo</p>
-                <p className="text-xs text-slate-400">Recommended: 1600x900px</p>
-              </>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              className="absolute inset-0 opacity-0 cursor-pointer"
-              onChange={handleFileUpload}
-            />
-          </div>
-        </div>
-      </EditorLayout>
-    );
+
 
     const renderDesignEditor = () => (
       <EditorLayout title="Design" onBack={() => setActiveView("main")} showBack>
@@ -1550,19 +1280,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const renderDetailsEditor = () => (
       <EditorLayout title="Details" onBack={() => setActiveView("main")} showBack>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block text-sm font-medium text-slate-700">
-              End time (optional)
-              <input type="time" value={data.endTime} onChange={(event) => setData((prev) => ({ ...prev, endTime: event.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900" />
-            </label>
-            <label className="block text-sm font-medium text-slate-700">
-              End date (if different)
-              <input type="date" min={data.date || undefined} value={data.endDate} onChange={(event) => setData((prev) => ({ ...prev, endDate: event.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900" />
-            </label>
-          </div>
-          {data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate) ? (
-            <p role="alert" className="text-sm text-red-700">End time must be after the start. For an overnight event, choose the next end date.</p>
-          ) : null}
           <EventGuestPlanningEditor category="football-season" value={data.guestPlanning} onChange={(guestPlanning) => setData((prev) => ({ ...prev, guestPlanning }))} />
 
           <InputGroup
@@ -1586,7 +1303,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 key={field.key}
                 label={field.label}
                 type={field.type === "textarea" ? "textarea" : "text"}
-                value={data.extra[field.key] || ""}
+                value={(field.key === "team" ? displayTeamName : data.extra[field.key]) || ""}
                 onChange={(v) => updateExtra(field.key, v)}
                 placeholder={field.placeholder}
               />
@@ -1598,104 +1315,100 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const handleDiscoverParse = useCallback(async () => {
       if (discoverBusy) return;
-      setDiscoverError("");
-      if (!discoverFile) {
-        setDiscoverError("Upload a file to continue.");
-        return;
+      setDiscoverError(""); setDiscoverSuccess("");
+      if (discoverMode === "file" && !discoverFile) { setDiscoverError("Choose a file to continue."); return; }
+      if (discoverMode === "url") {
+        try { const url = new URL(discoverUrl.trim()); if (!["https:", "http:"].includes(url.protocol)) throw new Error(); }
+        catch { setDiscoverError("Enter a complete http or https website URL."); return; }
       }
       setDiscoverBusy(true);
       try {
-        const formData = new FormData();
-        formData.append("file", discoverFile);
-        formData.append("workflow", "football");
-
-        const ingestRes = await fetch("/api/discovery/intake", {
-          method: "POST",
-          body: formData,
-          credentials: "include",
+        const form = new FormData();
+        if (discoverFile) form.append("file", discoverFile);
+        const response = await fetch("/api/football/prefill", {
+          method: "POST", credentials: "include",
+          ...(discoverMode === "url" ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: discoverUrl.trim() }) } : { body: form }),
         });
-        const ingestJson = await ingestRes.json().catch(() => ({}));
-        if (!ingestRes.ok || !ingestJson?.eventId) {
-          throw new Error(ingestJson?.error || "Failed to ingest source");
-        }
-
-        const eventId = String(ingestJson.eventId);
-        const runRes = await fetch(`/api/discovery/${eventId}/run`, {
-          method: "POST",
-          credentials: "include",
-        });
-        const runJson = await runRes.json().catch(() => ({}));
-        if (!runRes.ok) {
-          throw new Error(runJson?.error || "Failed to start discovery pipeline");
-        }
-        const deadlineAt = Date.now() + 60_000;
-        while (Date.now() < deadlineAt) {
-          const statusRes = await fetch(`/api/discovery/${eventId}/status`, {
-            credentials: "include",
-            cache: "no-store",
-          });
-          const statusJson = await statusRes.json().catch(() => ({}));
-          if (!statusRes.ok) {
-            throw new Error(statusJson?.error || "Failed to poll discovery status");
-          }
-          if (statusJson?.errorCode) {
-            throw new Error(statusJson?.errorMessage || "Football discovery failed");
-          }
-          if (statusJson?.builderReady === true) {
-            break;
-          }
-          await new Promise((resolve) => window.setTimeout(resolve, 1000));
-        }
-        if (Date.now() >= deadlineAt) {
-          throw new Error("Football discovery timed out");
-        }
-        router.push(`/event/football/customize?edit=${eventId}&new=1`);
-      } catch (err: any) {
-        setDiscoverError(String(err?.message || err || "Failed to parse source"));
-      } finally {
-        setDiscoverBusy(false);
-      }
-    }, [discoverBusy, discoverFile, router]);
+        const result = await readFootballResponse(response, "The import service did not respond. Try the file or URL again; your current details are kept.");
+        if (!result.data) throw new Error(result.error || "Unable to read this source.");
+        setData((previous) => ({ ...previous, ...footballEditorFields(result.data), guestPlanning: {}, passcode: result.passcode || "" }));
+        setAdvancedState((previous) => ({
+          ...(result.data.advancedSections || {}),
+          scores: previous.scores || { scorestreamWidgetUrl: "" },
+        }));
+        setLoadedDiscoverySource(result.source); setIsDiscoveryEdit(true);
+        void refreshGameContext(result.data.advancedSections?.games?.games || [], { teamName: result.data.extra?.team, homeVenue: result.data.extra?.stadium || result.data.venue, homeAddress: result.data.extra?.stadiumAddress, timezone: result.data.timezone });
+        setDiscoverSuccess("Source imported. Review your details, then save or publish when ready.");
+        setActiveView("main");
+      } catch (error) { setDiscoverError(footballErrorMessage(error, "The import service did not respond. Try again; your current details are kept.")); }
+      finally { setDiscoverBusy(false); }
+    }, [discoverBusy, discoverMode, discoverFile, discoverUrl]);
 
     const renderDiscoverEditor = () => (
-      <EditorLayout title="Upload to Prefill" onBack={() => setActiveView("main")} showBack>
-        <div className="space-y-4">
-          <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 text-sm text-orange-900">
-            Upload a football packet, season schedule, roster sheet, or parent memo. We will parse
-            and prefill the football page builder.
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-              Upload File
-            </label>
-            <input
-              type="file"
-              accept=".pdf,image/png,image/jpeg,image/jpg"
-              onChange={(e) => {
-                const picked = e.target.files?.[0] || null;
-                setDiscoverFile(picked);
-              }}
-              className={baseInputClass}
-            />
-            {discoverFile ? (
-              <p className="text-xs text-slate-500">Selected: {discoverFile.name}</p>
-            ) : null}
-          </div>
-          {discoverError ? (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-              {discoverError}
-            </div>
-          ) : null}
-          <button
-            type="button"
-            onClick={handleDiscoverParse}
+      <section aria-label="Import football details" className="w-full rounded-2xl border border-violet-100 bg-violet-50/60 p-4 text-left">
+        <p className="text-sm font-semibold text-slate-800">Have your football details already?</p>
+        <form className="mt-3 space-y-3" noValidate onSubmit={(event) => { event.preventDefault(); void handleDiscoverParse(); }}>
+          <input
+            ref={discoverFileInput}
+            type="file"
+            aria-label="Schedule, roster, or packet"
+            accept=".pdf,image/png,image/jpeg,image/webp"
             disabled={discoverBusy}
-            className="w-full py-3 rounded-lg bg-slate-900 text-white font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {discoverBusy ? "Parsing..." : "Parse and Build Football Page"}
-          </button>
-        </div>
-      </EditorLayout>
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = "";
+              if (!file) return;
+              setDiscoverFile(file);
+              setDiscoverError("");
+            }}
+          />
+          <div className="grid grid-cols-2 gap-2" role="tablist" aria-label="Import source">
+            {(["file", "url"] as const).map((mode) => (
+              <button
+                key={mode}
+                ref={(node) => { discoverTabs.current[mode] = node; }}
+                id={`${discoverId}-${mode}-tab`}
+                type="button"
+                role="tab"
+                aria-selected={discoverMode === mode}
+                aria-controls={`${discoverId}-${mode}-panel`}
+                tabIndex={discoverMode === mode ? 0 : -1}
+                disabled={discoverBusy}
+                onClick={() => {
+                  setDiscoverMode(mode);
+                  setDiscoverError("");
+                  if (mode === "file") discoverFileInput.current?.click();
+                }}
+                onKeyDown={(event) => {
+                  if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+                  event.preventDefault();
+                  const nextMode = event.key === "Home" ? "file" : event.key === "End" ? "url" : mode === "file" ? "url" : "file";
+                  setDiscoverMode(nextMode);
+                  setDiscoverError("");
+                  discoverTabs.current[nextMode]?.focus();
+                }}
+                className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 disabled:opacity-50 motion-reduce:transition-none ${discoverMode === mode ? "border-violet-600 bg-violet-600 text-white shadow-sm hover:bg-violet-700" : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"}`}
+              >
+                {mode === "file" ? <Upload className="h-4 w-4 shrink-0" aria-hidden="true" /> : <Globe className="h-4 w-4 shrink-0" aria-hidden="true" />}
+                {mode === "file" ? "Upload" : "Paste URL"}
+              </button>
+            ))}
+          </div>
+          <div id={`${discoverId}-file-panel`} role="tabpanel" aria-labelledby={`${discoverId}-file-tab`} hidden={discoverMode !== "file"} className="space-y-2">
+            {discoverFile ? <p role="status" className="break-all text-xs leading-5 text-slate-600">Selected: {discoverFile.name}</p> : null}
+            <p className="text-xs text-slate-500">PDF, PNG, JPG, or WebP</p>
+          </div>
+          <div id={`${discoverId}-url-panel`} role="tabpanel" aria-labelledby={`${discoverId}-url-tab`} hidden={discoverMode !== "url"} className="space-y-2">
+            <label htmlFor={`${discoverId}-source-url`} className="block text-xs font-semibold text-slate-600">Public football URL</label>
+            <input id={`${discoverId}-source-url`} type="url" value={discoverUrl} disabled={discoverBusy} onChange={(event) => { setDiscoverUrl(event.target.value); setDiscoverError(""); }} placeholder="https://school.edu/athletics/football" autoCapitalize="none" autoCorrect="off" aria-invalid={discoverMode === "url" && !!discoverError} aria-describedby={discoverMode === "url" && discoverError ? `${discoverId}-error` : undefined} className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base font-normal text-slate-900 outline-none focus:ring-2 focus:ring-violet-400" />
+          </div>
+          {discoverError ? <p id={`${discoverId}-error`} role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{footballErrorMessage(discoverError, "The previous import failed. Try the file or URL again; your current details are kept.")}</p> : null}
+          <button type="submit" disabled={discoverBusy} className="min-h-11 w-full rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-violet-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 disabled:cursor-wait disabled:opacity-60 motion-reduce:transition-none">{discoverBusy ? "Reading your source…" : discoverMode === "file" ? "Fill from this file" : "Fill from this link"}</button>
+          {discoverBusy ? <p role="status" className="text-sm text-slate-600">Reading the source and organizing the schedule. This can take a minute.</p> : null}
+          <p className="text-xs leading-5 text-slate-500">Imported details replace the current details. Your design and hero image stay in place.</p>
+        </form>
+      </section>
     );
 
     const renderRsvpEditor = () => (
@@ -1776,6 +1489,37 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const renderAdvancedEditor = (section: AdvancedSectionSpec) => (
       <EditorLayout title={section.menuTitle} onBack={() => setActiveView("main")} showBack>
+        {section.id === "games" ? (
+          <section className="mb-6 space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4" aria-labelledby="football-travel-heading">
+            <div>
+              <h3 id="football-travel-heading" className="text-base font-semibold text-slate-800">Tickets, stadiums & travel</h3>
+              <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                Find official ticket links and stadium addresses for the hosting schools. Away-game drives start at your team's home stadium.
+              </p>
+            </div>
+            <InputGroup
+              label="Home stadium name"
+              value={data.extra?.stadium || data.venue || ""}
+              onChange={(value) => setData((previous) => ({ ...previous, extra: { ...previous.extra, stadium: value } }))}
+              placeholder="Your team's home stadium"
+            />
+            <InputGroup
+              label="Home stadium address"
+              value={data.extra?.stadiumAddress || ""}
+              onChange={(value) => setData((previous) => ({ ...previous, extra: { ...previous.extra, stadiumAddress: value } }))}
+              placeholder="Street, city, state, and ZIP"
+            />
+            {hasGames ? (
+              <button type="button" onClick={() => void refreshGameContext()} disabled={contextBusy} className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60">
+                {contextBusy ? "Finding tickets, stadiums & miles…" : "Find tickets, stadiums & miles"}
+              </button>
+            ) : null}
+            <p className="text-xs leading-relaxed text-slate-500">
+              The lookup fills missing details and keeps your edits. Ticket buttons open the host school's sales page; forecasts appear when available near game day.
+            </p>
+            {contextMessage ? <p role="status" className="text-sm leading-relaxed text-slate-700">{footballErrorMessage(contextMessage, "The previous lookup failed. Select Find tickets, stadiums & miles to retry; your details are kept.")}</p> : null}
+          </section>
+        ) : null}
         {section.renderEditor({
           state: advancedState?.[section.id],
           setState: (updater: any) => setAdvancedSectionState(section.id, updater),
@@ -1786,28 +1530,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       </EditorLayout>
     );
 
-    const infoLine = (
-      <div
-        className={`flex flex-col md:flex-row md:items-center gap-2 md:gap-4 text-base font-medium opacity-90 ${textClass}`}
-        style={bodyShadow}
-      >
-        <span>
-          {new Date(data.date).toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          })}
-        </span>
-        <span className="hidden md:inline-block w-1 h-1 rounded-full bg-current opacity-50"></span>
-        <span>{data.time}</span>
-        {locationParts && (
-          <>
-            <span className="hidden md:inline-block w-1 h-1 rounded-full bg-current opacity-50"></span>
-            <span className="md:truncate">{locationParts}</span>
-          </>
-        )}
-      </div>
-    );
+    const infoLine = <div className="flex flex-wrap gap-x-4 gap-y-2 text-base font-medium text-current" style={bodyShadow}>
+      {[data.date ? new Date(data.date + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "", data.time, locationParts].filter(Boolean).map((value) => <span key={value}>{value}</span>)}
+    </div>;
 
     if (initializingEdit) {
       return (
@@ -1822,10 +1547,73 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       );
     }
 
+    const renderFootballPage = (readOnly: boolean) => (<FootballSeasonPreviewFrame theme={templateTheme}>
+                  <FootballPageTextProvider text={data.footballPageText} title={data.title} details={data.details} onChange={readOnly || mobileMenuOpen ? undefined : handlePageTextChange}>
+                  <FootballHero
+                    templateId={pageTemplateId}
+                    title={!editEventId && (!data.title?.trim() || data.title === config.displayName) ? "Your team. Your season." : resolveFootballTitle(data.title, data.extra?.team) || config.displayName}
+                    subtitle={footballModel.subtitle || "Football season"}
+                    metadata={infoLine}
+                    details={[addressLine]}
+                    heroSrc={resolvedHero}
+                    headingClassName={headingSizeClass}
+                    headingStyle={heroHeadingFontStyle}
+                    artworkAction={readOnly ? undefined : <HeroImageEditor value={data.hero} onChange={(hero) => setData((prev) => ({ ...prev, hero }))} />}
+                    actions={
+                      <FootballPageActions
+                        title={resolveFootballTitle(data.title, data.extra?.team)}
+                        start={data.date && data.time ? `${data.date}T${data.time}` : undefined}
+                        timezone={data.timezone || undefined}
+                        end={getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)}
+                        description={data.details}
+                        location={[data.venue, data.city, data.state].filter(Boolean).join(", ")}
+                        shareUrl={editEventId && typeof window !== "undefined" ? `${window.location.origin}${buildEventPath(editEventId)}` : undefined}
+                        onEdit={readOnly ? undefined : openMobileMenu}
+                        onPreview={readOnly ? undefined : () => setSectionPreviewOpen(true)}
+                      />
+                    }
+                  />
+
+                  {readOnly && navItems.length > 0 ? <div className="px-5 pt-5"><FootballSeasonSectionNav tabs={sectionTabs} shellClassName={templateTheme.navShellClass} activeClassName={templateTheme.navActiveClass} idleClassName={templateTheme.navIdleClass} /></div> : null}
+                  <FootballPageContent
+                    sections={footballModel.sections}
+                    tabs={sectionTabs}
+                    chrome={templateTheme}
+                    schedule={{
+                      games: advancedState?.games?.games || [], teamName: displayTeamName,
+                      teamMascot: data.extra?.teamMascot, season: data.extra?.season,
+                      homeVenue: data.extra?.stadium || data.venue, homeAddress: data.extra?.stadiumAddress,
+                      timezone: data.timezone,
+                    }}
+                    attendance={footballModel.attendance}
+                    sectionAction={readOnly ? undefined : (id) => id === "games" ? <div className="mb-5 flex flex-wrap items-center gap-3">
+                      <button type="button" disabled={contextBusy} onClick={() => void refreshGameContext()} className="inline-flex min-h-11 items-center justify-center rounded-full border border-current/30 px-4 py-2 text-sm font-semibold hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60">
+                        {contextBusy ? "Finding tickets, stadiums & miles…" : "Find tickets, stadiums & miles"}
+                      </button>
+                      {contextMessage ? <p role="status" className="max-w-2xl text-sm leading-relaxed opacity-85">{footballErrorMessage(contextMessage, "The previous lookup failed. Select Find tickets, stadiums & miles to retry; your details are kept.")}</p> : null}
+                    </div> : null}
+                  />
+
+                  <footer className={`mt-1 border-t border-white/10 py-8 text-center ${textClass}`}>
+                    <EnvitefyEventBranding category="Football" inheritColor />
+                  </footer>
+                  </FootballPageTextProvider>
+                </FootballSeasonPreviewFrame>);
+
+    const renderSectionEditor = (id: string) => {
+      if (id === "details") return renderDetailsEditor();
+      if (id === "rsvp") return renderRsvpEditor();
+      const section = config.advancedSections?.find((item) => item.id === id);
+      return section ? renderAdvancedEditor(section) : null;
+    };
+    const sectionCatalog = Object.entries(FOOTBALL_SECTION_LABELS).map(([id, label]) => ({ id, label, editorId: id }));
+
     return (
+      <EventSectionBuilderProvider layout={sectionLayout} catalog={sectionCatalog} renderEditor={renderSectionEditor}
+        onChange={(next) => setData((previous) => ({ ...previous, sectionLayout: next }))}>
       <div
         className={`relative flex w-full bg-slate-100 font-sans text-slate-900 ${
-          isEmbed ? "min-h-screen flex-col" : "min-h-screen h-[100dvh] overflow-hidden"
+          isEmbed ? "min-h-screen flex-col" : "min-h-screen h-[100dvh] overflow-clip"
         }`}
       >
         {!isEmbed && (
@@ -1839,161 +1627,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           >
             <div className="w-full min-w-0 mb-20 md:mb-24 pb-8 transition-all duration-500 ease-in-out">
               <div>
-                <FootballSeasonPreviewFrame theme={templateTheme}>
-                  <FootballSeasonHeader
-                    theme={templateTheme}
-                    title={data.title || config.displayName}
-                    infoLine={infoLine}
-                    addressLine={addressLine}
-                    heroSrc={data.hero}
-                    headingSizeClass={headingSizeClass}
-                    headingFontStyle={heroHeadingFontStyle}
-                    bodyShadow={bodyShadow}
-                    selectedSizeLabel={selectedSize.label}
-                    templateName={currentTemplate.name}
-                    isDiscoveryEdit={isDiscoveryEdit}
-                  />
-
-                  <div className="px-5 pb-2 pt-5 md:px-8">
-                    <FootballSeasonSectionNav
-                      theme={templateTheme}
-                      navItems={navItems}
-                      activeSection={activeSection}
-                      onSelect={handleSectionSelect}
-                    />
-                  </div>
-
-                  <FootballSeasonPreviewSection theme={templateTheme} id="details">
-                    <h2
-                      className={`${templateTypography.cardClassName} mb-3 text-2xl ${templateTheme.sectionTitleClass || accentClass}`}
-                      style={sectionHeadingFontStyle}
-                    >
-                      Details
-                    </h2>
-                    
-                  <EventGuestActions
-                    title={data.title}
-                    start={data.date ? `${data.date}T${data.time || "14:00"}` : undefined}
-                    end={getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)}
-                    description={data.details}
-                    location={[data.venue, data.city, data.state].filter(Boolean).join(", ")}
-                    preview
-                  />
-                  <EventGuestPlanningNotes value={data.guestPlanning} />
-                  {data.details ? (
-                      <p
-                        className={`whitespace-pre-wrap text-base leading-relaxed opacity-90 ${textClass}`}
-                        style={bodyShadow}
-                      >
-                        {data.details}
-                      </p>
-                    ) : (
-                      <p className={`text-sm opacity-70 ${textClass}`} style={bodyShadow}>
-                        Add a short description so guests know what to expect.
-                      </p>
-                    )}
-                    <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-                      {config.detailFields.map((field) => {
-                        const val = data.extra[field.key];
-                        return (
-                          <FootballSeasonSectionCard key={field.key} theme={templateTheme}>
-                            <div
-                              className={`text-xs uppercase tracking-wide opacity-80 ${textClass}`}
-                              style={bodyShadow}
-                            >
-                              {field.label}
-                            </div>
-                            <div
-                              className={`mt-2 text-base font-semibold opacity-90 ${textClass}`}
-                              style={bodyShadow}
-                            >
-                              {val || "—"}
-                            </div>
-                          </FootballSeasonSectionCard>
-                        );
-                      })}
-                    </div>
-                  </FootballSeasonPreviewSection>
-
-                  {advancedSectionPreviews.map(({ section, previewNode }) => (
-                    <FootballSeasonPreviewSection
-                      theme={templateTheme}
-                      key={section.id}
-                      id={section.id}
-                    >
-                      {previewNode}
-                    </FootballSeasonPreviewSection>
-                  ))}
-
-                  {data.rsvpEnabled && (
-                    <FootballSeasonPreviewSection theme={templateTheme} id="rsvp">
-                      <h2
-                        className={`${templateTypography.cardClassName} mb-6 text-2xl ${templateTheme.sectionTitleClass || accentClass}`}
-                        style={sectionHeadingFontStyle}
-                      >
-                        {rsvpCopy.editorTitle}
-                      </h2>
-                      <div className={`${templateTheme.sectionCardClass} p-8 text-left md:p-10`}>
-                        {!rsvpSubmitted ? (
-                          <div className="space-y-6">
-                            <div className="mb-4 text-center">
-                              <p className={`opacity-80 ${textClass}`}>
-                                {data.rsvpDeadline
-                                  ? `Kindly respond by ${new Date(
-                                      data.rsvpDeadline,
-                                    ).toLocaleDateString()}`
-                                  : "Please confirm attendance"}
-                              </p>
-                            </div>
-                            <div>
-                              <label
-                                className={`mb-2 block text-xs font-bold uppercase tracking-wider opacity-70 ${textClass}`}
-                              >
-                                Full Name
-                              </label>
-                              <input
-                                className="w-full rounded-lg border border-white/20 bg-white/10 p-4 text-inherit placeholder:text-inherit/30 outline-none transition-colors focus:border-white/50"
-                                placeholder="Guest Name"
-                              />
-                            </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setRsvpSubmitted(true);
-                              }}
-                              className="mt-2 w-full rounded-lg bg-white py-4 text-sm font-bold uppercase tracking-widest text-slate-900 shadow-lg transition-colors hover:bg-slate-200"
-                            >
-                              Send Attendance
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="py-12 text-center">
-                            <div className="mb-4 text-4xl">🎉</div>
-                            <h3 className={`mb-2 text-2xl font-serif ${textClass}`}>RSVP preview</h3>
-                            <p className={`opacity-70 ${textClass}`}>
-                              This is a preview. Publish your event to collect attendance responses.
-                            </p>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setRsvpSubmitted(false);
-                                setRsvpAttending("yes");
-                              }}
-                              className="mt-6 text-sm underline opacity-50 hover:opacity-100"
-                            >
-                              Send another response
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                    </FootballSeasonPreviewSection>
-                  )}
-
-                  <footer className={`mt-1 border-t border-white/10 py-8 text-center ${textClass}`}>
-                    <EnvitefyEventBranding category="Football" inverse={isDarkBackground} />
-                  </footer>
-                </FootballSeasonPreviewFrame>
+                {renderFootballPage(false)}
               </div>
             </div>
           </EventCanvas>
@@ -2012,7 +1646,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             isEmbed
               ? "min-h-screen bg-white"
               : `nav-chrome-mobile-drawer md:w-[400px] md:shrink-0 z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
-                  mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+                  mobileMenuOpen ? "translate-x-0" : "translate-x-full max-md:invisible max-md:pointer-events-none"
                 }`
           }`}
           {...drawerTouchHandlers}
@@ -2032,12 +1666,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             )}
 
             <div className="p-6 pt-4 md:pt-6">
-              {activeView === "main" && renderMainMenu()}
+              {(activeView === "main" || activeView === "images") && renderMainMenu()}
               {activeView === "headline" && renderHeadlineEditor}
-              {activeView === "images" && renderImagesEditor()}
+
               {activeView === "design" && renderDesignEditor()}
+              {activeView === "url" && <EditorLayout title="Custom URL" onBack={handleBackToMain} showBack>
+                <CustomEventUrlField value={data.publicSlugInput || ""} onChange={(value) => updateData("publicSlugInput", value)} eventId={editEventId} disabled={submitting}
+                  suggestion={suggestFootballPublicSlug({ teamName: displayTeamName, teamMascot: data.extra?.teamMascot, title: data.title === config.displayName ? "" : data.title, season: data.extra?.season, games: advancedState.games?.games || [] })} />
+              </EditorLayout>}
               {activeView === "details" && renderDetailsEditor()}
-              {activeView === "discover" && renderDiscoverEditor()}
               {activeView === "rsvp" && renderRsvpEditor()}
               {activeView === "passcode" && renderPasscodeEditor()}
               {config.advancedSections?.map((section) =>
@@ -2053,40 +1690,19 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               {editEventId && (
                 <button
                   onClick={() => {
-                    if (!didExplicitSave && isNewDraft && editEventId) {
-                      void (async () => {
-                        try {
-                          await fetch(`/api/history/${editEventId}`, {
-                            method: "DELETE",
-                            credentials: "include",
-                          });
-                        } catch {}
-
-                        if (
-                          isEmbed &&
-                          typeof window !== "undefined" &&
-                          (window as any).parent !== window
-                        ) {
-                          try {
-                            (window as any).parent.location.assign("/event/football");
-                            return;
-                          } catch {}
-                        }
-                        router.push("/event/football");
-                      })();
-                      return;
+                    const cancelHref = ownerEventEditorReturnHref(search) ||
+                      buildEventPath(editEventId, undefined, { tab: "event" });
+                    if (isEmbed && window.parent !== window) {
+                      requestLeave(() => {
+                        window.parent.postMessage(
+                          { type: "envitefy:discovery-preview-reset", eventId: editEventId },
+                          window.location.origin,
+                        );
+                        window.parent.location.assign(cancelHref);
+                      });
+                    } else {
+                      router.push(cancelHref);
                     }
-                    if (
-                      isEmbed &&
-                      typeof window !== "undefined" &&
-                      (window as any).parent !== window
-                    ) {
-                      try {
-                        (window as any).parent.location.assign(`/event/${editEventId}`);
-                        return;
-                      } catch {}
-                    }
-                    router.push(`/event/${editEventId}`);
                   }}
                   className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
                 >
@@ -2112,19 +1728,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           </div>
         </div>
 
-        {!isEmbed && !mobileMenuOpen && (
-          <div className="md:hidden fixed bottom-4 right-4 z-30">
-            <button
-              type="button"
-              onClick={openMobileMenu}
-              className="nav-chrome-mobile-drawer-trigger flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold"
-            >
-              <Menu size={18} />
-              Edit
-            </button>
-          </div>
-        )}
       </div>
+      <dialog ref={sectionPreviewRef} aria-label="Football event preview"
+        onCancel={() => setSectionPreviewOpen(false)} onClose={() => setSectionPreviewOpen(false)}
+        className="fixed inset-0 m-0 h-[100dvh] max-h-none w-full max-w-none overflow-y-auto border-0 p-0">
+        {sectionPreviewOpen ? <EventSectionsReadOnly><EventCanvas className="min-h-full w-full">
+          <div className="sticky top-0 z-50 flex justify-end p-3"><button type="button" onClick={() => setSectionPreviewOpen(false)} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow" aria-label="Close preview"><X size={18} aria-hidden="true" />Close</button></div>
+          {renderFootballPage(true)}
+        </EventCanvas></EventSectionsReadOnly> : null}
+      </dialog>
+      </EventSectionBuilderProvider>
     );
   };
 }

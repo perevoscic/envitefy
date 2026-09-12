@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import FileUploadInput from "@/components/ui/FileUploadInput";
 
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 
@@ -1794,9 +1795,8 @@ const logisticsSection = {
                 </button>
               </div>
             ) : (
-              <input
-                type="file"
-                className={inputClass}
+              <FileUploadInput
+                buttonLabel="Upload gym layout"
                 accept="image/png,image/jpeg,image/jpg,image/webp"
                 onChange={handleGymLayoutUpload}
               />
@@ -1932,12 +1932,12 @@ const logisticsSection = {
             Additional Documents
           </label>
           <div className="mb-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
+            <label htmlFor="gymnastics-additional-document" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
               Upload document
             </label>
-            <input
-              type="file"
-              className={inputClass}
+            <FileUploadInput
+              id="gymnastics-additional-document"
+              buttonLabel="Upload document"
               accept=".pdf,.doc,.docx,.txt,.rtf,.png,.jpg,.jpeg,.webp"
               onChange={handleDocumentUpload}
             />

@@ -2,7 +2,7 @@
 // @ts-nocheck
 "use client";
 
-import { ExternalLink, Pencil, Share2 } from "lucide-react";
+import { ExternalLink, Eye, Pencil, Share2 } from "lucide-react";
 import CalendarAction from "@/components/CalendarAction";
 
 export default function FloatingActionStrip({
@@ -12,6 +12,7 @@ export default function FloatingActionStrip({
   onAppleCalendar,
   onOutlookCalendar,
   onMobileEdit,
+  onPreview,
   mobileEditHref,
   resourcesHref,
 }: {
@@ -21,6 +22,7 @@ export default function FloatingActionStrip({
   onAppleCalendar: () => void;
   onOutlookCalendar: () => void;
   onMobileEdit?: () => void;
+  onPreview?: () => void;
   mobileEditHref?: string;
   resourcesHref?: string;
 }) {
@@ -48,25 +50,43 @@ export default function FloatingActionStrip({
         }}
       />
       {onMobileEdit ? (
-        <button
-          type="button"
-          onClick={onMobileEdit}
-          className={`${resolvedButtonClass} size-11 min-w-11 gap-0! p-0! md:hidden`}
-          aria-label="Edit event"
-          title="Edit event"
-        >
-          <Pencil size={16} aria-hidden="true" />
-        </button>
+        <span className="md:hidden">
+          <button
+            type="button"
+            onClick={onMobileEdit}
+            className={`${resolvedButtonClass} size-11 min-w-11 gap-0! p-0!`}
+            aria-label="Edit event"
+            title="Edit event"
+          >
+            <Pencil size={16} aria-hidden="true" />
+          </button>
+        </span>
       ) : mobileEditHref ? (
-        <a
-          href={mobileEditHref}
-          target="_top"
-          className={`${resolvedButtonClass} size-11 min-w-11 gap-0! p-0! lg:hidden`}
-          aria-label="Edit event"
-          title="Edit event"
-        >
-          <Pencil size={16} aria-hidden="true" />
-        </a>
+        <span className="lg:hidden">
+          <a
+            href={mobileEditHref}
+            target="_top"
+            className={`${resolvedButtonClass} size-11 min-w-11 gap-0! p-0!`}
+            aria-label="Edit event"
+            title="Edit event"
+          >
+            <Pencil size={16} aria-hidden="true" />
+          </a>
+        </span>
+      ) : null}
+      {onPreview ? (
+        <span className="hidden md:block">
+          <button
+            type="button"
+            onClick={onPreview}
+            className={resolvedButtonClass}
+            aria-label="Preview event"
+            title="Preview event"
+          >
+            <Eye size={16} aria-hidden="true" />
+            <span>Preview</span>
+          </button>
+        </span>
       ) : null}
       {resourcesHref ? (
         <a

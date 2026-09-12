@@ -2,6 +2,10 @@
 
 This folder is the working home for Envitefy video production. A request to create a video means produce and review the finished export, using the existing local pipeline.
 
+## Provider restriction — September 12, 2026
+
+The clarified workflow is **OpenAI for generated assets and substantive AI work; Remotion for animation, editing, composition and rendering**. Gemini is permitted only for small text calls. Google video/image generation, Lyria music, uploaded-media analysis/transcription and bulk reviews are prohibited. The studio guard limits small text calls to Flash text models, 4,000 input characters, 256 output tokens and one candidate, without media, tools or cached context. Do not batch small calls into heavy work or silently fall back to Google. If an OpenAI capability is unavailable, use existing local assets/tools or explain the limitation. This clarification supersedes the initial blanket Google ban and all historical Google production/recovery directions. New studio network code must use `scripts/provider-policy.mjs`; never bypass it. Offline fixtures may retain mocked Google responses. The parent app's Calendar, Maps and Vision OCR integrations are outside this video restriction.
+
 ## Start a video task
 
 - Read [STUDIO-GUIDE.md](STUDIO-GUIDE.md) for the user's standing preferences.
@@ -42,4 +46,4 @@ The skill contains the workflow and links to the scripts. Do not assume the exis
 
 The reusable local runner is `engine/cli.mjs`; its contract and recovery rules are in the producer skill's [engine reference](.agents/skills/envitefy-video-producer/references/engine.md). New engine campaigns use `production.json` alongside the creative `brief.json`. Start revisions with status, retain unchanged assets, and resolve recorded provider jobs before submitting another take. The engine is local production code and remains ignored with the renderer in `src/engine/`.
 
-Run `node --test engine/engine.test.mjs` after functional engine changes. `node engine/validate-local.mjs` renders a local three-format validation under out/_studio/ without paid generation. A technical pass leaves creative review pending; use the [review reference](.agents/skills/envitefy-video-producer/references/review.md) and never treat editor review as user approval.
+New films use the [directed workflow](.agents/skills/envitefy-video-producer/references/directed-workflow.md) and `init --directed`. Run `npm run test:engine` after functional engine changes. Also run `node engine/validate-directed.mjs` for shared-edit/audio verification; run actual render validation scripts sequentially while renderer sources are stable. `node engine/validate-local.mjs` renders a local three-format validation under out/_studio/ without paid generation. A technical pass leaves creative review pending; use the [review reference](.agents/skills/envitefy-video-producer/references/review.md) and never treat editor review as user approval.

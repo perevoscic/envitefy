@@ -66,7 +66,7 @@ export default function SkylineWedding({ theme, event }: Props) {
         <div className="absolute inset-0 z-0">
           <img
             src={heroImage}
-            className="w-full h-full object-cover opacity-60"
+            className="template-hero-image w-full h-full object-cover opacity-60"
             alt="City Skyline"
           />
           {/* Gradient Overlay */}

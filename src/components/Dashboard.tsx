@@ -1,4 +1,6 @@
 "use client";
+import { scanScheduleFromOcr, scanScheduleHistoryFields, type ScanSchedule } from "@/lib/scan-schedule";
+import ScheduleReviewDialog from "@/components/ScheduleReviewDialog";
 
 
 import * as chrono from "chrono-node";
@@ -110,6 +112,8 @@ type SubmitScannedEventParams = {
   sourceFile?: File | null;
   scanAttemptId?: string | null;
   ocrMeta?: {
+    scanSchedule?: ScanSchedule | null;
+    status?: "draft" | "published";
     scanArtworkTicket?: string | null;
     scanPersonalization?: ScanPersonalization | null;
     scanSourceKind?: "paperwork" | "designed" | "unknown";
@@ -305,6 +309,7 @@ export default function Dashboard({
   const [, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [, setOcrText] = useState<string>("");
+  const [pendingSchedule, setPendingSchedule] = useState<SubmitScannedEventParams | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [ocrCategory, setOcrCategory] = useState<string | null>(null);
   const [ocrBirthdayTemplateHint, setOcrBirthdayTemplateHint] =
@@ -1253,11 +1258,12 @@ export default function Dashboard({
         setOcrCategory(data?.category || null);
         setOcrBirthdayTemplateHint(data?.birthdayTemplateHint || null);
         if (adjusted) {
-          const created = await submitScannedEventRef.current({
+          const scannedParams: SubmitScannedEventParams = {
             eventInput: adjusted,
             sourceFile: incoming,
             scanAttemptId,
             ocrMeta: {
+              scanSchedule: scanScheduleFromOcr(data),
               scanArtworkTicket: typeof data?.scanArtworkTicket === "string" ? data.scanArtworkTicket : null,
               scanPersonalization: normalizeScanPersonalization(data?.fieldsGuess?.scanPersonalization),
               scanSourceKind: data?.fieldsGuess?.scanSourceKind || "unknown",
@@ -1267,7 +1273,15 @@ export default function Dashboard({
               thumbnailFocus: normalizeThumbnailFocus(data?.thumbnailFocus),
               openHouse: openHouseFromScan,
             },
-          });
+          };
+          if (scannedParams.ocrMeta?.scanSchedule) {
+            const firstDated = scannedParams.ocrMeta.scanSchedule.items.find((item) => item.startAt);
+            scannedParams.eventInput = { ...scannedParams.eventInput, start: firstDated?.startAt || null, end: firstDated?.endAt || null, timeFound: Boolean(firstDated?.startAt) };
+            setPendingSchedule(scannedParams);
+            resetScanUi();
+            return;
+          }
+          const created = await submitScannedEventRef.current(scannedParams);
           if (!created) {
             resetScanUi();
           }
@@ -1589,7 +1603,7 @@ export default function Dashboard({
             .join("\n"),
           category: normalizedOcrCategory,
         });
-        const detectedSourceIntent = sourceIntent.detectedSourceIntent;
+        const detectedSourceIntent = ocrMeta?.scanSchedule ? "authoring_source" : sourceIntent.detectedSourceIntent;
         const historyOwnership = detectedSourceIntent === "received_invite" ? "invited" : "owned";
         const existingRegistries = Array.isArray((eventInput as any)?.registries)
           ? ((eventInput as any).registries as any[])
@@ -1645,6 +1659,7 @@ export default function Dashboard({
         const payload: any = {
           title: eventInput.title || "Event",
           data: {
+            ...(ocrMeta?.scanSchedule ? { scanSchedule: ocrMeta.scanSchedule, scheduleItems: ocrMeta.scanSchedule.items, status: ocrMeta.status || "draft", draftStatus: ocrMeta.status || "draft", scheduleLine: ocrMeta.scanSchedule.timeframe || `${ocrMeta.scanSchedule.items.length} sessions and games` } : {}),
             ownership: historyOwnership,
             invitedFromScan: detectedSourceIntent === "received_invite",
             sourceContext: {
@@ -1953,7 +1968,14 @@ export default function Dashboard({
     : "relative flex min-h-[100dvh] w-full flex-col items-center bg-transparent px-3 pb-20 pt-2 text-foreground md:px-8 md:pt-16";
 
   return (
-    <main className={dashboardShellClassName}>
+    <main className={dashboardShellClassName}
+      onDragOver={(event) => { if (event.dataTransfer.types.includes("Files")) event.preventDefault(); }}
+      onDrop={(event) => {
+        if (!event.dataTransfer.files.length) return;
+        event.preventDefault();
+        if (!pendingSchedule && scanStatus === "idle") onFile(event.dataTransfer.files[0]);
+      }}
+    >
       <input
         ref={cameraInputRef}
         type="file"
@@ -2092,6 +2114,19 @@ export default function Dashboard({
             />
           )}
         </div>
+      )}
+      {pendingSchedule?.ocrMeta?.scanSchedule && (
+        <ScheduleReviewDialog
+          initialSchedule={pendingSchedule.ocrMeta.scanSchedule}
+          onDiscard={() => { setPendingSchedule(null); resetForm(); }}
+          onSave={async (schedule, status) => {
+            const params = { ...pendingSchedule, eventInput: { ...pendingSchedule.eventInput, ...scanScheduleHistoryFields(schedule), title: schedule.title }, ocrMeta: { ...pendingSchedule.ocrMeta, scanSchedule: schedule, status } };
+            const result = await saveToEnvitefyHistory({ ...params, ready: { ...buildSubmissionEvent(params.eventInput), ...scanScheduleHistoryFields(schedule) } });
+            if (!result.ok) throw new Error(result.error);
+            setPendingSchedule(null);
+            return buildEventPath(result.eventId, result.savedTitle || schedule.title, { tab: "event" }, result.publicSlug);
+          }}
+        />
       )}
       {scanStatus !== "idle" && (
         <div className="fixed left-0 right-0 top-0 z-[7000] flex h-[100svh] items-start justify-center overflow-y-auto bg-[#f4eeff]/95 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-[calc(env(safe-area-inset-top)+5.75rem)] md:inset-y-0 md:h-auto md:items-center md:p-4 md:bg-[#f4eeff]/78 md:backdrop-blur-md lg:left-[var(--app-sidebar-width,20rem)]">

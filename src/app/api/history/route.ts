@@ -34,6 +34,7 @@ import {
   redactHistoryHeavyFields,
 } from "@/lib/history-view";
 import { markScanAttemptSaved } from "@/lib/scan-attempts";
+import { validateCustomEventPublicSlug } from "@/utils/event-public-slug";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -325,6 +326,8 @@ export async function POST(req: Request) {
     }
     if (!userId) return NextResponse.json({ error: "Sign in to save your event" }, { status: 401 });
     const body = await req.json().catch(() => ({}));
+    const requestedSlug = body.publicSlug === undefined ? null : validateCustomEventPublicSlug(body.publicSlug);
+    if (requestedSlug?.error) return NextResponse.json({ error: requestedSlug.error }, { status: 400 });
     if (body.clientDraftId !== undefined && !isClientDraftId(body.clientDraftId)) return NextResponse.json({ error: "Invalid draft identity" }, { status: 400 });
     if (body.clientDraftId) {
       const existing = await getEventHistoryById(body.clientDraftId);
@@ -387,7 +390,7 @@ export async function POST(req: Request) {
     const needsScanDisplay = prepareSavedScanDisplay(data);
     const needsCalendarSync = prepareScanCalendarSync(data, scanAttemptId);
     const calendarOrigin = needsCalendarSync ? await absoluteUrl("/") : "";
-    const row = await insertEventHistory({ userId, title, data, clientDraftId: earlyEventId || body.clientDraftId });
+    const row = await insertEventHistory({ userId, title, data, clientDraftId: earlyEventId || body.clientDraftId, publicSlug: requestedSlug?.slug });
     if (needsCalendarSync) {
       after(async () => {
         try {
@@ -469,7 +472,7 @@ export async function POST(req: Request) {
     }
     return NextResponse.json(
       { error: String(err?.message || err || "unknown error") },
-      { status: 500 }
+      { status: /event link is already in use/i.test(String(err?.message)) ? 409 : 500 }
     );
   }
 }

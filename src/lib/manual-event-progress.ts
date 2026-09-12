@@ -1,4 +1,5 @@
 import { parseCalendarDateTimeToIso } from "./calendar-date-time";
+import { normalizeFootballPageText } from "./football-page-text";
 import { replaceDraftMedia, retainDraftMedia, type EditorSnapshot } from "./template-draft-storage";
 
 const EDITOR_PATHS = new Set([
@@ -135,6 +136,20 @@ export async function saveManualEventProgress({
                 ownership: "owned",
                 createdVia: "manual",
                 createdManually: true,
+                ...(templateId === "football-season"
+                  ? {
+                      footballPageText: normalizeFootballPageText(data.footballPageText),
+                      footballHiddenSections: data.footballHiddenSections || [],
+                      pageTemplateId: saved.pageTemplateId,
+                      heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
+                      extra: data.extra || {},
+                      customFields: data.extra || {},
+                      advancedSections: saved.advancedState || {},
+                      guestPlanning: data.guestPlanning || {},
+                      rsvpEnabled: data.rsvpEnabled === true,
+                      rsvpDeadline: data.rsvpDeadline || "",
+                    }
+                  : {}),
               }),
           manualEditor: { path, snapshot: saved },
         },

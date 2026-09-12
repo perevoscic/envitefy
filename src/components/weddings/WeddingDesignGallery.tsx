@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Gem, Sparkles } from "lucide-react";
 import WeddingDesignPreview from "@/components/weddings/WeddingDesignPreview";
 import TemplateAutoLoader from "@/components/events/TemplateAutoLoader";
+import { categoryGalleryPageClassName } from "@/components/events/category-gallery-page";
+import CategoryGalleryBackdrop from "@/components/events/CategoryGalleryBackdrop";
 import { TemplateMasonryCard, TemplateMasonryGrid } from "@/components/events/TemplateMasonryGallery";
 import WeddingTemplateRunway from "@/components/weddings/WeddingTemplateRunway";
 import {
@@ -40,7 +42,7 @@ function FilterSelect({
 }) {
   return (
     <label className="flex min-w-[170px] flex-1 flex-col gap-2">
-      <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#86796d]">
+      <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#756657]">
         {label}
       </span>
       <select
@@ -91,11 +93,9 @@ export default function WeddingDesignGallery() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f7f4ef] text-[#2d2723]">
+    <main className={`${categoryGalleryPageClassName("weddings")} min-h-screen text-[#2d2723]`}>
       <section className="relative overflow-hidden border-b border-[#ded5ca] bg-[#fffcf7] px-5 py-12 text-[#2d2723] sm:px-8 lg:px-12 lg:py-16">
-        <div className="absolute -right-32 top-1/2 h-[420px] w-[420px] -translate-y-1/2 rounded-full bg-[#ead9b8]/40 blur-3xl" aria-hidden="true" />
-        <div className="absolute -left-40 -top-48 h-[420px] w-[420px] rounded-full bg-[#efddd2]/45 blur-3xl" aria-hidden="true" />
-        <div className="absolute bottom-0 left-0 h-px w-full bg-gradient-to-r from-transparent via-[#d3b47b]/30 to-transparent" aria-hidden="true" />
+        <CategoryGalleryBackdrop category="weddings" />
         <div className="relative mx-auto max-w-[1500px]">
           <Link
             href="/weddings"
@@ -127,14 +127,14 @@ export default function WeddingDesignGallery() {
         </div>
       </section>
 
-      <section className="z-20 border-b border-[#ded5ca] bg-[#f7f4ef]/94 px-5 py-5 backdrop-blur-xl sm:px-8 lg:px-12 xl:sticky xl:top-0">
+      <section className="z-20 border-b border-[#ded5ca] bg-[var(--category-gallery-background)] px-5 py-5 backdrop-blur-xl sm:px-8 lg:px-12 xl:sticky xl:top-0">
         <div className="mx-auto flex max-w-[1500px] flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <div className="flex items-center gap-2 text-sm font-semibold text-[#332c27]">
               <Sparkles className="h-4 w-4 text-[#9d7d54]" />
               {visibleDesigns.length} curated designs
             </div>
-            <p className="mt-1 text-xs text-[#7a6f66]">
+            <p className="mt-1 text-xs text-[#706358]">
               Select a design to customize your wedding invitation.
             </p>
           </div>

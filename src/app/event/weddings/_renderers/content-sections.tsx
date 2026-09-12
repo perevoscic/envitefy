@@ -22,6 +22,8 @@ export type ThemeConfig = {
 };
 
 export type EventData = {
+  customHeroImage?: string;
+  heroImageFilterEnabled?: boolean;
   /** Render-only guest controls, placed by the selected design. */
   guestTools?: ReactNode;
   headlineTitle?: string;

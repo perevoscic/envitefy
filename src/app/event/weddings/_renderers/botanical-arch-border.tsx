@@ -33,7 +33,7 @@ export default function BotanicalArchBorder({
           {theme.decorations?.heroImage && (
             <img
               src={theme.decorations.heroImage}
-              className="absolute -top-10 left-1/2 -translate-x-1/2 w-56 max-w-full opacity-90 pointer-events-none"
+              className="template-hero-image absolute -top-10 left-1/2 -translate-x-1/2 w-56 max-w-full opacity-90 pointer-events-none"
               alt=""
             />
           )}

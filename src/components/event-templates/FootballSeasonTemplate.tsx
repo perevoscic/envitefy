@@ -1,6 +1,11 @@
 // @ts-nocheck
 "use client";
 
+import { footballLink } from "@/lib/football-games";
+import FootballSchedule from "@/components/football-season-templates/FootballSchedule";
+import ScoreStreamEditor from "@/components/football-season-templates/ScoreStreamEditor";
+import ScoreStreamScoreboard from "@/components/football-season-templates/ScoreStreamScoreboard";
+import { parseScoreStreamWidget } from "@/lib/scorestream";
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 
 import React, { useEffect, useState } from "react";
@@ -36,9 +41,10 @@ type Player = {
 type Game = {
   id: string;
   opponent: string;
+  opponentMascot?: string;
   date: string;
   time: string;
-  homeAway: "home" | "away";
+  homeAway: "home" | "away" | "neutral" | "";
   venue: string;
   address: string;
   conference: boolean;
@@ -255,7 +261,7 @@ const buildPreviewTitleClass = (
 const gameScheduleSection = {
   id: "games",
   menuTitle: "Game Schedule",
-  menuDesc: "Home/away games, opponents, dates, times, results.",
+  menuDesc: "Matchups, stadiums, ticket links, directions, and results.",
   initialState: {
     games: [] as Game[],
   },
@@ -287,7 +293,7 @@ const gameScheduleSection = {
       setState((s: any) => ({
         ...s,
         games: (s?.games || []).map((g: Game) =>
-          g.id === id ? { ...g, [field]: value } : g
+          g.id === id ? { ...g, ...(field === "opponent" && value !== g.opponent ? { opponentMascot: "" } : {}), [field]: value } : g
         ),
       }));
     };
@@ -390,6 +396,8 @@ const gameScheduleSection = {
                     updateGame(game.id, "homeAway", e.target.value)
                   }
                 >
+                  <option value="">Not specified</option>
+                  <option value="neutral">Neutral site</option>
                   <option value="home">🏠 Home</option>
                   <option value="away">✈️ Away</option>
                 </select>
@@ -412,10 +420,11 @@ const gameScheduleSection = {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              <label htmlFor={`game-${game.id}-venue`} className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
                 Venue
               </label>
               <BufferedInput
+                id={`game-${game.id}-venue`}
                 className={inputClass}
                 placeholder="Panthers Stadium"
                 value={game.venue}
@@ -423,15 +432,41 @@ const gameScheduleSection = {
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                Address
+              <label htmlFor={`game-${game.id}-address`} className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                Game stadium address
               </label>
               <BufferedInput
+                id={`game-${game.id}-address`}
                 className={inputClass}
                 placeholder="123 Stadium Way, City, ST 12345"
                 value={game.address}
                 onCommit={(value) => updateGame(game.id, "address", value)}
               />
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                Include the street, city, state, and ZIP. Directions open this location; away-game mileage starts at your home stadium.
+              </p>
+            </div>
+            <div>
+              <label htmlFor={`game-${game.id}-tickets`} className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                Buy tickets URL
+              </label>
+              <BufferedInput
+                id={`game-${game.id}-tickets`}
+                type="url"
+                className={inputClass}
+                placeholder="https://tickets.example.com/this-game"
+                value={game.ticketsLink || ""}
+                onCommit={(value) => updateGame(game.id, "ticketsLink", value.trim())}
+                autoCapitalize="none"
+                autoCorrect="off"
+                aria-invalid={Boolean(game.ticketsLink && !footballLink(game.ticketsLink))}
+                aria-describedby={`game-${game.id}-tickets-help`}
+              />
+              <p id={`game-${game.id}-tickets-help`} role={game.ticketsLink && !footballLink(game.ticketsLink) ? "alert" : undefined} className={`mt-2 text-xs leading-relaxed ${game.ticketsLink && !footballLink(game.ticketsLink) ? "text-red-700" : "text-slate-500"}`}>
+                {game.ticketsLink && !footballLink(game.ticketsLink)
+                  ? "Enter a complete http or https ticket link."
+                  : "Use the official ticket page for this game. For away games, use the host school's link. Leave blank if tickets aren't available online."}
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -486,113 +521,43 @@ const gameScheduleSection = {
       </div>
     );
   },
-  renderPreview: ({
-    state,
-    textClass,
-    accentClass,
-    titleTypographyClassName,
-    sectionTitleClass,
-    sectionCardClass,
-    sectionMutedClass,
-    headingShadow,
-    bodyShadow,
-    titleColor,
-    headingFontStyle,
-  }) => {
-    const games: Game[] = state?.games || [];
-    if (games.length === 0) return null;
-    const cardClass =
-      sectionCardClass || "bg-white/5 border border-white/10 rounded-lg p-4";
-    const mutedBadgeClass =
-      sectionMutedClass || "bg-white/10 text-white/60";
-
-    const formatDate = (d: string) => {
-      if (!d) return "";
-      return parseEventGuestDate(d).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      });
-    };
-    const formatTime = (t: string) => {
-      if (!t) return "";
-      const [h, m] = t.split(":");
-      const hour = parseInt(h, 10);
-      const ampm = hour >= 12 ? "PM" : "AM";
-      const hour12 = hour % 12 || 12;
-      return `${hour12}:${m} ${ampm}`;
-    };
-
-    return (
-      <>
-        <h2
-          className={`text-2xl mb-4 ${buildPreviewTitleClass(
-            titleTypographyClassName,
-            sectionTitleClass,
-            accentClass
-          )}`}
-          style={headingFontStyle}
-        >
-          Game Schedule
-        </h2>
-        <div className="space-y-3">
-          {games.map((game) => (
-            <div key={game.id} className={cardClass}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`${mutedBadgeClass} rounded`}
-                  >
-                    {game.homeAway === "home" ? "HOME" : "AWAY"}
-                  </span>
-                  {game.conference && (
-                    <span className={`${mutedBadgeClass} rounded`}>
-                      CONF
-                    </span>
-                  )}
-                </div>
-                {game.result && (
-                  <span
-                    className={`${mutedBadgeClass} rounded px-2 py-1 text-sm font-bold`}
-                  >
-                    {game.result} {game.score}
-                  </span>
-                )}
-              </div>
-              <div
-                className={`font-semibold text-lg ${textClass}`}
-                style={bodyShadow}
-              >
-                vs {game.opponent || "TBD"}
-              </div>
-              <div
-                className={`text-sm opacity-70 ${textClass}`}
-                style={bodyShadow}
-              >
-                {formatDate(game.date)} • {formatTime(game.time)} •{" "}
-                {game.venue || "TBD"}
-              </div>
-            </div>
-          ))}
-        </div>
-      <div className="mt-4 flex items-center gap-4 text-sm opacity-70" style={bodyShadow}>
-        <span className={textClass}>
-          {games.filter((g) => g.result === "W").length}W
-        </span>
-          <span className={textClass}>
-            {games.filter((g) => g.result === "L").length}L
-          </span>
-          <span className={textClass}>
-            {games.filter((g) => !g.result).length} Upcoming
-          </span>
-        </div>
-      </>
-    );
+  renderPreview: ({ state, teamName, teamMascot, season, homeVenue, homeAddress, timezone, sectionCardClass, textClass, headingFontStyle, titleTypographyClassName, sectionTitleClass, accentClass }) => {
+    if (!state?.games?.length) return null;
+    return <div className={textClass}>
+      <h2 className={`mb-4 text-2xl ${buildPreviewTitleClass(titleTypographyClassName, sectionTitleClass, accentClass)}`} style={headingFontStyle}>Game Schedule</h2>
+      <FootballSchedule games={state.games} teamName={teamName} teamMascot={teamMascot} season={season} homeVenue={homeVenue} homeAddress={homeAddress} timezone={timezone} cardClassName={sectionCardClass} />
+    </div>;
   },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SECTION 2: TEAM ROSTER
 // ═══════════════════════════════════════════════════════════════════════════
+
+const liveScoresSection = {
+  id: "scores",
+  menuTitle: "Live scores",
+  menuDesc: "Choose statewide high-school scores or connect your team's scoreboard.",
+  initialState: { scorestreamWidgetUrl: "" },
+  renderEditor: ({ state, setState }) => (
+    <ScoreStreamEditor
+      value={typeof state?.scorestreamWidgetUrl === "string" ? state.scorestreamWidgetUrl : ""}
+      onChange={(scorestreamWidgetUrl: string) =>
+        setState((previous) => ({ ...previous, scorestreamWidgetUrl }))
+      }
+    />
+  ),
+  renderPreview: ({ state, textClass, headingFontStyle, titleTypographyClassName, sectionTitleClass, accentClass }) => {
+    const widget = parseScoreStreamWidget(state?.scorestreamWidgetUrl);
+    if (!widget) return null;
+    return (
+      <div className={textClass}>
+        <h2 className={`mb-4 text-2xl ${buildPreviewTitleClass(titleTypographyClassName, sectionTitleClass, accentClass)}`} style={headingFontStyle}>Live scores</h2>
+        <ScoreStreamScoreboard value={widget.url} />
+      </div>
+    );
+  },
+};
 
 const rosterSection = {
   id: "roster",
@@ -1381,10 +1346,10 @@ const logisticsSection = {
             </label>
             <select
               className={inputClass}
-              value={info.travelMode || "bus"}
+              value={info.travelMode || ""}
               onChange={(e) => updateField("travelMode", e.target.value)}
             >
-              <option value="bus">🚌 Team Bus</option>
+              <option value="">Not specified</option><option value="bus">Team bus</option>
               <option value="parent_drive">🚗 Parent Drive</option>
               <option value="carpool">🚙 Carpool</option>
               <option value="other">Other</option>
@@ -1467,141 +1432,24 @@ const logisticsSection = {
       </div>
     );
   },
-  renderPreview: ({
-    state,
-    textClass,
-    accentClass,
-    titleTypographyClassName,
-    sectionTitleClass,
-    sectionCardClass,
-    sectionMutedClass,
-    headingShadow,
-    bodyShadow,
-    titleColor,
-    headingFontStyle,
-  }) => {
-    const info: LogisticsInfo = state || {};
-    const hasData = info.travelMode || info.callTime || info.weatherPolicy;
-    if (!hasData) return null;
-    const cardClass =
-      sectionCardClass || "bg-white/5 border border-white/10 rounded-lg p-4";
-    const mutedBadgeClass =
-      sectionMutedClass || "bg-white/10 text-white/60";
-
-    const formatTime = (t: string) => {
-      if (!t) return "";
-      const [h, m] = t.split(":");
-      const hour = parseInt(h, 10);
-      const ampm = hour >= 12 ? "PM" : "AM";
-      const hour12 = hour % 12 || 12;
-      return `${hour12}:${m} ${ampm}`;
-    };
-    const modeIcon = {
-      bus: "🚌",
-      parent_drive: "🚗",
-      carpool: "🚙",
-      other: "🚐",
-    };
-
-    return (
-      <>
-        <h2
-          className={`text-2xl mb-4 ${buildPreviewTitleClass(
-            titleTypographyClassName,
-            sectionTitleClass,
-            accentClass
-          )}`}
-          style={headingFontStyle}
-        >
-          Travel & Logistics
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-          {info.travelMode && (
-            <div className={`${cardClass} p-3 text-center`}>
-              <div className="text-2xl">
-                {modeIcon[info.travelMode] || "🚐"}
-              </div>
-              <div
-                className={`text-sm opacity-70 ${textClass}`}
-                style={bodyShadow}
-              >
-                {info.travelMode === "bus"
-                  ? "Team Bus"
-                  : info.travelMode === "parent_drive"
-                  ? "Parent Drive"
-                  : info.travelMode === "carpool"
-                  ? "Carpool"
-                  : "Other"}
-              </div>
-            </div>
-          )}
-          {info.callTime && (
-            <div className={`${cardClass} p-3 text-center`}>
-              <div
-                className={`text-xs uppercase tracking-wide opacity-70 ${textClass}`}
-                style={bodyShadow}
-              >
-                Call Time
-              </div>
-              <div
-                className={`text-lg font-bold ${textClass}`}
-                style={bodyShadow}
-              >
-                {formatTime(info.callTime)}
-              </div>
-            </div>
-          )}
-          {info.departureTime && (
-            <div className={`${cardClass} p-3 text-center`}>
-              <div
-                className={`text-xs uppercase tracking-wide opacity-70 ${textClass}`}
-                style={bodyShadow}
-              >
-                Departure
-              </div>
-              <div
-                className={`text-lg font-bold ${textClass}`}
-                style={bodyShadow}
-              >
-                {formatTime(info.departureTime)}
-              </div>
-            </div>
-          )}
-        </div>
-        {info.pickupWindow && (
-          <div
-            className={`text-sm opacity-80 mb-3 ${textClass}`}
-            style={bodyShadow}
-          >
-            📍 {info.pickupWindow}
-          </div>
-        )}
-        {info.mealPlan && (
-          <div
-            className={`text-sm opacity-80 mb-3 ${textClass}`}
-            style={bodyShadow}
-          >
-            🍽️ {info.mealPlan}
-          </div>
-        )}
-        {info.weatherPolicy && (
-          <div className={`${mutedBadgeClass} mt-4 rounded-lg p-4`}>
-            <h3
-              className={`font-semibold mb-2 ${textClass}`}
-              style={bodyShadow}
-            >
-              ⛈️ Weather Policy
-            </h3>
-            <p
-              className={`text-sm opacity-80 whitespace-pre-wrap ${textClass}`}
-              style={bodyShadow}
-            >
-              {info.weatherPolicy}
-            </p>
-          </div>
-        )}
-      </>
-    );
+  renderPreview: ({ state, textClass, sectionCardClass, headingFontStyle, titleTypographyClassName, sectionTitleClass, accentClass }) => {
+    const labels = { travelMode: "Travel", callTime: "Call time", departureTime: "Departure", pickupWindow: "Pickup", hotelName: "Hotel", hotelAddress: "Hotel address", mealPlan: "Meals", weatherPolicy: "Weather policy", parking: "Parking", broadcast: "Broadcast", ticketsLink: "Tickets" };
+    const facts = Object.entries(labels).flatMap(([key, label]) => {
+      const value = typeof state?.[key] === "string" ? state[key].trim() : "";
+      if (!value) return [];
+      const formatted = key === "travelMode" ? ({ bus: "Team bus", parent_drive: "Parent drive", carpool: "Carpool", other: "Other" })[value] || value : value;
+      return [{ key, label, value: formatted }];
+    });
+    const notes = (Array.isArray(state?.notes) ? state.notes : []).filter((note) => typeof note === "string" && note.trim());
+    if (!facts.length && !notes.length) return null;
+    return <div className={textClass}>
+      <h2 className={`mb-4 text-2xl ${buildPreviewTitleClass(titleTypographyClassName, sectionTitleClass, accentClass)}`} style={headingFontStyle}>Travel & Logistics</h2>
+      {facts.length ? <div className="grid gap-3 sm:grid-cols-2">{facts.map(({ key, label, value }) => <div key={key} className={sectionCardClass}>
+        <h3 className="text-sm font-semibold">{label}</h3>
+        {key === "ticketsLink" && footballLink(value) ? <a href={footballLink(value)} target="_blank" rel="noreferrer noopener" className="mt-2 inline-flex min-h-11 items-center underline underline-offset-4">Get tickets</a> : <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{value}</p>}
+      </div>)}</div> : null}
+      {notes.map((note) => <p key={note} className="mt-3 text-sm leading-relaxed">{note}</p>)}
+    </div>;
   },
 };
 
@@ -2245,10 +2093,10 @@ const config: SimpleTemplateConfig = {
   category: "sport_football_season",
   categoryLabel: "Football Season",
   themesExpandedByDefault: true,
-  defaultHero: "/templates/hero-images/football-hero.jpeg",
+  defaultHero: "/images/football/templates/launchpad-editorial.webp",
   detailFields: [
     { key: "team", label: "Team Name", placeholder: "Varsity Panthers" },
-    { key: "season", label: "Season", placeholder: "Fall 2025" },
+    { key: "season", label: "Season", placeholder: "Fall season" },
     {
       key: "league",
       label: "League / Conference",
@@ -2273,11 +2121,10 @@ const config: SimpleTemplateConfig = {
     },
   ],
   prefill: {
-    title: "Panthers Football 2025",
+    title: "Panthers Football",
     details:
-      "Welcome to the 2025 Football Season! This page has everything players and parents need - game schedule, practice times, equipment list, travel info, and volunteer sign-ups. Go Panthers! 🏈",
-    hero: "/templates/hero-images/football-hero.jpeg",
-    date: "2025-11-30",
+      "Welcome to football season! This page has everything players and parents need - game schedule, practice times, equipment list, travel info, and volunteer sign-ups. Go Panthers! 🏈",
+    hero: "/images/football/templates/launchpad-editorial.webp",
     time: "14:00",
     city: "Chicago",
     state: "IL",
@@ -2285,7 +2132,7 @@ const config: SimpleTemplateConfig = {
     rsvpEnabled: false,
     extra: {
       team: "Varsity Panthers",
-      season: "Fall 2025",
+      season: "Fall season",
       league: "Metro Conference",
       headCoach: "Coach Johnson",
       stadium: "Panthers Field",
@@ -2498,6 +2345,7 @@ const config: SimpleTemplateConfig = {
   ],
   advancedSections: [
     gameScheduleSection,
+    liveScoresSection,
     rosterSection,
     practiceSection,
     logisticsSection,
@@ -2510,6 +2358,7 @@ const config: SimpleTemplateConfig = {
 export {
   config,
   gameScheduleSection,
+  liveScoresSection,
   rosterSection,
   practiceSection,
   logisticsSection,

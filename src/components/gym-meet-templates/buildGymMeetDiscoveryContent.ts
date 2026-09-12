@@ -1420,7 +1420,12 @@ export function buildGymMeetDiscoveryContent({
   address?: string;
 }): GymMeetDiscoveryContent {
   eventData = inflateGymDiscoveryV2EventData(eventData);
-  const logistics = advancedSections?.logistics || {};
+  const hasSectionLayout = eventData?.sectionLayout?.version === 1;
+  const sourceLogistics = advancedSections?.logistics || {};
+  const logistics = hasSectionLayout ? {
+    ...sourceLogistics,
+    hotelInfo: sourceLogistics.hotelInfo || [sourceLogistics.hotelName, sourceLogistics.hotelAddress, sourceLogistics.hotelCheckIn ? `Check-in: ${sourceLogistics.hotelCheckIn}` : ""].filter(Boolean).join(". "),
+  } : sourceLogistics;
   const meetSection = advancedSections?.meet || {};
   const gearSection = advancedSections?.gear || {};
   const coachesSection = advancedSections?.coaches || {};
@@ -1526,7 +1531,9 @@ export function buildGymMeetDiscoveryContent({
     ? eventData.discoverySource.parseResult.admission
     : [];
   const rawAdmissionCards =
-    parseResultAdmission.length > 0
+    hasSectionLayout && safeString(customFields?.admission)
+      ? parseAdmissionsFromText(customFields.admission)
+      : parseResultAdmission.length > 0
       ? parseResultAdmission.map((item: any) => ({
           label: item?.label || "Admission",
           price: safeString(item?.price || ""),
@@ -1622,6 +1629,58 @@ export function buildGymMeetDiscoveryContent({
   const gymLayoutLabelValue = gymLayoutLabel
     ? gymLayoutLabel.replace(/^assigned gym location:\s*/i, "").trim() || gymLayoutLabel
     : "";
+
+  const composeSections = (sections: GymMeetDiscoverySection[]): GymMeetDiscoverySection[] => {
+    if (!hasSectionLayout) return sections;
+    const composed = sections.map((section) => ({ ...section, blocks: [...section.blocks] }));
+    const put = (id: string, label: string, blocks: GymMeetDiscoverySection["blocks"]) => {
+      const index = composed.findIndex((section) => section.id === id);
+      const section = { id, label, kind: id, priority: index >= 0 ? composed[index].priority : 80, hasContent: true, blocks };
+      if (index >= 0) composed[index] = section;
+      else composed.push(section);
+    };
+    const overview = composed.find((section) => section.id === "meet-details");
+    const importedUpdates = overview?.blocks.find((block) => block.id === "announcements");
+    if (overview) overview.blocks = overview.blocks.filter((block) => block.id !== "announcements");
+    const authoredUpdates = normalizeAnnouncementCards(advancedSections?.announcements?.announcements || advancedSections?.announcements?.items || [], "builder");
+    if (authoredUpdates.length) put("announcements", "Updates", [{ id: "announcement-cards", type: "card-grid", columns: 2, cards: authoredUpdates }]);
+    else if (importedUpdates) put("announcements", "Updates", [importedUpdates]);
+
+    const documents = sourceLogistics.showAdditionalDocuments !== false && Array.isArray(sourceLogistics.additionalDocuments)
+      ? uniqueLinks(sourceLogistics.additionalDocuments.map((item: any) => ({ label: item.name || "Document", url: item.url })), 24)
+      : [];
+    if (documents.length) {
+      const existing = composed.find((section) => section.id === "documents");
+      const links = uniqueLinks([...documents, ...(existing?.blocks.flatMap((block) => block.type === "link-list" ? block.links : []) || [])], 24);
+      put("documents", "Documents & links", [{ id: "document-links", type: "link-list", links }]);
+    }
+    if (safeString(meetSection.scoresLink)) {
+      const results = composed.find((section) => section.id === "results");
+      const links = uniqueLinks([{ label: "Results & live scoring", url: meetSection.scoresLink }], 1);
+      if (links.length && !(JSON.stringify(results?.blocks) || "").includes(meetSection.scoresLink)) {
+        put("results", "Results", [...(results?.blocks || []), { id: "authored-results-link", type: "link-list", links }]);
+      }
+    }
+    if (safeString(sourceLogistics.hotelName) && sourceLogistics.showAccommodations !== false) {
+      put("hotels", "Hotels", [{ id: "authored-hotel", type: "text", text: logistics.hotelInfo }]);
+    }
+    if (safeString(sourceLogistics.parking) || safeString(sourceLogistics.trafficAlerts)) {
+      const travel = composed.find((section) => section.id === "traffic-parking");
+      put("traffic-parking", "Travel & parking", [
+        ...(safeString(sourceLogistics.parking) ? [{ id: "authored-parking", type: "text" as const, title: "Parking & arrival", text: safeString(sourceLogistics.parking) }] : []),
+        ...(safeString(sourceLogistics.trafficAlerts) ? [{ id: "authored-traffic", type: "text" as const, title: "Traffic & travel", text: safeString(sourceLogistics.trafficAlerts) }] : []),
+        ...(travel?.blocks.filter((block) => block.type === "map" || block.type === "link-list") || []),
+      ]);
+    }
+    // Imported pages keep their curated public sections. Coaches become available only
+    // when the owner explicitly adds their own coaching information to the page.
+    if (isPublicPageV2 && eventData.sectionLayout.added?.includes("coaches")) {
+      const authored = buildGymMeetDiscoveryContent({ eventData: { sectionLayout: eventData.sectionLayout }, customFields: {}, advancedSections: { coaches: coachesSection } });
+      const coaches = authored.sections.find((section) => section.id === "coaches");
+      if (coaches) put("coaches", "Coaches", coaches.blocks);
+    }
+    return composed.filter((section) => section.blocks.length > 0);
+  };
 
   if (isPublicPageV2) {
     const fallbackMeetDetailsBody = [
@@ -1742,7 +1801,9 @@ export function buildGymMeetDiscoveryContent({
       meta: "Getting oriented",
     });
     const admissionCardsNormalized = mergeAdmissionVariants(
-      Array.isArray(parseResult?.admission) && parseResult.admission.length > 0
+      hasSectionLayout && safeString(customFields?.admission)
+        ? admissionCards
+        : Array.isArray(parseResult?.admission) && parseResult.admission.length > 0
         ? [...parseResult.admission, ...recoveredAdmissionMatrixCards]
         : rawAdmissionCards,
     );
@@ -1762,7 +1823,7 @@ export function buildGymMeetDiscoveryContent({
         meta: "Know before you go",
       },
     );
-    const resultLinks = selectSectionResourceLinks(resourceLinks, "results", 8);
+    const resultLinks = uniqueLinks([...selectSectionResourceLinks(resourceLinks, "results", 8), ...(hasSectionLayout && safeString(meetSection.scoresLink) ? [{ label: "Results & live scoring", url: meetSection.scoresLink }] : [])], 12);
     const hotelLinks = selectSectionResourceLinks(resourceLinks, "hotels", 8);
     const publicTravelHotelCards = buildStructuredHotelCards(
       effectivePublicSections?.travel?.items,
@@ -1845,10 +1906,10 @@ export function buildGymMeetDiscoveryContent({
         tone: "warning",
       }),
     ].filter(Boolean);
-    const documentLinks =
+    const documentLinks = uniqueLinks([...(hasSectionLayout && sourceLogistics.showAdditionalDocuments !== false && Array.isArray(sourceLogistics.additionalDocuments) ? sourceLogistics.additionalDocuments.map((item: any) => ({ label: item.name || "Document", url: item.url })) : []), ...(
       effectivePublicSections?.documents?.visibility === "visible"
         ? uniqueLinks(effectivePublicSections.documents.links, 12)
-        : [];
+        : [])], 24);
     const resultsBody = safeString(meetSection?.resultsInfo || parseMeetDetails?.resultsInfo);
     const announcementCards = uniqueBy(
       [
@@ -2050,7 +2111,6 @@ export function buildGymMeetDiscoveryContent({
         kind: "documents",
         priority: 70,
         hasContent:
-          safeString(effectivePublicSections?.documents?.visibility) === "visible" &&
           documentLinks.length > 0,
         blocks:
           documentLinks.length > 0
@@ -2084,7 +2144,7 @@ export function buildGymMeetDiscoveryContent({
       },
     ].filter((section) => section.hasContent);
 
-    return { sections };
+    return { sections: composeSections(sections) };
   }
 
   const isVenueHeaderNoiseLine = (line: string) =>
@@ -4053,10 +4113,10 @@ export function buildGymMeetDiscoveryContent({
       ],
     },
   ]
-    .filter((section) => section.id !== "coaches")
+    .filter((section) => eventData?.sectionLayout?.version === 1 || section.id !== "coaches")
     .filter((section) => section.hasContent);
 
   return {
-    sections: mergeSparseDiscoverySections(sections),
+    sections: hasSectionLayout ? composeSections(sections) : mergeSparseDiscoverySections(sections),
   };
 }

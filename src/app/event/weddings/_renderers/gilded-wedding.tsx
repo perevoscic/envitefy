@@ -251,7 +251,7 @@ export default function GildedWedding({ theme, event }: Props) {
           <img
             src={heroImage}
             alt="Venue"
-            className="w-full h-full object-cover opacity-20 sepia-[.3]"
+            className="template-hero-image w-full h-full object-cover opacity-20 sepia-[.3]"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-[#FDFBF7]/10 via-white/50 to-white"></div>
         </div>

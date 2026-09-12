@@ -2,7 +2,17 @@
 
 Saved from the user's production decisions on September 5, 2026. These are defaults for future Envitefy videos; a specific request can override them.
 
+## OpenAI and Remotion; Gemini for small text calls only — September 12, 2026
+
+The user clarified that production should use OpenAI and Remotion, with Gemini only for small calls. Use OpenAI for generated assets and substantive AI work. Use Remotion for animation, editing, composition, transitions, captions and rendering. OpenAI-generated stills, supplied or existing local media, and real product captures can be animated and assembled in Remotion. Do not default to paid Google-generated footage. If a requested OpenAI capability is unavailable, explain the specific limitation rather than substituting Google.
+
+Gemini is allowed only for occasional small text calls. Conservative studio limits are 4,000 total input characters, 256 output tokens and one candidate on a Flash text model. Send plain text only, with no media, tools or cached context, and no increased thinking budget. Do not batch these calls into heavy workloads or add automatic retries. Google/Gemini/Vertex video and image generation, Lyria music, and uploaded audio/video analysis, transcription and bulk reviews remain prohibited. Existing local footage, audio and exports can be reused.
+
+This clarification supersedes the initial blanket Google ban and historical Google provider/recovery instructions elsewhere. The engine and legacy callers use `scripts/provider-policy.mjs`; new studio network code must use its guarded fetch. Neither credentials nor `--allow-paid` override the heavy-work block. The app's separate Calendar, Maps and Vision OCR integrations are outside this video restriction.
+
 ## Professional production workflow reset — September 11, 2026
+
+The initial directed workflow is implemented. For commands, record ownership, cold-review isolation and recovery behavior, use the [directed workflow reference](.agents/skills/envitefy-video-producer/references/directed-workflow.md). New campaigns use `init --directed`; previous campaigns remain intact until explicitly adopted.
 
 Audience evidence received September 11: [one supplied public comment](projects/audience-feedback-2026-09-11.md) explicitly links perceived AI-ad quality to reduced product trust. Its campaign/version is unknown and it is not a measure of wider sentiment. During the unprimed editorial review, after unaided interpretation, ask whether the presentation makes Envitefy feel credible and well made, and what undermines confidence. Do not show the comment first or steer the verdict.
 
@@ -55,7 +65,7 @@ The workflow remains internal during an authorized production task. It does not 
 - The user rejected narration that obviously sounds synthetic. Natural delivery matters more than using a particular provider. Use a polished, conversational advertising read with natural pauses; extend the edit when needed instead of rushing or speeding up narration (reaffirmed September 10, 2026).
 - Narration is optional, not prohibited. Choose spoken narration, dialogue, music, ambience, and sound effects to serve the story; do not restrict a requested longer video to the old short script.
 - For speech, the existing ElevenLabs narration pipeline is available. Audition a short sample and adjust voice, writing, timing, and delivery before generating the full track when a new voice is needed. Do not default to the old Intro voice simply because it is configured.
-- For the established Host Mode style, original music, ambient party sound, and timed notification effects worked without scripted narration. Google Lyria supplied that instrumental. Provider availability and account access are operational facts to check when needed, not permanent creative limits.
+- For the established Host Mode style, original music, ambient party sound, and timed notification effects worked without scripted narration. Google Lyria supplied that historical instrumental; new Google requests are prohibited under the September 12 provider rule. Reuse existing local music or another authorized source.
 - Initialisms such as RSVP should flow naturally without exaggerated pauses between letters (September 11, 2026); keep the surrounding explanation conversational.
 - Preserve intelligibility, natural pauses, and clean transitions. Match captions to actual speech when speech is used; never cut a spoken sentence merely to hit an arbitrary target duration.
 
@@ -97,6 +107,7 @@ Standing preference (September 11, 2026, clarified): the user reviews the finish
 When feedback describes a lasting preference, update the relevant section above in the same task and add a short dated entry below. Keep one current statement per preference. Preserve scene-specific requests in the relevant campaign's feedback record.
 
 Preference history:
+- 2026-09-12: User clarified OpenAI for substantive AI/assets and Remotion for animation/editing/rendering. Allow Gemini only for small bounded text calls; block Google generation, music, uploaded-media reviews and bulk processing. This supersedes the initial blanket ban.
 - 2026-09-11: Future-video feedback: "Looks good but the screens go so quick it's hard to follow." Slow down demos, give each screen/action/result readable dwell time, and check first-watch comprehension during review.
 - 2026-09-11: User requires a minimum of 10 popular, relevant hashtags/tags with every post for every platform; current popularity research and honest ranking claims remain required.
 - 2026-09-11: Added ad creative as the producer's concept/script/storyboard stage, with direct use for written creative work and the existing brief-to-production handoff. Production-only revisions reuse saved decisions.

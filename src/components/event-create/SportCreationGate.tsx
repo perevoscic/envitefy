@@ -55,6 +55,10 @@ export default function SportCreationGate({
 
   useEffect(() => {
     if (!activeSport) return;
+    if (surface === "sports" && activeSport === "football") {
+      router.replace(buildSportCreationHref(activeSport));
+      return;
+    }
     if (surface === "gymnastics" && activeSport !== "gymnastics") {
       const href = buildSportCreationHref(activeSport);
       const separator = href.includes("?") ? "&" : "?";
@@ -210,7 +214,7 @@ export default function SportCreationGate({
     );
   }
 
-  if (!activeSport || (surface === "gymnastics") !== (activeSport === "gymnastics")) {
+  if (!activeSport || (surface === "sports" && activeSport === "football") || (surface === "gymnastics") !== (activeSport === "gymnastics")) {
     return (
       <main className="min-h-screen bg-[#f8f8fb] px-4 pb-12 pt-24 sm:px-6 lg:pt-12">
         <div className="mx-auto h-32 max-w-5xl animate-pulse rounded-[2rem] bg-white/80" />

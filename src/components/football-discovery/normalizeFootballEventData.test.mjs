@@ -2,6 +2,116 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { normalizeFootballEventData } from "./normalizeFootballEventData.mjs";
 
+test("saved section removals hide content and tabs without losing data needed to restore", () => {
+  const original = {
+    title: "Falcons Football",
+    extra: { team: "Falcons", stadium: "Home Field" },
+    rsvpEnabled: true,
+    accessControl: { requirePasscode: true, mode: "access-code" },
+    advancedSections: {
+      games: { games: [{ id: "g1", opponent: "Owls", homeAway: "home" }] },
+      scores: { scorestreamWidgetUrl: "https://scorestream.com/widgets/scoreboards/vert?userWidgetId=5926" },
+      roster: { players: [{ id: "p1", name: "Taylor", jerseyNumber: "8" }] },
+      practice: { blocks: [{ id: "b1", day: "Monday", focus: "Footwork" }] },
+      logistics: { travelMode: "Team bus" },
+      gear: { items: [{ name: "Helmet" }] },
+      volunteers: { slots: [{ id: "v1", role: "Concessions" }] },
+      announcements: { items: [{ id: "a1", text: "Welcome to the season" }] },
+    },
+  };
+  const baseline = normalizeFootballEventData({ eventData: original });
+  assert.equal(baseline.navItems.length, 10);
+  for (const id of ["details", "games", "scores", "roster", "practice", "logistics", "gear", "volunteers", "announcements", "rsvp"]) {
+    const saved = JSON.parse(JSON.stringify({ ...original, footballHiddenSections: [id] }));
+    const model = normalizeFootballEventData({ eventData: saved });
+    const publicId = id === "rsvp" ? "attendance" : id;
+    assert.equal(model.sections.some((section) => section.id === publicId), false, id);
+    assert.equal(model.navItems.some((section) => section.id === publicId), false, id);
+    assert.equal(model.navItems.length, baseline.navItems.length - 1);
+    if (id === "details") assert.deepEqual(model.summaryItems, []);
+    if (id === "rsvp") assert.equal(model.attendance.visible, false);
+    assert.deepEqual(saved.advancedSections, original.advancedSections);
+    assert.deepEqual(saved.accessControl, original.accessControl);
+    assert.equal(model.teamName, "Falcons");
+    saved.footballHiddenSections = [];
+    assert.deepEqual(normalizeFootballEventData({ eventData: saved }), baseline);
+  }
+});
+
+test("section visibility handles old records and imported fallback data", () => {
+  const original = {
+    discoverySource: { parseResult: {
+      games: [{ id: "g1", opponent: "Owls" }],
+      roster: { players: [{ id: "p1", name: "Taylor" }] },
+    } },
+  };
+  const baseline = normalizeFootballEventData({ eventData: original });
+  for (const malformed of [undefined, null, "games", {}, ["hero", "__proto__", 3, {}]]) {
+    assert.deepEqual(normalizeFootballEventData({ eventData: { ...original, footballHiddenSections: malformed } }), baseline);
+  }
+  const model = normalizeFootballEventData({ eventData: {
+    ...original, footballHiddenSections: ["games", "games", "roster"],
+  } });
+  assert.deepEqual(model.navItems, []);
+  assert.equal(model.sections.some((section) => section.id === "games" || section.id === "roster"), false);
+  assert.equal(original.discoverySource.parseResult.roster.players[0].name, "Taylor");
+});
+
+test("a saved ScoreStream widget adds live scores without needing imported games", () => {
+  const saved = JSON.parse(JSON.stringify({
+    customFields: { advancedSections: { scores: {
+      scorestreamWidgetUrl: "https://scorestream.com/widgets/scoreboards/vert?userWidgetId=5926",
+    } } },
+  }));
+  const model = normalizeFootballEventData({ eventData: saved, eventTitle: "Football" });
+  assert.deepEqual(model.navItems, [{ id: "scores", label: "Live scores" }]);
+  assert.equal(model.sections.find((section) => section.id === "scores").scorestreamWidgetUrl,
+    saved.customFields.advancedSections.scores.scorestreamWidgetUrl);
+  assert.equal(model.sections.find((section) => section.id === "games").hasContent, false);
+});
+
+test("removing or invalidating a ScoreStream link hides the published section", () => {
+  for (const value of ["", undefined, "https://evil.test/widgets/scoreboards/vert?userWidgetId=5926"]) {
+    const model = normalizeFootballEventData({
+      eventData: { advancedSections: { scores: { scorestreamWidgetUrl: value } } },
+      eventTitle: "Football",
+    });
+    assert.deepEqual(model.navItems, []);
+    assert.equal(model.sections.find((section) => section.id === "scores").scorestreamWidgetUrl, "");
+  }
+});
+
+test("published team summaries and matchups use the mascot already present in the title", () => {
+  const model = normalizeFootballEventData({
+    eventTitle: "South Walton Seahawks Football",
+    eventData: {
+      customFields: { team: "South Walton High School Football" },
+      advancedSections: { games: { games: [{ id: "game-1", opponent: "Fort Walton Beach", homeAway: "away" }] } },
+    },
+  });
+  assert.equal(model.teamName, "South Walton Seahawks");
+  assert.equal(model.summaryItems.find((item) => item.label === "Team").value, model.teamName);
+  assert.equal(model.sections.find((section) => section.id === "games").cards[0].title, "Seahawks at Vikings");
+});
+
+test("published matchups preserve source-provided multiword mascots", () => {
+  const model = normalizeFootballEventData({
+    eventData: {
+      customFields: { team: "St. Patrick", teamMascot: "Fighting Irish" },
+      advancedSections: { games: { games: [{ id: "game-1", opponent: "Bayview", opponentMascot: "Tigers", homeAway: "home" }] } },
+    },
+  });
+  assert.equal(model.teamName, "St. Patrick");
+  assert.equal(model.teamMascot, "Fighting Irish");
+  assert.equal(model.sections.find((section) => section.id === "games").cards[0].title, "Fighting Irish vs Tigers");
+  const edited = normalizeFootballEventData({ eventData: {
+    customFields: { team: "New School", teamMascot: "" },
+    discoverySource: { parseResult: { homeTeam: "St. Patrick", homeMascot: "Fighting Irish" } },
+    advancedSections: { games: { games: [{ id: "game-1", opponent: "Bayview", opponentMascot: "Tigers", homeAway: "away" }] } },
+  } });
+  assert.equal(edited.sections.find((section) => section.id === "games").cards[0].title, "New School at Tigers");
+});
+
 test("normalizeFootballEventData preserves football discovery sections and visibility", () => {
   const model = normalizeFootballEventData({
     eventTitle: "Panthers Football",
@@ -116,6 +226,7 @@ test("normalizeFootballEventData preserves football discovery sections and visib
   assert.deepEqual(
     model.navItems.map((item) => item.label),
     [
+      "Details",
       "Game Schedule",
       "Team Roster",
       "Practice Schedule",

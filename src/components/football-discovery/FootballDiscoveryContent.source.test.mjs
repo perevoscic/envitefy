@@ -29,11 +29,11 @@ test("football public renderer uses saved template chrome and keeps the legacy f
     "src/components/football-discovery/FootballDiscoveryContent.tsx"
   );
 
-  assert.match(source, /templateChrome\.titleTypography\.heroClassName/);
+  assert.match(source, /FootballHero/);
   assert.match(source, /templateChrome\.navShellClass/);
-  assert.match(source, /templateChrome\.sectionClass/);
+  assert.match(source, /FootballPageContent sections=\{sections\} tabs=\{sectionTabs\} chrome=\{templateChrome\}/);
   assert.match(source, /data-page-template-id/);
-  assert.match(source, /EventActions/);
+  assert.match(source, /FootballPageActions/);
   assert.match(source, /EventDeleteModal/);
   assert.match(source, /buildEditLink/);
   assert.match(source, /Football discovery/);

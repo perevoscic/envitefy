@@ -109,3 +109,21 @@
     transition: none;
   }
 }
+
+/* Editor sidebars keep two compact columns at every browser width. */
+.masonry[data-compact] {
+  --tile-gap: 0.75rem;
+  columns: 2;
+}
+
+.masonry[data-compact] .tile {
+  --tile-radius: 1rem;
+  --tile-inset: 0.25rem;
+}
+
+.masonry[data-compact] .selected {
+  right: 0.5rem;
+  bottom: 0.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
+}

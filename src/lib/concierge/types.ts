@@ -317,6 +317,7 @@ export type ConciergeWeatherContext = {
 };
 
 export type ConciergeEventDraft = {
+  scanSchedule?: import("../scan-schedule.ts").ScanSchedule | null;
   readiness?: import("./readiness.ts").CreationReadiness;
   /** Latest explicit corrections, kept separately from the immutable upload evidence. */
   sourceResolutions?: Record<string, string>;
@@ -424,6 +425,7 @@ export type CreationThreadSummary = {
 };
 
 export type ConciergeOcrContext = {
+  scanSchedule?: import("../scan-schedule.ts").ScanSchedule | null;
   ocrText?: string | null;
   sourceEvidence?: SourceEvidence | null;
   fieldsGuess?: Record<string, unknown> | null;

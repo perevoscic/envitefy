@@ -1,0 +1,77 @@
+/* One page color per category. :has keeps app chrome in sync without navigation effects. */
+:global(html):has(.football) {
+  --category-gallery-background: #eaf3e6;
+}
+:global(html):has(.soccer) {
+  --category-gallery-background: #e8f4ed;
+}
+:global(html):has(.gymnastics) {
+  --category-gallery-background: #f0ebf8;
+}
+:global(html):has(.cheerleading) {
+  --category-gallery-background: #fbedf1;
+}
+:global(html):has(.dance-ballet) {
+  --category-gallery-background: #f8edf2;
+}
+:global(html):has(.birthdays) {
+  --category-gallery-background: #fff3da;
+}
+:global(html):has(.weddings) {
+  --category-gallery-background: #f5f1e6;
+}
+:global(html):has(.anniversaries) {
+  --category-gallery-background: #f9ebe7;
+}
+:global(html):has(.bridal-showers) {
+  --category-gallery-background: #fbebf1;
+}
+:global(html):has(.baby-showers) {
+  --category-gallery-background: #f4f3e3;
+}
+:global(html):has(.gender-reveal) {
+  --category-gallery-background: #eef3fb;
+}
+:global(html):has(.sport-events) {
+  --category-gallery-background: #eaf2fb;
+}
+:global(html):has(.appointments) {
+  --category-gallery-background: #eaf6f3;
+}
+:global(html):has(.open-house) {
+  --category-gallery-background: #f4eee3;
+}
+:global(html):has(.workshops) {
+  --category-gallery-background: #fbf0e2;
+}
+:global(html):has(.signup-forms) {
+  --category-gallery-background: #eeeffb;
+}
+:global(html):has(.general) {
+  --category-gallery-background: #f1edfa;
+}
+:global(html):has(.special-events) {
+  --category-gallery-background: #edf1fb;
+}
+
+.page {
+  background-color: var(--category-gallery-background, #fbf8f5);
+}
+
+:global(html):has(.page),
+:global(html):has(.page) :global(body) {
+  background-color: var(--category-gallery-background);
+  background-image: none;
+}
+
+:global(html):has(.page) :global(body)::before,
+:global(html):has(.page) :global(body)::after,
+:global(html):has(.page) :global([data-app-mobile-topbar="app"]),
+:global(html):has(.page) :global([data-app-main-content="true"]) {
+  background: var(--category-gallery-background);
+}
+
+:global(html):has(.page)
+  :global([data-app-main-content="true"] > [data-project-gradient-background="true"]) {
+  display: none;
+}

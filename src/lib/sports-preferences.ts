@@ -53,7 +53,7 @@ export function normalizeSportPreferences(value: unknown): SportPreferences {
 }
 
 export function isSportsCreationEnabled(visibleTemplateKeys: readonly string[]): boolean {
-  return visibleTemplateKeys.includes("gymnastics") || visibleTemplateKeys.includes("sport_events");
+  return visibleTemplateKeys.includes("gymnastics") || visibleTemplateKeys.includes("sport_events") || visibleTemplateKeys.includes("football_season");
 }
 
 export function syncSportsVisibilityKeys(
@@ -62,11 +62,12 @@ export function syncSportsVisibilityKeys(
   sportsEnabled: boolean,
 ): string[] {
   const withoutSports = visibleTemplateKeys.filter(
-    (key) => key !== "gymnastics" && key !== "sport_events",
+    (key) => key !== "gymnastics" && key !== "sport_events" && key !== "football_season",
   );
   if (!sportsEnabled) return withoutSports;
 
   const next = [...withoutSports];
+  if (preferences.enabledSports.includes("football")) next.push("football_season");
   if (preferences.enabledSports.includes("gymnastics")) next.push("gymnastics");
   if (preferences.enabledSports.some((sport) => sport !== "gymnastics")) {
     next.push("sport_events");
@@ -80,6 +81,7 @@ export function syncSportsVisibilityKeys(
 export function buildSportCreationHref(sport: unknown): string {
   const normalized = normalizeSportActivityKey(sport);
   if (normalized === "gymnastics") return "/event/gymnastics";
+  if (normalized === "football") return "/event/football";
   return normalized
     ? `/event/sport-events?sport=${encodeURIComponent(normalized)}`
     : "/event/sport-events";

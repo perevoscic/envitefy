@@ -35,6 +35,7 @@ const PUBLIC_UNAUTH_PATHS = new Set([
   "/sports",
   "/sport-events",
   "/football",
+  "/football/templates",
   "/weddings",
   "/bridal-showers",
   "/baby-showers",
@@ -281,17 +282,6 @@ export async function middleware(req: NextRequest) {
   }
 
   if (
-    normalizedPathname === "/event/football" ||
-    normalizedPathname.startsWith("/event/football/") ||
-    normalizedPathname.startsWith("/event/football-season")
-  ) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/event/sport-events/customize";
-    url.search = "?sport=football";
-    return redirectWithMarker(url, 308);
-  }
-
-  if (
     normalizedPathname === "/event/new" ||
     DISABLED_EVENT_ROUTE_PREFIXES.some((prefix) =>
       matchesPathPrefix(normalizedPathname, prefix)
@@ -340,9 +330,13 @@ export async function middleware(req: NextRequest) {
     return { hasSession: Boolean(sessionCookie.value), token: null as any };
   };
 
+  if (normalizedPathname === "/event/football") return ok();
+
   if (isAdminOnlyCreateEventPath(normalizedPathname)) {
     const authState = await resolveAuthState();
-    const enabledEditor = isEnabledTemplateEditorPath(normalizedPathname);
+    const enabledEditor = isEnabledTemplateEditorPath(normalizedPathname) ||
+      normalizedPathname === "/event/football/customize" ||
+      normalizedPathname === "/event/football-season/customize";
     if (!authState.hasSession || (!enabledEditor && !isAdminToken(authState.token))) {
       const url = req.nextUrl.clone();
       url.pathname = "/";

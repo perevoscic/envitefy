@@ -9,9 +9,13 @@ import { Check } from "lucide-react";
 import React from "react";
 import FloatingActionStrip from "../FloatingActionStrip";
 import GymMeetDiscoveryContent from "../GymMeetDiscoveryContent";
+import { useEventSectionBuilder } from "@/components/events/EventSectionBuilder";
+import GymnasticsSchedule from "../GymnasticsSchedule";
 import { GymnasticsPageBody } from "../GymnasticsProgram";
 import type { GymnasticsPresentation } from "../gymnasticsPresentations";
 import { GymMeetTemplateRendererProps } from "../types";
+import { useGymnasticsPageText } from "../useGymnasticsPageText";
+import type { GymnasticsPageTextKey } from "@/lib/gymnastics-page-text";
 
 const formatTime = (value: string) => {
   if (!value) return "";
@@ -41,8 +45,8 @@ const Section = ({
   className,
   children,
 }: {
-  title: string;
-  eyebrow?: string;
+  title: React.ReactNode;
+  eyebrow?: React.ReactNode;
   id?: string;
   className: string;
   children: React.ReactNode;
@@ -65,6 +69,8 @@ export default function MeetPageContent({
   hideOwnerActions = false,
   suppressActionStrip = false,
   onMobileEdit,
+  onPreview,
+  onPageTextChange,
   mobileEditHref,
   onShare,
   onGoogleCalendar,
@@ -97,6 +103,11 @@ export default function MeetPageContent({
   };
 }) {
   const nameId = React.useId();
+  const sectionBuilder = useEventSectionBuilder();
+  const [previewRsvpConfirmation, setPreviewRsvpConfirmation] = React.useState(false);
+  const pageText = useGymnasticsPageText(model.gymnasticsPageText, onPageTextChange);
+  const copy = (key: GymnasticsPageTextKey, fallback: string) =>
+    model.gymnasticsPageText?.[key] ?? fallback;
   const practiceBlocks = Array.isArray(model.practiceBlocks) ? model.practiceBlocks : [];
   const volunteerSlots = Array.isArray(model.volunteers?.volunteerSlots)
     ? model.volunteers.volunteerSlots
@@ -114,11 +125,12 @@ export default function MeetPageContent({
       ? model.gear
       : [];
 
-  const teamContent =
-    model.rosterAthletes.length > 0 || practiceBlocks.length > 0 ? (
-      <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
-        {model.rosterAthletes.length > 0 ? (
-          <Section title="Active Roster" eyebrow="Attendance" className={variant.sectionClass}>
+  const rosterContent = model.rosterAthletes.length > 0 ? (
+          <Section
+            title={pageText("rosterTitle", "Active Roster")}
+            eyebrow={pageText("rosterEyebrow", "Attendance")}
+            className={variant.sectionClass}
+          >
             <div className="grid gap-3">
               {model.rosterAthletes.map((athlete: any) => (
                 <div key={athlete.id} className={variant.summaryCardClass}>
@@ -143,10 +155,13 @@ export default function MeetPageContent({
               ))}
             </div>
           </Section>
-        ) : null}
-
-        {practiceBlocks.length > 0 ? (
-          <Section title="Practice Planner" eyebrow="Prep" className={variant.sectionClass}>
+        ) : null;
+  const practiceContent = practiceBlocks.length > 0 ? (
+          <Section
+            title={pageText("practiceTitle", "Practice Planner")}
+            eyebrow={pageText("practiceEyebrow", "Prep")}
+            className={variant.sectionClass}
+          >
             <div className="space-y-3">
               {practiceBlocks.map((block: any, idx: number) => (
                 <div key={block.id || idx} className={variant.summaryCardClass}>
@@ -161,7 +176,8 @@ export default function MeetPageContent({
                   </div>
                   {(Array.isArray(block.focus) ? block.focus.length : block.focus) ? (
                     <p className="mt-2 text-sm opacity-80">
-                      Focus: {Array.isArray(block.focus) ? block.focus.join(", ") : block.focus}
+                      {pageText("practiceFocus", "Focus:")}{" "}
+                      {Array.isArray(block.focus) ? block.focus.join(", ") : block.focus}
                     </p>
                   ) : null}
                   {block.skillGoals || block.description ? (
@@ -173,21 +189,24 @@ export default function MeetPageContent({
               ))}
             </div>
           </Section>
-        ) : null}
-      </div>
-    ) : null;
+        ) : null;
+  const teamContent = rosterContent || practiceContent ? <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">{rosterContent}{practiceContent}</div> : null;
   const supportContent =
     gearItems.length > 0 ||
     model.gear?.uniform ||
     volunteerSlots.length > 0 ||
     carpools.length > 0 ? (
       <div className="grid gap-5">
-        <Section title="Gear & Support" eyebrow="Operations" className={variant.sectionClass}>
+        <Section
+          title={pageText("supportTitle", "Gear & Support")}
+          eyebrow={pageText("supportEyebrow", "Operations")}
+          className={variant.sectionClass}
+        >
           <div className="grid gap-3 sm:grid-cols-2">
             {model.gear?.uniform ? (
               <div className={variant.summaryCardClass}>
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
-                  Uniform
+                  {pageText("uniformLabel", "Uniform")}
                 </p>
                 <p className="mt-2 text-sm">{model.gear.uniform}</p>
               </div>
@@ -196,22 +215,44 @@ export default function MeetPageContent({
               const label = typeof item === "string" ? item : item?.name || `Gear ${idx + 1}`;
               return (
                 <div key={label} className={variant.summaryCardClass}>
-                  <p className="text-sm font-semibold">{label}</p>
+                  <p className="text-sm font-semibold">
+                    {typeof item === "string" || item?.name ? (
+                      label
+                    ) : (
+                      <>
+                        {pageText("gearFallback", "Gear")} {idx + 1}
+                      </>
+                    )}
+                  </p>
                 </div>
               );
             })}
             {volunteerSlots.slice(0, 4).map((slot: any, idx: number) => (
               <div key={slot.id || idx} className={variant.summaryCardClass}>
-                <p className="text-sm font-semibold">{slot.role || `Volunteer ${idx + 1}`}</p>
-                <p className="mt-1 text-xs opacity-70">{slot.name || "Open slot"}</p>
+                <p className="text-sm font-semibold">
+                  {slot.role || (
+                    <>
+                      {pageText("volunteerFallback", "Volunteer")} {idx + 1}
+                    </>
+                  )}
+                </p>
+                <p className="mt-1 text-xs opacity-70">
+                  {slot.name || pageText("openSlot", "Open slot")}
+                </p>
               </div>
             ))}
             {carpools.slice(0, 3).map((carpool: any, idx: number) => (
               <div key={carpool.id || idx} className={variant.summaryCardClass}>
-                <p className="text-sm font-semibold">{carpool.driverName || `Driver ${idx + 1}`}</p>
+                <p className="text-sm font-semibold">
+                  {carpool.driverName || (
+                    <>
+                      {pageText("driverFallback", "Driver")} {idx + 1}
+                    </>
+                  )}
+                </p>
                 <p className="mt-1 text-xs opacity-70">
                   {[carpool.departureLocation, carpool.departureTime].filter(Boolean).join(" • ") ||
-                    "Trip details TBD"}
+                    pageText("tripDetails", "Trip details TBD")}
                 </p>
               </div>
             ))}
@@ -219,64 +260,121 @@ export default function MeetPageContent({
         </Section>
       </div>
     ) : null;
+  const attendanceChoice = (
+    value: "yes" | "no",
+    titleKey: GymnasticsPageTextKey,
+    helpKey: GymnasticsPageTextKey,
+    title: string,
+    help: string,
+  ) => {
+    const className = `rounded-2xl border px-4 py-4 text-left text-sm transition ${
+      rsvpProps.attending === value
+        ? "border-slate-900 bg-slate-900 text-white"
+        : "border-black/10 bg-white text-slate-900 hover:border-slate-300"
+    }`;
+    return onPageTextChange ? (
+      <div className={className}>
+        <div className="font-black uppercase tracking-[0.14em]">{pageText(titleKey, title)}</div>
+        <div className="mt-1 opacity-75">{pageText(helpKey, help)}</div>
+      </div>
+    ) : (
+      <button
+        type="button"
+        className={className}
+        aria-pressed={rsvpProps.attending === value}
+        onClick={() => rsvpProps.setAttending(value)}
+      >
+        <div className="font-black uppercase tracking-[0.14em]">
+          {copy(titleKey, title) || title}
+        </div>
+        <div className="mt-1 opacity-75">{copy(helpKey, help)}</div>
+      </button>
+    );
+  };
   const attendanceContent = rsvpProps.enabled ? (
-    <Section title="RSVP" eyebrow="Attendance" className={variant.sectionClass}>
-      {!rsvpProps.submitted ? (
+    <Section
+      title={pageText("rsvpTitle", "RSVP")}
+      eyebrow={pageText("rsvpEyebrow", "Attendance")}
+      className={variant.sectionClass}
+    >
+      {onPageTextChange ? (
+        <button
+          type="button"
+          className="mb-4 min-h-11 text-sm underline underline-offset-4"
+          onClick={() => setPreviewRsvpConfirmation((value) => !value)}
+        >
+          {previewRsvpConfirmation ? "Show RSVP form" : "Edit confirmation message"}
+        </button>
+      ) : null}
+      {!rsvpProps.submitted && !(onPageTextChange && previewRsvpConfirmation) ? (
         <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
           <div className="space-y-4">
             <div>
-              <label
-                htmlFor={nameId}
-                className="mb-2 block text-[10px] font-black uppercase tracking-[0.18em] opacity-60"
-              >
-                Your Name
-              </label>
-              <input
-                className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-                id={nameId}
-                autoComplete="name"
-                placeholder="Parent or athlete name"
-                value={rsvpProps.nameInput}
-                onChange={(e) => rsvpProps.setNameInput(e.target.value)}
-              />
+              <div className="mb-2">
+                {pageText("rsvpName", "Your Name", undefined, (text) => (
+                  <label
+                    htmlFor={nameId}
+                    className="block text-[10px] font-black uppercase tracking-[0.18em] opacity-60"
+                  >
+                    {text}
+                  </label>
+                ))}
+              </div>
+              {pageText("rsvpNameHint", "Parent or athlete name", undefined, (text) => (
+                <input
+                  className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                  id={nameId}
+                  autoComplete="name"
+                  placeholder={text}
+                  aria-label={copy("rsvpName", "Your Name") || "Your Name"}
+                  value={rsvpProps.nameInput}
+                  onChange={(e) => rsvpProps.setNameInput(e.target.value)}
+                />
+              ))}
             </div>
             {!rsvpProps.isSignedIn && rsvpProps.allowGuestAttendanceRsvp ? (
               <div className="grid gap-3 sm:grid-cols-2">
-                <input
-                  className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-                  aria-label="Email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="Email"
-                  value={rsvpProps.guestEmailInput}
-                  onChange={(e) => rsvpProps.setGuestEmailInput(e.target.value)}
-                />
-                <input
-                  className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-                  aria-label="Phone"
-                  type="tel"
-                  autoComplete="tel"
-                  placeholder="Phone"
-                  value={rsvpProps.guestPhoneInput}
-                  onChange={(e) => rsvpProps.setGuestPhoneInput(e.target.value)}
-                />
+                {pageText("rsvpEmailHint", "Email", undefined, (text) => (
+                  <input
+                    className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                    aria-label="Email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder={text}
+                    value={rsvpProps.guestEmailInput}
+                    onChange={(e) => rsvpProps.setGuestEmailInput(e.target.value)}
+                  />
+                ))}
+                {pageText("rsvpPhoneHint", "Phone", undefined, (text) => (
+                  <input
+                    className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                    aria-label="Phone"
+                    type="tel"
+                    autoComplete="tel"
+                    placeholder={text}
+                    value={rsvpProps.guestPhoneInput}
+                    onChange={(e) => rsvpProps.setGuestPhoneInput(e.target.value)}
+                  />
+                ))}
               </div>
             ) : null}
-            {rsvpProps.rosterAthletes.length > 0 ? (
-              <select
-                aria-label="Choose athlete"
-                className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-                value={rsvpProps.selectedAthleteId}
-                onChange={(e) => rsvpProps.setSelectedAthleteId(e.target.value)}
-              >
-                <option value="">Choose athlete</option>
-                {rsvpProps.rosterAthletes.map((athlete: any) => (
-                  <option key={athlete.id} value={athlete.id}>
-                    {[athlete.name, athlete.level].filter(Boolean).join(" • ")}
-                  </option>
-                ))}
-              </select>
-            ) : null}
+            {rsvpProps.rosterAthletes.length > 0
+              ? pageText("rsvpAthleteHint", "Choose athlete", undefined, (text) => (
+                  <select
+                    aria-label="Choose athlete"
+                    className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                    value={rsvpProps.selectedAthleteId}
+                    onChange={(e) => rsvpProps.setSelectedAthleteId(e.target.value)}
+                  >
+                    <option value="">{text || "Choose athlete"}</option>
+                    {rsvpProps.rosterAthletes.map((athlete: any) => (
+                      <option key={athlete.id} value={athlete.id}>
+                        {[athlete.name, athlete.level].filter(Boolean).join(" • ")}
+                      </option>
+                    ))}
+                  </select>
+                ))
+              : null}
             {rsvpProps.error ? (
               <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {rsvpProps.error}
@@ -284,50 +382,54 @@ export default function MeetPageContent({
             ) : null}
           </div>
           <div className="grid gap-3">
-            <button
-              type="button"
-              aria-pressed={rsvpProps.attending === "yes"}
-              onClick={() => rsvpProps.setAttending("yes")}
-              className={`rounded-2xl border px-4 py-4 text-left text-sm transition ${
-                rsvpProps.attending === "yes"
-                  ? "border-slate-900 bg-slate-900 text-white"
-                  : "border-black/10 bg-white text-slate-900 hover:border-slate-300"
-              }`}
-            >
-              <div className="font-black uppercase tracking-[0.14em]">Going</div>
-              <div className="mt-1 opacity-75">Athlete will attend this meet.</div>
-            </button>
-            <button
-              type="button"
-              aria-pressed={rsvpProps.attending === "no"}
-              onClick={() => rsvpProps.setAttending("no")}
-              className={`rounded-2xl border px-4 py-4 text-left text-sm transition ${
-                rsvpProps.attending === "no"
-                  ? "border-slate-900 bg-slate-900 text-white"
-                  : "border-black/10 bg-white text-slate-900 hover:border-slate-300"
-              }`}
-            >
-              <div className="font-black uppercase tracking-[0.14em]">Not Going</div>
-              <div className="mt-1 opacity-75">Athlete cannot attend.</div>
-            </button>
-            <button
-              onClick={rsvpProps.onSubmit}
-              disabled={rsvpProps.submitting}
-              className={`w-full ${variant.primaryButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
-            >
-              {rsvpProps.submitting ? "Submitting..." : "Send RSVP"}
-            </button>
+            {attendanceChoice(
+              "yes",
+              "rsvpGoing",
+              "rsvpGoingHelp",
+              "Going",
+              "Athlete will attend this meet.",
+            )}
+            {attendanceChoice(
+              "no",
+              "rsvpNotGoing",
+              "rsvpNotGoingHelp",
+              "Not Going",
+              "Athlete cannot attend.",
+            )}
+            {pageText("rsvpSubmit", "Send RSVP", undefined, (text) => (
+              <button
+                type="button"
+                onClick={rsvpProps.onSubmit}
+                disabled={rsvpProps.submitting}
+                className={`w-full ${variant.primaryButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
+              >
+                {rsvpProps.submitting
+                  ? copy("rsvpSubmitting", "Submitting...") || "Submitting..."
+                  : text || "Send RSVP"}
+              </button>
+            ))}
+            {onPageTextChange ? (
+              <div className="text-xs opacity-75">
+                <p>While sending</p>
+                {pageText("rsvpSubmitting", "Submitting...")}
+              </div>
+            ) : null}
           </div>
         </div>
       ) : (
         <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-6 text-emerald-900">
-          <p className="text-lg font-black">Attendance updated.</p>
-          <button
-            onClick={rsvpProps.onReset}
-            className="mt-3 text-sm font-semibold underline underline-offset-4"
-          >
-            Send another response
-          </button>
+          <p className="text-lg font-black">
+            {pageText("rsvpConfirmation", "Attendance updated.")}
+          </p>
+          {pageText("rsvpAgain", "Send another response", undefined, (text) => (
+            <button
+              type="button"
+              onClick={rsvpProps.onReset}
+              className="mt-3 text-sm font-semibold underline underline-offset-4"
+            >
+              {text || "Send another response"}
+            </button>
+          ))}
         </div>
       )}
     </Section>
@@ -353,6 +455,7 @@ export default function MeetPageContent({
             <div className="relative z-20 mb-4 px-3 sm:px-6">
               <FloatingActionStrip
                 onMobileEdit={onMobileEdit}
+                onPreview={onPreview}
                 mobileEditHref={mobileEditHref}
                 buttonClass={variant.secondaryButtonClass}
                 onShare={onShare}
@@ -364,8 +467,19 @@ export default function MeetPageContent({
           ) : null}
 
           {hero}
+          {sectionBuilder || model.sectionLayout ? <div className="py-5">
+            <GymMeetDiscoveryContent model={model} variant={variant} presentation={presentation} onPageTextChange={onPageTextChange}
+              additionalSections={[
+                ...(Object.values(model.guestPlanning || {}).some(Boolean) ? [{ id: "guest-planning", label: "Guest information", editorId: "details", content: <EventGuestPlanningNotes value={model.guestPlanning} /> }] : []),
+                ...(model.schedule?.enabled !== false && model.schedule?.days?.length ? [{ id: "schedule", label: "Schedule", editorId: "schedule", content: <GymnasticsSchedule schedule={model.schedule} /> }] : []),
+                ...(rosterContent ? [{ id: "roster", label: "Roster", editorId: "roster", content: rosterContent }] : []),
+                ...(practiceContent ? [{ id: "practice", label: "Practice", editorId: "practice", content: practiceContent }] : []),
+                ...(supportContent ? [{ id: "support", label: "Gear & volunteers", editorId: "support", content: supportContent }] : []),
+                ...(attendanceContent ? [{ id: "rsvp", label: "Attendance / RSVP", editorId: "rsvp", content: attendanceContent }] : []),
+              ]} />
+            {footer}
+          </div> : <>
           <EventGuestPlanningNotes value={model.guestPlanning} />
-
           <GymnasticsPageBody
             presentation={presentation}
             discovery={
@@ -373,6 +487,7 @@ export default function MeetPageContent({
                 model={model}
                 variant={variant}
                 presentation={presentation}
+                onPageTextChange={onPageTextChange}
               />
             }
             team={teamContent}
@@ -380,6 +495,7 @@ export default function MeetPageContent({
             attendance={attendanceContent}
             footer={footer}
           />
+          </>}
         </div>
       </div>
     </div>

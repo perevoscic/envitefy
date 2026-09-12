@@ -180,7 +180,7 @@ export default function GardenWedding({ theme, event }: Props) {
         <div className="absolute inset-0 z-0">
           <img
             src={heroImage}
-            className="w-full h-full object-cover opacity-90"
+            className="template-hero-image w-full h-full object-cover opacity-90"
             alt="Garden Hero"
           />
           <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px]"></div>

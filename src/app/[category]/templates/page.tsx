@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
 import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
+import { categoryGalleryPageClassName } from "@/components/events/category-gallery-page";
 import { getTemplateCategory } from "@/lib/template-categories";
 
 type Props = { params: Promise<{ category: string }> };
@@ -25,7 +26,7 @@ export default async function TemplatesPage({ params }: Props) {
         brandHref="/"
         topNavVariant="transparent-light"
       />
-      <main className="pt-24">
+      <main data-category-gallery-page="true" className={`${categoryGalleryPageClassName(category.slug)} pt-24`}>
         <PublicTemplateGallery category={category.slug} />
       </main>
     </>

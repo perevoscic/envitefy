@@ -196,7 +196,7 @@ export default function CelestialWedding({ theme, event }: Props) {
         <img
           src={heroImage}
           alt="Starry Sky"
-          className="w-full h-full object-cover opacity-30 mix-blend-screen"
+          className="template-hero-image w-full h-full object-cover opacity-30 mix-blend-screen"
         />
         <div className="absolute inset-0 bg-[#0B1026]/60"></div>
       </div>

@@ -47,9 +47,7 @@ const ALL_TEMPLATE_ROUTE_LINKS: TemplateLink[] = TEMPLATE_DEFINITIONS.map((t) =>
   section: t.section,
 }));
 
-const ALL_TEMPLATE_LINKS = ALL_TEMPLATE_ROUTE_LINKS.filter(
-  (link) => link.key !== "football_season",
-);
+const ALL_TEMPLATE_LINKS = ALL_TEMPLATE_ROUTE_LINKS;
 
 const CREATE_EVENT_SECTION_ORDER: TemplateDef["section"][] = [
   "milestones",
@@ -75,7 +73,7 @@ function getCreateEventRouteBase(href: string): string {
 
 export function matchesCreateEventHrefPath(path: string, href: string): boolean {
   if (!path || !href) return false;
-  const pathname = normalizeNavigationPath(path);
+  const pathname = normalizeNavigationPath(path).replace(/^\/event\/football-season(?=\/|$)/, "/event/football");
   const routeBase = getCreateEventRouteBase(href);
   if (!routeBase.startsWith("/event/")) return false;
 
@@ -129,7 +127,7 @@ export function getTemplateLinks(
     : null;
 
   const standardLinks = ALL_TEMPLATE_LINKS.filter((t) => {
-    if (t.key === "gymnastics" || t.key === "sport_events") return false;
+    if (t.key === "gymnastics" || t.key === "sport_events" || t.key === "football_season") return false;
     if (visible && !visible.has(t.key)) return false;
     return isTemplateAvailableForScopes(t.key, productScopes);
   });
@@ -142,6 +140,11 @@ export function getTemplateLinks(
 
   const preferences = normalizeSportPreferences(sportPreferences);
   const primary = preferences.setupCompleted ? preferences.primarySport : null;
+  const football = ALL_TEMPLATE_LINKS.find((link) => link.key === "football_season");
+  if (football) standardLinks.push(football);
+  if (primary === "football" || (visible?.has("football_season") && !visible.has("sport_events") && !visible.has("gymnastics"))) {
+    return standardLinks;
+  }
   const source = ALL_TEMPLATE_LINKS.find((link) =>
     primary === "gymnastics" ? link.key === "gymnastics" : link.key === "sport_events",
   );

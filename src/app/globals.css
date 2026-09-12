@@ -1,6 +1,13 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Keep each template's existing photo effects while applying its automatic hue. */
+.template-hero-image {
+  filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,)
+    var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,)
+    var(--tw-drop-shadow,) var(--template-image-filter,);
+}
+
 @font-face {
   font-family: "Josefin Sans";
   src: url("/fonts/Josefin_Sans/JosefinSans-VariableFont_wght.ttf") format("truetype");
@@ -458,9 +465,19 @@
 .nav-chrome-sidebar-surface {
   background:
     radial-gradient(circle at top left, rgba(255, 255, 255, 0.1), transparent 28%),
-    linear-gradient(180deg, rgba(247, 245, 255, 0.5) 0%, rgba(241, 239, 253, 0.46) 100%);
+    linear-gradient(180deg, var(--nav-sidebar-frost-start, rgba(247, 245, 255, 0.5)) 0%, var(--nav-sidebar-frost-end, rgba(241, 239, 253, 0.46)) 100%);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+}
+
+/* The existing event-color registration switches frost only over dark event paper. */
+html[data-event-page-tone="dark"] [data-app-navigation="sidebar"] {
+  --nav-sidebar-frost-start: rgba(250, 249, 255, 0.94);
+  --nav-sidebar-frost-end: rgba(247, 245, 255, 0.94);
+  --nav-sidebar-mobile-frost: rgba(255, 255, 255, 0.94);
+  --nav-sidebar-label-muted: #6150ad;
+  --nav-sidebar-icon-muted: #796bb2;
+  --nav-sidebar-detail-muted: #685d82;
 }
 
 @media (max-width: 1023px) {
@@ -470,7 +487,7 @@
       radial-gradient(ellipse 85% 170px at 0% 0%, rgba(107, 60, 255, 0.1), transparent 74%),
       radial-gradient(ellipse 90% 200px at 0% 100%, rgba(55, 168, 255, 0.14), transparent 74%),
       radial-gradient(ellipse 80% 180px at 100% 100%, rgba(103, 87, 255, 0.1), transparent 74%),
-      rgba(255, 255, 255, 0.9);
+      var(--nav-sidebar-mobile-frost, rgba(255, 255, 255, 0.9));
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
   }
@@ -1254,6 +1271,11 @@ html[data-ios-browser-chrome="true"] body {
   body::after {
     background: var(--mobile-chrome-bottom-clouds), var(--mobile-chrome-bottom);
   }
+}
+
+/* Category galleries continue their ivory paper behind the top navigation and notch. */
+body:has([data-category-gallery-page="true"])::before {
+  background: #fffcfa;
 }
 
 /* Event and editor navigation use the actual event paper color, including safe areas. */

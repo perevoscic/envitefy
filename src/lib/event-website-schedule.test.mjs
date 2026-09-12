@@ -20,11 +20,11 @@ test("stored schedule aliases remain supported and an explicitly empty public sc
   assert.deepEqual(extractEventWebsiteSchedule({ ...data, publicEvent: { scheduleItems: [] } }), []);
 });
 
-test("untrusted schedules discard malformed entries and bound the public list", () => {
+test("untrusted schedules discard malformed entries and retain the complete public list", () => {
   assert.deepEqual(extractEventWebsiteSchedule(null), []);
   assert.deepEqual(extractEventWebsiteSchedule({ scheduleItems: [null, "x", [], {}] }), []);
   const rows = extractEventWebsiteSchedule({ scheduleItems: Array.from({ length: 40 }, () => ({ label: "  Lunch  ", start: "invalid" })) });
-  assert.equal(rows.length, 30);
+  assert.equal(rows.length, 40);
   assert.equal(rows[0].title, "Lunch");
   assert.equal(rows[0].startAt, null);
 });

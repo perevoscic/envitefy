@@ -1,3 +1,4 @@
+import { scanScheduleHistoryFields } from "../scan-schedule.ts";
 import { canPersistCreationDraft, rsvpTrackingEnabled } from "./creation-intent.ts";
 import {
   sanitizeConciergePreviewCopy,
@@ -367,8 +368,8 @@ export function buildConciergeHistoryPayload(
     throw new Error("Creation draft does not have enough source or event context to persist.");
   }
   const title = draft.title || draft.eventPurpose || "Event draft";
-  const ownership = draft.ownership === "invited" ? "invited" : "owned";
-  const invitedFromScan = draft.sourceContext.detectedSourceIntent === "received_invite";
+  const ownership = !draft.scanSchedule && draft.ownership === "invited" ? "invited" : "owned";
+  const invitedFromScan = !draft.scanSchedule && draft.sourceContext.detectedSourceIntent === "received_invite";
   const category = CATEGORY_LABELS[draft.eventType] || "General Event";
   const rsvpEnabled = rsvpTrackingEnabled(draft);
   const eventPlace = normalizeVenueLocation(draft.venue, draft.location);
@@ -502,6 +503,7 @@ export function buildConciergeHistoryPayload(
   const payload = {
     title,
     data: {
+      ...(draft.scanSchedule ? { scanSchedule: draft.scanSchedule, scheduleItems: draft.scanSchedule.items } : {}),
       creationIntent: draft.intent,
       requestedOutputs,
       sourceContext: draft.sourceContext,
@@ -578,6 +580,7 @@ export function buildConciergeHistoryPayload(
         outputs: requestedOutputs,
       },
       publicEvent: {
+        ...(draft.scanSchedule ? { scheduleItems: draft.scanSchedule.items } : {}),
         renderer: publicRenderer,
         primaryOutput,
         ownerDefaultSurface,
@@ -635,6 +638,10 @@ export function buildConciergeHistoryPayload(
       ...(signupForm ? { signupForm } : {}),
     },
   };
+  if (draft.scanSchedule) {
+    Object.assign(payload.data, scanScheduleHistoryFields(draft.scanSchedule));
+    payload.data.publicEvent.scheduleLine = payload.data.scheduleLine;
+  }
   sanitizeConciergePublicEventData(payload.data);
   payload.title = sanitizeGuestTitle(payload.data.title) || title;
   return payload;

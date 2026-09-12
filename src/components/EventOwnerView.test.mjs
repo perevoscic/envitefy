@@ -132,7 +132,14 @@ test("event pages open directly with owner actions and responsive device control
     assert.match(html, /href="\/event\/meet\?edit=meet&amp;editor=menu&amp;returnTo=%2Fevent%2Fmeet%3Ftab%3Devent&amp;eventColor=[^"]+"/);
     assert.match(html, /data-floating-event-toolbar="true"/);
     assert.doesNotMatch(html, /nav-chrome-mobile-drawer-trigger|absolute bottom-/);
-    assert.match(html, /hidden lg:inline-flex/);
+    const editLink = html.match(/<a[^>]*aria-label="Edit event"[^>]*>/)?.[0];
+    assert.ok(editLink);
+    if (data.category === "sport_gymnastics") {
+      assert.match(editLink, /hidden lg:inline-flex/);
+    } else {
+      assert.doesNotMatch(editLink, /hidden lg:inline-flex/);
+      assert.match(editLink, /inline-flex min-h-11 min-w-11/);
+    }
   }
 });
 

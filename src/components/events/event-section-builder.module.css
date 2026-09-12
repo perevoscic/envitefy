@@ -1,0 +1,316 @@
+.palette {
+  width: 100%;
+  padding: 16px;
+  border: 1px solid #ded4ed;
+  border-radius: 16px;
+  color: #322347;
+  background: #faf7ff;
+}
+.palette h3 {
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+.palette p {
+  margin-bottom: 12px;
+  color: #665573;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.palette button,
+.toolbar button,
+.menu button,
+.insertion button,
+.empty button,
+.dialog button,
+.notice button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.paletteItems {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+.catalogItem {
+  display: flex;
+  align-items: center;
+  border: 1px solid #e3daed;
+  border-radius: 10px;
+  background: white;
+}
+.catalogAdd {
+  flex: 1;
+  justify-content: flex-start !important;
+  padding: 8px;
+  font-size: 13px;
+  text-align: left;
+}
+.grip {
+  cursor: grab !important;
+  min-width: 44px;
+}
+.addButton {
+  width: 100%;
+  border-radius: 12px;
+  background: #6c3fc1;
+  color: white;
+  font-weight: 600;
+  padding: 8px 12px;
+}
+.section {
+  min-width: 0;
+  position: relative;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 16px;
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 6px 3px 12px;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+}
+.sectionName {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font:
+    600 13px / 1.4 system-ui,
+    sans-serif;
+}
+.actions {
+  display: flex;
+  flex-shrink: 0;
+}
+.toolbar button {
+  width: 44px;
+  border-radius: 10px;
+}
+.toolbar button:hover,
+.menu button:hover,
+.insertion button:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+.menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+}
+.menu button {
+  padding: 8px 12px;
+  font:
+    500 13px / 1.4 system-ui,
+    sans-serif;
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 10px;
+}
+.menu button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.insertion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  border-radius: 12px;
+  font:
+    600 13px / 1.4 system-ui,
+    sans-serif;
+}
+.insertion::before,
+.insertion::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, currentColor 20%, transparent);
+}
+.insertion button {
+  border-radius: 12px;
+  padding: 8px 12px;
+}
+.dropTarget {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}
+.dragOverlay {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 22px;
+  border-radius: 14px;
+  border: 1px solid #d9c6f5;
+  background: #fff;
+  color: #3e2166;
+  box-shadow: 0 12px 40px #26143d33;
+  font:
+    600 15px / 1.4 system-ui,
+    sans-serif;
+}
+.empty {
+  padding: 22px;
+  text-align: center;
+}
+.empty p {
+  margin-bottom: 12px;
+}
+.empty button {
+  padding: 8px 16px;
+  border: 1px solid currentColor;
+  border-radius: 12px;
+}
+.dialog {
+  position: fixed;
+  inset: 12px 12px 12px auto;
+  width: min(440px, calc(100vw - 24px));
+  max-width: none;
+  height: calc(100dvh - 24px);
+  max-height: none;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #dfd4ed;
+  border-radius: 22px;
+  color: #30223e;
+  background: #fff;
+  box-shadow: 0 20px 80px #28143d33;
+}
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.dialog::backdrop {
+  background: #21152c66;
+}
+.dialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid #ebe4f0;
+}
+.dialogHeader h2 {
+  font-size: 18px;
+  font-weight: 650;
+}
+.dialogHeader button {
+  min-width: 44px;
+  border-radius: 50%;
+}
+.dialogBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px;
+}
+.dialogBody input,
+.dialogBody textarea,
+.dialogBody select {
+  font-size: 16px;
+}
+.dialogFooter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid #ebe4f0;
+}
+.dialogFooter button {
+  padding: 8px 22px;
+  border-radius: 12px;
+  background: #6c3fc1;
+  color: white;
+  font-weight: 600;
+}
+.dialogFooter span {
+  font-size: 12px;
+  color: #665573;
+}
+.choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.choices button {
+  min-height: 70px;
+  justify-content: flex-start;
+  padding: 12px;
+  text-align: left;
+  border: 1px solid #e0d5ed;
+  border-radius: 14px;
+  background: #faf7ff;
+}
+.choices button > svg {
+  flex-shrink: 0;
+}
+.choices small {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #69577a;
+}
+.notice {
+  position: fixed;
+  z-index: 80;
+  left: 50%;
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  padding: 8px 14px;
+  border: 1px solid #ded0ee;
+  border-radius: 14px;
+  color: #322347;
+  background: #fff;
+  box-shadow: 0 8px 32px #22113222;
+  font:
+    500 12px / 1.4 system-ui,
+    sans-serif;
+}
+.notice button {
+  flex-shrink: 0;
+  color: #653ab0;
+  padding: 4px 8px;
+}
+@media (max-width: 767px) {
+  .grip,
+  .paletteItems {
+    display: none !important;
+  }
+  .dialog {
+    inset: auto 0 0;
+    width: 100%;
+    height: auto;
+    max-height: 88dvh;
+    border-radius: 24px 24px 0 0;
+  }
+  .dialogBody {
+    flex: 0 1 auto;
+  }
+  .palette p {
+    display: none;
+  }
+}
+@media (pointer: coarse) {
+  .grip {
+    display: none !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .section {
+    transition: none !important;
+  }
+}

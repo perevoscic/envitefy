@@ -85,43 +85,12 @@ export default function RusticBoho({ theme, event }: Props) {
         className="relative z-10 px-4 pt-8 md:pt-12 max-w-6xl mx-auto"
       >
         <div className="grid md:grid-cols-12 gap-8 items-center">
-          <div className="md:col-span-5 text-center md:text-left space-y-6">
-            <div className="inline-flex items-center gap-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full border border-[#D6C0A9] text-sm font-medium text-[#8C7A63]">
-              <Leaf size={16} />
-              <span>{dateLabel}</span>
-            </div>
-
-            <h1
-              className="text-6xl md:text-7xl font-serif text-[#9C563D] leading-[1.1]"
-              style={{ fontFamily: theme.fonts.headline }}
-            >
-              Wildly <br />
-              <span className="italic font-light text-[#4A4036]">in love.</span>
-            </h1>
-
-            <p className="text-lg leading-relaxed text-[#8C7A63] max-w-md mx-auto md:mx-0">
-              {event.story ||
-                "We're getting married under the oaks. Join us for a weekend of campfires, tacos, and dancing in Joshua Tree."}
-            </p>
-
-            {event.rsvpEnabled && (
-              <div className="flex justify-center md:justify-start gap-4 pt-4">
-                <a
-                  href={event.rsvp?.url || "#rsvp"}
-                  className="bg-[#9C563D] text-[#FDF8F3] px-8 py-4 rounded-full font-medium hover:bg-[#85452F] transition-colors shadow-lg shadow-[#9C563D]/20"
-                >
-                  RSVP Now
-                </a>
-              </div>
-            )}
-          </div>
-
           <div className="md:col-span-7 grid grid-cols-2 gap-4 h-[500px] md:h-[600px]">
             <div className="space-y-4 pt-12">
               <div className="h-3/5 w-full bg-white p-2 rounded-t-[100px] rounded-b-2xl shadow-sm rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
                 <img
                   src={mainImage}
-                  className="w-full h-full object-cover rounded-t-[90px] rounded-b-xl grayscale hover:grayscale-0 transition-all duration-700"
+                  className="template-hero-image w-full h-full object-cover rounded-t-[90px] rounded-b-xl grayscale hover:grayscale-0 transition-all duration-700"
                   alt="Couple at sunset"
                 />
               </div>
@@ -153,6 +122,38 @@ export default function RusticBoho({ theme, event }: Props) {
               </div>
             </div>
           </div>
+          <div className="md:col-span-5 text-center md:text-left space-y-6">
+            <div className="inline-flex items-center gap-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full border border-[#D6C0A9] text-sm font-medium text-[#8C7A63]">
+              <Leaf size={16} />
+              <span>{dateLabel}</span>
+            </div>
+
+            <h1
+              className="text-6xl md:text-7xl font-serif text-[#9C563D] leading-[1.1]"
+              style={{ fontFamily: theme.fonts.headline }}
+            >
+              Wildly <br />
+              <span className="italic font-light text-[#4A4036]">in love.</span>
+            </h1>
+
+            <p className="text-lg leading-relaxed text-[#8C7A63] max-w-md mx-auto md:mx-0">
+              {event.story ||
+                "We're getting married under the oaks. Join us for a weekend of campfires, tacos, and dancing in Joshua Tree."}
+            </p>
+
+            {event.rsvpEnabled && (
+              <div className="flex justify-center md:justify-start gap-4 pt-4">
+                <a
+                  href={event.rsvp?.url || "#rsvp"}
+                  className="bg-[#9C563D] text-[#FDF8F3] px-8 py-4 rounded-full font-medium hover:bg-[#85452F] transition-colors shadow-lg shadow-[#9C563D]/20"
+                >
+                  RSVP Now
+                </a>
+              </div>
+            )}
+          </div>
+
+
         </div>
       </main>
 

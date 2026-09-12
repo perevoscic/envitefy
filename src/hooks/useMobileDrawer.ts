@@ -71,6 +71,9 @@ export function useMobileDrawer(
     else setOpen(false);
   }, [returnHref, router]);
 
+  // In-memory fullscreen previews stay in this editor even for saved events.
+  const dismissDrawer = useCallback(() => setOpen(false), []);
+
   const handlePreviewTouchStart = useCallback(
     (event: TouchEvent<HTMLElement>) => {
       if (!isMobileViewport() || open) return;
@@ -224,6 +227,7 @@ export function useMobileDrawer(
     mobileMenuOpen: open,
     openMobileMenu: openDrawer,
     closeMobileMenu: closeDrawer,
+    dismissMobileMenu: dismissDrawer,
     previewTouchHandlers: {
       onTouchStart: handlePreviewTouchStart,
       onTouchEnd: handlePreviewTouchEnd,

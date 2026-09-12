@@ -1,7 +1,10 @@
+
+import TemplateImageTone from "@/components/events/TemplateImageTone";
 import { BRIDAL_PRESETS } from "@/lib/public-template-catalog";
 import type { CSSProperties } from "react";
 
 export type BridalPreviewData = {
+  heroImageFilterEnabled?: boolean;
   momName?: string;
   eventTitle?: string;
   date?: string;
@@ -10,7 +13,7 @@ export type BridalPreviewData = {
   venue?: string;
   images?: { hero?: string };
   fontFamily?: string;
-  theme?: { bg?: string; text?: string; bgStyle?: CSSProperties; fontFamily?: string };
+  theme?: { bg?: string; text?: string; accent?: string; bgStyle?: CSSProperties; fontFamily?: string };
   babyDetails?: { notes?: string; dressCode?: string };
   hosts?: { name: string; role?: string }[];
   registries?: { label: string; url: string }[];
@@ -28,7 +31,8 @@ export default function BridalShowerPreview({
   const theme = data.theme;
   const fontFamily = data.fontFamily || theme?.fontFamily;
   return (
-    <div
+    <TemplateImageTone color={theme?.accent || preset.accent} enabled={data.heroImageFilterEnabled !== false}>
+<div
       className={`p-6 sm:p-14 ${theme?.bg || ""} ${theme?.text || ""}`}
       style={{
         ...(theme?.bgStyle || (theme?.bg ? {} : { background: preset.background })),
@@ -40,7 +44,7 @@ export default function BridalShowerPreview({
         <img
           src={data.images?.hero || preset.heroImage}
           alt="Bridal shower celebration"
-          className="h-80 w-full object-cover"
+          className="template-hero-image h-80 w-full object-cover"
         />
         <div className="px-8 py-12">
           <p className="text-xs uppercase tracking-[0.3em]">You’re invited · Bridal shower</p>
@@ -86,5 +90,6 @@ export default function BridalShowerPreview({
         </div>
       </div>
     </div>
+</TemplateImageTone>
   );
 }

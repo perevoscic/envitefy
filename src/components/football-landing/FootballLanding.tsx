@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 
 const navLinks = [
@@ -108,19 +109,12 @@ const benefits = [
 
 function BrandMark() {
   return (
-    <div className="flex items-center gap-3">
-      <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/70 bg-white shadow-[0_10px_30px_rgba(141,151,179,0.18)]">
-        <span className="absolute inset-2 rounded-xl bg-[linear-gradient(135deg,#efe1ca,#f8efe2_55%,#dfe9ff)]" />
-        <span className="relative text-lg leading-none">🏈</span>
-      </div>
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#7d869d]">Envitefy</p>
-        <p className="text-sm font-medium text-[#1f2438]">Football</p>
-      </div>
-    </div>
+    <Link href="/" aria-label="Envitefy home" className="flex items-center gap-3">
+      <EnvitefyWordmark scaled={false} className="text-4xl" />
+      <span className="hidden border-l border-slate-200 pl-3 text-sm font-semibold text-slate-700 sm:inline">Football</span>
+    </Link>
   );
 }
-
 function SectionHeading({
   eyebrow,
   title,
@@ -239,7 +233,7 @@ function HeroPreview() {
                 className="mt-2 max-w-[12ch] text-3xl leading-[0.95] tracking-[-0.05em] text-[#1f2438] sm:text-[2.5rem]"
                 style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
               >
-                Panthers Football 2025
+                Panthers Football
               </h2>
               <p className="mt-4 text-sm leading-7 text-[#61708a]">
                 One public page for games, practices, field locations, travel notes, and the season
@@ -260,7 +254,7 @@ function HeroPreview() {
             <div className="overflow-hidden rounded-[1.8rem] border border-white/80 bg-white shadow-[0_18px_40px_rgba(112,124,160,0.08)]">
               <div className="relative h-[280px]">
                 <Image
-                  src="/templates/hero-images/football-hero.jpeg"
+                  src="/images/football/templates/launchpad-editorial.webp"
                   alt="Football season hero"
                   fill
                   className="object-cover"
@@ -386,13 +380,13 @@ export default function FootballLanding() {
 
             <div className="flex items-center gap-2">
               <Link
-                href="/event/football"
+                href="/football/templates"
                 className="cta-shell hidden h-10 rounded-full border border-[#dbe1f0] bg-white px-4 text-sm font-medium text-[#1f2438] transition hover:-translate-y-0.5 hover:shadow-md sm:inline-flex"
               >
                 <AnimatedButtonLabel label="View builder" />
               </Link>
               <Link
-                href="/event/football"
+                href="/football/templates"
                 className="cta-shell h-10 rounded-full bg-[linear-gradient(135deg,#c05d1f,#edb64a_56%,#4c6ddf)] px-4 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(103,117,222,0.22)] transition hover:-translate-y-0.5"
               >
                 <AnimatedButtonLabel label="Start a season" icon={ArrowRight} />
@@ -423,7 +417,7 @@ export default function FootballLanding() {
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
-                  href="/event/football"
+                  href="/football/templates"
                   className="cta-shell h-14 rounded-full bg-[linear-gradient(135deg,#c05d1f,#edb64a)] px-6 text-sm font-semibold text-white shadow-[0_20px_50px_rgba(197,107,30,0.24)] transition hover:-translate-y-0.5"
                 >
                   <AnimatedButtonLabel label="Start your football page" icon={ArrowRight} />
@@ -532,7 +526,7 @@ export default function FootballLanding() {
 
               <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
                 <Link
-                  href="/event/football"
+                  href="/football/templates"
                   className="cta-shell h-14 rounded-full bg-white px-6 text-sm font-semibold text-[#3e4fd0] shadow-[0_18px_40px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5"
                 >
                   <AnimatedButtonLabel label="Start your football page" icon={ArrowRight} />

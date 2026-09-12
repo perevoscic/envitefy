@@ -4,39 +4,68 @@ import { useId, type ReactNode } from "react";
 import type { GymMeetDiscoveryBlock, GymMeetDiscoverySection } from "./types";
 import { orderGymnasticsSections, type GymnasticsPresentation } from "./gymnasticsPresentations";
 import styles from "./gymnastics-program.module.css";
+import type { GymnasticsPageText, GymnasticsPageTextChange } from "@/lib/gymnastics-page-text";
+import { useGymnasticsPageText } from "./useGymnasticsPageText";
+import { EventSectionCanvas, useEventSectionBuilder, type EventSectionEntry } from "@/components/events/EventSectionBuilder";
+import { gymnasticsSectionEditor, orderEventSections, type EventSectionLayout } from "@/lib/event-section-layout";
 
 export default function GymnasticsProgram({
   sections,
   presentation,
   renderBlock,
+  pageTextOverrides,
+  onPageTextChange,
+  sectionLayout,
+  additionalSections = [],
 }: {
   sections: GymMeetDiscoverySection[];
   presentation: GymnasticsPresentation;
   renderBlock: (block: GymMeetDiscoveryBlock) => ReactNode;
+  pageTextOverrides?: GymnasticsPageText;
+  onPageTextChange?: GymnasticsPageTextChange;
+  sectionLayout?: EventSectionLayout;
+  additionalSections?: EventSectionEntry[];
 }) {
+  const pageText = useGymnasticsPageText(pageTextOverrides, onPageTextChange);
   const instanceId = useId();
+  const builder = useEventSectionBuilder();
   const ordered = orderGymnasticsSections(sections, presentation.flow);
+  const navigation = orderEventSections([
+    ...ordered.map(({ id, label, navLabel }) => ({ id, label, navLabel })),
+    ...additionalSections.map(({ id, label }) => ({ id, label, navLabel: label })),
+  ], sectionLayout);
   // useId keeps links local even when multiple previews are mounted together.
   const sectionId = (id: string) => `${instanceId}-program-${id}`;
-  if (!ordered.length) return null;
+  if (!ordered.length && !additionalSections.length && !builder) return null;
 
   return (
     <div className={styles.program}>
-      {ordered.length > 1 ? (
+      {navigation.length > 1 && !builder ? (
         <nav className={styles.navigation} aria-label="Meet information sections">
-          <span className={styles.indexLabel}>Inside the meet</span>
+          <span className={styles.indexLabel}>{pageText("programIndex", "Inside the meet")}</span>
           <div className={styles.navLinks}>
-            {ordered.map((section, index) => (
-              <a key={section.id} href={`#${sectionId(section.id)}`}>
-                <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-                {section.navLabel || section.label}
-              </a>
-            ))}
+            {navigation.map((section, index) =>
+              pageText(
+                `section:${encodeURIComponent(section.id)}:label`,
+                section.navLabel || section.label,
+                `${section.label} navigation label`,
+                (text) => (
+                  <a href={`#${sectionId(section.id)}`} aria-label={text || section.label}>
+                    <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                    {text || section.navLabel || section.label}
+                  </a>
+                ),
+              ),
+            )}
           </div>
         </nav>
       ) : null}
-      <div className={styles.chapters}>
-        {ordered.map((section, index) => (
+      <EventSectionCanvas className={styles.chapters} layout={sectionLayout} sections={[
+        ...ordered.map((section, index) => ({
+          id: section.id,
+          label: section.label,
+          editorId: gymnasticsSectionEditor(section.id, section.kind),
+          content: (
           <section
             key={section.id}
             id={sectionId(section.id)}
@@ -48,10 +77,19 @@ export default function GymnasticsProgram({
             <header
               className={`${styles.chapterHeading} ${section.hideSectionHeading ? styles.srOnly : ""}`}
             >
-              <span className={styles.chapterNumber} aria-hidden="true">
+              <span className={styles.chapterNumber} aria-hidden="true" hidden={Boolean(builder || sectionLayout)}>
                 {String(index + 1).padStart(2, "0")}
               </span>
-              <h2 id={`${sectionId(section.id)}-title`}>{section.label}</h2>
+              <h2 id={`${sectionId(section.id)}-title`}>
+                {section.hideSectionHeading
+                  ? (pageTextOverrides?.[`section:${encodeURIComponent(section.id)}:label`] ??
+                    section.label)
+                  : pageText(
+                      `section:${encodeURIComponent(section.id)}:label`,
+                      section.label,
+                      `${section.label} section heading`,
+                    )}
+              </h2>
               <span className={styles.headingRule} aria-hidden="true" />
             </header>
             <div className={styles.blocks}>
@@ -62,8 +100,10 @@ export default function GymnasticsProgram({
               ))}
             </div>
           </section>
-        ))}
-      </div>
+          ),
+        })),
+        ...additionalSections.map((section) => ({ ...section, content: <div id={sectionId(section.id)}>{section.content}</div> })),
+      ]} />
     </div>
   );
 }

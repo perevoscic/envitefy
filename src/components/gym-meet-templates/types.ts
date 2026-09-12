@@ -2,6 +2,8 @@
 // @ts-nocheck
 import React from "react";
 import type { EventGuestPlanning } from "@/lib/event-guest-planning";
+import type { HeroImageSettings } from "@/lib/hero-image-settings";
+import type { GymnasticsPageText, GymnasticsPageTextChange } from "@/lib/gymnastics-page-text";
 
 export type GymMeetTemplateId =
   | "airborne-atlas"
@@ -352,11 +354,16 @@ export type GymMeetDiscoveryContent = {
 export type GymMeetTitleSize = "small" | "medium" | "large";
 
 export type GymMeetRenderModel = {
+  schedule?: GymMeetScheduleInfo;
+  sectionLayout?: import("@/lib/event-section-layout").EventSectionLayout;
   guestPlanning?: EventGuestPlanning;
   pageTemplateId: GymMeetTemplateId;
   title: string;
   titleSize: GymMeetTitleSize;
   heroImage?: string;
+  heroImageFilterEnabled?: boolean;
+  heroImageSettings?: HeroImageSettings;
+  gymnasticsPageText?: GymnasticsPageText;
   hostGym?: string;
   venue?: string;
   address?: string;
@@ -364,6 +371,7 @@ export type GymMeetRenderModel = {
   dateLabel?: string;
   timeLabel?: string;
   detailsText?: string;
+  authoredTitle?: string;
   heroSummary?: string;
   team?: string;
   season?: string;
@@ -423,6 +431,10 @@ export type GymMeetTemplateRendererProps = {
   hideOwnerActions?: boolean;
   suppressActionStrip?: boolean;
   onMobileEdit?: () => void;
+  onPreview?: () => void;
+  heroImageAction?: React.ReactNode;
+  onHeroImagePositionChange?: (positionY: number) => void;
+  onPageTextChange?: GymnasticsPageTextChange;
   mobileEditHref?: string;
   onShare: () => void;
   onGoogleCalendar: () => void;

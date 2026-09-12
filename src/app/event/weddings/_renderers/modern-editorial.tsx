@@ -106,7 +106,7 @@ export default function ModernEditorial({ theme, event }: Props) {
           {theme.decorations?.heroImage && (
             <img
               src={theme.decorations.heroImage}
-              className="w-full h-full object-cover opacity-80 hover:scale-105 transition-transform duration-[2s]"
+              className="template-hero-image w-full h-full object-cover opacity-80 hover:scale-105 transition-transform duration-[2s]"
               alt="Hero"
             />
           )}

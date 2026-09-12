@@ -1,5 +1,8 @@
 // @ts-nocheck
 "use client";
+import TemplateImageTone from "@/components/events/TemplateImageTone";
+
+import HeroImageEditor from "@/components/events/HeroImageEditor";
 
 import EventGuestActions from "@/components/event-templates/EventGuestActions";
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
@@ -1517,6 +1520,7 @@ function _createSimpleCustomizePage(config: SimpleTemplateConfig) {
       state: config.prefill?.state || "IL",
       venue: config.prefill?.venue || "",
       details: config.prefill?.details || "Tell guests what to expect.",
+      heroImageFilterEnabled: true,
       hero: config.prefill?.hero || "",
       rsvpEnabled: config.prefill?.rsvpEnabled ?? true,
       rsvpDeadline:
@@ -1794,13 +1798,7 @@ function _createSimpleCustomizePage(config: SimpleTemplateConfig) {
       return () => observer.disconnect();
     }, [navItems]);
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        const url = URL.createObjectURL(file);
-        setData((prev) => ({ ...prev, hero: url }));
-      }
-    };
+
 
     const updateExtra = useCallback((key: string, value: string) => {
       setData((prev) => ({
@@ -1851,6 +1849,7 @@ function _createSimpleCustomizePage(config: SimpleTemplateConfig) {
               advancedSections: advancedState,
             },
             advancedSections: advancedState,
+            heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
             heroImage: data.hero || config.defaultHero,
           },
         };
@@ -1870,7 +1869,7 @@ function _createSimpleCustomizePage(config: SimpleTemplateConfig) {
       } finally {
         setSubmitting(false);
       }
-    }, [
+    }, [data.heroImageFilterEnabled,
       submitting,
       data.date,
       data.time,
@@ -2042,12 +2041,7 @@ function _createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<Type size={18} />}
             onClick={() => setActiveView("headline")}
           />
-          <MenuCard
-            title="Images"
-            desc="Hero & header photo."
-            icon={<ImageIcon size={18} />}
-            onClick={() => setActiveView("images")}
-          />
+
           <MenuCard
             title="Details"
             desc="Description and category specifics."
@@ -2143,54 +2137,7 @@ function _createSimpleCustomizePage(config: SimpleTemplateConfig) {
       ]
     );
 
-    const renderImagesEditor = () => (
-      <EditorLayout
-        title="Images"
-        onBack={() => setActiveView("main")}
-        showBack
-      >
-        <div className="space-y-4">
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-            Hero Image
-          </label>
-          <div className="border-2 border-dashed border-slate-300 rounded-xl p-5 text-center hover:bg-slate-50 transition-colors relative">
-            {data.hero ? (
-              <div className="relative w-full h-40 rounded-lg overflow-hidden">
-                <img
-                  src={data.hero}
-                  alt="Hero"
-                  className="w-full h-full object-cover"
-                />
-                <button
-                  onClick={() => setData((p) => ({ ...p, hero: "" }))}
-                  className="absolute top-2 right-2 px-2 py-1 text-xs bg-white rounded-full shadow hover:bg-red-50 text-red-500"
-                >
-                  Remove
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
-                  <ImageIcon size={20} />
-                </div>
-                <p className="text-sm text-slate-600 mb-1">
-                  Upload header photo
-                </p>
-                <p className="text-xs text-slate-400">
-                  Recommended: 1600x900px
-                </p>
-              </>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              className="absolute inset-0 opacity-0 cursor-pointer"
-              onChange={handleFileUpload}
-            />
-          </div>
-        </div>
-      </EditorLayout>
-    );
+
 
     const renderDesignEditor = () => (
       <EditorLayout
@@ -2425,6 +2372,27 @@ function _createSimpleCustomizePage(config: SimpleTemplateConfig) {
               className={`min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${textClass} transition-all duration-500 relative z-0`}
             >
               <div className="relative z-10">
+                <TemplateImageTone enabled={data.heroImageFilterEnabled !== false} color={currentTheme.accent || currentTheme.bg}>
+<div className="relative w-full h-64 md:h-96">
+                  {data.hero ? (
+                    <img
+                      src={data.hero}
+                      alt="Hero"
+                      className="template-hero-image w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Image
+                      src={config.defaultHero}
+                      alt="Hero"
+                      fill
+                      className="template-hero-image object-cover"
+                      sizes="(max-width: 768px) 100vw, 1000px"
+                    />
+                  )}
+                  <HeroImageEditor filterEnabled={data.heroImageFilterEnabled !== false} onFilterChange={(heroImageFilterEnabled) => setData((prev) => ({ ...prev, heroImageFilterEnabled }))} value={data.hero} onChange={(hero) => setData((prev) => ({ ...prev, hero }))} className="absolute inset-x-4 bottom-4 z-10 flex justify-center" />
+                </div>
+</TemplateImageTone>
+
                 <div
                   className={`p-6 md:p-8 border-b border-white/10 ${textClass}`}
                 >
@@ -2490,24 +2458,6 @@ function _createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   </div>
                 </div>
 
-                <div className="relative w-full h-64 md:h-96">
-                  {data.hero ? (
-                    <img
-                      src={data.hero}
-                      alt="Hero"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <Image
-                      src={config.defaultHero}
-                      alt="Hero"
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 1000px"
-                    />
-                  )}
-                </div>
-
                 <section
                   id="details"
                   className="py-10 border-t border-white/10 px-6 md:px-10"
@@ -2518,7 +2468,7 @@ function _createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   >
                     Details
                   </h2>
-                  
+
                   <EventGuestActions
                     title={data.title}
                     start={data.date ? `${data.date}T${data.time || "14:00"}` : undefined}
@@ -2762,9 +2712,9 @@ function _createSimpleCustomizePage(config: SimpleTemplateConfig) {
             </div>
 
             <div className="p-6 pt-4 md:pt-6">
-              {activeView === "main" && renderMainMenu()}
+              {(activeView === "main" || activeView === "images") && renderMainMenu()}
               {activeView === "headline" && renderHeadlineEditor}
-              {activeView === "images" && renderImagesEditor()}
+
               {activeView === "design" && renderDesignEditor()}
               {activeView === "details" && renderDetailsEditor()}
               {activeView === "rsvp" && renderRsvpEditor()}

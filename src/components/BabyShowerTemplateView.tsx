@@ -1,4 +1,6 @@
 "use client";
+import TemplateImageTone from "@/components/events/TemplateImageTone";
+
 import BridalShowerPreview from "@/components/templates/BridalShowerPreview";
 import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
 import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
@@ -299,7 +301,7 @@ export default function BabyShowerTemplateView({
             style={backgroundStyle}
           >
             {isBridal ? <BridalShowerPreview headerOnly templateId={eventData.templateId} data={{ ...eventData, theme, images: { hero: heroImage } }} /> : design ? (
-              <BabyShowerDesignHero
+              <BabyShowerDesignHero filterEnabled={eventData.heroImageFilterEnabled !== false}
                 design={design}
                 babyName={eventData?.babyName}
                 momName={eventData?.momName}
@@ -323,6 +325,13 @@ export default function BabyShowerTemplateView({
               />
             ) : (<>
             {/* Header */}
+            <div className="relative h-[420px] w-full">
+              <TemplateImageTone enabled={eventData.heroImageFilterEnabled !== false} color={theme.accent}>
+<img src={heroImage} alt="Hero" className="template-hero-image h-full w-full object-cover" />
+</TemplateImageTone>
+              <div className="absolute inset-0 bg-gradient-to-b from-black/0 to-black/30"></div>
+            </div>
+
             <div className={`px-6 md:px-10 pt-8 pb-4 border-b border-white/10 ${textClass}`}>
               <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div>
@@ -352,10 +361,7 @@ export default function BabyShowerTemplateView({
             </div>
 
             {/* Hero Image */}
-            <div className="relative h-[420px] w-full">
-              <img src={heroImage} alt="Hero" className="h-full w-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/0 to-black/30"></div>
-            </div>
+
 
             </>)}
             <div className={design ? babyStyles.body : undefined} data-style={design?.style}>

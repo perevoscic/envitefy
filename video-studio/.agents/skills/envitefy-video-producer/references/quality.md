@@ -1,5 +1,7 @@
 # Quality workflow for future Envitefy videos
 
+For new films and substantial creative rebuilds, use the [directed workflow](directed-workflow.md): one edit, complete early previews, scoped pilots, cold rough-cut critique and exact-file decisions. The legacy commands below remain available for existing campaigns.
+
 Updated September 11, 2026: the user is the final human reviewer. Codex handles concept development, production, independent AI critique, technical checks, repairs and review records in the background during each requested video task. Do not hire or contact an editor. Do not require intermediate human concept or rough-cut approval unless the user asks for it. The next three new videos remain the initial quality pilot; existing campaigns are unchanged unless a revision is requested.
 
 ## Background production and review

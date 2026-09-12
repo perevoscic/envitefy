@@ -29,6 +29,8 @@ import EventViewTracker from "@/components/EventViewTracker";
 import FirstScanCalendarPrompt from "@/components/FirstScanCalendarPrompt";
 import FootballSkin from "@/components/FootballSkin";
 import GenericEventSkin from "@/components/GenericEventSkin";
+import { ScannedScheduleProvider } from "@/components/ScannedSchedule";
+import { normalizeScanSchedule } from "@/lib/scan-schedule";
 import ScanArtworkProvider from "@/components/ScanArtworkProvider";
 import { normalizeScanArtwork } from "@/lib/ocr/scan-artwork-state";
 import { personalizedScanTitle, resolveSavedScanPersonalization, resolveSavedScanPresentation } from "@/lib/ocr/personalization";
@@ -1253,6 +1255,7 @@ export default async function EventPage({
           category={typeof (data as any)?.category === "string" ? (data as any).category : null}
         />
       ) : null}
+      <ScannedScheduleProvider schedule={normalizeScanSchedule(data.scanSchedule)}>
       <ScanArtworkProvider
         eventId={row.id}
         initialArtwork={normalizeScanArtwork(data.scanArtwork)}
@@ -1279,6 +1282,7 @@ export default async function EventPage({
         {scanMediaPolicy && isValidElement<{ imageUrl?: string | null }>(children) && "imageUrl" in children.props && (scanMediaPolicy.heroMode === "generated" || scanMediaPolicy.medical)
           ? cloneElement(children, { imageUrl: generatedScanHero(data) }) : children}
       </ScanArtworkProvider>
+      </ScannedScheduleProvider>
     </EventPageBackgroundStyle>
   );
 
@@ -1401,8 +1405,10 @@ export default async function EventPage({
           return null;
         })()
       : null;
-  if (editParam && canEditCreatedEvent && isFootballDiscoveryTemplate) {
-    redirect("/event");
+  if (editParam && canEditCreatedEvent && (isGymnasticsDiscoveryTemplate || isFootballDiscoveryTemplate)) {
+    const category = isFootballDiscoveryTemplate ? "football" : "gymnastics";
+    const editorUrl = `/event/${category}/customize?edit=${encodeURIComponent(row.id)}${requestedEditorView ? `&view=${requestedEditorView}` : ""}`;
+    redirect(buildOwnerEventEditHref(editorUrl, ownerEventHref, readRouteSearchParam((awaitedSearchParams as any)?.eventColor)));
   }
   if (editParam && canEditCreatedEvent && readRouteSearchParam((awaitedSearchParams as any)?.editor) === "menu") {
     const editUrl = new URL(
@@ -2691,7 +2697,7 @@ export default async function EventPage({
     const birthdayTheme = birthdayThemeBase;
 
     return renderWithEventPageBackground(
-      <BirthdayRenderer
+      <BirthdayRenderer heroImageFilterEnabled={data.heroImageFilterEnabled !== false}
         template={birthdayTheme}
         eventId={row.id}
         heroImageUrl={data.customHeroImage || data.images?.hero || data.heroImage || null}

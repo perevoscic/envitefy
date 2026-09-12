@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import HeroImageEditor from "@/components/events/HeroImageEditor";
 import EventCanvas from "@/components/EventCanvas";
 
 import { useEventProgress, useProgressNavigation } from "@/components/UnsavedProgressProvider";
@@ -30,7 +31,6 @@ import {
   Coffee,
   Upload,
   Trash2,
-  RotateCcw,
   Plane,
   Navigation,
   Building,
@@ -1067,6 +1067,7 @@ const DESIGN_THEMES = [
 ];
 
 const INITIAL_DATA = {
+  heroImageFilterEnabled: true,
   partner1: "Ava",
   partner2: "Mason",
   date: "2028-09-21",
@@ -1658,6 +1659,7 @@ const App = () => {
             ? payload.thingsToDo
             : prev.thingsToDo,
           hosts: payload.hosts ?? prev.hosts,
+          heroImageFilterEnabled: payload.heroImageFilterEnabled !== false,
           images: {
             ...prev.images,
             hero:
@@ -1718,8 +1720,8 @@ const App = () => {
   const fallbackHeroImage =
     (selectedTemplate as any)?.theme?.decorations?.heroImage ||
     "/templates/wedding-placeholders/ivory-ink-hero.jpeg";
-  const currentHeroImage = data.images.hero || fallbackHeroImage;
-  const hasCustomHeroImage = Boolean(data.images.hero);
+  
+  
 
   const previewEvent = useMemo(() => {
     const location = [data.city, data.state].filter(Boolean).join(", ");
@@ -1776,6 +1778,7 @@ const App = () => {
             url: r.url || "#",
           }))
         : [],
+      heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
       customHeroImage: data.images?.hero || undefined,
       venue: {
         name: location,
@@ -1875,17 +1878,7 @@ const App = () => {
     }));
   };
 
-  const handleImageUpload = (field, e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const imageUrl = (templateEditor ? templateEditor.previewPhoto(file) : URL.createObjectURL(file));
-      if (!imageUrl) return;
-      setData((prev) => ({
-        ...prev,
-        images: { ...prev.images, [field]: imageUrl },
-      }));
-    }
-  };
+  
 
   const handleGalleryUpload = (e) => {
     const files = Array.from(e.target.files || []);
@@ -2075,6 +2068,7 @@ const App = () => {
                 label: r.label?.trim() || "Registry",
                 url: r.url?.trim(),
               })) || [],
+          heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
           customHeroImage,
           headlineBg: data.images?.headlineBg || undefined,
           gallery,
@@ -2264,12 +2258,7 @@ const App = () => {
             desc="Names, date, location."
             onClick={() => setActiveView("headline")}
           />
-          <MenuCard
-            title="Images"
-            icon={<ImageIcon size={18} />}
-            desc="Hero & background photos."
-            onClick={() => setActiveView("images")}
-          />
+          
           <MenuCard
             title="Schedule"
             icon={<CalendarIcon size={18} />}
@@ -2393,85 +2382,7 @@ const App = () => {
     </EditorLayout>
   );
 
-  const renderImagesEditor = () => (
-    <EditorLayout title="Images" onBack={() => setActiveView("main")}>
-      <div className="space-y-8">
-        <div>
-          <div className="mb-3">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Main / top image
-            </p>
-            <p className="mt-1 text-xs leading-relaxed text-slate-400">
-              The large image shown at the top of this wedding design.
-            </p>
-          </div>
-
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="relative h-44 w-full overflow-hidden bg-slate-100">
-              {currentHeroImage ? (
-                <img
-                  src={currentHeroImage}
-                  alt="Current template hero"
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-slate-400">
-                  <ImageIcon size={28} />
-                </div>
-              )}
-              <span className="absolute left-3 top-3 rounded-full border border-white/40 bg-black/55 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur-sm">
-                {hasCustomHeroImage ? "Custom replacement" : "Template image"}
-              </span>
-            </div>
-
-            <div className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-800">Main / top image</h3>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                    {hasCustomHeroImage
-                      ? "Your replacement is currently displayed in the template."
-                      : "This is the original image included with the selected template."}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                <label className="relative inline-flex cursor-pointer items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700">
-                  <Upload size={14} />
-                  {hasCustomHeroImage ? "Replace image" : "Replace template image"}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="absolute inset-0 cursor-pointer opacity-0"
-                    onChange={(e) => handleImageUpload("hero", e)}
-                  />
-                </label>
-
-                {hasCustomHeroImage && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setData((prev) => ({
-                        ...prev,
-                        images: { ...prev.images, hero: null },
-                      }))
-                    }
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
-                  >
-                    <RotateCcw size={14} />
-                    Restore template image
-                  </button>
-                )}
-              </div>
-
-              <p className="mt-3 text-[11px] text-slate-400">Recommended: 1600 × 900 px</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </EditorLayout>
-  );
+  
 
   const renderDesignEditor = () => (
     <EditorLayout title="Design" onBack={() => setActiveView("main")}>
@@ -3240,6 +3151,7 @@ const App = () => {
             className="pointer-events-auto relative isolate z-0 mb-6 overflow-hidden shadow-2xl md:rounded-xl"
             style={{ contain: "paint", transform: "translateZ(0)" }}
           >
+            <HeroImageEditor filterEnabled={data.heroImageFilterEnabled !== false} onFilterChange={(heroImageFilterEnabled) => setData((prev) => ({ ...prev, heroImageFilterEnabled }))} value={data.images.hero} onChange={(hero) => setData((prev) => ({ ...prev, images: { ...prev.images, hero } }))} className="absolute left-4 top-4 z-30" />
             <WeddingRenderer
               template={selectedTemplate}
               event={previewEvent}
@@ -3943,12 +3855,12 @@ const App = () => {
           )}
           <div
             className={`p-6 pt-4 md:pt-6 ${
-              activeView === "main" ? "h-full flex flex-col" : ""
+              (activeView === "main" || activeView === "images") ? "h-full flex flex-col" : ""
             }`}
           >
-            {activeView === "main" && renderMainMenu()}
+            {(activeView === "main" || activeView === "images") && renderMainMenu()}
             {activeView === "headline" && renderHeadlineEditor()}
-            {activeView === "images" && renderImagesEditor()}
+            
             {activeView === "design" && renderDesignEditor()}
             {activeView === "schedule" && renderScheduleEditor()}
             {activeView === "story" && renderStoryEditor()}

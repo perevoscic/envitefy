@@ -1,5 +1,9 @@
 # Local campaign engine
 
+**September 12, 2026 override:** use OpenAI for generated assets and substantive AI work, and Remotion for animation, editing and rendering. The real adapter blocks `google-video` and `google-music`, including resume/download, even with credentials or `--allow-paid`. Legacy scripts use the same guard to block Google generation and heavy media processing. Only bounded text-only Gemini Flash calls are allowed (4,000 input characters, 256 output tokens, one candidate; no media, tools or cached context). Historical Google schemas and offline mocked tests do not authorize live generation. See the [standing provider rule](../../../../STUDIO-GUIDE.md#openai-and-remotion-gemini-for-small-text-calls-only--september-12-2026).
+
+For new films and substantial creative rebuilds, use the [directed workflow](directed-workflow.md): one edit, complete early previews, scoped pilots, cold rough-cut critique and exact-file decisions. The legacy commands below remain available for existing campaigns.
+
 Run commands from the saved `video-studio` folder. Runtime: `engine/cli.mjs`; renderer: `src/engine/entry.tsx`. These local files remain ignored under the user's Git preference. The engine is an agent-operated production tool, not an unattended creative generator or a public app feature.
 
 ## Commands
@@ -83,10 +87,12 @@ Save the generation request/provenance privately with the campaign, complete FFm
 | import | source, optional provenance/generated | Imports media from studio public/, assets/, or out/. Set generated:true for generated artwork; generated PNG/JPEG must complete the WebP/cleanup workflow first. |
 | capture | url, waitFor, optional actions/selector/viewport/scale/fullPage | Headless Playwright capture, waits for fonts/images and requested UI states, writes WebP. Actions are `{type:"click" or "wait",selector:"..."}`. Non-GET/HEAD/OPTIONS requests are blocked to prevent live submissions. Use inspected demo selectors. |
 | speech | text, voiceId, model, optional voiceSettings | ElevenLabs timestamped speech using the shared pronunciation controls. Saves audio, captions and a private receipt. No automatic voice selection or audition approval. |
-| google-video | prompt, model, optional aspectRatio/resolution/apiRevision/previousTask/referenceTask | Google Interactions video generation, preserving job IDs, continuity lineage and private response records. Model selection is explicit; verify current access. |
+| google-video | prompt, model, optional aspectRatio/resolution/apiRevision/previousTask/referenceTask/lastReferenceTask | Google Interactions video generation, preserving job IDs, continuity lineage and private response records. Model selection is explicit; verify current access. |
 | google-music | prompt, model, optional apiRevision | Google Interactions audio generation with the same durable submit/resume path. |
 
 Paid tasks additionally need `maxCostUsd` outside config. A `previousTask` must appear in dependsOn and have a completed Google job. A `referenceTask` must be a dependency producing an image or video; its media is sent as a reference. Only use references authorized for that generation. The user's pronunciation recording is not uploaded by default.
+
+For explicit first/last-frame interpolation, use `referenceTask` for the first image and `lastReferenceTask` for the ending image. Both must be dependencies producing images. They are sent as two separate ordered image content blocks followed by the prompt; explain that image1 is the first frame and image2 is the required ending pose. This is different from sending a two-panel collage. The optional field does not change existing single-reference requests. Verified locally September12,2026 with46 passing engine tests including actual ordered-image payloads.
 
 Google request structure follows the studio's working integration. Consult the current [Interactions reference](https://ai.google.dev/api/interactions-api) before changing its contract or model. ElevenLabs uses [speech with timing](https://elevenlabs.io/docs/api-reference/text-to-speech/convert-with-timestamps/). Local tests mock provider responses; they do not certify live account access.
 

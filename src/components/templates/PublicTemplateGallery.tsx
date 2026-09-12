@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import TemplateAutoLoader from "@/components/events/TemplateAutoLoader";
+import CategoryGalleryBackdrop from "@/components/events/CategoryGalleryBackdrop";
+import { categoryGalleryPageClassName } from "@/components/events/category-gallery-page";
 import { TemplateMasonryCard, TemplateMasonryGrid } from "@/components/events/TemplateMasonryGallery";
 import { getPublicTemplates } from "@/lib/public-template-catalog";
 import {
@@ -75,12 +77,13 @@ export default function PublicTemplateGallery({
     <section
       id="templates"
       aria-label={`${info.name} templates`}
-      className="scroll-mt-24 bg-[#fbf8f5] px-5 py-14 text-[#342d38] sm:px-8 lg:px-12"
+      className={`${featured ? "bg-[#fbf8f5]" : categoryGalleryPageClassName(category)} scroll-mt-24 px-5 py-14 text-[#342d38] sm:px-8 lg:px-12`}
     >
       <div className="mx-auto max-w-[1500px]">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#886488]">
+        <div className={featured ? "mb-8 flex flex-wrap items-end justify-between gap-5" : "relative isolate -mx-5 -mt-14 mb-8 overflow-hidden px-5 pt-14 sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12"}>
+          {!featured && <CategoryGalleryBackdrop category={category} />}
+          <div className="relative z-10">
+            <p className={`text-xs font-semibold uppercase tracking-widest ${featured ? "text-[#886488]" : "text-[#785779]"}`}>
               {info.name}
             </p>
             <Heading className="mt-3 font-serif text-4xl sm:text-5xl">

@@ -22,6 +22,7 @@ import type {
   RequestedOutput,
 } from "@/lib/concierge/types";
 import { buildChatShowcasePreview, type ChatPreviewSummary } from "./chat-preview-adapters";
+import ScannedSchedule from "@/components/ScannedSchedule";
 import EventPreviewViewport from "@/components/EventPreviewViewport";
 import ArtworkPreviewDialog from "@/components/ArtworkPreviewDialog";
 
@@ -277,6 +278,7 @@ export default function ChatProductPreview({
       <div className="flex h-full min-h-0 flex-col">
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-5 pt-3 sm:px-6 lg:pt-6">
           <div className="mx-auto flex w-full max-w-[34rem] flex-col gap-3">
+            {isEventPagePreview && draft?.scanSchedule ? <ScannedSchedule schedule={draft.scanSchedule} interactive={false} /> : null}
             {isLiveCard ? (
               <h2 className="sr-only">{summary.headline}</h2>
             ) : (

@@ -3154,6 +3154,7 @@ export function fallbackExtractConciergeDraft(args: {
     previewCopy.body = previous.previewCopy.body;
   }
   const base = {
+    scanSchedule: args.ocrContext?.scanSchedule || previous?.scanSchedule || null,
     creationSessionId: createCreationSessionId(sessionDraft),
     intent: blocksCreation
       ? ("unknown" as const)

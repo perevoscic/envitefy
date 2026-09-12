@@ -183,6 +183,7 @@ export function createSignupAppearance(
     slotLayout: design?.board === "ledger" || design?.board === "menu" ? "rows" : "cards",
     density: "comfortable",
     imagePosition: { x: 50, y: 50 },
+    imageFilterEnabled: true,
   };
 }
 
@@ -217,6 +218,7 @@ export function normalizeSignupAppearance(value: unknown): SignupAppearance | nu
       ? { accent: raw.accent }
       : {}),
     imagePosition: { x: coordinate(position.x), y: coordinate(position.y) },
+    imageFilterEnabled: raw.imageFilterEnabled !== false,
   };
 }
 
@@ -237,7 +239,7 @@ export function applySignupTheme(form: SignupForm, id: SignupThemeId): SignupFor
   const theme = getSignupTheme(id)!;
   return {
     ...form,
-    appearance: createSignupAppearance(id),
+    appearance: { ...createSignupAppearance(id), imageFilterEnabled: form.appearance?.imageFilterEnabled !== false },
     header: {
       ...form.header,
       backgroundColor: null,

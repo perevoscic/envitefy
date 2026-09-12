@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import HeroImageEditor from "@/components/events/HeroImageEditor";
 import EventCanvas from "@/components/EventCanvas";
 
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
@@ -229,6 +230,7 @@ const DESIGN_THEMES = [
 ];
 
 const INITIAL_DATA = {
+  heroImageFilterEnabled: true,
   eventTitle: "Gender Reveal Party",
   parentsName: "Sarah & Michael",
   date: (() => {
@@ -532,6 +534,7 @@ export default function GenderRevealTemplateCustomizePage() {
             // Include all theme properties from restoredTheme
             ...restoredTheme,
           },
+          heroImageFilterEnabled: existing.heroImageFilterEnabled !== false,
           images: {
             ...prev.images,
             hero:
@@ -594,17 +597,7 @@ export default function GenderRevealTemplateCustomizePage() {
     }));
   };
 
-  const handleImageUpload = (field, e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const imageUrl = (templateEditor ? templateEditor.previewPhoto(file) : URL.createObjectURL(file));
-      if (!imageUrl) return;
-      setData((prev) => ({
-        ...prev,
-        images: { ...prev.images, [field]: imageUrl },
-      }));
-    }
-  };
+  
 
   const handleGalleryUpload = (e) => {
     const files = Array.from(e.target.files || []);
@@ -761,6 +754,7 @@ export default function GenderRevealTemplateCustomizePage() {
               label: r.label.trim() || "Registry",
               url: r.url.trim(),
             })),
+          heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
           customHeroImage: heroImageToSave,
           heroImage: heroImageToSave, // Also save as heroImage for compatibility
           // Also save in images object for compatibility
@@ -885,12 +879,7 @@ export default function GenderRevealTemplateCustomizePage() {
           desc="Event title, date, location."
           onClick={() => setActiveView("headline")}
         />
-        <MenuCard
-          title="Images"
-          icon={<ImageIcon size={18} />}
-          desc="Hero & background photos."
-          onClick={() => setActiveView("images")}
-        />
+        
         <MenuCard
           title="Event Details"
           icon={<WandSparkles size={18} />}
@@ -984,101 +973,7 @@ export default function GenderRevealTemplateCustomizePage() {
     </EditorLayout>
   );
 
-  const renderImagesEditor = () => (
-    <EditorLayout title="Images" onBack={() => setActiveView("main")}>
-      <div className="space-y-8">
-        <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-3 tracking-wider">
-            Hero Image
-          </label>
-          <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition-colors relative">
-            {data.images.hero ? (
-              <div className="relative w-full h-48 rounded-lg overflow-hidden">
-                <img
-                  src={data.images.hero}
-                  alt="Hero"
-                  className="w-full h-full object-cover"
-                />
-                <button
-                  onClick={() =>
-                    setData((prev) => ({
-                      ...prev,
-                      images: { ...prev.images, hero: null },
-                    }))
-                  }
-                  className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md hover:bg-red-50 text-red-500"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
-                  <Upload size={20} />
-                </div>
-                <p className="text-sm text-slate-600 mb-1">Upload main photo</p>
-                <p className="text-xs text-slate-400">
-                  Recommended: 1600x900px
-                </p>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  onChange={(e) => handleImageUpload("hero", e)}
-                />
-              </>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-3 tracking-wider">
-            Headline Background
-          </label>
-          <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition-colors relative">
-            {data.images.headlineBg ? (
-              <div className="relative w-full h-32 rounded-lg overflow-hidden">
-                <img
-                  src={data.images.headlineBg}
-                  alt="Headline Bg"
-                  className="w-full h-full object-cover"
-                />
-                <button
-                  onClick={() =>
-                    setData((prev) => ({
-                      ...prev,
-                      images: { ...prev.images, headlineBg: null },
-                    }))
-                  }
-                  className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md hover:bg-red-50 text-red-500"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
-                  <ImageIcon size={20} />
-                </div>
-                <p className="text-sm text-slate-600 mb-1">
-                  Upload header texture
-                </p>
-                <p className="text-xs text-slate-400">
-                  Optional pattern behind names
-                </p>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  onChange={(e) => handleImageUpload("headlineBg", e)}
-                />
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </EditorLayout>
-  );
+  
 
   const renderDesignEditor = () => (
     <EditorLayout title="Design" onBack={() => setActiveView("main")}>
@@ -1594,13 +1489,15 @@ export default function GenderRevealTemplateCustomizePage() {
           overscrollBehavior: "contain",
         }}
       >
-        <div className="w-full min-w-0 mb-4 md:mb-8">
+        <div className="relative w-full min-w-0 mb-4 md:mb-8">
+          <HeroImageEditor filterEnabled={data.heroImageFilterEnabled !== false} onFilterChange={(heroImageFilterEnabled) => setData((prev) => ({ ...prev, heroImageFilterEnabled }))} value={data.images.hero} onChange={(hero) => setData((prev) => ({ ...prev, images: { ...prev.images, hero } }))} className="absolute left-4 top-4 z-30" />
           <GenderRevealTemplateView
             eventId=""
             eventTitle={data.eventTitle || "Our little surprise"}
             eventData={{
               ...data,
               templateId: resolvedTemplateId,
+              heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
               heroImage: data.images.hero || heroImageSrc,
               fontFamily: currentFont.preview,
               fontSize: data.theme.fontSize,
@@ -1649,9 +1546,9 @@ export default function GenderRevealTemplateCustomizePage() {
             </div>
           )}
           <div className="p-6 pt-4 md:pt-6">
-            {activeView === "main" && renderMainMenu()}
+            {(activeView === "main" || activeView === "images") && renderMainMenu()}
             {activeView === "headline" && renderHeadlineEditor()}
-            {activeView === "images" && renderImagesEditor()}
+            
             {activeView === "design" && renderDesignEditor()}
             {activeView === "eventDetails" && renderEventDetailsEditor()}
             {activeView === "hosts" && renderHostsEditor()}

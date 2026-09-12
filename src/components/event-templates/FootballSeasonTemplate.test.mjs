@@ -25,7 +25,7 @@ test("football builder shell uses the gym template selector pipeline and keeps s
   assert.match(templateSource, /menuTitle:\s*"Announcements"/);
   assert.match(
     templateSource,
-    /advancedSections:\s*\[\s*gameScheduleSection,\s*rosterSection,\s*practiceSection,\s*logisticsSection,\s*gearSection,\s*volunteersSection,\s*announcementsSection,\s*\]/s,
+    /advancedSections:\s*\[\s*gameScheduleSection,\s*liveScoresSection,\s*rosterSection,\s*practiceSection,\s*logisticsSection,\s*gearSection,\s*volunteersSection,\s*announcementsSection,\s*\]/s,
     "football advanced sections should end with announcements"
   );
   assert.match(templateSource, /export \{[\s\S]*announcementsSection/);
@@ -35,23 +35,24 @@ test("football builder shell uses the gym template selector pipeline and keeps s
   assert.ok(customizeSource.includes("getGymMeetTemplateMeta"));
   assert.ok(customizeSource.includes("isGymMeetTemplateId"));
   assert.ok(customizeSource.includes("resolveFootballSeasonTemplateChrome"));
-  assert.match(customizeSource, /FootballSeasonSectionNav/);
-  assert.match(customizeSource, /FootballSeasonHeader/);
+  assert.match(customizeSource, /EventSectionBuilderProvider/);
+  assert.match(customizeSource, /FootballHero/);
   assert.match(customizeSource, /FootballSeasonPreviewFrame/);
-  assert.match(customizeSource, /FootballSeasonPreviewSection/);
-  assert.match(customizeSource, /FootballSeasonSectionCard/);
-  assert.match(customizeSource, /FootballSeasonMutedBadge/);
+  assert.match(customizeSource, /FootballPageContent/);
+  assert.match(customizeSource, /FootballPageTextProvider/);
+  assert.match(customizeSource, /HeroImageEditor/);
   assert.match(customizeSource, /titleTypographyClassName/);
-  assert.match(customizeSource, /advancedSectionPreviews/);
-  assert.match(customizeSource, /previewNode == null/);
-  assert.match(customizeSource, /Build your football page/);
-  assert.match(customizeSource, /Edit your football page/);
+  assert.match(customizeSource, /normalizeFootballEventData/);
+  assert.match(customizeSource, /Event settings/);
   assert.match(customizeSource, /pageTemplateId/);
   assert.match(customizeSource, /themeId:\s*pageTemplateId/);
   assert.match(customizeSource, /sectionHeadingFontStyle/);
   assert.match(customizeSource, /heroHeadingFontStyle/);
-  assert.match(customizeSource, /navItems:\s*Array<\{ id: string; label: string \}>/);
-  assert.match(customizeSource, /router\.push\(`\/event\/football\/customize\?edit=\$\{eventId\}`\)/);
+  assert.match(customizeSource, /useFootballSectionTabs\(navItems\)/);
+  assert.match(customizeSource, /tabs=\{sectionTabs\}/);
+  assert.match(readSource("src/components/football-season-templates/FootballPageContent.tsx"), /tabs\.panelProps\(section\.id\)/);
+  assert.match(customizeSource, /\/api\/football\/prefill/);
+  assert.match(customizeSource, /footballEditorFields\(result.data\)/);
   assert.match(customizeSource, /config\.advancedSections\?\.map/);
   assert.doesNotMatch(customizeSource, /rivalry_red|victory_blue|championship_crimson/);
   assert.doesNotMatch(customizeSource, /FootballSeasonThemeRail/);

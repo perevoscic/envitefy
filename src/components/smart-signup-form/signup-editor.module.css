@@ -15,7 +15,7 @@
 .field { display: flex; flex-direction: column; gap: .5rem; min-width: 0; }
 .field label, .field legend { font-weight: 600; font-size: .85rem; }
 .field label span { font-weight: 400; color: var(--editor-muted); }
-.field input:not([type=checkbox]):not([type=range]):not([type=color]), .field textarea, .field select { width: 100%; min-height: 44px; border: 1px solid #cbc4ba; padding: .75rem; border-radius: .6rem; background: white; color: var(--editor-ink); outline-offset: 3px; font-size: 1rem; }
+.field input:not([type=checkbox]):not([type=range]):not([type=color]):not([type=file]), .field textarea, .field select { width: 100%; min-height: 44px; border: 1px solid #cbc4ba; padding: .75rem; border-radius: .6rem; background: white; color: var(--editor-ink); outline-offset: 3px; font-size: 1rem; }
 .help { font-size: .78rem; color: var(--editor-muted); line-height: 1.6; }
 .details { border-top: 1px solid var(--editor-line); padding-top: 1rem; }
 .details summary { font-size: .9rem; font-weight: 600; cursor: pointer; padding: .5rem 0; }

@@ -1,0 +1,78 @@
+.artwork {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.caption {
+  position: absolute;
+  left: 7%;
+  bottom: 8cqw;
+  z-index: 1;
+  width: max-content;
+  max-width: 86%;
+}
+
+/* Anchor to the card edges so a resize cannot clip a title while its new
+   photograph crop is being sampled. */
+.caption[data-caption-position^="top-"] {
+  top: 8cqw;
+  bottom: auto;
+}
+
+.caption[data-caption-position^="middle-"] {
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+}
+
+.caption[data-caption-position$="-right"] {
+  left: auto;
+  right: 7%;
+}
+
+.caption[data-caption-position$="-center"] {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.caption[data-caption-position="middle-center"] {
+  transform: translate(-50%, -50%);
+}
+
+.title {
+  margin: 0;
+  width: fit-content;
+  max-width: 100%;
+  font-size: clamp(1rem, 9.5cqw, 2rem);
+  font-weight: 700;
+  font-synthesis: none;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.media {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.artwork[data-football-thumbnail="poster"] .caption {
+  text-align: center;
+}
+
+.artwork[data-football-thumbnail="poster"] .title {
+  margin-inline: auto;
+  letter-spacing: 0;
+}
+
+.artwork[data-football-thumbnail="cinematic"] .title {
+  font-size: clamp(1.125rem, 12cqw, 2.625rem);
+}
+
+.artwork[data-compact] .title {
+  font-size: clamp(0.875rem, 10cqw, 1.125rem);
+}

@@ -136,6 +136,30 @@ test("Share sends the saved public event to the native chooser", async (t) => {
   assert.deepEqual(calls.alerts, []);
 });
 
+test("editor Preview reaches the full gymnastics renderer without leaking into guest pages", () => {
+  let opened = 0;
+  const onPreview = () => { opened += 1; };
+  const { html, actions } = render({ onPreview });
+  assert.equal(actions.onPreview, onPreview);
+  assert.ok(html.indexOf('aria-label="Preview event"') < html.indexOf("<h1"));
+  actions.onPreview();
+  assert.equal(opened, 1);
+  assert.ok(!render().html.includes('aria-label="Preview event"'));
+});
+
+test("inline text changes pass through the full editor renderer and guest pages remain clean", () => {
+  const changes = [];
+  const onPageTextChange = (key, value) => changes.push([key, value]);
+  const { html, actions } = render({ onPageTextChange });
+  assert.equal(actions.onPageTextChange, onPageTextChange);
+  assert.ok(html.includes('aria-label="Edit top-left label"'));
+  assert.ok(html.includes('aria-label="Edit meet day label"'));
+  actions.onPageTextChange('tagline', 'Go team!');
+  actions.onPageTextChange('eventTitle', 'Club meet');
+  assert.deepEqual(changes, [['tagline', 'Go team!'], ['eventTitle', 'Club meet']]);
+  assert.ok(!render().html.includes('aria-label="Edit top-left label"'));
+});
+
 test("dismissing native Share does not copy or prompt", async (t) => {
   const { actions } = render();
   const calls = browser(t, (calls) => ({

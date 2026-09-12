@@ -137,6 +137,20 @@ export default function LibraryWedding({ theme, event }: Props) {
 
       {/* The book-cover title and portrait have separate space so copy never hides the couple. */}
       <header className="relative z-10 overflow-hidden bg-[#211815]">
+        <figure
+          data-library-photo
+          className="relative mx-auto h-[56svh] min-h-[360px] max-w-[1500px] overflow-hidden border-y border-[#D4C5B0]/25"
+        >
+          <img
+            src={heroImage}
+            className="template-hero-image h-full w-full object-cover object-[center_38%]"
+            alt="Couple among the library shelves"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#211815]/35 via-transparent to-[#211815]/65" />
+          <figcaption className="absolute bottom-6 right-6 border-r border-[#D4C5B0]/60 pr-4 text-right text-[9px] uppercase tracking-[0.28em] text-[#F2E8DA]/80 sm:bottom-8 sm:right-10">
+            A portrait from our first volume
+          </figcaption>
+        </figure>
         <div
           data-library-cover
           className="relative flex min-h-[58svh] items-center justify-center overflow-hidden px-5 py-12 sm:px-8 md:py-16"
@@ -170,20 +184,7 @@ export default function LibraryWedding({ theme, event }: Props) {
           </div>
         </div>
 
-        <figure
-          data-library-photo
-          className="relative mx-auto h-[56svh] min-h-[360px] max-w-[1500px] overflow-hidden border-y border-[#D4C5B0]/25"
-        >
-          <img
-            src={heroImage}
-            className="h-full w-full object-cover object-[center_38%]"
-            alt="Couple among the library shelves"
-          />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#211815]/35 via-transparent to-[#211815]/65" />
-          <figcaption className="absolute bottom-6 right-6 border-r border-[#D4C5B0]/60 pr-4 text-right text-[9px] uppercase tracking-[0.28em] text-[#F2E8DA]/80 sm:bottom-8 sm:right-10">
-            A portrait from our first volume
-          </figcaption>
-        </figure>
+
       </header>
 
       {/* Chapter I: The Story */}

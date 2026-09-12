@@ -188,16 +188,12 @@ test("new wedding drafts use the selected template image until the user uploads 
   assert.match(customizeSource, /customHeroImage: data\.images\?\.hero \|\| undefined/);
 });
 
-test("wedding image editor identifies and previews the current template hero", () => {
+test("wedding image replacement is available on the preview without an Images sidebar", () => {
   const customizeSource = readSource("src/app/event/weddings/customize/page.tsx");
 
-  assert.match(customizeSource, /const currentHeroImage = data\.images\.hero \|\| fallbackHeroImage/);
-  assert.match(customizeSource, /src=\{currentHeroImage\}/);
-  assert.match(customizeSource, /Main \/ top image/);
-  assert.match(customizeSource, /Template image/);
-  assert.match(customizeSource, /Custom replacement/);
-  assert.match(customizeSource, /Replace template image/);
-  assert.match(customizeSource, /Restore template image/);
+  assert.match(customizeSource, /<HeroImageEditor\s+value=\{data\.images\.hero\}/);
+  assert.match(customizeSource, /customHeroImage: data\.images\?\.hero \|\| undefined/);
+  assert.doesNotMatch(customizeSource, /renderImagesEditor|title="Images"|setActiveView\("images"\)/);
 });
 
 test("the 20 expanded wedding designs use signature page compositions instead of shared color swaps", () => {

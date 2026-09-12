@@ -53,7 +53,7 @@ test("dashboard sends scan attempt ids through OCR, media upload, and history", 
   assert.match(source, /const scanAttemptId = pendingScanAttemptId \|\| createClientAttemptId\("scan"\);/);
   assert.match(source, /form\.append\("scanAttemptId", scanAttemptId\);/);
   assert.match(source, /scanAttemptId,\s*\}\);/);
-  assert.match(source, /body: JSON\.stringify\(\{ \.\.\.payload, scanAttemptId \}\)/);
+  assert.match(source, /body: JSON\.stringify\(\{\s*\.\.\.payload,\s*scanAttemptId,\s*scanArtworkTicket: ocrMeta\?\.scanArtworkTicket,?\s*\}\)/);
 });
 
 test("dashboard prepares oversized image scans before OCR upload", () => {

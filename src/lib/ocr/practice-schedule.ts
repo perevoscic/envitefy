@@ -38,6 +38,8 @@ export function parseDayCode(day?: string | null): { index: number; code: string
   const short = key.slice(0, 3);
   if ((DAY_NAME_TO_INDEX as any)[short]) return DAY_NAME_TO_INDEX[short];
   const upper = day.trim().toUpperCase();
+  const canonical = Object.values(DAY_NAME_TO_INDEX).find((value) => value.code === upper);
+  if (canonical) return canonical;
   switch (upper) {
     case "MON":
       return DAY_NAME_TO_INDEX.mon;
@@ -270,7 +272,7 @@ function convertTo24Hour(
   meridiem: string | null,
   fallbackCompareHour?: number,
 ): { hour: number; minute: number } {
-  let h = hour % 12;
+  let h = hour;
   if (meridiem) {
     if (/p/.test(meridiem) && h < 12) h += 12;
     if (/a/.test(meridiem) && hour === 12) h = 0;
@@ -313,7 +315,7 @@ export function parsePracticeScheduleHeuristics(
     }
   }
 
-  if (dayOrder.length < 3) return null;
+  if (dayOrder.length < 1) return null;
   if (headerEnd < headerStart) headerEnd = headerStart + dayOrder.length - 1;
 
   const groups: PracticeHeuristicGroup[] = [];
@@ -322,6 +324,8 @@ export function parsePracticeScheduleHeuristics(
   const collectValue = (startIdx: number): { value: string; consumed: number } => {
     let combined = normalizedLines[startIdx];
     let consumed = 1;
+    // OFF is a complete cell, not a note belonging to either adjacent day.
+    if (isOffToken(combined)) return { value: combined, consumed };
     let idx = startIdx + 1;
     while (idx < normalizedLines.length) {
       const next = normalizedLines[idx];
@@ -331,14 +335,9 @@ export function parsePracticeScheduleHeuristics(
         continue;
       }
       if (isDayToken(next)) break;
+      if (isOffToken(next)) break;
       if (looksLikeGroupName(next) && groupKeywords.test(next.toLowerCase())) break;
       if (/\d{1,2}:\d{2}/.test(next) && /\d{1,2}:\d{2}/.test(combined)) break;
-      if (/\boff\b/i.test(next) && /\boff\b/i.test(combined)) {
-        combined = "OFF";
-        idx++;
-        consumed++;
-        continue;
-      }
       if (!/\d/.test(next)) {
         combined = `${combined} ${next}`.trim();
         idx++;
@@ -373,8 +372,7 @@ export function parsePracticeScheduleHeuristics(
       }
       if (
         looksLikeGroupName(candidate) &&
-        groupKeywords.test(candidate.toLowerCase()) &&
-        values.length === 0
+        groupKeywords.test(candidate.toLowerCase())
       ) {
         break;
       }
@@ -418,7 +416,7 @@ export function parsePracticeScheduleHeuristics(
         });
         return;
       }
-      const dayInfo = DAY_NAME_TO_INDEX[normalizeDayToken(dayCode)] || {
+      const dayInfo = parseDayCode(dayCode) || {
         index: idxValue,
         code: dayCode,
       };

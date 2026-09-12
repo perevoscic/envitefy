@@ -1,27 +1,37 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import path from "node:path";
 import test from "node:test";
+const read = (path) => fs.readFileSync(path, "utf8");
 
-const repoRoot = process.cwd();
-
-const readSource = (relativePath) =>
-  fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
-
-test("football routes redirect to gymnastics", () => {
-  const landingPage = readSource("src/app/football/page.tsx");
-  const eventPage = readSource("src/app/event/football/page.tsx");
-
-  assert.match(landingPage, /redirect\("\/gymnastics"\)/);
-  assert.match(eventPage, /redirect\("\/gymnastics"\)/);
+test("football restores public landing and design-first creation routes", () => {
+  assert.match(read("src/app/football/page.tsx"), /<FootballLanding \/>/);
+  assert.match(read("src/app/event/football/page.tsx"), /<FootballDesignGallery \/>/);
+  assert.match(read("src/app/football/templates/page.tsx"), /<FootballDesignGallery \/>/);
+  assert.match(read("src/app/event/football/page.tsx"), /params.append\(key, item\)/);
+  assert.match(read("src/app/event/football/page.tsx"), /\/event\/football\/customize\?/);
+  assert.match(read("src/app/sitemap.ts"), /path: "\/football"/);
+  const middleware = read("src/middleware.ts");
+  assert.doesNotMatch(middleware, /url.search = "\?sport=football"/);
+  assert.match(middleware, /normalizedPathname === "\/event\/football\/customize"/);
+  assert.match(middleware, /normalizedPathname === "\/event\/football-season\/customize"/);
 });
 
-test("football is removed from the sitemap and redirected in middleware", () => {
-  const middleware = readSource("src/middleware.ts");
-  const sitemap = readSource("src/app/sitemap.ts");
+test("football uses shared gallery loading and an inert artwork picker", () => {
+  assert.match(read("src/components/football-season-templates/FootballDesignGallery.tsx"), /<EventDesignGallery/);
+  const picker = read("src/components/football-season-templates/TemplateSelector.tsx");
+  assert.match(picker, /<TemplateAutoLoader[^>]*scrollRoot=\{scrollRoot\}/);
+  assert.match(picker, /<TemplateScrollToTop scrollRoot=\{scrollRoot\}/);
+  assert.match(picker, /<FootballThumbnail/);
+  assert.match(read("src/components/football-season-templates/FootballThumbnail.tsx"), /scaled=\{false\}/);
+  assert.ok(fs.existsSync("public/images/football/templates/launchpad-editorial.webp"));
+});
 
-  assert.match(middleware, /normalizedPathname === "\/football"/);
-  assert.match(middleware, /normalizedPathname === "\/event\/football"/);
-  assert.doesNotMatch(sitemap, /path: "\/football"/);
-  assert.match(sitemap, /path: "\/snap"/);
+test("football selection initializes the editor and Cancel protects saved work", () => {
+  const editor = read("src/app/event/football-season/customize/page.tsx");
+  assert.match(editor, /isGymMeetTemplateId\(selected\) \? selected : DEFAULT_GYM_MEET_TEMPLATE_ID/);
+  assert.match(editor, /ownerEventEditorReturnHref\(search\)/);
+  assert.match(editor, /buildEventPath\(editEventId, undefined, \{ tab: "event" \}\)/);
+  assert.match(editor, /requestLeave\(\(\) =>/);
+  assert.doesNotMatch(editor, /method: "DELETE"/);
+  assert.match(editor, /useManualEventProgress\(/);
 });

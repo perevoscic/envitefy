@@ -26,6 +26,7 @@ import {
   EVENT_SKIN_FOOTER_DIVIDER_CLASS,
   EVENT_SKIN_FOOTER_TEXT_CLASS,
 } from "@/components/event-skin-layout";
+import ScannedSchedule from "@/components/ScannedSchedule";
 import OcrFactCards from "@/components/OcrFactCards";
 import EventDetailText from "@/components/EventDetailText";
 import RsvpIdentityModal from "@/components/RsvpIdentityModal";
@@ -1038,6 +1039,7 @@ export default function ScannedInviteSkin({
                 </motion.section>
               ) : null}
 
+              <ScannedSchedule interactive={!previewMode} />
               <OcrFactCards
                 interactive={!previewMode}
                 facts={[...leftColumnOcrFacts, ...rightColumnOcrFacts]}

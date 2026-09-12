@@ -798,6 +798,7 @@ function buildChatOcrContext(
 ): ConciergeOcrContext {
   return {
     ocrText: result.ocrText || null,
+    scanSchedule: result.scanSchedule || null,
     sourceEvidence: result.sourceEvidence || null,
     fieldsGuess: buildChatFieldsGuess(result),
     category: result.category || null,

@@ -1,5 +1,5 @@
 "use client";
-
+import TemplateImageTone from "@/components/events/TemplateImageTone";
 import { type CSSProperties, type ReactNode, useState } from "react";
 import CalendarAction from "@/components/CalendarAction";
 import { buildCalendarLinks } from "@/utils/calendar-links";
@@ -24,6 +24,7 @@ export default function BabyShowerDesignHero({
   momName,
   eventTitle,
   heroImage,
+  filterEnabled = true,
   dateLabel,
   timeLabel,
   location,
@@ -42,6 +43,7 @@ export default function BabyShowerDesignHero({
   momName?: string;
   eventTitle: string;
   heroImage: string;
+  filterEnabled?: boolean;
   dateLabel: string | null;
   timeLabel: string | null;
   location?: string;
@@ -68,9 +70,10 @@ export default function BabyShowerDesignHero({
     }
   };
   return (
-    <header className={styles.hero} data-baby-scene={design.id}>
+    <TemplateImageTone color={design.colors.accent} enabled={filterEnabled}>
+<header className={styles.hero} data-baby-scene={design.id}>
       <div className={styles.art}>
-        <img src={heroImage} alt={design.subject} className={styles.image} />
+        <img src={heroImage} alt={design.subject} className={`template-hero-image ${styles.image}`} />
       </div>
       <div className={styles.copy}>
         <p className={styles.eyebrow}>You’re invited · Baby shower</p>
@@ -92,5 +95,6 @@ export default function BabyShowerDesignHero({
         {!thumbnail && <div className={styles.share}><button type="button" onClick={share}>Share invitation</button>{shareMessage && <p role="status">{shareMessage}</p>}</div>}
       </div>
     </header>
+</TemplateImageTone>
   );
 }

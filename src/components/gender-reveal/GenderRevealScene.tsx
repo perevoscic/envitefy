@@ -1,3 +1,5 @@
+
+import TemplateImageTone from "@/components/events/TemplateImageTone";
 import type { CSSProperties, ReactNode } from "react";
 import { genderRevealFont, type GenderRevealDesign } from "@/lib/gender-reveal-designs";
 import styles from "./gender-reveal-scenes.module.css";
@@ -15,12 +17,13 @@ export { styles as genderRevealStyles };
 
 export default function GenderRevealScene({
   design, title, parents, image, fontFamily, fontSize, date, time, location, announcement,
-  actions, controls, status,
+  actions, controls, status, filterEnabled = true,
 }: {
   design: GenderRevealDesign;
   title: string;
   parents?: string;
   image: string;
+  filterEnabled?: boolean;
   fontFamily?: string;
   fontSize?: string;
   date?: string | null;
@@ -32,10 +35,11 @@ export default function GenderRevealScene({
   status?: ReactNode;
 }) {
   return (
-    <section className={`${styles.scene} ${styles[design.composition]}`} data-reveal-scene={design.id}>
+    <TemplateImageTone color={design.accent} enabled={filterEnabled}>
+<section className={`${styles.scene} ${styles[design.composition]}`} data-reveal-scene={design.id}>
       {controls ? <div className={styles.controls}>{controls}</div> : null}
       <div className={styles.art}>
-        <img src={image} alt="" loading="eager" decoding="async" width={1536} height={1024} />
+        <img className="template-hero-image" src={image} alt="" loading="eager" decoding="async" width={1536} height={1024} />
       </div>
       <div className={styles.copy}>
         <p className={styles.eyebrow}>{announcement || "A little surprise is on the way"}</p>
@@ -52,5 +56,6 @@ export default function GenderRevealScene({
       </div>
       {status ? <div className={styles.status}>{status}</div> : null}
     </section>
+</TemplateImageTone>
   );
 }

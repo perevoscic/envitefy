@@ -165,7 +165,7 @@ export default function EtherealWedding({ theme, event }: Props) {
       {/* Hero */}
       <header className="relative h-screen w-full overflow-hidden flex items-center justify-center">
         <div
-          className="absolute inset-0 bg-cover bg-center"
+          className="template-hero-image absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage: `url("${heroImage}")`,
           }}

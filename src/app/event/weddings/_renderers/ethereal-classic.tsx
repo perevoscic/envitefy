@@ -129,7 +129,7 @@ export default function EtherealClassic({ theme, event }: Props) {
 
       <header className="relative h-screen w-full overflow-hidden flex items-center justify-center">
         <div
-          className="absolute inset-0 bg-cover bg-center bg-fixed"
+          className="template-hero-image absolute inset-0 bg-cover bg-center bg-fixed"
           style={{
             backgroundImage: theme.decorations?.heroImage
               ? `url(${theme.decorations.heroImage})`

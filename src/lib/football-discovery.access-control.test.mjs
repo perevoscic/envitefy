@@ -12,15 +12,11 @@ test("football discovery keeps access-control normalization stable", () => {
   const source = readSource("src/lib/football-discovery.ts");
 
   assert.ok(
-    source.includes(
-      "baseData?.accessControl\n      ? await normalizeAccessControlPayload(\n          baseData.accessControl,\n          baseData.accessControl\n        )"
-    ),
+    /baseData\?\.accessControl\s*\? await normalizeAccessControlPayload\(\s*baseData.accessControl,\s*baseData.accessControl,?\s*\)/.test(source),
     "football discovery should preserve existing access control through the normalizer"
   );
   assert.ok(
-    source.includes(
-      "mode: \"public\",\n          requirePasscode: false"
-    ),
+    /mode: "public",\s*requirePasscode: false/.test(source),
     "football discovery should emit a stable public access-control payload when no passcode exists"
   );
   assert.ok(

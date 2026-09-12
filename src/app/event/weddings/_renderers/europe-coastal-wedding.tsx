@@ -218,7 +218,7 @@ export default function EuropeCoastalWedding({ theme, event }: Props) {
         <div className="relative mx-4 mt-4 h-[55svh] shrink-0 rounded-t-[10rem] border border-[#004B8D]/20 md:absolute md:inset-0 md:m-4 md:h-auto">
           <img
             src={heroImage}
-            className="h-full w-full rounded-t-[10rem] object-cover object-[35%_center] opacity-100 md:object-center md:opacity-90"
+            className="template-hero-image h-full w-full rounded-t-[10rem] object-cover object-[35%_center] opacity-100 md:object-center md:opacity-90"
             alt="Coastal View"
           />
           <div className="absolute inset-0 rounded-t-[10rem] bg-transparent md:bg-blue-900/10"></div>

@@ -99,6 +99,7 @@ export function resolveArtworkEditHref(eventId: string, eventData: unknown): str
  * for other event types, goes directly to customize.
  */
 export const buildEditLink = (eventId: string, eventData: any, eventTitle: string): string => {
+  if (eventData?.scanSchedule?.items?.length) return `/event/schedule/customize?edit=${encodeURIComponent(eventId)}`;
   try {
     const manualHref = manualEventEditHref(eventId, eventData);
     if (manualHref) return manualHref;
@@ -152,6 +153,7 @@ export const buildEditLink = (eventId: string, eventData: any, eventTitle: strin
 };
 
 export const resolveEditHref = (eventId: string, eventData: any, eventTitle: string): string => {
+  if (eventData?.scanSchedule?.items?.length) return `/event/schedule/customize?edit=${encodeURIComponent(eventId)}`;
   const manualHref = manualEventEditHref(eventId, eventData);
   if (manualHref) return manualHref;
   const editor = eventData?.templateEditor;
@@ -210,8 +212,14 @@ export const resolveEditHref = (eventId: string, eventData: any, eventTitle: str
       return `/events/${encodeURIComponent(eventId)}/manage`;
     }
 
-    // Discovery-generated gymnastics events: edit on the event page with a right sidebar (same URL + ?edit=).
+    // Section composition needs the page and its controls in the same editor.
     if (createdVia === "meet-discovery" || Boolean((eventData as any)?.discoverySource?.input)) {
+      if (/football/.test(`${normalizedCategory} ${createdVia} ${templateId || ""}`)) {
+        return `/event/football/customize?edit=${encodeURIComponent(eventId)}`;
+      }
+      if (createdVia === "meet-discovery" || /gymnastics/.test(normalizedCategory)) {
+        return `/event/gymnastics/customize?edit=${encodeURIComponent(eventId)}`;
+      }
       return buildEventPath(eventId, eventTitle, { edit: eventId });
     }
 

@@ -1,4 +1,11 @@
 export type EventWebsiteScheduleItem = {
+  group?: string | null;
+  day?: string | null;
+  date?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  opponent?: string | null;
+  homeAway?: "home" | "away" | null;
   id: string;
   title: string;
   type: string | null;
@@ -32,9 +39,10 @@ export function extractEventWebsiteSchedule(data: unknown): EventWebsiteSchedule
   const event = record(data);
   const publicEvent = record(event.publicEvent);
   const scheduleHub = record(event.scheduleHub);
+  const scanSchedule = record(event.scanSchedule);
   // The first stored array is authoritative, including an empty public schedule.
   // Falling through on [] would bring back items the host deliberately removed.
-  const items = [publicEvent.scheduleItems, scheduleHub.items, scheduleHub.occurrences, event.scheduleItems]
+  const items = [publicEvent.scheduleItems, scheduleHub.items, scheduleHub.occurrences, event.scheduleItems, scanSchedule.items]
     .find(Array.isArray) ?? [];
 
   return items.flatMap((value: unknown, index: number): EventWebsiteScheduleItem[] => {
@@ -51,6 +59,13 @@ export function extractEventWebsiteSchedule(data: unknown): EventWebsiteSchedule
       locationText: text(item.locationText || item.location || item.venue, 180) || null,
       status: text(item.status, 60) || "scheduled",
       notes: text(item.notes || item.description, 280) || null,
+      group: text(item.group, 180) || null,
+      day: text(item.day, 20) || null,
+      date: text(item.date, 30) || null,
+      startTime: text(item.startTime, 40) || null,
+      endTime: text(item.endTime, 40) || null,
+      opponent: text(item.opponent, 180) || null,
+      homeAway: item.homeAway === "home" || item.homeAway === "away" ? item.homeAway : null,
     }];
-  }).slice(0, 30);
+  });
 }

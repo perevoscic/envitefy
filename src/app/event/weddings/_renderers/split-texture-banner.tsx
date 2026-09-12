@@ -27,7 +27,7 @@ export default function SplitTextureBanner({
         {theme.decorations?.heroImage && (
           <img
             src={theme.decorations.heroImage}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="template-hero-image absolute inset-0 w-full h-full object-cover"
             alt=""
           />
         )}

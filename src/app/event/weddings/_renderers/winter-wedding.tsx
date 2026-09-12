@@ -247,7 +247,7 @@ export default function WinterWedding({ theme, event }: Props) {
         <div className="relative z-0 h-[58svh] w-full shrink-0 md:absolute md:inset-0 md:h-auto">
           <img
             src={heroImage}
-            className="h-full w-full object-cover object-center opacity-100 md:opacity-70"
+            className="template-hero-image h-full w-full object-cover object-center opacity-100 md:opacity-70"
             alt="Snowy Mountains"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#1A2F25]/15 via-transparent to-transparent md:from-[#1A2F25] md:to-[#1A2F25]/40"></div>

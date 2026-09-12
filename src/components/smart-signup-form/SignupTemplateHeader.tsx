@@ -1,3 +1,5 @@
+
+import TemplateImageTone from "@/components/events/TemplateImageTone";
 import type { ReactNode } from "react";
 import { parseCalendarDateTimeToIso } from "@/lib/calendar-date-time";
 import { getSignupDesign } from "@/lib/signup-designs";
@@ -11,12 +13,14 @@ export default function SignupTemplateHeader({
   fallbackTitle,
   children,
   actions,
+  imageActions,
   imageLoading,
 }: {
   form: SignupForm;
   fallbackTitle?: string;
   children?: ReactNode;
   actions?: ReactNode;
+  imageActions?: ReactNode;
   imageLoading?: "eager" | "lazy";
 }) {
   const header = form.header;
@@ -52,6 +56,7 @@ export default function SignupTemplateHeader({
   })();
   const content = (
     <div className={styles.headerContent}>
+      {imageActions}
       {header?.groupName && (
         <p
           className={styles.eyebrow}
@@ -100,7 +105,8 @@ export default function SignupTemplateHeader({
   );
   if (layout === "designed" && design) {
     return (
-      <section
+      <TemplateImageTone enabled={form.appearance?.imageFilterEnabled !== false} color={resolveSignupThemeStyle(form)["--signup-accent" as keyof ReturnType<typeof resolveSignupThemeStyle>] as string}>
+<section
         className={styles.composition}
         style={resolveSignupThemeStyle(form)}
         data-composition={design.composition}
@@ -109,7 +115,7 @@ export default function SignupTemplateHeader({
       >
         {cover && (
           <div className={styles.artwork}>
-            <img
+            <img className="template-hero-image"
               src={cover.dataUrl}
               alt=""
               loading={imageLoading}
@@ -124,10 +130,12 @@ export default function SignupTemplateHeader({
           <SignupDesignOrnament motif={design.motif} />
         </div>
       </section>
+</TemplateImageTone>
     );
   }
   return (
-    <section
+    <TemplateImageTone enabled={form.appearance?.imageFilterEnabled !== false} color={resolveSignupThemeStyle(form)["--signup-accent" as keyof ReturnType<typeof resolveSignupThemeStyle>] as string}>
+<section
       className={styles.header}
       style={{
         ...resolveSignupThemeStyle(form),
@@ -141,7 +149,7 @@ export default function SignupTemplateHeader({
     >
       {(layout === "header-3" || layout === "header-4") && cover && (
         <img
-          className={styles.cover}
+          className={`template-hero-image ${styles.cover}`}
           loading={imageLoading}
           src={cover.dataUrl}
           alt=""
@@ -156,7 +164,7 @@ export default function SignupTemplateHeader({
             {(gallery.length ? gallery : header?.backgroundImage ? [header.backgroundImage] : [])
               .slice(0, layout === "header-6" ? 3 : 2)
               .map((img, i) => (
-                <img
+                <img className="template-hero-image"
                   key={`${img.dataUrl}-${i}`}
                   src={img.dataUrl}
                   alt=""
@@ -169,7 +177,7 @@ export default function SignupTemplateHeader({
       {split ? (
         <div className={`${styles.split} ${layout === "header-2" ? styles.right : ""}`}>
           <img
-            className={styles.portrait}
+            className={`template-hero-image ${styles.portrait}`}
             src={portrait.dataUrl}
             alt=""
             style={imageStyle}
@@ -181,5 +189,6 @@ export default function SignupTemplateHeader({
         content
       )}
     </section>
+</TemplateImageTone>
   );
 }

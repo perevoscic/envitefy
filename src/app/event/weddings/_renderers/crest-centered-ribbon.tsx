@@ -33,7 +33,7 @@ export default function CrestCenteredRibbon({
           {theme.decorations?.heroImage && (
             <img
               src={theme.decorations.heroImage}
-              className="w-20 h-20 object-contain mb-4"
+              className="template-hero-image w-20 h-20 object-contain mb-4"
               alt=""
             />
           )}

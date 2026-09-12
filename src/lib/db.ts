@@ -55,6 +55,7 @@ import {
   makeEventPublicSlugRoutable,
   normalizePublicSlug,
   readEventPublicSlug,
+  validateCustomEventPublicSlug,
 } from "@/utils/event-public-slug";
 
 const scrypt = promisify(nodeScrypt);
@@ -2986,22 +2987,23 @@ function appendPublicSlugSuffix(base: string, suffixNumber: number): string {
   return makeEventPublicSlugRoutable(`${trimmedBase || "event"}${suffix}`);
 }
 
-async function isEventPublicSlugAvailable(publicSlug: string, eventId: string): Promise<boolean> {
+export async function isEventPublicSlugAvailable(publicSlug: string, eventId?: string, client?: PoolClient): Promise<boolean> {
   await ensureEventPublicSlugSchema();
   const slug = makeEventPublicSlugRoutable(publicSlug);
-  const res = await query<{ taken: boolean }>(
+  const runQuery = client ? client.query.bind(client) : query;
+  const res = await runQuery<{ taken: boolean }>(
     `select exists (
        select 1
        from event_history
        where lower(public_slug) = lower($1)
-         and id <> $2::uuid
+         and ($2::uuid is null or id <> $2::uuid)
        union all
        select 1
        from event_public_slug_aliases
        where lower(alias) = lower($1)
-         and event_id <> $2::uuid
+         and ($2::uuid is null or event_id <> $2::uuid)
      ) as taken`,
-    [slug, eventId],
+    [slug, eventId || null],
   );
   return !res.rows[0]?.taken;
 }
@@ -3011,68 +3013,89 @@ async function createUniqueEventPublicSlug(params: {
   title: string;
   data: any;
   preferredSlug?: string | null;
-}): Promise<string> {
+}, client?: PoolClient): Promise<string> {
   await ensureEventPublicSlugSchema();
   const base = makeEventPublicSlugRoutable(
     params.preferredSlug ||
       buildEventPublicSlugCandidate({ title: params.title, data: params.data }),
   );
-  if (await isEventPublicSlugAvailable(base, params.eventId)) return base;
+  if (await isEventPublicSlugAvailable(base, params.eventId, client)) return base;
 
   for (let suffix = 2; suffix <= 100; suffix += 1) {
     const candidate = appendPublicSlugSuffix(base, suffix);
-    if (await isEventPublicSlugAvailable(candidate, params.eventId)) return candidate;
+    if (await isEventPublicSlugAvailable(candidate, params.eventId, client)) return candidate;
   }
 
   return `${appendPublicSlugSuffix(base, Date.now())}`;
+}
+
+// Canonical links and aliases share one namespace, so serialize their writers.
+async function withEventPublicSlugTransaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T> {
+  await ensureEventPublicSlugSchema();
+  return withClient(async (client) => {
+    await client.query("begin");
+    try {
+      await client.query("select pg_advisory_xact_lock(192837465, 1)");
+      const result = await work(client);
+      await client.query("commit");
+      return result;
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    }
+  });
 }
 
 async function persistEventPublicSlug(params: {
   eventId: string;
   publicSlug: string;
   addPreviousAsAlias?: boolean;
+  data?: Record<string, any>;
+  title?: string;
 }): Promise<EventHistoryRow | null> {
-  await ensureEventPublicSlugSchema();
-  const currentRes = await query<EventHistoryRow>(
-    `select id, user_id, title, data, public_slug, created_at
-     from event_history
-     where id = $1
-     limit 1`,
-    [params.eventId],
-  );
-  const current = currentRes.rows[0] || null;
-  if (!current) return null;
-
-  const nextSlug = makeEventPublicSlugRoutable(params.publicSlug);
-  if (!(await isEventPublicSlugAvailable(nextSlug, params.eventId))) {
-    throw new Error("That event link is already in use.");
-  }
-
-  const previousSlug = current.public_slug ? makeEventPublicSlugRoutable(current.public_slug) : "";
-  if (params.addPreviousAsAlias && previousSlug && previousSlug !== nextSlug) {
-    await query(
-      `insert into event_public_slug_aliases (alias, event_id)
-       values ($1, $2)
-       on conflict (alias) do update
-         set event_id = excluded.event_id,
-             created_at = now()`,
-      [previousSlug, params.eventId],
+  return withEventPublicSlugTransaction(async (client) => {
+    const currentRes = await client.query<EventHistoryRow>(
+      `select id, user_id, title, data, public_slug, created_at
+       from event_history
+       where id = $1
+       limit 1 for update`,
+      [params.eventId],
     );
-  }
+    const current = currentRes.rows[0] || null;
+    if (!current) return null;
 
-  const res = await query<EventHistoryRow>(
-    `update event_history
-     set public_slug = $2,
-         data = jsonb_set(coalesce(data, '{}'::jsonb), '{publicSlug}', to_jsonb($2::text), true)
-     where id = $1
-     returning id, user_id, title, data, public_slug, created_at`,
-    [params.eventId, nextSlug],
-  );
-  await query(
-    `delete from event_public_slug_aliases where event_id = $1 and lower(alias) = lower($2)`,
-    [params.eventId, nextSlug],
-  );
-  return res.rows[0] || null;
+    const nextSlug = makeEventPublicSlugRoutable(params.publicSlug);
+    if (!(await isEventPublicSlugAvailable(nextSlug, params.eventId, client))) {
+      throw new Error("That event link is already in use.");
+    }
+
+    const previousSlug = current.public_slug ? makeEventPublicSlugRoutable(current.public_slug) : "";
+    if (params.addPreviousAsAlias && previousSlug && previousSlug !== nextSlug) {
+      await client.query(
+        `insert into event_public_slug_aliases (alias, event_id)
+         values ($1, $2)
+         on conflict (alias) do nothing`,
+        [previousSlug, params.eventId],
+      );
+    }
+
+    const safeData = params.data ? sanitizeJsonValueForPostgres(params.data) : null;
+    if (safeData) normalizeCanonicalStartFields(safeData);
+    const res = await client.query<EventHistoryRow>(
+      `update event_history
+       set public_slug = $2,
+           data = jsonb_set(coalesce($3::jsonb, data, '{}'::jsonb), '{publicSlug}', to_jsonb($2::text), true),
+           title = coalesce($4::text, title)
+       where id = $1
+       returning id, user_id, title, data, public_slug, created_at`,
+      [params.eventId, nextSlug, safeData ? JSON.stringify(safeData) : null, params.title ?? null],
+    );
+    await client.query(
+      `delete from event_public_slug_aliases where event_id = $1 and lower(alias) = lower($2)`,
+      [params.eventId, nextSlug],
+    );
+    return res.rows[0] || null;
+  });
 }
 
 async function ensureEventHistoryRowPublicSlug(
@@ -3108,6 +3131,8 @@ async function ensureEventHistoryRowPublicSlug(
 export async function updateEventHistoryPublicSlug(params: {
   id: string;
   publicSlug: string;
+  data?: Record<string, any>;
+  title?: string;
 }): Promise<EventHistoryRow | null> {
   const nextSlug = makeEventPublicSlugRoutable(params.publicSlug);
   if (!nextSlug || nextSlug === "event") {
@@ -3117,6 +3142,8 @@ export async function updateEventHistoryPublicSlug(params: {
     eventId: params.id,
     publicSlug: nextSlug,
     addPreviousAsAlias: true,
+    data: params.data,
+    title: params.title,
   });
 }
 
@@ -3125,25 +3152,32 @@ export async function insertEventHistory(params: {
   userId?: string | null;
   title: string;
   data: any;
+  publicSlug?: string;
 }): Promise<EventHistoryRow> {
   const id = params.clientDraftId || randomUUID();
   const safeData = sanitizeJsonValueForPostgres(params.data ?? {});
   if (safeData && typeof safeData === "object") {
     normalizeCanonicalStartFields(safeData);
   }
-  const publicSlug = await createUniqueEventPublicSlug({
-    eventId: id,
-    title: params.title,
-    data: safeData,
+  const res = await withEventPublicSlugTransaction(async (client) => {
+    const requested = params.publicSlug === undefined ? null : validateCustomEventPublicSlug(params.publicSlug);
+    if (requested?.error) throw new Error(requested.error);
+    if (requested && !(await isEventPublicSlugAvailable(requested.slug, id, client)))
+      throw new Error("That event link is already in use.");
+    const publicSlug = requested?.slug || await createUniqueEventPublicSlug({
+      eventId: id,
+      title: params.title,
+      data: safeData,
+    }, client);
+    const dataWithPublicSlug = addPublicSlugToData(safeData, publicSlug);
+    return client.query<EventHistoryRow>(
+      `insert into event_history (id, user_id, title, data, public_slug, created_at)
+       values ($1, $2, $3, $4, $5, coalesce(now(), now()))
+       on conflict (id) do nothing
+       returning id, user_id, title, data, public_slug, created_at`,
+      [id, params.userId || null, params.title, JSON.stringify(dataWithPublicSlug), publicSlug],
+    );
   });
-  const dataWithPublicSlug = addPublicSlugToData(safeData, publicSlug);
-  const res = await query<EventHistoryRow>(
-    `insert into event_history (id, user_id, title, data, public_slug, created_at)
-     values ($1, $2, $3, $4, $5, coalesce(now(), now()))
-     on conflict (id) do nothing
-     returning id, user_id, title, data, public_slug, created_at`,
-    [id, params.userId || null, params.title, JSON.stringify(dataWithPublicSlug), publicSlug],
-  );
   if (res.rows[0]) return res.rows[0];
   const existing = await getEventHistoryById(id);
   if (!existing || !params.userId || existing.user_id !== params.userId) throw new Error("Draft identity belongs to another account");

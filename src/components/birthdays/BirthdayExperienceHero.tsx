@@ -335,7 +335,7 @@ function HeroMedia({ theme, className = "" }: { theme: BirthdayExperienceTheme; 
         <img
           src={heroImage}
           alt=""
-          className="absolute inset-0 h-full w-full object-cover"
+          className="template-hero-image absolute inset-0 h-full w-full object-cover"
           style={{ objectPosition: profile.imagePosition }}
         />
       ) : null}
@@ -386,8 +386,9 @@ export default function BirthdayExperienceHero({
         <section className={`${shared} ${copyPadding}`} style={style}>
           {actionNode}
           <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[0.9fr_1.1fr]">
-            <HeroCopy theme={theme} event={event} onRsvpClick={onRsvpClick} />
             <HeroMedia theme={theme} className="min-h-[520px] rounded-t-[999px]" />
+            <HeroCopy theme={theme} event={event} onRsvpClick={onRsvpClick} />
+
           </div>
         </section>
       );
@@ -413,8 +414,9 @@ export default function BirthdayExperienceHero({
           {actionNode}
           <div className="mx-auto max-w-6xl border-y-4 border-dashed border-white/35 py-12">
             <div className="grid items-center gap-10 lg:grid-cols-[1.15fr_0.85fr]">
-              <HeroCopy theme={theme} event={event} inverse onRsvpClick={onRsvpClick} />
               <HeroMedia theme={theme} className="min-h-[460px]" />
+              <HeroCopy theme={theme} event={event} inverse onRsvpClick={onRsvpClick} />
+
             </div>
           </div>
         </section>
@@ -437,8 +439,9 @@ export default function BirthdayExperienceHero({
           {actionNode}
           <div className="absolute inset-0 opacity-20 [background-image:repeating-linear-gradient(90deg,transparent_0,transparent_78px,currentColor_79px,currentColor_80px)]" />
           <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="border-l-[10px] border-[var(--birthday-secondary)] pl-8"><HeroCopy theme={theme} event={event} onRsvpClick={onRsvpClick} /></div>
             <HeroMedia theme={theme} className="min-h-[440px] -skew-y-2" />
+            <div className="border-l-[10px] border-[var(--birthday-secondary)] pl-8"><HeroCopy theme={theme} event={event} onRsvpClick={onRsvpClick} /></div>
+
           </div>
         </section>
       );
@@ -447,8 +450,9 @@ export default function BirthdayExperienceHero({
         <section className={`${shared} ${copyPadding}`} style={style}>
           {actionNode}
           <div className="mx-auto grid max-w-7xl items-end gap-12 lg:grid-cols-[0.72fr_1.28fr]">
-            <div className="pb-8"><HeroCopy theme={theme} event={event} onRsvpClick={onRsvpClick} /></div>
             <HeroMedia theme={theme} className="min-h-[560px] rounded-none shadow-none ring-1 ring-black/12" />
+            <div className="pb-8"><HeroCopy theme={theme} event={event} onRsvpClick={onRsvpClick} /></div>
+
           </div>
         </section>
       );
@@ -470,8 +474,9 @@ export default function BirthdayExperienceHero({
         <section className={`${shared} ${copyPadding}`} style={style}>
           {actionNode}
           <div className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-12">
-            <div className="rounded-[2.5rem] bg-white/78 p-8 shadow-xl backdrop-blur sm:p-12 lg:col-span-7"><HeroCopy theme={theme} event={event} onRsvpClick={onRsvpClick} /></div>
             <HeroMedia theme={theme} className="min-h-[420px] lg:col-span-5" />
+            <div className="rounded-[2.5rem] bg-white/78 p-8 shadow-xl backdrop-blur sm:p-12 lg:col-span-7"><HeroCopy theme={theme} event={event} onRsvpClick={onRsvpClick} /></div>
+
             <div className="flex min-h-28 items-center justify-between rounded-[2rem] bg-[var(--birthday-secondary)] px-8 text-white lg:col-span-12"><Ticket className="h-8 w-8" aria-hidden="true" /><span className="text-right text-sm font-black uppercase tracking-[0.2em]">One remarkable celebration</span></div>
           </div>
         </section>
@@ -504,8 +509,9 @@ export default function BirthdayExperienceHero({
           <div className="mx-auto max-w-5xl rotate-[-0.5deg] border border-black/10 bg-[#fffdf7] px-7 py-12 shadow-[0_30px_90px_rgba(49,36,29,0.18)] sm:px-14">
             <div className="mb-10 flex items-center justify-between border-b border-black/15 pb-5 text-[10px] font-black uppercase tracking-[0.22em] text-black/50"><span>A celebration to remember</span><span>{theme.experience.ornament.replaceAll("-", " ")}</span></div>
             <div className="grid items-center gap-12 lg:grid-cols-[1fr_0.9fr]">
-              <HeroCopy theme={theme} event={event} onRsvpClick={onRsvpClick} />
               <HeroMedia theme={theme} className="min-h-[460px]" />
+              <HeroCopy theme={theme} event={event} onRsvpClick={onRsvpClick} />
+
             </div>
           </div>
         </section>
@@ -527,8 +533,9 @@ export default function BirthdayExperienceHero({
         <section className={`${shared} ${copyPadding}`} style={style}>
           {actionNode}
           <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2">
-            <HeroCopy theme={theme} event={event} onRsvpClick={onRsvpClick} />
             <HeroMedia theme={theme} className="min-h-[520px]" />
+            <HeroCopy theme={theme} event={event} onRsvpClick={onRsvpClick} />
+
           </div>
         </section>
       );

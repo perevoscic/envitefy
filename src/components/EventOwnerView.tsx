@@ -2,8 +2,7 @@
 
 import { Pencil, Share2 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { useEventTopbarEdit } from "@/hooks/useEventPageChrome";
+import { useState } from "react";
 import type { EventPreviewBackground } from "@/lib/event-preview-background";
 import { buildEmbeddedEventPreviewHref, buildOwnerEventEditHref } from "@/lib/event-preview-viewport";
 import { trackEventInteraction } from "@/utils/event-tracking-client";
@@ -30,8 +29,6 @@ export default function EventOwnerView({
   const [copied, setCopied] = useState(false);
   const [background, setBackground] = useState<EventPreviewBackground>({ backgroundColor });
   const editUrl = buildOwnerEventEditHref(editHref, publicHref, String(background.backgroundColor || ""));
-  const editAction = useMemo(() => ({ href: editUrl }), [editUrl]);
-  useEventTopbarEdit(mobileEditInEvent ? null : editAction);
 
   async function shareEvent() {
     const url = new URL(publicHref, window.location.origin).href;
@@ -60,9 +57,9 @@ export default function EventOwnerView({
 
   const actions = (
     <div role="group" aria-label="Event actions" className="flex min-w-0 items-center gap-2">
-      <Link href={editUrl} aria-label="Edit event" title="Edit event" className={`hidden lg:inline-flex ${actionClassName}`}>
+      <Link href={editUrl} aria-label="Edit event" title="Edit event" className={`${mobileEditInEvent ? "hidden lg:inline-flex" : "inline-flex"} ${actionClassName}`}>
         <Pencil size={19} aria-hidden="true" />
-        <span>Edit</span>
+        <span className="hidden sm:inline">Edit</span>
       </Link>
       <button
         type="button"

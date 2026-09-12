@@ -13,7 +13,7 @@ function Art({ theme, className }: BirthdaySceneProps & { className: string }) {
       src={theme.heroImage}
       alt=""
       aria-hidden="true"
-      className={`w-full object-cover ${className}`}
+      className={`template-hero-image w-full object-cover ${className}`}
     />
   );
 }
@@ -28,16 +28,17 @@ export default function Next26BirthdayScenes(p: BirthdaySceneProps) {
       return (
         <section data-birthday-scene="pottery-playhouse" className="overflow-hidden" style={style}>
           <div className="grid gap-8 p-7 md:grid-cols-[1.1fr_.9fr] md:p-14">
+            <Art
+              {...p}
+              className="aspect-[4/5] rounded-t-[45%] rounded-b-[12%] border-8 border-white rotate-2"
+            />
             <div className="space-y-7">
               <Label>Little hands · Big imagination</Label>
               <Copy {...p} />
               <Facts {...p} className="border-y border-current py-5" />
               <Rsvp {...p} />
             </div>
-            <Art
-              {...p}
-              className="aspect-[4/5] rounded-t-[45%] rounded-b-[12%] border-8 border-white rotate-2"
-            />
+
           </div>
         </section>
       );
@@ -49,11 +50,12 @@ export default function Next26BirthdayScenes(p: BirthdaySceneProps) {
           style={style}
         >
           <div className="p-6 md:p-12">
+            <Art {...p} className="aspect-[3/1] rounded-full" />
             <Label>Made by friends, kept forever</Label>
             <div className="my-8 rounded-[3rem] border-4 border-dotted border-current p-6 text-center md:p-10">
               <Copy {...p} className="mx-auto max-w-3xl" storyClassName="mx-auto" />
             </div>
-            <Art {...p} className="aspect-[3/1] rounded-full" />
+
             <Facts {...p} className="justify-center py-7" />
             <Rsvp {...p} className="justify-center" />
           </div>
@@ -143,11 +145,12 @@ export default function Next26BirthdayScenes(p: BirthdaySceneProps) {
       return (
         <section data-birthday-scene="plushie-sleepover" className="overflow-hidden" style={style}>
           <div className="p-6 text-center md:p-12">
-            <Label>A cozy little celebration</Label>
-            <Copy {...p} className="mx-auto my-8 max-w-3xl" storyClassName="mx-auto" />
             <div className="mx-auto max-w-4xl overflow-hidden rounded-t-[45%] rounded-b-[4rem] border-[12px] border-white">
               <Art {...p} className="aspect-[2/1]" />
             </div>
+            <Label>A cozy little celebration</Label>
+            <Copy {...p} className="mx-auto my-8 max-w-3xl" storyClassName="mx-auto" />
+
             <Rsvp {...p} className="justify-center my-7" />
             <Facts {...p} className="justify-center border-t border-current pt-6" />
           </div>
@@ -175,6 +178,7 @@ export default function Next26BirthdayScenes(p: BirthdaySceneProps) {
           style={style}
         >
           <div className="grid md:grid-cols-[1fr_1fr]">
+            <Art {...p} className="min-h-80 h-full border-l-4 border-current" />
             <div className="relative p-8 md:p-12">
               <Label>The birthday starting lineup</Label>
               <div
@@ -186,7 +190,7 @@ export default function Next26BirthdayScenes(p: BirthdaySceneProps) {
               <Copy {...p} className="relative -mt-20" titleClassName="uppercase" />
               <Rsvp {...p} className="mt-8" />
             </div>
-            <Art {...p} className="min-h-80 h-full border-l-4 border-current" />
+
             <Facts {...p} className="border-t-4 border-current p-7 md:col-span-2" />
           </div>
         </section>
@@ -220,10 +224,6 @@ export default function Next26BirthdayScenes(p: BirthdaySceneProps) {
           style={style}
         >
           <div>
-            <div className="border-b-[14px] border-[#862e30] p-7 md:p-12">
-              <Label>Your next birthday mission</Label>
-              <Copy {...p} className="mt-6 max-w-4xl" titleClassName="uppercase" />
-            </div>
             <div className="grid md:grid-cols-[1.4fr_.6fr]">
               <Art {...p} className="aspect-[3/2]" />
               <div className="flex flex-col justify-center gap-7 bg-[#862e30] p-7 text-white">
@@ -231,6 +231,11 @@ export default function Next26BirthdayScenes(p: BirthdaySceneProps) {
                 <Rsvp {...p} />
               </div>
             </div>
+            <div className="border-b-[14px] border-[#862e30] p-7 md:p-12">
+              <Label>Your next birthday mission</Label>
+              <Copy {...p} className="mt-6 max-w-4xl" titleClassName="uppercase" />
+            </div>
+
           </div>
         </section>
       );
@@ -250,11 +255,12 @@ export default function Next26BirthdayScenes(p: BirthdaySceneProps) {
                 </span>
               </div>
               <div className="grid gap-8 pt-8 md:grid-cols-[.9fr_1.1fr]">
+                <Art {...p} className="aspect-[4/3] border-8 border-white rotate-2" />
                 <div className="space-y-6">
                   <Copy {...p} />
                   <Rsvp {...p} />
                 </div>
-                <Art {...p} className="aspect-[4/3] border-8 border-white rotate-2" />
+
               </div>
               <Facts {...p} className="mt-8 border-t-2 border-dashed border-current pt-6" />
             </div>
@@ -320,6 +326,7 @@ export default function Next26BirthdayScenes(p: BirthdaySceneProps) {
         >
           <div className="p-5 md:p-10">
             <div className="rounded-t-[8rem] border-4 border-double border-current p-6 text-center md:p-10">
+              <Art {...p} className="aspect-[2/1] rounded-[2rem]" />
               <Label>A little garden gathering</Label>
               <Copy
                 {...p}
@@ -327,7 +334,7 @@ export default function Next26BirthdayScenes(p: BirthdaySceneProps) {
                 titleClassName="italic"
                 storyClassName="mx-auto"
               />
-              <Art {...p} className="aspect-[2/1] rounded-[2rem]" />
+
               <Facts {...p} className="justify-center py-7" />
               <Rsvp {...p} className="justify-center" />
             </div>
@@ -361,12 +368,13 @@ export default function Next26BirthdayScenes(p: BirthdaySceneProps) {
           style={style}
         >
           <div className="grid gap-0 p-5 md:grid-cols-2 md:p-10">
+            <Art {...p} className="h-full min-h-80 rounded-t-full border border-current p-3" />
             <div className="border border-current p-7 md:p-10">
               <Label>Come flutter by</Label>
               <Copy {...p} className="my-8" titleClassName="italic" />
               <Rsvp {...p} />
             </div>
-            <Art {...p} className="h-full min-h-80 rounded-t-full border border-current p-3" />
+
             <Facts {...p} className="border-x border-b border-current p-7 md:col-span-2" />
           </div>
         </section>
@@ -396,11 +404,12 @@ export default function Next26BirthdayScenes(p: BirthdaySceneProps) {
         <section data-birthday-scene="pizza-chef-club" className="overflow-hidden" style={style}>
           <div className="p-6 md:p-12">
             <div className="border-[12px] border-double border-current">
+              <Art {...p} className="aspect-[5/2]" />
               <div className="p-7 text-center">
                 <Label>Fresh from the birthday kitchen</Label>
                 <Copy {...p} className="my-6" storyClassName="mx-auto" />
               </div>
-              <Art {...p} className="aspect-[5/2]" />
+
               <div className="grid gap-5 p-7 md:grid-cols-[1fr_auto]">
                 <Facts {...p} />
                 <Rsvp {...p} />
@@ -413,15 +422,16 @@ export default function Next26BirthdayScenes(p: BirthdaySceneProps) {
       return (
         <section data-birthday-scene="sushi-roll-studio" className="overflow-hidden" style={style}>
           <div className="grid gap-5 p-6 md:grid-cols-[.8fr_1.2fr] md:p-12">
+            <div className="space-y-5">
+              <Art {...p} className="aspect-[4/3] rounded-3xl" />
+              <Facts {...p} className="rounded-3xl border border-current p-6" />
+            </div>
             <div className="flex flex-col gap-7 rounded-3xl border border-current p-7">
               <Label>The little roll workshop</Label>
               <Copy {...p} />
               <Rsvp {...p} />
             </div>
-            <div className="space-y-5">
-              <Art {...p} className="aspect-[4/3] rounded-3xl" />
-              <Facts {...p} className="rounded-3xl border border-current p-6" />
-            </div>
+
           </div>
         </section>
       );
@@ -455,8 +465,9 @@ export default function Next26BirthdayScenes(p: BirthdaySceneProps) {
           <div className="p-6 text-center md:p-12">
             <Label>Sweet as a birthday cherry</Label>
             <div className="mx-auto mt-8 max-w-4xl rounded-[3rem] bg-white/65 p-7 md:p-10">
-              <Copy {...p} titleClassName="italic" storyClassName="mx-auto" />
               <Art {...p} className="my-8 aspect-[2/1] rounded-[50%] border-8 border-[#f8dddd]" />
+              <Copy {...p} titleClassName="italic" storyClassName="mx-auto" />
+
               <Facts {...p} className="justify-center" />
               <Rsvp {...p} className="justify-center mt-7" />
             </div>
@@ -468,12 +479,13 @@ export default function Next26BirthdayScenes(p: BirthdaySceneProps) {
         <section data-birthday-scene="storybook-library" className="overflow-hidden" style={style}>
           <div className="p-6 md:p-12">
             <div className="grid overflow-hidden rounded-r-[3rem] border-l-[14px] border-[#405941] bg-[#fbf7e9] shadow-xl md:grid-cols-2">
+              <Art {...p} className="h-full min-h-80" />
               <div className="space-y-7 border-r border-[#d6ceb6] p-8 md:p-10">
                 <Label>A brand-new chapter</Label>
                 <Copy {...p} />
                 <Rsvp {...p} />
               </div>
-              <Art {...p} className="h-full min-h-80" />
+
             </div>
             <Facts {...p} className="mt-8 justify-center" />
           </div>
@@ -484,12 +496,13 @@ export default function Next26BirthdayScenes(p: BirthdaySceneProps) {
         <section data-birthday-scene="board-game-bonanza" className="overflow-hidden" style={style}>
           <div className="p-6 md:p-12">
             <div className="grid gap-6 md:grid-cols-[1.1fr_.9fr]">
+              <Art {...p} className="aspect-square rounded-[20%] border-4 border-current" />
               <div className="rounded-2xl border-4 border-current p-7">
                 <Label>Good company. Great games.</Label>
                 <Copy {...p} className="mt-6" />
                 <Rsvp {...p} className="mt-7" />
               </div>
-              <Art {...p} className="aspect-square rounded-[20%] border-4 border-current" />
+
             </div>
             <Facts {...p} className="mt-7 border-4 border-dotted border-current p-6" />
           </div>
@@ -507,11 +520,12 @@ export default function Next26BirthdayScenes(p: BirthdaySceneProps) {
               <Label>A little friendly competition</Label>
             </div>
             <div className="grid md:grid-cols-[.9fr_1.1fr]">
+              <Art {...p} className="h-full min-h-80" />
               <div className="space-y-7 p-8 md:p-12">
                 <Copy {...p} titleClassName="uppercase" />
                 <Rsvp {...p} />
               </div>
-              <Art {...p} className="h-full min-h-80" />
+
             </div>
             <Facts {...p} className="border-y-4 border-current p-7" />
             <p className="px-8 py-4 font-bold tracking-widest text-xs">

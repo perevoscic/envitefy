@@ -916,6 +916,7 @@ export default function WeddingTemplateView({
       },
       registry,
       customHeroImage: weddingData.customHeroImage || undefined,
+      heroImageFilterEnabled: weddingData.heroImageFilterEnabled !== false,
       venue: {
         name: location,
         address: weddingData.address || undefined,

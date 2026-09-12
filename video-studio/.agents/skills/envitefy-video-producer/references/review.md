@@ -1,5 +1,7 @@
 # Review, repair and delivery
 
+For new films and substantial creative rebuilds, use the [directed workflow](directed-workflow.md): one edit, complete early previews, scoped pilots, cold rough-cut critique and exact-file decisions. The legacy commands below remain available for existing campaigns.
+
 Use for each requested export. Review actual media, not only source code or a successful process exit.
 
 ## Engine review

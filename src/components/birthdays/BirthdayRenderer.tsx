@@ -1,5 +1,5 @@
 "use client";
-
+import TemplateImageTone from "@/components/events/TemplateImageTone";
 import type { BirthdayPartyDetails } from "@/lib/birthday-party-details";
 import React, { useState, useEffect, useContext, createContext } from "react";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
@@ -147,6 +147,7 @@ interface Props {
   isOwner?: boolean;
   showHostDashboard?: boolean;
   heroImageUrl?: string | null;
+  heroImageFilterEnabled?: boolean;
   calendarLinks?: {
     appleInline: string;
     google: string;
@@ -179,6 +180,7 @@ export default function BirthdayRenderer({
   isOwner,
   showHostDashboard = isOwner,
   heroImageUrl,
+  heroImageFilterEnabled = true,
   calendarLinks,
   coordinates,
   venueText,
@@ -263,7 +265,8 @@ export default function BirthdayRenderer({
   return (
     <UserRsvpContext.Provider value={userRsvpResponse}>
       <BirthdayGuestActionsProvider event={event} eventId={eventId} calendarLinks={calendarLinks} location={locationText || event.location}>
-      <div
+      <TemplateImageTone color={theme.colors.secondary} enabled={heroImageFilterEnabled}>
+<div
         className="relative w-full min-h-screen flex flex-col"
         style={{
           fontFamily: theme.fonts.body,
@@ -361,6 +364,7 @@ export default function BirthdayRenderer({
           </div>
         ) : null}
       </div>
+</TemplateImageTone>
       </BirthdayGuestActionsProvider>
     </UserRsvpContext.Provider>
   );
@@ -679,7 +683,7 @@ function ConfettiSplashLayout({
               <img
                 src={theme.decorations.heroImage}
                 alt=""
-                className="w-full h-full object-cover"
+                className="template-hero-image w-full h-full object-cover"
               />
             )}
           </div>
@@ -724,7 +728,7 @@ function BalloonArchLayout({
 
         {theme.decorations?.heroImage && (
           <div className="w-full max-w-sm h-72 md:h-96 rounded-full overflow-hidden mb-8 shadow-2xl border-8 border-white relative z-10 transition-transform hover:scale-105 duration-500">
-            <img src={theme.decorations.heroImage} alt="" className="w-full h-full object-cover" />
+            <img src={theme.decorations.heroImage} alt="" className="template-hero-image w-full h-full object-cover" />
           </div>
         )}
 
@@ -833,7 +837,7 @@ function GlamorousSparkleLayout({
               {theme.decorations?.heroImage && (
                 <img
                   src={theme.decorations.heroImage}
-                  className="w-full h-full object-cover"
+                  className="template-hero-image w-full h-full object-cover"
                   alt=""
                 />
               )}
@@ -920,7 +924,7 @@ function WhimsicalMagicLayout({
               {theme.decorations?.heroImage && (
                 <img
                   src={theme.decorations.heroImage}
-                  className="w-full h-full object-cover"
+                  className="template-hero-image w-full h-full object-cover"
                   alt=""
                 />
               )}
@@ -983,7 +987,7 @@ function NeonNightLayout({
             <img
               src={theme.decorations.heroImage}
               alt=""
-              className="w-full h-full object-cover grayscale"
+              className="template-hero-image w-full h-full object-cover grayscale"
             />
           </div>
         )}
@@ -1055,7 +1059,7 @@ function MagicalSparkleLayout({
         {theme.decorations?.heroImage && (
           <img
             src={theme.decorations.heroImage}
-            className="absolute inset-0 w-full h-full object-cover opacity-60 mask-image-gradient-b"
+            className="template-hero-image absolute inset-0 w-full h-full object-cover opacity-60 mask-image-gradient-b"
             alt=""
           />
         )}
@@ -1142,7 +1146,7 @@ function TropicalVibeLayout({
               <img
                 src={theme.decorations.heroImage}
                 alt=""
-                className="w-full h-full object-cover"
+                className="template-hero-image w-full h-full object-cover"
               />
             )}
           </div>
@@ -1297,7 +1301,7 @@ function ElegantSerifLayout({
             <div className="mt-8 relative h-64 w-full overflow-hidden grayscale hover:grayscale-0 transition-all duration-700">
               <img
                 src={theme.decorations.heroImage}
-                className="w-full h-full object-cover opacity-90"
+                className="template-hero-image w-full h-full object-cover opacity-90"
                 alt=""
               />
             </div>
@@ -1430,7 +1434,7 @@ function AnimalPartyLayout({
             {(theme.decorations?.heroImage || theme.heroImage) && (
               <img
                 src={theme.decorations?.heroImage || theme.heroImage}
-                className="w-full h-72 object-cover mb-4"
+                className="template-hero-image w-full h-72 object-cover mb-4"
                 alt=""
               />
             )}
@@ -1515,7 +1519,7 @@ function DinoExplorerLayout({
               <div className="rounded-2xl overflow-hidden shadow-2xl border-8 border-white">
                 <img
                   src={theme.decorations.heroImage}
-                  className="w-full h-[400px] object-cover"
+                  className="template-hero-image w-full h-[400px] object-cover"
                   alt=""
                 />
               </div>
@@ -1601,7 +1605,7 @@ function UnderwaterAdventureLayout({
               {theme.decorations?.heroImage && (
                 <img
                   src={theme.decorations.heroImage}
-                  className="w-full h-full object-cover"
+                  className="template-hero-image w-full h-full object-cover"
                   alt=""
                 />
               )}
@@ -1655,7 +1659,7 @@ function PatternPlayLayout({
             {theme.decorations?.heroImage ? (
               <img
                 src={theme.decorations.heroImage}
-                className="w-full h-full object-cover"
+                className="template-hero-image w-full h-full object-cover"
                 alt=""
               />
             ) : (
@@ -2137,13 +2141,13 @@ function EditorialFeatureLayout({
                   }`}
                   aria-label="Open invite image full size"
                 >
-                  <img src={heroImage} alt={theme.name} className="h-full w-full object-cover" />
+                  <img src={heroImage} alt={theme.name} className="template-hero-image h-full w-full object-cover" />
                   <span className="pointer-events-none absolute inset-x-4 bottom-4 rounded-full bg-black/55 px-3 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em] text-white opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
                     Open full size
                   </span>
                 </button>
               ) : (
-                <img src={heroImage} alt={theme.name} className="h-full w-full object-cover" />
+                <img src={heroImage} alt={theme.name} className="template-hero-image h-full w-full object-cover" />
               )
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-slate-100 text-slate-400">
@@ -2464,7 +2468,7 @@ function SportsStadiumLayout({
 
         <div className="absolute -bottom-12 z-20 w-48 h-48 md:w-64 md:h-64 rounded-2xl overflow-hidden border-[12px] border-white shadow-2xl rotate-3">
           {theme.decorations?.heroImage && (
-            <img src={theme.decorations.heroImage} className="w-full h-full object-cover" alt="" />
+            <img src={theme.decorations.heroImage} className="template-hero-image w-full h-full object-cover" alt="" />
           )}
         </div>
       </section>
@@ -2565,7 +2569,7 @@ function LuxuryRoyalLayout({
             {theme.decorations?.heroImage && (
               <img
                 src={theme.decorations.heroImage}
-                className="w-full h-full object-cover grayscale brightness-75 hover:grayscale-0 hover:brightness-100 transition-all duration-1000"
+                className="template-hero-image w-full h-full object-cover grayscale brightness-75 hover:grayscale-0 hover:brightness-100 transition-all duration-1000"
                 alt=""
               />
             )}
@@ -2627,7 +2631,7 @@ function IslandParadiseLayout({
 
         <div className="absolute top-0 left-0 w-full h-full -z-10 opacity-40">
           {theme.decorations?.heroImage && (
-            <img src={theme.decorations.heroImage} className="w-full h-full object-cover" alt="" />
+            <img src={theme.decorations.heroImage} className="template-hero-image w-full h-full object-cover" alt="" />
           )}
         </div>
       </section>
@@ -2702,7 +2706,7 @@ function SafariAdventureLayout({
 
         <div className="mt-[-40px] relative z-20 w-64 h-64 md:w-80 md:h-80 rounded-full border-[12px] border-[#5d4037] overflow-hidden shadow-2xl bg-white">
           {theme.decorations?.heroImage && (
-            <img src={theme.decorations.heroImage} className="w-full h-full object-cover" alt="" />
+            <img src={theme.decorations.heroImage} className="template-hero-image w-full h-full object-cover" alt="" />
           )}
         </div>
       </section>

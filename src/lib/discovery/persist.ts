@@ -1,4 +1,4 @@
-import { resolveGymDiscoveryTemplateSelection } from "@/lib/discovery/template-selection";
+import { resolveGymDiscoveryTemplateSelection, resolveFootballDiscoveryTemplateSelection } from "@/lib/discovery/template-selection";
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
   DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
@@ -82,7 +82,7 @@ export function buildDiscoveryShellEventData(params: {
         : "gymnastics-schedule",
     templateKey: isFootball ? "football" : isSports ? "sport-events" : "gymnastics",
     pageTemplateId: isFootball
-      ? DEFAULT_GYM_MEET_TEMPLATE_ID
+      ? resolveFootballDiscoveryTemplateSelection(params.pageTemplateId)
       : isSports
         ? sportPreset?.themeIds?.[0] || "stadium_nights"
         : resolveGymDiscoveryTemplateSelection(params.pageTemplateId),
@@ -302,6 +302,7 @@ export async function persistDiscoveryEventSnapshot(params: {
       (isFootball ? "football-season" : isSports ? "sport-event-football" : "gymnastics-schedule"),
     templateKey: isFootball ? "football" : isSports ? "sport-events" : "gymnastics",
     pageTemplateId:
+      (isFootball ? resolveFootballDiscoveryTemplateSelection(safeString(current.pageTemplateId), safeString(params.pageTemplateId) || safeString(builderEvent.pageTemplateId)) : null) ||
       gymPageTemplateId ||
       safeString(params.pageTemplateId) ||
       safeString(builderEvent.pageTemplateId) ||

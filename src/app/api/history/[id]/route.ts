@@ -1,3 +1,4 @@
+import { normalizeScanSchedule, scanScheduleHistoryFields } from "@/lib/scan-schedule";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
@@ -13,6 +14,7 @@ import {
   updateEventHistoryData,
   updateEventHistoryDataMerge,
   updateEventHistoryTitle,
+  updateEventHistoryPublicSlug,
 } from "@/lib/db";
 import { redactDiscoverySourceForPublicView } from "@/lib/discovery-public-redact";
 import {
@@ -30,6 +32,7 @@ import {
   updateSignupDefinition,
 } from "@/lib/signup-mutations";
 import { projectSignupForm } from "@/lib/signup-projection";
+import { validateCustomEventPublicSlug } from "@/utils/event-public-slug";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -181,6 +184,8 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const claimRequested = body?.claim === true;
+  const requestedSlug = body.publicSlug === undefined ? null : validateCustomEventPublicSlug(body.publicSlug);
+  if (requestedSlug?.error) return NextResponse.json({ error: requestedSlug.error }, { status: 400 });
   let claimedRow = existing;
   let claimed = false;
   if (claimRequested) {
@@ -201,7 +206,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   }
   const titleInput = typeof body.title === "string" ? body.title.trim() : undefined;
   const hasTitleUpdate = Boolean(titleInput);
-  const hasDataUpdate = body && (body.category != null || body.data != null);
+  const hasDataUpdate = body && (body.category != null || body.data != null || requestedSlug);
 
   let updatedRow = claimedRow;
   let changed = false;
@@ -212,6 +217,20 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     const existingAccessControl = (existing.data && (existing.data as any).accessControl) || null;
     const processedData =
       incomingData && typeof incomingData === "object" ? { ...incomingData } : incomingData;
+    if (isRecord(processedData) && "scanSchedule" in processedData) {
+      const schedule = normalizeScanSchedule(processedData.scanSchedule);
+      if (!schedule) return NextResponse.json({ error: "A schedule needs at least one valid row." }, { status: 400 });
+      Object.assign(processedData, scanScheduleHistoryFields(schedule));
+      processedData.scanSchedule = schedule;
+      if (isRecord(existing.data?.conciergeDraft)) {
+        processedData.conciergeDraft = { ...existing.data.conciergeDraft, ...(isRecord(processedData.conciergeDraft) ? processedData.conciergeDraft : {}), ...scanScheduleHistoryFields(schedule), title: schedule.title, scanSchedule: schedule };
+      }
+      processedData.scheduleItems = schedule.items;
+      processedData.ownership = "owned";
+      processedData.invitedFromScan = false;
+      const publicEvent = isRecord(existing.data?.publicEvent) ? existing.data.publicEvent : null;
+      if (publicEvent) processedData.publicEvent = { ...publicEvent, ...(isRecord(processedData.publicEvent) ? processedData.publicEvent : {}), scheduleLine: scanScheduleHistoryFields(schedule).scheduleLine, scheduleItems: schedule.items };
+    }
     if (processedData && typeof processedData === "object" && "accessControl" in processedData) {
       processedData.accessControl = await normalizeAccessControlPayload(
         processedData.accessControl,
@@ -240,7 +259,20 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
         processedData.fontSize != null ||
         processedData.advancedSections != null);
 
-    if (isRecord(processedData) && ("signupForm" in processedData || existing.data?.signupForm)) {
+    if (requestedSlug) {
+      if (existing.data?.signupForm || processedData?.signupForm)
+        return NextResponse.json({ error: "Use the signup page's public link editor to change its URL." }, { status: 400 });
+      const mergedData = { ...existing.data, ...(isRecord(processedData) ? processedData : {}) };
+      if (incomingCategory != null) mergedData.category = String(incomingCategory);
+      try {
+        updatedRow = (await updateEventHistoryPublicSlug({
+          id, publicSlug: requestedSlug.slug, data: mergedData, title: titleInput,
+        })) || updatedRow;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unable to save this event URL.";
+        return NextResponse.json({ error: message }, { status: /already in use/i.test(message) ? 409 : 500 });
+      }
+    } else if (isRecord(processedData) && ("signupForm" in processedData || existing.data?.signupForm)) {
       try {
         const saved = await mutateSignupEvent(id, (latest) => {
           if (latest.user_id !== userId) throw new SignupMutationError("Forbidden", 403);
@@ -310,7 +342,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   }
 
   // Support updating title (alone or together with data)
-  if (hasTitleUpdate) {
+  if (hasTitleUpdate && !requestedSlug) {
     updatedRow = (await updateEventHistoryTitle(id, String(titleInput))) || updatedRow;
     changed = true;
   }

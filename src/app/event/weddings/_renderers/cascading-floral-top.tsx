@@ -28,7 +28,7 @@ export default function CascadingFloralTop({
         {theme.decorations?.heroImage && (
           <img
             src={theme.decorations.heroImage}
-            className="absolute inset-x-0 top-0 h-40 w-full object-cover"
+            className="template-hero-image absolute inset-x-0 top-0 h-40 w-full object-cover"
             alt=""
           />
         )}

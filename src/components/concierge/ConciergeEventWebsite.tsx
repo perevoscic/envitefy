@@ -14,6 +14,7 @@ import CalendarAction from "@/components/CalendarAction";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
 import EventTrackedLink from "@/components/EventTrackedLink";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
+import { scanScheduleWhen } from "@/lib/scan-schedule";
 import type { EventWebsiteScheduleItem } from "@/lib/event-website-schedule";
 
 type CalendarLinks = {
@@ -303,7 +304,7 @@ export default function ConciergeEventWebsite({
             ) : null}
             {visibleScheduleItems.length ? (
               <div className="mt-5 space-y-3 border-t border-slate-100 pt-4">
-                {visibleScheduleItems.slice(0, 8).map((item, index) => (
+                {visibleScheduleItems.map((item, index) => (
                   <div
                     key={item.id || `${item.title}-${index}`}
                     className="rounded-lg border border-slate-100 bg-slate-50 p-3"
@@ -312,7 +313,7 @@ export default function ConciergeEventWebsite({
                       <div>
                         <p className="text-sm font-black text-slate-950">{item.title}</p>
                         <p className="mt-1 text-sm font-semibold text-slate-500">
-                          {formatDateTime(item.startAt) || displayWhen}
+                          {item.day || item.date ? scanScheduleWhen({ ...item, type: item.type === "practice" ? "practice" : "game", timezone: item.timezone || "UTC", group: item.group || null, day: item.day || null, date: item.date || null, startTime: item.startTime || null, endTime: item.endTime || null, opponent: item.opponent || null, homeAway: item.homeAway || null }) : formatDateTime(item.startAt) || displayWhen}
                         </p>
                       </div>
                       {item.type ? (
@@ -321,6 +322,9 @@ export default function ConciergeEventWebsite({
                         </span>
                       ) : null}
                     </div>
+                    {item.group || item.opponent || item.homeAway ? (
+                      <p className="mt-2 text-sm text-slate-600">{[item.group, item.opponent, item.homeAway === "home" ? "Home" : item.homeAway === "away" ? "Away" : null].filter(Boolean).join(" · ")}</p>
+                    ) : null}
                     {item.locationText || item.notes ? (
                       <p className="mt-2 text-sm leading-6 text-slate-600">
                         {[clean(item.locationText), clean(item.notes)].filter(Boolean).join(" - ")}

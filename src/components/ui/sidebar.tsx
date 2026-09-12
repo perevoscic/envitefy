@@ -88,7 +88,7 @@ export function SidebarLink({ link, className }: { link: SidebarLinkItem; classN
       "group flex min-h-12 w-full shrink-0 items-center gap-3 rounded-2xl px-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500",
       link.active
         ? "bg-white text-[#6b5fc2] shadow-[0_3px_16px_rgba(91,72,158,0.08)] ring-1 ring-violet-100/70"
-        : "text-[rgba(107,95,194,0.64)] hover:bg-white/70 hover:text-[#6b5fc2]",
+        : "text-[color:var(--nav-sidebar-label-muted,rgba(107,95,194,0.64))] hover:bg-white/70 hover:text-[#6b5fc2]",
       className,
     ),
   };

@@ -8,12 +8,17 @@ const RESERVED_EVENT_PUBLIC_SLUGS = new Set([
   "anniversaries",
   "cheerleading",
   "dance-ballet",
+  "document-layout-check",
   "football",
   "football-season",
   "gender-reveal",
   "general",
   "gymnastics",
+  "manual",
   "new",
+  "owner-toolbar-qa",
+  "scan-artwork-preview",
+  "schedule",
   "soccer",
   "special-events",
   "sport-events",
@@ -58,6 +63,20 @@ export function normalizePublicSlug(value: string | null | undefined): string {
 
 export function isReservedEventPublicSlug(slug: string): boolean {
   return RESERVED_EVENT_PUBLIC_SLUGS.has(normalizePublicSlug(slug));
+}
+
+/** Validate an explicitly chosen address without silently truncating or renaming it. */
+export function validateCustomEventPublicSlug(value: unknown): { slug: string; error: string | null } {
+  if (typeof value !== "string" || !value.trim())
+    return { slug: "", error: "Enter a custom URL, such as seahawks-at-vikings-2026." };
+  if (value.trim().length > MAX_PUBLIC_SLUG_LENGTH)
+    return { slug: "", error: `Keep the address to ${MAX_PUBLIC_SLUG_LENGTH} characters or fewer.` };
+  if (/[/:?#]/.test(value))
+    return { slug: "", error: "Enter only the last part of the URL, without a website address or slashes." };
+  const slug = normalizePublicSlug(value);
+  if (slug === "event" || isReservedEventPublicSlug(slug) || /(?:^|-)[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(slug))
+    return { slug: "", error: "Choose a more specific address for your event." };
+  return { slug, error: null };
 }
 
 export function makeEventPublicSlugRoutable(slug: string): string {

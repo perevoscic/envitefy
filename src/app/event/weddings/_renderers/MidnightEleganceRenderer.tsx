@@ -30,7 +30,7 @@ export default function MidnightEleganceRenderer({
           <img
             src={theme.decorations.heroImage}
             alt=""
-            className="absolute inset-0 w-full h-full object-cover opacity-60"
+            className="template-hero-image absolute inset-0 w-full h-full object-cover opacity-60"
           />
         )}
 

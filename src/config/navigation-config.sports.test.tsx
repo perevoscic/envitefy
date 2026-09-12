@@ -17,25 +17,25 @@ const sportsLink = (preferences?: {
   );
 
 describe("personalized sports navigation", () => {
-  test("shows one generic Sports item before setup", () => {
-    expect(sportsLink()).toMatchObject([{ label: "Sports", href: "/event/sport-events" }]);
+  test("shows Football and a generic Sports item before setup", () => {
+    expect(sportsLink()).toMatchObject([{ label: "Football", href: "/event/football" }, { label: "Sports", href: "/event/sport-events" }]);
   });
 
-  test("shows only the primary sport for single and multi-sport accounts", () => {
+  test("keeps Football beside the primary sport for single and multi-sport accounts", () => {
     expect(
       sportsLink({
         primarySport: "lacrosse",
         enabledSports: ["lacrosse"],
         setupCompleted: true,
       }),
-    ).toMatchObject([{ label: "Lacrosse", href: "/event/sport-events?sport=lacrosse" }]);
+    ).toMatchObject([{ label: "Football", href: "/event/football" }, { label: "Lacrosse", href: "/event/sport-events?sport=lacrosse" }]);
     expect(
       sportsLink({
         primarySport: "basketball",
         enabledSports: ["basketball", "lacrosse", "gymnastics"],
         setupCompleted: true,
       }),
-    ).toMatchObject([{ label: "Basketball", href: "/event/sport-events?sport=basketball" }]);
+    ).toMatchObject([{ label: "Football", href: "/event/football" }, { label: "Basketball", href: "/event/sport-events?sport=basketball" }]);
   });
 
   test("routes a gymnastics primary to its specialized builder", () => {
@@ -45,7 +45,7 @@ describe("personalized sports navigation", () => {
         enabledSports: ["gymnastics"],
         setupCompleted: true,
       }),
-    ).toMatchObject([{ label: "Gymnastics", href: "/event/gymnastics" }]);
+    ).toMatchObject([{ label: "Football", href: "/event/football" }, { label: "Gymnastics", href: "/event/gymnastics" }]);
   });
 
   test("hides sports navigation when Sports is disabled", () => {
@@ -120,5 +120,20 @@ describe("create event route matching", () => {
     ]) {
       expect(isCreateEventRoute(path)).toBe(false);
     }
+  });
+});
+
+
+describe("restored football navigation", () => {
+  test("uses one dedicated entry for a football primary", () => {
+    expect(sportsLink({ primarySport: "football", enabledSports: ["football"], setupCompleted: true }))
+      .toMatchObject([{ label: "Football", href: "/event/football" }]);
+  });
+  test("supports football-only visibility and old editor links", () => {
+    expect(getTemplateLinks(["football_season"], ["snap"]))
+      .toMatchObject([{ label: "Football", href: "/event/football" }]);
+    expect(isCreateEventRoute("/event/football-season/customize?edit=saved-id")).toBe(true);
+    expect(findActiveCreateEventItem("/event/football-season/customize", [{label:"Football", href:"/event/football"}])?.label).toBe("Football");
+    expect(getTemplateLinks([], ["snap"])).toEqual([]);
   });
 });

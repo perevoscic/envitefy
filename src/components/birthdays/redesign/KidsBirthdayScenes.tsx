@@ -15,7 +15,7 @@ function Art({ id, src, className = "" }: { id: string; src?: string; className?
       src={src || BIRTHDAY_KIDS_ART[id]}
       alt=""
       aria-hidden="true"
-      className={`h-full w-full object-cover ${className}`}
+      className={`template-hero-image h-full w-full object-cover ${className}`}
     />
   );
 }
@@ -34,15 +34,16 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
           className="relative overflow-hidden bg-[#f3f0dd] text-[#30412d]"
         >
           <div className="grid md:grid-cols-[.8fr_1.2fr]">
+            <div className="min-h-72 border-l border-[#bec59c]">
+              <Art id={id} src={p.theme.heroImage} />
+            </div>
             <div className="relative z-10 space-y-7 p-8 md:p-14">
               <Label>Field notes · A birthday expedition</Label>
               <Copy {...p} titleClassName="italic" />
               <Facts {...p} className="flex-col !items-start border-y border-[#7d8c58] py-5" />
               <Rsvp {...p} />
             </div>
-            <div className="min-h-72 border-l border-[#bec59c]">
-              <Art id={id} src={p.theme.heroImage} />
-            </div>
+
           </div>
           <p className="border-t border-[#bec59c] px-8 py-4 font-mono text-xs tracking-widest">
             PACK YOUR CURIOSITY. A LITTLE ADVENTURE AWAITS.
@@ -53,12 +54,13 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
       return (
         <section data-birthday-scene={id} className="bg-[#fff1cc] p-5 text-[#963e49] md:p-10">
           <div className="border-[10px] border-double border-[#dc8092] bg-[#fff9ed] px-7 pt-9 text-center">
-            <Label>The birthday bake shop</Label>
-            <Copy {...p} className="mx-auto mt-5 max-w-2xl" titleClassName="italic" />
-            <Rsvp {...p} className="my-7 justify-center" />
             <div className="mx-auto h-64 max-w-3xl overflow-hidden rounded-t-[50%]">
               <Art id={id} src={p.theme.heroImage} />
             </div>
+            <Label>The birthday bake shop</Label>
+            <Copy {...p} className="mx-auto mt-5 max-w-2xl" titleClassName="italic" />
+            <Rsvp {...p} className="my-7 justify-center" />
+
             <Facts
               {...p}
               className="justify-center border-t-2 border-dashed border-[#dc8092] py-6"
@@ -76,7 +78,6 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
             </span>
           </div>
           <div className="p-8 md:p-12">
-            <Copy {...p} className="max-w-3xl" titleClassName="uppercase !leading-[.87]" />
             <div className="mt-8 grid gap-8 md:grid-cols-[1.5fr_1fr]">
               <div className="h-80 -rotate-2 border-8 border-[#fff9e8] shadow-lg">
                 <Art id={id} src={p.theme.heroImage} />
@@ -86,6 +87,8 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
                 <Rsvp {...p} />
               </div>
             </div>
+            <Copy {...p} className="max-w-3xl" titleClassName="uppercase !leading-[.87]" />
+
           </div>
         </section>
       );
@@ -137,14 +140,15 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
             <span>ALL SYSTEMS GO</span>
           </div>
           <div className="grid gap-8 p-8 md:grid-cols-[1.15fr_1fr] md:p-12">
+            <div className="relative aspect-square overflow-hidden rounded-full border-[14px] border-[#596677] shadow-[0_0_0_4px_#ed6b35]">
+              <Art id={id} src={p.theme.heroImage} />
+            </div>
             <div className="space-y-8">
               <Copy {...p} titleClassName="uppercase" />
               <Facts {...p} inverse className="border-l-4 border-[#ed6b35] pl-5" />
               <Rsvp {...p} inverse />
             </div>
-            <div className="relative aspect-square overflow-hidden rounded-full border-[14px] border-[#596677] shadow-[0_0_0_4px_#ed6b35]">
-              <Art id={id} src={p.theme.heroImage} />
-            </div>
+
           </div>
           <div className="bg-[#ed6b35] px-8 py-4 text-xs font-bold tracking-[.25em] text-[#10172e]">
             COUNTDOWN TO AN OUT-OF-THIS-WORLD BIRTHDAY
@@ -163,13 +167,14 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
             ))}
           </div>
           <div className="relative mt-9 grid items-center gap-5 md:grid-cols-2">
+            <div className="h-80 rotate-3">
+              <Art id={id} src={p.theme.heroImage} />
+            </div>
             <div className="z-10 -rotate-2 bg-[#fffdf4] p-6 shadow-[8px_8px_0_#f8c441]">
               <Label>Make a little birthday magic</Label>
               <Copy {...p} className="mt-6" titleClassName="!leading-[.9]" />
             </div>
-            <div className="h-80 rotate-3">
-              <Art id={id} src={p.theme.heroImage} />
-            </div>
+
           </div>
           <div className="mt-12 flex flex-wrap items-center justify-between gap-7">
             <Facts {...p} />
@@ -182,14 +187,15 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
         <section data-birthday-scene={id} className="bg-[#f6c62d] text-[#202d30]">
           <div className="h-5 bg-[repeating-linear-gradient(135deg,#202d30_0px,#202d30_15px,#f6c62d_15px,#f6c62d_30px)]" />
           <div className="grid md:grid-cols-[1fr_1.15fr]">
+            <div className="min-h-80">
+              <Art id={id} src={p.theme.heroImage} />
+            </div>
             <div className="p-8 md:p-12">
               <Label>Birthday project / Crew wanted</Label>
               <Copy {...p} className="my-8" titleClassName="uppercase" />
               <Rsvp {...p} />
             </div>
-            <div className="min-h-80">
-              <Art id={id} src={p.theme.heroImage} />
-            </div>
+
           </div>
           <Facts {...p} className="border-t-4 border-[#202d30] bg-[#f9e7b5] p-7" />
         </section>
@@ -216,14 +222,15 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
         <section data-birthday-scene={id} className="bg-[#134d34] p-5 text-[#f3f1c9] md:p-9">
           <div className="border-2 border-[#f3f1c9]">
             <div className="grid md:grid-cols-[1fr_1.3fr]">
+              <div className="min-h-72 border-l-2 border-[#f3f1c9]">
+                <Art id={id} src={p.theme.heroImage} />
+              </div>
               <div className="space-y-7 p-7">
                 <Label>Birthday match day</Label>
                 <Copy {...p} titleClassName="uppercase italic" />
                 <Rsvp {...p} inverse />
               </div>
-              <div className="min-h-72 border-l-2 border-[#f3f1c9]">
-                <Art id={id} src={p.theme.heroImage} />
-              </div>
+
             </div>
             <Facts {...p} inverse className="border-t-2 border-[#f3f1c9] p-6" />
           </div>
@@ -250,13 +257,14 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
       return (
         <section data-birthday-scene={id} className="bg-[#ffe84c] p-5 text-[#202346] md:p-9">
           <div className="grid gap-5 md:grid-cols-2">
+            <div className="min-h-80 rotate-2 overflow-hidden border-[5px] border-[#202346]">
+              <Art id={id} src={p.theme.heroImage} />
+            </div>
             <div className="rotate-[-2deg] border-[5px] border-[#202346] bg-white p-7 shadow-[8px_8px_0_#202346]">
               <Label>Calling all birthday heroes!</Label>
               <Copy {...p} className="mt-6" titleClassName="uppercase italic" />
             </div>
-            <div className="min-h-80 rotate-2 overflow-hidden border-[5px] border-[#202346]">
-              <Art id={id} src={p.theme.heroImage} />
-            </div>
+
           </div>
           <div className="mt-8 grid gap-5 md:grid-cols-[1.5fr_1fr]">
             <Facts {...p} className="border-[4px] border-[#202346] bg-[#8bddf4] p-5" />
@@ -268,14 +276,15 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
       return (
         <section data-birthday-scene={id} className="bg-[#c9e4ed] text-[#bc3527]">
           <div className="grid md:grid-cols-[.9fr_1.1fr]">
+            <div className="min-h-80 [clip-path:polygon(10%_0,100%_0,100%_100%,0_100%)]">
+              <Art id={id} src={p.theme.heroImage} />
+            </div>
             <div className="space-y-7 p-8 md:p-12">
               <Label>Your birthday pit pass</Label>
               <Copy {...p} titleClassName="uppercase italic" />
               <Rsvp {...p} />
             </div>
-            <div className="min-h-80 [clip-path:polygon(10%_0,100%_0,100%_100%,0_100%)]">
-              <Art id={id} src={p.theme.heroImage} />
-            </div>
+
           </div>
           <div className="border-y-[10px] border-dashed border-[#20272b] bg-[#fff1d5] p-7">
             <Facts {...p} />
@@ -303,11 +312,12 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
         <section data-birthday-scene={id} className="bg-[#fcf3df] text-[#bd5570]">
           <div className="h-14 rounded-b-[25px] bg-[repeating-linear-gradient(90deg,#e37d8f_0px,#e37d8f_45px,#fff4df_45px,#fff4df_90px)]" />
           <div className="px-8 py-10 text-center">
-            <Label>The sweetest birthday scoop</Label>
-            <Copy {...p} className="mx-auto my-6 max-w-3xl" titleClassName="italic" />
             <div className="mx-auto h-64 max-w-4xl overflow-hidden rounded-[50%_50%_0_0]">
               <Art id={id} src={p.theme.heroImage} />
             </div>
+            <Label>The sweetest birthday scoop</Label>
+            <Copy {...p} className="mx-auto my-6 max-w-3xl" titleClassName="italic" />
+
             <Facts {...p} className="justify-center border-y-2 border-[#bd5570] py-5" />
             <Rsvp {...p} className="mt-7 justify-center" />
           </div>
@@ -317,10 +327,6 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
       return (
         <section data-birthday-scene={id} className="bg-[#eddfb7] p-6 text-[#8a362f] md:p-10">
           <div className="border-2 border-[#8a362f] p-6">
-            <div className="text-center">
-              <Label>Fresh air. Good friends. Birthday fun.</Label>
-              <Copy {...p} className="mx-auto my-7 max-w-3xl" />
-            </div>
             <div className="grid gap-7 md:grid-cols-[1.4fr_1fr]">
               <div className="h-72 rounded-t-[50%] overflow-hidden">
                 <Art id={id} src={p.theme.heroImage} />
@@ -330,6 +336,11 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
                 <Rsvp {...p} />
               </div>
             </div>
+            <div className="text-center">
+              <Label>Fresh air. Good friends. Birthday fun.</Label>
+              <Copy {...p} className="mx-auto my-7 max-w-3xl" />
+            </div>
+
           </div>
         </section>
       );
@@ -364,17 +375,18 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
             <Art id={id} src={p.theme.heroImage} />
           </div>
           <div className="relative grid gap-10 border-2 border-dashed border-[#6e593c] p-6 md:grid-cols-[1.1fr_.9fr] md:p-9">
-            <div className="space-y-7">
-              <Label>A birthday worth its weight in gold</Label>
-              <Copy {...p} />
-              <Rsvp {...p} />
-            </div>
             <div className="flex flex-col justify-end">
               <div className="mb-6 aspect-square overflow-hidden rounded-full border-[6px] border-[#765538]">
                 <Art id={id} src={p.theme.heroImage} />
               </div>
               <Facts {...p} className="bg-[#f7e5bb]/95 p-5" />
             </div>
+            <div className="space-y-7">
+              <Label>A birthday worth its weight in gold</Label>
+              <Copy {...p} />
+              <Rsvp {...p} />
+            </div>
+
           </div>
         </section>
       );
@@ -383,13 +395,14 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
         <section data-birthday-scene={id} className="bg-[#f8e3e5] px-6 py-10 text-[#865267]">
           <div className="mx-auto max-w-4xl border border-[#bda07b] p-3">
             <div className="border border-[#bda07b] px-7 pt-10 text-center">
+              <div className="h-64 overflow-hidden rounded-t-[50%]">
+                <Art id={id} src={p.theme.heroImage} />
+              </div>
               <Label>A royal birthday invitation</Label>
               <Copy {...p} className="mx-auto my-7 max-w-2xl" titleClassName="italic" />
               <Facts {...p} className="justify-center" />
               <Rsvp {...p} className="my-7 justify-center" />
-              <div className="h-64 overflow-hidden rounded-t-[50%]">
-                <Art id={id} src={p.theme.heroImage} />
-              </div>
+
             </div>
           </div>
         </section>
@@ -416,15 +429,16 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
       return (
         <section data-birthday-scene={id} className="bg-[#e6f2d7] p-7 text-[#286557] md:p-12">
           <div className="grid gap-9 md:grid-cols-[1fr_1.15fr]">
+            <div className="overflow-hidden rounded-[45%_45%_12px_12px] border-[12px] border-[#f5adbd] min-h-80">
+              <Art id={id} src={p.theme.heroImage} />
+            </div>
             <div className="flex flex-col justify-center gap-7">
               <Label>The birthday clubhouse</Label>
               <Copy {...p} titleClassName="italic" />
               <Facts {...p} />
               <Rsvp {...p} />
             </div>
-            <div className="overflow-hidden rounded-[45%_45%_12px_12px] border-[12px] border-[#f5adbd] min-h-80">
-              <Art id={id} src={p.theme.heroImage} />
-            </div>
+
           </div>
           <div className="mt-8 h-3 rounded-full bg-[#f5adbd]" />
         </section>
@@ -433,8 +447,6 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
       return (
         <section data-birthday-scene={id} className="bg-[#faf0dd] p-6 text-[#805b3d] md:p-10">
           <div className="rounded-[48%_48%_1rem_1rem] border-[12px] border-[#d99582]/50 bg-[#fffaf0] px-6 pb-8 pt-14 text-center">
-            <Label>A beary special birthday</Label>
-            <Copy {...p} className="mx-auto mt-5 max-w-2xl" />
             <div className="mx-auto my-5 h-64 max-w-2xl">
               <Art
                 id={id}
@@ -442,6 +454,9 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
                 className="[mask-image:radial-gradient(ellipse,black_55%,transparent_75%)]"
               />
             </div>
+            <Label>A beary special birthday</Label>
+            <Copy {...p} className="mx-auto mt-5 max-w-2xl" />
+
             <Facts {...p} className="justify-center" />
             <Rsvp {...p} className="mt-7 justify-center" />
           </div>
@@ -492,13 +507,14 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
     case "train-station-adventure":
       return (
         <section data-birthday-scene={id} className="bg-[#e4eadb] text-[#3c665e]">
+          <div className="h-64 md:h-80">
+            <Art id={id} src={p.theme.heroImage} />
+          </div>
           <div className="p-8 text-center">
             <Label>All aboard the birthday express</Label>
             <Copy {...p} className="mx-auto mt-6 max-w-3xl" />
           </div>
-          <div className="h-64 md:h-80">
-            <Art id={id} src={p.theme.heroImage} />
-          </div>
+
           <div className="mx-6 my-7 grid gap-5 rounded-xl border-2 border-dashed border-[#3c665e] bg-[#fff7df] p-6 md:grid-cols-[1.5fr_1fr]">
             <Facts {...p} />
             <Rsvp {...p} className="md:border-l-2 md:border-dashed md:border-[#3c665e] md:pl-6" />
@@ -510,13 +526,14 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
         <section data-birthday-scene={id} className="bg-[#ddecf3] p-6 text-[#334d66] md:p-10">
           <div className="grid overflow-hidden rounded-3xl bg-[#fff6df] shadow-xl md:grid-cols-[1.2fr_.8fr]">
             <div>
+              <div className="h-64">
+                <Art id={id} src={p.theme.heroImage} />
+              </div>
               <div className="space-y-6 p-8">
                 <Label>Destination: Birthday</Label>
                 <Copy {...p} />
               </div>
-              <div className="h-64">
-                <Art id={id} src={p.theme.heroImage} />
-              </div>
+
             </div>
             <div className="flex flex-col justify-between gap-8 border-t-2 border-dashed border-[#8197a7] p-8 md:border-l-2 md:border-t-0">
               <span className="text-4xl" aria-hidden="true">
@@ -532,10 +549,6 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
     case "comic-book-creator":
       return (
         <section data-birthday-scene={id} className="bg-[#ef554b] p-6 text-[#242129] md:p-10">
-          <div className="border-[5px] border-[#242129] bg-[#fff7de] p-7">
-            <Label>Every birthday deserves a great story</Label>
-            <Copy {...p} className="mt-6" titleClassName="uppercase" />
-          </div>
           <div className="mt-5 grid gap-5 md:grid-cols-[1.4fr_1fr]">
             <div className="h-72 border-[5px] border-[#242129]">
               <Art id={id} src={p.theme.heroImage} />
@@ -545,6 +558,11 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
               <Rsvp {...p} className="border-[5px] border-[#242129] bg-white p-5" />
             </div>
           </div>
+          <div className="border-[5px] border-[#242129] bg-[#fff7de] p-7">
+            <Label>Every birthday deserves a great story</Label>
+            <Copy {...p} className="mt-6" titleClassName="uppercase" />
+          </div>
+
         </section>
       );
     case "puppy-adoption-party":
@@ -586,17 +604,18 @@ export default function KidsBirthdayScenes(p: BirthdaySceneProps) {
       return (
         <section data-birthday-scene={id} className="bg-[#edf1ef] p-7 text-[#305d70] md:p-12">
           <div className="grid items-center gap-10 md:grid-cols-2">
+            <div className="relative overflow-hidden rounded-t-[50%] border-[12px] border-[#fffaf0] min-h-96 shadow-lg">
+              <Art id={id} src={p.theme.heroImage} className="absolute inset-0" />
+              <div className="absolute inset-y-0 left-1/2 w-3 bg-[#fffaf0]" />
+              <div className="absolute inset-x-0 top-1/2 h-3 bg-[#fffaf0]" />
+            </div>
             <div className="space-y-7">
               <Label>A cozy birthday gathering</Label>
               <Copy {...p} titleClassName="italic" />
               <Facts {...p} className="border-y border-[#8caeb5] py-6" />
               <Rsvp {...p} />
             </div>
-            <div className="relative overflow-hidden rounded-t-[50%] border-[12px] border-[#fffaf0] min-h-96 shadow-lg">
-              <Art id={id} src={p.theme.heroImage} className="absolute inset-0" />
-              <div className="absolute inset-y-0 left-1/2 w-3 bg-[#fffaf0]" />
-              <div className="absolute inset-x-0 top-1/2 h-3 bg-[#fffaf0]" />
-            </div>
+
           </div>
         </section>
       );

@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any */
 // @ts-nocheck
+import { normalizeEventSectionLayout } from "@/lib/event-section-layout";
 import { normalizeEventGuestPlanning } from "@/lib/event-guest-planning";
+import { normalizeHeroImageSettings } from "@/lib/hero-image-settings";
+import { normalizeGymnasticsPageText } from "@/lib/gymnastics-page-text";
 import { resolveGymMeetTemplateId } from "./registry";
 import { GymMeetRenderModel } from "./types";
 import { buildGymMeetDiscoveryContent } from "./buildGymMeetDiscoveryContent";
@@ -268,6 +271,7 @@ export const normalizeGymMeetEventData = ({
   mapAddress?: string;
   headerLocation?: string;
 }): GymMeetRenderModel => {
+  const savedPageText = eventData?.gymnasticsPageText ?? eventData?.customFields?.gymnasticsPageText;
   eventData = inflateGymDiscoveryV2EventData(eventData);
   const customFields = eventData?.customFields || {};
   const advancedSections = eventData?.advancedSections || customFields?.advancedSections || {};
@@ -418,24 +422,43 @@ export const normalizeGymMeetEventData = ({
     headerLocation || eventData?.location || eventData?.venue || resolvedAddress
   );
 
+  const hasAuthoredDescription = eventData?.createdVia === "simple-template" && !isDiscoveryEvent;
   const discovery = buildGymMeetDiscoveryContent({
     eventData,
     customFields,
     advancedSections,
     date: safeString(eventData?.date || eventData?.startISO),
-    detailsText,
+    detailsText: hasAuthoredDescription ? undefined : detailsText,
     detailsTextForDiscovery: isDiscoveryEvent ? rawDiscoveryDetails : undefined,
     venue: safeString(eventData?.venue),
     address: resolvedAddress,
   });
+  const descriptionText = detailsText || safeString(eventData?.previewDetailsPlaceholder);
+  if (hasAuthoredDescription && descriptionText) {
+    // Keep manual prose intact and editable as one field, including while typing.
+    const descriptionBlock = { id: "event-description", type: "text" as const, text: descriptionText };
+    const overview = discovery.sections.find((section) => section.id === "meet-details");
+    if (overview) {
+      overview.blocks.unshift(descriptionBlock);
+      overview.hasContent = true;
+    } else {
+      discovery.sections.unshift({ id: "meet-details", label: "Meet Details", kind: "meet_overview", priority: 10, hasContent: true, blocks: [descriptionBlock] });
+    }
+  }
   const quickLinks = isDiscoveryEvent ? buildPublicQuickAccessLinks(discovery) : baseQuickLinks;
 
   return {
+    sectionLayout: normalizeEventSectionLayout(eventData?.sectionLayout),
+    schedule: advancedSections?.schedule,
     guestPlanning: normalizeEventGuestPlanning(eventData?.guestPlanning),
     pageTemplateId: resolveGymMeetTemplateId(eventData),
     title: safeString(eventData?.eventTitle || eventTitle || "Gymnastics Meet"),
+    authoredTitle: safeString(eventData?.title ?? eventData?.eventTitle ?? eventTitle),
     titleSize: normalizeGymMeetTitleSize(eventData?.fontSize),
     heroImage: safeString(eventData?.heroImage || eventData?.customHeroImage),
+    heroImageSettings: normalizeHeroImageSettings(eventData?.heroImageSettings),
+    heroImageFilterEnabled: eventData?.heroImageFilterEnabled !== false,
+    gymnasticsPageText: normalizeGymnasticsPageText(savedPageText ?? eventData?.gymnasticsPageText ?? customFields?.gymnasticsPageText),
     hostGym: collapseRepeatedDisplayText(sanitizeDisplayHostGym(eventData?.hostGym)),
     venue: collapseRepeatedDisplayText(eventData?.venue),
     address: resolvedAddress,

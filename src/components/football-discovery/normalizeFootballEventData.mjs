@@ -1,3 +1,10 @@
+import { normalizeEventSectionLayout, orderEventSections } from "../../lib/event-section-layout.ts";
+import { footballMatchup, hasFootballGame } from "../../lib/football-games.ts";
+import { resolveFootballTeamName, resolveFootballTitle } from "../../lib/football-team-name.ts";
+import { parseScoreStreamWidget } from "../../lib/scorestream.ts";
+import { normalizeFootballHiddenSections } from "../../lib/football-section-visibility.ts";
+import { getEventGuestPlanningNotes } from "../../lib/event-guest-planning.ts";
+
 const safeString = (value) =>
   typeof value === "string"
     ? value.trim()
@@ -90,6 +97,8 @@ export function normalizeFootballEventData({
   eventTitle = "",
 } = {}) {
   const customFields = eventData?.customFields || {};
+  const sectionLayout = normalizeEventSectionLayout(eventData?.sectionLayout);
+  const hiddenSections = normalizeFootballHiddenSections(sectionLayout?.hidden ?? eventData?.footballHiddenSections);
   const advancedSections =
     eventData?.advancedSections ||
     customFields?.advancedSections ||
@@ -97,7 +106,7 @@ export function normalizeFootballEventData({
   const discoverySource = eventData?.discoverySource || {};
   const parseResult = discoverySource?.parseResult || {};
 
-  const games = pickArray(advancedSections?.games?.games || parseResult?.games);
+  const games = pickArray(advancedSections?.games?.games || parseResult?.games).filter(hasFootballGame);
   const rosterPlayers = pickArray(
     advancedSections?.roster?.players || parseResult?.roster?.players
   );
@@ -121,11 +130,14 @@ export function normalizeFootballEventData({
   );
   const isAttendanceEnabled =
     Boolean(eventData?.rsvpEnabled) ||
-    Boolean(safeString(eventData?.rsvpDeadline)) ||
-    Boolean(eventData?.accessControl?.requirePasscode);
+    Boolean(safeString(eventData?.rsvpDeadline));
   const passcodeRequired = Boolean(eventData?.accessControl?.requirePasscode);
 
-  const team = safeString(customFields?.team || eventData?.extra?.team);
+  const team = resolveFootballTeamName(
+    safeString(customFields?.team || eventData?.extra?.team || parseResult?.homeTeam),
+    safeString(eventData?.title || eventTitle),
+  );
+  const teamMascot = safeString(customFields?.teamMascot ?? eventData?.extra?.teamMascot ?? parseResult?.homeMascot);
   const season = safeString(customFields?.season || eventData?.extra?.season);
   const headCoach = safeString(
     customFields?.headCoach || eventData?.extra?.headCoach
@@ -143,7 +155,20 @@ export function normalizeFootballEventData({
     stadiumAddress ? { label: "Address", value: stadiumAddress } : null,
   ].filter(Boolean);
 
+  const detailLabels = { team: "Team Name", season: "Season", league: "League / Division", headCoach: "Head Coach", stadium: "Home Stadium", stadiumAddress: "Stadium Address", athleticTrainer: "Athletic Trainer", contact: "Team Contact" };
+  const detailCards = Object.entries(detailLabels).flatMap(([key, label]) => {
+    const value = key === "team" ? team : safeString(customFields[key] || eventData?.extra?.[key]);
+    return value ? [{ id: key, fieldKey: key, title: label, body: value }] : [];
+  });
+  const guestNotes = getEventGuestPlanningNotes(eventData?.guestPlanning).map(({ key, label, value }) => ({ id: `guest-${key}`, title: label, body: value }));
+  const description = typeof eventData?.details === "string" ? eventData.details : safeString(eventData?.description);
   const sections = [
+    {
+      id: "details", label: "Details", eyebrow: "About the event",
+      hasContent: Boolean(description.trim() || detailCards.length || guestNotes.length || eventData?.previewDetailsPlaceholder),
+      lines: description.trim() ? [description] : eventData?.previewDetailsPlaceholder ? [eventData.previewDetailsPlaceholder] : [],
+      cards: [...detailCards, ...guestNotes],
+    },
     {
       id: "games",
       label: "Game Schedule",
@@ -151,9 +176,7 @@ export function normalizeFootballEventData({
       hasContent: games.length > 0,
       cards: asCards(games, (game, idx) => ({
         id: safeString(game?.id) || `game-${idx + 1}`,
-        title: compactJoin([
-          game?.homeAway === "away" ? `at ${game?.opponent || "TBD"}` : `vs ${game?.opponent || "TBD"}`,
-        ]),
+        title: footballMatchup(game, team, teamMascot),
         body: compactJoin([
           [formatDate(game?.date), formatTime(game?.time)].filter(Boolean).join(" at "),
           game?.venue || "",
@@ -167,6 +190,13 @@ export function normalizeFootballEventData({
           game?.notes || "",
         ].filter(Boolean),
       })),
+    },
+    {
+      id: "scores",
+      label: "Live scores",
+      eyebrow: "ScoreStream",
+      hasContent: Boolean(parseScoreStreamWidget(advancedSections?.scores?.scorestreamWidgetUrl)),
+      scorestreamWidgetUrl: parseScoreStreamWidget(advancedSections?.scores?.scorestreamWidgetUrl)?.url || "",
     },
     {
       id: "roster",
@@ -381,23 +411,29 @@ export function normalizeFootballEventData({
     },
   ];
 
-  const navItems = sections.filter((section) => section.hasContent).map((section) => ({
+  const visibleSections = orderEventSections(
+    sections.filter((section) => !hiddenSections.includes(section.id === "attendance" ? "rsvp" : section.id)),
+    sectionLayout ? { ...sectionLayout, order: sectionLayout.order.map((id) => id === "rsvp" ? "attendance" : id), hidden: [] } : undefined,
+  );
+  const navItems = visibleSections.filter((section) => section.hasContent).map((section) => ({
     id: section.id,
     label: section.label,
   }));
 
   return {
-    title: safeString(eventData?.title || eventTitle || eventData?.customFields?.team || "Football Event"),
+    title: resolveFootballTitle(safeString(eventData?.title || eventTitle), safeString(customFields?.team || eventData?.extra?.team || parseResult?.homeTeam)) || team || "Football Event",
+    teamName: team,
+    teamMascot,
     subtitle: compactJoin([team, season, headCoach], " • "),
     dateLabel: formatDate(eventData?.date || eventData?.startISO) || safeString(parseResult?.dates),
     timeLabel: formatTime(eventData?.time || ""),
     locationLabel: compactJoin([stadium || safeString(eventData?.venue), stadiumAddress], " • "),
-    summaryItems,
-    sections,
+    summaryItems: hiddenSections.includes("details") ? [] : summaryItems,
+    sections: visibleSections,
     navItems,
     attendance: {
       enabled: isAttendanceEnabled,
-      visible: isAttendanceEnabled || passcodeRequired,
+      visible: !hiddenSections.includes("rsvp") && (isAttendanceEnabled || passcodeRequired),
       deadline: safeString(eventData?.rsvpDeadline),
       helperText: isAttendanceEnabled
         ? "Attendance tracking is available for this football event."

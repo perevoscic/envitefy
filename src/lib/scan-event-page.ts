@@ -1,4 +1,5 @@
 import * as chrono from "chrono-node";
+import { scanScheduleFromOcr } from "./scan-schedule.ts";
 import { buildScanPersonalization, normalizeScanPersonalization, personalizedScanCategory, personalizedScanTitle, withoutMedicalIdentityLines } from "./ocr/personalization.ts";
 import type { ConciergeEventType, DetectedSourceIntent } from "./concierge/types.ts";
 import { sanitizeConciergePublicEventData } from "./concierge/public-copy.ts";
@@ -35,6 +36,7 @@ import type { UploadResponse } from "./upload-config.ts";
 export type ScanEventPageSource = "camera" | "upload";
 
 export type ScanEventPageOcrResult = {
+  scanSchedule?: unknown;
   scanArtworkTicket?: string | null;
   ocrText?: string | null;
   fieldsGuess?: Record<string, unknown> | null;
@@ -747,12 +749,14 @@ export function buildScanEventPageHistoryPayload(params: {
   const ocrSkin = asRecord(params.ocr.ocrSkin);
   const openHouse = asRecord(params.ocr.openHouse);
   const activities = stringArray(fieldsGuess.activities).slice(0, 8);
+  const scanSchedule = scanScheduleFromOcr(params.ocr);
   const timezone =
-    firstString(fieldsGuess.timezone, params.ocr.schedule?.timezone, params.ocr.practiceSchedule?.timezone) ||
+    firstString(scanSchedule?.timezone, fieldsGuess.timezone, params.ocr.schedule?.timezone, params.ocr.practiceSchedule?.timezone) ||
     inferTimezoneFromState([venue, location, ocrText].filter(Boolean).join(" ")) ||
     inferTimezoneFromAddress([venue, location, ocrText].filter(Boolean).join(" ")) ||
     Intl.DateTimeFormat().resolvedOptions().timeZone ||
     "UTC";
+  const firstScheduledEvent = scanSchedule?.items.find((item) => item.startAt);
   const rescuedDate = parseScanDateTimeText(withoutMedicalIdentityLines(rescueText), timezone);
   const fieldStartText = firstString(fieldsGuess.start, fieldsGuess.startISO, fieldsGuess.startAt);
   const fieldEndText = firstString(fieldsGuess.end, fieldsGuess.endISO, fieldsGuess.endAt);
@@ -761,18 +765,18 @@ export function buildScanEventPageHistoryPayload(params: {
   const fieldEndISO = normalizeMaybeDateText(fieldEndText, timezone);
   const fieldHasExplicitTime = Boolean(normalizeIso(fieldStartText)) || hasExplicitTimeText(fieldDateTimeText);
   const preferRescuedDate = Boolean(rescuedDate.startISO && rescuedDate.timeFound && !fieldHasExplicitTime);
-  const startISO = preferRescuedDate ? rescuedDate.startISO : fieldStartISO || rescuedDate.startISO;
+  const startISO = scanSchedule ? firstScheduledEvent?.startAt || null : preferRescuedDate ? rescuedDate.startISO : fieldStartISO || rescuedDate.startISO;
   const scanPersonalization = normalizeScanPersonalization(fieldsGuess.scanPersonalization) || buildScanPersonalization({
     title, category: categoryRaw, sourceText: rawOcrText, start: firstString(fieldStartText, startISO),
   });
   title = personalizedScanTitle(title, scanPersonalization);
-  const endISO =
+  const endISO = scanSchedule ? firstScheduledEvent?.endAt || null :
     (preferRescuedDate ? rescuedDate.endISO : fieldEndISO) ||
     rescuedDate.endISO ||
     (startISO && fieldsGuess.timeFound !== false ? addMinutesIso(startISO, 90) : null);
-  const timeFound =
+  const timeFound = scanSchedule ? Boolean(firstScheduledEvent?.startAt) :
     typeof fieldsGuess.timeFound === "boolean" ? fieldsGuess.timeFound : rescuedDate.timeFound;
-  const scheduleLine = firstString(
+  const scheduleLine = scanSchedule ? scanSchedule.timeframe || `${scanSchedule.items.length} sessions and games` : firstString(
     firstSpecificString(fieldsGuess.whenLabel),
     firstSpecificString(fieldsGuess.scheduleLine),
     fieldsGuess.dateText && fieldsGuess.timeText
@@ -810,8 +814,8 @@ export function buildScanEventPageHistoryPayload(params: {
     ocrText,
     eventType,
   });
-  const ownership = sourceIntent.intent === "received_invite" ? "invited" : "owned";
-  const eventCount = Array.isArray(params.ocr.events) ? params.ocr.events.length : 0;
+  const ownership = !scanSchedule && sourceIntent.intent === "received_invite" ? "invited" : "owned";
+  const eventCount = scanSchedule?.items.length || (Array.isArray(params.ocr.events) ? params.ocr.events.length : 0);
   const thumbnail =
     params.media?.eventMedia.thumbnail || params.media?.stored.display?.url || undefined;
   const attachment = params.media?.eventMedia.attachment;
@@ -839,8 +843,9 @@ export function buildScanEventPageHistoryPayload(params: {
   ];
 
   const data: Record<string, unknown> = {
+    ...(scanSchedule ? { scanSchedule, scheduleItems: scanSchedule.items } : {}),
     ownership,
-    invitedFromScan: sourceIntent.intent === "received_invite",
+    invitedFromScan: !scanSchedule && sourceIntent.intent === "received_invite",
     sourceContext: {
       type: params.source === "camera" ? "snap" : "upload",
       detectedSourceIntent: sourceIntent.intent,
@@ -849,7 +854,7 @@ export function buildScanEventPageHistoryPayload(params: {
       requiresUserConfirmation: false,
       originalCategory: originalCategoryRaw || null,
       hasUsableContext: true,
-      ambiguity: eventCount > 1 ? "multiple" : "none",
+      ambiguity: !scanSchedule && eventCount > 1 ? "multiple" : "none",
       eventCount,
     },
     creationIntent: "create_event",

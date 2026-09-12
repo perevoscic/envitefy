@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import EventDesignGallery from "@/components/events/EventDesignGallery";
 import GymnasticsThumbnail from "./GymnasticsThumbnail";
+import GymnasticsGalleryHeader from "./GymnasticsGalleryHeader";
 import { GYM_MEET_TEMPLATE_LIBRARY } from "./registry";
 
 export default function GymnasticsDesignGallery() {
@@ -11,7 +12,8 @@ export default function GymnasticsDesignGallery() {
   return (
     <EventDesignGallery
       title="Gymnastics"
-      description="First, find your meet’s style. Then upload a packet, paste a meet link, or add your details by hand. We’ll bring it all together in your chosen design."
+      category="gymnastics"
+      header={<GymnasticsGalleryHeader count={GYM_MEET_TEMPLATE_LIBRARY.length} />}
       designs={GYM_MEET_TEMPLATE_LIBRARY}
       getHref={(design) => {
         const params = new URLSearchParams({ templateId: design.id });

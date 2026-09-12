@@ -17,8 +17,9 @@ export function hasBirthdayScene(id: string) {
 
 export default function BirthdayScene(props: BirthdaySceneProps) {
   const id = props.theme.id;
+  const sceneProps = { ...props, actions: undefined };
   return <div className="relative isolate" style={{ containerType: "inline-size" }} data-birthday-design-version="atelier-2026">
-    {props.actions ? <div className="relative z-30 flex justify-end px-5 py-3">{props.actions}</div> : null}
-    {NEXT26_BIRTHDAY_IDS.has(id) ? <Next26BirthdayScenes {...props} /> : ANNIVERSARY_COLLECTION_BY_ID.has(id) ? <AnniversaryScenes {...props} /> : BIRTHDAY_ORIGINAL_ART[id] ? <OriginalBirthdayScenes {...props} /> : BIRTHDAY_KIDS_ART[id] ? <KidsBirthdayScenes {...props} /> : <AdultBirthdayScenes {...props} />}
+    {props.actions ? <div className="pointer-events-none absolute inset-x-5 top-3 z-30 flex justify-end [&>*]:pointer-events-auto">{props.actions}</div> : null}
+    {NEXT26_BIRTHDAY_IDS.has(id) ? <Next26BirthdayScenes {...sceneProps} /> : ANNIVERSARY_COLLECTION_BY_ID.has(id) ? <AnniversaryScenes {...sceneProps} /> : BIRTHDAY_ORIGINAL_ART[id] ? <OriginalBirthdayScenes {...sceneProps} /> : BIRTHDAY_KIDS_ART[id] ? <KidsBirthdayScenes {...sceneProps} /> : <AdultBirthdayScenes {...sceneProps} />}
   </div>;
 }

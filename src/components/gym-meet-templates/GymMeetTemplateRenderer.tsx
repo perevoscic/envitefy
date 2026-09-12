@@ -50,7 +50,15 @@ export default function GymMeetTemplateRenderer(props: GymMeetTemplateRendererPr
     >
       <MeetPageContent
         {...props}
-        hero={<GymnasticsScene model={props.model} design={design} />}
+        hero={
+          <GymnasticsScene
+            model={props.model}
+            design={design}
+            heroImageAction={props.heroImageAction}
+            onHeroImagePositionChange={props.onHeroImagePositionChange}
+            onPageTextChange={props.onPageTextChange}
+          />
+        }
         variant={gymMeetPageVariant(design)}
         presentation={presentation}
       />

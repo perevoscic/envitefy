@@ -13,7 +13,7 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
   const { theme, event, actions } = props;
   const source = theme.heroImage || BIRTHDAY_ORIGINAL_ART[theme.id];
   const art = (className: string) =>
-    source ? <img src={source} alt="" aria-hidden="true" className={className} /> : null;
+    source ? <img src={source} alt="" aria-hidden="true" className={`template-hero-image ${className}`} /> : null;
   const mark = event.age || "✦";
   const tools = actions ? <div className="relative z-20 px-5 pt-4">{actions}</div> : null;
   switch (theme.id) {
@@ -50,6 +50,9 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
           className="[container-type:inline-size] relative overflow-hidden bg-[#ffe3ed] text-[#822e61]"
         >
           {tools}
+          {art(
+            "mt-[-30px] h-[340px] w-full object-cover object-bottom sm:h-[470px] [mask-image:linear-gradient(transparent,black_20%)]",
+          )}
           <div className="relative mx-auto max-w-3xl px-7 pt-16 text-center">
             <p className="mb-5 text-xs uppercase tracking-[.4em]">
               A little sugar. A lot of magic.
@@ -57,9 +60,7 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
             <Copy {...props} titleClassName="italic" storyClassName="mx-auto" />
             <Rsvp {...props} className="mt-7 justify-center" />
           </div>
-          {art(
-            "mt-[-30px] h-[340px] w-full object-cover object-bottom sm:h-[470px] [mask-image:linear-gradient(transparent,black_20%)]",
-          )}
+
           <Facts {...props} className="relative justify-center bg-[#fdf4eb] px-7 py-7" />
         </section>
       );
@@ -90,7 +91,9 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
           className="[container-type:inline-size] bg-[#d8eee3] text-[#355646]"
         >
           {tools}
-          <div className="px-6 pt-12 text-center">
+          <div className="relative">
+            {art("h-[340px] w-full object-cover object-bottom sm:h-[430px]")}
+          <div className="px-6 py-10 text-center">
             <span className="inline-block rotate-[-5deg] rounded-[50%] bg-[#ffdd8c] px-8 py-3 font-bold">
               You + me + all our pals
             </span>
@@ -101,13 +104,13 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
               storyClassName="mx-auto"
             />
           </div>
-          <div className="relative">
-            {art("h-[340px] w-full object-cover object-bottom sm:h-[430px]")}
-            <div className="relative mx-5 -mt-12 rounded-[50%_50%_0_0/25%_25%_0_0] bg-[#fff8e5] p-8 sm:mx-16">
+            <div className="relative mx-5 rounded-[50%_50%_0_0/25%_25%_0_0] bg-[#fff8e5] p-8 sm:mx-16">
               <Facts {...props} className="justify-center" />
               <Rsvp {...props} className="mt-6 justify-center" />
             </div>
           </div>
+
+
         </section>
       );
     case "birthday-burst":
@@ -118,13 +121,6 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
         >
           {tools}
           <div className="grid gap-0 p-5 sm:grid-cols-2 sm:p-9">
-            <div className="relative z-10 border-[5px] border-[#191826] bg-white p-8 sm:my-12 sm:-mr-10 sm:-rotate-3">
-              <p className="mb-6 inline-block bg-[#ec4938] px-4 py-2 font-black text-white">
-                IT’S GONNA BE EPIC!
-              </p>
-              <Copy {...props} titleClassName="font-black uppercase italic" />
-              <Facts {...props} className="mt-8" />
-            </div>
             <div className="relative">
               {art("h-full min-h-[340px] w-full border-[5px] border-[#191826] object-cover")}
               <span
@@ -134,6 +130,14 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
                 {mark}
               </span>
             </div>
+            <div className="relative z-10 border-[5px] border-[#191826] bg-white p-8 sm:my-12 sm:-mr-10 sm:-rotate-3">
+              <p className="mb-6 inline-block bg-[#ec4938] px-4 py-2 font-black text-white">
+                IT’S GONNA BE EPIC!
+              </p>
+              <Copy {...props} titleClassName="font-black uppercase italic" />
+              <Facts {...props} className="mt-8" />
+            </div>
+
           </div>
           <Rsvp {...props} className="justify-center px-5 pb-10" />
         </section>
@@ -149,13 +153,14 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
             <p className="text-xs uppercase tracking-[.35em]">Save room for something sweet</p>
           </div>
           <div className="grid items-center gap-8 px-7 pb-12 sm:grid-cols-[1fr_1.2fr] sm:px-14">
+            {art("aspect-[4/5] w-full rounded-t-[50%] object-cover")}
             <div>
               <Copy {...props} titleClassName="italic font-normal" />
               <div className="my-8 h-px w-20 bg-current" />
               <Facts {...props} className="flex-col !items-start" />
               <Rsvp {...props} className="mt-8" />
             </div>
-            {art("aspect-[4/5] w-full rounded-t-[50%] object-cover")}
+
           </div>
           <p
             aria-hidden="true"
@@ -196,6 +201,7 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
         >
           {tools}
           <div className="grid sm:grid-cols-[1.25fr_.75fr]">
+            {art("h-[340px] w-full object-cover sm:h-full")}
             <div className="p-8 sm:p-12">
               <p className="text-sm font-black uppercase">Move your feet / feel the beat</p>
               <Copy
@@ -205,7 +211,7 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
               />
               <Rsvp {...props} />
             </div>
-            {art("h-[340px] w-full object-cover sm:h-full")}
+
           </div>
           <div className="flex flex-col gap-5 bg-[#ffc6df] p-7 sm:flex-row sm:items-center sm:justify-between">
             <span aria-hidden="true" className="text-5xl">
@@ -223,6 +229,9 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
         >
           {tools}
           <div className="relative px-6 pt-14 text-center">
+            {art(
+              "mx-auto -mt-5 max-h-[410px] w-full object-cover [mask-image:linear-gradient(transparent,black_20%)]",
+            )}
             <p className="mb-6 tracking-[.35em]">✧ ONCE UPON A BIRTHDAY ✧</p>
             <Copy
               {...props}
@@ -230,9 +239,7 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
               titleClassName="font-normal"
               storyClassName="mx-auto"
             />
-            {art(
-              "mx-auto -mt-5 max-h-[410px] w-full object-cover [mask-image:linear-gradient(transparent,black_20%)]",
-            )}
+
           </div>
           <div className="mx-auto max-w-3xl border-t border-[#65508e]/30 px-7 py-9">
             <Facts {...props} className="justify-center" />
@@ -292,6 +299,7 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
           className="[container-type:inline-size] bg-[#f9e8c4] text-[#874b29]"
         >
           {tools}
+          {art("mt-8 h-[300px] w-full object-cover object-[50%_70%] sm:h-[400px]")}
           <div className="flex flex-col gap-7 px-8 pt-14 sm:flex-row sm:items-end sm:px-14">
             <div className="flex-1">
               <p className="mb-6 text-xs uppercase tracking-[.3em]">The gang’s getting together</p>
@@ -302,7 +310,7 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
               <Rsvp {...props} className="mt-6" />
             </div>
           </div>
-          {art("mt-8 h-[300px] w-full object-cover object-[50%_70%] sm:h-[400px]")}
+
         </section>
       );
     case "whimsical-wonder":
@@ -341,11 +349,6 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
         >
           {tools}
           <div className="relative p-6 sm:p-12">
-            <Copy
-              {...props}
-              className="relative z-10 max-w-3xl -rotate-3"
-              titleClassName="uppercase font-black !text-[clamp(3.6rem,8cqw,8rem)]"
-            />
             <div className="mt-10 grid gap-6 sm:grid-cols-[.8fr_1.2fr]">
               <div className="relative z-10 self-center border-y-4 border-[#282344] py-8">
                 <Facts {...props} />
@@ -353,6 +356,12 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
               </div>
               {art("h-[330px] w-full rotate-3 object-cover sm:-mt-24 sm:h-[420px]")}
             </div>
+            <Copy
+              {...props}
+              className="relative z-10 max-w-3xl -rotate-3"
+              titleClassName="uppercase font-black !text-[clamp(3.6rem,8cqw,8rem)]"
+            />
+
           </div>
         </section>
       );
@@ -368,6 +377,7 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
             className="h-12 bg-[repeating-linear-gradient(90deg,#a33432_0_40px,#fff3d9_40px_80px)]"
           />
           <div className="grid items-center sm:grid-cols-[1fr_1.1fr]">
+            {art("h-[360px] w-full object-cover sm:h-[520px]")}
             <div className="p-8 text-center sm:p-12">
               <p className="mb-7 text-xs uppercase tracking-[.35em]">Step right up</p>
               <Copy
@@ -377,7 +387,7 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
               />
               <Rsvp {...props} className="mt-8 justify-center" />
             </div>
-            {art("h-[360px] w-full object-cover sm:h-[520px]")}
+
           </div>
           <Facts {...props} className="justify-center border-y-2 border-current p-7" />
         </section>
@@ -390,6 +400,7 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
         >
           {tools}
           <div className="grid sm:grid-cols-[.8fr_1.2fr]">
+            {art("h-[430px] w-full object-cover sm:h-full sm:min-h-[650px]")}
             <div className="flex flex-col justify-center px-8 py-14 sm:px-14">
               <p className="mb-12 text-[10px] uppercase tracking-[.5em]">
                 The pleasure of your company
@@ -398,7 +409,7 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
               <Facts {...props} className="mt-12 border-t border-[#e9d1a0]/40 pt-8" />
               <Rsvp {...props} className="mt-8" />
             </div>
-            {art("h-[430px] w-full object-cover sm:h-full sm:min-h-[650px]")}
+
           </div>
         </section>
       );
@@ -433,6 +444,7 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
         >
           {tools}
           <div className="grid sm:grid-cols-[1.2fr_.8fr]">
+            {art("h-[330px] w-full object-cover sm:h-full")}
             <div className="px-7 py-16 sm:px-12">
               <p className="mb-8 text-xs uppercase tracking-[.45em]">After dark / until late</p>
               <Copy
@@ -441,7 +453,7 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
               />
               <Rsvp {...props} className="mt-10" />
             </div>
-            {art("h-[330px] w-full object-cover sm:h-full")}
+
           </div>
           <div className="bg-[#d8ff3f] px-7 py-7 text-[#0a142d]">
             <Facts {...props} />
@@ -456,12 +468,13 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
         >
           {tools}
           <div className="grid items-start sm:grid-cols-2">
+            {art("h-[400px] w-full object-cover sm:h-[580px]")}
             <div className="relative z-10 px-8 pt-14 sm:px-14">
               <p className="mb-7 text-xs uppercase tracking-[.3em]">Up, up & hooray</p>
               <Copy {...props} titleClassName="!text-[clamp(3.2rem,6cqw,6rem)]" />
               <Rsvp {...props} className="mt-8" />
             </div>
-            {art("h-[400px] w-full object-cover sm:h-[580px]")}
+
           </div>
           <Facts {...props} className="relative justify-center bg-[#f9e6a9] px-7 py-8" />
         </section>
@@ -473,6 +486,7 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
           className="[container-type:inline-size] bg-[#f4e4c5] text-[#983f36]"
         >
           {tools}
+          {art("h-[270px] w-full object-cover sm:h-[360px]")}
           <div className="px-7 py-12 text-center">
             <p className="mb-5 text-xs uppercase tracking-[.5em]">Your all-access invitation</p>
             <Copy
@@ -481,7 +495,7 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
               storyClassName="mx-auto"
             />
           </div>
-          {art("h-[270px] w-full object-cover sm:h-[360px]")}
+
           <div className="mx-6 my-8 grid gap-6 border-y-2 border-dashed border-current py-7 sm:mx-14 sm:grid-cols-[1fr_auto] sm:items-center">
             <Facts {...props} />
             <Rsvp {...props} />
@@ -496,6 +510,7 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
         >
           {tools}
           <div className="grid gap-8 p-7 sm:grid-cols-[1.2fr_.8fr] sm:p-12">
+            {art("aspect-[4/5] w-full -rotate-3 object-cover shadow-[12px_12px_0_#ffcf44]")}
             <div>
               <p className="mb-7 text-xs font-bold uppercase tracking-[.3em]">
                 A wonderfully messy celebration
@@ -503,7 +518,7 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
               <Copy {...props} titleClassName="font-black !text-[clamp(3.2rem,6cqw,6.8rem)]" />
               <Facts {...props} className="mt-10 text-[#273988]" />
             </div>
-            {art("aspect-[4/5] w-full -rotate-3 object-cover shadow-[12px_12px_0_#ffcf44]")}
+
           </div>
           <div className="bg-[#273988] p-7">
             <Rsvp {...props} inverse className="justify-center" />
@@ -557,6 +572,13 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
           className="[container-type:inline-size] overflow-hidden bg-[#163ce0] text-[#fff6d4]"
         >
           {tools}
+          <div className="relative mx-auto max-w-3xl">
+            {art("mx-auto h-[360px] w-full object-cover sm:h-[420px]")}
+            <div className="relative bg-[#e33f3b] px-7 py-8">
+              <Facts {...props} className="justify-center" />
+              <Rsvp {...props} className="mt-7 justify-center" />
+            </div>
+          </div>
           <div className="px-7 pt-12 text-center">
             <p className="mb-7 text-xs font-black uppercase tracking-[.4em]">
               The cherry on top of the year
@@ -567,13 +589,7 @@ export default function OriginalBirthdayScenes(props: BirthdaySceneProps) {
               storyClassName="mx-auto"
             />
           </div>
-          <div className="relative mx-auto max-w-3xl">
-            {art("mx-auto h-[360px] w-full object-cover sm:h-[420px]")}
-            <div className="relative bg-[#e33f3b] px-7 py-8">
-              <Facts {...props} className="justify-center" />
-              <Rsvp {...props} className="mt-7 justify-center" />
-            </div>
-          </div>
+
         </section>
       );
     default:

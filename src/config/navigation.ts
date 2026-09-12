@@ -33,6 +33,7 @@ export const publicUseCaseNavLinks: SignedOutMobileMenuLink[] = [
   { label: "Signup Forms", href: "/signup-forms" },
   { label: "Sports", href: "/sport-events" },
   { label: "Gymnastics", href: "/gymnastics" },
+  { label: "Football", href: "/football" },
 ];
 
 export const publicUseCasePrimaryNavLinks: SignedOutMobileMenuLink[] = [

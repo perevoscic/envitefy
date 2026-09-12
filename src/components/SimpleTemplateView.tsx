@@ -1,5 +1,7 @@
 // @ts-nocheck
 "use client";
+import TemplateImageTone from "@/components/events/TemplateImageTone";
+
 import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
 import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
 import { buildCalendarDescription } from "@/lib/calendar-description";
@@ -88,6 +90,11 @@ type SimpleTemplateViewProps = {
   /** When true, suppress shared compact action strips inside the template renderer. */
   suppressActionStrip?: boolean;
   onMobileEdit?: () => void;
+  onPreview?: () => void;
+  onPageTextChange?: import("@/lib/gymnastics-page-text").GymnasticsPageTextChange;
+  /** Editor-only image control, kept out of guest pages. */
+  heroImageAction?: React.ReactNode;
+  onHeroImagePositionChange?: (positionY: number) => void;
   mobileEditHref?: string;
   /** When true, render a neutral page surface instead of theme background fills (used by editor previews). */
   disableThemeBackground?: boolean;
@@ -311,6 +318,10 @@ export default function SimpleTemplateView({
   hideOwnerActions = false,
   suppressActionStrip = false,
   onMobileEdit,
+  onPreview,
+  onPageTextChange,
+  heroImageAction,
+  onHeroImagePositionChange,
   mobileEditHref,
   disableThemeBackground = false,
   neutralPreview,
@@ -2725,6 +2736,10 @@ export default function SimpleTemplateView({
           hideOwnerActions={hideOwnerActions}
           suppressActionStrip={suppressActionStrip}
           onMobileEdit={onMobileEdit}
+          onPreview={onPreview}
+          onPageTextChange={onPageTextChange}
+          heroImageAction={heroImageAction}
+          onHeroImagePositionChange={onHeroImagePositionChange}
           mobileEditHref={mobileEditHref}
           onShare={handleShare}
           onGoogleCalendar={handleGoogleCalendar}
@@ -3833,21 +3848,22 @@ export default function SimpleTemplateView({
           }`}
         >
           {hasHeaderVisual && (
-            <div className="absolute inset-0">
+            <TemplateImageTone enabled={currentData.heroImageFilterEnabled !== false} color={theme.accent || paletteColors[0] || theme.bg}>
+<div className="absolute inset-0">
               {hasHeaderHero ? (
                 headerHeroSrc.startsWith("http") ? (
                   <Image
                     src={headerHeroSrc}
                     alt="Header background"
                     fill
-                    className="object-cover"
+                    className="template-hero-image object-cover"
                     sizes="100vw"
                   />
                 ) : (
                   <img
                     src={headerHeroSrc}
                     alt="Header background"
-                    className="h-full w-full object-cover"
+                    className="template-hero-image h-full w-full object-cover"
                   />
                 )
               ) : (
@@ -3861,6 +3877,7 @@ export default function SimpleTemplateView({
                 }`}
               />
             </div>
+</TemplateImageTone>
           )}
           <div className="max-w-6xl mx-auto relative z-10">
             {(eventDatesLabel || sessionHeroLabel || teamLevelHeroLabel || gymHeroLabel) && (
@@ -4767,6 +4784,52 @@ export default function SimpleTemplateView({
           >
             <div className="relative z-10">
               {/* Header */}
+              <TemplateImageTone enabled={currentData.heroImageFilterEnabled !== false} color={theme.accent || paletteColors[0] || theme.bg}>
+<div className="relative w-full h-64 md:h-96">
+                {heroImage?.trim() ? (
+                  heroImage.startsWith("data:") ? (
+                    <img
+                      src={heroImage}
+                      alt="Hero"
+                      className="template-hero-image w-full h-full object-cover"
+                      onError={(e) => {
+                        console.error("[SimpleTemplateView] Hero image failed to load (data URL)");
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  ) : heroImage.startsWith("http") ? (
+                    <Image
+                      src={heroImage}
+                      alt="Hero"
+                      fill
+                      className="template-hero-image object-cover"
+                      sizes="(max-width: 768px) 100vw, 1000px"
+                      onError={() => {
+                        console.error("[SimpleTemplateView] Hero image failed to load (HTTP URL)");
+                      }}
+                    />
+                  ) : (
+                    <img
+                      src={heroImage}
+                      alt="Hero"
+                      className="template-hero-image w-full h-full object-cover"
+                      onError={(e) => {
+                        console.error("[SimpleTemplateView] Hero image failed to load (other)");
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  )
+                ) : (
+                  <div
+                    className="relative w-full h-full overflow-hidden"
+                    style={heroGradientFallbackStyle}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/45" />
+                  </div>
+                )}
+              </div>
+</TemplateImageTone>
+
               <div className={`relative p-6 md:p-8 border-b border-white/10 ${textClass}`}>
                 {/* Actions - White background bar with Edit/Delete/Share/Email */}
                 {!isLocked && !isReadOnly && !hideOwnerActions && (
@@ -4877,49 +4940,7 @@ export default function SimpleTemplateView({
               </> : null}
 
               {/* Hero Image */}
-              <div className="relative w-full h-64 md:h-96">
-                {heroImage?.trim() ? (
-                  heroImage.startsWith("data:") ? (
-                    <img
-                      src={heroImage}
-                      alt="Hero"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        console.error("[SimpleTemplateView] Hero image failed to load (data URL)");
-                        (e.target as HTMLImageElement).style.display = "none";
-                      }}
-                    />
-                  ) : heroImage.startsWith("http") ? (
-                    <Image
-                      src={heroImage}
-                      alt="Hero"
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 1000px"
-                      onError={() => {
-                        console.error("[SimpleTemplateView] Hero image failed to load (HTTP URL)");
-                      }}
-                    />
-                  ) : (
-                    <img
-                      src={heroImage}
-                      alt="Hero"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        console.error("[SimpleTemplateView] Hero image failed to load (other)");
-                        (e.target as HTMLImageElement).style.display = "none";
-                      }}
-                    />
-                  )
-                ) : (
-                  <div
-                    className="relative w-full h-full overflow-hidden"
-                    style={heroGradientFallbackStyle}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/45" />
-                  </div>
-                )}
-              </div>
+
 
               {/* Details Section */}
               <TemplateBodyLayout presentation={normalizedCategory === "sport_event" || currentData?.templateEditor?.category === "sport-events" ? getTemplateBodyPresentation("sport-events", currentData?.bodyDesignId || currentData?.templateEditor?.templateId || `${currentData?.customFields?.sport || currentData?.activityProfile || "football"}--stadium`) : undefined}>
@@ -4944,11 +4965,11 @@ export default function SimpleTemplateView({
                 )}
 
                 {/* Custom Fields Grid */}
-                {detailFields.length > 0 && (
+                {detailFields.some((field) => String(customFields[field.key] ?? currentData?.extra?.[field.key] ?? "").trim()) && (
                   <ul className="mt-6 grid grid-cols-2 gap-3 md:gap-4">
                     {detailFields.map((field: any) => {
                       const val = customFields[field.key] ?? currentData?.extra?.[field.key];
-                      if (!val) return null;
+                      if (val == null || !String(val).trim()) return null;
                       return (
                         <li key={field.key} className="list-none space-y-1">
                           <p

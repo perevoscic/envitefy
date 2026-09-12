@@ -133,7 +133,7 @@ function Art({
   return (
     <div className={`${styles.art} ${className}`}>
       {src && (
-        <img
+        <img className="template-hero-image"
           src={src}
           alt=""
           loading="lazy"
@@ -168,12 +168,13 @@ function Hero({
     case "tuscan-lemon-grove":
       composition = (
         <>
-          {invitation}
           <div className={styles.triptych}>
             <Art src={image} position="left" />
             <Art src={image} />
             <Art src={image} position="right" />
           </div>
+          {invitation}
+
         </>
       );
       break;
@@ -204,8 +205,9 @@ function Hero({
             <br />
             WEDDING
           </span>
-          {invitation}
           <div className={styles.offsetImage}>{art}</div>
+          {invitation}
+
         </>
       );
       break;
@@ -239,13 +241,14 @@ function Hero({
     case "disco-afterglow":
       composition = (
         <>
-          {invitation}
           <div className={styles.spotlight}>
             {art}
             <span className={styles.star} aria-hidden="true">
               ✦
             </span>
           </div>
+          {invitation}
+
         </>
       );
       break;
@@ -291,8 +294,9 @@ function Hero({
     case "cherry-blossom-silk":
       composition = (
         <>
-          {invitation}
           <div className={styles.fan}>{art}</div>
+          {invitation}
+
         </>
       );
       break;
@@ -318,8 +322,9 @@ function Hero({
     case "art-deco-soiree":
       composition = (
         <>
-          <div className={styles.marquee}>{invitation}</div>
           <div className={styles.decoPortal}>{art}</div>
+          <div className={styles.marquee}>{invitation}</div>
+
         </>
       );
       break;
@@ -340,8 +345,9 @@ function Hero({
     case "red-thread":
       composition = (
         <>
-          {invitation}
           <div className={styles.threadImage}>{art}</div>
+          {invitation}
+
           <p className={styles.runningTitle}>Together, from this day on.</p>
         </>
       );

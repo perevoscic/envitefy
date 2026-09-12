@@ -1,5 +1,7 @@
 # Envitefy Video Studio
 
+**Provider rule (September 12, 2026): OpenAI for generated assets and substantive AI work; Remotion for animation, editing and rendering.** Gemini is limited to small text calls. The engine and legacy callers block Google generation, music and heavy media processing; see [the standing rule](STUDIO-GUIDE.md#openai-and-remotion-gemini-for-small-text-calls-only--september-12-2026).
+
 A local Remotion project for Envitefy marketing videos. **EnvitefyHostMode** is the current 22-second TikTok: fictional host footage, a real product demo, original music, and notification sound effects. **EnvitefyIntro** is the earlier 30-second narrated introduction with ImageGen photography and illustrative cards.
 
 ## Ad creative and video production

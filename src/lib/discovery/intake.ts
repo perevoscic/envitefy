@@ -1,4 +1,5 @@
 import { isGymMeetTemplateId } from "@/components/gym-meet-templates/registry";
+import { isGymMeetTemplateId as isFootballTemplateId } from "@/components/football-season-templates/registry";
 import { upsertEventHistoryInputBlob } from "@/lib/db";
 import { createDiscoveryShell } from "@/lib/discovery/persist";
 import { createDiscoveryPipelineState } from "@/lib/discovery/shared";
@@ -66,8 +67,8 @@ export async function intakeDiscovery(params: {
   if (contentType.includes("multipart/form-data")) {
     const formData = await params.request.formData();
     const requestedTemplate = formData.get("pageTemplateId");
-    if (isGymMeetTemplateId(requestedTemplate)) pageTemplateId = requestedTemplate;
     workflow = normalizeWorkflow(formData.get("workflow") || workflow);
+    if ((workflow === "football" ? isFootballTemplateId : isGymMeetTemplateId)(requestedTemplate)) pageTemplateId = String(requestedTemplate);
     activityProfile = normalizeSportActivityKey(formData.get("activityProfile"));
     eventArchetype = normalizeSportEventArchetype(formData.get("eventArchetype"));
     title = defaultTitleForWorkflow(workflow);
@@ -95,8 +96,8 @@ export async function intakeDiscovery(params: {
     fileBuffer = prepared.buffer;
   } else {
     const body = await parseJsonRequestBody(params.request);
-    if (isGymMeetTemplateId(body?.pageTemplateId)) pageTemplateId = body.pageTemplateId;
     workflow = normalizeWorkflow(body?.workflow || workflow);
+    if ((workflow === "football" ? isFootballTemplateId : isGymMeetTemplateId)(body?.pageTemplateId)) pageTemplateId = body.pageTemplateId;
     activityProfile = normalizeSportActivityKey(body?.activityProfile);
     eventArchetype = normalizeSportEventArchetype(body?.eventArchetype);
     title = defaultTitleForWorkflow(workflow);
@@ -135,7 +136,7 @@ export async function intakeDiscovery(params: {
     title,
     source,
     pipeline,
-    pageTemplateId: workflow === "gymnastics" ? pageTemplateId : null,
+    pageTemplateId: workflow === "gymnastics" || workflow === "football" ? pageTemplateId : null,
   });
 
   if (fileBuffer && source.type === "file") {

@@ -69,7 +69,11 @@ export default function BauhausWedding({ theme, event }: Props) {
         </div>
 
         {/* Top Right Blue Block */}
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-[#1A73E8] z-0"></div>
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-[#1A73E8] z-0">
+          {event.customHeroImage && (
+            <img src={event.customHeroImage} alt="Wedding artwork" className="template-hero-image h-1/2 w-full object-cover" />
+          )}
+        </div>
 
         {/* Bottom Left Yellow Block */}
         <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-[#F9AB00] z-0"></div>

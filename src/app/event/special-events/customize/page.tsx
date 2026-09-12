@@ -1,5 +1,8 @@
 // @ts-nocheck
 "use client";
+import TemplateImageTone from "@/components/events/TemplateImageTone";
+
+import HeroImageEditor from "@/components/events/HeroImageEditor";
 import EventCanvas from "@/components/EventCanvas";
 
 import { useManualEventProgress } from "@/hooks/useManualEventProgress";
@@ -25,7 +28,6 @@ import {
   ChevronRight,
   ChevronDown,
   Edit2,
-  Image as ImageIcon,
   Menu,
   Type,
   Upload,
@@ -648,6 +650,7 @@ export default function SpecialEventsCustomizePage() {
     address: "",
     details:
       "Join us for an elegant evening celebrating the special bond between fathers and daughters. An unforgettable night of dancing, dining, and creating cherished memories.",
+    heroImageFilterEnabled: true,
     hero: "",
     rsvpEnabled: true,
     rsvpDeadline: (() => {
@@ -707,6 +710,7 @@ export default function SpecialEventsCustomizePage() {
           state: existing.state ?? "",
           venue: existing.venue ?? existing.location ?? "",
           details: existing.description ?? existing.details ?? "",
+          heroImageFilterEnabled: existing.heroImageFilterEnabled !== false,
           hero: existing.heroImage ?? existing.hero ?? "",
           rsvpEnabled: typeof existing.rsvpEnabled === "boolean" ? existing.rsvpEnabled : typeof existing.rsvp?.isEnabled === "boolean" ? existing.rsvp.isEnabled : Boolean(existing.rsvp),
           rsvpDeadline: existing.rsvpDeadline ?? (typeof existing.rsvp === "string" ? existing.rsvp : existing.rsvp?.deadline) ?? "",
@@ -908,14 +912,6 @@ export default function SpecialEventsCustomizePage() {
 
   const selectTheme = (themeId: string) => {
     updateTheme("themeId", themeId);
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      updateData("hero", url);
-    }
   };
 
   const currentTheme =
@@ -1171,6 +1167,7 @@ export default function SpecialEventsCustomizePage() {
           templateId: "special-event",
           customFields: data.extra,
           sponsors: sponsorsToSave,
+          heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
           heroImage: heroImageToSave,
           theme: data.theme,
         },
@@ -1276,12 +1273,7 @@ export default function SpecialEventsCustomizePage() {
           desc="Title, date, location."
           onClick={() => setActiveView("headline")}
         />
-        <MenuCard
-          title="Images"
-          icon={<ImageIcon size={18} />}
-          desc="Hero & background photos."
-          onClick={() => setActiveView("images")}
-        />
+
         <MenuCard
           title="Details"
           icon={<Edit2 size={18} />}
@@ -1370,50 +1362,7 @@ export default function SpecialEventsCustomizePage() {
     </EditorLayout>
   );
 
-  const renderImagesEditor = () => (
-    <EditorLayout title="Images" onBack={() => setActiveView("main")}>
-      <div className="space-y-8">
-        <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-3 tracking-wider">
-            Hero Image
-          </label>
-          <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition-colors relative">
-            {data.hero ? (
-              <div className="relative w-full h-48 rounded-lg overflow-hidden">
-                <img
-                  src={data.hero}
-                  alt="Hero"
-                  className="w-full h-full object-cover"
-                />
-                <button
-                  onClick={() => updateData("hero", "")}
-                  className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md hover:bg-red-50 text-red-500"
-                >
-                  <Upload size={16} />
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
-                  <Upload size={20} />
-                </div>
-                <p className="text-sm text-slate-600 mb-1">Upload main photo</p>
-                <p className="text-xs text-slate-400">
-                  Recommended: 1600x900px
-                </p>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  onChange={handleFileUpload}
-                />
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </EditorLayout>
-  );
+
 
   const renderDesignEditor = () => (
     <EditorLayout title="Design" onBack={() => setActiveView("main")}>
@@ -1891,6 +1840,27 @@ export default function SpecialEventsCustomizePage() {
             }}
           >
             <div className="relative z-10">
+              <TemplateImageTone enabled={data.heroImageFilterEnabled !== false} color={currentTheme.accent || currentTheme.bg}>
+<div className="relative w-full aspect-video">
+                {data.hero ? (
+                  <img
+                    src={data.hero}
+                    alt="Hero"
+                    className="template-hero-image w-full h-full object-cover"
+                  />
+                ) : (
+                  <Image
+                    src="/templates/hero-images/father-daughter-hero.jpeg"
+                    alt="Hero"
+                    fill
+                    className="object-cover"
+                    sizes="100vw"
+                  />
+                )}
+              <HeroImageEditor filterEnabled={data.heroImageFilterEnabled !== false} onFilterChange={(heroImageFilterEnabled) => setData((prev) => ({ ...prev, heroImageFilterEnabled }))} value={data.hero} onChange={(hero) => setData((prev) => ({ ...prev, hero }))} className="absolute inset-x-4 bottom-4 z-10 flex justify-center" />
+</div>
+</TemplateImageTone>
+
               <div
                 className={`p-6 md:p-8 border-b ${sectionBorder} ${textClass}`}
               >
@@ -1906,24 +1876,6 @@ export default function SpecialEventsCustomizePage() {
                   </h1>
                   {infoLine}
                 </div>
-              </div>
-
-              <div className="relative w-full aspect-video">
-                {data.hero ? (
-                  <img
-                    src={data.hero}
-                    alt="Hero"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <Image
-                    src="/templates/hero-images/father-daughter-hero.jpeg"
-                    alt="Hero"
-                    fill
-                    className="object-cover"
-                    sizes="100vw"
-                  />
-                )}
               </div>
 
               {/* Venue Section - Above Details */}
@@ -1969,7 +1921,7 @@ export default function SpecialEventsCustomizePage() {
                 >
                   Details
                 </h2>
-                
+
                   <EventGuestActions
                     title={data.title}
                     start={data.date ? `${data.date}T${data.time || "14:00"}` : undefined}
@@ -2346,9 +2298,9 @@ export default function SpecialEventsCustomizePage() {
             </div>
           )}
           <div className="p-6 pt-4 md:pt-6 pb-8">
-            {activeView === "main" && renderMainMenu()}
+            {(activeView === "main" || activeView === "images") && renderMainMenu()}
             {activeView === "headline" && renderHeadlineEditor()}
-            {activeView === "images" && renderImagesEditor()}
+
             {activeView === "design" && renderDesignEditor()}
             {activeView === "details" && renderDetailsEditor()}
             {activeView === "sponsors" && renderSponsorsEditor()}

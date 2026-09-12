@@ -19,12 +19,16 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import StaticMap from "@/components/StaticMap";
 import { splitGuidanceSentences } from "./displayText";
 import GymnasticsProgram from "./GymnasticsProgram";
+import type { EventSectionEntry } from "@/components/events/EventSectionBuilder";
 import type { GymnasticsPresentation } from "./gymnasticsPresentations";
+import type { GymnasticsPageTextChange } from "@/lib/gymnastics-page-text";
+import { useGymnasticsPageText } from "./useGymnasticsPageText";
+import InlineEditableText from "@/components/events/InlineEditableText";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2";
 
-const TabHeading = ({ title, style }: { title: string; style?: React.CSSProperties }) => (
+const TabHeading = ({ title, style }: { title: React.ReactNode; style?: React.CSSProperties }) => (
   <h3
     className="mb-4 flex items-center gap-2 text-lg font-black tracking-tight text-inherit sm:text-xl"
     style={style}
@@ -41,24 +45,18 @@ const EmptyState = ({ className, children }: { className: string; children: Reac
 
 const renderLineList = (
   lines: Array<{ text: string; href?: string }>,
-  secondaryButtonClass: string,
+  renderText: (text: string, index: number) => React.ReactNode,
+  renderAction: (href: string, index: number) => React.ReactNode,
 ) => (
   <ul className="space-y-4">
-    {lines.map((line) => (
-      <li key={`${line.text}-${line.href || "none"}`} className="flex items-start gap-3">
+    {lines.map((line, index) => (
+      <li key={`${index}-${line.href || "none"}`} className="flex items-start gap-3">
         <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-current opacity-40" />
         <div className="space-y-2">
-          <p className="text-sm leading-relaxed opacity-85">{line.text || "Reference link"}</p>
-          {line.href ? (
-            <a
-              href={line.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`${secondaryButtonClass} ${focusRing}`}
-            >
-              Open Link <ExternalLink size={12} />
-            </a>
-          ) : null}
+          <p className="text-sm leading-relaxed opacity-85">
+            {renderText(line.text || "Reference link", index)}
+          </p>
+          {line.href ? renderAction(line.href, index) : null}
         </div>
       </li>
     ))}
@@ -95,7 +93,31 @@ const getCollectionItemKey = (
 const MOBILE_NAV_SAFE_EDGE_PX = 48;
 const DESKTOP_NAV_SAFE_EDGE_PX = 8;
 
-export default function GymMeetDiscoveryContent({ model, variant, presentation }: { model: any; variant: any; presentation?: GymnasticsPresentation }) {
+export default function GymMeetDiscoveryContent({
+  model,
+  variant,
+  presentation,
+  onPageTextChange,
+  additionalSections,
+}: {
+  model: any;
+  variant: any;
+  presentation?: GymnasticsPresentation;
+  onPageTextChange?: GymnasticsPageTextChange;
+  additionalSections?: EventSectionEntry[];
+}) {
+  const pageText = useGymnasticsPageText(model.gymnasticsPageText, onPageTextChange);
+  const actionLink = (id: string, label: string, href: string, className: string) =>
+    pageText(`action:${encodeURIComponent(id)}:label`, label, `${label} button caption`, (text) => (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${className} ${focusRing}`}
+      >
+        {text || label} <ExternalLink size={12} aria-hidden="true" />
+      </a>
+    ));
   const sections = useMemo(
     () =>
       (Array.isArray(model?.discovery?.sections) ? model.discovery.sections : []).filter(
@@ -256,11 +278,35 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
     sections.find((section: any) => section.id === activeSectionId) || sections[0];
 
   const renderBlock = (block: any) => {
+    const blockKey = encodeURIComponent(block.id);
+    const blockTitle = () =>
+      pageText(`block:${blockKey}:title`, block.title, `${block.title} heading`);
+    const blockText = () =>
+      block.id === "event-description" ? (
+        <InlineEditableText
+          label="Event description"
+          value={model.detailsText || undefined}
+          fallback={block.text}
+          multiline
+          maxLength={4000}
+          onChange={
+            onPageTextChange ? (value) => onPageTextChange("eventDetails", value) : undefined
+          }
+        />
+      ) : (
+        pageText(`block:${blockKey}:text`, block.text, `${block.title || "Meet details"} text`)
+      );
     switch (block.type) {
       case "line-list":
         return (
           <div className={panelClass}>
-            {renderLineList(block.lines || [], secondaryButtonClass)}
+            {renderLineList(
+              block.lines || [],
+              (text, index) =>
+                pageText(`line:${blockKey}-${index}:text`, text, `Information line ${index + 1}`),
+              (href, index) =>
+                actionLink(`line-${blockKey}-${index}`, "Open Link", href, secondaryButtonClass),
+            )}
           </div>
         );
       case "text":
@@ -270,11 +316,13 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
               <p
                 className={`text-[10px] font-black uppercase tracking-[0.18em] opacity-60 ${cardTitleClass}`}
               >
-                {block.title}
+                {blockTitle()}
               </p>
             ) : null}
-            <p className={`${block.title ? "mt-2" : ""} text-sm leading-relaxed opacity-85`}>
-              {block.text}
+            <p
+              className={`${block.title ? "mt-2" : ""} whitespace-pre-line text-sm leading-relaxed opacity-85`}
+            >
+              {blockText()}
             </p>
           </div>
         );
@@ -283,7 +331,7 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
           <div className={panelClass}>
             {block.title ? (
               <h4 className={`mb-4 text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
-                {block.title}
+                {blockTitle()}
               </h4>
             ) : null}
             <div
@@ -294,6 +342,19 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
             >
               {(block.cards || []).map((card: any, index: number) => {
                 const cardReactKey = getCollectionItemKey(block.id, card?.key, index);
+                const cardTextKey = encodeURIComponent(cardReactKey);
+                const cardLabel = () =>
+                  pageText(
+                    `card:${cardTextKey}:label`,
+                    card.label,
+                    `${card.label || "Detail card"} label`,
+                  );
+                const cardBody = () =>
+                  pageText(
+                    `card:${cardTextKey}:body`,
+                    card.body,
+                    `${card.label || "Detail card"} text`,
+                  );
                 const hotelCardLayoutClass =
                   block.id === "hotel-cards" ? "flex h-full flex-col" : "";
                 const cardLabelClass =
@@ -337,10 +398,10 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="text-[9px] font-black uppercase tracking-[0.18em] opacity-50">
-                            Host hotel
+                            {pageText("hostHotel", "Host hotel")}
                           </p>
                           <h4 className="mt-1 text-base font-black leading-tight tracking-tight sm:text-lg">
-                            {card.label}
+                            {cardLabel()}
                           </h4>
                         </div>
                       </div>
@@ -353,7 +414,11 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
                               className="rounded-xl bg-violet-500/[0.07] px-3 py-2.5"
                             >
                               <dt className="text-[9px] font-black uppercase tracking-[0.15em] opacity-55">
-                                {highlight.label}
+                                {pageText(
+                                  `card:${cardTextKey}-highlight-${highlightIndex}:label`,
+                                  highlight.label,
+                                  `${highlight.label} label`,
+                                )}
                               </dt>
                               <dd className="mt-1 text-sm font-black leading-snug">
                                 {highlight.value}
@@ -363,7 +428,11 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
                         </dl>
                       ) : card.meta ? (
                         <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] opacity-60">
-                          {card.meta}
+                          {pageText(
+                            `card:${cardTextKey}:meta`,
+                            card.meta,
+                            `${card.label || "Card"} caption`,
+                          )}
                         </p>
                       ) : null}
 
@@ -391,7 +460,11 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
                                 />
                                 <div className="min-w-0">
                                   <dt className="text-[9px] font-black uppercase tracking-[0.14em] opacity-50">
-                                    {detail.label}
+                                    {pageText(
+                                      `card:${cardTextKey}-detail-${detailIndex}:label`,
+                                      detail.label,
+                                      `${detail.label} label`,
+                                    )}
                                   </dt>
                                   <dd className="mt-0.5 break-words text-sm font-semibold leading-snug opacity-90">
                                     {detail.value}
@@ -403,21 +476,18 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
                         </dl>
                       ) : card.body ? (
                         <p className="mt-4 whitespace-pre-line text-sm leading-relaxed opacity-85">
-                          {card.body}
+                          {cardBody()}
                         </p>
                       ) : null}
 
                       {card.action?.url ? (
                         <div className="mt-auto pt-5">
-                          <a
-                            href={card.action.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`${secondaryButtonClass} ${focusRing}`}
-                          >
-                            {card.action.label || "Book Hotel"}
-                            <ExternalLink size={12} />
-                          </a>
+                          {actionLink(
+                            cardReactKey,
+                            card.action.label || "Book Hotel",
+                            card.action.url,
+                            secondaryButtonClass,
+                          )}
                         </div>
                       ) : null}
                     </article>
@@ -447,7 +517,7 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
                           <div className="flex flex-wrap items-center gap-2">
                             {card.label ? (
                               <h4 className="text-sm font-black tracking-tight sm:text-base">
-                                {card.label}
+                                {cardLabel()}
                               </h4>
                             ) : null}
                             {card.meta ? (
@@ -458,7 +528,11 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
                                     : "bg-sky-500/10 text-sky-700"
                                 }`}
                               >
-                                {card.meta}
+                                {pageText(
+                                  `card:${cardTextKey}:meta`,
+                                  card.meta,
+                                  `${card.label || "Card"} caption`,
+                                )}
                               </span>
                             ) : null}
                           </div>
@@ -470,25 +544,34 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
                                   className="flex items-start gap-2.5"
                                 >
                                   <span className="mt-[0.55rem] h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-35" />
-                                  <span>{item}</span>
+                                  <span>
+                                    {pageText(
+                                      `line:${cardTextKey}-item-${itemIndex}:text`,
+                                      item,
+                                      `${card.label || "Meet detail"} line ${itemIndex + 1}`,
+                                    )}
+                                  </span>
                                 </li>
                               ))}
                             </ul>
                           ) : guidanceItems[0] ? (
                             <p className="mt-3 text-sm leading-relaxed opacity-90 sm:text-[15px]">
-                              {guidanceItems[0]}
+                              {pageText(
+                                `line:${cardTextKey}-item-0:text`,
+                                guidanceItems[0],
+                                `${card.label || "Meet detail"} text`,
+                              )}
                             </p>
                           ) : null}
                           {card.action?.url ? (
-                            <a
-                              href={card.action.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={`mt-4 ${secondaryButtonClass} ${focusRing}`}
-                            >
-                              {card.action.label || "Open Link"}
-                              <ExternalLink size={12} />
-                            </a>
+                            <div className="mt-4">
+                              {actionLink(
+                                cardReactKey,
+                                card.action.label || "Open Link",
+                                card.action.url,
+                                secondaryButtonClass,
+                              )}
+                            </div>
                           ) : null}
                         </div>
                       </div>
@@ -497,7 +580,7 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
                 }
                 return (
                   <div key={cardReactKey} className={`${cardClass} ${hotelCardLayoutClass}`.trim()}>
-                    {card.label ? <p className={cardLabelClass}>{card.label}</p> : null}
+                    {card.label ? <p className={cardLabelClass}>{cardLabel()}</p> : null}
                     {card.value ? (
                       <p className="mt-2 text-2xl font-black leading-none">{card.value}</p>
                     ) : null}
@@ -505,31 +588,40 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
                       <p
                         className={`${card.value || card.label ? "mt-2" : ""} whitespace-pre-line text-sm leading-relaxed opacity-85`}
                       >
-                        {card.body}
+                        {cardBody()}
                       </p>
                     ) : null}
                     {Array.isArray(card.items) && card.items.length > 0 ? (
                       <ul className="mt-3 list-disc space-y-1 pl-5 text-sm leading-relaxed opacity-85">
                         {card.items.map((item: string, itemIndex: number) => (
-                          <li key={`${cardReactKey}-item-${itemIndex}`}>{item}</li>
+                          <li key={`${cardReactKey}-item-${itemIndex}`}>
+                            {pageText(
+                              `line:${cardTextKey}-item-${itemIndex}:text`,
+                              item,
+                              `${card.label || "Meet detail"} line ${itemIndex + 1}`,
+                            )}
+                          </li>
                         ))}
                       </ul>
                     ) : null}
                     {card.meta ? (
                       <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.16em] opacity-55">
-                        {card.meta}
+                        {pageText(
+                          `card:${cardTextKey}:meta`,
+                          card.meta,
+                          `${card.label || "Card"} caption`,
+                        )}
                       </p>
                     ) : null}
                     {card.action?.url ? (
-                      <a
-                        href={card.action.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`${block.id === "hotel-cards" ? "mt-auto pt-4" : "mt-4"} ${secondaryButtonClass} ${focusRing}`}
-                      >
-                        {card.action.label || "Open Link"}
-                        <ExternalLink size={12} />
-                      </a>
+                      <div className={block.id === "hotel-cards" ? "mt-auto pt-4" : "mt-4"}>
+                        {actionLink(
+                          cardReactKey,
+                          card.action.label || "Open Link",
+                          card.action.url,
+                          secondaryButtonClass,
+                        )}
+                      </div>
                     ) : null}
                   </div>
                 );
@@ -542,22 +634,18 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
           <div className={panelClass}>
             {block.title ? (
               <h4 className={`mb-4 text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
-                {block.title}
+                {blockTitle()}
               </h4>
             ) : null}
             <div className="flex flex-wrap gap-2">
-              {(block.links || []).map((link: any, index: number) => (
-                <a
-                  key={link.url || `${block.id}-${index}`}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`${secondaryButtonClass} ${focusRing}`}
-                >
-                  {link.label || "Open Link"}
-                  <ExternalLink size={12} />
-                </a>
-              ))}
+              {(block.links || []).map((link: any, index: number) =>
+                actionLink(
+                  `link-${block.id}-${index}`,
+                  link.label || "Open Link",
+                  link.url,
+                  secondaryButtonClass,
+                ),
+              )}
             </div>
           </div>
         );
@@ -566,21 +654,20 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
           <div className={panelClass}>
             {block.title ? (
               <h4 className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
-                {block.title}
+                {blockTitle()}
               </h4>
             ) : null}
             {block.text ? (
-              <p className="mt-2 text-sm leading-relaxed opacity-85">{block.text}</p>
+              <p className="mt-2 text-sm leading-relaxed opacity-85">{blockText()}</p>
             ) : null}
-            <a
-              href={block.action?.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`mt-4 ${primaryButtonClass} ${focusRing}`}
-            >
-              {block.action?.label || "Open Link"}
-              <ExternalLink size={12} />
-            </a>
+            <div className="mt-4">
+              {actionLink(
+                block.id,
+                block.action?.label || "Open Link",
+                block.action?.url,
+                primaryButtonClass,
+              )}
+            </div>
           </div>
         );
       case "image":
@@ -588,7 +675,7 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
           <div className={panelClass}>
             {block.title ? (
               <h4 className={`mb-4 text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
-                {block.title}
+                {blockTitle()}
               </h4>
             ) : null}
             <div className="overflow-hidden rounded-[24px] border border-black/10">
@@ -608,11 +695,11 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
           <div className={panelClass}>
             {block.title ? (
               <h4 className={`mb-4 text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
-                {block.title}
+                {blockTitle()}
               </h4>
             ) : null}
             {block.text ? (
-              <p className="mb-4 text-sm leading-relaxed opacity-85">{block.text}</p>
+              <p className="mb-4 text-sm leading-relaxed opacity-85">{blockText()}</p>
             ) : null}
             <div className="overflow-hidden rounded-[24px] border border-black/10">
               <StaticMap address={block.address} height={360} />
@@ -625,7 +712,17 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
   };
 
   if (presentation) {
-    return <GymnasticsProgram sections={sections} presentation={presentation} renderBlock={renderBlock} />;
+    return (
+      <GymnasticsProgram
+        sections={sections}
+        sectionLayout={model.sectionLayout}
+        additionalSections={additionalSections}
+        presentation={presentation}
+        renderBlock={renderBlock}
+        pageTextOverrides={model.gymnasticsPageText}
+        onPageTextChange={onPageTextChange}
+      />
+    );
   }
 
   if (!sections.length) {
@@ -656,7 +753,9 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
             >
               {sections.map((section: any) => {
                 const isActive = activeSection?.id === section.id;
-                const navLabel = section.navLabel || section.label;
+                const navLabel =
+                  model.gymnasticsPageText?.[`section:${encodeURIComponent(section.id)}:label`] ??
+                  (section.navLabel || section.label);
                 return (
                   <button
                     key={section.id}
@@ -697,7 +796,14 @@ export default function GymMeetDiscoveryContent({ model, variant, presentation }
         <div className="space-y-4">
           {activeSection.hideSectionHeading ? null : (
             <div className={sectionTitleClass}>
-              <TabHeading title={activeSection.label} style={sectionTitleStyle} />
+              <TabHeading
+                title={pageText(
+                  `section:${encodeURIComponent(activeSection.id)}:label`,
+                  activeSection.label,
+                  `${activeSection.label} section heading`,
+                )}
+                style={sectionTitleStyle}
+              />
             </div>
           )}
           {activeSection.blocks.map((block: any) => (

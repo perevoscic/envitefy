@@ -168,15 +168,13 @@ function SidebarGymnasticsMenuIcon({
 function SidebarFootballMenuIcon({
   size = 22,
   className,
-  active = false,
 }: {
   size?: number;
   className?: string;
-  active?: boolean;
 }) {
   return (
     <span
-      className={["inline-block shrink-0", active ? "bg-[#d44f19]" : "bg-slate-500", className]
+      className={["inline-block shrink-0 bg-current", className]
         .filter(Boolean)
         .join(" ")}
       style={SIDEBAR_FB_MASK_STYLE(size)}
@@ -317,16 +315,16 @@ const SIDEBAR_SUBMENU_LABEL_CLASS =
   "nav-chrome-menu-label flex-1 truncate transition-colors";
 const SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS =
   "bg-white/92 border-[rgba(236,231,255,0.98)] shadow-[0_16px_32px_rgba(103,88,160,0.12)]";
-const SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS = "text-[#beb9e8] hover:bg-white/28";
+const SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS = "text-[color:var(--nav-sidebar-icon-muted,#beb9e8)] hover:bg-white/28";
 const SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS = "text-[#6b5fc2]";
 const SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS =
-  "text-[rgba(107,95,194,0.64)] group-hover:text-[#6b5fc2]";
+  "text-[color:var(--nav-sidebar-label-muted,rgba(107,95,194,0.64))] group-hover:text-[#6b5fc2]";
 const SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS =
   "border-[rgba(236,231,255,0.98)] bg-white text-[#6e59db] shadow-[0_10px_20px_rgba(103,88,160,0.1)]";
 const SIDEBAR_SUBPAGE_TITLE_CLASS =
   "font-[var(--font-josefin-sans)] text-[1.25rem] font-bold uppercase tracking-[0.13em] leading-none text-[#6b5fc2]";
 const SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS =
-  "border-transparent bg-transparent text-[#beb9e8] group-hover:text-[#aba4e3]";
+  "border-transparent bg-transparent text-[color:var(--nav-sidebar-icon-muted,#beb9e8)] group-hover:text-[color:var(--nav-sidebar-icon-muted,#aba4e3)]";
 
 function PanelBackButton({ onClick }: { onClick: () => void }) {
   return (
@@ -628,7 +626,7 @@ function CreateMenuButton({
         {Icon === SidebarGymnasticsMenuIcon ? (
           <SidebarGymnasticsMenuIcon size={18} />
         ) : Icon === SidebarFootballMenuIcon ? (
-          <SidebarFootballMenuIcon size={18} active={isActive} />
+          <SidebarFootballMenuIcon size={18} />
         ) : (
           <Icon size={18} />
         )}
@@ -643,7 +641,7 @@ function CreateMenuButton({
       <ChevronRight
         size={16}
         className={`ml-auto transition-all ${
-          isActive ? activeAccent.chevronClass : "text-[#b5afe8] group-hover:text-[#7b73d2]"
+          isActive ? activeAccent.chevronClass : "text-[color:var(--nav-sidebar-icon-muted,#b5afe8)] group-hover:text-[#7b73d2]"
         }`}
       />
     </button>
@@ -771,7 +769,7 @@ function EventListPanel({
         <Fragment key={item.row.id}>
           {showMonthDivider ? (
             <div className={`flex items-center gap-2 px-3 pb-1 ${index === 0 ? "pt-1" : "pt-4"}`}>
-              <p className="font-[var(--font-josefin-sans)] shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] leading-none text-[#9188bd]">
+              <p className="font-[var(--font-josefin-sans)] shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] leading-none text-[color:var(--nav-sidebar-detail-muted,#9188bd)]">
                 {monthLabel}
               </p>
               <span aria-hidden="true" className="h-px flex-1 bg-[#ded8f0]/70" />
@@ -795,14 +793,7 @@ function EventListPanel({
               aria-hidden="true"
               title={item.category}
             >
-              <CategoryIcon
-                size={18}
-                className={
-                    CategoryIcon === SidebarFootballMenuIcon
-                    ? "!bg-current"
-                    : undefined
-                }
-              />
+              <CategoryIcon size={18} />
             </span>
             <span className="min-w-0 flex-1">
               <span className="sr-only">{item.category}: </span>
@@ -837,8 +828,8 @@ function EventListPanel({
               <span
                 className={`mt-0.5 block truncate text-xs ${
                   isActive
-                    ? "text-[#9d95db]"
-                    : "text-[#c1bcf0] group-hover:text-[#b0aae4]"
+                    ? "text-[color:var(--nav-sidebar-detail-muted,#9d95db)]"
+                    : "text-[color:var(--nav-sidebar-detail-muted,#c1bcf0)] group-hover:text-[color:var(--nav-sidebar-detail-muted,#b0aae4)]"
                 }`}
               >
                 {dateLabel}

@@ -527,6 +527,7 @@ export function normalizeConciergeDraft(
     draftStatus: record.draftStatus,
   });
   const draft: ConciergeEventDraft = {
+    scanSchedule: fallback.scanSchedule || null,
     creationSessionId: cleanString(record.creationSessionId) || createCreationSessionId(fallback),
     intent: normalizeCreationIntent(record.intent ?? fallback.intent, "", requestedOutputs),
     requestedOutputs,

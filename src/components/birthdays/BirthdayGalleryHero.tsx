@@ -1,27 +1,12 @@
 import { BIRTHDAY_DESIGN_CATALOG } from "@/data/birthday-design-catalog";
 import { CakeSlice, Sparkles } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
+import CategoryGalleryBackdrop from "@/components/events/CategoryGalleryBackdrop";
 
 export default function BirthdayGalleryHero() {
   return (
     <section className="relative isolate overflow-hidden border-b border-[#eadbd9] bg-[#fff8f5] text-[#382a32]">
-      <Image
-        src="/templates/birthdays/birthday-gallery-hero-v2.webp"
-        alt=""
-        fill
-        priority
-        sizes="100vw"
-        className="z-0 object-cover object-[70%_center] opacity-55 sm:object-[66%_center]"
-      />
-      <div
-        className="absolute inset-0 z-10 bg-[linear-gradient(90deg,#fff8f5_0%,rgba(255,248,245,0.98)_34%,rgba(255,248,245,0.82)_54%,rgba(255,248,245,0.2)_80%,rgba(255,248,245,0.08)_100%)]"
-        aria-hidden="true"
-      />
-      <div
-        className="absolute inset-0 z-10 bg-[linear-gradient(0deg,#fff8f5_0%,rgba(255,248,245,0.2)_45%,rgba(255,248,245,0.3)_100%)]"
-        aria-hidden="true"
-      />
+      <CategoryGalleryBackdrop category="birthdays" />
 
       <div className="relative z-20 mx-auto max-w-[1500px] px-5 pb-8 pt-10 sm:px-8 sm:pb-10 sm:pt-12 lg:px-12 lg:pb-12 lg:pt-14">
         <Link
