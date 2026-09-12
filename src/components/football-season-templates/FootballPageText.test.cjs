@@ -95,6 +95,23 @@ function EditorFixture({data,onChange}) {
     React.createElement(Hero,{title:data.title,subtitle:"Football season"}),
     React.createElement(Content,{sections:model.sections,tabs,chrome:resolveFootballSeasonTemplateChrome("elite-athlete"),schedule:{games:data.advancedSections.games.games,teamName:"Falcons",season:"2028"},attendance:model.attendance}));
 }
+
+test("saved football owners can preview from the hero while guest previews omit owner controls", () => {
+  const data = fixture();
+  const props = {
+    eventData: data, eventTitle: data.title, eventId: "falcons",
+    shareUrl: "https://envitefy.com/event/falcons", isOwner: true,
+    chrome: resolveFootballSeasonTemplateChrome("elite-athlete"),
+  };
+  const render = (overrides = {}) => renderToStaticMarkup(React.createElement(Page, {...props, ...overrides}));
+  const owner = render();
+  assert.match(owner, /aria-label="Preview event"/);
+  assert.match(owner, /href="\/event\/falcons\?preview=owner&amp;returnTo=%2Fevent%2Ffalcons%3Ftab%3Devent"/);
+  assert.equal((owner.match(/aria-label="Preview event"/g) || []).length, 1);
+  for (const overrides of [{isOwner:false}, {isReadOnly:true}, {hideOwnerActions:true}]) {
+    assert.doesNotMatch(render(overrides), /aria-label="Preview event"/);
+  }
+});
 test("editor pencils cover shared sections and stay outside links and tab buttons", () => {
   const html = renderToStaticMarkup(React.createElement(EditorFixture,{data:fixture(),onChange:()=>{}}));
   for(const label of ["Edit event title","Edit event description","Edit game schedule heading","Edit details caption","Edit parking label","Edit buy tickets","Edit upcoming navigation label","Edit attendance heading"]) assert.ok(html.includes('aria-label="'+label+'"'),label);

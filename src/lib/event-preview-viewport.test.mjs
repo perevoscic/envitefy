@@ -5,6 +5,7 @@ import {
   buildEmbeddedEventPreviewHref,
   buildOwnerEventViewHref,
   buildOwnerEventEditHref,
+  buildOwnerEventPreviewHref,
   eventPreviewReturnHref,
   fitEventPreview,
   getEventPreviewLayout,
@@ -35,6 +36,34 @@ test("sidebar event links enter the owner view without stale editor or preview f
 test("owned Live Cards and flyers open Design while event pages keep the event viewer", () => {
   assert.equal(buildOwnerEventViewHref("/event/card?tab=event&preview=owner", "card"), "/event/card?tab=design");
   assert.equal(buildOwnerEventViewHref("/event/meet?tab=design", "event"), "/event/meet?tab=event");
+});
+
+test("owner Preview opens fullscreen and Close returns to the same event and section", () => {
+  const preview = new URL(buildOwnerEventPreviewHref(
+    "https://envitefy.com/event/seahawks?created=1&edit=team&editor=menu&tab=event#games",
+  ), "https://envitefy.local");
+  assert.equal(preview.pathname, "/event/seahawks");
+  assert.equal(preview.searchParams.get("preview"), "owner");
+  for (const key of ["embed", "created", "edit", "editor", "tab"]) {
+    assert.equal(preview.searchParams.has(key), false);
+  }
+  assert.equal(eventPreviewReturnHref(preview.searchParams.get("returnTo"), "/"), "/event/seahawks?tab=event#games");
+  assert.equal(preview.hash, "#games");
+});
+
+test("new-event calendar notices reach the embedded owner view without entering guest preview links", () => {
+  const publicHref = "/event/seahawks";
+  const frame = new URL(buildEmbeddedEventPreviewHref(publicHref, {
+    created: "1", calendarSync: "needs_reconnect", calendarProvider: "google",
+    calendarSetup: "google", googleAuth: "not-stored", googleAuthReason: "Try connecting again",
+  }), "https://envitefy.local");
+  assert.equal(frame.searchParams.get("preview"), "owner");
+  assert.equal(frame.searchParams.get("embed"), "dashboard-preview");
+  assert.equal(frame.searchParams.get("created"), "1");
+  assert.equal(frame.searchParams.get("calendarSync"), "needs_reconnect");
+  assert.equal(frame.searchParams.get("calendarProvider"), "google");
+  assert.equal(frame.searchParams.get("googleAuthReason"), "Try connecting again");
+  assert.doesNotMatch(buildOwnerEventPreviewHref(publicHref), /created|calendarSync|googleAuth/);
 });
 
 test("Mobile on a real phone fills its available CSS viewport without scaling", () => {

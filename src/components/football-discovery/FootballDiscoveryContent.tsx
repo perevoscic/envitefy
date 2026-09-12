@@ -183,7 +183,7 @@ function FootballDiscoveryBody({
               heroSrc={eventData.heroImage || eventData.hero}
               actions={canShowPublicActions || canShowOwnerToolbar ? (
                 <>
-                  {canShowPublicActions ? (
+                  {canShowPublicActions || canShowOwnerToolbar ? (
                     <FootballPageActions
                       title={eventTitle}
                       start={eventData.startISO || eventData.startAt || eventData.start || (eventData.date && eventData.time ? `${eventData.date}T${eventData.time}` : null)}
@@ -193,6 +193,7 @@ function FootballDiscoveryBody({
                       location={model.locationLabel}
                       shareUrl={shareUrl}
                       editHref={canShowOwnerToolbar ? resolvedEditHref : undefined}
+                      previewHref={canShowOwnerToolbar ? shareUrl || `/event/${eventId}` : undefined}
                     />
                   ) : null}
                   {canShowOwnerToolbar ? (

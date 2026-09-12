@@ -3,6 +3,7 @@
 import { Eye, Pencil, Share2 } from "lucide-react";
 import { useState } from "react";
 import CalendarAction from "@/components/CalendarAction";
+import { buildOwnerEventPreviewHref } from "@/lib/event-preview-viewport";
 import { buildCalendarLinks } from "@/utils/calendar-links";
 
 export default function FootballPageActions({
@@ -15,6 +16,7 @@ export default function FootballPageActions({
   shareUrl,
   onEdit,
   onPreview,
+  previewHref,
   editHref,
 }: {
   title: string;
@@ -26,6 +28,7 @@ export default function FootballPageActions({
   shareUrl?: string;
   onEdit?: () => void;
   onPreview?: () => void;
+  previewHref?: string;
   editHref?: string;
 }) {
   const [message, setMessage] = useState("");
@@ -70,7 +73,12 @@ export default function FootballPageActions({
   return (
     <div className="relative z-30 max-w-full">
       <div className="flex flex-wrap items-center justify-end gap-2">
-        {onPreview ? <button type="button" className={buttonClass} onClick={onPreview} aria-label="Preview event"><Eye size={16} aria-hidden="true" /><span className="hidden sm:inline">Preview</span></button> : null}
+        {onPreview ? <button type="button" className={buttonClass} onClick={onPreview} aria-label="Preview event"><Eye size={16} aria-hidden="true" /><span className="hidden sm:inline">Preview</span></button> : previewHref ? (
+          <a href={buildOwnerEventPreviewHref(previewHref)} target="_top" className={buttonClass} aria-label="Preview event" title="Preview event">
+            <Eye size={16} aria-hidden="true" />
+            <span className="hidden sm:inline">Preview</span>
+          </a>
+        ) : null}
         <button
           type="button"
           className={buttonClass}

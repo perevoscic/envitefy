@@ -18,6 +18,7 @@ import OwnerPreviewMobileTopbarSuppressor from "./OwnerPreviewMobileTopbarSuppre
 import EventCanvas from "./EventCanvas";
 import { useEventPageColor } from "@/hooks/useEventPageChrome";
 import type { EventPreviewBackground } from "@/lib/event-preview-background";
+import { isDarkEventPageColor } from "@/lib/event-page-chrome";
 
 const deviceIcons = { desktop: Monitor, tablet: Tablet, mobile: Smartphone };
 const deviceOrder: EventPreviewDevice[] = ["desktop", "tablet", "mobile"];
@@ -226,7 +227,13 @@ export default function EventPreviewViewport({
     "inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-current/15 bg-transparent text-inherit transition hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current";
   const mount = !src ? frameDocument?.getElementById("event-preview-content") : null;
   const floatingSurfaceStyle = preserveNavigation
-    ? { backgroundColor: `color-mix(in srgb, ${background.backgroundColor || "#f8f8f7"} 88%, transparent)` }
+    ? isDarkEventPageColor(String(background.backgroundColor || ""))
+      ? {
+          backgroundColor: "rgba(250, 249, 255, 0.94)",
+          color: "#38246b",
+          borderColor: "rgba(107, 70, 206, 0.2)",
+        }
+      : { backgroundColor: `color-mix(in srgb, ${background.backgroundColor || "#f8f8f7"} 88%, transparent)` }
     : undefined;
 
   return (
@@ -238,6 +245,7 @@ export default function EventPreviewViewport({
       {!preserveNavigation && (fullscreen || onClose) ? <OwnerPreviewMobileTopbarSuppressor /> : null}
       <header
         data-floating-event-toolbar={preserveNavigation || undefined}
+        style={{ color: isDarkEventPageColor(String(background.backgroundColor || "")) ? "#ffffff" : background.color }}
         className={`z-10 ${preserveNavigation ? "pointer-events-none absolute inset-x-0 top-[calc(var(--app-mobile-topbar-offset,6rem)+0.5rem)] flex flex-wrap justify-center md:grid md:grid-cols-[1fr_auto_1fr] lg:flex lg:top-[max(0.5rem,env(safe-area-inset-top))]" : `relative grid shrink-0 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] ${actions ? "grid-cols-[1fr_auto] sm:grid-cols-[1fr_auto_1fr]" : "grid-cols-[1fr_auto_1fr]"}`} items-center gap-2 px-3 sm:px-5`}
       >
         {preserveNavigation ? null : actions || <div aria-hidden="true" />}

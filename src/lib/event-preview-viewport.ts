@@ -62,13 +62,31 @@ export function ownerEventEditorReturnHref(search: Pick<URLSearchParams, "get"> 
   return eventId ? buildOwnerEventViewHref(`/event/${encodeURIComponent(eventId)}`) : null;
 }
 
-export function buildEmbeddedEventPreviewHref(publicUrl: string): string {
+export type EventPreviewEntryContext = Partial<Record<
+  "created" | "calendarSync" | "calendarProvider" | "calendarSetup" |
+  "googleAuth" | "outlookAuth" | "googleAuthReason" | "outlookAuthReason",
+  string
+>>;
+
+export function buildEmbeddedEventPreviewHref(publicUrl: string, entryContext?: EventPreviewEntryContext): string {
   const url = new URL(publicUrl, "https://envitefy.local");
   for (const key of ["edit", "editor", "eventColor", "tab", "returnTo", "updated", "created", "t"]) {
     url.searchParams.delete(key);
   }
   url.searchParams.set("preview", "owner");
   url.searchParams.set("embed", "dashboard-preview");
+  // Post-publish calendar notices stay in the owner frame, outside the shared URL.
+  for (const [key, value] of Object.entries(entryContext || {})) {
+    if (value) url.searchParams.set(key, value);
+  }
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+/** Open the clean fullscreen preview and return to this event's owner canvas. */
+export function buildOwnerEventPreviewHref(publicUrl: string): string {
+  const url = new URL(buildEmbeddedEventPreviewHref(publicUrl), "https://envitefy.local");
+  url.searchParams.delete("embed");
+  url.searchParams.set("returnTo", buildOwnerEventViewHref(publicUrl));
   return `${url.pathname}${url.search}${url.hash}`;
 }
 

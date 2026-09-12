@@ -1320,7 +1320,6 @@ export default async function EventPage({
       (!requestedTab &&
         canManageCreatedEvent &&
         !cardFirstCanonical &&
-        !createdParam &&
         !autoAccept &&
         !isScannedOrUploadedEventData(data)));
   if (cardFirstCanonical && !ownerToolsTab && !showOwnerEventView) {
@@ -1435,6 +1434,16 @@ export default async function EventPage({
         editHref={resolveEditHref(row.id, data, title)}
         mobileEditInEvent={isGymnasticsTemplate && canEditCreatedEvent}
         backgroundColor={eventPageBackgroundColor}
+        entryContext={createdParam ? {
+          created: "1",
+          calendarSync: calendarSyncStatus,
+          calendarProvider: calendarSyncProvider,
+          calendarSetup: calendarSetupProvider || "",
+          googleAuth: googleAuthStatus,
+          outlookAuth: outlookAuthStatus,
+          googleAuthReason: calendarSetupProvider === "google" ? calendarSetupFailureReason || "" : "",
+          outlookAuthReason: calendarSetupProvider === "microsoft" ? calendarSetupFailureReason || "" : "",
+        } : undefined}
       />
     );
   }

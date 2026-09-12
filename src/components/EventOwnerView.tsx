@@ -1,10 +1,11 @@
 "use client";
 
-import { Pencil, Share2 } from "lucide-react";
+import { Eye, Pencil, Share2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import type { EventPreviewBackground } from "@/lib/event-preview-background";
-import { buildEmbeddedEventPreviewHref, buildOwnerEventEditHref } from "@/lib/event-preview-viewport";
+import { buildEmbeddedEventPreviewHref, buildOwnerEventEditHref, buildOwnerEventPreviewHref } from "@/lib/event-preview-viewport";
+import type { EventPreviewEntryContext } from "@/lib/event-preview-viewport";
 import { trackEventInteraction } from "@/utils/event-tracking-client";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventPreviewViewport from "./EventPreviewViewport";
@@ -16,6 +17,7 @@ type Props = {
   editHref: string;
   backgroundColor?: string;
   mobileEditInEvent?: boolean;
+  entryContext?: EventPreviewEntryContext;
 };
 
 export default function EventOwnerView({
@@ -25,6 +27,7 @@ export default function EventOwnerView({
   editHref,
   backgroundColor,
   mobileEditInEvent = false,
+  entryContext,
 }: Props) {
   const [copied, setCopied] = useState(false);
   const [background, setBackground] = useState<EventPreviewBackground>({ backgroundColor });
@@ -57,6 +60,10 @@ export default function EventOwnerView({
 
   const actions = (
     <div role="group" aria-label="Event actions" className="flex min-w-0 items-center gap-2">
+      <Link href={buildOwnerEventPreviewHref(publicHref)} aria-label="Preview event" title="Preview event" className={`inline-flex ${actionClassName}`}>
+        <Eye size={19} aria-hidden="true" />
+        <span className="hidden sm:inline">Preview</span>
+      </Link>
       <Link href={editUrl} aria-label="Edit event" title="Edit event" className={`${mobileEditInEvent ? "hidden lg:inline-flex" : "inline-flex"} ${actionClassName}`}>
         <Pencil size={19} aria-hidden="true" />
         <span className="hidden sm:inline">Edit</span>
@@ -93,7 +100,7 @@ export default function EventOwnerView({
     >
       <EventPreviewViewport
         title={title}
-        src={buildEmbeddedEventPreviewHref(publicHref)}
+        src={buildEmbeddedEventPreviewHref(publicHref, entryContext)}
         preserveNavigation
         onBackgroundChange={setBackground}
         initialBackground={background}
