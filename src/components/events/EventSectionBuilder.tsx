@@ -24,10 +24,10 @@ import {
   ArrowDown,
   ArrowUp,
   GripVertical,
-  MoreHorizontal,
   Pencil,
   Plus,
   RotateCcw,
+  Trash2,
   X,
 } from "lucide-react";
 import {
@@ -382,7 +382,6 @@ function EditableSection({
   count: number;
 }) {
   const builder = useEventSectionBuilder();
-  const [menuOpen, setMenuOpen] = useState(false);
   const {
     attributes,
     listeners,
@@ -415,55 +414,45 @@ function EditableSection({
           >
             <GripVertical size={18} />
           </button>
-          {section.label}
+          <span className={styles.sectionLabel}>{section.label}</span>
         </span>
         <span className={styles.actions}>
           <button
             type="button"
             onClick={() => builder?.edit(section)}
             aria-label={`Edit ${section.label}`}
+            title="Edit section"
           >
-            <Pencil size={17} />
+            <Pencil size={17} aria-hidden="true" />
           </button>
-          <button
-            type="button"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label={`Options for ${section.label}`}
-            aria-expanded={menuOpen}
-          >
-            <MoreHorizontal size={20} />
-          </button>
-        </span>
-      </div>
-      {menuOpen ? (
-        <div className={styles.menu}>
           <button
             type="button"
             disabled={index === 0}
             onClick={() => builder?.change({ type: "move", id: section.id, index: index - 1 })}
+            aria-label={`Move ${section.label} up`}
+            title="Move up"
           >
-            <ArrowUp size={16} aria-hidden="true" />
-            Move up
+            <ArrowUp size={18} aria-hidden="true" />
           </button>
           <button
             type="button"
             disabled={index === count - 1}
             onClick={() => builder?.change({ type: "move", id: section.id, index: index + 1 })}
+            aria-label={`Move ${section.label} down`}
+            title="Move down"
           >
-            <ArrowDown size={16} aria-hidden="true" />
-            Move down
+            <ArrowDown size={18} aria-hidden="true" />
           </button>
           <button
             type="button"
             onClick={() => builder?.change({ type: "remove", id: section.id })}
             aria-label={`Remove ${section.label} section`}
             title="Remove section"
-            style={{ width: 44, padding: 0 }}
           >
-            <X size={18} aria-hidden="true" />
+            <Trash2 size={18} aria-hidden="true" />
           </button>
-        </div>
-      ) : null}
+        </span>
+      </div>
       {section.content || (
         <div className={styles.empty}>
           <p>Add your {section.label.toLowerCase()} content.</p>

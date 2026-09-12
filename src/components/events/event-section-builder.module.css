@@ -18,7 +18,6 @@
 }
 .palette button,
 .toolbar button,
-.menu button,
 .insertion button,
 .empty button,
 .dialog button,
@@ -88,31 +87,21 @@
   display: flex;
   flex-shrink: 0;
 }
+.sectionLabel {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .toolbar button {
   width: 44px;
+  flex-shrink: 0;
+  padding: 0;
   border-radius: 10px;
 }
-.toolbar button:hover,
-.menu button:hover,
+.toolbar button:hover:not(:disabled),
 .insertion button:hover {
   background: color-mix(in srgb, currentColor 8%, transparent);
 }
-.menu {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px;
-  border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent);
-}
-.menu button {
-  padding: 8px 12px;
-  font:
-    500 13px / 1.4 system-ui,
-    sans-serif;
-  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
-  border-radius: 10px;
-}
-.menu button:disabled {
+.toolbar button:disabled {
   opacity: 0.4;
   cursor: default;
 }
