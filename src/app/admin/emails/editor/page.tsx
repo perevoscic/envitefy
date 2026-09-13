@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useAdminAccess } from "@/components/admin/AdminAccessProvider";
 import {
   MAGAZINE_1_SUBJECT,
   renderMagazineEmail,
@@ -55,8 +55,7 @@ function personalize(html: string) {
 }
 
 export default function EmailEditorPage() {
-  const { data: session, status } = useSession();
-  const isAdmin = Boolean((session?.user as any)?.isAdmin);
+  const { status, isAdmin } = useAdminAccess();
 
   const [subject, setSubject] = useState("");
   const [html, setHtml] = useState("");

@@ -58,9 +58,8 @@ function createPage({ status = "authenticated", isAdmin = true } = {}) {
           }
         },
       };
-      if (name === "next-auth/react") return {
-        // Session refreshes return a new object even when the account is unchanged.
-        useSession: () => ({ status, data: { user: { email: "admin@example.test", isAdmin } } }),
+      if (name === "@/components/admin/AdminAccessProvider") return {
+        useAdminAccess: () => ({ status, email: "admin@example.test", isAdmin }),
       };
       if (name === "next/link") return { default: "a" };
       if (name === "@/utils/event-product-route") return {};

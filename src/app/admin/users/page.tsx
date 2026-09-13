@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
+import { useAdminAccess } from "@/components/admin/AdminAccessProvider";
 import { buildEventProductPath } from "@/utils/event-product-route";
 
 const EVENT_TYPE_LABELS = {
@@ -60,7 +60,7 @@ type Overview = {
 type StatView = "all" | "scans" | "shares" | null;
 
 export default function AdminUsersPage() {
-  const { data: session, status } = useSession();
+  const { email: adminEmail, status, isAdmin } = useAdminAccess();
   const [overview, setOverview] = useState<Overview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [overviewRefreshKey, setOverviewRefreshKey] = useState(0);
@@ -72,8 +72,6 @@ export default function AdminUsersPage() {
   const [hasSearched, setHasSearched] = useState(false);
   const [activeStatView, setActiveStatView] = useState<StatView>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
-  const isAdmin = Boolean((session?.user as { isAdmin?: boolean } | undefined)?.isAdmin);
-  const adminEmail = session?.user?.email;
 
   useEffect(() => {
     if (status !== "authenticated" || !isAdmin) return;

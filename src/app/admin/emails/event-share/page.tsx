@@ -1,10 +1,10 @@
 "use client";
-import { useSession } from "next-auth/react";
+import { useAdminAccess } from "@/components/admin/AdminAccessProvider";
 import Link from "next/link";
 import { createEmailTemplate, escapeHtml } from "@/lib/email-template";
 
 export default function EventSharePreviewPage() {
-  const { data: session, status } = useSession();
+  const { status, isAdmin } = useAdminAccess();
 
   if (status === "loading") {
     return <div className="p-6">Loading…</div>;
@@ -18,7 +18,6 @@ export default function EventSharePreviewPage() {
     );
   }
 
-  const isAdmin = (session?.user as any)?.isAdmin;
   if (!isAdmin) {
     return (
       <div className="p-6">

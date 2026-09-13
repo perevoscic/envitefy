@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useAdminAccess } from "@/components/admin/AdminAccessProvider";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -13,7 +13,7 @@ import {
 const EDITOR_HANDOFF_KEY = "envitefy:admin:email-editor:handoff";
 
 export default function MagazineEmailPreviewPage() {
-  const { data: session, status } = useSession();
+  const { status, isAdmin } = useAdminAccess();
   const router = useRouter();
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState(false);
@@ -61,7 +61,6 @@ export default function MagazineEmailPreviewPage() {
       </div>
     );
   }
-  const isAdmin = (session?.user as any)?.isAdmin;
   if (!isAdmin) {
     return (
       <div className="p-6">

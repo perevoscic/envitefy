@@ -65,11 +65,13 @@ export default function EventPreviewViewport({
   const [frameDocument, setFrameDocument] = useState<Document | null>(null);
   const [background, setBackground] = useState(() => initialBackground?.backgroundColor ? { ...DEFAULT_PREVIEW_BACKGROUND, ...initialBackground } : DEFAULT_PREVIEW_BACKGROUND);
   useEventPageColor(String(background.backgroundColor || ""), preserveNavigation);
+  const nativeMobile = device === "mobile" && available.browserWidth > 0 && available.browserWidth < 768;
+  const floatingToolbar = preserveNavigation || nativeMobile;
   const { viewport, fit } = getEventPreviewLayout(
     device,
     available.width,
     available.height,
-    preserveNavigation && available.browserWidth > 0 && available.browserWidth < 768,
+    nativeMobile,
   );
   const closePreview = useCallback(() => {
     if (onClose) onClose();
@@ -111,7 +113,7 @@ export default function EventPreviewViewport({
 
   useEffect(() => onBackgroundChange?.(background), [background, onBackgroundChange]);
 
-  // Wait for the app shell's commit before adjusting its toolbar spacing.
+  // Wait for the app shell's commit before connecting its preview document.
   // Nested event content may hydrate later; background styling leaves its
   // React-owned attributes untouched. Load can lag behind fonts and assets.
   useEffect(() => {
@@ -181,31 +183,6 @@ export default function EventPreviewViewport({
     };
   }, [frameDocument, preserveNavigation]);
 
-  // Reserve space for the floating top controls without adding bottom clearance.
-  // The page keeps its own footer spacing and native safe-area inset.
-  useEffect(() => {
-    if (!preserveNavigation || !frameDocument || fit.scale <= 0) return;
-    const content = frameDocument.querySelector<HTMLElement>(
-      "#event-preview-content, [data-app-main-content]",
-    );
-    if (!content) return;
-    const properties = ["padding-top", "scroll-padding-top"] as const;
-    const previous = properties.map((property) => ({
-      property,
-      value: content.style.getPropertyValue(property),
-      priority: content.style.getPropertyPriority(property),
-    }));
-    for (const property of properties) {
-      content.style.setProperty(property, `${72 / fit.scale}px`, "important");
-    }
-    return () => {
-      for (const { property, value, priority } of previous) {
-        if (value) content.style.setProperty(property, value, priority);
-        else content.style.removeProperty(property);
-      }
-    };
-  }, [frameDocument, fit.scale, preserveNavigation]);
-
   useEffect(() => {
     if (!frameDocument || (!onClose && !returnHref)) return;
     const handleEscape = (event: KeyboardEvent) => {
@@ -226,8 +203,8 @@ export default function EventPreviewViewport({
   const closeClassName =
     "inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-current/15 bg-transparent text-inherit transition hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current";
   const mount = !src ? frameDocument?.getElementById("event-preview-content") : null;
-  const floatingSurfaceStyle = preserveNavigation
-    ? isDarkEventPageColor(String(background.backgroundColor || ""))
+  const floatingSurfaceStyle = floatingToolbar
+    ? preserveNavigation && isDarkEventPageColor(String(background.backgroundColor || ""))
       ? {
           backgroundColor: "rgba(250, 249, 255, 0.94)",
           color: "#38246b",
@@ -244,15 +221,15 @@ export default function EventPreviewViewport({
     >
       {!preserveNavigation && (fullscreen || onClose) ? <OwnerPreviewMobileTopbarSuppressor /> : null}
       <header
-        data-floating-event-toolbar={preserveNavigation || undefined}
+        data-floating-event-toolbar={floatingToolbar || undefined}
         style={{ color: isDarkEventPageColor(String(background.backgroundColor || "")) ? "#ffffff" : background.color }}
-        className={`z-10 ${preserveNavigation ? "pointer-events-none absolute inset-x-0 top-[calc(var(--app-mobile-topbar-offset,6rem)+0.5rem)] flex flex-wrap justify-center md:grid md:grid-cols-[1fr_auto_1fr] lg:flex lg:top-[max(0.5rem,env(safe-area-inset-top))]" : `relative grid shrink-0 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] ${actions ? "grid-cols-[1fr_auto] sm:grid-cols-[1fr_auto_1fr]" : "grid-cols-[1fr_auto_1fr]"}`} items-center gap-2 px-3 sm:px-5`}
+        className={`z-10 ${preserveNavigation ? "pointer-events-none absolute inset-x-0 top-[calc(var(--app-mobile-topbar-offset,6rem)+0.5rem)] flex flex-wrap justify-center md:grid md:grid-cols-[1fr_auto_1fr] lg:flex lg:top-[max(0.5rem,env(safe-area-inset-top))]" : `${nativeMobile ? "pointer-events-none absolute inset-x-0 top-0" : "relative shrink-0"} grid pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] ${actions ? "grid-cols-[1fr_auto] sm:grid-cols-[1fr_auto_1fr]" : "grid-cols-[1fr_auto_1fr]"}`} items-center gap-2 px-3 sm:px-5`}
       >
-        {preserveNavigation ? null : actions || <div aria-hidden="true" />}
+        {preserveNavigation ? null : actions ? <div className="pointer-events-auto">{actions}</div> : <div aria-hidden="true" />}
         <div
           role="group"
           aria-label="Preview device"
-          className={`flex gap-2 rounded-full border border-current/15 p-1 ${preserveNavigation ? "pointer-events-auto shadow-sm backdrop-blur-xl md:col-start-2" : actions ? "col-span-2 row-start-2 justify-self-center sm:col-span-1 sm:col-start-2 sm:row-start-1" : ""}`}
+          className={`flex gap-2 rounded-full border border-current/15 p-1 ${floatingToolbar ? "pointer-events-auto shadow-sm backdrop-blur-xl" : ""} ${preserveNavigation ? "md:col-start-2" : actions ? "col-span-2 row-start-2 justify-self-center sm:col-span-1 sm:col-start-2 sm:row-start-1" : ""}`}
           style={floatingSurfaceStyle}
         >
           {deviceOrder.map((id) => {
@@ -280,7 +257,8 @@ export default function EventPreviewViewport({
         ) : null}
         {onClose || returnHref || onExpand ? (
           <div
-            className={`flex justify-end ${actions ? "col-start-2 row-start-1 sm:col-start-3" : ""}`}
+            className={`pointer-events-auto flex justify-end ${nativeMobile ? "justify-self-end rounded-full shadow-sm backdrop-blur-xl" : ""} ${actions ? "col-start-2 row-start-1 sm:col-start-3" : ""}`}
+            style={nativeMobile ? floatingSurfaceStyle : undefined}
           >
             {onClose ? (
               <button
@@ -315,13 +293,13 @@ export default function EventPreviewViewport({
           </div>
         ) : null}
       </header>
-      <div className={`flex min-h-0 flex-1 ${preserveNavigation ? "" : "p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:p-5"}`}>
+      <div className={`flex min-h-0 flex-1 ${preserveNavigation || nativeMobile ? "" : "p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:p-5"}`}>
         <div
           ref={stageRef}
           className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden"
         >
           <div
-            className={`relative shrink-0 ${preserveNavigation || device === "desktop" ? "" : "rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.12)]"}`}
+            className={`relative shrink-0 ${preserveNavigation || nativeMobile || device === "desktop" ? "" : "rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.12)]"}`}
             style={{
               width: fit.width,
               height: fit.height,
@@ -338,8 +316,8 @@ export default function EventPreviewViewport({
               style={{
                 width: viewport.width,
                 height: viewport.height,
-                transform: `scale(${fit.scale})`,
-                borderRadius: preserveNavigation || device === "desktop" ? 0 : 24,
+                transform: nativeMobile ? "none" : `scale(${fit.scale})`,
+                borderRadius: preserveNavigation || nativeMobile || device === "desktop" ? 0 : 24,
               }}
               onLoad={(event) => {
                 try {

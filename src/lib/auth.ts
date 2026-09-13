@@ -298,7 +298,7 @@ export function getAuthOptions(): NextAuthOptions {
           return false;
         }
       },
-      async jwt({ token, user, account }) {
+      async jwt({ token, user, account, trigger }) {
         try {
           const email = (user?.email as string) || (token?.email as string) || null;
           const tokenAny = token as any;
@@ -324,13 +324,19 @@ export function getAuthOptions(): NextAuthOptions {
               ? tokenAny.isAdminCheckedAt
               : 0;
           const shouldRefreshAdminClaim =
-            !email ||
+            Boolean(user) ||
+            trigger === "update" ||
             tokenAny.isAdmin === undefined ||
+            tokenAny.isAdminCheckedAt === undefined ||
             now - lastAdminCheckAt > ADMIN_CLAIM_REFRESH_MS;
 
-          if (email && shouldRefreshAdminClaim) {
+          if (!email) {
+            tokenAny.isAdmin = false;
+            delete tokenAny.isAdminCheckedAt;
+          } else if (shouldRefreshAdminClaim) {
             try {
-              tokenAny.isAdmin = await getIsAdminByEmail(email);
+              tokenAny.isAdmin = await getIsAdminByEmail(email, { throwOnError: true });
+              tokenAny.isAdminCheckedAt = now;
             } catch (err) {
               const message = describeDatabaseError(err);
               if (isTransientDbError(err)) {
@@ -339,8 +345,9 @@ export function getAuthOptions(): NextAuthOptions {
                 console.error("[auth] isAdmin lookup failed; defaulting to false", message);
               }
               tokenAny.isAdmin = false;
-            } finally {
-              tokenAny.isAdminCheckedAt = now;
+              // Deny access while the lookup is unavailable, but retry on the next
+              // session request instead of caching the failure for 15 minutes.
+              delete tokenAny.isAdminCheckedAt;
             }
           }
 

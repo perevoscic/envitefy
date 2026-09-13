@@ -351,8 +351,8 @@ test("each scheduled game displays its own score even without a final result", (
   assert.match(render({ score: " 14-7 " }), /Score · 14-7/);
   assert.doesNotMatch(render({ score: "14-7" }), /Win|Loss|Tie/);
   assert.match(render({ score: "0-0" }), /Score · 0-0/);
-  assert.match(render({ score: "28-14", result: "W" }), /Win · 28-14/);
-  assert.match(render({ result: "L" }), />Loss<\/span>/);
+  assert.match(render({ score: "28-14", result: "W" }), /Score · 28-14/);
+  assert.match(render({ result: "L" }), /Score unavailable/);
   assert.doesNotMatch(render({ score: "  " }), /Score ·|0-0|Win|Loss|Tie/);
   const schedule = renderToStaticMarkup(React.createElement(FootballSchedule, {
     games: [{ id: "first", opponent: "First", score: "21-7" }, { id: "second", opponent: "Second" }],
@@ -360,6 +360,25 @@ test("each scheduled game displays its own score even without a final result", (
   const cards = schedule.match(/<article[\s\S]*?<\/article>/g);
   assert.match(cards[0], /Score · 21-7/);
   assert.doesNotMatch(cards[1], /Score ·|21-7|0-0/);
+});
+
+test("past game cards show only matchup, date and supplied score, even with full game details", () => {
+  const game = {
+    id: "past", opponent: "Freeport Bulldogs", opponentMascot: "Bulldogs",
+    date: "2020-09-18", time: "19:00", homeAway: "away", result: "W", score: " 0-0 ",
+    venue: "Bulldog Stadium", address: "12615 US-331", ticketsLink: "https://school.example/tickets",
+    notes: "Arrive early", broadcast: "Sports TV", conference: true,
+    venueLookup: { venueSource: "https://school.example/stadium", ticketsSource: "https://school.example/sales", schoolTickets: true },
+  };
+  game.context = {
+    key: footballGameContextKey(game, home), miles: 28, minutes: 42, routeVersion: 2,
+    weather: { summary: "Clear", tempF: 75, checkedAt: new Date().toISOString() },
+  };
+  const markup = renderToStaticMarkup(React.createElement(FootballSchedule, { ...home, games: [game] }));
+  const card = markup.match(/<article[\s\S]*?<\/article>/)?.[0];
+  assert.ok(card);
+  assert.equal(card.replace(/<[^>]+>/g, ""), "Seahawks at BulldogsFri, Sep 18, 2020Score · 0-0");
+  assert.doesNotMatch(card, /<a\b|<button\b/);
 });
 
 test("ScoreStream previews embed only validated widgets with accessible fallback links", () => {

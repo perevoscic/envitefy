@@ -40,6 +40,8 @@ export default function FootballDesignGallery() {
         onModeChange={setAuthMode}
         onClose={() => setDestination(null)}
         successRedirectUrl={destination || "/event/football"}
+        signupIntent="football"
+        description={authMode === "signup" ? "Create your account to customize your Football page." : undefined}
       />
     </>
   );

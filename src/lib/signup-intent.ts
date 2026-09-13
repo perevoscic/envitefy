@@ -4,6 +4,7 @@ export type SignupIntent =
   | "bridal_showers"
   | "baby_showers"
   | "gymnastics"
+  | "football"
   | "sport_events"
   | "signup_forms"
   | "gender_reveal"
@@ -18,6 +19,7 @@ export const SIGNUP_INTENTS: SignupIntent[] = [
   "bridal_showers",
   "baby_showers",
   "gymnastics",
+  "football",
   "sport_events",
   "signup_forms",
   "gender_reveal",
@@ -34,6 +36,7 @@ const INTENT_BY_MARKETING_PATH: Record<string, SignupIntent> = {
   "/bridal-showers": "bridal_showers",
   "/baby-showers": "baby_showers",
   "/gymnastics": "gymnastics",
+  "/football": "football",
   "/sports": "sport_events",
   "/sport-events": "sport_events",
   "/signup-forms": "signup_forms",
@@ -74,6 +77,11 @@ const CREATE_ACTION_BY_INTENT: Record<
     label: "Gymnastics Meet",
     ctaLabel: "+ Gymnastics Meet",
     href: "/event/gymnastics",
+  },
+  football: {
+    label: "Football",
+    ctaLabel: "+ Football",
+    href: "/event/football",
   },
   sport_events: {
     label: "Sports Event",

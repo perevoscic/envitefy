@@ -90,6 +90,43 @@ export default function FootballSchedule({
             {view.games.map((game) => {
               const score = game.score?.trim();
               const matchup = footballMatchup(game, home.teamName, home.teamMascot);
+              const gameDate = normalizeFootballGameDate(game.date, home.season);
+              const date = gameDate ? new Date(`${gameDate}T12:00:00Z`) : null;
+              const dateContent = date ? (
+                <time dateTime={gameDate}>
+                  {date.toLocaleDateString("en-US", {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    timeZone: "UTC",
+                  })}
+                </time>
+              ) : (
+                <span>
+                  {game.date?.trim() || <FootballText fallback="Date to be confirmed" />}
+                </span>
+              );
+              if (view.id === "past-games") {
+                return (
+                  <article key={game.id} className={`min-w-0 ${cardClassName}`}>
+                    <h3 className="break-words text-xl font-bold">{matchup}</h3>
+                    <p className="mt-2 flex flex-wrap items-center gap-2 text-sm font-semibold">
+                      <CalendarDays size={16} aria-hidden="true" />
+                      {dateContent}
+                    </p>
+                    <p className="mt-3 text-lg font-bold tabular-nums">
+                      {score ? (
+                        <>
+                          <FootballText fallback="Score" /> · {score}
+                        </>
+                      ) : (
+                        <FootballText fallback="Score unavailable" />
+                      )}
+                    </p>
+                  </article>
+                );
+              }
               const schools = footballSchoolMatchup(game, home.teamName);
               const { venue, address } = footballGameLocation(game, home);
               const directions = game.homeAway === "away" ? footballDirections(game, home) : null;
@@ -103,8 +140,6 @@ export default function FootballSchedule({
               const tickets = footballLink(game.ticketsLink);
               const venueSource = footballLink(game.venueLookup?.venueSource);
               const ticketsSource = footballLink(game.venueLookup?.ticketsSource);
-              const gameDate = normalizeFootballGameDate(game.date, home.season);
-              const date = gameDate ? new Date(`${gameDate}T12:00:00Z`) : null;
               const start = gameDate ? gameDate + (game.time ? `T${game.time}` : "") : null;
               const links = start
                 ? buildCalendarLinks({
@@ -163,21 +198,7 @@ export default function FootballSchedule({
                   <h3 className="mt-3 break-words text-xl font-bold">{matchup}</h3>
                   <p className="mt-2 flex flex-wrap items-center gap-2 text-sm font-semibold">
                     <CalendarDays size={16} aria-hidden="true" />
-                    {date ? (
-                      <time dateTime={gameDate}>
-                        {date.toLocaleDateString("en-US", {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                          timeZone: "UTC",
-                        })}
-                      </time>
-                    ) : (
-                      <span>
-                        {game.date?.trim() || <FootballText fallback="Date to be confirmed" />}
-                      </span>
-                    )}
+                    {dateContent}
                     {time ? <span>· {time}</span> : null}
                   </p>
                   {venue ? (

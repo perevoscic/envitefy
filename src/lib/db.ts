@@ -608,8 +608,11 @@ export async function setUserAdminByEmail(email: string, isAdmin: boolean): Prom
   await query(`update users set is_admin = $2 where email = $1`, [lower, !!isAdmin]);
 }
 
-export async function getIsAdminByEmail(email: string): Promise<boolean> {
-  const lower = email.toLowerCase();
+export async function getIsAdminByEmail(
+  email: string,
+  options: { throwOnError?: boolean } = {},
+): Promise<boolean> {
+  const lower = email.trim().toLowerCase();
   const selectIsAdmin = async () =>
     query<{ is_admin: boolean | null }>(`select is_admin from users where email = $1 limit 1`, [
       lower,
@@ -626,6 +629,7 @@ export async function getIsAdminByEmail(email: string): Promise<boolean> {
         const retry = await selectIsAdmin();
         return Boolean(retry.rows[0]?.is_admin);
       } catch (retryErr) {
+        if (options.throwOnError) throw retryErr;
         if (isTransientPgError(retryErr)) {
           console.warn(
             "[db] getIsAdminByEmail: database unavailable during schema ensure, defaulting isAdmin=false",
@@ -641,6 +645,7 @@ export async function getIsAdminByEmail(email: string): Promise<boolean> {
       }
     }
 
+    if (options.throwOnError) throw err;
     if (isTransientPgError(err)) {
       console.warn(
         "[db] getIsAdminByEmail: database unavailable, defaulting isAdmin=false",

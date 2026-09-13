@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminAccessProvider } from "@/components/admin/AdminAccessProvider";
 import { AdminRouteError, requireAdminSession } from "@/lib/admin/require-admin";
 
 export const runtime = "nodejs";
@@ -24,11 +25,11 @@ function AdminAccessMessage({ title, description }: { title: string; description
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   try {
-    await requireAdminSession();
+    const { email } = await requireAdminSession();
     return (
       <div className="min-h-[100dvh] text-slate-950">
         <div className="mx-auto w-full max-w-[1600px] px-3 pb-3 pt-24 sm:px-5 sm:pb-5 sm:pt-28 lg:px-6 lg:pb-6">
-          {children}
+          <AdminAccessProvider email={email}>{children}</AdminAccessProvider>
         </div>
       </div>
     );
