@@ -100,6 +100,7 @@ export default function SettingsPage() {
   const [lastName, setLastName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
   const [avatarState, setAvatarState] = useState<ApiState<{ ok?: boolean }>>({
     loading: false,
     error: null,
@@ -717,14 +718,16 @@ export default function SettingsPage() {
           <div className="relative flex flex-col justify-between gap-7 lg:flex-row lg:items-end">
             <div className="flex min-w-0 items-start gap-3 sm:gap-4">
               <span className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white/12 text-lg font-black shadow-inner">
-                {displayedAvatarUrl ? (
+                {displayedAvatarUrl && displayedAvatarUrl !== failedAvatarUrl ? (
                   <Image
+                    key={displayedAvatarUrl}
                     src={displayedAvatarUrl}
                     alt={`${settingsDisplayName} profile`}
                     fill
                     sizes="56px"
                     unoptimized
                     className="object-cover"
+                    onError={() => setFailedAvatarUrl(displayedAvatarUrl)}
                   />
                 ) : (
                   settingsInitials
@@ -845,14 +848,16 @@ export default function SettingsPage() {
             </div>
             <div className="flex min-w-0 flex-col gap-4 rounded-2xl border border-[#e2d9f2] bg-[linear-gradient(145deg,#fbf9ff,#fff)] p-4 sm:flex-row sm:items-center sm:p-5">
               <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[1.6rem] border-4 border-white bg-[linear-gradient(135deg,#6f59b1,#527d98)] shadow-[0_12px_30px_rgba(70,52,111,0.18)]">
-                {displayedAvatarUrl ? (
+                {displayedAvatarUrl && displayedAvatarUrl !== failedAvatarUrl ? (
                   <Image
+                    key={displayedAvatarUrl}
                     src={displayedAvatarUrl}
                     alt={`${settingsDisplayName} profile`}
                     fill
                     sizes="96px"
                     unoptimized
                     className="object-cover"
+                    onError={() => setFailedAvatarUrl(displayedAvatarUrl)}
                   />
                 ) : (
                   <span className="flex h-full w-full items-center justify-center text-2xl font-black text-white">

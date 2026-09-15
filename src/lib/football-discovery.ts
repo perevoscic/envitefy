@@ -712,6 +712,7 @@ function buildFootballParsePrompt(
     "- Do not repeat the title, team, season, dates, venue, address, game rows, scores, or facts already placed in logistics, roster, practice, gear, volunteers or announcements in additionalDetails. Do not copy schedule headings, navigation, search snippets, source citations, or chatbot offers such as 'I can check game times or ticket details'.",
     "- Put each fact in its dedicated field once. Summary is not an announcement; leave it null for a schedule-only source. Keep unmappedFacts for useful source facts not already captured elsewhere.",
     "- Keep season schedule rows in `games`.",
+    "- Preserve Senior Night labels and any ceremony details in that game's notes, separate from its opponent name. Do not duplicate the label in communications.announcements; the page derives a dated announcement from the game note.",
     "- Open Week, Bye, Bye Week, Off Week and No Game mean there is no matchup. Preserve the printed date in a row with opponent 'Open Week'; leave homeAway, venue, address, kickoff time, tickets, result and score null. Never treat these labels as teams or look up a stadium for them.",
     "- Keep single-game logistics in `logistics`; reserve announcements for explicit updates from the source.",
     "- `startAt` should represent the primary game, match, or event start when one is evident; otherwise null.",

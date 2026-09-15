@@ -21,6 +21,7 @@ import ConciergeEventWebsite from "@/components/concierge/ConciergeEventWebsite"
 import EventActions from "@/components/EventActions";
 import EventCelebrationOverlay from "@/components/EventCelebrationOverlay";
 import EventDeleteModal from "@/components/EventDeleteModal";
+import RemoveUnavailableEventFromLists from "@/components/RemoveUnavailableEventFromLists";
 import EventMap from "@/components/EventMap";
 import EventRsvpDashboard from "@/components/EventRsvpDashboard";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
@@ -56,6 +57,7 @@ import { isScannedInviteCreatedVia, normalizeDashboardEventOwnership } from "@/l
 import {
   acceptEventShare,
   getEventHistoryPublicRenderBySlugOrId,
+  resolveEventHistoryIdentityBySlugOrId,
   getUserById,
   getUserIdByEmail,
   isEventSharedWithUser,
@@ -182,9 +184,10 @@ function sanitizeInternalReturnHref(value: string): string {
   }
 }
 
-function DeletedEventNotice() {
+function DeletedEventNotice({ missingEventKey }: { missingEventKey?: string }) {
   return (
     <main className="flex min-h-screen items-center justify-center px-5 py-16 text-[#2f2741]">
+      {missingEventKey ? <RemoveUnavailableEventFromLists eventKey={missingEventKey} /> : null}
       <section className="w-full max-w-xl text-center">
         <p className="font-[var(--font-josefin-sans)] text-xs font-black uppercase tracking-[0.28em] text-[#7b70d8]">
           Event unavailable
@@ -1080,7 +1083,15 @@ export default async function EventPage({
   const row = await timing.time("event_lookup", () =>
     getCachedEventHistoryBySlugOrId(awaitedParams.id, userId),
   );
-  if (!row) return <DeletedEventNotice />;
+  if (!row) {
+    // An unreadable private draft can also return null; only prune confirmed missing records.
+    const identity = await resolveEventHistoryIdentityBySlugOrId({ value: awaitedParams.id, userId });
+    if (!identity && userId) {
+      invalidateUserHistory(userId);
+      invalidateUserDashboard(userId);
+    }
+    return <DeletedEventNotice missingEventKey={identity ? undefined : awaitedParams.id} />;
+  }
   const isOwner = Boolean(userId && row.user_id && userId === row.user_id);
   if (isOwner && isEventDraft(row.data) && row.data?.templateEditor) redirect(resolveEditHref(row.id, row.data, row.title));
   const ownerUserId = typeof row.user_id === "string" ? row.user_id : null;

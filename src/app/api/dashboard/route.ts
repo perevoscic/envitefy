@@ -484,12 +484,13 @@ function getOrCreateRefresh(
 ): Promise<DashboardPayload> {
   const existing = dashboardRefreshInflight.get(userId);
   if (existing) return existing;
-  const promise = (async () => {
-    const payload = await computeDashboardPayload(userId, userEmail, timing);
-    dashboardResponseCache.set(userId, { at: Date.now(), payload });
+  const promise = computeDashboardPayload(userId, userEmail, timing).then((payload) => {
+    if (dashboardRefreshInflight.get(userId) === promise) {
+      dashboardResponseCache.set(userId, { at: Date.now(), payload });
+    }
     return payload;
-  })().finally(() => {
-    dashboardRefreshInflight.delete(userId);
+  }).finally(() => {
+    if (dashboardRefreshInflight.get(userId) === promise) dashboardRefreshInflight.delete(userId);
   });
   dashboardRefreshInflight.set(userId, promise);
   return promise;

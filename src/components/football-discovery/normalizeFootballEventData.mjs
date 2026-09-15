@@ -1,5 +1,5 @@
 import { groupEventSectionRows, normalizeEventSectionLayout, orderEventSections } from "../../lib/event-section-layout.ts";
-import { footballMatchup, hasFootballGame, isFootballOffWeek } from "../../lib/football-games.ts";
+import { footballMatchup, footballSeniorNightNotes, hasFootballGame, isFootballOffWeek } from "../../lib/football-games.ts";
 import { formatFootballGameDate, normalizeFootballGameDate } from "../../lib/football-schedule-dates.ts";
 import { resolveFootballTeamName, resolveFootballTitle } from "../../lib/football-team-name.ts";
 import { parseScoreStreamWidget } from "../../lib/scorestream.ts";
@@ -107,6 +107,11 @@ export function normalizeFootballEventData({
   const discoverySource = eventData?.discoverySource || {};
   const parseResult = discoverySource?.parseResult || {};
   const season = safeString(customFields?.season || eventData?.extra?.season || parseResult?.season);
+  const team = resolveFootballTeamName(
+    safeString(customFields?.team || eventData?.extra?.team || parseResult?.homeTeam),
+    safeString(eventData?.title || eventTitle),
+  );
+  const teamMascot = safeString(customFields?.teamMascot ?? eventData?.extra?.teamMascot ?? parseResult?.homeMascot);
 
   const scheduleEntries = pickArray(advancedSections?.games?.games || parseResult?.games);
   const games = scheduleEntries.filter(hasFootballGame);
@@ -138,6 +143,20 @@ export function normalizeFootballEventData({
           title: "Open week",
           body: `${formatFootballGameDate(week.date, season)} · No game scheduled`,
         })),
+      ...games.filter(footballSeniorNightNotes)
+        .sort((a, b) => normalizeFootballGameDate(a.date, season).localeCompare(normalizeFootballGameDate(b.date, season)))
+        .map((game, idx) => {
+          const notes = footballSeniorNightNotes(game);
+          const hasMoreDetails = !/^\(?senior[\s-]+night\)?[.!]?$/i.test(notes);
+          return {
+            id: `senior-night-${game.id || idx + 1}`,
+            title: "Senior Night",
+            body: [
+              `${formatFootballGameDate(game.date, season)} · ${footballMatchup(game, team, teamMascot)}`,
+              hasMoreDetails ? notes : "",
+            ].filter(Boolean).join("\n\n"),
+          };
+        }),
     ],
     (item) => `${safeString(item?.title)}|${safeString(item?.body)}`
   );
@@ -146,11 +165,6 @@ export function normalizeFootballEventData({
     Boolean(safeString(eventData?.rsvpDeadline));
   const passcodeRequired = Boolean(eventData?.accessControl?.requirePasscode);
 
-  const team = resolveFootballTeamName(
-    safeString(customFields?.team || eventData?.extra?.team || parseResult?.homeTeam),
-    safeString(eventData?.title || eventTitle),
-  );
-  const teamMascot = safeString(customFields?.teamMascot ?? eventData?.extra?.teamMascot ?? parseResult?.homeMascot);
   const headCoach = safeString(
     customFields?.headCoach || eventData?.extra?.headCoach
   );

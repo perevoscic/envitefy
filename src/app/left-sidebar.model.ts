@@ -60,12 +60,10 @@ export function buildSidebarDraftItems({
   isInvitedEventLikeRecord: (data: Record<string, unknown>) => boolean;
 }): SidebarDraftItem[] {
   const items: SidebarDraftItem[] = [];
-  const eventIds = new Set<string>();
   const threadIds = new Set<string>();
   for (const row of history) {
     const data = asSidebarRecord(row.data);
     if (!data) continue;
-    eventIds.add(row.id);
     const concierge = asSidebarRecord(data.conciergeDraft);
     const threadId = concierge?.creationSessionId || data.creationSessionId;
     if (typeof threadId === "string") threadIds.add(threadId);
@@ -81,9 +79,9 @@ export function buildSidebarDraftItems({
   for (const thread of threads) {
     const status = thread.status.trim().toLowerCase();
     if (
-      ["published", "publishing", "archived", "canceled", "cancelled"].includes(status) ||
+      ["published", "publishing", "archived", "canceled", "cancelled", "deleted"].includes(status) ||
       threadIds.has(thread.id) ||
-      (thread.savedEventId && eventIds.has(thread.savedEventId))
+      thread.savedEventId
     ) continue;
     items.push({
       id: `thread:${thread.id}`,

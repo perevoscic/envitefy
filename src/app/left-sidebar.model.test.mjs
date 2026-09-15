@@ -65,6 +65,8 @@ test("Drafts includes saved work across editors and dates without published, inv
     { id: "published-chat", title: "Published chat", status: "published" },
     { id: "publishing-chat", title: "Publishing chat", status: "publishing" },
     { id: "archived-chat", title: "Archived chat", status: "archived" },
+    { id: "orphan-chat", title: "Deleted saved event", status: "drafting", savedEventId: "missing-event" },
+    { id: "deleted-chat", title: "Deleted chat", status: "deleted" },
   ].map((thread) => ({ createdAt: "2026-08-01", updatedAt: "2026-08-01", savedEventId: null, ...thread }));
   const before = structuredClone({ history, threads });
   const drafts = buildSidebarDraftItems({

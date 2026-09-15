@@ -115,6 +115,8 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
 
 ## Feature Maps
 
+- Mobile event controls preference (September 15, 2026): keep the owner-view device selector centered, with a circular vertical three-dot button on the right opening labeled Preview, Edit, Share and Delete actions. Keep desktop actions visible and preserve templates that already place their mobile Edit beside guest actions. Narrow football game cards put compact Directions and Calendar buttons in one row with 44px targets, full accessible labels, the saved calendar provider and editable directions wording preserved.
+
 - Football game card preference (September 15, 2026): omit the drive-summary box with mileage, drive time, road names and the origin-to-destination sentence. Keep the away-game Get directions action. This supersedes the earlier instruction to display road names and mileage on football game cards.
 
 - Mobile phone preview preference (September 12, 2026): selecting Mobile in `EventPreviewViewport` on a phone fills the available browser width and height at native CSS size, with no scale transform, device-frame padding, rounded frame or shadow. Apply to fullscreen, owner and Concierge event previews; retain device switching and Close without saving or losing in-memory state. Content may scroll underneath the floating controls: do not reserve a toolbar band or inject extra top padding for those controls. Keep the controls readable and tappable, and let pointer gestures pass through the surrounding empty space.

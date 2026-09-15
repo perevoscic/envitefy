@@ -12,6 +12,12 @@ type CacheEntry<T> = {
 
 const CACHE_TTL_MS = 30 * 1000; // 30 seconds
 const cache = new Map<string, CacheEntry<any>>();
+const userRevisions = new Map<string, number>();
+let clearRevision = 0;
+
+export function getHistoryCacheRevision(userId: string): string {
+  return `${clearRevision}:${userRevisions.get(userId) || 0}`;
+}
 
 function getCacheKey(
   userId: string,
@@ -57,8 +63,10 @@ export function setCachedHistory(
   view: CacheableHistoryView,
   limit: number,
   timeFilter: HistoryTimeFilter,
-  items: any[]
+  items: any[],
+  expectedRevision = getHistoryCacheRevision(userId),
 ): void {
+  if (expectedRevision !== getHistoryCacheRevision(userId)) return;
   const key = getCacheKey(userId, view, limit, timeFilter);
   cache.set(key, {
     data: items,
@@ -67,6 +75,7 @@ export function setCachedHistory(
 }
 
 export function invalidateUserHistory(userId: string): void {
+  userRevisions.set(userId, (userRevisions.get(userId) || 0) + 1);
   const prefix = `history:v`;
   for (const key of cache.keys()) {
     if (key.startsWith(prefix) && key.includes(`:${userId}:`)) {
@@ -76,6 +85,8 @@ export function invalidateUserHistory(userId: string): void {
 }
 
 export function invalidateAllHistory(): void {
+  clearRevision += 1;
+  userRevisions.clear();
   cache.clear();
 }
 
@@ -87,6 +98,5 @@ export function cleanupExpiredEntries(): void {
     }
   }
 }
-
 
 

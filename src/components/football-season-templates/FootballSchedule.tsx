@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, CloudSun, MapPin, Navigation, Ticket } from "lucide-react";
+import { CalendarDays, CalendarPlus, CloudSun, MapPin, Navigation, Ticket } from "lucide-react";
 import { useEffect, useState } from "react";
 import FootballSectionTabs, { useFootballSectionTabs } from "./FootballSectionTabs";
 import { formatFootballGameDate, groupFootballGames, normalizeFootballGameDate } from "@/lib/football-schedule-dates";
@@ -13,6 +13,7 @@ import {
   footballLink,
   footballMatchup,
   footballSchoolMatchup,
+  footballSeniorNightNotes,
   hasFootballGame,
   isFootballOffWeek,
   type FootballGame,
@@ -82,6 +83,8 @@ export default function FootballSchedule({
   if (!visibleGames.length && !offWeeks.length) return null;
   const buttonClass =
     "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-current/30 px-4 py-2 text-sm font-semibold hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2";
+  const planningButtonClass =
+    "inline-flex min-h-11 min-w-0 w-full items-center justify-center gap-1.5 rounded-full border border-current/30 px-2 py-2 text-xs font-semibold hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2 @sm/game-card:w-auto @sm/game-card:gap-2 @sm/game-card:px-4 @sm/game-card:text-sm";
   return (
     <div className="@container">
       <FootballSectionTabs
@@ -138,6 +141,7 @@ export default function FootballSchedule({
               const tickets = footballLink(game.ticketsLink);
               const venueSource = footballLink(game.venueLookup?.venueSource || knownVenueSource);
               const ticketsSource = footballLink(game.venueLookup?.ticketsSource);
+              const seniorNightNotes = footballSeniorNightNotes(game);
               const start = gameDate ? gameDate + (game.time ? `T${game.time}` : "") : null;
               const links = start
                 ? buildCalendarLinks({
@@ -165,7 +169,7 @@ export default function FootballSchedule({
                   })
                 : game.time;
               return (
-                <article key={game.id} className={`min-w-0 ${cardClassName}`}>
+                <article key={game.id} className={`@container/game-card min-w-0 ${cardClassName}`}>
                   <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                     {game.homeAway ? (
                       <span className="rounded-full border border-current/25 px-3 py-1 font-semibold">
@@ -221,7 +225,7 @@ export default function FootballSchedule({
                       <FootballText fallback="Broadcast:" /> {game.broadcast}
                     </p>
                   ) : null}
-                  {game.notes ? (
+                  {game.notes && !seniorNightNotes ? (
                     <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{game.notes}</p>
                   ) : null}
                   {directions || links || tickets ? (
@@ -243,28 +247,48 @@ export default function FootballSchedule({
                           )}
                         />
                       ) : null}
-                      {directions ? (
-                        <FootballText
-                          fallback="Get directions"
-                          renderText={(caption) => (
-                            <a
-                              href={directions}
-                              target="_blank"
-                              rel="noreferrer noopener"
-                              className={buttonClass}
-                              aria-label={`Get directions to ${venue || address} for ${matchup}`}
-                            >
-                              <Navigation size={16} aria-hidden="true" />
-                              {caption || "Get directions"}
-                            </a>
-                          )}
-                        />
+                      {directions || links ? (
+                        <div className={`grid w-full min-w-0 gap-2 ${directions && links ? "grid-cols-2" : "grid-cols-1"} @sm/game-card:flex @sm/game-card:w-auto`}>
+                          {directions ? (
+                            <FootballText
+                              fallback="Get directions"
+                              renderText={(caption) => (
+                                <a
+                                  href={directions}
+                                  target="_blank"
+                                  rel="noreferrer noopener"
+                                  className={planningButtonClass}
+                                  aria-label={`Get directions to ${venue || address} for ${matchup}`}
+                                  title={caption || "Get directions"}
+                                >
+                                  <Navigation className="shrink-0" size={16} aria-hidden="true" />
+                                  <span className="min-w-0 break-words @sm/game-card:hidden">
+                                    {!caption || caption === "Get directions" ? "Directions" : caption}
+                                  </span>
+                                  <span className="hidden @sm/game-card:inline">{caption || "Get directions"}</span>
+                                </a>
+                              )}
+                            />
+                          ) : null}
+                          {links ? (
+                            <CalendarAction links={links} className={planningButtonClass}>
+                              {(label) => (
+                                <>
+                                  <CalendarPlus className="shrink-0" size={16} aria-hidden="true" />
+                                  <span className="min-w-0 break-words @sm/game-card:hidden">
+                                    {label === "Add to calendar" ? "Calendar" : label.replace(/^Add to /, "")}
+                                  </span>
+                                  <span className="hidden @sm/game-card:inline">{label}</span>
+                                </>
+                              )}
+                            </CalendarAction>
+                          ) : null}
+                        </div>
                       ) : null}
-                      {links ? <CalendarAction links={links} className={buttonClass} /> : null}
                     </div>
                   ) : null}
-                  {venueSource || ticketsSource ? (
-                    <div className="mt-2 flex flex-wrap gap-x-4 text-xs">
+                  {venueSource || ticketsSource || seniorNightNotes ? (
+                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                       {venueSource ? (
                         <FootballText
                           fallback="Stadium details"
@@ -294,6 +318,9 @@ export default function FootballSchedule({
                             </a>
                           )}
                         />
+                      ) : null}
+                      {seniorNightNotes ? (
+                        <span className="inline-flex min-h-9 items-center whitespace-pre-wrap font-semibold">{seniorNightNotes}</span>
                       ) : null}
                     </div>
                   ) : null}

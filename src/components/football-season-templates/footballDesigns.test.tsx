@@ -9,8 +9,8 @@ import { FOOTBALL_DESIGNS, getFootballDesign, resolveFootballHero } from "./foot
 import { GYM_MEET_TEMPLATE_LIBRARY, resolveGymMeetTemplateId } from "./registry";
 
 test("every football design has distinct verified artwork and its own theme", () => {
-  assert.equal(GYM_MEET_TEMPLATE_LIBRARY.length, 60);
-  assert.equal(Object.keys(FOOTBALL_DESIGNS).length, 60);
+  assert.equal(GYM_MEET_TEMPLATE_LIBRARY.length, 90);
+  assert.equal(Object.keys(FOOTBALL_DESIGNS).length, 90);
   const hashes = new Set<string>();
   const palettes = new Set<string>();
   for (const template of GYM_MEET_TEMPLATE_LIBRARY) {
@@ -31,8 +31,8 @@ test("every football design has distinct verified artwork and its own theme", ()
     assert.ok(html.includes(`data-football-hero-layout="${design.layout}"`));
     assert.ok(html.includes("Panthers Football"));
   }
-  assert.equal(hashes.size, 60);
-  assert.equal(palettes.size, 60);
+  assert.equal(hashes.size, 90);
+  assert.equal(palettes.size, 90);
 });
 
 test("artwork follows the selected design while custom uploads survive switching", () => {

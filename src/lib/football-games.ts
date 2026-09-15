@@ -113,6 +113,10 @@ export function hasFootballGame(game: FootballGame) {
       game.notes?.trim(),
   );
 }
+export function footballSeniorNightNotes(game: FootballGame) {
+  const notes = game.notes?.trim() || "";
+  return !isFootballOffWeek(game) && /\bsenior[\s-]+night\b/i.test(notes) ? notes : "";
+}
 export function footballLink(value?: string) {
   if (!value) return null;
   try {

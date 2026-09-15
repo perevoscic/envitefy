@@ -23,6 +23,7 @@ import { normalizeAccessControlPayload } from "@/lib/event-access";
 import { findTransientEventMedia } from "@/lib/event-media";
 import {
   getCachedHistory,
+  getHistoryCacheRevision,
   getCachedHistoryStale,
   invalidateUserHistory,
   setCachedHistory,
@@ -145,8 +146,10 @@ export async function GET(req: Request) {
       });
 
     const useCache = isCacheableHistoryView(view);
+    const cacheRevision = getHistoryCacheRevision(userId);
     const allowEmptySidebarCache = !(view === "sidebar" && timeFilter === "all");
-    const cachedRaw = useCache ? getCachedHistory(userId, view, limit, timeFilter) : null;
+    const forceRefresh = url.searchParams.get("refresh") === "1";
+    const cachedRaw = useCache && !forceRefresh ? getCachedHistory(userId, view, limit, timeFilter) : null;
     const cached =
       !allowEmptySidebarCache && Array.isArray(cachedRaw) && cachedRaw.length === 0
         ? null
@@ -229,7 +232,7 @@ export async function GET(req: Request) {
         light = finalizeItems(rows);
       }
       if (useCache && shouldCacheResponse && light !== staleCached) {
-        setCachedHistory(userId, view, limit, timeFilter, light);
+        setCachedHistory(userId, view, limit, timeFilter, light, cacheRevision);
       }
     }
     const diagnostics = {
@@ -253,7 +256,7 @@ export async function GET(req: Request) {
     const headers: Record<string, string> = {
       ETag: etag,
       "Last-Modified": lastModifiedIso.toUTCString(),
-      "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
+      "Cache-Control": "private, no-store",
     };
     if (degradedReason) {
       headers["X-History-Degraded"] = degradedReason;

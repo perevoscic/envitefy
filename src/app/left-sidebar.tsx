@@ -1130,6 +1130,8 @@ function FooterProfileMenu({
   }>;
   isCompact: boolean;
 }) {
+  const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
+
   return (
     <div
       className={`absolute bottom-0 left-0 right-0 z-[40] bg-transparent pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 ${
@@ -1157,14 +1159,16 @@ function FooterProfileMenu({
         >
           <div className="min-w-0 flex-1 inline-flex items-center gap-3.5">
             <span className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[14px] bg-[linear-gradient(135deg,#7f67ff_0%,#6f7aff_100%)] text-[15px] font-bold text-white shadow-[0_12px_22px_rgba(102,93,219,0.22)]">
-              {profileAvatarUrl ? (
+              {profileAvatarUrl && profileAvatarUrl !== failedAvatarUrl ? (
                 <Image
+                  key={profileAvatarUrl}
                   src={profileAvatarUrl}
                   alt=""
                   fill
                   sizes="44px"
                   unoptimized
                   className="object-cover"
+                  onError={() => setFailedAvatarUrl(profileAvatarUrl)}
                 />
               ) : (
                 profileInitials

@@ -5,17 +5,17 @@ import type { GymMeetTemplateId } from "./types";
 // The opening rows mix photographic and illustrated art in stable masonry columns.
 const openingDesigns: GymMeetTemplateId[] = [
   "parent-command",
-  "homecoming",
-  "sunday-ink",
+  "stadium-mosaic",
+  "stitched-season",
   "launchpad-editorial",
   "coastal-kickoff",
-  "saturday-morning",
+  "paper-stadium",
   "friday-night",
-  "chrome-league",
-  "pep-rally",
+  "stained-glass-sunday",
+  "clay-play",
   "womens-gridiron",
-  "leather-linen",
-  "pennant-club",
+  "risograph-rush",
+  "copper-kickoff",
 ];
 
 const openingRanks = new Map(openingDesigns.map((id, index) => [id, index]));

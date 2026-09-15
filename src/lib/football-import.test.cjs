@@ -382,12 +382,35 @@ test("each scheduled game displays its own score even without a final result", (
   assert.doesNotMatch(cards[1], /Score ·|21-7|0-0/);
 });
 
+test("Senior Night shares the stadium and ticket information row while preserving notes and links", () => {
+  const source = "https://swh.walton.k12.fl.us/o/swh/page/sports";
+  const game = {
+    id: "senior", opponent: "Pensacola Catholic", homeAway: "home", date: "2099-10-30",
+    notes: "Senior Night", venueLookup: { venueSource: source, ticketsSource: source },
+  };
+  const render = (overrides = {}) => renderToStaticMarkup(React.createElement(FootballSchedule, {
+    ...home, games: [{ ...game, ...overrides }],
+  }));
+  const markup = render();
+  const row = markup.match(/<div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">[\s\S]*?<\/div>/)?.[0];
+  assert.ok(row);
+  assert.match(row, /Stadium details/);
+  assert.match(row, /Official ticket information/);
+  assert.match(row, /Senior Night/);
+  assert.equal((row.match(new RegExp(`href="${source}"`, "g")) || []).length, 2);
+  assert.equal((markup.match(/Senior Night/g) || []).length, 1);
+  assert.match(render({ venueLookup: undefined }), /<span[^>]*>Senior Night<\/span>/);
+  assert.match(render({ notes: "Senior Night ceremony at 6 PM." }), /Senior Night ceremony at 6 PM\./);
+  assert.match(render({ notes: "Bring a blanket" }), /<p[^>]*>Bring a blanket<\/p>/);
+  assert.equal(game.notes, "Senior Night");
+});
+
 test("past game cards show only matchup, date and supplied score, even with full game details", () => {
   const game = {
     id: "past", opponent: "Freeport Bulldogs", opponentMascot: "Bulldogs",
     date: "2020-09-18", time: "19:00", homeAway: "away", result: "W", score: " 0-0 ",
     venue: "Bulldog Stadium", address: "12615 US-331", ticketsLink: "https://school.example/tickets",
-    notes: "Arrive early", broadcast: "Sports TV", conference: true,
+    notes: "Senior Night. Arrive early", broadcast: "Sports TV", conference: true,
     venueLookup: { venueSource: "https://school.example/stadium", ticketsSource: "https://school.example/sales", schoolTickets: true },
   };
   game.context = {
