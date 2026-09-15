@@ -24,6 +24,8 @@ test("sidebar history projections preserve product routing fields for My Events"
     "'publicEvent'",
     "'conciergeDraft'",
     "'creationSessionId'",
+    "'draftStatus'",
+    "'sidebarSports'",
   ]) {
     assert.ok(sidebarProjection[0].includes(token), `missing ${token}`);
   }
@@ -38,6 +40,8 @@ test("sidebar history projections preserve product routing fields for My Events"
   assert.match(fastProjection[0], /public_event_primary_output/);
   assert.match(fastProjection[0], /concierge_creation_session_id/);
   assert.match(fastProjection[0], /concierge_requested_outputs/);
+  assert.match(fastProjection[0], /buildSidebarSportsProjectionSql\("coalesce\(eh\.data, '\{\}'::jsonb\)"\)/);
+  assert.match(fastProjection[0], /draft_status/);
 
   const mapper = source.match(/function mapSidebarProjectionRowToEventHistoryRow[\s\S]*?\n\}/);
   assert.ok(mapper, "expected sidebar mapper");
@@ -46,6 +50,8 @@ test("sidebar history projections preserve product routing fields for My Events"
   assert.match(mapper[0], /requestedOutputs: Array\.isArray\(row\.requested_outputs\)/);
   assert.match(mapper[0], /publicEvent: buildObjectOrNull/);
   assert.match(mapper[0], /conciergeDraft: buildObjectOrNull/);
+  assert.match(mapper[0], /sidebarSports: row\.sidebar_sports/);
+  assert.match(mapper[0], /draftStatus: row\.draft_status/);
 });
 
 test("dashboard and general history projections preserve canonical event slugs", () => {
@@ -55,12 +61,16 @@ test("dashboard and general history projections preserve canonical event slugs",
   );
   assert.ok(dashboardProjection, "expected fast dashboard projection");
   assert.match(dashboardProjection[0], /eh\.public_slug/);
+  assert.match(dashboardProjection[0], /buildSidebarSportsProjectionSql/);
+  assert.match(dashboardProjection[0], /draft_status/);
 
   const dashboardMapper = source.match(
     /function mapDashboardProjectionRowToEventHistoryRow[\s\S]*?\n\}/,
   );
   assert.ok(dashboardMapper, "expected dashboard mapper");
   assert.match(dashboardMapper[0], /public_slug: row\.public_slug \|\| null/);
+  assert.match(dashboardMapper[0], /sidebarSports: row\.sidebar_sports/);
+  assert.match(dashboardMapper[0], /draftStatus: row\.draft_status/);
 
   const unionQuery = source.match(/function buildHistoryUnionQuery[\s\S]*?\n\}/);
   assert.ok(unionQuery, "expected shared history query");

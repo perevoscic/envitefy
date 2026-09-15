@@ -1,6 +1,7 @@
 import { buildScanPersonalization, resolveSavedScanPresentation } from "../lib/ocr/personalization.ts";
 import type { CreationThreadSummary } from "../lib/concierge/types.ts";
 import { isEventDraft } from "../lib/event-draft-access.ts";
+import { getSportsScheduleSummary, type SportsScheduleSummary } from "../lib/sports-schedule-navigation.ts";
 
 export type CalendarProviderKey = "google" | "microsoft" | "apple";
 
@@ -10,6 +11,7 @@ export type SidebarPage =
   | "createEventOther"
   | "aiThreads"
   | "myEvents"
+  | "schedules"
   | "drafts"
   | "invitedEvents"
   | "admin"
@@ -17,7 +19,7 @@ export type SidebarPage =
 
 export type EventSidebarMode = "owner" | "guest";
 
-export type EventListPage = "myEvents" | "invitedEvents";
+export type EventListPage = "myEvents" | "invitedEvents" | "schedules";
 
 export type CompactNavItemId = "home" | "studio" | "snap" | "create" | "myEvents" | "invitedEvents";
 
@@ -112,6 +114,7 @@ export type GroupedEventItem = {
   title: string;
   category: string;
   isDraft: boolean;
+  schedule?: SportsScheduleSummary;
   dateLabel: string;
   dateMs: number;
   shareStatus: "accepted" | "pending" | null;
@@ -948,6 +951,9 @@ function resolveSidebarProductKind(output: SidebarProductOutput | null) {
 
 function sortGroupedSections(source: Map<string, GroupedEventItem[]>) {
   const priority = new Map<string, number>([
+    ["games", 0],
+    ["meets", 1],
+    ["matches", 2],
     ["drafts", 0],
     ["birthdays", 1],
     ["general events", 2],
@@ -989,6 +995,16 @@ export function getChronologicalEventItems(
   });
 }
 
+export function getSidebarEventDateLabels(item: GroupedEventItem): { heading: string; detail: string } {
+  if (!Number.isFinite(item.dateMs)) {
+    return { heading: item.isDraft ? "Drafts" : "Date to confirm", detail: item.isDraft ? "Draft" : "Date to confirm" };
+  }
+  return {
+    heading: new Date(item.dateMs).toLocaleDateString(undefined, { month: "short", year: "numeric" }),
+    detail: `${item.dateLabel}${item.isDraft ? " · Draft" : ""}`,
+  };
+}
+
 export function buildGroupedEventLists(args: {
   history: HistoryRow[];
   getEventStartIso: (data: unknown) => unknown;
@@ -1005,6 +1021,7 @@ export function buildGroupedEventLists(args: {
   const bucketsByList: Record<EventListPage, ReturnType<typeof createGroupedBuckets>> = {
     myEvents: createGroupedBuckets(),
     invitedEvents: createGroupedBuckets(),
+    schedules: createGroupedBuckets(),
   };
 
   const today = new Date();
@@ -1017,8 +1034,10 @@ export function buildGroupedEventLists(args: {
     const isInvited = isInvitedHistoryEvent(data, args.isInvitedEventLikeRecord);
     if (data?.signupForm && !isInvited) continue;
 
-    const targetList: EventListPage = "myEvents";
-    const isDraft = String(data?.status || "").toLowerCase() === "draft";
+    const isDraft = isEventDraft(data);
+    if (isDraft) continue;
+    const schedule = getSportsScheduleSummary(data, row.title);
+    const targetList: EventListPage = schedule ? "schedules" : "myEvents";
     const presentation = resolveSavedScanPresentation(data, row.title || "");
     const normalizedCategoryRaw = normalizeCategoryLabel(
       presentation.category ||
@@ -1031,7 +1050,7 @@ export function buildGroupedEventLists(args: {
         .toLowerCase() === "shared events"
         ? "Invited Events"
         : normalizedCategoryRaw;
-    const category = isDraft ? "Drafts" : normalizedCategory || "General Events";
+    const category = schedule?.itemsLabel || normalizedCategory || "General Events";
 
     const dateRaw = String(args.getEventStartIso(row?.data) || "").trim();
     const parsedDateMs = dateRaw ? new Date(dateRaw).getTime() : Number.NaN;
@@ -1080,6 +1099,7 @@ export function buildGroupedEventLists(args: {
       title: presentation.title || "Untitled event",
       category: normalizedCategory || "General Events",
       isDraft,
+      ...(schedule ? { schedule } : {}),
       dateLabel,
       dateMs,
       shareStatus,
@@ -1092,7 +1112,7 @@ export function buildGroupedEventLists(args: {
 
     const targetBuckets = bucketsByList[targetList];
     const targetGroup =
-      Number.isFinite(dateMs) && dateMs < startOfTodayMs
+      !schedule && Number.isFinite(dateMs) && dateMs < startOfTodayMs
         ? targetBuckets.past
         : targetBuckets.upcoming;
     const currentItems = targetGroup.get(category) || [];
@@ -1108,6 +1128,10 @@ export function buildGroupedEventLists(args: {
     invitedEvents: {
       upcoming: sortGroupedSections(bucketsByList.invitedEvents.upcoming),
       past: sortGroupedSections(bucketsByList.invitedEvents.past),
+    },
+    schedules: {
+      upcoming: sortGroupedSections(bucketsByList.schedules.upcoming),
+      past: [],
     },
   };
 }

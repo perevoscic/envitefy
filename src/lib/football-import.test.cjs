@@ -16,7 +16,17 @@ Module._resolveFilename = function (request, parent, ...rest) {
   );
 };
 const originalLoad = Module._load;
+let footballParseCompletion;
+const footballParseRequests = [];
 Module._load = function (request, parent, main) {
+  if (request === "openai" && parent.filename.endsWith("/football-discovery.ts"))
+    return class OpenAI {
+      chat = { completions: { create: async (body) => {
+        footballParseRequests.push(body);
+        assert.ok(footballParseCompletion, "The parser response must be provided by the test");
+        return footballParseCompletion;
+      } } };
+    };
   if (request === "@/lib/event-access")
     return { normalizeAccessControlPayload: async (value) => value };
   if (request === "lucide-react") {
@@ -45,16 +55,21 @@ for (const extension of [".ts", ".tsx"])
 
 const { footballEditorFields } = require("./football-editor-data.ts");
 Module._extensions[".css"] = (mod) => { mod.exports = new Proxy({}, { get: (_, key) => key === "__esModule" ? false : String(key) }); };
-const { resolveFootballTeamName, footballTeamLabel } = require("./football-team-name.ts");
+const { resolveFootballTeamName, resolveFootballTitle, footballTeamLabel } = require("./football-team-name.ts");
 const { default: FootballSectionTabs, useFootballSectionTabs } = require("../components/football-season-templates/FootballSectionTabs.tsx");
 const {
   mapParseResultToFootballData,
   buildDefaultFootballDiscoveryData,
+  parseFootballFromExtractedText,
 } = require("./football-discovery.ts");
 const {
   footballDirections,
   footballMatchup,
+  footballSchoolMatchup,
   footballGameContextKey,
+  footballGameLocation,
+  hasFootballGame,
+  isFootballOffWeek,
 } = require("./football-games.ts");
 const { footballWebsiteText, isPublicSourceAddress } = require("./football-source.ts");
 const { resolveFootballDiscoveryTemplateSelection } = require("./discovery/template-selection.ts");
@@ -217,6 +232,7 @@ test("verified school directory fills direct Hudl/GoFan links without waiting fo
     pages.push(url);
     let html = "";
     if (url.includes("swh.walton")) html = '<p>645 Greenway Trail, Santa Rosa Beach, FL 32459</p><a href="https://fan.hudl.com/usa/fl/santa-rosa-beach/organization/8951/south-walton-high-school">Hudl Livestream & Tickets</a>';
+    if (url.includes("whs.walton")) html = '<p>Walton Braves football: 449 Walton Road, DeFuniak Springs, FL 32433</p><a href="https://gofan.co/app/school/FL21427">GoFan Tickets</a>';
     if (url.includes("gbh.santarosa")) html = "675 Gulf Breeze Parkway, Gulf Breeze, FL 32561";
     if (url.includes("okaloosa")) html = "400 Hollywood Blvd. SW, Fort Walton Beach, FL 32548";
     if (url.includes("nfhsnetwork.com/schools/gulf-breeze")) html = '<a href="https://gofan.co/app/school/FL19831?utm_source=nfhs-network">Tickets</a>';
@@ -229,19 +245,23 @@ test("verified school directory fills direct Hudl/GoFan links without waiting fo
       { id: "home", opponent: "Lawton Chiles", homeAway: "home" },
       { id: "gulf", opponent: "Gulf Breeze", homeAway: "away" },
       { id: "fort", opponent: "Fort Walton Beach", homeAway: "away" },
+      { id: "walton", opponent: "Walton", homeAway: "away" },
     ], { teamName: "South Walton Seahawks" }, { allowSearch: false });
     assert.match(result.home.homeAddress, /645 Greenway/);
     assert.match(result.games[0].ticketsLink, /fan\.hudl\.com/);
     assert.equal(result.games[1].ticketsLink, "https://gofan.co/app/school/FL19831");
     assert.equal(result.games[2].ticketsLink, "https://gofan.co/app/school/FL19830");
     assert.equal(result.games[2].venue, "Steve Riggs Stadium");
+    assert.equal(result.games[3].venue, "Walton High School football stadium");
+    assert.equal(result.games[3].address, "449 Walton Road, DeFuniak Springs, FL 32433");
+    assert.equal(result.games[3].ticketsLink, "https://gofan.co/app/school/FL21427");
     for (const game of result.games) {
       assert.ok(footballDirections(game, result.home));
       assert.equal(game.venueLookup.schoolTickets, true);
     }
-    assert.equal(pages.length, 5);
+    assert.equal(pages.length, 6);
     const markup = renderToStaticMarkup(React.createElement(FootballSchedule, { ...result.home, games: result.games }));
-    assert.equal((markup.match(/>Buy tickets<\/a>/g) || []).length, 3);
+    assert.equal((markup.match(/>Buy tickets<\/a>/g) || []).length, 4);
     assert.doesNotMatch(markup, /google\.com\/search|Find tickets/);
   } finally { source.fetchFootballSource = originalSource; global.fetch = savedFetch; }
 });
@@ -351,7 +371,7 @@ test("each scheduled game displays its own score even without a final result", (
   assert.match(render({ score: " 14-7 " }), /Score · 14-7/);
   assert.doesNotMatch(render({ score: "14-7" }), /Win|Loss|Tie/);
   assert.match(render({ score: "0-0" }), /Score · 0-0/);
-  assert.match(render({ score: "28-14", result: "W" }), /Score · 28-14/);
+  assert.match(render({ score: "28-14", result: "W" }), /Win · 28-14/);
   assert.match(render({ result: "L" }), /Score unavailable/);
   assert.doesNotMatch(render({ score: "  " }), /Score ·|0-0|Win|Loss|Tie/);
   const schedule = renderToStaticMarkup(React.createElement(FootballSchedule, {
@@ -377,8 +397,79 @@ test("past game cards show only matchup, date and supplied score, even with full
   const markup = renderToStaticMarkup(React.createElement(FootballSchedule, { ...home, games: [game] }));
   const card = markup.match(/<article[\s\S]*?<\/article>/)?.[0];
   assert.ok(card);
-  assert.equal(card.replace(/<[^>]+>/g, ""), "Seahawks at BulldogsFri, Sep 18, 2020Score · 0-0");
+  assert.equal(card.replace(/<[^>]+>/g, ""), "Seahawks at BulldogsFri, Sep 18, 2020Win · 0-0");
   assert.doesNotMatch(card, /<a\b|<button\b/);
+});
+
+test("past results color only the score with readable Win/Loss labels, leaving uncertain outcomes neutral", () => {
+  const render = (result, score = "28-14") => renderToStaticMarkup(React.createElement(FootballSchedule, {
+    games: [{ id: "past", opponent: "Visitors", date: "2020-09-18", result, score }],
+  }));
+  const win = render("W");
+  const loss = render("L", "8-41");
+  assert.match(win, /data-result="W"[^>]*bg-emerald-100[^>]*text-emerald-800[^>]*>Win · 28-14/);
+  assert.match(loss, /data-result="L"[^>]*bg-red-100[^>]*text-red-800[^>]*>Loss · 8-41/);
+  for (const markup of [win, loss]) assert.doesNotMatch(markup, /<article[^>]*(?:bg-red|bg-emerald)/);
+  assert.match(render("T", "14-14"), /Tie · 14-14/);
+  assert.doesNotMatch(render(null), /bg-red|bg-emerald|Win ·|Loss ·/);
+  assert.doesNotMatch(render("W", ""), /bg-emerald|Win ·/);
+});
+
+test("open weeks remain dated no-game notes, outside game counts, matchups, calendar and travel", async () => {
+  for (const opponent of ["Open Week", " OPEN ", "Bye", "bye-week", "Off week", "No game", "No games scheduled"]) {
+    assert.equal(isFootballOffWeek({ opponent }), true, opponent);
+    assert.equal(hasFootballGame({ id: "off", opponent, date: "2026-10-16" }), false);
+  }
+  assert.equal(isFootballOffWeek({ opponent: "Open Door Christian" }), false);
+  assert.equal(isFootballOffWeek({ opponent: "Byers" }), false);
+  const off = { id: "off", opponent: "Open Week", date: "2026-10-16", homeAway: "away", venue: "Stale venue", address: "Stale address", ticketsLink: "https://example.com/stale", score: "14-7", result: "W" };
+  const actual = { id: "game", opponent: "Walton", date: "2026-10-02", homeAway: "away" };
+  const grouped = groupFootballGames([actual, off], home, Date.parse("2026-09-15T12:00:00Z"));
+  assert.deepEqual(grouped.upcoming.map((game) => game.id), ["game"]);
+  assert.deepEqual(grouped.past, []);
+  assert.equal(footballMatchup(off, home.teamName), "Open week");
+  assert.equal(footballDirections(off, home), null);
+  const html = renderToStaticMarkup(React.createElement(FootballSchedule, { ...home, games: [actual, off] }));
+  assert.equal((html.match(/<article/g) || []).length, 1);
+  const note = html.match(/<aside[\s\S]*?<\/aside>/)?.[0];
+  assert.match(note, /Open week/);
+  assert.match(note, /Oct 16, 2026/);
+  assert.match(note, /No game scheduled/);
+  assert.doesNotMatch(note, /<a\b|<button\b|Seahawks|Stale|14-7|Win/);
+  const savedFetch = global.fetch;
+  let calls = 0;
+  global.fetch = async () => { calls++; throw new Error("Off weeks must not request travel"); };
+  try {
+    assert.deepEqual(await enrichFootballGames([off], home), [off]);
+    const result = await updateFootballGameDetails({
+      games: [off], home, signal: new AbortController().signal,
+      onProgress: () => {}, onUpdate: () => assert.fail("An open week should not be enriched"),
+    });
+    assert.deepEqual(result.games, [off]);
+    assert.equal(calls, 0);
+  } finally { global.fetch = savedFetch; }
+});
+
+test("Walton resolves to the Florida Braves and directions in South Walton's schedule, preserving manual venues", () => {
+  const game = { id: "walton", opponent: "Walton", homeAway: "away", date: "2026-10-02" };
+  const address = "449 Walton Road, DeFuniak Springs, FL 32433";
+  assert.equal(footballMatchup(game, home.teamName), "Seahawks at Braves");
+  assert.equal(footballTeamLabel("Walton", "", "Other School"), "Walton");
+  assert.equal(footballGameLocation(game, { teamName: "Other School" }).address, "");
+  assert.equal(footballGameLocation({ ...game, homeAway: "neutral" }, home).address, "");
+  assert.equal(footballGameLocation({ ...game, venue: "Regional Stadium" }, home).address, "");
+  assert.equal(footballGameLocation({ ...game, address: "123 Custom Road" }, home).address, "123 Custom Road");
+  assert.equal(footballGameLocation(game, home).address, address);
+  const directions = new URL(footballDirections(game, home));
+  assert.equal(directions.searchParams.get("destination"), address);
+  assert.equal(directions.searchParams.get("origin"), home.homeAddress);
+  const markup = renderToStaticMarkup(React.createElement(FootballSchedule, { ...home, games: [game] }));
+  assert.match(markup, /Seahawks at Braves/);
+  assert.match(markup, /Home: Braves/);
+  assert.match(markup, /Walton High School football stadium/);
+  assert.match(markup, /Get directions/);
+  assert.match(markup, /whs.walton.k12.fl.us/);
+  assert.doesNotMatch(markup.replace(/<[^>]+>/g, ""), /449 Walton Road/);
 });
 
 test("ScoreStream previews embed only validated widgets with accessible fallback links", () => {
@@ -447,6 +538,105 @@ const home = {
   timezone: "America/Chicago",
 };
 
+test("season schedule titles include the school year and preserve custom and single-game titles", async () => {
+  const team = "South Walton Seahawks";
+  const title = `${team} Football`;
+  for (const season of ["2026", "2026-2027", "2026/27", "'26-'27", "Fall 2026"]) {
+    assert.equal(resolveFootballTitle(title, team, { season, gameCount: 12 }), `${title} '26-'27 Schedule`);
+  }
+  assert.equal(resolveFootballTitle(title, team, { season: "2026", gameCount: 1 }), title);
+  assert.equal(resolveFootballTitle(title, team, { season: "", gameCount: 12 }), title);
+  assert.equal(resolveFootballTitle("Homecoming Under the Lights", team, { season: "2026", gameCount: 12 }), "Homecoming Under the Lights");
+  assert.equal(resolveFootballTitle(`${title} '26-'27 Schedule`, team, { season: "2026", gameCount: 12 }), `${title} '26-'27 Schedule`);
+  assert.equal(resolveFootballTeamName("Pinecrest High School", "Pinecrest Lions Football '26-'27 Schedule"), "Pinecrest Lions");
+  const imported = await mapParseResultToFootballData({
+    ...emptyParse(), season: "2026", documentProfile: "season_schedule",
+    games: [{ opponent: "Walton", date: "2026-10-02" }, { opponent: "Bay", date: "2026-10-23" }],
+  });
+  assert.equal(imported.title, `${title} '26-'27 Schedule`);
+  assert.equal(imported.extra.season, "2026");
+  assert.deepEqual(imported.advancedSections.games.games.map((game) => game.date), ["2026-10-02", "2026-10-23"]);
+  const fields = footballEditorFields(JSON.parse(JSON.stringify(imported)));
+  assert.equal(fields.title, imported.title);
+  assert.equal(fields.extra.team, team);
+});
+
+test("a schedule-only import leaves Details and Announcements empty while retaining every game", async () => {
+  const data = await mapParseResultToFootballData({
+    ...emptyParse(),
+    documentProfile: "season_schedule",
+    dates: "2026 Matchups and Results",
+    summary: "South Walton High School's 2026 football matchups and results.",
+    season: "2026",
+    games: [
+      { opponent: "Lawton Chiles", date: "8/14", homeAway: "home", result: "W", score: "35-18" },
+      { opponent: "Gulf Breeze", date: "8/21", homeAway: "away", result: "L", score: "13-40" },
+      { opponent: "Arnold", date: "9/18", homeAway: "away" },
+    ],
+  }, buildDefaultFootballDiscoveryData());
+  assert.equal(data.details, "");
+  assert.equal(footballEditorFields(data).details, "");
+  assert.deepEqual(data.advancedSections.announcements.items, []);
+  assert.equal(data.extra.team, "South Walton Seahawks");
+  assert.equal(data.extra.season, "2026");
+  assert.equal(data.advancedSections.games.games.length, 3);
+  assert.equal(data.advancedSections.games.games[0].score, "35-18");
+  assert.equal(data.advancedSections.games.games[2].date, "2026-09-18");
+});
+
+test("supplemental details keep source prose and leave dedicated facts in their own sections", async () => {
+  const data = await mapParseResultToFootballData({
+    ...emptyParse(),
+    dates: "2026 Matchups and Results",
+    additionalDetails: [
+      "South Walton Seahawks", "2026 Matchups and Results", "Senior Night",
+      "Use the north lot.", "Proceeds support the school library.",
+      "Proceeds support the school library.",
+    ],
+    games: [{ opponent: "Pensacola Catholic", notes: "Senior Night" }],
+    logistics: { notes: ["Buses leave from the gym."], parking: "Use the north lot.", weatherPolicy: "Wait indoors during lightning." },
+    volunteers: { notes: "Concession helpers needed.", slots: [] },
+    communications: { announcements: [{ title: "Gate change", body: "Enter through gate B." }] },
+  });
+  assert.equal(data.details, "Proceeds support the school library.");
+  assert.equal(data.advancedSections.logistics.parking, "Use the north lot.");
+  assert.deepEqual(data.advancedSections.logistics.notes, ["Buses leave from the gym."]);
+  assert.equal(data.advancedSections.volunteers.notes, "Concession helpers needed.");
+  assert.deepEqual(data.advancedSections.announcements.items.map((item) => item.text), ["Gate change\n\nEnter through gate B."]);
+  assert.equal(data.advancedSections.games.games[0].notes, "Senior Night");
+});
+
+test("parsing accepts supplemental source excerpts but rejects invented description text", async () => {
+  const previousKey = process.env.OPENAI_API_KEY;
+  process.env.OPENAI_API_KEY = "test-football-parser";
+  const sourceText = "2026 Matchups and Results\n8/14 vs Lawton Chiles (Win, 35-18)\nProceeds support\nthe school library.";
+  footballParseRequests.length = 0;
+  footballParseCompletion = {
+    choices: [{ message: { content: JSON.stringify({
+      ...emptyParse(),
+      dates: "2026 Matchups and Results",
+      additionalDetails: [
+        "2026 Matchups and Results",
+        "South Walton High School's 2026 football matchups and results.",
+        "Proceeds support the school library.",
+      ],
+    }) } }],
+  };
+  try {
+    const { parseResult } = await parseFootballFromExtractedText(sourceText, { textQuality: "good" }, { openAiOnly: true });
+    assert.equal(footballParseRequests.length, 1);
+    const body = footballParseRequests[0];
+    assert.ok(body.response_format.json_schema.schema.properties.additionalDetails);
+    assert.match(body.messages[1].content, /screenshot containing only a game calendar/);
+    const data = await mapParseResultToFootballData(parseResult);
+    assert.equal(data.details, "Proceeds support the school library.");
+  } finally {
+    footballParseCompletion = undefined;
+    if (previousKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = previousKey;
+  }
+});
+
 test("team fields recover a source-supported mascot without mixing schools or guessing", async () => {
   const title = "South Walton Seahawks Football";
   assert.equal(resolveFootballTeamName("South Walton High School Football", title), "South Walton Seahawks");
@@ -465,8 +655,12 @@ test("team fields recover a source-supported mascot without mixing schools or gu
 test("matchup headings use confirmed mascots without a duplicate school matchup", () => {
   const game = { id: "vikings", opponent: "Fort Walton Beach", homeAway: "away" };
   assert.equal(footballMatchup(game, "South Walton High School"), "Seahawks at Vikings");
-  assert.equal(footballMatchup({ ...game, homeAway: "home" }, "South Walton Seahawks"), "Seahawks vs Vikings");
+  assert.equal(footballMatchup({ ...game, homeAway: "home" }, "South Walton Seahawks"), "Vikings at Seahawks");
   assert.equal(footballMatchup({ ...game, homeAway: "neutral" }, "South Walton"), "Seahawks vs Vikings");
+  assert.equal(footballMatchup({ ...game, homeAway: null }, "South Walton"), "Seahawks vs Vikings");
+  const pineForest = { id: "pine-forest", opponent: "Pine Forest", homeAway: "home" };
+  assert.equal(footballMatchup(pineForest, "South Walton Seahawks"), "Pine Forest at Seahawks");
+  assert.equal(footballSchoolMatchup(pineForest, "South Walton High School"), "Pine Forest at South Walton High School");
   assert.equal(footballTeamLabel("Fort Walton Beach High School Football"), "Vikings");
   assert.equal(footballTeamLabel("Gulf Breeze High School"), "Dolphins");
   assert.equal(footballTeamLabel("Palm Beach Central"), "Palm Beach Central");
@@ -480,6 +674,11 @@ test("matchup headings use confirmed mascots without a duplicate school matchup"
   assert.match(markup, /Home: Vikings/);
   assert.doesNotMatch(markup, /South Walton High School at Fort Walton Beach/);
   assert.doesNotMatch(markup, /google\.com\/search|Find tickets|Buy tickets/);
+  const homeMarkup = renderToStaticMarkup(React.createElement(FootballSchedule, {
+    games: [pineForest], teamName: "South Walton Seahawks",
+  }));
+  assert.match(homeMarkup, /<h3[^>]*>Pine Forest at Seahawks<\/h3>/);
+  assert.match(homeMarkup, /Home: Seahawks/);
 });
 
 test("source-provided mascots survive import and editor projection for other schools", async () => {
@@ -580,7 +779,7 @@ test("away and unknown games never inherit the home stadium or fabricate opponen
   assert.equal(footballDirections(away, home), null);
   assert.equal(footballMatchup(away, home.teamName), "Seahawks at Freeport Bulldogs");
 });
-test("game cards include both teams, stadium, directions, mileage, weather, tickets and calendar", () => {
+test("game cards include stadium, directions and guest actions without a drive-summary box", () => {
   const game = {
     id: "away",
     opponent: "Freeport Bulldogs",
@@ -607,17 +806,14 @@ test("game cards include both teams, stadium, directions, mileage, weather, tick
     "Seahawks at Bulldogs",
     "Home: Bulldogs",
     "Bulldog Stadium",
-    "28.4 miles",
-    "Via US 331",
-    "42 min drive",
     "75°F",
     "Add to calendar",
     "Buy tickets",
     "Get directions",
-    "From Home Stadium to Bulldog Stadium · one way",
   ])
     assert.ok(markup.includes(expected), expected);
   const cardText = markup.replace(/<[^>]+>/g, "");
+  assert.doesNotMatch(cardText, /28\.4 miles|Via US 331|42 min drive|From Home Stadium to Bulldog Stadium|one way/);
   assert.ok(!cardText.includes("South Walton Seahawks at Freeport Bulldogs"));
   assert.ok(!cardText.includes(game.address));
   const directions = new URL(footballDirections(game, home));

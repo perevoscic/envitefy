@@ -1,16 +1,42 @@
 .masonry {
   --tile-gap: 1rem;
-  columns: 2;
+  --tile-inset: 0.375rem;
+  --column-count: 2;
+  display: grid;
+  grid-template-columns: repeat(var(--column-count), minmax(0, 1fr));
   column-gap: var(--tile-gap);
+  container-type: inline-size;
+}
+
+.slot {
+  --column: var(--column-2);
+  --preceding-height: var(--height-2);
+  --preceding-count: var(--count-2);
+  --tile-chrome: calc(2 * var(--tile-inset) + 2px);
+  --artwork-width: calc(
+    (100cqw - (var(--column-count) - 1) * var(--tile-gap)) /
+    var(--column-count) -
+    var(--tile-chrome)
+  );
+  grid-column: var(--column);
+  grid-row: 1;
+  align-self: start;
+  min-width: 0;
+  /* Artwork has a known aspect ratio; only its border, inset and gaps need
+     adding. Container units keep this exact without a post-load measurement. */
+  margin-top: calc(
+    var(--preceding-height) *
+    var(--artwork-width) +
+    var(--preceding-count) *
+    (var(--tile-chrome) + var(--tile-gap))
+  );
 }
 
 .tile {
   --tile-ratio: 4 / 5;
   --tile-radius: 1.35rem;
-  --tile-inset: 0.375rem;
   display: block;
   position: relative;
-  break-inside: avoid;
   margin-bottom: var(--tile-gap);
   border: 1px solid rgb(52 45 56 / 12%);
   border-radius: var(--tile-radius);
@@ -91,16 +117,25 @@
 }
 
 @media (min-width: 640px) {
+  .masonry {
+    --tile-inset: 0.5rem;
+  }
+
   .tile {
     --tile-radius: 2rem;
-    --tile-inset: 0.5rem;
   }
 }
 
 @media (min-width: 1024px) {
   .masonry {
     --tile-gap: 1.5rem;
-    columns: 4;
+    --column-count: 4;
+  }
+
+  .masonry:not([data-compact]) > .slot {
+    --column: var(--column-4);
+    --preceding-height: var(--height-4);
+    --preceding-count: var(--count-4);
   }
 }
 
@@ -113,12 +148,12 @@
 /* Editor sidebars keep two compact columns at every browser width. */
 .masonry[data-compact] {
   --tile-gap: 0.75rem;
-  columns: 2;
+  --tile-inset: 0.25rem;
+  --column-count: 2;
 }
 
 .masonry[data-compact] .tile {
   --tile-radius: 1rem;
-  --tile-inset: 0.25rem;
 }
 
 .masonry[data-compact] .selected {

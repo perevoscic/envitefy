@@ -397,6 +397,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [discoverSuccess, setDiscoverSuccess] = useState("");
     const [discoverFile, setDiscoverFile] = useState<File | null>(null);
     const [discoverBusy, setDiscoverBusy] = useState(false);
+    const discoverParsing = useRef(false);
     const [discoverError, setDiscoverError] = useState("");
     const [loadedDiscoverySource, setLoadedDiscoverySource] = useState<Record<string, any> | null>(
       null,
@@ -580,6 +581,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }, [editEventId]);
 
     const resolvedHero = resolveFootballHero(pageTemplateId, data.hero);
+    const resolvedTitle = resolveFootballTitle(data.title, data.extra?.team, {
+      season: data.extra?.season, gameCount: advancedState?.games?.games?.length || 0,
+    });
     const currentTemplate = useMemo(() => getGymMeetTemplateMeta(pageTemplateId), [pageTemplateId]);
     const templateTheme = useMemo(
       () => resolveFootballSeasonTemplateChrome(pageTemplateId),
@@ -601,7 +605,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             type: "envitefy:discovery-preview-patch",
             eventId: editEventId,
             patch: {
-              title: resolveFootballTitle(data.title, data.extra?.team),
+              title: resolvedTitle,
               description: data.details,
               details: data.details,
               guestPlanning: data.guestPlanning,
@@ -654,6 +658,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.extra,
       data.fontSize,
       resolvedHero,
+      resolvedTitle,
       data.rsvpDeadline,
       data.rsvpEnabled,
       data.time,
@@ -695,10 +700,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       eventTitle: data.title,
       eventData: {
         ...data, description: data.details, customFields: data.extra,
-        advancedSections: advancedState, previewDetailsPlaceholder: "Add an event description",
+        advancedSections: advancedState,
+        previewDetailsPlaceholder: !isDiscoveryEdit || data.sectionLayout?.added?.includes("details") ? "Add an event description" : "",
         accessControl: { requirePasscode: data.passcodeRequired },
       },
-    }), [data, advancedState]);
+    }), [data, advancedState, isDiscoveryEdit]);
     const navItems = footballModel.navItems;
 
     const sectionTabs = useFootballSectionTabs(navItems);
@@ -727,7 +733,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     };
 
   useManualEventProgress({
-    snapshot: { data, advancedState, pageTemplateId, loadedDiscoverySource, isDiscoveryEdit },
+    snapshot: { data: { ...data, title: resolvedTitle }, advancedState, pageTemplateId, loadedDiscoverySource, isDiscoveryEdit },
     category: config.category, templateId: config.slug, eventId: editEventId,
     ready: !progressLoading, busy: submitting || discoverBusy,
   });
@@ -797,7 +803,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           normalizeAdvancedSectionsForStorage(advancedState) || advancedState;
         const isDiscoveryUpdate = isDiscoveryEdit;
         const payload: any = {
-          title: resolveFootballTitle(data.title, data.extra?.team) || config.displayName,
+          title: resolvedTitle || config.displayName,
           data: {
             category: config.category,
             displayName: config.displayName,
@@ -954,6 +960,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     }, [
       submitting,
+      resolvedTitle,
       data.date,
       data.time,
       data.title,
@@ -992,7 +999,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     ]);
 
     const buildEventDetails = () => {
-      const title = data.title || config.displayName;
+      const title = resolvedTitle || config.displayName;
       let start: Date | null = null;
       if (data.date) {
         const tentative = new Date(`${data.date}T${data.time || "14:00"}`);
@@ -1170,7 +1177,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             <InputGroup
               key="title"
               label="Headline"
-              value={data.title}
+              value={resolvedTitle}
               onChange={(v) => updateData("title", v)}
               placeholder={`${config.displayName} title`}
             />
@@ -1220,7 +1227,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         </EditorLayout>
       ),
       [
-        data.title,
+        resolvedTitle,
         data.date,
         data.time,
         data.endTime,
@@ -1313,21 +1320,21 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       </EditorLayout>
     );
 
-    const handleDiscoverParse = useCallback(async () => {
-      if (discoverBusy) return;
+    const handleDiscoverParse = async (source: { type: "file"; file: File } | { type: "url"; url: string }) => {
+      if (discoverParsing.current) return;
       setDiscoverError(""); setDiscoverSuccess("");
-      if (discoverMode === "file" && !discoverFile) { setDiscoverError("Choose a file to continue."); return; }
-      if (discoverMode === "url") {
-        try { const url = new URL(discoverUrl.trim()); if (!["https:", "http:"].includes(url.protocol)) throw new Error(); }
+      if (source.type === "url") {
+        try { const url = new URL(source.url.trim()); if (!["https:", "http:"].includes(url.protocol)) throw new Error(); }
         catch { setDiscoverError("Enter a complete http or https website URL."); return; }
       }
+      discoverParsing.current = true;
       setDiscoverBusy(true);
       try {
         const form = new FormData();
-        if (discoverFile) form.append("file", discoverFile);
+        if (source.type === "file") form.append("file", source.file);
         const response = await fetch("/api/football/prefill", {
           method: "POST", credentials: "include",
-          ...(discoverMode === "url" ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: discoverUrl.trim() }) } : { body: form }),
+          ...(source.type === "url" ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: source.url.trim() }) } : { body: form }),
         });
         const result = await readFootballResponse(response, "The import service did not respond. Try the file or URL again; your current details are kept.");
         if (!result.data) throw new Error(result.error || "Unable to read this source.");
@@ -1341,13 +1348,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         setDiscoverSuccess("Source imported. Review your details, then save or publish when ready.");
         setActiveView("main");
       } catch (error) { setDiscoverError(footballErrorMessage(error, "The import service did not respond. Try again; your current details are kept.")); }
-      finally { setDiscoverBusy(false); }
-    }, [discoverBusy, discoverMode, discoverFile, discoverUrl]);
+      finally { discoverParsing.current = false; setDiscoverBusy(false); }
+    };
 
     const renderDiscoverEditor = () => (
       <section aria-label="Import football details" className="w-full rounded-2xl border border-violet-100 bg-violet-50/60 p-4 text-left">
         <p className="text-sm font-semibold text-slate-800">Have your football details already?</p>
-        <form className="mt-3 space-y-3" noValidate onSubmit={(event) => { event.preventDefault(); void handleDiscoverParse(); }}>
+        <form className="mt-3 space-y-3" noValidate onSubmit={(event) => { event.preventDefault(); if (discoverMode === "url") void handleDiscoverParse({ type: "url", url: discoverUrl }); }}>
           <input
             ref={discoverFileInput}
             type="file"
@@ -1361,6 +1368,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               if (!file) return;
               setDiscoverFile(file);
               setDiscoverError("");
+              void handleDiscoverParse({ type: "file", file });
             }}
           />
           <div className="grid grid-cols-2 gap-2" role="tablist" aria-label="Import source">
@@ -1397,16 +1405,21 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           </div>
           <div id={`${discoverId}-file-panel`} role="tabpanel" aria-labelledby={`${discoverId}-file-tab`} hidden={discoverMode !== "file"} className="space-y-2">
             {discoverFile ? <p role="status" className="break-all text-xs leading-5 text-slate-600">Selected: {discoverFile.name}</p> : null}
-            <p className="text-xs text-slate-500">PDF, PNG, JPG, or WebP</p>
+            {!isDiscoveryEdit ? <p className="text-xs text-slate-500">PDF, PNG, JPG, or WebP. Parsing starts as soon as you choose a file.</p> : null}
           </div>
           <div id={`${discoverId}-url-panel`} role="tabpanel" aria-labelledby={`${discoverId}-url-tab`} hidden={discoverMode !== "url"} className="space-y-2">
             <label htmlFor={`${discoverId}-source-url`} className="block text-xs font-semibold text-slate-600">Public football URL</label>
-            <input id={`${discoverId}-source-url`} type="url" value={discoverUrl} disabled={discoverBusy} onChange={(event) => { setDiscoverUrl(event.target.value); setDiscoverError(""); }} placeholder="https://school.edu/athletics/football" autoCapitalize="none" autoCorrect="off" aria-invalid={discoverMode === "url" && !!discoverError} aria-describedby={discoverMode === "url" && discoverError ? `${discoverId}-error` : undefined} className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base font-normal text-slate-900 outline-none focus:ring-2 focus:ring-violet-400" />
+            <input id={`${discoverId}-source-url`} type="url" value={discoverUrl} disabled={discoverBusy} onChange={(event) => { setDiscoverUrl(event.target.value); setDiscoverError(""); }} onPaste={(event) => {
+              const url = event.clipboardData.getData("text").trim();
+              if (!url) return;
+              event.preventDefault();
+              setDiscoverUrl(url);
+              void handleDiscoverParse({ type: "url", url });
+            }} placeholder="https://school.edu/athletics/football" autoCapitalize="none" autoCorrect="off" aria-invalid={discoverMode === "url" && !!discoverError} aria-describedby={`${discoverId}-url-help${discoverMode === "url" && discoverError ? ` ${discoverId}-error` : ""}`} className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base font-normal text-slate-900 outline-none focus:ring-2 focus:ring-violet-400" />
+            <p id={`${discoverId}-url-help`} className="text-xs text-slate-500">Paste a link to start parsing automatically, or type a link and press Enter.</p>
           </div>
           {discoverError ? <p id={`${discoverId}-error`} role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{footballErrorMessage(discoverError, "The previous import failed. Try the file or URL again; your current details are kept.")}</p> : null}
-          <button type="submit" disabled={discoverBusy} className="min-h-11 w-full rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-violet-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 disabled:cursor-wait disabled:opacity-60 motion-reduce:transition-none">{discoverBusy ? "Reading your source…" : discoverMode === "file" ? "Fill from this file" : "Fill from this link"}</button>
           {discoverBusy ? <p role="status" className="text-sm text-slate-600">Reading the source and organizing the schedule. This can take a minute.</p> : null}
-          <p className="text-xs leading-5 text-slate-500">Imported details replace the current details. Your design and hero image stay in place.</p>
         </form>
       </section>
     );
@@ -1548,10 +1561,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }
 
     const renderFootballPage = (readOnly: boolean) => (<FootballSeasonPreviewFrame theme={templateTheme}>
-                  <FootballPageTextProvider text={data.footballPageText} title={data.title} details={data.details} onChange={readOnly || mobileMenuOpen ? undefined : handlePageTextChange}>
+                  <FootballPageTextProvider text={data.footballPageText} title={resolvedTitle} details={data.details} onChange={readOnly || mobileMenuOpen ? undefined : handlePageTextChange}>
                   <FootballHero
                     templateId={pageTemplateId}
-                    title={!editEventId && (!data.title?.trim() || data.title === config.displayName) ? "Your team. Your season." : resolveFootballTitle(data.title, data.extra?.team) || config.displayName}
+                    title={!editEventId && (!data.title?.trim() || data.title === config.displayName) ? "Your team. Your season." : resolvedTitle || config.displayName}
                     subtitle={footballModel.subtitle || "Football season"}
                     metadata={infoLine}
                     details={[addressLine]}
@@ -1561,7 +1574,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     artworkAction={readOnly ? undefined : <HeroImageEditor value={data.hero} onChange={(hero) => setData((prev) => ({ ...prev, hero }))} />}
                     actions={
                       <FootballPageActions
-                        title={resolveFootballTitle(data.title, data.extra?.team)}
+                        title={resolvedTitle}
                         start={data.date && data.time ? `${data.date}T${data.time}` : undefined}
                         timezone={data.timezone || undefined}
                         end={getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)}
@@ -1577,6 +1590,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   {readOnly && navItems.length > 0 ? <div className="px-5 pt-5"><FootballSeasonSectionNav tabs={sectionTabs} shellClassName={templateTheme.navShellClass} activeClassName={templateTheme.navActiveClass} idleClassName={templateTheme.navIdleClass} /></div> : null}
                   <FootballPageContent
                     sections={footballModel.sections}
+                    sectionLayout={sectionLayout}
                     tabs={sectionTabs}
                     chrome={templateTheme}
                     schedule={{

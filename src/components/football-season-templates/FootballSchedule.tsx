@@ -1,25 +1,35 @@
 "use client";
 
-import { CalendarDays, Car, CloudSun, MapPin, Navigation, Ticket } from "lucide-react";
+import { CalendarDays, CloudSun, MapPin, Navigation, Ticket } from "lucide-react";
 import { useEffect, useState } from "react";
 import FootballSectionTabs, { useFootballSectionTabs } from "./FootballSectionTabs";
-import { groupFootballGames, normalizeFootballGameDate } from "@/lib/football-schedule-dates";
+import { formatFootballGameDate, groupFootballGames, normalizeFootballGameDate } from "@/lib/football-schedule-dates";
 import CalendarAction from "@/components/CalendarAction";
 import { buildCalendarLinks } from "@/utils/calendar-links";
 import {
   footballDirections,
-  FOOTBALL_ROUTE_VERSION,
   footballGameContextKey,
   footballGameLocation,
   footballLink,
   footballMatchup,
   footballSchoolMatchup,
   hasFootballGame,
+  isFootballOffWeek,
   type FootballGame,
   type FootballHome,
 } from "@/lib/football-games";
 import { footballTeamLabel } from "@/lib/football-team-name";
 import FootballText from "./FootballPageText";
+
+function ScheduleDate({ value, season }: { value?: string; season?: string }) {
+  const gameDate = normalizeFootballGameDate(value, season);
+  if (!gameDate) return <span>{value?.trim() || <FootballText fallback="Date to be confirmed" />}</span>;
+  return (
+    <time dateTime={gameDate}>
+      {formatFootballGameDate(value, season)}
+    </time>
+  );
+}
 
 export default function FootballSchedule({
   games,
@@ -27,6 +37,9 @@ export default function FootballSchedule({
   ...home
 }: FootballHome & { games: FootballGame[]; cardClassName?: string }) {
   const visibleGames = games.filter(hasFootballGame);
+  const offWeeks = games.filter(isFootballOffWeek).sort((a, b) =>
+    normalizeFootballGameDate(a.date, home.season).localeCompare(normalizeFootballGameDate(b.date, home.season)),
+  );
   const [now, setNow] = useState(() => Date.now());
   const groups = groupFootballGames(visibleGames, home, now);
   const views = [
@@ -66,7 +79,7 @@ export default function FootballSchedule({
       window.removeEventListener("focus", refresh);
     };
   }, []);
-  if (!visibleGames.length) return null;
+  if (!visibleGames.length && !offWeeks.length) return null;
   const buttonClass =
     "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-current/30 px-4 py-2 text-sm font-semibold hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2";
   return (
@@ -91,22 +104,7 @@ export default function FootballSchedule({
               const score = game.score?.trim();
               const matchup = footballMatchup(game, home.teamName, home.teamMascot);
               const gameDate = normalizeFootballGameDate(game.date, home.season);
-              const date = gameDate ? new Date(`${gameDate}T12:00:00Z`) : null;
-              const dateContent = date ? (
-                <time dateTime={gameDate}>
-                  {date.toLocaleDateString("en-US", {
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                    timeZone: "UTC",
-                  })}
-                </time>
-              ) : (
-                <span>
-                  {game.date?.trim() || <FootballText fallback="Date to be confirmed" />}
-                </span>
-              );
+              const dateContent = <ScheduleDate value={game.date} season={home.season} />;
               if (view.id === "past-games") {
                 return (
                   <article key={game.id} className={`min-w-0 ${cardClassName}`}>
@@ -117,9 +115,9 @@ export default function FootballSchedule({
                     </p>
                     <p className="mt-3 text-lg font-bold tabular-nums">
                       {score ? (
-                        <>
-                          <FootballText fallback="Score" /> · {score}
-                        </>
+                        <span data-result={game.result || undefined} className={game.result === "W" ? "inline-block rounded-md bg-emerald-100 px-2 py-0.5 text-emerald-800" : game.result === "L" ? "inline-block rounded-md bg-red-100 px-2 py-0.5 text-red-800" : undefined}>
+                          <FootballText fallback={game.result ? { W: "Win", L: "Loss", T: "Tie" }[game.result] : "Score"} /> · {score}
+                        </span>
                       ) : (
                         <FootballText fallback="Score unavailable" />
                       )}
@@ -128,7 +126,7 @@ export default function FootballSchedule({
                 );
               }
               const schools = footballSchoolMatchup(game, home.teamName);
-              const { venue, address } = footballGameLocation(game, home);
+              const { venue, address, venueSource: knownVenueSource } = footballGameLocation(game, home);
               const directions = game.homeAway === "away" ? footballDirections(game, home) : null;
               const context =
                 game.context?.key === footballGameContextKey(game, home) ? game.context : null;
@@ -138,7 +136,7 @@ export default function FootballSchedule({
                   ? context.weather
                   : null;
               const tickets = footballLink(game.ticketsLink);
-              const venueSource = footballLink(game.venueLookup?.venueSource);
+              const venueSource = footballLink(game.venueLookup?.venueSource || knownVenueSource);
               const ticketsSource = footballLink(game.venueLookup?.ticketsSource);
               const start = gameDate ? gameDate + (game.time ? `T${game.time}` : "") : null;
               const links = start
@@ -156,7 +154,7 @@ export default function FootballSchedule({
                 : null;
               const homeTeam =
                 game.homeAway === "away"
-                  ? footballTeamLabel(game.opponent, game.opponentMascot)
+                  ? footballTeamLabel(game.opponent, game.opponentMascot, home.teamName)
                   : game.homeAway === "home"
                     ? footballTeamLabel(home.teamName, home.teamMascot)
                     : "";
@@ -205,29 +203,6 @@ export default function FootballSchedule({
                     <div className="mt-3 flex items-start gap-2">
                       <MapPin className="mt-0.5 shrink-0" size={17} aria-hidden="true" />
                       <p className="font-semibold">{venue}</p>
-                    </div>
-                  ) : null}
-                  {game.homeAway === "away" &&
-                  context?.miles != null &&
-                  context.routeVersion === FOOTBALL_ROUTE_VERSION ? (
-                    <div className="mt-4 flex items-start gap-3 rounded-xl border border-current/20 p-3">
-                      <Car className="mt-0.5 shrink-0" size={18} aria-hidden="true" />
-                      <div className="min-w-0 text-sm">
-                        <p className="font-bold">
-                          {context.miles.toLocaleString("en-US", { maximumFractionDigits: 1 })}{" "}
-                          miles
-                          {context.minutes != null
-                            ? ` · about ${Math.floor(context.minutes / 60) ? `${Math.floor(context.minutes / 60)} hr ` : ""}${context.minutes % 60} min drive`
-                            : ""}
-                        </p>
-                        {context.routeSummary ? (
-                          <p className="mt-1 font-semibold">Via {context.routeSummary}</p>
-                        ) : null}
-                        <p className="mt-1 leading-relaxed opacity-85">
-                          From {home.homeVenue || "home stadium"} to {venue || "away stadium"} · one
-                          way
-                        </p>
-                      </div>
                     </div>
                   ) : null}
                   {weather ? (
@@ -288,11 +263,6 @@ export default function FootballSchedule({
                       {links ? <CalendarAction links={links} className={buttonClass} /> : null}
                     </div>
                   ) : null}
-                  {tickets && game.venueLookup?.schoolTickets ? (
-                    <p className="mt-2 text-xs leading-relaxed opacity-85">
-                      <FootballText fallback="Opens the host school's ticket page. Choose your game to see availability." />
-                    </p>
-                  ) : null}
                   {venueSource || ticketsSource ? (
                     <div className="mt-2 flex flex-wrap gap-x-4 text-xs">
                       {venueSource ? (
@@ -333,6 +303,19 @@ export default function FootballSchedule({
           </div>
         </div>
       ))}
+      {offWeeks.length ? (
+        <aside aria-label="Open weeks" className="mt-4 rounded-xl border border-current/15 px-4 py-3 text-sm">
+          <ul className="space-y-2">
+            {offWeeks.map((week) => (
+              <li key={week.id} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="font-semibold"><FootballText fallback="Open week" /></span>
+                <span>· <ScheduleDate value={week.date} season={home.season} /></span>
+                <span className="opacity-80">· <FootballText fallback="No game scheduled" /></span>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      ) : null}
     </div>
   );
 }

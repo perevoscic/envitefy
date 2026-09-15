@@ -33,6 +33,7 @@ test("custom URLs normalize readable names and reject unusable or reserved addre
 test("URL suggestions use short matchup names for one game and season names for schedules", () => {
   const input = { teamName: "South Walton High School", season: "2026", games: [{ id: "1", opponent: "Fort Walton Beach", homeAway: "away", date: "2026-09-18" }] };
   assert.equal(suggestFootballPublicSlug(input), "seahawks-at-vikings-2026");
+  assert.equal(suggestFootballPublicSlug({ ...input, games: [{ ...input.games[0], homeAway: "home" }] }), "vikings-at-seahawks-2026");
   assert.equal(suggestFootballPublicSlug({ ...input, games: [...input.games, { id: "2", opponent: "Bayview" }] }), "seahawks-football-2026");
 });
 

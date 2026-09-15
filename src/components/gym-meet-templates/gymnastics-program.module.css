@@ -14,6 +14,7 @@
 .bodyColumns { display: grid; gap: var(--program-gap); align-items: start; }
 .program { display: grid; gap: var(--program-gap); align-items: start; }
 .chapters { display: grid; gap: var(--program-gap); align-items: start; }
+.sectionColumn { container: gym / inline-size; }
 .chapter {
   position: relative;
   padding: clamp(1.2rem, 3cqi, 2.8rem);

@@ -18,6 +18,7 @@
 }
 .palette button,
 .toolbar button,
+.layoutControls button,
 .insertion button,
 .empty button,
 .dialog button,
@@ -68,6 +69,7 @@
 }
 .toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
@@ -90,6 +92,80 @@
 .sectionLabel {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+.canvas {
+  container: event-sections / inline-size;
+}
+.canvas > * {
+  grid-column: 1 / -1;
+}
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+  min-width: 0;
+}
+.cell {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.layoutControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 6px 12px;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  font:
+    500 12px / 1.4 system-ui,
+    sans-serif;
+}
+.layoutControls label {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.layoutControls select {
+  min-height: 44px;
+  max-width: 100%;
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 8px;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+}
+.layoutControls option {
+  color: #322347;
+  background: white;
+}
+.layoutControls button {
+  padding: 4px 6px;
+  border-radius: 8px;
+}
+.layoutControls button:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+.layoutControls :is(button, select):focus-visible,
+.toolbar button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+.layoutHelp {
+  margin-bottom: 16px;
+  color: #665573;
+  font-size: 14px;
+  line-height: 1.5;
+}
+@container event-sections (min-width: 760px) {
+  .row {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+  .cell {
+    grid-column: span var(--section-span, 12);
+  }
 }
 .toolbar button {
   width: 44px;

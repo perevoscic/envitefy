@@ -222,7 +222,7 @@ function FootballDiscoveryBody({
               </div>
             ) : null}
 
-            <FootballPageContent sections={sections} tabs={sectionTabs} chrome={templateChrome} schedule={scheduleProps} attendance={model.attendance} />
+            <FootballPageContent sections={sections} tabs={sectionTabs} chrome={templateChrome} schedule={scheduleProps} attendance={model.attendance} sectionLayout={model.sectionLayout} />
           </div>
         </div>
         <footer className="px-4 py-8 text-center"><EnvitefyEventBranding category="Football" inheritColor /></footer>

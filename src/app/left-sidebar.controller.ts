@@ -137,8 +137,10 @@ export type LeftSidebarControllerViewModel = {
   isCreateEntryActive: boolean;
   isAdmin: boolean;
   createdEventsCount: number;
+  schedulesCount: number;
   invitedEventsCount: number;
   myEventsGrouped: ReturnType<typeof buildGroupedEventLists>["myEvents"];
+  schedulesGrouped: ReturnType<typeof buildGroupedEventLists>["schedules"];
   invitedEventsGrouped: ReturnType<typeof buildGroupedEventLists>["invitedEvents"];
   showPastMyEvents: boolean;
   setShowPastMyEvents: React.Dispatch<React.SetStateAction<boolean>>;
@@ -170,6 +172,7 @@ export type LeftSidebarControllerViewModel = {
   openAiThread: (threadId: string) => void;
   startNewAiChat: () => void;
   openMyEventsPage: () => void;
+  openSchedulesPage: () => void;
   openDraftsPage: () => void;
   onDraftNavigate: () => void;
   openInvitedEventsPage: () => void;
@@ -1133,6 +1136,10 @@ export function useLeftSidebarController({
     () => openCompactEventsPage("myEvents"),
     [openCompactEventsPage],
   );
+  const openSchedulesPage = useCallback(
+    () => openCompactEventsPage("schedules"),
+    [openCompactEventsPage],
+  );
   const openDraftsPage = useCallback(() => {
     clearEventContext();
     setIsCollapsed(false);
@@ -1281,6 +1288,8 @@ export function useLeftSidebarController({
     [history],
   );
   const myEventsGrouped = groupedEventLists.myEvents;
+  const schedulesGrouped = groupedEventLists.schedules;
+  const schedulesCount = countGroupedEventItems(schedulesGrouped.upcoming);
   const invitedEventsGrouped = groupedEventLists.invitedEvents;
   const createdEventsCount = useMemo(
     () => countGroupedEventItems(myEventsGrouped.upcoming),
@@ -1325,6 +1334,9 @@ export function useLeftSidebarController({
         findInSections("invitedEvents", "past", invitedEventsGrouped.past);
       if (invitedMatch) return invitedMatch;
 
+      const scheduleMatch = findInSections("schedules", "upcoming", schedulesGrouped.upcoming);
+      if (scheduleMatch) return scheduleMatch;
+
       const ownedMatch =
         findInSections("myEvents", "upcoming", myEventsGrouped.upcoming) ||
         findInSections("myEvents", "past", myEventsGrouped.past);
@@ -1338,6 +1350,7 @@ export function useLeftSidebarController({
       invitedEventsGrouped.upcoming,
       myEventsGrouped.past,
       myEventsGrouped.upcoming,
+      schedulesGrouped.upcoming,
     ],
   );
 
@@ -1369,8 +1382,9 @@ export function useLeftSidebarController({
     }
     setEventSidebarMode(inferred.source === "invitedEvents" ? "guest" : "owner");
 
-    if (lastEventListRouteSyncPathRef.current === normalizedPathname) return;
-    lastEventListRouteSyncPathRef.current = normalizedPathname;
+    const syncKey = `${normalizedPathname}:${inferred.source}`;
+    if (lastEventListRouteSyncPathRef.current === syncKey) return;
+    lastEventListRouteSyncPathRef.current = syncKey;
     setSidebarPage(inferred.source);
     if (inferred.bucket === "past") {
       if (inferred.source === "invitedEvents") {
@@ -1394,7 +1408,7 @@ export function useLeftSidebarController({
       .toLowerCase();
     if (createdHint !== "true" && createdHint !== "1") return;
     const inferred = findEventListItemFromPath(pathname);
-    if (inferred && inferred.source === "myEvents") {
+    if (inferred && (inferred.source === "myEvents" || inferred.source === "schedules")) {
       const { item, bucket } = inferred;
       const { row } = item;
       const title = row.title || item.title || "Untitled event";
@@ -1408,8 +1422,8 @@ export function useLeftSidebarController({
       setSelectedEventEditHref(resolveEditHref(row.id, row.data, title));
       setActiveEventTab("dashboard");
       setEventSidebarMode("owner");
-      setEventContextSourcePage("myEvents");
-      setSidebarPage("myEvents");
+      setEventContextSourcePage(inferred.source);
+      setSidebarPage(inferred.source);
       if (bucket === "past") {
         setShowPastMyEvents(true);
       }
@@ -1576,6 +1590,7 @@ export function useLeftSidebarController({
   const openOwnerEventContext = useCallback(
     (item: GroupedEventItem) => {
       const { row, openMode } = item;
+      const sourcePage: EventListPage = item.schedule ? "schedules" : "myEvents";
       const title = row.title || "Untitled event";
       const publicHref = item.publicHref || item.href;
       const rowData =
@@ -1594,7 +1609,8 @@ export function useLeftSidebarController({
 
       if (openMode === "preview") {
         clearEventContext();
-        setSidebarPage("myEvents");
+        setEventContextSourcePage(sourcePage);
+        setSidebarPage(sourcePage);
         try {
           router.prefetch?.(publicHref);
         } catch {}
@@ -1609,8 +1625,8 @@ export function useLeftSidebarController({
       setSelectedEventEditHref(resolveEditHref(row.id, row.data, title));
       setActiveEventTab("design");
       setEventSidebarMode("owner");
-      setEventContextSourcePage("myEvents");
-      setSidebarPage("myEvents");
+      setEventContextSourcePage(sourcePage);
+      setSidebarPage(sourcePage);
       const nextHref = buildOwnerEventViewHref(ownerHref, item.productKind);
       const currentPath = typeof window !== "undefined" ? window.location.pathname : pathname;
       if (!String(currentPath || "").startsWith("/event/")) {
@@ -1629,6 +1645,7 @@ export function useLeftSidebarController({
       setSelectedEventId,
       setSelectedEventOwnerHref,
       setSelectedEventTitle,
+      setEventContextSourcePage,
     ],
   );
 
@@ -1805,8 +1822,10 @@ export function useLeftSidebarController({
     isCreateEntryActive,
     isAdmin,
     createdEventsCount,
+    schedulesCount,
     invitedEventsCount,
     myEventsGrouped,
+    schedulesGrouped,
     invitedEventsGrouped,
     showPastMyEvents,
     setShowPastMyEvents,
@@ -1833,6 +1852,7 @@ export function useLeftSidebarController({
     openAiThread,
     startNewAiChat,
     openMyEventsPage,
+    openSchedulesPage,
     openDraftsPage,
     onDraftNavigate,
     openInvitedEventsPage,

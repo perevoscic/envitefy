@@ -8,8 +8,11 @@ const text = (value: unknown) => (typeof value === "string" ? value.trim() : "")
 /** Source facts replace demo values. Appearance is deliberately outside this projection. */
 export function footballEditorFields(source: Source) {
   const extra = { ...record(source.extra), ...record(source.customFields) };
+  const games = record(record(source.advancedSections || extra.advancedSections).games).games;
   delete extra.advancedSections;
-  const title = resolveFootballTitle(text(source.title), text(extra.team));
+  const title = resolveFootballTitle(text(source.title), text(extra.team), {
+    season: text(extra.season), gameCount: Array.isArray(games) ? games.length : 0,
+  });
   extra.team = resolveFootballTeamName(text(extra.team), title);
   const access = record(source.accessControl);
   return {

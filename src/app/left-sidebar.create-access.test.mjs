@@ -202,7 +202,7 @@ test("left sidebar keeps My Events visible on owner event tab routes", () => {
   );
   assert.match(
     controllerSource,
-    /const openOwnerEventContext = useCallback\([\s\S]*?setEventContextSourcePage\("myEvents"\);[\s\S]*?setSidebarPage\("myEvents"\);[\s\S]*?const nextHref = buildOwnerEventViewHref/,
+    /const openOwnerEventContext = useCallback\([\s\S]*?setEventContextSourcePage\(sourcePage\);[\s\S]*?setSidebarPage\(sourcePage\);[\s\S]*?const nextHref = buildOwnerEventViewHref/,
   );
   assert.match(controllerSource, /const ownerNavigationPendingRef = useRef\(false\);/);
   assert.match(
@@ -219,7 +219,7 @@ test("left sidebar keeps My Events visible on owner event tab routes", () => {
   );
   assert.match(
     controllerSource,
-    /setSidebarPage\("myEvents"\);\s*const nextHref = buildOwnerEventViewHref\(ownerHref, item\.productKind\);\s*const currentPath = typeof window !== "undefined" \? window\.location\.pathname : pathname;\s*if \(!String\(currentPath \|\| ""\)\.startsWith\("\/event\/"\)\) \{\s*ownerNavigationPendingRef\.current = true;\s*\}\s*router\.push\(nextHref\);/,
+    /setSidebarPage\(sourcePage\);\s*const nextHref = buildOwnerEventViewHref\(ownerHref, item\.productKind\);\s*const currentPath = typeof window !== "undefined" \? window\.location\.pathname : pathname;\s*if \(!String\(currentPath \|\| ""\)\.startsWith\("\/event\/"\)\) \{\s*ownerNavigationPendingRef\.current = true;\s*\}\s*router\.push\(nextHref\);/,
   );
   assert.match(viewSource, /const showOwnerEventsPanel =/);
   assert.match(

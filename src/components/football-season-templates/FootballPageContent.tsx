@@ -8,6 +8,8 @@ import FootballSchedule from "./FootballSchedule";
 import ScoreStreamScoreboard from "./ScoreStreamScoreboard";
 import type { useFootballSectionTabs } from "./FootballSectionTabs";
 import type { FootballGame, FootballHome } from "@/lib/football-games";
+import type { EventSectionLayout } from "@/lib/event-section-layout";
+import styles from "./football-page-content.module.css";
 
 type Card = {
   id: string;
@@ -54,6 +56,7 @@ export default function FootballPageContent({
   attendance,
   onRemove,
   sectionAction,
+  sectionLayout,
 }: {
   sections: FootballPageSection[];
   tabs: ReturnType<typeof useFootballSectionTabs>;
@@ -62,10 +65,13 @@ export default function FootballPageContent({
   attendance: Attendance;
   onRemove?: (id: string) => void;
   sectionAction?: (id: string) => ReactNode;
+  sectionLayout?: EventSectionLayout;
 }) {
   const builder = useEventSectionBuilder();
   return (
     <EventSectionCanvas className="space-y-4 px-3 pb-5 pt-6 sm:px-5 sm:pb-6 sm:pt-7"
+      layout={sectionLayout}
+      rowProps={(section) => tabs.panelProps(section.id === "rsvp" ? "attendance" : section.id)}
       sections={sections.filter((section) => section.hasContent).map((section) => ({
         id: section.id === "attendance" ? "rsvp" : section.id,
         label: section.label,
@@ -73,8 +79,8 @@ export default function FootballPageContent({
         content: (
           <section
             key={section.id}
-            {...(builder ? { id: section.id } : tabs.panelProps(section.id))}
-            className={`${chrome.sectionClass} scroll-mt-28`}
+            id={section.id}
+            className={`${chrome.sectionClass} ${styles.section} scroll-mt-28`}
           >
             <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
@@ -118,7 +124,7 @@ export default function FootballPageContent({
             ) : section.id === "games" ? (
               <FootballSchedule {...schedule} cardClassName={chrome.sectionCardClass} />
             ) : section.id === "attendance" ? (
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className={styles.attendance}>
                 <article className={chrome.sectionCardClass}>
                   <h3 className={`text-base font-bold ${chrome.sectionTitleClass}`}>
                     <FootballText fallback={attendance.passcodeLabel} />
@@ -177,7 +183,7 @@ export default function FootballPageContent({
                   </div>
                 ) : null}
                 {section.cards?.length ? (
-                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  <div className={styles.cards}>
                     {section.cards.map((card) => {
                       const key = encodeURIComponent(`${section.id}-${card.id}`);
                       return (

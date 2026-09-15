@@ -2,6 +2,7 @@ import {
   FOOTBALL_ROUTE_VERSION,
   footballGameContextKey,
   footballGameLocation,
+  isFootballOffWeek,
   type FootballGame,
   type FootballHome,
 } from "./football-games";
@@ -61,6 +62,7 @@ export async function updateFootballGameDetails({
   let games = sourceGames;
   let home = sourceHome;
   const errors = new Set<string>();
+  if (games.every(isFootballOffWeek)) return { games, home, errors: [] };
   const run = async (batch: FootballGame[], phase: Phase) => {
     signal.throwIfAborted();
     const previous = { games: batch, home };
@@ -116,13 +118,14 @@ export async function updateFootballGameDetails({
   };
 
   onProgress("Finding official ticket links and stadium addresses…");
-  await run(games, "venues");
+  await run(games.filter((game) => !isFootballOffWeek(game)), "venues");
   await travel();
 
   // Search each hosting school once. Existing directory results remain visible
   // while these less predictable searches run, and each success is applied.
   const hosts = new Set<string>();
   const pending = games.filter((game) => {
+    if (isFootballOffWeek(game)) return false;
     const host =
       game.homeAway === "away" ? game.opponent : game.homeAway === "home" ? home.teamName : "";
     if (!host || /^(tbd|tba|bye)$/i.test(host) || hosts.has(host.toLowerCase())) return false;
@@ -144,7 +147,7 @@ export async function updateFootballGameDetails({
         .map((game) => games.find((current) => current.id === game.id) || game),
       "discover",
     );
-    if (found.length) await run(games, "venues");
+    if (found.length) await run(games.filter((game) => !isFootballOffWeek(game)), "venues");
     await travel();
   }
   return { games, home, errors: [...errors] };

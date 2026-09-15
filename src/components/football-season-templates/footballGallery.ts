@@ -2,7 +2,7 @@ import { GYM_MEET_TEMPLATE_LIBRARY } from "./registry";
 import type { GymMeetTemplateId } from "./types";
 
 // Lead with recognizable team, heritage and stadium scenes, then the full collection.
-// Masonry reads down columns; each opening group mixes photographic and illustrated art.
+// The opening rows mix photographic and illustrated art in stable masonry columns.
 const openingDesigns: GymMeetTemplateId[] = [
   "parent-command",
   "homecoming",

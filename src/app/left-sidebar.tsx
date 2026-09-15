@@ -69,6 +69,7 @@ import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { useMenu } from "@/contexts/MenuContext";
 import type { CreationThreadSummary, CreationThreadsResponse } from "@/lib/concierge/types";
 import { isInvitedEventLikeRecord } from "@/lib/dashboard-data";
+import { formatSportsScheduleSummary } from "@/lib/sports-schedule-navigation";
 import { buildEditLink } from "@/utils/event-edit-route";
 import { secureSignOut } from "@/utils/secureSignOut";
 import { useLeftSidebarController } from "./left-sidebar.controller";
@@ -81,6 +82,7 @@ import {
   GroupedEventSection,
   getCreateMenuActiveAccent,
   getChronologicalEventItems,
+  getSidebarEventDateLabels,
   SIDEBAR_BADGE_CLASS,
   SIDEBAR_COLLAPSED_REM,
   SIDEBAR_DIVIDER_CLASS,
@@ -455,12 +457,14 @@ function RootNavigationPanel({
   isSnapUploadActive,
   isAdmin,
   createdEventsCount,
+  schedulesCount,
   draftsCount,
   onHome,
   onSnapUpload,
   onAiThreads,
   onCreate,
   onMyEvents,
+  onSchedules,
   onDrafts,
   onAdmin,
 }: {
@@ -473,12 +477,14 @@ function RootNavigationPanel({
   isSnapUploadActive: boolean;
   isAdmin: boolean;
   createdEventsCount: number;
+  schedulesCount: number;
   draftsCount: number;
   onHome: () => void;
   onSnapUpload: () => void;
   onAiThreads: () => void;
   onCreate: () => void;
   onMyEvents: () => void;
+  onSchedules: () => void;
   onDrafts: () => void;
   onAdmin: () => void;
 }) {
@@ -497,6 +503,9 @@ function RootNavigationPanel({
   const isAdminActive =
     sidebarPage === "admin" || (Boolean(pathname?.startsWith("/admin")) && sidebarPage === "root");
   const isDraftsActive = sidebarPage === "drafts";
+  const isSchedulesActive = sidebarPage === "schedules" ||
+    (sidebarPage === "eventContext" && eventContextSourcePage === "schedules") ||
+    (isViewingEventFromListInRoot && eventContextSourcePage === "schedules");
 
   return (
     <nav aria-label="Main navigation" className="space-y-5 pt-2">
@@ -510,6 +519,7 @@ function RootNavigationPanel({
       </div>
       <div className="space-y-1.5 border-t border-violet-200/40 pt-4">
         <SidebarLink link={{ label: "My Events", icon: <SidebarMyEventsMenuIcon size={20} active={isMyEventsActive} />, onClick: onMyEvents, active: isMyEventsActive, badge: createdEventsCount }} />
+        <SidebarLink link={{ label: "Schedules", icon: <Trophy />, onClick: onSchedules, active: isSchedulesActive, badge: schedulesCount }} />
         <SidebarLink link={{ label: "Drafts", icon: <FileEdit />, onClick: onDrafts, active: isDraftsActive, badge: draftsCount }} />
       </div>
       {isAdmin ? (
@@ -737,6 +747,7 @@ function EventListPanel({
   showPendingBadge,
   pastRowOpacityClass,
   onBack,
+  scheduleList = false,
 }: {
   title: string;
   grouped: { upcoming: GroupedEventSection[]; past: GroupedEventSection[] };
@@ -749,11 +760,10 @@ function EventListPanel({
   showPendingBadge: boolean;
   pastRowOpacityClass: string;
   onBack: () => void;
+  scheduleList?: boolean;
 }) {
   const getMonthLabel = (item: GroupedEventItem) =>
-    Number.isFinite(item.dateMs)
-      ? new Date(item.dateMs).toLocaleDateString(undefined, { month: "short", year: "numeric" })
-      : "Draft";
+    scheduleList && item.schedule ? item.schedule.itemsLabel : getSidebarEventDateLabels(item).heading;
 
   const renderRows = (items: GroupedEventItem[], muted: boolean) =>
     items.map((item, index) => {
@@ -761,9 +771,9 @@ function EventListPanel({
       const CategoryIcon =
         sidebarIconLookup[item.category as keyof typeof sidebarIconLookup] || PartyPopper;
       const monthLabel = getMonthLabel(item);
-      const dateLabel = Number.isFinite(item.dateMs)
-        ? `${item.dateLabel}${item.isDraft ? " · Draft" : ""}`
-        : "Draft";
+      const dateLabel = scheduleList && item.schedule
+        ? formatSportsScheduleSummary(item.schedule)
+        : getSidebarEventDateLabels(item).detail;
       const showMonthDivider = index === 0 || monthLabel !== getMonthLabel(items[index - 1]);
       return (
         <Fragment key={item.row.id}>
@@ -859,7 +869,7 @@ function EventListPanel({
               </div>
             ) : (
               <div className="space-y-1">
-                {renderRows(getChronologicalEventItems(grouped.upcoming), false)}
+                {renderRows(scheduleList ? grouped.upcoming.flatMap((section) => section.items) : getChronologicalEventItems(grouped.upcoming), false)}
               </div>
             )}
 
@@ -1338,7 +1348,9 @@ export default function LeftSidebar() {
       viewModel.eventSidebarMode === "owner");
   const showEventContextPanel =
     viewModel.sidebarPage === "eventContext" &&
-    !(viewModel.eventContextSourcePage === "myEvents" && viewModel.eventSidebarMode === "owner");
+    !(["myEvents", "schedules"].includes(viewModel.eventContextSourcePage) && viewModel.eventSidebarMode === "owner");
+  const showSchedulesPanel = viewModel.sidebarPage === "schedules" ||
+    (viewModel.sidebarPage === "eventContext" && viewModel.eventContextSourcePage === "schedules" && viewModel.eventSidebarMode === "owner");
   const myEventsPanelTransform = showOwnerEventsPanel
     ? "translateX(0%)"
     : viewModel.sidebarPage === "eventContext" && viewModel.eventContextSourcePage === "myEvents"
@@ -1551,12 +1563,14 @@ export default function LeftSidebar() {
                       isSnapUploadActive={isSnapUploadStartActive}
                       isAdmin={viewModel.isAdmin}
                       createdEventsCount={viewModel.createdEventsCount}
+                      schedulesCount={viewModel.schedulesCount}
                       draftsCount={drafts.length}
                       onHome={viewModel.goHomeFromSidebar}
                       onSnapUpload={viewModel.handleRootSnapNavigate}
                       onAiThreads={viewModel.openAiThreadsPage}
                       onCreate={viewModel.openCreateEventPage}
                       onMyEvents={viewModel.openMyEventsPage}
+                      onSchedules={viewModel.openSchedulesPage}
                       onDrafts={viewModel.openDraftsPage}
                       onAdmin={viewModel.openAdminPage}
                     />
@@ -1659,6 +1673,29 @@ export default function LeftSidebar() {
                   </div>
 
                   <div
+                    className={`${SIDEBAR_LIST_PANEL_CLASS} z-[15]`}
+                    style={panelStyle(showSchedulesPanel ? "translateX(0%)" : "translateX(100%)", showSchedulesPanel)}
+                    data-sidebar-detail-panel
+                    inert={viewModel.isCompact || !showSchedulesPanel}
+                    aria-hidden={!showSchedulesPanel}
+                  >
+                    <EventListPanel
+                      title="Schedules"
+                      scheduleList
+                      grouped={viewModel.schedulesGrouped}
+                      emptyStateCopy="Your season schedules will appear here, grouped into Games, Meets, and Matches."
+                      emptyPastCopy="No past schedules."
+                      isHistoryRowActive={viewModel.isHistoryRowActive}
+                      onRowClick={viewModel.openOwnerEventContext}
+                      pastExpanded={viewModel.showPastMyEvents}
+                      setPastExpanded={viewModel.setShowPastMyEvents}
+                      showPendingBadge={false}
+                      pastRowOpacityClass="opacity-75 saturate-75"
+                      onBack={viewModel.backToRoot}
+                    />
+                  </div>
+
+                  <div
                     className={`${SIDEBAR_LIST_PANEL_CLASS} z-[20]`}
                     style={panelStyle(
                       invitedEventsPanelTransform,
@@ -1713,7 +1750,7 @@ export default function LeftSidebar() {
                       backLabel={
                         viewModel.eventContextSourcePage === "invitedEvents"
                           ? "Invited Events"
-                          : "My Events"
+                          : viewModel.eventContextSourcePage === "schedules" ? "Schedules" : "My Events"
                       }
                     />
                   </div>

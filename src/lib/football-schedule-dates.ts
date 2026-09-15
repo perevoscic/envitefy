@@ -1,5 +1,5 @@
-import type { FootballGame, FootballHome } from "./football-games";
-import { parseCalendarDateTimeToIso } from "./calendar-date-time";
+import { isFootballOffWeek, type FootballGame, type FootballHome } from "./football-games.ts";
+import { parseCalendarDateTimeToIso } from "./calendar-date-time.ts";
 
 function calendarDate(year: number, month: number, day: number) {
   const date = new Date(Date.UTC(year, month - 1, day));
@@ -62,6 +62,14 @@ export function normalizeFootballGameDate(value?: string | null, season?: string
   return calendarDate(year, month, day);
 }
 
+export function formatFootballGameDate(value?: string | null, season?: string | null) {
+  const date = normalizeFootballGameDate(value, season);
+  if (!date) return value?.trim() || "Date to be confirmed";
+  return new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", {
+    weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone: "UTC",
+  });
+}
+
 export function footballToday(timezone?: string, now = Date.now()) {
   try {
     const parts = new Intl.DateTimeFormat("en-US", {
@@ -85,6 +93,7 @@ export function groupFootballGames(games: FootballGame[], home: FootballHome, no
     undated: [],
   };
   for (const game of games) {
+    if (isFootballOffWeek(game)) continue;
     const date = normalizeFootballGameDate(game.date, home.season);
     const kickoff = date && home.timezone && /^\d{2}:\d{2}$/.test(game.time || "")
       ? parseCalendarDateTimeToIso(`${date}T${game.time}`, home.timezone) : null;

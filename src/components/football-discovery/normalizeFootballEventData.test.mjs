@@ -5,6 +5,7 @@ import { normalizeFootballEventData } from "./normalizeFootballEventData.mjs";
 test("saved section removals hide content and tabs without losing data needed to restore", () => {
   const original = {
     title: "Falcons Football",
+    details: "Join the team celebration after the final home game.",
     extra: { team: "Falcons", stadium: "Home Field" },
     rsvpEnabled: true,
     accessControl: { requirePasscode: true, mode: "access-code" },
@@ -36,6 +37,34 @@ test("saved section removals hide content and tabs without losing data needed to
     saved.footballHiddenSections = [];
     assert.deepEqual(normalizeFootballEventData({ eventData: saved }), baseline);
   }
+});
+
+test("hero facts do not create a duplicate Details section for schedule-only imports", () => {
+  const original = {
+    title: "South Walton Seahawks Football",
+    extra: {
+      team: "South Walton Seahawks", season: "2026",
+      stadium: "South Walton High School football stadium",
+      stadiumAddress: "645 Greenway Trail, Santa Rosa Beach, FL 32459",
+    },
+    advancedSections: { games: { games: [{ id: "g1", opponent: "Arnold", date: "2026-09-18" }] } },
+  };
+  const model = normalizeFootballEventData({ eventData: original });
+  const details = model.sections.find((section) => section.id === "details");
+  assert.equal(details.hasContent, false);
+  assert.deepEqual(details.cards, []);
+  assert.deepEqual(model.navItems, [{ id: "games", label: "Game Schedule" }]);
+  assert.match(model.subtitle, /South Walton Seahawks.*2026/);
+  assert.match(model.locationLabel, /South Walton High School football stadium.*645 Greenway Trail/);
+  assert.equal(original.extra.stadiumAddress, "645 Greenway Trail, Santa Rosa Beach, FL 32459");
+
+  const authored = normalizeFootballEventData({ eventData: {
+    ...original, details: "Proceeds support the school library.",
+    extra: { ...original.extra, headCoach: "Coach Taylor", contact: "team@example.com" },
+  } });
+  const authoredDetails = authored.sections.find((section) => section.id === "details");
+  assert.deepEqual(authoredDetails.lines, ["Proceeds support the school library."]);
+  assert.deepEqual(authoredDetails.cards.map((card) => card.id), ["headCoach", "contact"]);
 });
 
 test("section visibility handles old records and imported fallback data", () => {
@@ -94,6 +123,17 @@ test("published team summaries and matchups use the mascot already present in th
   assert.equal(model.sections.find((section) => section.id === "games").cards[0].title, "Seahawks at Vikings");
 });
 
+test("saved generic season titles show the school-year schedule name without changing authored titles", () => {
+  const eventData = {
+    title: "South Walton Seahawks Football",
+    extra: { team: "South Walton Seahawks", season: "2026" },
+    advancedSections: { games: { games: [{ id: "1", opponent: "Walton" }, { id: "2", opponent: "Bay" }] } },
+  };
+  assert.equal(normalizeFootballEventData({ eventData }).title, "South Walton Seahawks Football '26-'27 Schedule");
+  assert.equal(normalizeFootballEventData({ eventData: { ...eventData, title: "Seahawks Homecoming" } }).title, "Seahawks Homecoming");
+  assert.equal(eventData.title, "South Walton Seahawks Football");
+});
+
 test("published matchups preserve source-provided multiword mascots", () => {
   const model = normalizeFootballEventData({
     eventData: {
@@ -103,7 +143,7 @@ test("published matchups preserve source-provided multiword mascots", () => {
   });
   assert.equal(model.teamName, "St. Patrick");
   assert.equal(model.teamMascot, "Fighting Irish");
-  assert.equal(model.sections.find((section) => section.id === "games").cards[0].title, "Fighting Irish vs Tigers");
+  assert.equal(model.sections.find((section) => section.id === "games").cards[0].title, "Tigers at Fighting Irish");
   const edited = normalizeFootballEventData({ eventData: {
     customFields: { team: "New School", teamMascot: "" },
     discoverySource: { parseResult: { homeTeam: "St. Patrick", homeMascot: "Fighting Irish" } },
@@ -250,7 +290,6 @@ test("normalizeFootballEventData preserves football discovery sections and visib
   assert.equal(model.attendance.visible, true);
   assert.equal(model.attendance.passcodeRequired, true);
   assert.match(model.sections.find((section) => section.id === "announcements").cards[0].title, /Gate Change/);
-  assert.match(model.sections.find((section) => section.id === "games").cards[0].title, /vs Cougars/);
+  assert.match(model.sections.find((section) => section.id === "games").cards[0].title, /Cougars at Varsity Panthers/);
   assert.match(model.sections.find((section) => section.id === "roster").cards[0].body, /#12/);
 });
-

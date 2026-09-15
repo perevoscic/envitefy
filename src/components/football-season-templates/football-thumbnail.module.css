@@ -14,6 +14,10 @@
   max-width: 86%;
 }
 
+.caption[data-caption-ready="false"] {
+  visibility: hidden;
+}
+
 /* Anchor to the card edges so a resize cannot clip a title while its new
    photograph crop is being sampled. */
 .caption[data-caption-position^="top-"] {

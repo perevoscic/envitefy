@@ -1,4 +1,5 @@
 import { footballTeamLabel } from "./football-team-name.ts";
+import { resolveWaltonFootballProgram } from "./football-walton-program.ts";
 
 export type FootballGame = {
   id: string;
@@ -43,13 +44,19 @@ export type FootballHome = {
 };
 
 export function footballGameLocation(game: FootballGame, home: FootballHome) {
+  if (isFootballOffWeek(game)) return { venue: "", address: "", venueSource: "" };
   const same = (a?: string, b?: string) => a?.trim().toLowerCase() === b?.trim().toLowerCase();
+  const program = game.homeAway === "away" ? resolveWaltonFootballProgram(game.opponent, home.teamName) : null;
+  const useVerifiedVenue = program &&
+    (!game.venue?.trim() || same(game.venue, program.venue) || program.aliases.some((alias) => same(game.venue, alias))) &&
+    (!game.address?.trim() || same(game.address, program.address));
   const useHomeVenue = game.homeAway === "home" && (!game.address?.trim() || same(game.address, home.homeAddress));
   const useHomeAddress = game.homeAway === "home" && (!game.venue?.trim() || same(game.venue, home.homeVenue));
   return {
-    venue: game.venue?.trim() || (useHomeVenue ? home.homeVenue?.trim() : "") || "",
+    venue: game.venue?.trim() || (useHomeVenue ? home.homeVenue?.trim() : "") || (useVerifiedVenue ? program.venue : "") || "",
     address:
-      game.address?.trim() || (useHomeAddress ? home.homeAddress?.trim() : "") || "",
+      game.address?.trim() || (useHomeAddress ? home.homeAddress?.trim() : "") || (useVerifiedVenue ? program.address : "") || "",
+    venueSource: useVerifiedVenue ? program.venueSource : "",
   };
 }
 export function footballGameContextKey(game: FootballGame, home: FootballHome) {
@@ -65,14 +72,17 @@ export function footballGameContextKey(game: FootballGame, home: FootballHome) {
   ]);
 }
 export function footballSchoolMatchup(game: FootballGame, teamName = "") {
+  if (isFootballOffWeek(game)) return "Open week";
   const opponent = game.opponent?.trim() || "";
   if (!opponent) return teamName || "Game";
   if (!teamName) return opponent;
+  if (game.homeAway === "home") return `${opponent} at ${teamName}`;
   return [teamName, game.homeAway === "away" ? "at" : "vs", opponent].filter(Boolean).join(" ");
 }
 export function footballMatchup(game: FootballGame, teamName = "", teamMascot = "") {
+  if (isFootballOffWeek(game)) return "Open week";
   return footballSchoolMatchup(
-    { ...game, opponent: footballTeamLabel(game.opponent, game.opponentMascot) },
+    { ...game, opponent: footballTeamLabel(game.opponent, game.opponentMascot, teamName) },
     footballTeamLabel(teamName, teamMascot),
   );
 }
@@ -88,7 +98,13 @@ export function footballDirections(game: FootballGame, home: FootballHome) {
     params.set("origin", home.homeAddress.trim());
   return `https://www.google.com/maps/dir/?${params}`;
 }
+export function isFootballOffWeek(game: Pick<FootballGame, "opponent">) {
+  return /^(?:open(?:\s+week)?|bye(?:\s+week)?|off(?:\s+week)?|no\s+games?(?:\s+scheduled)?|idle)$/i.test(
+    (game.opponent || "").trim().replace(/[-–—_]+/g, " ").replace(/\s+/g, " "),
+  );
+}
 export function hasFootballGame(game: FootballGame) {
+  if (isFootballOffWeek(game)) return false;
   return Boolean(
     game.opponent?.trim() ||
       game.date?.trim() ||

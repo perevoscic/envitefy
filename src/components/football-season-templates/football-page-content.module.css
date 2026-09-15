@@ -1,0 +1,21 @@
+.section {
+  container: football-section / inline-size;
+  min-width: 0;
+}
+.cards,
+.attendance {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+@container football-section (min-width: 560px) {
+  .cards,
+  .attendance {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container football-section (min-width: 900px) {
+  .cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

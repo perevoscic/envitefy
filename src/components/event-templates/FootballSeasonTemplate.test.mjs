@@ -50,7 +50,7 @@ test("football builder shell uses the gym template selector pipeline and keeps s
   assert.match(customizeSource, /heroHeadingFontStyle/);
   assert.match(customizeSource, /useFootballSectionTabs\(navItems\)/);
   assert.match(customizeSource, /tabs=\{sectionTabs\}/);
-  assert.match(readSource("src/components/football-season-templates/FootballPageContent.tsx"), /tabs\.panelProps\(section\.id\)/);
+  assert.match(readSource("src/components/football-season-templates/FootballPageContent.tsx"), /rowProps=\{\(section\) => tabs\.panelProps\(/);
   assert.match(customizeSource, /\/api\/football\/prefill/);
   assert.match(customizeSource, /footballEditorFields\(result.data\)/);
   assert.match(customizeSource, /config\.advancedSections\?\.map/);
