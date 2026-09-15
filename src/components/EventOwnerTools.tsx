@@ -920,7 +920,7 @@ export default function EventOwnerTools({
   return (
     <main className="min-h-[100dvh] w-full px-3 pb-5 pt-[calc(var(--app-mobile-topbar-offset,4rem)+1.35rem)] text-slate-950 sm:px-6 lg:px-8 lg:py-5">
       <div
-        className="grid w-full min-w-0 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
+        className="grid w-full min-w-0 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(20rem,1fr)]"
       >
         <section className="min-w-0 space-y-3 sm:space-y-4">
           <div>
