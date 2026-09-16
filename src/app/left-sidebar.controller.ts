@@ -48,7 +48,7 @@ import type { EventContextTab, EventRouteAlias } from "./sidebar-context";
 
 const MOBILE_SIDEBAR_SCROLL_LOCK_CLASS = "sidebar-mobile-open";
 const CREATED_EVENT_CONTEXT_STORAGE_KEY = "envitefy:created-event-context:v1";
-const OPEN_MY_EVENTS_SIDEBAR_EVENT = "envitefy:sidebar:open-my-events";
+const OPEN_EVENT_LIST_SIDEBAR_EVENT = "envitefy:sidebar:open-event-list";
 
 type InferredEventListItem = {
   source: EventListPage;
@@ -1535,16 +1535,18 @@ export function useLeftSidebarController({
   }, [clearEventContext, selectedEventId]);
 
   useEffect(() => {
-    const onOpenMyEvents = () => {
-      setEventContextSourcePage("myEvents");
-      setEventSidebarMode("owner");
-      setSidebarPage("myEvents");
+    const onOpenEventList = (event: Event) => {
+      const page = (event as CustomEvent<{ page?: EventListPage }>).detail?.page;
+      if (page !== "myEvents" && page !== "invitedEvents" && page !== "schedules") return;
+      setEventContextSourcePage(page);
+      setEventSidebarMode(page === "invitedEvents" ? "guest" : "owner");
+      setSidebarPage(page);
       setIsCollapsed(false);
     };
 
-    window.addEventListener(OPEN_MY_EVENTS_SIDEBAR_EVENT, onOpenMyEvents);
+    window.addEventListener(OPEN_EVENT_LIST_SIDEBAR_EVENT, onOpenEventList);
     return () => {
-      window.removeEventListener(OPEN_MY_EVENTS_SIDEBAR_EVENT, onOpenMyEvents);
+      window.removeEventListener(OPEN_EVENT_LIST_SIDEBAR_EVENT, onOpenEventList);
     };
   }, [setEventContextSourcePage, setEventSidebarMode, setIsCollapsed, setSidebarPage]);
 

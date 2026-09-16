@@ -48,7 +48,7 @@ export function resolveFootballTeamName(teamName?: string | null, title?: string
 type FootballTitleContext = { season?: string | null; gameCount?: number; isSchedule?: boolean };
 
 /** A school-year schedule label; the title does not change any supplied game dates. */
-function footballSeasonTitleLabel(season?: string | null) {
+export function footballSeasonTitleLabel(season?: string | null) {
   const value = compact(season);
   const years = value.match(/\b((?:19|20)\d{2})(?:\s*[-–—/]\s*['’]?((?:19|20)?\d{2}))?\b/);
   if (years) {
@@ -58,6 +58,17 @@ function footballSeasonTitleLabel(season?: string | null) {
   }
   const shortYears = value.match(/['’]?(\d{2})\s*[-–—/]\s*['’]?(\d{2})/);
   return shortYears ? `'${shortYears[1]}-'${shortYears[2]}` : "";
+}
+
+/** Team and season already appear in the hero caption; keep the saved title intact. */
+export function resolveFootballHeroTitle(title: string, teamName?: string | null) {
+  const heading = compact(title);
+  const team = resolveFootballTeamName(teamName, heading);
+  const scheduleTeam = withoutSchoolSuffix(withoutFootballTitleSuffix(heading));
+  return team && /\bfootball\b.*\bschedule$/i.test(heading) &&
+    scheduleTeam.toLowerCase() === withoutSchoolSuffix(team).toLowerCase()
+    ? "Football Schedule"
+    : heading;
 }
 
 export function resolveFootballTitle(title?: string | null, teamName?: string | null, context: FootballTitleContext = {}) {

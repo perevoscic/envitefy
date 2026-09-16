@@ -178,6 +178,7 @@ function FootballDiscoveryBody({
             <FootballHero
               templateId={pageTemplateId || eventData.pageTemplateId || templateChrome.id}
               title={model.title}
+              teamName={model.teamName}
               subtitle={model.subtitle || "Football season"}
               details={summaryChips}
               heroSrc={eventData.heroImage || eventData.hero}

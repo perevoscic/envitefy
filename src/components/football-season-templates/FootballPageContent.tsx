@@ -30,6 +30,7 @@ export type FootballPageSection = {
   scorestreamWidgetUrl?: string;
 };
 type Chrome = {
+  presentationClass?: string;
   sectionClass: string;
   sectionTitleClass: string;
   sectionTitleStyle?: CSSProperties;
@@ -69,7 +70,7 @@ export default function FootballPageContent({
 }) {
   const builder = useEventSectionBuilder();
   return (
-    <EventSectionCanvas className="space-y-4 px-3 pb-5 pt-6 sm:px-5 sm:pb-6 sm:pt-7"
+    <EventSectionCanvas className={`${chrome.presentationClass || ""} ${styles.canvas}`}
       layout={sectionLayout}
       rowProps={(section) => tabs.panelProps(section.id === "rsvp" ? "attendance" : section.id)}
       sections={sections.filter((section) => section.hasContent).map((section) => ({
@@ -82,11 +83,11 @@ export default function FootballPageContent({
             id={section.id}
             className={`${chrome.sectionClass} ${styles.section} scroll-mt-28`}
           >
-            <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
-              <div className="min-w-0">
+            <div className={styles.sectionHeader}>
+              <div className={styles.headingGroup}>
                 {section.eyebrow ? (
                   <p
-                    className={`text-[10px] font-black uppercase tracking-[0.26em] ${chrome.accentClass}`}
+                    className={`${styles.eyebrow} ${chrome.accentClass}`}
                   >
                     <FootballText
                       textKey={`section:${section.id}:caption`}
@@ -96,7 +97,7 @@ export default function FootballPageContent({
                   </p>
                 ) : null}
                 <h2
-                  className={`mt-2 text-2xl font-black uppercase tracking-tight ${chrome.sectionTitleClass}`}
+                  className={`${styles.sectionTitle} ${chrome.sectionTitleClass}`}
                   style={chrome.sectionTitleStyle}
                 >
                   <FootballText
@@ -118,6 +119,7 @@ export default function FootballPageContent({
                 </button>
               ) : null}
             </div>
+            <div className={styles.sectionBody}>
             {sectionAction?.(section.id)}
             {section.id === "scores" ? (
               <ScoreStreamScoreboard value={section.scorestreamWidgetUrl} />
@@ -161,7 +163,7 @@ export default function FootballPageContent({
             ) : (
               <>
                 {section.lines?.length ? (
-                  <div className="mb-4 space-y-3">
+                  <div className={styles.lines}>
                     {section.lines.map((line, index) => (
                       <p
                         key={`${section.id}-${index}`}
@@ -191,7 +193,7 @@ export default function FootballPageContent({
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="min-w-0">
                               <h3
-                                className={`text-base font-black uppercase tracking-[0.08em] ${chrome.sectionTitleClass}`}
+                                className={`${styles.cardTitle} ${chrome.sectionTitleClass}`}
                                 style={chrome.sectionTitleStyle}
                               >
                                 <FootballText
@@ -270,6 +272,7 @@ export default function FootballPageContent({
                 ) : null}
               </>
             )}
+            </div>
           </section>
         ),
       }))} />

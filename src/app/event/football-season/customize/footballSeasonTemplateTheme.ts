@@ -12,6 +12,7 @@ import {
 import { getGymMeetTitleTypography } from "@/components/football-season-templates/titleTypography";
 import type { GymMeetTitleTypographySpec } from "@/components/football-season-templates/titleTypography";
 import type { GymMeetTemplateId } from "@/components/football-season-templates/types";
+import presentation from "@/components/football-season-templates/football-page-content.module.css";
 
 export type FootballSeasonTemplateTheme = {
   id: GymMeetTemplateId;
@@ -37,6 +38,7 @@ export type FootballSeasonTemplateTheme = {
   sectionTitleStyle?: CSSProperties;
   titleTypography: GymMeetTitleTypographySpec;
   isDark: boolean;
+  presentationClass: string;
 };
 
 const extractTextClass = (className: string, fallback = "text-slate-900") => {
@@ -443,13 +445,20 @@ export const resolveFootballSeasonTemplateChrome = (
   return {
     ...normalizedBase,
     ...design,
+    presentationClass: `${presentation.page} ${presentation[templateId]}`,
+    pageClass: `${design.pageClass} ${presentation.page} ${presentation[templateId]}`,
+    sectionClass: presentation.section,
+    sectionCardClass: presentation.card,
+    navShellClass: `${presentation.navigation} ${presentation.page} ${presentation[templateId]}`,
+    navActiveClass: presentation.activeTab,
+    navIdleClass: presentation.idleTab,
     id: meta.id,
     name: design.name,
     titleClass: `text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl ${design.textClass}`,
     titleStyle: { color: design.ink, textShadow: "none" },
     sectionTitleClass: design.textClass,
-    sectionTitleStyle: { color: design.ink, textShadow: "none" },
-    summaryCardClass: design.sectionCardClass,
+    sectionTitleStyle: { ...titleTypography.fontStyle, color: design.ink, textShadow: "none" },
+    summaryCardClass: presentation.card,
     heroBadgeClass: `inline-flex items-center gap-2 rounded-full border px-3 py-1 ${design.sectionMutedClass}`,
     isDark: parseInt(design.ink.slice(1, 3), 16) > 180,
     titleTypography,

@@ -1566,6 +1566,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     templateId={pageTemplateId}
                     title={!editEventId && (!data.title?.trim() || data.title === config.displayName) ? "Your team. Your season." : resolvedTitle || config.displayName}
                     subtitle={footballModel.subtitle || "Football season"}
+                    teamName={footballModel.teamName}
                     metadata={infoLine}
                     details={[addressLine]}
                     heroSrc={resolvedHero}

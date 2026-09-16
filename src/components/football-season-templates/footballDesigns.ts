@@ -1365,7 +1365,7 @@ export const FOOTBALL_DESIGNS = {
   "paper-stadium": {
     name: "Paper Stadium",
     layout: "editorial",
-    hero: "/images/football/templates/paper-stadium.webp",
+    hero: "/images/football/templates/paper-stadium-v2.webp",
     alt: "Layered paper football stadium in blue and green",
     pageClass: "min-h-screen bg-[#e7eff1] text-[#294857]",
     shellClass: "overflow-hidden rounded-sm border border-[#446e80]/25 bg-[#e7eff1] shadow-xl",
@@ -1450,7 +1450,7 @@ export const FOOTBALL_DESIGNS = {
   "stained-glass-sunday": {
     name: "Stained Glass Sunday",
     layout: "cinematic",
-    hero: "/images/football/templates/stained-glass-sunday.webp",
+    hero: "/images/football/templates/stained-glass-sunday-v2.webp",
     alt: "Jewel-tone stained glass football and sunlit field",
     pageClass: "min-h-screen bg-[#181e30] text-[#fff1d2]",
     shellClass: "overflow-hidden rounded-2xl border border-[#e5bf82]/25 bg-[#181e30] shadow-xl",

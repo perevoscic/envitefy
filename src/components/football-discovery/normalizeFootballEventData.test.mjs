@@ -54,7 +54,7 @@ test("hero facts do not create a duplicate Details section for schedule-only imp
   assert.equal(details.hasContent, false);
   assert.deepEqual(details.cards, []);
   assert.deepEqual(model.navItems, [{ id: "games", label: "Game Schedule" }]);
-  assert.match(model.subtitle, /South Walton Seahawks.*2026/);
+  assert.equal(model.subtitle, "South Walton Seahawks • '26-'27");
   assert.match(model.locationLabel, /South Walton High School football stadium.*645 Greenway Trail/);
   assert.equal(original.extra.stadiumAddress, "645 Greenway Trail, Santa Rosa Beach, FL 32459");
 

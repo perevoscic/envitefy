@@ -25,7 +25,7 @@
       "bytes": 588652,
       "sha256": "30107f279a043e787154fa0fac9f7a4bb8b3133f7dda620fe8aef166d5a8a594",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "copper-kickoff",
@@ -47,7 +47,7 @@
       "bytes": 199154,
       "sha256": "4ae07e301ee8e30db904d141f862d78b4a4ba74d087afb522cab709b1f40962a",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "clay-play",
@@ -69,7 +69,7 @@
       "bytes": 107458,
       "sha256": "ef0980549c86c7f140f6c2130bc66efade8e72d609b9f1f3442acad2a4f81cd3",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "paper-stadium",
@@ -84,14 +84,28 @@
       "scene": "An American football stadium bowl built from many layers of meticulously cut pale blue, forest green and ivory paper, miniature pointed football hovering over the central field, dramatic real paper shadows, isometric architectural papercraft",
       "alt": "Layered paper football stadium in blue and green",
       "prompt": "Use case: stylized-concept\nAsset type: American football event template hero and gallery artwork for Paper Stadium.\nPrimary request: An American football stadium bowl built from many layers of meticulously cut pale blue, forest green and ivory paper, miniature pointed football hovering over the central field, dramatic real paper shadows, isometric architectural papercraft.\nComposition: landscape 3:2, one full-bleed finished artwork. Keep main subject within central 55 percent so a tall mobile thumbnail crop preserves it. Keep one or more outer corners quiet for a later live text title, no baked-in title or caption panel.\nConstraints: American football, not soccer or rugby. Correct pointed football with laces. No text, letters, numbers, logos, watermarks, UI, borders or contact sheet. Distinct premium visual direction.",
-      "src": "/images/football/templates/paper-stadium.webp",
-      "generatedOriginal": "/Users/rj/.codex/generated_images/01a0a752-5fb1-7c43-8223-69c97ad7063d/exec-0a1e6a31-35d7-437b-aef3-e1ef42b59fe1.png",
+      "src": "/images/football/templates/paper-stadium-v2.webp",
+      "generatedOriginal": "/Users/rj/.codex/generated_images/01a0a752-5fb1-7c43-8223-69c97ad7063d/exec-2849ff80-91bd-403a-8d23-b6c77f64cf85.png",
       "width": 1536,
       "height": 1024,
-      "bytes": 249054,
-      "sha256": "fb0913f7a610fe41e26317385467da7cfc776e4daf870f9422a95f5fee3014c4",
+      "bytes": 208082,
+      "sha256": "101a2d37a86f1d395a39d375cba12f15f6aeed45a81ba1041597316b587fb2c7",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true,
+      "earlierVersions": [
+        {
+          "generatedOriginal": "/Users/rj/.codex/generated_images/01a0a752-5fb1-7c43-8223-69c97ad7063d/exec-0a1e6a31-35d7-437b-aef3-e1ef42b59fe1.png",
+          "src": "/images/football/templates/paper-stadium.webp",
+          "width": 1536,
+          "height": 1024,
+          "bytes": 249054,
+          "sha256": "fb0913f7a610fe41e26317385467da7cfc776e4daf870f9422a95f5fee3014c4",
+          "verified": true,
+          "originalRemoved": true,
+          "supersededWebpRemoved": true
+        }
+      ],
+      "refinementPrompt": "Edit the supplied Paper Stadium artwork. Preserve the handcrafted layered blue, cream and green paper stadium, hovering American football, tactile detail, palette and landscape 3:2 dimensions. Recompose the stadium slightly smaller and lower so the entire upper 25 percent of the image is uninterrupted pale blue paper sky, including the central 60 percent that survives a tall center crop. Remove trees, floodlights and any objects from this quiet upper area. The stadium bowl occupies the lower 70 percent and remains detailed and recognizable. No text, lettering, caption bands, borders or added overlay. The quiet sky is part of the original scene."
     },
     {
       "id": "stitched-season",
@@ -113,7 +127,7 @@
       "bytes": 438006,
       "sha256": "f53e16fa862fb9ee207d9db6b86fa4ea16948f2538e43f66eabaf27517c808cf",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "risograph-rush",
@@ -135,7 +149,7 @@
       "bytes": 565460,
       "sha256": "9a33a24f4ecb7d78e0d0ffe55b77ec1262b18b41c80157e0accfea0695a52bb1",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "cyanotype-club",
@@ -157,7 +171,7 @@
       "bytes": 340658,
       "sha256": "4a16c0921d4ac7dc810eabcff4bccd79b0861a5d00f6385cc45197d0de6b290d",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "stained-glass-sunday",
@@ -172,14 +186,28 @@
       "scene": "A glowing secular stained glass sports artwork of a pointed American football centered above a sweeping green field and gold sunburst, jewel sapphire, emerald and amber glass, dark lead outlines and light passing through richly textured glass, no religious symbols",
       "alt": "Jewel-tone stained glass football and sunlit field",
       "prompt": "Use case: stylized-concept\nAsset type: American football event template hero and gallery artwork for Stained Glass Sunday.\nPrimary request: A glowing secular stained glass sports artwork of a pointed American football centered above a sweeping green field and gold sunburst, jewel sapphire, emerald and amber glass, dark lead outlines and light passing through richly textured glass, no religious symbols.\nComposition: landscape 3:2, one full-bleed finished artwork. Keep main subject within central 55 percent so a tall mobile thumbnail crop preserves it. Keep one or more outer corners quiet for a later live text title, no baked-in title or caption panel.\nConstraints: American football, not soccer or rugby. Correct pointed football with laces. No text, letters, numbers, logos, watermarks, UI, borders or contact sheet. Distinct premium visual direction.",
-      "src": "/images/football/templates/stained-glass-sunday.webp",
-      "generatedOriginal": "/Users/rj/.codex/generated_images/01a0a752-5fb1-7c43-8223-69c97ad7063d/exec-02155131-dfd6-4eb9-aa2b-19bbffcc0135.png",
+      "src": "/images/football/templates/stained-glass-sunday-v2.webp",
+      "generatedOriginal": "/Users/rj/.codex/generated_images/01a0a752-5fb1-7c43-8223-69c97ad7063d/exec-3d6726dd-c410-408a-88e3-6e89bc15de34.png",
       "width": 1536,
       "height": 1024,
-      "bytes": 560712,
-      "sha256": "4a099581a354111bd82195a9795d7450a4b42584add72daddd6535dfbd6d5db4",
+      "bytes": 424698,
+      "sha256": "a0a8fcdba775c37bc3dec064173d8980f1a8c1d47efa5f8206934d7db4fe489c",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true,
+      "earlierVersions": [
+        {
+          "generatedOriginal": "/Users/rj/.codex/generated_images/01a0a752-5fb1-7c43-8223-69c97ad7063d/exec-02155131-dfd6-4eb9-aa2b-19bbffcc0135.png",
+          "src": "/images/football/templates/stained-glass-sunday.webp",
+          "width": 1536,
+          "height": 1024,
+          "bytes": 560712,
+          "sha256": "4a099581a354111bd82195a9795d7450a4b42584add72daddd6535dfbd6d5db4",
+          "verified": true,
+          "originalRemoved": true,
+          "supersededWebpRemoved": true
+        }
+      ],
+      "refinementPrompt": "Edit the supplied Stained Glass Sunday artwork. Preserve the jewel-tone secular American football stained-glass illustration with amber football, emerald field and sapphire setting, actual glass texture and landscape 3:2 dimensions. Recompose the focal football and sunburst lower into the middle/lower two-thirds. Make the whole upper 25 percent an area of rich dark sapphire glass with very subtle dark lead seams: no yellow, bright cyan, rays or clouds in that upper area. This naturally dark glass sky must remain uninterrupted across the central 60 percent so white live titles can be read in narrow center crops. Keep the rest vivid and detailed. No actual words, captions, gradient overlay or separate caption band."
     },
     {
       "id": "terrazzo-touchdown",
@@ -201,7 +229,7 @@
       "bytes": 181036,
       "sha256": "1add37c810445da60e5507915f440951b456ffdb338955c117cc47164cdb0dfc",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "origami-offense",
@@ -223,7 +251,7 @@
       "bytes": 110002,
       "sha256": "0391717fff1e7d31981acb666c0cf9e6a4c670bbf0797a1c5cd47010dc33df22",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "velvet-victory",
@@ -245,7 +273,7 @@
       "bytes": 144772,
       "sha256": "0caa034b62d27d86e6fa4128250193a6e979952191bcf987ec1b51cb44dd82ba",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "blue-hour-stands",
@@ -267,7 +295,7 @@
       "bytes": 159042,
       "sha256": "d7053b6b1c9f611e01c9c6ff9a5a381bbd0f94ff7689c48a4761cc9849096b11",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "aerial-playbook",
@@ -289,7 +317,7 @@
       "bytes": 232856,
       "sha256": "b3bd1d2b19738ac6ad1b4130ca1df79bd315bd65952d88379952ba3eaee64a3c",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "locker-room",
@@ -311,7 +339,7 @@
       "bytes": 141594,
       "sha256": "72fb4951a23c7a81c6a51408525bb1d5e6b15dc1fc4513b67fbed0e544f628f6",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "tunnel-vision",
@@ -333,7 +361,7 @@
       "bytes": 147008,
       "sha256": "d26fd931924b682ae4dd84dd170857a8f94b12ed7e941a6fd1ebec74de927e90",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "foggy-morning",
@@ -355,7 +383,7 @@
       "bytes": 120964,
       "sha256": "c43897daf2dee0e80b98727fe2c9a90cae86c78238721e018ddaad27cf4115b3",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "harvest-kickoff",
@@ -377,7 +405,7 @@
       "bytes": 219198,
       "sha256": "0a4876e87950efc2ce556e9e6e4f72908266367e56e2a70d9e90025d98168587",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "riverside-lights",
@@ -399,7 +427,7 @@
       "bytes": 220140,
       "sha256": "c8c3e081681a69de0721c6af8ed74bb043e372592a8aa20df0128688801879b8",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "steel-town",
@@ -421,7 +449,7 @@
       "bytes": 301006,
       "sha256": "2965ba1085cc60c7c89e1953addeb04eeeb0985c9cef73d8e4ae9647f2c215ed",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "desert-moon",
@@ -443,7 +471,7 @@
       "bytes": 309952,
       "sha256": "06d1137fe768007b3e7ef8398bac5373b0ee8a3912faa02823fd3776dbe1f973",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "tropical-touchdown",
@@ -465,7 +493,7 @@
       "bytes": 328952,
       "sha256": "0c73f2aa7d5d6fab076e0740f7eb49eefd5dc4034f9ee7ab5a9406870435d9dc",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "flag-football",
@@ -487,7 +515,7 @@
       "bytes": 192714,
       "sha256": "eaaa0af519ad517bdeae97182a921e3154dde187fa9cd610556c6469ce34b50a",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "backyard-bowl",
@@ -509,7 +537,7 @@
       "bytes": 352270,
       "sha256": "28e164ee22e2f6e0ff96a0a1014aceea5532cc546d018c78d4fe0d78ed233303",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "senior-night",
@@ -531,7 +559,7 @@
       "bytes": 162076,
       "sha256": "e9e3e2dba8d0d0415ce78e6f53a40a6c1f1e97136da16a3326aa912ab22179be",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "saturday-scrapbook",
@@ -553,7 +581,7 @@
       "bytes": 301338,
       "sha256": "809c62bad4fa974d052360899220b1f8dc2494d4fbab3f7edbbc807450bfa34c",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "midcentury-matchup",
@@ -575,7 +603,7 @@
       "bytes": 256856,
       "sha256": "367fe657d4bad6a58dfffe7194fb64fab3abb12e70e4d197078f88ecec2201c6",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "quilted-gridiron",
@@ -597,7 +625,7 @@
       "bytes": 403684,
       "sha256": "16f28694d8b985b9d4dd1479d7abb8db5ca9090a2d4994d0dc68f1a2715e16ae",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "electric-lime",
@@ -619,7 +647,7 @@
       "bytes": 324842,
       "sha256": "93a68b96b6964e28629ca34a354e9d9d22e9ce24dfd19ac827c1d151948a4748",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "monochrome-motion",
@@ -641,7 +669,7 @@
       "bytes": 116112,
       "sha256": "11fd640a84b15b3a14c3807c4d6f2b67d68e175f063fb81c12d764b256d3f034",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     },
     {
       "id": "rooftop-league",
@@ -663,7 +691,37 @@
       "bytes": 340342,
       "sha256": "7cb1a078ca814d2ae57daf3e7e0509cd5501f3396e5cf44d78179d151437a79a",
       "verified": true,
-      "originalRemoved": false
+      "originalRemoved": true
     }
-  ]
+  ],
+  "conversion": {
+    "encoder": "FFmpeg libwebp",
+    "quality": 85,
+    "compressionLevel": 6,
+    "dimensionsPreserved": true,
+    "allOutputsDecoded": true,
+    "generatedOriginalsRemoved": true,
+    "originalsRemoved": 32,
+    "finalWebps": 30
+  },
+  "validation": {
+    "gallery": {
+      "desktopWidth": 1280,
+      "mobileWidth": 390,
+      "all90Reachable": true,
+      "titleClipping": false,
+      "horizontalOverflow": false,
+      "searchVerified": true
+    },
+    "editor": {
+      "sharedRendererAll90": true,
+      "authenticatedBrowserInteraction": "Not tested: signed-out browser session"
+    },
+    "templateTestsPassed": 9,
+    "skinTestPassed": true,
+    "biome": "Passed; two pre-existing informational suggestions in the wording test",
+    "typescript": "No diagnostics in changed template/catalog files; existing errors elsewhere",
+    "vscodeDiagnostics": "Unavailable: Chat to CLI bridge not running",
+    "existingTestFailure": "FootballSeasonTemplate.test.mjs expects sectionHeadingFontStyle, already absent from HEAD editor source"
+  }
 }

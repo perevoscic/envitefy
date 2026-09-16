@@ -34,11 +34,13 @@ export function TemplateMasonryGrid({
 
   return (
     <div data-template-masonry-grid data-compact={compact || undefined} className={styles.masonry}>
-      {Children.map(children, (child, index) => {
+      {Children.map(children, (child) => {
         if (!isValidElement<CardProps>(child)) return child;
         const placement: CSSProperties & Record<`--${string}`, number> = {};
         for (const layout of layouts) {
-          const column = index % layout.columns;
+          // Balance accumulated artwork height instead of card count. A fixed
+          // rotation lets taller designs build a long tail in one column.
+          const column = layout.heights.indexOf(Math.min(...layout.heights));
           placement[`--column-${layout.columns}`] = column + 1;
           placement[`--height-${layout.columns}`] = layout.heights[column];
           placement[`--count-${layout.columns}`] = layout.counts[column];

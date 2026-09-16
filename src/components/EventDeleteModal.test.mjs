@@ -17,7 +17,7 @@ const compiled = ts.transpileModule(
   },
 ).outputText;
 
-function setup() {
+function setup(sourcePage = "myEvents") {
   const calls = [];
   const state = [];
   let cursor = 0;
@@ -48,6 +48,7 @@ function setup() {
     },
     "@/app/sidebar-context": {
       useSidebar: () => ({
+        eventContextSourcePage: sourcePage,
         clearEventContext: () => calls.push(["clear"]),
         setEventContextSourcePage: (page) => calls.push(["list", page]),
       }),
@@ -78,13 +79,21 @@ function setup() {
   return { calls, render, findButton };
 }
 
-for (const success of [true, false]) {
+for (const { sourcePage, success, navigateAfterDelete } of [
+  { sourcePage: "myEvents", success: true, navigateAfterDelete: true },
+  { sourcePage: "schedules", success: true, navigateAfterDelete: true },
+  { sourcePage: "invitedEvents", success: true, navigateAfterDelete: true },
+  { sourcePage: "schedules", success: false, navigateAfterDelete: true },
+  { sourcePage: "schedules", success: true, navigateAfterDelete: false },
+]) {
   test(
-    success
-      ? "successful deletion returns to My Events without selecting another event"
-      : "failed deletion stays on the event and preserves the list",
+    !success
+      ? "failed deletion stays on the event and preserves Schedules"
+      : navigateAfterDelete
+        ? `successful deletion returns to ${sourcePage} without selecting another event`
+        : "deletion without navigation preserves the current sidebar",
     async (t) => {
-      const { calls, render, findButton } = setup();
+      const { calls, render, findButton } = setup(sourcePage);
       t.mock.method(globalThis, "fetch", async (url, options) => {
         calls.push(["request", url, options.method]);
         return { ok: success };
@@ -94,29 +103,39 @@ for (const success of [true, false]) {
         document: globalThis.document,
         alert: globalThis.alert,
       };
-      globalThis.window = { dispatchEvent: (event) => calls.push(["event", event.type]) };
+      globalThis.window = {
+        dispatchEvent: (event) => calls.push(["event", event.type, event.detail]),
+      };
       globalThis.document = { body: {} };
       globalThis.alert = () => calls.push(["alert"]);
       t.mock.method(console, "error", () => {});
       t.after(() => Object.assign(globalThis, originals));
 
-      const closed = render();
+      const props = { navigateAfterDelete };
+      const closed = render(props);
       React.Children.toArray(closed.props.children)[0].props.onClick();
-      const confirm = findButton(render(), "Delete Event");
+      const confirm = findButton(render(props), "Delete Event");
       assert.ok(confirm);
       await confirm.props.onClick();
       assert.deepEqual(calls[0], ["request", "/api/history/test-event", "DELETE"]);
       const destinations = calls.filter(([kind]) => kind === "replace");
-      assert.deepEqual(destinations, success ? [["replace", "/"]] : []);
+      assert.deepEqual(destinations, success && navigateAfterDelete ? [["replace", "/"]] : []);
       if (success) {
         assert.ok(calls.some(([kind, value]) => kind === "event" && value === "history:deleted"));
-        assert.ok(
-          calls.some(
-            ([kind, value]) => kind === "event" && value === "envitefy:sidebar:open-my-events",
-          ),
+        const sidebarEvents = calls.filter(
+          ([kind, value]) => kind === "event" && value.startsWith("envitefy:sidebar:"),
         );
-        assert.ok(calls.some(([kind, value]) => kind === "list" && value === "myEvents"));
-        assert.ok(calls.some(([kind]) => kind === "clear"));
+        assert.deepEqual(
+          sidebarEvents,
+          navigateAfterDelete
+            ? [["event", "envitefy:sidebar:open-event-list", { page: sourcePage }]]
+            : [],
+        );
+        assert.deepEqual(
+          calls.filter(([kind]) => kind === "list"),
+          navigateAfterDelete ? [["list", sourcePage]] : [],
+        );
+        assert.equal(calls.some(([kind]) => kind === "clear"), navigateAfterDelete);
         assert.ok(calls.some(([kind]) => kind === "invalidate"));
       } else {
         assert.deepEqual(

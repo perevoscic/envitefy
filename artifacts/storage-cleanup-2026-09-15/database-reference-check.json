@@ -1,0 +1,276 @@
+{
+  "checkedAt": "2026-09-15T23:47:43.217Z",
+  "mode": "read-only",
+  "tablesChecked": 67,
+  "totalMatchingRows": 0,
+  "tables": [
+    {
+      "table": "admin_marketing_assets",
+      "matchingRows": 0
+    },
+    {
+      "table": "admin_marketing_versions",
+      "matchingRows": 0
+    },
+    {
+      "table": "apple_calendar_subscriptions",
+      "matchingRows": 0
+    },
+    {
+      "table": "attendance_records",
+      "matchingRows": 0
+    },
+    {
+      "table": "audit_logs",
+      "matchingRows": 0
+    },
+    {
+      "table": "calendar_feeds",
+      "matchingRows": 0
+    },
+    {
+      "table": "checklist_items",
+      "matchingRows": 0
+    },
+    {
+      "table": "concierge_drafts",
+      "matchingRows": 0
+    },
+    {
+      "table": "concierge_sessions",
+      "matchingRows": 0
+    },
+    {
+      "table": "conversation_messages",
+      "matchingRows": 0
+    },
+    {
+      "table": "conversation_threads",
+      "matchingRows": 0
+    },
+    {
+      "table": "creation_sessions",
+      "matchingRows": 0
+    },
+    {
+      "table": "dynamic_event_page_versions",
+      "matchingRows": 0
+    },
+    {
+      "table": "dynamic_event_pages",
+      "matchingRows": 0
+    },
+    {
+      "table": "email_campaigns",
+      "matchingRows": 0
+    },
+    {
+      "table": "event_assets",
+      "matchingRows": 0
+    },
+    {
+      "table": "event_discoveries",
+      "matchingRows": 0
+    },
+    {
+      "table": "event_history",
+      "matchingRows": 0
+    },
+    {
+      "table": "event_history_input_blobs",
+      "matchingRows": 0
+    },
+    {
+      "table": "event_metrics_cache",
+      "matchingRows": 0
+    },
+    {
+      "table": "event_occurrences",
+      "matchingRows": 0
+    },
+    {
+      "table": "event_pages",
+      "matchingRows": 0
+    },
+    {
+      "table": "event_public_slug_aliases",
+      "matchingRows": 0
+    },
+    {
+      "table": "event_series",
+      "matchingRows": 0
+    },
+    {
+      "table": "event_shares",
+      "matchingRows": 0
+    },
+    {
+      "table": "event_templates",
+      "matchingRows": 0
+    },
+    {
+      "table": "event_tracking_events",
+      "matchingRows": 0
+    },
+    {
+      "table": "extracted_items",
+      "matchingRows": 0
+    },
+    {
+      "table": "families",
+      "matchingRows": 0
+    },
+    {
+      "table": "family_guardians",
+      "matchingRows": 0
+    },
+    {
+      "table": "form_fields",
+      "matchingRows": 0
+    },
+    {
+      "table": "form_responses",
+      "matchingRows": 0
+    },
+    {
+      "table": "gift_orders",
+      "matchingRows": 0
+    },
+    {
+      "table": "integration_connections",
+      "matchingRows": 0
+    },
+    {
+      "table": "membership_invitations",
+      "matchingRows": 0
+    },
+    {
+      "table": "memberships",
+      "matchingRows": 0
+    },
+    {
+      "table": "message_campaigns",
+      "matchingRows": 0
+    },
+    {
+      "table": "message_deliveries",
+      "matchingRows": 0
+    },
+    {
+      "table": "message_templates",
+      "matchingRows": 0
+    },
+    {
+      "table": "oauth_tokens",
+      "matchingRows": 0
+    },
+    {
+      "table": "participants",
+      "matchingRows": 0
+    },
+    {
+      "table": "password_resets",
+      "matchingRows": 0
+    },
+    {
+      "table": "payment_requests",
+      "matchingRows": 0
+    },
+    {
+      "table": "payments",
+      "matchingRows": 0
+    },
+    {
+      "table": "program_participants",
+      "matchingRows": 0
+    },
+    {
+      "table": "programs",
+      "matchingRows": 0
+    },
+    {
+      "table": "promo_codes",
+      "matchingRows": 0
+    },
+    {
+      "table": "registry_claims",
+      "matchingRows": 0
+    },
+    {
+      "table": "registry_items",
+      "matchingRows": 0
+    },
+    {
+      "table": "reminders",
+      "matchingRows": 0
+    },
+    {
+      "table": "resource_assignments",
+      "matchingRows": 0
+    },
+    {
+      "table": "resource_requirements",
+      "matchingRows": 0
+    },
+    {
+      "table": "resources",
+      "matchingRows": 0
+    },
+    {
+      "table": "rsvp_responses",
+      "matchingRows": 0
+    },
+    {
+      "table": "scan_attempts",
+      "matchingRows": 0
+    },
+    {
+      "table": "scan_diagnostic_jobs",
+      "matchingRows": 0
+    },
+    {
+      "table": "signup_forms",
+      "matchingRows": 0
+    },
+    {
+      "table": "smart_forms",
+      "matchingRows": 0
+    },
+    {
+      "table": "source_documents",
+      "matchingRows": 0
+    },
+    {
+      "table": "stripe_webhook_events",
+      "matchingRows": 0
+    },
+    {
+      "table": "sync_jobs",
+      "matchingRows": 0
+    },
+    {
+      "table": "users",
+      "matchingRows": 0
+    },
+    {
+      "table": "venues",
+      "matchingRows": 0
+    },
+    {
+      "table": "volunteer_boards",
+      "matchingRows": 0
+    },
+    {
+      "table": "volunteer_claims",
+      "matchingRows": 0
+    },
+    {
+      "table": "volunteer_slots",
+      "matchingRows": 0
+    },
+    {
+      "table": "workspaces",
+      "matchingRows": 0
+    }
+  ]
+}

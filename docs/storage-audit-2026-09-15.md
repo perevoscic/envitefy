@@ -54,3 +54,7 @@ The supplied project URL, https://vercel.com/nexa-lyunxs-projects/envitefy, redi
 Vercel's current documentation lists a 1 GB-month Blob storage allowance for Hobby and measures storage as a monthly average. Instantaneous stored bytes do not establish which monthly usage meter triggered a warning: https://vercel.com/docs/vercel-blob/usage-and-pricing.
 
 Detailed inventory and candidate paths are in `/private/tmp/envitefy-blob-inventory-2026-09-15.json` and `/private/tmp/envitefy-blob-cleanup-candidates-2026-09-15.json`. These contain file metadata only, without credentials.
+
+## Follow-up: preview access
+
+The original-image review confirmed that Vercel content reads return **HTTP 403, `Your store is blocked`**, including reads through the official SDK. Listing metadata succeeded earlier, but image bytes cannot currently be displayed or validated. This confirms a blocked store; it does not identify which quota or account condition caused the block. See `generated-invitation-originals-2026-09-15.md` for all 188 original paths and the listed replacement groups. No files were deleted.

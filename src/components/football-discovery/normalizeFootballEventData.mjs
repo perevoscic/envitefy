@@ -1,7 +1,7 @@
 import { groupEventSectionRows, normalizeEventSectionLayout, orderEventSections } from "../../lib/event-section-layout.ts";
 import { footballMatchup, footballSeniorNightNotes, hasFootballGame, isFootballOffWeek } from "../../lib/football-games.ts";
 import { formatFootballGameDate, normalizeFootballGameDate } from "../../lib/football-schedule-dates.ts";
-import { resolveFootballTeamName, resolveFootballTitle } from "../../lib/football-team-name.ts";
+import { footballSeasonTitleLabel, resolveFootballTeamName, resolveFootballTitle } from "../../lib/football-team-name.ts";
 import { parseScoreStreamWidget } from "../../lib/scorestream.ts";
 import { normalizeFootballHiddenSections } from "../../lib/football-section-visibility.ts";
 import { getEventGuestPlanningNotes } from "../../lib/event-guest-planning.ts";
@@ -455,7 +455,7 @@ export function normalizeFootballEventData({
     title: resolveFootballTitle(safeString(eventData?.title || eventTitle), safeString(customFields?.team || eventData?.extra?.team || parseResult?.homeTeam), { season, gameCount: scheduleEntries.length }) || team || "Football Event",
     teamName: team,
     teamMascot,
-    subtitle: compactJoin([team, season, headCoach], " • "),
+    subtitle: compactJoin([team, footballSeasonTitleLabel(season) || season, headCoach], " • "),
     dateLabel: formatDate(eventData?.date || eventData?.startISO) || safeString(parseResult?.dates),
     timeLabel: formatTime(eventData?.time || ""),
     locationLabel: compactJoin([stadium || safeString(eventData?.venue), stadiumAddress], " • "),
