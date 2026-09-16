@@ -399,8 +399,8 @@ export const guidePages: GuidePage[] = [
       "Learn how Envitefy live card invitations combine designed cards, hosted pages, RSVP actions, registry links, maps, and calendar saves.",
     h1: "What are live card invitations?",
     eyebrow: "Live card guide",
-    routeLabel: "Envitefy Concierge",
-    productSurface: "Envitefy Concierge",
+    routeLabel: "Envitefy Create",
+    productSurface: "Envitefy Create",
     heroImage: "/images/studio/editor-preview.webp",
     heroImageAlt: "A designed Envitefy live card invitation preview",
     heroImagePosition: "center",
@@ -420,7 +420,7 @@ export const guidePages: GuidePage[] = [
       },
       {
         heading: "Created from ideas or uploads",
-        body: "Hosts can describe an event to Envitefy Concierge or start from an existing invite, flyer, screenshot, or PDF through Snap.",
+        body: "Hosts can describe an event to Envitefy Create or start from an existing invite, flyer, screenshot, or PDF through Snap.",
       },
       {
         heading: "Why it helps guests",
@@ -431,7 +431,7 @@ export const guidePages: GuidePage[] = [
       {
         label: "Design",
         title: "Pick a visual direction",
-        body: "Use Envitefy Concierge when the invitation should feel polished, personal, and ready to share.",
+        body: "Use Envitefy Create when the invitation should feel polished, personal, and ready to share.",
       },
       {
         label: "Connect",
@@ -479,7 +479,7 @@ export const guidePages: GuidePage[] = [
       "Use the same link after the host updates event information",
       "Share the invite without losing the source of truth",
     ],
-    cta: { label: "Create with Concierge", href: "/chat" },
+    cta: { label: "Create with Envitefy", href: "/chat" },
     secondaryCta: { label: "View showcase", href: "/showcase" },
     relatedLinks: [
       { label: "Live card showcase", href: "/showcase" },
@@ -527,7 +527,7 @@ export const guidePages: GuidePage[] = [
       },
       {
         heading: "How hosts create one",
-        body: "Hosts can start with Envitefy Concierge, Snap/upload, or a category template, then publish a hosted page once the details are ready.",
+        body: "Hosts can start with Envitefy Create, Snap/upload, or a category template, then publish a hosted page once the details are ready.",
       },
       {
         heading: "Where it fits",
@@ -538,7 +538,7 @@ export const guidePages: GuidePage[] = [
       {
         label: "Create",
         title: "Start the event",
-        body: "Use Envitefy Concierge for an event idea, Snap for an upload, or a category template for a structured design.",
+        body: "Use Envitefy Create for an event idea, Snap for an upload, or a category template for a structured design.",
       },
       {
         label: "Enable",
@@ -586,7 +586,7 @@ export const guidePages: GuidePage[] = [
       "Find registries, signups, ticket pages, or forms from one place",
       "Return to a live page instead of a stale invitation image",
     ],
-    cta: { label: "Create with Concierge", href: "/chat" },
+    cta: { label: "Create with Envitefy", href: "/chat" },
     secondaryCta: { label: "Browse examples", href: "/showcase" },
     relatedLinks: [
       { label: "Live card invitations", href: "/guides/live-card-invitations" },
@@ -752,7 +752,7 @@ export const guidePages: GuidePage[] = [
       {
         label: "Create",
         title: "Publish the hosted event page",
-        body: "Build the page with Envitefy Concierge, Snap, or a category template.",
+        body: "Build the page with Envitefy Create, Snap, or a category template.",
       },
       {
         label: "Copy",
@@ -944,7 +944,7 @@ export const guidePages: GuidePage[] = [
     intro:
       "A wedding event page gives guests one current place for the invitation, schedule, registry links, travel details, RSVP actions, maps, and updates.",
     directAnswer:
-      "Use Envitefy to create a hosted wedding page from a wedding template, Envitefy Concierge, or an uploaded invite. Add the visible card, event timing, venue, registry links, RSVP details, and any weekend notes guests need.",
+      "Use Envitefy to create a hosted wedding page from a wedding template, Envitefy Create, or an uploaded invite. Add the visible card, event timing, venue, registry links, RSVP details, and any weekend notes guests need.",
     stats: [
       { value: "1 link", label: "Guest hub" },
       { value: "RSVP", label: "Guest action" },
@@ -961,7 +961,7 @@ export const guidePages: GuidePage[] = [
       },
       {
         heading: "How to start",
-        body: "Choose a wedding template or describe your celebration to Envitefy Concierge. Use Snap when you already have a wedding invite, PDF, or schedule packet.",
+        body: "Choose a wedding template or describe your celebration to Envitefy Create. Use Snap when you already have a wedding invite, PDF, or schedule packet.",
       },
     ],
     steps: [
@@ -1053,7 +1053,7 @@ export const guidePages: GuidePage[] = [
     intro:
       "A birthday RSVP invitation combines the designed invite with guest actions, so parents and guests can respond, save the date, find the map, and return to updates.",
     directAnswer:
-      "Choose a birthday template or use Envitefy Concierge to create the birthday invitation, add party details, then publish a hosted event page with RSVP, calendar, map, and optional gift or registry links.",
+      "Choose a birthday template or use Envitefy Create to create the birthday invitation, add party details, then publish a hosted event page with RSVP, calendar, map, and optional gift or registry links.",
     stats: [
       { value: "Card", label: "Invitation" },
       { value: "RSVP", label: "Response action" },
@@ -1077,7 +1077,7 @@ export const guidePages: GuidePage[] = [
       {
         label: "Choose",
         title: "Pick the birthday style",
-        body: "Choose a birthday template, describe the party to Envitefy Concierge, or upload an existing birthday invite.",
+        body: "Choose a birthday template, describe the party to Envitefy Create, or upload an existing birthday invite.",
       },
       {
         label: "Add",
@@ -1186,7 +1186,7 @@ export const guidePages: GuidePage[] = [
       {
         label: "Create",
         title: "Build or upload the invitation",
-        body: "Use Envitefy Concierge for a new live card or Snap for an existing invite, flyer, screenshot, or PDF.",
+        body: "Use Envitefy Create for a new live card or Snap for an existing invite, flyer, screenshot, or PDF.",
       },
       {
         label: "Add",
@@ -1236,7 +1236,7 @@ export const guidePages: GuidePage[] = [
       "Open the invitation from any browser",
       "Return to current links after updates",
     ],
-    cta: { label: "Create with Concierge", href: "/chat" },
+    cta: { label: "Create with Envitefy", href: "/chat" },
     secondaryCta: { label: "Upload with Snap", href: "/snap" },
     relatedLinks: [
       { label: "Wedding event pages", href: "/guides/wedding-event-page" },

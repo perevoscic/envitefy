@@ -55,7 +55,7 @@ test("live card non-visual updates reuse the current image in the studio generat
 
 test("the retired Studio entry redirects instead of mounting the workspace", () => {
   const pageSource = readSource("src/app/studio/page.tsx");
-  assert.match(pageSource, /permanentRedirect\("\/envitefy-concierge"\)/);
+  assert.match(pageSource, /permanentRedirect\("\/envitefy-create"\)/);
   assert.doesNotMatch(pageSource, /<StudioWorkspace/);
 });
 

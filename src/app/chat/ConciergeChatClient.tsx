@@ -19,7 +19,6 @@ import {
   Loader2,
   type LucideIcon,
   Mic,
-  Plus,
   Sparkles,
   Square,
   Trophy,
@@ -58,6 +57,7 @@ import {
   PromptInputTextarea,
 } from "@/components/ui/ai-prompt-box";
 import { useVisualViewportInsets } from "@/hooks/useVisualViewportInsets";
+import { startChatDictation, type ChatDictation } from "@/lib/chat-dictation";
 import { isExternalPlatformActionRequest as isUnsupportedExternalConciergeRequest } from "@/lib/concierge/creation-intent";
 import { skinLabelForCategoryName, skinLabelForConciergeDraft } from "@/lib/concierge/skins";
 import type {
@@ -525,7 +525,7 @@ async function readConciergeIntakeStream(
   response: Response,
   handlers: ConciergeStreamHandlers,
 ): Promise<ConciergeStreamStatePayload | null> {
-  if (!response.body) throw new Error("Concierge stream did not include a response body.");
+  if (!response.body) throw new Error("Envitefy Create stream did not include a response body.");
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
@@ -548,7 +548,7 @@ async function readConciergeIntakeStream(
       return;
     }
     if (parsed.event === "error") {
-      throw new Error(conciergeClientErrorMessage(data?.error, "Concierge stream failed."));
+      throw new Error(conciergeClientErrorMessage(data?.error, "Envitefy Create stream failed."));
     }
   };
 
@@ -1414,27 +1414,20 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
   const chatPaneRef = useRef<HTMLDivElement | null>(null);
-  const suggestionsRef = useRef<HTMLDetailsElement | null>(null);
+  const dictationRef = useRef<ChatDictation | null>(null);
   const composerCardRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const shouldRefocusComposerRef = useRef(false);
   const responseAbortRef = useRef<AbortController | null>(null);
+  const uploadAbortRef = useRef<AbortController | null>(null);
   const conversationVersionRef = useRef(0);
   useEffect(() => () => {
     conversationVersionRef.current += 1;
     responseAbortRef.current?.abort();
     generationAbortRef.current?.abort();
+    uploadAbortRef.current?.abort();
+    dictationRef.current?.cancel();
     responseAbortRef.current = null;
-  }, []);
-  useEffect(() => {
-    const dismissSuggestions = (event: PointerEvent) => {
-      const panel = suggestionsRef.current;
-      if (panel?.open && event.target instanceof Node && !panel.contains(event.target)) {
-        panel.open = false;
-      }
-    };
-    document.addEventListener("pointerdown", dismissSuggestions);
-    return () => document.removeEventListener("pointerdown", dismissSuggestions);
   }, []);
   const unsentDraftId = useRef<string | null>(null);
   const [input, setInput] = useState("");
@@ -1522,6 +1515,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     );
   });
   const isBusy = isSending || isUploading || isGeneratingCard || isPublishingCard;
+  useEffect(() => {
+    if (isBusy) dictationRef.current?.cancel();
+  }, [isBusy]);
   const progress = useEventProgress({
     snapshot: { draft, studioInvite: draftStudioInvite, messages: chatMessagesForPersistence(messages), input, selectedProductOutput, pendingUpload: pendingChatUpload ? { name: pendingChatUpload.file.name, size: pendingChatUpload.file.size, modified: pendingChatUpload.file.lastModified, source: pendingChatUpload.source } : null },
     ready: !restoringProgress,
@@ -1546,8 +1542,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         ? "Generating invite"
         : isPublishingCard
           ? "Publishing invite"
-          : "Concierge is thinking...";
-  const isThinking = busyLabel === "Concierge is thinking..." && !isStreamingAssistant;
+          : "Envitefy Create is thinking...";
+  const isThinking = busyLabel === "Envitefy Create is thinking..." && !isStreamingAssistant;
   const isCompactEmptyComposer =
     isEmptyState && !input.trim() && !isComposerFocused && !isListening;
   const effectiveSelectedProductOutput = selectedProductOutput || "live_card";
@@ -1591,7 +1587,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     previewImageForDraft(draft);
   const selectedCategoryLabel =
     starterSelectionLabel(selectedStarterCategory) || categoryLabelForDraft(draft);
-  const canStopResponse = isSending && Boolean(responseAbortRef.current);
+  // A committed publish/save cannot be undone by aborting the browser request.
+  const isCommittingEvent = isPublishingCard || (Boolean(liveCardEventId) && isSending);
   const hasComposerSelection = Boolean(selectedStarterCategory || selectedProductOutput);
   const canSubmitComposer = Boolean(input.trim() || hasComposerSelection || pendingChatUpload);
   const selectedSkinLabel =
@@ -1627,6 +1624,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     conversationVersionRef.current += 1;
     responseAbortRef.current?.abort();
     generationAbortRef.current?.abort();
+    uploadAbortRef.current?.abort();
+    dictationRef.current?.cancel();
     responseAbortRef.current = null;
     setStreamingPreviewImage(null);
     setGenerationStage("preparing");
@@ -1657,6 +1656,50 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setMobileView("chat");
     setIsReadyChatComposerOpen(false);
     setMessages([newMessage("assistant", initialAssistantPrompt)]);
+  }
+
+  function handleCancelChat() {
+    if (isCommittingEvent) return;
+    dictationRef.current?.cancel();
+    dictationRef.current = null;
+    if (isListening && !isBusy) return;
+    if (!isBusy) {
+      progress.requestLeave(() => router.push("/"));
+      return;
+    }
+
+    // Invalidate late results before aborting so a stopped request cannot replace
+    // the current draft, clear a newer request's state, or start another stage.
+    conversationVersionRef.current += 1;
+    responseAbortRef.current?.abort();
+    generationAbortRef.current?.abort();
+    uploadAbortRef.current?.abort();
+    responseAbortRef.current = null;
+    generationAbortRef.current = null;
+    uploadAbortRef.current = null;
+    setIsSending(false);
+    setRestoringProgress(false);
+    setIsStreamingAssistant(false);
+    setIsUploading(false);
+    setChatUploadStage("idle");
+    setStreamingPreviewImage(null);
+    setGenerationStage("preparing");
+    setError(null);
+    setFailedRequest(null);
+    setFailedSnapUpload(null);
+    setPhase(
+      draftStudioInvite || liveCardEventId
+        ? "card_ready"
+        : draft && isReadyProductDraft(draft)
+          ? "ready_to_generate"
+          : "collecting_details",
+    );
+    setMobileView("chat");
+    setMessages((current) => [
+      ...current.filter((message) => message.type !== "upload_status" && message.text.trim()),
+      newMessage("system", "Stopped. Your progress is still here; you can keep chatting when you're ready."),
+    ]);
+    focusComposerAtEnd();
   }
 
   function focusComposerAtEnd() {
@@ -1787,6 +1830,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     responseAbortRef.current?.abort();
     responseAbortRef.current = null;
     generationAbortRef.current?.abort();
+    uploadAbortRef.current?.abort();
+    dictationRef.current?.cancel();
     setStreamingPreviewImage(null);
     setGenerationStage("preparing");
 
@@ -1799,6 +1844,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       };
     }
     const targetThreadId = threadId;
+    const restoreController = new AbortController();
+    responseAbortRef.current = restoreController;
     setRestoringProgress(true);
 
     async function restoreThread() {
@@ -1808,13 +1855,14 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         const response = await fetch(
           `/api/creation/intake?threadId=${encodeURIComponent(targetThreadId)}`,
           {
+            signal: restoreController.signal,
             credentials: "include",
           },
         );
         const json = (await response
           .json()
           .catch(() => null)) as CreationSessionResumeResponse | null;
-        if (cancelled || !response.ok || !json?.ok || !json.draft) return;
+        if (cancelled || restoreController.signal.aborted || !response.ok || !json?.ok || !json.draft) return;
 
         const metadata = json.creationSession?.metadata;
         const pending = metadata?.pendingUpload;
@@ -1822,10 +1870,10 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         if (pending && typeof pending === "object" && !Array.isArray(pending)) {
           const file = pending as Record<string, unknown>;
           if (typeof file.url === "string" && typeof file.name === "string" && typeof file.type === "string") {
-            const response = await fetch(file.url);
+            const response = await fetch(file.url, { signal: restoreController.signal });
             if (!response.ok) throw new Error("Your saved upload could not be opened. Please retry opening this draft.");
             const blob = await response.blob();
-            if (cancelled) return;
+            if (cancelled || restoreController.signal.aborted) return;
             setPendingChatUpload({ file: new File([blob], file.name, { type: file.type }), source: file.source === "camera" ? "camera" : "upload" });
           }
         }
@@ -1878,17 +1926,19 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
               ],
         );
       } catch (err) {
-        if (!cancelled) {
+        if (!cancelled && !restoreController.signal.aborted) {
           setError(err instanceof Error ? err.message : "Unable to open AI thread.");
         }
       } finally {
-        if (!cancelled) { setIsSending(false); setRestoringProgress(false); }
+        if (!cancelled && !restoreController.signal.aborted) { setIsSending(false); setRestoringProgress(false); }
+        if (responseAbortRef.current === restoreController) responseAbortRef.current = null;
       }
     }
 
     void restoreThread();
     return () => {
       cancelled = true;
+      restoreController.abort();
     };
   }, [threadId]);
 
@@ -2002,6 +2052,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         },
       },
     ).finally(() => { if (generationAbortRef.current === controller) generationAbortRef.current = null; });
+    controller.signal.throwIfAborted();
+    if (conversationVersion !== conversationVersionRef.current) throw new DOMException("Cancelled", "AbortError");
     const generatedDetails = response.preparedDetails || details;
     const rawImageUrl = response.imageUrl || response.imageDataUrl;
     if (!rawImageUrl) {
@@ -2186,6 +2238,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     const trimmed = message.trim();
     if (!trimmed || !draft) return;
     const conversationVersion = conversationVersionRef.current;
+    const responseController = new AbortController();
+    responseAbortRef.current = responseController;
 
     const fullRedesign = isGeneratedDraftFullRedesignRequest(trimmed);
     const userMessage = newMessage("user", trimmed);
@@ -2199,6 +2253,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setMessages((prev) => [...prev, userMessage]);
     try {
       const response = await fetch(withConciergeTiming(CREATION_INTAKE_URL), {
+        signal: responseController.signal,
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -2288,6 +2343,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       setError(err instanceof Error ? err.message : "Draft update failed.");
     } finally {
       if (conversationVersion === conversationVersionRef.current) {
+        if (responseAbortRef.current === responseController) responseAbortRef.current = null;
         setIsSending(false);
         refocusComposerAfterResponse();
       }
@@ -2361,6 +2417,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   }): Promise<ConciergeStreamStatePayload | null> {
     const message = params.message.trim();
     if (!message && !params.ocrContext) return null;
+    const conversationVersion = conversationVersionRef.current;
 
     setError(null);
     setFailedRequest(null);
@@ -2375,6 +2432,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     }
     setSelectedStarterCategory(null);
     const responseController = new AbortController();
+    responseAbortRef.current = responseController;
     let streamAssistantId: string | null = null;
     let streamedAssistantText = "";
     try {
@@ -2447,7 +2505,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         (action === "message" || action === "chip" || action === "starter_category");
 
       if (shouldStream) {
-        responseAbortRef.current = responseController;
         const assistantPlaceholder = newMessage("assistant", "");
         streamAssistantId = assistantPlaceholder.id;
         setMessages((prev) => [...prev, assistantPlaceholder]);
@@ -2460,7 +2517,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         });
         if (!response.ok) {
           const payload = await response.json().catch(() => null);
-          throw new Error(conciergeClientErrorMessage(payload?.error || payload, "Concierge request failed."));
+          throw new Error(conciergeClientErrorMessage(payload?.error || payload, "Envitefy Create request failed."));
         }
         const finalState = await readConciergeIntakeStream(response, {
           onDelta: (text) => {
@@ -2500,20 +2557,22 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             setPhase(isReady ? "ready_to_generate" : "collecting_details");
           },
         });
-        if (!finalState) throw new Error("Concierge stream ended before draft state arrived.");
+        if (!finalState) throw new Error("Envitefy Create stream ended before draft state arrived.");
         return finalState;
       }
 
       const response = await fetch(withConciergeTiming(CREATION_INTAKE_URL), {
+        signal: responseController.signal,
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(requestBody),
       });
       const json = (await response.json().catch(() => null)) as ConciergeMessageResponse | null;
+      if (conversationVersion !== conversationVersionRef.current) return null;
       if (!response.ok || !json?.ok) {
         throw new Error(
-          conciergeClientErrorMessage(json && !json.ok ? json.error : json, "Concierge request failed."),
+          conciergeClientErrorMessage(json && !json.ok ? json.error : json, "Envitefy Create request failed."),
         );
       }
       setDraft(json.draft);
@@ -2534,6 +2593,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       if (!json.chatMessages?.length) setMessages((prev) => [...prev, assistantMessage]);
       return json;
     } catch (err) {
+      if (conversationVersion !== conversationVersionRef.current) return null;
       if (responseController.signal.aborted) {
         if (responseAbortRef.current !== responseController) return null;
         setMessages((prev) => [
@@ -2543,7 +2603,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         setPhase(draft && isReadyProductDraft(draft) ? "ready_to_generate" : draft ? "collecting_details" : "intake_empty");
         return null;
       }
-      const errorMessage = conciergeClientErrorMessage(err, "Concierge request failed.");
+      const errorMessage = conciergeClientErrorMessage(err, "Envitefy Create request failed.");
       setPhase(draft ? "collecting_details" : "intake_empty");
       if (streamAssistantId) {
         setMessages((prev) => prev.filter((item) => item.id !== streamAssistantId));
@@ -2552,7 +2612,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       setFailedRequest({ ...params, error: errorMessage });
       return null;
     } finally {
-      if (!responseController.signal.aborted || responseAbortRef.current === responseController) {
+      if (conversationVersion === conversationVersionRef.current) {
         if (responseAbortRef.current === responseController) responseAbortRef.current = null;
         setIsStreamingAssistant(false);
         setIsSending(false);
@@ -2672,7 +2732,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   }
 
   async function submitComposerInput() {
-    if (isBusy) return;
+    if (isBusy || isListening) return;
     const typedValue = input.trim();
     if (pendingChatUpload) {
       const upload = pendingChatUpload;
@@ -2730,23 +2790,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     await submitComposerInput();
   }
 
-  function handleStarterPrompt(tile: CelebrationStarterTile) {
-    if (isBusy) return;
-    setError(null);
-    if ("action" in tile && tile.action === "upload") {
-      setPendingChatUpload(null);
-      const isSelected = isUploadStarterTile(selectedStarterCategory);
-      setSelectedStarterCategory(isSelected ? null : tile);
-      updateComposerSelection();
-      return;
-    }
-    setPendingChatUpload(null);
-    setPendingUploadSubmission(null);
-    const isSelected = selectedStarterCategory?.label === tile.label;
-    setSelectedStarterCategory(isSelected ? null : tile);
-    updateComposerSelection();
-  }
-
   function handleStarterProductChoice(option: ProductOption) {
     if (isBusy) return;
     setSelectedProductOutput(option.output);
@@ -2760,35 +2803,20 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   }
 
   function handleVoiceInput() {
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setError("Voice input is not supported in this browser.");
+    if (isBusy) return;
+    if (isListening) {
+      dictationRef.current?.stop();
       return;
     }
-
+    dictationRef.current?.cancel();
     setError(null);
-    setIsListening(true);
-    const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = window.navigator.language || "en-US";
-    recognition.onresult = (event: any) => {
-      const transcript = Array.from(event.results || [])
-        .map((result: any) => result?.[0]?.transcript)
-        .filter(Boolean)
-        .join(" ")
-        .trim();
-      if (!transcript) return;
-      setInput((current) => (current.trim() ? `${current.trim()} ${transcript}` : transcript));
-    };
-    recognition.onerror = () => {
-      setError("Voice input was not captured.");
-    };
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-    recognition.start();
+    dictationRef.current = startChatDictation(window, {
+      onTranscript: (transcript) => {
+        setInput((current) => (current.trim() ? `${current.trim()} ${transcript}` : transcript));
+      },
+      onListeningChange: setIsListening,
+      onError: setError,
+    });
   }
 
   function handleSelectedSnapFile(file: File | null | undefined, source: "camera" | "upload") {
@@ -2835,6 +2863,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     userEchoOverride?: string,
   ) {
     if (!file || isBusy) return;
+    const conversationVersion = conversationVersionRef.current;
     const validationError = validateClientUploadFile(file, "attachment");
     if (validationError) {
       setError(validationError);
@@ -2845,6 +2874,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setFailedRequest(null);
     setFailedSnapUpload(null);
     setIsUploading(true);
+    const uploadController = new AbortController();
+    uploadAbortRef.current = uploadController;
     setChatUploadStage("preparing_upload");
     const uploadPreviewUrl = createObjectUrlPreview(file);
     setUploadedPreviewImageUrl(uploadPreviewUrl);
@@ -2879,7 +2910,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
           fileType: file.type,
         },
       });
-      const ocrResult = await runSnapOcrUpload({ file, scanAttemptId });
+      const ocrResult = await runSnapOcrUpload({ file, scanAttemptId, signal: uploadController.signal });
+      if (conversationVersion !== conversationVersionRef.current) return;
       setChatUploadStage("ocr_ready");
       updateUploadStatus("Reading upload...");
       const uploadInstruction = uploadPrompt.trim()
@@ -2892,6 +2924,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         requestedOutputs: [uploadRequestedOutput],
         suppressUserEcho: true,
       });
+      if (conversationVersion !== conversationVersionRef.current) return;
       if (!intakeResult?.ok) {
         throw new Error("I scanned the file, but couldn't turn it into event details.");
       }
@@ -2914,6 +2947,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         setChatUploadStage("success");
       }
     } catch (err) {
+      if (conversationVersion !== conversationVersionRef.current) return;
       clearUploadStatus();
       setChatUploadStage("error");
       reportClientLog({
@@ -2943,11 +2977,14 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         ),
       ]);
     } finally {
-      setIsUploading(false);
-      setChatUploadStage((current) =>
-        current === "error" || current === "success" ? current : "idle",
-      );
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (uploadAbortRef.current === uploadController) uploadAbortRef.current = null;
+      if (conversationVersion === conversationVersionRef.current) {
+        setIsUploading(false);
+        setChatUploadStage((current) =>
+          current === "error" || current === "success" ? current : "idle",
+        );
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
     }
   }
 
@@ -2965,7 +3002,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
 
   const chatThread = (
     <div
-      className="flex min-h-full w-full min-w-0 flex-col justify-start gap-5 px-4 py-8 sm:px-6"
+      className="mx-auto flex min-h-full w-full min-w-0 max-w-3xl flex-col justify-start gap-5 px-4 py-8 sm:px-6"
       role="log"
       aria-live="polite"
       aria-relevant="additions text"
@@ -3061,7 +3098,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         >
           <ConciergeChatAvatar />
           <div className="min-w-0 max-w-[94%] rounded-3xl rounded-tl-md border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800 shadow-sm sm:max-w-[88%]">
-            <p className="font-semibold">Concierge could not finish that request.</p>
+            <p className="font-semibold">Envitefy Create could not finish that request.</p>
             <p>{failedRequest.error}</p>
             <button
               type="button"
@@ -3177,9 +3214,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const composer = (
     <div
       className={cn(
-        "pointer-events-none z-30 mx-auto flex w-full min-w-0 shrink-0 flex-col items-stretch px-2 pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+0.75rem)] pt-4 sm:px-6 sm:pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+2rem)]",
+        "pointer-events-none z-30 mx-auto flex w-full min-w-0 max-w-3xl shrink-0 flex-col items-stretch px-2 pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+0.75rem)] pt-4 sm:px-6 sm:pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+2rem)]",
         isEmptyState &&
-          "mb-auto max-w-3xl !pb-6 !pt-0",
+          "mb-auto !pb-6 !pt-0",
       )}
     >
       <div ref={composerCardRef} className="pointer-events-auto relative w-full">
@@ -3251,66 +3288,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             >
               {selectionPills}
               <div className="flex min-w-0 items-center gap-2">
-                <details
-                  ref={suggestionsRef}
-                  className="group/suggestions shrink-0"
-                  onBlur={(event) => {
-                    if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false;
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Escape") {
-                      event.preventDefault();
-                      event.currentTarget.open = false;
-                      event.currentTarget.querySelector("summary")?.focus();
-                    }
-                  }}
-                >
-                  <summary
-                    aria-label="Add an upload or choose suggestions"
-                    title="Uploads and suggestions"
-                    className="flex size-11 cursor-pointer list-none items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] group-open/suggestions:bg-[#eee7ff] [&::-webkit-details-marker]:hidden"
-                  >
-                    <Plus className="size-5 transition-transform group-open/suggestions:rotate-45" aria-hidden="true" />
-                  </summary>
-                  <div className="absolute bottom-[calc(100%+0.75rem)] left-0 z-50 max-h-[min(25rem,42dvh)] w-[min(22rem,100%)] overflow-y-auto rounded-2xl border border-[#e6dff0] bg-white p-2 text-left shadow-[0_16px_48px_rgba(55,35,90,0.16)]">
-                    <button
-                      type="button"
-                      disabled={isBusy}
-                      onClick={() => {
-                        if (suggestionsRef.current) suggestionsRef.current.open = false;
-                        openSnapUploadPicker();
-                      }}
-                      className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-[#413653] hover:bg-[#f5f1fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:opacity-50"
-                    >
-                      <Upload className="size-4" aria-hidden="true" />
-                      Upload a file or invitation
-                      {pendingChatUpload ? <span className="ml-auto text-[#5c5be5]">+1</span> : null}
-                    </button>
-                    <p className="px-3 pb-2 pt-3 text-xs font-medium text-[#8b7ca6]">Start with an occasion</p>
-                    <div className="grid grid-cols-2 gap-1" role="group" aria-label="Choose celebration category">
-                      {CELEBRATION_STARTER_TILES.filter((tile) => !("action" in tile && tile.action === "upload")).map((tile) => {
-                        const Icon = tile.icon;
-                        return (
-                          <button
-                            key={tile.label}
-                            type="button"
-                            disabled={isBusy}
-                            aria-pressed={selectedStarterCategory?.label === tile.label}
-                            onClick={() => {
-                              handleStarterPrompt(tile);
-                              if (suggestionsRef.current) suggestionsRef.current.open = false;
-                              focusComposerAtEnd();
-                            }}
-                            className="flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm text-[#625579] hover:bg-[#f5f1fb] aria-pressed:bg-[#eee7ff] aria-pressed:text-[#5c5be5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:opacity-50"
-                          >
-                            <Icon className="size-4 shrink-0" />
-                            {tile.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </details>
                 <PromptInputTextarea
                   placeholder={
                     liveCardEventId
@@ -3323,73 +3300,42 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                   onFocus={() => setIsComposerFocused(true)}
                   onBlur={() => setIsComposerFocused(false)}
                   className={cn(
-                    "min-h-[44px] min-w-0 flex-1 px-3 py-2.5 text-base !text-[#25183a] caret-[#5c5be5] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6] [&::placeholder]:text-[0.82rem] sm:min-w-[12rem] sm:[&::placeholder]:text-base",
+                    "min-h-[44px] min-w-0 flex-1 px-3 py-2.5 text-base !text-[#25183a] caret-[#5c5be5] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6] [&::placeholder]:text-[0.82rem] sm:[&::placeholder]:text-base",
                     isCompactEmptyComposer &&
                       "max-md:min-h-11 max-md:px-2 max-md:py-2.5 max-md:text-base max-md:[&::placeholder]:text-[0.78rem]",
                   )}
                 />
-                <PromptInputActions className="ml-auto shrink-0 justify-end gap-2">
-                  <PromptInputAction
-                    tooltip={
-                      canStopResponse
-                        ? "Stop response"
-                        : isBusy
-                        ? busyLabel
-                        : canSubmitComposer
-                          ? "Send message"
-                          : isListening
-                            ? "Listening"
-                            : "Voice message"
-                    }
-                  >
+                <PromptInputActions className="ml-auto shrink-0 justify-end gap-1">
+                  <PromptInputAction tooltip={isListening ? "Finish dictation" : "Dictate a message"}>
                     <button
-                      type={!canStopResponse && canSubmitComposer ? "submit" : "button"}
-                      disabled={!canStopResponse && (isBusy || (!canSubmitComposer && isListening))}
-                      onClick={(event) => {
-                        if (canStopResponse) {
-                          event.preventDefault();
-                          responseAbortRef.current?.abort();
-                          generationAbortRef.current?.abort();
-                          return;
-                        }
-                        if (canSubmitComposer) return;
-                        event.preventDefault();
-                        void handleVoiceInput();
-                      }}
+                      type="button"
+                      disabled={isBusy}
+                      onClick={handleVoiceInput}
+                      aria-label={isListening ? "Stop voice input" : "Use voice input"}
+                      aria-pressed={isListening}
                       className={cn(
-                        "inline-flex h-11 w-11 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] disabled:pointer-events-none disabled:opacity-50",
-                        (canSubmitComposer || isListening) && "text-[#5c5be5]",
+                        "inline-flex size-11 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-50",
+                        isListening && "bg-[#eee7ff] text-[#5c5be5]",
                       )}
-                      aria-label={canStopResponse ? "Stop response" : canSubmitComposer ? "Send" : "Use voice input"}
                     >
-                      {canStopResponse ? (
+                      {isListening ? (
                         <Square className="size-4 fill-current" aria-hidden="true" />
-                      ) : isBusy ? (
-                        <Loader2
-                          className={cn(
-                            "size-5 animate-spin text-[#5c5be5]",
-                            isCompactEmptyComposer && "max-md:size-4",
-                          )}
-                          aria-hidden="true"
-                        />
-                      ) : canSubmitComposer ? (
-                        <ArrowUp
-                          className={cn(
-                            "size-6 text-current",
-                            isCompactEmptyComposer && "max-md:size-5",
-                          )}
-                          strokeWidth={2.5}
-                          aria-hidden="true"
-                        />
                       ) : (
-                        <Mic
-                          className={cn(
-                            "size-6 text-current",
-                            isCompactEmptyComposer && "max-md:size-5",
-                          )}
-                          strokeWidth={2.4}
-                          aria-hidden="true"
-                        />
+                        <Mic className="size-6" strokeWidth={2.4} aria-hidden="true" />
+                      )}
+                    </button>
+                  </PromptInputAction>
+                  <PromptInputAction tooltip={isBusy ? busyLabel : "Send message"}>
+                    <button
+                      type="submit"
+                      disabled={isBusy || isListening || !canSubmitComposer}
+                      className="inline-flex size-11 items-center justify-center rounded-full text-[#5c5be5] transition hover:bg-[#f1ebff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label="Send"
+                    >
+                      {isBusy ? (
+                        <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <ArrowUp className="size-6" strokeWidth={2.5} aria-hidden="true" />
                       )}
                     </button>
                   </PromptInputAction>
@@ -3398,13 +3344,29 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             </div>
           </PromptInput>
         </form>
+        <div className="mt-1 flex min-h-11 items-center justify-between gap-3 px-1">
+          <span role="status" className="text-xs text-[#76648f]">
+            {isListening ? "Listening… tap the microphone to finish." : null}
+          </span>
+          <button
+            type="button"
+            onClick={handleCancelChat}
+            disabled={isCommittingEvent}
+            aria-label={isBusy ? "Cancel current response or generation" : isListening ? "Cancel voice input" : "Cancel chat and return to dashboard"}
+            title={isCommittingEvent ? "Finishing your saved event update" : undefined}
+            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-full px-3 text-sm font-medium text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-wait disabled:opacity-50"
+          >
+            <X className="size-4" aria-hidden="true" />
+            {isCommittingEvent ? "Saving…" : "Cancel"}
+          </button>
+        </div>
         {error ? <p className="mt-3 text-sm font-medium text-red-600">{error}</p> : null}
       </div>
     </div>
   );
 
   const readyActions = (
-    <div className="pointer-events-none z-30 flex w-full min-w-0 shrink-0 flex-col items-stretch px-2 pt-2 sm:px-6">
+    <div className="pointer-events-none z-30 mx-auto flex w-full min-w-0 max-w-3xl shrink-0 flex-col items-stretch px-2 pt-2 sm:px-6">
       <div className="pointer-events-auto w-full">
         {shouldShowGiftRegistryPrompt ? (
           <div className="mb-2 rounded-[1.35rem] border border-[#ded2f5] bg-white/96 p-3 text-[#4f3a73] shadow-[0_14px_34px_rgba(93,63,155,0.12)] ring-1 ring-white/80 backdrop-blur">

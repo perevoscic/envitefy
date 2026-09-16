@@ -140,13 +140,13 @@ function cleanMultilineString(value: unknown, maxLength = MAX_BODY_HTML_LENGTH):
   return value.replace(/\r\n/g, "\n").trim().slice(0, maxLength);
 }
 
-function normalizeEnvitefyConciergeName(value: string): string {
-  return value.replace(/(?<!Envitefy\s)\bConcierge\b/gi, "Envitefy Concierge");
+function normalizeEnvitefyCreateName(value: string): string {
+  return value.replace(/\b(?:Envitefy\s+)?Concierge\b/gi, "Envitefy Create");
 }
 
-function normalizeEnvitefyConciergeInHtml(html: string): string {
+function normalizeEnvitefyCreateInHtml(html: string): string {
   return html.replace(/>([^<]*)</g, (_full, text: string) => {
-    return `>${normalizeEnvitefyConciergeName(text)}<`;
+    return `>${normalizeEnvitefyCreateName(text)}<`;
   });
 }
 
@@ -286,9 +286,9 @@ function parseScenarioRows(value: unknown): AdminEmailScenarioRow[] {
     const scenarioId = parseScenarioId(item.scenarioId);
     if (!scenarioId || seen.has(scenarioId)) continue;
 
-    const title = normalizeEnvitefyConciergeName(cleanString(item.title, 120));
-    const body = normalizeEnvitefyConciergeName(cleanString(item.body, 500));
-    const imageScene = normalizeEnvitefyConciergeName(cleanString(item.imageScene, 1200));
+    const title = normalizeEnvitefyCreateName(cleanString(item.title, 120));
+    const body = normalizeEnvitefyCreateName(cleanString(item.body, 500));
+    const imageScene = normalizeEnvitefyCreateName(cleanString(item.imageScene, 1200));
     if (!title || !body || !imageScene) continue;
 
     seen.add(scenarioId);
@@ -303,7 +303,7 @@ const TEACHER_AUDIENCE_PATTERN =
 const EXPLICIT_TEACHER_BRIEF_PATTERN =
   /\b(?:teachers?|classrooms?|school\s+staff|educators?|room\s+parents?|class\s+part(?:y|ies)|school\s+events?)\b/i;
 const PARENTS_ONLY_PATTERN = /\b(?:(?:only|just)\s+(?:for\s+)?parents?|parents?\s+only)\b/i;
-const BARE_CONCIERGE_PATTERN = /(?<!Envitefy\s)\bConcierge\b/i;
+const LEGACY_CREATE_NAME_PATTERN = /\b(?:Envitefy\s+)?Concierge\b/i;
 const SNAP_EVENT_RESULT_PATTERN =
   /\b(?:live\s+(?:event\s+)?card|event\s+(?:card|page|record)|hosted\s+event\s+page)\b/i;
 const SNAP_CALENDAR_PATTERN = /\bcalendar\b/i;
@@ -335,7 +335,7 @@ const SIGNUP_STATUS_PATTERN = /\b(?:claimed|filled|full|waitlisted|still\s+neede
 const CREATE_INVITATION_PATTERN =
   /\b(?:create|make|build|draft|design)\s+(?!an?\s+email\b)(?:an?\s+|the\s+|my\s+|your\s+|their\s+|our\s+|new\s+|polished\s+|professional\s+|beautiful\s+|birthday\s+|wedding\s+|baby\s+shower\s+|bridal\s+shower\s+|gender\s+reveal\s+){0,4}(?:invites?|invitations?|event\s+pages?|live\s+cards?)\b/i;
 const EXPLICIT_NON_CONCIERGE_CREATION_PATTERN =
-  /\b(?:manual(?:ly)?|from\s+a\s+template|using\s+(?:a\s+)?template|in\s+Studio|without\s+Envitefy\s+Concierge)\b/i;
+  /\b(?:manual(?:ly)?|from\s+a\s+template|using\s+(?:a\s+)?template|in\s+Studio|without\s+Envitefy\s+(?:Create|Concierge))\b/i;
 
 type ExplicitFeatureRequirement = {
   label: string;
@@ -517,7 +517,7 @@ function promptEventMatches(prompt: string): PromptEventMatch[] {
 function scenarioActionPattern(scenarioId: AdminEmailScenarioId): RegExp {
   if (scenarioId === "snap") return /\b(?:snap|scan|photograph|upload)\b/gi;
   if (scenarioId === "concierge") {
-    return /\b(?:create|make|build|draft|design|Envitefy\s+Concierge)\b/gi;
+    return /\b(?:create|make|build|draft|design|Envitefy\s+(?:Create|Concierge))\b/gi;
   }
   if (scenarioId === "rsvp") {
     return /\b(?:rsvp|attendance|headcounts?|guest\s+(?:repl(?:y|ies)|responses?))\b/gi;
@@ -568,7 +568,7 @@ function requiredScenarioIdsForPrompt(
   if (
     promptPositivelyRequests(
       prompt,
-      /\b(?:Envitefy\s+Concierge|ask\s+(?:Envitefy\s+)?Concierge|from\s+(?:my|your|their|the\s+host'?s)\s+words)\b/i,
+      /\b(?:Envitefy\s+(?:Create|Concierge)|ask\s+(?:Envitefy\s+)?Concierge|from\s+(?:my|your|their|the\s+host'?s)\s+words)\b/i,
     ) ||
     (promptPositivelyRequests(prompt, CREATE_INVITATION_PATTERN) &&
       !EXPLICIT_NON_CONCIERGE_CREATION_PATTERN.test(prompt))
@@ -637,8 +637,8 @@ function buildFallbackScenarioRow(
   if (scenarioId === "concierge") {
     return {
       scenarioId,
-      title: `Create a polished ${eventPrefix}invitation with Envitefy Concierge`,
-      body: `Describe the ${eventPrefix}event in your own words and Envitefy Concierge creates a polished invitation and live event page for review. Add relevant tools such as RSVP and calendar details, then share one guest-ready link.`,
+      title: `Create a polished ${eventPrefix}invitation with Envitefy Create`,
+      body: `Describe the ${eventPrefix}event in your own words and Envitefy Create builds a polished invitation and live event page for review. Add relevant tools such as RSVP and calendar details, then share one guest-ready link.`,
       imageScene: `Professional lifestyle photo of a ${actor} calmly creating a ${eventPrefix}invitation on a phone at home, with natural light and realistic materials.`,
     };
   }
@@ -760,9 +760,9 @@ export function validateAdminEmailPromptFidelity(
     draft.buttonText,
     ...draft.scenarioRows.flatMap((row) => [row.title, row.body]),
   ].join(" ");
-  if (BARE_CONCIERGE_PATTERN.test(generatedCopy)) {
+  if (LEGACY_CREATE_NAME_PATTERN.test(generatedCopy)) {
     violations.push(
-      "Replace every standalone “Concierge” reference with the full product name “Envitefy Concierge.”",
+      "Replace the retired Concierge product name, including its full branded form, with “Envitefy Create.”",
     );
   }
 
@@ -795,7 +795,7 @@ export function validateAdminEmailPromptFidelity(
       if (toolCount < 2) missing.push("at least two relevant guest or host tools");
       if (missing.length > 0) {
         violations.push(
-          `Expand the Envitefy Concierge scenario beyond generic planning help. It is missing: ${missing.join(
+          `Expand the Envitefy Create scenario beyond generic planning help. It is missing: ${missing.join(
             ", ",
           )}.`,
         );
@@ -877,12 +877,12 @@ export function validateAdminEmailPromptFidelity(
   if (
     promptPositivelyRequests(
       prompt,
-      /\b(?:Envitefy\s+Concierge|ask\s+(?:Envitefy\s+)?Concierge|from\s+(?:my|your|their|the\s+host'?s)\s+words)\b/i,
+      /\b(?:Envitefy\s+(?:Create|Concierge)|ask\s+(?:Envitefy\s+)?Concierge|from\s+(?:my|your|their|the\s+host'?s)\s+words)\b/i,
     ) &&
     !draft.scenarioRows.some((row) => row.scenarioId === "concierge")
   ) {
     violations.push(
-      "The campaign brief explicitly requests Envitefy Concierge; include an Envitefy Concierge scenario.",
+      "The campaign brief explicitly requests Envitefy Create; include an Envitefy Create scenario.",
     );
   }
 
@@ -892,7 +892,7 @@ export function validateAdminEmailPromptFidelity(
     !draft.scenarioRows.some((row) => row.scenarioId === "concierge")
   ) {
     violations.push(
-      "The campaign brief asks to create an invitation; include an Envitefy Concierge creation scenario unless the client explicitly requests manual or template creation.",
+      "The campaign brief asks to create an invitation; include an Envitefy Create creation scenario unless the client explicitly requests manual or template creation.",
     );
   }
 
@@ -939,14 +939,14 @@ export function validateAdminEmailPromptFidelity(
 export function normalizeAdminEmailDraft(value: unknown): AdminEmailDraft | null {
   if (!isRecord(value)) return null;
 
-  const subject = normalizeEnvitefyConciergeName(cleanString(value.subject, 140));
-  const preheader = normalizeEnvitefyConciergeName(cleanString(value.preheader, 180));
-  const bodyHtml = normalizeEnvitefyConciergeInHtml(
+  const subject = normalizeEnvitefyCreateName(cleanString(value.subject, 140));
+  const preheader = normalizeEnvitefyCreateName(cleanString(value.preheader, 180));
+  const bodyHtml = normalizeEnvitefyCreateInHtml(
     sanitizeGeneratedEmailHtml(cleanMultilineString(value.bodyHtml)),
   );
-  const buttonText = normalizeEnvitefyConciergeName(cleanString(value.buttonText, 60));
+  const buttonText = normalizeEnvitefyCreateName(cleanString(value.buttonText, 60));
   const rawButtonUrl = cleanString(value.buttonUrl, 500);
-  const notes = normalizeEnvitefyConciergeName(cleanString(value.notes, 500));
+  const notes = normalizeEnvitefyCreateName(cleanString(value.notes, 500));
   const scenarioRows = parseScenarioRows(value.scenarioRows);
 
   if (!subject || !bodyHtml) return null;
@@ -1513,7 +1513,7 @@ export function buildGeneratedEmailImageBlock(
 ): string {
   if (isGifAssetUrl(asset.url)) return "";
   return `<a href="${href}" target="_blank" style="display:block; margin:0 0 16px 0; text-decoration:none;">
-  <img src="${asset.url}" width="544" alt="${escapeEmailHtmlText(normalizeEnvitefyConciergeName(asset.altText))}" style="display:block; width:100%; max-width:544px; height:auto; border:0; border-radius:14px; outline:none; text-decoration:none;" />
+  <img src="${asset.url}" width="544" alt="${escapeEmailHtmlText(normalizeEnvitefyCreateName(asset.altText))}" style="display:block; width:100%; max-width:544px; height:auto; border:0; border-radius:14px; outline:none; text-decoration:none;" />
 </a>`;
 }
 

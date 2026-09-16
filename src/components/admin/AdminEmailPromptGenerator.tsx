@@ -198,12 +198,12 @@ export default function AdminEmailPromptGenerator() {
     {
       label: "Back to school",
       prompt:
-        "Write a back-to-school email for parents and teachers. Cover snapping birthday flyers, asking Envitefy Concierge about an upcoming birthday, class parties, and sharing one event link. Include clear CTAs.",
+        "Write a back-to-school email for parents and teachers. Cover snapping birthday flyers, using Envitefy Create for an upcoming birthday, class parties, and sharing one event link. Include clear CTAs.",
     },
     {
       label: "Birthday parties",
       prompt:
-        "Promote Envitefy for birthday parties: snap or upload the invitation into a saved live event card, add it to a calendar, keep it easy to reopen, and share one link with families. Also explain how Envitefy Concierge can create a polished birthday invitation with RSVP and guest-ready details from the parent's words.",
+        "Promote Envitefy for birthday parties: snap or upload the invitation into a saved live event card, add it to a calendar, keep it easy to reopen, and share one link with families. Also explain how Envitefy Create can create a polished birthday invitation with RSVP and guest-ready details from the parent's words.",
     },
     {
       label: "Teachers + share",

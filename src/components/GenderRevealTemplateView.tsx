@@ -1,23 +1,33 @@
 "use client";
 
-import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
-import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
-import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
-import { parseEventGuestDate, normalizeEventGuestPlanning } from "@/lib/event-guest-planning";
-import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
-
-import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { CSSProperties, FormEvent } from "react";
 import { Check, Gift, MapPin } from "lucide-react";
+import Link from "next/link";
+import type { CSSProperties, FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import EventActions from "@/components/EventActions";
 import EventDeleteModal from "@/components/EventDeleteModal";
+import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
+import GenderRevealScene, {
+  genderRevealPageStyle,
+  genderRevealStyles,
+} from "@/components/gender-reveal/GenderRevealScene";
 import StaticMap from "@/components/StaticMap";
+import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
+import {
+  getEventGuestPlanningNotes,
+  normalizeEventGuestPlanning,
+  parseEventGuestDate,
+} from "@/lib/event-guest-planning";
 import {
   areGenderRevealGuessesLocked,
   buildGenderRevealLiveStrip,
   buildGenderRevealRsvpAnswers,
   canGuestSeeGenderRevealTally,
+  type GenderRevealConfig,
+  type GenderRevealGuess,
+  type GenderRevealGuessCounts,
+  type GenderRevealLiveStrip,
   genderRevealGuessLabel,
   genderRevealMemoryLine,
   genderRevealResultLabel,
@@ -25,13 +35,9 @@ import {
   parseGenderRevealConfig,
   parseGenderRevealRsvpAnswers,
   shouldCollectGenderRevealGuess,
-  type GenderRevealConfig,
-  type GenderRevealGuess,
-  type GenderRevealGuessCounts,
-  type GenderRevealLiveStrip,
 } from "@/lib/gender-reveal";
-import GenderRevealScene, { genderRevealPageStyle, genderRevealStyles } from "@/components/gender-reveal/GenderRevealScene";
-import { getGenderRevealDesign, genderRevealFont } from "@/lib/gender-reveal-designs";
+import { genderRevealFont, getGenderRevealDesign } from "@/lib/gender-reveal-designs";
+import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
 import type { CalendarLinkSet } from "@/utils/calendar-links";
 
 // Existing uploaded and saved hero images take precedence over catalog defaults.
@@ -119,7 +125,9 @@ function GuessButton({
           : "border-white/30 bg-white/10 hover:bg-white/20"
       } ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
     >
-      <div className={`text-sm font-black uppercase tracking-[0.18em] ${isPink ? "text-pink-600" : "text-sky-700"}`}>
+      <div
+        className={`text-sm font-black uppercase tracking-[0.18em] ${isPink ? "text-pink-600" : "text-sky-700"}`}
+      >
         {genderRevealGuessLabel(guess)}
       </div>
       <p className="mt-1 text-sm opacity-70">{isPink ? "She's on the way." : "He's on the way."}</p>
@@ -157,9 +165,7 @@ function LiveStrip({
         </span>
       ))}
       {revealed && memoryLine ? (
-        <span className="w-full text-center text-sm font-medium text-current">
-          {memoryLine}
-        </span>
+        <span className="w-full text-center text-sm font-medium text-current">{memoryLine}</span>
       ) : null}
     </div>
   );
@@ -187,7 +193,11 @@ function HostBar({
   const yesHeadcount = responses.reduce((sum, row) => {
     if (String(row.response || "").toLowerCase() !== "yes") return sum;
     const answers = parseGenderRevealRsvpAnswers(row.answersJson);
-    return sum + (answers.partySize || (typeof row.adultCount === "number" && row.adultCount > 0 ? row.adultCount : 1));
+    return (
+      sum +
+      (answers.partySize ||
+        (typeof row.adultCount === "number" && row.adultCount > 0 ? row.adultCount : 1))
+    );
   }, 0);
 
   return (
@@ -271,7 +281,9 @@ function HostChip({
   };
   return (
     <div className={`rounded-2xl border px-3 py-3 ${tones[tone]}`}>
-      <div className="text-[0.65rem] font-black uppercase tracking-[0.16em] opacity-70">{label}</div>
+      <div className="text-[0.65rem] font-black uppercase tracking-[0.16em] opacity-70">
+        {label}
+      </div>
       <div className="mt-1 text-xl font-semibold tabular-nums">{value}</div>
     </div>
   );
@@ -356,7 +368,9 @@ export default function GenderRevealTemplateView({
   const textClass = readString(savedTheme.text) || "text-slate-900";
   const accentClass = readString(savedTheme.accent) || "text-pink-600";
   const headingFont =
-    readString(eventData.fontFamily) || readString(savedTheme.fontFamily) || genderRevealFont(design);
+    readString(eventData.fontFamily) ||
+    readString(savedTheme.fontFamily) ||
+    genderRevealFont(design);
   const heroImage =
     readString(eventData.heroImage) ||
     readString(eventData.customHeroImage) ||
@@ -383,13 +397,23 @@ export default function GenderRevealTemplateView({
     : eventData.date
       ? new Date(`${String(eventData.date)}T${readString(eventData.time) || "14:00"}:00`)
       : null;
-  const dateLabel = startDate ? formatDate(startDate.toISOString()) : formatDate(readString(eventData.date));
+  const dateLabel = startDate
+    ? formatDate(startDate.toISOString())
+    : formatDate(readString(eventData.date));
   const timeLabel = formatTime(startDate) || readString(eventData.time) || null;
-  const storedEnd = readString(eventData.endISO) || readString(eventData.end) || readString(eventData.endAt);
+  const storedEnd =
+    readString(eventData.endISO) || readString(eventData.end) || readString(eventData.endAt);
   const parsedEnd = storedEnd ? new Date(storedEnd) : null;
-  const endLabel = parsedEnd && !Number.isNaN(parsedEnd.getTime())
-    ? parsedEnd.toLocaleString("en-US", { ...(startDate && parsedEnd.toDateString() !== startDate.toDateString() ? { month: "short", day: "numeric" } : {}), hour: "numeric", minute: "2-digit" })
-    : null;
+  const endLabel =
+    parsedEnd && !Number.isNaN(parsedEnd.getTime())
+      ? parsedEnd.toLocaleString("en-US", {
+          ...(startDate && parsedEnd.toDateString() !== startDate.toDateString()
+            ? { month: "short", day: "numeric" }
+            : {}),
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      : null;
   const locationLabel = [
     readString(eventData.address),
     readString(eventData.venue),
@@ -428,7 +452,6 @@ export default function GenderRevealTemplateView({
     counts: stats.guesses || { pink: 0, blue: 0, total: 0 },
   });
   const revealed = liveConfig.revealed && liveConfig.revealedResult;
-
 
   const detailItems = [
     liveConfig.revealMethod ? { label: "Reveal", value: liveConfig.revealMethod } : null,
@@ -514,10 +537,13 @@ export default function GenderRevealTemplateView({
         return;
       }
       try {
-        localStorage.setItem("envitefy_rsvp_guest_info", JSON.stringify({
-          name: rsvpName.trim(),
-          email: rsvpEmail.trim(),
-        }));
+        localStorage.setItem(
+          "envitefy_rsvp_guest_info",
+          JSON.stringify({
+            name: rsvpName.trim(),
+            email: rsvpEmail.trim(),
+          }),
+        );
         localStorage.setItem(`envitefy_rsvp_${eventId}`, rsvpChoice);
       } catch {
         // ignore storage failures
@@ -537,9 +563,19 @@ export default function GenderRevealTemplateView({
   const titleStyle: CSSProperties = { fontFamily: headingFont };
 
   return (
-    <main className={thumbnail ? "font-sans text-slate-900" : "event-modern-page font-sans text-slate-900"}>
+    <main
+      className={
+        thumbnail ? "font-sans text-slate-900" : "event-modern-page font-sans text-slate-900"
+      }
+    >
       <div className={thumbnail ? "" : "event-modern-container"}>
-        <div className={thumbnail ? "flex w-full flex-col" : "mx-auto flex w-full max-w-5xl flex-col py-6 md:py-10"}>
+        <div
+          className={
+            thumbnail
+              ? "flex w-full flex-col"
+              : "mx-auto flex w-full max-w-5xl flex-col py-6 md:py-10"
+          }
+        >
           {isOwner && !isReadOnly ? (
             <HostBar
               config={liveConfig}
@@ -550,8 +586,13 @@ export default function GenderRevealTemplateView({
             />
           ) : null}
 
-          <div className={`${genderRevealStyles.page} ${readString(savedTheme.bg)}`} style={{ ...genderRevealPageStyle(design), ...(asRecord(savedTheme.bgStyle) || {}) }} data-reveal-body={design.style}>
-            <GenderRevealScene filterEnabled={eventData.heroImageFilterEnabled !== false}
+          <div
+            className={`${genderRevealStyles.page} ${readString(savedTheme.bg)}`}
+            style={{ ...genderRevealPageStyle(design), ...(asRecord(savedTheme.bgStyle) || {}) }}
+            data-reveal-body={design.style}
+          >
+            <GenderRevealScene
+              filterEnabled={eventData.heroImageFilterEnabled !== false}
               design={design}
               title={eventTitle}
               parents={parentsName}
@@ -561,313 +602,374 @@ export default function GenderRevealTemplateView({
               date={dateLabel}
               time={timeLabel ? `${timeLabel}${endLabel ? ` – ${endLabel}` : ""}` : null}
               location={locationLabel}
-              announcement={revealed ? `It's a ${genderRevealResultLabel(liveConfig.revealedResult)}` : undefined}
-              controls={!isReadOnly && (canEdit || isOwner) ? <>
-                {canEdit ? <Link href={editHref} className="rounded-full border border-current/30 px-4 py-2 text-sm font-semibold">Edit</Link> : null}
-                {isOwner ? <EventDeleteModal eventId={eventId} eventTitle={eventTitle} /> : null}
-              </> : null}
-              status={!preview ? <LiveStrip strip={strip} showGuesses={showGuestTally || isOwner} revealed={Boolean(revealed)} memoryLine={memoryLine} /> : null}
+              announcement={
+                revealed
+                  ? `It's a ${genderRevealResultLabel(liveConfig.revealedResult)}`
+                  : undefined
+              }
+              controls={
+                !isReadOnly && (canEdit || isOwner) ? (
+                  <>
+                    {canEdit ? (
+                      <Link
+                        href={editHref}
+                        className="rounded-full border border-current/30 px-4 py-2 text-sm font-semibold"
+                      >
+                        Edit
+                      </Link>
+                    ) : null}
+                    {isOwner ? (
+                      <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />
+                    ) : null}
+                  </>
+                ) : null
+              }
+              status={
+                !preview ? (
+                  <LiveStrip
+                    strip={strip}
+                    showGuesses={showGuestTally || isOwner}
+                    revealed={Boolean(revealed)}
+                    memoryLine={memoryLine}
+                  />
+                ) : null
+              }
               actions={rsvpEnabled ? <a href="#rsvp">RSVP</a> : null}
             />
 
-            <EventGuestPlanningNotes value={normalizeEventGuestPlanning(eventData.guestPlanning)} inverse={textClass.includes("text-white")} />
-
-            <TemplateBodyLayout presentation={getTemplateBodyPresentation("gender-reveal", design.id)}>
-            {detailItems.length > 0 ? (
-              <section id="details" className="border-t border-white/10 px-6 py-10 md:px-10">
-                <h2 className={`mb-6 text-center text-2xl ${accentClass}`} style={titleStyle}>
-                  Details
-                </h2>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {detailItems.map((item) => (
-                    <div key={item.label} className="rounded-2xl bg-white/40 p-4">
-                      <div className="text-xs font-black uppercase tracking-[0.18em] opacity-60">
-                        {item.label}
-                      </div>
-                      <p className="mt-2 whitespace-pre-wrap text-base font-medium">{item.value}</p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ) : null}
-
-            {hosts.length > 0 ? (
-              <section id="hosts" className="border-t border-white/10 px-6 py-10 text-center md:px-10">
-                <h2 className={`mb-6 text-2xl ${accentClass}`} style={titleStyle}>
-                  Hosted by
-                </h2>
-                <div className="flex flex-wrap justify-center gap-6">
-                  {hosts.map((host: { id?: string; name?: string; role?: string }) => (
-                    <div key={host.id || host.name}>
-                      <div className="text-lg font-semibold">{host.name}</div>
-                      {host.role ? <div className="text-sm opacity-70">{host.role}</div> : null}
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ) : null}
-
-            {registries.length > 0 ? (
-              <section id="registry" className="border-t border-white/10 px-6 py-10 text-center md:px-10">
-                <h2 className={`mb-6 text-2xl ${accentClass}`} style={titleStyle}>
-                  Registry / gifts
-                </h2>
-                <div className="flex flex-wrap justify-center gap-3">
-                  {registries.map((registry: { id?: string; label?: string; url?: string }, idx: number) => (
-                    <a
-                      key={registry.id || idx}
-                      href={registry.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-full border border-current/20 px-5 py-2.5 text-sm font-semibold"
-                    >
-                      <Gift size={16} />
-                      {registry.label || "Registry"}
-                    </a>
-                  ))}
-                </div>
-              </section>
-            ) : null}
-
-            {locationLabel && !thumbnail ? (
-              <section id="map" className="border-t border-white/10 px-6 py-10 md:px-10">
-                <h2 className={`mb-4 text-center text-2xl ${accentClass}`} style={titleStyle}>
-                  Map + calendar
-                </h2>
-                <p className="mb-4 flex items-center justify-center gap-2 text-center opacity-80">
-                  <MapPin size={16} />
-                  {locationLabel}
-                </p>
-                <StaticMap address={locationLabel} height={320} className="mx-auto max-w-3xl" />
-              </section>
-            ) : null}
-
-            {gallery.length > 0 ? (
-              <section id="photos" className="border-t border-white/10 px-6 py-10 md:px-10">
-                <h2 className={`mb-6 text-center text-2xl ${accentClass}`} style={titleStyle}>
-                  Photos
-                </h2>
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                  {gallery.map((item: unknown, idx: number) => {
-                    const record =
-                      item && typeof item === "object" ? (item as Record<string, unknown>) : null;
-                    const url = typeof item === "string" ? item : readString(record?.url);
-                    if (!url) return null;
-                    const caption = readString(record?.caption) || "Reveal photo";
-                    const key = readString(record?.id) || url || String(idx);
-                    return (
-                      <figure key={key} className="overflow-hidden rounded-2xl">
-                        <img src={url} alt={caption} className="h-44 w-full object-cover" />
-                      </figure>
-                    );
-                  })}
-                </div>
-              </section>
-            ) : null}
-
-            {updateItems.length > 0 ? (
-              <section id="updates" className="border-t border-white/10 px-6 py-10 md:px-10">
-                <h2 className={`mb-6 text-center text-2xl ${accentClass}`} style={titleStyle}>
-                  Updates
-                </h2>
-                <div className="mx-auto max-w-2xl space-y-4">
-                  {updateItems.map((item) => (
-                    <div key={item.label} className="rounded-2xl bg-white/40 p-4">
-                      <div className="text-xs font-black uppercase tracking-[0.18em] opacity-60">
-                        {item.label}
-                      </div>
-                      <p className="mt-2 whitespace-pre-wrap">{item.value}</p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ) : null}
-
-            {rsvpEnabled ? (
-              <section id="rsvp" className="scroll-mt-24 border-t border-white/10 px-6 py-10 md:px-10">
-                <h2 className={`mb-6 text-center text-2xl ${accentClass}`} style={titleStyle}>
-                  RSVP
-                </h2>
-                <form
-                  onSubmit={handleRsvpSubmit}
-                  className="mx-auto max-w-2xl space-y-5 rounded-3xl bg-white/50 p-6 md:p-8"
-                >
-                  {rsvpSubmitted ? (
-                    <div className="py-10 text-center">
-                      <div className="mb-3 text-4xl">🎉</div>
-                      <h3 className="text-2xl font-semibold">You are on the list</h3>
-                      <p className="mt-2 opacity-70">
-                        {rsvpChoice === "yes" && genderGuess
-                          ? `${genderRevealGuessLabel(genderGuess)} is locked in.`
-                          : "Thanks for letting us know."}
-                      </p>
-                      <button
-                        type="button"
-                        className="mt-6 text-sm underline opacity-60"
-                        onClick={() => setRsvpSubmitted(false)}
+            <TemplateBodyLayout
+              design={{ category: "gender-reveal", id: design.id }}
+              presentation={getTemplateBodyPresentation("gender-reveal", design.id)}
+            >
+              {getEventGuestPlanningNotes(normalizeEventGuestPlanning(eventData.guestPlanning))
+                .length > 0 && (
+                <EventGuestPlanningNotes
+                  id="notes"
+                  themed
+                  value={normalizeEventGuestPlanning(eventData.guestPlanning)}
+                />
+              )}
+              {detailItems.length > 0 ? (
+                <section id="details" className="border-t border-white/10 px-6 py-10 md:px-10">
+                  <h2 className={`mb-6 text-center text-2xl ${accentClass}`} style={titleStyle}>
+                    Details
+                  </h2>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {detailItems.map((item) => (
+                      <div
+                        key={item.label}
+                        data-celebration-card
+                        className="rounded-2xl bg-white/40 p-4"
                       >
-                        Update your response
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-center opacity-80">
-                        {rsvpDeadline
-                          ? `Kindly respond by ${formatDate(rsvpDeadline) || rsvpDeadline}`
-                          : "Please RSVP"}
-                      </p>
-                      <label className="block">
-                        <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider opacity-70">
-                          Full name
-                        </span>
-                        <input
-                          value={rsvpName}
-                          onChange={(event) => setRsvpName(event.target.value)}
-                          className="w-full rounded-xl border border-current/20 bg-white/70 p-3 outline-none"
-                          placeholder="Guest name"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider opacity-70">
-                          Email
-                        </span>
-                        <input
-                          type="email"
-                          value={rsvpEmail}
-                          onChange={(event) => setRsvpEmail(event.target.value)}
-                          className="w-full rounded-xl border border-current/20 bg-white/70 p-3 outline-none"
-                          placeholder="you@email.com"
-                        />
-                      </label>
-                      <div>
-                        <span className="mb-2 block text-xs font-bold uppercase tracking-wider opacity-70">
-                          Will you be there?
-                        </span>
-                        <div className="grid gap-2 sm:grid-cols-3">
-                          {(
-                            [
-                              ["yes", "Yes"],
-                              ["maybe", "Maybe"],
-                              ["no", "No"],
-                            ] as Array<[RsvpChoice, string]>
-                          ).map(([value, label]) => (
-                            <button
-                              key={value}
-                              type="button"
-                              onClick={() => {
-                                setRsvpChoice(value);
-                                if (value === "no") setGenderGuess(null);
-                              }}
-                              className={`rounded-xl border-2 px-3 py-3 text-sm font-semibold ${
-                                rsvpChoice === value
-                                  ? "border-current bg-white"
-                                  : "border-current/20 bg-white/40"
-                              }`}
-                            >
-                              {label}
-                            </button>
-                          ))}
+                        <div className="text-xs font-black uppercase tracking-[0.18em] opacity-60">
+                          {item.label}
                         </div>
+                        <p className="mt-2 whitespace-pre-wrap text-base font-medium">
+                          {item.value}
+                        </p>
                       </div>
-                      {rsvpChoice === "yes" ? (
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              {hosts.length > 0 ? (
+                <section
+                  id="hosts"
+                  className="border-t border-white/10 px-6 py-10 text-center md:px-10"
+                >
+                  <h2 className={`mb-6 text-2xl ${accentClass}`} style={titleStyle}>
+                    Hosted by
+                  </h2>
+                  <div className="flex flex-wrap justify-center gap-6">
+                    {hosts.map((host: { id?: string; name?: string; role?: string }) => (
+                      <div key={host.id || host.name}>
+                        <div className="text-lg font-semibold">{host.name}</div>
+                        {host.role ? <div className="text-sm opacity-70">{host.role}</div> : null}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              {registries.length > 0 ? (
+                <section
+                  id="registry"
+                  className="border-t border-white/10 px-6 py-10 text-center md:px-10"
+                >
+                  <h2 className={`mb-6 text-2xl ${accentClass}`} style={titleStyle}>
+                    Registry / gifts
+                  </h2>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    {registries.map(
+                      (registry: { id?: string; label?: string; url?: string }, idx: number) => (
+                        <a
+                          key={registry.id || idx}
+                          href={registry.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 rounded-full border border-current/20 px-5 py-2.5 text-sm font-semibold"
+                        >
+                          <Gift size={16} />
+                          {registry.label || "Registry"}
+                        </a>
+                      ),
+                    )}
+                  </div>
+                </section>
+              ) : null}
+
+              {locationLabel && !thumbnail ? (
+                <section id="map" className="border-t border-white/10 px-6 py-10 md:px-10">
+                  <h2 className={`mb-4 text-center text-2xl ${accentClass}`} style={titleStyle}>
+                    Map + calendar
+                  </h2>
+                  <p className="mb-4 flex items-center justify-center gap-2 text-center opacity-80">
+                    <MapPin size={16} />
+                    {locationLabel}
+                  </p>
+                  <StaticMap address={locationLabel} height={320} className="mx-auto max-w-3xl" />
+                </section>
+              ) : null}
+
+              {gallery.length > 0 ? (
+                <section id="photos" className="border-t border-white/10 px-6 py-10 md:px-10">
+                  <h2 className={`mb-6 text-center text-2xl ${accentClass}`} style={titleStyle}>
+                    Photos
+                  </h2>
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                    {gallery.map((item: unknown, idx: number) => {
+                      const record =
+                        item && typeof item === "object" ? (item as Record<string, unknown>) : null;
+                      const url = typeof item === "string" ? item : readString(record?.url);
+                      if (!url) return null;
+                      const caption = readString(record?.caption) || "Reveal photo";
+                      const key = readString(record?.id) || url || String(idx);
+                      return (
+                        <figure key={key} className="overflow-hidden rounded-2xl">
+                          <img src={url} alt={caption} className="h-44 w-full object-cover" />
+                        </figure>
+                      );
+                    })}
+                  </div>
+                </section>
+              ) : null}
+
+              {updateItems.length > 0 ? (
+                <section id="updates" className="border-t border-white/10 px-6 py-10 md:px-10">
+                  <h2 className={`mb-6 text-center text-2xl ${accentClass}`} style={titleStyle}>
+                    Updates
+                  </h2>
+                  <div className="mx-auto max-w-2xl space-y-4">
+                    {updateItems.map((item) => (
+                      <div
+                        key={item.label}
+                        data-celebration-card
+                        className="rounded-2xl bg-white/40 p-4"
+                      >
+                        <div className="text-xs font-black uppercase tracking-[0.18em] opacity-60">
+                          {item.label}
+                        </div>
+                        <p className="mt-2 whitespace-pre-wrap">{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              {rsvpEnabled ? (
+                <section
+                  id="rsvp"
+                  className="scroll-mt-24 border-t border-white/10 px-6 py-10 md:px-10"
+                >
+                  <h2 className={`mb-6 text-center text-2xl ${accentClass}`} style={titleStyle}>
+                    RSVP
+                  </h2>
+                  <form
+                    data-celebration-form
+                    onSubmit={handleRsvpSubmit}
+                    className="mx-auto max-w-2xl space-y-5 rounded-3xl bg-white/50 p-6 md:p-8"
+                  >
+                    {rsvpSubmitted ? (
+                      <div className="py-10 text-center">
+                        <div className="mb-3 text-4xl">🎉</div>
+                        <h3 className="text-2xl font-semibold">You are on the list</h3>
+                        <p className="mt-2 opacity-70">
+                          {rsvpChoice === "yes" && genderGuess
+                            ? `${genderRevealGuessLabel(genderGuess)} is locked in.`
+                            : "Thanks for letting us know."}
+                        </p>
+                        <button
+                          type="button"
+                          className="mt-6 text-sm underline opacity-60"
+                          onClick={() => setRsvpSubmitted(false)}
+                        >
+                          Update your response
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-center opacity-80">
+                          {rsvpDeadline
+                            ? `Kindly respond by ${formatDate(rsvpDeadline) || rsvpDeadline}`
+                            : "Please RSVP"}
+                        </p>
                         <label className="block">
                           <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider opacity-70">
-                            Party size
+                            Full name
                           </span>
                           <input
-                            type="number"
-                            min={1}
-                            max={20}
-                            value={partySize}
-                            onChange={(event) => setPartySize(event.target.value)}
+                            value={rsvpName}
+                            onChange={(event) => setRsvpName(event.target.value)}
                             className="w-full rounded-xl border border-current/20 bg-white/70 p-3 outline-none"
+                            placeholder="Guest name"
                           />
                         </label>
-                      ) : null}
-                      {collectGuess ? (
+                        <label className="block">
+                          <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider opacity-70">
+                            Email
+                          </span>
+                          <input
+                            type="email"
+                            value={rsvpEmail}
+                            onChange={(event) => setRsvpEmail(event.target.value)}
+                            className="w-full rounded-xl border border-current/20 bg-white/70 p-3 outline-none"
+                            placeholder="you@email.com"
+                          />
+                        </label>
                         <div>
                           <span className="mb-2 block text-xs font-bold uppercase tracking-wider opacity-70">
-                            {guessRequired ? "Team Pink or Team Blue?" : "Want to guess? (optional)"}
+                            Will you be there?
                           </span>
-                          <div className="flex gap-3">
-                            <GuessButton
-                              guess="pink"
-                              selected={genderGuess === "pink"}
-                              onSelect={() => setGenderGuess("pink")}
-                              disabled={guessesLocked}
-                            />
-                            <GuessButton
-                              guess="blue"
-                              selected={genderGuess === "blue"}
-                              onSelect={() => setGenderGuess("blue")}
-                              disabled={guessesLocked}
-                            />
+                          <div className="grid gap-2 sm:grid-cols-3">
+                            {(
+                              [
+                                ["yes", "Yes"],
+                                ["maybe", "Maybe"],
+                                ["no", "No"],
+                              ] as Array<[RsvpChoice, string]>
+                            ).map(([value, label]) => (
+                              <button
+                                key={value}
+                                type="button"
+                                onClick={() => {
+                                  setRsvpChoice(value);
+                                  if (value === "no") setGenderGuess(null);
+                                }}
+                                className={`rounded-xl border-2 px-3 py-3 text-sm font-semibold ${
+                                  rsvpChoice === value
+                                    ? "border-current bg-white"
+                                    : "border-current/20 bg-white/40"
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            ))}
                           </div>
-                          {guessesLocked ? (
-                            <p className="mt-2 text-xs opacity-60">Guesses are locked.</p>
-                          ) : null}
                         </div>
-                      ) : null}
-                      <label className="block">
-                        <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider opacity-70">
-                          {rsvpChoice === "no" ? "Gift note (optional)" : "Bringing a gift?"}
-                        </span>
-                        {rsvpChoice !== "no" ? (
-                          <div className="mb-2 flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setBringingGift(true)}
-                              className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                                bringingGift === true ? "bg-slate-900 text-white" : "bg-white/70"
-                              }`}
-                            >
-                              Yes
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setBringingGift(false)}
-                              className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                                bringingGift === false ? "bg-slate-900 text-white" : "bg-white/70"
-                              }`}
-                            >
-                              Not this time
-                            </button>
+                        {rsvpChoice === "yes" ? (
+                          <label className="block">
+                            <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider opacity-70">
+                              Party size
+                            </span>
+                            <input
+                              type="number"
+                              min={1}
+                              max={20}
+                              value={partySize}
+                              onChange={(event) => setPartySize(event.target.value)}
+                              className="w-full rounded-xl border border-current/20 bg-white/70 p-3 outline-none"
+                            />
+                          </label>
+                        ) : null}
+                        {collectGuess ? (
+                          <div>
+                            <span className="mb-2 block text-xs font-bold uppercase tracking-wider opacity-70">
+                              {guessRequired
+                                ? "Team Pink or Team Blue?"
+                                : "Want to guess? (optional)"}
+                            </span>
+                            <div className="flex gap-3">
+                              <GuessButton
+                                guess="pink"
+                                selected={genderGuess === "pink"}
+                                onSelect={() => setGenderGuess("pink")}
+                                disabled={guessesLocked}
+                              />
+                              <GuessButton
+                                guess="blue"
+                                selected={genderGuess === "blue"}
+                                onSelect={() => setGenderGuess("blue")}
+                                disabled={guessesLocked}
+                              />
+                            </div>
+                            {guessesLocked ? (
+                              <p className="mt-2 text-xs opacity-60">Guesses are locked.</p>
+                            ) : null}
                           </div>
                         ) : null}
-                        <textarea
-                          value={giftNote}
-                          onChange={(event) => setGiftNote(event.target.value)}
-                          className="w-full rounded-xl border border-current/20 bg-white/70 p-3 outline-none"
-                          rows={3}
-                          placeholder={
-                            rsvpChoice === "no"
-                              ? "Send a note even if you cannot make it."
-                              : "Optional gift note"
-                          }
-                        />
-                      </label>
-                      {rsvpError ? (
-                        <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
-                          {rsvpError}
-                        </p>
-                      ) : null}
-                      <button
-                        type="submit"
-                        disabled={rsvpSubmitting}
-                        className="flex w-full items-center justify-center gap-2 rounded-full bg-slate-900 py-4 text-sm font-black uppercase tracking-[0.18em] text-white disabled:opacity-60"
-                      >
-                        <Check size={16} />
-                        {rsvpSubmitting ? "Saving..." : "Send RSVP"}
-                      </button>
-                    </>
-                  )}
-                </form>
-              </section>
-            ) : null}
-
+                        <label className="block">
+                          <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider opacity-70">
+                            {rsvpChoice === "no" ? "Gift note (optional)" : "Bringing a gift?"}
+                          </span>
+                          {rsvpChoice !== "no" ? (
+                            <div className="mb-2 flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setBringingGift(true)}
+                                className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                                  bringingGift === true ? "bg-slate-900 text-white" : "bg-white/70"
+                                }`}
+                              >
+                                Yes
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setBringingGift(false)}
+                                className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                                  bringingGift === false ? "bg-slate-900 text-white" : "bg-white/70"
+                                }`}
+                              >
+                                Not this time
+                              </button>
+                            </div>
+                          ) : null}
+                          <textarea
+                            value={giftNote}
+                            onChange={(event) => setGiftNote(event.target.value)}
+                            className="w-full rounded-xl border border-current/20 bg-white/70 p-3 outline-none"
+                            rows={3}
+                            placeholder={
+                              rsvpChoice === "no"
+                                ? "Send a note even if you cannot make it."
+                                : "Optional gift note"
+                            }
+                          />
+                        </label>
+                        {rsvpError ? (
+                          <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
+                            {rsvpError}
+                          </p>
+                        ) : null}
+                        <button
+                          type="submit"
+                          disabled={rsvpSubmitting}
+                          className="flex w-full items-center justify-center gap-2 rounded-full bg-slate-900 py-4 text-sm font-black uppercase tracking-[0.18em] text-white disabled:opacity-60"
+                        >
+                          <Check size={16} />
+                          {rsvpSubmitting ? "Saving..." : "Send RSVP"}
+                        </button>
+                      </>
+                    )}
+                  </form>
+                </section>
+              ) : null}
             </TemplateBodyLayout>
             <footer className="border-t border-white/10 px-6 py-8 text-center text-xs uppercase tracking-[0.28em] ">
-              <EnvitefyEventBranding category="Gender Reveals" inverse={textClass.includes("text-white")} />
+              <EnvitefyEventBranding
+                category="Gender Reveals"
+                inverse={textClass.includes("text-white")}
+              />
             </footer>
           </div>
         </div>

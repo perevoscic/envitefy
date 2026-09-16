@@ -266,7 +266,7 @@ function StartWays() {
       <div className="mx-auto max-w-7xl">
         <BirthdaySectionIntro
           eyebrow="Start your way"
-          title="Describe the idea, SNAP what you have, or tell Concierge."
+          title="Describe the idea, SNAP what you have, or tell Envitefy Create."
           body="You do not need to rebuild the party by hand. Begin with as much—or as little—as you already know."
         />
 
@@ -325,7 +325,7 @@ function StartWays() {
               </span>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#cfbfef]">
-                  Envitefy Concierge
+                  Envitefy Create
                 </p>
                 <h3 className="text-2xl font-semibold tracking-[-0.03em] !text-white">
                   Describe the party in a message.
@@ -333,7 +333,7 @@ function StartWays() {
               </div>
             </div>
             <p className="mt-5 text-sm leading-7 text-white/68">
-              Concierge asks for anything missing, then drafts the invitation, household RSVP, map,
+              Envitefy Create asks for anything missing, then drafts the invitation, household RSVP, map,
               and gift notes for you.
             </p>
             <div className="mt-6 space-y-3">
@@ -353,7 +353,7 @@ function StartWays() {
               href="/chat"
               className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--birthday-yellow)] underline decoration-[#ffd66b]/40 underline-offset-8"
             >
-              Ask Envitefy Concierge
+              Create with Envitefy
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </article>

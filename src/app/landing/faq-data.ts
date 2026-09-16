@@ -12,8 +12,8 @@ export const landingFaqItems = [
     a: "If it is a received invite-card case, such as a birthday, wedding, gender reveal, or similar social invite, Envitefy treats it as an Invited event. If you upload a flyer, schedule, PDF, or source material for something you are hosting, it belongs in My events.",
   },
   {
-    q: "Do I have to use Concierge?",
-    a: "No. Concierge is a fast starting point for many hosts, but templates, manual event creation, and upload-based creation stay available when you already know the structure you want.",
+    q: "Do I have to use Envitefy Create?",
+    a: "No. Envitefy Create is a fast starting point for many hosts, but templates, manual event creation, and upload-based creation stay available when you already know the structure you want.",
   },
   {
     q: "Can I edit details before publishing?",

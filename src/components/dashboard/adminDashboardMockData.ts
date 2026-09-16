@@ -111,7 +111,7 @@ export const mockActivity: MockDashboardActivity[] = [
   {
     id: "act_004",
     type: "concierge",
-    message: "Concierge suggested adding parking information to Olivia's event",
+    message: "Envitefy Create suggested adding parking information to Olivia's event",
     timestamp: "Yesterday",
   },
 ];

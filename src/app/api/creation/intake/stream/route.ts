@@ -53,7 +53,7 @@ export async function POST(req: Request) {
   try {
     const session: any = await timing.time("session", () => getServerSession(authOptions as any));
     const userId = await timing.time("user_lookup", () => resolveSessionUserId(session));
-    if (!userId) return responseWithJsonError("Sign in to use Envitefy Concierge.", 401);
+    if (!userId) return responseWithJsonError("Sign in to use Envitefy Create.", 401);
 
     const body = (await timing.time("body_parse", () =>
       req.json().catch(() => ({})),

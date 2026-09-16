@@ -25,13 +25,13 @@ test("AI content hub exposes llms.txt and all guide URLs", () => {
 
   assert.match(
     llms,
-    /Envitefy turns invites, flyers, PDFs, schedules, and Concierge-created cards into hosted live event pages/,
+    /Envitefy turns invites, flyers, PDFs, schedules, and cards made with Envitefy Create into hosted live event pages/,
   );
   assert.match(llms, /https:\/\/envitefy\.com\/snap/);
   assert.match(llms, /https:\/\/envitefy\.com\/chat/);
-  assert.match(llms, /Envitefy Concierge/);
+  assert.match(llms, /Envitefy Create/);
   assert.match(llms, /https:\/\/envitefy\.com\/gymnastics/);
-  assert.match(llms, /https:\/\/envitefy\.com\/envitefy-concierge/);
+  assert.match(llms, /https:\/\/envitefy\.com\/envitefy-create/);
   assert.match(llms, /https:\/\/envitefy\.com\/showcase/);
   assert.match(llms, /Not only an OCR-to-calendar utility/);
 

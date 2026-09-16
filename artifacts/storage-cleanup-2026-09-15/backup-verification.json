@@ -3058,5 +3058,19 @@
   "failures": [],
   "storeBytesBefore": 889755509,
   "finishedAt": "2026-09-16T00:02:04.310Z",
-  "complete": true
+  "complete": true,
+  "inspection": {
+    "contactSheets": [
+      "/Users/rj/.codex/visualizations/2026/09/15/01a0a755-dae4-7381-8ff0-67fe7969d121/storage-backup-2026-09-15/inspection/originals-01.webp",
+      "/Users/rj/.codex/visualizations/2026/09/15/01a0a755-dae4-7381-8ff0-67fe7969d121/storage-backup-2026-09-15/inspection/originals-02.webp",
+      "/Users/rj/.codex/visualizations/2026/09/15/01a0a755-dae4-7381-8ff0-67fe7969d121/storage-backup-2026-09-15/inspection/originals-03.webp",
+      "/Users/rj/.codex/visualizations/2026/09/15/01a0a755-dae4-7381-8ff0-67fe7969d121/storage-backup-2026-09-15/inspection/originals-04.webp",
+      "/Users/rj/.codex/visualizations/2026/09/15/01a0a755-dae4-7381-8ff0-67fe7969d121/storage-backup-2026-09-15/inspection/originals-05.webp",
+      "/Users/rj/.codex/visualizations/2026/09/15/01a0a755-dae4-7381-8ff0-67fe7969d121/storage-backup-2026-09-15/inspection/originals-06.webp"
+    ],
+    "comparisonSheet": "/Users/rj/.codex/visualizations/2026/09/15/01a0a755-dae4-7381-8ff0-67fe7969d121/storage-backup-2026-09-15/inspection/comparison-worst-six.webp",
+    "transparencyCheckPassed": true,
+    "visualReviewCompletedAt": "2026-09-16T00:10:14.015Z",
+    "visualReview": "All 113 originals reviewed across six contact sheets; six lowest-PSNR pairs reviewed side by side, including a full-size comparison of the lowest-PSNR pair. Matching artwork and readable text confirmed."
+  }
 }

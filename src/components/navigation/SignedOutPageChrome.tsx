@@ -24,7 +24,7 @@ type SignedOutPageChromeProps = {
 const signedOutPageNavLinks = [...publicUseCasePrimaryNavLinks];
 
 export default function SignedOutPageChrome({
-  activeBottomNavLabel = "Concierge",
+  activeBottomNavLabel = "Create",
   brandHref = "/",
   topNavVariant = "default",
 }: SignedOutPageChromeProps) {

@@ -8,18 +8,34 @@ import ts from "typescript";
 import * as dashboardData from "../../lib/dashboard-data.ts";
 import * as dashboardOverview from "../../lib/dashboard-overview.ts";
 import * as thumbnailFocus from "../../lib/thumbnail-focus.ts";
+import * as dashboardGames from "../../lib/dashboard-games.ts";
+import * as footballGames from "../../lib/football-games.ts";
+import * as footballDates from "../../lib/football-schedule-dates.ts";
+import * as footballTeams from "../../lib/football-team-name.ts";
+import * as calendarLinks from "../../utils/calendar-links.ts";
 
 const require = createRequire(import.meta.url);
-function loadComponent(filename) {
+function loadComponent(filename, selectedFilter = "all") {
   const { outputText } = ts.transpileModule(readFileSync(new URL(filename, import.meta.url), "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   });
   const componentModule = { exports: {} };
   new Function("require", "module", "exports", outputText)((name) => {
+    if (name === "react") return { ...React, useState: (initial) => React.useState(initial === "all" ? selectedFilter : initial) };
     if (name === "lucide-react") return new Proxy({}, { get: () => () => null });
     if (name === "@/lib/dashboard-data") return dashboardData;
     if (name === "@/lib/dashboard-overview") return dashboardOverview;
     if (name === "@/lib/thumbnail-focus") return thumbnailFocus;
+    if (name === "@/lib/dashboard-games") return dashboardGames;
+    if (name === "@/lib/football-games") return footballGames;
+    if (name === "@/lib/football-schedule-dates") return footballDates;
+    if (name === "@/lib/football-team-name") return footballTeams;
+    if (name === "@/utils/calendar-links") return calendarLinks;
+    if (name === "./DashboardGames") return loadComponent("./DashboardGames.tsx");
+    if (name === "@/components/football-season-templates/FootballSchedule") return loadComponent("../football-season-templates/FootballSchedule.tsx");
+    if (name === "./FootballSectionTabs") return loadComponent("../football-season-templates/FootballSectionTabs.tsx");
+    if (name === "./FootballPageText") return { default: ({ fallback, renderText }) => renderText ? renderText(fallback) : fallback, useFootballPageText: () => ({}) };
+    if (name === "@/components/CalendarAction") return { default: ({ links }) => React.createElement("a", { href: links.google }, "Add to calendar") };
     if (name === "./DashboardOverviewSections") return loadComponent("./DashboardOverviewSections.tsx");
     if (name === "./DashboardReviewDialog") return loadComponent("./DashboardReviewDialog.tsx");
     if (name === "@/components/ui/flip-clock") return { FlipClock: () => null };
@@ -36,8 +52,9 @@ const emptyData = {
   snapshot: { upcomingCount30Days: 0, upcomingCount7Days: 0, nextEventInDays: null },
   metricsEligibility: { weatherEligible: false, travelWindowEligible: false },
 };
-function render(props = {}) {
-  return renderToStaticMarkup(React.createElement(HomeOverviewDashboard, {
+function render(props = {}, filter = "all") {
+  const Component = filter === "all" ? HomeOverviewDashboard : loadComponent("./HomeOverviewDashboard.tsx", filter).default;
+  return renderToStaticMarkup(React.createElement(Component, {
     viewerName: "Ruslan", data: null, metrics: null, enrichMeta: null,
     metricsLoading: false, loading: false, error: null,
     onRetry: () => {}, onForceTravel: () => {}, ...props,
@@ -94,7 +111,57 @@ test("event filter bubbles count the complete list by ownership, excluding the s
   assert.match(ownOnly, /aria-label="Invited events, 0 events"/);
 });
 
-test("Home renders actionable sections, accurate replies, and known sign-up needs", () => {
+test("Games counts individual fixtures even when a saved season has no dated event card", () => {
+  const games = dashboardGames.dashboardGamesFromSources([{
+    id: "season", public_slug: "seahawks-season", title: "Seahawks football season",
+    home: { season: "2099", teamName: "South Walton", timezone: "America/Chicago" },
+    games: Array.from({ length: 5 }, (_, index) => ({
+      id: `g-${index}`, opponent: `Visitors ${index}`, date: `2099-10-${10 + index}`,
+      homeAway: "away", venue: "Away stadium", address: "123 Away Road", time: "19:00",
+      ticketsLink: "https://tickets.example/game",
+    })),
+  }]);
+  const data = { ...emptyData, games };
+  const initial = render({ data });
+  assert.match(initial, /Your next games are ready/);
+  assert.doesNotMatch(initial, /Nothing is scheduled yet/);
+  assert.match(initial, /aria-label="All, 0 events"/);
+  assert.match(initial, /aria-label="Games, 5 games"/);
+  const html = render({ data }, "games");
+  assert.match(html, /aria-pressed="true" aria-label="Games, 5 games"/);
+  assert.match(html, /Visitors 0/);
+  assert.match(html, /Visitors 3/);
+  assert.doesNotMatch(html, /Visitors 4|Game schedule periods|No other upcoming/);
+  assert.match(html, /Show all 5 games/);
+  assert.match(html, /href="\/event\/seahawks-season\?tab=event#games"/);
+  assert.doesNotMatch(html, /Seahawks football season/);
+  assert.match(html, /Add to calendar/);
+  assert.match(html, /https:\/\/tickets.example\/game/);
+  assert.match(html, /Get directions to Away stadium/);
+});
+
+test("Games renders duplicate cached schedule entries once and counts unique fixtures", () => {
+  const games = dashboardGames.dashboardGamesFromSources([
+    { id: "season-one", title: "First saved schedule", public_slug: null, home: { teamName: "South Walton", season: "2099" }, games: [{ id: "one", opponent: "Pine Forest", date: "2099-09-25", homeAway: "home" }] },
+    { id: "season-two", title: "Second saved schedule", public_slug: null, home: { teamName: "South Walton High School", season: "2099" }, games: [{ id: "two", opponent: "Pine Forest High School", date: "2099-09-25", homeAway: "home" }] },
+  ]);
+  const html = render({ data: { ...emptyData, games } }, "games");
+  assert.match(html, /aria-label="Games, 1 game"/);
+  assert.equal((html.match(/<h3/g) || []).length, 1);
+  assert.doesNotMatch(html, /First saved schedule|Second saved schedule/);
+});
+
+test("Games distinguishes an empty schedule from a failed load", () => {
+  const empty = render({ data: { ...emptyData, games: [] } }, "games");
+  assert.match(empty, /No upcoming games in your saved schedules/);
+  const failed = render({ data: { ...emptyData, games: [], gamesUnavailable: true } }, "games");
+  assert.match(failed, /aria-label="Games, unavailable"/);
+  assert.match(failed, /Your games couldn’t load/);
+  assert.match(failed, /Try again/);
+  assert.doesNotMatch(failed, /No upcoming games/);
+});
+
+test("Home keeps drafts and sign-up needs while omitting Guest responses", () => {
   const nextEvent = { id: "picnic", title: "School picnic", startAt: "2030-09-25T12:00:00Z", endAt: null, ownership: "owned", locationText: "Park", mapsUrl: "https://maps.example/park" };
   const overview = {
     attention: [{ id: "venue", eventId: "school", eventTitle: "School night", kind: "venue", label: "Add event location", href: "/edit/school" }],
@@ -110,8 +177,7 @@ test("Home renders actionable sections, accurate replies, and known sign-up need
   assert.match(review, /href="\/edit\/school"/);
   assert.doesNotMatch(html, /id="dashboard-attention"|href="#dashboard-attention"/);
   assert.match(html, /href="\/chat\?thread=saved"/);
-  assert.match(html, /3 shared invitations awaiting a reply/);
-  assert.match(html, /7 Replies/);
+  assert.doesNotMatch(html, /Guest responses|dashboard-guests|3 shared invitations awaiting a reply|7 Replies/);
   assert.match(html, /1 open/);
   assert.match(html, /Forecast available closer to the event/);
   assert.doesNotMatch(html, /72h Window|Open Route/);

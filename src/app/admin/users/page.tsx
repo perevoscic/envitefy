@@ -872,6 +872,8 @@ function BreakdownPopup({
 }: BreakdownPopupProps) {
   const [open, setOpen] = useState(false);
   const [debugLinkState, setDebugLinkState] = useState<DebugLinkState | null>(null);
+  const [debugLinksRetryKey, setDebugLinksRetryKey] = useState(0);
+  const loadedDebugLinks = useRef<{ count: number; state: DebugLinkState } | null>(null);
   const ref = useRef<HTMLDivElement | null>(null);
   const normalizedCount = Number.isFinite(count) ? count : 0;
   const hasItems = breakdown.length > 0;
@@ -887,6 +889,7 @@ function BreakdownPopup({
     isScanBreakdown &&
     normalizedCount > 0 &&
     Boolean(activeDebugLinkState?.loaded) &&
+    !activeDebugLinkState?.error &&
     !hasEventLinks &&
     !hasScanAttempts;
 
@@ -912,7 +915,13 @@ function BreakdownPopup({
 
   useEffect(() => {
     if (!open || !debugLinkKey || !userId || !debugLinkKind || normalizedCount <= 0) return;
-    if (activeDebugLinkState?.loading || activeDebugLinkState?.loaded) return;
+    // Only completed requests are reusable. Loading state must not restart this
+    // effect: its cleanup would abort the request that just set that state.
+    const cached = loadedDebugLinks.current;
+    if (cached?.state.key === debugLinkKey && cached.count === normalizedCount) {
+      setDebugLinkState(cached.state);
+      return;
+    }
 
     const controller = new AbortController();
     setDebugLinkState({
@@ -931,6 +940,7 @@ function BreakdownPopup({
           { cache: "no-store", signal: controller.signal },
         );
         const payload: unknown = await response.json().catch(() => null);
+        if (controller.signal.aborted) return;
         if (!response.ok) {
           throw new Error(readAdminDebugError(payload) || `Debug links failed: ${response.status}`);
         }
@@ -939,14 +949,16 @@ function BreakdownPopup({
             ? (payload as Record<string, unknown>)
             : {};
         const rawLinks = debugLinkKind === "scans" ? record.scanLinks : record.eventLinks;
-        setDebugLinkState({
+        const nextState: DebugLinkState = {
           key: debugLinkKey,
           links: readAdminDebugLinks(rawLinks),
           scanAttempts: readAdminScanAttemptLinks(record.scanAttempts),
           loading: false,
           loaded: true,
           error: null,
-        });
+        };
+        loadedDebugLinks.current = { count: normalizedCount, state: nextState };
+        setDebugLinkState(nextState);
       } catch (error) {
         if (controller.signal.aborted) return;
         setDebugLinkState({
@@ -963,10 +975,9 @@ function BreakdownPopup({
     void loadDebugLinks();
     return () => controller.abort();
   }, [
-    activeDebugLinkState?.loaded,
-    activeDebugLinkState?.loading,
     debugLinkKey,
     debugLinkKind,
+    debugLinksRetryKey,
     normalizedCount,
     open,
     userId,
@@ -1068,9 +1079,16 @@ function BreakdownPopup({
         </p>
       )}
       {activeDebugLinkState?.error && (
-        <p className="mt-3 border-t border-[#e8e1fb] pt-3 text-xs text-[#b84367]">
-          {activeDebugLinkState.error}
-        </p>
+        <div role="alert" className="mt-3 border-t border-[#e8e1fb] pt-3 text-xs text-[#b84367]">
+          <p>{activeDebugLinkState.error}</p>
+          <button
+            type="button"
+            onClick={() => setDebugLinksRetryKey((key) => key + 1)}
+            className="mt-2 font-semibold text-[#6e55c8] underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-[#8c74df]"
+          >
+            Retry
+          </button>
+        </div>
       )}
       {showMissingScanLinks && (
         <p className="mt-3 border-t border-[#e8e1fb] pt-3 text-xs text-[#9186bb]">

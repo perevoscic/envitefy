@@ -269,7 +269,7 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
               </h1>
 
               <p className="mx-auto max-w-xl text-base font-light leading-relaxed text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] sm:text-lg lg:mx-0">
-                An exquisite digital stationery and guest concierge experience. From save-the-dates
+                An exquisite digital stationery and guest planning experience. From save-the-dates
                 to multi-day wedding weekend itineraries with live RSVP tracking, custom meal
                 selections, and seating charts.
               </p>
@@ -442,7 +442,7 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
         <section id="concierge" className="bg-white py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto mb-20 max-w-3xl space-y-4 text-center">
-              <SectionEyebrow>Guest Concierge Suite</SectionEyebrow>
+              <SectionEyebrow>Guest Planning Suite</SectionEyebrow>
               <h2 className="font-wedding-serif text-3xl font-light tracking-wide text-slate-900 sm:text-5xl">
                 Everything Needed for Your Grand Celebration
               </h2>

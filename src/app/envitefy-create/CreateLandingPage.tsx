@@ -36,7 +36,7 @@ const steps = [
   {
     title: "Fill in the details together",
     description:
-      "Share the date, time, location, and the look you have in mind. Concierge picks up the details you provide and asks for what’s missing. You can correct anything in the conversation.",
+      "Share the date, time, location, and the look you have in mind. Envitefy Create picks up the details you provide and asks for what’s missing. You can correct anything in the conversation.",
     icon: Paperclip,
   },
   {
@@ -73,7 +73,7 @@ const examples = [
 
 const faqs = [
   {
-    question: "What is Envitefy Concierge?",
+    question: "What is Envitefy Create?",
     answer:
       "It’s Envitefy’s conversational event creator. Start with your own words or an upload, and it helps collect the event details, draft invitation wording, and create a design you can review before publishing.",
   },
@@ -105,7 +105,7 @@ const primaryButton =
 function StartButton({ authenticated, onStart }: { authenticated: boolean; onStart: () => void }) {
   const content = (
     <>
-      Start with Concierge <ArrowRight size={17} aria-hidden="true" />
+      Create with Envitefy <ArrowRight size={17} aria-hidden="true" />
     </>
   );
   return authenticated ? (
@@ -119,7 +119,7 @@ function StartButton({ authenticated, onStart }: { authenticated: boolean; onSta
   );
 }
 
-export default function ConciergeLandingPage() {
+export default function CreateLandingPage() {
   const { status } = useSession();
   const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
   const [authOpen, setAuthOpen] = useState(false);
@@ -134,7 +134,7 @@ export default function ConciergeLandingPage() {
       <HeroTopNav
         navLinks={navigation}
         mobileNavLinks={[{ label: "Home", href: "/" }, ...navigation]}
-        primaryCtaLabel="Start with Concierge"
+        primaryCtaLabel="Create with Envitefy"
         authenticatedPrimaryHref="/chat"
         loginSuccessRedirectUrl="/chat"
         onGuestLoginAction={() => openAuth("login")}
@@ -145,14 +145,14 @@ export default function ConciergeLandingPage() {
           <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 pb-16 pt-28 sm:px-8 sm:pt-32 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pb-20">
             <div>
               <p className="mb-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#7041d9]">
-                <Sparkles size={16} aria-hidden="true" /> Envitefy Concierge
+                <Sparkles size={16} aria-hidden="true" /> Envitefy Create
               </p>
               <h1 className="max-w-xl font-serif text-[2.8rem] leading-[1.06] tracking-[-0.035em] sm:text-6xl lg:text-[4.2rem]">
                 Your next celebration starts with{" "}
                 <span className="text-[#7041d9]">a conversation.</span>
               </h1>
               <p className="mt-6 max-w-lg text-base leading-8 text-[#655b70] sm:text-lg">
-                An idea, a few details, or a flyer you already have. Concierge helps turn it into a
+                An idea, a few details, or a flyer you already have. Envitefy Create helps turn it into a
                 beautiful invitation and a shareable event your guests can use.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-5">
@@ -237,7 +237,7 @@ export default function ConciergeLandingPage() {
           className="mx-auto max-w-6xl scroll-mt-24 px-6 py-16 sm:px-8 lg:py-24"
         >
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7041d9]">
-            How to use Concierge
+            How to use Envitefy Create
           </p>
           <h2 className="mt-4 font-serif text-4xl tracking-tight sm:text-5xl">
             A few words. A clear next step.
@@ -268,7 +268,7 @@ export default function ConciergeLandingPage() {
               </h2>
               <p className="mt-5 text-base leading-8 text-[#655b70]">
                 Birthday dinners, weddings, showers, school events, and everything you’re bringing
-                people together for. Choose what you want to make, and Concierge helps you shape it.
+                people together for. Choose what you want to make, and Envitefy Create helps you shape it.
               </p>
               <Link
                 href="/showcase"

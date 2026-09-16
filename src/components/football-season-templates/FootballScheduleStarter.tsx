@@ -12,7 +12,9 @@ import {
   X,
 } from "lucide-react";
 import { type CSSProperties, type MouseEvent, useEffect, useRef } from "react";
-import { getFootballDesign } from "./footballDesigns";
+import { resolveFootballSeasonTemplateChrome } from "@/app/event/football-season/customize/footballSeasonTemplateTheme";
+import styles from "./football-page-content.module.css";
+import { getGymMeetTemplateMeta } from "./registry";
 
 type StarterView = "games" | "discover" | "details" | "roster" | "practice";
 export type FootballStarterPanelId = "all" | "matchup" | "details" | "roster" | "practice";
@@ -43,7 +45,7 @@ export default function FootballScheduleStarter({
   onDismiss,
   onRestore,
 }: Props) {
-  const design = getFootballDesign(templateId);
+  const design = resolveFootballSeasonTemplateChrome(getGymMeetTemplateMeta(templateId).id);
   const restoreRef = useRef<HTMLButtonElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const focusAfterChange = useRef<"restore" | "heading" | null>(null);
@@ -88,11 +90,11 @@ export default function FootballScheduleStarter({
   const closeClass = `absolute right-2 top-2 z-10 inline-flex size-11 items-center justify-center rounded-full border border-current/20 hover:border-current/60 hover:bg-current/10 ${focusClass}`;
 
   return (
-    <div className={design.textClass}>
+    <div className={`${design.presentationClass} ${design.textClass}`}>
       {!dismissedPanels.includes("all") && (
         <section
           aria-labelledby="football-starter-heading"
-          className={`@container relative space-y-6 ${design.sectionClass} ${design.textClass}`}
+          className={`@container relative space-y-6 ${design.sectionClass} ${styles.starter} ${design.textClass}`}
         >
           <button
             type="button"

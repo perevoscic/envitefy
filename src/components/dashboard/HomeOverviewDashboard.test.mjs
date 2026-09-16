@@ -49,7 +49,7 @@ test("dashboard puts travel and directions with the spotlight and gives summary 
 test("dashboard empty state offers Concierge and snap upload routes", () => {
   const source = readFileSync(new URL("./HomeOverviewDashboard.tsx", import.meta.url), "utf8");
 
-  assert.match(source, /href="\/chat"[\s\S]*Create with Concierge/);
+  assert.match(source, /href="\/chat"[\s\S]*Create with Envitefy/);
   assert.match(source, /href="\/event"[\s\S]*Snap\/upload/);
   assert.doesNotMatch(source, /Create First Event/);
   assert.doesNotMatch(source, /onCreateEvent/);

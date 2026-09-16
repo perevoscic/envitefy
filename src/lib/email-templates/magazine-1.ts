@@ -281,7 +281,7 @@ export const MAGAZINE_1_HTML = `<!DOCTYPE html>
               {{SHOWCASE_CARDS_HTML}}
               <div style="height:18px;"></div>
               <div style="text-align:center;">
-                <a href="{{CONCIERGE_URL}}" class="btn">Try Envitefy Concierge</a>
+                <a href="{{CONCIERGE_URL}}" class="btn">Try Envitefy Create</a>
               </div>
             </td>
           </tr>

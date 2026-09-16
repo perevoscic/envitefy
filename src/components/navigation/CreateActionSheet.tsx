@@ -29,8 +29,8 @@ type CreateActionSheetProps = {
 
 const createActionItems: CreateAction[] = [
   {
-    label: "Create with Envitefy Concierge",
-    description: "Start from the signed-out Concierge demo.",
+    label: "Create with Envitefy",
+    description: "Describe your event and try Envitefy Create.",
     icon: Sparkles,
     href: "#concierge",
     action: "concierge",

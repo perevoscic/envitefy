@@ -1415,11 +1415,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               event.preventDefault();
               setDiscoverUrl(url);
               void handleDiscoverParse({ type: "url", url });
-            }} placeholder="https://school.edu/athletics/football" autoCapitalize="none" autoCorrect="off" aria-invalid={discoverMode === "url" && !!discoverError} aria-describedby={`${discoverId}-url-help${discoverMode === "url" && discoverError ? ` ${discoverId}-error` : ""}`} className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base font-normal text-slate-900 outline-none focus:ring-2 focus:ring-violet-400" />
-            <p id={`${discoverId}-url-help`} className="text-xs text-slate-500">Paste a link to start parsing automatically, or type a link and press Enter.</p>
+            }} placeholder="https://school.edu/athletics/football" autoCapitalize="none" autoCorrect="off" aria-invalid={discoverMode === "url" && !!discoverError} aria-describedby={`${discoverId}-${discoverBusy ? "import-status" : "url-help"}${discoverMode === "url" && discoverError ? ` ${discoverId}-error` : ""}`} className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base font-normal text-slate-900 outline-none focus:ring-2 focus:ring-violet-400" />
+            {!discoverBusy ? <p id={`${discoverId}-url-help`} className="text-xs text-slate-500">Paste a link to start parsing automatically, or type a link and press Enter.</p> : null}
           </div>
           {discoverError ? <p id={`${discoverId}-error`} role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{footballErrorMessage(discoverError, "The previous import failed. Try the file or URL again; your current details are kept.")}</p> : null}
-          {discoverBusy ? <p role="status" className="text-sm text-slate-600">Reading the source and organizing the schedule. This can take a minute.</p> : null}
+          {discoverBusy ? (
+            <p id={`${discoverId}-import-status`} role="status" className="flex items-start gap-2.5 text-sm text-slate-600">
+              <span aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 rounded-full border-2 border-violet-200 border-t-violet-600 motion-safe:animate-spin" />
+              <span>Reading the source and organizing the schedule. This can take a minute.</span>
+            </p>
+          ) : null}
         </form>
       </section>
     );

@@ -15,6 +15,7 @@ import {
 const PUBLIC_UNAUTH_PATHS = new Set([
   "/",
   "/studio",
+  "/envitefy-create",
   "/envitefy-concierge",
   "/landing",
   "/invitation-maker",

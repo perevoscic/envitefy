@@ -1,0 +1,207 @@
+.body,
+.wedding {
+  --celebration-paper: var(--birthday-body-bg, var(--baby-paper, var(--reveal-paper, transparent)));
+  --celebration-line: color-mix(in srgb, currentColor 30%, transparent);
+  --celebration-wash: color-mix(in srgb, currentColor 5%, transparent);
+}
+.body {
+  container: celebration-body / inline-size;
+}
+
+/* A structural surface belongs to content, never to hero art or editor chrome. */
+.body[data-template-body-layout][data-celebration-design] [data-body-section],
+.wedding[data-celebration-design]
+  :is([data-celebration-section], section:has(h2)):not(:has(h1)):not(:has(section)) {
+  position: relative;
+  min-width: 0;
+  padding: clamp(24px, 4cqi, 48px);
+  border: var(--celebration-border, 0);
+  border-block: var(--celebration-border-block, var(--celebration-border, 0));
+  border-inline: var(--celebration-border-inline, var(--celebration-border, 0));
+  border-block-start: var(
+    --celebration-border-block-start,
+    var(--celebration-border-block, var(--celebration-border, 0))
+  );
+  border-block-end: var(
+    --celebration-border-block-end,
+    var(--celebration-border-bottom, var(--celebration-border-block, var(--celebration-border, 0)))
+  );
+  border-inline-start: var(
+    --celebration-border-inline-start,
+    var(--celebration-border-inline, var(--celebration-border, 0))
+  );
+  border-inline-end: var(
+    --celebration-border-inline-end,
+    var(--celebration-border-inline, var(--celebration-border, 0))
+  );
+  border-radius: var(--celebration-radius);
+  outline: var(--celebration-outline, none);
+  outline-offset: var(--celebration-outline-offset, 0);
+  box-shadow: var(--celebration-box-shadow, none);
+  background-image: var(--celebration-atmosphere);
+  overflow-wrap: anywhere;
+}
+.body[data-template-body-layout][data-celebration-design] [data-body-section] {
+  background-color: transparent;
+}
+.body[data-template-body-layout][data-celebration-design] [data-body-section] > section {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  color: inherit;
+}
+.body[data-template-body-layout][data-celebration-design]
+  [data-body-section]
+  > section
+  > div:has(> h2) {
+  align-items: start;
+  color: inherit;
+}
+.body[data-template-body-layout][data-celebration-design] [data-body-section] > section h2 {
+  color: inherit;
+  font-family: var(--birthday-body-headline, var(--baby-font, var(--reveal-font, inherit)));
+  text-wrap: balance;
+}
+.body[data-template-body-layout][data-celebration-design] [data-body-section] > span[aria-hidden] {
+  display: none;
+}
+.body[data-template-body-layout][data-celebration-design] [data-body-section]::before {
+  content: none;
+}
+.body[data-template-body-layout][data-celebration-design] [data-celebration-card],
+.wedding[data-celebration-design] [data-celebration-card] {
+  border: 1px solid var(--celebration-line);
+  border-radius: var(--celebration-radius);
+  background: var(--celebration-wash);
+  padding: 20px;
+  min-width: 0;
+}
+.body[data-template-body-layout][data-celebration-design]
+  [data-birthday-schedule-treatment]
+  > div:last-child {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+}
+.body[data-template-body-layout][data-celebration-design]
+  [data-celebration-card]
+  > div:first-child {
+  flex-wrap: wrap;
+}
+.body[data-template-body-layout][data-celebration-design]
+  [data-celebration-card]
+  > div:first-child
+  > span {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.body[data-template-body-layout][data-celebration-design] [data-celebration-card] :is(h3, p, span) {
+  color: inherit;
+}
+.body[data-template-body-layout][data-celebration-design] [data-celebration-form] {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  padding-inline: 0;
+}
+.body[data-template-body-layout][data-celebration-design][data-celebration-heading]
+  [data-body-section]
+  h2 {
+  margin: 0 0 24px;
+  padding: 0;
+  border: 0;
+  font-size: clamp(24px, 3cqi, 38px);
+  line-height: 1.25;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.body[data-template-body-layout][data-celebration-design][data-celebration-heading="label"]
+  [data-body-section]
+  h2 {
+  font-size: 17px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: left;
+  border-bottom: 1px solid var(--celebration-line);
+  padding-bottom: 18px;
+}
+.body[data-template-body-layout][data-celebration-design][data-celebration-heading="masthead"]
+  [data-body-section]
+  h2 {
+  font-size: clamp(32px, 4cqi, 48px);
+  letter-spacing: -0.035em;
+  text-align: left;
+}
+.body[data-template-body-layout][data-celebration-design][data-celebration-heading="ribbon"]
+  [data-body-section]
+  h2 {
+  border-block: 3px double var(--celebration-line);
+  padding-block: 12px;
+  text-align: center;
+}
+.body[data-template-body-layout][data-celebration-design][data-celebration-heading="side"]
+  [data-body-section]
+  h2 {
+  border-inline-start: 4px solid var(--celebration-line);
+  padding-inline-start: 18px;
+  text-align: left;
+}
+.body[data-template-body-layout][data-celebration-design][data-celebration-heading="center"]
+  [data-body-section]
+  h2 {
+  text-align: center;
+  font-style: italic;
+}
+.body[data-template-body-layout][data-celebration-design][data-celebration-heading="folio"]
+  [data-body-section]
+  h2 {
+  border-bottom: 4px double var(--celebration-line);
+  padding-bottom: 16px;
+  text-align: left;
+}
+.body[data-template-body-layout][data-celebration-design] [data-body-section="rsvp"] {
+  width: 100%;
+  margin: 0;
+  grid-column: 1 / -1;
+}
+.body[data-template-body-layout][data-celebration-design]
+  [data-body-section="rsvp"]
+  > section
+  > button {
+  color: var(--birthday-body-bg);
+  background: var(--birthday-body-ink);
+  border-radius: var(--celebration-radius);
+}
+.body[data-template-body-layout][data-celebration-design] [data-body-section="registry"] a {
+  color: inherit;
+  background: var(--celebration-wash);
+  border-radius: var(--celebration-radius);
+}
+/* Editor sidebars and device previews may be narrow inside a desktop window. */
+@container celebration-body (max-width: 700px) {
+  .body[data-template-body-layout][data-celebration-design] [data-body-sections] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .body[data-template-body-layout][data-celebration-design] [data-body-section]:nth-child(n) {
+    grid-column: auto;
+    width: 100%;
+    margin: 0;
+  }
+  .body[data-template-body-layout][data-celebration-design] [data-body-section] > section {
+    display: block;
+  }
+  .body[data-template-body-layout][data-celebration-design]
+    [data-body-section]
+    :is(dl, div):has(> [data-celebration-card]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .body[data-template-body-layout][data-celebration-design] [data-body-section],
+  .wedding[data-celebration-design]
+    :is([data-celebration-section], section:has(h2)):not(:has(h1)):not(:has(section)) {
+    padding: 28px 20px;
+  }
+}

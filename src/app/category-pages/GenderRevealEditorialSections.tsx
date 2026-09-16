@@ -404,7 +404,7 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
               Two ways to start
             </p>
             <h2 className="mt-5 font-serif text-4xl leading-tight text-[#241b29] sm:text-5xl">
-              SNAP the invite. Or tell Envitefy Concierge.
+              SNAP the invite. Or tell Envitefy Create.
             </h2>
             <p className="mt-5 text-lg leading-8 text-[#6b5d68]">
               Photograph the card you already printed, or describe the reveal in a message.
@@ -466,13 +466,13 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
                 </span>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#efb6ce]">
-                    Envitefy Concierge
+                    Envitefy Create
                   </p>
                   <h3 className="font-serif text-3xl !text-white">Describe the reveal</h3>
                 </div>
               </div>
               <p className="mt-4 leading-7 text-white/68">
-                Tell Concierge who it is for, when, and where. It collects missing details, then
+                Tell Envitefy Create who it is for, when, and where. It collects missing details, then
                 drafts the invitation, Team Pink or Team Blue, RSVP, and guest page.
               </p>
               <div className="mt-6 space-y-3">
@@ -493,7 +493,7 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
                 href="/chat"
                 className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#f3b6cf] underline decoration-[#f3b6cf]/40 underline-offset-8"
               >
-                Ask Envitefy Concierge
+                Create with Envitefy
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             </article>

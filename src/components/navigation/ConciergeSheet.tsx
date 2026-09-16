@@ -147,7 +147,7 @@ export default function ConciergeSheet({
       });
       const data = parseGuestChatResponse(await res.json().catch(() => ({})));
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || "Envitefy Concierge is temporarily unavailable.");
+        throw new Error(data.error || "Envitefy Create is temporarily unavailable.");
       }
 
       setMessages((current) => [
@@ -170,7 +170,7 @@ export default function ConciergeSheet({
           text:
             error instanceof Error
               ? error.message
-              : "Envitefy Concierge is temporarily unavailable.",
+              : "Envitefy Create is temporarily unavailable.",
         },
       ]);
     } finally {
@@ -194,7 +194,7 @@ export default function ConciergeSheet({
         <div className="fixed inset-0 z-[90] md:hidden" role="presentation">
           <motion.button
             type="button"
-            aria-label="Dismiss Envitefy Concierge"
+            aria-label="Dismiss Envitefy Create"
             className="absolute inset-0 bg-[#120b1d]/48 backdrop-blur-[3px]"
             onClick={() => onOpenChange(false)}
             initial={{ opacity: 0 }}
@@ -206,7 +206,7 @@ export default function ConciergeSheet({
           <motion.section
             role="dialog"
             aria-modal="true"
-            aria-label="Envitefy Concierge"
+            aria-label="Envitefy Create"
             className="absolute inset-x-0 bottom-0 mx-auto flex h-[82vh] max-h-[85vh] min-h-[70vh] w-full max-w-md flex-col overflow-hidden rounded-t-[1.75rem] border border-white/12 bg-[#fbf8ff] text-[#211821] shadow-[0_-28px_90px_rgba(20,11,34,0.38)]"
             initial={{ y: "100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -226,7 +226,7 @@ export default function ConciergeSheet({
                       className="truncate text-base font-semibold text-[#f9df94]"
                       style={{ color: "#f9df94" }}
                     >
-                      Envitefy Concierge
+                      Envitefy Create
                     </h2>
                     <p className="truncate text-xs font-semibold text-[#fff7df]">
                       Event ideas, RSVP, gifts & setup
@@ -237,7 +237,7 @@ export default function ConciergeSheet({
                   type="button"
                   onClick={() => onOpenChange(false)}
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#f4ead5]/78 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f]"
-                  aria-label="Close Envitefy Concierge"
+                  aria-label="Close Envitefy Create"
                   title="Close"
                 >
                   <X className="h-5 w-5" aria-hidden="true" />
@@ -327,14 +327,14 @@ export default function ConciergeSheet({
                   rows={1}
                   maxLength={1000}
                   className="max-h-28 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-sm leading-5 text-[#211821] outline-none placeholder:text-[#8c8192]"
-                  placeholder="Ask Envitefy Concierge..."
+                  placeholder="Describe your event..."
                   disabled={isSending}
                 />
                 <button
                   type="submit"
                   disabled={isSending || !input.trim()}
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#5f3cff_0%,#8b4dff_58%,#f04fb7_100%)] text-white shadow-[0_10px_22px_rgba(115,76,224,0.25)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
-                  aria-label="Send Concierge message"
+                  aria-label="Send Envitefy Create message"
                   title="Send"
                 >
                   {isSending ? (

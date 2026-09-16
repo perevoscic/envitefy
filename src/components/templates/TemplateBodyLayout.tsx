@@ -1,4 +1,6 @@
-import { Children, Fragment, isValidElement, type CSSProperties, type ReactNode } from "react";
+import { Children, type CSSProperties, Fragment, isValidElement, type ReactNode } from "react";
+import { celebrationMaterialStyle, getCelebrationDirection } from "./celebration-materials";
+import materialStyles from "./celebration-materials.module.css";
 import styles from "./template-body-layout.module.css";
 
 export type BodyPresentation = {
@@ -90,6 +92,7 @@ function flatten(children: ReactNode): ReactNode[] {
 /** Layout only: keep the existing content, controls, IDs and guest behaviour. */
 export default function TemplateBodyLayout({
   presentation,
+  design,
   sections,
   children,
   className = "",
@@ -97,12 +100,22 @@ export default function TemplateBodyLayout({
   style,
 }: {
   presentation?: BodyPresentation;
+  design?: { category: string; id?: string | null };
   sections?: BodySection[];
   children?: ReactNode;
   className?: string;
   fallbackClassName?: string;
   style?: CSSProperties;
 }) {
+  const direction = design && getCelebrationDirection(design.category, design.id);
+  const activePresentation = direction
+    ? {
+        layout: direction.layout,
+        surface: "outline" as const,
+        heading: "masthead" as const,
+        flow: presentation?.flow || ("invitation" as const),
+      }
+    : presentation;
   const items =
     sections ||
     flatten(children).map((content, index) => ({
@@ -114,11 +127,11 @@ export default function TemplateBodyLayout({
   const visible = items.filter(
     (item) => item.content !== null && item.content !== undefined && item.content !== false,
   );
-  if (!presentation) {
+  if (!activePresentation) {
     const content = visible.map((item) => <Fragment key={item.id}>{item.content}</Fragment>);
     return fallbackClassName ? <div className={fallbackClassName}>{content}</div> : content;
   }
-  const order = flows[presentation.flow];
+  const order = flows[activePresentation.flow];
   const rank = (id: string) => {
     const index = order.indexOf(id === "photos" ? "gallery" : id === "updates" ? "notes" : id);
     return index === -1 ? order.indexOf("registry") - 0.5 : index;
@@ -127,13 +140,15 @@ export default function TemplateBodyLayout({
   if (!ordered.length) return null;
   return (
     <div
-      className={`${styles.body} ${className}`}
-      style={style}
-      data-template-body-layout={presentation.layout}
-      data-body-surface={presentation.surface}
-      data-body-heading={presentation.heading}
+      className={`${styles.body} ${direction ? materialStyles.body : ""} ${className}`}
+      style={{ ...style, ...(direction ? celebrationMaterialStyle(direction) : {}) }}
+      data-template-body-layout={activePresentation.layout}
+      data-body-surface={activePresentation.surface}
+      data-body-heading={activePresentation.heading}
+      data-celebration-design={direction && design ? `${design.category}/${design.id}` : undefined}
+      data-celebration-heading={direction?.heading}
     >
-      <div className={styles.sections}>
+      <div className={styles.sections} data-body-sections>
         {ordered.map((item, index) => (
           <div className={styles.panel} data-body-section={item.id} key={item.id}>
             <span className={styles.index} aria-hidden="true">

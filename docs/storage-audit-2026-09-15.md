@@ -1,8 +1,16 @@
 # Envitefy storage audit — September 15, 2026
 
-## Findings
+## Completed cleanup
 
-Read-only inventory of the Vercel Blob store configured in this checkout's `.env`:
+After storage access was restored, the authorized **113 generated/edited PNG originals with display WebPs** were downloaded, backed up, fully decoded and compared with their replacements. Visual review confirmed matching artwork. All 113 PNGs were then deleted with ETag conditions after a fresh reference scan found no old PNG pointers to update.
+
+This operation freed **309,818,549 bytes (309.82 MB)**. The immediately preceding live inventory contained **1,228 objects / 889,755,509 bytes**; the final inventory contained **1,115 objects / 579,936,960 bytes (579.94 MB)**. Other changes between the initial audit below and this pre-deletion snapshot are outside this operation.
+
+All **113 display WebPs and 113 thumbnails** remain unchanged. The **75 originals with only thumbnails / 209.90 MB** remain. Original PNG backups are retained locally outside the repository. See [the completed cleanup record](../artifacts/storage-cleanup-2026-09-15/README.md), its exact replacement mappings, backup verification and deletion receipt.
+
+## Initial findings — before cleanup
+
+Initial read-only inventory of the Vercel Blob store configured in this checkout's `.env` (historical, superseded by the completed cleanup above):
 
 - **1,258 files; 927,883,348 bytes (927.88 MB / 884.90 MiB).**
 - PNG files, including uppercase `.PNG`: **291 files; 719,798,829 bytes (77.57%).**
@@ -43,11 +51,11 @@ The audit extracted file references from all public database tables, then checke
 - Of those 188 originals, 113 have a `display.webp` sibling; 75 have only a `thumb.webp` sibling. Do not treat thumbnails as verified original replacements.
 - Database-only scanning would miss hardcoded site/showcase/email artwork. The repository check was included to retain those references.
 
-Absence of a reference is not proof that deletion is safe. Previous deployments, distributed email HTML, external links and unsaved browser state were not exhaustively checked. No remote files or records were changed or deleted.
+Absence of a reference is not proof that deletion is safe. Previous deployments, distributed email HTML, external links and unsaved browser state were not exhaustively checked. The initial audit made no remote changes; the subsequent authorized cleanup is recorded above.
 
 Recommended next work: validate abandoned generated assets, preserve any required originals at full dimensions in verified WebP format, update references where needed, and reconcile upload variants so this does not recur. Preserve user-supplied originals required by editing workflows.
 
-## Quota limitation
+## Initial quota limitation — resolved for this cleanup
 
 The supplied project URL, https://vercel.com/nexa-lyunxs-projects/envitefy, redirects to sign-in in the available browser. The team's actual plan, complete store inventory, production environment mapping and warning meter could not be verified there. These measurements describe the store and database configured locally.
 
@@ -55,6 +63,6 @@ Vercel's current documentation lists a 1 GB-month Blob storage allowance for Hob
 
 Detailed inventory and candidate paths are in `/private/tmp/envitefy-blob-inventory-2026-09-15.json` and `/private/tmp/envitefy-blob-cleanup-candidates-2026-09-15.json`. These contain file metadata only, without credentials.
 
-## Follow-up: preview access
+## Initial follow-up: preview access — subsequently restored
 
-The original-image review confirmed that Vercel content reads return **HTTP 403, `Your store is blocked`**, including reads through the official SDK. Listing metadata succeeded earlier, but image bytes cannot currently be displayed or validated. This confirms a blocked store; it does not identify which quota or account condition caused the block. See `generated-invitation-originals-2026-09-15.md` for all 188 original paths and the listed replacement groups. No files were deleted.
+The first original-image review received **HTTP 403, `Your store is blocked`**, including reads through the official SDK. Metadata listing worked but content reads were blocked. The user subsequently lifted the limit; the completed verification, backup and cleanup are recorded above. See `generated-invitation-originals-2026-09-15.md` for the initial 188-original inventory and replacement groups.

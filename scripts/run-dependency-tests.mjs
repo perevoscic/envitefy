@@ -21,7 +21,7 @@ registerHooks({
       if (!extname(target.pathname) && existsSync(new URL(`${target.href}.ts`))) {
         target = new URL(`${target.href}.ts`);
       }
-      return nextResolve(target.href, context);
+      return nextResolve(fileURLToPath(target), context);
     }
     return nextResolve(specifier, context);
   },
@@ -29,6 +29,7 @@ registerHooks({
 
 for (const file of [
   "lib/media-upload.test.ts",
+  "lib/media-upload.storage.test.mjs",
   "lib/pdf-raster.test.ts",
   "lib/pdf-optimize.test.ts",
   "lib/upload-config.test.ts",

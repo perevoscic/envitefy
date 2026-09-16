@@ -105,8 +105,8 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
     conditionalFooter,
     /if \(\(isEventShare && hasNoSession\) \|\| isStudioCardShare \|\| isLandingShowcase\) \{/,
   );
-  assert.match(sharedPageSource, /Created by Envitefy Concierge/);
-  assert.match(sharedPageSource, /href="\/envitefy-concierge"/);
+  assert.match(sharedPageSource, /Created by Envitefy Create/);
+  assert.match(sharedPageSource, /href="\/envitefy-create"/);
   assert.match(sharedPageSource, /const shareData = \{\s*url: shareUrl,\s*\};/s);
   assert.doesNotMatch(sharedPageSource, /text: props\.title \|\| "Envitefy invitation"/);
   assert.match(pageSource, /function resolveSharedCardMetaDescription/);
@@ -214,7 +214,7 @@ test("poster guest controls overlay artwork while creator attribution stays outs
     surfaceSource,
     /max-md:min-h-\[min\(14svh,4rem\)\] min-h-\[min\(8svh,2\.4rem\)\] md:min-h-\[min\(6svh,2rem\)\]/,
   );
-  assert.match(sharedPageSource, /Created by Envitefy Concierge/);
+  assert.match(sharedPageSource, /Created by Envitefy Create/);
   assert.match(surfaceSource, /data-live-card-actions-placement/);
   assert.match(surfaceSource, /actionsBelow \? "hidden" : posterFirstHeroCard/);
   assert.doesNotMatch(

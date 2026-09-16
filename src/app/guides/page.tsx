@@ -55,7 +55,7 @@ const guideVisuals = {
     accent: "bg-[#efeaff] text-[#6047b8]",
     bestFor: "Designed invites with RSVP and live details",
     icon: Sparkles,
-    route: "Envitefy Concierge",
+    route: "Envitefy Create",
   },
   "rsvp-event-page": {
     accent: "bg-[#eaf7f0] text-[#317652]",
@@ -110,7 +110,7 @@ const startingPoints = [
   },
   {
     title: "I need a better invite",
-    body: "Use Envitefy Concierge when you want a polished live card connected to event details and actions.",
+    body: "Use Envitefy Create when you want a polished live card connected to event details and actions.",
     href: "/guides/live-card-invitations",
     icon: Sparkles,
   },
@@ -376,7 +376,7 @@ export default function GuidesPage() {
               Turn the guide into a live page guests can actually use.
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-white/72">
-              Upload a file with Snap, create a live card with Concierge, or open a dedicated workflow
+              Upload a file with Snap, create a live card with Envitefy Create, or open a dedicated workflow
               for gymnastics meets and family logistics.
             </p>
           </div>

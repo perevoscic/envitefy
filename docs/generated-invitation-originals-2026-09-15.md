@@ -1,8 +1,18 @@
 # Generated invitation PNG originals — September 15, 2026
 
-## Read-only review
+## Completed inspection and cleanup
 
-**188 PNG originals totaling 519.72 MB. No files deleted.**
+Storage access resumed. All **113 originals with display WebPs** were downloaded and backed up outside the repository, verified against their display replacements, visually inspected and removed from Vercel. **309.82 MB** was freed. The 113 display WebPs and 113 thumbnails remain unchanged. Fresh database and repository checks found no old PNG references to rewrite; exact mappings are recorded in the cleanup plan.
+
+The other **75 originals / 209.90 MB**, with only thumbnail siblings, remain. See [the cleanup record](../artifacts/storage-cleanup-2026-09-15/README.md) for verification, mappings and deletion receipts. The full-resolution local backups and contact sheets are in:
+
+`/Users/rj/.codex/visualizations/2026/09/15/01a0a755-dae4-7381-8ff0-67fe7969d121/storage-backup-2026-09-15/inspection-gallery.md`
+
+The inventory and numbered entries below are the **historical pre-cleanup list of 188 originals**. The authoritative 113 deleted paths are in `artifacts/storage-cleanup-2026-09-15/replacement-plan.json`; gallery IDs use that plan's order, not this initial inventory's order.
+
+## Initial read-only review — before access was restored
+
+**188 PNG originals totaling 519.72 MB at the initial audit.**
 
 Vercel returned HTTP 403 with the body `Your store is blocked` when reading originals, display WebPs and thumbnails. The API inventory remains readable. Actual pictures, original dimensions and replacement image quality could not be verified.
 
@@ -11,7 +21,7 @@ Vercel returned HTTP 403 with the body `Your store is blocked` when reading orig
 - None of the 188 original paths had a direct reference in the public database tables or the scanned repository files during the prior audit. Sibling references below concern display/thumbnail paths, not the PNG.
 - Missing direct references do not rule out earlier deployments, previously sent emails, direct shared links or unsaved browser state.
 
-## Inventory (newest first)
+## Initial inventory (newest first)
 
 | # | Uploaded | Type | PNG MB | Existing variants | Database / repository |
 | --- | --- | --- | ---: | --- | --- |

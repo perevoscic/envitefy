@@ -25,7 +25,7 @@ test("admin nav config has expected sections", () => {
     "Dashboard",
     "Users",
     "Events",
-    "Envitefy Concierge",
+    "Envitefy Create",
     "Scans & Traffic",
     "Emails",
     "Ad Studio",

@@ -40,7 +40,7 @@ function scrollToHash(href: string) {
 }
 
 export default function BottomNav({
-  initialActiveLabel = "Concierge",
+  initialActiveLabel = "Create",
   items = signedOutBottomNav,
   onConciergeSelect,
   onHashSelect,
@@ -215,11 +215,11 @@ export default function BottomNav({
         open={createSheetOpen}
         onOpenChange={setCreateSheetOpen}
         onConciergeSelect={() => {
-          setActiveLabel("Concierge");
+          setActiveLabel("Create");
           onConciergeSelect?.();
         }}
         onHashSelect={(href) => {
-          setActiveLabel(href === "#examples" ? "Templates" : "Create");
+          setActiveLabel(href === "#examples" ? "Templates" : "More ways");
           handleHashSelect(href);
         }}
       />

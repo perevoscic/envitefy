@@ -16,7 +16,7 @@ export async function DELETE(
     const userId = await resolveSessionUserId(session);
     if (!userId) {
       return NextResponse.json(
-        { ok: false, error: "Sign in to use Envitefy Concierge." },
+        { ok: false, error: "Sign in to use Envitefy Create." },
         { status: 401 },
       );
     }

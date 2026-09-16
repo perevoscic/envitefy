@@ -24,24 +24,24 @@ if (!liveAi) {
   process.env.OPENAI_CONCIERGE_TIMEOUT_MS = "1000";
 }
 
-const USER_SIMULATOR_PROMPT = `You are acting as a realistic user testing an event-building Envitefy Concierge.
+const USER_SIMULATOR_PROMPT = `You are acting as a realistic user testing Envitefy Create for building events.
 
 You are NOT the assistant. You are the human user.
 
-Your job is to continue the conversation naturally based on the Concierge's latest message.
+Your job is to continue the conversation naturally based on Envitefy Create's latest message.
 
 Rules:
 - Answer only as the user.
 - Use the scenario details provided.
-- If the Concierge asks for a detail that is already obvious from the previous user message, gently clarify it instead of repeating everything.
-- If the Concierge asks a relevant missing question, answer it naturally.
-- If the Concierge sounds robotic, repetitive, confused, or asks for information already provided, respond the way a real user would: slightly confused but still cooperative.
+- If Envitefy Create asks for a detail that is already obvious from the previous user message, gently clarify it instead of repeating everything.
+- If Envitefy Create asks a relevant missing question, answer it naturally.
+- If Envitefy Create sounds robotic, repetitive, confused, or asks for information already provided, respond the way a real user would: slightly confused but still cooperative.
 - Do not invent important details unless the scenario provides them.
 - If a detail is missing, you may answer with a realistic simple value.
 - Keep responses short and casual.
 - Do not explain what you are doing.
 - Do not say "as an AI."
-- Do not judge the Concierge; just continue the conversation.
+- Do not judge Envitefy Create; just continue the conversation.
 
 Scenario:
 {{SCENARIO_JSON}}
@@ -49,16 +49,16 @@ Scenario:
 Conversation so far:
 {{TRANSCRIPT}}
 
-Concierge's latest message:
+Envitefy Create's latest message:
 {{LAST_ASSISTANT_MESSAGE}}
 
 Return only the next user message.`;
 
-const EVALUATOR_PROMPT = `Evaluate this Envitefy Concierge conversation.
+const EVALUATOR_PROMPT = `Evaluate this Envitefy Create conversation.
 
 Give a score from 1-5 for each:
 
-1. Did Concierge correctly understand event type?
+1. Did Envitefy Create correctly understand event type?
 2. Did it avoid asking for details already provided?
 3. Did it ask only useful missing questions?
 4. Did it sound casual and human?
@@ -947,7 +947,7 @@ function jsonForPrompt(value) {
 }
 
 function transcriptText(transcript) {
-  return transcript.map((turn) => `${turn.role === "assistant" ? "Concierge" : "User"}: ${turn.text}`).join("\n");
+  return transcript.map((turn) => `${turn.role === "assistant" ? "Envitefy Create" : "User"}: ${turn.text}`).join("\n");
 }
 
 function latestAssistant(transcript) {
@@ -1305,7 +1305,7 @@ async function runScenario(scenario, index) {
 
     const result = await intake({ scenario, message: userMessage, draft, chatMessages });
     if (!result.ok) {
-      transcript.push({ role: "assistant", text: result.error || "Concierge request failed." });
+      transcript.push({ role: "assistant", text: result.error || "Envitefy Create request failed." });
       break;
     }
 
@@ -1412,7 +1412,7 @@ function summarize(results) {
 
 function markdownReport(summary, results) {
   return [
-    `# Concierge Persona Eval ${summary.runId}`,
+    `# Envitefy Create Persona Eval ${summary.runId}`,
     "",
     `API path: ${summary.apiPath}`,
     `Live AI simulator/evaluator: ${summary.liveAi ? "yes" : "no"}`,
@@ -1443,7 +1443,7 @@ function markdownReport(summary, results) {
         .join(", ") || "none"}`,
       "",
       ...result.transcript.map((turn) => {
-        const label = turn.role === "assistant" ? "Concierge" : "User";
+        const label = turn.role === "assistant" ? "Envitefy Create" : "User";
         const suffix = turn.challengeType ? ` [challenge:${turn.challengeType}]` : "";
         return `${label}${suffix}: ${turn.text}`;
       }),

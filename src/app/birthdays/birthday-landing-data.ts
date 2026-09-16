@@ -64,7 +64,7 @@ export const birthdaySetupSteps = [
   {
     number: "01",
     label: "Choose the feeling",
-    body: "Describe the person and party, SNAP an invitation you already have, or tell Concierge.",
+    body: "Describe the person and party, SNAP an invitation you already have, or tell Envitefy Create.",
     image: "/images/marketing/birthday-step-theme.png",
     imageAlt: "Parent and child choosing a birthday invitation design together",
   },

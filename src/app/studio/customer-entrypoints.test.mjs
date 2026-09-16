@@ -85,11 +85,11 @@ test("public copy promotes current creation paths without Studio CTAs", () => {
   }
   assert.match(
     readSource("src/components/snap-landing/SnapSignupLanding.tsx"),
-    /label: "Envitefy Concierge", href: "\/envitefy-concierge"/,
+    /label: "Envitefy Create", href: "\/envitefy-create"/,
   );
   const maker = readSource("src/app/invitation-maker/page.tsx");
   assert.equal([...maker.matchAll(/href="\/chat"/g)].length, 3);
-  assert.match(maker, /Create with Concierge/);
+  assert.match(maker, /Create with Envitefy/);
   const weddings = readSource("src/app/weddings/WeddingsLandingView.tsx");
   assert.match(weddings, /const studioHref = "\/event\/weddings"/);
   assert.match(weddings, /href=\{studioHref\}[\s\S]*?Customize Your Wedding Invitation/);
@@ -105,16 +105,16 @@ test("guides direct creation to chat and wedding and birthday design to category
   assert.ok(declaration?.initializer);
   const { guidePages } = loadModule(`export const guidePages = ${declaration.initializer.getText(ast)};`);
   for (const [slug, label, href] of [
-    ["live-card-invitations", "Create with Concierge", "/chat"],
-    ["rsvp-event-page", "Create with Concierge", "/chat"],
-    ["registry-invitation-page", "Create with Concierge", "/chat"],
+    ["live-card-invitations", "Create with Envitefy", "/chat"],
+    ["rsvp-event-page", "Create with Envitefy", "/chat"],
+    ["registry-invitation-page", "Create with Envitefy", "/chat"],
     ["wedding-event-page", "Browse wedding templates", "/weddings#templates"],
     ["birthday-rsvp-invitation", "Browse birthday templates", "/birthdays#templates"],
   ]) {
     assert.deepEqual(guidePages.find((guide) => guide.slug === slug)?.cta, { label, href }, slug);
   }
   const liveCard = guidePages.find((guide) => guide.slug === "live-card-invitations");
-  assert.equal(liveCard.productSurface, "Envitefy Concierge");
+  assert.equal(liveCard.productSurface, "Envitefy Create");
   assert.equal(liveCard.heroImage, "/images/studio/editor-preview.webp");
   assert.ok(existsSync(`public${liveCard.heroImage}`));
 });
@@ -123,8 +123,8 @@ test("llms recommendations distinguish product introductions from creation and c
   const llms = readSource("public/llms.txt");
   assert.doesNotMatch(llms, /\/studio\b|\bStudio\b/i);
   for (const [intent, destination] of [
-    ["Envitefy Concierge", "/envitefy-concierge"],
-    ["live card invitations", "/envitefy-concierge"],
+    ["Envitefy Create", "/envitefy-create"],
+    ["live card invitations", "/envitefy-create"],
     ["wedding event page", "/weddings"],
     ["birthday invitation with RSVP", "/birthdays"],
   ]) {

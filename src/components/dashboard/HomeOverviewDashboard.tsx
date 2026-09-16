@@ -23,6 +23,8 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { DashboardOverview } from "@/lib/dashboard-overview";
 import { DashboardPlanningPanels, NextEventPlanning } from "./DashboardOverviewSections";
 import { DashboardReviewDialog } from "./DashboardReviewDialog";
+import DashboardGames from "./DashboardGames";
+import { upcomingDashboardGames, type DashboardGame } from "@/lib/dashboard-games";
 import EventActions from "@/components/EventActions";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import { FlipClock } from "@/components/ui/flip-clock";
@@ -71,6 +73,8 @@ type DashboardResponse = {
     nextEventInDays: number | null;
   };
   upcoming: DashboardEventItem[];
+  games?: DashboardGame[];
+  gamesUnavailable?: boolean;
   rsvp: {
     going: number;
     maybe: number;
@@ -802,14 +806,15 @@ export default function HomeOverviewDashboard({
 }: HomeOverviewDashboardProps) {
   const [now, setNow] = useState(() => Date.now());
   const [showAllUpcoming, setShowAllUpcoming] = useState(false);
-  const [upcomingFilter, setUpcomingFilter] = useState<"all" | "owned" | "invited">("all");
+  const [upcomingFilter, setUpcomingFilter] = useState<"all" | "owned" | "invited" | "games">("all");
   const nextEvent = data?.nextEvent ?? null;
+  const games = useMemo(() => upcomingDashboardGames(data?.games ?? [], now), [data?.games, now]);
 
   useEffect(() => {
-    if (!nextEvent) return;
+    if (!nextEvent && !data?.games?.length) return;
     const timer = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(timer);
-  }, [nextEvent]);
+  }, [nextEvent, data?.games?.length]);
 
   const viewerLabel = getViewerLabel(viewerName);
   const relationLabel = eventRelationLabel(nextEvent);
@@ -846,7 +851,6 @@ export default function HomeOverviewDashboard({
   const overview = data?.overview;
   const attentionCount = overview?.attention.length || 0;
   const conflictCount = overview?.conflicts.length || 0;
-  const replies = overview?.guests.reduce((total, guest) => total + guest.going + guest.maybe + guest.declined, 0) || 0;
   const openSignupSpots = overview?.signups.reduce((total, form) => total + form.remaining, 0) || 0;
   const hasUnlimitedSignup = overview?.signups.some((form) => form.unlimitedSlots > 0) || false;
   const infoCards: InfoCardProps[] = [
@@ -861,10 +865,6 @@ export default function HomeOverviewDashboard({
       review: overview ? { kind: "conflicts", overview } : undefined,
       href: overview ? undefined : "#dashboard-agenda",
     },
-    ...(overview?.guests.length ? [{
-      label: "Guest responses", value: `${replies} ${replies === 1 ? "Reply" : "Replies"}`,
-      description: `Across ${overview.guests.length} of your events`, icon: Users, tone: "sky" as const, href: "#dashboard-guests",
-    }] : []),
     ...(overview?.drafts.count ? [{
       label: "Drafts", value: `${overview.drafts.count} to finish`, description: "Pick up where you left off",
       icon: PenLine, tone: "indigo" as const, href: "#dashboard-drafts",
@@ -943,6 +943,16 @@ export default function HomeOverviewDashboard({
               loading={metricsLoading} hasOrigin={enrichMeta?.hasOrigin} onTravel={onForceTravel} error={travelError}
               editHref={overview?.editLinks[nextEvent.id]} now={now} />}
           />
+        ) : games.length ? (
+          <section className="rounded-[32px] border border-slate-100 bg-white p-6 shadow-sm sm:p-8">
+            <h2 className="text-2xl font-bold text-slate-900">Your next games are ready</h2>
+            <p className="mt-2 text-sm text-slate-600">{games.length} upcoming {games.length === 1 ? "game" : "games"} from your saved schedules.</p>
+            <button type="button" aria-controls="dashboard-agenda" onClick={() => {
+              setUpcomingFilter("games");
+              setShowAllUpcoming(false);
+              document.getElementById("dashboard-agenda")?.scrollIntoView({ block: "start", behavior: "instant" });
+            }} className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">View games</button>
+          </section>
         ) : (
           <article className="relative overflow-hidden rounded-[40px] border border-slate-100 bg-white shadow-xl">
             <div className="flex min-h-[400px] flex-col md:flex-row">
@@ -1002,7 +1012,7 @@ export default function HomeOverviewDashboard({
                     className="inline-flex min-h-[56px] min-w-[150px] flex-1 items-center justify-center gap-2 rounded-[20px] bg-slate-900 px-6 py-4 text-sm font-bold text-white shadow-xl transition-all hover:bg-indigo-600 sm:min-w-[170px] sm:px-8"
                   >
                     <WandSparkles size={16} />
-                    <span>Create with Concierge</span>
+                    <span>Create with Envitefy</span>
                   </Link>
                   <Link
                     href="/event"
@@ -1029,31 +1039,38 @@ export default function HomeOverviewDashboard({
       <div id="dashboard-agenda" className="scroll-mt-24">
         {(() => {
           const upcomingRest = (data?.upcoming ?? []).filter((event) => event.id !== nextEvent?.id);
-          if (!upcomingRest.length) return null;
+          const showingGames = upcomingFilter === "games";
+          const previewLimit = showingGames ? 4 : 3;
           const invitedCount = upcomingRest.filter((event) => event.ownership === "invited").length;
           const filterOptions = [
             { value: "all", label: "All", count: upcomingRest.length },
             { value: "owned", label: "My events", count: upcomingRest.length - invitedCount },
             { value: "invited", label: "Invited events", count: invitedCount },
+            { value: "games", label: "Games", count: games.length },
           ] as const;
           const filteredUpcoming = upcomingRest.filter((event) => upcomingFilter === "all" || (event.ownership || "owned") === upcomingFilter);
-          const visibleUpcoming = showAllUpcoming ? filteredUpcoming : filteredUpcoming.slice(0, 3);
+          const visibleUpcoming = showAllUpcoming ? filteredUpcoming : filteredUpcoming.slice(0, previewLimit);
+          const filteredCount = showingGames ? games.length : filteredUpcoming.length;
+          const itemLabel = showingGames ? "games" : "events";
           return (
             <section className="flex flex-col gap-4" aria-label="Upcoming events">
                 <div role="group" aria-label="Filter upcoming events" className="inline-flex max-w-full flex-wrap self-start rounded-2xl border border-slate-100 bg-white p-1">
                   {filterOptions.map((option) => (
                     <button type="button" key={option.value} aria-pressed={upcomingFilter === option.value}
-                      aria-label={`${option.label}, ${option.count} ${option.count === 1 ? "event" : "events"}`}
+                      aria-label={option.value === "games" && data?.gamesUnavailable ? "Games, unavailable" : `${option.label}, ${option.count} ${option.value === "games" ? option.count === 1 ? "game" : "games" : option.count === 1 ? "event" : "events"}`}
                       onClick={() => { setUpcomingFilter(option.value); setShowAllUpcoming(false); }}
                       className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-2.5 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-indigo-600 sm:gap-2 sm:px-3 sm:text-sm ${upcomingFilter === option.value ? "bg-indigo-600 text-white shadow-sm" : "text-slate-600 hover:bg-indigo-50"}`}>
                       <span>{option.label}</span>
                       <span aria-hidden="true" className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold tabular-nums sm:h-[22px] sm:min-w-[22px] sm:text-[11px] ${upcomingFilter === option.value ? "bg-white text-indigo-600" : "bg-slate-100 text-slate-600"}`}>
-                        {option.count}
+                        {option.value === "games" && data?.gamesUnavailable ? "–" : option.count}
                       </span>
                     </button>
                   ))}
                 </div>
-              <div className="flex flex-col gap-6">
+              {showingGames ? (
+                data?.gamesUnavailable ? <p role="status" className="rounded-2xl bg-amber-50 p-5 text-sm text-amber-900">Your games couldn’t load. <button type="button" onClick={onRetry} className="min-h-11 font-semibold underline underline-offset-4">Try again</button></p>
+                  : <DashboardGames games={showAllUpcoming ? games : games.slice(0, previewLimit)} />
+              ) : <div className="flex flex-col gap-6">
                 {visibleUpcoming.map((ev) => {
                   const actions = buildInvitationActions(ev);
                   return (
@@ -1062,15 +1079,15 @@ export default function HomeOverviewDashboard({
                       primaryAction={actions.primaryAction} secondaryAction={actions.secondaryAction} />
                   );
                 })}
-              </div>
-              {!filteredUpcoming.length ? <p className="rounded-2xl border border-slate-100 bg-white p-5 text-sm text-slate-500">No other upcoming {upcomingFilter === "invited" ? "invited events" : "events you own"}.</p> : null}
-              {filteredUpcoming.length > 3 ? (
+              </div>}
+              {!filteredCount && !(showingGames && data?.gamesUnavailable) ? <p className="rounded-2xl border border-slate-100 bg-white p-5 text-sm text-slate-500">{showingGames ? "No upcoming games in your saved schedules." : `No other upcoming ${upcomingFilter === "invited" ? "invited events" : upcomingFilter === "owned" ? "events you own" : "events"}.`}</p> : null}
+              {filteredCount > previewLimit ? (
                 <button type="button" aria-expanded={showAllUpcoming} onClick={() => setShowAllUpcoming((current) => !current)}
                   className="mobile-touch-target mx-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700">
-                  {showAllUpcoming ? <>Show fewer events <ChevronUp className="h-4 w-4" /></> : <>Show all {filteredUpcoming.length} events <ChevronDown className="h-4 w-4" /></>}
+                  {showAllUpcoming ? <>Show fewer {itemLabel} <ChevronUp className="h-4 w-4" /></> : <>Show all {filteredCount} {itemLabel} <ChevronDown className="h-4 w-4" /></>}
                 </button>
               ) : null}
-              {data?.eventWindowLimited ? <p className="text-xs text-slate-500">Showing the nearest saved events. Your event list has the rest.</p> : null}
+              {!showingGames && data?.eventWindowLimited ? <p className="text-xs text-slate-500">Showing the nearest saved events. Your event list has the rest.</p> : null}
             </section>
           );
         })()}

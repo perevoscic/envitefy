@@ -1,0 +1,2312 @@
+{
+  "birthdays/party-pop": {
+    "silhouette": "step",
+    "binding": "offset",
+    "heading": "masthead",
+    "layout": "mosaic",
+    "wash": "dawn"
+  },
+  "birthdays/candy-dreams": {
+    "silhouette": "cloud",
+    "binding": "beaded",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "halo"
+  },
+  "birthdays/rainbow-bash": {
+    "silhouette": "arch",
+    "binding": "band",
+    "heading": "masthead",
+    "layout": "poster",
+    "wash": "dawn"
+  },
+  "birthdays/playful-pals": {
+    "silhouette": "book",
+    "binding": "stitched",
+    "heading": "folio",
+    "layout": "book",
+    "wash": "paper"
+  },
+  "birthdays/birthday-burst": {
+    "silhouette": "ticket",
+    "binding": "ribbon",
+    "heading": "side",
+    "layout": "rail",
+    "wash": "horizon"
+  },
+  "birthdays/sweet-celebration": {
+    "silhouette": "canopy",
+    "binding": "double",
+    "heading": "ribbon",
+    "layout": "ledger",
+    "wash": "silk"
+  },
+  "birthdays/super-star": {
+    "silhouette": "prism",
+    "binding": "inlay",
+    "heading": "label",
+    "layout": "mosaic",
+    "wash": "stage"
+  },
+  "birthdays/happy-dance": {
+    "silhouette": "marquee",
+    "binding": "band",
+    "heading": "masthead",
+    "layout": "poster",
+    "wash": "stage"
+  },
+  "birthdays/magic-sparkle": {
+    "silhouette": "portal",
+    "binding": "double",
+    "heading": "center",
+    "layout": "book",
+    "wash": "halo"
+  },
+  "birthdays/celebration-time": {
+    "silhouette": "folio",
+    "binding": "deckle",
+    "heading": "folio",
+    "layout": "columns",
+    "wash": "paper"
+  },
+  "birthdays/fun-fiesta": {
+    "silhouette": "pennant",
+    "binding": "ribbon",
+    "heading": "ribbon",
+    "layout": "mosaic",
+    "wash": "dawn"
+  },
+  "birthdays/joyful-jamboree": {
+    "silhouette": "arch",
+    "binding": "rails",
+    "heading": "masthead",
+    "layout": "rail",
+    "wash": "stage"
+  },
+  "birthdays/whimsical-wonder": {
+    "silhouette": "shell",
+    "binding": "deckle",
+    "heading": "center",
+    "layout": "path",
+    "wash": "halo"
+  },
+  "birthdays/cheerful-chaos": {
+    "silhouette": "step",
+    "binding": "offset",
+    "heading": "side",
+    "layout": "stagger",
+    "wash": "dawn"
+  },
+  "birthdays/party-parade": {
+    "silhouette": "ticket",
+    "binding": "band",
+    "heading": "label",
+    "layout": "rail",
+    "wash": "paper"
+  },
+  "birthdays/birthday-bliss": {
+    "silhouette": "petal",
+    "binding": "open",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "halo"
+  },
+  "birthdays/sparkle-splash": {
+    "silhouette": "lagoon",
+    "binding": "open",
+    "heading": "center",
+    "layout": "terraces",
+    "wash": "tide"
+  },
+  "birthdays/celebration-craze": {
+    "silhouette": "screen",
+    "binding": "inlay",
+    "heading": "masthead",
+    "layout": "poster",
+    "wash": "stage"
+  },
+  "birthdays/happy-hooray": {
+    "silhouette": "cushion",
+    "binding": "offset",
+    "heading": "ribbon",
+    "layout": "mosaic",
+    "wash": "dawn"
+  },
+  "birthdays/party-palooza": {
+    "silhouette": "marquee",
+    "binding": "double",
+    "heading": "masthead",
+    "layout": "columns",
+    "wash": "stage"
+  },
+  "birthdays/birthday-bonanza": {
+    "silhouette": "tablet",
+    "binding": "spine",
+    "heading": "label",
+    "layout": "ledger",
+    "wash": "paper"
+  },
+  "birthdays/sweet-surprise": {
+    "silhouette": "bowl",
+    "binding": "beaded",
+    "heading": "ribbon",
+    "layout": "islands",
+    "wash": "halo"
+  },
+  "birthdays/party-perfect": {
+    "silhouette": "lozenge",
+    "binding": "rails",
+    "heading": "center",
+    "layout": "gallery",
+    "wash": "silk"
+  },
+  "birthdays/birthday-bash": {
+    "silhouette": "folio",
+    "binding": "ribbon",
+    "heading": "label",
+    "layout": "rail",
+    "wash": "horizon"
+  },
+  "birthdays/backyard-bug-explorer": {
+    "silhouette": "folio",
+    "binding": "stitched",
+    "heading": "label",
+    "layout": "ledger",
+    "wash": "paper"
+  },
+  "birthdays/junior-baker-studio": {
+    "silhouette": "canopy",
+    "binding": "ruled",
+    "heading": "ribbon",
+    "layout": "ledger",
+    "wash": "dawn"
+  },
+  "birthdays/little-firehouse": {
+    "silhouette": "portal",
+    "binding": "band",
+    "heading": "masthead",
+    "layout": "rail",
+    "wash": "horizon"
+  },
+  "birthdays/dinosaur-dig-lab": {
+    "silhouette": "keepsake",
+    "binding": "deckle",
+    "heading": "folio",
+    "layout": "book",
+    "wash": "paper"
+  },
+  "birthdays/enchanted-forest-tea": {
+    "silhouette": "arch",
+    "binding": "beaded",
+    "heading": "center",
+    "layout": "path",
+    "wash": "halo"
+  },
+  "birthdays/outer-space-mission-control": {
+    "silhouette": "prism",
+    "binding": "double",
+    "heading": "label",
+    "layout": "mosaic",
+    "wash": "stage"
+  },
+  "birthdays/rainbow-art-studio": {
+    "silhouette": "step",
+    "binding": "ribbon",
+    "heading": "masthead",
+    "layout": "gallery",
+    "wash": "dawn"
+  },
+  "birthdays/construction-crew-yard": {
+    "silhouette": "folio",
+    "binding": "spine",
+    "heading": "side",
+    "layout": "mosaic",
+    "wash": "paper"
+  },
+  "birthdays/undersea-mermaid-cove": {
+    "silhouette": "shell",
+    "binding": "open",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "tide"
+  },
+  "birthdays/soccer-goal-celebration": {
+    "silhouette": "screen",
+    "binding": "double",
+    "heading": "label",
+    "layout": "rail",
+    "wash": "horizon"
+  },
+  "birthdays/ballet-rehearsal-party": {
+    "silhouette": "ribbon",
+    "binding": "rails",
+    "heading": "center",
+    "layout": "stagger",
+    "wash": "silk"
+  },
+  "birthdays/superhero-training-hq": {
+    "silhouette": "prism",
+    "binding": "offset",
+    "heading": "masthead",
+    "layout": "mosaic",
+    "wash": "stage"
+  },
+  "birthdays/race-car-pit-stop": {
+    "silhouette": "ticket",
+    "binding": "spine",
+    "heading": "label",
+    "layout": "rail",
+    "wash": "paper"
+  },
+  "birthdays/woodland-camping-night": {
+    "silhouette": "canopy",
+    "binding": "stitched",
+    "heading": "folio",
+    "layout": "path",
+    "wash": "dusk"
+  },
+  "birthdays/ice-cream-parlor": {
+    "silhouette": "cloud",
+    "binding": "double",
+    "heading": "ribbon",
+    "layout": "ledger",
+    "wash": "halo"
+  },
+  "birthdays/farmyard-harvest": {
+    "silhouette": "tablet",
+    "binding": "ribbon",
+    "heading": "label",
+    "layout": "mosaic",
+    "wash": "dawn"
+  },
+  "birthdays/science-lab-spark": {
+    "silhouette": "capsule",
+    "binding": "inlay",
+    "heading": "label",
+    "layout": "columns",
+    "wash": "halo"
+  },
+  "birthdays/pirate-treasure-port": {
+    "silhouette": "scroll",
+    "binding": "deckle",
+    "heading": "folio",
+    "layout": "path",
+    "wash": "paper"
+  },
+  "birthdays/princess-garden-ball": {
+    "silhouette": "portal",
+    "binding": "inlay",
+    "heading": "center",
+    "layout": "gallery",
+    "wash": "halo"
+  },
+  "birthdays/monster-truck-arena": {
+    "silhouette": "step",
+    "binding": "spine",
+    "heading": "masthead",
+    "layout": "poster",
+    "wash": "horizon"
+  },
+  "birthdays/mini-golf-clubhouse": {
+    "silhouette": "lozenge",
+    "binding": "ruled",
+    "heading": "label",
+    "layout": "path",
+    "wash": "horizon"
+  },
+  "birthdays/teddy-bear-picnic": {
+    "silhouette": "cushion",
+    "binding": "stitched",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "dawn"
+  },
+  "birthdays/safari-expedition-camp": {
+    "silhouette": "book",
+    "binding": "seam",
+    "heading": "label",
+    "layout": "ledger",
+    "wash": "paper"
+  },
+  "birthdays/glow-dance-party": {
+    "silhouette": "marquee",
+    "binding": "inlay",
+    "heading": "masthead",
+    "layout": "poster",
+    "wash": "stage"
+  },
+  "birthdays/train-station-adventure": {
+    "silhouette": "ticket",
+    "binding": "double",
+    "heading": "label",
+    "layout": "rail",
+    "wash": "paper"
+  },
+  "birthdays/airplane-travel-club": {
+    "silhouette": "ticket",
+    "binding": "stitched",
+    "heading": "side",
+    "layout": "columns",
+    "wash": "horizon"
+  },
+  "birthdays/comic-book-creator": {
+    "silhouette": "prism",
+    "binding": "ribbon",
+    "heading": "masthead",
+    "layout": "mosaic",
+    "wash": "dawn"
+  },
+  "birthdays/puppy-adoption-party": {
+    "silhouette": "tablet",
+    "binding": "beaded",
+    "heading": "center",
+    "layout": "stagger",
+    "wash": "halo"
+  },
+  "birthdays/beach-surf-shack": {
+    "silhouette": "sail",
+    "binding": "open",
+    "heading": "masthead",
+    "layout": "terraces",
+    "wash": "tide"
+  },
+  "birthdays/winter-snow-lodge": {
+    "silhouette": "canopy",
+    "binding": "inlay",
+    "heading": "center",
+    "layout": "book",
+    "wash": "dusk"
+  },
+  "birthdays/pottery-playhouse": {
+    "silhouette": "vessel",
+    "binding": "letterpress",
+    "heading": "masthead",
+    "layout": "gallery",
+    "wash": "dawn"
+  },
+  "birthdays/friendship-bead-club": {
+    "silhouette": "capsule",
+    "binding": "beaded",
+    "heading": "ribbon",
+    "layout": "islands",
+    "wash": "halo"
+  },
+  "birthdays/slime-squish-studio": {
+    "silhouette": "pebble",
+    "binding": "offset",
+    "heading": "masthead",
+    "layout": "stagger",
+    "wash": "dawn"
+  },
+  "birthdays/magic-school-owls": {
+    "silhouette": "portal",
+    "binding": "seam",
+    "heading": "folio",
+    "layout": "book",
+    "wash": "paper"
+  },
+  "birthdays/roller-rink-rainbow": {
+    "silhouette": "marquee",
+    "binding": "offset",
+    "heading": "masthead",
+    "layout": "rail",
+    "wash": "stage"
+  },
+  "birthdays/pixel-builder-world": {
+    "silhouette": "step",
+    "binding": "double",
+    "heading": "label",
+    "layout": "mosaic",
+    "wash": "stage"
+  },
+  "birthdays/plushie-sleepover": {
+    "silhouette": "cushion",
+    "binding": "beaded",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "halo"
+  },
+  "birthdays/kpop-stage-stars": {
+    "silhouette": "prism",
+    "binding": "band",
+    "heading": "masthead",
+    "layout": "poster",
+    "wash": "stage"
+  },
+  "birthdays/basketball-court-crew": {
+    "silhouette": "arch",
+    "binding": "double",
+    "heading": "label",
+    "layout": "rail",
+    "wash": "horizon"
+  },
+  "birthdays/skatepark-stickers": {
+    "silhouette": "ticket",
+    "binding": "offset",
+    "heading": "side",
+    "layout": "stagger",
+    "wash": "paper"
+  },
+  "birthdays/ninja-obstacle-dojo": {
+    "silhouette": "folio",
+    "binding": "band",
+    "heading": "masthead",
+    "layout": "path",
+    "wash": "horizon"
+  },
+  "birthdays/detective-clue-club": {
+    "silhouette": "book",
+    "binding": "ribbon",
+    "heading": "label",
+    "layout": "ledger",
+    "wash": "paper"
+  },
+  "birthdays/dragon-cloud-quest": {
+    "silhouette": "cloud",
+    "binding": "rails",
+    "heading": "folio",
+    "layout": "terraces",
+    "wash": "halo"
+  },
+  "birthdays/axolotl-lagoon": {
+    "silhouette": "lagoon",
+    "binding": "beaded",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "tide"
+  },
+  "birthdays/capybara-orange-spa": {
+    "silhouette": "pebble",
+    "binding": "letterpress",
+    "heading": "center",
+    "layout": "gallery",
+    "wash": "halo"
+  },
+  "birthdays/bunny-carrot-garden": {
+    "silhouette": "arch",
+    "binding": "stitched",
+    "heading": "center",
+    "layout": "path",
+    "wash": "dawn"
+  },
+  "birthdays/pony-ribbon-rodeo": {
+    "silhouette": "crest",
+    "binding": "stitched",
+    "heading": "ribbon",
+    "layout": "poster",
+    "wash": "horizon"
+  },
+  "birthdays/butterfly-conservatory": {
+    "silhouette": "window",
+    "binding": "inlay",
+    "heading": "center",
+    "layout": "columns",
+    "wash": "halo"
+  },
+  "birthdays/jellyfish-glow-garden": {
+    "silhouette": "shell",
+    "binding": "float",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "tide"
+  },
+  "birthdays/pizza-chef-club": {
+    "silhouette": "capsule",
+    "binding": "double",
+    "heading": "ribbon",
+    "layout": "ledger",
+    "wash": "dawn"
+  },
+  "birthdays/sushi-roll-studio": {
+    "silhouette": "folio",
+    "binding": "inlay",
+    "heading": "label",
+    "layout": "gallery",
+    "wash": "paper"
+  },
+  "birthdays/lemonade-market-day": {
+    "silhouette": "canopy",
+    "binding": "band",
+    "heading": "masthead",
+    "layout": "mosaic",
+    "wash": "dawn"
+  },
+  "birthdays/cherry-picnic-bows": {
+    "silhouette": "cushion",
+    "binding": "double",
+    "heading": "ribbon",
+    "layout": "columns",
+    "wash": "silk"
+  },
+  "birthdays/storybook-library": {
+    "silhouette": "book",
+    "binding": "double",
+    "heading": "folio",
+    "layout": "book",
+    "wash": "paper"
+  },
+  "birthdays/board-game-bonanza": {
+    "silhouette": "screen",
+    "binding": "offset",
+    "heading": "label",
+    "layout": "mosaic",
+    "wash": "stage"
+  },
+  "birthdays/mini-olympics-field-day": {
+    "silhouette": "pennant",
+    "binding": "ruled",
+    "heading": "masthead",
+    "layout": "rail",
+    "wash": "horizon"
+  },
+  "birthdays/champagne-bow-soiree": {
+    "silhouette": "ribbon",
+    "binding": "inlay",
+    "heading": "center",
+    "layout": "gallery",
+    "wash": "silk"
+  },
+  "birthdays/garden-brunch-bloom": {
+    "silhouette": "petal",
+    "binding": "deckle",
+    "heading": "center",
+    "layout": "path",
+    "wash": "dawn"
+  },
+  "birthdays/rose-gold-rooftop-forty": {
+    "silhouette": "step",
+    "binding": "seam",
+    "heading": "label",
+    "layout": "columns",
+    "wash": "dusk"
+  },
+  "birthdays/parisian-patisserie-thirty": {
+    "silhouette": "canopy",
+    "binding": "beaded",
+    "heading": "ribbon",
+    "layout": "ledger",
+    "wash": "halo"
+  },
+  "birthdays/coastal-white-linen-fifty": {
+    "silhouette": "sail",
+    "binding": "stitched",
+    "heading": "center",
+    "layout": "terraces",
+    "wash": "tide"
+  },
+  "birthdays/disco-cowgirl-night": {
+    "silhouette": "crest",
+    "binding": "offset",
+    "heading": "masthead",
+    "layout": "poster",
+    "wash": "stage"
+  },
+  "birthdays/bookshop-candle-dinner-forty-five": {
+    "silhouette": "book",
+    "binding": "letterpress",
+    "heading": "folio",
+    "layout": "book",
+    "wash": "dusk"
+  },
+  "birthdays/spa-day-sage-forty": {
+    "silhouette": "pebble",
+    "binding": "rails",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "halo"
+  },
+  "birthdays/mahogany-wine-table-fifty-five": {
+    "silhouette": "tablet",
+    "binding": "double",
+    "heading": "folio",
+    "layout": "ledger",
+    "wash": "dusk"
+  },
+  "birthdays/sunset-pool-cabana-thirty-five": {
+    "silhouette": "lagoon",
+    "binding": "band",
+    "heading": "masthead",
+    "layout": "terraces",
+    "wash": "horizon"
+  },
+  "birthdays/sculptural-floral-forty": {
+    "silhouette": "vessel",
+    "binding": "open",
+    "heading": "masthead",
+    "layout": "gallery",
+    "wash": "dawn"
+  },
+  "birthdays/emerald-cocktail-forty-five": {
+    "silhouette": "lozenge",
+    "binding": "inlay",
+    "heading": "label",
+    "layout": "columns",
+    "wash": "dusk"
+  },
+  "birthdays/pearl-dinner-fifty": {
+    "silhouette": "shell",
+    "binding": "beaded",
+    "heading": "center",
+    "layout": "ledger",
+    "wash": "silk"
+  },
+  "birthdays/lavender-tea-sixty": {
+    "silhouette": "petal",
+    "binding": "double",
+    "heading": "ribbon",
+    "layout": "islands",
+    "wash": "halo"
+  },
+  "birthdays/golden-jubilee-seventy": {
+    "silhouette": "crest",
+    "binding": "double",
+    "heading": "folio",
+    "layout": "book",
+    "wash": "stage"
+  },
+  "birthdays/whiskey-library-forty-five": {
+    "silhouette": "book",
+    "binding": "spine",
+    "heading": "folio",
+    "layout": "columns",
+    "wash": "dusk"
+  },
+  "birthdays/vintage-garage-forty": {
+    "silhouette": "screen",
+    "binding": "seam",
+    "heading": "label",
+    "layout": "ledger",
+    "wash": "paper"
+  },
+  "birthdays/stadium-suite-fifty": {
+    "silhouette": "ticket",
+    "binding": "inlay",
+    "heading": "masthead",
+    "layout": "rail",
+    "wash": "stage"
+  },
+  "birthdays/golf-club-forty-five": {
+    "silhouette": "crest",
+    "binding": "ruled",
+    "heading": "label",
+    "layout": "path",
+    "wash": "horizon"
+  },
+  "birthdays/backyard-bbq-fifty": {
+    "silhouette": "tablet",
+    "binding": "stitched",
+    "heading": "ribbon",
+    "layout": "mosaic",
+    "wash": "dusk"
+  },
+  "birthdays/craft-brew-hall-thirty": {
+    "silhouette": "vessel",
+    "binding": "ruled",
+    "heading": "masthead",
+    "layout": "ledger",
+    "wash": "paper"
+  },
+  "birthdays/black-tie-forty": {
+    "silhouette": "folio",
+    "binding": "double",
+    "heading": "center",
+    "layout": "poster",
+    "wash": "silk"
+  },
+  "birthdays/bourbon-bluegrass-sixty": {
+    "silhouette": "scroll",
+    "binding": "ruled",
+    "heading": "folio",
+    "layout": "columns",
+    "wash": "dusk"
+  },
+  "birthdays/coastal-sailing-fifty": {
+    "silhouette": "sail",
+    "binding": "seam",
+    "heading": "side",
+    "layout": "path",
+    "wash": "tide"
+  },
+  "birthdays/modern-steakhouse-forty-five": {
+    "silhouette": "screen",
+    "binding": "rails",
+    "heading": "label",
+    "layout": "ledger",
+    "wash": "dusk"
+  },
+  "birthdays/vinyl-listening-thirty-five": {
+    "silhouette": "capsule",
+    "binding": "spine",
+    "heading": "label",
+    "layout": "columns",
+    "wash": "dusk"
+  },
+  "birthdays/mountain-lodge-fifty-five": {
+    "silhouette": "canopy",
+    "binding": "spine",
+    "heading": "folio",
+    "layout": "terraces",
+    "wash": "dusk"
+  },
+  "birthdays/poker-night-forty": {
+    "silhouette": "lozenge",
+    "binding": "double",
+    "heading": "label",
+    "layout": "poster",
+    "wash": "stage"
+  },
+  "birthdays/classic-roadster-seventy": {
+    "silhouette": "marquee",
+    "binding": "seam",
+    "heading": "masthead",
+    "layout": "rail",
+    "wash": "paper"
+  },
+  "birthdays/observatory-night-sixty-five": {
+    "silhouette": "portal",
+    "binding": "rails",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "stage"
+  },
+  "birthdays/mediterranean-dinner-forty": {
+    "silhouette": "arch",
+    "binding": "letterpress",
+    "heading": "ribbon",
+    "layout": "ledger",
+    "wash": "dawn"
+  },
+  "birthdays/rooftop-city-lights-thirty": {
+    "silhouette": "step",
+    "binding": "rails",
+    "heading": "label",
+    "layout": "columns",
+    "wash": "stage"
+  },
+  "birthdays/modern-minimal-fifty": {
+    "silhouette": "folio",
+    "binding": "open",
+    "heading": "masthead",
+    "layout": "gallery",
+    "wash": "paper"
+  },
+  "birthdays/tropical-sunset-forty-five": {
+    "silhouette": "leaf",
+    "binding": "band",
+    "heading": "center",
+    "layout": "terraces",
+    "wash": "horizon"
+  },
+  "birthdays/art-gallery-cocktail-thirty-five": {
+    "silhouette": "folio",
+    "binding": "offset",
+    "heading": "label",
+    "layout": "gallery",
+    "wash": "dawn"
+  },
+  "birthdays/backyard-long-table-sixty": {
+    "silhouette": "tablet",
+    "binding": "open",
+    "heading": "ribbon",
+    "layout": "ledger",
+    "wash": "dawn"
+  },
+  "birthdays/eighties-retro-dance-forty": {
+    "silhouette": "prism",
+    "binding": "seam",
+    "heading": "masthead",
+    "layout": "mosaic",
+    "wash": "stage"
+  },
+  "birthdays/black-white-photo-fifty": {
+    "silhouette": "screen",
+    "binding": "plinth",
+    "heading": "folio",
+    "layout": "gallery",
+    "wash": "paper"
+  },
+  "birthdays/night-market-thirty": {
+    "silhouette": "canopy",
+    "binding": "ribbon",
+    "heading": "label",
+    "layout": "stagger",
+    "wash": "stage"
+  },
+  "birthdays/desert-dusk-fifty-five": {
+    "silhouette": "pebble",
+    "binding": "band",
+    "heading": "masthead",
+    "layout": "terraces",
+    "wash": "dusk"
+  },
+  "anniversaries/paper-atelier-first-anniversary": {
+    "silhouette": "folio",
+    "binding": "deckle",
+    "heading": "masthead",
+    "layout": "gallery",
+    "wash": "paper"
+  },
+  "anniversaries/woodland-table-fifth-anniversary": {
+    "silhouette": "tablet",
+    "binding": "seam",
+    "heading": "ribbon",
+    "layout": "ledger",
+    "wash": "dawn"
+  },
+  "anniversaries/tin-copper-tenth-anniversary": {
+    "silhouette": "screen",
+    "binding": "double",
+    "heading": "side",
+    "layout": "columns",
+    "wash": "silk"
+  },
+  "anniversaries/crystal-dinner-fifteenth-anniversary": {
+    "silhouette": "prism",
+    "binding": "inlay",
+    "heading": "center",
+    "layout": "poster",
+    "wash": "stage"
+  },
+  "anniversaries/porcelain-blue-twentieth-anniversary": {
+    "silhouette": "shell",
+    "binding": "double",
+    "heading": "ribbon",
+    "layout": "islands",
+    "wash": "halo"
+  },
+  "anniversaries/silver-night-twenty-fifth-anniversary": {
+    "silhouette": "folio",
+    "binding": "inlay",
+    "heading": "masthead",
+    "layout": "gallery",
+    "wash": "dusk"
+  },
+  "anniversaries/pearl-supper-thirtieth-anniversary": {
+    "silhouette": "crest",
+    "binding": "beaded",
+    "heading": "ribbon",
+    "layout": "ledger",
+    "wash": "silk"
+  },
+  "anniversaries/ruby-gala-fortieth-anniversary": {
+    "silhouette": "portal",
+    "binding": "double",
+    "heading": "masthead",
+    "layout": "poster",
+    "wash": "stage"
+  },
+  "anniversaries/golden-dinner-fiftieth-anniversary": {
+    "silhouette": "crest",
+    "binding": "inlay",
+    "heading": "folio",
+    "layout": "book",
+    "wash": "silk"
+  },
+  "anniversaries/garden-vow-renewal-anniversary": {
+    "silhouette": "petal",
+    "binding": "rails",
+    "heading": "center",
+    "layout": "path",
+    "wash": "dawn"
+  },
+  "anniversaries/cotton-letter-second-anniversary": {
+    "silhouette": "folio",
+    "binding": "stitched",
+    "heading": "folio",
+    "layout": "book",
+    "wash": "paper"
+  },
+  "anniversaries/leather-passport-third-anniversary": {
+    "silhouette": "book",
+    "binding": "stitched",
+    "heading": "label",
+    "layout": "path",
+    "wash": "paper"
+  },
+  "anniversaries/linen-sunday-fourth-anniversary": {
+    "silhouette": "tablet",
+    "binding": "deckle",
+    "heading": "ribbon",
+    "layout": "ledger",
+    "wash": "dawn"
+  },
+  "anniversaries/iron-rose-sixth-anniversary": {
+    "silhouette": "window",
+    "binding": "double",
+    "heading": "side",
+    "layout": "columns",
+    "wash": "halo"
+  },
+  "anniversaries/copper-glow-seventh-anniversary": {
+    "silhouette": "lozenge",
+    "binding": "letterpress",
+    "heading": "center",
+    "layout": "gallery",
+    "wash": "dusk"
+  },
+  "anniversaries/bronze-hour-eighth-anniversary": {
+    "silhouette": "step",
+    "binding": "plinth",
+    "heading": "label",
+    "layout": "gallery",
+    "wash": "dusk"
+  },
+  "anniversaries/pottery-studio-ninth-anniversary": {
+    "silhouette": "vessel",
+    "binding": "seam",
+    "heading": "masthead",
+    "layout": "islands",
+    "wash": "dawn"
+  },
+  "anniversaries/steel-skyline-eleventh-anniversary": {
+    "silhouette": "step",
+    "binding": "double",
+    "heading": "label",
+    "layout": "columns",
+    "wash": "stage"
+  },
+  "anniversaries/silk-moon-twelfth-anniversary": {
+    "silhouette": "shell",
+    "binding": "rails",
+    "heading": "center",
+    "layout": "terraces",
+    "wash": "silk"
+  },
+  "anniversaries/lace-heirloom-thirteenth-anniversary": {
+    "silhouette": "arch",
+    "binding": "beaded",
+    "heading": "folio",
+    "layout": "book",
+    "wash": "paper"
+  },
+  "anniversaries/ivory-orchid-fourteenth-anniversary": {
+    "silhouette": "petal",
+    "binding": "inlay",
+    "heading": "masthead",
+    "layout": "gallery",
+    "wash": "halo"
+  },
+  "anniversaries/sapphire-evening-anniversary": {
+    "silhouette": "portal",
+    "binding": "seam",
+    "heading": "ribbon",
+    "layout": "poster",
+    "wash": "dusk"
+  },
+  "anniversaries/emerald-conservatory-anniversary": {
+    "silhouette": "window",
+    "binding": "rails",
+    "heading": "center",
+    "layout": "path",
+    "wash": "halo"
+  },
+  "anniversaries/diamond-light-sixtieth-anniversary": {
+    "silhouette": "prism",
+    "binding": "double",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "silk"
+  },
+  "anniversaries/hydrangea-house-anniversary": {
+    "silhouette": "canopy",
+    "binding": "deckle",
+    "heading": "folio",
+    "layout": "columns",
+    "wash": "dawn"
+  },
+  "anniversaries/amalfi-postcard-anniversary": {
+    "silhouette": "ticket",
+    "binding": "letterpress",
+    "heading": "masthead",
+    "layout": "stagger",
+    "wash": "tide"
+  },
+  "anniversaries/stargazer-vows-anniversary": {
+    "silhouette": "capsule",
+    "binding": "rails",
+    "heading": "center",
+    "layout": "path",
+    "wash": "stage"
+  },
+  "anniversaries/vinyl-love-song-anniversary": {
+    "silhouette": "capsule",
+    "binding": "seam",
+    "heading": "folio",
+    "layout": "columns",
+    "wash": "dusk"
+  },
+  "anniversaries/desert-sunrise-anniversary": {
+    "silhouette": "pebble",
+    "binding": "open",
+    "heading": "center",
+    "layout": "terraces",
+    "wash": "horizon"
+  },
+  "anniversaries/champagne-midnight-anniversary": {
+    "silhouette": "marquee",
+    "binding": "inlay",
+    "heading": "ribbon",
+    "layout": "poster",
+    "wash": "stage"
+  },
+  "weddings/gilded-wedding": {
+    "silhouette": "crest",
+    "binding": "double",
+    "heading": "ribbon",
+    "layout": "poster",
+    "wash": "silk"
+  },
+  "weddings/modern-editorial": {
+    "silhouette": "folio",
+    "binding": "ruled",
+    "heading": "masthead",
+    "layout": "editorial",
+    "wash": "paper"
+  },
+  "weddings/rustic-boho": {
+    "silhouette": "canopy",
+    "binding": "deckle",
+    "heading": "center",
+    "layout": "path",
+    "wash": "dawn"
+  },
+  "weddings/cinematic-wedding": {
+    "silhouette": "screen",
+    "binding": "rails",
+    "heading": "label",
+    "layout": "rail",
+    "wash": "stage"
+  },
+  "weddings/celestial-wedding": {
+    "silhouette": "shell",
+    "binding": "rails",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "stage"
+  },
+  "weddings/ethereal-classic": {
+    "silhouette": "arch",
+    "binding": "inlay",
+    "heading": "center",
+    "layout": "gallery",
+    "wash": "halo"
+  },
+  "weddings/museum-wedding": {
+    "silhouette": "folio",
+    "binding": "plinth",
+    "heading": "label",
+    "layout": "gallery",
+    "wash": "paper"
+  },
+  "weddings/ethereal-wedding": {
+    "silhouette": "cloud",
+    "binding": "open",
+    "heading": "center",
+    "layout": "terraces",
+    "wash": "halo"
+  },
+  "weddings/noir-luxury": {
+    "silhouette": "portal",
+    "binding": "double",
+    "heading": "ribbon",
+    "layout": "columns",
+    "wash": "dusk"
+  },
+  "weddings/retro-70s": {
+    "silhouette": "arch",
+    "binding": "plinth",
+    "heading": "masthead",
+    "layout": "poster",
+    "wash": "dusk"
+  },
+  "weddings/newspaper-wedding": {
+    "silhouette": "folio",
+    "binding": "open",
+    "heading": "folio",
+    "layout": "columns",
+    "wash": "paper"
+  },
+  "weddings/bauhaus-wedding": {
+    "silhouette": "step",
+    "binding": "ribbon",
+    "heading": "label",
+    "layout": "mosaic",
+    "wash": "dawn"
+  },
+  "weddings/europe-coastal-wedding": {
+    "silhouette": "sail",
+    "binding": "double",
+    "heading": "center",
+    "layout": "terraces",
+    "wash": "tide"
+  },
+  "weddings/florida-coastal-wedding": {
+    "silhouette": "lagoon",
+    "binding": "rails",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "tide"
+  },
+  "weddings/california-coastal-wedding": {
+    "silhouette": "pebble",
+    "binding": "open",
+    "heading": "masthead",
+    "layout": "gallery",
+    "wash": "horizon"
+  },
+  "weddings/winter-wedding": {
+    "silhouette": "shell",
+    "binding": "beaded",
+    "heading": "ribbon",
+    "layout": "poster",
+    "wash": "halo"
+  },
+  "weddings/industrial-wedding": {
+    "silhouette": "screen",
+    "binding": "spine",
+    "heading": "label",
+    "layout": "ledger",
+    "wash": "paper"
+  },
+  "weddings/library-wedding": {
+    "silhouette": "book",
+    "binding": "seam",
+    "heading": "folio",
+    "layout": "book",
+    "wash": "dusk"
+  },
+  "weddings/garden-wedding": {
+    "silhouette": "petal",
+    "binding": "stitched",
+    "heading": "center",
+    "layout": "path",
+    "wash": "dawn"
+  },
+  "weddings/skyline-wedding": {
+    "silhouette": "step",
+    "binding": "inlay",
+    "heading": "label",
+    "layout": "rail",
+    "wash": "stage"
+  },
+  "weddings/midnight-elegance": {
+    "silhouette": "folio",
+    "binding": "seam",
+    "heading": "label",
+    "layout": "editorial",
+    "wash": "dusk"
+  },
+  "weddings/wild-rose-halo": {
+    "silhouette": "petal",
+    "binding": "beaded",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "halo"
+  },
+  "weddings/golden-hour-promise": {
+    "silhouette": "sail",
+    "binding": "band",
+    "heading": "masthead",
+    "layout": "columns",
+    "wash": "horizon"
+  },
+  "weddings/ivory-lace-crest": {
+    "silhouette": "crest",
+    "binding": "beaded",
+    "heading": "center",
+    "layout": "poster",
+    "wash": "silk"
+  },
+  "weddings/emerald-garden-vignette": {
+    "silhouette": "window",
+    "binding": "spine",
+    "heading": "side",
+    "layout": "path",
+    "wash": "dawn"
+  },
+  "weddings/blush-linen-romance": {
+    "silhouette": "cushion",
+    "binding": "deckle",
+    "heading": "center",
+    "layout": "columns",
+    "wash": "silk"
+  },
+  "weddings/sapphire-moonlit-arch": {
+    "silhouette": "portal",
+    "binding": "open",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "dusk"
+  },
+  "weddings/rustic-oak-storybook": {
+    "silhouette": "book",
+    "binding": "deckle",
+    "heading": "folio",
+    "layout": "book",
+    "wash": "paper"
+  },
+  "weddings/champagne-velvet": {
+    "silhouette": "marquee",
+    "binding": "rails",
+    "heading": "ribbon",
+    "layout": "poster",
+    "wash": "silk"
+  },
+  "weddings/celestial-whisper": {
+    "silhouette": "shell",
+    "binding": "inlay",
+    "heading": "center",
+    "layout": "path",
+    "wash": "stage"
+  },
+  "weddings/pearl-tide-horizon": {
+    "silhouette": "bowl",
+    "binding": "open",
+    "heading": "label",
+    "layout": "terraces",
+    "wash": "tide"
+  },
+  "weddings/crimson-orchard": {
+    "silhouette": "leaf",
+    "binding": "seam",
+    "heading": "folio",
+    "layout": "columns",
+    "wash": "dawn"
+  },
+  "weddings/opaline-crest": {
+    "silhouette": "crest",
+    "binding": "float",
+    "heading": "center",
+    "layout": "gallery",
+    "wash": "silk"
+  },
+  "weddings/velvet-midnight-lily": {
+    "silhouette": "leaf",
+    "binding": "double",
+    "heading": "center",
+    "layout": "poster",
+    "wash": "dusk"
+  },
+  "weddings/lavender-mist-cascade": {
+    "silhouette": "petal",
+    "binding": "float",
+    "heading": "center",
+    "layout": "stagger",
+    "wash": "halo"
+  },
+  "weddings/coral-sands-keepsake": {
+    "silhouette": "keepsake",
+    "binding": "open",
+    "heading": "folio",
+    "layout": "gallery",
+    "wash": "tide"
+  },
+  "weddings/eternal-marble": {
+    "silhouette": "folio",
+    "binding": "letterpress",
+    "heading": "masthead",
+    "layout": "gallery",
+    "wash": "silk"
+  },
+  "weddings/willow-fern-embrace": {
+    "silhouette": "arch",
+    "binding": "seam",
+    "heading": "center",
+    "layout": "path",
+    "wash": "halo"
+  },
+  "weddings/silver-frost-gala": {
+    "silhouette": "prism",
+    "binding": "letterpress",
+    "heading": "ribbon",
+    "layout": "poster",
+    "wash": "silk"
+  },
+  "weddings/autumn-ember-waltz": {
+    "silhouette": "leaf",
+    "binding": "deckle",
+    "heading": "folio",
+    "layout": "stagger",
+    "wash": "dusk"
+  },
+  "weddings/tuscan-lemon-grove": {
+    "silhouette": "canopy",
+    "binding": "rails",
+    "heading": "ribbon",
+    "layout": "ledger",
+    "wash": "dawn"
+  },
+  "weddings/delft-blue-estate": {
+    "silhouette": "shell",
+    "binding": "inlay",
+    "heading": "folio",
+    "layout": "gallery",
+    "wash": "paper"
+  },
+  "weddings/meadow-reverie": {
+    "silhouette": "petal",
+    "binding": "open",
+    "heading": "center",
+    "layout": "path",
+    "wash": "dawn"
+  },
+  "weddings/desert-modernism": {
+    "silhouette": "step",
+    "binding": "letterpress",
+    "heading": "masthead",
+    "layout": "terraces",
+    "wash": "horizon"
+  },
+  "weddings/chateau-toile": {
+    "silhouette": "window",
+    "binding": "inlay",
+    "heading": "ribbon",
+    "layout": "columns",
+    "wash": "paper"
+  },
+  "weddings/riviera-stripes": {
+    "silhouette": "ticket",
+    "binding": "seam",
+    "heading": "label",
+    "layout": "rail",
+    "wash": "tide"
+  },
+  "weddings/japanese-ink": {
+    "silhouette": "scroll",
+    "binding": "rails",
+    "heading": "label",
+    "layout": "ledger",
+    "wash": "paper"
+  },
+  "weddings/disco-afterglow": {
+    "silhouette": "screen",
+    "binding": "beaded",
+    "heading": "masthead",
+    "layout": "mosaic",
+    "wash": "stage"
+  },
+  "weddings/palm-springs-mod": {
+    "silhouette": "arch",
+    "binding": "offset",
+    "heading": "masthead",
+    "layout": "stagger",
+    "wash": "dawn"
+  },
+  "weddings/highland-romance": {
+    "silhouette": "canopy",
+    "binding": "stitched",
+    "heading": "folio",
+    "layout": "book",
+    "wash": "dusk"
+  },
+  "weddings/terracotta-courtyard": {
+    "silhouette": "portal",
+    "binding": "letterpress",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "dawn"
+  },
+  "weddings/lake-como-letter": {
+    "silhouette": "folio",
+    "binding": "deckle",
+    "heading": "center",
+    "layout": "editorial",
+    "wash": "tide"
+  },
+  "weddings/cherry-blossom-silk": {
+    "silhouette": "petal",
+    "binding": "seam",
+    "heading": "center",
+    "layout": "stagger",
+    "wash": "silk"
+  },
+  "weddings/french-patisserie": {
+    "silhouette": "canopy",
+    "binding": "inlay",
+    "heading": "ribbon",
+    "layout": "ledger",
+    "wash": "halo"
+  },
+  "weddings/ocean-cyanotype": {
+    "silhouette": "folio",
+    "binding": "double",
+    "heading": "label",
+    "layout": "gallery",
+    "wash": "tide"
+  },
+  "weddings/art-deco-soiree": {
+    "silhouette": "prism",
+    "binding": "rails",
+    "heading": "ribbon",
+    "layout": "poster",
+    "wash": "stage"
+  },
+  "weddings/prairie-wildflower": {
+    "silhouette": "leaf",
+    "binding": "open",
+    "heading": "folio",
+    "layout": "path",
+    "wash": "dawn"
+  },
+  "weddings/red-thread": {
+    "silhouette": "folio",
+    "binding": "ribbon",
+    "heading": "side",
+    "layout": "columns",
+    "wash": "paper"
+  },
+  "weddings/moonstone-minimal": {
+    "silhouette": "pebble",
+    "binding": "letterpress",
+    "heading": "label",
+    "layout": "gallery",
+    "wash": "halo"
+  },
+  "weddings/tropical-afterdark": {
+    "silhouette": "leaf",
+    "binding": "inlay",
+    "heading": "masthead",
+    "layout": "islands",
+    "wash": "dusk"
+  },
+  "baby-showers/pear-orchard-cradle": {
+    "silhouette": "arch",
+    "binding": "spine",
+    "heading": "center",
+    "layout": "path",
+    "wash": "dawn"
+  },
+  "baby-showers/otterly-loved": {
+    "silhouette": "lagoon",
+    "binding": "stitched",
+    "heading": "center",
+    "layout": "terraces",
+    "wash": "tide"
+  },
+  "baby-showers/starlight-observatory": {
+    "silhouette": "portal",
+    "binding": "inlay",
+    "heading": "label",
+    "layout": "islands",
+    "wash": "stage"
+  },
+  "baby-showers/peach-patisserie": {
+    "silhouette": "canopy",
+    "binding": "letterpress",
+    "heading": "ribbon",
+    "layout": "ledger",
+    "wash": "halo"
+  },
+  "baby-showers/whale-song-bay": {
+    "silhouette": "bowl",
+    "binding": "rails",
+    "heading": "center",
+    "layout": "terraces",
+    "wash": "tide"
+  },
+  "baby-showers/marigold-courtyard": {
+    "silhouette": "window",
+    "binding": "double",
+    "heading": "ribbon",
+    "layout": "columns",
+    "wash": "dawn"
+  },
+  "baby-showers/bunny-burrow-brunch": {
+    "silhouette": "portal",
+    "binding": "beaded",
+    "heading": "center",
+    "layout": "path",
+    "wash": "dawn"
+  },
+  "baby-showers/paper-kite-parade": {
+    "silhouette": "prism",
+    "binding": "deckle",
+    "heading": "masthead",
+    "layout": "stagger",
+    "wash": "paper"
+  },
+  "baby-showers/rosewater-hammam": {
+    "silhouette": "arch",
+    "binding": "rails",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "silk"
+  },
+  "baby-showers/apricot-quilt-club": {
+    "silhouette": "cushion",
+    "binding": "stitched",
+    "heading": "ribbon",
+    "layout": "mosaic",
+    "wash": "dawn"
+  },
+  "baby-showers/little-lighthouse": {
+    "silhouette": "tablet",
+    "binding": "band",
+    "heading": "label",
+    "layout": "rail",
+    "wash": "horizon"
+  },
+  "baby-showers/fig-and-fern": {
+    "silhouette": "leaf",
+    "binding": "inlay",
+    "heading": "center",
+    "layout": "columns",
+    "wash": "halo"
+  },
+  "baby-showers/duckling-puddle-party": {
+    "silhouette": "lagoon",
+    "binding": "double",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "tide"
+  },
+  "baby-showers/swan-lake-serenade": {
+    "silhouette": "shell",
+    "binding": "seam",
+    "heading": "center",
+    "layout": "gallery",
+    "wash": "tide"
+  },
+  "baby-showers/clementine-sunroom": {
+    "silhouette": "window",
+    "binding": "band",
+    "heading": "masthead",
+    "layout": "columns",
+    "wash": "dawn"
+  },
+  "baby-showers/hummingbird-haven": {
+    "silhouette": "petal",
+    "binding": "ribbon",
+    "heading": "center",
+    "layout": "stagger",
+    "wash": "halo"
+  },
+  "baby-showers/gingham-goose": {
+    "silhouette": "tablet",
+    "binding": "stitched",
+    "heading": "ribbon",
+    "layout": "ledger",
+    "wash": "paper"
+  },
+  "baby-showers/moon-jelly-drift": {
+    "silhouette": "shell",
+    "binding": "float",
+    "heading": "center",
+    "layout": "terraces",
+    "wash": "tide"
+  },
+  "baby-showers/cherry-bow-social": {
+    "silhouette": "ribbon",
+    "binding": "beaded",
+    "heading": "ribbon",
+    "layout": "poster",
+    "wash": "silk"
+  },
+  "baby-showers/alpine-fawn": {
+    "silhouette": "canopy",
+    "binding": "rails",
+    "heading": "folio",
+    "layout": "path",
+    "wash": "dusk"
+  },
+  "baby-showers/rainbow-prism-studio": {
+    "silhouette": "prism",
+    "binding": "offset",
+    "heading": "label",
+    "layout": "mosaic",
+    "wash": "dawn"
+  },
+  "baby-showers/hibiscus-hideaway": {
+    "silhouette": "petal",
+    "binding": "band",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "halo"
+  },
+  "baby-showers/pocket-robot": {
+    "silhouette": "screen",
+    "binding": "spine",
+    "heading": "label",
+    "layout": "mosaic",
+    "wash": "paper"
+  },
+  "baby-showers/lavender-laundry": {
+    "silhouette": "ribbon",
+    "binding": "stitched",
+    "heading": "center",
+    "layout": "stagger",
+    "wash": "silk"
+  },
+  "baby-showers/turtle-tidepool": {
+    "silhouette": "pebble",
+    "binding": "inlay",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "tide"
+  },
+  "baby-showers/strawberry-stitch": {
+    "silhouette": "keepsake",
+    "binding": "stitched",
+    "heading": "ribbon",
+    "layout": "columns",
+    "wash": "dawn"
+  },
+  "baby-showers/desert-tortoise": {
+    "silhouette": "pebble",
+    "binding": "deckle",
+    "heading": "label",
+    "layout": "terraces",
+    "wash": "horizon"
+  },
+  "baby-showers/origami-crane-wishes": {
+    "silhouette": "prism",
+    "binding": "seam",
+    "heading": "folio",
+    "layout": "gallery",
+    "wash": "paper"
+  },
+  "baby-showers/blueberry-breakfast": {
+    "silhouette": "bowl",
+    "binding": "double",
+    "heading": "ribbon",
+    "layout": "ledger",
+    "wash": "dawn"
+  },
+  "baby-showers/foxglove-fairy-door": {
+    "silhouette": "portal",
+    "binding": "deckle",
+    "heading": "center",
+    "layout": "path",
+    "wash": "halo"
+  },
+  "baby-showers/polka-dot-puppy": {
+    "silhouette": "cushion",
+    "binding": "beaded",
+    "heading": "masthead",
+    "layout": "stagger",
+    "wash": "halo"
+  },
+  "baby-showers/magnolia-morning": {
+    "silhouette": "petal",
+    "binding": "letterpress",
+    "heading": "center",
+    "layout": "gallery",
+    "wash": "dawn"
+  },
+  "baby-showers/tiny-train-ticket": {
+    "silhouette": "ticket",
+    "binding": "ruled",
+    "heading": "label",
+    "layout": "rail",
+    "wash": "paper"
+  },
+  "baby-showers/water-lily-welcome": {
+    "silhouette": "bowl",
+    "binding": "float",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "tide"
+  },
+  "baby-showers/cocoa-cabin": {
+    "silhouette": "canopy",
+    "binding": "seam",
+    "heading": "folio",
+    "layout": "book",
+    "wash": "dusk"
+  },
+  "baby-showers/bubblegum-carousel": {
+    "silhouette": "marquee",
+    "binding": "beaded",
+    "heading": "ribbon",
+    "layout": "poster",
+    "wash": "stage"
+  },
+  "baby-showers/olive-oil-bambino": {
+    "silhouette": "vessel",
+    "binding": "double",
+    "heading": "center",
+    "layout": "ledger",
+    "wash": "dawn"
+  },
+  "baby-showers/little-bookbindery": {
+    "silhouette": "book",
+    "binding": "spine",
+    "heading": "folio",
+    "layout": "book",
+    "wash": "paper"
+  },
+  "baby-showers/dandelion-post": {
+    "silhouette": "folio",
+    "binding": "seam",
+    "heading": "folio",
+    "layout": "stagger",
+    "wash": "paper"
+  },
+  "baby-showers/koala-eucalyptus-club": {
+    "silhouette": "leaf",
+    "binding": "stitched",
+    "heading": "center",
+    "layout": "columns",
+    "wash": "halo"
+  },
+  "baby-showers/sugarplum-music-box": {
+    "silhouette": "keepsake",
+    "binding": "inlay",
+    "heading": "ribbon",
+    "layout": "gallery",
+    "wash": "silk"
+  },
+  "baby-showers/tiny-tennis-club": {
+    "silhouette": "screen",
+    "binding": "ruled",
+    "heading": "label",
+    "layout": "rail",
+    "wash": "horizon"
+  },
+  "baby-showers/pumpkin-patch-promise": {
+    "silhouette": "vessel",
+    "binding": "stitched",
+    "heading": "masthead",
+    "layout": "mosaic",
+    "wash": "dawn"
+  },
+  "baby-showers/sea-horse-garden": {
+    "silhouette": "sail",
+    "binding": "beaded",
+    "heading": "center",
+    "layout": "path",
+    "wash": "tide"
+  },
+  "baby-showers/silk-ribbon-atelier": {
+    "silhouette": "ribbon",
+    "binding": "rails",
+    "heading": "folio",
+    "layout": "gallery",
+    "wash": "silk"
+  },
+  "baby-showers/cloud-nine-airmail": {
+    "silhouette": "cloud",
+    "binding": "stitched",
+    "heading": "label",
+    "layout": "stagger",
+    "wash": "horizon"
+  },
+  "baby-showers/chrysanthemum-tea": {
+    "silhouette": "shell",
+    "binding": "letterpress",
+    "heading": "ribbon",
+    "layout": "ledger",
+    "wash": "halo"
+  },
+  "baby-showers/maple-mouse-house": {
+    "silhouette": "canopy",
+    "binding": "beaded",
+    "heading": "folio",
+    "layout": "path",
+    "wash": "dawn"
+  },
+  "baby-showers/snowdrop-first-light": {
+    "silhouette": "leaf",
+    "binding": "float",
+    "heading": "center",
+    "layout": "terraces",
+    "wash": "halo"
+  },
+  "baby-showers/confetti-clay-play": {
+    "silhouette": "vessel",
+    "binding": "offset",
+    "heading": "masthead",
+    "layout": "mosaic",
+    "wash": "dawn"
+  },
+  "baby-showers/pomegranate-blessing": {
+    "silhouette": "crest",
+    "binding": "seam",
+    "heading": "ribbon",
+    "layout": "poster",
+    "wash": "dusk"
+  },
+  "baby-showers/meadow-lamb": {
+    "silhouette": "cushion",
+    "binding": "deckle",
+    "heading": "center",
+    "layout": "path",
+    "wash": "dawn"
+  },
+  "baby-showers/peony-parasol": {
+    "silhouette": "fan",
+    "binding": "beaded",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "halo"
+  },
+  "baby-showers/saffron-sunset-camper": {
+    "silhouette": "canopy",
+    "binding": "offset",
+    "heading": "label",
+    "layout": "rail",
+    "wash": "horizon"
+  },
+  "baby-showers/jasmine-crescent": {
+    "silhouette": "shell",
+    "binding": "open",
+    "heading": "folio",
+    "layout": "islands",
+    "wash": "dusk"
+  },
+  "baby-showers/little-artichoke": {
+    "silhouette": "leaf",
+    "binding": "double",
+    "heading": "label",
+    "layout": "ledger",
+    "wash": "dawn"
+  },
+  "baby-showers/penguin-postcard": {
+    "silhouette": "ticket",
+    "binding": "deckle",
+    "heading": "folio",
+    "layout": "stagger",
+    "wash": "tide"
+  },
+  "baby-showers/golden-ginkgo": {
+    "silhouette": "fan",
+    "binding": "letterpress",
+    "heading": "center",
+    "layout": "gallery",
+    "wash": "silk"
+  },
+  "baby-showers/macaron-moonwalk": {
+    "silhouette": "capsule",
+    "binding": "offset",
+    "heading": "masthead",
+    "layout": "mosaic",
+    "wash": "stage"
+  },
+  "baby-showers/willow-wishing-boat": {
+    "silhouette": "sail",
+    "binding": "deckle",
+    "heading": "center",
+    "layout": "terraces",
+    "wash": "tide"
+  },
+  "gender-reveal/petal-post": {
+    "silhouette": "ribbon",
+    "binding": "deckle",
+    "heading": "folio",
+    "layout": "stagger",
+    "wash": "paper"
+  },
+  "gender-reveal/moonlit-menagerie": {
+    "silhouette": "portal",
+    "binding": "stitched",
+    "heading": "center",
+    "layout": "path",
+    "wash": "dusk"
+  },
+  "gender-reveal/citrus-secret": {
+    "silhouette": "arch",
+    "binding": "ribbon",
+    "heading": "masthead",
+    "layout": "islands",
+    "wash": "dawn"
+  },
+  "gender-reveal/velvet-curtain": {
+    "silhouette": "marquee",
+    "binding": "spine",
+    "heading": "ribbon",
+    "layout": "poster",
+    "wash": "stage"
+  },
+  "gender-reveal/pearl-in-the-tide": {
+    "silhouette": "shell",
+    "binding": "double",
+    "heading": "center",
+    "layout": "terraces",
+    "wash": "tide"
+  },
+  "gender-reveal/paper-kite-parade": {
+    "silhouette": "prism",
+    "binding": "stitched",
+    "heading": "side",
+    "layout": "stagger",
+    "wash": "horizon"
+  },
+  "gender-reveal/fig-garden-gathering": {
+    "silhouette": "leaf",
+    "binding": "rails",
+    "heading": "center",
+    "layout": "path",
+    "wash": "dawn"
+  },
+  "gender-reveal/stardust-telegram": {
+    "silhouette": "ticket",
+    "binding": "inlay",
+    "heading": "label",
+    "layout": "rail",
+    "wash": "stage"
+  },
+  "gender-reveal/gingham-goose": {
+    "silhouette": "cushion",
+    "binding": "ruled",
+    "heading": "ribbon",
+    "layout": "ledger",
+    "wash": "paper"
+  },
+  "gender-reveal/cherry-soda-surprise": {
+    "silhouette": "capsule",
+    "binding": "plinth",
+    "heading": "masthead",
+    "layout": "poster",
+    "wash": "dawn"
+  },
+  "gender-reveal/desert-lullaby": {
+    "silhouette": "pebble",
+    "binding": "rails",
+    "heading": "center",
+    "layout": "terraces",
+    "wash": "dusk"
+  },
+  "gender-reveal/porcelain-wishes": {
+    "silhouette": "bowl",
+    "binding": "inlay",
+    "heading": "ribbon",
+    "layout": "gallery",
+    "wash": "halo"
+  },
+  "gender-reveal/firefly-meadow": {
+    "silhouette": "leaf",
+    "binding": "beaded",
+    "heading": "center",
+    "layout": "path",
+    "wash": "stage"
+  },
+  "gender-reveal/little-lunar-landing": {
+    "silhouette": "portal",
+    "binding": "band",
+    "heading": "label",
+    "layout": "mosaic",
+    "wash": "stage"
+  },
+  "gender-reveal/apricot-atelier": {
+    "silhouette": "vessel",
+    "binding": "deckle",
+    "heading": "masthead",
+    "layout": "gallery",
+    "wash": "dawn"
+  },
+  "gender-reveal/otterly-awaited": {
+    "silhouette": "lagoon",
+    "binding": "seam",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "tide"
+  },
+  "gender-reveal/wildflower-press": {
+    "silhouette": "folio",
+    "binding": "stitched",
+    "heading": "label",
+    "layout": "gallery",
+    "wash": "paper"
+  },
+  "gender-reveal/carousel-whisper": {
+    "silhouette": "marquee",
+    "binding": "float",
+    "heading": "ribbon",
+    "layout": "poster",
+    "wash": "halo"
+  },
+  "gender-reveal/seasalt-letter": {
+    "silhouette": "scroll",
+    "binding": "deckle",
+    "heading": "center",
+    "layout": "editorial",
+    "wash": "tide"
+  },
+  "gender-reveal/plum-orbit": {
+    "silhouette": "capsule",
+    "binding": "double",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "dusk"
+  },
+  "gender-reveal/marigold-courtyard": {
+    "silhouette": "window",
+    "binding": "ruled",
+    "heading": "ribbon",
+    "layout": "path",
+    "wash": "dawn"
+  },
+  "gender-reveal/tiny-ticket": {
+    "silhouette": "ticket",
+    "binding": "plinth",
+    "heading": "label",
+    "layout": "rail",
+    "wash": "paper"
+  },
+  "gender-reveal/origami-crane-club": {
+    "silhouette": "prism",
+    "binding": "ribbon",
+    "heading": "side",
+    "layout": "columns",
+    "wash": "paper"
+  },
+  "gender-reveal/maple-mitten": {
+    "silhouette": "cushion",
+    "binding": "seam",
+    "heading": "center",
+    "layout": "book",
+    "wash": "dusk"
+  },
+  "gender-reveal/lavender-lantern": {
+    "silhouette": "fan",
+    "binding": "rails",
+    "heading": "center",
+    "layout": "stagger",
+    "wash": "halo"
+  },
+  "gender-reveal/confetti-confidant": {
+    "silhouette": "step",
+    "binding": "beaded",
+    "heading": "masthead",
+    "layout": "mosaic",
+    "wash": "dawn"
+  },
+  "gender-reveal/bluebell-burrow": {
+    "silhouette": "portal",
+    "binding": "letterpress",
+    "heading": "folio",
+    "layout": "path",
+    "wash": "halo"
+  },
+  "gender-reveal/saffron-supper": {
+    "silhouette": "bowl",
+    "binding": "ruled",
+    "heading": "ribbon",
+    "layout": "ledger",
+    "wash": "dusk"
+  },
+  "gender-reveal/rainbow-ribbons": {
+    "silhouette": "ribbon",
+    "binding": "offset",
+    "heading": "masthead",
+    "layout": "stagger",
+    "wash": "dawn"
+  },
+  "gender-reveal/snowdrop-secret": {
+    "silhouette": "petal",
+    "binding": "rails",
+    "heading": "center",
+    "layout": "gallery",
+    "wash": "halo"
+  },
+  "gender-reveal/rocket-pocket": {
+    "silhouette": "prism",
+    "binding": "spine",
+    "heading": "label",
+    "layout": "rail",
+    "wash": "stage"
+  },
+  "gender-reveal/rooftop-reverie": {
+    "silhouette": "step",
+    "binding": "double",
+    "heading": "masthead",
+    "layout": "columns",
+    "wash": "dusk"
+  },
+  "gender-reveal/pistachio-patisserie": {
+    "silhouette": "canopy",
+    "binding": "seam",
+    "heading": "ribbon",
+    "layout": "ledger",
+    "wash": "halo"
+  },
+  "gender-reveal/whale-song": {
+    "silhouette": "bowl",
+    "binding": "seam",
+    "heading": "center",
+    "layout": "terraces",
+    "wash": "tide"
+  },
+  "gender-reveal/secret-greenhouse": {
+    "silhouette": "window",
+    "binding": "stitched",
+    "heading": "label",
+    "layout": "path",
+    "wash": "dawn"
+  },
+  "gender-reveal/sunbeam-studio": {
+    "silhouette": "fan",
+    "binding": "ribbon",
+    "heading": "masthead",
+    "layout": "gallery",
+    "wash": "dawn"
+  },
+  "gender-reveal/balloon-cartographer": {
+    "silhouette": "cloud",
+    "binding": "seam",
+    "heading": "folio",
+    "layout": "path",
+    "wash": "horizon"
+  },
+  "gender-reveal/rosewater-ripple": {
+    "silhouette": "lagoon",
+    "binding": "letterpress",
+    "heading": "center",
+    "layout": "terraces",
+    "wash": "silk"
+  },
+  "gender-reveal/little-acorn-almanac": {
+    "silhouette": "book",
+    "binding": "ruled",
+    "heading": "folio",
+    "layout": "ledger",
+    "wash": "paper"
+  },
+  "gender-reveal/midnight-macaron": {
+    "silhouette": "capsule",
+    "binding": "inlay",
+    "heading": "ribbon",
+    "layout": "poster",
+    "wash": "dusk"
+  },
+  "gender-reveal/coral-cove": {
+    "silhouette": "shell",
+    "binding": "ribbon",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "tide"
+  },
+  "gender-reveal/storybook-suitcase": {
+    "silhouette": "book",
+    "binding": "double",
+    "heading": "label",
+    "layout": "path",
+    "wash": "paper"
+  },
+  "gender-reveal/dahlia-daydream": {
+    "silhouette": "petal",
+    "binding": "plinth",
+    "heading": "center",
+    "layout": "gallery",
+    "wash": "halo"
+  },
+  "gender-reveal/terracotta-tidings": {
+    "silhouette": "vessel",
+    "binding": "rails",
+    "heading": "masthead",
+    "layout": "editorial",
+    "wash": "dawn"
+  },
+  "gender-reveal/juniper-cabin": {
+    "silhouette": "canopy",
+    "binding": "double",
+    "heading": "folio",
+    "layout": "book",
+    "wash": "dusk"
+  },
+  "gender-reveal/little-record": {
+    "silhouette": "capsule",
+    "binding": "open",
+    "heading": "label",
+    "layout": "columns",
+    "wash": "dusk"
+  },
+  "gender-reveal/butterfly-conservatory": {
+    "silhouette": "window",
+    "binding": "beaded",
+    "heading": "center",
+    "layout": "path",
+    "wash": "halo"
+  },
+  "gender-reveal/honeyed-horizon": {
+    "silhouette": "arch",
+    "binding": "open",
+    "heading": "masthead",
+    "layout": "terraces",
+    "wash": "horizon"
+  },
+  "gender-reveal/cloud-nine-cinema": {
+    "silhouette": "screen",
+    "binding": "float",
+    "heading": "label",
+    "layout": "rail",
+    "wash": "stage"
+  },
+  "gender-reveal/raspberry-rendezvous": {
+    "silhouette": "lozenge",
+    "binding": "beaded",
+    "heading": "ribbon",
+    "layout": "islands",
+    "wash": "dawn"
+  },
+  "gender-reveal/waterlily-wonder": {
+    "silhouette": "bowl",
+    "binding": "beaded",
+    "heading": "center",
+    "layout": "gallery",
+    "wash": "tide"
+  },
+  "gender-reveal/brass-compass": {
+    "silhouette": "crest",
+    "binding": "rails",
+    "heading": "label",
+    "layout": "path",
+    "wash": "paper"
+  },
+  "gender-reveal/plush-panda-promise": {
+    "silhouette": "cushion",
+    "binding": "inlay",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "halo"
+  },
+  "gender-reveal/golden-ginkgo": {
+    "silhouette": "fan",
+    "binding": "double",
+    "heading": "folio",
+    "layout": "stagger",
+    "wash": "silk"
+  },
+  "gender-reveal/sherbet-skies": {
+    "silhouette": "cloud",
+    "binding": "band",
+    "heading": "masthead",
+    "layout": "terraces",
+    "wash": "horizon"
+  },
+  "gender-reveal/storybook-swan": {
+    "silhouette": "shell",
+    "binding": "deckle",
+    "heading": "folio",
+    "layout": "book",
+    "wash": "tide"
+  },
+  "gender-reveal/olive-branch-oath": {
+    "silhouette": "leaf",
+    "binding": "letterpress",
+    "heading": "label",
+    "layout": "editorial",
+    "wash": "dawn"
+  },
+  "gender-reveal/velvet-mushroom": {
+    "silhouette": "canopy",
+    "binding": "plinth",
+    "heading": "center",
+    "layout": "islands",
+    "wash": "dusk"
+  },
+  "gender-reveal/prism-keepsake": {
+    "silhouette": "prism",
+    "binding": "float",
+    "heading": "masthead",
+    "layout": "gallery",
+    "wash": "silk"
+  },
+  "gender-reveal/first-light-fable": {
+    "silhouette": "arch",
+    "binding": "deckle",
+    "heading": "folio",
+    "layout": "book",
+    "wash": "horizon"
+  }
+}

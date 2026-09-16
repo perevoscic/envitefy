@@ -21,7 +21,7 @@ export const UPLOAD_LIMITS = {
 
 export const SHARP_UPLOAD_PRESETS = {
   displayMaxWidth: 2400,
-  displayQuality: 92,
+  displayQuality: 85,
   thumbWidth: 560,
   thumbQuality: 76,
 } as const;

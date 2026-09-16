@@ -52,9 +52,9 @@ test("current chat, published cards, and current Concierge APIs do not enter the
   }
 });
 
-test("the Concierge introduction is public for guests and stays readable after sign-in", async () => {
+test("the Create introduction and its legacy redirect are public before and after sign-in", async () => {
   for (const cookie of ["", "next-auth.session-token=test-session"]) {
-    for (const path of ["/envitefy-concierge", "/envitefy-concierge/"]) {
+    for (const path of ["/envitefy-create", "/envitefy-create/", "/envitefy-concierge", "/envitefy-concierge/"]) {
       const response = await middleware(new NextRequest(`https://envitefy.test${path}`, {
         headers: { cookie },
       }));

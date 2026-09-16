@@ -37,9 +37,9 @@ export const ADMIN_EMAIL_PRODUCT_SCENARIOS: AdminEmailProductScenario[] = [
   },
   {
     id: "concierge",
-    title: "Birthday coming up? Ask Envitefy Concierge",
-    body: "Describe the event in plain language and Envitefy Concierge creates a polished invitation and live event page without starting from a blank form. Review the draft, add relevant tools such as RSVP, calendar, directions, registry, or reminders, then share one guest-ready link.",
-    ctaLabel: "Open Envitefy Concierge",
+    title: "Birthday coming up? Create with Envitefy",
+    body: "Describe the event in plain language and Envitefy Create builds a polished invitation and live event page without starting from a blank form. Review the draft, add relevant tools such as RSVP, calendar, directions, registry, or reminders, then share one guest-ready link.",
+    ctaLabel: "Open Envitefy Create",
     ctaPath: "/chat",
     stillScene:
       "Natural lifestyle photo of a host at a desk with coffee and a notebook, calmly using a phone to plan the event type requested by the campaign. Soft realistic lighting, authentic skin texture. No logos, watermarks, holograms, robot avatar, glowing UI bubbles, or floating collage panels.",

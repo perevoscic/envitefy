@@ -1,21 +1,3742 @@
+/* Shared behavior only. Each art direction below supplies its own composition. */
+.page {
+  --ft-ink: #202d3c;
+  --ft-accent: #536a7d;
+  --ft-paper: #fff;
+  --ft-ground: #f7f4ee;
+  --ft-line: color-mix(in srgb, var(--ft-accent) 38%, transparent);
+  --ft-wash: color-mix(in srgb, var(--ft-accent) 8%, var(--ft-paper));
+  --ft-font: sans-serif;
+}
+.canvas {
+  padding: 28px 20px;
+}
+.canvas > * + * {
+  margin-top: 20px;
+}
+.canvas [data-section-width] {
+  container: football-cell / inline-size;
+}
+/* Keep editing controls separate: a toolbar must not impose a second rounded card. */
+.canvas [data-editable-section] {
+  border: 0;
+  border-radius: 0;
+}
+.canvas [data-editable-section] > div:first-child {
+  border-top: 1px solid var(--ft-line);
+  background: var(--ft-ground);
+}
+.canvas [data-editable-section] > div:nth-child(2) {
+  background: var(--ft-ground);
+}
 .section {
   container: football-section / inline-size;
+  position: relative;
+  isolation: isolate;
+  display: grid;
   min-width: 0;
+  color: var(--ft-ink);
+  background-color: var(--ft-paper);
+  background-image: var(--ft-atmosphere);
+}
+.section::before,
+.section::after,
+.sectionHeader::before,
+.sectionHeader::after,
+.card::before,
+.card::after {
+  pointer-events: none;
+}
+.sectionHeader {
+  position: relative;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  padding: 26px 28px 18px;
+}
+.headingGroup {
+  min-width: 0;
+}
+.eyebrow {
+  color: var(--ft-ink);
+  margin: 0 0 8px;
+  font:
+    700 10px / 1.6 system-ui,
+    sans-serif;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.sectionTitle {
+  margin: 0;
+  font-family: var(--ft-font);
+  font-size: clamp(26px, 4cqi, 42px);
+  font-weight: 700;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+.sectionBody {
+  min-width: 0;
+  padding: 12px 28px 30px;
+}
+.page .starter.section {
+  display: block;
+  padding: clamp(20px, 3cqi, 32px);
+}
+.lines {
+  max-width: 72ch;
+  margin-bottom: 20px;
+}
+.lines > * + * {
+  margin-top: 12px;
+}
+.lines p {
+  font-size: 15px;
+  line-height: 1.85;
 }
 .cards,
 .attendance {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
+  gap: 16px;
 }
-@container football-section (min-width: 560px) {
-  .cards,
+.card {
+  position: relative;
+  min-width: 0;
+  padding: 20px;
+  background: var(--ft-ground);
+  border: 1px solid var(--ft-line);
+}
+.cardTitle,
+.card h3 {
+  font-family: var(--ft-font);
+  font-size: 18px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+.navigation {
+  padding: 8px;
+  color: var(--ft-ink);
+  background: var(--ft-paper);
+}
+.activeTab,
+.idleTab {
+  min-height: 44px;
+  padding: 12px 18px;
+  font: 600 13px / 1.4 var(--ft-font);
+  border: 1px solid transparent;
+}
+.activeTab {
+  color: var(--ft-paper);
+  background: var(--ft-ink);
+}
+.idleTab {
+  color: var(--ft-ink);
+}
+.idleTab:hover {
+  background: var(--ft-wash);
+}
+.activeTab > span[aria-hidden],
+.idleTab > span[aria-hidden] {
+  display: none;
+}
+@container football-cell (min-width: 620px) {
+  .section {
+    grid-template-columns: var(--ft-columns, minmax(0, 1fr));
+  }
+}
+@container football-section (min-width: 620px) {
   .attendance {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-}
-@container football-section (min-width: 900px) {
   .cards {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
   }
+}
+@media (max-width: 639px) {
+  .canvas {
+    padding: 20px 12px;
+  }
+  .sectionHeader {
+    padding: 22px 20px 16px;
+  }
+  .sectionBody {
+    padding: 12px 20px 24px;
+  }
+  .sectionTitle {
+    font-size: clamp(24px, 7cqi, 34px);
+  }
+  .card {
+    padding: 16px;
+  }
+}
+
+/* BEGIN GENERATED ART DIRECTIONS — scripts/build-football-presentations.cjs */
+/* Newspaper spread · masthead rules, folio columns, open cards */
+.launchpad-editorial {
+  --ft-ink: #202d3c;
+  --ft-accent: #536a7d;
+  --ft-paper: #ffffff;
+  --ft-ground: #f7f4ee;
+  --ft-font: "Playfair Display", Georgia, serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.launchpad-editorial .section {
+  --ft-columns: minmax(150px, 0.7fr) minmax(0, 2fr);
+  border-top: 5px solid var(--ft-ink);
+  border-bottom: 1px solid var(--ft-ink);
+}
+.launchpad-editorial .sectionHeader {
+  border-right: 1px solid var(--ft-line);
+}
+.launchpad-editorial .sectionTitle {
+  font-size: clamp(32px, 5cqi, 54px);
+}
+.launchpad-editorial .sectionBody {
+  padding-top: 28px;
+}
+.launchpad-editorial .card {
+  border: 0;
+  border-top: 1px solid var(--ft-ink);
+  padding-inline: 0;
+  background: transparent;
+}
+.launchpad-editorial.navigation {
+  border-block: 1px solid var(--ft-ink);
+  background: transparent;
+}
+.launchpad-editorial .activeTab {
+  color: var(--ft-ink);
+  background: transparent;
+  border-bottom: 3px solid;
+}
+/* Reinforced equipment · speed stripe, cut-corner plates */
+.elite-athlete {
+  --ft-ink: #f0f7ff;
+  --ft-accent: #9ac8ff;
+  --ft-paper: #0d2038;
+  --ft-ground: #071323;
+  --ft-font: Anton, Impact, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.elite-athlete .section {
+  border-left: 8px solid var(--ft-accent);
+  border-radius: 0 32px 0 0;
+  box-shadow: inset 0 1px var(--ft-line);
+}
+.elite-athlete .sectionHeader {
+  border-bottom: 1px solid var(--ft-line);
+  background: linear-gradient(
+    115deg,
+    transparent 82%,
+    var(--ft-line) 82% 85%,
+    transparent 85% 88%,
+    var(--ft-line) 88% 91%,
+    transparent 91%
+  );
+}
+.elite-athlete .sectionTitle {
+  text-transform: uppercase;
+  font-style: italic;
+  font-size: clamp(34px, 5cqi, 58px);
+}
+.elite-athlete .card {
+  border: 0;
+  border-left: 3px solid var(--ft-accent);
+  border-radius: 0 20px 0 0;
+}
+.elite-athlete.navigation {
+  border-left: 8px solid var(--ft-accent);
+}
+.elite-athlete .activeTab {
+  border-radius: 0 14px 0 0;
+  font-style: italic;
+}
+/* Bento compartments · cushioned title tile and interlocking modules */
+.bento-box {
+  --ft-ink: #292747;
+  --ft-accent: #605486;
+  --ft-paper: #fafaff;
+  --ft-ground: #eeedf7;
+  --ft-font: "League Spartan", sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.bento-box .section {
+  --ft-columns: minmax(170px, 0.8fr) minmax(0, 2fr);
+  gap: 10px;
+  background: transparent;
+}
+.bento-box .sectionHeader {
+  align-items: center;
+  border-radius: 28px 8px 28px 28px;
+  background: var(--ft-wash);
+}
+.bento-box .sectionTitle {
+  letter-spacing: -0.06em;
+}
+.bento-box .sectionBody {
+  border-radius: 8px 28px 28px 28px;
+  padding: 28px;
+  background: var(--ft-paper);
+}
+.bento-box .card {
+  border: 0;
+  border-radius: 22px;
+  box-shadow: 0 5px 0 var(--ft-line);
+}
+.bento-box.navigation {
+  border-radius: 24px;
+}
+.bento-box .activeTab {
+  border-radius: 18px;
+}
+/* Team command board · labeled rail and recessed task compartments */
+.parent-command {
+  --ft-ink: #18345b;
+  --ft-accent: #335d92;
+  --ft-paper: #ffffff;
+  --ft-ground: #f0f6fd;
+  --ft-font: Montserrat, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.parent-command .section {
+  border: 1px solid var(--ft-line);
+  border-radius: 14px;
+  border-top: 0;
+}
+.parent-command .sectionHeader {
+  border-top: 6px solid var(--ft-accent);
+  border-radius: 14px 14px 0 0;
+  background: var(--ft-wash);
+}
+.parent-command .headingGroup {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+}
+.parent-command .sectionTitle {
+  font-size: 27px;
+  letter-spacing: -0.04em;
+}
+.parent-command .card {
+  border: 0;
+  border-radius: 6px;
+  box-shadow: inset 4px 0 var(--ft-line);
+  padding-left: 26px;
+}
+.parent-command.navigation {
+  border-radius: 10px;
+  box-shadow: inset 0 -3px var(--ft-line);
+}
+.parent-command .activeTab {
+  border-radius: 6px;
+  border-bottom: 3px solid var(--ft-accent);
+}
+/* Varsity stationery · double frame, centered crest, ruled labels */
+.varsity-classic {
+  --ft-ink: #452424;
+  --ft-accent: #8b363d;
+  --ft-paper: #fffaf0;
+  --ft-ground: #f5eee1;
+  --ft-font: "Cormorant Garamond", Georgia, serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.varsity-classic .section {
+  border: 5px double var(--ft-accent);
+}
+.varsity-classic .sectionHeader {
+  justify-content: center;
+  text-align: center;
+  border-bottom: 3px double var(--ft-line);
+  margin: 10px 18px 0;
+}
+.varsity-classic .eyebrow {
+  letter-spacing: 0.35em;
+}
+.varsity-classic .sectionTitle {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.varsity-classic .card {
+  border: 0;
+  border-block: 3px double var(--ft-line);
+  background: transparent;
+}
+.varsity-classic.navigation {
+  border-block: 4px double var(--ft-accent);
+}
+.varsity-classic .activeTab {
+  background: transparent;
+  color: var(--ft-ink);
+  text-decoration: underline;
+  text-underline-offset: 8px;
+}
+/* Road itinerary · route rail, stop markers, tear-off tickets */
+.weekend-journey {
+  --ft-ink: #293c30;
+  --ft-accent: #567446;
+  --ft-paper: #fffff6;
+  --ft-ground: #f3f3e8;
+  --ft-font: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.weekend-journey .section {
+  --ft-columns: minmax(150px, 0.6fr) minmax(0, 2fr);
+  border-left: 2px dashed var(--ft-accent);
+  margin-left: 10px;
+}
+.weekend-journey .sectionHeader {
+  border-right: 1px dashed var(--ft-line);
+}
+.weekend-journey .sectionTitle {
+  text-transform: uppercase;
+  font-size: 38px;
+}
+.weekend-journey .sectionBody {
+  padding-top: 28px;
+}
+.weekend-journey .card {
+  border: 0;
+  border-right: 3px dashed var(--ft-accent);
+  box-shadow: 0 4px 10px var(--ft-line);
+}
+.weekend-journey.navigation {
+  border-bottom: 2px dashed var(--ft-accent);
+}
+.weekend-journey .activeTab {
+  border-radius: 22px 22px 22px 2px;
+}
+/* Scouting file · index strip and monospaced record forms */
+.scouting-report {
+  --ft-ink: #243039;
+  --ft-accent: #4c606c;
+  --ft-paper: #f8fafb;
+  --ft-ground: #e9edef;
+  --ft-font: "Space Mono", monospace;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.scouting-report .section {
+  border: 1px solid var(--ft-ink);
+  border-top-width: 12px;
+}
+.scouting-report .sectionHeader {
+  border-bottom: 1px solid var(--ft-ink);
+  padding-block: 14px;
+}
+.scouting-report .headingGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px 28px;
+}
+.scouting-report .sectionTitle {
+  font-size: 26px;
+  text-transform: uppercase;
+}
+.scouting-report .card {
+  background: transparent;
+  border: 1px solid var(--ft-ink);
+  box-shadow: 3px 3px 0 var(--ft-line);
+}
+.scouting-report.navigation {
+  border: 1px solid var(--ft-ink);
+  padding: 0;
+}
+.scouting-report .activeTab {
+  border-bottom: 4px solid var(--ft-accent);
+}
+/* Cyber instrument · corner brackets and separated readout channels */
+.cyber-athlete {
+  --ft-ink: #e0ffff;
+  --ft-accent: #82eafa;
+  --ft-paper: #0a2031;
+  --ft-ground: #071322;
+  --ft-font: Orbitron, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.cyber-athlete .section {
+  border: 1px solid var(--ft-line);
+  border-right: 5px solid var(--ft-accent);
+}
+.cyber-athlete .sectionHeader {
+  margin: 12px;
+  padding: 20px 16px;
+  border-bottom: 1px dashed var(--ft-accent);
+}
+.cyber-athlete .sectionTitle {
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.cyber-athlete .card {
+  border: 0;
+  box-shadow:
+    inset 0 2px var(--ft-accent),
+    inset 0 -1px var(--ft-line);
+}
+.cyber-athlete.navigation {
+  border: 1px solid var(--ft-accent);
+  border-inline-width: 5px;
+}
+.cyber-athlete .activeTab {
+  box-shadow: inset 0 -4px var(--ft-accent);
+}
+/* Pencil playbook · hand-drawn edges and notebook margin */
+.paper-proto {
+  --ft-ink: #30302d;
+  --ft-accent: #6c6156;
+  --ft-paper: #fffdf5;
+  --ft-ground: #f4f1e9;
+  --ft-font: "Playfair Display", Georgia, serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.paper-proto .section {
+  border: 2px solid var(--ft-ink);
+  border-radius: 3px 8px 4px 12px;
+  box-shadow: 5px 5px 0 var(--ft-line);
+}
+.paper-proto .sectionHeader {
+  border-bottom: 2px dashed var(--ft-line);
+  margin-inline: 20px;
+  padding-inline: 8px;
+}
+.paper-proto .sectionTitle {
+  font-style: italic;
+}
+.paper-proto .sectionBody {
+  border-left: 2px solid var(--ft-line);
+  margin-left: 27px;
+  padding-left: 20px;
+}
+.paper-proto .card {
+  border: 1px dashed var(--ft-ink);
+  border-radius: 6px 2px 12px 3px;
+  background: transparent;
+}
+.paper-proto.navigation {
+  border-bottom: 2px solid var(--ft-ink);
+  background: transparent;
+}
+.paper-proto .activeTab {
+  border-radius: 45% 4px 40% 6px;
+}
+/* Sunset terraces · stepped horizon and low information bands */
+.sunset-arena {
+  --ft-ink: #fff1d8;
+  --ft-accent: #ffd291;
+  --ft-paper: #45251b;
+  --ft-ground: #2b1814;
+  --ft-font: "Cormorant Garamond", Georgia, serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.sunset-arena .section {
+  border-radius: 70px 70px 8px 8px;
+  border-top: 12px solid var(--ft-accent);
+  box-shadow: inset 0 8px var(--ft-line);
+}
+.sunset-arena .sectionHeader {
+  text-align: center;
+  justify-content: center;
+  padding-top: 38px;
+}
+.sunset-arena .sectionTitle {
+  letter-spacing: -0.04em;
+}
+.sunset-arena .card {
+  border: 0;
+  border-radius: 20px 20px 2px 2px;
+  border-bottom: 4px solid var(--ft-accent);
+}
+.sunset-arena.navigation {
+  border-radius: 32px 32px 0 0;
+  border-bottom: 3px solid var(--ft-accent);
+}
+.sunset-arena .activeTab {
+  border-radius: 24px 24px 0 0;
+}
+/* Comic panel · speech balloon heading, ink offset, halftone dots */
+.pop-art {
+  --ft-ink: #231e1c;
+  --ft-accent: #962b24;
+  --ft-paper: #fff29e;
+  --ft-ground: #ffe36a;
+  --ft-font: Bungee, Impact, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.pop-art .section {
+  border: 3px solid var(--ft-ink);
+  box-shadow: 8px 8px 0 var(--ft-accent);
+  margin: 0 8px 8px 0;
+}
+.pop-art .sectionHeader {
+  background-image: radial-gradient(var(--ft-line) 1.5px, transparent 1.5px);
+  background-size: 9px 9px;
+}
+.pop-art .headingGroup {
+  background: var(--ft-paper);
+  border: 3px solid var(--ft-ink);
+  border-radius: 40px 40px 40px 4px;
+  padding: 16px 24px;
+}
+.pop-art .sectionTitle {
+  text-transform: uppercase;
+}
+.pop-art .card {
+  border: 2px solid var(--ft-ink);
+  box-shadow: 4px 4px 0 var(--ft-ink);
+}
+.pop-art.navigation {
+  border: 3px solid var(--ft-ink);
+}
+.pop-art .activeTab {
+  border-radius: 50%;
+  box-shadow: 3px 3px 0 var(--ft-accent);
+}
+/* Swiss grid · asymmetric type, registration lines, open matrix */
+.swiss-grid {
+  --ft-ink: #171c22;
+  --ft-accent: #b52725;
+  --ft-paper: #ffffff;
+  --ft-ground: #f6f6f3;
+  --ft-font: "League Spartan", sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.swiss-grid .section {
+  --ft-columns: minmax(140px, 1fr) minmax(0, 3fr);
+  background: transparent;
+  border-top: 2px solid var(--ft-ink);
+}
+.swiss-grid .sectionHeader {
+  border-right: 1px solid var(--ft-ink);
+  padding-left: 0;
+}
+.swiss-grid .sectionTitle {
+  font-size: 46px;
+  letter-spacing: -0.075em;
+}
+.swiss-grid .sectionBody {
+  padding-top: 28px;
+  padding-right: 0;
+}
+.swiss-grid .cards {
+  gap: 0;
+}
+.swiss-grid .card {
+  border: 0;
+  border-left: 1px solid var(--ft-line);
+  border-top: 1px solid var(--ft-line);
+  background: transparent;
+}
+.swiss-grid.navigation {
+  background: transparent;
+  border-bottom: 1px solid var(--ft-ink);
+}
+.swiss-grid .activeTab {
+  padding-left: 30px;
+  box-shadow: inset 8px 0 var(--ft-accent);
+}
+/* Deco invitation · nested gilt lines and stepped central plaque */
+.art-deco {
+  --ft-ink: #f7e9bf;
+  --ft-accent: #d6bc76;
+  --ft-paper: #20272a;
+  --ft-ground: #141a1c;
+  --ft-font: "Cormorant Garamond", Georgia, serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.art-deco .section {
+  border: 1px solid var(--ft-accent);
+  outline: 1px solid var(--ft-line);
+  outline-offset: -8px;
+  padding: 12px;
+}
+.art-deco .sectionHeader {
+  justify-content: center;
+  text-align: center;
+}
+.art-deco .headingGroup {
+  border-inline: 4px double var(--ft-accent);
+  padding: 8px 24px;
+}
+.art-deco .sectionTitle {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: clamp(24px, 3cqi, 36px);
+}
+.art-deco .card {
+  border: 1px solid var(--ft-accent);
+  border-top: 5px double var(--ft-accent);
+  background: transparent;
+}
+.art-deco.navigation {
+  border-block: 4px double var(--ft-accent);
+  border-inline: 1px solid var(--ft-accent);
+}
+.art-deco .activeTab {
+  background: transparent;
+  color: var(--ft-ink);
+  border: 1px solid var(--ft-accent);
+  box-shadow:
+    inset 0 0 0 3px var(--ft-paper),
+    inset 0 0 0 4px var(--ft-accent);
+}
+/* Cast concrete · heavy base, recessed seams, slab labels */
+.concrete-gym {
+  --ft-ink: #f0efeb;
+  --ft-accent: #f5b581;
+  --ft-paper: #2d3032;
+  --ft-ground: #202224;
+  --ft-font: "IBM Plex Mono", monospace;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.concrete-gym .section {
+  border: 1px solid var(--ft-line);
+  border-bottom: 12px solid var(--ft-accent);
+  box-shadow: 6px 6px 0 var(--ft-line);
+}
+.concrete-gym .sectionHeader {
+  border-bottom: 4px solid var(--ft-line);
+  padding-block: 20px;
+}
+.concrete-gym .eyebrow {
+  padding-left: 14px;
+  border-left: 18px solid var(--ft-accent);
+}
+.concrete-gym .sectionTitle {
+  text-transform: uppercase;
+  font-size: 48px;
+}
+.concrete-gym .card {
+  border: 0;
+  box-shadow: inset 3px 3px 0 var(--ft-line);
+}
+.concrete-gym.navigation {
+  border-bottom: 8px solid var(--ft-accent);
+}
+.concrete-gym .activeTab {
+  border: 2px solid var(--ft-ink);
+  background: transparent;
+  color: var(--ft-ink);
+}
+/* Frost panes · crystalline edges and translucent inset frames */
+.midnight-frost {
+  --ft-ink: #eef3ff;
+  --ft-accent: #b0c9ff;
+  --ft-paper: #1c2445;
+  --ft-ground: #11142c;
+  --ft-font: Sora, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.midnight-frost .section {
+  border: 1px solid var(--ft-line);
+  border-radius: 2px 36px 2px 36px;
+  box-shadow:
+    inset 0 0 0 7px var(--ft-wash),
+    0 12px 30px var(--ft-line);
+}
+.midnight-frost .sectionHeader {
+  margin: 10px 20px;
+  border-bottom: 1px solid var(--ft-accent);
+}
+.midnight-frost .sectionTitle {
+  letter-spacing: 0.12em;
+  font-size: 30px;
+}
+.midnight-frost .card {
+  border-radius: 2px 18px 2px 18px;
+  border: 1px solid var(--ft-line);
+  box-shadow: inset 0 1px var(--ft-accent);
+}
+.midnight-frost.navigation {
+  border: 1px solid var(--ft-line);
+  border-radius: 2px 22px;
+}
+.midnight-frost .activeTab {
+  border-radius: 2px 16px;
+}
+/* Grassroots field · seedbed curves and grass-marked title rail */
+.eco-motion {
+  --ft-ink: #253b2b;
+  --ft-accent: #4c704b;
+  --ft-paper: #fbfff6;
+  --ft-ground: #eef3e8;
+  --ft-font: Manrope, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.eco-motion .section {
+  --ft-columns: minmax(150px, 0.7fr) minmax(0, 2fr);
+  border-radius: 8px 52px 8px 8px;
+  border-bottom: 4px solid var(--ft-accent);
+}
+.eco-motion .sectionHeader {
+  border-right: 1px dashed var(--ft-line);
+  background: linear-gradient(0deg, var(--ft-wash) 12px, transparent 12px);
+}
+.eco-motion .sectionTitle {
+  font-size: 34px;
+  line-height: 1.2;
+}
+.eco-motion .sectionBody {
+  padding-top: 28px;
+}
+.eco-motion .card {
+  border: 0;
+  border-radius: 24px 4px 24px 4px;
+  border-left: 3px solid var(--ft-accent);
+}
+.eco-motion.navigation {
+  border-radius: 8px 30px 8px 8px;
+}
+.eco-motion .activeTab {
+  border-radius: 18px 3px 18px 3px;
+}
+/* Holographic display · floating windows and prismatic folds */
+.holo-elite {
+  --ft-ink: #303751;
+  --ft-accent: #655a8f;
+  --ft-paper: #ffffff;
+  --ft-ground: #edf1fa;
+  --ft-font: "Exo 2", sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.holo-elite .section {
+  border: 2px solid var(--ft-accent);
+  border-radius: 28px;
+  box-shadow:
+    7px 7px 0 var(--ft-line),
+    -5px -5px 0 var(--ft-wash);
+  margin: 5px 7px 7px 5px;
+}
+.holo-elite .sectionHeader {
+  justify-content: center;
+  text-align: center;
+  margin: 12px;
+  border-radius: 16px;
+  background: var(--ft-wash);
+}
+.holo-elite .sectionTitle {
+  letter-spacing: -0.04em;
+}
+.holo-elite .card {
+  border-radius: 16px 16px 3px 16px;
+  border: 1px solid var(--ft-accent);
+  box-shadow: 3px 3px 0 var(--ft-line);
+}
+.holo-elite.navigation {
+  border-radius: 30px;
+  border: 2px solid var(--ft-line);
+}
+.holo-elite .activeTab {
+  border-radius: 30px;
+  box-shadow: 3px 3px 0 var(--ft-accent);
+}
+/* Broadcast interference · interrupted rules and offset blocks */
+.glitch-sport {
+  --ft-ink: #f3f6f8;
+  --ft-accent: #8aebf2;
+  --ft-paper: #1d2228;
+  --ft-ground: #101115;
+  --ft-font: "IBM Plex Mono", monospace;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.glitch-sport .section {
+  border-left: 5px solid var(--ft-accent);
+  border-bottom: 2px solid var(--ft-ink);
+  box-shadow: 7px -5px 0 -3px var(--ft-line);
+}
+.glitch-sport .sectionHeader {
+  background: repeating-linear-gradient(0deg, transparent 0 8px, var(--ft-wash) 8px 10px);
+}
+.glitch-sport .sectionTitle {
+  text-transform: uppercase;
+  letter-spacing: -0.065em;
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 8px;
+}
+.glitch-sport .card {
+  border: 0;
+  border-top: 3px solid var(--ft-accent);
+  box-shadow: -5px 5px 0 var(--ft-line);
+}
+.glitch-sport.navigation {
+  border-block: 2px dashed var(--ft-accent);
+}
+.glitch-sport .activeTab {
+  box-shadow: 4px -3px 0 var(--ft-line);
+}
+/* Contour landscape · asymmetric panel and pebble cards */
+.organic-flow {
+  --ft-ink: #294339;
+  --ft-accent: #4a6450;
+  --ft-paper: #f9f6ed;
+  --ft-ground: #ede9db;
+  --ft-font: Manrope, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.organic-flow .section {
+  border-radius: 50px 8px 50px 8px;
+  border: 1px solid var(--ft-line);
+}
+.organic-flow .sectionHeader {
+  padding-top: 36px;
+  padding-left: 36px;
+}
+.organic-flow .sectionTitle {
+  font-style: italic;
+  font-weight: 500;
+  font-size: 44px;
+}
+.organic-flow .sectionBody {
+  padding-inline: 36px;
+}
+.organic-flow .card {
+  border: 0;
+  border-radius: 30px 8px 24px 8px;
+  border-bottom: 2px solid var(--ft-line);
+}
+.organic-flow.navigation {
+  border-radius: 30px 5px;
+  border-bottom: 2px solid var(--ft-line);
+}
+.organic-flow .activeTab {
+  border-radius: 22px 6px 22px 6px;
+}
+/* Arcade cartridge · pixel frame, scanline masthead, inset buttons */
+.pixel-arena {
+  --ft-ink: #dfffe5;
+  --ft-accent: #8aee92;
+  --ft-paper: #10281d;
+  --ft-ground: #07180f;
+  --ft-font: "Press Start 2P", monospace;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.pixel-arena .section {
+  border: 4px solid var(--ft-ink);
+  box-shadow:
+    6px 0 var(--ft-accent),
+    -6px 0 var(--ft-accent),
+    0 6px var(--ft-accent),
+    0 -6px var(--ft-accent);
+  margin: 6px;
+}
+.pixel-arena .sectionHeader {
+  border-bottom: 4px solid var(--ft-ink);
+  background: repeating-linear-gradient(0deg, var(--ft-paper) 0 3px, var(--ft-wash) 3px 6px);
+}
+.pixel-arena .sectionTitle {
+  font-size: clamp(18px, 2.5cqi, 26px);
+  line-height: 1.6;
+}
+.pixel-arena .card {
+  border: 3px solid var(--ft-line);
+  box-shadow: inset -4px -4px var(--ft-line);
+}
+.pixel-arena.navigation {
+  border: 4px solid var(--ft-accent);
+  padding: 0;
+}
+.pixel-arena .activeTab {
+  box-shadow: inset -4px -4px var(--ft-line);
+  font-size: 10px;
+}
+.pixel-arena .idleTab {
+  font-size: 10px;
+}
+/* Architectural study · datum rail and registration crosshairs */
+.architect-clean {
+  --ft-ink: #26343a;
+  --ft-accent: #4a6873;
+  --ft-paper: #ffffff;
+  --ft-ground: #f0f2f2;
+  --ft-font: Manrope, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.architect-clean .section {
+  --ft-columns: minmax(160px, 0.8fr) minmax(0, 2fr);
+  border: 1px solid var(--ft-line);
+}
+.architect-clean .sectionHeader {
+  border-right: 1px solid var(--ft-line);
+  padding-left: 36px;
+}
+.architect-clean .sectionTitle {
+  font-size: 31px;
+  font-weight: 500;
+}
+.architect-clean .sectionBody {
+  padding-top: 28px;
+}
+.architect-clean .card {
+  background: transparent;
+  border: 1px solid var(--ft-line);
+  outline: 1px solid var(--ft-line);
+  outline-offset: -6px;
+}
+.architect-clean.navigation {
+  border: 1px solid var(--ft-line);
+  background: transparent;
+  padding: 0;
+}
+.architect-clean .activeTab {
+  color: var(--ft-ink);
+  background: transparent;
+  border-inline: 1px solid;
+  border-bottom: 2px solid;
+}
+/* Noir title sequence · negative space and luminous side rule */
+.noir-silhouette {
+  --ft-ink: #f5f3ef;
+  --ft-accent: #c6c3bd;
+  --ft-paper: #202020;
+  --ft-ground: #121212;
+  --ft-font: Anton, Impact, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.noir-silhouette .section {
+  background: transparent;
+  border-left: 1px solid var(--ft-accent);
+}
+.noir-silhouette .sectionHeader {
+  padding: 40px 34px 24px;
+}
+.noir-silhouette .eyebrow {
+  letter-spacing: 0.45em;
+}
+.noir-silhouette .sectionTitle {
+  font-size: clamp(38px, 6cqi, 68px);
+  font-weight: 400;
+  text-transform: uppercase;
+}
+.noir-silhouette .sectionBody {
+  padding-left: 34px;
+}
+.noir-silhouette .card {
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--ft-line);
+  padding: 8px 20px 24px;
+}
+.noir-silhouette.navigation {
+  background: transparent;
+}
+.noir-silhouette .activeTab {
+  background: transparent;
+  color: var(--ft-ink);
+  border-left: 2px solid var(--ft-accent);
+  letter-spacing: 0.12em;
+}
+/* Retro horizon · neon grid edge and floating window tabs */
+.vaporwave-grid {
+  --ft-ink: #fbebff;
+  --ft-accent: #f6b4e9;
+  --ft-paper: #351e4c;
+  --ft-ground: #231333;
+  --ft-font: Audiowide, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.vaporwave-grid .section {
+  border: 2px solid var(--ft-accent);
+  border-bottom-width: 9px;
+  box-shadow: 0 8px 0 var(--ft-line);
+}
+.vaporwave-grid .sectionHeader {
+  justify-content: center;
+  text-align: center;
+  border-bottom: 1px solid var(--ft-line);
+}
+.vaporwave-grid .headingGroup {
+  background: var(--ft-paper);
+  padding: 12px 24px;
+  border: 1px solid var(--ft-line);
+}
+.vaporwave-grid .card {
+  border: 1px solid var(--ft-accent);
+  box-shadow: 5px 5px 0 var(--ft-line);
+  border-radius: 10px 10px 0 0;
+}
+.vaporwave-grid.navigation {
+  border: 2px solid var(--ft-accent);
+  padding-bottom: 0;
+}
+.vaporwave-grid .activeTab {
+  border-radius: 12px 12px 0 0;
+  border-top: 3px solid var(--ft-accent);
+}
+/* Impact poster · massive type slab and bolted blocks */
+.heavy-impact {
+  --ft-ink: #252214;
+  --ft-accent: #514619;
+  --ft-paper: #ffe680;
+  --ft-ground: #f5ca3c;
+  --ft-font: Anton, Impact, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.heavy-impact .section {
+  border: 4px solid var(--ft-ink);
+  border-left-width: 16px;
+}
+.heavy-impact .sectionHeader {
+  border-bottom: 8px solid var(--ft-accent);
+}
+.heavy-impact .sectionTitle {
+  text-transform: uppercase;
+  font-size: clamp(42px, 7cqi, 76px);
+  line-height: 0.98;
+}
+.heavy-impact .card {
+  border: 3px solid var(--ft-ink);
+  border-bottom-width: 8px;
+}
+.heavy-impact.navigation {
+  border: 3px solid var(--ft-ink);
+  padding: 0;
+}
+.heavy-impact .activeTab {
+  text-transform: uppercase;
+  font-size: 17px;
+  border-right: 6px solid var(--ft-accent);
+}
+/* Technical blueprint · dimension grid and dashed planning frames */
+.blueprint-tech {
+  --ft-ink: #eff9ff;
+  --ft-accent: #b4defc;
+  --ft-paper: #174979;
+  --ft-ground: #103866;
+  --ft-font: "IBM Plex Mono", monospace;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.blueprint-tech .section {
+  border: 1px solid var(--ft-accent);
+  padding: 10px;
+}
+.blueprint-tech .sectionHeader {
+  border: 1px dashed var(--ft-accent);
+  margin: 8px;
+  padding: 16px;
+}
+.blueprint-tech .headingGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px 30px;
+}
+.blueprint-tech .sectionTitle {
+  font-size: 28px;
+}
+.blueprint-tech .card {
+  border: 1px dashed var(--ft-accent);
+  background: var(--ft-paper);
+  box-shadow: 5px 5px 0 -4px var(--ft-accent);
+}
+.blueprint-tech.navigation {
+  border: 1px dashed var(--ft-accent);
+}
+.blueprint-tech .activeTab {
+  border: 1px solid var(--ft-accent);
+  background: var(--ft-wash);
+  color: var(--ft-ink);
+}
+/* Kinetic warning panel · diagonal edge marks and sharp tags */
+.toxic-kinetic {
+  --ft-ink: #efffc9;
+  --ft-accent: #c0f278;
+  --ft-paper: #203015;
+  --ft-ground: #111a0c;
+  --ft-font: Kanit, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.toxic-kinetic .section {
+  border: 2px solid var(--ft-accent);
+  border-left: 14px solid var(--ft-accent);
+}
+.toxic-kinetic .sectionHeader {
+  background: repeating-linear-gradient(125deg, transparent 0 16px, var(--ft-wash) 16px 32px);
+}
+.toxic-kinetic .eyebrow {
+  display: inline-block;
+  border-bottom: 4px solid var(--ft-accent);
+}
+.toxic-kinetic .sectionTitle {
+  text-transform: uppercase;
+  font-style: italic;
+  letter-spacing: -0.05em;
+}
+.toxic-kinetic .card {
+  border: 0;
+  border-top: 2px solid var(--ft-accent);
+  border-right: 6px solid var(--ft-accent);
+}
+.toxic-kinetic.navigation {
+  border-left: 14px solid var(--ft-accent);
+  padding: 0;
+}
+.toxic-kinetic .activeTab {
+  font-style: italic;
+  box-shadow: inset -6px 0 var(--ft-accent);
+}
+/* Luxury magazine · oversized italic type and hairline columns */
+.luxe-magazine {
+  --ft-ink: #302b27;
+  --ft-accent: #786654;
+  --ft-paper: #ffffff;
+  --ft-ground: #f4f1ec;
+  --ft-font: "Cormorant Garamond", Georgia, serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.luxe-magazine .section {
+  --ft-columns: minmax(180px, 1fr) minmax(0, 1.7fr);
+  background: transparent;
+  border-block: 1px solid var(--ft-accent);
+}
+.luxe-magazine .sectionHeader {
+  padding: 36px 24px;
+}
+.luxe-magazine .eyebrow {
+  letter-spacing: 0.32em;
+  font-weight: 400;
+}
+.luxe-magazine .sectionTitle {
+  font-size: clamp(40px, 6cqi, 64px);
+  font-weight: 400;
+  font-style: italic;
+}
+.luxe-magazine .sectionBody {
+  border-left: 1px solid var(--ft-line);
+  padding-top: 36px;
+}
+.luxe-magazine .card {
+  border: 0;
+  border-bottom: 1px solid var(--ft-accent);
+  background: transparent;
+  padding-inline: 0;
+}
+.luxe-magazine.navigation {
+  background: transparent;
+  border-bottom: 1px solid var(--ft-accent);
+  padding-block: 16px;
+}
+.luxe-magazine .activeTab {
+  color: var(--ft-ink);
+  background: transparent;
+  font-style: italic;
+  font-size: 20px;
+}
+/* Chalkboard coach · chalk rails and sketched play boxes */
+.chalk-strike {
+  --ft-ink: #f7f2ed;
+  --ft-accent: #f3b6cf;
+  --ft-paper: #283438;
+  --ft-ground: #1c2528;
+  --ft-font: "Space Mono", monospace;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.chalk-strike .section {
+  border: 7px solid var(--ft-line);
+  outline: 1px dashed var(--ft-accent);
+  outline-offset: -14px;
+}
+.chalk-strike .sectionHeader {
+  margin: 10px 12px;
+  border-bottom: 2px dashed var(--ft-accent);
+}
+.chalk-strike .sectionTitle {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.chalk-strike .card {
+  border: 2px dashed var(--ft-line);
+  border-radius: 5px 12px 3px 8px;
+  background: transparent;
+}
+.chalk-strike.navigation {
+  border-bottom: 3px dashed var(--ft-accent);
+  background: transparent;
+}
+.chalk-strike .activeTab {
+  background: transparent;
+  color: var(--ft-ink);
+  border: 2px dashed var(--ft-accent);
+  border-radius: 40%;
+}
+/* Championship stage · marquee heading and raised podium blocks */
+.podium-lights {
+  --ft-ink: #fff3d1;
+  --ft-accent: #e3c079;
+  --ft-paper: #1b2d47;
+  --ft-ground: #101d32;
+  --ft-font: Oswald, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.podium-lights .section {
+  border-top: 3px solid var(--ft-accent);
+}
+.podium-lights .sectionHeader {
+  justify-content: center;
+  text-align: center;
+  padding-top: 36px;
+}
+.podium-lights .headingGroup {
+  border-bottom: 4px double var(--ft-accent);
+  padding-bottom: 16px;
+}
+.podium-lights .sectionTitle {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.podium-lights .card {
+  border: 0;
+  border-top: 6px solid var(--ft-accent);
+  box-shadow: 0 8px 0 var(--ft-line);
+  margin-bottom: 8px;
+}
+.podium-lights.navigation {
+  border-top: 3px solid var(--ft-accent);
+}
+.podium-lights .activeTab {
+  border-radius: 10px 10px 0 0;
+  border-bottom: 5px solid var(--ft-accent);
+}
+/* Coach notebook · binder holes, ruled notes and index tabs */
+.judges-sheet {
+  --ft-ink: #463730;
+  --ft-accent: #854547;
+  --ft-paper: #fffaf0;
+  --ft-ground: #f2ebdf;
+  --ft-font: "Space Mono", monospace;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.judges-sheet .section {
+  border: 1px solid var(--ft-line);
+  border-left: 24px solid var(--ft-wash);
+}
+.judges-sheet .sectionHeader {
+  margin-left: 20px;
+  border-bottom: 2px solid var(--ft-line);
+}
+.judges-sheet .sectionTitle {
+  font-size: 30px;
+}
+.judges-sheet .sectionBody {
+  margin-left: 20px;
+  border-left: 1px solid var(--ft-line);
+}
+.judges-sheet .card {
+  border: 0;
+  border-bottom: 1px solid var(--ft-accent);
+  background: transparent;
+  padding-left: 0;
+}
+.judges-sheet.navigation {
+  border-bottom: 2px solid var(--ft-line);
+  padding-bottom: 0;
+}
+.judges-sheet .activeTab {
+  border-radius: 8px 16px 0 0;
+  border: 1px solid var(--ft-line);
+}
+/* Spring scrimmage · capsule heading and lively open-field cards */
+.spring-energy {
+  --ft-ink: #244854;
+  --ft-accent: #a13847;
+  --ft-paper: #fcfff9;
+  --ft-ground: #eef6ee;
+  --ft-font: Poppins, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.spring-energy .section {
+  border-radius: 34px 6px 34px 6px;
+  border: 2px solid var(--ft-accent);
+}
+.spring-energy .sectionHeader {
+  padding-bottom: 0;
+}
+.spring-energy .headingGroup {
+  border-radius: 40px;
+  border: 2px solid var(--ft-accent);
+  padding: 14px 26px;
+  background: var(--ft-wash);
+}
+.spring-energy .sectionTitle {
+  font-size: 32px;
+  letter-spacing: -0.05em;
+}
+.spring-energy .sectionBody {
+  padding-top: 26px;
+}
+.spring-energy .card {
+  border: 0;
+  border-radius: 4px 24px 4px 24px;
+  box-shadow: inset 0 -4px var(--ft-line);
+}
+.spring-energy.navigation {
+  border-radius: 8px 28px;
+  border: 2px solid var(--ft-accent);
+}
+.spring-energy .activeTab {
+  border-radius: 50px;
+  border: 3px solid var(--ft-paper);
+  outline: 1px solid var(--ft-accent);
+}
+/* Booster society · engraved nameplate and formal ledger borders */
+.club-classic {
+  --ft-ink: #263c59;
+  --ft-accent: #913e43;
+  --ft-paper: #fffbf2;
+  --ft-ground: #f1eee6;
+  --ft-font: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.club-classic .section {
+  border: 1px solid var(--ft-accent);
+  border-top: 7px double var(--ft-accent);
+  border-radius: 2px 2px 16px 16px;
+}
+.club-classic .sectionHeader {
+  justify-content: center;
+  text-align: center;
+}
+.club-classic .headingGroup {
+  border: 1px solid var(--ft-line);
+  padding: 18px 32px;
+}
+.club-classic .sectionTitle {
+  font-size: 36px;
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+}
+.club-classic .card {
+  background: transparent;
+  border-inline: 0;
+  border-block: 1px solid var(--ft-accent);
+}
+.club-classic.navigation {
+  border: 1px solid var(--ft-accent);
+  border-radius: 2px 2px 12px 12px;
+}
+.club-classic .activeTab {
+  border-radius: 2px;
+  outline: 1px solid var(--ft-accent);
+  outline-offset: 3px;
+}
+/* Aurora ribbons · sweeping corners and luminous vertical seams */
+.aurora-lift {
+  --ft-ink: #e5fff5;
+  --ft-accent: #9ee1c8;
+  --ft-paper: #10414a;
+  --ft-ground: #092d35;
+  --ft-font: "Exo 2", sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.aurora-lift .section {
+  border-radius: 60px 4px 4px 60px;
+  border-left: 5px solid var(--ft-accent);
+}
+.aurora-lift .sectionHeader {
+  padding-left: 38px;
+}
+.aurora-lift .sectionTitle {
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+.aurora-lift .sectionBody {
+  padding-left: 38px;
+}
+.aurora-lift .card {
+  border: 0;
+  border-left: 1px solid var(--ft-accent);
+  border-radius: 22px 0 0 22px;
+}
+.aurora-lift.navigation {
+  border-radius: 32px 4px 4px 32px;
+  border-left: 4px solid var(--ft-accent);
+}
+.aurora-lift .activeTab {
+  border-radius: 24px 4px 4px 24px;
+}
+/* Sideline feature · ribbon masthead and story columns */
+.ribbon-editorial {
+  --ft-ink: #543637;
+  --ft-accent: #965b66;
+  --ft-paper: #fff8f3;
+  --ft-ground: #f7ede8;
+  --ft-font: "Cormorant Garamond", Georgia, serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.ribbon-editorial .section {
+  --ft-columns: minmax(170px, 0.8fr) minmax(0, 2fr);
+  border-bottom: 3px double var(--ft-line);
+}
+.ribbon-editorial .sectionHeader {
+  background: var(--ft-wash);
+  border-bottom: 12px solid var(--ft-paper);
+  padding-top: 32px;
+}
+.ribbon-editorial .eyebrow {
+  border-bottom: 1px solid var(--ft-accent);
+  padding-bottom: 8px;
+}
+.ribbon-editorial .sectionTitle {
+  font-style: italic;
+  font-size: 38px;
+}
+.ribbon-editorial .sectionBody {
+  padding-top: 32px;
+}
+.ribbon-editorial .card {
+  background: transparent;
+  border: 0;
+  border-left: 3px double var(--ft-line);
+}
+.ribbon-editorial.navigation {
+  border-bottom: 6px solid var(--ft-line);
+}
+.ribbon-editorial .activeTab {
+  border-radius: 0 0 15px 0;
+}
+/* Victory placard · ribbon tails and medal-inspired footers */
+.medal-poster {
+  --ft-ink: #fff2d7;
+  --ft-accent: #ffd193;
+  --ft-paper: #763824;
+  --ft-ground: #562719;
+  --ft-font: Kanit, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.medal-poster .section {
+  border: 3px solid var(--ft-accent);
+  border-top-width: 10px;
+  border-radius: 0 0 28px 28px;
+}
+.medal-poster .sectionHeader {
+  justify-content: center;
+  text-align: center;
+}
+.medal-poster .eyebrow {
+  display: inline-block;
+  border-inline: 12px solid var(--ft-line);
+  padding-inline: 12px;
+}
+.medal-poster .sectionTitle {
+  text-transform: uppercase;
+  font-size: 46px;
+}
+.medal-poster .card {
+  border: 2px solid var(--ft-line);
+  border-radius: 3px 3px 24px 24px;
+  border-bottom: 5px solid var(--ft-accent);
+}
+.medal-poster.navigation {
+  border-block: 3px solid var(--ft-accent);
+}
+.medal-poster .activeTab {
+  border-radius: 0 0 18px 18px;
+}
+/* End-zone matrix · data band and yard-grid compartments */
+.vault-grid {
+  --ft-ink: #2c3866;
+  --ft-accent: #526399;
+  --ft-paper: #fafaff;
+  --ft-ground: #eceefa;
+  --ft-font: "League Spartan", sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.vault-grid .section {
+  border: 2px solid var(--ft-accent);
+}
+.vault-grid .sectionHeader {
+  background: var(--ft-wash);
+  border-bottom: 2px solid var(--ft-accent);
+}
+.vault-grid .headingGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+.vault-grid .eyebrow {
+  border-right: 2px solid var(--ft-accent);
+  padding-right: 20px;
+  margin: 0;
+}
+.vault-grid .sectionTitle {
+  font-size: 28px;
+  text-transform: uppercase;
+}
+.vault-grid .cards {
+  gap: 0;
+}
+.vault-grid .card {
+  border: 1px solid var(--ft-line);
+  border-bottom: 4px solid var(--ft-accent);
+}
+.vault-grid.navigation {
+  padding: 0;
+  border: 2px solid var(--ft-accent);
+}
+.vault-grid .activeTab {
+  border-inline: 3px solid var(--ft-accent);
+}
+/* Travel wallet · perforated spine and luggage-tag cards */
+.travel-briefing {
+  --ft-ink: #314837;
+  --ft-accent: #586943;
+  --ft-paper: #fcfff5;
+  --ft-ground: #edf1e3;
+  --ft-font: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 100% 0, var(--ft-wash), transparent 68%);
+}
+.travel-briefing .section {
+  --ft-columns: minmax(160px, 0.65fr) minmax(0, 2fr);
+  border: 1px solid var(--ft-accent);
+  border-radius: 14px 0 0 14px;
+}
+.travel-briefing .sectionHeader {
+  border-right: 2px dashed var(--ft-line);
+  background: var(--ft-wash);
+  border-radius: 14px 0 0 14px;
+}
+.travel-briefing .sectionTitle {
+  font-size: 34px;
+  text-transform: uppercase;
+}
+.travel-briefing .sectionBody {
+  padding-top: 28px;
+}
+.travel-briefing .card {
+  border: 1px solid var(--ft-line);
+  border-radius: 12px 0 0 12px;
+  border-right: 3px dashed var(--ft-accent);
+}
+.travel-briefing.navigation {
+  border: 1px solid var(--ft-accent);
+  border-radius: 12px 0 0 12px;
+}
+.travel-briefing .activeTab {
+  border-radius: 10px 0 0 10px;
+  border-right: 2px dashed var(--ft-paper);
+}
+/* Floodlit stadium · light-bar masthead and scoreboard trays */
+.friday-night {
+  --ft-ink: #edf7ff;
+  --ft-accent: #a9d8ef;
+  --ft-paper: #182a38;
+  --ft-ground: #101923;
+  --ft-font: Anton, Impact, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 50% -20%, var(--ft-wash), transparent 70%);
+}
+.friday-night .section {
+  border-radius: 12px 12px 0 0;
+  border: 1px solid var(--ft-line);
+  border-top: 6px solid var(--ft-accent);
+}
+.friday-night .sectionHeader {
+  border-bottom: 1px solid var(--ft-line);
+  box-shadow: inset 0 8px 16px var(--ft-wash);
+}
+.friday-night .eyebrow {
+  letter-spacing: 0.4em;
+}
+.friday-night .sectionTitle {
+  text-transform: uppercase;
+  font-size: 44px;
+}
+.friday-night .card {
+  border: 1px solid var(--ft-accent);
+  box-shadow: inset 0 5px var(--ft-line);
+  border-radius: 6px;
+  padding-top: 25px;
+}
+.friday-night.navigation {
+  border-block: 2px solid var(--ft-accent);
+  box-shadow: 0 5px 15px var(--ft-line);
+}
+.friday-night .activeTab {
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 2px var(--ft-paper),
+    0 0 0 3px var(--ft-accent);
+}
+/* Coastal watercolor · tide-line dividers and scalloped shoreline panels */
+.coastal-kickoff {
+  --ft-ink: #234b49;
+  --ft-accent: #397166;
+  --ft-paper: #f7fffa;
+  --ft-ground: #e8f3ee;
+  --ft-font: "Cormorant Garamond", Georgia, serif;
+  --ft-atmosphere: linear-gradient(0deg, var(--ft-wash), transparent 65%);
+}
+.coastal-kickoff .section {
+  border-radius: 8px 8px 48px 48px;
+  border-bottom: 6px double var(--ft-accent);
+}
+.coastal-kickoff .sectionHeader {
+  justify-content: center;
+  text-align: center;
+  border-bottom: 1px solid var(--ft-line);
+  margin-inline: 26px;
+}
+.coastal-kickoff .sectionTitle {
+  font-style: italic;
+  font-size: 42px;
+  font-weight: 500;
+}
+.coastal-kickoff .sectionBody {
+  padding-top: 22px;
+}
+.coastal-kickoff .card {
+  border: 0;
+  border-radius: 6px 6px 30px 30px;
+  border-bottom: 3px solid var(--ft-line);
+}
+.coastal-kickoff.navigation {
+  border-bottom: 4px double var(--ft-accent);
+  border-radius: 0 0 22px 22px;
+}
+.coastal-kickoff .activeTab {
+  border-radius: 4px 4px 20px 20px;
+}
+/* Desert strata · stepped mesa headings and sediment bands */
+.desert-gridiron {
+  --ft-ink: #542e24;
+  --ft-accent: #984627;
+  --ft-paper: #fff6eb;
+  --ft-ground: #f3e3d4;
+  --ft-font: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --ft-atmosphere: linear-gradient(
+    175deg,
+    transparent 45%,
+    var(--ft-wash) 45% 60%,
+    transparent 60% 75%,
+    var(--ft-wash) 75%
+  );
+}
+.desert-gridiron .section {
+  border-left: 12px solid var(--ft-line);
+  border-bottom: 6px solid var(--ft-accent);
+  border-radius: 0 24px 0 0;
+}
+.desert-gridiron .sectionHeader {
+  padding-bottom: 24px;
+  border-bottom: 8px double var(--ft-line);
+}
+.desert-gridiron .headingGroup {
+  border-left: 3px solid var(--ft-accent);
+  padding-left: 18px;
+}
+.desert-gridiron .sectionTitle {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.desert-gridiron .card {
+  border: 0;
+  border-top: 4px solid var(--ft-accent);
+  box-shadow: inset 0 8px var(--ft-wash);
+  border-radius: 0 16px 0 0;
+}
+.desert-gridiron.navigation {
+  border-bottom: 6px double var(--ft-accent);
+}
+.desert-gridiron .activeTab {
+  border-radius: 0 12px 0 0;
+  border-bottom: 4px solid var(--ft-accent);
+}
+/* Mountain lodge · peaked border rhythm and trail-marker panels */
+.mountain-league {
+  --ft-ink: #263f37;
+  --ft-accent: #456e53;
+  --ft-paper: #f7fcf7;
+  --ft-ground: #e7efe9;
+  --ft-font: Manrope, sans-serif;
+  --ft-atmosphere: linear-gradient(
+    145deg,
+    var(--ft-wash) 20%,
+    transparent 20% 80%,
+    var(--ft-wash) 80%
+  );
+}
+.mountain-league .section {
+  --ft-columns: minmax(150px, 0.75fr) minmax(0, 2fr);
+  border: 2px solid var(--ft-accent);
+  border-radius: 3px;
+}
+.mountain-league .sectionHeader {
+  border-right: 5px double var(--ft-accent);
+  align-items: center;
+}
+.mountain-league .sectionTitle {
+  font-size: 36px;
+  text-transform: uppercase;
+}
+.mountain-league .sectionBody {
+  padding-top: 28px;
+}
+.mountain-league .card {
+  border: 0;
+  border-block: 2px solid var(--ft-accent);
+  box-shadow: inset 0 6px var(--ft-wash);
+}
+.mountain-league.navigation {
+  border-block: 5px double var(--ft-accent);
+}
+.mountain-league .activeTab {
+  border-radius: 3px;
+  border: 1px solid var(--ft-accent);
+  outline: 1px solid var(--ft-paper);
+  outline-offset: -5px;
+}
+/* Homecoming banner · arched title crest and pennant cards */
+.homecoming {
+  --ft-ink: #5b2b3d;
+  --ft-accent: #973d58;
+  --ft-paper: #fff7f0;
+  --ft-ground: #f6e9e3;
+  --ft-font: "Playfair Display", Georgia, serif;
+  --ft-atmosphere: radial-gradient(ellipse at 50% 0, var(--ft-wash), transparent 75%);
+}
+.homecoming .section {
+  border: 2px solid var(--ft-accent);
+  border-radius: 42px 42px 4px 4px;
+}
+.homecoming .sectionHeader {
+  justify-content: center;
+  text-align: center;
+  border-bottom: 1px solid var(--ft-line);
+  margin: 10px 20px 0;
+}
+.homecoming .headingGroup {
+  border-top: 4px double var(--ft-accent);
+  border-radius: 50% 50% 0 0;
+  padding: 16px 20px 0;
+}
+.homecoming .sectionTitle {
+  font-size: 40px;
+  letter-spacing: 0.03em;
+}
+.homecoming .card {
+  border: 1px solid var(--ft-line);
+  border-bottom: 7px double var(--ft-accent);
+  border-radius: 0 0 20px 2px;
+}
+.homecoming.navigation {
+  border-radius: 24px 24px 0 0;
+  border-top: 4px double var(--ft-accent);
+}
+.homecoming .activeTab {
+  border-radius: 20px 20px 2px 2px;
+}
+/* Rain shelter · sloped awning rule and water-beaded window cards */
+.rain-game {
+  --ft-ink: #e1f6ff;
+  --ft-accent: #8fddf5;
+  --ft-paper: #14364a;
+  --ft-ground: #0b2231;
+  --ft-font: Oswald, sans-serif;
+  --ft-atmosphere: linear-gradient(120deg, var(--ft-wash), transparent 55%);
+}
+.rain-game .section {
+  border: 1px solid var(--ft-line);
+  border-top: 8px solid var(--ft-accent);
+  border-radius: 18px 2px 18px 2px;
+}
+.rain-game .sectionHeader {
+  border-bottom: 1px dashed var(--ft-accent);
+}
+.rain-game .sectionTitle {
+  letter-spacing: -0.025em;
+  font-size: 38px;
+}
+.rain-game .card {
+  border: 1px solid var(--ft-line);
+  border-radius: 3px 3px 18px 3px;
+  box-shadow: 0 6px 12px var(--ft-wash);
+}
+.rain-game.navigation {
+  border-top: 3px solid var(--ft-accent);
+  border-radius: 12px 0 0 0;
+}
+.rain-game .activeTab {
+  border-radius: 12px 2px 12px 2px;
+  border-bottom: 2px solid var(--ft-accent);
+}
+/* Winter field · soft snowcap masthead and frosted ticket frames */
+.snow-bowl {
+  --ft-ink: #29455f;
+  --ft-accent: #4e6985;
+  --ft-paper: #f7fcff;
+  --ft-ground: #e7f1f7;
+  --ft-font: Sora, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 50% 100%, var(--ft-wash), transparent 70%);
+}
+.snow-bowl .section {
+  border: 1px solid var(--ft-line);
+  border-radius: 36px 36px 10px 10px;
+  box-shadow: inset 0 12px var(--ft-wash);
+}
+.snow-bowl .sectionHeader {
+  padding-top: 38px;
+  justify-content: center;
+  text-align: center;
+}
+.snow-bowl .sectionTitle {
+  letter-spacing: 0.08em;
+  font-size: 34px;
+}
+.snow-bowl .card {
+  border: 2px solid var(--ft-line);
+  border-radius: 18px 18px 6px 6px;
+  outline: 1px dashed var(--ft-line);
+  outline-offset: -7px;
+}
+.snow-bowl.navigation {
+  border-radius: 24px 24px 6px 6px;
+  box-shadow: inset 0 5px var(--ft-wash);
+}
+.snow-bowl .activeTab {
+  border-radius: 18px 18px 4px 4px;
+}
+/* Red-zone drive · goal-post title brackets and field-stripe rails */
+.red-zone {
+  --ft-ink: #fff3e7;
+  --ft-accent: #ffc394;
+  --ft-paper: #661a25;
+  --ft-ground: #8d1e29;
+  --ft-font: Bungee, Impact, sans-serif;
+  --ft-atmosphere: linear-gradient(
+    90deg,
+    var(--ft-wash) 0 4%,
+    transparent 4% 96%,
+    var(--ft-wash) 96%
+  );
+}
+.red-zone .section {
+  border-inline: 3px solid var(--ft-accent);
+  border-bottom: 3px solid var(--ft-accent);
+}
+.red-zone .sectionHeader {
+  border-top: 12px solid var(--ft-accent);
+  border-bottom: 2px dashed var(--ft-line);
+}
+.red-zone .headingGroup {
+  border-inline: 3px solid var(--ft-accent);
+  padding-inline: 18px;
+}
+.red-zone .sectionTitle {
+  text-transform: uppercase;
+  font-size: 48px;
+}
+.red-zone .card {
+  border: 0;
+  border-inline: 4px solid var(--ft-line);
+  border-bottom: 2px solid var(--ft-accent);
+}
+.red-zone.navigation {
+  border-top: 7px solid var(--ft-accent);
+  border-bottom: 2px dashed var(--ft-accent);
+}
+.red-zone .activeTab {
+  border-inline: 2px solid var(--ft-accent);
+  text-transform: uppercase;
+}
+/* Leather and linen · stitched inset border and leather label rail */
+.leather-linen {
+  --ft-ink: #4c3d31;
+  --ft-accent: #786044;
+  --ft-paper: #faf4eb;
+  --ft-ground: #eee6dc;
+  --ft-font: "Cormorant Garamond", Georgia, serif;
+  --ft-atmosphere: linear-gradient(90deg, var(--ft-wash), transparent 30% 70%, var(--ft-wash));
+}
+.leather-linen .section {
+  border: 9px solid var(--ft-line);
+  border-radius: 16px;
+  outline: 1px dashed var(--ft-accent);
+  outline-offset: -6px;
+}
+.leather-linen .sectionHeader {
+  border-bottom: 1px dashed var(--ft-accent);
+  margin-inline: 12px;
+}
+.leather-linen .sectionTitle {
+  font-size: 38px;
+  font-weight: 500;
+}
+.leather-linen .card {
+  border: 1px dashed var(--ft-accent);
+  border-radius: 8px;
+  box-shadow: 0 3px 0 var(--ft-line);
+}
+.leather-linen.navigation {
+  border: 1px dashed var(--ft-accent);
+  border-radius: 10px;
+  outline: 4px solid var(--ft-wash);
+}
+.leather-linen .activeTab {
+  border-radius: 6px;
+  outline: 1px dashed var(--ft-paper);
+  outline-offset: -5px;
+}
+/* Chrome chassis · beveled rails and machined metal plates */
+.chrome-league {
+  --ft-ink: #273b58;
+  --ft-accent: #4a6585;
+  --ft-paper: #f7faff;
+  --ft-ground: #e4eaf1;
+  --ft-font: "Exo 2", sans-serif;
+  --ft-atmosphere: linear-gradient(135deg, transparent 30%, var(--ft-wash) 45%, transparent 60%);
+}
+.chrome-league .section {
+  border: 6px ridge var(--ft-line);
+  border-radius: 20px 2px 20px 2px;
+}
+.chrome-league .sectionHeader {
+  border-bottom: 4px ridge var(--ft-line);
+  background: linear-gradient(100deg, transparent, var(--ft-wash), transparent);
+}
+.chrome-league .sectionTitle {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 36px;
+}
+.chrome-league .card {
+  border: 3px ridge var(--ft-line);
+  border-radius: 10px 2px;
+  box-shadow: inset 0 0 0 3px var(--ft-paper);
+}
+.chrome-league.navigation {
+  border: 3px ridge var(--ft-line);
+  border-radius: 12px 0;
+}
+.chrome-league .activeTab {
+  border: 2px outset var(--ft-accent);
+  border-radius: 7px 0;
+}
+/* Morning kickoff · sunrise arch, friendly headline and rounded score slips */
+.saturday-morning {
+  --ft-ink: #594522;
+  --ft-accent: #926520;
+  --ft-paper: #fff9e9;
+  --ft-ground: #fff0c9;
+  --ft-font: Poppins, sans-serif;
+  --ft-atmosphere: radial-gradient(circle at 0 0, var(--ft-wash), transparent 55%);
+}
+.saturday-morning .section {
+  border-radius: 60px 12px 12px 12px;
+  border: 2px solid var(--ft-line);
+}
+.saturday-morning .sectionHeader {
+  padding-top: 34px;
+  padding-left: 34px;
+}
+.saturday-morning .eyebrow {
+  border-bottom: 3px solid var(--ft-accent);
+  display: inline-block;
+  padding-bottom: 4px;
+}
+.saturday-morning .sectionTitle {
+  font-size: 40px;
+  letter-spacing: -0.04em;
+}
+.saturday-morning .card {
+  border: 0;
+  border-radius: 20px 6px 20px 6px;
+  box-shadow: 4px 4px 0 var(--ft-line);
+}
+.saturday-morning.navigation {
+  border-radius: 30px 8px 8px 8px;
+}
+.saturday-morning .activeTab {
+  border-radius: 24px 5px 5px 5px;
+}
+/* Women’s gridiron · confident vertical banner and athletic badge corners */
+.womens-gridiron {
+  --ft-ink: #faf0ff;
+  --ft-accent: #e4afea;
+  --ft-paper: #3a294d;
+  --ft-ground: #291d38;
+  --ft-font: "League Spartan", sans-serif;
+  --ft-atmosphere: linear-gradient(155deg, var(--ft-wash) 22%, transparent 22%);
+}
+.womens-gridiron .section {
+  --ft-columns: minmax(160px, 0.85fr) minmax(0, 2fr);
+  border-left: 7px solid var(--ft-accent);
+  border-radius: 0 28px 28px 0;
+}
+.womens-gridiron .sectionHeader {
+  background: var(--ft-wash);
+  border-right: 1px solid var(--ft-line);
+}
+.womens-gridiron .sectionTitle {
+  font-size: 42px;
+  text-transform: uppercase;
+  letter-spacing: -0.05em;
+}
+.womens-gridiron .sectionBody {
+  padding-top: 28px;
+}
+.womens-gridiron .card {
+  border: 2px solid var(--ft-line);
+  border-radius: 0 20px 0 20px;
+  border-bottom: 5px solid var(--ft-accent);
+}
+.womens-gridiron.navigation {
+  border-left: 7px solid var(--ft-accent);
+  border-radius: 0 22px 22px 0;
+}
+.womens-gridiron .activeTab {
+  border-radius: 0 16px 0 16px;
+}
+/* Pep rally · cheer bursts, megaphone banner and confetti panels */
+.pep-rally {
+  --ft-ink: #50315e;
+  --ft-accent: #79508e;
+  --ft-paper: #fcf5ff;
+  --ft-ground: #ede3f4;
+  --ft-font: Kanit, sans-serif;
+  --ft-atmosphere: radial-gradient(circle at 90% 10%, var(--ft-wash), transparent 60%);
+}
+.pep-rally .section {
+  border: 3px solid var(--ft-accent);
+  border-radius: 4px 30px 4px 30px;
+  box-shadow: 6px 6px 0 var(--ft-line);
+}
+.pep-rally .sectionHeader {
+  border-bottom: 3px dotted var(--ft-accent);
+}
+.pep-rally .headingGroup {
+  border-left: 12px solid var(--ft-accent);
+  padding-left: 18px;
+}
+.pep-rally .sectionTitle {
+  text-transform: uppercase;
+  font-size: 44px;
+}
+.pep-rally .card {
+  border: 2px solid var(--ft-accent);
+  border-radius: 14px 2px 14px 2px;
+  box-shadow: 3px -3px 0 var(--ft-line);
+}
+.pep-rally.navigation {
+  border-block: 3px dotted var(--ft-accent);
+}
+.pep-rally .activeTab {
+  border-radius: 4px 18px 4px 18px;
+}
+/* Captain’s armband · wraparound stripes and embroidered name tabs */
+.captains-band {
+  --ft-ink: #38432a;
+  --ft-accent: #5d6937;
+  --ft-paper: #f7f9ed;
+  --ft-ground: #e8ebda;
+  --ft-font: Montserrat, sans-serif;
+  --ft-atmosphere: linear-gradient(
+    0deg,
+    var(--ft-wash) 0 8%,
+    transparent 8% 92%,
+    var(--ft-wash) 92%
+  );
+}
+.captains-band .section {
+  border-block: 7px solid var(--ft-accent);
+  border-radius: 24px 4px 24px 4px;
+}
+.captains-band .sectionHeader {
+  border-bottom: 3px double var(--ft-line);
+}
+.captains-band .headingGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 14px 30px;
+}
+.captains-band .sectionTitle {
+  font-size: 34px;
+  text-transform: uppercase;
+}
+.captains-band .card {
+  border: 0;
+  border-left: 7px double var(--ft-accent);
+  border-right: 1px solid var(--ft-line);
+  border-radius: 5px;
+}
+.captains-band.navigation {
+  border-block: 5px double var(--ft-accent);
+  border-radius: 12px;
+}
+.captains-band .activeTab {
+  border-radius: 8px;
+  border-inline: 3px solid var(--ft-accent);
+}
+/* Overtime clock · segmented timer band and compact display housings */
+.overtime {
+  --ft-ink: #fff5d6;
+  --ft-accent: #eacd8e;
+  --ft-paper: #352a19;
+  --ft-ground: #211c12;
+  --ft-font: "Space Mono", monospace;
+  --ft-atmosphere: radial-gradient(ellipse at 50% 50%, var(--ft-wash), transparent 75%);
+}
+.overtime .section {
+  border: 2px solid var(--ft-accent);
+  border-radius: 8px;
+  box-shadow:
+    inset 0 0 0 5px var(--ft-paper),
+    inset 0 0 0 6px var(--ft-line);
+}
+.overtime .sectionHeader {
+  margin: 8px;
+  border-bottom: 3px dotted var(--ft-accent);
+}
+.overtime .sectionTitle {
+  letter-spacing: 0.12em;
+  font-size: 32px;
+}
+.overtime .card {
+  border: 1px solid var(--ft-accent);
+  border-radius: 4px;
+  box-shadow: inset 0 0 12px var(--ft-wash);
+  border-top: 4px solid var(--ft-accent);
+}
+.overtime.navigation {
+  border: 2px solid var(--ft-accent);
+  border-radius: 6px;
+}
+.overtime .activeTab {
+  border-radius: 3px;
+  outline: 1px dashed var(--ft-accent);
+  outline-offset: 2px;
+}
+/* Tailgate picnic · gingham edges and folded place cards */
+.tailgate-social {
+  --ft-ink: #603d39;
+  --ft-accent: #914c43;
+  --ft-paper: #fff4ed;
+  --ft-ground: #f7e2d9;
+  --ft-font: Manrope, sans-serif;
+  --ft-atmosphere: linear-gradient(0deg, var(--ft-wash), transparent 35%);
+}
+.tailgate-social .section {
+  border: 8px solid var(--ft-wash);
+  border-radius: 6px;
+  outline: 1px solid var(--ft-line);
+  outline-offset: -8px;
+}
+.tailgate-social .sectionHeader {
+  justify-content: center;
+  text-align: center;
+  border-bottom: 2px dashed var(--ft-accent);
+  margin-inline: 16px;
+}
+.tailgate-social .sectionTitle {
+  font-size: 38px;
+}
+.tailgate-social .card {
+  border: 1px solid var(--ft-line);
+  border-top: 6px solid var(--ft-wash);
+  box-shadow: 0 5px 0 var(--ft-line);
+  border-radius: 3px;
+}
+.tailgate-social.navigation {
+  border: 6px solid var(--ft-wash);
+  border-radius: 6px;
+}
+.tailgate-social .activeTab {
+  border-radius: 3px;
+  border-bottom: 3px solid var(--ft-accent);
+}
+/* Marching band · staff-line masthead and brass-button cards */
+.bandstand {
+  --ft-ink: #fff5df;
+  --ft-accent: #edc57e;
+  --ft-paper: #253d49;
+  --ft-ground: #182833;
+  --ft-font: Oswald, sans-serif;
+  --ft-atmosphere: linear-gradient(90deg, var(--ft-wash), transparent 60%);
+}
+.bandstand .section {
+  border-top: 8px double var(--ft-accent);
+  border-bottom: 2px solid var(--ft-accent);
+}
+.bandstand .sectionHeader {
+  border-left: 5px solid var(--ft-accent);
+  margin-left: 20px;
+}
+.bandstand .sectionTitle {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 40px;
+}
+.bandstand .card {
+  border: 1px solid var(--ft-accent);
+  border-radius: 12px 12px 2px 2px;
+  border-top: 5px double var(--ft-accent);
+}
+.bandstand.navigation {
+  border-block: 6px double var(--ft-accent);
+}
+.bandstand .activeTab {
+  border-radius: 12px 12px 0 0;
+  border-inline: 1px solid var(--ft-accent);
+}
+/* Goal-line field · end-zone hatching and sideline marker cards */
+.goal-line {
+  --ft-ink: #20452d;
+  --ft-accent: #396f4b;
+  --ft-paper: #f2fcf5;
+  --ft-ground: #dfefe5;
+  --ft-font: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --ft-atmosphere: repeating-linear-gradient(90deg, transparent 0 95px, var(--ft-wash) 95px 96px);
+}
+.goal-line .section {
+  border: 2px solid var(--ft-accent);
+  border-inline-width: 10px;
+}
+.goal-line .sectionHeader {
+  border-bottom: 2px solid var(--ft-accent);
+  padding-block: 22px;
+}
+.goal-line .eyebrow {
+  border-inline: 2px solid var(--ft-accent);
+  padding-inline: 12px;
+  display: inline-block;
+}
+.goal-line .sectionTitle {
+  text-transform: uppercase;
+  font-size: 50px;
+}
+.goal-line .card {
+  border: 0;
+  border-block: 2px solid var(--ft-accent);
+  border-left: 12px solid var(--ft-wash);
+}
+.goal-line.navigation {
+  border-inline: 10px solid var(--ft-accent);
+  border-bottom: 2px solid var(--ft-accent);
+}
+.goal-line .activeTab {
+  border-bottom: 5px double var(--ft-accent);
+  text-transform: uppercase;
+}
+/* Retro television · rounded tube frame and channel-strip headings */
+.retro-broadcast {
+  --ft-ink: #654028;
+  --ft-accent: #885426;
+  --ft-paper: #fff3df;
+  --ft-ground: #f3e1c8;
+  --ft-font: Audiowide, sans-serif;
+  --ft-atmosphere: repeating-linear-gradient(0deg, transparent 0 5px, var(--ft-wash) 5px 6px);
+}
+.retro-broadcast .section {
+  border: 8px solid var(--ft-line);
+  border-radius: 38px;
+  box-shadow: inset 0 0 0 2px var(--ft-accent);
+}
+.retro-broadcast .sectionHeader {
+  border-bottom: 3px solid var(--ft-line);
+  margin: 6px 18px 0;
+}
+.retro-broadcast .sectionTitle {
+  font-size: 36px;
+  text-transform: uppercase;
+}
+.retro-broadcast .card {
+  border: 2px solid var(--ft-line);
+  border-radius: 20px;
+  box-shadow: inset 0 -4px var(--ft-wash);
+}
+.retro-broadcast.navigation {
+  border: 5px solid var(--ft-line);
+  border-radius: 24px;
+}
+.retro-broadcast .activeTab {
+  border-radius: 15px;
+  border-bottom: 3px solid var(--ft-accent);
+}
+/* Rivalry matchup · split banner, opposing stripes and divider cards */
+.rivalry-week {
+  --ft-ink: #fff0eb;
+  --ft-accent: #f2b4a7;
+  --ft-paper: #352637;
+  --ft-ground: #201a27;
+  --ft-font: Anton, Impact, sans-serif;
+  --ft-atmosphere: linear-gradient(
+    110deg,
+    transparent 49.8%,
+    var(--ft-wash) 49.8% 50.2%,
+    transparent 50.2%
+  );
+}
+.rivalry-week .section {
+  border-left: 8px solid var(--ft-accent);
+  border-right: 8px solid var(--ft-ink);
+}
+.rivalry-week .sectionHeader {
+  background: linear-gradient(110deg, var(--ft-wash) 50%, transparent 50%);
+  border-bottom: 3px solid var(--ft-accent);
+}
+.rivalry-week .sectionTitle {
+  text-transform: uppercase;
+  font-size: 48px;
+  letter-spacing: -0.04em;
+}
+.rivalry-week .card {
+  border: 0;
+  border-left: 4px solid var(--ft-accent);
+  border-right: 4px solid var(--ft-ink);
+  border-bottom: 1px solid var(--ft-line);
+}
+.rivalry-week.navigation {
+  border-left: 8px solid var(--ft-accent);
+  border-right: 8px solid var(--ft-ink);
+}
+.rivalry-week .activeTab {
+  border-left: 4px solid var(--ft-accent);
+  border-right: 4px solid var(--ft-paper);
+}
+/* City league · street-grid rail and stacked building cards */
+.city-league {
+  --ft-ink: #354452;
+  --ft-accent: #716050;
+  --ft-paper: #f6f7f8;
+  --ft-ground: #e7e9eb;
+  --ft-font: "League Spartan", sans-serif;
+  --ft-atmosphere: linear-gradient(90deg, var(--ft-wash) 0 3%, transparent 3%);
+}
+.city-league .section {
+  --ft-columns: minmax(150px, 0.65fr) minmax(0, 2fr);
+  border-top: 4px solid var(--ft-ink);
+  border-bottom: 8px solid var(--ft-accent);
+}
+.city-league .sectionHeader {
+  border-right: 3px solid var(--ft-line);
+}
+.city-league .sectionTitle {
+  font-size: 40px;
+  text-transform: uppercase;
+}
+.city-league .sectionBody {
+  padding-top: 28px;
+}
+.city-league .card {
+  border: 0;
+  border-top: 8px solid var(--ft-accent);
+  border-left: 2px solid var(--ft-line);
+  box-shadow: 5px 5px 0 var(--ft-wash);
+}
+.city-league.navigation {
+  border-top: 4px solid var(--ft-ink);
+  border-bottom: 2px solid var(--ft-accent);
+}
+.city-league .activeTab {
+  border-bottom: 6px solid var(--ft-accent);
+  border-radius: 0;
+}
+/* Linocut Sunday · carved borders and rough print blocks */
+.sunday-ink {
+  --ft-ink: #243f61;
+  --ft-accent: #41668e;
+  --ft-paper: #f6faff;
+  --ft-ground: #e6edf4;
+  --ft-font: "Playfair Display", Georgia, serif;
+  --ft-atmosphere: linear-gradient(155deg, var(--ft-wash), transparent 45%);
+}
+.sunday-ink .section {
+  border: 4px solid var(--ft-ink);
+  outline: 2px solid var(--ft-line);
+  outline-offset: -10px;
+}
+.sunday-ink .sectionHeader {
+  border-bottom: 5px double var(--ft-ink);
+  margin: 8px 14px 0;
+}
+.sunday-ink .sectionTitle {
+  text-transform: uppercase;
+  font-size: 46px;
+}
+.sunday-ink .eyebrow {
+  letter-spacing: 0.1em;
+}
+.sunday-ink .card {
+  border: 2px solid var(--ft-ink);
+  box-shadow: 5px 5px 0 -1px var(--ft-ink);
+  background: transparent;
+}
+.sunday-ink.navigation {
+  border-top: 5px double var(--ft-ink);
+  border-bottom: 3px solid var(--ft-ink);
+}
+.sunday-ink .activeTab {
+  border: 2px solid var(--ft-ink);
+  outline: 1px solid var(--ft-paper);
+  outline-offset: -4px;
+}
+/* Pennant club · banner-shaped heading and stitched flag labels */
+.pennant-club {
+  --ft-ink: #254d4a;
+  --ft-accent: #3e7065;
+  --ft-paper: #f4fffc;
+  --ft-ground: #dff1ef;
+  --ft-font: Bungee, Impact, sans-serif;
+  --ft-atmosphere: linear-gradient(90deg, var(--ft-wash), transparent 75%);
+}
+.pennant-club .section {
+  --ft-columns: minmax(170px, 0.8fr) minmax(0, 2fr);
+  border-top: 3px solid var(--ft-accent);
+  border-bottom: 3px solid var(--ft-accent);
+}
+.pennant-club .sectionHeader {
+  background: var(--ft-wash);
+  border-right: 6px double var(--ft-accent);
+}
+.pennant-club .sectionTitle {
+  font-size: 38px;
+  text-transform: uppercase;
+}
+.pennant-club .sectionBody {
+  padding-top: 28px;
+}
+.pennant-club .card {
+  border: 1px solid var(--ft-line);
+  border-radius: 0 24px 24px 0;
+  border-left: 5px solid var(--ft-accent);
+}
+.pennant-club.navigation {
+  border-block: 3px solid var(--ft-accent);
+  border-left: 6px double var(--ft-accent);
+}
+.pennant-club .activeTab {
+  border-radius: 0 24px 24px 0;
+  border-left: 4px solid var(--ft-accent);
+}
+/* Ceramic mosaic · grouted tile frame and tessellated heading strip */
+.stadium-mosaic {
+  --ft-ink: #344844;
+  --ft-accent: #506a4d;
+  --ft-paper: #fffaf0;
+  --ft-ground: #f3ede0;
+  --ft-font: Bungee, Impact, sans-serif;
+  --ft-atmosphere: linear-gradient(135deg, var(--ft-wash), transparent 50%);
+}
+.stadium-mosaic .section {
+  border: 10px solid var(--ft-wash);
+  outline: 2px solid var(--ft-accent);
+  outline-offset: -10px;
+  border-radius: 6px;
+}
+.stadium-mosaic .sectionHeader {
+  border-bottom: 6px double var(--ft-accent);
+  background: repeating-linear-gradient(90deg, transparent 0 47px, var(--ft-line) 47px 50px);
+}
+.stadium-mosaic .headingGroup {
+  background: var(--ft-paper);
+  padding: 12px 18px;
+  border: 1px solid var(--ft-line);
+}
+.stadium-mosaic .sectionTitle {
+  font-size: 36px;
+}
+.stadium-mosaic .card {
+  border: 4px solid var(--ft-wash);
+  outline: 1px solid var(--ft-line);
+  outline-offset: -4px;
+  border-radius: 2px;
+}
+.stadium-mosaic.navigation {
+  border: 6px solid var(--ft-wash);
+  outline: 1px solid var(--ft-accent);
+  outline-offset: -6px;
+}
+.stadium-mosaic .activeTab {
+  border: 3px solid var(--ft-paper);
+  outline: 1px solid var(--ft-line);
+}
+/* Hammered copper · riveted spine and embossed metal labels */
+.copper-kickoff {
+  --ft-ink: #fff0dd;
+  --ft-accent: #e5b789;
+  --ft-paper: #30241e;
+  --ft-ground: #211b18;
+  --ft-font: "Cormorant Garamond", Georgia, serif;
+  --ft-atmosphere: linear-gradient(115deg, transparent 20%, var(--ft-wash) 50%, transparent 80%);
+}
+.copper-kickoff .section {
+  --ft-columns: minmax(170px, 0.75fr) minmax(0, 2fr);
+  border: 3px ridge var(--ft-accent);
+  border-radius: 3px;
+}
+.copper-kickoff .sectionHeader {
+  border-right: 8px double var(--ft-accent);
+  align-items: center;
+}
+.copper-kickoff .sectionTitle {
+  font-size: 38px;
+  letter-spacing: 0.05em;
+}
+.copper-kickoff .sectionBody {
+  padding-top: 28px;
+}
+.copper-kickoff .card {
+  border: 1px solid var(--ft-accent);
+  box-shadow:
+    inset 0 0 0 4px var(--ft-paper),
+    inset 0 0 0 5px var(--ft-line);
+  border-radius: 5px;
+}
+.copper-kickoff.navigation {
+  border-block: 3px ridge var(--ft-accent);
+}
+.copper-kickoff .activeTab {
+  border: 1px solid var(--ft-accent);
+  box-shadow:
+    inset 0 0 0 3px var(--ft-ink),
+    inset 0 0 0 4px var(--ft-paper);
+}
+/* Sculpted clay · hand-shaped soft slab and pressed thumbprint cards */
+.clay-play {
+  --ft-ink: #663e35;
+  --ft-accent: #985239;
+  --ft-paper: #fff6f0;
+  --ft-ground: #fae6dc;
+  --ft-font: Poppins, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 0 100%, var(--ft-wash), transparent 65%);
+}
+.clay-play .section {
+  border-radius: 42px 22px 36px 14px;
+  border: 2px solid var(--ft-line);
+  box-shadow:
+    inset 0 -8px var(--ft-wash),
+    5px 6px 0 var(--ft-line);
+}
+.clay-play .sectionHeader {
+  padding-top: 32px;
+}
+.clay-play .sectionTitle {
+  font-size: 42px;
+  letter-spacing: -0.06em;
+}
+.clay-play .headingGroup {
+  border-bottom: 4px solid var(--ft-line);
+  border-radius: 0 0 50% 4px;
+  padding-bottom: 12px;
+}
+.clay-play .card {
+  border: 0;
+  border-radius: 24px 12px 20px 9px;
+  box-shadow: inset 3px 3px 0 var(--ft-line);
+}
+.clay-play.navigation {
+  border-radius: 25px 15px 21px 10px;
+  box-shadow: inset 0 -4px var(--ft-line);
+}
+.clay-play .activeTab {
+  border-radius: 18px 8px 16px 7px;
+  box-shadow: 2px 3px 0 var(--ft-line);
+}
+/* Layered paper stadium · folded grandstand header and lifted paper cards */
+.paper-stadium {
+  --ft-ink: #294857;
+  --ft-accent: #446e80;
+  --ft-paper: #f7fcfd;
+  --ft-ground: #e7eff1;
+  --ft-font: "League Spartan", sans-serif;
+  --ft-atmosphere: linear-gradient(165deg, transparent 60%, var(--ft-wash) 60%);
+}
+.paper-stadium .section {
+  border: 1px solid var(--ft-line);
+  border-top: 0;
+  box-shadow:
+    5px 5px 0 var(--ft-wash),
+    10px 10px 0 var(--ft-line);
+  margin: 0 10px 10px 0;
+}
+.paper-stadium .sectionHeader {
+  border-top: 12px solid var(--ft-line);
+  border-bottom: 1px solid var(--ft-accent);
+  background: linear-gradient(135deg, var(--ft-wash) 24px, transparent 24px);
+}
+.paper-stadium .sectionTitle {
+  font-size: 40px;
+  letter-spacing: -0.04em;
+}
+.paper-stadium .card {
+  border: 1px solid var(--ft-line);
+  border-top: 0;
+  box-shadow:
+    0 -5px 0 var(--ft-wash),
+    3px 4px 0 var(--ft-line);
+  border-radius: 0;
+}
+.paper-stadium.navigation {
+  border-top: 6px solid var(--ft-wash);
+  box-shadow: 0 3px 0 var(--ft-line);
+}
+.paper-stadium .activeTab {
+  border-radius: 0;
+  box-shadow: 3px 3px 0 var(--ft-line);
+}
+/* Embroidered team patch · overlocked fabric frame and stitched pockets */
+.stitched-season {
+  --ft-ink: #534237;
+  --ft-accent: #78603f;
+  --ft-paper: #fff9ee;
+  --ft-ground: #f4eadb;
+  --ft-font: "Playfair Display", Georgia, serif;
+  --ft-atmosphere: linear-gradient(0deg, var(--ft-wash), transparent 50%);
+}
+.stitched-season .section {
+  border: 3px dashed var(--ft-accent);
+  border-radius: 22px;
+  box-shadow:
+    0 0 0 5px var(--ft-wash),
+    inset 0 0 0 6px var(--ft-wash);
+  margin: 5px;
+}
+.stitched-season .sectionHeader {
+  margin: 10px 16px;
+  border-bottom: 2px dashed var(--ft-accent);
+  justify-content: center;
+  text-align: center;
+}
+.stitched-season .sectionTitle {
+  font-size: 36px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+.stitched-season .card {
+  border: 2px dashed var(--ft-accent);
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 4px var(--ft-wash);
+}
+.stitched-season.navigation {
+  border: 2px dashed var(--ft-accent);
+  border-radius: 16px;
+}
+.stitched-season .activeTab {
+  border-radius: 10px;
+  outline: 1px dashed var(--ft-paper);
+  outline-offset: -6px;
+}
+/* Risograph print · misregistered masthead and ink-trap offsets */
+.risograph-rush {
+  --ft-ink: #603c48;
+  --ft-accent: #8a4563;
+  --ft-paper: #fff3eb;
+  --ft-ground: #f4ded4;
+  --ft-font: Oswald, sans-serif;
+  --ft-atmosphere: linear-gradient(130deg, var(--ft-wash) 30%, transparent 30%);
+}
+.risograph-rush .section {
+  border-top: 6px solid var(--ft-ink);
+  border-left: 1px solid var(--ft-line);
+  box-shadow: 7px 5px 0 var(--ft-line);
+  margin-right: 7px;
+}
+.risograph-rush .sectionHeader {
+  border-bottom: 2px solid var(--ft-ink);
+  background: linear-gradient(175deg, transparent 80%, var(--ft-wash) 80%);
+}
+.risograph-rush .sectionTitle {
+  font-size: 48px;
+  text-transform: uppercase;
+  letter-spacing: -0.06em;
+}
+.risograph-rush .eyebrow {
+  border-left: 24px solid var(--ft-accent);
+  padding-left: 12px;
+}
+.risograph-rush .card {
+  border: 0;
+  border-top: 4px solid var(--ft-ink);
+  box-shadow: 4px 4px 0 var(--ft-line);
+  background: var(--ft-wash);
+}
+.risograph-rush.navigation {
+  border-block: 2px solid var(--ft-ink);
+  box-shadow: 5px 3px 0 var(--ft-line);
+}
+.risograph-rush .activeTab {
+  box-shadow: 4px 3px 0 var(--ft-accent);
+}
+/* Cyanotype proof · contact-print border and botanical specimen captions */
+.cyanotype-club {
+  --ft-ink: #20466d;
+  --ft-accent: #3c668a;
+  --ft-paper: #f8fbff;
+  --ft-ground: #e5eef8;
+  --ft-font: "Space Mono", monospace;
+  --ft-atmosphere: radial-gradient(ellipse at center, transparent 40%, var(--ft-wash));
+}
+.cyanotype-club .section {
+  border: 10px solid var(--ft-wash);
+  border-radius: 2px;
+  outline: 1px solid var(--ft-accent);
+  outline-offset: -10px;
+}
+.cyanotype-club .sectionHeader {
+  border-bottom: 1px solid var(--ft-accent);
+  margin: 8px 12px 0;
+  justify-content: center;
+  text-align: center;
+}
+.cyanotype-club .sectionTitle {
+  font-size: 38px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+.cyanotype-club .card {
+  background: transparent;
+  border: 1px solid var(--ft-accent);
+  border-bottom: 5px double var(--ft-line);
+}
+.cyanotype-club.navigation {
+  border-top: 5px solid var(--ft-wash);
+  border-bottom: 1px solid var(--ft-accent);
+  background: transparent;
+}
+.cyanotype-club .activeTab {
+  background: transparent;
+  color: var(--ft-ink);
+  border-bottom: 5px double var(--ft-accent);
+}
+/* Stained glass · leaded arch, faceted frame and window-panel cards */
+.stained-glass-sunday {
+  --ft-ink: #fff1d2;
+  --ft-accent: #e5bf82;
+  --ft-paper: #242c42;
+  --ft-ground: #181e30;
+  --ft-font: "Cormorant Garamond", Georgia, serif;
+  --ft-atmosphere: conic-gradient(
+    from 30deg at 50% 0,
+    var(--ft-wash),
+    transparent 90deg,
+    var(--ft-wash) 180deg,
+    transparent 270deg,
+    var(--ft-wash)
+  );
+}
+.stained-glass-sunday .section {
+  border: 4px solid var(--ft-ink);
+  border-radius: 72px 72px 4px 4px;
+}
+.stained-glass-sunday .sectionHeader {
+  justify-content: center;
+  text-align: center;
+  padding-top: 42px;
+  border-bottom: 5px double var(--ft-accent);
+}
+.stained-glass-sunday .headingGroup {
+  border-inline: 2px solid var(--ft-line);
+  padding-inline: 24px;
+}
+.stained-glass-sunday .sectionTitle {
+  font-size: 38px;
+  letter-spacing: 0.04em;
+}
+.stained-glass-sunday .card {
+  border: 3px solid var(--ft-ink);
+  border-radius: 32px 32px 2px 2px;
+  border-bottom: 6px solid var(--ft-accent);
+}
+.stained-glass-sunday.navigation {
+  border: 3px solid var(--ft-ink);
+  border-radius: 25px 25px 0 0;
+}
+.stained-glass-sunday .activeTab {
+  border-radius: 18px 18px 0 0;
+  border-inline: 2px solid var(--ft-accent);
+}
+/* Terrazzo slab · inset stone tablet and polished chip-edged cards */
+.terrazzo-touchdown {
+  --ft-ink: #554b47;
+  --ft-accent: #806350;
+  --ft-paper: #fff9f6;
+  --ft-ground: #efe8e3;
+  --ft-font: Sora, sans-serif;
+  --ft-atmosphere: linear-gradient(120deg, var(--ft-wash), transparent 60%);
+}
+.terrazzo-touchdown .section {
+  border: 14px solid var(--ft-wash);
+  border-radius: 20px 4px 20px 4px;
+  outline: 1px solid var(--ft-line);
+  outline-offset: -14px;
+}
+.terrazzo-touchdown .sectionHeader {
+  border-bottom: 1px solid var(--ft-line);
+}
+.terrazzo-touchdown .sectionTitle {
+  font-size: 38px;
+  letter-spacing: -0.04em;
+}
+.terrazzo-touchdown .card {
+  border: 1px solid var(--ft-line);
+  border-radius: 12px 3px 12px 3px;
+  box-shadow: 0 4px 0 var(--ft-wash);
+}
+.terrazzo-touchdown.navigation {
+  border: 8px solid var(--ft-wash);
+  border-radius: 12px 3px;
+}
+.terrazzo-touchdown .activeTab {
+  border-radius: 7px 2px;
+  border-bottom: 3px solid var(--ft-accent);
+}
+/* Origami fold · diagonal corner fold, crease rail and folded card flaps */
+.origami-offense {
+  --ft-ink: #514931;
+  --ft-accent: #756036;
+  --ft-paper: #fff9e9;
+  --ft-ground: #f2e8cc;
+  --ft-font: "Exo 2", sans-serif;
+  --ft-atmosphere: linear-gradient(
+    135deg,
+    transparent 49.8%,
+    var(--ft-wash) 50% 50.2%,
+    transparent 50.2%
+  );
+}
+.origami-offense .section {
+  --ft-columns: minmax(170px, 0.8fr) minmax(0, 2fr);
+  border: 1px solid var(--ft-line);
+  box-shadow: 6px 6px 0 var(--ft-wash);
+}
+.origami-offense .sectionHeader {
+  border-right: 1px solid var(--ft-accent);
+  background: linear-gradient(
+    135deg,
+    var(--ft-line) 26px,
+    var(--ft-wash) 26px 27px,
+    transparent 27px
+  );
+  padding-top: 38px;
+}
+.origami-offense .sectionTitle {
+  font-size: 38px;
+  letter-spacing: -0.05em;
+}
+.origami-offense .sectionBody {
+  padding-top: 28px;
+}
+.origami-offense .card {
+  border: 1px solid var(--ft-line);
+  border-bottom: 4px solid var(--ft-wash);
+  background: linear-gradient(225deg, var(--ft-line) 18px, transparent 18px), var(--ft-ground);
+}
+.origami-offense.navigation {
+  border-bottom: 4px solid var(--ft-line);
+}
+.origami-offense .activeTab {
+  border-radius: 0;
+  border-right: 10px solid var(--ft-accent);
+}
+/* Velvet presentation box · padded surround, inset label and piping */
+.velvet-victory {
+  --ft-ink: #fbebf6;
+  --ft-accent: #d9aed0;
+  --ft-paper: #38273f;
+  --ft-ground: #291b32;
+  --ft-font: "Playfair Display", Georgia, serif;
+  --ft-atmosphere: radial-gradient(ellipse at 50% 0, var(--ft-wash), transparent 70%);
+}
+.velvet-victory .section {
+  border: 12px solid var(--ft-wash);
+  border-radius: 28px;
+  box-shadow:
+    inset 0 0 0 1px var(--ft-accent),
+    0 8px 24px var(--ft-line);
+}
+.velvet-victory .sectionHeader {
+  justify-content: center;
+  text-align: center;
+}
+.velvet-victory .headingGroup {
+  border-bottom: 3px double var(--ft-accent);
+  padding: 10px 24px 20px;
+}
+.velvet-victory .sectionTitle {
+  font-size: 42px;
+  font-weight: 400;
+}
+.velvet-victory .card {
+  border: 1px solid var(--ft-accent);
+  border-radius: 16px;
+  box-shadow:
+    inset 0 0 0 5px var(--ft-ground),
+    inset 0 0 0 6px var(--ft-line);
+}
+.velvet-victory.navigation {
+  border: 6px solid var(--ft-wash);
+  border-radius: 20px;
+}
+.velvet-victory .activeTab {
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px var(--ft-accent);
+}
+/* Blue-hour grandstand · terrace bands and long bench-like panels */
+.blue-hour-stands {
+  --ft-ink: #334567;
+  --ft-accent: #53678f;
+  --ft-paper: #f7f9ff;
+  --ft-ground: #e6eaf5;
+  --ft-font: Manrope, sans-serif;
+  --ft-atmosphere: linear-gradient(0deg, var(--ft-wash), transparent 80%);
+}
+.blue-hour-stands .section {
+  border-top: 1px solid var(--ft-accent);
+  border-bottom: 8px double var(--ft-line);
+}
+.blue-hour-stands .sectionHeader {
+  border-bottom: 1px solid var(--ft-line);
+  padding-top: 34px;
+}
+.blue-hour-stands .headingGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px 32px;
+}
+.blue-hour-stands .sectionTitle {
+  font-size: 36px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+.blue-hour-stands .card {
+  border: 0;
+  border-block: 1px solid var(--ft-accent);
+  box-shadow: 0 5px 0 var(--ft-wash);
+  border-radius: 2px;
+}
+.blue-hour-stands.navigation {
+  border-block: 1px solid var(--ft-accent);
+  padding-block: 4px;
+}
+.blue-hour-stands .activeTab {
+  background: var(--ft-wash);
+  color: var(--ft-ink);
+  border-bottom: 2px solid var(--ft-accent);
+}
+/* Aerial formation · field diagram panel, coaching rail and route cards */
+.aerial-playbook {
+  --ft-ink: #2c5039;
+  --ft-accent: #4b7049;
+  --ft-paper: #f7fcf4;
+  --ft-ground: #e4eee3;
+  --ft-font: "IBM Plex Mono", monospace;
+  --ft-atmosphere: repeating-linear-gradient(0deg, transparent 0 59px, var(--ft-wash) 59px 60px);
+}
+.aerial-playbook .section {
+  --ft-columns: minmax(150px, 0.65fr) minmax(0, 2fr);
+  border: 2px solid var(--ft-accent);
+  border-radius: 8px;
+}
+.aerial-playbook .sectionHeader {
+  border-right: 2px dashed var(--ft-accent);
+}
+.aerial-playbook .sectionTitle {
+  font-size: 32px;
+  text-transform: uppercase;
+}
+.aerial-playbook .sectionBody {
+  padding-top: 28px;
+}
+.aerial-playbook .card {
+  border: 1px solid var(--ft-line);
+  border-left: 6px double var(--ft-accent);
+  border-radius: 0 8px 8px 0;
+}
+.aerial-playbook.navigation {
+  border: 2px solid var(--ft-accent);
+  border-bottom-style: dashed;
+}
+.aerial-playbook .activeTab {
+  border-radius: 4px;
+  border-left: 5px double var(--ft-accent);
+}
+/* Locker-room steel · vented title plate, riveted doors and inset handles */
+.locker-room {
+  --ft-ink: #454b3e;
+  --ft-accent: #5d6942;
+  --ft-paper: #fffaf0;
+  --ft-ground: #eeeadf;
+  --ft-font: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --ft-atmosphere: linear-gradient(90deg, var(--ft-wash), transparent 10% 90%, var(--ft-wash));
+}
+.locker-room .section {
+  border: 3px solid var(--ft-line);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 4px var(--ft-wash);
+}
+.locker-room .sectionHeader {
+  border-bottom: 3px solid var(--ft-line);
+  border-top: 12px double var(--ft-line);
+  margin: 8px 12px 0;
+}
+.locker-room .headingGroup {
+  border: 1px solid var(--ft-accent);
+  padding: 12px 18px;
+  background: var(--ft-ground);
+}
+.locker-room .sectionTitle {
+  font-size: 30px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.locker-room .card {
+  border: 2px solid var(--ft-line);
+  border-radius: 2px;
+  box-shadow: inset -7px 0 var(--ft-wash);
+  padding-right: 28px;
+}
+.locker-room.navigation {
+  border: 3px solid var(--ft-line);
+  box-shadow: inset 0 4px var(--ft-wash);
+}
+.locker-room .activeTab {
+  border: 1px solid var(--ft-accent);
+  box-shadow: inset 0 -4px var(--ft-line);
+}
+/* Stadium tunnel · receding nested frame and portal-shaped cards */
+.tunnel-vision {
+  --ft-ink: #f6f0df;
+  --ft-accent: #d8bf78;
+  --ft-paper: #252a34;
+  --ft-ground: #181b22;
+  --ft-font: Anton, Impact, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 50% 100%, var(--ft-wash), transparent 65%);
+}
+.tunnel-vision .section {
+  border: 1px solid var(--ft-accent);
+  box-shadow:
+    inset 0 0 0 7px var(--ft-paper),
+    inset 0 0 0 8px var(--ft-line),
+    inset 0 0 0 15px var(--ft-paper),
+    inset 0 0 0 16px var(--ft-line);
+  padding: 16px;
+  border-radius: 36px 36px 0 0;
+}
+.tunnel-vision .sectionHeader {
+  justify-content: center;
+  text-align: center;
+}
+.tunnel-vision .sectionTitle {
+  font-size: 42px;
+  text-transform: uppercase;
+}
+.tunnel-vision .card {
+  border: 1px solid var(--ft-accent);
+  border-radius: 20px 20px 0 0;
+  box-shadow:
+    inset 0 0 0 5px var(--ft-ground),
+    inset 0 0 0 6px var(--ft-line);
+}
+.tunnel-vision.navigation {
+  border: 1px solid var(--ft-accent);
+  border-radius: 20px 20px 0 0;
+}
+.tunnel-vision .activeTab {
+  border-radius: 14px 14px 0 0;
+  border-top: 3px solid var(--ft-accent);
+}
+/* Misty morning field · floating translucent sheet and horizon dividers */
+.foggy-morning {
+  --ft-ink: #3e5356;
+  --ft-accent: #536a6d;
+  --ft-paper: #f9fcfa;
+  --ft-ground: #e8eeee;
+  --ft-font: "Cormorant Garamond", Georgia, serif;
+  --ft-atmosphere: linear-gradient(
+    0deg,
+    var(--ft-wash),
+    transparent 35%,
+    var(--ft-wash) 70%,
+    transparent
+  );
+}
+.foggy-morning .section {
+  border: 0;
+  border-radius: 2px 2px 30px 30px;
+  box-shadow: 0 16px 30px var(--ft-wash);
+}
+.foggy-morning .sectionHeader {
+  border-bottom: 1px solid var(--ft-line);
+  margin-inline: 26px;
+  padding-inline: 0;
+}
+.foggy-morning .sectionTitle {
+  font-size: 44px;
+  font-weight: 400;
+  font-style: italic;
+}
+.foggy-morning .eyebrow {
+  letter-spacing: 0.3em;
+  font-weight: 500;
+}
+.foggy-morning .card {
+  border: 0;
+  border-bottom: 1px solid var(--ft-line);
+  background: linear-gradient(0deg, var(--ft-wash), transparent);
+  border-radius: 0 0 16px 16px;
+}
+.foggy-morning.navigation {
+  background: transparent;
+  border-bottom: 1px solid var(--ft-line);
+  border-radius: 0 0 18px 18px;
+}
+.foggy-morning .activeTab {
+  background: var(--ft-wash);
+  color: var(--ft-ink);
+  border-radius: 2px 2px 16px 16px;
+}
+/* Harvest gathering · woven border, leaf-stem rail and warm paper labels */
+.harvest-kickoff {
+  --ft-ink: #66422c;
+  --ft-accent: #89572d;
+  --ft-paper: #fff7e6;
+  --ft-ground: #f6e8cf;
+  --ft-font: "Playfair Display", Georgia, serif;
+  --ft-atmosphere: linear-gradient(135deg, var(--ft-wash), transparent 70%);
+}
+.harvest-kickoff .section {
+  --ft-columns: minmax(160px, 0.75fr) minmax(0, 2fr);
+  border: 3px solid var(--ft-line);
+  border-bottom: 8px double var(--ft-accent);
+  border-radius: 3px 24px 3px 3px;
+}
+.harvest-kickoff .sectionHeader {
+  border-right: 2px dashed var(--ft-accent);
+}
+.harvest-kickoff .sectionTitle {
+  font-size: 38px;
+  font-weight: 500;
+}
+.harvest-kickoff .sectionBody {
+  padding-top: 28px;
+}
+.harvest-kickoff .card {
+  border: 1px solid var(--ft-line);
+  border-radius: 3px 18px 3px 3px;
+  border-left: 4px solid var(--ft-accent);
+}
+.harvest-kickoff.navigation {
+  border-block: 4px double var(--ft-accent);
+  border-radius: 0 16px 0 0;
+}
+.harvest-kickoff .activeTab {
+  border-radius: 2px 14px 2px 2px;
+}
+/* Riverside reflections · flowing edge lines and mirrored light strips */
+.riverside-lights {
+  --ft-ink: #e6fbef;
+  --ft-accent: #9fd2c5;
+  --ft-paper: #1a3b40;
+  --ft-ground: #102c32;
+  --ft-font: Oswald, sans-serif;
+  --ft-atmosphere: linear-gradient(0deg, var(--ft-wash), transparent 45%, var(--ft-wash));
+}
+.riverside-lights .section {
+  border-radius: 5px 36px 5px 36px;
+  border-top: 2px solid var(--ft-accent);
+  border-bottom: 6px double var(--ft-accent);
+}
+.riverside-lights .sectionHeader {
+  border-bottom: 1px solid var(--ft-line);
+}
+.riverside-lights .sectionTitle {
+  font-size: 38px;
+  letter-spacing: 0.04em;
+}
+.riverside-lights .card {
+  border: 0;
+  border-top: 1px solid var(--ft-accent);
+  border-bottom: 4px double var(--ft-line);
+  border-radius: 0 16px 0 16px;
+}
+.riverside-lights.navigation {
+  border-top: 1px solid var(--ft-accent);
+  border-bottom: 4px double var(--ft-line);
+}
+.riverside-lights .activeTab {
+  border-radius: 2px 14px 2px 14px;
+  box-shadow: 0 3px 0 var(--ft-line);
+}
+/* Steel-town truss · riveted beam rail and industrial gusset cards */
+.steel-town {
+  --ft-ink: #38474b;
+  --ft-accent: #52656b;
+  --ft-paper: #f5f8f7;
+  --ft-ground: #e4e7e7;
+  --ft-font: "League Spartan", sans-serif;
+  --ft-atmosphere: linear-gradient(
+    135deg,
+    var(--ft-wash) 20%,
+    transparent 20% 80%,
+    var(--ft-wash) 80%
+  );
+}
+.steel-town .section {
+  --ft-columns: minmax(155px, 0.7fr) minmax(0, 2fr);
+  border: 4px solid var(--ft-accent);
+  border-bottom-width: 10px;
+}
+.steel-town .sectionHeader {
+  border-right: 8px double var(--ft-accent);
+  background: var(--ft-wash);
+}
+.steel-town .sectionTitle {
+  font-size: 42px;
+  text-transform: uppercase;
+}
+.steel-town .sectionBody {
+  padding-top: 28px;
+}
+.steel-town .card {
+  border: 2px solid var(--ft-accent);
+  border-top: 8px solid var(--ft-line);
+  box-shadow: 3px 3px 0 var(--ft-line);
+}
+.steel-town.navigation {
+  border: 3px solid var(--ft-accent);
+  border-bottom-width: 7px;
+}
+.steel-town .activeTab {
+  border: 2px solid var(--ft-paper);
+  outline: 1px solid var(--ft-accent);
+}
+/* Desert moon · moon-gate heading, quiet dune contours and crescent cards */
+.desert-moon {
+  --ft-ink: #f7ebff;
+  --ft-accent: #ceb9e6;
+  --ft-paper: #373149;
+  --ft-ground: #28233c;
+  --ft-font: Audiowide, sans-serif;
+  --ft-atmosphere: radial-gradient(circle at 80% 0, var(--ft-wash), transparent 55%);
+}
+.desert-moon .section {
+  border-radius: 60px 60px 4px 4px;
+  border: 1px solid var(--ft-accent);
+  border-bottom: 4px solid var(--ft-line);
+}
+.desert-moon .sectionHeader {
+  justify-content: center;
+  text-align: center;
+  padding-top: 38px;
+}
+.desert-moon .headingGroup {
+  border-top: 1px solid var(--ft-accent);
+  border-radius: 50% 50% 0 0;
+  padding: 20px 28px 0;
+}
+.desert-moon .sectionTitle {
+  font-size: 38px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+}
+.desert-moon .card {
+  border: 1px solid var(--ft-line);
+  border-left: 5px solid var(--ft-accent);
+  border-radius: 28px 4px 4px 28px;
+}
+.desert-moon.navigation {
+  border-block: 1px solid var(--ft-accent);
+  border-radius: 20px 20px 0 0;
+}
+.desert-moon .activeTab {
+  border-radius: 22px 4px 4px 22px;
+}
+/* Tropical pavilion · leaf-framed heading and woven palm panels */
+.tropical-touchdown {
+  --ft-ink: #265342;
+  --ft-accent: #36714b;
+  --ft-paper: #f5fff4;
+  --ft-ground: #e1f1e6;
+  --ft-font: Kanit, sans-serif;
+  --ft-atmosphere: linear-gradient(120deg, var(--ft-wash), transparent 55%);
+}
+.tropical-touchdown .section {
+  border-radius: 4px 48px 4px 48px;
+  border: 2px solid var(--ft-accent);
+  border-left-width: 7px;
+}
+.tropical-touchdown .sectionHeader {
+  border-bottom: 2px dashed var(--ft-line);
+}
+.tropical-touchdown .headingGroup {
+  border-left: 3px solid var(--ft-accent);
+  padding-left: 18px;
+}
+.tropical-touchdown .sectionTitle {
+  font-size: 40px;
+  letter-spacing: -0.04em;
+}
+.tropical-touchdown .card {
+  border: 0;
+  border-radius: 2px 26px 2px 26px;
+  border-block: 3px solid var(--ft-line);
+}
+.tropical-touchdown.navigation {
+  border-radius: 3px 26px 3px 26px;
+  border-bottom: 3px solid var(--ft-accent);
+}
+.tropical-touchdown .activeTab {
+  border-radius: 2px 20px 2px 20px;
+}
+/* Flag football · pull-tag heading, dashed routes and soft flag pockets */
+.flag-football {
+  --ft-ink: #3d4370;
+  --ft-accent: #60679d;
+  --ft-paper: #fbfaff;
+  --ft-ground: #ecedf8;
+  --ft-font: Montserrat, sans-serif;
+  --ft-atmosphere: linear-gradient(180deg, var(--ft-wash), transparent 70%);
+}
+.flag-football .section {
+  border: 2px dashed var(--ft-accent);
+  border-radius: 10px 30px 10px 10px;
+}
+.flag-football .sectionHeader {
+  border-bottom: 2px dashed var(--ft-line);
+}
+.flag-football .eyebrow {
+  background: var(--ft-wash);
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 0 16px 16px 0;
+}
+.flag-football .sectionTitle {
+  font-size: 42px;
+  text-transform: uppercase;
+}
+.flag-football .card {
+  border: 0;
+  border-left: 5px solid var(--ft-accent);
+  border-radius: 3px 20px 20px 3px;
+  box-shadow: 0 3px 0 var(--ft-line);
+}
+.flag-football.navigation {
+  border-bottom: 3px dashed var(--ft-accent);
+}
+.flag-football .activeTab {
+  border-radius: 3px 22px 22px 3px;
+  border-left: 4px solid var(--ft-accent);
+}
+/* Backyard field · hand-painted fence rail and friendly garden cards */
+.backyard-bowl {
+  --ft-ink: #675024;
+  --ft-accent: #815f22;
+  --ft-paper: #fff8e5;
+  --ft-ground: #f8ebc8;
+  --ft-font: Poppins, sans-serif;
+  --ft-atmosphere: linear-gradient(0deg, var(--ft-wash) 10%, transparent 65%);
+}
+.backyard-bowl .section {
+  border-radius: 18px 5px 18px 5px;
+  border: 3px solid var(--ft-line);
+  border-bottom: 8px solid var(--ft-accent);
+}
+.backyard-bowl .sectionHeader {
+  border-bottom: 2px dashed var(--ft-line);
+  justify-content: center;
+  text-align: center;
+}
+.backyard-bowl .sectionTitle {
+  font-size: 40px;
+}
+.backyard-bowl .card {
+  border: 2px solid var(--ft-line);
+  border-radius: 10px 3px 10px 3px;
+  box-shadow: 4px 4px 0 var(--ft-wash);
+}
+.backyard-bowl.navigation {
+  border-bottom: 6px solid var(--ft-accent);
+  border-radius: 12px 4px 12px 4px;
+}
+.backyard-bowl .activeTab {
+  border-radius: 8px 3px;
+  outline: 1px dashed var(--ft-paper);
+  outline-offset: -5px;
+}
+/* Senior-night tribute · portrait mat, commemorative ribbon and keepsake cards */
+.senior-night {
+  --ft-ink: #fff1df;
+  --ft-accent: #e1b28b;
+  --ft-paper: #413027;
+  --ft-ground: #30221b;
+  --ft-font: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 50% 0, var(--ft-wash), transparent 70%);
+}
+.senior-night .section {
+  border: 2px solid var(--ft-accent);
+  border-radius: 8px;
+  outline: 1px solid var(--ft-line);
+  outline-offset: -9px;
+  padding: 9px;
+}
+.senior-night .sectionHeader {
+  justify-content: center;
+  text-align: center;
+  border-bottom: 3px double var(--ft-accent);
+  margin: 8px 14px 0;
+}
+.senior-night .eyebrow {
+  letter-spacing: 0.4em;
+}
+.senior-night .sectionTitle {
+  font-size: 42px;
+  font-weight: 500;
+}
+.senior-night .card {
+  border: 1px solid var(--ft-accent);
+  border-top: 7px double var(--ft-line);
+  border-radius: 3px;
+  box-shadow: 0 4px 0 var(--ft-wash);
+}
+.senior-night.navigation {
+  border: 1px solid var(--ft-accent);
+  border-block-width: 4px;
+  border-radius: 6px;
+}
+.senior-night .activeTab {
+  border-radius: 3px;
+  border-bottom: 4px double var(--ft-accent);
+}
+/* Saturday scrapbook · tape tabs, photo corners and layered paper notes */
+.saturday-scrapbook {
+  --ft-ink: #574637;
+  --ft-accent: #7d6149;
+  --ft-paper: #fffaf1;
+  --ft-ground: #f1e9db;
+  --ft-font: "Space Mono", monospace;
+  --ft-atmosphere: linear-gradient(
+    175deg,
+    var(--ft-wash) 7%,
+    transparent 7% 92%,
+    var(--ft-wash) 92%
+  );
+}
+.saturday-scrapbook .section {
+  border: 1px solid var(--ft-line);
+  border-radius: 3px;
+  box-shadow: 6px 6px 0 var(--ft-wash);
+  margin: 10px 6px 6px 0;
+}
+.saturday-scrapbook .sectionHeader {
+  border-top: 12px solid var(--ft-wash);
+  margin: 0 24px;
+  border-bottom: 1px dashed var(--ft-accent);
+  padding-inline: 8px;
+}
+.saturday-scrapbook .sectionTitle {
+  font-size: 40px;
+  font-style: italic;
+}
+.saturday-scrapbook .card {
+  border: 5px solid var(--ft-paper);
+  border-bottom-width: 16px;
+  outline: 1px solid var(--ft-line);
+  box-shadow: 4px 5px 0 var(--ft-line);
+}
+.saturday-scrapbook.navigation {
+  border-top: 8px solid var(--ft-wash);
+  border-bottom: 1px dashed var(--ft-accent);
+}
+.saturday-scrapbook .activeTab {
+  border-radius: 2px;
+  box-shadow: 3px 3px 0 var(--ft-line);
+}
+/* Midcentury program · asymmetrical color-block rail and atomic geometry */
+.midcentury-matchup {
+  --ft-ink: #414e48;
+  --ft-accent: #57663b;
+  --ft-paper: #fff5dc;
+  --ft-ground: #e9dfc7;
+  --ft-font: Bungee, Impact, sans-serif;
+  --ft-atmosphere: linear-gradient(90deg, var(--ft-wash) 22%, transparent 22%);
+}
+.midcentury-matchup .section {
+  --ft-columns: minmax(165px, 0.8fr) minmax(0, 2fr);
+  border: 1px solid var(--ft-accent);
+  border-radius: 28px 0 0 0;
+}
+.midcentury-matchup .sectionHeader {
+  background: var(--ft-wash);
+  border-right: 2px solid var(--ft-accent);
+  border-radius: 28px 0 0 0;
+}
+.midcentury-matchup .sectionTitle {
+  font-size: 40px;
+  letter-spacing: -0.055em;
+}
+.midcentury-matchup .sectionBody {
+  padding-top: 28px;
+}
+.midcentury-matchup .card {
+  border: 0;
+  border-radius: 18px 0 0 0;
+  border-bottom: 3px solid var(--ft-accent);
+  border-right: 1px solid var(--ft-line);
+}
+.midcentury-matchup.navigation {
+  border: 1px solid var(--ft-accent);
+  border-radius: 18px 0 0 0;
+}
+.midcentury-matchup .activeTab {
+  border-radius: 14px 0 0 0;
+  border-right: 4px solid var(--ft-accent);
+}
+/* Patchwork quilt · pieced border, quilt-block heading and sewn pockets */
+.quilted-gridiron {
+  --ft-ink: #67424b;
+  --ft-accent: #874f5c;
+  --ft-paper: #fff6f4;
+  --ft-ground: #f2e3e3;
+  --ft-font: "Cormorant Garamond", Georgia, serif;
+  --ft-atmosphere: linear-gradient(45deg, transparent 40%, var(--ft-wash) 40% 60%, transparent 60%);
+}
+.quilted-gridiron .section {
+  border: 12px solid var(--ft-wash);
+  outline: 2px dashed var(--ft-accent);
+  outline-offset: -8px;
+  border-radius: 10px;
+}
+.quilted-gridiron .sectionHeader {
+  background: linear-gradient(135deg, var(--ft-wash) 25%, transparent 25% 75%, var(--ft-wash) 75%);
+  border-bottom: 2px dashed var(--ft-accent);
+}
+.quilted-gridiron .headingGroup {
+  background: var(--ft-paper);
+  border: 1px dashed var(--ft-line);
+  padding: 14px 20px;
+}
+.quilted-gridiron .sectionTitle {
+  font-size: 34px;
+}
+.quilted-gridiron .card {
+  border: 2px dashed var(--ft-line);
+  border-radius: 5px;
+  box-shadow: 0 0 0 4px var(--ft-wash);
+}
+.quilted-gridiron.navigation {
+  border: 6px solid var(--ft-wash);
+  outline: 1px dashed var(--ft-accent);
+  outline-offset: -4px;
+}
+.quilted-gridiron .activeTab {
+  border-radius: 4px;
+  border: 2px dashed var(--ft-paper);
+}
+/* Electric pulse · charge rail, energized title underline and circuit cards */
+.electric-lime {
+  --ft-ink: #f1fbd9;
+  --ft-accent: #c0e487;
+  --ft-paper: #252f27;
+  --ft-ground: #171e19;
+  --ft-font: Orbitron, sans-serif;
+  --ft-atmosphere: radial-gradient(ellipse at 0 0, var(--ft-wash), transparent 60%);
+}
+.electric-lime .section {
+  border-top: 3px solid var(--ft-accent);
+  border-left: 3px solid var(--ft-accent);
+  border-radius: 0 24px 0 24px;
+  box-shadow: 6px 6px 0 var(--ft-line);
+}
+.electric-lime .sectionHeader {
+  border-bottom: 1px solid var(--ft-accent);
+}
+.electric-lime .sectionTitle {
+  font-size: 46px;
+  text-transform: uppercase;
+  font-style: italic;
+}
+.electric-lime .eyebrow {
+  border-bottom: 4px solid var(--ft-accent);
+  display: inline-block;
+}
+.electric-lime .card {
+  border: 1px solid var(--ft-accent);
+  border-radius: 0 14px 0 14px;
+  border-left: 6px solid var(--ft-accent);
+}
+.electric-lime.navigation {
+  border-top: 3px solid var(--ft-accent);
+  border-radius: 0 18px 0 18px;
+}
+.electric-lime .activeTab {
+  border-radius: 0 12px 0 12px;
+  box-shadow: 3px 3px 0 var(--ft-accent);
+}
+/* Motion photography · speed-line edge and staggered photo-strip cards */
+.monochrome-motion {
+  --ft-ink: #333333;
+  --ft-accent: #62615e;
+  --ft-paper: #ffffff;
+  --ft-ground: #e9e8e6;
+  --ft-font: Anton, Impact, sans-serif;
+  --ft-atmosphere: repeating-linear-gradient(160deg, transparent 0 38px, var(--ft-wash) 38px 40px);
+}
+.monochrome-motion .section {
+  border-block: 3px solid var(--ft-ink);
+  border-left: 14px double var(--ft-ink);
+}
+.monochrome-motion .sectionHeader {
+  border-bottom: 1px solid var(--ft-ink);
+  background: linear-gradient(100deg, transparent 70%, var(--ft-wash) 70%);
+}
+.monochrome-motion .sectionTitle {
+  font-size: clamp(40px, 6cqi, 66px);
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: -0.06em;
+}
+.monochrome-motion .card {
+  border: 0;
+  border-bottom: 3px solid var(--ft-ink);
+  border-left: 8px double var(--ft-ink);
+  background: transparent;
+}
+.monochrome-motion.navigation {
+  border-block: 3px solid var(--ft-ink);
+  border-left: 10px double var(--ft-ink);
+}
+.monochrome-motion .activeTab {
+  font-style: italic;
+  background: transparent;
+  color: var(--ft-ink);
+  border-bottom: 4px solid var(--ft-ink);
+}
+/* Rooftop court · fenced perimeter, skyline masthead and court tiles */
+.rooftop-league {
+  --ft-ink: #384b60;
+  --ft-accent: #506683;
+  --ft-paper: #f7fbff;
+  --ft-ground: #e6edf3;
+  --ft-font: Sora, sans-serif;
+  --ft-atmosphere: linear-gradient(0deg, var(--ft-wash) 15%, transparent 80%);
+}
+.rooftop-league .section {
+  border: 2px solid var(--ft-accent);
+  border-top: 10px double var(--ft-accent);
+  border-radius: 2px 2px 16px 16px;
+}
+.rooftop-league .sectionHeader {
+  border-bottom: 2px solid var(--ft-line);
+}
+.rooftop-league .headingGroup {
+  border-left: 5px solid var(--ft-accent);
+  padding-left: 18px;
+}
+.rooftop-league .sectionTitle {
+  font-size: 40px;
+  text-transform: uppercase;
+}
+.rooftop-league .card {
+  border: 1px solid var(--ft-accent);
+  border-radius: 2px 2px 12px 12px;
+  box-shadow: inset 0 -5px var(--ft-wash);
+}
+.rooftop-league.navigation {
+  border-top: 6px double var(--ft-accent);
+  border-bottom: 2px solid var(--ft-accent);
+}
+.rooftop-league .activeTab {
+  border-radius: 0 0 12px 12px;
+  border-bottom: 3px solid var(--ft-accent);
 }

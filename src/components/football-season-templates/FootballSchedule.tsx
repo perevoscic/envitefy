@@ -2,11 +2,11 @@
 
 import { CalendarDays, CalendarPlus, CloudSun, MapPin, Navigation, Ticket } from "lucide-react";
 import { useEffect, useState } from "react";
-import FootballSectionTabs, { useFootballSectionTabs } from "./FootballSectionTabs";
-import { formatFootballGameDate, groupFootballGames, normalizeFootballGameDate } from "@/lib/football-schedule-dates";
+import Link from "next/link";
 import CalendarAction from "@/components/CalendarAction";
-import { buildCalendarLinks } from "@/utils/calendar-links";
 import {
+  type FootballGame,
+  type FootballHome,
   footballDirections,
   footballGameContextKey,
   footballGameLocation,
@@ -16,31 +16,50 @@ import {
   footballSeniorNightNotes,
   hasFootballGame,
   isFootballOffWeek,
-  type FootballGame,
-  type FootballHome,
 } from "@/lib/football-games";
+import {
+  formatFootballGameDate,
+  groupFootballGames,
+  normalizeFootballGameDate,
+} from "@/lib/football-schedule-dates";
 import { footballTeamLabel } from "@/lib/football-team-name";
+import { buildCalendarLinks } from "@/utils/calendar-links";
 import FootballText from "./FootballPageText";
+import FootballSectionTabs, { useFootballSectionTabs } from "./FootballSectionTabs";
 
 function ScheduleDate({ value, season }: { value?: string; season?: string }) {
   const gameDate = normalizeFootballGameDate(value, season);
-  if (!gameDate) return <span>{value?.trim() || <FootballText fallback="Date to be confirmed" />}</span>;
-  return (
-    <time dateTime={gameDate}>
-      {formatFootballGameDate(value, season)}
-    </time>
-  );
+  if (!gameDate)
+    return <span>{value?.trim() || <FootballText fallback="Date to be confirmed" />}</span>;
+  return <time dateTime={gameDate}>{formatFootballGameDate(value, season)}</time>;
 }
 
 export default function FootballSchedule({
   games,
   cardClassName = "rounded-2xl border border-current/20 p-5",
+  navigationClassName,
+  activeTabClassName = "rounded-full border border-current/40 bg-current/10 px-4 py-2 text-sm font-bold",
+  idleTabClassName = "rounded-full border border-transparent px-4 py-2 text-sm font-semibold opacity-75 hover:bg-current/10",
+  upcomingOnly = false,
+  gameHref,
   ...home
-}: FootballHome & { games: FootballGame[]; cardClassName?: string }) {
+}: FootballHome & {
+  games: FootballGame[];
+  cardClassName?: string;
+  upcomingOnly?: boolean;
+  gameHref?: string;
+  navigationClassName?: string;
+  activeTabClassName?: string;
+  idleTabClassName?: string;
+}) {
   const visibleGames = games.filter(hasFootballGame);
-  const offWeeks = games.filter(isFootballOffWeek).sort((a, b) =>
-    normalizeFootballGameDate(a.date, home.season).localeCompare(normalizeFootballGameDate(b.date, home.season)),
-  );
+  const offWeeks = games
+    .filter(isFootballOffWeek)
+    .sort((a, b) =>
+      normalizeFootballGameDate(a.date, home.season).localeCompare(
+        normalizeFootballGameDate(b.date, home.season),
+      ),
+    );
   const [now, setNow] = useState(() => Date.now());
   const groups = groupFootballGames(visibleGames, home, now);
   const views = [
@@ -87,14 +106,21 @@ export default function FootballSchedule({
     "inline-flex min-h-11 min-w-0 w-full items-center justify-center gap-1.5 rounded-full border border-current/30 px-2 py-2 text-xs font-semibold hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2 @sm/game-card:w-auto @sm/game-card:gap-2 @sm/game-card:px-4 @sm/game-card:text-sm";
   return (
     <div className="@container">
-      <FootballSectionTabs
-        tabs={tabs}
-        ariaLabel="Game schedule periods"
-        activeClassName="rounded-full border border-current/40 bg-current/10 px-4 py-2 text-sm font-bold"
-        idleClassName="rounded-full border border-transparent px-4 py-2 text-sm font-semibold opacity-75 hover:bg-current/10"
-      />
-      {views.map((view) => (
-        <div key={view.id} {...tabs.panelProps(view.id)} className="mt-4">
+      {!upcomingOnly ? (
+        <FootballSectionTabs
+          tabs={tabs}
+          ariaLabel="Game schedule periods"
+          shellClassName={navigationClassName}
+          activeClassName={activeTabClassName}
+          idleClassName={idleTabClassName}
+        />
+      ) : null}
+      {(upcomingOnly ? views.slice(0, 1) : views).map((view) => (
+        <div
+          key={view.id}
+          {...(upcomingOnly ? {} : tabs.panelProps(view.id))}
+          className={upcomingOnly ? "" : "mt-4"}
+        >
           {!view.games.length ? (
             <p className="py-5 text-sm opacity-85">
               <FootballText fallback={view.empty} />
@@ -118,8 +144,22 @@ export default function FootballSchedule({
                     </p>
                     <p className="mt-3 text-lg font-bold tabular-nums">
                       {score ? (
-                        <span data-result={game.result || undefined} className={game.result === "W" ? "inline-block rounded-md bg-emerald-100 px-2 py-0.5 text-emerald-800" : game.result === "L" ? "inline-block rounded-md bg-red-100 px-2 py-0.5 text-red-800" : undefined}>
-                          <FootballText fallback={game.result ? { W: "Win", L: "Loss", T: "Tie" }[game.result] : "Score"} /> · {score}
+                        <span
+                          data-result={game.result || undefined}
+                          className={
+                            game.result === "W"
+                              ? "inline-block rounded-md bg-emerald-100 px-2 py-0.5 text-emerald-800"
+                              : game.result === "L"
+                                ? "inline-block rounded-md bg-red-100 px-2 py-0.5 text-red-800"
+                                : undefined
+                          }
+                        >
+                          <FootballText
+                            fallback={
+                              game.result ? { W: "Win", L: "Loss", T: "Tie" }[game.result] : "Score"
+                            }
+                          />{" "}
+                          · {score}
                         </span>
                       ) : (
                         <FootballText fallback="Score unavailable" />
@@ -129,7 +169,11 @@ export default function FootballSchedule({
                 );
               }
               const schools = footballSchoolMatchup(game, home.teamName);
-              const { venue, address, venueSource: knownVenueSource } = footballGameLocation(game, home);
+              const {
+                venue,
+                address,
+                venueSource: knownVenueSource,
+              } = footballGameLocation(game, home);
               const directions = game.homeAway === "away" ? footballDirections(game, home) : null;
               const context =
                 game.context?.key === footballGameContextKey(game, home) ? game.context : null;
@@ -197,7 +241,7 @@ export default function FootballSchedule({
                       </span>
                     ) : null}
                   </div>
-                  <h3 className="mt-3 break-words text-xl font-bold">{matchup}</h3>
+                  <h3 className="mt-3 break-words text-xl font-bold">{gameHref ? <Link href={gameHref} className="underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2">{matchup}</Link> : matchup}</h3>
                   <p className="mt-2 flex flex-wrap items-center gap-2 text-sm font-semibold">
                     <CalendarDays size={16} aria-hidden="true" />
                     {dateContent}
@@ -248,7 +292,9 @@ export default function FootballSchedule({
                         />
                       ) : null}
                       {directions || links ? (
-                        <div className={`grid w-full min-w-0 gap-2 ${directions && links ? "grid-cols-2" : "grid-cols-1"} @sm/game-card:flex @sm/game-card:w-auto`}>
+                        <div
+                          className={`grid w-full min-w-0 gap-2 ${directions && links ? "grid-cols-2" : "grid-cols-1"} @sm/game-card:flex @sm/game-card:w-auto`}
+                        >
                           {directions ? (
                             <FootballText
                               fallback="Get directions"
@@ -263,9 +309,13 @@ export default function FootballSchedule({
                                 >
                                   <Navigation className="shrink-0" size={16} aria-hidden="true" />
                                   <span className="min-w-0 break-words @sm/game-card:hidden">
-                                    {!caption || caption === "Get directions" ? "Directions" : caption}
+                                    {!caption || caption === "Get directions"
+                                      ? "Directions"
+                                      : caption}
                                   </span>
-                                  <span className="hidden @sm/game-card:inline">{caption || "Get directions"}</span>
+                                  <span className="hidden @sm/game-card:inline">
+                                    {caption || "Get directions"}
+                                  </span>
                                 </a>
                               )}
                             />
@@ -276,7 +326,9 @@ export default function FootballSchedule({
                                 <>
                                   <CalendarPlus className="shrink-0" size={16} aria-hidden="true" />
                                   <span className="min-w-0 break-words @sm/game-card:hidden">
-                                    {label === "Add to calendar" ? "Calendar" : label.replace(/^Add to /, "")}
+                                    {label === "Add to calendar"
+                                      ? "Calendar"
+                                      : label.replace(/^Add to /, "")}
                                   </span>
                                   <span className="hidden @sm/game-card:inline">{label}</span>
                                 </>
@@ -320,7 +372,9 @@ export default function FootballSchedule({
                         />
                       ) : null}
                       {seniorNightNotes ? (
-                        <span className="inline-flex min-h-9 items-center whitespace-pre-wrap font-semibold">{seniorNightNotes}</span>
+                        <span className="inline-flex min-h-9 items-center whitespace-pre-wrap font-semibold">
+                          {seniorNightNotes}
+                        </span>
                       ) : null}
                     </div>
                   ) : null}
@@ -331,13 +385,22 @@ export default function FootballSchedule({
         </div>
       ))}
       {offWeeks.length ? (
-        <aside aria-label="Open weeks" className="mt-4 rounded-xl border border-current/15 px-4 py-3 text-sm">
+        <aside
+          aria-label="Open weeks"
+          className="mt-4 rounded-xl border border-current/15 px-4 py-3 text-sm"
+        >
           <ul className="space-y-2">
             {offWeeks.map((week) => (
               <li key={week.id} className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="font-semibold"><FootballText fallback="Open week" /></span>
-                <span>· <ScheduleDate value={week.date} season={home.season} /></span>
-                <span className="opacity-80">· <FootballText fallback="No game scheduled" /></span>
+                <span className="font-semibold">
+                  <FootballText fallback="Open week" />
+                </span>
+                <span>
+                  · <ScheduleDate value={week.date} season={home.season} />
+                </span>
+                <span className="opacity-80">
+                  · <FootballText fallback="No game scheduled" />
+                </span>
               </li>
             ))}
           </ul>

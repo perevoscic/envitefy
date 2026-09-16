@@ -1,31 +1,35 @@
-# Authorized PNG cleanup — pending Vercel access
+# Authorized PNG cleanup — completed
 
-The user authorized backing up and verifying the **113 generated invitation PNG originals with existing display WebPs**, updating their image references to the correct replacement paths, and then removing only those PNGs.
+The user authorized backing up and verifying the **113 generated invitation PNG originals with existing display WebPs**, updating any references, and removing those exact PNGs. Storage access resumed after the user lifted the limit.
 
-## Completed checks
+## Result
 
-- Refreshed the live Blob inventory: all 113 originals and all 113 display WebPs remain listed.
-- Original bytes to remove after verification: **309,818,549 (309.82 MB)**.
-- Prepared exact original path, replacement path, proxy URL, Blob URL, current sizes and ETags in `replacement-plan.json`.
-- Fresh read-only checks across **67 public database tables** found **zero rows containing the generated-original filenames**.
-- A source/assets/templates/scripts check found **zero references to these specific original paths**, including URL-encoded and slash-escaped forms. No application placeholder currently found needs rewriting.
+- **113 PNG originals deleted: 309,818,549 bytes (309.82 MB).**
+- Live store immediately before deletion: **1,228 objects / 889,755,509 bytes**.
+- Live store after deletion: **1,115 objects / 579,936,960 bytes**.
+- All **113 display WebPs and 113 thumbnails** remain with unchanged sizes and ETags.
+- Three display WebPs were additionally read directly from origin after deletion, decoded successfully and matched their backup SHA-256 hashes.
+- The other **75 generated originals / 209,903,534 bytes** remain; they only have thumbnails and were outside this cleanup's scope.
 
-## Blocker
+## Verification and references
 
-Vercel returns HTTP 403 for the PNG and its replacement WebP. The signed-in dashboard confirms:
+All 113 PNG originals and their 113 display WebPs were backed up outside the repository. File signatures, full decoding, dimensions, transparency, byte counts and SHA-256 hashes were checked. Every pair preserved dimensions and passed pixel comparison. All originals were visually reviewed in six contact sheets, with the six lowest-scoring pairs compared side by side. All 226 backup hashes were checked again immediately before deletion.
 
-> You have reached your usage limits for this store using the Hobby plan. Access resumes on 9/16/26.
+Fresh read-only checks across **67 public database tables** and relevant application/assets/templates/scripts files found **zero references to the original PNG paths**. No placeholder or database record needed rewriting. Exact old-to-new mappings, including proxy paths and Blob URLs, are retained in `replacement-plan.json`.
 
-Store: https://vercel.com/nexa-lyunxs-projects/envitefy/stores/blob/store_jGkRBPQY79wXQGAh/manage-blobs
+Deletion used one exact original pathname at a time, conditioned on its recorded ETag. The final inventory confirmed that all 113 originals were absent and all 226 display/thumbnail objects remained unchanged. No other assets were deleted by this operation.
 
-**No image bytes were backed up, no references were changed, and no PNGs were deleted.** Listed metadata is not a verified image backup or a verified replacement.
+## Files
 
-## Resume within the existing authorization
+- `replacement-plan.json`: exact 113 mappings and final status.
+- `backup-verification.json`: backup paths, hashes, dimensions and comparison results.
+- `deletion-receipt.json`: exact deletions, timestamps and before/after measurements.
+- `inventory-immediately-before-deletion.json` / `inventory-after.json`: live storage snapshots around deletion.
+- `database-reference-check.json` / `repository-reference-check.json`: final reference checks.
+- `verify-and-back-up.cjs` / `check-references.mjs` / `finalize-cleanup.cjs`: operation scripts; **cleanup is already complete, do not rerun deletion**.
 
-1. Check that Blob reads have resumed, then refresh the exact 113-entry scope. Do not expand the deletion set to the 75 originals with only thumbnails or to any other assets.
-2. Download all 113 original PNGs into the local backup directory recorded in the plan, outside the deployed application and Git source. Verify PNG signatures, complete decoding, dimensions, byte counts and SHA-256 hashes; save the hashes in a backup manifest.
-3. Download and decode each mapped display WebP. Verify the intended artwork, dimensions and readable text against its original. Preserve the local PNG backups as explicitly requested. If a display is insufficient, preserve original-size artwork in a verified WebP replacement using FFmpeg before removing the PNG.
-4. Recheck current database and application references immediately before mutation. Apply only exact old-to-new mappings, preserving the surrounding URL/path form and unrelated event data. Update matching media MIME/size/dimension metadata as needed. Reconcile history/dashboard caches if any records change. Earlier checks found no matching references, so do not manufacture changes to unrelated placeholders.
-5. Only after backups, replacement checks and reference updates succeed, delete the exact verified PNG paths via the authorized storage API. Re-read the inventory to confirm those originals are gone and the display/thumbnail paths remain. Record actual reclaimed bytes and any skipped files.
+Local backup and inspection gallery:
 
-Backing up and deleting the specified PNGs is already authorized. Restoring storage access is the outstanding prerequisite; no upgrade or billing change was authorized. No scheduled automation was created.
+`/Users/rj/.codex/visualizations/2026/09/15/01a0a755-dae4-7381-8ff0-67fe7969d121/storage-backup-2026-09-15/inspection-gallery.md`
+
+Original PNGs, retained WebP copies and manifests remain in that backup directory as explicitly requested. These image bytes are outside the deployed app and Git source. No automatic repository-to-Blob mirror was configured.

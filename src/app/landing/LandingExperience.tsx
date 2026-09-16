@@ -235,7 +235,7 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
               onClick={onPrimaryAction}
               className="inline-flex h-12 w-full min-w-0 cursor-pointer items-center justify-center gap-2 rounded-md border border-[#f3d58b] bg-[#f3d58b] px-5 text-sm font-bold text-[#21170e] shadow-[0_18px_44px_rgba(0,0,0,0.28)] transition hover:-translate-y-0.5 hover:bg-[#ffe8b0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f3d58b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#21170e] motion-reduce:transform-none motion-reduce:transition-none sm:w-auto sm:px-6"
             >
-              <span className="whitespace-nowrap">Try the Envitefy Concierge</span>
+              <span className="whitespace-nowrap">Try Envitefy Create</span>
               <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
             </button>
             <Link
@@ -693,7 +693,7 @@ function CreationPaths({ onPrimaryAction }: { onPrimaryAction: () => void }) {
               className="mt-4 text-4xl font-light leading-tight text-white sm:text-5xl"
               style={{ color: "#fff", fontFamily: "var(--font-playfair), Georgia, serif" }}
             >
-              Start from Concierge or the file you already have.
+              Start from Envitefy Create or the file you already have.
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-white/72">
               Hosting creates My events. Received birthday, wedding, gender reveal, and similar

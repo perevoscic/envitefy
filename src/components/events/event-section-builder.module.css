@@ -121,26 +121,6 @@
     500 12px / 1.4 system-ui,
     sans-serif;
 }
-.layoutControls label {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.layoutControls select {
-  min-height: 44px;
-  max-width: 100%;
-  padding: 6px;
-  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
-  border-radius: 8px;
-  color: inherit;
-  background: transparent;
-  font: inherit;
-}
-.layoutControls option {
-  color: #322347;
-  background: white;
-}
 .layoutControls button {
   padding: 4px 6px;
   border-radius: 8px;
@@ -148,7 +128,7 @@
 .layoutControls button:hover {
   background: color-mix(in srgb, currentColor 8%, transparent);
 }
-.layoutControls :is(button, select):focus-visible,
+.layoutControls button:focus-visible,
 .toolbar button:focus-visible {
   outline: 2px solid currentColor;
   outline-offset: 2px;

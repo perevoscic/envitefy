@@ -512,7 +512,7 @@ function RootNavigationPanel({
       <div className="space-y-1.5">
         <SidebarLink link={{ label: "Home", href: "/", icon: <Home />, onClick: onHome, active: isHomeActive }} />
         <SidebarLink link={{ label: "Snap / Upload", icon: <Upload />, onClick: onSnapUpload, active: isSnapUploadActive }} />
-        <SidebarLink link={{ label: "Envitefy Concierge", icon: <ConciergeLogoIcon size={20} isActive={isChatActive} />, onClick: onAiThreads, active: isChatActive }} />
+        <SidebarLink link={{ label: "Envitefy Create", icon: <ConciergeLogoIcon size={20} isActive={isChatActive} />, onClick: onAiThreads, active: isChatActive }} />
         {hasCreateEventAccess ? (
           <SidebarLink link={{ label: createEntryLabel, icon: <Plus />, onClick: onCreate, active: isCreateEntryActive }} />
         ) : null}
@@ -1009,7 +1009,7 @@ function AiThreadsPanel({
 }) {
   return (
     <SidebarListPanel
-      title="Envitefy Concierge"
+      title="Envitefy Create"
       titleClassName="!text-[1.1rem] !tracking-[0.06em]"
       onBack={onBack}
     >

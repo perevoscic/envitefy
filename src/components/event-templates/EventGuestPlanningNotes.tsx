@@ -1,12 +1,14 @@
-import { getEventGuestPlanningNotes, type EventGuestPlanning } from "@/lib/event-guest-planning";
+import { type EventGuestPlanning, getEventGuestPlanningNotes } from "@/lib/event-guest-planning";
 import styles from "./guest-actions.module.css";
 
 export default function EventGuestPlanningNotes({
   value,
+  id,
   inverse = false,
   themed = false,
 }: {
   value?: EventGuestPlanning;
+  id?: string;
   inverse?: boolean;
   themed?: boolean;
 }) {
@@ -14,6 +16,7 @@ export default function EventGuestPlanningNotes({
   if (!notes.length) return null;
   return (
     <section
+      id={id}
       aria-label="Before you arrive"
       className={`mx-auto w-full max-w-5xl px-5 py-7 text-left normal-case tracking-normal ${themed ? "" : inverse ? "text-white" : "text-slate-800"}`}
     >
@@ -21,6 +24,7 @@ export default function EventGuestPlanningNotes({
       <dl className="grid gap-3 sm:grid-cols-2">
         {notes.map(({ key, label, value: note }) => (
           <div
+            data-celebration-card
             key={key}
             className={`p-5 ${themed ? styles.note : `rounded-2xl border ${inverse ? "border-white/20 bg-black/40" : "border-slate-200 bg-white/95"}`}`}
           >

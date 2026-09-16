@@ -1,0 +1,724 @@
+{
+  "startedAt": "2026-09-16T00:09:02.156Z",
+  "complete": true,
+  "scopeCount": 113,
+  "deleted": [
+    {
+      "oldPath": "event-media/upload-019481c3-700a-476f-a1d4-0b27a17bdefb/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-019481c3-700a-476f-a1d4-0b27a17bdefb/header/display.webp",
+      "bytes": 2873219,
+      "deletedAt": "2026-09-16T00:09:10.747Z"
+    },
+    {
+      "oldPath": "event-media/upload-053cd973-d18c-42bb-af22-cce0fbf4d7b4/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-053cd973-d18c-42bb-af22-cce0fbf4d7b4/header/display.webp",
+      "bytes": 3038954,
+      "deletedAt": "2026-09-16T00:09:10.946Z"
+    },
+    {
+      "oldPath": "event-media/upload-084da949-b33a-441c-9fe0-58ffe5703e83/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-084da949-b33a-441c-9fe0-58ffe5703e83/header/display.webp",
+      "bytes": 2838100,
+      "deletedAt": "2026-09-16T00:09:11.034Z"
+    },
+    {
+      "oldPath": "event-media/upload-0862ef1c-514c-4724-bb9b-381e3d08e72e/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-0862ef1c-514c-4724-bb9b-381e3d08e72e/header/display.webp",
+      "bytes": 2710411,
+      "deletedAt": "2026-09-16T00:09:11.182Z"
+    },
+    {
+      "oldPath": "event-media/upload-09bdc4bd-b74b-4834-b2b5-4a8474ab69c3/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-09bdc4bd-b74b-4834-b2b5-4a8474ab69c3/header/display.webp",
+      "bytes": 2550064,
+      "deletedAt": "2026-09-16T00:09:11.286Z"
+    },
+    {
+      "oldPath": "event-media/upload-0b79f022-6c9c-48b5-b723-7a6154fccb7f/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-0b79f022-6c9c-48b5-b723-7a6154fccb7f/header/display.webp",
+      "bytes": 2447792,
+      "deletedAt": "2026-09-16T00:09:11.362Z"
+    },
+    {
+      "oldPath": "event-media/upload-0ba4219c-826e-4a4c-9ffa-b9081f8dda12/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-0ba4219c-826e-4a4c-9ffa-b9081f8dda12/header/display.webp",
+      "bytes": 2827873,
+      "deletedAt": "2026-09-16T00:09:11.444Z"
+    },
+    {
+      "oldPath": "event-media/upload-0d103e8a-eb69-4a92-8584-822b174fdb0f/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-0d103e8a-eb69-4a92-8584-822b174fdb0f/header/display.webp",
+      "bytes": 2824731,
+      "deletedAt": "2026-09-16T00:09:11.549Z"
+    },
+    {
+      "oldPath": "event-media/upload-0f4a6730-8097-4cd2-a5fa-1879bd19fcd4/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-0f4a6730-8097-4cd2-a5fa-1879bd19fcd4/header/display.webp",
+      "bytes": 2689300,
+      "deletedAt": "2026-09-16T00:09:11.713Z"
+    },
+    {
+      "oldPath": "event-media/upload-108afbac-b2a8-4fd9-811f-002afdd131e6/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-108afbac-b2a8-4fd9-811f-002afdd131e6/header/display.webp",
+      "bytes": 2852057,
+      "deletedAt": "2026-09-16T00:09:11.823Z"
+    },
+    {
+      "oldPath": "event-media/upload-11ae17da-beb2-4ede-83bf-88639e1cc6fc/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-11ae17da-beb2-4ede-83bf-88639e1cc6fc/header/display.webp",
+      "bytes": 2904222,
+      "deletedAt": "2026-09-16T00:09:11.908Z"
+    },
+    {
+      "oldPath": "event-media/upload-14251cf5-f32b-410f-a9ee-e299eeff7718/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-14251cf5-f32b-410f-a9ee-e299eeff7718/header/display.webp",
+      "bytes": 2947121,
+      "deletedAt": "2026-09-16T00:09:11.996Z"
+    },
+    {
+      "oldPath": "event-media/upload-14699cbe-ac7a-4081-bf76-12974579a964/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-14699cbe-ac7a-4081-bf76-12974579a964/header/display.webp",
+      "bytes": 2559819,
+      "deletedAt": "2026-09-16T00:09:12.122Z"
+    },
+    {
+      "oldPath": "event-media/upload-16687351-518a-4bf8-bb34-3692328d0344/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-16687351-518a-4bf8-bb34-3692328d0344/header/display.webp",
+      "bytes": 2768044,
+      "deletedAt": "2026-09-16T00:09:12.229Z"
+    },
+    {
+      "oldPath": "event-media/upload-199127da-4a5e-43ad-a3f6-8814898ad19b/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-199127da-4a5e-43ad-a3f6-8814898ad19b/header/display.webp",
+      "bytes": 2447667,
+      "deletedAt": "2026-09-16T00:09:12.314Z"
+    },
+    {
+      "oldPath": "event-media/upload-1e97ed2f-1c40-4f5c-beee-118a86592c4a/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-1e97ed2f-1c40-4f5c-beee-118a86592c4a/header/display.webp",
+      "bytes": 2885072,
+      "deletedAt": "2026-09-16T00:09:12.406Z"
+    },
+    {
+      "oldPath": "event-media/upload-214ac8ba-e8e6-4b75-84ef-b8ebb6e85afa/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-214ac8ba-e8e6-4b75-84ef-b8ebb6e85afa/header/display.webp",
+      "bytes": 2780895,
+      "deletedAt": "2026-09-16T00:09:12.511Z"
+    },
+    {
+      "oldPath": "event-media/upload-216ed55c-6d42-4ca9-97b2-13ce1dcbfaaf/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-216ed55c-6d42-4ca9-97b2-13ce1dcbfaaf/header/display.webp",
+      "bytes": 3029249,
+      "deletedAt": "2026-09-16T00:09:12.592Z"
+    },
+    {
+      "oldPath": "event-media/upload-2434fed6-0990-4541-8690-f8cefdc56032/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-2434fed6-0990-4541-8690-f8cefdc56032/header/display.webp",
+      "bytes": 2978088,
+      "deletedAt": "2026-09-16T00:09:12.754Z"
+    },
+    {
+      "oldPath": "event-media/upload-24e2e6d4-7033-4de7-ba46-ff058a14d76c/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-24e2e6d4-7033-4de7-ba46-ff058a14d76c/header/display.webp",
+      "bytes": 2488925,
+      "deletedAt": "2026-09-16T00:09:12.837Z"
+    },
+    {
+      "oldPath": "event-media/upload-250c5c60-075d-4428-860b-29575a23c2ad/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-250c5c60-075d-4428-860b-29575a23c2ad/header/display.webp",
+      "bytes": 2866150,
+      "deletedAt": "2026-09-16T00:09:12.920Z"
+    },
+    {
+      "oldPath": "event-media/upload-2a76c4b4-080e-470e-a68a-f4a0c06aee90/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-2a76c4b4-080e-470e-a68a-f4a0c06aee90/header/display.webp",
+      "bytes": 2910827,
+      "deletedAt": "2026-09-16T00:09:13.005Z"
+    },
+    {
+      "oldPath": "event-media/upload-2baca615-ca9f-4032-a9bc-231adb6d3ca1/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-2baca615-ca9f-4032-a9bc-231adb6d3ca1/header/display.webp",
+      "bytes": 2860814,
+      "deletedAt": "2026-09-16T00:09:13.096Z"
+    },
+    {
+      "oldPath": "event-media/upload-31198412-a87e-4573-8857-a8a860d2863a/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-31198412-a87e-4573-8857-a8a860d2863a/header/display.webp",
+      "bytes": 2936132,
+      "deletedAt": "2026-09-16T00:09:13.183Z"
+    },
+    {
+      "oldPath": "event-media/upload-36113ff6-ee43-425a-8ae7-0fcf4bff9a7c/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-36113ff6-ee43-425a-8ae7-0fcf4bff9a7c/header/display.webp",
+      "bytes": 2539212,
+      "deletedAt": "2026-09-16T00:09:13.356Z"
+    },
+    {
+      "oldPath": "event-media/upload-391f0532-ec9e-4f9d-b37f-33b87cbe98db/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-391f0532-ec9e-4f9d-b37f-33b87cbe98db/header/display.webp",
+      "bytes": 2620220,
+      "deletedAt": "2026-09-16T00:09:13.456Z"
+    },
+    {
+      "oldPath": "event-media/upload-3c0b6449-4442-4612-932e-60da98923589/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-3c0b6449-4442-4612-932e-60da98923589/header/display.webp",
+      "bytes": 2808448,
+      "deletedAt": "2026-09-16T00:09:13.540Z"
+    },
+    {
+      "oldPath": "event-media/upload-40ea3cae-66bc-4167-9b81-bbe7d9bfbd3c/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-40ea3cae-66bc-4167-9b81-bbe7d9bfbd3c/header/display.webp",
+      "bytes": 2897600,
+      "deletedAt": "2026-09-16T00:09:13.617Z"
+    },
+    {
+      "oldPath": "event-media/upload-45ca2cc2-9e59-4adc-b6f3-7f7d62c77c82/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-45ca2cc2-9e59-4adc-b6f3-7f7d62c77c82/header/display.webp",
+      "bytes": 2627868,
+      "deletedAt": "2026-09-16T00:09:13.805Z"
+    },
+    {
+      "oldPath": "event-media/upload-481bd34f-49bc-4acb-ab0a-0060dd9cecf6/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-481bd34f-49bc-4acb-ab0a-0060dd9cecf6/header/display.webp",
+      "bytes": 2800152,
+      "deletedAt": "2026-09-16T00:09:13.899Z"
+    },
+    {
+      "oldPath": "event-media/upload-489f8f24-5ba2-4c9b-8767-1f7ff195ab46/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-489f8f24-5ba2-4c9b-8767-1f7ff195ab46/header/display.webp",
+      "bytes": 2524867,
+      "deletedAt": "2026-09-16T00:09:13.979Z"
+    },
+    {
+      "oldPath": "event-media/upload-49724e80-7b34-4bec-92f4-9e0524a534ab/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-49724e80-7b34-4bec-92f4-9e0524a534ab/header/display.webp",
+      "bytes": 2946838,
+      "deletedAt": "2026-09-16T00:09:14.062Z"
+    },
+    {
+      "oldPath": "event-media/upload-4dce3ef0-0114-45f4-baec-dc38d30b37b5/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-4dce3ef0-0114-45f4-baec-dc38d30b37b5/header/display.webp",
+      "bytes": 3149184,
+      "deletedAt": "2026-09-16T00:09:14.158Z"
+    },
+    {
+      "oldPath": "event-media/upload-519515e3-7a15-4d33-8a73-e59c5d62003b/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-519515e3-7a15-4d33-8a73-e59c5d62003b/header/display.webp",
+      "bytes": 3074917,
+      "deletedAt": "2026-09-16T00:09:14.326Z"
+    },
+    {
+      "oldPath": "event-media/upload-5357a0f3-3933-4b55-8c6c-3faee0aa99be/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-5357a0f3-3933-4b55-8c6c-3faee0aa99be/header/display.webp",
+      "bytes": 3004094,
+      "deletedAt": "2026-09-16T00:09:14.433Z"
+    },
+    {
+      "oldPath": "event-media/upload-5502d713-f393-4af9-bd29-2af0cb0f4a01/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-5502d713-f393-4af9-bd29-2af0cb0f4a01/header/display.webp",
+      "bytes": 3073346,
+      "deletedAt": "2026-09-16T00:09:14.523Z"
+    },
+    {
+      "oldPath": "event-media/upload-572e7863-cdd8-46fe-9903-efaf5b883f8c/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-572e7863-cdd8-46fe-9903-efaf5b883f8c/header/display.webp",
+      "bytes": 2532281,
+      "deletedAt": "2026-09-16T00:09:14.751Z"
+    },
+    {
+      "oldPath": "event-media/upload-598b1400-7b35-470f-9c1d-3842b63e4967/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-598b1400-7b35-470f-9c1d-3842b63e4967/header/display.webp",
+      "bytes": 2492348,
+      "deletedAt": "2026-09-16T00:09:14.852Z"
+    },
+    {
+      "oldPath": "event-media/upload-5ab8acaf-8c92-4d8a-a501-d0b15b076879/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-5ab8acaf-8c92-4d8a-a501-d0b15b076879/header/display.webp",
+      "bytes": 2459990,
+      "deletedAt": "2026-09-16T00:09:14.945Z"
+    },
+    {
+      "oldPath": "event-media/upload-5c2a1e6f-1439-4ea5-90e8-cf6c4ac136c7/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-5c2a1e6f-1439-4ea5-90e8-cf6c4ac136c7/header/display.webp",
+      "bytes": 2533269,
+      "deletedAt": "2026-09-16T00:09:15.039Z"
+    },
+    {
+      "oldPath": "event-media/upload-5cc7c634-1520-485d-818a-8d56ac97d58a/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-5cc7c634-1520-485d-818a-8d56ac97d58a/header/display.webp",
+      "bytes": 3111765,
+      "deletedAt": "2026-09-16T00:09:15.196Z"
+    },
+    {
+      "oldPath": "event-media/upload-62137da6-5133-456f-8b26-47ff0c601286/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-62137da6-5133-456f-8b26-47ff0c601286/header/display.webp",
+      "bytes": 2945717,
+      "deletedAt": "2026-09-16T00:09:15.376Z"
+    },
+    {
+      "oldPath": "event-media/upload-64015da2-0c09-4227-9cde-dc23d58d3794/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-64015da2-0c09-4227-9cde-dc23d58d3794/header/display.webp",
+      "bytes": 2680025,
+      "deletedAt": "2026-09-16T00:09:15.478Z"
+    },
+    {
+      "oldPath": "event-media/upload-66d87451-23f9-4efd-908e-5885cc1c19ac/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-66d87451-23f9-4efd-908e-5885cc1c19ac/header/display.webp",
+      "bytes": 2965216,
+      "deletedAt": "2026-09-16T00:09:15.567Z"
+    },
+    {
+      "oldPath": "event-media/upload-671ef733-3451-4fd0-a043-6966c06090f3/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-671ef733-3451-4fd0-a043-6966c06090f3/header/display.webp",
+      "bytes": 2606118,
+      "deletedAt": "2026-09-16T00:09:15.659Z"
+    },
+    {
+      "oldPath": "event-media/upload-6cc60de4-6119-4987-8900-307ad32f52c5/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-6cc60de4-6119-4987-8900-307ad32f52c5/header/display.webp",
+      "bytes": 2605181,
+      "deletedAt": "2026-09-16T00:09:15.750Z"
+    },
+    {
+      "oldPath": "event-media/upload-6cc7b036-aab1-4492-bf56-a254857bd54c/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-6cc7b036-aab1-4492-bf56-a254857bd54c/header/display.webp",
+      "bytes": 2633505,
+      "deletedAt": "2026-09-16T00:09:15.900Z"
+    },
+    {
+      "oldPath": "event-media/upload-6d4dd398-006d-484c-a006-34b4cbf39326/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-6d4dd398-006d-484c-a006-34b4cbf39326/header/display.webp",
+      "bytes": 2478670,
+      "deletedAt": "2026-09-16T00:09:15.998Z"
+    },
+    {
+      "oldPath": "event-media/upload-6db02f99-c2a4-4467-9f5b-ef7dc2a42a2d/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-6db02f99-c2a4-4467-9f5b-ef7dc2a42a2d/header/display.webp",
+      "bytes": 2322045,
+      "deletedAt": "2026-09-16T00:09:16.084Z"
+    },
+    {
+      "oldPath": "event-media/upload-6df02fab-b3ba-475a-8f52-e457238359bc/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-6df02fab-b3ba-475a-8f52-e457238359bc/header/display.webp",
+      "bytes": 2949773,
+      "deletedAt": "2026-09-16T00:09:16.171Z"
+    },
+    {
+      "oldPath": "event-media/upload-6e09e4a2-3821-4df6-83a6-26bf3b1dc03e/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-6e09e4a2-3821-4df6-83a6-26bf3b1dc03e/header/display.webp",
+      "bytes": 2951603,
+      "deletedAt": "2026-09-16T00:09:16.249Z"
+    },
+    {
+      "oldPath": "event-media/upload-71f9e31a-885a-4230-9b3d-95a742cc0639/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-71f9e31a-885a-4230-9b3d-95a742cc0639/header/display.webp",
+      "bytes": 3017375,
+      "deletedAt": "2026-09-16T00:09:16.423Z"
+    },
+    {
+      "oldPath": "event-media/upload-79554d06-fead-4334-8e8a-5011632889aa/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-79554d06-fead-4334-8e8a-5011632889aa/header/display.webp",
+      "bytes": 2772920,
+      "deletedAt": "2026-09-16T00:09:16.510Z"
+    },
+    {
+      "oldPath": "event-media/upload-7da3c7e6-9304-46ba-a536-b6e306e932b7/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-7da3c7e6-9304-46ba-a536-b6e306e932b7/header/display.webp",
+      "bytes": 2835696,
+      "deletedAt": "2026-09-16T00:09:16.602Z"
+    },
+    {
+      "oldPath": "event-media/upload-80528242-c3fc-4ba6-82e5-051f5cb8dff3/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-80528242-c3fc-4ba6-82e5-051f5cb8dff3/header/display.webp",
+      "bytes": 2748669,
+      "deletedAt": "2026-09-16T00:09:16.686Z"
+    },
+    {
+      "oldPath": "event-media/upload-8095dc57-c101-45ba-93dd-beb871832d82/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-8095dc57-c101-45ba-93dd-beb871832d82/header/display.webp",
+      "bytes": 2923602,
+      "deletedAt": "2026-09-16T00:09:16.809Z"
+    },
+    {
+      "oldPath": "event-media/upload-834b5d8c-3937-4229-afc8-e82deb1821fb/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-834b5d8c-3937-4229-afc8-e82deb1821fb/header/display.webp",
+      "bytes": 2467897,
+      "deletedAt": "2026-09-16T00:09:16.953Z"
+    },
+    {
+      "oldPath": "event-media/upload-873c3605-2d1e-4b06-9ff2-f17f5febc942/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-873c3605-2d1e-4b06-9ff2-f17f5febc942/header/display.webp",
+      "bytes": 2943380,
+      "deletedAt": "2026-09-16T00:09:17.040Z"
+    },
+    {
+      "oldPath": "event-media/upload-878f1084-79d9-439a-8887-816fe4665f92/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-878f1084-79d9-439a-8887-816fe4665f92/header/display.webp",
+      "bytes": 2777260,
+      "deletedAt": "2026-09-16T00:09:17.125Z"
+    },
+    {
+      "oldPath": "event-media/upload-889ac04c-c363-4a56-be38-ed29573c911d/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-889ac04c-c363-4a56-be38-ed29573c911d/header/display.webp",
+      "bytes": 3106207,
+      "deletedAt": "2026-09-16T00:09:17.211Z"
+    },
+    {
+      "oldPath": "event-media/upload-8b23d8d7-44b5-4ef7-bdfe-8384bfee0a7c/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-8b23d8d7-44b5-4ef7-bdfe-8384bfee0a7c/header/display.webp",
+      "bytes": 2828834,
+      "deletedAt": "2026-09-16T00:09:17.300Z"
+    },
+    {
+      "oldPath": "event-media/upload-8b30b346-25a3-4928-b54b-e81fe1a2c999/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-8b30b346-25a3-4928-b54b-e81fe1a2c999/header/display.webp",
+      "bytes": 2722735,
+      "deletedAt": "2026-09-16T00:09:17.473Z"
+    },
+    {
+      "oldPath": "event-media/upload-8b8e4962-7077-4558-8f3f-9ef2c906871f/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-8b8e4962-7077-4558-8f3f-9ef2c906871f/header/display.webp",
+      "bytes": 2605725,
+      "deletedAt": "2026-09-16T00:09:17.558Z"
+    },
+    {
+      "oldPath": "event-media/upload-8f9213fb-b8a4-4407-80f6-d6ee69bb9f1b/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-8f9213fb-b8a4-4407-80f6-d6ee69bb9f1b/header/display.webp",
+      "bytes": 2405507,
+      "deletedAt": "2026-09-16T00:09:17.660Z"
+    },
+    {
+      "oldPath": "event-media/upload-93034cab-fafc-470a-b629-2cb64e101ae2/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-93034cab-fafc-470a-b629-2cb64e101ae2/header/display.webp",
+      "bytes": 2495377,
+      "deletedAt": "2026-09-16T00:09:17.742Z"
+    },
+    {
+      "oldPath": "event-media/upload-98685ce2-9f08-48d8-a830-969bf0f0d86d/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-98685ce2-9f08-48d8-a830-969bf0f0d86d/header/display.webp",
+      "bytes": 2361010,
+      "deletedAt": "2026-09-16T00:09:17.865Z"
+    },
+    {
+      "oldPath": "event-media/upload-9d090fa0-ade2-4953-b022-41a14f38bfb9/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-9d090fa0-ade2-4953-b022-41a14f38bfb9/header/display.webp",
+      "bytes": 2464809,
+      "deletedAt": "2026-09-16T00:09:17.998Z"
+    },
+    {
+      "oldPath": "event-media/upload-9ec47aef-a543-4f76-be95-a25b65a029ed/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-9ec47aef-a543-4f76-be95-a25b65a029ed/header/display.webp",
+      "bytes": 2909908,
+      "deletedAt": "2026-09-16T00:09:18.108Z"
+    },
+    {
+      "oldPath": "event-media/upload-a4d53c29-3f0f-4eea-bf4d-65acdb80540f/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-a4d53c29-3f0f-4eea-bf4d-65acdb80540f/header/display.webp",
+      "bytes": 2741704,
+      "deletedAt": "2026-09-16T00:09:18.188Z"
+    },
+    {
+      "oldPath": "event-media/upload-a7324d9b-1575-43f6-8d19-177b78c0dd79/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-a7324d9b-1575-43f6-8d19-177b78c0dd79/header/display.webp",
+      "bytes": 2396273,
+      "deletedAt": "2026-09-16T00:09:18.340Z"
+    },
+    {
+      "oldPath": "event-media/upload-a987371d-3337-488f-8760-5c7d01390c76/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-a987371d-3337-488f-8760-5c7d01390c76/header/display.webp",
+      "bytes": 2966052,
+      "deletedAt": "2026-09-16T00:09:18.425Z"
+    },
+    {
+      "oldPath": "event-media/upload-aea4d72d-935a-48af-9016-ba7904ee5b11/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-aea4d72d-935a-48af-9016-ba7904ee5b11/header/display.webp",
+      "bytes": 2743594,
+      "deletedAt": "2026-09-16T00:09:18.600Z"
+    },
+    {
+      "oldPath": "event-media/upload-b13b49a9-af03-4769-a192-02cc78af82bd/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-b13b49a9-af03-4769-a192-02cc78af82bd/header/display.webp",
+      "bytes": 2700501,
+      "deletedAt": "2026-09-16T00:09:18.680Z"
+    },
+    {
+      "oldPath": "event-media/upload-b1547358-dacb-4155-9651-818e3ca18938/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-b1547358-dacb-4155-9651-818e3ca18938/header/display.webp",
+      "bytes": 2922534,
+      "deletedAt": "2026-09-16T00:09:18.767Z"
+    },
+    {
+      "oldPath": "event-media/upload-b4d302de-a2f4-46cf-a133-186ea05c007b/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-b4d302de-a2f4-46cf-a133-186ea05c007b/header/display.webp",
+      "bytes": 2998466,
+      "deletedAt": "2026-09-16T00:09:18.874Z"
+    },
+    {
+      "oldPath": "event-media/upload-b5d5802c-1bd2-40ea-9a4d-373e94ab47bf/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-b5d5802c-1bd2-40ea-9a4d-373e94ab47bf/header/display.webp",
+      "bytes": 2562776,
+      "deletedAt": "2026-09-16T00:09:19.047Z"
+    },
+    {
+      "oldPath": "event-media/upload-b62b0445-f5a1-4c77-8191-240f939f7ca6/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-b62b0445-f5a1-4c77-8191-240f939f7ca6/header/display.webp",
+      "bytes": 2851584,
+      "deletedAt": "2026-09-16T00:09:19.133Z"
+    },
+    {
+      "oldPath": "event-media/upload-b876f621-6653-4da4-9ec3-d0a617a15b0d/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-b876f621-6653-4da4-9ec3-d0a617a15b0d/header/display.webp",
+      "bytes": 2771747,
+      "deletedAt": "2026-09-16T00:09:19.229Z"
+    },
+    {
+      "oldPath": "event-media/upload-b9297fc4-3189-405f-af15-78101dc74e56/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-b9297fc4-3189-405f-af15-78101dc74e56/header/display.webp",
+      "bytes": 2624043,
+      "deletedAt": "2026-09-16T00:09:19.404Z"
+    },
+    {
+      "oldPath": "event-media/upload-b92a412d-76e0-4059-8588-2434101d8afc/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-b92a412d-76e0-4059-8588-2434101d8afc/header/display.webp",
+      "bytes": 2811898,
+      "deletedAt": "2026-09-16T00:09:19.571Z"
+    },
+    {
+      "oldPath": "event-media/upload-ba7c4386-e1cb-438e-ae7c-68c903d19b1f/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-ba7c4386-e1cb-438e-ae7c-68c903d19b1f/header/display.webp",
+      "bytes": 2487569,
+      "deletedAt": "2026-09-16T00:09:19.657Z"
+    },
+    {
+      "oldPath": "event-media/upload-be310cff-d48a-43f3-92fa-11e5f7f52456/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-be310cff-d48a-43f3-92fa-11e5f7f52456/header/display.webp",
+      "bytes": 2809679,
+      "deletedAt": "2026-09-16T00:09:19.770Z"
+    },
+    {
+      "oldPath": "event-media/upload-c1205036-83b4-479f-b541-686ec96878b1/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-c1205036-83b4-479f-b541-686ec96878b1/header/display.webp",
+      "bytes": 2484842,
+      "deletedAt": "2026-09-16T00:09:19.847Z"
+    },
+    {
+      "oldPath": "event-media/upload-c25ba16f-df88-415b-8dc5-5711e0b85977/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-c25ba16f-df88-415b-8dc5-5711e0b85977/header/display.webp",
+      "bytes": 2539239,
+      "deletedAt": "2026-09-16T00:09:19.921Z"
+    },
+    {
+      "oldPath": "event-media/upload-c7638938-bcd8-4764-9412-c6e430dc195a/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-c7638938-bcd8-4764-9412-c6e430dc195a/header/display.webp",
+      "bytes": 3087984,
+      "deletedAt": "2026-09-16T00:09:20.093Z"
+    },
+    {
+      "oldPath": "event-media/upload-c87d63cc-9bd8-4868-ace6-b32ca29322b8/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-c87d63cc-9bd8-4868-ace6-b32ca29322b8/header/display.webp",
+      "bytes": 2589835,
+      "deletedAt": "2026-09-16T00:09:20.226Z"
+    },
+    {
+      "oldPath": "event-media/upload-c8967bc6-a405-4538-be9e-ce3065183892/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-c8967bc6-a405-4538-be9e-ce3065183892/header/display.webp",
+      "bytes": 2464154,
+      "deletedAt": "2026-09-16T00:09:20.478Z"
+    },
+    {
+      "oldPath": "event-media/upload-ce6a27eb-d0a8-422a-bd01-de67d9f02299/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-ce6a27eb-d0a8-422a-bd01-de67d9f02299/header/display.webp",
+      "bytes": 2858491,
+      "deletedAt": "2026-09-16T00:09:20.619Z"
+    },
+    {
+      "oldPath": "event-media/upload-d28a490b-f904-4673-b767-62f55d1e57fd/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-d28a490b-f904-4673-b767-62f55d1e57fd/header/display.webp",
+      "bytes": 2774481,
+      "deletedAt": "2026-09-16T00:09:20.708Z"
+    },
+    {
+      "oldPath": "event-media/upload-d4cc8dbe-c73c-47b7-896a-337f4c7f5d4c/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-d4cc8dbe-c73c-47b7-896a-337f4c7f5d4c/header/display.webp",
+      "bytes": 2454838,
+      "deletedAt": "2026-09-16T00:09:20.802Z"
+    },
+    {
+      "oldPath": "event-media/upload-d5060aec-97da-4558-8a2a-c1874803508f/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-d5060aec-97da-4558-8a2a-c1874803508f/header/display.webp",
+      "bytes": 3276865,
+      "deletedAt": "2026-09-16T00:09:20.884Z"
+    },
+    {
+      "oldPath": "event-media/upload-d8ac3282-ddf3-4456-8a98-cf6135c0666c/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-d8ac3282-ddf3-4456-8a98-cf6135c0666c/header/display.webp",
+      "bytes": 2607966,
+      "deletedAt": "2026-09-16T00:09:20.965Z"
+    },
+    {
+      "oldPath": "event-media/upload-db27123f-8dde-4a85-9575-9cd8dcbe127c/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-db27123f-8dde-4a85-9575-9cd8dcbe127c/header/display.webp",
+      "bytes": 2940850,
+      "deletedAt": "2026-09-16T00:09:21.142Z"
+    },
+    {
+      "oldPath": "event-media/upload-dd05d539-e96d-49fc-b568-00bc9434a9a6/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-dd05d539-e96d-49fc-b568-00bc9434a9a6/header/display.webp",
+      "bytes": 3075778,
+      "deletedAt": "2026-09-16T00:09:21.230Z"
+    },
+    {
+      "oldPath": "event-media/upload-df70771a-b911-4a2c-a7f7-ad87e335b8e6/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-df70771a-b911-4a2c-a7f7-ad87e335b8e6/header/display.webp",
+      "bytes": 2953250,
+      "deletedAt": "2026-09-16T00:09:21.311Z"
+    },
+    {
+      "oldPath": "event-media/upload-e0ebcd22-d982-47f4-aee1-56986296d9c0/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-e0ebcd22-d982-47f4-aee1-56986296d9c0/header/display.webp",
+      "bytes": 2743056,
+      "deletedAt": "2026-09-16T00:09:21.469Z"
+    },
+    {
+      "oldPath": "event-media/upload-e0fb34c9-2866-4fce-bf88-505e718fe922/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-e0fb34c9-2866-4fce-bf88-505e718fe922/header/display.webp",
+      "bytes": 2282000,
+      "deletedAt": "2026-09-16T00:09:21.560Z"
+    },
+    {
+      "oldPath": "event-media/upload-e3523fb9-3f7d-42d0-aed9-1ca0f7f8cc2c/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-e3523fb9-3f7d-42d0-aed9-1ca0f7f8cc2c/header/display.webp",
+      "bytes": 2837516,
+      "deletedAt": "2026-09-16T00:09:21.669Z"
+    },
+    {
+      "oldPath": "event-media/upload-e4ce622a-d90b-440f-adad-61a2af00fcf0/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-e4ce622a-d90b-440f-adad-61a2af00fcf0/header/display.webp",
+      "bytes": 2955552,
+      "deletedAt": "2026-09-16T00:09:21.744Z"
+    },
+    {
+      "oldPath": "event-media/upload-e51c1065-de77-4b82-b878-a0044a6993c1/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-e51c1065-de77-4b82-b878-a0044a6993c1/header/display.webp",
+      "bytes": 2886603,
+      "deletedAt": "2026-09-16T00:09:21.830Z"
+    },
+    {
+      "oldPath": "event-media/upload-e8b9bfd9-5c08-4038-92b7-d71bab493d06/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-e8b9bfd9-5c08-4038-92b7-d71bab493d06/header/display.webp",
+      "bytes": 2488869,
+      "deletedAt": "2026-09-16T00:09:21.964Z"
+    },
+    {
+      "oldPath": "event-media/upload-ea2da55c-f613-4fae-9aad-0af3b974a8f4/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-ea2da55c-f613-4fae-9aad-0af3b974a8f4/header/display.webp",
+      "bytes": 2988684,
+      "deletedAt": "2026-09-16T00:09:22.057Z"
+    },
+    {
+      "oldPath": "event-media/upload-ed26ea76-748e-4fa2-8e84-14fa86c403ac/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-ed26ea76-748e-4fa2-8e84-14fa86c403ac/header/display.webp",
+      "bytes": 2921894,
+      "deletedAt": "2026-09-16T00:09:22.190Z"
+    },
+    {
+      "oldPath": "event-media/upload-f0354c67-f409-4623-aec2-6bc006a5a38d/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-f0354c67-f409-4623-aec2-6bc006a5a38d/header/display.webp",
+      "bytes": 2041581,
+      "deletedAt": "2026-09-16T00:09:22.278Z"
+    },
+    {
+      "oldPath": "event-media/upload-f098463a-fe78-4355-9d50-59ce088c9695/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-f098463a-fe78-4355-9d50-59ce088c9695/header/display.webp",
+      "bytes": 2794863,
+      "deletedAt": "2026-09-16T00:09:22.359Z"
+    },
+    {
+      "oldPath": "event-media/upload-f1078668-7c7d-4a31-a3aa-2ca0e439280e/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-f1078668-7c7d-4a31-a3aa-2ca0e439280e/header/display.webp",
+      "bytes": 2488352,
+      "deletedAt": "2026-09-16T00:09:22.448Z"
+    },
+    {
+      "oldPath": "event-media/upload-f81ef033-9ddd-4aa1-be35-9ef308050307/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-f81ef033-9ddd-4aa1-be35-9ef308050307/header/display.webp",
+      "bytes": 2320386,
+      "deletedAt": "2026-09-16T00:09:22.593Z"
+    },
+    {
+      "oldPath": "event-media/upload-f9e75dd0-c6d2-4e65-9374-55925a568b3d/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-f9e75dd0-c6d2-4e65-9374-55925a568b3d/header/display.webp",
+      "bytes": 2464567,
+      "deletedAt": "2026-09-16T00:09:22.717Z"
+    },
+    {
+      "oldPath": "event-media/upload-fb18000b-8bce-4183-a88f-e7d998a43b5a/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-fb18000b-8bce-4183-a88f-e7d998a43b5a/header/display.webp",
+      "bytes": 2845705,
+      "deletedAt": "2026-09-16T00:09:22.796Z"
+    },
+    {
+      "oldPath": "event-media/upload-fc76c261-0e20-4854-b887-04d4a1fe620d/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-fc76c261-0e20-4854-b887-04d4a1fe620d/header/display.webp",
+      "bytes": 2882366,
+      "deletedAt": "2026-09-16T00:09:22.887Z"
+    },
+    {
+      "oldPath": "event-media/upload-fcb602cb-ff43-4ddc-b1e3-3307dbc0d1a8/header/source/event-card-edit.png",
+      "retainedPath": "event-media/upload-fcb602cb-ff43-4ddc-b1e3-3307dbc0d1a8/header/display.webp",
+      "bytes": 2516437,
+      "deletedAt": "2026-09-16T00:09:22.991Z"
+    },
+    {
+      "oldPath": "event-media/upload-fdf11a3f-a94f-4393-b5d9-8f0251c59c68/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-fdf11a3f-a94f-4393-b5d9-8f0251c59c68/header/display.webp",
+      "bytes": 2833029,
+      "deletedAt": "2026-09-16T00:09:23.077Z"
+    },
+    {
+      "oldPath": "event-media/upload-ff349299-706b-4d9b-ac09-8c9a7db98918/header/source/studio-generated-image.png",
+      "retainedPath": "event-media/upload-ff349299-706b-4d9b-ac09-8c9a7db98918/header/display.webp",
+      "bytes": 2293407,
+      "deletedAt": "2026-09-16T00:09:23.240Z"
+    }
+  ],
+  "failures": [],
+  "preflight": {
+    "backupsRehashed": 226,
+    "referencesToUpdate": 0,
+    "databaseCheckedAt": "2026-09-16T00:09:09.829Z",
+    "repositoryCheckedAt": "2026-09-16T00:09:02.624Z",
+    "replacementAndThumbnailCount": 226
+  },
+  "before": {
+    "objects": 1228,
+    "bytes": 889755509
+  },
+  "displayReadChecks": [
+    {
+      "path": "event-media/upload-019481c3-700a-476f-a1d4-0b27a17bdefb/header/display.webp",
+      "originReadPassed": true,
+      "sha256Matched": true
+    },
+    {
+      "path": "event-media/upload-834b5d8c-3937-4229-afc8-e82deb1821fb/header/display.webp",
+      "originReadPassed": true,
+      "sha256Matched": true
+    },
+    {
+      "path": "event-media/upload-ff349299-706b-4d9b-ac09-8c9a7db98918/header/display.webp",
+      "originReadPassed": true,
+      "sha256Matched": true
+    }
+  ],
+  "after": {
+    "objects": 1115,
+    "bytes": 579936960
+  },
+  "deletedBytes": 309818549,
+  "inventoryByteReduction": 309818549,
+  "remainingScopedPngs": 0,
+  "retainedDisplays": 113,
+  "retainedThumbnails": 113,
+  "finishedAt": "2026-09-16T00:09:24.574Z"
+}

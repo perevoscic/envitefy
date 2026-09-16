@@ -1,11 +1,11 @@
 import type { CSSProperties, ReactNode } from "react";
+import styles from "./atelier-wedding-layouts.module.css";
 import {
   buildWeddingLocationHref,
-  Footer,
   type EventData,
+  Footer,
   type ThemeConfig,
 } from "./content-sections";
-import styles from "./atelier-wedding-layouts.module.css";
 
 export type AtelierWeddingLayoutId =
   | "tuscan-lemon-grove"
@@ -133,7 +133,8 @@ function Art({
   return (
     <div className={`${styles.art} ${className}`}>
       {src && (
-        <img className="template-hero-image"
+        <img
+          className="template-hero-image"
           src={src}
           alt=""
           loading="lazy"
@@ -174,7 +175,6 @@ function Hero({
             <Art src={image} position="right" />
           </div>
           {invitation}
-
         </>
       );
       break;
@@ -207,7 +207,6 @@ function Hero({
           </span>
           <div className={styles.offsetImage}>{art}</div>
           {invitation}
-
         </>
       );
       break;
@@ -248,7 +247,6 @@ function Hero({
             </span>
           </div>
           {invitation}
-
         </>
       );
       break;
@@ -296,7 +294,6 @@ function Hero({
         <>
           <div className={styles.fan}>{art}</div>
           {invitation}
-
         </>
       );
       break;
@@ -324,7 +321,6 @@ function Hero({
         <>
           <div className={styles.decoPortal}>{art}</div>
           <div className={styles.marquee}>{invitation}</div>
-
         </>
       );
       break;
@@ -388,14 +384,14 @@ function Details({ layout, event }: { layout: AtelierWeddingLayoutId; event: Eve
       {event.guestTools}
       <div className={styles.storyAndSchedule}>
         {event.story && (
-          <section id="atelier-story" className={styles.story}>
+          <section data-celebration-section id="atelier-story" className={styles.story}>
             <p className={styles.eyebrow}>A little about us</p>
             <h2>Our story</h2>
             <p className={styles.prose}>{event.story}</p>
           </section>
         )}
         {!!event.schedule?.length && (
-          <section id="atelier-schedule" className={styles.program}>
+          <section data-celebration-section id="atelier-schedule" className={styles.program}>
             <p className={styles.eyebrow}>Join us for every moment</p>
             <h2>{programTitles[layout]}</h2>
             <ol className={styles.schedule}>
@@ -416,7 +412,12 @@ function Details({ layout, event }: { layout: AtelierWeddingLayoutId; event: Eve
         )}
       </div>
       {!!photos?.length && (
-        <section id="atelier-photos" className={styles.photoSection} aria-label="Our photos">
+        <section
+          data-celebration-section
+          id="atelier-photos"
+          className={styles.photoSection}
+          aria-label="Our photos"
+        >
           <p className={styles.eyebrow}>A few favourite memories</p>
           <div className={styles.photos}>
             {photos.map((src, index) => (
@@ -432,7 +433,7 @@ function Details({ layout, event }: { layout: AtelierWeddingLayoutId; event: Eve
       )}
       <div className={styles.practical}>
         {!!event.party?.length && (
-          <section>
+          <section data-celebration-section>
             <p className={styles.eyebrow}>Our favourite people</p>
             <h2>Wedding party</h2>
             <ul className={styles.party}>
@@ -446,7 +447,7 @@ function Details({ layout, event }: { layout: AtelierWeddingLayoutId; event: Eve
           </section>
         )}
         {(event.travel || locationHref) && (
-          <section id="atelier-travel">
+          <section data-celebration-section id="atelier-travel">
             <p className={styles.eyebrow}>Make yourself at home</p>
             <h2>Getting here</h2>
             {event.travel && <p className={styles.prose}>{event.travel}</p>}
@@ -458,7 +459,7 @@ function Details({ layout, event }: { layout: AtelierWeddingLayoutId; event: Eve
           </section>
         )}
         {event.thingsToDo && (
-          <section>
+          <section data-celebration-section>
             <p className={styles.eyebrow}>Stay a little longer</p>
             <h2>Around town</h2>
             <p className={styles.prose}>{event.thingsToDo}</p>
@@ -466,7 +467,7 @@ function Details({ layout, event }: { layout: AtelierWeddingLayoutId; event: Eve
         )}
       </div>
       {(event.registry?.length || event.registryNote || event.rsvpEnabled) && (
-        <section className={styles.guestActions} id="rsvp">
+        <section data-celebration-section className={styles.guestActions} id="rsvp">
           <p className={styles.eyebrow}>We cannot wait to celebrate with you</p>
           {event.registryNote && <p className={styles.prose}>{event.registryNote}</p>}
           {event.rsvpEnabled && (

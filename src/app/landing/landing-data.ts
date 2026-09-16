@@ -735,8 +735,8 @@ const guestTestimonials: TestimonialItem[] = [
 const hostTestimonials: TestimonialItem[] = [
   {
     quote:
-      "Concierge gave me a polished first draft from a messy note. I changed the time, added gift links, and shared the page the same night.",
-    company: "Concierge draft",
+      "Envitefy Create gave me a polished first draft from a messy note. I changed the time, added gift links, and shared the page the same night.",
+    company: "Envitefy Create draft",
     image:
       "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=200&h=200&fit=crop&crop=faces",
     author: "Aisha Martin",
@@ -865,7 +865,7 @@ export const landingTestimonials: TestimonialItem[] = interleaveTestimonials(
 
 export const creationPaths = [
   {
-    title: "Concierge",
+    title: "Envitefy Create",
     badge: "Fastest start",
     description:
       "Describe the gathering and let Envitefy draft the invitation, page, RSVP flow, registry notes, and sign-up needs.",

@@ -3,11 +3,26 @@ import ffmpegPath from "ffmpeg-static";
 import sharp from "sharp";
 
 /** Convert in memory: generated PNG/JPEG originals are never written or uploaded. */
-export async function encodeScanArtworkWebp(original: Buffer): Promise<Buffer> {
-  const binary = process.env.SCAN_ARTWORK_FFMPEG_PATH || ffmpegPath;
+export async function encodeScanArtworkWebp(
+  original: Buffer,
+  options: { maxWidth?: number; quality?: number } = {},
+): Promise<Buffer> {
+  const binary = process.env.IMAGE_FFMPEG_PATH || process.env.SCAN_ARTWORK_FFMPEG_PATH || ffmpegPath;
   if (!binary) throw new Error("FFmpeg is unavailable");
-  const before = await sharp(original).metadata();
-  const hasTransparency = before.hasAlpha && !(await sharp(original).stats()).isOpaque;
+  const inputMeta = await sharp(original, { failOn: "warning" }).metadata();
+  if ((inputMeta.pages || 1) > 1) throw new Error("Animated images require an animated WebP conversion");
+  if (inputMeta.format === "webp" && (!inputMeta.orientation || inputMeta.orientation === 1) &&
+      (!options.maxWidth || (inputMeta.width || 0) <= options.maxWidth)) {
+    await sharp(original, { failOn: "warning" }).raw().toBuffer();
+    return original;
+  }
+  // Normalize EXIF orientation without a lossy intermediate. No originals touch disk.
+  let normalized = sharp(original, { failOn: "warning" }).rotate();
+  if (options.maxWidth) {
+    normalized = normalized.resize({ width: options.maxWidth, withoutEnlargement: true });
+  }
+  const { data: input, info: before } = await normalized.png().toBuffer({ resolveWithObject: true });
+  const hasTransparency = before.channels === 4 && !(await sharp(input).stats()).isOpaque;
   const webp = await new Promise<Buffer>((resolve, reject) => {
     const child = spawn(
       binary,
@@ -22,7 +37,7 @@ export async function encodeScanArtworkWebp(original: Buffer): Promise<Buffer> {
         "-c:v",
         "libwebp",
         "-quality",
-        "85",
+        String(options.quality ?? 85),
         "-compression_level",
         "6",
         "-f",
@@ -43,10 +58,10 @@ export async function encodeScanArtworkWebp(original: Buffer): Promise<Buffer> {
         ? resolve(Buffer.concat(chunks))
         : reject(new Error("Artwork WebP conversion failed")),
     );
-    child.stdin.end(original);
+    child.stdin.end(input);
   });
   const after = await sharp(webp).metadata();
-  await sharp(webp).raw().toBuffer();
+  await sharp(webp, { failOn: "warning" }).raw().toBuffer();
   if (
     after.format !== "webp" ||
     before.width !== after.width ||

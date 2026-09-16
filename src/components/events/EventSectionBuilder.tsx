@@ -51,7 +51,6 @@ import {
   orderEventSections,
   type EventSectionLayout,
   type EventSectionChange,
-  type EventSectionWidth,
 } from "@/lib/event-section-layout";
 import styles from "./event-section-builder.module.css";
 
@@ -395,8 +394,7 @@ export function EventSectionPalette() {
     <section className={styles.palette} aria-label="Page sections">
       <h3>Page sections</h3>
       <p>
-        Add sections, choose their width, or use Place beside to share a row. Drag handles to
-        reorder.
+        Add sections or use Place beside to share a row. Drag handles to reorder.
       </p>
       <button
         type="button"
@@ -515,25 +513,6 @@ function EditableSection({
         </span>
       </div>
       <div className={styles.layoutControls}>
-        <label>
-          Width
-          <select
-            aria-label={`${section.label} section width`}
-            value={builder?.layout?.widths?.[section.id] ?? 12}
-            onChange={(event) =>
-              builder?.change({
-                type: "resize",
-                id: section.id,
-                width: Number(event.target.value) as EventSectionWidth,
-              })
-            }
-          >
-            <option value={12}>Full</option>
-            <option value={8}>Two thirds</option>
-            <option value={6}>Half</option>
-            <option value={4}>One third</option>
-          </select>
-        </label>
         <button
           type="button"
           onClick={() => builder?.placeBeside(section)}

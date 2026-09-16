@@ -11,7 +11,7 @@ type FaqPageItem = Omit<FAQItem, "answer"> & { answer: string };
 export const metadata: Metadata = {
   title: "Envitefy FAQ",
   description:
-    "Answers about creating events, Envitefy Snap, Envitefy Concierge, live pages, RSVP, smart sign-ups, calendars, privacy, and sharing.",
+    "Answers about creating events, Envitefy Snap, Envitefy Create, live pages, RSVP, smart sign-ups, calendars, privacy, and sharing.",
   openGraph: {
     title: "Envitefy FAQ",
     description:
@@ -29,7 +29,7 @@ const faqItems: FaqPageItem[] = [
     id: "ways-to-create",
     question: "How can I create an event in Envitefy?",
     answer:
-      "Start with Envitefy Snap when you have a photo or file, describe the event to Envitefy Concierge, or choose a category template and enter the details manually. Each path gives you event details and a guest experience to review before sharing.",
+      "Start with Envitefy Snap when you have a photo or file, describe the event to Envitefy Create, or choose a category template and enter the details manually. Each path gives you event details and a guest experience to review before sharing.",
   },
   {
     id: "snap-uploads",
@@ -39,9 +39,9 @@ const faqItems: FaqPageItem[] = [
   },
   {
     id: "envitefy-concierge",
-    question: "What is Envitefy Concierge?",
+    question: "What is Envitefy Create?",
     answer:
-      "Envitefy Concierge turns a plain-language event idea or uploaded context into an editable invitation and guest-ready live page. It can ask for missing details and shape the RSVP, calendar, directions, registry, updates, reminders, or sign-up experience when the event needs them.",
+      "Envitefy Create turns a plain-language event idea or uploaded context into an editable invitation and guest-ready live page. It can ask for missing details and shape the RSVP, calendar, directions, registry, updates, reminders, or sign-up experience when the event needs them.",
   },
   {
     id: "my-events-invited-events",
@@ -125,7 +125,7 @@ const faqItems: FaqPageItem[] = [
   },
   {
     id: "review-automated-results",
-    question: "Should I review details created by Snap or Envitefy Concierge?",
+    question: "Should I review details created by Snap or Envitefy Create?",
     answer:
       "Yes. Automated extraction and generated content can be incomplete or wrong. Review names, dates, times, time zones, locations, links, permissions, guest information, and wording before publishing, sharing, traveling, or saving anything to a calendar.",
   },
