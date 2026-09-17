@@ -7,6 +7,45 @@ const repoRoot = process.cwd();
 
 const loadModelModule = () => import("./left-sidebar.model.ts");
 
+test("published undated schedules move out of Drafts, keep their URL, and never inherit creation dates", async () => {
+  const { buildGroupedEventLists, buildSidebarDraftItems, getSidebarEventDateLabels } = await loadModelModule();
+  const data = { status: "draft", draftStatus: "draft", category: "football-season", advancedSections: { games: { games: [{ opponent: "Vikings" }, { opponent: "Dolphins" }] } } };
+  const row = { id: "seahawks", title: "South Walton Seahawks Football", public_slug: "seahawks-2026", created_at: "2026-09-15", data };
+  const group = (history) => buildGroupedEventLists({ history, getEventStartIso: (data) => data.startISO, buildEventPath: (id, _title, _params, slug) => `/event/${slug || id}`, isSportsPreviewFirstEvent: () => true, isInvitedEventLikeRecord: () => false, canShowOwnerRsvpDashboard: () => false });
+  const drafts = (history) => buildSidebarDraftItems({ history, threads: [], buildEditLink: (id) => `/edit/${id}`, isInvitedEventLikeRecord: () => false });
+  assert.equal(drafts([row]).length, 1);
+  assert.deepEqual(group([row]).schedules.upcoming, []);
+  const published = { ...row, data: { ...data, status: "published", draftStatus: "published" } };
+  const before = structuredClone(published);
+  const grouped = group([published]);
+  const item = grouped.schedules.upcoming[0].items[0];
+  assert.equal(drafts([published]).length, 0);
+  assert.deepEqual(grouped.myEvents.upcoming, []);
+  assert.equal(grouped.schedules.upcoming[0].category, "Games");
+  assert.equal(item.isDraft, false);
+  assert.equal(item.schedule.itemCount, 2);
+  assert.equal(item.ownerHref, "/event/seahawks-2026");
+  assert.equal(item.dateMs, Infinity);
+  assert.deepEqual(getSidebarEventDateLabels(item), { heading: "Date to confirm", detail: "Date to confirm" });
+  assert.deepEqual(published, before);
+  assert.deepEqual(getSidebarEventDateLabels({ ...item, isDraft: true }), { heading: "Drafts", detail: "Draft" });
+});
+
+test("published single events stay in My Events while schedules group into Games, Meets and Matches", async () => {
+  const { buildGroupedEventLists, getSidebarEventDateLabels } = await loadModelModule();
+  const history = [
+    { id: "single", title: "Single football game", data: { status: "published", sport: "football", games: [{ opponent: "Vikings" }] } },
+    ...["football", "gymnastics", "soccer"].map((sport) => ({ id: sport, title: `${sport} season`, data: { status: "published", sport, games: [{ opponent: "A" }, { opponent: "B" }], startISO: "2020-01-01" } })),
+  ];
+  const lists = buildGroupedEventLists({ history, getEventStartIso: (data) => data.startISO, buildEventPath: (id) => `/event/${id}`, isSportsPreviewFirstEvent: () => false, isInvitedEventLikeRecord: () => false, canShowOwnerRsvpDashboard: () => false });
+  assert.deepEqual(lists.schedules.upcoming.map((group) => group.category), ["Games", "Meets", "Matches"]);
+  assert.equal(lists.schedules.upcoming.flatMap((group) => group.items).length, 3);
+  assert.deepEqual(lists.schedules.past, [], "a past parent date cannot hide a whole season");
+  const single = lists.myEvents.upcoming[0].items[0];
+  assert.equal(single.row.id, "single");
+  assert.equal(getSidebarEventDateLabels(single).detail, "Date to confirm");
+});
+
 test("Drafts includes saved work across editors and dates without published, invited, or duplicate entries", async () => {
   const { buildSidebarDraftItems } = await loadModelModule();
   const history = [
@@ -26,6 +65,8 @@ test("Drafts includes saved work across editors and dates without published, inv
     { id: "published-chat", title: "Published chat", status: "published" },
     { id: "publishing-chat", title: "Publishing chat", status: "publishing" },
     { id: "archived-chat", title: "Archived chat", status: "archived" },
+    { id: "orphan-chat", title: "Deleted saved event", status: "drafting", savedEventId: "missing-event" },
+    { id: "deleted-chat", title: "Deleted chat", status: "deleted" },
   ].map((thread) => ({ createdAt: "2026-08-01", updatedAt: "2026-08-01", savedEventId: null, ...thread }));
   const before = structuredClone({ history, threads });
   const drafts = buildSidebarDraftItems({
@@ -71,11 +112,11 @@ test("sidebar chronology crosses category boundaries and keeps undated events la
   const originalGroupOrder = grouped.myEvents.upcoming.flatMap((group) => group.items.map((item) => item.row.id));
   const upcoming = getChronologicalEventItems(grouped.myEvents.upcoming);
   assert.deepEqual(upcoming.map((item) => item.row.id), [
-    "near-wedding", "appointment", "draft", "far-birthday", "invalid", "undated",
+    "near-wedding", "appointment", "far-birthday", "invalid", "undated",
   ]);
   assert.equal(upcoming[1].category, "Medical Appointments");
   assert.equal(upcoming[2].category, "Birthdays");
-  assert.equal(upcoming[2].isDraft, true);
+  assert.equal(upcoming[2].isDraft, false);
   assert.equal(upcoming.at(-1).dateLabel, "No date");
   assert.deepEqual(getChronologicalEventItems(grouped.myEvents.past, "past").map((item) => item.row.id), ["recent", "older"]);
   assert.deepEqual(grouped.myEvents.upcoming.flatMap((group) => group.items.map((item) => item.row.id)), originalGroupOrder);
@@ -107,7 +148,7 @@ test("saved ENT scans get the doctor group and patient title while general appoi
   assert.equal(guessCategoryFromText("Haircut appointment"), "Appointments");
 });
 
-test("buildGroupedEventLists ports invited rows into My Events, prioritizes drafts, splits past events, and excludes owned signup forms", async () => {
+test("buildGroupedEventLists ports invited rows into My Events, splits past events, and leaves drafts and signup forms in their own lists", async () => {
   const { buildGroupedEventLists } = await loadModelModule();
 
   const grouped = buildGroupedEventLists({
@@ -174,9 +215,9 @@ test("buildGroupedEventLists ports invited rows into My Events, prioritizes draf
 
   assert.deepEqual(
     grouped.myEvents.upcoming.map((section) => section.category),
-    ["Drafts", "Birthdays", "Baby Showers"]
+    ["Birthdays", "Baby Showers"]
   );
-  assert.equal(grouped.myEvents.upcoming[0].items[0].row.id, "draft-1");
+  assert.equal(grouped.myEvents.upcoming[0].items[0].row.id, "birthday-1");
   const invitedItem = grouped.myEvents.upcoming
     .flatMap((section) => section.items)
     .find((item) => item.row.id === "invited-1");
@@ -276,8 +317,7 @@ test("buildGroupedEventLists keeps concierge product hrefs but opens owner works
   assert.equal(byId.get("event-page-1")?.ownerHref, "/event/event-page-1-Event Page 1");
   assert.equal(byId.get("event-page-1")?.productKind, "event");
   assert.equal(byId.get("event-page-1")?.openMode, "dashboard");
-  assert.equal(byId.get("legacy-live-1")?.href, "/card/create-a-live-card-for-mia-s-birthday-legacy-live-1");
-  assert.equal(byId.get("legacy-live-1")?.openMode, "dashboard");
+  assert.equal(byId.has("legacy-live-1"), false, "unfinished cards belong in Drafts");
 });
 
 test("buildGroupedEventLists opens owner workspaces for created and owned uploaded events", async () => {
@@ -384,7 +424,7 @@ test("left sidebar reopens My Events and selects newly created upload routes", (
   assert.match(controllerSource, /eventListItemMatchesPath\(item, routePath\)/);
   assert.match(controllerSource, /const createdHint = String\(searchParams\?\.get\("created"\) \|\| ""\)/);
   assert.match(controllerSource, /if \(createdHint !== "true" && createdHint !== "1"\) return;/);
-  assert.match(controllerSource, /if \(inferred && inferred\.source === "myEvents"\) \{/);
+  assert.match(controllerSource, /if \(inferred && \(inferred\.source === "myEvents" \|\| inferred\.source === "schedules"\)\) \{/);
   assert.match(controllerSource, /const pending = readPendingCreatedEventContext\(\);/);
   assert.match(controllerSource, /if \(!pending \|\| !pendingCreatedEventMatchesPath\(pending, pathname\)\) return;/);
   assert.match(controllerSource, /setSelectedEventId\(row\.id\);/);
@@ -451,7 +491,7 @@ test("left sidebar opens the matching event list and marks the current event row
   );
   assert.match(
     controllerSource,
-    /if \(lastEventListRouteSyncPathRef\.current === normalizedPathname\) return;/
+    /if \(lastEventListRouteSyncPathRef\.current === syncKey\) return;/
   );
   assert.match(controllerSource, /setSidebarPage\(inferred\.source\);/);
   assert.match(controllerSource, /if \(inferred\.bucket === "past"\)/);

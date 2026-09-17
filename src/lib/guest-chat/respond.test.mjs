@@ -7,16 +7,19 @@ import {
   shouldSuggestGuestSignup,
 } from "./respond.ts";
 
-test("guest chat explains SNAP and Envitefy Concierge", () => {
+test("guest chat explains SNAP and Envitefy Create", () => {
   const snap = buildDeterministicGuestChatAnswer("What is SNAP?");
   assert.equal(snap.matchedKnowledgeIds.includes("snap"), true);
   assert.match(snap.answer, /SNAP/i);
   assert.match(snap.answer, /upload/i);
 
-  const concierge = buildDeterministicGuestChatAnswer("What is Envitefy Concierge?");
-  assert.equal(concierge.matchedKnowledgeIds.includes("concierge"), true);
-  assert.match(concierge.answer, /Concierge/);
-  assert.match(concierge.answer, /chat/i);
+  for (const question of ["What is Envitefy Create?", "What is Envitefy Concierge?"]) {
+    const creation = buildDeterministicGuestChatAnswer(question);
+    assert.equal(creation.matchedKnowledgeIds[0], "concierge");
+    assert.match(creation.answer, /Envitefy Create/);
+    assert.match(creation.answer, /chat/i);
+    assert.doesNotMatch(creation.answer, /Concierge/);
+  }
 });
 
 test("guest chat answers account-free guest usage", () => {

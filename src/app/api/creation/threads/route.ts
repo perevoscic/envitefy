@@ -51,7 +51,7 @@ export async function GET(req: Request) {
       return NextResponse.json(
         {
           ok: false,
-          error: "Sign in to use Envitefy Concierge.",
+          error: "Sign in to use Envitefy Create.",
         } satisfies CreationThreadsResponse,
         { status: 401 },
       );

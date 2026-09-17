@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
+import { resolveFootballHeroTitle } from "@/lib/football-team-name";
 import { getFootballDesign, resolveFootballHero } from "./footballDesigns";
 import { getGymMeetTitleTypography } from "./titleTypography";
 import type { GymMeetTemplateId } from "./types";
@@ -8,6 +9,7 @@ import FootballText from "./FootballPageText";
 type Props = {
   templateId?: string | null;
   title: string;
+  teamName?: string;
   subtitle?: string;
   details?: string[];
   heroSrc?: string | null;
@@ -22,6 +24,7 @@ type Props = {
 export default function FootballHero({
   templateId,
   title,
+  teamName,
   subtitle,
   details = [],
   heroSrc,
@@ -55,7 +58,11 @@ export default function FootballHero({
           color: cinematic ? "#ffffff" : design.ink,
         }}
       >
-        <FootballText textKey="eventTitle" fallback={title} />
+        <FootballText
+          textKey="eventTitle"
+          fallback={title}
+          renderText={(text) => resolveFootballHeroTitle(text, teamName)}
+        />
       </h1>
       {metadata}
       {details.filter(Boolean).length ? (

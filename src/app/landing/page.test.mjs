@@ -406,7 +406,7 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
 
   assert.match(conditionalFooter, /MARKETING_FOOTER_GROUPS/);
   assert.match(conditionalFooter, /"\/landing"/);
-  assert.match(conditionalFooter, /Concierge/);
+  assert.match(conditionalFooter, /Envitefy Create/);
   assert.match(conditionalFooter, /Live cards/);
   assert.match(conditionalFooter, /RSVP event pages/);
   assert.match(conditionalFooter, /Guest action flow/);
@@ -457,7 +457,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
 
   assert.match(signedOutNav, /from "@\/config\/navigation"/);
   assert.match(signedOutNavConfig, /export const signedOutBottomNav/);
-  for (const label of ["Templates", "Examples", "Concierge", "Create", "Menu"]) {
+  for (const label of ["Templates", "Examples", "Create", "More ways", "Menu"]) {
     assert.match(signedOutNavConfig, new RegExp(`label: "${label}"`));
   }
   assert.match(signedOutNavConfig, /href: "#examples"/);
@@ -507,7 +507,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(bottomNav, /backdrop-blur-2xl/);
   assert.match(bottomNav, /rounded-\[1\.65rem\]/);
   assert.match(bottomNav, /env\(safe-area-inset-bottom\)/);
-  assert.match(bottomNav, /initialActiveLabel = "Concierge"/);
+  assert.match(bottomNav, /initialActiveLabel = "Create"/);
   assert.match(bottomNav, /const \[activeLabel, setActiveLabel\] = useState\(initialActiveLabel\)/);
   assert.match(bottomNav, /onHashSelect\?: \(href: string\) => void/);
   assert.match(bottomNav, /const handleHashSelect = \(href: string\) => \{/);
@@ -548,7 +548,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(showcasePage, /<SignedOutPageChrome/);
   assert.match(showcasePage, /activeBottomNavLabel="Examples"/);
   assert.match(showcasePage, /topNavVariant="transparent-light"/);
-  assert.match(createActionSheet, /Create with Envitefy Concierge/);
+  assert.match(createActionSheet, /Create with Envitefy/);
   assert.match(createActionSheet, /Start from Template/);
   assert.match(createActionSheet, /href: "#examples"/);
   assert.doesNotMatch(createActionSheet, /href: "\/templates"/);
@@ -665,13 +665,13 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(landingExperience, /mobileNavLinks=\{\[...signedOutMobileMenuLinks\]\}/);
   assert.match(landingExperience, /showMobileMenuAuthActions=\{false\}/);
   assert.match(landingExperience, /brandHref="\/"/);
-  assert.match(landingExperience, /Try the Envitefy Concierge/);
+  assert.match(landingExperience, /Try Envitefy Create/);
   assert.match(landingExperience, /openConciergeDemo/);
   assert.match(landingExperience, /<AIConciergeSection \/>/);
   assert.match(landingExperience, /<CategoryDirectory \/>/);
   assert.match(landingExperience, /<HeroCategoryStrip \/>/);
   assert.match(aiConciergeSection, /onPrimaryAction\?: \(\) => void/);
-  assert.match(conciergeSheet, /Envitefy Concierge/);
+  assert.match(conciergeSheet, /Envitefy Create/);
   assert.match(conciergeSheet, /Event ideas, RSVP, gifts & setup/);
   assert.match(conciergeSheet, /logo-colored\.png/);
   assert.match(conciergeSheet, /bg-\[#f6d477\]/);

@@ -12,6 +12,17 @@ Effective September 8, 2026; pronunciation updated from the user-supplied record
 
 The existing locked lowercase `envitefy` wordmark and approved `envitefy.com` artwork/domain remain governed by the logo rules in [AGENTS.md](AGENTS.md#envitefy-logo-brand-lock) and the [Video Studio guide](video-studio/STUDIO-GUIDE.md#brand-and-product). This standard does not authorize altering those brand assets.
 
+## Creation product name
+
+The event creation feature is **Envitefy Create** (renamed from Concierge on September 15, 2026).
+
+- Use **Envitefy Create** in headings, descriptions, assistant identity, and marketing copy.
+- Use **Create with Envitefy** for creation buttons and **Create** in compact navigation.
+- Use **New chat** and **Chat history** for conversations within the feature.
+- The public introduction is `/envitefy-create`; the former `/envitefy-concierge` address redirects there. The creator stays at `/chat`.
+- Keep existing API routes, stored `concierge` identifiers, saved drafts, event URLs, and legacy asset filenames compatible. Those internal names are not the product's visible name.
+- Historical recordings and provenance records retain their original names; use the new product name for future copy and narration.
+
 ## Official pronunciation
 
 **Target: in-VY-tih-fy**  

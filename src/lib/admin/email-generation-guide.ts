@@ -23,9 +23,9 @@ export const ADMIN_EMAIL_GENERATION_GUIDE = {
     "Every scenario body should use two concise sentences and explain what the customer gets after the initial action; do not stop at 'photograph the invite' or 'describe the party.'",
     "Use concrete verbs and benefits. Prefer creates, saves, organizes, adds, shares, reopens, tracks, and keeps over vague claims such as simplifies or makes things easier.",
     "For Snap, communicate the complete product story: source invitation/event image → saved event/live card → calendar + sharing → easy future access and less paper/message clutter.",
-    "For Envitefy Concierge, communicate the complete creation story: the host's words → polished invitation/live event page → relevant guest tools such as RSVP, calendar, registry, directions, reminders, or sharing.",
+    "For Envitefy Create, communicate the complete creation story: the host's words → polished invitation/live event page → relevant guest tools such as RSVP, calendar, registry, directions, reminders, or sharing.",
     "Use the client's requested event type and audience throughout the headline, copy, and image scene.",
-    "Name the creation experience Envitefy Concierge. Link creation CTAs to https://envitefy.com/chat, introductions to https://envitefy.com/envitefy-concierge, and template CTAs to the matching category page. Studio and /studio are retired customer entry points; do not promote them.",
+    "Name the creation experience Envitefy Create. Link creation CTAs to https://envitefy.com/chat, introductions to https://envitefy.com/envitefy-create, and template CTAs to the matching category page. Studio and /studio are retired customer entry points; do not promote them.",
     "Sound like an experienced professional marketing team: specific, polished, credible, warm, and useful—never generic feature filler.",
   ] as const,
 
@@ -62,7 +62,7 @@ export const ADMIN_EMAIL_GENERATION_GUIDE = {
     ids: {
       snap: "Use when the prompt asks to snap, scan, photograph, or upload an invitation or flyer.",
       concierge:
-        "Use when the prompt asks to create, draft, or plan an invitation/event with Envitefy Concierge or from a description.",
+        "Use when the prompt asks to create, draft, or plan an invitation/event with Envitefy Create or from a description.",
       "live-page":
         "Use when the prompt emphasizes a hosted event page, live card, current details, browser access, calendar, maps, updates, or one guest action center.",
       rsvp: "Use when the prompt emphasizes RSVPs, attendance, headcounts, households, plus-ones, guest questions, pending replies, or host response tracking.",
@@ -98,8 +98,8 @@ export const ADMIN_EMAIL_GENERATION_GUIDE = {
     "Prefer buttonUrl https://envitefy.com only when a single final wrapper CTA is intentionally required.",
     "Only use {{greeting}}, {{firstName}}, and {{lastName}} personalization tokens.",
     "Put the recipient name only in {{greeting}} (e.g. Hi {{firstName}} via greeting). Do not open the headline or body paragraph with {{firstName}} again.",
-    "Prefer concrete product benefits (live cards, RSVP, snap, Envitefy Concierge, smart sign-ups) over vague lifestyle claims.",
-    "Always write the product name as “Envitefy Concierge.” Never write “Concierge” by itself in customer-facing copy.",
+    "Prefer concrete product benefits (live cards, RSVP, snap, Envitefy Create, smart sign-ups) over vague lifestyle claims.",
+    "Use “Envitefy Create” for the product name and “Create with Envitefy” for creation buttons. Do not use the retired Concierge name.",
     "Follow explicit audience limits and exclusions from the user prompt in the subject, preheader, intro, scenarioRows, and image scenes.",
   ] as const,
 

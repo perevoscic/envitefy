@@ -92,7 +92,7 @@ const workflowSteps = [
     label: "Start",
     title: "Create from scratch or bring the file you already have.",
     description:
-      "Use Snap or the event concierge depending on whether you are creating from scratch or cleaning up an existing invite, flyer, packet, or schedule.",
+      "Use Snap or Envitefy Create depending on whether you are creating from scratch or cleaning up an existing invite, flyer, packet, or schedule.",
   },
   {
     icon: WandSparkles,

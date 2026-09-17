@@ -30,13 +30,19 @@ export default function FootballThumbnail({
   const artwork = getFootballDesign(design.id);
   const imageRef = useRef<HTMLImageElement>(null);
   const titleRef = useRef<HTMLParagraphElement>(null);
+  const fontsReady = useRef(false);
   const [caption, setCaption] = useState<ReturnType<typeof chooseThumbnailCaption> | null>(null);
   const objectPosition = focalPositions[design.id] ?? "50% 50%";
+  const showFallbackCaption = useCallback(() => {
+    setCaption(
+      (current) => current ?? { left: 7, top: 0, ink: artwork.ink, position: "bottom-left" },
+    );
+  }, [artwork.ink]);
 
   const updateCaption = useCallback(() => {
     const image = imageRef.current;
     const title = titleRef.current;
-    if (!image?.complete || !image.naturalWidth || !title) return;
+    if (!fontsReady.current || !image?.complete || !image.naturalWidth || !title) return;
     const imageBox = image.getBoundingClientRect();
     const titleBox = title.getBoundingClientRect();
     if (!imageBox.width || !titleBox.width || !titleBox.height) return;
@@ -55,7 +61,10 @@ export default function FootballThumbnail({
     canvas.width = Math.max(1, Math.round(imageBox.width * sampleScale));
     canvas.height = Math.max(1, Math.round(imageBox.height * sampleScale));
     const context = canvas.getContext("2d", { willReadFrequently: true });
-    if (!context) return;
+    if (!context) {
+      showFallbackCaption();
+      return;
+    }
     try {
       context.drawImage(
         image,
@@ -85,17 +94,27 @@ export default function FootballThumbnail({
       );
     } catch {
       // A restricted or unavailable image retains its design's original ink.
-      setCaption(null);
+      showFallbackCaption();
     }
-  }, [artwork.ink, artwork.layout, objectPosition]);
+  }, [artwork.ink, artwork.layout, objectPosition, showFallbackCaption]);
 
   useEffect(() => {
-    updateCaption();
+    let active = true;
+    // Measure the final title font before revealing it in its readable spot.
+    // Otherwise the fallback caption flashes at the bottom, then jumps.
+    void document.fonts.ready.then(() => {
+      if (!active) return;
+      fontsReady.current = true;
+      updateCaption();
+    });
     const observer =
       typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateCaption);
     if (titleRef.current) observer?.observe(titleRef.current);
     if (imageRef.current) observer?.observe(imageRef.current);
-    return () => observer?.disconnect();
+    return () => {
+      active = false;
+      observer?.disconnect();
+    };
   }, [updateCaption]);
 
   return (
@@ -106,7 +125,11 @@ export default function FootballThumbnail({
         className={`${styles.artwork} ${artwork.headerClass}`}
         style={{ color: caption?.ink ?? artwork.ink }}
       >
-        <div className={styles.caption} data-caption-position={caption?.position}>
+        <div
+          className={styles.caption}
+          data-caption-position={caption?.position}
+          data-caption-ready={caption !== null}
+        >
           <p
             ref={titleRef}
             className={styles.title}
@@ -125,6 +148,7 @@ export default function FootballThumbnail({
             className="object-cover"
             style={{ objectPosition }}
             onLoad={updateCaption}
+            onError={showFallbackCaption}
           />
         </div>
       </div>

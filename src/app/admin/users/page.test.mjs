@@ -22,20 +22,24 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
-function createPage({ status = "authenticated", isAdmin = true } = {}) {
+function createPage({ status = "authenticated", isAdmin = true, popupProps } = {}) {
   const states = [];
+  const refs = [];
   const requests = [];
   let stateIndex = 0;
-  let effectDeps;
-  let pendingEffect;
-  let cleanup;
+  let refIndex = 0;
+  let effectIndex = 0;
+  let effectDeps = [];
+  const pendingEffects = new Map();
+  const cleanups = [];
   const module = { exports: {} };
   const jsx = (type, props) => ({ type, props });
-  vm.runInNewContext(outputText, {
+  vm.runInNewContext(`${outputText}\nexports.BreakdownPopup = BreakdownPopup;`, {
     module,
     exports: module.exports,
     AbortController,
     Error,
+    document: { addEventListener() {}, removeEventListener() {} },
     fetch(url, options) {
       const request = { url, ...options, ...deferred() };
       requests.push(request);
@@ -51,10 +55,16 @@ function createPage({ status = "authenticated", isAdmin = true } = {}) {
             states[index] = typeof value === "function" ? value(states[index]) : value;
           }];
         },
+        useRef(initial) {
+          const index = refIndex++;
+          if (!(index in refs)) refs[index] = { current: initial };
+          return refs[index];
+        },
         useEffect(effect, deps) {
-          if (!effectDeps || deps.some((dep, index) => !Object.is(dep, effectDeps[index]))) {
-            effectDeps = deps;
-            pendingEffect = effect;
+          const index = effectIndex++;
+          if (!effectDeps[index] || deps.some((dep, depIndex) => !Object.is(dep, effectDeps[index][depIndex]))) {
+            effectDeps[index] = deps;
+            pendingEffects.set(index, effect);
           }
         },
       };
@@ -62,25 +72,33 @@ function createPage({ status = "authenticated", isAdmin = true } = {}) {
         useAdminAccess: () => ({ status, email: "admin@example.test", isAdmin }),
       };
       if (name === "next/link") return { default: "a" };
-      if (name === "@/utils/event-product-route") return {};
+      if (name === "@/utils/event-product-route") return {
+        buildEventProductPath: ({ eventId, publicSlug }) => `/event/${publicSlug || eventId}`,
+      };
       throw new Error(`Unexpected import: ${name}`);
     },
   }, { filename: filename.pathname });
 
   return {
     requests,
-    render() {
+    render(nextProps = popupProps) {
+      popupProps = nextProps;
       stateIndex = 0;
-      const tree = module.exports.default();
-      if (pendingEffect) {
-        cleanup?.();
-        cleanup = pendingEffect();
-        pendingEffect = null;
+      refIndex = 0;
+      effectIndex = 0;
+      const tree = popupProps ? module.exports.BreakdownPopup(popupProps) : module.exports.default();
+      for (const [index, effect] of pendingEffects) {
+        cleanups[index]?.();
+        cleanups[index] = effect();
       }
+      pendingEffects.clear();
       return tree;
     },
-    restartEffects() { effectDeps = undefined; },
-    unmount() { cleanup?.(); },
+    restartEffects(index) {
+      if (index === undefined) effectDeps = [];
+      else effectDeps[index] = undefined;
+    },
+    unmount() { for (const cleanup of cleanups) cleanup?.(); },
   };
 }
 
@@ -169,3 +187,130 @@ for (const access of [{ status: "unauthenticated" }, { isAdmin: false }]) {
     assert.equal(page.requests.length, 0);
   });
 }
+
+function createPopup(kind, extraProps = {}) {
+  return createPage({ popupProps: {
+    label: kind === "scans" ? "Scans" : "Events",
+    count: 1,
+    breakdown: [],
+    userId: "00000000-0000-0000-0000-000000000001",
+    debugLinkKind: kind,
+    ...extraProps,
+  } });
+}
+
+function togglePopup(popup) {
+  nodes(popup.render()).find((node) => node.type === "button").props.onClick();
+  popup.render();
+  // The loading state causes a render before the server responds.
+  return popup.render();
+}
+
+function debugSuccess(kind, title = "Saved event") {
+  return Response.json({
+    [kind === "scans" ? "scanLinks" : "eventLinks"]: [
+      { id: "event-1", title, publicSlug: "saved-event" },
+    ],
+    scanAttempts: kind === "scans" ? [
+      { id: "attempt-1", title: "Unsaved scan", category: "General", status: "processed" },
+    ] : [],
+  });
+}
+
+for (const kind of ["events", "scans"]) {
+  for (const variant of ["popover", "inline"]) {
+    test(`${kind} ${variant} finishes loading after its loading-state render and caches success`, async () => {
+      const popup = createPopup(kind, { variant });
+      assert.match(text(togglePopup(popup)), /Loading dev URLs/);
+      assert.equal(popup.requests.length, 1);
+      assert.equal(popup.requests[0].signal.aborted, false);
+      assert.match(popup.requests[0].url, new RegExp(`/debug-links\\?kind=${kind}$`));
+      popup.requests[0].resolve(debugSuccess(kind));
+      await setImmediate();
+      const loaded = popup.render();
+      assert.doesNotMatch(text(loaded), /Loading dev URLs/);
+      assert.match(text(loaded), /Saved event/);
+      assert.ok(nodes(loaded).some((node) => node.props?.href === "/event/saved-event"));
+      if (kind === "scans") {
+        assert.match(text(loaded), /Unsaved scan/);
+        assert.ok(nodes(loaded).some((node) => node.props?.href === "/admin/scans/attempt-1"));
+      }
+      togglePopup(popup);
+      assert.match(text(togglePopup(popup)), /Saved event/);
+      assert.equal(popup.requests.length, 1);
+      popup.unmount();
+    });
+  }
+}
+
+test("closing a pending popup cancels it and reopening starts a fresh request", async () => {
+  const popup = createPopup("events");
+  togglePopup(popup);
+  const oldRequest = popup.requests[0];
+  togglePopup(popup);
+  assert.equal(oldRequest.signal.aborted, true);
+  togglePopup(popup);
+  assert.equal(popup.requests.length, 2);
+  assert.equal(popup.requests[1].signal.aborted, false);
+  popup.requests[1].resolve(debugSuccess("events", "Current event"));
+  await setImmediate();
+  // An already-resolving response must not overwrite the reopened popup or its cache.
+  oldRequest.resolve(debugSuccess("events", "Stale event"));
+  await setImmediate();
+  assert.match(text(popup.render()), /Current event/);
+  assert.doesNotMatch(text(popup.render()), /Stale event/);
+  togglePopup(popup);
+  assert.match(text(togglePopup(popup)), /Current event/);
+  assert.equal(popup.requests.length, 2);
+  popup.unmount();
+});
+
+test("restarting the request effect while loading does not strand the popup", async () => {
+  const popup = createPopup("scans");
+  togglePopup(popup);
+  popup.restartEffects(2);
+  popup.render();
+  popup.render();
+  assert.equal(popup.requests.length, 2);
+  assert.equal(popup.requests[0].signal.aborted, true);
+  popup.requests[1].resolve(debugSuccess("scans"));
+  await setImmediate();
+  assert.match(text(popup.render()), /Saved event/);
+  popup.unmount();
+});
+
+test("a failed scan request offers Retry and does not claim scan records are missing", async () => {
+  const popup = createPopup("scans");
+  togglePopup(popup);
+  popup.requests[0].resolve(Response.json({ error: "Database request timed out" }, { status: 500 }));
+  await setImmediate();
+  const failed = popup.render();
+  assert.match(text(failed), /Database request timed out/);
+  assert.doesNotMatch(text(failed), /Loading dev URLs|predates detailed attempt tracking/);
+  const retry = nodes(failed).find((node) => node.type === "button" && text(node) === "Retry");
+  assert.ok(retry);
+  retry.props.onClick();
+  popup.render();
+  assert.doesNotMatch(text(popup.render()), /Database request timed out/);
+  assert.equal(popup.requests.length, 2);
+  popup.requests[1].resolve(debugSuccess("scans"));
+  await setImmediate();
+  assert.match(text(popup.render()), /Saved event/);
+  popup.unmount();
+});
+
+test("successfully loaded empty scans explain why historical scans have no links", async () => {
+  const popup = createPopup("scans");
+  togglePopup(popup);
+  popup.requests[0].resolve(Response.json({ scanLinks: [], scanAttempts: [] }));
+  await setImmediate();
+  assert.match(text(popup.render()), /predates detailed attempt tracking/);
+  popup.unmount();
+});
+
+test("zero-count popups do not request debug links", () => {
+  const popup = createPopup("events", { count: 0 });
+  assert.match(text(togglePopup(popup)), /No events yet/);
+  assert.equal(popup.requests.length, 0);
+  popup.unmount();
+});

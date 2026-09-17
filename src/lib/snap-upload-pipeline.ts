@@ -53,14 +53,19 @@ export async function runSnapOcrUpload(params: {
   file: File;
   scanAttemptId: string;
   timeoutMs?: number;
+  signal?: AbortSignal;
 }): Promise<SnapOcrUploadResult> {
+  params.signal?.throwIfAborted();
   const preparedFile = await prepareOcrUploadFile(params.file);
   const fileToUpload = await cloneFileForUpload(preparedFile);
+  params.signal?.throwIfAborted();
   const form = new FormData();
   form.append("file", fileToUpload);
   form.append("scanAttemptId", params.scanAttemptId);
 
   const controller = new AbortController();
+  const abortUpload = () => controller.abort(params.signal?.reason);
+  params.signal?.addEventListener("abort", abortUpload, { once: true });
   const timeoutMs = Number.isFinite(params.timeoutMs) ? Math.max(1000, params.timeoutMs!) : 75_000;
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -74,6 +79,7 @@ export async function runSnapOcrUpload(params: {
       credentials: "include",
     });
   } catch (error) {
+    if (params.signal?.aborted) throw error;
     if (error instanceof Error && error.name === "AbortError") {
       throw new Error("Upload timed out. Please check your connection and try again.");
     }
@@ -81,9 +87,11 @@ export async function runSnapOcrUpload(params: {
     throw new Error(`Upload failed: ${message}. Please check your connection and try again.`);
   } finally {
     clearTimeout(timeoutId);
+    params.signal?.removeEventListener("abort", abortUpload);
   }
 
   const payload = await response.json().catch(() => null);
+  params.signal?.throwIfAborted();
   if (!response.ok) {
     const record = asRecord(payload);
     const serverError = typeof record?.error === "string" ? record.error.trim() : "";

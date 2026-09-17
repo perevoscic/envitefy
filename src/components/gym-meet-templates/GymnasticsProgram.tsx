@@ -60,7 +60,7 @@ export default function GymnasticsProgram({
           </div>
         </nav>
       ) : null}
-      <EventSectionCanvas className={styles.chapters} layout={sectionLayout} sections={[
+      <EventSectionCanvas className={styles.chapters} cellClassName={styles.sectionColumn} layout={sectionLayout} sections={[
         ...ordered.map((section, index) => ({
           id: section.id,
           label: section.label,

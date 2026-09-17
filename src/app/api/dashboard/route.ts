@@ -17,6 +17,8 @@ import {
 } from "@/lib/dashboard-cache";
 import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
 import { loadDashboardOverview } from "@/lib/dashboard-overview-query";
+import { loadDashboardGames } from "@/lib/dashboard-games-query";
+import { upcomingDashboardGames } from "@/lib/dashboard-games";
 import {
   createServerTimingTracker,
   isTimingRequested,
@@ -109,6 +111,8 @@ function buildEmptyDashboardPayload(): DashboardPayload {
       nextEventInDays: null,
     },
     upcoming: [],
+    games: [],
+    gamesUnavailable: true,
     rsvp: null,
     setupHealth: {
       flags: [],
@@ -229,11 +233,14 @@ async function computeDashboardPayload(
   userEmail: string,
   timing?: ServerTimingTracker
 ): Promise<DashboardPayload> {
-  const eventResult = timing
-    ? await timing.time("events", () =>
-        listDashboardEventsForUser(userId, DASHBOARD_EVENT_QUERY_LIMIT)
-      )
-    : await listDashboardEventsForUser(userId, DASHBOARD_EVENT_QUERY_LIMIT);
+  const [eventResult, gameResult] = await Promise.all([
+    timing
+      ? timing.time("events", () => listDashboardEventsForUser(userId, DASHBOARD_EVENT_QUERY_LIMIT))
+      : listDashboardEventsForUser(userId, DASHBOARD_EVENT_QUERY_LIMIT),
+    (timing ? timing.time("games", () => loadDashboardGames(userId)) : loadDashboardGames(userId))
+      .then((games) => ({ games, unavailable: false }))
+      .catch(() => ({ games: [], unavailable: true })),
+  ]);
   const events = eventResult.events;
   const now = Date.now();
   const {
@@ -292,6 +299,7 @@ async function computeDashboardPayload(
   const allEventIds = [
     ...(nextEvent ? [nextEvent.id] : []),
     ...upcoming.map((e) => e.id),
+    ...gameResult.games.map((game) => game.eventId),
   ].filter((id, i, arr) => arr.indexOf(id) === i);
 
   const userRsvpMap = new Map<string, "yes" | "no" | "maybe">();
@@ -439,6 +447,8 @@ async function computeDashboardPayload(
       nextEventInDays: visible.nextEventInDays,
     },
     upcoming: visible.upcoming,
+    games: upcomingDashboardGames(gameResult.games.filter((game) => userRsvpMap.get(game.eventId) !== "no"), now),
+    gamesUnavailable: gameResult.unavailable,
     overview,
     eventWindowLimited: eventResult.diagnostics.sourceRowCount >= DASHBOARD_EVENT_QUERY_LIMIT,
     rsvp: shouldLoadOwnerRsvp && visible.nextEvent?.id === nextEvent?.id ? rsvp : null,
@@ -484,12 +494,13 @@ function getOrCreateRefresh(
 ): Promise<DashboardPayload> {
   const existing = dashboardRefreshInflight.get(userId);
   if (existing) return existing;
-  const promise = (async () => {
-    const payload = await computeDashboardPayload(userId, userEmail, timing);
-    dashboardResponseCache.set(userId, { at: Date.now(), payload });
+  const promise = computeDashboardPayload(userId, userEmail, timing).then((payload) => {
+    if (dashboardRefreshInflight.get(userId) === promise) {
+      dashboardResponseCache.set(userId, { at: Date.now(), payload });
+    }
     return payload;
-  })().finally(() => {
-    dashboardRefreshInflight.delete(userId);
+  }).finally(() => {
+    if (dashboardRefreshInflight.get(userId) === promise) dashboardRefreshInflight.delete(userId);
   });
   dashboardRefreshInflight.set(userId, promise);
   return promise;

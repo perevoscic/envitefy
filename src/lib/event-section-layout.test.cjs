@@ -47,6 +47,7 @@ const {
   normalizeEventSectionLayout,
   orderEventSections,
   changeEventSectionLayout,
+  groupEventSectionRows,
 } = require("./event-section-layout.ts");
 const { buildTemplateDraftPayload } = require("./template-draft-payload.ts");
 const {
@@ -125,12 +126,122 @@ test("move, remove, restore and add preserve content and resolve insertion posit
   );
 });
 
+test("resize and pair sections with complementary widths without changing their contents", () => {
+  const sections = [
+    { id: "details", content: "Original" },
+    { id: "games", content: "Games" },
+    { id: "rsvp", content: "Responses" },
+  ];
+  const original = JSON.stringify(sections);
+  const ids = sections.map((section) => section.id);
+  const resized = changeEventSectionLayout(undefined, ids, {
+    type: "resize",
+    id: "details",
+    width: 8,
+  });
+  const paired = changeEventSectionLayout(resized, ids, {
+    type: "pair",
+    id: "rsvp",
+    besideId: "details",
+  });
+  assert.deepEqual(paired.widths, { details: 8, rsvp: 4 });
+  assert.deepEqual(
+    groupEventSectionRows(sections, paired).map((row) => row.map((section) => section.id)),
+    [["details", "rsvp"], ["games"]],
+  );
+  const half = changeEventSectionLayout(paired, paired.order, {
+    type: "resize",
+    id: "rsvp",
+    width: 6,
+  });
+  assert.deepEqual(half.widths, { details: 6, rsvp: 6 });
+  const full = changeEventSectionLayout(half, half.order, {
+    type: "resize",
+    id: "details",
+    width: 12,
+  });
+  assert.deepEqual(full.pairs, []);
+  assert.deepEqual(full.widths, { details: 12, rsvp: 12 });
+  assert.equal(JSON.stringify(sections), original);
+  assert.deepEqual(
+    paired.widths,
+    { details: 8, rsvp: 4 },
+    "previous snapshots remain available for Undo",
+  );
+});
+
+test("pairing can add, restore, replace a neighbor and move sections into their own rows", () => {
+  const sections = ["details", "games", "updates", "rsvp"].map((id) => ({ id }));
+  const paired = changeEventSectionLayout(undefined, ["details", "games", "updates"], {
+    type: "pair",
+    id: "rsvp",
+    besideId: "details",
+  });
+  assert.deepEqual(paired.added, ["rsvp"]);
+  const removed = changeEventSectionLayout(paired, paired.order, { type: "remove", id: "rsvp" });
+  assert.deepEqual(
+    groupEventSectionRows(sections, removed).map((row) => row.map((section) => section.id)),
+    [["details"], ["games"], ["updates"]],
+  );
+  const restored = changeEventSectionLayout(removed, ["details", "games", "updates"], {
+    type: "add",
+    id: "rsvp",
+    index: 1,
+  });
+  assert.deepEqual(restored.pairs, [["details", "rsvp"]]);
+  const replaced = changeEventSectionLayout(restored, restored.order, {
+    type: "pair",
+    id: "games",
+    besideId: "rsvp",
+  });
+  assert.deepEqual(replaced.pairs, [["rsvp", "games"]]);
+  assert.equal(groupEventSectionRows(sections, replaced).flat().length, 4);
+  const moved = changeEventSectionLayout(replaced, replaced.order, {
+    type: "move",
+    id: "games",
+    index: 0,
+  });
+  assert.deepEqual(moved.pairs, []);
+  assert.equal(groupEventSectionRows(sections, moved)[0][0].id, "games");
+  const unpaired = changeEventSectionLayout(replaced, replaced.order, {
+    type: "unpair",
+    id: "rsvp",
+  });
+  assert.deepEqual(unpaired.pairs, []);
+  assert.equal(unpaired.widths.games, 12);
+  assert.equal(unpaired.widths.rsvp, 12);
+});
+
+test("untrusted column settings reject invalid sizes and duplicate or malformed pairs", () => {
+  const layout = normalizeEventSectionLayout({
+    version: 1,
+    widths: { details: 8, games: 200, updates: "6", rsvp: -4 },
+    pairs: [
+      ["details", "games"],
+      ["games", "rsvp"],
+      ["rsvp", "rsvp"],
+      ["<script>", "updates"],
+      ["a", "b", "c"],
+    ],
+  });
+  assert.deepEqual(layout.widths, { details: 8, games: 4 });
+  assert.deepEqual(layout.pairs, [["details", "games"]]);
+  const inheritedKey = normalizeEventSectionLayout({
+    version: 1,
+    pairs: [["constructor", "toString"]],
+  });
+  assert.equal(inheritedKey.widths.constructor, 6);
+  assert.equal(inheritedKey.widths.toString, 6);
+});
+
 test("gymnastics explicit drafts preserve composition and every design respects saved order", () => {
   const layout = {
     version: 1,
     order: ["schedule", "meet-details", "venue-details"],
     hidden: ["venue-details"],
     added: ["schedule"],
+    widths: { schedule: 8, "meet-details": 4 },
+    pairs: [["schedule", "meet-details"]],
   };
   const payload = buildTemplateDraftPayload(
     {
@@ -180,6 +291,9 @@ test("gymnastics explicit drafts preserve composition and every design respects 
     assert.ok(!html.includes("Venue marker"), design.id);
     assert.ok(!html.includes("data-editable-section"), design.id);
     assert.ok(!html.includes("Add section"), design.id);
+    assert.ok(html.includes('data-section-row="schedule meet-details"'), design.id);
+    assert.ok(html.includes('data-section-width="8"'), design.id);
+    assert.ok(html.includes('data-section-width="4"'), design.id);
   }
 });
 
@@ -357,18 +471,141 @@ test("saved imported meets enter the full section editor instead of a disconnect
   );
 });
 
-
 test("complete gymnastics guest pages render saved extra sections in order with hidden attendance", () => {
   const Renderer = require("../components/gym-meet-templates/GymMeetTemplateRenderer.tsx").default;
-  const snapshot = buildTemplateDraftPayload({ data: { title: "Autumn Club Meet", venue: "Club Arena", sectionLayout: { version: 1, order: ["schedule", "announcements", "meet-details"], hidden: ["rsvp"], added: ["schedule", "announcements"] }, rsvpEnabled: true, advancedSections: { schedule: { enabled: true, days: [{ id: "day", date: "October 17", sessions: [{ id: "session", label: "Saved session marker", startTime: "09:00", clubs: [] }] }] }, announcements: { announcements: [{ id: "update", text: "Saved update marker" }] } } } }, "gymnastics", "America/Chicago");
+  const snapshot = buildTemplateDraftPayload(
+    {
+      data: {
+        title: "Autumn Club Meet",
+        venue: "Club Arena",
+        sectionLayout: {
+          version: 1,
+          order: ["schedule", "announcements", "meet-details"],
+          hidden: ["rsvp"],
+          added: ["schedule", "announcements"],
+        },
+        rsvpEnabled: true,
+        advancedSections: {
+          schedule: {
+            enabled: true,
+            days: [
+              {
+                id: "day",
+                date: "October 17",
+                sessions: [
+                  { id: "session", label: "Saved session marker", startTime: "09:00", clubs: [] },
+                ],
+              },
+            ],
+          },
+          announcements: { announcements: [{ id: "update", text: "Saved update marker" }] },
+        },
+      },
+    },
+    "gymnastics",
+    "America/Chicago",
+  );
   for (const design of GYM_MEET_TEMPLATE_LIBRARY) {
-    const model = normalizeGymMeetEventData({ eventTitle: snapshot.title, eventData: { ...snapshot.data, pageTemplateId: design.id }, rosterAthletes: [], navItems: [] });
-    const html = renderToStaticMarkup(React.createElement(Renderer, { model, isReadOnly: true, suppressActionStrip: true, rsvpProps: { submitted: true } }));
+    const model = normalizeGymMeetEventData({
+      eventTitle: snapshot.title,
+      eventData: { ...snapshot.data, pageTemplateId: design.id },
+      rosterAthletes: [],
+      navItems: [],
+    });
+    const html = renderToStaticMarkup(
+      React.createElement(Renderer, {
+        model,
+        isReadOnly: true,
+        suppressActionStrip: true,
+        rsvpProps: { submitted: true },
+      }),
+    );
     assert.ok(html.includes("Saved session marker"), design.id);
-    assert.ok(html.indexOf("Saved session marker") < html.indexOf("Saved update marker"), design.id);
+    assert.ok(
+      html.indexOf("Saved session marker") < html.indexOf("Saved update marker"),
+      design.id,
+    );
     assert.ok(!html.includes("Attendance updated."), design.id);
     assert.ok(!html.includes("data-editable-section"), design.id);
     assert.ok(!html.includes("Add section"), design.id);
     assert.ok(!html.includes("Reorder"), design.id);
   }
+});
+
+test("football saves column widths and renders a paired row as one accessible tab panel", async () => {
+  const { normalizeFootballEventData } = await import(
+    "../components/football-discovery/normalizeFootballEventData.mjs"
+  );
+  const FootballContent =
+    require("../components/football-season-templates/FootballPageContent.tsx").default;
+  const {
+    default: FootballTabs,
+    useFootballSectionTabs,
+  } = require("../components/football-season-templates/FootballSectionTabs.tsx");
+  const {
+    FootballPageTextProvider,
+  } = require("../components/football-season-templates/FootballPageText.tsx");
+  const layout = changeEventSectionLayout(undefined, ["details", "games", "rsvp"], {
+    type: "pair",
+    id: "rsvp",
+    besideId: "details",
+  });
+  const resized = changeEventSectionLayout(layout, layout.order, {
+    type: "resize",
+    id: "details",
+    width: 8,
+  });
+  const payload = buildTemplateDraftPayload(
+    {
+      data: {
+        title: "Club season",
+        details: "Saved detail marker",
+        rsvpEnabled: true,
+        sectionLayout: resized,
+        advancedSections: { games: { games: [{ opponent: "Visitors", date: "2027-10-17" }] } },
+      },
+    },
+    "sport-events",
+    "America/Chicago",
+  );
+  const model = normalizeFootballEventData({ eventData: JSON.parse(JSON.stringify(payload)).data });
+  assert.deepEqual(model.sectionLayout, resized);
+  assert.deepEqual(
+    model.navItems.map((item) => item.id),
+    ["details", "games"],
+  );
+  assert.deepEqual(
+    model.navItems[0].members.map((item) => item.id),
+    ["details", "attendance"],
+  );
+  function GuestPage() {
+    const tabs = useFootballSectionTabs(model.navItems, false);
+    assert.equal(
+      tabs.panelId("attendance"),
+      tabs.panelId("details"),
+      "deep links to either section resolve to the paired panel",
+    );
+    return React.createElement(
+      FootballPageTextProvider,
+      { text: { "nav:details": "Team information", "nav:attendance": "Join us" } },
+      React.createElement(FootballTabs, { tabs, activeClassName: "active", idleClassName: "idle" }),
+      React.createElement(FootballContent, {
+        sections: model.sections,
+        sectionLayout: model.sectionLayout,
+        tabs,
+        chrome: {},
+        schedule: { games: [] },
+        attendance: model.attendance,
+      }),
+    );
+  }
+  const html = renderToStaticMarkup(React.createElement(GuestPage));
+  assert.ok(html.includes("Team information + Join us"));
+  assert.ok(html.includes('data-section-row="details rsvp"'));
+  assert.ok(html.includes('data-section-width="8"'));
+  assert.ok(html.includes('data-section-width="4"'));
+  assert.equal((html.match(/role="tabpanel"/g) || []).length, 2);
+  assert.equal((html.match(/hidden=""/g) || []).length, 1);
+  assert.equal((html.match(/Saved detail marker/g) || []).length, 1);
+  assert.ok(!html.includes("Place beside"));
 });

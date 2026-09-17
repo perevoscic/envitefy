@@ -17,12 +17,13 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
-  verticalListSortingStrategy,
+  rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
   ArrowDown,
   ArrowUp,
+  Columns2,
   GripVertical,
   Pencil,
   Plus,
@@ -41,9 +42,12 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type CSSProperties,
+  type HTMLAttributes,
 } from "react";
 import {
   changeEventSectionLayout,
+  groupEventSectionRows,
   orderEventSections,
   type EventSectionLayout,
   type EventSectionChange,
@@ -61,6 +65,7 @@ type BuilderContext = {
   edit: (section: EventSectionOption) => void;
   addAt: (index: number) => void;
   add: (section: EventSectionOption, index: number) => void;
+  placeBeside: (section: EventSectionOption) => void;
 };
 const Builder = createContext<BuilderContext | null>(null);
 const EditorClose = createContext<(() => void) | null>(null);
@@ -96,7 +101,7 @@ export function EventSectionBuilderProvider({
 }) {
   const [entries, setEntries] = useState<EventSectionOption[]>([]);
   const [panel, setPanel] = useState<
-    { kind: "add"; index: number } | { kind: "edit"; section: EventSectionOption } | null
+    { kind: "add"; index: number } | { kind: "edit" | "beside"; section: EventSectionOption } | null
   >(null);
   const [dragLabel, setDragLabel] = useState("");
   const [notice, setNotice] = useState("");
@@ -115,10 +120,14 @@ export function EventSectionBuilderProvider({
   const close = useCallback(() => setPanel(null), []);
   useEffect(() => {
     const element = dialog.current;
-    if (panel && element && !element.open) {
-      focusReturn.current =
-        document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      element.showModal();
+    if (panel && element) {
+      if (!element.open) {
+        focusReturn.current =
+          document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        element.showModal();
+      } else if (!element.contains(document.activeElement)) {
+        element.querySelector<HTMLElement>("input, textarea, select, button")?.focus();
+      }
     } else if (!panel && element?.open) {
       element.close();
       if (focusReturn.current?.isConnected) focusReturn.current.focus({ preventScroll: true });
@@ -151,7 +160,7 @@ export function EventSectionBuilderProvider({
       const label =
         [...catalog, ...entries].find((item) => item.id === action.id)?.label || "Section";
       setNotice(
-        `${label} ${action.type === "remove" ? "removed from page" : action.type === "add" ? "added" : "moved"}.`,
+        `${label} ${action.type === "remove" ? "removed from page" : action.type === "add" ? "added" : action.type === "resize" ? "width updated" : action.type === "pair" ? "placed beside section" : action.type === "unpair" ? "moved to its own row" : "moved"}.`,
       );
       if (action.type === "remove")
         requestAnimationFrame(() => undoButton.current?.focus({ preventScroll: true }));
@@ -163,6 +172,10 @@ export function EventSectionBuilderProvider({
     [],
   );
   const addAt = useCallback((index: number) => setPanel({ kind: "add", index }), []);
+  const placeBeside = useCallback(
+    (section: EventSectionOption) => setPanel({ kind: "beside", section }),
+    [],
+  );
   const add = useCallback(
     (section: EventSectionOption, index: number) => {
       if (!visible.some((item) => item.id === section.id))
@@ -172,8 +185,8 @@ export function EventSectionBuilderProvider({
     [visible, change, edit],
   );
   const value = useMemo(
-    () => ({ layout, catalog, entries, register, change, edit, addAt, add }),
-    [layout, catalog, entries, register, change, edit, addAt, add],
+    () => ({ layout, catalog, entries, register, change, edit, addAt, add, placeBeside }),
+    [layout, catalog, entries, register, change, edit, addAt, add, placeBeside],
   );
   function onDragEnd(event: DragEndEvent) {
     setDragLabel("");
@@ -251,13 +264,56 @@ export function EventSectionBuilderProvider({
         onClose={close}
       >
         <div className={styles.dialogHeader}>
-          <h2 id={titleId}>{panel?.kind === "edit" ? panel.section.label : "Add section"}</h2>
+          <h2 id={titleId}>
+            {panel?.kind === "edit"
+              ? panel.section.label
+              : panel?.kind === "beside"
+                ? `Place beside ${panel.section.label}`
+                : "Add section"}
+          </h2>
           <button type="button" onClick={close} aria-label="Close section panel">
             <X size={20} />
           </button>
         </div>
         <div className={styles.dialogBody}>
-          {panel?.kind === "add" ? (
+          {panel?.kind === "beside" ? (
+            <>
+              <p className={styles.layoutHelp}>
+                Choose a section to share this row. Sections stack on small screens.
+              </p>
+              <div className={styles.choices}>
+                {[
+                  ...visible,
+                  ...catalog.filter((item) => !visible.some((entry) => entry.id === item.id)),
+                ]
+                  .filter((section) => section.id !== panel.section.id)
+                  .map((section) => (
+                    <button
+                      type="button"
+                      key={section.id}
+                      onClick={() => {
+                        const existing = visible.some((item) => item.id === section.id);
+                        change({ type: "pair", id: section.id, besideId: panel.section.id });
+                        if (existing) close();
+                        else edit(section);
+                      }}
+                    >
+                      <Columns2 size={18} aria-hidden="true" />
+                      <span>
+                        {section.label}
+                        <small>
+                          {visible.some((item) => item.id === section.id)
+                            ? "Move beside"
+                            : layout?.hidden.includes(section.id)
+                              ? "Restore beside"
+                              : "Add beside"}
+                        </small>
+                      </span>
+                    </button>
+                  ))}
+              </div>
+            </>
+          ) : panel?.kind === "add" ? (
             <div className={styles.choices}>
               {catalog.map((section) => (
                 <button type="button" key={section.id} onClick={() => add(section, panel.index)}>
@@ -337,7 +393,9 @@ export function EventSectionPalette() {
   return (
     <section className={styles.palette} aria-label="Page sections">
       <h3>Page sections</h3>
-      <p>Use + on the page to add a section. Drag the handle to choose its position.</p>
+      <p>
+        Add sections or use Place beside to share a row. Drag handles to reorder.
+      </p>
       <button
         type="button"
         className={styles.addButton}
@@ -382,6 +440,7 @@ function EditableSection({
   count: number;
 }) {
   const builder = useEventSectionBuilder();
+  const paired = builder?.layout?.pairs?.some((pair) => pair.includes(section.id));
   const {
     attributes,
     listeners,
@@ -453,6 +512,25 @@ function EditableSection({
           </button>
         </span>
       </div>
+      <div className={styles.layoutControls}>
+        <button
+          type="button"
+          onClick={() => builder?.placeBeside(section)}
+          aria-label={`Place another section beside ${section.label}`}
+        >
+          <Columns2 size={16} aria-hidden="true" />
+          Place beside
+        </button>
+        {paired ? (
+          <button
+            type="button"
+            onClick={() => builder?.change({ type: "unpair", id: section.id })}
+            aria-label={`Move ${section.label} to its own row`}
+          >
+            Own row
+          </button>
+        ) : null}
+      </div>
       {section.content || (
         <div className={styles.empty}>
           <p>Add your {section.label.toLowerCase()} content.</p>
@@ -470,10 +548,14 @@ export function EventSectionCanvas({
   sections,
   layout,
   className = "",
+  cellClassName = "",
+  rowProps,
 }: {
   sections: EventSectionEntry[];
   layout?: EventSectionLayout;
   className?: string;
+  cellClassName?: string;
+  rowProps?: (section: EventSectionEntry) => HTMLAttributes<HTMLDivElement>;
 }) {
   const builder = useEventSectionBuilder();
   const register = builder?.register;
@@ -493,8 +575,9 @@ export function EventSectionCanvas({
           .map((item) => ({ ...item, content: null })),
       ]
     : sections;
-  const ordered = orderEventSections(candidates, currentLayout);
-  if (!builder)
+  const rows = groupEventSectionRows(candidates, currentLayout);
+  const ordered = rows.flat();
+  if (!builder && !currentLayout?.widths && !currentLayout?.pairs?.length && !rowProps)
     return (
       <div className={className}>
         {ordered.map((section) => (
@@ -502,20 +585,50 @@ export function EventSectionCanvas({
         ))}
       </div>
     );
+  const content = rows.map((row) => {
+    const index = ordered.findIndex((section) => section.id === row[0].id);
+    const attributes = !builder ? rowProps?.(row[0]) : undefined;
+    return (
+      <Fragment key={row[0].id}>
+        {builder ? <InsertionPoint index={index} /> : null}
+        <div
+          {...attributes}
+          className={`${styles.row} ${attributes?.className || ""}`}
+          data-section-row={row.map((section) => section.id).join(" ")}
+        >
+          {row.map((section, offset) => (
+            <div
+              key={section.id}
+              className={`${styles.cell} ${cellClassName}`}
+              data-section-width={currentLayout?.widths?.[section.id] ?? 12}
+              style={
+                { "--section-span": currentLayout?.widths?.[section.id] ?? 12 } as CSSProperties
+              }
+            >
+              {builder ? (
+                <EditableSection section={section} index={index + offset} count={ordered.length} />
+              ) : (
+                section.content
+              )}
+            </div>
+          ))}
+        </div>
+      </Fragment>
+    );
+  });
   return (
-    <div className={className}>
-      <SortableContext
-        items={ordered.map((section) => `section:${section.id}`)}
-        strategy={verticalListSortingStrategy}
-      >
-        {ordered.map((section, index) => (
-          <Fragment key={section.id}>
-            <InsertionPoint index={index} />
-            <EditableSection section={section} index={index} count={ordered.length} />
-          </Fragment>
-        ))}
-        <InsertionPoint index={ordered.length} />
-      </SortableContext>
+    <div className={`${className} ${styles.canvas}`}>
+      {builder ? (
+        <SortableContext
+          items={ordered.map((section) => `section:${section.id}`)}
+          strategy={rectSortingStrategy}
+        >
+          {content}
+          <InsertionPoint index={ordered.length} />
+        </SortableContext>
+      ) : (
+        content
+      )}
     </div>
   );
 }

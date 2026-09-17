@@ -29,9 +29,6 @@ const panel =
 const action =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600";
 
-function eventHref(id: string) {
-  return `/event/${encodeURIComponent(id)}`;
-}
 function time(date: string | Date) {
   return new Date(date).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
@@ -222,49 +219,9 @@ export function NextEventPlanning({
 
 export function DashboardPlanningPanels({ overview }: { overview?: DashboardOverview }) {
   const [allDrafts, setAllDrafts] = useState(false);
-  if (!overview) return null;
+  if (!overview || (!overview.drafts.count && !overview.signups.length)) return null;
   return (
-    <div className="grid items-stretch gap-5 lg:grid-cols-2">
-      {overview.guests.length ? (
-        <section id="dashboard-guests" className={panel} aria-labelledby="guests-heading">
-          <h2 id="guests-heading" className="text-lg font-bold text-slate-900">
-            Guest responses
-          </h2>
-          <p className="mt-1 text-xs leading-5 text-slate-500">Replies to events you’re hosting.</p>
-          <ul className="mt-4 space-y-4">
-            {overview.guests.map((guest) => (
-              <li key={guest.eventId} className="rounded-2xl border border-slate-100 p-4">
-                <Link
-                  className="flex min-h-11 items-center justify-between gap-3 text-sm font-semibold text-slate-800 hover:text-indigo-600"
-                  href={`${eventHref(guest.eventId)}?tab=rsvps`}
-                >
-                  <span className="break-words">{guest.title}</span>
-                  <ArrowUpRight size={16} className="shrink-0" />
-                </Link>
-                <dl className="mt-2 grid grid-cols-3 gap-2">
-                  {[
-                    { label: "Going", value: guest.going, color: "text-emerald-700" },
-                    { label: "Maybe", value: guest.maybe, color: "text-amber-700" },
-                    { label: "Declined", value: guest.declined, color: "text-slate-500" },
-                  ].map((stat) => (
-                    <div key={stat.label}>
-                      <dt className="text-xs text-slate-500">{stat.label}</dt>
-                      <dd className={`mt-1 text-2xl font-bold ${stat.color}`}>{stat.value}</dd>
-                    </div>
-                  ))}
-                </dl>
-                {guest.awaitingShared != null && guest.awaitingShared > 0 ? (
-                  <p className="mt-3 text-xs text-slate-600">
-                    {guest.awaitingShared} shared{" "}
-                    {guest.awaitingShared === 1 ? "invitation" : "invitations"} awaiting a reply
-                  </p>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
+    <div className={`grid items-stretch gap-5 ${overview.drafts.count && overview.signups.length ? "lg:grid-cols-2" : ""}`}>
       {overview.drafts.count > 0 ? (
         <section id="dashboard-drafts" className={panel} aria-labelledby="drafts-heading">
           <div className="flex items-center justify-between">

@@ -206,8 +206,8 @@ const faqItems = [
     a: "No. The luxury is in the absence of friction: guests tap the shared link, read the invitation, RSVP, open directions, save the date, and view registries from their browser.",
   },
   {
-    q: "What can Concierge start from?",
-    a: "Concierge can start from raw text, a half-written idea, a flyer, invite card, screenshot, PDF packet, schedule, or design direction.",
+    q: "What can Envitefy Create start from?",
+    a: "Envitefy Create can start from raw text, a half-written idea, a flyer, invite card, screenshot, PDF packet, schedule, or design direction.",
   },
   {
     q: "Can hosts update details after sharing?",
@@ -442,7 +442,7 @@ function ConciergeWorkspace() {
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#dfc39a]">
-                  Envitefy premium concierge
+                  Envitefy Create
                 </p>
                 <p className="mt-1 text-xs text-slate-400">
                   Turn messy source material into one polished guest page
@@ -457,7 +457,7 @@ function ConciergeWorkspace() {
           <div className="grid lg:grid-cols-[1.05fr_0.95fr]">
             <div className="border-b border-[#c5a880]/15 p-5 lg:border-b-0 lg:border-r lg:p-8">
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#a88b58]">
-                Concierge blueprints
+                Envitefy Create blueprints
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {sampleBlueprints.map((sample) => (
@@ -736,7 +736,7 @@ export default async function AdminLandingPreviewPage() {
           <div className="mx-auto max-w-4xl text-center">
             <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-[#c5a880]/25 bg-white px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#a88b58] shadow-sm">
               <Sparkles className="h-3.5 w-3.5" />
-              AI event concierge for beautiful gatherings
+              Create beautiful gatherings with Envitefy
             </div>
             <h1
               className="mt-8 text-5xl font-light leading-[1.05] text-slate-950 sm:text-6xl lg:text-7xl"

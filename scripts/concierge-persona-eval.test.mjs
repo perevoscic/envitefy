@@ -17,10 +17,10 @@ test("concierge persona eval keeps 40 scenario-driven user tests", () => {
 
 test("concierge persona eval preserves simulator and evaluator prompt criteria", () => {
   assert.match(source, /You are NOT the assistant\. You are the human user\./);
-  assert.match(source, /If the Concierge asks for a detail that is already obvious/);
+  assert.match(source, /If Envitefy Create asks for a detail that is already obvious/);
   assert.match(source, /Return only the next user message\./);
-  assert.match(source, /Evaluate this Envitefy Concierge conversation\./);
-  assert.match(source, /Did Concierge correctly understand event type\?/);
+  assert.match(source, /Evaluate this Envitefy Create conversation\./);
+  assert.match(source, /Did Envitefy Create correctly understand event type\?/);
   assert.match(source, /repeated question/);
   assert.match(source, /failed completion/);
   assert.match(source, /Return JSON only\./);

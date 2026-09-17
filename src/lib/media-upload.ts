@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { put } from "@vercel/blob";
 import sharp, { type Metadata } from "sharp";
+import { encodeScanArtworkWebp } from "./ocr/artwork-webp.ts";
 import { optimizePdfWithQpdf } from "./pdf-optimize.ts";
 import { rasterizePdfPageToPng } from "./pdf-raster.ts";
 import { buildPublicAssetUrl } from "./public-asset-url.ts";
@@ -102,10 +103,6 @@ function getImageOutputName(fileName: string): string {
   return `${sanitizePathSegment(stripExtension(fileName)) || "image"}.webp`;
 }
 
-function getOriginalOutputName(fileName: string): string {
-  return sanitizePathSegment(fileName || "image") || "image";
-}
-
 function isBlobStoreAccessError(error: unknown): boolean {
   return error instanceof Error && BLOB_STORE_ACCESS_ERROR.test(error.message);
 }
@@ -129,6 +126,23 @@ function resolveBlobAssetUrl(pathname: string, blobUrl: string, access: BlobAcce
 }
 
 async function uploadBlobAsset(params: UploadBlobParams): Promise<BlobAsset> {
+  // Enforce the policy at the shared boundary, including binary/email callers.
+  const isPngOrJpeg =
+    /^image\/(png|jpe?g)(?:;|$)/i.test(params.contentType) ||
+    /\.(png|jpe?g)$/i.test(params.pathname) ||
+    params.bytes.subarray(0, 8).toString("hex") === "89504e470d0a1a0a" ||
+    params.bytes.subarray(0, 3).toString("hex") === "ffd8ff";
+  if (isPngOrJpeg) {
+    const bytes = await encodeScanArtworkWebp(params.bytes);
+    params = {
+      ...params,
+      bytes,
+      pathname: /\.(png|jpe?g|webp)$/i.test(params.pathname)
+        ? params.pathname.replace(/\.(png|jpe?g|webp)$/i, ".webp")
+        : `${params.pathname}.webp`,
+      contentType: "image/webp",
+    };
+  }
   const preferredAccess = detectedBlobStoreAccess || params.access;
   let blob: Awaited<ReturnType<typeof put>>;
   let resolvedAccess = preferredAccess;
@@ -157,7 +171,7 @@ async function uploadBlobAsset(params: UploadBlobParams): Promise<BlobAsset> {
   };
 }
 
-/** Upload bytes as-is (e.g. animated GIF) without webp conversion. */
+/** PNG/JPEG bytes become verified WebP; other binary formats pass through. */
 export async function uploadPublicBinaryAsset(params: {
   bytes: Buffer;
   pathname: string;
@@ -240,7 +254,7 @@ export function resolveEmailEmbedAssetUrl(params: {
 async function uploadWebpAsset(params: {
   scopeId: string;
   usage: UploadUsage;
-  assetKind: "display" | "thumb";
+  assetKind: "display" | "thumb" | "source";
   bytes: Buffer;
   width: number;
   height: number;
@@ -309,15 +323,10 @@ async function renderImageVariants(
   thumb: { bytes: Buffer; width: number; height: number } | null;
 }> {
   const resolved = resolveImageOptimizationOptions(options);
-  const displayBytes = await sharp(inputBuffer)
-    .rotate()
-    .resize({
-      width: resolved.displayMaxWidth,
-      fit: "inside",
-      withoutEnlargement: true,
-    })
-    .webp({ quality: resolved.displayQuality })
-    .toBuffer();
+  const displayBytes = await encodeScanArtworkWebp(inputBuffer, {
+    maxWidth: resolved.displayMaxWidth,
+    quality: resolved.displayQuality,
+  });
   const displayMeta = await sharp(displayBytes).metadata();
 
   if (!resolved.includeThumb) {
@@ -340,6 +349,7 @@ async function renderImageVariants(
     .webp({ quality: resolved.thumbQuality })
     .toBuffer();
   const thumbMeta = await sharp(thumbBytes).metadata();
+  await sharp(thumbBytes, { failOn: "warning" }).raw().toBuffer();
 
   return {
     display: {
@@ -397,7 +407,15 @@ async function processImageUpload(params: {
   if (!processed.thumb) {
     throw new Error("Could not generate upload thumbnail");
   }
-  const [display, thumb, source] = await Promise.all([
+  const originalMeta = await sharp(params.validated.bytes).metadata();
+  const orientedWidth = originalMeta.autoOrient.width;
+  // Full-resolution artwork is kept for printing/editing. Reuse the display when
+  // it already has the full dimensions instead of uploading an identical source.
+  const sourceBytes = orientedWidth > processed.display.width
+    ? await encodeScanArtworkWebp(params.validated.bytes)
+    : null;
+  const sourceMeta = sourceBytes ? await sharp(sourceBytes).metadata() : null;
+  const [display, thumb] = await Promise.all([
     uploadWebpAsset({
       scopeId: params.scopeId,
       usage: params.usage,
@@ -416,25 +434,28 @@ async function processImageUpload(params: {
       height: processed.thumb.height,
       access: "public",
     }),
-    uploadBlobAsset({
-      pathname: `event-media/${params.scopeId}/${params.usage}/source/${getOriginalOutputName(
-        params.validated.fileName,
-      )}`,
-      bytes: params.validated.bytes,
-      contentType: params.validated.mimeType,
-      access: "public",
-    }),
   ]);
+  const source = sourceBytes && sourceMeta
+    ? await uploadWebpAsset({
+        scopeId: params.scopeId,
+        usage: params.usage,
+        assetKind: "source",
+        bytes: sourceBytes,
+        width: sourceMeta.width || 1,
+        height: sourceMeta.height || 1,
+        access: "public",
+      })
+    : display;
 
   const attachment =
     params.usage === "attachment"
       ? {
-          name: params.validated.fileName,
-          type: params.validated.mimeType,
+          name: getImageOutputName(params.validated.fileName),
+          type: "image/webp",
           dataUrl: source.url,
-          sizeBytes: params.validated.sizeBytes,
-          width: processed.original.width,
-          height: processed.original.height,
+          sizeBytes: source.sizeBytes,
+          width: source.width,
+          height: source.height,
           previewImageUrl: display.url,
           thumbnailUrl: thumb.url,
           thumbnailWidth: thumb.width,
@@ -475,10 +496,10 @@ async function processImageUpload(params: {
       },
       source: {
         url: source.url,
-        mimeType: params.validated.mimeType,
-        sizeBytes: params.validated.sizeBytes,
-        width: processed.original.width,
-        height: processed.original.height,
+        mimeType: "image/webp",
+        sizeBytes: source.sizeBytes,
+        width: source.width,
+        height: source.height,
       },
     },
     eventMedia: {

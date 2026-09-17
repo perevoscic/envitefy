@@ -79,7 +79,7 @@ export const useCasePages = [
     title: "Haute Couture Digital Invitations for Your Forever After",
     metadataTitle: "Envitefy Weddings | Haute Couture Digital Wedding Invitations & Suites",
     description:
-      "An exquisite digital stationery and guest concierge experience. From save-the-dates to multi-day wedding weekend itineraries with live RSVP tracking, custom meal selections, and seating charts.",
+      "An exquisite digital stationery and guest planning experience. From save-the-dates to multi-day wedding weekend itineraries with live RSVP tracking, custom meal selections, and seating charts.",
     keywords: [
       "digital wedding invitations",
       "wedding RSVP tracker",
@@ -110,7 +110,7 @@ export const useCasePages = [
     ],
     proofTitle: "Uncompromising Wedding Aesthetics",
     proofBody:
-      "Choose from editorial design palettes and a guest concierge suite with multi-event itineraries, meal tracking, registry links, and live RSVP analytics.",
+      "Choose from editorial design palettes and a guest planning suite with multi-event itineraries, meal tracking, registry links, and live RSVP analytics.",
     preview: {
       eventTitle: "Eleanor & Julian",
       eventMeta: "Villa Cetinale • Tuscany, Italy",
@@ -745,9 +745,9 @@ export const useCasePages = [
           "Yes. SNAP photographs or uploads the invitation, flyer, or screenshot. Envitefy extracts the details so you can review them before sharing the live page.",
       },
       {
-        question: "What is Envitefy Concierge?",
+        question: "What is Envitefy Create?",
         answer:
-          "Envitefy Concierge is a chat that builds the reveal page from a message or upload. It asks for missing details, then drafts the invitation, RSVP, Team Pink or Team Blue, and guest page for you to review.",
+          "Envitefy Create is a chat that builds the reveal page from a message or upload. It asks for missing details, then drafts the invitation, RSVP, Team Pink or Team Blue, and guest page for you to review.",
       },
       {
         question: "Can guests RSVP with plus-ones?",
@@ -837,7 +837,7 @@ export const useCasePages = [
     steps: [
       {
         title: "Build or upload",
-        body: "Start with a prompt, a birthday invite image, or a conversation with Concierge.",
+        body: "Start with a prompt, a birthday invite image, or a conversation with Envitefy Create.",
       },
       {
         title: "Collect household replies",
@@ -870,9 +870,9 @@ export const useCasePages = [
           "Yes. SNAP photographs or uploads the invitation, flyer, or screenshot. Envitefy extracts the title, date, time, and place so you can review the birthday page before sharing.",
       },
       {
-        question: "What is Envitefy Concierge?",
+        question: "What is Envitefy Create?",
         answer:
-          "Envitefy Concierge is a chat that builds the birthday page from a message or upload. It collects missing details, then drafts the invitation, household RSVP, map, and gift notes for you to approve.",
+          "Envitefy Create is a chat that builds the birthday page from a message or upload. It collects missing details, then drafts the invitation, household RSVP, map, and gift notes for you to approve.",
       },
       {
         question: "Can I add gift registry or wishlist links?",

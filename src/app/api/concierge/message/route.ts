@@ -34,7 +34,7 @@ export async function POST(req: Request) {
         timing,
         {
           ok: false,
-          error: "Sign in to use Envitefy Concierge.",
+          error: "Sign in to use Envitefy Create.",
         } satisfies ConciergeMessageResponse,
         { status: 401 },
       );
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
       timing,
       {
         ok: false,
-        error: conciergeApiErrorMessage(error, "Concierge request failed."),
+        error: conciergeApiErrorMessage(error, "Envitefy Create request failed."),
       } satisfies ConciergeMessageResponse,
       { status: 500 },
     );

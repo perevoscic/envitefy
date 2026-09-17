@@ -84,10 +84,12 @@ export default function AppShell({
     (status === "loading" && wasAuthenticated.current);
   const onMarketing = isMarketingPath(pathname);
   const isStudioCardShare = isStudioCardSharePath(pathname);
-  const isConciergeLanding = pathname.replace(/\/+$/, "") === "/envitefy-concierge";
+  const isCreateLanding = ["/envitefy-create", "/envitefy-concierge"].includes(
+    pathname.replace(/\/+$/, ""),
+  );
   const isChatPath = pathname.replace(/\/+$/, "") === "/chat";
   const isEventPreview = searchParams?.get("preview") === "owner";
-  const showAppChrome = isAuthenticated && !onMarketing && !isStudioCardShare && !isConciergeLanding && !isEventPreview;
+  const showAppChrome = isAuthenticated && !onMarketing && !isStudioCardShare && !isCreateLanding && !isEventPreview;
   const isRedirectingFromMarketing = pathname === "/landing" && isAuthenticated;
   const isLightweightLanding = pathname === "/event" && !isAuthenticated;
 

@@ -31,7 +31,7 @@ test("retired Studio visits go to the Concierge introduction", async () => {
   for (const params of [undefined, {}, { step: "details", auth: "login" }, { showcase: "missing" }]) {
     await assert.rejects(
       StudioPage({ searchParams: params ? Promise.resolve(params) : undefined }),
-      { message: "redirect:/envitefy-concierge" },
+      { message: "redirect:/envitefy-create" },
     );
   }
 });

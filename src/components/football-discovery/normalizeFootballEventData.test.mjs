@@ -5,6 +5,7 @@ import { normalizeFootballEventData } from "./normalizeFootballEventData.mjs";
 test("saved section removals hide content and tabs without losing data needed to restore", () => {
   const original = {
     title: "Falcons Football",
+    details: "Join the team celebration after the final home game.",
     extra: { team: "Falcons", stadium: "Home Field" },
     rsvpEnabled: true,
     accessControl: { requirePasscode: true, mode: "access-code" },
@@ -36,6 +37,98 @@ test("saved section removals hide content and tabs without losing data needed to
     saved.footballHiddenSections = [];
     assert.deepEqual(normalizeFootballEventData({ eventData: saved }), baseline);
   }
+});
+
+test("hero facts do not create a duplicate Details section for schedule-only imports", () => {
+  const original = {
+    title: "South Walton Seahawks Football",
+    extra: {
+      team: "South Walton Seahawks", season: "2026",
+      stadium: "South Walton High School football stadium",
+      stadiumAddress: "645 Greenway Trail, Santa Rosa Beach, FL 32459",
+    },
+    advancedSections: { games: { games: [{ id: "g1", opponent: "Arnold", date: "2026-09-18" }] } },
+  };
+  const model = normalizeFootballEventData({ eventData: original });
+  const details = model.sections.find((section) => section.id === "details");
+  assert.equal(details.hasContent, false);
+  assert.deepEqual(details.cards, []);
+  assert.deepEqual(model.navItems, [{ id: "games", label: "Game Schedule" }]);
+  assert.equal(model.subtitle, "South Walton Seahawks • '26-'27");
+  assert.match(model.locationLabel, /South Walton High School football stadium.*645 Greenway Trail/);
+  assert.equal(original.extra.stadiumAddress, "645 Greenway Trail, Santa Rosa Beach, FL 32459");
+
+  const authored = normalizeFootballEventData({ eventData: {
+    ...original, details: "Proceeds support the school library.",
+    extra: { ...original.extra, headCoach: "Coach Taylor", contact: "team@example.com" },
+  } });
+  const authoredDetails = authored.sections.find((section) => section.id === "details");
+  assert.deepEqual(authoredDetails.lines, ["Proceeds support the school library."]);
+  assert.deepEqual(authoredDetails.cards.map((card) => card.id), ["headCoach", "contact"]);
+});
+
+test("open-week announcements follow schedule edits without creating duplicate saved content", () => {
+  const original = {
+    extra: { season: "2026" },
+    advancedSections: {
+      games: { games: [
+        { id: "game", opponent: "Pine Forest", date: "2026-09-25" },
+        { id: "off", opponent: "Open Week", date: "2026-10-16" },
+        { id: "duplicate", opponent: "Bye", date: "10/16" },
+      ] },
+      announcements: { items: [{ id: "gate", text: "Gate change\n\nUse gate B." }] },
+    },
+  };
+  const saved = JSON.stringify(original);
+  const model = normalizeFootballEventData({ eventData: original });
+  const announcements = (data) => normalizeFootballEventData({ eventData: data }).sections.find((section) => section.id === "announcements");
+  assert.deepEqual(announcements(original).cards, [
+    { id: "gate", title: "Gate change", body: "Use gate B." },
+    { id: "off-week-2026-10-16", title: "Open week", body: "Fri, Oct 16, 2026 · No game scheduled" },
+  ]);
+  assert.ok(model.navItems.some((item) => item.id === "announcements"));
+  assert.equal(model.sections.find((section) => section.id === "games").cards.length, 1);
+  assert.equal(JSON.stringify(original), saved);
+  assert.deepEqual(announcements(JSON.parse(saved)), announcements(original));
+
+  const changed = JSON.parse(saved);
+  changed.advancedSections.games.games = [{ id: "off", opponent: "Open Week", date: "2026-10-23" }];
+  assert.equal(announcements(changed).cards[1].body, "Fri, Oct 23, 2026 · No game scheduled");
+  changed.advancedSections.games.games = [];
+  assert.equal(announcements(changed).cards.length, 1);
+  assert.equal(announcements({ ...original, footballHiddenSections: ["announcements"] }), undefined);
+
+  const imported = { discoverySource: { parseResult: { season: "2026", games: [{ opponent: "Off week", date: "10/16" }] } } };
+  assert.equal(announcements(imported).cards[0].body, "Fri, Oct 16, 2026 · No game scheduled");
+  delete imported.discoverySource.parseResult.season;
+  assert.equal(announcements(imported).cards[0].body, "10/16 · No game scheduled");
+  imported.discoverySource.parseResult.games[0].date = "";
+  assert.equal(announcements(imported).cards[0].body, "Date to be confirmed · No game scheduled");
+});
+
+test("Senior Night announcements retain the game date, matchup and source ceremony details", () => {
+  const data = {
+    extra: { team: "South Walton Seahawks", season: "2026" },
+    advancedSections: { games: { games: [
+      { id: "open", opponent: "Open Week", date: "10/16" },
+      { id: "senior", opponent: "Pensacola Catholic", homeAway: "home", date: "10/30", notes: "Senior Night" },
+    ] } },
+  };
+  const cards = () => normalizeFootballEventData({ eventData: data }).sections.find((section) => section.id === "announcements").cards;
+  assert.deepEqual(cards(), [
+    { id: "off-week-2026-10-16", title: "Open week", body: "Fri, Oct 16, 2026 · No game scheduled" },
+    { id: "senior-night-senior", title: "Senior Night", body: "Fri, Oct 30, 2026 · Pensacola Catholic at Seahawks" },
+  ]);
+  const senior = data.advancedSections.games.games[1];
+  senior.date = "10/23";
+  senior.notes = "Senior Night ceremony at 6 PM.";
+  assert.equal(cards()[1].body, "Fri, Oct 23, 2026 · Pensacola Catholic at Seahawks\n\nSenior Night ceremony at 6 PM.");
+  senior.notes = "Bring a blanket";
+  assert.equal(cards().length, 1);
+  senior.notes = "Senior Night";
+  senior.opponent = "Open Week";
+  assert.ok(cards().every((card) => card.title === "Open week"));
+  assert.equal(data.advancedSections.announcements, undefined);
 });
 
 test("section visibility handles old records and imported fallback data", () => {
@@ -94,6 +187,17 @@ test("published team summaries and matchups use the mascot already present in th
   assert.equal(model.sections.find((section) => section.id === "games").cards[0].title, "Seahawks at Vikings");
 });
 
+test("saved generic season titles show the school-year schedule name without changing authored titles", () => {
+  const eventData = {
+    title: "South Walton Seahawks Football",
+    extra: { team: "South Walton Seahawks", season: "2026" },
+    advancedSections: { games: { games: [{ id: "1", opponent: "Walton" }, { id: "2", opponent: "Bay" }] } },
+  };
+  assert.equal(normalizeFootballEventData({ eventData }).title, "South Walton Seahawks Football '26-'27 Schedule");
+  assert.equal(normalizeFootballEventData({ eventData: { ...eventData, title: "Seahawks Homecoming" } }).title, "Seahawks Homecoming");
+  assert.equal(eventData.title, "South Walton Seahawks Football");
+});
+
 test("published matchups preserve source-provided multiword mascots", () => {
   const model = normalizeFootballEventData({
     eventData: {
@@ -103,7 +207,7 @@ test("published matchups preserve source-provided multiword mascots", () => {
   });
   assert.equal(model.teamName, "St. Patrick");
   assert.equal(model.teamMascot, "Fighting Irish");
-  assert.equal(model.sections.find((section) => section.id === "games").cards[0].title, "Fighting Irish vs Tigers");
+  assert.equal(model.sections.find((section) => section.id === "games").cards[0].title, "Tigers at Fighting Irish");
   const edited = normalizeFootballEventData({ eventData: {
     customFields: { team: "New School", teamMascot: "" },
     discoverySource: { parseResult: { homeTeam: "St. Patrick", homeMascot: "Fighting Irish" } },
@@ -250,7 +354,6 @@ test("normalizeFootballEventData preserves football discovery sections and visib
   assert.equal(model.attendance.visible, true);
   assert.equal(model.attendance.passcodeRequired, true);
   assert.match(model.sections.find((section) => section.id === "announcements").cards[0].title, /Gate Change/);
-  assert.match(model.sections.find((section) => section.id === "games").cards[0].title, /vs Cougars/);
+  assert.match(model.sections.find((section) => section.id === "games").cards[0].title, /Cougars at Varsity Panthers/);
   assert.match(model.sections.find((section) => section.id === "roster").cards[0].body, /#12/);
 });
-

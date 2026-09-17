@@ -30,6 +30,7 @@ export type FootballParseResult = {
     | "unknown";
   title: string;
   summary: string | null;
+  additionalDetails?: string[];
   dates: string;
   startAt: string | null;
   endAt: string | null;
@@ -131,6 +132,7 @@ const FOOTBALL_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown.
   "documentProfile": "game_day_packet" | "season_schedule" | "travel_itinerary" | "roster_sheet" | "parent_letter" | "unknown",
   "title": string,
   "summary": string|null,
+  "additionalDetails": string[],
   "dates": string,
   "startAt": string|null,
   "endAt": string|null,
@@ -237,6 +239,7 @@ const FOOTBALL_PARSE_JSON_SCHEMA = {
     },
     title: JSON_STRING,
     summary: jsonNullable(JSON_STRING),
+    additionalDetails: jsonArray(JSON_STRING),
     dates: JSON_STRING,
     startAt: jsonNullable(JSON_STRING),
     endAt: jsonNullable(JSON_STRING),
@@ -453,6 +456,7 @@ function buildEmptyParseResult(): FootballParseResult {
     documentProfile: "unknown",
     title: "",
     summary: null,
+    additionalDetails: [],
     dates: "",
     startAt: null,
     endAt: null,
@@ -490,8 +494,9 @@ function buildEmptyParseResult(): FootballParseResult {
   };
 }
 
-function normalizeParseResult(value: any): FootballParseResult | null {
+function normalizeParseResult(value: any, sourceText: string): FootballParseResult | null {
   if (!value || typeof value !== "object") return null;
+  const sourceContent = sourceText.replace(/\s+/g, " ");
   const eventType =
     value.eventType === "football_game_packet" || value.eventType === "football_season_schedule"
       ? value.eventType
@@ -509,6 +514,12 @@ function normalizeParseResult(value: any): FootballParseResult | null {
     documentProfile,
     title: safeString(value.title),
     summary: safeString(value.summary) || null,
+    additionalDetails: uniqueBy(
+      pickArray(value.additionalDetails).map(safeString).filter((detail) =>
+        detail && sourceContent.includes(detail.replace(/\s+/g, " ")),
+      ),
+      (detail) => detail.replace(/\s+/g, " "),
+    ),
     dates: safeString(value.dates),
     startAt: toIsoOrNull(value.startAt),
     endAt: toIsoOrNull(value.endAt),
@@ -697,8 +708,13 @@ function buildFootballParsePrompt(
     "- For a season, never invent a single kickoff date or time. Leave startAt null unless the source clearly identifies a primary game.",
     "- Write a concise team-oriented title, such as 'South Walton Seahawks Football', when supported. The page title need not be copied verbatim.",
     "- Summary, announcements and unmappedFacts are guest-facing facts only. Omit commentary about parsing, missing information, page structure, embedded JSON, empty arrays or the website itself. Never announce that information is absent.",
+    "- `additionalDetails` is only useful event information explicitly written in the source that has no dedicated field or section. Copy these short passages verbatim. Use [] when there is no additional information, especially for a screenshot containing only a game calendar or matchups and results. Never generate an introduction or recap of the schedule.",
+    "- Do not repeat the title, team, season, dates, venue, address, game rows, scores, or facts already placed in logistics, roster, practice, gear, volunteers or announcements in additionalDetails. Do not copy schedule headings, navigation, search snippets, source citations, or chatbot offers such as 'I can check game times or ticket details'.",
+    "- Put each fact in its dedicated field once. Summary is not an announcement; leave it null for a schedule-only source. Keep unmappedFacts for useful source facts not already captured elsewhere.",
     "- Keep season schedule rows in `games`.",
-    "- Keep single-game logistics in `logistics` and announcements.",
+    "- Preserve Senior Night labels and any ceremony details in that game's notes, separate from its opponent name. Do not duplicate the label in communications.announcements; the page derives a dated announcement from the game note.",
+    "- Open Week, Bye, Bye Week, Off Week and No Game mean there is no matchup. Preserve the printed date in a row with opponent 'Open Week'; leave homeAway, venue, address, kickoff time, tickets, result and score null. Never treat these labels as teams or look up a stadium for them.",
+    "- Keep single-game logistics in `logistics`; reserve announcements for explicit updates from the source.",
     "- `startAt` should represent the primary game, match, or event start when one is evident; otherwise null.",
     "- `dates` should preserve date ranges or the schedule label exactly when present.",
     "- Do not use update stamps or publish stamps as game dates.",
@@ -750,7 +766,7 @@ async function callOpenAiFootballParse(
   const raw = completion.choices?.[0]?.message?.content || "";
   return {
     raw,
-    result: normalizeParseResult(extractJsonObject(raw)),
+    result: normalizeParseResult(extractJsonObject(raw), text),
     usage: completion.usage || null,
   };
 }
@@ -785,7 +801,7 @@ async function callGeminiFootballParse(
   }
   const json = await response.json();
   const raw = safeString(json?.candidates?.[0]?.content?.parts?.[0]?.text);
-  return { raw, result: normalizeParseResult(extractJsonObject(raw)) };
+  return { raw, result: normalizeParseResult(extractJsonObject(raw), text) };
 }
 
 export async function parseFootballFromExtractedText(
@@ -938,7 +954,7 @@ export async function mapParseResultToFootballData(
             ticketsLink: parseResult.logistics.ticketsLink,
             result: null,
             score: null,
-            notes: parseResult.summary,
+            notes: null,
           },
         ] : []
     ).map((game, idx) => ({
@@ -1011,16 +1027,6 @@ export async function mapParseResultToFootballData(
   const generatedAnnouncements = uniqueBy(
     [
       ...parseResult.communications.announcements,
-      parseResult.summary ? { title: "Summary", body: parseResult.summary } : null,
-      parseResult.logistics.weatherPolicy
-        ? { title: "Weather Policy", body: parseResult.logistics.weatherPolicy }
-        : null,
-      parseResult.logistics.parking
-        ? { title: "Parking", body: parseResult.logistics.parking }
-        : null,
-      parseResult.volunteers.notes
-        ? { title: "Volunteers", body: parseResult.volunteers.notes }
-        : null,
       ...parseResult.unmappedFacts
         .filter((item) => item.confidence !== "low")
         .map((item) => ({
@@ -1042,19 +1048,19 @@ export async function mapParseResultToFootballData(
     (item) => safeString(item?.text || item?.body || item?.title),
   );
 
+  const detailKey = (value: string) => value.replace(/\s+/g, " ").trim().toLowerCase();
+  const dedicatedFacts = new Set([
+    parseResult.title, parseResult.dates, parseResult.homeTeam, parsedTeamName,
+    parseResult.season, parseResult.headCoach, parseResult.venue, parseResult.address,
+    parseResult.city, parseResult.state, parseResult.volunteers.notes,
+    ...Object.values(parseResult.logistics).flat(),
+    ...parseResult.games.flatMap((game) => Object.values(game)),
+    ...parseResult.communications.announcements.flatMap((item) => [item.title, item.body]),
+  ].map(safeString).filter(Boolean).map(detailKey));
   const detailBlocks = uniqueBy(
-    [
-      parseResult.dates,
-      parseResult.summary || "",
-      parseResult.logistics.weatherPolicy
-        ? `Weather policy: ${parseResult.logistics.weatherPolicy}`
-        : "",
-      parseResult.logistics.mealPlan ? `Meal plan: ${parseResult.logistics.mealPlan}` : "",
-      parseResult.logistics.parking ? `Parking: ${parseResult.logistics.parking}` : "",
-      parseResult.volunteers.notes ? `Volunteer help: ${parseResult.volunteers.notes}` : "",
-      ...parseResult.logistics.notes,
-    ].filter(Boolean),
-    (item) => item,
+    (parseResult.additionalDetails || []).map(safeString)
+      .filter((detail) => detail && !dedicatedFacts.has(detailKey(detail))),
+    detailKey,
   );
 
   const nextAdvanced = {
@@ -1085,6 +1091,7 @@ export async function mapParseResultToFootballData(
       parking: parseResult.logistics.parking || "",
       broadcast: parseResult.logistics.broadcast || "",
       ticketsLink: parseResult.logistics.ticketsLink || "",
+      notes: parseResult.logistics.notes,
     },
     gear: {
       ...(existingAdvanced.gear || {}),
@@ -1123,7 +1130,11 @@ export async function mapParseResultToFootballData(
 
   return {
     ...baseData,
-    title: resolveFootballTitle(parseResult.title, parseResult.homeTeam) || baseData?.title || "Football Event",
+    title: resolveFootballTitle(parseResult.title, parseResult.homeTeam, {
+      season: parseResult.season,
+      gameCount: mappedGames.length,
+      isSchedule: parseResult.eventType === "football_season_schedule" || parseResult.documentProfile === "season_schedule",
+    }) || baseData?.title || "Football Event",
     details: uniqueBy([baseData?.details, ...detailBlocks].filter(Boolean), (item) => item).join(
       "\n\n",
     ),

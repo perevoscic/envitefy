@@ -2,20 +2,20 @@ import { GYM_MEET_TEMPLATE_LIBRARY } from "./registry";
 import type { GymMeetTemplateId } from "./types";
 
 // Lead with recognizable team, heritage and stadium scenes, then the full collection.
-// Masonry reads down columns; each opening group mixes photographic and illustrated art.
+// The opening rows mix photographic and illustrated art in stable masonry columns.
 const openingDesigns: GymMeetTemplateId[] = [
   "parent-command",
-  "homecoming",
-  "sunday-ink",
+  "stadium-mosaic",
+  "stitched-season",
   "launchpad-editorial",
   "coastal-kickoff",
-  "saturday-morning",
+  "paper-stadium",
   "friday-night",
-  "chrome-league",
-  "pep-rally",
+  "stained-glass-sunday",
+  "clay-play",
   "womens-gridiron",
-  "leather-linen",
-  "pennant-club",
+  "risograph-rush",
+  "copper-kickoff",
 ];
 
 const openingRanks = new Map(openingDesigns.map((id, index) => [id, index]));

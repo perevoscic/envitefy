@@ -51,6 +51,7 @@ type FooterGroup = {
 };
 
 const MARKETING_ROUTE_PATHS = new Set([
+  "/envitefy-create",
   "/envitefy-concierge",
   "/about",
   "/contact",
@@ -79,7 +80,7 @@ const MARKETING_FOOTER_GROUPS: FooterGroup[] = [
     title: "Create",
     links: [
       { label: "Invitation maker", href: "/invitation-maker" },
-      { label: "Concierge", href: "/envitefy-concierge" },
+      { label: "Envitefy Create", href: "/envitefy-create" },
       { label: "Weddings", href: "/weddings" },
       { label: "Live cards", href: "/showcase" },
       { label: "Snap uploads", href: "/snap" },

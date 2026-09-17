@@ -55,15 +55,15 @@ export const signedOutBottomNav: SignedOutBottomNavItem[] = [
       "Show finished live cards, RSVP pages, registry examples, sports examples, weddings, birthdays, and baby showers.",
   },
   {
-    label: "Concierge",
+    label: "Create",
     href: "#concierge",
     icon: Sparkles,
-    purpose: "Open Envitefy Concierge for signed-out users.",
+    purpose: "Open Envitefy Create for signed-out users.",
     action: "concierge",
     featured: true,
   },
   {
-    label: "Create",
+    label: "More ways",
     href: "#creation-paths",
     icon: PlusCircle,
     purpose: "Open signed-out creation choices.",
@@ -79,7 +79,7 @@ export const signedOutBottomNav: SignedOutBottomNavItem[] = [
 ];
 
 export const signedOutMobileMenuLinks: SignedOutMobileMenuLink[] = [
-  { label: "Envitefy Concierge", href: "/envitefy-concierge" },
+  { label: "Envitefy Create", href: "/envitefy-create" },
   { label: "Invitation Maker", href: "/invitation-maker" },
   ...publicUseCaseNavLinks,
   { label: "Guides", href: "/guides" },

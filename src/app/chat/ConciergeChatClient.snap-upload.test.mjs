@@ -10,7 +10,7 @@ const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativ
 test("chat snap upload scans in chat instead of routing through dashboard upload action", () => {
   const source = readSource("src/app/chat/ConciergeChatClient.tsx");
 
-  assert.match(source, /runSnapOcrUpload\(\{ file, scanAttemptId \}\)/);
+  assert.match(source, /runSnapOcrUpload\(\{ file, scanAttemptId, signal: uploadController.signal \}\)/);
   assert.match(source, /action: "ocr_result"/);
   assert.match(source, /buildChatFieldsGuess/);
   assert.match(source, /birthdayHint\.honoreeName/);
@@ -41,7 +41,7 @@ test("chat upload queues the picked file before product selection", () => {
   assert.match(source, /setPendingChatUpload\(\{ file, source \}\)/);
   assert.match(source, /routeSelectedSnapFile\(upload\.file, upload\.source, option\.output\)/);
   assert.match(source, /openSnapUploadPicker\(\)/);
-  assert.match(source, />\s*\+1\s*<\/span>/);
+  assert.match(source, /label=\{pendingChatUpload.file.name\}/);
   assert.match(source, /`\$\{userEchoOverride\.trim\(\)\} - Uploaded 1 file`/);
   assert.match(source, /User note: \$\{uploadPrompt\.trim\(\)\}/);
   assert.doesNotMatch(source, /Choose what this upload should become\./);

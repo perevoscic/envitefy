@@ -122,7 +122,7 @@ test("complete product catalog is embedded in the email-team prompt", () => {
   assert.match(prompt, /rsvp-households-headcount/);
   assert.match(prompt, /yes, maybe, and no responses/);
   assert.match(prompt, /automatic waitlists/);
-  assert.match(prompt, /Envitefy Concierge/);
+  assert.match(prompt, /Envitefy Create/);
   assert.ok(prompt.includes(buildEnvitefyMarketingCatalogPrompt()));
   assert.equal(ADMIN_EMAIL_GENERATION_GUIDE.productCatalog, ENVITEFY_PRODUCT_MARKETING_CATALOG);
   assert.match(agentsSource, /Every launched customer-facing feature must add or update/);
@@ -356,7 +356,7 @@ test("only model-selected scenario rows and assets are injected", () => {
       {
         scenarioId: "concierge",
         title: "Create a polished birthday invitation",
-        body: "Tell Envitefy Concierge the party details and get a share-ready invitation without a blank form.",
+        body: "Tell Envitefy Create the party details and get a share-ready invitation without a blank form.",
         imageScene: "A parent planning a birthday invitation on a phone at home.",
       },
     ],
@@ -376,7 +376,7 @@ test("only model-selected scenario rows and assets are injected", () => {
       role: "scenario",
       scenarioId: "concierge",
       url: "https://envitefy.com/api/blob/event-media/admin-email/demo/concierge/display.webp",
-      altText: "Birthday coming up? Ask Envitefy Concierge",
+      altText: "Birthday coming up? Create with Envitefy",
       prompt: "concierge scene",
       model: "gpt-image-2",
     },
@@ -407,7 +407,7 @@ test("only model-selected scenario rows and assets are injected", () => {
   assert.match(withImage.bodyHtml, /Snap a wedding invitation in seconds/);
   assert.match(withImage.bodyHtml, /Create a polished birthday invitation/);
   assert.match(withImage.bodyHtml, /Try Snap/);
-  assert.match(withImage.bodyHtml, /Open Envitefy Concierge/);
+  assert.match(withImage.bodyHtml, /Open Envitefy Create/);
   assert.doesNotMatch(withImage.bodyHtml, /Teachers:|class parties/i);
   assert.doesNotMatch(withImage.bodyHtml, /Turn a flyer into a live event card/i);
   assert.doesNotMatch(withImage.bodyHtml, /\.gif/i);
@@ -440,7 +440,7 @@ test("parents-only campaign briefs reject teacher content before image generatio
   assert.match(validateAdminEmailPromptFidelity(prompt, offBrief).join(" "), /teachers scenario/i);
   assert.match(
     validateAdminEmailPromptFidelity(prompt, offBrief).join(" "),
-    /Envitefy Concierge creation scenario/i,
+    /Envitefy Create creation scenario/i,
   );
   assert.deepEqual(
     validateAdminEmailPromptFidelity(
@@ -469,7 +469,7 @@ test("parents-only campaign briefs reject teacher content before image generatio
       {
         scenarioId: "concierge",
         title: "Create the birthday invitation",
-        body: "Describe the celebration in your own words and Envitefy Concierge creates a polished invitation and live event page. Add RSVP and calendar details, then share one guest-ready link.",
+        body: "Describe the celebration in your own words and Envitefy Create creates a polished invitation and live event page. Add RSVP and calendar details, then share one guest-ready link.",
         imageScene: "A parent creating a birthday invitation on a phone in a bright home.",
       },
     ],
@@ -710,7 +710,7 @@ test("explicit RSVP and smart-signup briefs require complete dedicated scenarios
   );
 });
 
-test("generated copy always uses the full Envitefy Concierge product name", () => {
+test("generated copy always uses the full Envitefy Create product name", () => {
   const bareNameDraft = normalizeAdminEmailDraft({
     subject: "Create your birthday invitation with Concierge",
     preheader: "Turn your words into a polished event page.",
@@ -729,9 +729,9 @@ test("generated copy always uses the full Envitefy Concierge product name", () =
     ],
   });
   assert.ok(bareNameDraft);
-  assert.equal(bareNameDraft.subject, "Create your birthday invitation with Envitefy Concierge");
-  assert.match(bareNameDraft.bodyHtml, /Envitefy Concierge helps shape the invitation/);
-  assert.equal(bareNameDraft.scenarioRows[0]?.title, "Ask Envitefy Concierge");
+  assert.equal(bareNameDraft.subject, "Create your birthday invitation with Envitefy Create");
+  assert.match(bareNameDraft.bodyHtml, /Envitefy Create helps shape the invitation/);
+  assert.equal(bareNameDraft.scenarioRows[0]?.title, "Ask Envitefy Create");
   assert.doesNotMatch(
     [
       bareNameDraft.subject,
@@ -747,14 +747,14 @@ test("generated copy always uses the full Envitefy Concierge product name", () =
 
   const brandedDraft = normalizeAdminEmailDraft({
     ...bareNameDraft,
-    subject: "Create your birthday invitation with Envitefy Concierge",
+    subject: "Create your birthday invitation with Envitefy Create",
     bodyHtml:
-      "<p>{{greeting}}</p><h1>Start with a simple description</h1><p>Envitefy Concierge helps shape the invitation.</p>",
+      "<p>{{greeting}}</p><h1>Start with a simple description</h1><p>Envitefy Create helps shape the invitation.</p>",
     scenarioRows: [
       {
         scenarioId: "concierge",
-        title: "Ask Envitefy Concierge",
-        body: "Envitefy Concierge drafts a polished invitation from your words with RSVP and a shareable link.",
+        title: "Create with Envitefy",
+        body: "Envitefy Create drafts a polished invitation from your words with RSVP and a shareable link.",
         imageScene: "A parent creating an invitation on a phone.",
       },
     ],
@@ -764,6 +764,25 @@ test("generated copy always uses the full Envitefy Concierge product name", () =
     validateAdminEmailPromptFidelity("Create a birthday invitation for parents.", brandedDraft),
     [],
   );
+
+  const legacyBrandedDraft = normalizeAdminEmailDraft({
+    ...brandedDraft,
+    subject: "Create an invitation with Envitefy Concierge",
+    bodyHtml: '<p>Create an invitation with Envitefy Concierge.</p><p><a href="https://envitefy.com/envitefy-concierge">Envitefy Concierge</a></p>',
+  });
+  assert.ok(legacyBrandedDraft);
+  assert.equal(legacyBrandedDraft.subject, "Create an invitation with Envitefy Create");
+  assert.match(legacyBrandedDraft.bodyHtml, /Create an invitation with Envitefy Create/);
+  assert.match(legacyBrandedDraft.bodyHtml, /href="https:\/\/envitefy\.com\/envitefy-concierge"/);
+  assert.doesNotMatch(legacyBrandedDraft.bodyHtml, /Envitefy Concierge/);
+
+  for (const productName of ["Envitefy Create", "Envitefy Concierge"]) {
+    assert.deepEqual(validateAdminEmailPromptFidelity(`Promote ${productName}.`, brandedDraft), []);
+    assert.ok(validateAdminEmailPromptFidelity(`Promote ${productName}.`, {
+      ...brandedDraft,
+      scenarioRows: [],
+    }).some((message) => /Envitefy Create scenario/.test(message)));
+  }
 });
 
 test("polish removes flyer text links and duplicate purple buttons", () => {
@@ -805,7 +824,7 @@ test("polish strips repeated firstName after greeting", () => {
   const polished = polishAdminEmailBodyHtml(`
     <p style="margin:0 0 16px 0;">{{greeting}}</p>
     <h1>Make the birthday invite easy</h1>
-    <p>{{firstName}}, snap a party flyer into a live card, use Envitefy Concierge while the details come together.</p>
+    <p>{{firstName}}, snap a party flyer into a live card, use Envitefy Create while the details come together.</p>
   `);
 
   assert.match(polished, /\{\{greeting\}\}/);

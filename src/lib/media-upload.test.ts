@@ -57,17 +57,18 @@ test("processImageBufferWithVariants supports display-only optimization", async 
   assert.equal(result.thumb, null);
 });
 
-test("image upload source path cannot collide with generated display asset", () => {
+test("image uploads use separate WebP source paths only when full resolution needs them", () => {
   const source = readFileSync(new URL("./media-upload.ts", import.meta.url), "utf8");
 
   assert.match(
     source,
-    /pathname: `event-media\/\$\{params\.scopeId\}\/\$\{params\.usage\}\/source\/\$\{getOriginalOutputName\(/,
+    /assetKind: "source"/,
   );
   assert.match(
     source,
     /pathname: `event-media\/\$\{params\.scopeId\}\/\$\{params\.usage\}\/\$\{params\.assetKind\}\.webp`/,
   );
+  assert.doesNotMatch(source, /getOriginalOutputName/);
 });
 
 test("account media can prefer the private store without losing public-store compatibility", () => {

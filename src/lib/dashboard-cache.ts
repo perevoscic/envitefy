@@ -18,4 +18,5 @@ export function getDashboardRefreshInflight() {
 export function invalidateUserDashboard(userId: string): void {
   if (!userId) return;
   dashboardResponseCache.delete(userId);
+  dashboardRefreshInflight.delete(userId);
 }

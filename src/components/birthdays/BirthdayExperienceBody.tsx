@@ -1,9 +1,5 @@
 "use client";
 
-import type { CSSProperties, ReactNode } from "react";
-import BirthdayArtDirectedBody from "./redesign/BirthdayArtDirectedBody";
-import { BIRTHDAY_BODY_DIRECTIONS } from "./redesign/body-directions";
-import { getBirthdayGuestNotes, type BirthdayPartyDetails } from "@/lib/birthday-party-details";
 import {
   BookOpen,
   CalendarDays,
@@ -21,10 +17,14 @@ import {
   Users,
   XCircle,
 } from "lucide-react";
+import type { CSSProperties, ReactNode } from "react";
 import type { BirthdayExperienceProfile } from "@/data/birthday-experience-profiles.mjs";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
+import { type BirthdayPartyDetails, getBirthdayGuestNotes } from "@/lib/birthday-party-details";
 import { formatMonthDayOrdinalEn } from "@/utils/format-month-day-ordinal";
 import { getRegistrySectionCopyForCategory } from "@/utils/registry-links";
+import BirthdayArtDirectedBody from "./redesign/BirthdayArtDirectedBody";
+import { BIRTHDAY_BODY_DIRECTIONS } from "./redesign/body-directions";
 
 type ExperienceTheme = {
   id?: string;
@@ -71,7 +71,8 @@ const SURFACE_CLASSES: Record<string, string> = {
   canvas: "border-2 border-[var(--birthday-body-ink)]/25 bg-white/68",
   outlined: "border-2 border-[var(--birthday-body-accent)] bg-transparent",
   soft: "border border-white/40 bg-white/48 shadow-sm",
-  metallic: "border border-white/35 bg-[linear-gradient(135deg,rgba(255,255,255,.86),rgba(255,255,255,.42))] shadow-xl",
+  metallic:
+    "border border-white/35 bg-[linear-gradient(135deg,rgba(255,255,255,.86),rgba(255,255,255,.42))] shadow-xl",
   neon: "border border-[var(--birthday-body-accent)]/55 bg-black/82 text-white shadow-[0_0_34px_var(--birthday-body-accent-soft)]",
 };
 
@@ -81,9 +82,11 @@ const FACT_WRAPPER_CLASSES: Record<string, string> = {
   "numbered-rail": "grid gap-0 border-l-4 border-[var(--birthday-body-accent)] md:grid-cols-4",
   "party-seals": "flex flex-wrap justify-center gap-4",
   "ticket-stubs": "grid gap-3 sm:grid-cols-2 lg:grid-cols-4",
-  "score-cells": "grid grid-cols-2 gap-px overflow-hidden border-2 border-[var(--birthday-body-ink)] bg-[var(--birthday-body-ink)] md:grid-cols-4",
+  "score-cells":
+    "grid grid-cols-2 gap-px overflow-hidden border-2 border-[var(--birthday-body-ink)] bg-[var(--birthday-body-ink)] md:grid-cols-4",
   "taped-notes": "grid grid-cols-2 gap-5 md:grid-cols-4",
-  "editorial-columns": "grid divide-y border-y border-[var(--birthday-body-ink)]/25 md:grid-cols-4 md:divide-x md:divide-y-0",
+  "editorial-columns":
+    "grid divide-y border-y border-[var(--birthday-body-ink)]/25 md:grid-cols-4 md:divide-x md:divide-y-0",
   "menu-lines": "grid gap-2 md:grid-cols-2",
   "postage-marks": "flex flex-wrap items-center justify-around gap-5",
   "chapter-tabs": "grid gap-2 sm:grid-cols-2 lg:grid-cols-4",
@@ -234,7 +237,9 @@ function ExperienceFacts({ facts, treatment }: { facts: Fact[]; treatment: strin
                 {fact.label}
               </span>
               <span className="mb-1 flex-1 border-b border-dotted border-[var(--birthday-body-ink)]/25" />
-              <strong className="text-right text-[var(--birthday-body-accent)]">{fact.value}</strong>
+              <strong className="text-right text-[var(--birthday-body-accent)]">
+                {fact.value}
+              </strong>
             </div>
           );
         }
@@ -254,7 +259,9 @@ function ExperienceFacts({ facts, treatment }: { facts: Fact[]; treatment: strin
               key={`${fact.label}-${fact.value}`}
               className="border-l-8 border-[var(--birthday-body-accent)] bg-white/66 p-4"
             >
-              <span className="mb-2 block text-xs font-black">CH. {String(index + 1).padStart(2, "0")}</span>
+              <span className="mb-2 block text-xs font-black">
+                CH. {String(index + 1).padStart(2, "0")}
+              </span>
               {shared}
             </div>
           );
@@ -276,7 +283,9 @@ function ExperienceFacts({ facts, treatment }: { facts: Fact[]; treatment: strin
             className={`${treatment === "ticker-tape" ? "min-w-52 flex-1 snap-start border-r-2 border-[var(--birthday-body-ink)] px-6 py-4" : treatment === "numbered-rail" ? "border-b border-[var(--birthday-body-ink)]/15 p-5 md:border-b-0" : treatment === "editorial-columns" ? "p-5" : "rounded-2xl border border-white/35 bg-white/68 p-5 text-center shadow-sm"}`}
           >
             {treatment === "numbered-rail" ? (
-              <span className="mb-2 block font-mono text-xs opacity-45">{String(index + 1).padStart(2, "0")}</span>
+              <span className="mb-2 block font-mono text-xs opacity-45">
+                {String(index + 1).padStart(2, "0")}
+              </span>
             ) : null}
             {shared}
           </div>
@@ -348,12 +357,14 @@ function ExperienceHosts({
 }) {
   if (hosts.length === 0) return null;
   const wrapperClass: Record<string, string> = {
-    "signature-line": "flex flex-wrap justify-center gap-4 border-y border-[var(--birthday-body-ink)]/18 py-7",
+    "signature-line":
+      "flex flex-wrap justify-center gap-4 border-y border-[var(--birthday-body-ink)]/18 py-7",
     "host-badges": "flex flex-wrap justify-center gap-4",
     "calling-card": "grid gap-4 sm:grid-cols-2",
     "credit-roll": "space-y-2 border-l-4 border-[var(--birthday-body-accent)] pl-6",
     "ticket-holders": "grid gap-3 sm:grid-cols-2",
-    "editorial-byline": "flex flex-wrap items-baseline gap-x-8 gap-y-3 border-t-2 border-[var(--birthday-body-ink)] pt-4",
+    "editorial-byline":
+      "flex flex-wrap items-baseline gap-x-8 gap-y-3 border-t-2 border-[var(--birthday-body-ink)] pt-4",
     "portrait-labels": "flex flex-wrap justify-center gap-5",
     "ribbon-names": "flex flex-wrap justify-center gap-2",
   };
@@ -367,6 +378,7 @@ function ExperienceHosts({
         {hosts.map((host, index) => (
           <div
             key={`${host.name || "Host"}-${index}`}
+            data-celebration-card
             className={`${treatment === "host-badges" || treatment === "portrait-labels" ? "rounded-full" : treatment === "ticket-holders" ? "border-2 border-dashed" : "border"} border-[var(--birthday-body-ink)]/15 bg-white/66 px-6 py-4 shadow-sm`}
           >
             <p
@@ -377,8 +389,22 @@ function ExperienceHosts({
             </p>
             {host.email || host.phone ? (
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-sm">
-                {host.email ? <a href={`mailto:${host.email}`} className="underline underline-offset-4 focus-visible:outline focus-visible:outline-2">Email your host</a> : null}
-                {host.phone ? <a href={`tel:${host.phone.replace(/[^+\d]/g, "")}`} className="underline underline-offset-4 focus-visible:outline focus-visible:outline-2">Call your host</a> : null}
+                {host.email ? (
+                  <a
+                    href={`mailto:${host.email}`}
+                    className="underline underline-offset-4 focus-visible:outline focus-visible:outline-2"
+                  >
+                    Email your host
+                  </a>
+                ) : null}
+                {host.phone ? (
+                  <a
+                    href={`tel:${host.phone.replace(/[^+\d]/g, "")}`}
+                    className="underline underline-offset-4 focus-visible:outline focus-visible:outline-2"
+                  >
+                    Call your host
+                  </a>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -417,6 +443,7 @@ function ExperienceSchedule({
       >
         {items.map((item, index) => (
           <article
+            data-celebration-card
             key={`${item.title}-${index}`}
             className={`${treatment === "scoreboard-periods" ? "rounded-none" : treatment === "stepped-times" && index % 2 ? "sm:ml-12" : "rounded-2xl"} bg-white/68 p-5 shadow-sm`}
           >
@@ -488,7 +515,11 @@ function ExperienceRsvp({
         <div className="inline-flex items-center gap-3 border-2 border-[var(--birthday-body-accent)] bg-white/65 px-7 py-4 shadow-lg">
           <Icon className="h-6 w-6" aria-hidden="true" />
           <strong className="text-lg text-[var(--birthday-body-accent)]">
-            {response === "yes" ? "You’re going!" : response === "no" ? "You’ve declined" : "You responded maybe"}
+            {response === "yes"
+              ? "You’re going!"
+              : response === "no"
+                ? "You’ve declined"
+                : "You responded maybe"}
           </strong>
         </div>
       </section>
@@ -505,7 +536,8 @@ function ExperienceRsvp({
       </button>
       {deadline ? (
         <p className="mt-3 text-xs font-bold uppercase tracking-[0.15em] opacity-55">
-          Please RSVP by {formatMonthDayOrdinalEn(deadline, { utc: true, includeYearIfNotCurrent: true })}
+          Please RSVP by{" "}
+          {formatMonthDayOrdinalEn(deadline, { utc: true, includeYearIfNotCurrent: true })}
         </p>
       ) : null}
     </section>
@@ -551,10 +583,18 @@ function renderBodyComposition(
     case "editorial-ledger":
       return (
         <div className="space-y-10">
-          <div className="border-y-4 border-double border-[var(--birthday-body-ink)] py-6">{facts}</div>
+          <div className="border-y-4 border-double border-[var(--birthday-body-ink)] py-6">
+            {facts}
+          </div>
           <div className="grid gap-10 lg:grid-cols-[1.5fr_.7fr]">
-            <div className="space-y-8">{story}{gallery}</div>
-            <aside className="space-y-8 border-l border-[var(--birthday-body-ink)]/22 pl-0 lg:pl-8">{notes}{hosts}</aside>
+            <div className="space-y-8">
+              {story}
+              {gallery}
+            </div>
+            <aside className="space-y-8 border-l border-[var(--birthday-body-ink)]/22 pl-0 lg:pl-8">
+              {notes}
+              {hosts}
+            </aside>
           </div>
           {schedule}
           {tail}
@@ -577,21 +617,31 @@ function renderBodyComposition(
     case "storybook-chapters":
       return (
         <div className="mx-auto max-w-5xl space-y-12">
-          <div className="text-center"><BookOpen className="mx-auto mb-3 h-8 w-8" aria-hidden="true" />{facts}</div>
+          <div className="text-center">
+            <BookOpen className="mx-auto mb-3 h-8 w-8" aria-hidden="true" />
+            {facts}
+          </div>
           <Chapter label="Chapter one">{story}</Chapter>
           <Chapter label="Chapter two">{notes}</Chapter>
           <Chapter label="Chapter three">{gallery}</Chapter>
           <Chapter label="The cast">{hosts}</Chapter>
-          {schedule}{tail}
+          {schedule}
+          {tail}
         </div>
       );
     case "scrapbook-wall":
       return (
         <div className="space-y-12">
           <div className="rotate-[-1deg]">{facts}</div>
-          <div className="grid items-start gap-8 md:grid-cols-2 [&>*:first-child]:rotate-[-1deg] [&>*:last-child]:rotate-[1deg]">{story}{notes}</div>
+          <div className="grid items-start gap-8 md:grid-cols-2 [&>*:first-child]:rotate-[-1deg] [&>*:last-child]:rotate-[1deg]">
+            {story}
+            {notes}
+          </div>
           <div className="border-[10px] border-white/42 bg-white/20 p-4 shadow-2xl">{gallery}</div>
-          <div className="grid gap-8 lg:grid-cols-2">{hosts}{schedule}</div>
+          <div className="grid gap-8 lg:grid-cols-2">
+            {hosts}
+            {schedule}
+          </div>
           {tail}
         </div>
       );
@@ -600,19 +650,43 @@ function renderBodyComposition(
         <div className="space-y-8">
           {facts}
           <div className="border-2 border-dashed border-[var(--birthday-body-ink)]/40 p-4 sm:p-8">
-            <div className="mb-7 flex items-center gap-3 border-b-2 border-dashed border-[var(--birthday-body-ink)]/30 pb-5"><Ticket className="h-6 w-6" aria-hidden="true" /><strong className="uppercase tracking-[0.2em]">Admit one unforgettable celebration</strong></div>
-            <div className="grid gap-6 lg:grid-cols-2">{story}{notes}</div>
+            <div className="mb-7 flex items-center gap-3 border-b-2 border-dashed border-[var(--birthday-body-ink)]/30 pb-5">
+              <Ticket className="h-6 w-6" aria-hidden="true" />
+              <strong className="uppercase tracking-[0.2em]">
+                Admit one unforgettable celebration
+              </strong>
+            </div>
+            <div className="grid gap-6 lg:grid-cols-2">
+              {story}
+              {notes}
+            </div>
           </div>
-          {schedule}{gallery}<div className="grid gap-8 md:grid-cols-2">{hosts}{registry}</div>{rsvp}
+          {schedule}
+          {gallery}
+          <div className="grid gap-8 md:grid-cols-2">
+            {hosts}
+            {registry}
+          </div>
+          {rsvp}
         </div>
       );
     case "scoreboard-grid":
       return (
         <div className="space-y-8 border-4 border-[var(--birthday-body-ink)] p-4 sm:p-7">
-          <div className="bg-[var(--birthday-body-ink)] p-4 text-[var(--birthday-body-bg)]">{facts}</div>
-          <div className="grid gap-1 bg-[var(--birthday-body-ink)] lg:grid-cols-2 [&>*]:rounded-none">{story}{notes}</div>
-          <div className="grid gap-6 lg:grid-cols-[.75fr_1.25fr]">{schedule}{gallery}</div>
-          {hosts}{registry}{rsvp}
+          <div className="bg-[var(--birthday-body-ink)] p-4 text-[var(--birthday-body-bg)]">
+            {facts}
+          </div>
+          <div className="grid gap-1 bg-[var(--birthday-body-ink)] lg:grid-cols-2 [&>*]:rounded-none">
+            {story}
+            {notes}
+          </div>
+          <div className="grid gap-6 lg:grid-cols-[.75fr_1.25fr]">
+            {schedule}
+            {gallery}
+          </div>
+          {hosts}
+          {registry}
+          {rsvp}
         </div>
       );
     case "gallery-exhibition":
@@ -620,8 +694,14 @@ function renderBodyComposition(
         <div className="space-y-12">
           <div className="border-b border-[var(--birthday-body-ink)]/20 pb-8">{gallery}</div>
           {facts}
-          <div className="grid gap-10 lg:grid-cols-2 [&_section]:rounded-none [&_section]:border-x-0">{story}{notes}</div>
-          <div className="grid items-start gap-10 lg:grid-cols-2">{hosts}{schedule}</div>
+          <div className="grid gap-10 lg:grid-cols-2 [&_section]:rounded-none [&_section]:border-x-0">
+            {story}
+            {notes}
+          </div>
+          <div className="grid items-start gap-10 lg:grid-cols-2">
+            {hosts}
+            {schedule}
+          </div>
           {tail}
         </div>
       );
@@ -629,89 +709,179 @@ function renderBodyComposition(
       return (
         <div className="space-y-10">
           {facts}
-          <div className="grid gap-8 lg:grid-cols-2 [&_section]:rounded-sm [&_section]:border-[10px] [&_section]:border-white/60">{story}{notes}</div>
-          <div className="rotate-[-1deg] border-2 border-dashed border-[var(--birthday-body-ink)]/35 p-5">{gallery}</div>
-          <div className="grid gap-8 md:grid-cols-2">{schedule}{hosts}</div>{tail}
+          <div className="grid gap-8 lg:grid-cols-2 [&_section]:rounded-sm [&_section]:border-[10px] [&_section]:border-white/60">
+            {story}
+            {notes}
+          </div>
+          <div className="rotate-[-1deg] border-2 border-dashed border-[var(--birthday-body-ink)]/35 p-5">
+            {gallery}
+          </div>
+          <div className="grid gap-8 md:grid-cols-2">
+            {schedule}
+            {hosts}
+          </div>
+          {tail}
         </div>
       );
     case "magazine-columns":
       return (
         <div className="space-y-10">
-          <div className="flex items-end justify-between border-b-8 border-[var(--birthday-body-ink)] pb-3"><strong className="text-4xl uppercase tracking-[-0.06em] sm:text-6xl">The birthday edit</strong><span className="font-mono text-xs">SPECIAL ISSUE</span></div>
+          <div className="flex items-end justify-between border-b-8 border-[var(--birthday-body-ink)] pb-3">
+            <strong className="text-4xl uppercase tracking-[-0.06em] sm:text-6xl">
+              The birthday edit
+            </strong>
+            <span className="font-mono text-xs">SPECIAL ISSUE</span>
+          </div>
           {facts}
-          <div className="columns-1 gap-8 lg:columns-2 [&>section]:mb-8 [&>section]:break-inside-avoid [&_section]:rounded-none">{story}{notes}{hosts}</div>
-          {gallery}{schedule}{tail}
+          <div className="columns-1 gap-8 lg:columns-2 [&>section]:mb-8 [&>section]:break-inside-avoid [&_section]:rounded-none">
+            {story}
+            {notes}
+            {hosts}
+          </div>
+          {gallery}
+          {schedule}
+          {tail}
         </div>
       );
     case "menu-table":
       return (
         <div className="mx-auto max-w-5xl space-y-10 border-2 border-[var(--birthday-body-ink)]/30 bg-white/28 p-5 sm:p-10">
-          <div className="text-center"><p className="text-xs font-black uppercase tracking-[0.35em] opacity-55">Today’s celebration menu</p><Sparkles className="mx-auto my-4 h-6 w-6" aria-hidden="true" /></div>
+          <div className="text-center">
+            <p className="text-xs font-black uppercase tracking-[0.35em] opacity-55">
+              Today’s celebration menu
+            </p>
+            <Sparkles className="mx-auto my-4 h-6 w-6" aria-hidden="true" />
+          </div>
           {facts}
           <Chapter label="First course · the story">{story}</Chapter>
           <Chapter label="House notes">{notes}</Chapter>
           <Chapter label="Today’s specials">{schedule}</Chapter>
           <Chapter label="Sweet finish">{gallery}</Chapter>
-          {hosts}{tail}
+          {hosts}
+          {tail}
         </div>
       );
     case "constellation-map":
       return (
         <div className="space-y-12 rounded-[3rem] bg-[var(--birthday-body-ink)] p-6 text-[var(--birthday-body-bg)] sm:p-10">
-          <div className="relative before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_15%_25%,white_0_1px,transparent_2px),radial-gradient(circle_at_80%_35%,white_0_1px,transparent_2px),radial-gradient(circle_at_40%_75%,white_0_1px,transparent_2px)] before:opacity-40"><div className="relative">{facts}</div></div>
-          <div className="grid gap-8 lg:grid-cols-2 [&_section]:border-white/20 [&_section]:bg-white/8 [&_section]:text-white">{story}{notes}</div>
-          {gallery}{schedule}{hosts}{tail}
+          <div className="relative before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_15%_25%,white_0_1px,transparent_2px),radial-gradient(circle_at_80%_35%,white_0_1px,transparent_2px),radial-gradient(circle_at_40%_75%,white_0_1px,transparent_2px)] before:opacity-40">
+            <div className="relative">{facts}</div>
+          </div>
+          <div className="grid gap-8 lg:grid-cols-2 [&_section]:border-white/20 [&_section]:bg-white/8 [&_section]:text-white">
+            {story}
+            {notes}
+          </div>
+          {gallery}
+          {schedule}
+          {hosts}
+          {tail}
         </div>
       );
     case "minimal-rail":
       return (
         <div className="grid gap-10 lg:grid-cols-[240px_1fr]">
-          <aside className="space-y-7 border-r border-[var(--birthday-body-ink)]/25 pr-0 lg:sticky lg:top-8 lg:self-start lg:pr-8">{facts}{hosts}</aside>
-          <div className="space-y-10 [&_section]:rounded-none [&_section]:border-x-0 [&_section]:shadow-none">{story}{notes}{gallery}{schedule}{tail}</div>
+          <aside className="space-y-7 border-r border-[var(--birthday-body-ink)]/25 pr-0 lg:sticky lg:top-8 lg:self-start lg:pr-8">
+            {facts}
+            {hosts}
+          </aside>
+          <div className="space-y-10 [&_section]:rounded-none [&_section]:border-x-0 [&_section]:shadow-none">
+            {story}
+            {notes}
+            {gallery}
+            {schedule}
+            {tail}
+          </div>
         </div>
       );
     case "arched-suite":
       return (
         <div className="space-y-10">
           {facts}
-          <div className="grid gap-6 lg:grid-cols-2 [&_section]:rounded-t-[999px] [&_section]:pt-24">{story}{notes}</div>
-          <div className="rounded-t-[12rem] border border-[var(--birthday-body-accent)]/35 bg-white/26 px-5 pt-20">{gallery}</div>
-          <div className="grid gap-8 lg:grid-cols-2">{hosts}{schedule}</div>{tail}
+          <div className="grid gap-6 lg:grid-cols-2 [&_section]:rounded-t-[999px] [&_section]:pt-24">
+            {story}
+            {notes}
+          </div>
+          <div className="rounded-t-[12rem] border border-[var(--birthday-body-accent)]/35 bg-white/26 px-5 pt-20">
+            {gallery}
+          </div>
+          <div className="grid gap-8 lg:grid-cols-2">
+            {hosts}
+            {schedule}
+          </div>
+          {tail}
         </div>
       );
     case "ribbon-run":
       return (
         <div className="space-y-5">
           {facts}
-          <div className="-mx-4 -skew-x-2 bg-[var(--birthday-body-accent)] p-3 sm:-mx-10"><div className="skew-x-2 text-white">{story}</div></div>
-          <div className="-mx-4 skew-x-2 border-y-4 border-[var(--birthday-body-ink)]/40 p-3 sm:-mx-10"><div className="-skew-x-2">{notes}</div></div>
-          {gallery}<div className="grid gap-8 md:grid-cols-2">{schedule}{hosts}</div>{tail}
+          <div className="-mx-4 -skew-x-2 bg-[var(--birthday-body-accent)] p-3 sm:-mx-10">
+            <div className="skew-x-2 text-white">{story}</div>
+          </div>
+          <div className="-mx-4 skew-x-2 border-y-4 border-[var(--birthday-body-ink)]/40 p-3 sm:-mx-10">
+            <div className="-skew-x-2">{notes}</div>
+          </div>
+          {gallery}
+          <div className="grid gap-8 md:grid-cols-2">
+            {schedule}
+            {hosts}
+          </div>
+          {tail}
         </div>
       );
     case "festival-lineup":
       return (
         <div className="space-y-10">
-          <div className="border-y-[12px] border-double border-[var(--birthday-body-accent)] py-5">{facts}</div>
-          <div className="grid gap-4 lg:grid-cols-[.7fr_1.3fr]"><div className="space-y-4">{story}{notes}</div><div className="border-l-8 border-[var(--birthday-body-accent)] pl-5">{schedule}{hosts}</div></div>
-          <div className="bg-[var(--birthday-body-ink)] p-5 text-white">{gallery}</div>{registry}{rsvp}
+          <div className="border-y-[12px] border-double border-[var(--birthday-body-accent)] py-5">
+            {facts}
+          </div>
+          <div className="grid gap-4 lg:grid-cols-[.7fr_1.3fr]">
+            <div className="space-y-4">
+              {story}
+              {notes}
+            </div>
+            <div className="border-l-8 border-[var(--birthday-body-accent)] pl-5">
+              {schedule}
+              {hosts}
+            </div>
+          </div>
+          <div className="bg-[var(--birthday-body-ink)] p-5 text-white">{gallery}</div>
+          {registry}
+          {rsvp}
         </div>
       );
     case "passport-stamps":
       return (
         <div className="space-y-10 rounded-[2rem] border-[10px] border-double border-[var(--birthday-body-ink)]/30 bg-white/30 p-5 sm:p-9">
           {facts}
-          <div className="grid gap-0 overflow-hidden rounded-xl bg-white/62 shadow-2xl lg:grid-cols-2 [&>*]:rounded-none [&>*]:shadow-none">{story}{notes}</div>
+          <div className="grid gap-0 overflow-hidden rounded-xl bg-white/62 shadow-2xl lg:grid-cols-2 [&>*]:rounded-none [&>*]:shadow-none">
+            {story}
+            {notes}
+          </div>
           <Chapter label="Destination memories">{gallery}</Chapter>
           <Chapter label="Travel party">{hosts}</Chapter>
-          {schedule}{tail}
+          {schedule}
+          {tail}
         </div>
       );
     case "newspaper-front":
       return (
         <div className="space-y-8">
-          <div className="border-y-4 border-[var(--birthday-body-ink)] py-3 text-center text-4xl font-black uppercase tracking-[-0.05em] sm:text-6xl">The party times</div>
+          <div className="border-y-4 border-[var(--birthday-body-ink)] py-3 text-center text-4xl font-black uppercase tracking-[-0.05em] sm:text-6xl">
+            The party times
+          </div>
           {facts}
-          <div className="grid gap-8 lg:grid-cols-[1.4fr_.8fr] [&_section]:rounded-none [&_section]:border-x-0 [&_section]:shadow-none"><div className="space-y-8">{story}{gallery}</div><aside className="space-y-8 border-l border-[var(--birthday-body-ink)]/25 pl-6">{notes}{schedule}{hosts}</aside></div>
+          <div className="grid gap-8 lg:grid-cols-[1.4fr_.8fr] [&_section]:rounded-none [&_section]:border-x-0 [&_section]:shadow-none">
+            <div className="space-y-8">
+              {story}
+              {gallery}
+            </div>
+            <aside className="space-y-8 border-l border-[var(--birthday-body-ink)]/25 pl-6">
+              {notes}
+              {schedule}
+              {hosts}
+            </aside>
+          </div>
           {tail}
         </div>
       );
@@ -719,8 +889,16 @@ function renderBodyComposition(
       return (
         <div className="space-y-8 bg-black p-5 text-white shadow-[0_0_70px_var(--birthday-body-accent-soft)] sm:p-9">
           <div className="border border-[var(--birthday-body-accent)] p-4">{facts}</div>
-          <div className="grid gap-6 lg:grid-cols-2 [&_section]:rounded-none [&_section]:border-[var(--birthday-body-accent)]/60 [&_section]:bg-white/5 [&_section]:text-white">{story}{notes}</div>
-          {gallery}<div className="grid gap-8 md:grid-cols-2">{schedule}{hosts}</div>{tail}
+          <div className="grid gap-6 lg:grid-cols-2 [&_section]:rounded-none [&_section]:border-[var(--birthday-body-accent)]/60 [&_section]:bg-white/5 [&_section]:text-white">
+            {story}
+            {notes}
+          </div>
+          {gallery}
+          <div className="grid gap-8 md:grid-cols-2">
+            {schedule}
+            {hosts}
+          </div>
+          {tail}
         </div>
       );
     case "garden-path":
@@ -728,42 +906,77 @@ function renderBodyComposition(
         <div className="space-y-10">
           {facts}
           <div className="relative space-y-8 before:absolute before:bottom-0 before:left-1/2 before:top-0 before:hidden before:w-px before:bg-[var(--birthday-body-accent)]/40 md:before:block">
-            <div className="md:mr-[52%]">{story}</div><div className="md:ml-[52%]">{notes}</div><div className="md:mr-[52%]">{hosts}</div><div className="md:ml-[52%]">{schedule}</div>
+            <div className="md:mr-[52%]">{story}</div>
+            <div className="md:ml-[52%]">{notes}</div>
+            <div className="md:mr-[52%]">{hosts}</div>
+            <div className="md:ml-[52%]">{schedule}</div>
           </div>
-          {gallery}{tail}
+          {gallery}
+          {tail}
         </div>
       );
     case "memory-book":
       return (
         <div className="space-y-10">
           {facts}
-          <div className="grid overflow-hidden rounded-[2rem] bg-white/62 shadow-2xl lg:grid-cols-2 [&>*]:rounded-none [&>*]:border-0 [&>*]:shadow-none"><div className="border-r border-[var(--birthday-body-ink)]/15">{story}{hosts}</div><div>{notes}{schedule}</div></div>
-          <div className="border-t-2 border-[var(--birthday-body-ink)]/20 pt-8">{gallery}</div>{tail}
+          <div className="grid overflow-hidden rounded-[2rem] bg-white/62 shadow-2xl lg:grid-cols-2 [&>*]:rounded-none [&>*]:border-0 [&>*]:shadow-none">
+            <div className="border-r border-[var(--birthday-body-ink)]/15">
+              {story}
+              {hosts}
+            </div>
+            <div>
+              {notes}
+              {schedule}
+            </div>
+          </div>
+          <div className="border-t-2 border-[var(--birthday-body-ink)]/20 pt-8">{gallery}</div>
+          {tail}
         </div>
       );
     case "comic-panels":
       return (
         <div className="space-y-5 border-4 border-[var(--birthday-body-ink)] bg-[var(--birthday-body-ink)] p-1">
           <div className="bg-[var(--birthday-body-bg)] p-4">{facts}</div>
-          <div className="grid gap-1 lg:grid-cols-12 [&>*]:rounded-none [&>*]:border-4 [&>*]:border-[var(--birthday-body-ink)] [&>*]:shadow-none"><div className="lg:col-span-7">{story}</div><div className="lg:col-span-5">{notes}</div><div className="lg:col-span-12">{gallery}</div><div className="lg:col-span-5">{hosts}</div><div className="lg:col-span-7">{schedule}</div></div>
+          <div className="grid gap-1 lg:grid-cols-12 [&>*]:rounded-none [&>*]:border-4 [&>*]:border-[var(--birthday-body-ink)] [&>*]:shadow-none">
+            <div className="lg:col-span-7">{story}</div>
+            <div className="lg:col-span-5">{notes}</div>
+            <div className="lg:col-span-12">{gallery}</div>
+            <div className="lg:col-span-5">{hosts}</div>
+            <div className="lg:col-span-7">{schedule}</div>
+          </div>
           <div className="space-y-7 bg-[var(--birthday-body-bg)] p-5">{tail}</div>
         </div>
       );
     case "polaroid-desk":
       return (
         <div className="space-y-12">
-          <div className="-rotate-1 border-[14px] border-white border-b-[40px] bg-white shadow-2xl">{gallery}</div>
+          <div className="-rotate-1 border-[14px] border-white border-b-[40px] bg-white shadow-2xl">
+            {gallery}
+          </div>
           {facts}
-          <div className="grid gap-8 md:grid-cols-2 [&>*:first-child]:rotate-[-1deg] [&>*:last-child]:rotate-[1deg]">{story}{notes}</div>
-          <div className="grid gap-8 md:grid-cols-2">{hosts}{schedule}</div>{tail}
+          <div className="grid gap-8 md:grid-cols-2 [&>*:first-child]:rotate-[-1deg] [&>*:last-child]:rotate-[1deg]">
+            {story}
+            {notes}
+          </div>
+          <div className="grid gap-8 md:grid-cols-2">
+            {hosts}
+            {schedule}
+          </div>
+          {tail}
         </div>
       );
     case "stage-program":
       return (
         <div className="space-y-10 border-x-[18px] border-[var(--birthday-body-accent)]/30 px-4 text-center sm:px-10">
           <div className="mx-auto max-w-4xl">{facts}</div>
-          <div className="mx-auto max-w-3xl space-y-7 [&_section]:rounded-t-[8rem] [&_section]:pt-16">{story}{notes}</div>
-          {schedule}<div className="border-y border-[var(--birthday-body-ink)]/20 py-8">{gallery}</div>{hosts}{tail}
+          <div className="mx-auto max-w-3xl space-y-7 [&_section]:rounded-t-[8rem] [&_section]:pt-16">
+            {story}
+            {notes}
+          </div>
+          {schedule}
+          <div className="border-y border-[var(--birthday-body-ink)]/20 py-8">{gallery}</div>
+          {hosts}
+          {tail}
         </div>
       );
     case "cake-layers":
@@ -781,14 +994,34 @@ function renderBodyComposition(
     case "orbit-dashboard":
       return (
         <div className="space-y-12">
-          <div className="relative mx-auto max-w-6xl rounded-full border-2 border-dashed border-[var(--birthday-body-accent)]/45 p-7 sm:p-12"><div className="mx-auto max-w-3xl">{gallery}</div><div className="mt-8">{facts}</div></div>
-          <div className="grid gap-8 lg:grid-cols-2 [&>*:first-child]:rounded-[4rem_1rem] [&>*:last-child]:rounded-[1rem_4rem]">{story}{notes}</div>
-          <div className="grid gap-8 md:grid-cols-2">{schedule}{hosts}</div>{tail}
+          <div className="relative mx-auto max-w-6xl rounded-full border-2 border-dashed border-[var(--birthday-body-accent)]/45 p-7 sm:p-12">
+            <div className="mx-auto max-w-3xl">{gallery}</div>
+            <div className="mt-8">{facts}</div>
+          </div>
+          <div className="grid gap-8 lg:grid-cols-2 [&>*:first-child]:rounded-[4rem_1rem] [&>*:last-child]:rounded-[1rem_4rem]">
+            {story}
+            {notes}
+          </div>
+          <div className="grid gap-8 md:grid-cols-2">
+            {schedule}
+            {hosts}
+          </div>
+          {tail}
         </div>
       );
     default:
       return (
-        <div className="space-y-10">{facts}<div className="grid gap-7 md:grid-cols-2">{story}{notes}</div>{gallery}{schedule}{hosts}{tail}</div>
+        <div className="space-y-10">
+          {facts}
+          <div className="grid gap-7 md:grid-cols-2">
+            {story}
+            {notes}
+          </div>
+          {gallery}
+          {schedule}
+          {hosts}
+          {tail}
+        </div>
       );
   }
 }
@@ -819,7 +1052,10 @@ export default function BirthdayExperienceBody({
     childName ? { label: "Guest of honor", value: childName } : null,
     event.age ? { label: "Turning", value: formatAge(event.age) } : null,
     formatEventTime(event.date, event.end)
-      ? { label: event.end ? "Party time" : "Starts at", value: formatEventTime(event.date, event.end) }
+      ? {
+          label: event.end ? "Party time" : "Starts at",
+          value: formatEventTime(event.date, event.end),
+        }
       : null,
     partyTheme ? { label: "Party theme", value: partyTheme } : null,
   ].filter((fact): fact is Fact => Boolean(fact));
@@ -850,23 +1086,35 @@ export default function BirthdayExperienceBody({
         <p>{event.story}</p>
       </StoryCard>
     ) : null,
-    notes: goodToKnow || guestNotes.length ? (
-      <StoryCard
-        title="Good to know"
-        icon={<Lightbulb className="h-6 w-6" aria-hidden="true" />}
-        profile={profile}
-      >
-        {goodToKnow ? <p>{goodToKnow}</p> : null}
-        {guestNotes.length ? <dl className="mt-5 space-y-5">{guestNotes.map(({ key, label, value }) => <div key={key}><dt className="font-bold">{label}</dt><dd className="mt-1 whitespace-pre-line break-words">{value}</dd></div>)}</dl> : null}
-      </StoryCard>
-    ) : null,
+    notes:
+      goodToKnow || guestNotes.length ? (
+        <StoryCard
+          title="Good to know"
+          icon={<Lightbulb className="h-6 w-6" aria-hidden="true" />}
+          profile={profile}
+        >
+          {goodToKnow ? <p>{goodToKnow}</p> : null}
+          {guestNotes.length ? (
+            <dl className="mt-5 space-y-5">
+              {guestNotes.map(({ key, label, value }) => (
+                <div key={key}>
+                  <dt className="font-bold">{label}</dt>
+                  <dd className="mt-1 whitespace-pre-line break-words">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+        </StoryCard>
+      ) : null,
     schedule: event.schedule?.length ? (
       <ExperienceSchedule items={event.schedule || []} treatment={profile.scheduleTreatment} />
     ) : null,
     gallery: event.gallery?.length ? (
       <ExperienceGallery photos={event.gallery || []} treatment={profile.galleryTreatment} />
     ) : null,
-    hosts: event.hosts?.length ? <ExperienceHosts hosts={event.hosts || []} treatment={profile.hostTreatment} /> : null,
+    hosts: event.hosts?.length ? (
+      <ExperienceHosts hosts={event.hosts || []} treatment={profile.hostTreatment} />
+    ) : null,
     registry: registries.length ? <ExperienceRegistry registries={registries} /> : null,
     rsvp: event.rsvpEnabled ? (
       <ExperienceRsvp
@@ -883,24 +1131,33 @@ export default function BirthdayExperienceBody({
       data-birthday-body-composition={profile.bodyComposition}
       data-birthday-body-experience={profile.bodySignature}
       data-birthday-section-order={profile.sectionOrder}
-      className={artDirected ? "w-full px-5 sm:px-8 lg:px-12" : "w-full px-5 py-12 sm:px-8 lg:px-12 lg:py-16"}
+      className={
+        artDirected ? "w-full px-5 sm:px-8 lg:px-12" : "w-full px-5 py-12 sm:px-8 lg:px-12 lg:py-16"
+      }
       style={bodyStyle}
     >
       <div className="mx-auto max-w-7xl">
-        {artDirected ? <BirthdayArtDirectedBody id={theme.id!} blocks={blocks} /> : <>
-        <div className="mb-9 flex items-center justify-between gap-5 border-b border-[var(--birthday-body-ink)]/14 pb-4">
-          <div className="flex items-center gap-3">
-            <Sparkles className="h-5 w-5 text-[var(--birthday-body-accent)]" aria-hidden="true" />
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] opacity-58">
-              The celebration
-            </p>
-          </div>
-          <div className="hidden items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] opacity-45 sm:flex">
-            <Users className="h-4 w-4" aria-hidden="true" /> You’re invited
-          </div>
-        </div>
-        {renderBodyComposition(profile, blocks)}
-        </>}
+        {artDirected ? (
+          <BirthdayArtDirectedBody id={theme.id!} blocks={blocks} />
+        ) : (
+          <>
+            <div className="mb-9 flex items-center justify-between gap-5 border-b border-[var(--birthday-body-ink)]/14 pb-4">
+              <div className="flex items-center gap-3">
+                <Sparkles
+                  className="h-5 w-5 text-[var(--birthday-body-accent)]"
+                  aria-hidden="true"
+                />
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] opacity-58">
+                  The celebration
+                </p>
+              </div>
+              <div className="hidden items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] opacity-45 sm:flex">
+                <Users className="h-4 w-4" aria-hidden="true" /> You’re invited
+              </div>
+            </div>
+            {renderBodyComposition(profile, blocks)}
+          </>
+        )}
       </div>
     </main>
   );

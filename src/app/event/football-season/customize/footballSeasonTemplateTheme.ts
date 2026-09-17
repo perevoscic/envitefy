@@ -1,5 +1,6 @@
 // @ts-nocheck
 import type { CSSProperties } from "react";
+import presentation from "@/components/football-season-templates/football-page-content.module.css";
 import { getFootballDesign } from "@/components/football-season-templates/footballDesigns";
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
@@ -9,8 +10,8 @@ import {
   SHOWCASE_THEMES,
   type ShowcaseThemeConfig,
 } from "@/components/football-season-templates/showcaseThemes";
-import { getGymMeetTitleTypography } from "@/components/football-season-templates/titleTypography";
 import type { GymMeetTitleTypographySpec } from "@/components/football-season-templates/titleTypography";
+import { getGymMeetTitleTypography } from "@/components/football-season-templates/titleTypography";
 import type { GymMeetTemplateId } from "@/components/football-season-templates/types";
 
 export type FootballSeasonTemplateTheme = {
@@ -37,18 +38,19 @@ export type FootballSeasonTemplateTheme = {
   sectionTitleStyle?: CSSProperties;
   titleTypography: GymMeetTitleTypographySpec;
   isDark: boolean;
+  presentationClass: string;
 };
 
 const extractTextClass = (className: string, fallback = "text-slate-900") => {
   const match = String(className || "").match(
-    /(?:^|\s)(text-\[[^\]]+\]|text-[a-z-]+(?:-\d{2,3})?|text-white|text-black)(?=\s|$)/
+    /(?:^|\s)(text-\[[^\]]+\]|text-[a-z-]+(?:-\d{2,3})?|text-white|text-black)(?=\s|$)/,
   );
   return match?.[1] || fallback;
 };
 
 const isDarkTextClass = (className: string) =>
   /text-(white|amber-50|cyan-50|indigo-50|emerald-50|sky-50|slate-50|stone-50|neutral-50|zinc-50|gray-50)/.test(
-    className
+    className,
   ) ||
   (/^text-\[#([0-9a-f]{6})\]$/i.test(className) &&
     (() => {
@@ -60,9 +62,7 @@ const isDarkTextClass = (className: string) =>
       const b = n & 255;
       const [rr, gg, bb] = [r, g, b].map((value) => {
         const channel = value / 255;
-        return channel <= 0.03928
-          ? channel / 12.92
-          : ((channel + 0.055) / 1.055) ** 2.4;
+        return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
       });
       const luminance = 0.2126 * rr + 0.7152 * gg + 0.0722 * bb;
       return luminance < 0.58;
@@ -127,7 +127,7 @@ const normalizeBaseTheme = (theme: ShowcaseThemeConfig | undefined | null) => {
       .filter(
         (token) =>
           !/\[font-family:[^\]]+\]/.test(token) &&
-          !/(?:^|:)font-(?:sans|serif|mono)(?:$|:)/.test(token)
+          !/(?:^|:)font-(?:sans|serif|mono)(?:$|:)/.test(token),
       )
       .join(" ");
 
@@ -141,13 +141,11 @@ const normalizeBaseTheme = (theme: ShowcaseThemeConfig | undefined | null) => {
       sourceTheme.headerOverlayClass ||
       "bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_34%)]",
     titleClass:
-      stripTitleFontFamilyClasses(sourceTheme.previewTitleClassName) ||
-      "font-black tracking-tight",
+      stripTitleFontFamilyClasses(sourceTheme.previewTitleClassName) || "font-black tracking-tight",
     titleStyle: sourceTheme.titleStyle,
     textClass,
     mutedClass: sourceTheme.subtitleClass || sourceTheme.metaClass || textClass,
-    accentClass:
-      sourceTheme.sectionTitleClass || sourceTheme.previewAccentClassName || textClass,
+    accentClass: sourceTheme.sectionTitleClass || sourceTheme.previewAccentClassName || textClass,
     heroBadgeClass:
       sourceTheme.heroBadgeClass ||
       "inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em]",
@@ -156,15 +154,10 @@ const normalizeBaseTheme = (theme: ShowcaseThemeConfig | undefined | null) => {
     navIdleClass: sourceTheme.navIdleClass,
     sectionClass: sourceTheme.sectionClass,
     sectionCardClass: sourceTheme.sectionCardClass,
-    summaryCardClass:
-      sourceTheme.summaryCardClass || sourceTheme.sectionCardClass,
-    sectionMutedClass:
-      sourceTheme.sectionMutedClass ||
-      "bg-white/10 text-white/80",
+    summaryCardClass: sourceTheme.summaryCardClass || sourceTheme.sectionCardClass,
+    sectionMutedClass: sourceTheme.sectionMutedClass || "bg-white/10 text-white/80",
     sectionTitleClass:
-      sourceTheme.sectionTitleClass ||
-      sourceTheme.previewAccentClassName ||
-      textClass,
+      sourceTheme.sectionTitleClass || sourceTheme.previewAccentClassName || textClass,
     sectionTitleStyle: sourceTheme.sectionTitleStyle,
     isDark,
   } satisfies FootballSeasonTemplateTheme;
@@ -178,8 +171,7 @@ const LEGACY_TEMPLATE_THEMES: Record<string, ShowcaseThemeConfig> = {
       "min-h-screen bg-[radial-gradient(circle_at_top,#1d4ed8_0%,#020617_42%,#020617_100%)] text-white",
     shellClass:
       "overflow-hidden rounded-[28px] border border-white/10 bg-slate-950/80 shadow-[0_28px_80px_rgba(2,6,23,0.55)] backdrop-blur",
-    headerClass:
-      "relative overflow-hidden bg-slate-950 px-5 py-12 sm:px-8 sm:py-16",
+    headerClass: "relative overflow-hidden bg-slate-950 px-5 py-12 sm:px-8 sm:py-16",
     headerOverlayClass:
       "bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_32%)]",
     titleClass:
@@ -197,14 +189,12 @@ const LEGACY_TEMPLATE_THEMES: Record<string, ShowcaseThemeConfig> = {
       "rounded-full border border-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/25 hover:text-white",
     panelClass: "",
     cardClass: "",
-    summaryCardClass:
-      "rounded-[24px] border border-white/10 bg-white/5 px-4 py-4 backdrop-blur",
+    summaryCardClass: "rounded-[24px] border border-white/10 bg-white/5 px-4 py-4 backdrop-blur",
     sectionClass:
       "rounded-[28px] border border-white/10 bg-slate-900/80 px-5 py-5 shadow-[0_10px_28px_rgba(2,6,23,0.28)]",
     sectionTitleClass: "text-slate-50",
     sectionTitleStyle: { color: "#f8fafc" },
-    sectionCardClass:
-      "rounded-[24px] border border-white/10 bg-white/5 px-4 py-4 backdrop-blur",
+    sectionCardClass: "rounded-[24px] border border-white/10 bg-white/5 px-4 py-4 backdrop-blur",
     sectionMutedClass: "bg-blue-500/15 text-blue-100",
     accentClass: "text-blue-300",
     ctaPrimaryClass: "",
@@ -238,13 +228,10 @@ const LEGACY_TEMPLATE_THEMES: Record<string, ShowcaseThemeConfig> = {
       "rounded-full bg-slate-100 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 transition hover:bg-slate-200 hover:text-slate-900",
     panelClass: "",
     cardClass: "",
-    summaryCardClass:
-      "rounded-[28px] border border-slate-200 bg-slate-50 px-4 py-4 shadow-sm",
-    sectionClass:
-      "rounded-[32px] border border-slate-200 bg-white px-5 py-5 shadow-sm",
+    summaryCardClass: "rounded-[28px] border border-slate-200 bg-slate-50 px-4 py-4 shadow-sm",
+    sectionClass: "rounded-[32px] border border-slate-200 bg-white px-5 py-5 shadow-sm",
     sectionTitleClass: "text-slate-900",
-    sectionCardClass:
-      "rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 shadow-sm",
+    sectionCardClass: "rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 shadow-sm",
     sectionMutedClass: "bg-indigo-50 text-indigo-700",
     accentClass: "text-indigo-600",
     ctaPrimaryClass: "",
@@ -278,13 +265,11 @@ const LEGACY_TEMPLATE_THEMES: Record<string, ShowcaseThemeConfig> = {
       "rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-blue-700 transition hover:bg-blue-100",
     panelClass: "",
     cardClass: "",
-    summaryCardClass:
-      "rounded-[24px] border-b-4 border-blue-200 bg-white px-4 py-4 shadow-sm",
+    summaryCardClass: "rounded-[24px] border-b-4 border-blue-200 bg-white px-4 py-4 shadow-sm",
     sectionClass:
       "rounded-[26px] border border-blue-100 bg-white px-5 py-5 shadow-[0_8px_24px_rgba(59,130,246,0.08)]",
     sectionTitleClass: "text-blue-700",
-    sectionCardClass:
-      "rounded-[20px] border border-blue-100 bg-blue-50 px-4 py-4",
+    sectionCardClass: "rounded-[20px] border border-blue-100 bg-blue-50 px-4 py-4",
     sectionMutedClass: "bg-blue-50 text-blue-700",
     accentClass: "text-blue-700",
     ctaPrimaryClass: "",
@@ -358,13 +343,10 @@ const LEGACY_TEMPLATE_THEMES: Record<string, ShowcaseThemeConfig> = {
       "rounded-full border border-emerald-100 bg-emerald-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-emerald-700 transition hover:bg-emerald-100",
     panelClass: "",
     cardClass: "",
-    summaryCardClass:
-      "rounded-[22px] border-l-4 border-emerald-500 bg-white px-4 py-4 shadow-sm",
-    sectionClass:
-      "rounded-[24px] border border-emerald-100 bg-white px-5 py-5 shadow-sm",
+    summaryCardClass: "rounded-[22px] border-l-4 border-emerald-500 bg-white px-4 py-4 shadow-sm",
+    sectionClass: "rounded-[24px] border border-emerald-100 bg-white px-5 py-5 shadow-sm",
     sectionTitleClass: "text-emerald-700",
-    sectionCardClass:
-      "rounded-[18px] border border-emerald-100 bg-emerald-50 px-4 py-4",
+    sectionCardClass: "rounded-[18px] border border-emerald-100 bg-emerald-50 px-4 py-4",
     sectionMutedClass: "bg-emerald-50 text-emerald-700",
     accentClass: "text-emerald-700",
     ctaPrimaryClass: "",
@@ -398,13 +380,10 @@ const LEGACY_TEMPLATE_THEMES: Record<string, ShowcaseThemeConfig> = {
       "rounded-none border border-slate-300 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-slate-600 transition hover:border-slate-500 hover:text-slate-900",
     panelClass: "",
     cardClass: "",
-    summaryCardClass:
-      "rounded-none border border-slate-300 bg-slate-50 px-4 py-4",
-    sectionClass:
-      "rounded-none border border-slate-300 bg-white px-5 py-5",
+    summaryCardClass: "rounded-none border border-slate-300 bg-slate-50 px-4 py-4",
+    sectionClass: "rounded-none border border-slate-300 bg-white px-5 py-5",
     sectionTitleClass: "text-slate-900",
-    sectionCardClass:
-      "rounded-none border border-slate-300 bg-slate-50 px-4 py-4",
+    sectionCardClass: "rounded-none border border-slate-300 bg-slate-50 px-4 py-4",
     sectionMutedClass: "bg-slate-100 text-slate-700",
     accentClass: "text-slate-700",
     ctaPrimaryClass: "",
@@ -425,7 +404,7 @@ const GROUP_FALLBACKS: Record<string, GymMeetTemplateId> = {
 };
 
 export const resolveFootballSeasonTemplateChrome = (
-  templateId: GymMeetTemplateId
+  templateId: GymMeetTemplateId,
 ): FootballSeasonTemplateTheme => {
   const meta = getGymMeetTemplateMeta(templateId);
   const fallbackId = GROUP_FALLBACKS[meta.group] || DEFAULT_GYM_MEET_TEMPLATE_ID;
@@ -443,13 +422,20 @@ export const resolveFootballSeasonTemplateChrome = (
   return {
     ...normalizedBase,
     ...design,
+    presentationClass: `${presentation.page} ${presentation[meta.id]}`,
+    pageClass: `${design.pageClass} ${presentation.page} ${presentation[meta.id]}`,
+    sectionClass: presentation.section,
+    sectionCardClass: presentation.card,
+    navShellClass: `${presentation.navigation} ${presentation.page} ${presentation[meta.id]}`,
+    navActiveClass: presentation.activeTab,
+    navIdleClass: presentation.idleTab,
     id: meta.id,
     name: design.name,
     titleClass: `text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl ${design.textClass}`,
     titleStyle: { color: design.ink, textShadow: "none" },
     sectionTitleClass: design.textClass,
-    sectionTitleStyle: { color: design.ink, textShadow: "none" },
-    summaryCardClass: design.sectionCardClass,
+    sectionTitleStyle: { ...titleTypography.fontStyle, color: design.ink, textShadow: "none" },
+    summaryCardClass: presentation.card,
     heroBadgeClass: `inline-flex items-center gap-2 rounded-full border px-3 py-1 ${design.sectionMutedClass}`,
     isDark: parseInt(design.ink.slice(1, 3), 16) > 180,
     titleTypography,
@@ -457,5 +443,5 @@ export const resolveFootballSeasonTemplateChrome = (
 };
 
 export const resolveFootballSeasonTemplateTypography = (
-  templateId: GymMeetTemplateId
+  templateId: GymMeetTemplateId,
 ): GymMeetTitleTypographySpec => getGymMeetTitleTypography(templateId);

@@ -1,0 +1,164 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import test from "node:test";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import ts from "typescript";
+
+const source = fs.readFileSync(new URL("./ConciergeChatClient.tsx", import.meta.url), "utf8");
+const ast = ts.createSourceFile("chat.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+function declaration(name) {
+  let found;
+  const visit = (node) => {
+    if ((ts.isFunctionDeclaration(node) || ts.isVariableDeclaration(node)) && node.name?.getText(ast) === name) found = node;
+    ts.forEachChild(node, visit);
+  };
+  visit(ast);
+  assert.ok(found, `Missing ${name}`);
+  return ts.isVariableDeclaration(found) ? `const ${found.getText(ast)};` : found.getText(ast);
+}
+function load(name, scope) {
+  const code = ts.transpile(declaration(name), { target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.React });
+  return new Function(...Object.keys(scope), `${code}; return ${name};`)(...Object.values(scope));
+}
+const noop = () => {};
+function harness(overrides = {}) {
+  const state = {
+    messages: [
+      { id: "user", role: "user", text: "Wedding at the beach" },
+      { id: "partial", role: "assistant", text: "Let's plan it" },
+      { id: "empty", role: "assistant", text: "" },
+    ],
+    draft: { ready: true, requestedOutputs: [] },
+    isSending: true,
+  };
+  const scope = {
+    isCommittingEvent: false, isListening: false, isBusy: true,
+    dictationRef: { current: { cancel: noop } },
+    conversationVersionRef: { current: 0 },
+    responseAbortRef: { current: new AbortController() },
+    generationAbortRef: { current: new AbortController() },
+    uploadAbortRef: { current: new AbortController() },
+    progress: { requestLeave: (navigate) => { state.navigate = navigate; } },
+    router: { push: (url) => { state.destination = url; } },
+    draftStudioInvite: null, liveCardEventId: null, draft: state.draft,
+    isReadyProductDraft: (draft) => draft.ready,
+    newMessage: (role, text) => ({ role, text, id: String(Math.random()) }),
+    focusComposerAtEnd: noop, refocusComposerAfterResponse: noop,
+    messages: state.messages, phase: "collecting_details", selectedStarterCategory: null,
+    selectedProductOutput: "live_card", selectedSkinLabel: null,
+    starterSelectionLabel: () => null, categoryLabelForDraft: () => "wedding",
+    skinLabelForCategoryName: () => null, chatMessagesForPersistence: (messages) => messages,
+    withConciergeTiming: (url) => url, CREATION_INTAKE_URL: "/intake",
+    conciergeClientErrorMessage: (error) => String(error),
+    ...overrides,
+  };
+  for (const name of ["IsSending", "RestoringProgress", "IsStreamingAssistant", "IsUploading", "ChatUploadStage", "StreamingPreviewImage", "GenerationStage", "Error", "FailedRequest", "FailedSnapUpload", "Phase", "MobileView", "Messages", "SelectedStarterCategory", "Draft"]) {
+    const key = name[0].toLowerCase() + name.slice(1);
+    scope[`set${name}`] = (value) => { state[key] = typeof value === "function" ? value(state[key]) : value; };
+  }
+  return { state, scope, cancel: () => load("handleCancelChat", scope)() };
+}
+
+test("idle Cancel requests guarded dashboard navigation without discarding progress", () => {
+  const h = harness({ isBusy: false });
+  h.cancel();
+  assert.equal(h.state.destination, undefined);
+  assert.equal(h.state.draft.ready, true);
+  h.state.navigate();
+  assert.equal(h.state.destination, "/");
+});
+
+test("busy Cancel aborts all active work, preserves useful messages and the existing artwork", () => {
+  const artwork = { imageUrl: "saved-in-memory.webp" };
+  const h = harness({ draftStudioInvite: artwork });
+  const controllers = [h.scope.responseAbortRef.current, h.scope.generationAbortRef.current, h.scope.uploadAbortRef.current];
+  h.cancel();
+  assert.ok(controllers.every((controller) => controller.signal.aborted));
+  assert.equal(h.scope.conversationVersionRef.current, 1);
+  assert.equal(h.scope.draftStudioInvite, artwork);
+  assert.equal(h.state.phase, "card_ready");
+  assert.equal(h.state.isSending, false);
+  assert.equal(h.state.isUploading, false);
+  assert.ok(h.state.messages.some((message) => message.id === "partial"));
+  assert.ok(!h.state.messages.some((message) => message.id === "empty"));
+  assert.match(h.state.messages.at(-1).text, /Stopped/);
+});
+
+test("a cancelled non-streaming response cannot overwrite the draft or clear a newer busy state", async () => {
+  let resolveFetch;
+  let signal;
+  const h = harness({ fetch: (_url, options) => {
+    signal = options.signal;
+    return new Promise((resolve) => { resolveFetch = resolve; });
+  } });
+  const response = load("sendToConcierge", h.scope)({ message: "Confirm the date", ocrContext: {} });
+  assert.ok(signal);
+  h.cancel();
+  h.state.isSending = true;
+  resolveFetch({ ok: true, json: async () => ({ ok: true, draft: { title: "stale result" } }) });
+  assert.equal(await response, null);
+  assert.equal(signal.aborted, true);
+  assert.equal(h.state.draft.ready, true);
+  assert.equal(h.state.isSending, true);
+  assert.equal(h.state.failedRequest, null);
+});
+
+test("Cancel during artwork generation ignores a late completed image", async () => {
+  let completeGeneration;
+  const h = harness({
+    normalizeDraftProductOutputs: (draft) => draft,
+    uploadedLiveCardSourceImageUrl: async () => null,
+    generateStudioInviteForDraft: () => new Promise((resolve) => { completeGeneration = resolve; }),
+  });
+  const generation = load("generateProductForDraft", h.scope)(h.state.draft);
+  await Promise.resolve();
+  assert.equal(typeof completeGeneration, "function");
+  h.cancel();
+  completeGeneration({ imageUrl: "late-image.webp" });
+  await generation;
+  assert.equal(h.state.phase, "ready_to_generate");
+  assert.equal(h.scope.draftStudioInvite, null);
+  assert.equal(h.state.error, null);
+});
+
+test("Cancel does not pretend to undo an event save already in progress", () => {
+  const h = harness({ isCommittingEvent: true });
+  h.cancel();
+  assert.equal(h.scope.conversationVersionRef.current, 0);
+  assert.equal(h.scope.responseAbortRef.current.signal.aborted, false);
+});
+
+function renderComposer({ busy = false, listening = false, text = "" } = {}) {
+  const icon = (name) => (props) => React.createElement("svg", { ...props, "data-icon": name });
+  const container = ({ children, className }) => React.createElement("div", { className }, children);
+  return renderToStaticMarkup(load("composer", {
+    React, cn: (...classes) => classes.filter(Boolean).join(" "),
+    isEmptyState: false, isCompactEmptyComposer: false, isBusy: busy,
+    isListening: listening, isCommittingEvent: false, isUploading: false,
+    isGeneratingCard: busy, isPublishingCard: false, canSubmitComposer: true,
+    liveCardEventId: null, draft: {}, input: text, selectionPills: null, error: null,
+    composerCardRef: { current: null }, fileInputRef: { current: null },
+    handleSubmit: noop, handleSelectedSnapFile: noop, handleComposerValueChange: noop,
+    submitComposerInput: noop, handleVoiceInput: noop, handleCancelChat: noop,
+    setIsComposerFocused: noop, getUploadAcceptAttribute: () => "image/*", busyLabel: "Generating invite",
+    PromptInput: container, PromptInputActions: container, PromptInputAction: container,
+    PromptInputTextarea: (props) => React.createElement("textarea", props),
+    Mic: icon("mic"), Square: icon("stop"), ArrowUp: icon("send"), Loader2: icon("loading"), X: icon("cancel"),
+  }));
+}
+
+test("active chat keeps a dedicated mic beside Send and a visible Cancel, with no plus menu", () => {
+  for (const text of ["", "More wedding details"]) {
+    const html = renderComposer({ text });
+    assert.match(html, /aria-label="Use voice input"/);
+    assert.match(html, /aria-label="Send"/);
+    assert.match(html, /Cancel chat and return to dashboard/);
+    assert.doesNotMatch(html, /<details|Uploads and suggestions|data-icon="plus"/);
+  }
+  const busy = renderComposer({ busy: true });
+  assert.match(busy, /aria-label="Cancel current response or generation"/);
+  const listening = renderComposer({ listening: true });
+  assert.match(listening, /aria-label="Stop voice input"/);
+  assert.match(listening, /disabled=""[^>]+aria-label="Send"/);
+});

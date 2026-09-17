@@ -1,6 +1,7 @@
 import { buildSignupDefaults } from "@/lib/signup-defaults";
 import type { SignupIntent, SignupSource } from "@/lib/signup-intent";
 import { canReadEventDraft } from "@/lib/event-draft-access";
+import { buildSidebarSportsProjectionSql } from "@/lib/sports-schedule-navigation";
 import { resolveScanMediaPolicy, withoutMedicalSourceMedia } from "@/lib/ocr/scan-media";
 import { resolveSavedScanPersonalization } from "@/lib/ocr/personalization";
 import { withMissingContactNumbers } from "@/lib/ocr/contact-numbers";
@@ -1909,6 +1910,8 @@ function buildHistoryDataProjectionSql(params: {
       'shareStatus', ${shareStatusSql},
       'templateEditor', ((${dataSql}->'templateEditor') - 'snapshot'),
       'status', ${dataSql}->'status',
+      'draftStatus', ${dataSql}->'draftStatus',
+      'sidebarSports', ${buildSidebarSportsProjectionSql(dataSql)},
       'description', ${dataSql}->'description',
       'startAt', ${dataSql}->'startAt',
       'startISO', ${dataSql}->'startISO',
@@ -2144,7 +2147,9 @@ function _buildDashboardDataProjectionSql(
       `${dataSql}->>'heroImage'`,
     )},
     'templateEditor', ((${dataSql}->'templateEditor') - 'snapshot'),
-      'status', ${dataSql}->'status',
+    'status', ${dataSql}->'status',
+    'draftStatus', ${dataSql}->'draftStatus',
+    'sidebarSports', ${buildSidebarSportsProjectionSql(dataSql)},
     'category', ${dataSql}->'category',
     'updatedAt', ${dataSql}->'updatedAt',
     'numberOfGuests', ${dataSql}->'numberOfGuests',
@@ -2204,6 +2209,8 @@ function _buildDashboardDataProjectionSql(
 }
 
 type DashboardProjectionQueryRow = {
+  draft_status: string | null;
+  sidebar_sports: unknown;
   scan_personalization: unknown;
   scan_artwork: unknown;
   scan_source_kind: unknown;
@@ -2271,6 +2278,8 @@ type DashboardProjectionQueryRow = {
 };
 
 type SidebarProjectionQueryRow = {
+  draft_status: string | null;
+  sidebar_sports: unknown;
   scan_personalization: unknown;
   scan_artwork: unknown;
   scan_source_kind: unknown;
@@ -2371,6 +2380,8 @@ function mapDashboardProjectionRowToEventHistoryRow(
       heroImage: row.hero_image ?? null,
       templateEditor: row.template_editor ?? null,
       status: row.status ?? null,
+      draftStatus: row.draft_status ?? null,
+      sidebarSports: row.sidebar_sports ?? null,
       category: row.category ?? null,
       updatedAt: row.updated_at ?? null,
       numberOfGuests: row.number_of_guests ?? null,
@@ -2436,6 +2447,8 @@ function mapSidebarProjectionRowToEventHistoryRow(row: SidebarProjectionQueryRow
       shareStatus: row.share_status ?? null,
       templateEditor: row.template_editor ?? null,
       status: row.status ?? null,
+      draftStatus: row.draft_status ?? null,
+      sidebarSports: row.sidebar_sports ?? null,
       description: row.description ?? null,
       startAt: row.start_at ?? null,
       startISO: row.start_iso ?? null,
@@ -2599,6 +2612,8 @@ async function listProjectedDashboardHistoryRowsByIds(
        )} as hero_image,
        ((coalesce(eh.data, '{}'::jsonb)->'templateEditor') - 'snapshot') as template_editor,
        coalesce(eh.data, '{}'::jsonb)->'status' as status,
+       coalesce(eh.data, '{}'::jsonb)->>'draftStatus' as draft_status,
+       ${buildSidebarSportsProjectionSql("coalesce(eh.data, '{}'::jsonb)")} as sidebar_sports,
        coalesce(eh.data, '{}'::jsonb)->'category' as category,
        coalesce(eh.data, '{}'::jsonb)->'updatedAt' as updated_at,
        coalesce(eh.data, '{}'::jsonb)->'numberOfGuests' as number_of_guests,
@@ -2707,6 +2722,8 @@ async function listProjectedSidebarHistoryRowsByIds(
        end as category,
        ((coalesce(eh.data, '{}'::jsonb)->'templateEditor') - 'snapshot') as template_editor,
        coalesce(eh.data, '{}'::jsonb)->'status' as status,
+       coalesce(eh.data, '{}'::jsonb)->>'draftStatus' as draft_status,
+       ${buildSidebarSportsProjectionSql("coalesce(eh.data, '{}'::jsonb)")} as sidebar_sports,
        coalesce(eh.data, '{}'::jsonb)->'description' as description,
        coalesce(eh.data, '{}'::jsonb)->'startAt' as start_at,
        coalesce(eh.data, '{}'::jsonb)->'startISO' as start_iso,

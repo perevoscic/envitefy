@@ -1,5 +1,5 @@
-import { parseEventGuestDate } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
+import { parseEventGuestDate } from "@/lib/event-guest-planning";
 
 import type { EventData, ThemeConfig } from "./content-sections";
 
@@ -71,7 +71,11 @@ export default function BauhausWedding({ theme, event }: Props) {
         {/* Top Right Blue Block */}
         <div className="absolute top-0 right-0 w-1/2 h-full bg-[#1A73E8] z-0">
           {event.customHeroImage && (
-            <img src={event.customHeroImage} alt="Wedding artwork" className="template-hero-image h-1/2 w-full object-cover" />
+            <img
+              src={event.customHeroImage}
+              alt="Wedding artwork"
+              className="template-hero-image h-1/2 w-full object-cover"
+            />
           )}
         </div>
 
@@ -108,7 +112,10 @@ export default function BauhausWedding({ theme, event }: Props) {
 
       {/* Story Section */}
       {event.story && (
-        <div className="w-full max-w-2xl bg-white p-8 md:p-12 border-4 border-black">
+        <div
+          data-celebration-section
+          className="w-full max-w-2xl bg-white p-8 md:p-12 border-4 border-black"
+        >
           <h2
             className="text-3xl md:text-4xl font-bold mb-6 uppercase tracking-wider text-center"
             style={{ fontFamily: theme.fonts.headline }}
@@ -126,7 +133,11 @@ export default function BauhausWedding({ theme, event }: Props) {
 
       {/* RSVP Section */}
       {event.rsvpEnabled && (
-        <div id="rsvp" className="w-full max-w-2xl bg-white p-8 border-4 border-black">
+        <div
+          data-celebration-section
+          id="rsvp"
+          className="w-full max-w-2xl bg-white p-8 border-4 border-black"
+        >
           <div className="text-center">
             <h2
               className="text-3xl font-bold mb-4 uppercase tracking-wider"

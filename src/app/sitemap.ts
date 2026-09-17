@@ -18,7 +18,7 @@ const staticEntries: StaticEntry[] = [
   { path: "/", priority: 1, changeFrequency: "weekly" },
   { path: "/invitation-maker", priority: 0.95, changeFrequency: "weekly" },
   { path: "/snap", priority: 0.9, changeFrequency: "weekly" },
-  { path: "/envitefy-concierge", priority: 0.86, changeFrequency: "weekly" },
+  { path: "/envitefy-create", priority: 0.86, changeFrequency: "weekly" },
   { path: "/gymnastics", priority: 0.9, changeFrequency: "weekly" },
   { path: "/football", priority: 0.9, changeFrequency: "weekly" },
   { path: "/football/templates", priority: 0.8, changeFrequency: "weekly" },

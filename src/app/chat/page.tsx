@@ -10,9 +10,9 @@ type ChatUserProfile = {
 };
 
 export const metadata: Metadata = {
-  title: "Envitefy Concierge | Create Events From a Message or Upload",
+  title: "Envitefy Create | Create Events From a Message or Upload",
   description:
-    "Start with one message, upload, or screenshot. Envitefy Concierge collects missing details and builds a live event draft.",
+    "Start with one message, upload, or screenshot. Envitefy Create collects missing details and builds a live event draft.",
   alternates: { canonical: "/chat" },
 };
 

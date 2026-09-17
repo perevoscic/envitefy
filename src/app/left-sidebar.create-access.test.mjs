@@ -84,12 +84,12 @@ test("left sidebar omits Studio and Snap Event from the always-open navigation",
   assert.doesNotMatch(source, /Snap Event/);
 });
 
-test("left sidebar exposes signed-in Envitefy Concierge entry", () => {
+test("left sidebar exposes signed-in Envitefy Create entry", () => {
   const source = readSource("src/app/left-sidebar.tsx");
   const controllerSource = readSource("src/app/left-sidebar.controller.ts");
   const modelSource = readSource("src/app/left-sidebar.model.ts");
 
-  assert.match(source, /label: "Envitefy Concierge",[\s\S]*?onClick: onAiThreads/s);
+  assert.match(source, /label: "Envitefy Create",[\s\S]*?onClick: onAiThreads/s);
   assert.match(source, /public\/brand\/concierge-chat\.webp/);
   assert.doesNotMatch(source, /Create with AI/);
   assert.match(
@@ -202,7 +202,7 @@ test("left sidebar keeps My Events visible on owner event tab routes", () => {
   );
   assert.match(
     controllerSource,
-    /const openOwnerEventContext = useCallback\([\s\S]*?setEventContextSourcePage\("myEvents"\);[\s\S]*?setSidebarPage\("myEvents"\);[\s\S]*?const nextHref = buildOwnerEventViewHref/,
+    /const openOwnerEventContext = useCallback\([\s\S]*?setEventContextSourcePage\(sourcePage\);[\s\S]*?setSidebarPage\(sourcePage\);[\s\S]*?const nextHref = buildOwnerEventViewHref/,
   );
   assert.match(controllerSource, /const ownerNavigationPendingRef = useRef\(false\);/);
   assert.match(
@@ -219,7 +219,7 @@ test("left sidebar keeps My Events visible on owner event tab routes", () => {
   );
   assert.match(
     controllerSource,
-    /setSidebarPage\("myEvents"\);\s*const nextHref = buildOwnerEventViewHref\(ownerHref, item\.productKind\);\s*const currentPath = typeof window !== "undefined" \? window\.location\.pathname : pathname;\s*if \(!String\(currentPath \|\| ""\)\.startsWith\("\/event\/"\)\) \{\s*ownerNavigationPendingRef\.current = true;\s*\}\s*router\.push\(nextHref\);/,
+    /setSidebarPage\(sourcePage\);\s*const nextHref = buildOwnerEventViewHref\(ownerHref, item\.productKind\);\s*const currentPath = typeof window !== "undefined" \? window\.location\.pathname : pathname;\s*if \(!String\(currentPath \|\| ""\)\.startsWith\("\/event\/"\)\) \{\s*ownerNavigationPendingRef\.current = true;\s*\}\s*router\.push\(nextHref\);/,
   );
   assert.match(viewSource, /const showOwnerEventsPanel =/);
   assert.match(

@@ -3,18 +3,28 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import FootballText, { useFootballPageText } from "./FootballPageText";
 
-type Section = { id: string; label: string; count?: number };
+type Section = {
+  id: string;
+  label: string;
+  count?: number;
+  members?: Array<{ id: string; label: string }>;
+};
 
 export function useFootballSectionTabs(items: Section[], syncHash = true) {
   const prefix = useId();
   const [requestedId, setRequestedId] = useState(items[0]?.id || "");
-  const activeId = items.some((item) => item.id === requestedId) ? requestedId : items[0]?.id || "";
+  const resolveId = useCallback(
+    (id: string) =>
+      items.find((item) => item.id === id || item.members?.some((member) => member.id === id))?.id,
+    [items],
+  );
+  const activeId = resolveId(requestedId) || items[0]?.id || "";
 
   useEffect(() => {
     if (!syncHash) return;
     const readHash = () => {
       const id = window.location.hash.slice(1);
-      if (items.some((item) => item.id === id)) setRequestedId(id);
+      if (resolveId(id)) setRequestedId(id);
     };
     readHash();
     window.addEventListener("hashchange", readHash);
@@ -23,7 +33,7 @@ export function useFootballSectionTabs(items: Section[], syncHash = true) {
       window.removeEventListener("hashchange", readHash);
       window.removeEventListener("popstate", readHash);
     };
-  }, [items, syncHash]);
+  }, [resolveId, syncHash]);
 
   const select = useCallback(
     (id: string) => {
@@ -32,15 +42,15 @@ export function useFootballSectionTabs(items: Section[], syncHash = true) {
     },
     [syncHash],
   );
-  const tabId = (id: string) => `${prefix}-tab-${id}`;
-  const panelId = (id: string) => `${prefix}-panel-${id}`;
+  const tabId = (id: string) => `${prefix}-tab-${resolveId(id) || id}`;
+  const panelId = (id: string) => `${prefix}-panel-${resolveId(id) || id}`;
   const panelProps = (id: string) => ({
     id: panelId(id),
     role: "tabpanel" as const,
     "aria-labelledby": tabId(id),
     tabIndex: 0,
-    hidden: activeId !== id,
-    style: { display: activeId !== id ? ("none" as const) : undefined },
+    hidden: activeId !== (resolveId(id) || id),
+    style: { display: activeId !== (resolveId(id) || id) ? ("none" as const) : undefined },
   });
   return { items, activeId, select, tabId, panelId, panelProps };
 }
@@ -111,7 +121,16 @@ export default function FootballSectionTabs({
                     className={`size-1.5 rounded-full bg-current ${active ? "" : "opacity-40"}`}
                     aria-hidden="true"
                   />
-                  {caption || item.label}
+                  {item.members?.length
+                    ? item.members
+                        .map(
+                          (member) =>
+                            text?.[`nav:${member.id}`] ||
+                            text?.[`section:${member.id}:title`] ||
+                            member.label,
+                        )
+                        .join(" + ")
+                    : caption || item.label}
                   {item.count == null ? null : ` (${item.count})`}
                 </button>
               )}

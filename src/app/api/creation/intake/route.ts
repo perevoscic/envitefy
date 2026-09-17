@@ -45,7 +45,7 @@ export async function GET(req: Request) {
         timing,
         {
           ok: false,
-          error: "Sign in to use Envitefy Concierge.",
+          error: "Sign in to use Envitefy Create.",
         } satisfies CreationSessionResumeResponse,
         { status: 401 },
       );
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
         timing,
         {
           ok: false,
-          error: "Sign in to use Envitefy Concierge.",
+          error: "Sign in to use Envitefy Create.",
         } satisfies ConciergeMessageResponse,
         { status: 401 },
       );

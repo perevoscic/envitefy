@@ -51,7 +51,7 @@ GOOGLE_APPLICATION_CREDENTIALS_JSON=
 # Optional LLM fallback for OCR title/schedule
 OPENAI_API_KEY=
 LLM_MODEL=gpt-5.6-luna
-# Optional GPT model routing for Envitefy Concierge and premium generation
+# Optional GPT model routing for Envitefy Create and premium generation
 OPENAI_CONCIERGE_CHAT_MODEL=gpt-5.6-luna
 OPENAI_CONCIERGE_MODEL=gpt-5.6-terra
 OPENAI_CONCIERGE_PREMIUM_MODEL=gpt-6-astra

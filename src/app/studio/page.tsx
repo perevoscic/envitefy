@@ -16,5 +16,5 @@ export default async function StudioPage(props: {
   const eventId = (Array.isArray(editEvent) ? editEvent[0] : editEvent)?.trim();
   if (eventId) permanentRedirect(`/event/${encodeURIComponent(eventId)}`);
 
-  permanentRedirect("/envitefy-concierge");
+  permanentRedirect("/envitefy-create");
 }

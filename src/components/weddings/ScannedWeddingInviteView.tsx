@@ -497,7 +497,7 @@ export default function ScannedWeddingInviteView({
               onClick={calendar.open}
             />
             <ActionCard
-              title="Concierge"
+              title="Directions"
               subtitle="Map and access"
               icon={<MapPin className="h-6 w-6" />}
               colors={colors}

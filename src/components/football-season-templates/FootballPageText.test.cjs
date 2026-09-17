@@ -71,7 +71,7 @@ test("wording normalizes safely, preserves empty lines, and resets without mutat
   assert.deepEqual(updateFootballPageText(edited,"subtitle",undefined).footballPageText,{});
 });
 test("saved wording renders without pencils across every football design", () => {
-  assert.equal(designs.length,60);
+  assert.equal(designs.length,90);
   for(const design of designs) {
     const data = fixture();
     data.footballPageText = {
@@ -95,6 +95,31 @@ function EditorFixture({data,onChange}) {
     React.createElement(Hero,{title:data.title,subtitle:"Football season"}),
     React.createElement(Content,{sections:model.sections,tabs,chrome:resolveFootballSeasonTemplateChrome("elite-athlete"),schedule:{games:data.advancedSections.games.games,teamName:"Falcons",season:"2028"},attendance:model.attendance}));
 }
+
+test("open weeks and Senior Night render in announcements in editor and published pages", () => {
+  const data = fixture();
+  data.extra.season = "2026";
+  data.advancedSections.games.games = [
+    { id: "off", opponent: "Open Week", date: "2026-10-16" },
+    { id: "senior", opponent: "Owls", homeAway: "home", date: "2026-10-30", notes: "Senior Night" },
+  ];
+  data.advancedSections.announcements.items = [];
+  const pages = [
+    React.createElement(EditorFixture, { data, onChange: () => {} }),
+    React.createElement(Page, { eventData: JSON.parse(JSON.stringify(data)), eventTitle: data.title, chrome: resolveFootballSeasonTemplateChrome("elite-athlete"), hideOwnerActions: true }),
+  ];
+  for (const page of pages) {
+    const html = renderToStaticMarkup(page);
+    assert.match(html, /<aside aria-label="Open weeks"[\s\S]*?Open week[\s\S]*?Oct 16, 2026[\s\S]*?No game scheduled[\s\S]*?<\/aside>/);
+    const announcement = html.match(/<section[^>]*id="announcements"[\s\S]*?<\/section>/)?.[0];
+    assert.ok(announcement);
+    assert.match(announcement, /Open week/);
+    assert.match(announcement, /Fri, Oct 16, 2026 · No game scheduled/);
+    assert.match(announcement, /Senior Night/);
+    assert.match(announcement, /Fri, Oct 30, 2026 · Owls at Falcons/);
+    assert.doesNotMatch(announcement, /Add to calendar|Get directions|Home:| at Open Week| vs Open Week/);
+  }
+});
 
 test("saved football owners can preview from the hero while guest previews omit owner controls", () => {
   const data = fixture();

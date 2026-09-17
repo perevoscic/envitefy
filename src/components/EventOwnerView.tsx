@@ -56,17 +56,17 @@ export default function EventOwnerView({
   }
 
   const actionClassName =
-    "min-h-11 min-w-11 items-center justify-center gap-2 rounded-full px-3 text-sm font-semibold transition hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current";
+    "min-h-11 min-w-11 items-center justify-start gap-2 rounded-xl px-3 text-sm font-semibold transition hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current lg:justify-center lg:rounded-full";
 
   const actions = (
-    <div role="group" aria-label="Event actions" className="flex min-w-0 items-center gap-2">
+    <div role="group" aria-label="Event actions" className="flex min-w-0 flex-col items-stretch gap-1 lg:flex-row lg:items-center lg:gap-2">
       <Link href={buildOwnerEventPreviewHref(publicHref)} aria-label="Preview event" title="Preview event" className={`inline-flex ${actionClassName}`}>
         <Eye size={19} aria-hidden="true" />
-        <span className="hidden sm:inline">Preview</span>
+        <span>Preview</span>
       </Link>
       <Link href={editUrl} aria-label="Edit event" title="Edit event" className={`${mobileEditInEvent ? "hidden lg:inline-flex" : "inline-flex"} ${actionClassName}`}>
         <Pencil size={19} aria-hidden="true" />
-        <span className="hidden sm:inline">Edit</span>
+        <span>Edit</span>
       </Link>
       <button
         type="button"
@@ -76,13 +76,14 @@ export default function EventOwnerView({
         className={`inline-flex ${actionClassName}`}
       >
         <Share2 size={19} aria-hidden="true" />
-        <span className="hidden sm:inline">{copied ? "Copied" : "Share"}</span>
+        <span>{copied ? "Copied" : "Share"}</span>
       </button>
       <EventDeleteModal
         eventId={eventId}
         eventTitle={title}
         ariaLabel="Delete event"
         buttonClassName={`inline-flex ${actionClassName}`}
+        labelClassName="inline"
       />
       {copied ? (
         <span role="status" className="sr-only">

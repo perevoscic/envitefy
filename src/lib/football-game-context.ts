@@ -1,6 +1,7 @@
 import {
   footballGameContextKey,
   footballGameLocation,
+  isFootballOffWeek,
   FOOTBALL_ROUTE_VERSION,
   type FootballGame,
   type FootballHome,
@@ -146,6 +147,7 @@ export async function enrichFootballGames(
   for (let start = 0; start < Math.min(games.length, 40); start += 4) {
     await Promise.all(
       games.slice(start, start + 4).map(async (game, index) => {
+        if (isFootballOffWeek(game)) return;
         const { address } = footballGameLocation(game, home);
         const [route, weather] = await Promise.all([
           game.homeAway === "away" && home.homeAddress && address

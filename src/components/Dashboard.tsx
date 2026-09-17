@@ -179,6 +179,8 @@ type DashboardResponse = {
     nextEventInDays: number | null;
   };
   upcoming: DashboardEventItem[];
+  games?: import("@/lib/dashboard-games").DashboardGame[];
+  gamesUnavailable?: boolean;
   rsvp: {
     going: number;
     maybe: number;

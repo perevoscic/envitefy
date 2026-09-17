@@ -11,6 +11,14 @@ import {
   type ReactNode,
 } from "react";
 import { useSession } from "next-auth/react";
+import {
+  EVENT_DELETION_CHANNEL,
+  mergeEventHistoryRefresh,
+  normalizeEventRemovalKey,
+  readEventRemovalKeys,
+  withoutRemovedEvents,
+  writeEventRemovalKeys,
+} from "@/lib/event-cache-removals";
 
 export const EVENT_CACHE_INVALIDATE_EVENT = "envitefy:events:invalidate";
 export const EVENT_CACHE_RESET_EVENT = "envitefy:events:reset";
@@ -77,6 +85,7 @@ type DashboardPayload = {
 type EventCacheInvalidateDetail = {
   force?: boolean;
   source?: string;
+  includeDashboard?: boolean;
 };
 
 type EventCacheRefreshOptions = {
@@ -96,6 +105,7 @@ type EventCacheContextValue = {
   refreshDashboard: (opts?: { force?: boolean }) => Promise<void>;
   refreshAll: (opts?: EventCacheRefreshOptions) => Promise<void>;
   invalidateEventCache: (detail?: EventCacheInvalidateDetail) => void;
+  removeUnavailableEvent: (eventKey: string) => void;
   setDashboardMetricsCache: (metrics: DashboardMetricsCache | null) => void;
 };
 
@@ -168,6 +178,8 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
 
   const historyRef = useRef<HistoryRow[]>([]);
+  const removedKeysByIdentityRef = useRef(new Map<string, Set<string>>());
+  const deletionChannelRef = useRef<BroadcastChannel | null>(null);
   const cacheRevisionRef = useRef(0);
   const historyResetEpochRef = useRef(0);
   const dashboardRef = useRef<DashboardPayload | null>(null);
@@ -175,6 +187,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
   const isHydratedRef = useRef(false);
   const refreshTimerRef = useRef<number | null>(null);
   const refreshPromiseRef = useRef<Promise<void> | null>(null);
+  const pendingRefreshOptionsRef = useRef<EventCacheRefreshOptions | null>(null);
   const identityKeyRef = useRef<string | null>(null);
   const sessionIdentityKey =
     status === "authenticated"
@@ -205,6 +218,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     }
     refreshTimerRef.current = null;
     refreshPromiseRef.current = null;
+    pendingRefreshOptionsRef.current = null;
     historyRef.current = [];
     dashboardRef.current = null;
     dashboardRefreshPromiseRef.current = null;
@@ -218,7 +232,30 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     setIsHydrated(false);
   }, []);
 
-  const refreshHistory = useCallback(async (_opts?: { force?: boolean }) => {
+  const getRemovedKeys = useCallback(() => {
+    if (!sessionIdentityKey) return new Set<string>();
+    let removed = removedKeysByIdentityRef.current.get(sessionIdentityKey);
+    if (!removed) {
+      try {
+        removed = readEventRemovalKeys(window.sessionStorage, sessionIdentityKey);
+      } catch {
+        removed = new Set<string>();
+      }
+      removedKeysByIdentityRef.current.set(sessionIdentityKey, removed);
+    }
+    return removed;
+  }, [sessionIdentityKey]);
+
+  const persistRemovedKeys = useCallback((removed: ReadonlySet<string>) => {
+    if (!sessionIdentityKey) return;
+    try {
+      writeEventRemovalKeys(window.sessionStorage, sessionIdentityKey, removed);
+    } catch {
+      // Storage access can be disabled by the browser.
+    }
+  }, [sessionIdentityKey]);
+
+  const refreshHistory = useCallback(async (opts?: { force?: boolean }) => {
     const revision = cacheRevisionRef.current;
     const resetEpoch = historyResetEpochRef.current;
     setHistoryLoading(true);
@@ -228,6 +265,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
         limit: "200",
         time: "all",
       });
+      if (opts?.force) params.set("refresh", "1");
       const res = await fetch(`/api/history?${params.toString()}`, {
         credentials: "include",
         cache: "no-store",
@@ -246,9 +284,12 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
       setHistorySidebarItems((prev) => {
         // An older read can still fill the rest of the sidebar without replacing
         // the event just seeded by a save. Identity resets discard the read above.
-        const rows = revision === cacheRevisionRef.current
-          ? items
-          : [...new Map([...items, ...prev].map((row) => [row.id, row] as const)).values()];
+        const rows = mergeEventHistoryRefresh(
+          items,
+          prev,
+          revision !== cacheRevisionRef.current,
+          getRemovedKeys(),
+        );
         return sortHistoryRows(rows).slice(0, 200);
       });
     } catch {
@@ -256,7 +297,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     } finally {
       setHistoryLoading(false);
     }
-  }, []);
+  }, [getRemovedKeys]);
 
   const refreshDashboard = useCallback(async (opts?: { force?: boolean }) => {
     const revision = cacheRevisionRef.current;
@@ -332,27 +373,76 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     [refreshDashboard, refreshHistory],
   );
 
-  const queueRefresh = useCallback(
+  const queueRefresh: (detail?: EventCacheInvalidateDetail) => void = useCallback(
     (detail?: EventCacheInvalidateDetail) => {
       if (status !== "authenticated" || typeof window === "undefined") return;
+      pendingRefreshOptionsRef.current = {
+        force: pendingRefreshOptionsRef.current?.force || detail?.force !== false,
+        includeDashboard: pendingRefreshOptionsRef.current?.includeDashboard ||
+          detail?.includeDashboard || Boolean(dashboardRef.current),
+      };
       if (refreshTimerRef.current != null) {
         window.clearTimeout(refreshTimerRef.current);
       }
       refreshTimerRef.current = window.setTimeout(() => {
         refreshTimerRef.current = null;
-        if (refreshPromiseRef.current) return;
-        refreshPromiseRef.current = refreshAll({
-          force: detail?.force !== false,
-          includeDashboard: Boolean(dashboardRef.current),
-        })
+        if (refreshPromiseRef.current) {
+          const epoch = historyResetEpochRef.current;
+          void refreshPromiseRef.current.finally(() => {
+            if (epoch === historyResetEpochRef.current) queueRefresh(detail);
+          });
+          return;
+        }
+        const options = pendingRefreshOptionsRef.current || undefined;
+        pendingRefreshOptionsRef.current = null;
+        const refreshPromise = refreshAll(options)
           .catch(() => undefined)
           .finally(() => {
-            refreshPromiseRef.current = null;
+            if (refreshPromiseRef.current === refreshPromise) refreshPromiseRef.current = null;
           });
+        refreshPromiseRef.current = refreshPromise;
       }, 80);
     },
     [refreshAll, status],
   );
+
+  const removeUnavailableEvent = useCallback((eventKey: string, broadcast = true) => {
+    if (!sessionIdentityKey) return;
+    const key = normalizeEventRemovalKey(eventKey);
+    if (!key) return;
+    const removed = getRemovedKeys();
+    if (removed.has(key)) return;
+    removed.add(key);
+    persistRemovedKeys(removed);
+    cacheRevisionRef.current += 1;
+    historyRef.current = withoutRemovedEvents(historyRef.current, removed);
+    setHistorySidebarItems((prev) => withoutRemovedEvents(prev, removed));
+    const includeDashboard = Boolean(dashboardRef.current || dashboardRefreshPromiseRef.current);
+    dashboardRefreshPromiseRef.current = null;
+    dashboardRef.current = null;
+    setDashboardData(null);
+    if (broadcast && typeof BroadcastChannel !== "undefined") {
+      const channel = deletionChannelRef.current || new BroadcastChannel(EVENT_DELETION_CHANNEL);
+      channel.postMessage({ identity: sessionIdentityKey, key });
+      if (channel !== deletionChannelRef.current) channel.close();
+    }
+    queueRefresh({ force: true, source: "history:deleted", includeDashboard });
+  }, [getRemovedKeys, persistRemovedKeys, queueRefresh, sessionIdentityKey]);
+
+  useEffect(() => {
+    if (!sessionIdentityKey || typeof BroadcastChannel === "undefined") return;
+    const channel = new BroadcastChannel(EVENT_DELETION_CHANNEL);
+    deletionChannelRef.current = channel;
+    channel.onmessage = (event: MessageEvent<{ identity?: string; key?: string }>) => {
+      if (event.data?.identity === sessionIdentityKey && typeof event.data.key === "string") {
+        removeUnavailableEvent(event.data.key, false);
+      }
+    };
+    return () => {
+      deletionChannelRef.current = null;
+      channel.close();
+    };
+  }, [removeUnavailableEvent, sessionIdentityKey]);
 
   const invalidateEventCache = useCallback(
     (detail?: EventCacheInvalidateDetail) => {
@@ -426,7 +516,13 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
             ...(detail.category ? { category: String(detail.category) } : {}),
           },
         };
-        return sortHistoryRows([nextItem, ...prev.filter((row) => row.id !== nextItem.id)]).slice(0, 200);
+        const removed = getRemovedKeys();
+        // A newly saved or reaccepted event can legitimately reuse a removed slug.
+        for (const key of [nextItem.id, nextItem.public_slug]) {
+          if (key) removed.delete(normalizeEventRemovalKey(key));
+        }
+        persistRemovedKeys(removed);
+        return sortHistoryRows(withoutRemovedEvents([nextItem, ...prev.filter((row) => row.id !== nextItem.id)], removed)).slice(0, 200);
       });
       if (detail.deferRefresh === true) {
         // The save response already includes this event. Refresh dashboard lazily
@@ -443,10 +539,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
       const deletedId =
         detail?.id != null ? String(detail.id).trim() : "";
       if (!deletedId) return;
-      setHistorySidebarItems((prev) =>
-        prev.filter((row) => row.id !== deletedId),
-      );
-      queueRefresh({ force: true, source: "history:deleted" });
+      removeUnavailableEvent(deletedId);
     };
 
     const onInvalidate = (event: Event) => {
@@ -488,7 +581,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
       window.removeEventListener(EVENT_CACHE_RESET_EVENT, onReset as EventListener);
       window.removeEventListener("rsvp-submitted", onRsvpSubmitted);
     };
-  }, [queueRefresh, resetCacheState]);
+  }, [getRemovedKeys, persistRemovedKeys, queueRefresh, resetCacheState, removeUnavailableEvent]);
 
   const value = useMemo<EventCacheContextValue>(
     () => ({
@@ -503,6 +596,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
       refreshDashboard,
       refreshAll,
       invalidateEventCache,
+      removeUnavailableEvent,
       setDashboardMetricsCache,
     }),
     [
@@ -513,6 +607,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
       historyLoading,
       historySidebarItems,
       invalidateEventCache,
+      removeUnavailableEvent,
       isHydrated,
       refreshAll,
       refreshDashboard,

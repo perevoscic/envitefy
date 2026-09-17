@@ -1446,7 +1446,7 @@ function buildEmptyConversationDraft(args: {
     outputs: toLegacyOutputs(args.requestedOutputs),
     missingFields: [],
     previewCopy: {
-      headline: "Envitefy Concierge",
+      headline: "Envitefy Create",
       subheadline: "Ask about event products, RSVP, uploads, or guest pages.",
       body: "Envitefy helps turn event details into shareable guest-facing products.",
       scheduleLine: "Date TBD",

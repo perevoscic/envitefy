@@ -1,6 +1,5 @@
-import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
-
 import { Camera } from "lucide-react";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import { EventData, ThemeConfig } from "./content-sections";
 
 type Props = {
@@ -48,17 +47,17 @@ export default function NewspaperWedding({ theme, event }: Props) {
       style={{ fontFamily: theme.fonts.body }}
     >
       <div className="max-w-4xl w-full mx-auto bg-white p-6 md:p-12 shadow-xl border border-neutral-200">
-<div className="h-64 bg-neutral-100 mb-4 grayscale flex items-center justify-center border border-neutral-300 overflow-hidden">
-              {heroImage ? (
-                <img
-                  src={heroImage}
-                  alt={coupleNames}
-                  className="template-hero-image w-full h-full object-cover"
-                />
-              ) : (
-                <Camera className="w-12 h-12 opacity-20" />
-              )}
-            </div>
+        <div className="h-64 bg-neutral-100 mb-4 grayscale flex items-center justify-center border border-neutral-300 overflow-hidden">
+          {heroImage ? (
+            <img
+              src={heroImage}
+              alt={coupleNames}
+              className="template-hero-image w-full h-full object-cover"
+            />
+          ) : (
+            <Camera className="w-12 h-12 opacity-20" />
+          )}
+        </div>
         <header className="border-b-4 border-black pb-4 mb-4 text-center">
           <div className="flex justify-between items-center border-b border-black pb-2 mb-2 text-xs uppercase font-sans font-bold tracking-[0.18em]">
             <span>Vol. 1</span>
@@ -74,7 +73,7 @@ export default function NewspaperWedding({ theme, event }: Props) {
         </header>
 
         <div className="grid md:grid-cols-12 gap-8">
-          <div className="md:col-span-8">
+          <div data-celebration-section className="md:col-span-8">
             <h2 className="text-3xl md:text-5xl font-bold leading-none mb-4 uppercase tracking-tight">
               EXTRA! EXTRA! {coupleNames} MAKE IT OFFICIAL
             </h2>
@@ -88,12 +87,13 @@ export default function NewspaperWedding({ theme, event }: Props) {
                 : `n a stunning turn of events, ${coupleNames} have announced their intention to wed this coming ${weddingDate}. Sources close to the couple say the ceremony will be delightful and full of cake. Citizens are advised to save the date immediately.`}
             </p>
           </div>
-          <div className="md:col-span-4 border-l border-black pl-8 flex flex-col gap-8">
+          <div
+            data-celebration-section
+            className="md:col-span-4 border-l border-black pl-8 flex flex-col gap-8"
+          >
             <div className="border-b border-black pb-8">
               <h3 className="font-bold uppercase text-xl mb-2">Weather</h3>
-              <p className="text-sm">
-                Sunny with a 100% chance of champagne showers.
-              </p>
+              <p className="text-sm">Sunny with a 100% chance of champagne showers.</p>
             </div>
             <div>
               <h3 className="font-bold uppercase text-xl mb-2">Details</h3>

@@ -555,7 +555,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /choiceIconClassName/);
   assert.doesNotMatch(client, /<Paperclip/);
   assert.doesNotMatch(client, /<Camera/);
-  assert.match(client, /Concierge is thinking\.\.\./);
+  assert.match(client, /Envitefy Create is thinking\.\.\./);
   assert.match(client, /isThinking && "animate-pulse"/);
   assert.match(client, /isThinking \? null : \(/);
   assert.match(client, /message\.type !== "upload_status" && !message\.text\.trim\(\)/);

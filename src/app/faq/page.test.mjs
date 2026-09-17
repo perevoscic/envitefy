@@ -10,7 +10,7 @@ const componentSource = await readFile(
 
 test("the full FAQ reflects the current customer-facing product", () => {
   for (const expected of [
-    "Envitefy Concierge",
+    "Envitefy Create",
     "My events and Invited events",
     "smart sign-up forms",
     "automatic waitlists",

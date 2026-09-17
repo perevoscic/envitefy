@@ -87,7 +87,7 @@ const steps = [
   {
     number: "01",
     title: "Bring the idea",
-    body: "Describe the event to Envitefy Concierge, choose a category template, or upload the invitation you already have.",
+    body: "Describe the event to Envitefy Create, choose a category template, or upload the invitation you already have.",
   },
   {
     number: "02",
@@ -136,7 +136,7 @@ const faqs = [
   {
     question: "How do I create an online invitation with Envitefy?",
     answer:
-      "Start with Envitefy Concierge or a category template, enter the event details, choose the guest actions you need, preview the invitation, and share the published link.",
+      "Start with Envitefy Create or a category template, enter the event details, choose the guest actions you need, preview the invitation, and share the published link.",
   },
   {
     question: "Can I add RSVP to my invitation?",
@@ -370,7 +370,7 @@ export default function InvitationMakerPage() {
                   </h3>
                   <p className="mt-4 max-w-xl leading-7 text-[#d7ccd9]">
                     Choose the event type, add the essentials, and build the guest experience in
-                    Envitefy Concierge. You can refine the design before anyone sees it.
+                    Envitefy Create. You can refine the design before anyone sees it.
                   </p>
 
                   <div className="mt-8 rounded-2xl border border-white/12 bg-black/15 p-4">
@@ -386,7 +386,7 @@ export default function InvitationMakerPage() {
                     href="/chat"
                     className="mt-8 inline-flex items-center gap-2 font-bold text-[#f0d58f] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f0d58f]"
                   >
-                    Create with Concierge <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    Create with Envitefy <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </Link>
                 </div>
               </article>
@@ -662,7 +662,7 @@ export default function InvitationMakerPage() {
                 Create the invite. Share one link. Keep every detail current.
               </h2>
               <p className="mt-5 max-w-2xl text-lg leading-8 text-[#d9ceda]">
-                Describe your event to Concierge or upload the invitation you already have. Guests can
+                Describe your event to Envitefy Create or upload the invitation you already have. Guests can
                 open either experience in any modern browser—no app required.
               </p>
               <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">

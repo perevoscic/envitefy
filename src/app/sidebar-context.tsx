@@ -40,7 +40,7 @@ interface SidebarContextType {
 export type EventContextTab = "dashboard" | "rsvps" | "messages" | "design";
 export type EventEditAction = { href: string } | { onClick: () => void };
 
-export type EventListPage = "myEvents" | "invitedEvents";
+export type EventListPage = "myEvents" | "invitedEvents" | "schedules";
 
 export type EventRouteAlias = { pathname: string; eventHref: string };
 

@@ -1,4 +1,5 @@
-import { footballLink, type FootballGame, type FootballHome } from "./football-games";
+import { footballLink, isFootballOffWeek, type FootballGame, type FootballHome } from "./football-games";
+import { resolveWaltonFootballProgram } from "./football-walton-program";
 import { fetchFootballSource, footballWebsiteText } from "./football-source";
 
 export type FootballVenueFacts = {
@@ -44,8 +45,11 @@ const verifiedPrograms = [
 ];
 // Official starting pages verified September 12, 2026. These are lookup hints,
 // not hardcoded venue facts: the pages are fetched and validated on every lookup.
-function officialStartingPages(team: string) {
-  const program = verifiedPrograms.find((item) => item.aliases.some((alias) => normalize(alias) === normalize(team)));
+function verifiedProgram(team: string, home: FootballHome) {
+  return resolveWaltonFootballProgram(team, home.teamName) || verifiedPrograms.find((item) => item.aliases.some((alias) => normalize(alias) === normalize(team)));
+}
+function officialStartingPages(team: string, home: FootballHome) {
+  const program = verifiedProgram(team, home);
   return program ? [program.venueSource, program.ticketsSource].filter(Boolean) : [];
 }
 
@@ -148,13 +152,13 @@ async function searchTargets(targets: LookupTarget[], home: FootballHome, allowS
       }
       return page;
     };
-    const startingUrls = [...new Set(targets.flatMap((target) => officialStartingPages(target.team)))];
+    const startingUrls = [...new Set(targets.flatMap((target) => officialStartingPages(target.team, home)))];
     const officialPages = await Promise.all(startingUrls.map(async (url) => ({ url, text: (await readPage(url)).slice(0, 25_000) })));
     const verifiedUrls = new Set(officialPages.filter((page) => page.text).map((page) => page.url));
     // Keep verified school-directory facts stable across model runs. Validate
     // their address and ticket link against the live official page first.
     for (const target of targets) {
-      const program = verifiedPrograms.find((item) => item.aliases.some((alias) => normalize(alias) === normalize(target.team)));
+      const program = verifiedProgram(target.team, home);
       if (!program) continue;
       const sameVenue = !target.venue || normalize(target.venue) === normalize(program.venue) || program.aliases.some((alias) => normalize(alias) === normalize(target.venue));
       const sameAddress = !target.address || normalize(target.address) === normalize(program.address);
@@ -230,6 +234,7 @@ export async function lookupFootballVenues(games: FootballGame[], home: Football
   const targets: LookupTarget[] = [];
   if (home.teamName) targets.push({ id: "home", team: home.teamName, venue: home.homeVenue || "", address: home.homeAddress || "" });
   for (const game of games) {
+    if (isFootballOffWeek(game)) continue;
     if (game.homeAway !== "away" || !game.opponent || /^(?:tbd|tba|bye|region(?:al)? |state |district |.*(?:quarterfinal|semifinal|championship))/i.test(game.opponent) || (game.address && game.venue && game.ticketsLink)) continue;
     const id = hostKey(game);
     if (!targets.some((target) => target.id === id)) targets.push({ id, team: game.opponent, venue: game.venue || "", address: game.address || "" });
@@ -274,6 +279,7 @@ export function applyFootballVenueFacts(games: FootballGame[], home: FootballHom
   return {
     home: enrichedHome,
     games: games.map((game) => {
+      if (isFootballOffWeek(game)) return game;
       const details = game.homeAway === "home" ? homeFacts : game.homeAway === "away" ? facts.get(hostKey(game)) : null;
       if (!details) return game;
       // A designated home game can still be played off campus. Never attach the

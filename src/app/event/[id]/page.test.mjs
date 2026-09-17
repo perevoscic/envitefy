@@ -334,9 +334,11 @@ test("event route disconnects the retired legacy event page fallback", () => {
 test("event route shows deleted event copy for missing event rows", () => {
   const source = readSource("src/app/event/[id]/page.tsx");
 
-  assert.match(source, /function DeletedEventNotice\(\)/);
+  assert.match(source, /function DeletedEventNotice\(\{ missingEventKey \}/);
   assert.match(source, /This event was deleted/);
-  assert.match(source, /if \(!row\) return <DeletedEventNotice \/>;/);
+  assert.match(source, /resolveEventHistoryIdentityBySlugOrId\(\{ value: awaitedParams\.id, userId \}\)/);
+  assert.match(source, /<DeletedEventNotice missingEventKey=\{identity \? undefined : awaitedParams\.id\}/);
+  assert.match(source, /<RemoveUnavailableEventFromLists eventKey=\{missingEventKey\}/);
   assert.doesNotMatch(source, /if \(!row\) return notFound\(\);/);
 });
 

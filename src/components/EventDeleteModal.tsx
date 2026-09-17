@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { emitEventCacheInvalidation } from "@/app/event-cache-context";
-import { useSidebar } from "@/app/sidebar-context";
+import { type EventListPage, useSidebar } from "@/app/sidebar-context";
 
 interface EventDeleteModalProps {
   eventId: string;
@@ -18,9 +18,9 @@ interface EventDeleteModalProps {
   ariaLabel?: string;
 }
 
-function openMyEventsSidebar() {
+function openEventListSidebar(page: EventListPage) {
   if (typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent("envitefy:sidebar:open-my-events"));
+  window.dispatchEvent(new CustomEvent("envitefy:sidebar:open-event-list", { detail: { page } }));
 }
 
 async function removeInvitedEventRequest(eventId: string, data: unknown): Promise<void> {
@@ -62,7 +62,7 @@ export default function EventDeleteModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const { data: session } = useSession();
-  const { clearEventContext, setEventContextSourcePage } = useSidebar();
+  const { clearEventContext, eventContextSourcePage, setEventContextSourcePage } = useSidebar();
   const router = useRouter();
 
   useEffect(() => {
@@ -100,8 +100,8 @@ export default function EventDeleteModal({
         setIsOpen(false);
       } else {
         clearEventContext();
-        setEventContextSourcePage("myEvents");
-        openMyEventsSidebar();
+        setEventContextSourcePage(eventContextSourcePage);
+        openEventListSidebar(eventContextSourcePage);
         router.replace("/");
       }
       router.refresh();

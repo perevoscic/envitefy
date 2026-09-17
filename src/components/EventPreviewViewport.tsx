@@ -16,6 +16,7 @@ import {
 } from "@/lib/event-preview-viewport";
 import OwnerPreviewMobileTopbarSuppressor from "./OwnerPreviewMobileTopbarSuppressor";
 import EventCanvas from "./EventCanvas";
+import EventPreviewActions from "./EventPreviewActions";
 import { useEventPageColor } from "@/hooks/useEventPageChrome";
 import type { EventPreviewBackground } from "@/lib/event-preview-background";
 import { isDarkEventPageColor } from "@/lib/event-page-chrome";
@@ -223,13 +224,13 @@ export default function EventPreviewViewport({
       <header
         data-floating-event-toolbar={floatingToolbar || undefined}
         style={{ color: isDarkEventPageColor(String(background.backgroundColor || "")) ? "#ffffff" : background.color }}
-        className={`z-10 ${preserveNavigation ? "pointer-events-none absolute inset-x-0 top-[calc(var(--app-mobile-topbar-offset,6rem)+0.5rem)] flex flex-wrap justify-center md:grid md:grid-cols-[1fr_auto_1fr] lg:flex lg:top-[max(0.5rem,env(safe-area-inset-top))]" : `${nativeMobile ? "pointer-events-none absolute inset-x-0 top-0" : "relative shrink-0"} grid pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] ${actions ? "grid-cols-[1fr_auto] sm:grid-cols-[1fr_auto_1fr]" : "grid-cols-[1fr_auto_1fr]"}`} items-center gap-2 px-3 sm:px-5`}
+        className={`z-10 ${preserveNavigation ? "pointer-events-none absolute inset-x-0 top-[calc(var(--app-mobile-topbar-offset,6rem)+0.5rem)] grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:flex lg:justify-center lg:top-[max(0.5rem,env(safe-area-inset-top))]" : `${nativeMobile ? "pointer-events-none absolute inset-x-0 top-0" : "relative shrink-0"} grid pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] ${actions ? "grid-cols-[1fr_auto] sm:grid-cols-[1fr_auto_1fr]" : "grid-cols-[1fr_auto_1fr]"}`} items-center gap-2 px-3 sm:px-5`}
       >
         {preserveNavigation ? null : actions ? <div className="pointer-events-auto">{actions}</div> : <div aria-hidden="true" />}
         <div
           role="group"
           aria-label="Preview device"
-          className={`flex gap-2 rounded-full border border-current/15 p-1 ${floatingToolbar ? "pointer-events-auto shadow-sm backdrop-blur-xl" : ""} ${preserveNavigation ? "md:col-start-2" : actions ? "col-span-2 row-start-2 justify-self-center sm:col-span-1 sm:col-start-2 sm:row-start-1" : ""}`}
+          className={`flex gap-2 rounded-full border border-current/15 p-1 ${floatingToolbar ? "pointer-events-auto shadow-sm backdrop-blur-xl" : ""} ${preserveNavigation ? "col-start-2 row-start-1 justify-self-center" : actions ? "col-span-2 row-start-2 justify-self-center sm:col-span-1 sm:col-start-2 sm:row-start-1" : ""}`}
           style={floatingSurfaceStyle}
         >
           {deviceOrder.map((id) => {
@@ -251,9 +252,9 @@ export default function EventPreviewViewport({
           })}
         </div>
         {preserveNavigation && actions ? (
-          <div className="pointer-events-auto justify-self-start rounded-full border border-current/15 p-1 shadow-sm backdrop-blur-xl md:col-start-3" style={floatingSurfaceStyle}>
+          <EventPreviewActions surfaceStyle={floatingSurfaceStyle} previewDocument={frameDocument}>
             {actions}
-          </div>
+          </EventPreviewActions>
         ) : null}
         {onClose || returnHref || onExpand ? (
           <div

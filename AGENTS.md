@@ -12,7 +12,11 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 - Dashboard preference (September 7, 2026): keep the original image-led `InvitationEventCard` design for Upcoming Events, including its event details and action buttons. The user prefers these cards to a compact agenda/list; preserve the cards when adding dashboard data or filters.
 - Upcoming cards use left-aligned All, My events, and Invited events filters with count bubbles in place of the visible Upcoming Events heading/count. Counts reflect the complete card list before filtering or pagination, excluding the spotlight event.
 - Dashboard Drive tile preference (September 7, 2026): show total route distance in miles and drive duration in hours/minutes. Keep departure times, arrival buffers, traffic notes, and drive update timestamps out of this tile.
-- Dashboard panel preference (September 7, 2026): keep Guest responses beside Continue creating. Do not restore the large Needs attention panel; use separate compact Schedule conflicts (second summary tile) and Needs attention tiles with clickable details.
+- Dashboard panel preference (September 15, 2026, updated): remove the Guest responses panel and its summary tile from the main dashboard. Keep Continue creating and sign-up progress, filling the available row when only one remains. This supersedes the earlier Guest responses beside Continue creating preference. Do not restore the large Needs attention panel; use separate compact Schedule conflicts (second summary tile) and Needs attention tiles with clickable details.
+
+## Creation Product Name
+
+- Product naming (September 15, 2026): the former Envitefy Concierge is **Envitefy Create**. Use **Create with Envitefy** for creation buttons and **Create** in compact navigation; chat-specific controls may say New chat or Chat history. Public introductions use `/envitefy-create`, with `/envitefy-concierge` redirecting there. Keep `/chat`, existing API routes, saved data keys, event URLs and legacy asset filenames compatible. Earlier Concierge references in these notes refer to the same current creation feature.
 
 ## Explicit Draft Saves
 
@@ -22,6 +26,10 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 - Keep publishing separate from saving progress. Preserve the chosen destination after saving, and resume each saved draft in its matching editor with its artwork and form fields.
 
 ## Template Gallery Standard
+
+- Celebration content individuality (September 15, 2026): birthdays, weddings, anniversaries, baby showers and gender reveals carry their theme into section geometry, headings and cards. Keep the explicit per-design assignments in `scripts/build-celebration-art-directions.cjs` and the shared `celebration-materials` styling aligned between editors and guest pages. Preserve original hero artwork and existing wedding compositions. Use restrained CSS gradients; do not add SVG background patterns.
+
+- Football design individuality (September 15, 2026): all 90 templates need theme-specific content structure and surfaces, not the same div/card CSS with different colors. Preserve the individual section frames, heading compositions, cards, navigation and restrained gradients in `scripts/build-football-presentations.cjs` and its generated CSS. Do not add SVG background patterns: the user requested their removal across templates. Fabric themes use stitching, paper themes use folds, stadium themes use field/structural markings, and so on. Shared editor toolbars must not wrap every design in the same rounded card. Keep editor and guest content aligned through `FootballPageContent`.
 
 - Football gallery thumbnail preference (September 12, 2026, updated): fill the rounded card interior with artwork and overlay the design name directly inside the image. Keep the white shell, inset and each design's font. No gradient, faded overlay or tinted caption band. Move the name to a clear, readable area of each thumbnail rather than fixing it to the bottom. Prefer quiet edges over the central subject, and choose dark lettering over light artwork and light lettering over dark artwork using the actual crop and wrapped text. This supersedes the earlier caption-gradient treatment and fixed title placement.
 
@@ -114,6 +122,10 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
   Start with `rg` on symbols, then use targeted `sed -n` slices.
 
 ## Feature Maps
+
+- Mobile event controls preference (September 15, 2026): keep the owner-view device selector centered, with a circular vertical three-dot button on the right opening labeled Preview, Edit, Share and Delete actions. Keep desktop actions visible and preserve templates that already place their mobile Edit beside guest actions. Narrow football game cards put compact Directions and Calendar buttons in one row with 44px targets, full accessible labels, the saved calendar provider and editable directions wording preserved.
+
+- Football game card preference (September 15, 2026): omit the drive-summary box with mileage, drive time, road names and the origin-to-destination sentence. Keep the away-game Get directions action. This supersedes the earlier instruction to display road names and mileage on football game cards.
 
 - Mobile phone preview preference (September 12, 2026): selecting Mobile in `EventPreviewViewport` on a phone fills the available browser width and height at native CSS size, with no scale transform, device-frame padding, rounded frame or shadow. Apply to fullscreen, owner and Concierge event previews; retain device switching and Close without saving or losing in-memory state. Content may scroll underneath the floating controls: do not reserve a toolbar band or inject extra top padding for those controls. Keep the controls readable and tappable, and let pointer gestures pass through the surrounding empty space.
 - Past football games preference (September 12, 2026): `FootballSchedule` past-game cards show only matchup, date and supplied score. Show Score unavailable when missing; omit home badges, kickoff time, venues, travel, weather, notes, broadcast, ticket links, source links and calendar actions. Upcoming and undated cards retain their planning details.
@@ -226,6 +238,8 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
 - Appointment category preference (September 10, 2026): use the existing **Medical Appointments** category for medically supported scans, including ENT visits, and keep nonmedical appointments under **Appointments**. Apply the same category and concise patient title in the sidebar, dashboard and scanned event page; preserve existing event URLs.
 
 - Snap personalization preference (September 10, 2026): use a concise person/event title for scanned appointments, for example first name + ENT appointment, rather than clinic shorthand such as Estab Pt. Generate a unique event/person-aware background after a signed-in scan is saved. Use a clearly supported age at the event date for age-appropriate artwork, keep identifying details out of image prompts, and leave unclear ages/people unknown. Keep printed Patient, Patient ID, individual clinician, Fax and clinic/organization details in the appointment view. Medical cards label the person **Clinician** and the organization **Appointment provider**, never **Host**; retain the stored Appointment Provider/Host facts for compatibility and preserve printed credentials without assuming the person is a doctor. Hide DOB/birthday cards and omit the generic “Bring your appointment details with you.” Good to Know reminder. See `docs/snap-personalization-2026-09-10.md` for the extraction, background generation and retry paths.
+
+- Chat controls preference (September 15, 2026): keep chat messages, composer and actions centered at a 768px maximum width. Remove the composer + menu. Keep a dedicated microphone beside Send in empty and active chats; dictation fills the composer for review before sending. Cancel stops the current response or draft artwork generation while preserving progress, and returns to the dashboard through Save / Discard / Keep editing when idle. Finish committed publishing/saved-event updates before enabling Cancel again.
 
 - Chat product selector preference (September 8, 2026): keep the Live Card, Flyer/Invitation, and Event Page choices on the empty starting screen only. Do not render the old product navigation bar between conversation messages, including when a draft has no requested output.
 

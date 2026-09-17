@@ -16,7 +16,7 @@ const MARKETING_PRODUCT_LINKS = [
 const MARKETING_HOME_LINK = { label: "Home", href: "/" };
 
 /**
- * Builds the shared guest marketing navigation for `/landing`, `/envitefy-concierge`, `/snap`, and `/gymnastics`.
+ * Builds the shared guest marketing navigation for `/landing`, `/envitefy-create`, `/snap`, and `/gymnastics`.
  *
  * @param {MarketingHeroNavPageKey} _page
  * @param {HeroTopNavLink[]} sectionLinks

@@ -374,7 +374,10 @@ export async function DELETE(_req: Request, context: { params: Promise<{ id: str
 
   const { id } = await context.params;
   const existing = await getEventHistoryById(id);
-  if (!existing) return NextResponse.json({ ok: true });
+  if (!existing) {
+    invalidateHistoryAndDashboardForUser(userId);
+    return NextResponse.json({ ok: true });
+  }
   if (existing.user_id !== userId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

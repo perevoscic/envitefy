@@ -17,7 +17,7 @@ export const guestChatKnowledgeItems: GuestChatKnowledgeItem[] = [
     id: "product-overview",
     question: "What does Envitefy create?",
     answer:
-      "Envitefy helps hosts create polished hosted event pages with live invitations, RSVP flows, maps, calendar saves, registry links, smart sign-ups, updates, and guest-facing details from one shareable link. You can start with SNAP, Envitefy Concierge, or a category template.",
+      "Envitefy helps hosts create polished hosted event pages with live invitations, RSVP flows, maps, calendar saves, registry links, smart sign-ups, updates, and guest-facing details from one shareable link. You can start with SNAP, Envitefy Create, or a category template.",
     keywords: ["envitefy", "what", "create", "event", "page", "invitation", "hosted", "host"],
   },
   {
@@ -54,10 +54,10 @@ export const guestChatKnowledgeItems: GuestChatKnowledgeItem[] = [
   },
   {
     id: "concierge",
-    question: "What is Envitefy Concierge?",
+    question: "What is Envitefy Create?",
     answer:
-      "Envitefy Concierge is the chat that creates an event from a message, upload, or screenshot. It asks for missing details, then drafts the live invitation, RSVP, and guest page for you to review before sharing.",
-    keywords: ["concierge", "chat", "ai", "message", "draft", "assistant", "envitefy concierge"],
+      "Envitefy Create is the chat that creates an event from a message, upload, or screenshot. It asks for missing details, then drafts the live invitation, RSVP, and guest page for you to review before sharing.",
+    keywords: ["concierge", "chat", "ai", "message", "draft", "assistant", "envitefy concierge", "create", "envitefy create"],
   },
   {
     id: "my-events-vs-invited",
@@ -162,7 +162,7 @@ export function rankGuestChatKnowledge(message: string, limit = 5): GuestChatKno
     .map((item) => {
       const keywordScore = item.keywords.reduce((score, keyword) => {
         const normalized = keyword.toLowerCase();
-        if (message.toLowerCase().includes(normalized)) return score + 4;
+        if (message.toLowerCase().includes(normalized)) return score + 4 * words(keyword).length;
         return score + words(keyword).filter((word) => queryWords.has(word)).length * 2;
       }, 0);
       const questionScore = words(item.question).filter((word) => queryWords.has(word)).length;

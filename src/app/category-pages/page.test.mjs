@@ -153,7 +153,7 @@ test("category landing pages use root URLs and keep old use-case paths redirect-
   assert.match(birthdaysExperience, /Household RSVP/);
   assert.match(birthdaysExperience, /Host bar/);
   assert.match(birthdaysExperience, /SNAP/);
-  assert.match(birthdaysExperience, /Envitefy Concierge/);
+  assert.match(birthdaysExperience, /Envitefy Create/);
   assert.match(birthdaysExperience, /href="\/snap\?auth=signup"/);
   assert.match(birthdaysExperience, /href="\/chat"/);
   assert.match(birthdaysExperience, /role="tablist"/);
@@ -165,7 +165,7 @@ test("category landing pages use root URLs and keep old use-case paths redirect-
 
   const genderRevealView = readSource("src/app/category-pages/GenderRevealEditorialSections.tsx");
   assert.match(genderRevealView, /SNAP the invite/);
-  assert.match(genderRevealView, /Envitefy Concierge/);
+  assert.match(genderRevealView, /Envitefy Create/);
   assert.match(genderRevealView, /href="\/snap\?auth=signup"/);
   assert.match(genderRevealView, /href="\/chat"/);
 });

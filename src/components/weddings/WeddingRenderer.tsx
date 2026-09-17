@@ -1,42 +1,46 @@
-
-import TemplateImageTone from "@/components/events/TemplateImageTone";
-import EventGuestActions from "@/components/event-templates/EventGuestActions";
 import type { CSSProperties } from "react";
-import { getEventEndLocal } from "@/lib/event-guest-planning";
-import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
 import AtelierWeddingLayout from "@/app/event/weddings/_renderers/atelier-wedding-layouts";
-import SignatureWeddingLayout from "@/app/event/weddings/_renderers/signature-wedding-layouts";
-import EtherealClassic from "@/app/event/weddings/_renderers/ethereal-classic";
-import ModernEditorial from "@/app/event/weddings/_renderers/modern-editorial";
-import RusticBoho from "@/app/event/weddings/_renderers/rustic-boho";
-import NoirLuxury from "@/app/event/weddings/_renderers/noir-luxury";
-import CinematicWedding from "@/app/event/weddings/_renderers/cinematic-wedding";
-import CelestialWedding from "@/app/event/weddings/_renderers/celestial-wedding";
-import GildedWedding from "@/app/event/weddings/_renderers/gilded-wedding";
-import MuseumWedding from "@/app/event/weddings/_renderers/museum-wedding";
-import EtherealWedding from "@/app/event/weddings/_renderers/ethereal-wedding";
-import Retro70s from "@/app/event/weddings/_renderers/retro-70s";
-import NewspaperWedding from "@/app/event/weddings/_renderers/newspaper-wedding";
 import BauhausWedding from "@/app/event/weddings/_renderers/bauhaus-wedding";
+import CaliforniaCoastalWedding from "@/app/event/weddings/_renderers/california-coastal-wedding";
+import CelestialWedding from "@/app/event/weddings/_renderers/celestial-wedding";
+import CinematicWedding from "@/app/event/weddings/_renderers/cinematic-wedding";
+import {
+  ContentSections,
+  type EventData,
+  Footer,
+  getLuminance,
+  type ThemeConfig,
+} from "@/app/event/weddings/_renderers/content-sections";
+import EtherealClassic from "@/app/event/weddings/_renderers/ethereal-classic";
+import EtherealWedding from "@/app/event/weddings/_renderers/ethereal-wedding";
 import EuropeCoastalWedding from "@/app/event/weddings/_renderers/europe-coastal-wedding";
 import FloridaCoastalWedding from "@/app/event/weddings/_renderers/florida-coastal-wedding";
-import CaliforniaCoastalWedding from "@/app/event/weddings/_renderers/california-coastal-wedding";
-import WinterWedding from "@/app/event/weddings/_renderers/winter-wedding";
+import GardenWedding from "@/app/event/weddings/_renderers/garden-wedding";
+import GildedWedding from "@/app/event/weddings/_renderers/gilded-wedding";
 import IndustrialWedding from "@/app/event/weddings/_renderers/industrial-wedding";
 import LibraryWedding from "@/app/event/weddings/_renderers/library-wedding";
-import GardenWedding from "@/app/event/weddings/_renderers/garden-wedding";
+import ModernEditorial from "@/app/event/weddings/_renderers/modern-editorial";
+import MuseumWedding from "@/app/event/weddings/_renderers/museum-wedding";
+import NewspaperWedding from "@/app/event/weddings/_renderers/newspaper-wedding";
+import NoirLuxury from "@/app/event/weddings/_renderers/noir-luxury";
+import Retro70s from "@/app/event/weddings/_renderers/retro-70s";
+import RusticBoho from "@/app/event/weddings/_renderers/rustic-boho";
+import SignatureWeddingLayout from "@/app/event/weddings/_renderers/signature-wedding-layouts";
 import SkylineWedding from "@/app/event/weddings/_renderers/skyline-wedding";
+import WinterWedding from "@/app/event/weddings/_renderers/winter-wedding";
+import EventGuestActions from "@/components/event-templates/EventGuestActions";
+import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
+import TemplateImageTone from "@/components/events/TemplateImageTone";
+import {
+  celebrationMaterialStyle,
+  getCelebrationDirection,
+} from "@/components/templates/celebration-materials";
+import materialStyles from "@/components/templates/celebration-materials.module.css";
 import ScannedWeddingInviteView, {
   type ScannedWeddingRegistryCard,
 } from "@/components/weddings/ScannedWeddingInviteView";
-import {
-  ContentSections,
-  Footer,
-  type EventData,
-  type ThemeConfig,
-  getLuminance,
-} from "@/app/event/weddings/_renderers/content-sections";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
+import { getEventEndLocal } from "@/lib/event-guest-planning";
 import { buildWeddingScanSchedule } from "@/lib/wedding-scan";
 import { getRegistryBrandByUrl } from "@/utils/registry-links";
 
@@ -98,7 +102,15 @@ function withAmazonAffiliateRegistryLinks(event: EventData): EventData {
   };
 }
 
-export default function WeddingRenderer({ template, event, renderMode = "default", shareUrl, eventId, preview = true, hideGuestTools = false }: Props) {
+export default function WeddingRenderer({
+  template,
+  event,
+  renderMode = "default",
+  shareUrl,
+  eventId,
+  preview = true,
+  hideGuestTools = false,
+}: Props) {
   const { layout, theme } = template;
   const eventWithAffiliateRegistries = withAmazonAffiliateRegistryLinks(event);
 
@@ -163,7 +175,8 @@ export default function WeddingRenderer({ template, event, renderMode = "default
   };
   const surface = theme.colors.primary;
   const fill = theme.colors.secondary;
-  const contrast = (Math.max(getLuminance(surface), getLuminance(fill)) + 0.05) /
+  const contrast =
+    (Math.max(getLuminance(surface), getLuminance(fill)) + 0.05) /
     (Math.min(getLuminance(surface), getLuminance(fill)) + 0.05);
   const guestStyle = {
     "--guest-action-fill": fill,
@@ -171,18 +184,37 @@ export default function WeddingRenderer({ template, event, renderMode = "default
     "--guest-action-text": contrast >= 4.5 ? surface : readableText(fill),
     "--guest-action-surface": surface,
     "--guest-action-ink": contrast >= 4.5 ? fill : readableText(surface),
-    "--guest-action-radius": /editorial|newspaper|bauhaus|gilded|deco|japanese|cyanotype|red-thread/.test(layout) ? "0.25rem" : "999px",
+    "--guest-action-radius":
+      /editorial|newspaper|bauhaus|gilded|deco|japanese|cyanotype|red-thread/.test(layout)
+        ? "0.25rem"
+        : "999px",
     fontFamily: theme.fonts.body,
   } as CSSProperties;
   const themedEvent: EventData = {
     ...eventWithAffiliateRegistries,
     guestTools: hideGuestTools ? null : (
-      <div className="mx-auto w-full max-w-5xl px-5 py-4 normal-case tracking-normal" style={guestStyle}>
-        {event.time && <p className="text-center text-sm font-medium">{event.time}{event.endTime ? ` – ${event.endTime}${event.endDate && event.endDate !== event.date ? ` (${event.endDate})` : ""}` : ""}</p>}
+      <div
+        className="mx-auto w-full max-w-5xl px-5 py-4 normal-case tracking-normal"
+        style={guestStyle}
+      >
+        {event.time && (
+          <p className="text-center text-sm font-medium">
+            {event.time}
+            {event.endTime
+              ? ` – ${event.endTime}${event.endDate && event.endDate !== event.date ? ` (${event.endDate})` : ""}`
+              : ""}
+          </p>
+        )}
         <EventGuestActions
           title={event.headlineTitle}
-          start={event.startISO || (event.date ? `${event.date}${event.time ? `T${event.time}` : ""}` : undefined)}
-          end={event.endISO || getEventEndLocal(event.date || "", event.time || "", event.endTime || "", event.endDate)}
+          start={
+            event.startISO ||
+            (event.date ? `${event.date}${event.time ? `T${event.time}` : ""}` : undefined)
+          }
+          end={
+            event.endISO ||
+            getEventEndLocal(event.date || "", event.time || "", event.endTime || "", event.endDate)
+          }
           description={event.story}
           location={event.venue?.address || event.location}
           shareUrl={shareUrl}
@@ -194,18 +226,24 @@ export default function WeddingRenderer({ template, event, renderMode = "default
     ),
   };
 
+  const direction = getCelebrationDirection("weddings", template.id);
   return (
-    <TemplateImageTone color={theme.colors.accent || theme.colors.secondary} enabled={event.heroImageFilterEnabled !== false}>
-<div
-      className="w-full min-h-screen flex flex-col"
-      style={{
-        fontFamily: theme.fonts.body,
-        backgroundColor: "transparent",
-      }}
+    <TemplateImageTone
+      color={theme.colors.accent || theme.colors.secondary}
+      enabled={event.heroImageFilterEnabled !== false}
     >
-      {renderLayout(layout, theme, themedEvent)}
-    </div>
-</TemplateImageTone>
+      <div
+        className={`w-full min-h-screen flex flex-col ${direction ? materialStyles.wedding : ""}`}
+        data-celebration-design={direction ? `weddings/${template.id}` : undefined}
+        style={{
+          fontFamily: theme.fonts.body,
+          backgroundColor: "transparent",
+          ...(direction ? celebrationMaterialStyle(direction) : {}),
+        }}
+      >
+        {renderLayout(layout, theme, themedEvent)}
+      </div>
+    </TemplateImageTone>
   );
 }
 

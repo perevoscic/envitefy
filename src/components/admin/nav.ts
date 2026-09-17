@@ -38,7 +38,7 @@ export const adminNavItems: AdminNavItem[] = [
   },
   {
     id: "concierge",
-    label: "Envitefy Concierge",
+    label: "Envitefy Create",
     href: "/admin/concierge",
     description: "Draft sessions and conversation activity",
   },
