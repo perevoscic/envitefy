@@ -11,7 +11,7 @@ export type SignupIntent =
   | "birthdays"
   | "anniversaries";
 
-export type SignupSource = "snap" | "gymnastics";
+export type SignupSource = SignupIntent;
 
 export const SIGNUP_INTENTS: SignupIntent[] = [
   "snap",
@@ -107,17 +107,62 @@ const CREATE_ACTION_BY_INTENT: Record<
 };
 
 export function normalizeSignupIntent(value: unknown): SignupIntent | null {
-  const normalized = String(value || "").trim().replace(/-/g, "_");
+  const normalized = typeof value === "string" ? value.trim().toLowerCase().replace(/-/g, "_") : "";
   return SIGNUP_INTENT_SET.has(normalized) ? (normalized as SignupIntent) : null;
 }
 
 export function signupIntentForMarketingPath(pathname: string): SignupIntent | null {
-  const normalized = (pathname || "").replace(/\/+$/, "") || "/";
-  return INTENT_BY_MARKETING_PATH[normalized] || (normalized.includes("/templates") ? INTENT_BY_MARKETING_PATH[`/${normalized.split("/")[1]}`] : null) || null;
+  const normalized = normalizeSignupPath(pathname);
+  if (!normalized) return null;
+  const segments = normalized.split("/").filter(Boolean);
+  if (segments[0] === "event") {
+    return segments[1] === "football-season"
+      ? "football"
+      : INTENT_BY_MARKETING_PATH[`/${segments[1]}`] || null;
+  }
+  if (normalized === "/templates/signup") return "signup_forms";
+  return (
+    INTENT_BY_MARKETING_PATH[normalized] ||
+    (segments[1] === "templates" ? INTENT_BY_MARKETING_PATH[`/${segments[0]}`] : null) ||
+    null
+  );
 }
 
 export function signupSourceForIntent(intent: SignupIntent | null | undefined): SignupSource {
-  return intent === "gymnastics" ? "gymnastics" : "snap";
+  return intent || "snap";
+}
+
+// Store only an app pathname, never query strings, event facts, or external referrers.
+export function normalizeSignupPath(value: unknown): string | null {
+  if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) return null;
+  const path = value.split(/[?#]/, 1)[0].replace(/\/+$/, "") || "/";
+  return /^\/[a-zA-Z0-9/_-]*$/.test(path) && path.length <= 250 ? path : null;
+}
+
+export function resolveSignupContext(input: {
+  intent?: unknown;
+  source?: unknown;
+  path?: unknown;
+  previousIntent?: unknown;
+  previousPath?: unknown;
+}) {
+  const path = normalizeSignupPath(input.path);
+  const intent =
+    normalizeSignupIntent(input.intent) ||
+    signupIntentForMarketingPath(path || "") ||
+    normalizeSignupIntent(input.source) ||
+    normalizeSignupIntent(input.previousIntent) ||
+    "snap";
+  const previousPath = normalizeSignupPath(input.previousPath);
+  const matchingPreviousPath =
+    signupIntentForMarketingPath(previousPath || "") === intent ? previousPath : null;
+  return {
+    intent,
+    source: signupSourceForIntent(intent),
+    // Retain the category landing page through its gallery/editor and generic signup.
+    path:
+      matchingPreviousPath || (signupIntentForMarketingPath(path || "") === intent ? path : null),
+  };
 }
 
 export function getCreateActionForSignupIntent(intent: unknown) {

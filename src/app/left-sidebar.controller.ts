@@ -1,3 +1,4 @@
+import type { PrimarySignupSource } from "@/lib/product-scopes";
 import { writeLocalCalendarDefault } from "@/lib/calendar-preference";
 import {
   type Dispatch,
@@ -78,7 +79,7 @@ type LeftSidebarControllerArgs = {
       visibleTemplateKeys: TemplateKey[];
       sportPreferences: SportPreferences;
     };
-    primarySignupSource: "snap" | "gymnastics" | "legacy" | null;
+    primarySignupSource: PrimarySignupSource | null;
     productScopes: string[] | undefined;
     defaultCreateIntent?: string | null;
   };
@@ -356,7 +357,7 @@ export function useLeftSidebarController({
   });
   const [isAdmin, setIsAdmin] = useState<boolean>(Boolean((session?.user as any)?.isAdmin));
   const [profilePrimarySignupSource, setProfilePrimarySignupSource] = useState<
-    "snap" | "gymnastics" | "legacy" | null
+    PrimarySignupSource | null
   >(null);
   const [_profileLoaded, setProfileLoaded] = useState(false);
 

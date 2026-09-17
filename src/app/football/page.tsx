@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     description:
       "Football pages for coaches, players, and families. Choose a design and bring your team details together.",
     url: "https://envitefy.com/football",
-    images: ["/images/landing/template-proof/generated/football-night.webp"],
+    images: ["/images/landing/football/friday-night-team.webp"],
   },
 };
 

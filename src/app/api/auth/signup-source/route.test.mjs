@@ -10,8 +10,8 @@ const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativ
 test("signup-source route validates the source and sets the signup cookie", () => {
   const routeSource = readSource("src/app/api/auth/signup-source/route.ts");
 
-  assert.match(routeSource, /body\?\.source === "snap" \|\| body\?\.source === "gymnastics"/);
-  assert.match(routeSource, /normalizeSignupIntent\(body\?\.intent \?\? body\?\.source\)/);
+  assert.match(routeSource, /normalizeSignupIntent\(body.source\)/);
+  assert.match(routeSource, /resolveSignupContext\(/);
   assert.match(routeSource, /response\.cookies\.set\("envitefy_signup_source", source/);
   assert.match(routeSource, /response\.cookies\.set\("envitefy_signup_intent", intent/);
   assert.match(routeSource, /maxAge: 60 \* 10/);
@@ -48,7 +48,7 @@ test("signup form primes the signup-source cookie before email and Google signup
   assert.match(signupFormSource, /fetch\("\/api\/auth\/signup-source"/);
   assert.match(
     signupFormSource,
-    /body: JSON\.stringify\(\{ source: signupSource, intent: signupIntent \}\)/,
+    /body: JSON\.stringify\(\{ source: signupSource, intent: signupIntent, path: window.location.pathname \}\)/,
   );
   assert.match(
     signupFormSource,

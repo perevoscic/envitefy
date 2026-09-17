@@ -8,6 +8,7 @@ import {
   getCreateActionForSignupIntent,
   signupIntentForMarketingPath,
   signupSourceForIntent,
+  resolveSignupContext,
   type SignupIntent,
   type SignupSource,
 } from "@/lib/signup-intent";
@@ -166,7 +167,11 @@ const attachSignupSourceCookie = (
   res: NextResponse,
   source: SignupSource,
   intent: SignupIntent = source,
+  req?: NextRequest,
 ) => {
+  // Prefetches are not visits, and visiting a landing page must not reconfigure an account.
+  if (req && (getSessionCookie(req)?.value || req.headers.has("next-router-prefetch") ||
+      req.headers.get("purpose") === "prefetch" || req.headers.get("sec-purpose") === "prefetch")) return res;
   res.cookies.set("envitefy_signup_source", source, {
     httpOnly: true,
     maxAge: 60 * 10,
@@ -177,6 +182,18 @@ const attachSignupSourceCookie = (
   res.cookies.set("envitefy_signup_intent", intent, {
     httpOnly: true,
     maxAge: 60 * 10,
+    path: "/",
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  });
+  const context = resolveSignupContext({
+    intent,
+    path: req?.nextUrl.pathname,
+    previousPath: req?.cookies.get("envitefy_signup_path")?.value,
+  });
+  res.cookies.set("envitefy_signup_path", context.path || "", {
+    httpOnly: true,
+    maxAge: context.path ? 60 * 10 : 0,
     path: "/",
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -347,7 +364,7 @@ export async function middleware(req: NextRequest) {
   }
 
   if (categorySignupIntent && templateCategoryForPath(normalizedPathname)) {
-    return attachSignupSourceCookie(ok(), signupSourceForIntent(categorySignupIntent), categorySignupIntent);
+    return attachSignupSourceCookie(ok(), signupSourceForIntent(categorySignupIntent), categorySignupIntent, req);
   }
 
   if (normalizedPathname === "/landing" || categorySignupIntent) {
@@ -375,6 +392,7 @@ export async function middleware(req: NextRequest) {
         response,
         signupSourceForIntent(categorySignupIntent),
         categorySignupIntent,
+        req,
       );
     }
     return ok();
@@ -383,7 +401,7 @@ export async function middleware(req: NextRequest) {
   if (normalizedPathname === "/snap") {
     const authState = await resolveAuthState();
     if (!authState.hasSession) {
-      return attachSignupSourceCookie(ok(), "snap", "snap");
+      return attachSignupSourceCookie(ok(), "snap", "snap", req);
     }
     return ok();
   }
@@ -419,6 +437,16 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next|api|public|fonts|icons|videos|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|css|js|map|webmanifest|mp4|webm|woff|woff2|ttf|otf)).*)",
+    // Next strips Flight headers before middleware runs. Match public category
+    // prefetches out here, while keeping all protected routes behind middleware.
+    {
+      source: "/:category(gymnastics|football|sports|sport-events|weddings|bridal-showers|baby-showers|signup-forms|gender-reveal|birthdays|anniversaries|snap|invitation-maker)",
+      missing: [{ type: "header", key: "next-router-prefetch" }],
+    },
+    {
+      source: "/:category(gymnastics|football|sports|sport-events|weddings|bridal-showers|baby-showers|signup-forms|gender-reveal|birthdays|anniversaries)/templates/:path*",
+      missing: [{ type: "header", key: "next-router-prefetch" }],
+    },
+    "/((?!_next|api|public|fonts|icons|videos|(?:gymnastics|football|sports|sport-events|weddings|bridal-showers|baby-showers|signup-forms|gender-reveal|birthdays|anniversaries|snap|invitation-maker)(?:/?$|/templates(?:/|$))|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|css|js|map|webmanifest|mp4|webm|woff|woff2|ttf|otf)).*)",
   ],
 };

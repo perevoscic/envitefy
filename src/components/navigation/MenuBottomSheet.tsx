@@ -15,7 +15,7 @@ import {
 import LoginForm from "@/components/auth/LoginForm";
 import SignupForm from "@/components/auth/SignupForm";
 import { signedOutMobileMenuLinks } from "@/config/navigation";
-import type { SignupIntent } from "@/lib/signup-intent";
+import type { SignupIntent, SignupSource } from "@/lib/signup-intent";
 import { useModalDialog } from "@/hooks/useModalDialog";
 
 type AuthMode = "login" | "signup";
@@ -25,7 +25,7 @@ type MenuBottomSheetProps = {
   onOpenChange: (open: boolean) => void;
   successRedirectUrl?: string;
   signupSuccessRedirectUrl?: string;
-  signupSource?: "snap" | "gymnastics";
+  signupSource?: SignupSource;
   signupIntent?: SignupIntent;
 };
 

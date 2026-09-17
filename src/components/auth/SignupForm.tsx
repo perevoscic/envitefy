@@ -9,7 +9,7 @@ import {
   CURRENT_PRIVACY_VERSION,
   CURRENT_TERMS_VERSION,
 } from "@/lib/legal-versions";
-import type { SignupIntent } from "@/lib/signup-intent";
+import type { SignupIntent, SignupSource } from "@/lib/signup-intent";
 import { hideAuthTransition, showAuthTransition } from "@/utils/authTransition";
 
 function cx(...parts: Array<string | false | null | undefined>) {
@@ -22,7 +22,7 @@ export type SignupFormProps = {
   allowGoogleAuth?: boolean;
   onSwitchMode?: (mode: "login" | "signup") => void;
   successRedirectUrl?: string;
-  signupSource?: "snap" | "gymnastics";
+  signupSource?: SignupSource;
   signupIntent?: SignupIntent;
   variant?: "default" | "inline";
   inlineTone?: "dark" | "light";
@@ -76,12 +76,10 @@ export default function SignupForm({
   );
 
   const ensureSignupSourceCookie = async () => {
-    if (!signupSource && !signupIntent) return;
-
     const response = await fetch("/api/auth/signup-source", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source: signupSource, intent: signupIntent }),
+      body: JSON.stringify({ source: signupSource, intent: signupIntent, path: window.location.pathname }),
       credentials: "include",
     });
 

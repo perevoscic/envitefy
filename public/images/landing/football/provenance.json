@@ -1,0 +1,18 @@
+{
+  "created": "2026-09-17",
+  "generator": "OpenAI built-in image_gen",
+  "asset": "/images/landing/football/friday-night-team.webp",
+  "width": 1536,
+  "height": 1024,
+  "encoding": {
+    "tool": "FFmpeg",
+    "codec": "libwebp",
+    "quality": 85,
+    "compression_level": 6
+  },
+  "sha256": "cfe923c366445552716303f3bc167b9e8ff8208190577a0a78f0c35e0dc3f846",
+  "original": "C:/Users/rjosan/.codex/generated_images/01a0b04f-029a-7952-b0d5-7c479a607ff3/exec-51e0e49a-5be1-4fb2-a903-108f6c8df1dd.png",
+  "original_deleted_after_verification": true,
+  "verification": "WebP magic and Sharp dimensions checked; FFmpeg fully decoded the replacement; desktop and mobile landing previews inspected.",
+  "prompt": "Use case: photorealistic editorial landscape. Asset type: Envitefy football landing-page full-viewport hero, 1536x1024 or wider landscape. Primary request: a cinematic American high-school football evening with a coach and helmeted team gathered on the right sideline, a green field with believable markings, softly lit stands and tall stadium lights against a blue-hour sky. Natural documentary sports photography, warm lights, deep forest green and midnight blue, realistic proportions, authentic football equipment. Composition: wide establishing photo, central field and left third quieter and darker so white website headline overlays remain readable, team primarily in right third; natural light without artificial painted gradients. Real people in modest full sports uniforms; no celebrity resemblance. No lettering, no logos, no watermark, no interface, no embedded text. This must match premium full-bleed photographic heroes for wedding and gymnastics event planning pages."
+}

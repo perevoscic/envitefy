@@ -1,0 +1,73 @@
+{
+  "created": "2026-09-17",
+  "images": [
+    {
+      "name": "stadium-lights",
+      "prompt": "Use case: photorealistic editorial sports photograph. Asset type: Envitefy American football landing-page hero carousel, landscape 1536x1024. Natural documentary photography with realistic people and equipment, cinematic light and premium restrained color grading. Keep the left 45 percent relatively uncluttered and darker for a white website headline; important subjects on the right, with crop flexibility on mobile. Image fills the frame without borders. No embedded captions, no logos, no sponsor text, no watermark, no interface. Authentic American football, not soccer. Scene: wide field-level view across a beautifully maintained high-school football stadium at blue hour, warm stadium floodlights, deep forest-green turf and midnight-blue sky, a small helmeted team running onto the field at the far right, glowing bleachers beyond. The wide field and dramatic sky are the main subject. Quiet left field, exciting but believable game-night atmosphere. No readable signage.",
+      "original": "C:/Users/rjosan/.codex/generated_images/01a0b04f-029a-7952-b0d5-7c479a607ff3/exec-0bc52d28-73f7-4442-81a6-c47d482a880d.png",
+      "asset": "/images/landing/football/stadium-lights.webp",
+      "generator": "OpenAI built-in image_gen",
+      "originalDeleted": true,
+      "width": 1536,
+      "height": 1024,
+      "encoding": {
+        "tool": "FFmpeg",
+        "codec": "libwebp",
+        "quality": 85,
+        "compressionLevel": 6
+      },
+      "sha256": "d93435b8b1acc582c2c43c19a50f58f8960af0016ab83c82099dad71827d04bb"
+    },
+    {
+      "name": "game-night-catch",
+      "prompt": "Use case: photorealistic editorial sports photograph. Asset type: Envitefy American football landing-page hero carousel, landscape 1536x1024. Natural documentary photography with realistic people and equipment, cinematic light and premium restrained color grading. Keep the left 45 percent relatively uncluttered and darker for a white website headline; important subjects on the right, with crop flexibility on mobile. Image fills the frame without borders. No embedded captions, no logos, no sponsor text, no watermark, no interface. Authentic American football, not soccer. Scene: an athletic adult American football receiver in a navy-and-white uniform on the right third of the image, both gloved hands making one natural chest-height catch of a single football while running; two distant defenders and softly blurred packed bleachers under stadium lights. Wide sideline sports-lens framing, realistic anatomy, hands and ball clearly separated and plausible, vivid green turf with a few simple yard markings. Left side mostly open dark-green field, rich blue-hour shadows and warm lighting. No injuries, no airborne contortion, no recognizable professional team.",
+      "original": "C:/Users/rjosan/.codex/generated_images/01a0b04f-029a-7952-b0d5-7c479a607ff3/exec-d026f0e2-bc57-472c-8941-323f342bf4b1.png",
+      "asset": "/images/landing/football/game-night-catch.webp",
+      "generator": "OpenAI built-in image_gen",
+      "originalDeleted": true,
+      "width": 1536,
+      "height": 1024,
+      "encoding": {
+        "tool": "FFmpeg",
+        "codec": "libwebp",
+        "quality": 85,
+        "compressionLevel": 6
+      },
+      "sha256": "c262ae48988be1119ec15d66e3fad2b5845cb78720ec262226a35008c870f2be"
+    },
+    {
+      "name": "sunset-practice",
+      "prompt": "Use case: photorealistic editorial sports photograph. Asset type: Envitefy American football landing-page hero carousel, landscape 1536x1024. Natural documentary photography with realistic people and equipment, cinematic light and premium restrained color grading. Keep the left 45 percent relatively uncluttered and darker for a white website headline; important subjects on the right, with crop flexibility on mobile. Image fills the frame without borders. No embedded captions, no logos, no sponsor text, no watermark, no interface. Authentic American football, not soccer. Scene: community football practice at late golden hour, an adult coach standing in a loose huddle with teenage players in full protective football uniforms on the right side of a spacious green practice field, warm rim light on helmets, distant goalpost and trees, long soft shadows, calm purposeful teamwork. Low wide sideline camera. Left side is quiet open shaded turf. Premium warm documentary photography, natural green and amber palette, no sun glare behind the headline area.",
+      "original": "C:/Users/rjosan/.codex/generated_images/01a0b04f-029a-7952-b0d5-7c479a607ff3/exec-b5fc9285-46dc-47eb-903a-69b58c097b1e.png",
+      "asset": "/images/landing/football/sunset-practice.webp",
+      "generator": "OpenAI built-in image_gen",
+      "originalDeleted": true,
+      "width": 1536,
+      "height": 1024,
+      "encoding": {
+        "tool": "FFmpeg",
+        "codec": "libwebp",
+        "quality": 85,
+        "compressionLevel": 6
+      },
+      "sha256": "746f7378eeefb46b648384227e8bd1e238e45dd564341ef9fc56653b776ca80e"
+    },
+    {
+      "name": "sideline-families",
+      "prompt": "Use case: photorealistic editorial sports photograph. Asset type: Envitefy American football landing-page hero carousel, landscape 1536x1024. Natural documentary photography with realistic people and equipment, cinematic light and premium restrained color grading. Keep the left 45 percent relatively uncluttered and darker for a white website headline; important subjects on the right, with crop flexibility on mobile. Image fills the frame without borders. No embedded captions, no logos, no sponsor text, no watermark, no interface. Authentic American football, not soccer. Scene: multigenerational families and friends supporting a local American football team, natural candid cheering from the front rows of stadium bleachers on the right third, with a father, mother, older adult and school-age child all in casual autumn jackets; field stretches to the left with small distant helmeted players and a football goalpost. Wide establishing photograph with recognizable football setting. Early evening stadium lights, warm skin tones against deep green and blue background. Quiet darker grass on the left for headline, joyful but unposed community atmosphere. No readable banners or clothing branding.",
+      "original": "C:/Users/rjosan/.codex/generated_images/01a0b04f-029a-7952-b0d5-7c479a607ff3/exec-4d65c1f4-9636-49ba-a5fa-7ce336df8c01.png",
+      "asset": "/images/landing/football/sideline-families.webp",
+      "generator": "OpenAI built-in image_gen",
+      "originalDeleted": true,
+      "width": 1536,
+      "height": 1024,
+      "encoding": {
+        "tool": "FFmpeg",
+        "codec": "libwebp",
+        "quality": 85,
+        "compressionLevel": 6
+      },
+      "sha256": "3090a78f77932badffe74f75a0f5eaa67ac1b937c3307d2a73813aa11cbdfecf"
+    }
+  ]
+}

@@ -1,6 +1,8 @@
+import { normalizeSignupIntent, type SignupSource } from "@/lib/signup-intent";
+
 export type ProductScope = "snap" | "gymnastics";
 
-export type PrimarySignupSource = "snap" | "gymnastics" | "legacy";
+export type PrimarySignupSource = SignupSource | "legacy";
 
 export const DEFAULT_PRODUCT_SCOPES: ProductScope[] = ["snap"];
 
@@ -11,13 +13,11 @@ export function isProductScope(value: unknown): value is ProductScope {
 export function normalizePrimarySignupSource(
   value: unknown,
 ): PrimarySignupSource | null {
-  return value === "snap" || value === "gymnastics" || value === "legacy"
-    ? value
-    : null;
+  return value === "legacy" ? "legacy" : normalizeSignupIntent(value);
 }
 
 export function productScopesForSignupSource(
-  source: PrimarySignupSource | "snap" | "gymnastics",
+  source: PrimarySignupSource,
 ): ProductScope[] {
   if (source === "gymnastics") {
     return ["snap", "gymnastics"];

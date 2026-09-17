@@ -1,3 +1,5 @@
+import { buildSignupDefaults } from "@/lib/signup-defaults";
+import type { SignupIntent, SignupSource } from "@/lib/signup-intent";
 import { canReadEventDraft } from "@/lib/event-draft-access";
 import { resolveScanMediaPolicy, withoutMedicalSourceMedia } from "@/lib/ocr/scan-media";
 import { resolveSavedScanPersonalization } from "@/lib/ocr/personalization";
@@ -1144,6 +1146,10 @@ export async function getSportPreferenceSuggestionByEmail(
     return { sport: "gymnastics", source: "signup" };
   }
 
+  if (user.primary_signup_source === "football" || metadata.defaultCreateIntent === "football") {
+    return { sport: "football", source: "signup" };
+  }
+
   const sport = inferSportFromRecentEvents(await listEventHistoryByUser(user.id, 100));
   return sport ? { sport, source: "history" } : null;
 }
@@ -1200,7 +1206,9 @@ export async function createUserWithEmailPassword(params: {
   firstName?: string;
   lastName?: string;
   password: string;
-  signupSource: "snap" | "gymnastics";
+  signupSource: SignupSource;
+  signupIntent?: SignupIntent;
+  signupPath?: string | null;
   legalAcceptance: UserLegalAcceptance;
 }): Promise<AppUserRow> {
   const { email, firstName, lastName, password, signupSource, legalAcceptance } = params;
@@ -1217,9 +1225,9 @@ export async function createUserWithEmailPassword(params: {
     `insert into users (
        email, first_name, last_name, password_hash, primary_signup_source, product_scopes,
        terms_version, terms_accepted_at, privacy_version, privacy_acknowledged_at,
-       legal_acceptance_metadata
+       legal_acceptance_metadata, feature_visibility
      )
-     values ($1, $2, $3, $4, $5, $6::text[], $7, $8::timestamptz, $9, $8::timestamptz, $10::jsonb)
+     values ($1, $2, $3, $4, $5, $6::text[], $7, $8::timestamptz, $9, $8::timestamptz, $10::jsonb, $11::jsonb)
      returning ${USER_SELECT_COLUMNS}`,
     [
       lower,
@@ -1236,6 +1244,7 @@ export async function createUserWithEmailPassword(params: {
         ipHash: legalAcceptance.ipHash,
         userAgent: legalAcceptance.userAgent,
       }),
+      JSON.stringify(buildSignupDefaults(params.signupIntent || signupSource, params.signupPath)),
     ],
   );
   return res.rows[0];
@@ -1284,7 +1293,9 @@ export async function createOrUpdateOAuthUser(params: {
   firstName?: string | null;
   lastName?: string | null;
   provider: string;
-  signupSource?: "snap" | "gymnastics";
+  signupSource?: SignupSource;
+  signupIntent?: SignupIntent;
+  signupPath?: string | null;
   legalAcceptance?: UserLegalAcceptance;
 }): Promise<AppUserRow> {
   await ensureUsersHasFeatureVisibilityColumn();
@@ -1309,9 +1320,9 @@ export async function createOrUpdateOAuthUser(params: {
     `insert into users (
        email, first_name, last_name, password_hash, primary_signup_source, product_scopes,
        terms_version, terms_accepted_at, privacy_version, privacy_acknowledged_at,
-       legal_acceptance_metadata
+       legal_acceptance_metadata, feature_visibility
      )
-     values ($1, $2, $3, NULL, $4, $5::text[], $6, $7::timestamptz, $8, $7::timestamptz, $9::jsonb)
+     values ($1, $2, $3, NULL, $4, $5::text[], $6, $7::timestamptz, $8, $7::timestamptz, $9::jsonb, $10::jsonb)
      returning ${USER_SELECT_COLUMNS}`,
     [
       lower,
@@ -1327,6 +1338,7 @@ export async function createOrUpdateOAuthUser(params: {
         ipHash: params.legalAcceptance.ipHash,
         userAgent: params.legalAcceptance.userAgent,
       }),
+      JSON.stringify(buildSignupDefaults(params.signupIntent || signupSource, params.signupPath)),
     ],
   );
   return res.rows[0];

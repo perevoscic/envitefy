@@ -4,8 +4,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { getToken } from "next-auth/jwt";
 import { cookies } from "next/headers";
-import { TEMPLATE_KEYS } from "@/config/feature-visibility";
-import { getUserByEmail, verifyPassword, getIsAdminByEmail, createOrUpdateOAuthUser, getUserIdByEmail, updateFeatureVisibilityByEmail } from "@/lib/db";
+import { getUserByEmail, verifyPassword, getIsAdminByEmail, createOrUpdateOAuthUser, getUserIdByEmail } from "@/lib/db";
 import {
   describeDatabaseError,
   isDatabaseUnavailableError,
@@ -16,7 +15,7 @@ import {
   type PrimarySignupSource,
   type ProductScope,
 } from "@/lib/product-scopes";
-import { normalizeSignupIntent, type SignupIntent } from "@/lib/signup-intent";
+import { normalizeSignupIntent, normalizeSignupPath, type SignupIntent, type SignupSource } from "@/lib/signup-intent";
 import {
   LEGAL_ACCEPTANCE_COOKIE_NAME,
   verifyLegalAcceptanceToken,
@@ -53,11 +52,11 @@ const userAccessByEmailCache = new Map<
   }
 >();
 
-async function readSignupSourceCookie(): Promise<"snap" | "gymnastics" | null> {
+async function readSignupSourceCookie(): Promise<SignupSource | null> {
   try {
     const jar = await cookies();
     const value = jar.get("envitefy_signup_source")?.value || null;
-    return value === "snap" || value === "gymnastics" ? value : null;
+    return normalizeSignupIntent(value);
   } catch {
     return null;
   }
@@ -79,17 +78,6 @@ async function readLegalAcceptanceCookie() {
   } catch {
     return null;
   }
-}
-
-async function applySignupIntentDefaults(email: string, intent: SignupIntent | null) {
-  if (!intent || intent === "snap") return;
-  await updateFeatureVisibilityByEmail({
-    email,
-    persona: null,
-    personas: [],
-    visibleTemplateKeys: [...TEMPLATE_KEYS],
-    defaultCreateIntent: intent,
-  });
 }
 
 async function resolveUserAccessMetadata(email: string): Promise<{
@@ -285,10 +273,11 @@ export function getAuthOptions(): NextAuthOptions {
               firstName,
               lastName,
               provider: "google",
-              signupSource,
+              signupSource: signupIntent || signupSource,
+              signupIntent: signupIntent || signupSource,
+              signupPath: normalizeSignupPath((await cookies()).get("envitefy_signup_path")?.value),
               legalAcceptance,
             });
-            await applySignupIntentDefaults(user.email, signupIntent);
 
             return true;
           }

@@ -1,26 +1,22 @@
 import { NextResponse } from "next/server";
-import { TEMPLATE_KEYS } from "@/config/feature-visibility";
-import {
-  createUserWithEmailPassword,
-  updateFeatureVisibilityByEmail,
-} from "@/lib/db";
+import { createUserWithEmailPassword } from "@/lib/db";
 import {
   LEGAL_ACCEPTANCE_COOKIE_NAME,
   readCookieValue,
   verifyLegalAcceptanceToken,
 } from "@/lib/legal-acceptance";
-import { normalizeSignupIntent, type SignupIntent } from "@/lib/signup-intent";
+import { normalizeSignupIntent, normalizeSignupPath, type SignupIntent, type SignupSource } from "@/lib/signup-intent";
 
 function getSignupSourceFromCookieHeader(
   cookieHeader: string | null,
-): "snap" | "gymnastics" | null {
+): SignupSource | null {
   if (!cookieHeader) return null;
   const pairs = cookieHeader.split(";");
   for (const pair of pairs) {
     const [rawKey, ...rawValue] = pair.trim().split("=");
     if (rawKey !== "envitefy_signup_source") continue;
     const value = rawValue.join("=");
-    return value === "snap" || value === "gymnastics" ? value : null;
+    return normalizeSignupIntent(value);
   }
   return null;
 }
@@ -91,7 +87,7 @@ export async function POST(req: Request) {
     const recaptchaToken =
       typeof body.recaptchaToken === "string" ? body.recaptchaToken.trim() : "";
     const requestedSignupSource =
-      body.signupSource === "snap" || body.signupSource === "gymnastics" ? body.signupSource : null;
+      normalizeSignupIntent(body.signupSource);
     const cookieSignupSource = getSignupSourceFromCookieHeader(req.headers.get("cookie"));
     const requestedSignupIntent = normalizeSignupIntent(body.signupIntent ?? body.signupSource);
     const cookieSignupIntent = getSignupIntentFromCookieHeader(req.headers.get("cookie"));
@@ -117,17 +113,6 @@ export async function POST(req: Request) {
     if (!legalAcceptance || legalAcceptance.source !== "email_signup") {
       return NextResponse.json(
         { error: "Please confirm your age and accept the current Terms and Privacy Policy." },
-        { status: 400 },
-      );
-    }
-
-    if (
-      requestedSignupSource &&
-      cookieSignupSource &&
-      requestedSignupSource !== cookieSignupSource
-    ) {
-      return NextResponse.json(
-        { error: "Signup source mismatch. Please refresh and try again." },
         { status: 400 },
       );
     }
@@ -162,8 +147,8 @@ export async function POST(req: Request) {
       });
     }
 
-    const effectiveSignupSource = cookieSignupSource ?? requestedSignupSource ?? "snap";
-    const effectiveSignupIntent = cookieSignupIntent ?? requestedSignupIntent;
+    const effectiveSignupIntent = cookieSignupIntent ?? requestedSignupIntent ?? cookieSignupSource ?? requestedSignupSource ?? "snap";
+    const effectiveSignupSource = effectiveSignupIntent;
 
     await createUserWithEmailPassword({
       email,
@@ -171,17 +156,10 @@ export async function POST(req: Request) {
       firstName,
       lastName,
       signupSource: effectiveSignupSource,
+      signupIntent: effectiveSignupIntent,
+      signupPath: normalizeSignupPath(readCookieValue(req.headers.get("cookie"), "envitefy_signup_path")),
       legalAcceptance,
     });
-    if (effectiveSignupIntent && effectiveSignupIntent !== "snap") {
-      await updateFeatureVisibilityByEmail({
-        email,
-        persona: null,
-        personas: [],
-        visibleTemplateKeys: [...TEMPLATE_KEYS],
-        defaultCreateIntent: effectiveSignupIntent,
-      });
-    }
     const response = NextResponse.json({ ok: true });
     response.cookies.set("envitefy_signup_source", "", {
       expires: new Date(0),
@@ -194,6 +172,9 @@ export async function POST(req: Request) {
       httpOnly: true,
       path: "/",
       sameSite: "lax",
+    });
+    response.cookies.set("envitefy_signup_path", "", {
+      expires: new Date(0), httpOnly: true, path: "/", sameSite: "lax",
     });
     response.cookies.set(LEGAL_ACCEPTANCE_COOKIE_NAME, "", {
       expires: new Date(0),

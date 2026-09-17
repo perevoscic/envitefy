@@ -141,7 +141,7 @@ export function getTemplateLinks(
   const preferences = normalizeSportPreferences(sportPreferences);
   const primary = preferences.setupCompleted ? preferences.primarySport : null;
   const football = ALL_TEMPLATE_LINKS.find((link) => link.key === "football_season");
-  if (football) standardLinks.push(football);
+  if (football && (!visible || visible.has("football_season"))) standardLinks.push(football);
   if (primary === "football" || (visible?.has("football_season") && !visible.has("sport_events") && !visible.has("gymnastics"))) {
     return standardLinks;
   }

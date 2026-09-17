@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useSidebar } from "@/app/sidebar-context";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
-import type { SignupIntent } from "@/lib/signup-intent";
+import type { SignupIntent, SignupSource } from "@/lib/signup-intent";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
 
@@ -16,7 +16,7 @@ export type AuthModalProps = {
   onClose: () => void;
   onModeChange?: (m: "login" | "signup") => void;
   successRedirectUrl?: string;
-  signupSource?: "snap" | "gymnastics";
+  signupSource?: SignupSource;
   signupIntent?: SignupIntent;
   allowSignupSwitch?: boolean;
 };

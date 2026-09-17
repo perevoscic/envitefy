@@ -24,7 +24,7 @@ test("login form supports redirect targets passed by the caller", () => {
 test("middleware leaves category landings and galleries public for signed-in visitors", () => {
   const middleware = readSource("src/middleware.ts");
   assert.match(middleware, /categorySignupIntent && templateCategoryForPath\(normalizedPathname\)/);
-  assert.match(middleware, /return attachSignupSourceCookie\(ok\(\), signupSourceForIntent\(categorySignupIntent\), categorySignupIntent\)/);
+  assert.match(middleware, /return attachSignupSourceCookie\(ok\(\), signupSourceForIntent\(categorySignupIntent\), categorySignupIntent, req\)/);
   assert.match(middleware, /isPublicTemplatePath\(normalized\)/);
 });
 
@@ -35,7 +35,7 @@ test("middleware lets authenticated users open /snap for the app launch cards", 
   assert.match(middleware, /if \(normalizedPathname === "\/snap"\) \{/);
   assert.match(
     middleware,
-    /if \(!authState\.hasSession\) \{\s*return attachSignupSourceCookie\(ok\(\), "snap", "snap"\);\s*\}/s,
+    /if \(!authState\.hasSession\) \{\s*return attachSignupSourceCookie\(ok\(\), "snap", "snap", req\);\s*\}/s,
   );
   assert.match(middleware, /return ok\(\);/);
   assert.doesNotMatch(appShell, /const MARKETING_PATHS = new Set\(\[[^\]]*"\/snap"/s);

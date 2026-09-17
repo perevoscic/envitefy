@@ -1,0 +1,71 @@
+{
+  "created": "2026-09-17",
+  "reason": "Replace repetitive dusk field compositions with different subjects, camera angles, lighting and settings.",
+  "activeSlides": [
+    "/images/landing/football/friday-night-team.webp",
+    "/images/landing/football/overhead-field.webp",
+    "/images/landing/football/daylight-game-action.webp",
+    "/images/landing/football/locker-room-gear.webp",
+    "/images/landing/football/sideline-families.webp"
+  ],
+  "retainedProvenance": [
+    "provenance.json",
+    "carousel-provenance.json"
+  ],
+  "images": [
+    {
+      "name": "overhead-field",
+      "replaces": "stadium-lights",
+      "prompt": "Use case: photorealistic-natural. Asset type: Envitefy American football website hero carousel. Create one landscape photograph, 1536x1024. Primary request: an unmistakably different bird's-eye aerial view of an American football field in crisp morning daylight. Camera points straight down, with NO horizon or sky. Geometric parallel white yard lines and small hash marks run diagonally through the frame, alternating natural emerald and sage-green turf strips, a narrow curved terracotta running-track edge in the upper-right. Crop a real section of the field, not a diagram and not an entire tiny stadium. No players or people. Premium real drone photography, tactile grass detail, soft morning shadows. The field is the subject and fills the composition; left third is quieter unmarked grass in mild shadow, leaving space for a white website headline applied separately. Composition must remain recognizable in a central-right mobile crop. This replaces a repetitive dusk sideline photograph, so use a radically different overhead camera angle and fresh daylight palette. No embedded text, logos, crests, watermarks, sponsor signage, illustration, or interface. Authentic American football field, not soccer.",
+      "original": "C:/Users/rjosan/.codex/generated_images/01a0b04f-029a-7952-b0d5-7c479a607ff3/exec-999a930c-7e20-4b71-a6fb-2334499be654.png",
+      "asset": "/images/landing/football/overhead-field.webp",
+      "generator": "OpenAI built-in image_gen",
+      "originalDeleted": true,
+      "width": 1536,
+      "height": 1024,
+      "encoding": {
+        "tool": "FFmpeg",
+        "codec": "libwebp",
+        "quality": 85,
+        "compressionLevel": 6
+      },
+      "sha256": "a64f3e6961762b08e2d6153cce57403391d87ab2f2c2d1f65df8062dacd71159"
+    },
+    {
+      "name": "daylight-game-action",
+      "replaces": "game-night-catch",
+      "prompt": "Use case: photorealistic-natural. Asset type: Envitefy American football website hero carousel. Create one landscape editorial sports photograph, 1536x1024. Primary request: dynamic daytime American football game action from a very low sideline camera, one adult running back in a solid crimson jersey, cream pants and cream protective helmet sprinting diagonally forward toward the right edge, safely holding one brown football tight under his right arm. Subject occupies center-right at a convincing full-body scale, athletic grounded stride and realistic proportions. A few small, softly blurred defenders behind him, sunlit bright green field, out-of-focus autumn ochre trees and modest silver bleachers in the background. Clear afternoon daylight, natural cream highlights and rich crimson, warm autumn color; no dusk, no floodlights, no blue-hour sky. Fast shutter, crisp player and grass kicked up near the cleats, premium documentary sports photography. Left 40 percent is softly focused shaded turf and subdued background for a separately overlaid white website headline. Main subject must remain usable in a right-centered mobile crop. No visible brands, readable lettering, logos, watermarks, interface, injuries, acrobatic poses, or extra limbs. Authentic American football, not soccer. This is a powerful running play, not a catch, huddle, or wide stadium panorama.",
+      "original": "C:/Users/rjosan/.codex/generated_images/01a0b04f-029a-7952-b0d5-7c479a607ff3/exec-3ba46655-43f7-40fd-892f-e89c4272a1d8.png",
+      "asset": "/images/landing/football/daylight-game-action.webp",
+      "generator": "OpenAI built-in image_gen",
+      "originalDeleted": true,
+      "width": 1536,
+      "height": 1024,
+      "encoding": {
+        "tool": "FFmpeg",
+        "codec": "libwebp",
+        "quality": 85,
+        "compressionLevel": 6
+      },
+      "sha256": "7c3cc95c1259db37625d97cd7c98f91b4f3ddd6608a82f9f14176e42b4ef31ea"
+    },
+    {
+      "name": "locker-room-gear",
+      "replaces": "sunset-practice",
+      "prompt": "Use case: photorealistic-natural. Asset type: Envitefy American football website hero carousel. Create one landscape photograph, 1536x1024. Primary request: intimate football equipment still life in a quiet old-school locker room before game day. A beautifully detailed brown pebbled-leather American football with correct white laces lies diagonally on a honey-colored wooden bench in the center-right foreground, beside one unbranded cream football helmet with a dark steel protective face mask. Deep forest-green jersey draped softly farther behind, dark wood cubbies subtly out of focus. No people, no outdoor field, no stadium, no skyline. Camera close to bench level, shallow depth of field, rich tactile leather and wood grain, warm window light from upper right creating soft amber highlights; left 45 percent falls naturally into quiet warm charcoal shadow for a separate white website headline. The ball and helmet should both fit in a right-centered mobile crop, with breathing room and no cropped-off equipment. Premium editorial sports still-life photography, realistic materials, calm anticipation, no glossy 3D look, no logos, no printed words, no watermarks, no interface. This is deliberately a close indoor detail shot, entirely different from an outdoor sideline team photo.",
+      "original": "C:/Users/rjosan/.codex/generated_images/01a0b04f-029a-7952-b0d5-7c479a607ff3/exec-563edaf0-443d-406f-9b58-199f7fa81812.png",
+      "asset": "/images/landing/football/locker-room-gear.webp",
+      "generator": "OpenAI built-in image_gen",
+      "originalDeleted": true,
+      "width": 1536,
+      "height": 1024,
+      "encoding": {
+        "tool": "FFmpeg",
+        "codec": "libwebp",
+        "quality": 85,
+        "compressionLevel": 6
+      },
+      "sha256": "ddebdfddd8e071edafa4463fd517e931ba01c000a83056b8b7bb3dadda992c09"
+    }
+  ]
+}

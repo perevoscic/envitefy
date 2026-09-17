@@ -531,7 +531,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   );
   assert.match(
     signedOutPageChrome,
-    /const primaryCreateHref = templateCategory\s*\? `\/\$\{templateCategory\.slug\}\/templates`\s*: createAction\?\.href \|\| "\/chat"/,
+    /const primaryCreateHref = signupIntent === "football" \? "\/football\/templates" : templateCategory\s*\? `\/\$\{templateCategory\.slug\}\/templates`\s*: createAction\?\.href \|\| "\/chat"/,
   );
   assert.match(
     signedOutPageChrome,

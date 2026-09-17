@@ -44,7 +44,7 @@ export default function SignedOutPageChrome({
   const signupSource = signupIntent ? signupSourceForIntent(signupIntent) : undefined;
   const createAction = getCreateActionForSignupIntent(signupIntent);
   const templateCategory = templateCategoryForPath(pathname || "");
-  const primaryCreateHref = templateCategory
+  const primaryCreateHref = signupIntent === "football" ? "/football/templates" : templateCategory
     ? `/${templateCategory.slug}/templates`
     : createAction?.href || "/chat";
   const loginSuccessRedirectUrl = createAction?.href || "/";

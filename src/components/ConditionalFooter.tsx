@@ -57,6 +57,7 @@ const MARKETING_ROUTE_PATHS = new Set([
   "/faq",
   "/guides",
   "/gymnastics",
+  "/football",
   "/how-it-works",
   "/invitation-maker",
   "/landing",
