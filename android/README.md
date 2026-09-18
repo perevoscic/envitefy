@@ -28,10 +28,10 @@ cache avoids changing legacy tracked `.gradle` cache files in this repository.
 Artifacts are `app/build/outputs/apk/release/app-release.apk` (direct install)
 and `app/build/outputs/bundle/release/app-release.aab` (Play upload).
 
-Default version is `1.0.2` / code `3`. Increment the code for every subsequent upload:
+Default version is `1.0.2` / code `4`. Increment the code for every subsequent upload:
 
 ```powershell
-.\gradlew.bat --project-cache-dir .gradle-local :app:bundleRelease -PenvitefyVersionCode=4 -PenvitefyVersionName=1.0.3
+.\gradlew.bat --project-cache-dir .gradle-local :app:bundleRelease -PenvitefyVersionCode=5 -PenvitefyVersionName=1.0.3
 ```
 
 ## Upload signing
@@ -126,6 +126,8 @@ The Play Store listing's icon is separate from the installed launcher icon.
   permission when the page calls geolocation. Fine and coarse are declared
   together, allowing the user to choose approximate location. No background
   permission, foreground tracking service or launch-time permission request is added.
+  Location/GPS/network hardware is explicitly optional so Play does not exclude
+  devices that can use the rest of the app without location.
   `DelegationService` checks the browser's trusted token before handling commands;
   its exported service follows Google's integration and is not an unrestricted
   location endpoint. The permission activity itself is private.

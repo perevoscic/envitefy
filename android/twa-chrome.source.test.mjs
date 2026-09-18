@@ -28,6 +28,16 @@ const strings = readFileSync(
   "utf8",
 );
 
+test("location access does not require background access or location hardware", () => {
+  for (const feature of ["location", "location.gps", "location.network"]) {
+    assert.ok(manifest.includes(`android:name="android.hardware.${feature}" android:required="false"`),
+      "Play must not filter devices without location hardware just because location permission is declared");
+  }
+  assert.doesNotMatch(manifest, /ACCESS_BACKGROUND_LOCATION|FOREGROUND_SERVICE_LOCATION|READ_MEDIA_|READ_EXTERNAL_STORAGE|MANAGE_EXTERNAL_STORAGE/);
+  assert.match(manifest, /ACCESS_COARSE_LOCATION/);
+  assert.match(manifest, /ACCESS_FINE_LOCATION/);
+});
+
 test("android TWA sets white top status bar and purple bottom navigation bar", () => {
   assert.match(buildGradle, /com\.google\.androidbrowserhelper:androidbrowserhelper:2\.7\.3/);
   assert.match(manifest, /com\.google\.androidbrowserhelper\.trusted\.LauncherActivity/);

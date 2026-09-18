@@ -2,10 +2,11 @@
 
 Planning date: September 18, 2026.
 
-Implementation started September 18, 2026 after approval. Version 1.0.1 is now
-active in Play Internal Testing after fixing a reproduced launch crash in 1.0.0.
+Implementation started September 18, 2026 after approval. Version 1.0.2 / code 4
+is now active in Play Internal Testing with the official Envitefy launcher icon
+and foreground location delegation, retaining the 1.0.1 launch crash fix.
 The website association is deployed through GitHub main to Vercel. See
-[the current build record](android-release-1.0.1.md) for the installation link,
+[the current build record](android-release-1.0.2.md) for the installation link,
 validation, artifact locations and remaining device checks.
 
 ## Agreed product scope
