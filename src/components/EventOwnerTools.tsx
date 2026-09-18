@@ -1,9 +1,9 @@
 "use client";
-import { resolveEventPageBackgroundColor } from "@/lib/theme-color";
 
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   AlertCircle,
+  ArrowLeft,
   CalendarDays,
   CheckCircle2,
   Clock3,
@@ -27,15 +27,9 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { type EventContextTab, useSidebar } from "@/app/sidebar-context";
 import EventDeleteModal from "@/components/EventDeleteModal";
-import ArtworkPreviewDialog from "@/components/ArtworkPreviewDialog";
-import EventPreviewViewport from "@/components/EventPreviewViewport";
-import EventOwnerView from "@/components/EventOwnerView";
 import EventResponseDashboard from "@/components/EventResponseDashboard";
-import { useUnsavedProgress } from "@/components/UnsavedProgressProvider";
+import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileTopbarSuppressor";
 import { SharedStudioCardFrame } from "@/components/studio/SharedStudioCardPage";
-import { withDirectRsvpInvitationData } from "@/lib/studio/live-card-rsvp";
-import { changedCardEditFields } from "@/lib/studio/card-edit-fields";
-import { isRegistryOnlyCardEdit, normalizeCardRegistryLink, readCardRegistryLink } from "@/lib/studio/card-registry";
 import { hasActionableRsvp } from "@/lib/dashboard-data";
 import { requestCardEdit } from "@/lib/card-edit-client";
 import {
@@ -74,7 +68,6 @@ type DesignFormState = {
   endTime: string;
   venueName: string;
   location: string;
-  registryLink: string;
   designIdea: string;
 };
 
@@ -85,7 +78,6 @@ type DesignEditFields = {
   endTime: string;
   venueName: string;
   location: string;
-  registryLink: string;
   theme?: string;
 };
 
@@ -337,11 +329,11 @@ function resolveProductPreviewSurface(
     publicEvent?.ownerDefaultSurface,
     data?.ownerDefaultSurface,
   ).toLowerCase();
-  const primaryOutput = getPrimaryEventProductOutput(data);
-  if (primaryOutput && !isCardFirstEventProduct(primaryOutput)) return "event-page";
-  if (isCardFirstEventProduct(primaryOutput) && imageUrl) return "studio-card";
   if (ownerDefaultSurface === "card" && imageUrl) return "studio-card";
   if (ownerDefaultSurface === "event" || ownerDefaultSurface === "signup") return "event-page";
+
+  const primaryOutput = getPrimaryEventProductOutput(data);
+  if (primaryOutput && !isCardFirstEventProduct(primaryOutput)) return "event-page";
 
   return imageUrl && (asRecord(data?.studioCard) || isCardFirstProduct(data))
     ? "studio-card"
@@ -413,7 +405,10 @@ function buildFallbackInvitationData(
       rsvpName: firstString(data.rsvpName, rsvp?.name),
       rsvpContact: firstString(data.rsvpContact, rsvp?.contact),
       rsvpDeadline: firstString(data.rsvpDeadline, rsvp?.deadline),
-      registryLink: readCardRegistryLink(data),
+      registryLink:
+        Array.isArray(data.registries) && asRecord(data.registries[0])
+          ? firstString(asRecord(data.registries[0])?.url)
+          : firstString(data.registryLink),
     },
   };
 }
@@ -572,7 +567,6 @@ function buildDesignEditFields(form: DesignFormState): DesignEditFields {
     endTime: form.endTime,
     venueName: splitLocation.venueName,
     location: splitLocation.location,
-    registryLink: form.registryLink.trim(),
   };
   const requestedCardChange = readString(form.designIdea);
   if (requestedCardChange) fields.theme = requestedCardChange;
@@ -649,7 +643,6 @@ function buildDesignFormState(
         preview.locationLine,
       ),
     ),
-    registryLink: readCardRegistryLink(eventData),
     designIdea: "",
   };
 }
@@ -737,6 +730,7 @@ export default function EventOwnerTools({
   );
   const ownerHref = eventOwnerHref || `/event/${encodeURIComponent(eventId)}`;
   const designHref = buildOwnerTabHref(ownerHref, eventId, "design");
+  const primaryEditHref = resolvedArtworkEditHref ? designHref : resolvedEditHref;
   const [currentEventTitle, setCurrentEventTitle] = useState(eventTitle);
   const [designPreviewOverride, setDesignPreviewOverride] =
     useState<Partial<ProductPreviewModel> | null>(null);
@@ -747,41 +741,7 @@ export default function EventOwnerTools({
   } | null>(null);
   const productViewerTrigger = useRef<HTMLElement | null>(null);
   const [publicUrlOverride, setPublicUrlOverride] = useState<string | null>(null);
-  const serverPreview = useMemo(() => {
-    const model = buildProductPreviewModel(eventData);
-    return {
-      ...model,
-      invitationData: model.invitationData
-        ? withDirectRsvpInvitationData({
-            invitationData: model.invitationData,
-            row: {
-              id: eventId,
-              data: eventData,
-              public_slug: firstString(
-                eventData?.publicSlug,
-                eventData?.public_slug,
-                readSlugFromHref(ownerHref),
-              ),
-            },
-            title: eventTitle,
-          })
-        : null,
-    };
-  }, [eventData, eventId, eventTitle, ownerHref]);
-  const [savedPreview, setSavedPreview] = useState<{
-    eventId: string;
-    sourceImageUrl: string | null;
-    preview: Partial<ProductPreviewModel>;
-  } | null>(null);
-  // A router refresh can briefly retain the pre-save props. Keep the confirmed
-  // save as the baseline until the server supplies a different image revision.
-  const preview = useMemo(
-    () => savedPreview?.eventId === eventId &&
-      savedPreview.sourceImageUrl === serverPreview.imageUrl
-      ? { ...serverPreview, ...savedPreview.preview }
-      : serverPreview,
-    [eventId, savedPreview, serverPreview],
-  );
+  const preview = useMemo(() => buildProductPreviewModel(eventData), [eventData]);
   const effectivePreview = useMemo(
     () => (designPreviewOverride ? { ...preview, ...designPreviewOverride } : preview),
     [designPreviewOverride, preview],
@@ -827,9 +787,6 @@ export default function EventOwnerTools({
     ? { ...preview, ...savedProductOverride.preview }
     : preview;
   const productName = preview.surface === "studio-card" ? "card" : "event";
-  const isEventPage = preview.surface === "event-page";
-  const isEventPageWorkspace = isEventPage && (!rsvpEnabled || activeOwnerTab === "design");
-  const primaryEditHref = !isEventPage && resolvedArtworkEditHref ? designHref : resolvedEditHref;
   const openProductViewer = (mode: "current" | "changes") => {
     productViewerTrigger.current = document.activeElement instanceof HTMLElement
       ? document.activeElement
@@ -837,13 +794,12 @@ export default function EventOwnerTools({
     setProductViewerMode(mode);
   };
 
-  const persistedEventKey = JSON.stringify({ eventId, eventTitle, eventData });
   useEffect(() => {
     setCurrentEventTitle(eventTitle);
     setDesignPreviewOverride(null);
     setSavedProductOverride(null);
     setPublicUrlOverride(null);
-  }, [persistedEventKey]);
+  }, [eventData, eventId, eventTitle, preview]);
 
   useEffect(() => {
     setSelectedEventId(eventId);
@@ -899,54 +855,31 @@ export default function EventOwnerTools({
     } catch {}
   }
 
-  if (isEventPageWorkspace) {
-    const mobileEditInEvent =
-      ["gymnastics", "sport_gymnastics", "sport_gymnastics_schedule"].includes(
-        firstString(eventData?.category).toLowerCase(),
-      ) ||
-      ["gymnastics", "gymnastics-schedule"].includes(firstString(eventData?.templateId).toLowerCase());
-    return (
-      <EventOwnerView
-        eventId={eventId}
-        title={currentEventTitle}
-        publicHref={publicUrl}
-        editHref={resolvedEditHref}
-        backgroundColor={resolveEventPageBackgroundColor(eventData)}
-        mobileEditInEvent={mobileEditInEvent}
-      />
-    );
-  }
-
   return (
     <main className="min-h-[100dvh] w-full px-3 pb-5 pt-[calc(var(--app-mobile-topbar-offset,4rem)+1.35rem)] text-slate-950 sm:px-6 lg:px-8 lg:py-5">
       <div
-        className="grid w-full min-w-0 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(20rem,1fr)]"
+        className="mx-auto grid w-full max-w-[1380px] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,410px)] xl:grid-cols-[minmax(0,1fr)_430px]"
       >
         <section className="min-w-0 space-y-3 sm:space-y-4">
-          <div>
           <OwnerWorkspaceHeader
             eventId={eventId}
             title={currentEventTitle}
             dateLine={effectivePreview.dateLine}
             timeLine={effectivePreview.timeLine}
             locationLine={effectivePreview.locationLine}
-            previewLabel={`Preview ${productName}`}
-            isEventPage={isEventPage}
+            viewCurrentLabel={`View current ${productName}`}
             editHref={primaryEditHref}
-            detailsEditHref={!isEventPage && resolvedArtworkEditHref ? resolvedEditHref : null}
+            detailsEditHref={resolvedArtworkEditHref ? resolvedEditHref : null}
             onViewCurrent={() => openProductViewer("current")}
             onShare={sharePublicLink}
           />
-          </div>
           {ownerWorkspaceTabs.length > 1 ? (
-            <div>
             <OwnerWorkspaceTabs
               activeTab={activeOwnerTab}
               ownerHref={ownerHref}
               eventId={eventId}
               tabs={ownerWorkspaceTabs}
             />
-            </div>
           ) : null}
           {activeOwnerTab === "design" ? (
             <OwnerPublicLinkPanel
@@ -957,7 +890,6 @@ export default function EventOwnerTools({
               onUpdated={(nextPath) => setPublicUrlOverride(nextPath)}
             />
           ) : null}
-          <div>
           <OwnerTabContent
             activeTab={activeOwnerTab}
             eventId={eventId}
@@ -972,9 +904,6 @@ export default function EventOwnerTools({
               if (typeof next.title === "string") setCurrentEventTitle(next.title);
               setDesignPreviewOverride(next.preview);
               if (next.persisted) {
-                if (next.preview) {
-                  setSavedPreview({ eventId, sourceImageUrl: serverPreview.imageUrl, preview: next.preview });
-                }
                 setSavedProductOverride({ title: next.title, preview: next.preview });
                 window.dispatchEvent(
                   new CustomEvent("history:updated", { detail: { id: eventId } }),
@@ -983,24 +912,23 @@ export default function EventOwnerTools({
               }
             }}
           />
-          </div>
         </section>
 
-        <aside className="hidden min-w-0 lg:sticky lg:top-5 lg:flex lg:h-[calc(100dvh-2.5rem)] lg:items-start lg:justify-end lg:self-start">
+        <aside className="hidden min-w-0 lg:sticky lg:top-5 lg:flex lg:h-[calc(100dvh-2.5rem)] lg:translate-x-6 lg:items-center lg:justify-end lg:self-start xl:translate-x-10">
           <EventProductPreview
             eventId={eventId}
             eventTitle={currentEventTitle}
             preview={effectivePreview}
             publicUrl={publicUrl}
             embeddedPreviewUrl={embeddedPreviewHref}
-            className="w-full"
-            onViewCurrent={() => openProductViewer("current")}
           />
         </aside>
       </div>
       <OwnerProductViewer
         open={productViewerMode !== null}
-        heading={productViewerMode === "changes" ? "Preview changes" : `Preview ${productName}`}
+        heading={productViewerMode === "changes" ? "Proposed changes" : `Current ${productName}`}
+        description={productViewerMode === "changes" ? "Review your changes before saving." : "The saved version your guests can open."}
+        returnLabel={activeOwnerTab === "design" ? "Back to editing" : "Back to dashboard"}
         eventId={eventId}
         eventTitle={productViewerMode === "changes" ? currentEventTitle : savedProductOverride?.title || eventTitle}
         preview={productViewerMode === "changes" ? effectivePreview : currentProduct}
@@ -1009,6 +937,7 @@ export default function EventOwnerTools({
         onClose={() => setProductViewerMode(null)}
         onReturnFocus={() => productViewerTrigger.current?.focus()}
       />
+      {productViewerMode !== null ? <OwnerPreviewMobileTopbarSuppressor /> : null}
     </main>
   );
 }
@@ -1131,8 +1060,7 @@ function EventProductPreview({
   publicUrl,
   embeddedPreviewUrl,
   className = "",
-  onViewCurrent,
-  onClose,
+  heightMode = "fixed",
 }: {
   eventId: string;
   eventTitle: string;
@@ -1140,34 +1068,22 @@ function EventProductPreview({
   publicUrl: string;
   embeddedPreviewUrl: string;
   className?: string;
-  onViewCurrent?: () => void;
-  onClose?: () => void;
+  heightMode?: "fixed" | "auto";
 }) {
-  const isStudioCard = preview.surface === "studio-card" && Boolean(preview.imageUrl);
-  const cardAspectRatio = preview.invitationData?.heroTextMode === "image" ? 2 / 3 : 9 / 16;
-  const previewAction = onViewCurrent ? (
-    <OwnerPreviewButton
-      label={`Preview ${isStudioCard ? "card" : "event"}`}
-      onClick={onViewCurrent}
-      className="absolute right-3 top-5 z-30 h-12 w-12 border border-white/30 bg-black/40 text-white shadow-lg backdrop-blur-md hover:bg-black/60 focus-visible:ring-white sm:right-5 sm:top-6 md:right-8 md:top-8 md:h-14 md:w-14"
-    />
-  ) : null;
+  const autoHeight = heightMode === "auto";
 
   return (
     <section
-      className={`relative ${
-        isStudioCard
-          ? "h-auto min-h-0"
+      className={`owner-workspace-glass relative overflow-hidden rounded-[28px] border border-white/70 bg-slate-950 shadow-[0_24px_70px_rgba(79,70,128,0.16)] backdrop-blur-xl ${
+        autoHeight
+          ? "h-auto min-h-0 !border-0 !bg-transparent !shadow-none !backdrop-blur-none before:!hidden"
           : "h-[min(680px,calc(100dvh-5rem))] min-h-[480px] lg:h-[min(760px,calc(100dvh-2.5rem))] lg:max-h-[760px]"
       } ${className}`.trim()}
-      style={isStudioCard ? {
-        maxWidth: `var(--artwork-preview-width, calc((100dvh - 2.5rem) * ${cardAspectRatio}))`,
-      } : undefined}
       aria-label="Product preview"
     >
       <div
         className={
-          isStudioCard
+          autoHeight
             ? "flex w-full items-center justify-center"
             : "flex h-full w-full items-center justify-center"
         }
@@ -1180,14 +1096,26 @@ function EventProductPreview({
             invitationData={preview.invitationData as any}
             positions={preview.positions as any}
             shareUrl={publicUrl}
-            topRightAction={previewAction}
-            onClose={onClose}
-            className="w-full"
-            frameClassName="!w-full !max-w-full !rounded-[28px] !border-0 !bg-transparent"
-            style={{ width: "100%" }}
+            className={
+              autoHeight
+                ? "flex w-full items-center justify-center"
+                : "flex h-full w-full items-center justify-center"
+            }
+            frameClassName={
+              autoHeight
+                ? "!aspect-[9/17] !w-full !max-w-full !rounded-[28px] !border-0 shadow-none sm:!aspect-[9/16]"
+                : "!h-full !w-auto !max-w-full !rounded-[28px] !border-0 shadow-none"
+            }
+            style={autoHeight ? undefined : { width: "100%", height: "100%" }}
           />
         ) : publicUrl ? (
-          <div className="relative h-full w-auto max-w-full aspect-[9/16] overflow-hidden rounded-[28px] bg-white shadow-2xl">
+          <div
+            className={
+              autoHeight
+                ? "relative aspect-[9/17] w-full overflow-hidden rounded-[28px] bg-white shadow-2xl sm:aspect-[9/16]"
+                : "relative h-full w-auto max-w-full aspect-[9/16] overflow-hidden rounded-[28px] bg-white shadow-2xl"
+            }
+          >
             <iframe
               src={embeddedPreviewUrl}
               title={`${eventTitle || "Event"} preview`}
@@ -1217,32 +1145,8 @@ function EventProductPreview({
             </div>
           </div>
         )}
-        {!isStudioCard ? previewAction : null}
       </div>
     </section>
-  );
-}
-
-function OwnerPreviewButton({
-  label,
-  onClick,
-  className,
-}: {
-  label: string;
-  onClick: () => void;
-  className: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      aria-haspopup="dialog"
-      className={`inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${className}`}
-    >
-      <Eye size={24} strokeWidth={2.2} aria-hidden="true" />
-    </button>
   );
 }
 
@@ -1279,8 +1183,7 @@ function OwnerWorkspaceHeader({
   dateLine,
   timeLine,
   locationLine,
-  previewLabel,
-  isEventPage,
+  viewCurrentLabel,
   editHref,
   detailsEditHref,
   onViewCurrent,
@@ -1291,8 +1194,7 @@ function OwnerWorkspaceHeader({
   dateLine: string;
   timeLine: string;
   locationLine: string;
-  previewLabel: string;
-  isEventPage: boolean;
+  viewCurrentLabel: string;
   editHref: string;
   detailsEditHref: string | null;
   onViewCurrent: () => void;
@@ -1306,7 +1208,7 @@ function OwnerWorkspaceHeader({
       <div className="space-y-3 sm:space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-[0.66rem] font-black uppercase tracking-[0.16em] text-[#786bd6]">
-            {isEventPage ? "Event workspace" : "Owner workspace"}
+            Owner workspace
           </p>
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
             {!detailsEditHref ? (
@@ -1335,11 +1237,6 @@ function OwnerWorkspaceHeader({
               <Share2 size={21} strokeWidth={2.3} aria-hidden="true" />
               <span className="hidden sm:inline">Share</span>
             </button>
-            <OwnerPreviewButton
-              label={previewLabel}
-              onClick={onViewCurrent}
-              className="h-11 w-11 text-violet-700 hover:bg-violet-50 focus-visible:ring-violet-400 lg:hidden"
-            />
           </div>
         </div>
         <div className="min-w-0">
@@ -1371,6 +1268,15 @@ function OwnerWorkspaceHeader({
             ) : null}
           </div>
         </div>
+        <button
+          type="button"
+          onClick={onViewCurrent}
+          aria-haspopup="dialog"
+          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-violet-700 px-4 py-3 text-sm font-bold text-white shadow-[0_8px_20px_rgba(109,40,217,0.16)] transition hover:bg-violet-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300 sm:w-auto sm:px-6"
+        >
+          <Eye size={20} strokeWidth={2.2} aria-hidden="true" />
+          <span>{viewCurrentLabel}</span>
+        </button>
       </div>
     </header>
   );
@@ -1382,14 +1288,12 @@ function OwnerPublicLinkPanel({
   publicSlug,
   publicUrl,
   onUpdated,
-  compact = false,
 }: {
   eventId: string;
   activeTab: EventContextTab;
   publicSlug: string;
   publicUrl: string;
   onUpdated: (nextPath: string) => void;
-  compact?: boolean;
 }) {
   const router = useRouter();
   const [slug, setSlug] = useState(publicSlug);
@@ -1466,16 +1370,15 @@ function OwnerPublicLinkPanel({
 
   return (
     <section className="owner-workspace-glass relative overflow-hidden rounded-[22px] border border-white/75 bg-white/92 p-3 shadow-[0_14px_38px_rgba(79,70,128,0.09)] backdrop-blur-xl sm:p-4">
-      <form className={compact ? "grid min-w-0 gap-3" : "grid gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]"} onSubmit={handleSubmit}>
+      <form className="grid gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]" onSubmit={handleSubmit}>
         <div className="flex items-center gap-2 text-[0.66rem] font-black uppercase tracking-[0.16em] text-[#786bd6]">
           <Link2 size={16} aria-hidden="true" />
           Public link
         </div>
         <label className="min-w-0">
           <span className="sr-only">Public link slug</span>
-          {compact ? <span className="mb-2 block truncate text-xs text-slate-500">{origin || "https://envitefy.com"}/{publicPathPrefix}/</span> : null}
           <div className="flex min-h-11 min-w-0 items-center overflow-hidden rounded-2xl border border-violet-900/20 bg-white/68 text-sm font-semibold text-slate-950 shadow-[inset_0_1px_3px_rgba(76,29,149,0.16)]">
-            <span className={compact ? "hidden" : "hidden shrink-0 pl-3 pr-1 text-slate-400 sm:inline"}>
+            <span className="hidden shrink-0 pl-3 pr-1 text-slate-400 sm:inline">
               {origin || "https://envitefy.com"}/{publicPathPrefix}/
             </span>
             <input
@@ -1548,9 +1451,6 @@ function OwnerTabContent({
   }) => void;
 }) {
   if (!rsvpEnabled || activeTab === "design") {
-    if (preview.surface === "event-page") {
-      return null;
-    }
     return (
       <OwnerDesignPanel
         eventId={eventId}
@@ -1580,6 +1480,8 @@ function OwnerTabContent({
 function OwnerProductViewer({
   open,
   heading,
+  description,
+  returnLabel,
   eventId,
   eventTitle,
   preview,
@@ -1590,6 +1492,8 @@ function OwnerProductViewer({
 }: {
   open: boolean;
   heading: string;
+  description: string;
+  returnLabel: string;
   eventId: string;
   eventTitle: string;
   preview: ProductPreviewModel;
@@ -1598,58 +1502,40 @@ function OwnerProductViewer({
   onClose: () => void;
   onReturnFocus: () => void;
 }) {
-  const isArtwork = preview.surface === "studio-card";
-  useEffect(() => {
-    if (!open || isArtwork) return;
-    const root = document.documentElement;
-    const previousOverflow = root.style.getPropertyValue("overflow");
-    const previousPriority = root.style.getPropertyPriority("overflow");
-    root.style.setProperty("overflow", "hidden", "important");
-    return () => {
-      if (previousOverflow) {
-        root.style.setProperty("overflow", previousOverflow, previousPriority);
-      } else {
-        root.style.removeProperty("overflow");
-      }
-    };
-  }, [open, isArtwork]);
-
-  if (isArtwork) {
-    return (
-      <ArtworkPreviewDialog
-        open={open}
-        title={heading}
-        aspectRatio={preview.invitationData?.heroTextMode === "image" ? 2 / 3 : 9 / 16}
-        onClose={onClose}
-        onReturnFocus={onReturnFocus}
-      >
-        <EventProductPreview
-          eventId={eventId}
-          eventTitle={eventTitle}
-          preview={preview}
-          publicUrl={publicUrl}
-          embeddedPreviewUrl={embeddedPreviewUrl}
-          className="mx-auto w-full"
-        />
-      </ArtworkPreviewDialog>
-    );
-  }
-
   return (
     <Dialog.Root open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[7000] bg-slate-950" />
+        <Dialog.Overlay className="fixed inset-0 z-[7000] bg-slate-950/40 backdrop-blur-sm" />
         <Dialog.Content
-          className="fixed inset-0 z-[7001] flex items-center justify-center overflow-hidden outline-none"
-          aria-describedby={undefined}
+          className="fixed inset-0 z-[7001] flex flex-col bg-[#f5f3ff] pt-[env(safe-area-inset-top)] shadow-2xl outline-none sm:inset-x-auto sm:inset-y-4 sm:left-1/2 sm:w-[min(560px,calc(100%-2rem))] sm:-translate-x-1/2 sm:rounded-[28px]"
           onCloseAutoFocus={(event) => { event.preventDefault(); onReturnFocus(); }}
         >
-          <Dialog.Title className="sr-only">{heading}</Dialog.Title>
-          <EventPreviewViewport
-            title={eventTitle}
-            src={embeddedPreviewUrl}
-            onClose={onClose}
-          />
+          <div className="shrink-0 border-b border-violet-100 px-4 pb-4 pt-2">
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                className="-ml-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-3 text-sm font-bold text-violet-700 transition hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+              >
+                <ArrowLeft size={20} strokeWidth={2.4} aria-hidden="true" />
+                <span>{returnLabel}</span>
+              </button>
+            </Dialog.Close>
+            <Dialog.Title className="mt-1 text-xl font-semibold text-slate-950">{heading}</Dialog.Title>
+            <Dialog.Description className="mt-1 text-sm text-slate-600">{description}</Dialog.Description>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+            <div className="flex min-h-full items-center justify-center">
+              <EventProductPreview
+                eventId={eventId}
+                eventTitle={eventTitle}
+                preview={preview}
+                publicUrl={publicUrl}
+                embeddedPreviewUrl={embeddedPreviewUrl}
+                className="mx-auto w-full max-w-[430px]"
+                heightMode="auto"
+              />
+            </div>
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
@@ -1687,35 +1573,15 @@ function OwnerDesignPanel({
     buildDesignFormState(eventTitle, eventData, preview),
   );
   const [candidate, setCandidate] = useState<DesignPreviewCandidate | null>(null);
-  const [previewNotice, setPreviewNotice] = useState("");
   const [status, setStatus] = useState<"idle" | "previewing" | "ready" | "saving" | "saved">(
     "idle",
   );
   const [error, setError] = useState("");
   const isBusy = status === "previewing" || status === "saving";
   const hasDesignChanges = !designFormsMatch(form, baselineForm);
-  const registryOnlyChanges = isRegistryOnlyCardEdit(
-    changedCardEditFields(buildDesignEditFields(form), buildDesignEditFields(baselineForm)),
-  );
-  const canSaveChanges = !isBusy && (Boolean(candidate) || registryOnlyChanges);
   const canCancelDesignChanges =
     !isBusy && (hasDesignChanges || Boolean(candidate) || Boolean(error));
 
-  useUnsavedProgress({
-    dirty: hasDesignChanges || Boolean(candidate),
-    busy: isBusy,
-    save: async () => {
-      if (!candidate && !registryOnlyChanges) {
-        throw new Error("Preview your artwork changes before saving them. Your edits are still here.");
-      }
-      if (!await handleSaveChanges()) {
-        throw new Error("The card changes could not be saved. Your edits are still here; keep editing and try again.");
-      }
-    },
-    discard: handleCancelChanges,
-  });
-
-  const persistedDesignKey = JSON.stringify({ eventId, eventData });
   useEffect(() => {
     const nextForm = buildDesignFormState(eventTitle, eventData, preview);
     setForm(nextForm);
@@ -1726,7 +1592,7 @@ function OwnerDesignPanel({
     setCandidate(null);
     setStatus("idle");
     setError("");
-  }, [persistedDesignKey]);
+  }, [eventData, eventId]);
 
   function updateField(key: keyof DesignFormState, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -1775,7 +1641,7 @@ function OwnerDesignPanel({
     try {
       const json = await requestCardEdit(eventId, {
         action: "preview",
-        fields: changedCardEditFields(fields, buildDesignEditFields(baselineForm)),
+        fields,
       });
 
       const details = asRecord(json?.details);
@@ -1812,8 +1678,7 @@ function OwnerDesignPanel({
         endTime: formatDesignTimeInput(details?.endTime) || form.endTime,
         venueName: firstString(details?.venueName, form.venueName),
         location: firstString(details?.location, form.location),
-        registryLink: typeof details?.registryLink === "string" ? details.registryLink : form.registryLink,
-        designIdea: form.designIdea,
+        designIdea: firstString(details?.theme, form.designIdea),
       };
       const nextFields = buildDesignEditFields(nextForm);
       setForm(nextForm);
@@ -1828,7 +1693,6 @@ function OwnerDesignPanel({
         timeLine: nextTimeLine,
         locationLine: nextLocationLine,
       });
-      setPreviewNotice(Array.isArray(json?.warnings) ? json.warnings.filter((item: unknown): item is string => typeof item === "string").join(" ") : "");
       setStatus("ready");
       onDesignUpdated({
         title: nextTitle,
@@ -1849,56 +1713,44 @@ function OwnerDesignPanel({
   }
 
   async function handleSaveChanges() {
-    if (!canSaveChanges) return false;
+    if (!candidate || isBusy) return;
 
     setStatus("saving");
     setError("");
 
     try {
-      const selectedCandidate = candidate || {
-        imageDataUrl: "",
-        fields: { ...buildDesignEditFields(form), registryLink: normalizeCardRegistryLink(form.registryLink) },
-        title: form.title,
-        invitationData: currentInvitationData,
-        positions: currentPositions,
-        details: null,
-        dateLine: preview.dateLine,
-        timeLine: preview.timeLine,
-        locationLine: preview.locationLine,
-      };
       const json = await requestCardEdit(eventId, {
         action: "save",
-        fields: changedCardEditFields(selectedCandidate.fields, buildDesignEditFields(baselineForm)),
-        imageDataUrl: selectedCandidate.imageDataUrl || undefined,
+        fields: candidate.fields,
+        imageDataUrl: candidate.imageDataUrl,
       });
 
-      const details = asRecord(json?.details) || selectedCandidate.details;
-      const nextImageUrl = firstString(json?.imageUrl, selectedCandidate.imageDataUrl, currentImageUrl);
-      const nextInvitationData = asRecord(json?.invitationData) || selectedCandidate.invitationData;
-      const nextPositions = asRecord(json?.positions) || selectedCandidate.positions;
-      const nextTitle = firstString(details?.eventTitle, json?.title, selectedCandidate.title);
+      const details = asRecord(json?.details) || candidate.details;
+      const nextImageUrl = firstString(json?.imageUrl, candidate.imageDataUrl);
+      const nextInvitationData = asRecord(json?.invitationData) || candidate.invitationData;
+      const nextPositions = asRecord(json?.positions) || candidate.positions;
+      const nextTitle = firstString(details?.eventTitle, json?.title, candidate.title);
       const nextDateLine =
         formatOwnerDateChipValue(
-          details?.eventDate || selectedCandidate.fields.eventDate,
-          inferOwnerEventYear(details?.eventDate || selectedCandidate.fields.eventDate),
-        ) || selectedCandidate.dateLine;
+          details?.eventDate || candidate.fields.eventDate,
+          inferOwnerEventYear(details?.eventDate || candidate.fields.eventDate),
+        ) || candidate.dateLine;
       const nextTimeLine =
-        formatOwnerTimeChipValue(details?.startTime || selectedCandidate.fields.startTime) ||
-        selectedCandidate.timeLine;
+        formatOwnerTimeChipValue(details?.startTime || candidate.fields.startTime) ||
+        candidate.timeLine;
       const nextLocationLine = firstString(
         details?.venueName,
         details?.locationName,
         details?.location,
-        selectedCandidate.locationLine,
+        candidate.locationLine,
       );
       const nextForm = {
         title: nextTitle,
-        eventDate: formatDesignDateInput(details?.eventDate) || selectedCandidate.fields.eventDate,
-        startTime: formatDesignTimeInput(details?.startTime) || selectedCandidate.fields.startTime,
-        endTime: formatDesignTimeInput(details?.endTime) || selectedCandidate.fields.endTime,
-        venueName: firstString(details?.venueName, selectedCandidate.fields.venueName),
-        location: firstString(details?.location, selectedCandidate.fields.location),
-        registryLink: typeof details?.registryLink === "string" ? details.registryLink : selectedCandidate.fields.registryLink,
+        eventDate: formatDesignDateInput(details?.eventDate) || candidate.fields.eventDate,
+        startTime: formatDesignTimeInput(details?.startTime) || candidate.fields.startTime,
+        endTime: formatDesignTimeInput(details?.endTime) || candidate.fields.endTime,
+        venueName: firstString(details?.venueName, candidate.fields.venueName),
+        location: firstString(details?.location, candidate.fields.location),
         designIdea: "",
       };
 
@@ -1921,11 +1773,9 @@ function OwnerDesignPanel({
         },
         persisted: true,
       });
-      return true;
     } catch (err) {
-      setStatus(candidate ? "ready" : "idle");
+      setStatus("ready");
       setError(err instanceof Error ? err.message : "The card changes could not be saved.");
-      return false;
     }
   }
 
@@ -1937,16 +1787,12 @@ function OwnerDesignPanel({
             <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
               <Palette size={20} aria-hidden="true" />
             </span>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0">
               <p className="text-[0.66rem] font-black uppercase tracking-[0.16em] text-[#786bd6]">
                 Design
               </p>
               <h3 className="text-2xl font-semibold text-slate-950">Edit card</h3>
             </div>
-            <Link href={detailsEditHref} className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-violet-700 hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
-              <Pencil size={16} aria-hidden="true" />
-              Edit all details
-            </Link>
           </div>
 
           {!currentImageUrl ? (
@@ -2023,25 +1869,6 @@ function OwnerDesignPanel({
             </label>
 
             <label className="col-span-2 block text-xs font-black uppercase tracking-[0.13em] text-slate-500 md:col-span-3">
-              Registry link
-              <input
-                type="text"
-                inputMode="url"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                value={form.registryLink}
-                onChange={(event) => updateField("registryLink", event.target.value)}
-                placeholder="https://your-registry.com/your-event"
-                aria-describedby="card-registry-help"
-                className="mt-2 min-h-11 w-full rounded-2xl border border-violet-900/20 bg-white/62 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 shadow-[inset_0_1px_3px_rgba(76,29,149,0.20)] outline-none backdrop-blur-md transition focus:border-violet-500/40 focus:bg-white/80 focus:ring-4 focus:ring-violet-200/60"
-              />
-              <span id="card-registry-help" className="mt-2 block text-xs font-normal normal-case tracking-normal text-slate-600">
-                Opens from the Registry button. Save directly, or leave blank to remove the button. To change a link printed in the artwork, describe it below.
-              </span>
-            </label>
-
-            <label className="col-span-2 block text-xs font-black uppercase tracking-[0.13em] text-slate-500 md:col-span-3">
               Enter your change
               <input
                 value={form.designIdea}
@@ -2094,7 +1921,7 @@ function OwnerDesignPanel({
             <button
               type="button"
               onClick={handleSaveChanges}
-              disabled={!canSaveChanges}
+              disabled={!candidate || isBusy}
               className="inline-flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-violet-700 px-4 text-sm font-bold text-white shadow-[0_14px_30px_rgba(109,40,217,0.18)] transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:bg-slate-300 sm:px-5"
             >
               {status === "saving" ? (
@@ -2108,11 +1935,8 @@ function OwnerDesignPanel({
 
           {status === "previewing" ? (
             <p role="status" className="text-sm font-medium text-slate-600">
-              {registryOnlyChanges ? "Updating your card preview." : "Updating your card artwork. This can take a few minutes. Keep this page open."}
+              Updating your card artwork. This can take a few minutes. Keep this page open.
             </p>
-          ) : null}
-          {candidate && previewNotice && !error ? (
-            <p role="status" className="text-sm text-slate-600">{previewNotice}</p>
           ) : null}
           {error ? (
             <p
