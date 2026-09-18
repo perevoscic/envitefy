@@ -1,13 +1,27 @@
 [
-    {
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "com.snapmydate.twa",
-        "sha256_cert_fingerprints": [
-          "18:66:CC:9E:C7:2C:35:55:B8:25:36:6A:60:AA:A6:27:A2:9A:55:FF:B1:1F:AF:5B:5F:39:88:65:FF:A6:25:08"
-        ]
-      }
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.snapmydate.twa",
+      "sha256_cert_fingerprints": [
+        "18:66:CC:9E:C7:2C:35:55:B8:25:36:6A:60:AA:A6:27:A2:9A:55:FF:B1:1F:AF:5B:5F:39:88:65:FF:A6:25:08"
+      ]
     }
-  ]
-  
+  },
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.envitefy.app",
+      "sha256_cert_fingerprints": [
+        "39:FC:8B:DF:BA:E6:40:B4:AD:CA:A4:EC:34:5C:E5:18:A7:01:FD:50:E1:18:EB:3A:16:B8:24:DB:AD:A0:23:2D",
+        "C5:5A:21:48:E3:B5:6E:AD:9E:52:48:8F:4F:11:06:46:D2:2B:FB:65:65:C2:B6:99:A2:DB:8E:E4:65:08:3C:BC"
+      ]
+    }
+  }
+]

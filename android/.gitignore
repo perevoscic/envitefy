@@ -2,10 +2,10 @@
 .gradle*/
 build/
 app/build/
+releases/
 local.properties
 signing.properties
 .signing/
 *.jks
 *.keystore
 *.p12
-

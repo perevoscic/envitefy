@@ -17,6 +17,10 @@ const styles = readFileSync(
   join(__dirname, "app", "src", "main", "res", "values", "styles.xml"),
   "utf8",
 );
+const stylesV27 = readFileSync(
+  join(__dirname, "app", "src", "main", "res", "values-v27", "styles.xml"),
+  "utf8",
+);
 const readme = readFileSync(join(__dirname, "README.md"), "utf8");
 const buildGradle = readFileSync(join(__dirname, "app", "build.gradle"), "utf8");
 const strings = readFileSync(
@@ -34,7 +38,8 @@ test("android TWA sets white top status bar and purple bottom navigation bar", (
   assert.match(manifest, /android\.support\.customtabs\.trusted\.STATUS_BAR_COLOR/);
   assert.match(manifest, /android\.support\.customtabs\.trusted\.NAVIGATION_BAR_COLOR/);
   assert.match(styles, /android:windowLightStatusBar">true</);
-  assert.match(styles, /android:windowLightNavigationBar">false</);
+  assert.match(stylesV27, /android:windowLightNavigationBar">false</);
+  assert.doesNotMatch(styles, /android:windowLightNavigationBar/);
 });
 
 test("android README documents the pure web PWA navigation-bar limitation", () => {

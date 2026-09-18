@@ -2,6 +2,10 @@
 
 Planning date: September 18, 2026.
 
+Implementation started September 18, 2026 after approval. A signed version 1.0.0
+bundle and APK now exist; see [the build record](android-release-1.0.0.md) for
+validation, artifact locations, signing details and remaining release gates.
+
 ## Agreed product scope
 
 The first Android release must provide all features currently available on the live Envitefy website. There is no reduced-feature first release. Preserve existing accounts, permissions, data, URLs, artwork, creation tools, signup forms and Studio functionality.
@@ -14,11 +18,11 @@ Complete the existing Android Trusted Web Activity (TWA) project for this releas
 
 Google documents TWA as an Android integration for owned web content, with app/site ownership verified through Digital Asset Links. It uses browser-rendered content; it does not turn server code into a local native application. [Chrome TWA documentation](https://developer.chrome.com/docs/android/trusted-web-activity)
 
-This recommendation follows the full-site requirement; it is a proposed architecture, not an implemented migration. TWA can produce a signed Android App Bundle. Capacitor is not a prerequisite for an `.aab`.
+This architecture follows the full-site requirement. The TWA now produces a signed Android App Bundle. Capacitor is not a prerequisite for an `.aab`.
 
 The app remains an online product, like the live website. Network-dependent features must offer clear loading, error and retry states. Full offline creation or native background rendering is not part of the stated requirement.
 
-## Repository findings
+## Repository findings before implementation
 
 | Area | Observed state | Work required |
 | --- | --- | --- |
@@ -33,7 +37,7 @@ The app remains an online product, like the live website. Network-dependent feat
 | PWA support | Web manifest and service worker already exist | Validate deployed assets, navigation, updates and offline behavior |
 | Local tools | Java 21 and Android platform-tools are discoverable | Verify Android Studio, SDK platform and the chosen Gradle/JDK combination during implementation |
 
-The live `assetlinks.json` could not be retrieved through the research tool. Its deployed contents and HTTP response remain unverified; the package mismatch above is a local repository finding.
+During implementation, a direct HTTPS check confirmed the live endpoint returned HTTP 200 JSON containing only the legacy package association. Both the upload certificate for direct APK testing and the Play app-signing certificate have now been added locally. Deployment and live verification remain required.
 
 ## Implementation sequence
 
@@ -54,7 +58,7 @@ Exit condition: an agreed feature-parity checklist and verified app identity.
 - Verify Envitefy app name, launcher/adaptive icons, splash appearance, status/navigation bars, Android back navigation and edge-to-edge layouts.
 - Build and install a debug package on an emulator and a physical Android phone.
 
-New apps and updates require Android 16 / API 36 or higher from August 31, 2026, subject to Google's stated exceptions. The current API 35 configuration therefore needs an update for this release. [Android target SDK requirements](https://developer.android.com/google/play/requirements/target-sdk)
+New apps and updates require Android 16 / API 36 or higher from August 31, 2026, subject to Google's stated exceptions. The implementation now targets API 36. [Android target SDK requirements](https://developer.android.com/google/play/requirements/target-sdk)
 
 Exit condition: repeatable local build and successful device launch without application crashes.
 
@@ -125,6 +129,16 @@ Do not switch the existing Next.js site to static export as a shortcut: server-o
 
 Capacitor's `server.url` is documented for development/live reload rather than production. Loading the live site through a verified TWA is a different architecture, not a workaround using that setting. [Capacitor configuration](https://capacitorjs.com/docs/config)
 
-## Work performed for this plan
+## Work performed
 
-Read repository configuration and official documentation. No dependency installation, Capacitor initialization/sync, Android build, signing operation, website deployment or Play Console change was performed. This document is the implementation plan; no release-readiness claim is made yet.
+The approved implementation adds a pinned Gradle wrapper, API 36 support, upload
+signing, verified App Links configuration and certificate merge/verification
+tooling. Release and debug builds, Android lint, signature checks and bundletool
+validation passed. Google Play accepted version 1.0.0 (code 1) in the Internal
+Testing draft after the user enabled the Chrome extension's file URL access and
+reconnected it. The release name and notes are saved; final review has two
+warnings (no testers selected and no deobfuscation mapping for the non-minified
+build), with no blocking bundle errors shown. Nothing has been rolled out.
+Tester selection, website deployment, secure key backup and full device parity
+testing remain. The build record is the current status; this plan does not
+assert production readiness.
