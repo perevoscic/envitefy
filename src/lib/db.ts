@@ -2209,6 +2209,7 @@ function _buildDashboardDataProjectionSql(
 }
 
 type DashboardProjectionQueryRow = {
+  has_signup_form: boolean;
   draft_status: string | null;
   sidebar_sports: unknown;
   scan_personalization: unknown;
@@ -2383,6 +2384,7 @@ function mapDashboardProjectionRowToEventHistoryRow(
       draftStatus: row.draft_status ?? null,
       sidebarSports: row.sidebar_sports ?? null,
       category: row.category ?? null,
+      signupForm: row.has_signup_form ? { responses: [] } : null,
       updatedAt: row.updated_at ?? null,
       numberOfGuests: row.number_of_guests ?? null,
       rsvpEnabled: row.rsvp_enabled ?? null,
@@ -2651,7 +2653,8 @@ async function listProjectedDashboardHistoryRowsByIds(
        coalesce(eh.data, '{}'::jsonb)#>'{event,location}' as event_location,
        coalesce(eh.data, '{}'::jsonb)#>'{event,timezone}' as event_timezone,
        coalesce(eh.data, '{}'::jsonb)#>'{event,locationLat}' as event_location_lat,
-       coalesce(eh.data, '{}'::jsonb)#>'{event,locationLng}' as event_location_lng
+       coalesce(eh.data, '{}'::jsonb)#>'{event,locationLng}' as event_location_lng,
+       (jsonb_typeof(coalesce(eh.data, '{}'::jsonb)->'signupForm') = 'object') as has_signup_form
      from requested_ids r
      join event_history eh on eh.id = r.requested_id
      order by r.ord`,
