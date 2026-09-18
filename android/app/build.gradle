@@ -16,7 +16,7 @@ def releaseStorePassword = signingValue("storePassword", "ENVITEFY_ANDROID_STORE
 def releaseKeyAlias = signingValue("keyAlias", "ENVITEFY_ANDROID_KEY_ALIAS")
 def releaseKeyPassword = signingValue("keyPassword", "ENVITEFY_ANDROID_KEY_PASSWORD")
 def hasReleaseSigning = [releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword].every { it }
-def releaseVersionCode = providers.gradleProperty("envitefyVersionCode").getOrElse("1").toInteger()
+def releaseVersionCode = providers.gradleProperty("envitefyVersionCode").getOrElse("2").toInteger()
 if (releaseVersionCode < 1) {
     throw new GradleException("envitefyVersionCode must be a positive integer.")
 }
@@ -30,7 +30,7 @@ android {
         minSdk 23
         targetSdk 36
         versionCode releaseVersionCode
-        versionName providers.gradleProperty("envitefyVersionName").getOrElse("1.0.0")
+        versionName providers.gradleProperty("envitefyVersionName").getOrElse("1.0.1")
     }
 
     signingConfigs {

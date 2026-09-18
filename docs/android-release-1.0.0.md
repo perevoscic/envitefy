@@ -1,6 +1,11 @@
 # Envitefy Android 1.0.0 — build record
 
-Date: September 18, 2026. Status: **signed build accepted by Play; Internal Testing draft awaiting rollout**.
+Date: September 18, 2026. Status: **superseded by 1.0.1 after a reproduced launch crash**.
+
+The initial Play installation succeeded, but launch failed because a browser
+helper activity was missing from the manifest. See [the 1.0.1 build record](android-release-1.0.1.md)
+for the reproduced exception, fix, runtime checks and published update. The
+historical validation and release details below describe the original build.
 
 ## Artifact
 
@@ -34,8 +39,17 @@ Public SHA-256 fingerprints:
 
 Both associations are in `public/.well-known/assetlinks.json`; the legacy
 `com.snapmydate.twa` entry remains intact. The exact verification URL now bypasses
-authentication middleware. No debug certificate was added. A live check still
-found only the legacy association, so these website changes need deployment.
+authentication middleware. No debug certificate was added. Both certificates
+passed the live HTTPS verification after the GitHub-to-Vercel deployment.
+
+## Website deployment
+
+- GitHub main commit: `b923ee2e9456fc5252d599532ed19b7f95867bd0`
+  (`Prepare signed Android release and website verification`).
+- Vercel reports **Ready**, **Production / Current**, serving `envitefy.com`.
+- [Verified Vercel deployment](https://vercel.com/nexa-lyunxs-projects/envitefy/CL1xanheq7SSaK9X21itCEiPz7yd).
+- Live `/.well-known/assetlinks.json` checks passed for the Play app-signing
+  certificate and the direct-install/upload certificate.
 
 ## Verification performed
 
@@ -70,29 +84,36 @@ file URL access and reconnected the extension. The release name and English
 notes are saved. The review page confirms code 1 / version 1.0.0, API 23+ and
 target SDK 36, with an estimated new-install size of 3.44 MB.
 
-Final review shows two warnings: no testers selected, and no deobfuscation
-mapping file. This wrapper does not enable R8/minification, so there is no mapping
-file to upload. No blocking bundle errors were shown. **Save and publish has not
-been pressed; nothing has been rolled out.**
+The approved reusable **Envitefy internal testers** list contains one tester and
+is selected for this app. The no-testers warning cleared. The remaining warning
+concerns a deobfuscation mapping file; this wrapper does not enable
+R8/minification, so there is no mapping file to upload.
 
-[Resume the Internal Testing draft in Play Console](https://play.google.com/console/u/4/developers/9210338056613116669/app/4973399946558335612/tracks/4699523210540474676/releases/1/review).
+**Save and publish completed.** Play Console shows the track as **Active**, the
+release as **Available to internal testers**, and the release name as
+**1.0.0 (1) — Initial Android test**. Console records release on September 18,
+5:07 PM. The app remains unreviewed, with the temporary listing name
+`com.envitefy.app (unreviewed)`. This is an internal release, not a public launch.
 
-1. Supply the intended testers' Google account emails; these have been requested
-   and have not been guessed or configured.
-2. Deploy the prepared website association through the normal web release and
-   run `assetlinks.mjs --fingerprint <Play SHA-256 above> --check-live`.
-3. Confirm signing backup, select the intended internal testers, and finish the
-   internal release review.
-4. Install the Play build on Android and run the full feature matrix in
+[Internal Testing installation link](https://play.google.com/apps/internaltest/4699523210540474676).
+Open it using the approved tester's Google account, join the test, then install
+through Google Play.
+
+[Release details in Play Console](https://play.google.com/console/u/4/developers/9210338056613116669/app/4973399946558335612/tracks/4699523210540474676/releases/1/details).
+
+Remaining work:
+
+1. Confirm a secure backup of the signing directory and properties.
+2. Install the Play build on Android and run the full feature matrix in
    [the release plan](android-full-site-release-plan.md), including login, camera,
    uploads, creation, explicit saves, signup/RSVP, sharing, calendars and resume.
    No device was connected and no AVD was configured during this work, so no
    device feature-parity or fullscreen trust claim is made.
-5. Complete the Console's store setup and closed-test requirements before public
+3. Complete the Console's store setup and closed-test requirements before public
    release. The actual Console shows 12 opted-in testers for 14 continuous days
    are required before applying for production access.
 
-The saved test draft uses these release notes:
+The published internal release uses these release notes:
 
 ```text
 <en-US>

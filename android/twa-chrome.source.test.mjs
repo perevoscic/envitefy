@@ -46,3 +46,15 @@ test("android README documents the pure web PWA navigation-bar limitation", () =
   assert.match(readme, /system navigation bar is outside normal PWA\s+CSS/);
   assert.match(readme, /cannot reliably set the bottom multitasking\/home\/back bar/);
 });
+
+test("the launcher can enable its declared site-settings activity", () => {
+  const component = "com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity";
+  assert.ok(manifest.includes(`android:manageSpaceActivity="${component}"`));
+  const activity = manifest.match(
+    /<activity\s+android:name="com\.google\.androidbrowserhelper\.trusted\.ManageDataLauncherActivity"[\s\S]*?<\/activity>/,
+  )?.[0];
+  assert.ok(activity, "Android Browser Helper enables this activity on every launch on API 25+");
+  assert.match(activity, /android:exported="false"/);
+  assert.match(activity, /android\.support\.customtabs\.trusted\.MANAGE_SPACE_URL/);
+  assert.match(activity, /android:value="@string\/launch_url"/);
+});

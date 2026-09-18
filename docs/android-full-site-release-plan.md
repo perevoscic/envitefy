@@ -2,9 +2,11 @@
 
 Planning date: September 18, 2026.
 
-Implementation started September 18, 2026 after approval. A signed version 1.0.0
-bundle and APK now exist; see [the build record](android-release-1.0.0.md) for
-validation, artifact locations, signing details and remaining release gates.
+Implementation started September 18, 2026 after approval. Version 1.0.1 is now
+active in Play Internal Testing after fixing a reproduced launch crash in 1.0.0.
+The website association is deployed through GitHub main to Vercel. See
+[the current build record](android-release-1.0.1.md) for the installation link,
+validation, artifact locations and remaining device checks.
 
 ## Agreed product scope
 
@@ -37,7 +39,10 @@ The app remains an online product, like the live website. Network-dependent feat
 | PWA support | Web manifest and service worker already exist | Validate deployed assets, navigation, updates and offline behavior |
 | Local tools | Java 21 and Android platform-tools are discoverable | Verify Android Studio, SDK platform and the chosen Gradle/JDK combination during implementation |
 
-During implementation, a direct HTTPS check confirmed the live endpoint returned HTTP 200 JSON containing only the legacy package association. Both the upload certificate for direct APK testing and the Play app-signing certificate have now been added locally. Deployment and live verification remain required.
+The initial HTTPS check found only the legacy package association. Both the
+upload certificate for direct APK testing and the Play app-signing certificate
+have since been deployed through GitHub main to Vercel. Live verification passed
+for both certificate/package pairs, preserving the legacy entry.
 
 ## Implementation sequence
 
@@ -115,7 +120,10 @@ Exit condition: a verified signed `.aab`, with its exact path and build metadata
 - Complete the applicable app setup, reviewer access, privacy/data-safety declarations, content rating and listing assets before moving toward public distribution.
 - Fix findings and increment version code for each new uploaded build.
 
-Internal testing is distinct from public production access. For personal developer accounts created after November 13, 2023, Google currently requires a closed test with at least 12 continuously opted-in testers for 14 days before applying for production access. Account type and Console requirements still need verification. [Google testing requirements](https://support.google.com/googleplay/android-developer/answer/14151465?hl=en), [testing track setup](https://support.google.com/googleplay/android-developer/answer/9845334?hl=en)
+Internal testing is distinct from public production access. The app's actual
+Console shows a requirement for at least 12 continuously opted-in closed-test
+testers for 14 days before applying for production access. Internal Testing does
+not fulfill that closed-test requirement. [Google testing requirements](https://support.google.com/googleplay/android-developer/answer/14151465?hl=en), [testing track setup](https://support.google.com/googleplay/android-developer/answer/9845334?hl=en)
 
 Exit condition: testers can install the Play-distributed app and use the complete live Envitefy feature set.
 
@@ -134,11 +142,14 @@ Capacitor's `server.url` is documented for development/live reload rather than p
 The approved implementation adds a pinned Gradle wrapper, API 36 support, upload
 signing, verified App Links configuration and certificate merge/verification
 tooling. Release and debug builds, Android lint, signature checks and bundletool
-validation passed. Google Play accepted version 1.0.0 (code 1) in the Internal
-Testing draft after the user enabled the Chrome extension's file URL access and
-reconnected it. The release name and notes are saved; final review has two
-warnings (no testers selected and no deobfuscation mapping for the non-minified
-build), with no blocking bundle errors shown. Nothing has been rolled out.
-Tester selection, website deployment, secure key backup and full device parity
-testing remain. The build record is the current status; this plan does not
-assert production readiness.
+validation passed. Google Play accepted version 1.0.0 (code 1), the approved
+tester list was selected, and **Save and publish** completed. The track is
+**Active**, and the release is **Available to internal testers**. Vercel deployed
+GitHub main commit `b923ee2e`; both Android certificates passed live website
+association checks. Secure key backup and full physical-device parity testing
+remain. A subsequent phone install exposed a launcher crash in 1.0.0. The
+standard Android 16 emulator reproduced the missing manage-data component
+exception; declaring the activity fixed cold launch, relaunch and incoming HTTPS
+intent checks. Version 1.0.1 (code 2) is now published to the same Internal Testing
+track. The latest build record is the current status; this plan does not assert
+public production readiness.

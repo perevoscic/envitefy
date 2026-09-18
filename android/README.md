@@ -28,10 +28,10 @@ cache avoids changing legacy tracked `.gradle` cache files in this repository.
 Artifacts are `app/build/outputs/apk/release/app-release.apk` (direct install)
 and `app/build/outputs/bundle/release/app-release.aab` (Play upload).
 
-Default version is `1.0.0` / code `1`. After the first upload, increment the code:
+Default version is `1.0.1` / code `2`. Increment the code for every subsequent upload:
 
 ```powershell
-.\gradlew.bat --project-cache-dir .gradle-local :app:bundleRelease -PenvitefyVersionCode=2 -PenvitefyVersionName=1.0.1
+.\gradlew.bat --project-cache-dir .gradle-local :app:bundleRelease -PenvitefyVersionCode=3 -PenvitefyVersionName=1.0.2
 ```
 
 ## Upload signing
@@ -88,6 +88,23 @@ Build/signature checks do not prove feature parity. Use the device test matrix
 in [the release plan](../docs/android-full-site-release-plan.md) before rollout.
 Test a Play-installed copy as well as a directly installed APK because their
 signing certificates differ.
+
+Before uploading, run the launcher smoke against a booted disposable emulator
+with Chrome installed. From the repository root:
+
+```powershell
+node android/scripts/launch-smoke.mjs --adb "$env:LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe" --serial emulator-5556 --apk android/app/build/outputs/apk/release/app-release.apk
+```
+
+This installs the APK, tests cold launch, relaunch and an incoming HTTPS intent,
+checks the crash buffer, and requires Chrome to resume. It clears only the
+emulator's crash log and stops only Envitefy between scenarios. It refuses
+physical-device serials. A first-run Chrome screen is sufficient for this
+launcher check; it does not prove website trust or complete feature parity.
+
+Keep `ManageDataLauncherActivity` declared even if the app does not show its own
+site-settings control: Android Browser Helper 2.7.3 enables or disables this
+component at launch on API 25+, and Android throws if the component is missing.
 
 ## System bars
 
