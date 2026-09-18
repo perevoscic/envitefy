@@ -8,6 +8,21 @@ import { renderToStaticMarkup } from "react-dom/server";
 import ts from "typescript";
 
 const nativeRequire = createRequire(import.meta.url);
+
+test("signup email notice distinguishes delivery failure from a saved reservation", () => {
+  const Notice = load("src/components/smart-signup-form/SignupEmailNotice.tsx", {}).default;
+  const render = (status) => renderToStaticMarkup(React.createElement(Notice, { status }));
+  const failure = render("failed");
+  assert.match(failure, /Your signup is saved/);
+  assert.match(failure, /couldn’t send the confirmation email/);
+  assert.match(failure, /Don’t sign up again/);
+  assert.match(failure, /role="status"/);
+  assert.doesNotMatch(failure, /email is on its way/);
+  assert.match(render("accepted"), /confirmation email is on its way/);
+  assert.match(render("not_requested"), /No email address was provided/);
+  assert.equal(render(null), "");
+});
+
 function load(relative, mocks, cache = new Map()) {
   const file = path.resolve(relative);
   if (file.endsWith(".json")) return JSON.parse(readFileSync(file, "utf8"));

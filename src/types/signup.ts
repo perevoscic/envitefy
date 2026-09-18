@@ -1,5 +1,8 @@
 import type { EventGuestPlanning } from "@/lib/event-guest-planning";
 
+/** Accepted means the mail provider accepted the message, not that it reached the inbox. */
+export type SignupConfirmationEmailStatus = "accepted" | "failed" | "not_requested";
+
 export type SignupFormSlot = {
   id: string;
   label: string;

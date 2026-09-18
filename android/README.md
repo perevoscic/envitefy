@@ -28,10 +28,10 @@ cache avoids changing legacy tracked `.gradle` cache files in this repository.
 Artifacts are `app/build/outputs/apk/release/app-release.apk` (direct install)
 and `app/build/outputs/bundle/release/app-release.aab` (Play upload).
 
-Default version is `1.0.1` / code `2`. Increment the code for every subsequent upload:
+Default version is `1.0.2` / code `3`. Increment the code for every subsequent upload:
 
 ```powershell
-.\gradlew.bat --project-cache-dir .gradle-local :app:bundleRelease -PenvitefyVersionCode=3 -PenvitefyVersionName=1.0.2
+.\gradlew.bat --project-cache-dir .gradle-local :app:bundleRelease -PenvitefyVersionCode=4 -PenvitefyVersionName=1.0.3
 ```
 
 ## Upload signing
@@ -105,6 +105,38 @@ launcher check; it does not prove website trust or complete feature parity.
 Keep `ManageDataLauncherActivity` declared even if the app does not show its own
 site-settings control: Android Browser Helper 2.7.3 enables or disables this
 component at launch on API 25+, and Android throws if the component is missing.
+
+## Icons and device access
+
+Launcher artwork comes unchanged from `public/icons/icon-{48,72,96,144,192,512}.png`.
+Run `node android/scripts/sync-icons.mjs` from the repository root after an approved
+brand-asset update. Density-specific PNGs support older devices; Android 8+ uses
+the original 512px artwork inset into an adaptive icon so circular and other
+launcher masks retain the e/plane. No separate round or redrawn logo is needed.
+The Play Store listing's icon is separate from the installed launcher icon.
+
+- **Camera:** the site's Snap controls already use an image file input with
+  `capture="environment"`. Chrome and the system camera handle capture and any
+  required browser/device permission. The TWA wrapper does not own the camera.
+- **Local media:** upload controls open the system picker. Only selected files
+  are shared. Broad `READ_MEDIA_*` or storage permission is unnecessary; adding
+  it to the wrapper would not grant permission to Chrome.
+- **Location:** `EnvitefyDelegationService` registers Google's location-delegation
+  handler. A verified supporting browser can request Android foreground location
+  permission when the page calls geolocation. Fine and coarse are declared
+  together, allowing the user to choose approximate location. No background
+  permission, foreground tracking service or launch-time permission request is added.
+  `DelegationService` checks the browser's trusted token before handling commands;
+  its exported service follows Google's integration and is not an unrestricted
+  location endpoint. The permission activity itself is private.
+
+Test the **Play-installed** app: allow while using, approximate only, deny, ask
+every time, camera capture, file selection and cancellation. Also test app
+background/resume. [Google's location-delegation integration](https://github.com/GoogleChrome/android-browser-helper/tree/main/demos/twa-location-delegation)
+has a [reported Samsung/Play permission-prompt issue](https://github.com/GoogleChrome/android-browser-helper/issues/499);
+an APK launcher smoke cannot certify that device-specific flow. If the prompt
+does not appear, inspect Chrome's version and the device's location settings
+before claiming the permission flow is verified.
 
 ## System bars
 

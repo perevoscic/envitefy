@@ -69,7 +69,7 @@ async function resendHttpSend(params: {
 export interface BulkEmailParams {
   subject: string;
   body: string; // HTML content for email body
-  fromEmail?: string; // defaults to SES_FROM_EMAIL_NO_REPLY or RESEND_FROM_EMAIL
+  fromEmail?: string; // defaults to RESEND_FROM_EMAIL or EMAIL_FROM_NO_REPLY
   recipients: Array<{
     email: string;
     firstName?: string | null;
@@ -103,7 +103,7 @@ export async function sendBulkEmail(params: BulkEmailParams): Promise<BulkEmailR
   const fromEmail = normalizeEnvitefySender(
     params.fromEmail ||
       process.env.RESEND_FROM_EMAIL ||
-      process.env.SES_FROM_EMAIL_NO_REPLY ||
+      process.env.EMAIL_FROM_NO_REPLY ||
       DEFAULT_ENVITEFY_SENDER,
   );
 
@@ -192,9 +192,7 @@ export async function sendTestEmail(toEmail: string): Promise<boolean> {
 
     await resendHttpSend({
       from: normalizeEnvitefySender(
-        process.env.RESEND_FROM_EMAIL ||
-          process.env.SES_FROM_EMAIL_NO_REPLY ||
-          DEFAULT_ENVITEFY_SENDER,
+        process.env.RESEND_FROM_EMAIL || process.env.EMAIL_FROM_NO_REPLY || DEFAULT_ENVITEFY_SENDER,
       ),
       to: toEmail,
       subject: "Resend Test Email",

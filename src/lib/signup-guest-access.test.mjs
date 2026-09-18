@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import test from "node:test";
@@ -42,11 +42,13 @@ const {
   createSignupManagementToken,
   managedSignupResponseId,
   normalizeSignupContact,
+  signupEmailEventUrl,
+  signupManagementUrl,
   signupManagementCookieName,
   SIGNUP_MANAGEMENT_MAX_AGE,
 } = load("src/lib/signup-management.ts");
 
-function setup() {
+function setup({ sendConfirmation = async () => {} } = {}) {
   const form = createSignupThemeForm("harvest-table");
   form.settings.collectPhone = false;
   form.settings.collectEmail = true;
@@ -97,6 +99,7 @@ function setup() {
     "@/lib/email": {
       sendSignupConfirmationEmail: async (message) => {
         mail.push(message);
+        await sendConfirmation(message);
       },
       sendSignupRecoveryEmail: async (message) => recoveryMail.push(message),
     },
@@ -187,6 +190,7 @@ test("anonymous guests can reserve, reload, edit and cancel using their private 
   const cookie = header.split(";")[0];
   const body = await saved.json();
   assert.equal(body.status, "confirmed");
+  assert.equal(body.confirmationEmail, "accepted");
   assert.equal(body.myResponseId, body.response.id);
   assert.ok(!JSON.stringify(body).includes("guestId"));
   const stored = app.row().data.signupForm.responses[0];
@@ -209,6 +213,65 @@ test("anonymous guests can reserve, reload, edit and cancel using their private 
   assert.equal((await cancelled.json()).myResponseId, null);
   assert.equal(app.row().data.signupForm.responses[0].status, "cancelled");
   assert.equal(app.mail.length, 2);
+});
+
+test("a failed confirmation is reported without losing the signup or creating a duplicate", async (t) => {
+  const errors = [];
+  t.mock.method(console, "error", (...args) => errors.push(args));
+  const app = setup({
+    sendConfirmation: async () => {
+      throw new Error("SMTP authentication failed");
+    },
+  });
+  const saved = await app.post(app.reservation());
+  assert.equal(saved.status, 200);
+  const cookie = saved.headers.get("set-cookie").split(";")[0];
+  const body = await saved.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.status, "confirmed");
+  assert.equal(body.confirmationEmail, "failed");
+  assert.equal(app.row().data.signupForm.responses.length, 1);
+  assert.equal((await (await app.get(cookie)).json()).myResponseId, body.response.id);
+  assert.equal((await app.post(app.reservation(), cookie)).status, 409);
+  assert.equal(app.mail.length, 1);
+  assert.equal(errors[0][0], "[signup] Confirmation delivery failed");
+  assert.ok(!JSON.stringify(body).includes("SMTP authentication failed"));
+});
+
+test("signup email is attempted only when an address is saved", async () => {
+  const app = setup();
+  app.row().data.signupForm.settings.collectEmail = false;
+  const body = await (await app.post(app.reservation({ email: "" }))).json();
+  assert.equal(body.ok, true);
+  assert.equal(body.confirmationEmail, "not_requested");
+  assert.equal(app.mail.length, 0);
+});
+
+test("signup response waits until its confirmation email attempt finishes", async () => {
+  let finishEmail;
+  let emailStarted;
+  const started = new Promise((resolve) => {
+    emailStarted = resolve;
+  });
+  const pendingMail = new Promise((resolve) => {
+    finishEmail = resolve;
+  });
+  const app = setup({
+    sendConfirmation: async () => {
+      emailStarted();
+      await pendingMail;
+    },
+  });
+  let finished = false;
+  const request = app.post(app.reservation()).then((response) => {
+    finished = true;
+    return response;
+  });
+  await started;
+  assert.equal(app.row().data.signupForm.responses.length, 1);
+  assert.equal(finished, false);
+  finishEmail();
+  assert.equal((await (await request).json()).confirmationEmail, "accepted");
 });
 
 test("response IDs and matching email addresses cannot reveal or change another guest's signup", async () => {
@@ -452,42 +515,217 @@ test("origin checks accept the public proxy hostname but reject unrelated or mis
 
 test("confirmation and recovery emails contain private management links in HTML and plain text", async () => {
   const sent = [];
-  const previousFrom = process.env.SES_FROM_EMAIL_SIGNUP;
-  process.env.SES_FROM_EMAIL_SIGNUP = "no-reply@example.com";
+  const smtpNames = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "SMTP_PORT"];
+  const previousSmtp = smtpNames.map((name) => process.env[name]);
+  Object.assign(process.env, {
+    SMTP_HOST: "smtppro.zoho.com",
+    SMTP_USER: "test@example.com",
+    SMTP_PASS: "test-only",
+    SMTP_PORT: "465",
+  });
   const email = loader({
     "@/lib/db": {},
-    "@aws-sdk/client-sesv2": {
-      SESv2Client: class {
-        async send(command) {
-          sent.push(command.input);
-          return { MessageId: "test-only" };
-        }
-      },
-      SendEmailCommand: class {
-        constructor(input) {
-          this.input = input;
-        }
+    nodemailer: {
+      createTransport: (options) => {
+        assert.equal(options.host, "smtppro.zoho.com");
+        return {
+          async sendMail(message) {
+            sent.push(message);
+            return { accepted: [message.to], rejected: [] };
+          },
+        };
       },
     },
   })("src/lib/email.ts");
   try {
     const app = setup();
+    app.row().data.signupForm.start = "2026-09-23T07:00";
+    app.row().data.signupForm.timezone = "America/Chicago";
+    app.row().data.signupForm.venue = "Upper School Campus";
+    app.row().data.signupForm.sections[0].title = "Parent Volunteers";
+    app.row().data.signupForm.sections[0].slots[0].label = "Donuts & muffins <nut-free>";
     await app.post(app.reservation());
     await email.sendSignupConfirmationEmail(app.mail[0]);
-    const content = sent[0].Content.Simple.Body;
-    assert.match(content.Html.Data, /Manage my signup/);
-    assert.ok(content.Html.Data.includes(app.mail[0].manageUrl));
-    assert.ok(content.Text.Data.includes(app.mail[0].manageUrl));
+    const content = sent[0];
+    assert.equal(content.from, "Envitefy Sign-up Forms <signup-forms@envitefy.com>");
+    assert.match(content.html, /Update or cancel my signup/);
+    assert.match(content.html, /Parent Volunteers: Donuts &amp; muffins &lt;nut-free&gt;/);
+    assert.match(content.text, /Parent Volunteers: Donuts & muffins <nut-free>/);
+    assert.match(content.text, /7:00 AM CDT/);
+    assert.match(content.text, /Upper School Campus/);
+    assert.match(content.html, />View signup form<\/a>/);
+    assert.ok(content.html.includes(app.mail[0].eventUrl));
+    assert.ok(content.html.includes(app.mail[0].manageUrl));
+    assert.ok(content.text.includes(app.mail[0].manageUrl));
     await email.sendSignupRecoveryEmail({
       toEmail: "one@example.com",
       eventTitle: "Breakfast",
       links: [{ name: "Guest One", url: app.mail[0].manageUrl }],
     });
-    assert.deepEqual(sent[1].Destination.ToAddresses, ["one@example.com"]);
-    assert.ok(sent[1].Content.Simple.Body.Html.Data.includes(app.mail[0].manageUrl));
-    assert.ok(sent[1].Content.Simple.Body.Text.Data.includes(app.mail[0].manageUrl));
+    assert.equal(sent[1].to, "one@example.com");
+    assert.equal(sent[1].from, "Envitefy Sign-up Forms <signup-forms@envitefy.com>");
+    assert.ok(sent[1].html.includes(app.mail[0].manageUrl));
+    assert.ok(sent[1].text.includes(app.mail[0].manageUrl));
+    for (const message of sent) {
+      const visibleCopy = message.html.replace(/<[^>]*>/g, "");
+      assert.ok(!visibleCopy.includes(app.mail[0].manageUrl));
+      assert.ok(!visibleCopy.includes(app.mail[0].eventUrl));
+      assert.doesNotMatch(visibleCopy, /#token=|30 days|You can also open this private link/);
+      assert.match(message.html, /Sincerely,<br\/>/);
+      assert.match(message.html, /<strong>Envitefy Team<\/strong>/);
+      assert.match(message.html, /CREATE \| SHARE \| ENJOY/);
+      assert.match(message.html, /https:\/\/envitefy.com\/email\/envitefy-wordmark-email.png/);
+      assert.match(message.html, /https:\/\/www.instagram.com\/envitefy\//);
+      assert.match(message.text, /Sincerely,\nEnvitefy Team\nCREATE \| SHARE \| ENJOY/);
+    }
+    assert.doesNotMatch(content.html, /src="\/templates\//);
+    if (process.env.SIGNUP_EMAIL_PREVIEW_PATH)
+      writeFileSync(process.env.SIGNUP_EMAIL_PREVIEW_PATH, content.html);
   } finally {
-    if (previousFrom === undefined) delete process.env.SES_FROM_EMAIL_SIGNUP;
-    else process.env.SES_FROM_EMAIL_SIGNUP = previousFrom;
+    smtpNames.forEach((name, index) => {
+      if (previousSmtp[index] === undefined) delete process.env[name];
+      else process.env[name] = previousSmtp[index];
+    });
   }
+});
+
+test("emailed signup links always use the public site, even when generated on localhost", () => {
+  const names = [
+    "NEXT_PUBLIC_APP_URL",
+    "NEXT_PUBLIC_BASE_URL",
+    "NEXTAUTH_URL",
+    "PUBLIC_BASE_URL",
+    "APP_URL",
+  ];
+  const previous = names.map((name) => process.env[name]);
+  try {
+    for (const name of names) process.env[name] = "http://localhost:3000";
+    const response = {
+      id: "response",
+      createdAt: "2026-09-18T12:00:00Z",
+      email: "test@example.com",
+    };
+    assert.equal(
+      signupEmailEventUrl("breakfast"),
+      "https://envitefy.com/smart-signup-form/breakfast",
+    );
+    assert.match(
+      signupManagementUrl("event", response),
+      /^https:\/\/envitefy.com\/smart-signup-form\/event\/manage#token=/,
+    );
+  } finally {
+    names.forEach((name, index) => {
+      if (previous[index] === undefined) delete process.env[name];
+      else process.env[name] = previous[index];
+    });
+  }
+});
+
+test("Zoho requires credentials and encrypted SMTP; rejected mail remains a failure", async (t) => {
+  const logs = [];
+  t.mock.method(console, "error", (...args) => logs.push(args));
+  t.mock.method(console, "info", (...args) => logs.push(args));
+  const names = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "SMTP_PASSWORD", "SMTP_PORT"];
+  const previous = names.map((name) => process.env[name]);
+  const attempts = [];
+  let result = { accepted: ["guest@example.com"], rejected: [] };
+  let sendError = null;
+  const { sendTransactionalEmail, zohoSmtpOptions } = loader({
+    nodemailer: {
+      createTransport: (options) => ({
+        async sendMail(message) {
+          attempts.push({ options, message });
+          if (sendError) throw sendError;
+          return result;
+        },
+      }),
+    },
+  })("src/lib/mail-transport.ts");
+  const message = {
+    from: "Envitefy Sign-up Forms <signup-forms@envitefy.com>",
+    to: "guest@example.com",
+    subject: "Confirmed",
+    text: "Your signup",
+    html: "<p>Your signup</p>",
+  };
+  try {
+    for (const name of names) delete process.env[name];
+    await assert.rejects(sendTransactionalEmail(message), /Zoho email is not configured/);
+    assert.equal(attempts.length, 0);
+    Object.assign(process.env, {
+      SMTP_HOST: "smtppro.zoho.com",
+      SMTP_USER: "mailbox@example.com",
+      SMTP_PASS: "test-only",
+    });
+    await sendTransactionalEmail(message);
+    assert.deepEqual(attempts[0].message, message);
+    assert.equal(attempts[0].options.host, "smtppro.zoho.com");
+    assert.equal(attempts[0].options.port, 465);
+    assert.equal(attempts[0].options.secure, true);
+    process.env.SMTP_PORT = "587";
+    assert.equal(zohoSmtpOptions().secure, false);
+    assert.equal(zohoSmtpOptions().requireTLS, true);
+    process.env.SMTP_PORT = "25";
+    assert.throws(zohoSmtpOptions, /must be 465 or 587/);
+    process.env.SMTP_PORT = "465";
+    result = { accepted: [], rejected: [message.to] };
+    await assert.rejects(sendTransactionalEmail(message), /did not accept/);
+    sendError = Object.assign(new Error("SMTP authentication failed: private-token"), {
+      code: "EAUTH",
+      responseCode: 535,
+      command: "AUTH PLAIN",
+    });
+    await assert.rejects(sendTransactionalEmail(message), /SMTP authentication failed/);
+    assert.equal(attempts.length, 3, "delivery failures must not trigger a provider fallback");
+    assert.deepEqual(logs.at(-1), [
+      "[email] Zoho delivery failed",
+      { code: "EAUTH", responseCode: 535, stage: "AUTH" },
+    ]);
+    const logged = JSON.stringify(logs);
+    assert.ok(!logged.includes(message.to));
+    assert.ok(!logged.includes("test-only"));
+    assert.ok(!logged.includes("private-token"));
+  } finally {
+    names.forEach((name, index) => {
+      if (previous[index] === undefined) delete process.env[name];
+      else process.env[name] = previous[index];
+    });
+  }
+});
+
+test("account, sharing and RSVP emails use the same transactional transport", async () => {
+  const sent = [];
+  const email = loader({
+    "@/lib/db": { getUserByEmail: async () => ({ first_name: "Test", last_name: "Host" }) },
+    "@/lib/mail-transport": { sendTransactionalEmail: async (message) => sent.push(message) },
+  })("src/lib/email.ts");
+  const toEmail = "guest@example.com";
+  await email.sendPasswordResetEmail({
+    toEmail,
+    resetUrl: "https://envitefy.com/reset?token=test",
+  });
+  await email.sendPasswordChangeConfirmationEmail({ toEmail, userName: "Guest" });
+  await email.sendShareEventEmail({
+    toEmail,
+    ownerEmail: "host@example.com",
+    eventTitle: "Breakfast",
+    eventUrl: "https://envitefy.com/event/test",
+  });
+  await email.sendRsvpConfirmationEmail({
+    toEmail,
+    eventTitle: "Breakfast",
+    eventUrl: "https://envitefy.com/event/test",
+    response: "yes",
+  });
+  assert.equal(sent.length, 4);
+  for (const message of sent) {
+    assert.equal(message.to, toEmail);
+    assert.ok(message.subject);
+    assert.ok(message.html);
+    assert.ok(message.text);
+  }
+  assert.match(sent[0].text, /https:\/\/envitefy.com\/reset\?token=test/);
+  assert.match(sent[1].text, /password was successfully changed/);
+  assert.match(sent[2].text, /Test Host/);
+  assert.match(sent[3].text, /Going/);
 });

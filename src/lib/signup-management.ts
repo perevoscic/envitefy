@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { SignupForm, SignupResponse } from "@/types/signup";
+import { resolvePublicAssetOrigin } from "./public-asset-url";
 
 export const SIGNUP_MANAGEMENT_MAX_AGE = 60 * 60 * 24 * 30;
 export const signupManagementCookieName = (eventId: string) => `envitefy_signup_manage_${eventId}`;
@@ -106,15 +107,15 @@ export function readSignupManagementToken(request: Request, eventId: string): st
 }
 
 /** Never derive email recovery URLs from an untrusted Host/forwarded-host header. */
+export function signupEmailEventUrl(eventId: string): string {
+  return new URL(
+    `/smart-signup-form/${encodeURIComponent(eventId)}`,
+    resolvePublicAssetOrigin(),
+  ).toString();
+}
+
 export function signupManagementUrl(eventId: string, response: SignupResponse): string {
-  const configured =
-    process.env.NEXTAUTH_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.PUBLIC_BASE_URL ||
-    process.env.APP_URL ||
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    "https://envitefy.com";
-  const url = new URL(`/smart-signup-form/${encodeURIComponent(eventId)}/manage`, configured);
+  const url = new URL(`${signupEmailEventUrl(eventId)}/manage`);
   if (!["http:", "https:"].includes(url.protocol))
     throw new Error("Invalid signup management origin.");
   url.hash = `token=${createSignupManagementToken(eventId, response)}`;

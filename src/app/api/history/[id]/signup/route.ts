@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { absoluteUrl } from "@/lib/absolute-url";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import {
@@ -30,6 +29,7 @@ import {
   managedSignupResponseId,
   readSignupManagementToken,
   SIGNUP_MANAGEMENT_MAX_AGE,
+  signupEmailEventUrl,
   signupManagementCookieName,
   signupManagementUrl,
 } from "@/lib/signup-management";
@@ -40,6 +40,7 @@ import {
 } from "@/lib/signup-mutations";
 import { projectSignupForm } from "@/lib/signup-projection";
 import { hasSameSignupOrigin } from "@/lib/signup-request-origin";
+import type { SignupConfirmationEmailStatus } from "@/types/signup";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -128,6 +129,7 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
         invalidateUserDashboard(viewer);
       }
     const { form, response, isOwner } = saved.result;
+    let confirmationEmail: SignupConfirmationEmailStatus = "not_requested";
     // Await the attempt so the runtime cannot discard it after the response. A mail failure
     // never turns a committed reservation into a failed request that guests would retry.
     if (response?.email) {
@@ -136,14 +138,16 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
           toEmail: response.email,
           userName: response.name,
           eventTitle: form.title || saved.row.title || "Signup",
-          eventUrl: await absoluteUrl(`/smart-signup-form/${id}`),
+          eventUrl: signupEmailEventUrl(saved.row.public_slug || id),
           manageUrl: allowsPublicSignup(saved.row.data)
             ? signupManagementUrl(id, response)
             : undefined,
           form,
           response,
         });
+        confirmationEmail = "accepted";
       } catch (error) {
+        confirmationEmail = "failed";
         console.error("[signup] Confirmation delivery failed", {
           eventId: id,
           error: error instanceof Error ? error.message : "Mail error",
@@ -154,6 +158,7 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
       {
         ok: true,
         status: response?.status,
+        confirmationEmail,
         signupForm: projectSignupForm(form, { isOwner, ...identity }),
         response: response ? withoutSignupGuestId(response) : undefined,
         myResponseId: ownSignupResponseId(form, identity),

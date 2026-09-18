@@ -1,18 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Requested by the verified browser only when the website asks for location. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:manageSpaceActivity="com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity"
-        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Envitefy.Launcher">
         <meta-data
             android:name="asset_statements"
             android:resource="@string/asset_statements" />
+
+        <!-- DelegationService verifies the caller against the trusted browser token. -->
+        <service
+            android:name=".EnvitefyDelegationService"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.support.customtabs.trusted.TRUSTED_WEB_ACTIVITY_SERVICE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
+
+        <activity
+            android:name="com.google.androidbrowserhelper.locationdelegation.PermissionRequestActivity"
+            android:exported="false" />
 
         <!-- LauncherActivity toggles this component while creating its site-settings shortcut. -->
         <activity

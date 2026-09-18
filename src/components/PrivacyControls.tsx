@@ -1,6 +1,7 @@
 "use client";
 
 import Script from "next/script";
+import { useSession } from "next-auth/react";
 import { ShieldCheck } from "lucide-react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { useCallback, useEffect, useState } from "react";
@@ -24,6 +25,7 @@ function removeGoogleAnalyticsCookies() {
 }
 
 export default function PrivacyControls() {
+  const { status } = useSession();
   const [preferences, setPreferences] = useState<PrivacyPreferences | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -60,7 +62,7 @@ export default function PrivacyControls() {
   }, []);
 
   const analyticsEnabled = preferences?.analytics === true;
-  const showInitialNotice = hasLoaded && preferences === null;
+  const showInitialNotice = status === "authenticated" && hasLoaded && preferences === null;
 
   return (
     <>

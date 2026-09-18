@@ -23,15 +23,17 @@ export default function SignupManageAccess({ eventId }: { eventId: string }) {
       body: JSON.stringify({ token }),
     })
       .then(async (response) => {
-        const result: { error?: string } = await response.json();
-        if (!response.ok)
-          throw new Error(
-            result.error || "This link is no longer available. Request a new one below.",
-          );
+        const result: { error?: string } | null = await response.json().catch(() => null);
+        if (!response.ok) {
+          setError(result?.error || "This link is no longer available. Request a new one below.");
+          return;
+        }
         window.location.replace(`/smart-signup-form/${encodeURIComponent(eventId)}#my-signup`);
       })
-      .catch((error: Error) =>
-        setError(error.message || "We couldn’t open your signup. Request a new link below."),
+      .catch(() =>
+        setError(
+          "We couldn’t open your signup. Check your connection and reopen your email link, or request a new one below.",
+        ),
       );
   }, [eventId]);
 

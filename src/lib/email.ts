@@ -1,169 +1,32 @@
-import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
-import nodemailer from "nodemailer";
 import { getUserByEmail } from "@/lib/db";
-import { DEFAULT_ENVITEFY_SENDER, normalizeEnvitefySender } from "@/lib/email-sender";
+import { normalizeEnvitefySender, SIGNUP_FORMS_SENDER } from "@/lib/email-sender";
 import { createEmailTemplate, escapeHtml } from "@/lib/email-template";
-import { resolvePublicAssetOrigin } from "@/lib/public-asset-url";
+import { sendTransactionalEmail } from "@/lib/mail-transport";
+import { buildPublicAssetUrl, resolvePublicAssetOrigin } from "@/lib/public-asset-url";
+import { formatSignupDateRange } from "@/lib/signup-display";
 import type { SignupForm, SignupResponse } from "@/types/signup";
-
-type NonEmptyString = string & { _brand: "NonEmptyString" };
-
-function assertEnv(name: string, value: string | undefined): asserts value is NonEmptyString {
-  if (!value || value.trim().length === 0) {
-    throw new Error(`${name} is not set`);
-  }
-}
 
 // Re-export for backwards compatibility
 export { createEmailTemplate, escapeHtml };
 
-let sesClient: any = null;
-function getSes(): any {
-  if (!sesClient) {
-    const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "us-east-1";
-    sesClient = new SESv2Client({ region });
-  }
-  return sesClient;
-}
+const signupTextSignature =
+  "\n\nSincerely,\nEnvitefy Team\nCREATE | SHARE | ENJOY\nhttps://envitefy.com";
 
-function resolveNoReplySender(context: string): { from: string; usedFallback: boolean } {
-  const preferred = (process.env.SES_FROM_EMAIL_NO_REPLY || "").trim();
-  const fallbacks = [
-    preferred,
-    (process.env.SES_FROM_EMAIL || "").trim(),
-    (process.env.SES_FROM_EMAIL_CONTACT || "").trim(),
-    (process.env.SMTP_FROM || "").trim(),
-    "no-reply@envitefy.com",
-  ].filter(Boolean);
-
-  const from = fallbacks[0] as string | undefined;
-  const usedFallback = Boolean(from && preferred && from !== preferred) || !preferred;
-  if (!from) throw new Error(`${context}: no from address configured`);
-
-  if (usedFallback) {
-    try {
-      console.warn(`[email] ${context} using fallback sender`, {
-        from: maskEmail(from),
-        preferred: preferred || null,
-      });
-    } catch {}
-  }
-
-  return { from: normalizeEnvitefySender(from), usedFallback };
-}
-
-function readEnv(name: string): string | undefined {
-  const value = process.env[name];
-  if (!value || value.trim().length === 0) return undefined;
-  return value.trim();
-}
-
-async function sendViaSmtp(params: {
-  from: string;
-  to: string;
-  subject: string;
-  text: string;
-  html?: string;
-  replyTo?: string;
-}): Promise<{ sent: boolean; reason?: string; messageId?: string }> {
-  const host = readEnv("SMTP_HOST");
-  const portRaw = readEnv("SMTP_PORT");
-  const user = readEnv("SMTP_USER");
-  const pass = readEnv("SMTP_PASS") || readEnv("SMTP_PASSWORD");
-  const secureRaw = readEnv("SMTP_SECURE");
-
-  if (!host || !portRaw || !user || !pass) {
-    return { sent: false, reason: "SMTP is not fully configured" };
-  }
-
-  const port = Number.parseInt(portRaw, 10) || 587;
-  const secure = (secureRaw || "").toLowerCase() === "true" || port === 465;
-
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: { user, pass },
-  } as any);
-
-  const info = await transporter.sendMail({
-    from: params.from,
-    to: params.to,
-    subject: params.subject,
-    text: params.text,
-    html: params.html,
-    replyTo: params.replyTo,
-  });
-  return { sent: true, messageId: info?.messageId };
-}
-
-async function sendViaResend(params: {
-  from: string;
-  to: string;
-  subject: string;
-  text: string;
-  html: string;
-}): Promise<{ sent: boolean; reason?: string; id?: string }> {
-  const apiKey = readEnv("RESEND_API_KEY");
-  if (!apiKey) {
-    return { sent: false, reason: "RESEND_API_KEY is not configured" };
-  }
-
-  const preferredFrom = normalizeEnvitefySender(readEnv("RESEND_FROM_EMAIL") || params.from);
-  const fallbackFrom = DEFAULT_ENVITEFY_SENDER;
-
-  const attempt = async (fromValue: string) => {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: fromValue,
-        to: params.to,
-        subject: params.subject,
-        text: params.text,
-        html: params.html,
-      }),
-    });
-    const data = (await res.json().catch(() => null)) as {
-      id?: string;
-      message?: string;
-      error?: unknown;
-    } | null;
-    const errorMessage =
-      (typeof data?.message === "string" && data.message) ||
-      (typeof data?.error === "string" && data.error) ||
-      `Resend HTTP ${res.status}`;
-    return { ok: res.ok, status: res.status, id: data?.id, errorMessage };
+function resolveNoReplySender() {
+  return {
+    from: normalizeEnvitefySender(
+      process.env.EMAIL_FROM_NO_REPLY?.trim() ||
+        process.env.SMTP_FROM?.trim() ||
+        "Envitefy <no-reply@envitefy.com>",
+    ),
   };
-
-  const first = await attempt(preferredFrom);
-  if (first.ok) return { sent: true, id: first.id };
-
-  const shouldTryFallback =
-    preferredFrom !== fallbackFrom &&
-    (first.status === 400 ||
-      first.status === 401 ||
-      first.status === 403 ||
-      first.status === 422 ||
-      /domain|from|verify|authorized|permission/i.test(first.errorMessage));
-
-  if (!shouldTryFallback) {
-    return { sent: false, reason: first.errorMessage };
-  }
-
-  const second = await attempt(fallbackFrom);
-  if (second.ok) return { sent: true, id: second.id };
-  return { sent: false, reason: second.errorMessage };
 }
 
 export async function sendPasswordResetEmail(params: {
   toEmail: string;
   resetUrl: string;
 }): Promise<void> {
-  const { from } = resolveNoReplySender("password reset");
+  const { from } = resolveNoReplySender();
   const to = params.toEmail;
   const subject = `Reset your Envitefy password`;
   const preheader = `We received a request to reset your password.`;
@@ -193,73 +56,7 @@ export async function sendPasswordResetEmail(params: {
     footerText,
   });
 
-  try {
-    const resendResult = await sendViaResend({
-      from,
-      to,
-      subject,
-      text,
-      html,
-    });
-    if (!resendResult.sent) {
-      throw new Error(resendResult.reason || "Resend send failed");
-    }
-    try {
-      console.log("[email] sendPasswordResetEmail success", {
-        to: maskEmail(to),
-        from: maskEmail(from),
-        provider: "resend",
-        messageId: resendResult.id || null,
-      });
-    } catch {}
-  } catch (err: any) {
-    try {
-      const smtpResult = await sendViaSmtp({
-        from,
-        to,
-        subject,
-        text,
-        html,
-      });
-      if (smtpResult.sent) {
-        try {
-          console.log("[email] sendPasswordResetEmail SMTP fallback success", {
-            to: maskEmail(to),
-            from: maskEmail(from),
-            messageId: smtpResult.messageId || null,
-            resendError: err?.message || null,
-          });
-        } catch {}
-        return;
-      }
-      try {
-        console.warn("[email] sendPasswordResetEmail SMTP fallback skipped", {
-          to: maskEmail(to),
-          reason: smtpResult.reason || "unknown",
-          resendError: err?.message || null,
-        });
-      } catch {}
-    } catch (smtpErr: any) {
-      try {
-        console.error("[email] sendPasswordResetEmail SMTP fallback failed", {
-          to: maskEmail(to),
-          from: maskEmail(from),
-          error: smtpErr?.message,
-          name: smtpErr?.name,
-        });
-      } catch {}
-    }
-
-    try {
-      console.error("[email] sendPasswordResetEmail failed", {
-        to: maskEmail(to),
-        from: maskEmail(from),
-        error: err?.message,
-        name: err?.name,
-      });
-    } catch {}
-    throw err;
-  }
+  await sendTransactionalEmail({ from, to, subject, text, html });
 }
 
 export async function sendShareEventEmail(params: {
@@ -270,8 +67,7 @@ export async function sendShareEventEmail(params: {
   recipientFirstName?: string | null;
   recipientLastName?: string | null;
 }): Promise<void> {
-  assertEnv("SES_FROM_EMAIL_NO_REPLY", process.env.SES_FROM_EMAIL_NO_REPLY);
-  const from = process.env.SES_FROM_EMAIL_NO_REPLY as string;
+  const { from } = resolveNoReplySender();
   const to = params.toEmail;
   // Subject includes sender's name when available, falling back to their email
   let senderName: string | null = null;
@@ -329,45 +125,14 @@ export async function sendShareEventEmail(params: {
     footerText,
   });
 
-  const cmd = new SendEmailCommand({
-    FromEmailAddress: from,
-    Destination: { ToAddresses: [to] },
-    Content: {
-      Simple: { Subject: { Data: subject }, Body: { Text: { Data: text }, Html: { Data: html } } },
-    },
-  });
-  // Lightweight instrumentation to surface SES delivery outcomes in logs
-  try {
-    console.log("[email] sendShareEventEmail dispatch", {
-      to: maskEmail(to),
-      hasOwnerEmail: Boolean(params.ownerEmail),
-      hasEventUrl: Boolean(params.eventUrl),
-    });
-    const result = await getSes().send(cmd);
-    console.log("[email] sendShareEventEmail success", {
-      to: maskEmail(to),
-      messageId: (result as any)?.MessageId || (result as any)?.messageId || null,
-      requestId: (result as any)?.$metadata?.requestId || null,
-      statusCode: (result as any)?.$metadata?.httpStatusCode || null,
-    });
-  } catch (err: any) {
-    console.error("[email] sendShareEventEmail failed", {
-      to: maskEmail(to),
-      error: err?.message,
-      name: err?.name,
-      statusCode: err?.$metadata?.httpStatusCode || null,
-      requestId: err?.$metadata?.requestId || null,
-    });
-    throw err;
-  }
+  await sendTransactionalEmail({ from, to, subject, text, html });
 }
 
 export async function sendPasswordChangeConfirmationEmail(params: {
   toEmail: string;
   userName?: string | null;
 }): Promise<void> {
-  assertEnv("SES_FROM_EMAIL_NO_REPLY", process.env.SES_FROM_EMAIL_NO_REPLY);
-  const from = process.env.SES_FROM_EMAIL_NO_REPLY as string;
+  const { from } = resolveNoReplySender();
   const to = params.toEmail;
   const subject = `Your Envitefy password was changed`;
   const preheader = `Your password was successfully changed.`;
@@ -417,30 +182,7 @@ export async function sendPasswordChangeConfirmationEmail(params: {
     footerText,
   });
 
-  const cmd = new SendEmailCommand({
-    FromEmailAddress: from,
-    Destination: { ToAddresses: [to] },
-    Content: {
-      Simple: { Subject: { Data: subject }, Body: { Text: { Data: text }, Html: { Data: html } } },
-    },
-  });
-
-  try {
-    console.log("[email] sendPasswordChangeConfirmationEmail dispatch", {
-      to: maskEmail(to),
-    });
-    const result = await getSes().send(cmd);
-    console.log("[email] sendPasswordChangeConfirmationEmail success", {
-      to: maskEmail(to),
-      messageId: (result as any)?.MessageId || (result as any)?.messageId || null,
-    });
-  } catch (err: any) {
-    console.error("[email] sendPasswordChangeConfirmationEmail failed", {
-      to: maskEmail(to),
-      error: err?.message,
-    });
-    throw err;
-  }
+  await sendTransactionalEmail({ from, to, subject, text, html });
 }
 
 export async function sendRsvpConfirmationEmail(params: {
@@ -455,7 +197,7 @@ export async function sendRsvpConfirmationEmail(params: {
   eventImageAlt?: string | null;
   calendarLinks?: Array<{ label: string; url: string }> | null;
 }): Promise<void> {
-  const { from } = resolveNoReplySender("RSVP confirmation");
+  const { from } = resolveNoReplySender();
   const to = params.toEmail;
   const statusLabel =
     params.response === "yes" ? "Going" : params.response === "no" ? "Not attending" : "Maybe";
@@ -543,79 +285,7 @@ export async function sendRsvpConfirmationEmail(params: {
     .filter(Boolean)
     .join("\n");
 
-  const cmd = new SendEmailCommand({
-    FromEmailAddress: from,
-    Destination: { ToAddresses: [to] },
-    Content: {
-      Simple: { Subject: { Data: subject }, Body: { Text: { Data: text }, Html: { Data: html } } },
-    },
-  });
-
-  try {
-    console.log("[email] sendRsvpConfirmationEmail dispatch", {
-      to: maskEmail(to),
-      response: params.response,
-    });
-    const result = await getSes().send(cmd);
-    console.log("[email] sendRsvpConfirmationEmail success", {
-      to: maskEmail(to),
-      provider: "ses",
-      messageId: (result as any)?.MessageId || (result as any)?.messageId || null,
-    });
-  } catch (err: any) {
-    try {
-      const resendResult = await sendViaResend({
-        from,
-        to,
-        subject,
-        text,
-        html,
-      });
-      if (resendResult.sent) {
-        console.log("[email] sendRsvpConfirmationEmail Resend fallback success", {
-          to: maskEmail(to),
-          provider: "resend",
-          messageId: resendResult.id || null,
-          sesError: err?.message || null,
-        });
-        return;
-      }
-
-      const smtpResult = await sendViaSmtp({
-        from,
-        to,
-        subject,
-        text,
-        html,
-      });
-      if (smtpResult.sent) {
-        console.log("[email] sendRsvpConfirmationEmail SMTP fallback success", {
-          to: maskEmail(to),
-          provider: "smtp",
-          messageId: smtpResult.messageId || null,
-          sesError: err?.message || null,
-          resendError: resendResult.reason || null,
-        });
-        return;
-      }
-
-      console.error("[email] sendRsvpConfirmationEmail failed", {
-        to: maskEmail(to),
-        error: err?.message,
-        name: err?.name,
-        resendError: resendResult.reason || null,
-        smtpError: smtpResult.reason || null,
-      });
-    } catch (fallbackErr: any) {
-      console.error("[email] sendRsvpConfirmationEmail fallback failed", {
-        to: maskEmail(to),
-        error: fallbackErr?.message,
-        name: fallbackErr?.name,
-        sesError: err?.message || null,
-      });
-    }
-    throw err;
-  }
+  await sendTransactionalEmail({ from, to, subject, text, html });
 }
 
 export async function sendSignupConfirmationEmail(params: {
@@ -627,41 +297,15 @@ export async function sendSignupConfirmationEmail(params: {
   form: SignupForm;
   response: SignupResponse;
 }): Promise<void> {
-  // Use dedicated signup forms email if available, otherwise fall back to no-reply
-  const signupFrom = process.env.SES_FROM_EMAIL_SIGNUP;
-  const fromCandidate = signupFrom || process.env.SES_FROM_EMAIL_NO_REPLY;
-  assertEnv(signupFrom ? "SES_FROM_EMAIL_SIGNUP" : "SES_FROM_EMAIL_NO_REPLY", fromCandidate);
-  const from = fromCandidate as string;
+  const from = SIGNUP_FORMS_SENDER;
   const to = params.toEmail;
 
   const status = params.response.status === "waitlisted" ? "Waitlisted" : "Confirmed";
   const subject = `${status}: ${params.eventTitle}`;
   const preheader = `${status} for ${params.eventTitle}`;
 
-  const startLabel = (() => {
-    const raw = (params.form as any)?.start as string | undefined;
-    if (!raw) return null;
-    // If it's just a date (YYYY-MM-DD), show date only
-    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-      try {
-        const [y, m, d] = raw.split("-").map((s) => Number.parseInt(s, 10));
-        const dt = new Date(y, (m || 1) - 1, d || 1);
-        return dt.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
-      } catch {
-        return raw;
-      }
-    }
-    // Otherwise attempt to parse as ISO-local
-    const dt = new Date(raw);
-    if (Number.isNaN(dt.getTime())) return raw;
-    return dt.toLocaleString(undefined, {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  })();
+  const startLabel = formatSignupDateRange(params.form);
+  const locationLabel = [params.form.venue, params.form.location].filter(Boolean).join(" · ");
 
   const formatTime = (value?: string | null): string | null => {
     if (!value) return null;
@@ -690,9 +334,7 @@ export async function sendSignupConfirmationEmail(params: {
         if (b) return `Ends ${b}`;
         return null;
       })();
-      entries.push(
-        `${escapeHtml(section.title)}: ${escapeHtml(slot.label)}${qty}${range ? ` (${escapeHtml(range)})` : ""}`,
-      );
+      entries.push(`${section.title}: ${slot.label}${qty}${range ? ` (${range})` : ""}`);
     }
     return entries;
   })();
@@ -701,16 +343,21 @@ export async function sendSignupConfirmationEmail(params: {
   const headerBg = header?.backgroundCss || header?.backgroundColor || "#F5F5F4";
   const text1 = header?.textColor1 || "#4E4E50";
   const text2 = header?.textColor2 || "#111827";
-  const bannerSrc = header?.images?.[0]?.dataUrl || null;
-  const squareSrc = header?.backgroundImage?.dataUrl || header?.images?.[1]?.dataUrl || null;
+  const emailImageUrl = (value?: string | null): string | null => {
+    if (!value) return null;
+    if (/^data:image\/(?:png|jpeg|gif|webp);base64,/i.test(value)) return value;
+    const url = buildPublicAssetUrl(value);
+    return /^https?:\/\//i.test(url) ? url : null;
+  };
+  const bannerSrc = emailImageUrl(header?.images?.[0]?.dataUrl);
+  const squareSrc = emailImageUrl(header?.backgroundImage?.dataUrl || header?.images?.[1]?.dataUrl);
 
   const headerPreview = `
     <div style="border:1px solid #E5E7EB; border-radius: 14px; overflow: hidden; background:${escapeHtml(headerBg)};">
       <div style="padding:18px;">
-        <p style="margin:0 0 8px 0; font-size:12px; color:${escapeHtml(text1)}; text-align:center;">Header preview</p>
-        ${bannerSrc ? `<img src="${bannerSrc}" alt="banner" style="width:100%; height:180px; object-fit:cover; border-radius: 12px; border:1px solid #E5E7EB;" />` : ""}
+        ${bannerSrc ? `<img src="${escapeHtml(bannerSrc)}" alt="${escapeHtml(params.eventTitle)}" style="width:100%; height:180px; object-fit:cover; border-radius: 12px; border:1px solid #E5E7EB;" />` : ""}
         <div style="display:flex; gap:16px; align-items:flex-start; margin-top:${bannerSrc ? "12px" : "0"};">
-          ${squareSrc ? `<img src="${squareSrc}" alt="image" width="140" height="140" style="border-radius:12px; object-fit:cover; border:1px solid #E5E7EB;" />` : ""}
+          ${squareSrc ? `<img src="${escapeHtml(squareSrc)}" alt="${escapeHtml(params.eventTitle)}" width="140" height="140" style="border-radius:12px; object-fit:cover; border:1px solid #E5E7EB;" />` : ""}
           <div style="flex:1; min-width:0;">
             ${header?.groupName ? `<div style="font-weight:600; font-size:14px; color:${escapeHtml(text1)}; margin:4px 0 6px 0;">${escapeHtml(header.groupName)}</div>` : ""}
             <div style="font-weight:700; font-size:20px; color:${escapeHtml(text2)};">${escapeHtml(params.eventTitle || "Smart sign-up")}</div>
@@ -725,77 +372,39 @@ export async function sendSignupConfirmationEmail(params: {
     <p style="margin:0 0 16px 0; font-size:16px; line-height:1.6;">You're <strong>${escapeHtml(status)}</strong> for <strong>${escapeHtml(params.eventTitle)}</strong>.</p>
     <div style="background:#F9FAFB; border:1px solid #E5E7EB; padding:14px 16px; border-radius:10px; margin:16px 0;">
       ${startLabel ? `<p style="margin:0 0 4px 0; font-size:14px;"><strong>Date:</strong> ${escapeHtml(startLabel)}</p>` : ""}
-      ${(params.form as any)?.location ? `<p style="margin:0 0 4px 0; font-size:14px;"><strong>Location:</strong> ${escapeHtml(((params.form as any).location as string) || "")}</p>` : ""}
-      ${slotSummaries.length ? `<p style="margin:8px 0 0 0; font-size:14px;"><strong>Selections:</strong><br/> ${slotSummaries.map((s) => `• ${s}`).join("<br/>")}</p>` : ""}
+      ${locationLabel ? `<p style="margin:0 0 4px 0; font-size:14px;"><strong>Location:</strong> ${escapeHtml(locationLabel)}</p>` : ""}
+      ${slotSummaries.length ? `<p style="margin:8px 0 0 0; font-size:14px;"><strong>Your signup — roles, items or shifts:</strong><br/> ${slotSummaries.map((s) => `• ${escapeHtml(s)}`).join("<br/>")}</p>` : ""}
     </div>
     ${headerPreview}
-    ${params.manageUrl ? '<p style="font-size:14px;line-height:1.6">Use your private link to edit or cancel your signup from any browser or device. No account needed. Keep this link private; it expires in 30 days. You can request another from the signup form.</p>' : ""}
+    ${params.eventUrl && params.manageUrl ? `<p style="font-size:14px;line-height:1.6;"><a href="${escapeHtml(params.eventUrl)}" style="color:#59439e;text-decoration:underline;">View signup form</a></p>` : ""}
   `;
 
   const html = createEmailTemplate({
     preheader,
     title: `${status} for ${params.eventTitle}`,
     body,
-    buttonText: params.manageUrl ? "Manage my signup" : params.eventUrl ? "View Sign-up" : undefined,
+    buttonText: params.manageUrl
+      ? "Update or cancel my signup"
+      : params.eventUrl
+        ? "View signup form"
+        : undefined,
     buttonUrl: params.manageUrl || params.eventUrl || undefined,
   });
 
   const text = [
     `${status} for ${params.eventTitle}`,
     startLabel ? `Date: ${startLabel}` : undefined,
-    (params.form as any)?.location ? `Location: ${(params.form as any).location}` : undefined,
+    locationLabel ? `Location: ${locationLabel}` : undefined,
     slotSummaries.length
-      ? `Selections:\n${slotSummaries.map((s) => `- ${s}`).join("\n")}`
+      ? `Your signup — roles, items or shifts:\n${slotSummaries.map((s) => `- ${s}`).join("\n")}`
       : undefined,
-    params.manageUrl ? `Manage my signup: ${params.manageUrl}\nUse this private link on any device. No account needed. It expires in 30 days; request another from the signup form.` : undefined,
+    params.manageUrl ? `Update or cancel my signup: ${params.manageUrl}` : undefined,
     params.eventUrl ? `Open signup form: ${params.eventUrl}` : undefined,
   ]
     .filter(Boolean)
     .join("\n");
 
-  const cmd = new SendEmailCommand({
-    FromEmailAddress: from,
-    Destination: { ToAddresses: [to] },
-    Content: {
-      Simple: { Subject: { Data: subject }, Body: { Text: { Data: text }, Html: { Data: html } } },
-    },
-  });
-
-  try {
-    console.log("[email] sendSignupConfirmationEmail dispatch", { to: maskEmail(to), status });
-    const result = await getSes().send(cmd);
-    console.log("[email] sendSignupConfirmationEmail success", {
-      to: maskEmail(to),
-      messageId: (result as any)?.MessageId || (result as any)?.messageId || null,
-    });
-  } catch (err: any) {
-    const errorName = err?.name || "UnknownError";
-    const errorMessage = err?.message || String(err);
-    const statusCode = err?.$metadata?.httpStatusCode || null;
-    const requestId = err?.$metadata?.requestId || null;
-
-    // Check for common AWS permission errors
-    const isPermissionError =
-      errorName === "AccessDeniedException" ||
-      errorMessage.includes("not authorized") ||
-      errorMessage.includes("AccessDenied");
-
-    console.error("[email] sendSignupConfirmationEmail failed", {
-      to: maskEmail(to),
-      error: errorMessage,
-      name: errorName,
-      statusCode,
-      requestId,
-      isPermissionError,
-      ...(isPermissionError
-        ? {
-            suggestion:
-              "Check AWS IAM permissions for SES SendEmail action. The IAM user/role needs ses:SendEmail permission for the SES identity.",
-          }
-        : {}),
-    });
-    throw err;
-  }
+  await sendTransactionalEmail({ from, to, subject, text: text + signupTextSignature, html });
 }
 
 export async function sendSignupRecoveryEmail(params: {
@@ -803,38 +412,21 @@ export async function sendSignupRecoveryEmail(params: {
   eventTitle: string;
   links: { name: string; url: string }[];
 }): Promise<void> {
-  const from = process.env.SES_FROM_EMAIL_SIGNUP || process.env.SES_FROM_EMAIL_NO_REPLY;
-  assertEnv("SES_FROM_EMAIL_SIGNUP or SES_FROM_EMAIL_NO_REPLY", from);
-  const explanation = "Use your private link to view, edit or cancel your signup from any browser or device. No account needed. These links expire in 30 days. If you did not request this email, you can ignore it.";
+  const from = SIGNUP_FORMS_SENDER;
+  const explanation =
+    "You can update or cancel your signup below. If you didn’t request this email, you can ignore it.";
   const html = createEmailTemplate({
     title: `Manage your signup: ${params.eventTitle}`,
-    preheader: "Your private signup management link",
-    body: `<p>${escapeHtml(explanation)}</p>${params.links.length > 1 ? params.links.map((link) => `<p><strong>${escapeHtml(link.name)}</strong><br/><a href="${escapeHtml(link.url)}">Manage my signup</a></p>`).join("") : ""}<p>Keep this email private. Anyone with your link can manage that signup.</p>`,
-    buttonText: params.links.length === 1 ? "Manage my signup" : undefined,
+    preheader: "Update or cancel your signup",
+    body: `<p>${escapeHtml(explanation)}</p>${params.links.length > 1 ? params.links.map((link) => `<p><strong>${escapeHtml(link.name)}</strong><br/><a href="${escapeHtml(link.url)}" style="color:#59439e;text-decoration:underline;">Update or cancel my signup</a></p>`).join("") : ""}`,
+    buttonText: params.links.length === 1 ? "Update or cancel my signup" : undefined,
     buttonUrl: params.links.length === 1 ? params.links[0].url : undefined,
   });
-  await getSes().send(new SendEmailCommand({
-    FromEmailAddress: from,
-    Destination: { ToAddresses: [params.toEmail] },
-    Content: { Simple: {
-      Subject: { Data: `Manage your signup: ${params.eventTitle}` },
-      Body: {
-        Text: { Data: `${explanation}\n\n${params.links.map((link) => `${link.name}: ${link.url}`).join("\n\n")}\n\nKeep this email private.` },
-        Html: { Data: html },
-      },
-    } },
-  }));
-}
-
-// escapeHtml is now imported from email-template.ts
-
-function maskEmail(email: string): string {
-  if (!email || !email.includes("@")) return email;
-  const [user, domain] = email.split("@");
-  if (!user) return email;
-  if (user.length <= 2) {
-    return `${user[0] ?? "*"}*@${domain}`;
-  }
-  const masked = `${user[0]}${"*".repeat(Math.max(1, user.length - 2))}${user[user.length - 1]}`;
-  return `${masked}@${domain}`;
+  await sendTransactionalEmail({
+    from,
+    to: params.toEmail,
+    subject: `Manage your signup: ${params.eventTitle}`,
+    text: `${explanation}\n\n${params.links.map((link) => `${link.name}: ${link.url}`).join("\n\n")}${signupTextSignature}`,
+    html,
+  });
 }

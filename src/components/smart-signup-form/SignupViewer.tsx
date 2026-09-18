@@ -13,7 +13,7 @@ import {
 import { resolveSignupDesign, resolveSignupThemeStyle } from "@/lib/signup-themes";
 import { signupWindowMessage } from "@/lib/signup-validation";
 import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
-import type { SignupForm, SignupResponse } from "@/types/signup";
+import type { SignupConfirmationEmailStatus, SignupForm, SignupResponse } from "@/types/signup";
 import {
   countConfirmedForSlot,
   countWaitlistedForSlot,
@@ -22,6 +22,7 @@ import {
   normalizeSignupQuantity,
   remainingCapacityForSlot,
 } from "@/utils/signup";
+import SignupEmailNotice from "./SignupEmailNotice";
 import SignupRecovery from "./SignupRecovery";
 import SignupSharing from "./SignupSharing";
 import themeStyles from "./signup-theme.module.css";
@@ -61,6 +62,7 @@ type SignupApiResponse = {
   response?: SignupResponse;
   status?: string;
   myResponseId?: string | null;
+  confirmationEmail?: SignupConfirmationEmailStatus;
 };
 
 type SlotSelectionMap = Record<string, number>;
@@ -157,6 +159,9 @@ const SignupViewer: React.FC<Props> = ({
   const [attempted, setAttempted] = useState(false);
   const [acceptWaitlist, setAcceptWaitlist] = useState(false);
   const [resultStatus, setResultStatus] = useState("confirmed");
+  const [confirmationEmail, setConfirmationEmail] = useState<SignupConfirmationEmailStatus | null>(
+    null,
+  );
   const [testAttempt, setTestAttempt] = useState(0);
   const [myResponseId, setMyResponseId] = useState(viewerResponseId || null);
   useEffect(() => {
@@ -380,6 +385,7 @@ const SignupViewer: React.FC<Props> = ({
     setAttempted(true);
     setError(null);
     setServerMessage(null);
+    setConfirmationEmail(null);
     if (validation.issues.length) {
       requestAnimationFrame(() => focusIssue(validation.issues[0].field));
       return;
@@ -422,6 +428,7 @@ const SignupViewer: React.FC<Props> = ({
       setSelectedSlots({});
       setAttempted(false);
       setResultStatus(data.response?.status || data.status || "confirmed");
+      setConfirmationEmail(data.confirmationEmail || null);
       setServerMessage(
         data.response?.status === "waitlisted"
           ? "All selections are waitlisted. No places or items are confirmed yet."
@@ -440,6 +447,7 @@ const SignupViewer: React.FC<Props> = ({
     if (!myResponse || loading) return;
     setError(null);
     setServerMessage(null);
+    setConfirmationEmail(null);
     setLoading(true);
     try {
       const res = await fetch(`/api/history/${eventId}/signup`, {
@@ -654,6 +662,7 @@ const SignupViewer: React.FC<Props> = ({
           {feedback}
         </div>
       )}
+      {!confirmOpen && <SignupEmailNotice status={confirmationEmail} />}
       {error && (
         <div
           role="alert"
@@ -1398,6 +1407,7 @@ const SignupViewer: React.FC<Props> = ({
                       </>
                     )}
                   </p>
+                  <SignupEmailNotice status={confirmationEmail} />
                 </div>
               </div>
               <div className="flex items-center justify-end gap-2 pt-2">

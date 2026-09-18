@@ -1,5 +1,7 @@
 export const DEFAULT_ENVITEFY_SENDER = "Envitefy <onboarding@resend.dev>";
 
+export const SIGNUP_FORMS_SENDER = "Envitefy Sign-up Forms <signup-forms@envitefy.com>";
+
 /** Keep the configured mailbox while making the customer-facing sender name consistent. */
 export function normalizeEnvitefySender(value: string): string {
   const singleLine = value.replace(/[\r\n]+/g, " ").trim();

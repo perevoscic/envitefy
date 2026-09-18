@@ -1,5 +1,5 @@
-import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 import type { NextConfig } from "next";
+import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 import retiredBabyDesigns from "./src/data/baby-shower-retired-designs.json";
 
 const resolveDevDistDir = () => {
@@ -64,7 +64,6 @@ const nextConfig = (phase: string): NextConfig => ({
     "googleapis",
     "sharp",
     "ffmpeg-static",
-    "@aws-sdk/client-sesv2",
   ],
 
   images: {

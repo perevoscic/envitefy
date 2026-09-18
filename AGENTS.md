@@ -4,6 +4,8 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 
 ## Reality Check
 
+- Email provider preference (September 18, 2026): transactional email uses the existing Zoho SMTP configuration directly. Do not use AWS SES or fall back to another provider for signup confirmations/recovery, RSVP, event-sharing, or account emails. Signup mail sends from `signup-forms@envitefy.com`, an alias of `no-reply@envitefy.com`; authenticate as the mailbox and include the shared Envitefy email signature. Preserve private management links and selected slots in confirmations.
+
 - Standing video-provider preference (September 12, 2026, clarified): use OpenAI for generated assets and substantive AI work, and Remotion for animation, editing, composition and rendering. Google/Gemini must not generate video, images or music or process heavy media reviews/transcription. Gemini is allowed only for small, bounded text calls; the studio guard caps these at 4,000 input characters and 256 output tokens on Flash text models, one candidate, no media or tools. Do not batch these into heavy workloads, silently substitute Google, or bypass the provider guard. This clarification supersedes the initial blanket Google ban. The app's separate Calendar, Maps and Vision OCR integrations are outside this video restriction. See `video-studio/STUDIO-GUIDE.md`.
 
 - The repo still has rename drift. `package.json` says `snap-my-date`, and `README.md` still frames the product as OCR-to-calendar first, but the current app is broader: multi-vertical event creation, public event sites, RSVP/sign-up flows, registry links, and admin campaign tooling.
@@ -28,6 +30,8 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 - Keep publishing separate from saving progress. Preserve the chosen destination after saving, and resume each saved draft in its matching editor with its artwork and form fields.
 
 ## Template Gallery Standard
+
+- Signup email preference (September 18, 2026, simplified): send confirmation and recovery emails from `Envitefy Sign-up Forms <signup-forms@envitefy.com>`. Include selected roles/items/shifts and quantities, event date/timezone and location when provided, a short View signup form link, an Update or cancel my signup button, and the shared Envitefy signature. Keep raw URLs, private tokens and technical expiry/recovery explanations out of visible HTML copy; URLs belong in link destinations and the plain-text fallback. This supersedes the earlier request to show full URLs below buttons. Emailed links must use the public site, never localhost. Opening the email link must not itself cancel a signup.
 
 - Signup recovery preference (September 18, 2026): guests must be able to edit/cancel from another browser without an account. Confirmation emails include a private management link; Already signed up offers recovery by the saved email or phone number and delivers links only to the saved email. Phone lookup is not SMS verification. Verify possession of a signed, expiring response-specific link before restoring access; never treat an entered contact as proof. Keep drafts and explicit private forms protected and rate-limit recovery sends across app instances.
 

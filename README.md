@@ -7,7 +7,8 @@ Create hosted event pages from uploads, snaps, event packets, flyers, schedules,
 - Next.js 15 (App Router) + Node runtime for API routes
 - NextAuth (credentials provider) with JWT sessions
 - Google Cloud Vision for OCR
-- Postgres (AWS RDS) for users and OAuth token storage
+- Postgres for users and OAuth token storage
+- Zoho SMTP for transactional email, including signup confirmations and recovery links
 
 ---
 
@@ -28,6 +29,12 @@ Create `.env` with the following (fill values):
 NEXTAUTH_SECRET=dev-build-secret
 # Optional alternative secret used by auth
 AUTH_SECRET=
+# Transactional email (use the Zoho host for your account region)
+SMTP_HOST=smtppro.zoho.com
+SMTP_PORT=465
+SMTP_USER=no-reply@envitefy.com
+SMTP_PASS=
+EMAIL_FROM_NO_REPLY=Envitefy <no-reply@envitefy.com>
 # Public/base URL (used by OAuth callbacks when behind proxies)
 NEXTAUTH_URL=http://localhost:3001
 PUBLIC_BASE_URL=http://localhost:3001
@@ -89,7 +96,8 @@ Astra tool calling requires the Responses API. See the
 Tips:
 
 - To create BASE64 creds: `base64 -i service-account.json | tr -d '\n'` and paste into `GOOGLE_APPLICATION_CREDENTIALS_BASE64`.
-- If you use `PGSSL_CA_BASE64`, download RDS CA bundle `https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem` and base64 the contents.
+- If you use `PGSSL_CA_BASE64`, use the CA certificate supplied by your Postgres provider.
+- Signup confirmations and recovery emails send from the `signup-forms@envitefy.com` alias of `no-reply@envitefy.com`, with the shared Envitefy email signature. Authenticate SMTP as the mailbox, using a Zoho app password when required. SMTP errors are reported without switching providers; update the same SMTP settings in the deployed environment. Separate admin marketing campaigns retain their existing Resend integration.
 
 3. Initialize database (optional, but recommended)
 

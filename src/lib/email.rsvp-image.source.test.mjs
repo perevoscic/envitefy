@@ -8,12 +8,19 @@ test("RSVP confirmation email can render a hosted event image", () => {
   assert.match(source, /eventImageUrl\?: string \| null/);
   assert.match(source, /eventImageAlt\?: string \| null/);
   assert.match(source, /<img src="\$\{escapeHtml\(eventImageUrl\)\}"/);
-  assert.match(source, /Your RSVP for <strong>\$\{escapeHtml\(params\.eventTitle\)\}<\/strong> is saved\.[\s\S]*\$\{eventImageBlock\}/);
+  assert.match(
+    source,
+    /Your RSVP for <strong>\$\{escapeHtml\(params\.eventTitle\)\}<\/strong> is saved\.[\s\S]*\$\{eventImageBlock\}/,
+  );
 });
 
 test("RSVP confirmation email rejects non-http image sources", () => {
-  assert.match(source, /\^https\?:\\\/\\\/.*params\.eventImageUrl\.trim\(\)/);
-  assert.doesNotMatch(source, /base64/);
+  const rsvpSource = source.slice(
+    source.indexOf("export async function sendRsvpConfirmationEmail"),
+    source.indexOf("export async function sendSignupConfirmationEmail"),
+  );
+  assert.match(rsvpSource, /\^https\?:\\\/\\\/.*params\.eventImageUrl\.trim\(\)/);
+  assert.doesNotMatch(rsvpSource, /base64/);
 });
 
 test("RSVP confirmation email uses provider calendar choices without a duplicate CTA", () => {
