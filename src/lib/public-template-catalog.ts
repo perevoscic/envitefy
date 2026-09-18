@@ -55,6 +55,7 @@ export type PublicTemplate = {
   audience?: string;
   milestone?: string | number | null;
   sport?: string;
+  keywords?: string;
 };
 const styleNames = { stadium: "Stadium", club: "Club", tournament: "Tournament" };
 const sportGalleryArtwork: Record<string, string> = {
@@ -103,7 +104,8 @@ export function getPublicTemplates(category: TemplateCategory): PublicTemplate[]
           style: label,
           sport: sport.label,
           description: sport.defaultDetails,
-          heroImage: sportGalleryArtwork[sport.key] || "/templates/hero-images/general-sport-hero.jpeg",
+          heroImage:
+            sportGalleryArtwork[sport.key] || "/templates/hero-images/general-sport-hero.jpeg",
         })),
       );
     case "signup-forms":
@@ -113,6 +115,12 @@ export function getPublicTemplates(category: TemplateCategory): PublicTemplate[]
           name: theme.name,
           description: theme.description,
           style: "Editorial collection",
+          ...(theme.id === "school-days"
+            ? {
+                audience: "School & Education",
+                keywords: "field day school classroom teacher parents pta pto volunteer supplies",
+              }
+            : {}),
           heroImage: theme.artwork,
         })),
         ...Object.entries(SIGNUP_TEMPLATES)
@@ -125,6 +133,13 @@ export function getPublicTemplates(category: TemplateCategory): PublicTemplate[]
               name: design.name,
               description: `Make ${design.name.toLowerCase()} your own with signup sections, questions, and slots.`,
               style: group,
+              ...(/school|classroom|teacher|field.day|pta|pto|recess/i.test(design.name)
+                ? {
+                    audience: "School & Education",
+                    keywords:
+                      "field day school classroom teacher parents pta pto volunteer supplies",
+                  }
+                : {}),
               heroImage: design.artworkPath || design.path,
             })),
           )

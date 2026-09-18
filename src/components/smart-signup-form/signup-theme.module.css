@@ -8,10 +8,67 @@
 }
 
 .sheet {
+  position: relative;
   max-width: 960px;
   margin: 0 auto;
   display: grid;
   gap: 1.25rem;
+}
+.ownerActions {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 30;
+  max-width: calc(100% - 1rem);
+}
+.ownerActionsAbove {
+  position: relative;
+  top: auto;
+  right: auto;
+  justify-self: end;
+}
+.ownerToolbar {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.25rem;
+  border: 1px solid var(--signup-border);
+  border-radius: 0.75rem;
+  background: var(--signup-surface);
+  color: var(--signup-text);
+  box-shadow: 0 2px 8px #0001;
+}
+.ownerButton {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.ownerButton:hover {
+  background: var(--signup-page);
+}
+.ownerButton:focus-visible {
+  outline: 2px solid var(--signup-focus);
+  outline-offset: 2px;
+}
+.ownerError {
+  max-width: 24rem;
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--signup-border);
+  border-radius: 0.5rem;
+  background: var(--signup-surface);
+  color: var(--signup-text);
+}
+@container signup-page (max-width: 640px) {
+  .ownerLabel {
+    display: none;
+  }
 }
 .header {
   overflow: hidden;
@@ -165,6 +222,11 @@
 /* Complete page compositions adapt to full pages and editor panes. */
 .page[data-signup-design] {
   padding: 28px;
+}
+@media (max-width: 420px) {
+  .page[data-signup-design] {
+    padding: 12px;
+  }
 }
 .page[data-signup-design] .sheet {
   max-width: 1100px;
@@ -805,12 +867,12 @@
     margin-left: auto;
   }
   .composition[data-reverse="true"]:is(
-      [data-composition="botanical"],
-      [data-composition="journal"],
-      [data-composition="scrapbook"],
-      [data-composition="ticket"],
-      [data-composition="menu"]
-    ) {
+    [data-composition="botanical"],
+    [data-composition="journal"],
+    [data-composition="scrapbook"],
+    [data-composition="ticket"],
+    [data-composition="menu"]
+  ) {
     grid-template-columns: 1.15fr 0.85fr;
   }
   .composition[data-reverse="true"]:is(

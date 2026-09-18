@@ -1,11 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import TemplateAutoLoader from "@/components/events/TemplateAutoLoader";
 import CategoryGalleryBackdrop from "@/components/events/CategoryGalleryBackdrop";
 import { categoryGalleryPageClassName } from "@/components/events/category-gallery-page";
-import { TemplateMasonryCard, TemplateMasonryGrid } from "@/components/events/TemplateMasonryGallery";
+import {
+  TemplateMasonryCard,
+  TemplateMasonryGrid,
+} from "@/components/events/TemplateMasonryGallery";
 import { getPublicTemplates } from "@/lib/public-template-catalog";
 import {
   getTemplateCategory,
@@ -25,6 +29,7 @@ export default function PublicTemplateGallery({
   category: TemplateCategory;
   featured?: boolean;
 }) {
+  const { status } = useSession();
   const info = getTemplateCategory(category)!;
   const templates = getPublicTemplates(category);
   const [query, setQuery] = useState("");
@@ -48,7 +53,11 @@ export default function PublicTemplateGallery({
         ...new Set(templates.map((template) => String(template[filter.key] || "")).filter(Boolean)),
       ],
     }))
-    .filter((filter) => filter.values.length > 1);
+    .filter(
+      (filter) =>
+        filter.values.length > 1 ||
+        (category === "signup-forms" && filter.key === "audience" && filter.values.length > 0),
+    );
   const filtered = templates.filter(
     (template) =>
       filters.every(
@@ -56,9 +65,9 @@ export default function PublicTemplateGallery({
           !selectedFilters[filter.key] ||
           String(template[filter.key]) === selectedFilters[filter.key],
       ) &&
-      `${template.name} ${template.description} ${template.style}`
+      `${template.name} ${template.description} ${template.style} ${template.audience || ""} ${template.keywords || ""}`
         .toLowerCase()
-        .includes(query.toLowerCase()),
+        .includes(query.trim().toLowerCase()),
   );
   const shown = featured ? templates.slice(0, 6) : filtered.slice(0, visible);
   useEffect(() => {
@@ -80,17 +89,27 @@ export default function PublicTemplateGallery({
       className={`${featured ? "bg-[#fbf8f5]" : categoryGalleryPageClassName(category)} scroll-mt-24 px-5 py-14 text-[#342d38] sm:px-8 lg:px-12`}
     >
       <div className="mx-auto max-w-[1500px]">
-        <div className={featured ? "mb-8 flex flex-wrap items-end justify-between gap-5" : "relative isolate -mx-5 -mt-14 mb-8 overflow-hidden px-5 pt-14 sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12"}>
+        <div
+          className={
+            featured
+              ? "mb-8 flex flex-wrap items-end justify-between gap-5"
+              : "relative isolate -mx-5 -mt-14 mb-8 overflow-hidden px-5 pt-14 sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12"
+          }
+        >
           {!featured && <CategoryGalleryBackdrop category={category} />}
           <div className="relative z-10">
-            <p className={`text-xs font-semibold uppercase tracking-widest ${featured ? "text-[#886488]" : "text-[#785779]"}`}>
+            <p
+              className={`text-xs font-semibold uppercase tracking-widest ${featured ? "text-[#886488]" : "text-[#785779]"}`}
+            >
               {info.name}
             </p>
             <Heading className="mt-3 font-serif text-4xl sm:text-5xl">
               {featured ? "Make it yours" : `${info.name} templates`}
             </Heading>
             <p className="mt-4 text-sm text-[#746775]">
-              Customize freely. An account is required to save and share.
+              {status === "authenticated"
+                ? "Save a private draft, then publish when ready."
+                : "Customize freely. An account is required to save and share."}
               {category === "signup-forms" && " Choose a design, then make it yours in the editor."}
             </p>
           </div>
@@ -169,7 +188,12 @@ export default function PublicTemplateGallery({
           <p className="py-12 text-center">No templates match. Try another style or search.</p>
         )}
         {!featured && (
-          <TemplateAutoLoader visibleCount={visible} totalCount={filtered.length} setVisibleCount={setVisible} itemLabel="templates" />
+          <TemplateAutoLoader
+            visibleCount={visible}
+            totalCount={filtered.length}
+            setVisibleCount={setVisible}
+            itemLabel="templates"
+          />
         )}
       </div>
     </section>

@@ -1,6 +1,7 @@
 import { getSignupDemoContent } from "@/lib/signup-demo-content";
+import { getSignupDesign } from "@/lib/signup-designs";
 import { applySignupTheme, createSignupAppearance, getSignupTheme } from "@/lib/signup-themes";
-import type { SignupForm, SignupThemeId } from "@/types/signup";
+import type { SignupForm, SignupFormSection, SignupFormSlot, SignupThemeId } from "@/types/signup";
 import { createDefaultSignupForm, generateSignupId } from "@/utils/signup";
 
 export const SIGNUP_STARTERS = [
@@ -66,9 +67,79 @@ export const SIGNUP_STARTERS = [
   },
 ] as const;
 
+type SectionDefinition = Pick<SignupFormSection, "title" | "description"> & {
+  slots: Omit<SignupFormSlot, "id">[];
+};
+
+// IDs are regenerated for each template and save; compare the editable content.
+const sectionSignature = (sections: SectionDefinition[]) =>
+  JSON.stringify(
+    sections.map((section) => ({
+      title: section.title.trim(),
+      description: section.description?.trim() || "",
+      slots: section.slots.map((slot) => ({
+        label: slot.label.trim(),
+        capacity: slot.capacity && slot.capacity > 0 ? slot.capacity : null,
+        startTime: slot.startTime?.trim() || "",
+        endTime: slot.endTime?.trim() || "",
+        notes: slot.notes?.trim() || "",
+      })),
+    })),
+  );
+
+export function signupStarterNeedsConfirmation(form: SignupForm): boolean {
+  if (form.responses.length) return true;
+  const hasContent = form.sections.some(
+    (section) =>
+      section.title.trim() ||
+      section.description?.trim() ||
+      section.slots.some(
+        (slot) =>
+          slot.label.trim() ||
+          slot.notes?.trim() ||
+          slot.startTime ||
+          slot.endTime ||
+          slot.capacity,
+      ),
+  );
+  if (!hasContent) return false;
+
+  const current = sectionSignature(form.sections);
+  const starter = SIGNUP_STARTERS.find((item) => item.id === form.starterId);
+  if (
+    starter &&
+    current ===
+      sectionSignature([
+        {
+          title: starter.section,
+          slots: starter.slots.map((label) => ({ label, capacity: starter.capacity })),
+        },
+      ])
+  )
+    return false;
+
+  const design = getSignupDesign(form.appearance?.designId);
+  if (design) {
+    const demo = getSignupDemoContent(design);
+    if (
+      current ===
+      sectionSignature([
+        {
+          title: demo.section,
+          description: demo.instructions,
+          slots: demo.slots,
+        },
+      ])
+    )
+      return false;
+  }
+  return true;
+}
+
 export function applySignupStarter(form: SignupForm, id: string, append = false): SignupForm {
   const starter = SIGNUP_STARTERS.find((item) => item.id === id);
   if (!starter) return form;
+  const previousStarter = SIGNUP_STARTERS.find((item) => item.id === form.starterId);
   const section = {
     id: generateSignupId(),
     title: starter.section,
@@ -82,13 +153,16 @@ export function applySignupStarter(form: SignupForm, id: string, append = false)
     ...form,
     starterId: id,
     title: form.title || starter.title,
-    sections: append
-      ? [...form.sections.filter((entry) => entry.slots.some((slot) => slot.label.trim())), section]
-      : [section],
+    sections: append ? [...form.sections, section] : [section],
     settings: {
       ...form.settings,
-      collectPhone: false,
-      allowMultipleSlotsPerPerson: id !== "workshop",
+      // Keep custom rules and contact settings when changing the slot structure.
+      allowMultipleSlotsPerPerson:
+        !append &&
+        (!previousStarter ||
+          form.settings.allowMultipleSlotsPerPerson === (previousStarter.id !== "workshop"))
+          ? id !== "workshop"
+          : form.settings.allowMultipleSlotsPerPerson,
     },
   };
 }
@@ -101,6 +175,7 @@ export function createSignupThemeForm(id: SignupThemeId): SignupForm {
       ...form,
       start: null,
       locationMode: "tba",
+      settings: { ...form.settings, collectPhone: false },
       description: theme.description,
       header: { ...form.header, groupName: "Made for getting together" },
     },
@@ -163,5 +238,29 @@ export function createSignupTemplateForm(template: {
         dataUrl: template.heroImage,
       },
     },
+  };
+}
+
+/** A chosen design supplies artwork and styling, never fictitious event details or bookings. */
+export function createEmptySignupTemplateForm(template?: {
+  id: string;
+  name: string;
+  heroImage: string;
+}): SignupForm {
+  const themed = template ? createSignupTemplateForm(template) : createDefaultSignupForm();
+  const empty = createDefaultSignupForm();
+  return {
+    ...empty,
+    boardTitle: "",
+    boardDescription: "",
+    appearance: themed.appearance,
+    header: { ...themed.header, groupName: "", creatorName: "" },
+    starterId: null,
+    start: null,
+    end: null,
+    locationMode: "tba",
+    sections: [],
+    questions: [],
+    settings: { ...empty.settings, collectPhone: false, allowMultipleSlotsPerPerson: true },
   };
 }

@@ -77,6 +77,7 @@ export function notifyFeatureVisibilityChanged() {
 
 export function useFeatureVisibility() {
   const [loading, setLoading] = useState(true);
+  const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
   const [state, setState] = useState<FeatureVisibilityState>(DEFAULT_STATE);
 
   const refresh = useCallback(async () => {
@@ -103,8 +104,9 @@ export function useFeatureVisibility() {
             ? (json.sportPreferenceSuggestion as SportPreferenceSuggestion)
             : null,
       });
+      setHasLoadedPreferences(true);
     } catch {
-      setState(DEFAULT_STATE);
+      // Retain the last successful preferences rather than revealing every category.
     } finally {
       setLoading(false);
     }
@@ -122,6 +124,7 @@ export function useFeatureVisibility() {
 
   return {
     loading,
+    hasLoadedPreferences,
     ...state,
     refresh,
   };

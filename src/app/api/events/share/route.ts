@@ -10,12 +10,39 @@ import {
   getEventHistoryById,
   getUserIdByEmail,
   incrementUserSharesSent,
+  listShareRecipientsForEvent,
 } from "@/lib/db";
 import { sendShareEventEmail } from "@/lib/email";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { buildEventPath } from "@/utils/event-url";
 
 export const runtime = "nodejs";
+
+/** Only the owner can inspect the invitation roster, including private contact details. */
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    const email = session?.user?.email;
+    if (!email)
+      return NextResponse.json({ error: "Sign in to manage invitations." }, { status: 401 });
+    const ownerId = await getUserIdByEmail(email);
+    const eventId = request.nextUrl.searchParams.get("eventId");
+    if (!ownerId || !eventId)
+      return NextResponse.json({ error: "An event is required." }, { status: 400 });
+    const event = await getEventHistoryById(eventId);
+    if (!event || event.user_id !== ownerId)
+      return NextResponse.json(
+        { error: "Invitations are available to the organizer only." },
+        { status: 403 },
+      );
+    return NextResponse.json(
+      { recipients: await listShareRecipientsForEvent(ownerId, eventId) },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
+  } catch {
+    return NextResponse.json({ error: "Could not load invitations. Try again." }, { status: 503 });
+  }
+}
 
 type SessionLike = {
   user?: {
@@ -94,7 +121,8 @@ export async function POST(request: NextRequest) {
 
     const existing = await getEventHistoryById(eventId);
     if (!existing) return NextResponse.json({ error: "Event not found" }, { status: 404 });
-    if (isEventDraft(existing.data)) return NextResponse.json({ error: "Publish your event before sharing it." }, { status: 409 });
+    if (isEventDraft(existing.data))
+      return NextResponse.json({ error: "Publish your event before sharing it." }, { status: 409 });
     if (existing.user_id && existing.user_id !== ownerUserId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }

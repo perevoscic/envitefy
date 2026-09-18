@@ -11,6 +11,11 @@ export type SignupFormSlot = {
 
 export type SignupFormSection = {
   id: string;
+  kind?: "slots" | "info";
+  purpose?: "registration" | "volunteers" | "items" | "times" | "custom";
+  unitLabel?: string;
+  maxSelectionsPerPerson?: number | null;
+  maxQuantityPerSlot?: number;
   title: string;
   description?: string | null;
   slots: SignupFormSlot[];
@@ -55,6 +60,8 @@ export type SignupFormSettings = {
   allowMultipleSlotsPerPerson: boolean;
   maxSlotsPerPerson?: number | null;
   maxGuestsPerSignup: number;
+  maxQuantityPerSlot?: number;
+  collectGuestCount?: boolean;
   waitlistEnabled: boolean;
   lockWhenFull: boolean;
   collectPhone: boolean;
@@ -78,6 +85,8 @@ export type SignupSafetyFlags = {
 };
 
 export type SignupForm = {
+  boardTitle?: string;
+  boardDescription?: string;
   appearance?: SignupAppearance | null;
   starterId?: string | null;
   locationMode?: "in-person" | "online" | "tba";

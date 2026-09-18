@@ -1,6 +1,6 @@
 .shell {
   display: flex;
-  height: 100dvh;
+  height: calc(100dvh - var(--app-content-top-inset, 0px) - env(safe-area-inset-bottom, 0px));
   flex-direction: column;
   overflow: hidden;
 }

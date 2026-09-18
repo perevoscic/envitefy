@@ -5,6 +5,7 @@ import {
   type TemplateKey,
 } from "@/config/feature-visibility";
 import { hasProductScope } from "@/lib/product-scopes";
+import { getCreateActionForSignupIntent } from "@/lib/signup-intent";
 import {
   buildSportCreationHref,
   getSportCreationLabel,
@@ -75,6 +76,10 @@ export function matchesCreateEventHrefPath(path: string, href: string): boolean 
   if (!path || !href) return false;
   const pathname = normalizeNavigationPath(path).replace(/^\/event\/football-season(?=\/|$)/, "/event/football");
   const routeBase = getCreateEventRouteBase(href);
+  if (routeBase === "/signup-forms/templates") {
+    return pathname === routeBase || pathname.startsWith(`${routeBase}/`) ||
+      pathname === "/templates/signup" || pathname === "/smart-signup-form";
+  }
   if (!routeBase.startsWith("/event/")) return false;
 
   return (
@@ -162,20 +167,47 @@ export function getCreateEventSections(
   visibleTemplateKeys?: TemplateKey[],
   productScopes?: string[],
   sportPreferences?: SportPreferences,
+  options: { isAdmin?: boolean; defaultCreateIntent?: string | null } = {},
 ): CreateEventSection[] {
-  const links = getTemplateLinks(visibleTemplateKeys, productScopes, sportPreferences);
-  return CREATE_EVENT_SECTION_ORDER.map((section) => ({
+  const links = options.isAdmin
+    ? getTemplateLinks()
+    : getTemplateLinks(visibleTemplateKeys, productScopes, sportPreferences);
+  const sections: CreateEventSection[] = CREATE_EVENT_SECTION_ORDER.map((section) => ({
     title: CREATE_EVENT_SECTION_TITLES[section],
     items: links
       .filter((link) => link.section === section)
       .map(({ label, href, icon }) => ({ label, href, icon })),
   })).filter((section) => section.items.length > 0);
+  sections.push({
+    title: "Sign-ups",
+    items: [{
+      label: "Sign-up Form",
+      href: "/signup-forms/templates",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
+          <rect x="8" y="2" width="8" height="4" rx="1" />
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M12 11h4M12 16h4M8 11h.01M8 16h.01" />
+        </svg>
+      ),
+      description: "Coordinate volunteers, food, supplies, and shifts",
+    }],
+  });
+  // Put the saved preference first without adding a disabled event category.
+  const preferredHref = getCreateActionForSignupIntent(options.defaultCreateIntent)?.href;
+  for (const section of sections) {
+    section.items.sort((a, b) => Number(b.href === preferredHref) - Number(a.href === preferredHref));
+  }
+  return sections.sort((a, b) =>
+    Number(b.items.some((item) => item.href === preferredHref)) -
+    Number(a.items.some((item) => item.href === preferredHref)),
+  );
 }
 
 export function isCreateEventRoute(path: string | null | undefined): boolean {
   if (!path) return false;
   const pathname = normalizeNavigationPath(path);
   if (pathname === "/event/new" || pathname.startsWith("/event/new/")) return true;
+  if (matchesCreateEventHrefPath(pathname, "/signup-forms/templates")) return true;
   return ALL_TEMPLATE_ROUTE_LINKS.some((link) =>
     matchesCreateEventHrefPath(pathname, link.href),
   );

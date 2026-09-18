@@ -33,6 +33,37 @@
 .button:hover {
   filter: brightness(0.94);
 }
+.shortLabel {
+  display: none;
+}
+.compactMobile {
+  container: guest-actions / inline-size;
+}
+@container guest-actions (max-width: 480px) {
+  .actionRow {
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+  }
+  .actionRow .button {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 0.25rem;
+    padding: 0.5rem 0.25rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+  .actionRow .button svg {
+    width: 0.875rem;
+    height: 0.875rem;
+    flex-shrink: 0;
+  }
+  .fullLabel {
+    display: none;
+  }
+  .shortLabel {
+    display: inline;
+  }
+}
 .button:focus-visible,
 .menu a:focus-visible {
   outline: 2px solid currentColor;

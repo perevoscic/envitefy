@@ -4,10 +4,10 @@ import {
   findSignupSlot,
   generateSignupId,
   rebalanceSignupWaitlist,
-  remainingCapacityForSlot,
   sanitizeSignupForm,
 } from "@/utils/signup";
 import { signupWindowMessage, validateSignupPublish } from "./signup-validation";
+import { validateSignupReservation } from "./signup-reservation-validation";
 
 export class SignupMutationError extends Error {
   constructor(
@@ -186,15 +186,21 @@ export function mutateSignupReservation(
     availability: undefined,
     responses: form.responses.filter((entry) => entry.id !== existing?.id),
   };
-  const full = slots.some((slot) => {
-    const remaining = remainingCapacityForSlot(withoutExisting, slot.sectionId, slot.slotId);
-    return remaining !== null && slot.quantity > remaining;
-  });
-  if (full && !form.settings.waitlistEnabled)
-    throw new SignupMutationError(
-      "A selected slot is full. Refresh availability and choose another slot.",
-      409,
-    );
+  const validation = validateSignupReservation(
+    withoutExisting,
+    {
+      slots,
+      name,
+      email,
+      phone,
+      guests,
+      answers,
+      acceptWaitlist: payload.acceptWaitlist === true,
+    },
+    now,
+  );
+  if (validation.issues.length)
+    throw new SignupMutationError(validation.issues[0].message, validation.issues[0].status);
   const response: SignupResponse = {
     id: existing?.id || generateSignupId(),
     userId: existing ? existing.userId : actor.userId,
@@ -205,7 +211,7 @@ export function mutateSignupReservation(
     note: text(payload.note, 4000) || null,
     slots,
     answers,
-    status: full ? "waitlisted" : "confirmed",
+    status: validation.status,
     createdAt: existing?.createdAt || nowIso,
     updatedAt: nowIso,
   };

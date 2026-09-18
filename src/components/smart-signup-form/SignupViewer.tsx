@@ -1,9 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import EventDeleteModal from "@/components/EventDeleteModal";
 import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
 import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
 import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
@@ -11,8 +9,12 @@ import { getSignupDesign } from "@/lib/signup-designs";
 import { signupResponsesCsv } from "@/lib/signup-export";
 import { resolveSignupThemeStyle } from "@/lib/signup-themes";
 import { signupWindowMessage } from "@/lib/signup-validation";
+import {
+  signupQuantityLimit,
+  validateSignupReservation,
+  type SignupReservationInput,
+} from "@/lib/signup-reservation-validation";
 import type { SignupForm, SignupResponse } from "@/types/signup";
-import { resolveEditHref } from "@/utils/event-edit-route";
 import {
   countConfirmedForSlot,
   countWaitlistedForSlot,
@@ -22,6 +24,7 @@ import {
   remainingCapacityForSlot,
 } from "@/utils/signup";
 import themeStyles from "./signup-theme.module.css";
+import SignupSharing from "./SignupSharing";
 
 type ViewerKind = "owner" | "guest" | "readonly";
 
@@ -32,9 +35,8 @@ type Props = {
   viewerId?: string | null;
   viewerName?: string | null;
   viewerEmail?: string | null;
-  ownerEventTitle?: string;
-  ownerEventData?: any;
   hideOwnerTools?: boolean;
+  interactivePreview?: boolean;
 };
 
 type ReserveRequestPayload = {
@@ -47,6 +49,7 @@ type ReserveRequestPayload = {
   email?: string;
   phone?: string;
   signupId?: string;
+  acceptWaitlist?: boolean;
 };
 
 type SignupApiResponse = {
@@ -113,35 +116,6 @@ const summarizeResponseSlots = (form: SignupForm, response: SignupResponse): str
   return entries.join("; ");
 };
 
-const useStatusMessage = (message: string | null, timeoutMs: number) => {
-  const [value, setValue] = useState(message);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    if (message) {
-      setValue(message);
-      timerRef.current = setTimeout(() => {
-        setValue(null);
-        timerRef.current = null;
-      }, timeoutMs);
-    } else {
-      setValue(null);
-    }
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [message, timeoutMs]);
-
-  return value;
-};
-
 const SignupViewer: React.FC<Props> = ({
   eventId,
   initialForm,
@@ -149,16 +123,16 @@ const SignupViewer: React.FC<Props> = ({
   viewerId,
   viewerName,
   viewerEmail,
-  ownerEventTitle,
-  ownerEventData,
   hideOwnerTools = false,
+  interactivePreview = false,
 }) => {
-  const router = useRouter();
-  const SlotControl = eventId === "preview" ? "span" : "button";
+  const isTestPreview = eventId === "preview" && interactivePreview;
+  const SlotControl = eventId === "preview" && !isTestPreview ? "span" : "button";
   const [form, setForm] = useState<SignupForm>(initialForm);
   const [selectedSlots, setSelectedSlots] = useState<SlotSelectionMap>({});
   const [name, setName] = useState<string>(
-    (initialForm.responses.find((response) => response.userId === viewerId)?.name ||
+    ((!isTestPreview &&
+      initialForm.responses.find((response) => response.userId === viewerId)?.name) ||
       viewerName ||
       "") as string,
   );
@@ -174,8 +148,12 @@ const SignupViewer: React.FC<Props> = ({
   const [errorOpen, setErrorOpen] = useState(false);
   const [editingResponse, setEditingResponse] = useState<SignupResponse | null>(null);
   const [removingResponseId, setRemovingResponseId] = useState<string | null>(null);
+  const [attempted, setAttempted] = useState(false);
+  const [acceptWaitlist, setAcceptWaitlist] = useState(false);
+  const [resultStatus, setResultStatus] = useState("confirmed");
+  const [testAttempt, setTestAttempt] = useState(0);
 
-  const feedback = useStatusMessage(serverMessage, 4000);
+  const feedback = serverMessage;
   const windowMessage = signupWindowMessage(form);
   const canInteract = viewerKind !== "readonly" && !windowMessage;
   useEffect(() => {
@@ -199,46 +177,35 @@ const SignupViewer: React.FC<Props> = ({
   };
   const maxGuests = form.settings.maxGuestsPerSignup || 1;
 
-  // Board-level capacity: total, filled (confirmed), remaining
-  const { totalCapacity, filledCount, remainingCount, hasUnlimited } = useMemo(() => {
-    let total = 0;
-    let filled = 0;
-    let unlimited = false;
-    for (const section of form.sections) {
-      for (const slot of section.slots) {
-        const capacity = getSlotCapacity(slot);
-        const confirmed = countConfirmedForSlot(form, section.id, slot.id);
-        filled += confirmed;
-        if (capacity === null) {
-          unlimited = true;
-        } else {
-          total += capacity;
-        }
-      }
-    }
-    const remaining = unlimited ? Number.POSITIVE_INFINITY : Math.max(0, total - filled);
-    return {
-      totalCapacity: total,
-      filledCount: filled,
-      remainingCount: remaining,
-      hasUnlimited: unlimited,
-    };
-  }, [form]);
+  const sectionProgress = form.sections
+    .filter((section) => section.slots.length)
+    .map((section) => {
+      const unlimited = section.slots.some((slot) => slot.capacity === null);
+      const capacity = section.slots.reduce((sum, slot) => sum + (slot.capacity || 0), 0);
+      const confirmed = section.slots.reduce(
+        (sum, slot) => sum + countConfirmedForSlot(form, section.id, slot.id),
+        0,
+      );
+      return { section, capacity, confirmed, unlimited };
+    });
 
   const myResponse = useMemo(
     () =>
-      findSignupResponseForUser(
-        form,
-        viewerId || undefined,
-        viewerEmail || undefined,
-        undefined, // phone not available in viewer props initially
-      ),
-    [form, viewerId, viewerEmail],
+      isTestPreview
+        ? null
+        : findSignupResponseForUser(
+            form,
+            viewerId || undefined,
+            viewerEmail || undefined,
+            undefined, // phone not available in viewer props initially
+          ),
+    [form, viewerId, viewerEmail, isTestPreview],
   );
 
   const lastResponseId = useRef<string | null | undefined>(undefined);
   useEffect(() => {
-    const currentId = myResponse?.id || null;
+    if (editingResponse) return;
+    const currentId = myResponse ? `${myResponse.id}:${myResponse.updatedAt}` : null;
     if (lastResponseId.current === currentId) return;
     lastResponseId.current = currentId;
 
@@ -288,6 +255,7 @@ const SignupViewer: React.FC<Props> = ({
     canInteract,
     name,
     email,
+    editingResponse,
   ]);
 
   useEffect(() => {
@@ -311,36 +279,67 @@ const SignupViewer: React.FC<Props> = ({
     });
   }, [form.sections]);
 
-  const selectedEntries = useMemo(() => {
-    const entries: Array<{
-      key: string;
-      sectionId: string;
-      slotId: string;
-      sectionTitle: string;
-      slotLabel: string;
-      quantity: number;
-      range: string | null;
-    }> = [];
-    for (const [key, quantity] of Object.entries(selectedSlots)) {
+  const canChoose = canInteract && (!myResponse || !!editingResponse);
+  const reservation: SignupReservationInput = {
+    slots: Object.entries(selectedSlots).map(([key, quantity]) => {
       const [sectionId, slotId] = key.split("::");
-      const section = form.sections.find((s) => s.id === sectionId);
-      const slot = section?.slots.find((s) => s.id === slotId);
-      if (!section || !slot) continue;
-      entries.push({
-        key,
-        sectionId,
-        slotId,
-        sectionTitle: section.title,
-        slotLabel: slot.label,
-        quantity,
-        range: formatSlotRange(slot.startTime, slot.endTime),
-      });
+      return { sectionId, slotId, quantity };
+    }),
+    name,
+    email,
+    phone,
+    guests,
+    answers: form.questions.map((question) => ({
+      questionId: question.id,
+      value: answers[question.id] || "",
+    })),
+    signupId: editingResponse?.id || myResponse?.id,
+    acceptWaitlist,
+  };
+  const validation = validateSignupReservation(form, reservation);
+  const fieldError = (field: string) =>
+    attempted ? validation.issues.find((issue) => issue.field === field)?.message : undefined;
+  const inputProps = (field: string) => ({
+    id: `signup-input-${field}`,
+    "aria-invalid": !!fieldError(field),
+    "aria-describedby": fieldError(field) ? `signup-error-${field}` : undefined,
+  });
+  const inlineError = (field: string) =>
+    fieldError(field) ? (
+      <p id={`signup-error-${field}`} className="mt-1 text-sm text-red-700">
+        {fieldError(field)}
+      </p>
+    ) : null;
+  const focusIssue = (field: string) => {
+    const target = document.getElementById(`signup-input-${field}`);
+    target?.scrollIntoView({ block: "center", behavior: "auto" });
+    target?.focus({ preventScroll: true });
+  };
+  useEffect(() => {
+    setError(null);
+  }, [selectedSlots, name, email, phone, guests, answers, acceptWaitlist]);
+  useEffect(() => {
+    setAcceptWaitlist(false);
+  }, [selectedSlots]);
+  const cancelEdit = () => {
+    lastResponseId.current = undefined;
+    setEditingResponse(null);
+    setSelectedSlots({});
+    setAttempted(false);
+    setAcceptWaitlist(false);
+    setError(null);
+    if (!myResponse) {
+      setName(viewerName || "");
+      setEmail(viewerEmail || "");
+      setPhone("");
+      setGuests(0);
+      setNote("");
+      setAnswers({});
     }
-    return entries;
-  }, [selectedSlots, form.sections]);
+  };
 
   const handleToggleSlot = (sectionId: string, slotId: string) => {
-    if (!canInteract || loading) return;
+    if (!canChoose || loading) return;
     const key = slotKey(sectionId, slotId);
     setSelectedSlots((prev) => {
       const next = { ...prev };
@@ -357,69 +356,37 @@ const SignupViewer: React.FC<Props> = ({
   };
 
   const handleQuantityChange = (key: string, quantity: number) => {
-    if (!canInteract || loading) return;
-    setSelectedSlots((prev) => ({
-      ...prev,
-      [key]: Math.max(1, Math.min(maxGuests, normalizeSignupQuantity(quantity))),
-    }));
+    if (!canChoose || loading) return;
+    setSelectedSlots((prev) => ({ ...prev, [key]: Math.max(1, quantity) }));
   };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!canInteract || loading) return;
+    if (!canChoose || loading) return;
+    setAttempted(true);
     setError(null);
     setServerMessage(null);
-
-    if (Object.keys(selectedSlots).length === 0) {
-      setError("Select at least one slot.");
+    if (validation.issues.length) {
+      requestAnimationFrame(() => focusIssue(validation.issues[0].field));
       return;
     }
-    if (!name.trim()) {
-      setError("Please add the name we should associate with this sign-up.");
+    if (eventId === "preview") {
+      setTestAttempt((previous) => previous + 1);
+      setServerMessage(
+        validation.status === "waitlisted"
+          ? "Test result: all selections would be waitlisted. Nothing was submitted."
+          : "Test signup complete. Your selections would be confirmed. Nothing was submitted and no places were reserved.",
+      );
       return;
     }
-    if (form.settings.collectEmail && !email.trim()) {
-      setError("Add the best email for reminders.");
-      return;
-    }
-    if (form.settings.collectPhone && !phone.trim()) {
-      setError("Add a mobile number in case plans change.");
-      return;
-    }
-    for (const question of form.questions) {
-      if (question.required) {
-        const value = answers[question.id]?.trim();
-        if (!value) {
-          setError("Answer all required questions.");
-          return;
-        }
-      }
-    }
-
-    const slotsPayload = Object.entries(selectedSlots).map(([key, quantity]) => {
-      const [sectionId, slotId] = key.split("::");
-      return { sectionId, slotId, quantity };
-    });
-
-    const answersPayload = form.questions
-      .map((question) => ({
-        questionId: question.id,
-        value: answers[question.id]?.trim() || "",
-      }))
-      .filter((entry) => entry.value);
-
     const payload: ReserveRequestPayload = {
       action: "reserve",
-      slots: slotsPayload,
+      ...reservation,
       name: name.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
+      note: note.trim(),
     };
-    if (note.trim()) payload.note = note.trim();
-    if (guests > 0) payload.guests = guests;
-    if (answersPayload.length > 0) payload.answers = answersPayload;
-    if (form.settings.collectEmail && email.trim()) payload.email = email.trim();
-    if (form.settings.collectPhone && phone.trim()) payload.phone = phone.trim();
-    if (myResponse?.id) payload.signupId = myResponse.id;
-
     setLoading(true);
     try {
       const res = await fetch(`/api/history/${eventId}/signup`, {
@@ -428,29 +395,26 @@ const SignupViewer: React.FC<Props> = ({
         body: JSON.stringify(payload),
       });
       const data = (await res.json().catch(() => ({}))) as SignupApiResponse;
-      if (!res.ok || !data?.signupForm) {
-        const errorMessage = data?.error || "Could not save your sign-up. Try again.";
-        setError(errorMessage);
+      if (!res.ok || !data.signupForm) {
+        setError(data.error || "Could not save your signup. Please try again.");
         setErrorOpen(true);
         return;
       }
+      lastResponseId.current = undefined;
+      if (editingResponse && !myResponse) cancelEdit();
       setForm(data.signupForm);
-      const status =
-        typeof data?.status === "string"
-          ? data.status
-          : (data?.response?.status as string | undefined);
-      if (status === "waitlisted") {
-        setServerMessage(
-          "You're on the waitlist. We'll promote you automatically if spots open up.",
-        );
-      } else {
-        setServerMessage("Your signup is confirmed. Your selected slots are saved below.");
-      }
+      setEditingResponse(null);
+      setSelectedSlots({});
+      setAttempted(false);
+      setResultStatus(data.response?.status || data.status || "confirmed");
+      setServerMessage(
+        data.response?.status === "waitlisted"
+          ? "All selections are waitlisted. No places or items are confirmed yet."
+          : "Signup confirmed. The saved commitments are shown below.",
+      );
       setConfirmOpen(true);
-    } catch (err: unknown) {
-      console.error("Failed to submit signup:", err);
-      const errorMessage = "Unexpected error. Please try again.";
-      setError(errorMessage);
+    } catch {
+      setError("Could not save your signup. Check your connection and try again.");
       setErrorOpen(true);
     } finally {
       setLoading(false);
@@ -474,6 +438,8 @@ const SignupViewer: React.FC<Props> = ({
         return;
       }
       setForm(data.signupForm);
+      setEditingResponse(null);
+      setAttempted(false);
       setServerMessage("Cancelled. Thanks for letting us know!");
       setSelectedSlots({});
       setNote("");
@@ -505,6 +471,7 @@ const SignupViewer: React.FC<Props> = ({
         return;
       }
       setForm(data.signupForm);
+      if (editingResponse?.id === responseId) cancelEdit();
     } catch (err: unknown) {
       console.error("Failed to remove signup:", err);
       setError("Unexpected error removing sign-up.");
@@ -516,6 +483,10 @@ const SignupViewer: React.FC<Props> = ({
 
   const handleEditResponse = (response: SignupResponse) => {
     setEditingResponse(response);
+    setAttempted(false);
+    setAcceptWaitlist(false);
+    setServerMessage(null);
+    requestAnimationFrame(() => focusIssue("slots"));
     // Pre-populate selected slots
     const slotsMap: SlotSelectionMap = {};
     for (const slot of response.slots || []) {
@@ -535,81 +506,13 @@ const SignupViewer: React.FC<Props> = ({
     setAnswers(answersMap);
   };
 
-  const handleSaveEdit = async () => {
-    if (!editingResponse || loading) return;
-
-    const slotsPayload = Object.entries(selectedSlots).map(([key, quantity]) => {
-      const [sectionId, slotId] = key.split("::");
-      return { sectionId, slotId, quantity };
-    });
-
-    if (slotsPayload.length === 0) {
-      setError("Select at least one slot.");
-      setErrorOpen(true);
-      return;
-    }
-
-    const answersPayload = form.questions
-      .map((question) => ({
-        questionId: question.id,
-        value: answers[question.id]?.trim() || "",
-      }))
-      .filter((entry) => entry.value);
-
-    const payload: ReserveRequestPayload = {
-      action: "reserve",
-      slots: slotsPayload,
-      name: name.trim(),
-      signupId: editingResponse.id,
-    };
-    if (note.trim()) payload.note = note.trim();
-    if (guests > 0) payload.guests = guests;
-    if (answersPayload.length > 0) payload.answers = answersPayload;
-    if (form.settings.collectEmail && email.trim()) payload.email = email.trim();
-    if (form.settings.collectPhone && phone.trim()) payload.phone = phone.trim();
-
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/history/${eventId}/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = (await res.json().catch(() => ({}))) as SignupApiResponse;
-      if (!res.ok || !data?.signupForm) {
-        const errorMessage = data?.error || "Could not update sign-up. Try again.";
-        setError(errorMessage);
-        setErrorOpen(true);
-        return;
-      }
-      setForm(data.signupForm);
-      setEditingResponse(null);
-      setSelectedSlots({});
-      setName("");
-      setEmail("");
-      setPhone("");
-      setNote("");
-      setGuests(0);
-      setAnswers({});
-      setServerMessage("Sign-up updated successfully!");
-      setConfirmOpen(true);
-    } catch (err: unknown) {
-      console.error("Failed to update signup:", err);
-      setError("Unexpected error updating sign-up.");
-      setErrorOpen(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const [participantSearch, setParticipantSearch] = useState("");
   const visibleResponses = useMemo(
     () =>
       form.responses.filter(
         (response) =>
           !participantSearch.trim() ||
-          `${response.name} ${response.email || ""} ${summarizeResponseSlots(form, response)}`
+          `${response.name} ${response.email || ""} ${summarizeResponseSlots(form, response)} ${(response.answers || []).map((answer) => answer.value).join(" ")}`
             .toLowerCase()
             .includes(participantSearch.trim().toLowerCase()),
       ),
@@ -657,7 +560,51 @@ const SignupViewer: React.FC<Props> = ({
     [visibleResponses],
   );
 
+  const responseDetails = (response: SignupResponse) => (
+    <details className="mt-3 rounded-lg border border-[var(--signup-border)] p-3">
+      <summary className="min-h-11 cursor-pointer font-semibold">Participant details</summary>
+      <dl className="space-y-2 break-words text-sm">
+        {response.email && (
+          <div>
+            <dt>Email</dt>
+            <dd>{response.email}</dd>
+          </div>
+        )}
+        {response.phone && (
+          <div>
+            <dt>Phone</dt>
+            <dd>{response.phone}</dd>
+          </div>
+        )}
+        {!!response.guests && (
+          <div>
+            <dt>Extra guests</dt>
+            <dd>{response.guests}</dd>
+          </div>
+        )}
+        {form.questions.map((question) => (
+          <div key={question.id}>
+            <dt className="font-medium">{question.prompt}</dt>
+            <dd>
+              {response.answers?.find((answer) => answer.questionId === question.id)?.value ||
+                "Not provided"}
+            </dd>
+          </div>
+        ))}
+        {response.note && (
+          <div>
+            <dt>Note</dt>
+            <dd>{response.note}</dd>
+          </div>
+        )}
+      </dl>
+    </details>
+  );
   if (!form.sections.length) return null;
+  const boardTitle = form.boardTitle ?? "Sign-up board";
+  const boardDescription =
+    form.boardDescription ??
+    "Choose what you can bring or how you can help. Every contribution counts.";
 
   return (
     <section
@@ -665,87 +612,26 @@ const SignupViewer: React.FC<Props> = ({
       data-signup-board={getSignupDesign(form.appearance?.designId)?.board}
       className={`${themeStyles.board} rounded-2xl border border-[var(--signup-border)] bg-[var(--signup-surface)] p-5 sm:p-6 space-y-5 shadow-sm`}
     >
-      <header className="space-y-2">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-xl font-bold text-[var(--signup-text)]">Sign-up board</h2>
-          {viewerKind === "owner" && ownerEventData && !hideOwnerTools && (
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Link
-                href={resolveEditHref(eventId, ownerEventData, ownerEventTitle || "Event")}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
-                title="Edit event"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4"
-                >
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                </svg>
-                <span className="hidden sm:inline">Edit</span>
-              </Link>
-              <button
-                type="button"
-                onClick={() => {
-                  try {
-                    const originalTitle = ownerEventTitle || "Smart sign-up";
-                    const dataCopy: any = { ...(ownerEventData || {}) };
-                    dataCopy.signupForm = {
-                      ...form,
-                      responses: [],
-                      revision: 0,
-                      availability: undefined,
-                    };
-                    if (dataCopy.shared) delete dataCopy.shared;
-                    if (dataCopy.sharedOut) delete dataCopy.sharedOut;
-                    sessionStorage.setItem(
-                      "snapmydate:signup-duplicate",
-                      JSON.stringify({ originalTitle, dataCopy }),
-                    );
-                    router.push(`/smart-signup-form?duplicate=1`);
-                  } catch {
-                    setError(
-                      "This browser could not retain the copy. Free some browser storage and try again.",
-                    );
-                    setErrorOpen(true);
-                  }
-                }}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-[var(--signup-muted)] hover:text-[var(--signup-text)] hover:bg-[var(--signup-page)] rounded-lg transition-colors"
-                title="Duplicate form"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4"
-                >
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                </svg>
-                <span className="hidden sm:inline">Duplicate</span>
-              </button>
-              <EventDeleteModal eventId={eventId} eventTitle={ownerEventTitle || "Event"} />
-            </div>
+      {(boardTitle || boardDescription) && (
+        <header className="space-y-2">
+          {boardTitle && (
+            <h2 className="text-xl font-bold text-[var(--signup-text)]">{boardTitle}</h2>
           )}
-        </div>
-        <p className="text-sm text-[var(--signup-muted)]">
-          Choose what you can bring or how you can help. Every contribution counts.
-        </p>
-      </header>
+          {boardDescription && (
+            <p className="text-sm text-[var(--signup-muted)]">{boardDescription}</p>
+          )}
+        </header>
+      )}
       <EventGuestPlanningNotes value={form.guestPlanning} />
+      {viewerKind === "owner" && !hideOwnerTools && eventId !== "preview" && (
+        <SignupSharing eventId={eventId} />
+      )}
 
-      {feedback && (
-        <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600">
+      {feedback && !isTestPreview && (
+        <div
+          role="status"
+          className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600"
+        >
           {feedback}
         </div>
       )}
@@ -766,16 +652,7 @@ const SignupViewer: React.FC<Props> = ({
             </span>
             <button
               type="button"
-              onClick={() => {
-                setEditingResponse(null);
-                setSelectedSlots({});
-                setName("");
-                setEmail("");
-                setPhone("");
-                setNote("");
-                setGuests(0);
-                setAnswers({});
-              }}
+              onClick={cancelEdit}
               className="text-xs underline hover:no-underline"
             >
               Cancel edit
@@ -814,145 +691,170 @@ const SignupViewer: React.FC<Props> = ({
           to claim a slot after accepting their invitation.
         </p>
       )}
-      <TemplateBodyLayout fallbackClassName="space-y-5" presentation={getTemplateBodyPresentation("signup-forms", form.appearance?.designId || (form.appearance?.themeId ? `editorial--${form.appearance.themeId}` : undefined))}>
-        {form.sections.map((section) => (
-          <div key={section.id} className="space-y-3" data-signup-section>
-            <div>
-              <h3 data-template-section-title className="text-base font-semibold text-[var(--signup-text)]">{section.title}</h3>
-              {section.description && (
-                <p className="text-sm text-[var(--signup-muted)] mt-1">{section.description}</p>
-              )}
-            </div>
-            <div data-signup-slots data-layout={form.appearance?.slotLayout || "rows"}>
-              {section.slots.map((slot, slotIndex) => {
-                const key = slotKey(section.id, slot.id);
-                const isSelected = Boolean(selectedSlots[key]);
-                const capacity = getSlotCapacity(slot);
-                const confirmed = countConfirmedForSlot(form, section.id, slot.id);
-                const waitlisted = countWaitlistedForSlot(form, section.id, slot.id);
-                const remaining = remainingCapacityForSlot(
-                  form,
-                  section.id,
-                  slot.id,
-                  myResponse?.id,
-                );
-                const range = formatSlotRange(slot.startTime, slot.endTime);
-                const selectedQuantity = selectedSlots[key] || 1;
-                const isFull = typeof capacity === "number" ? confirmed >= capacity : false;
+      <div id="signup-input-slots" tabIndex={-1}>
+        {inlineError("slots")}
+        <TemplateBodyLayout
+          fallbackClassName="space-y-5"
+          presentation={getTemplateBodyPresentation(
+            "signup-forms",
+            form.appearance?.designId ||
+              (form.appearance?.themeId ? `editorial--${form.appearance.themeId}` : undefined),
+          )}
+        >
+          {form.sections.map((section) => (
+            <div
+              key={section.id}
+              className="space-y-3"
+              data-signup-section
+              data-signup-section-kind={section.kind || "slots"}
+            >
+              <div>
+                <h3
+                  data-template-section-title
+                  className="text-base font-semibold text-[var(--signup-text)]"
+                >
+                  {section.title}
+                </h3>
+                {section.description && (
+                  <p className="text-sm text-[var(--signup-muted)] mt-1">{section.description}</p>
+                )}
+                {section.slots.length > 0 &&
+                  (section.maxSelectionsPerPerson || section.unitLabel) && (
+                    <p className="mt-1 text-xs text-[var(--signup-muted)]">
+                      {section.maxSelectionsPerPerson
+                        ? `Choose up to ${section.maxSelectionsPerPerson} ${section.maxSelectionsPerPerson === 1 ? "option" : "options"} in this section. `
+                        : ""}
+                      {section.unitLabel ? `Quantities count ${section.unitLabel}.` : ""}
+                    </p>
+                  )}
+              </div>
+              <div data-signup-slots data-layout={form.appearance?.slotLayout || "rows"}>
+                {section.slots.map((slot, slotIndex) => {
+                  const key = slotKey(section.id, slot.id);
+                  const isSelected = Boolean(selectedSlots[key]);
+                  const capacity = getSlotCapacity(slot);
+                  const confirmed = countConfirmedForSlot(form, section.id, slot.id);
+                  const waitlisted = countWaitlistedForSlot(form, section.id, slot.id);
+                  const remaining = remainingCapacityForSlot(
+                    form,
+                    section.id,
+                    slot.id,
+                    editingResponse?.id,
+                  );
+                  const range = formatSlotRange(slot.startTime, slot.endTime);
+                  const selectedQuantity = selectedSlots[key] || 1;
+                  const isFull = typeof capacity === "number" ? confirmed >= capacity : false;
 
-                return (
-                  <div
-                    key={slot.id}
-                    data-signup-slot
-                    data-selected={isSelected || undefined}
-                    className={`rounded-xl border px-4 py-3.5 transition ${
-                      isSelected
-                        ? "border-[var(--signup-accent)] bg-[var(--signup-soft)] shadow-sm"
-                        : "border-[var(--signup-border)] bg-[var(--signup-page)]"
-                    }`}
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div className="space-y-1.5">
-                        <span className={themeStyles.slotNumber} aria-hidden="true">
-                          {String(slotIndex + 1).padStart(2, "0")}
-                        </span>
-                        <div className="text-sm font-medium text-[var(--signup-text)]">
-                          {slot.label}
-                        </div>
-                        {range && <div className="text-xs text-[var(--signup-muted)]">{range}</div>}
-                        {slot.notes && (
-                          <div className="text-xs text-[var(--signup-muted)]">{slot.notes}</div>
-                        )}
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--signup-muted)]">
-                          {form.settings.showRemainingSpots &&
-                            (typeof capacity === "number" ? (
-                              <span>
-                                {confirmed}/{capacity} claimed
-                                {remaining !== null && remaining >= 0 ? ` · ${remaining} open` : ""}
+                  return (
+                    <div
+                      key={slot.id}
+                      data-signup-slot
+                      data-selected={isSelected || undefined}
+                      className={`rounded-xl border px-4 py-3.5 transition ${
+                        isSelected
+                          ? "border-[var(--signup-accent)] bg-[var(--signup-soft)] shadow-sm"
+                          : "border-[var(--signup-border)] bg-[var(--signup-page)]"
+                      }`}
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="space-y-1.5">
+                          <span className={themeStyles.slotNumber} aria-hidden="true">
+                            {String(slotIndex + 1).padStart(2, "0")}
+                          </span>
+                          <div className="text-sm font-medium text-[var(--signup-text)]">
+                            {slot.label}
+                          </div>
+                          {range && (
+                            <div className="text-xs text-[var(--signup-muted)]">{range}</div>
+                          )}
+                          {slot.notes && (
+                            <div className="text-xs text-[var(--signup-muted)]">{slot.notes}</div>
+                          )}
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--signup-muted)]">
+                            {form.settings.showRemainingSpots &&
+                              (typeof capacity === "number" ? (
+                                <span>
+                                  {confirmed}/{capacity} claimed
+                                  {` · ${Math.max(0, capacity - confirmed)} open`}
+                                </span>
+                              ) : (
+                                <span>Unlimited capacity</span>
+                              ))}
+                            {waitlisted > 0 && <span>· Waitlist {waitlisted}</span>}
+                            {myResponse?.slots?.some(
+                              (entry) => entry.sectionId === section.id && entry.slotId === slot.id,
+                            ) && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--signup-soft)] px-2.5 py-0.5 text-xs font-medium text-[var(--signup-accent)]">
+                                {myResponse?.status === "waitlisted"
+                                  ? "Waitlisted — not confirmed"
+                                  : "Confirmed"}
                               </span>
-                            ) : (
-                              <span>Unlimited capacity</span>
-                            ))}
-                          {waitlisted > 0 && <span>· Waitlist {waitlisted}</span>}
-                          {myResponse?.slots?.some(
-                            (entry) => entry.sectionId === section.id && entry.slotId === slot.id,
-                          ) && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--signup-soft)] px-2.5 py-0.5 text-xs font-medium text-[var(--signup-accent)]">
-                              You&apos;re signed up
-                            </span>
-                          )}
-                          {isFull && remaining === 0 && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
-                              Currently full
-                            </span>
-                          )}
+                            )}
+                            {isFull && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+                                Currently full
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {isSelected && (
-                          <input
-                            type="number"
-                            min={1}
-                            max={maxGuests}
-                            value={selectedQuantity}
-                            onChange={(event) =>
-                              handleQuantityChange(
-                                key,
-                                Number.parseInt(event.target.value, 10) || 1,
-                              )
+                        <div className="flex items-center gap-2">
+                          {isSelected && (
+                            <input
+                              type="number"
+                              min={1}
+                              max={signupQuantityLimit(form, section)}
+                              {...inputProps(`slot-${section.id}-${slot.id}`)}
+                              value={selectedQuantity}
+                              onChange={(event) =>
+                                handleQuantityChange(
+                                  key,
+                                  Number.parseInt(event.target.value, 10) || 1,
+                                )
+                              }
+                              aria-label={`Quantity for ${slot.label}`}
+                              className="w-16 rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-2 py-1.5 text-sm text-[var(--signup-text)] transition focus:border-[var(--signup-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--signup-focus)]"
+                              disabled={!canChoose || loading}
+                            />
+                          )}
+                          <SlotControl
+                            data-signup-select
+                            type="button"
+                            className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
+                              isSelected
+                                ? "border-[var(--signup-accent)] bg-[var(--signup-accent)] text-[var(--signup-on-accent)] shadow-sm hover:opacity-90"
+                                : "border-[var(--signup-border)] bg-[var(--signup-surface)] text-[var(--signup-text)] hover:bg-[var(--signup-page)]"
+                            }`}
+                            onClick={() => handleToggleSlot(section.id, slot.id)}
+                            aria-label={`${isSelected ? "Deselect" : "Select"} ${slot.label}`}
+                            aria-pressed={isSelected}
+                            disabled={
+                              !canChoose ||
+                              loading ||
+                              (!isSelected && remaining === 0 && !form.settings.waitlistEnabled)
                             }
-                            aria-label={`Quantity for ${slot.label}`}
-                            className="w-16 rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-2 py-1.5 text-sm text-[var(--signup-text)] transition focus:border-[var(--signup-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--signup-focus)]"
-                            disabled={!canInteract || loading}
-                          />
-                        )}
-                        <SlotControl
-                          data-signup-select
-                          type="button"
-                          className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
-                            isSelected
-                              ? "border-[var(--signup-accent)] bg-[var(--signup-accent)] text-[var(--signup-on-accent)] shadow-sm hover:opacity-90"
-                              : "border-[var(--signup-border)] bg-[var(--signup-surface)] text-[var(--signup-text)] hover:bg-[var(--signup-page)]"
-                          }`}
-                          onClick={() => handleToggleSlot(section.id, slot.id)}
-                          aria-label={`${isSelected ? "Deselect" : "Select"} ${slot.label}`}
-                          aria-pressed={isSelected}
-                          disabled={
-                            !canInteract ||
-                            loading ||
-                            (!isSelected && remaining === 0 && !form.settings.waitlistEnabled)
-                          }
-                        >
-                          {isSelected
-                            ? "Selected ✓"
-                            : remaining === 0
-                              ? form.settings.waitlistEnabled
-                                ? "Join waitlist"
-                                : "Full"
-                              : "Select"}
-                        </SlotControl>
+                          >
+                            {isSelected
+                              ? "Selected ✓"
+                              : remaining === 0
+                                ? form.settings.waitlistEnabled
+                                  ? "Join waitlist"
+                                  : "Full"
+                                : "Select"}
+                          </SlotControl>
+                          {inlineError(`slot-${section.id}-${slot.id}`)}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
-      </TemplateBodyLayout>
+          ))}
+        </TemplateBodyLayout>
+      </div>
 
-      {canInteract && (!myResponse || editingResponse) && (
-        <form
-          className="space-y-4"
-          onSubmit={
-            editingResponse
-              ? (e) => {
-                  e.preventDefault();
-                  handleSaveEdit();
-                }
-              : handleSubmit
-          }
-        >
+      {canChoose && (
+        <form className="space-y-4" noValidate onSubmit={handleSubmit}>
           {(viewerKind === "owner" ||
             Object.keys(selectedSlots).length > 0 ||
             myResponse ||
@@ -962,10 +864,11 @@ const SignupViewer: React.FC<Props> = ({
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-sm font-medium text-[var(--signup-text)] mb-2">
-                    Name
+                    Name (required)
                   </label>
                   <input
                     aria-label="Your name"
+                    {...inputProps("name")}
                     autoComplete="name"
                     type="text"
                     value={name}
@@ -973,14 +876,16 @@ const SignupViewer: React.FC<Props> = ({
                     className="w-full rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-4 py-2.5 text-sm text-[var(--signup-text)] placeholder:text-gray-400 transition focus:border-[var(--signup-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--signup-focus)]"
                     disabled={loading}
                   />
+                  {inlineError("name")}
                 </div>
                 {form.settings.collectEmail && (
                   <div>
                     <label className="block text-sm font-medium text-[var(--signup-text)] mb-2">
-                      Email for reminders
+                      Email for reminders (required)
                     </label>
                     <input
                       aria-label="Email address"
+                      {...inputProps("email")}
                       name="email"
                       type="email"
                       autoComplete="email"
@@ -989,15 +894,17 @@ const SignupViewer: React.FC<Props> = ({
                       className="w-full rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-4 py-2.5 text-sm text-[var(--signup-text)] placeholder:text-gray-400 transition focus:border-[var(--signup-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--signup-focus)]"
                       disabled={loading}
                     />
+                    {inlineError("email")}
                   </div>
                 )}
                 {form.settings.collectPhone && (
                   <div>
                     <label className="block text-sm font-medium text-[var(--signup-text)] mb-2">
-                      Mobile number
+                      Mobile number (required)
                     </label>
                     <input
                       aria-label="Mobile number"
+                      {...inputProps("phone")}
                       autoComplete="tel"
                       type="tel"
                       value={phone}
@@ -1005,15 +912,17 @@ const SignupViewer: React.FC<Props> = ({
                       className="w-full rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-4 py-2.5 text-sm text-[var(--signup-text)] placeholder:text-gray-400 transition focus:border-[var(--signup-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--signup-focus)]"
                       disabled={loading}
                     />
+                    {inlineError("phone")}
                   </div>
                 )}
-                {maxGuests > 1 && (
+                {form.settings.collectGuestCount && (
                   <div>
                     <label className="block text-sm font-medium text-[var(--signup-text)] mb-2">
                       Extra guests (for headcount)
                     </label>
                     <input
                       aria-label="Extra guests"
+                      {...inputProps("guests")}
                       type="number"
                       min={0}
                       max={maxGuests}
@@ -1029,6 +938,7 @@ const SignupViewer: React.FC<Props> = ({
                       className="w-full rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-4 py-2.5 text-sm text-[var(--signup-text)] placeholder:text-gray-400 transition focus:border-[var(--signup-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--signup-focus)]"
                       disabled={loading}
                     />
+                    {inlineError("guests")}
                   </div>
                 )}
               </div>
@@ -1046,6 +956,7 @@ const SignupViewer: React.FC<Props> = ({
                         {question.multiline ? (
                           <textarea
                             aria-label={question.prompt}
+                            {...inputProps(`question-${question.id}`)}
                             aria-required={question.required}
                             value={value}
                             onChange={(event) =>
@@ -1062,6 +973,7 @@ const SignupViewer: React.FC<Props> = ({
                           <input
                             type="text"
                             aria-label={question.prompt}
+                            {...inputProps(`question-${question.id}`)}
                             aria-required={question.required}
                             value={value}
                             onChange={(event) =>
@@ -1074,6 +986,7 @@ const SignupViewer: React.FC<Props> = ({
                             disabled={loading}
                           />
                         )}
+                        {inlineError(`question-${question.id}`)}
                       </div>
                     );
                   })}
@@ -1096,34 +1009,69 @@ const SignupViewer: React.FC<Props> = ({
             </div>
           )}
 
+          {validation.waitlisted.length > 0 && form.settings.waitlistEnabled && (
+            <div className="rounded-xl border border-amber-500 p-4 text-sm">
+              <p>
+                <strong>Not enough places for: {validation.waitlisted.join(", ")}.</strong>
+              </p>
+              <p>
+                Submitting now puts every selection on the waitlist, including available items.
+                Nothing is reserved until all selections fit. Change the unavailable choices to
+                confirm the others now.
+              </p>
+              <label className="mt-3 flex min-h-11 items-center gap-3">
+                <input
+                  type="checkbox"
+                  {...inputProps("waitlist")}
+                  checked={acceptWaitlist}
+                  onChange={(e) => setAcceptWaitlist(e.target.checked)}
+                />
+                Put all my selections on the waitlist
+              </label>
+              {inlineError("waitlist")}
+            </div>
+          )}
+          {attempted && validation.issues.length > 0 && (
+            <div role="alert" className="rounded-xl border border-red-400 p-4 text-sm">
+              <strong>Check these details</strong>
+              <ul>
+                {validation.issues.map((issue) => (
+                  <li key={issue.field + issue.message}>
+                    <button
+                      type="button"
+                      className="min-h-11 text-left underline"
+                      onClick={() => focusIssue(issue.field)}
+                    >
+                      {issue.message}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {error && (
+            <p role="alert" className="text-sm text-red-700">
+              {error}
+            </p>
+          )}
+          {isTestPreview && feedback && (
+            <p
+              key={testAttempt}
+              role="status"
+              className="rounded-xl border border-[var(--signup-border)] p-4"
+            >
+              {feedback}
+            </p>
+          )}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
             <div className="text-xs text-[var(--signup-muted)]">
               You can return to this page to view or update your signup.
             </div>
             <div className="flex items-center gap-2">
-              {myResponse && !editingResponse && (
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="rounded-lg border border-red-300 bg-[var(--signup-surface)] px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
-                  disabled={loading}
-                >
-                  Cancel my spot
-                </button>
-              )}
               {editingResponse && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setEditingResponse(null);
-                    setSelectedSlots({});
-                    setName("");
-                    setEmail("");
-                    setPhone("");
-                    setNote("");
-                    setGuests(0);
-                    setAnswers({});
-                  }}
+                  onClick={cancelEdit}
                   className="rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-4 py-2 text-sm font-semibold text-[var(--signup-text)] transition hover:bg-[var(--signup-page)] disabled:opacity-50"
                   disabled={loading}
                 >
@@ -1141,7 +1089,9 @@ const SignupViewer: React.FC<Props> = ({
                     : "Saving..."
                   : editingResponse
                     ? "Update sign-up"
-                    : "Save my sign-up"}
+                    : isTestPreview
+                      ? "Test signup"
+                      : "Save my sign-up"}
               </button>
             </div>
           </div>
@@ -1168,16 +1118,31 @@ const SignupViewer: React.FC<Props> = ({
                   : "Cancelled"}
             </span>
           </p>
-          {selectedEntries.length > 0 && (
-            <ul className="mt-2 text-sm text-[var(--signup-muted)] space-y-1">
-              {selectedEntries.map((entry) => (
-                <li key={entry.key}>
-                  {entry.sectionTitle}: {entry.slotLabel}
-                  {entry.quantity > 1 ? ` ×${entry.quantity}` : ""}{" "}
-                  {entry.range ? `(${entry.range})` : ""}
-                </li>
-              ))}
-            </ul>
+          <p className="mt-2 text-sm">{summarizeResponseSlots(form, myResponse)}</p>
+          {myResponse.status === "waitlisted" && (
+            <p className="mt-2 text-sm">
+              No places or items are reserved yet. Edit your choices to select an available option.
+            </p>
+          )}
+          {!editingResponse && viewerKind !== "readonly" && (
+            <div className="mt-3 flex flex-wrap gap-3">
+              <button
+                type="button"
+                className="min-h-11 rounded-lg border px-4"
+                disabled={loading || !canInteract}
+                onClick={() => handleEditResponse(myResponse)}
+              >
+                Edit my signup
+              </button>
+              <button
+                type="button"
+                className="min-h-11 rounded-lg border px-4 text-red-700"
+                disabled={loading}
+                onClick={handleCancel}
+              >
+                Cancel my signup
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -1186,40 +1151,28 @@ const SignupViewer: React.FC<Props> = ({
         <div className="rounded-2xl border border-[var(--signup-border)] bg-[var(--signup-surface)] p-5 space-y-4 shadow-sm">
           <header className="flex flex-wrap items-center justify-between gap-4">
             <h3 className="text-lg font-bold text-[var(--signup-text)]">Host dashboard</h3>
-            <div className="flex items-end gap-6">
-              <div className="text-center leading-none">
-                <div className="font-mono font-extrabold text-3xl sm:text-4xl text-sky-600">
-                  {hasUnlimited ? "∞" : totalCapacity}
-                </div>
-                <div className="mt-1.5 text-xs uppercase tracking-wider font-semibold text-[var(--signup-muted)]">
-                  Total
-                </div>
-              </div>
-              <div className="text-center leading-none">
-                <div className="font-mono font-extrabold text-3xl sm:text-4xl text-emerald-600">
-                  {filledCount}
-                </div>
-                <div className="mt-1.5 text-xs uppercase tracking-wider font-semibold text-[var(--signup-muted)]">
-                  Filled
-                </div>
-              </div>
-              <div className="text-center leading-none">
-                <div className="font-mono font-extrabold text-3xl sm:text-4xl text-violet-600">
-                  {hasUnlimited ? "∞" : remainingCount}
-                </div>
-                <div className="mt-1.5 text-xs uppercase tracking-wider font-semibold text-[var(--signup-muted)]">
-                  Remaining
-                </div>
-              </div>
-            </div>
           </header>
-          <div className="mb-5 flex flex-wrap items-center gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {sectionProgress.map(({ section, capacity, confirmed, unlimited }) => (
+              <div key={section.id} className="rounded-lg border border-[var(--signup-border)] p-3">
+                <h4 className="font-semibold">{section.title}</h4>
+                {section.unitLabel && <p className="text-xs">Counted in {section.unitLabel}</p>}
+                <p className="text-sm">
+                  {confirmed} confirmed
+                  {unlimited
+                    ? " · Unlimited capacity"
+                    : ` · ${Math.max(0, capacity - confirmed)} of ${capacity} remaining`}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="mb-5 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-center">
             <input
               aria-label="Search participants"
-              placeholder="Search name, email, or slot"
+              placeholder="Search name, email, slot, or answer"
               value={participantSearch}
               onChange={(event) => setParticipantSearch(event.target.value)}
-              className="min-w-0 flex-1 rounded-lg border border-[var(--signup-border)] px-3 py-2"
+              className="col-span-2 min-h-11 w-full min-w-0 sm:w-auto sm:flex-1 rounded-lg border border-[var(--signup-border)] px-3 py-2"
             />
             <button
               type="button"
@@ -1290,10 +1243,11 @@ const SignupViewer: React.FC<Props> = ({
                       <div className="text-xs text-[var(--signup-muted)] mt-1.5 flex flex-wrap gap-3">
                         {response.email && <span>{response.email}</span>}
                         {response.phone && <span>{response.phone}</span>}
-                        {response.guests && response.guests > 0 && (
+                        {!!response.guests && response.guests > 0 && (
                           <span>{response.guests} guests</span>
                         )}
                       </div>
+                      {responseDetails(response)}
                       {response.note && (
                         <div className="mt-2 text-sm text-[var(--signup-muted)] bg-[var(--signup-surface)] rounded-lg px-3 py-2 border border-[var(--signup-border)]">
                           <span className="font-medium">Note:</span> {response.note}
@@ -1324,6 +1278,25 @@ const SignupViewer: React.FC<Props> = ({
                       </div>
                       <div className="text-sm text-amber-800 mt-2">
                         {summarizeResponseSlots(form, response) || "No slots selected"}
+                      </div>
+                      {responseDetails(response)}
+                      <div className="mt-3 flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          className="min-h-11 rounded-lg border px-4"
+                          disabled={loading || !canInteract}
+                          onClick={() => handleEditResponse(response)}
+                        >
+                          Edit signup
+                        </button>
+                        <button
+                          type="button"
+                          className="min-h-11 rounded-lg border px-4"
+                          disabled={loading || removingResponseId === response.id}
+                          onClick={() => handleRemoveResponse(response.id)}
+                        >
+                          Cancel signup
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -1379,15 +1352,15 @@ const SignupViewer: React.FC<Props> = ({
                 </div>
                 <div className="flex-1 space-y-2">
                   <h3 className="text-lg font-bold text-[var(--signup-text)]">
-                    {myResponse?.status === "waitlisted"
+                    {resultStatus === "waitlisted"
                       ? "You're on the waitlist"
                       : "Sign-up confirmed!"}
                   </h3>
                   <p className="text-sm text-[var(--signup-muted)]">
-                    {myResponse?.status === "waitlisted" ? (
+                    {resultStatus === "waitlisted" ? (
                       <>
-                        Your sign-up went through successfully! We'll promote you automatically if
-                        spots open up.
+                        All your selections are waitlisted. Nothing is reserved yet. You can edit
+                        your choices below, or wait until all requested places become available.
                       </>
                     ) : (
                       <>

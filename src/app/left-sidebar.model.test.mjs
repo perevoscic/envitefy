@@ -7,6 +7,32 @@ const repoRoot = process.cwd();
 
 const loadModelModule = () => import("./left-sidebar.model.ts");
 
+test("Sign-up Forms lists owned published forms and keeps drafts and invitations separate", async () => {
+  const { buildGroupedEventLists, countGroupedEventItems, eventListItemMatchesPath } = await loadModelModule();
+  const history = [
+    { id: "form", title: "School helpers", public_slug: "school-helpers", data: { status: "published", signupForm: {}, startISO: "2200-09-01" } },
+    { id: "past", title: "Past potluck", data: { status: "published", signupForm: {}, startISO: "2020-01-01" } },
+    { id: "undated", title: "Supplies", data: { signupForm: {} } },
+    { id: "draft", title: "Unsure yet", data: { status: "draft", signupForm: {} } },
+    { id: "invited", title: "Someone else's form", data: { signupForm: {}, ownership: "invited" } },
+    { id: "event", title: "An event", data: { category: "birthdays" } },
+  ];
+  const original = structuredClone(history);
+  const grouped = buildGroupedEventLists({ history, getEventStartIso: (data) => data.startISO, buildEventPath: (id) => `/event/${id}`, isSportsPreviewFirstEvent: () => false, isInvitedEventLikeRecord: (data) => data.ownership === "invited", canShowOwnerRsvpDashboard: () => false });
+  const upcoming = grouped.signupForms.upcoming.flatMap((section) => section.items);
+  assert.deepEqual(upcoming.map((item) => item.row.id).sort(), ["form", "undated"]);
+  assert.deepEqual(grouped.signupForms.past.flatMap((section) => section.items).map((item) => item.row.id), ["past"]);
+  assert.equal(countGroupedEventItems(grouped.signupForms.upcoming) + countGroupedEventItems(grouped.signupForms.past), 3);
+  const form = upcoming.find((item) => item.row.id === "form");
+  assert.equal(form.ownerHref, "/smart-signup-form/school-helpers");
+  assert.equal(form.publicHref, form.ownerHref);
+  assert.equal(form.productKind, "signup");
+  assert.equal(eventListItemMatchesPath(form, form.ownerHref), true);
+  assert.equal(eventListItemMatchesPath(form, "/smart-signup-form/form"), true);
+  assert.equal(grouped.myEvents.upcoming.flatMap((section) => section.items).some((item) => item.row.id === "form"), false);
+  assert.deepEqual(history, original);
+});
+
 test("published undated schedules move out of Drafts, keep their URL, and never inherit creation dates", async () => {
   const { buildGroupedEventLists, buildSidebarDraftItems, getSidebarEventDateLabels } = await loadModelModule();
   const data = { status: "draft", draftStatus: "draft", category: "football-season", advancedSections: { games: { games: [{ opponent: "Vikings" }, { opponent: "Dolphins" }] } } };
@@ -424,7 +450,7 @@ test("left sidebar reopens My Events and selects newly created upload routes", (
   assert.match(controllerSource, /eventListItemMatchesPath\(item, routePath\)/);
   assert.match(controllerSource, /const createdHint = String\(searchParams\?\.get\("created"\) \|\| ""\)/);
   assert.match(controllerSource, /if \(createdHint !== "true" && createdHint !== "1"\) return;/);
-  assert.match(controllerSource, /if \(inferred && \(inferred\.source === "myEvents" \|\| inferred\.source === "schedules"\)\) \{/);
+  assert.match(controllerSource, /if \(inferred && inferred\.source !== "invitedEvents"\) \{/);
   assert.match(controllerSource, /const pending = readPendingCreatedEventContext\(\);/);
   assert.match(controllerSource, /if \(!pending \|\| !pendingCreatedEventMatchesPath\(pending, pathname\)\) return;/);
   assert.match(controllerSource, /setSelectedEventId\(row\.id\);/);

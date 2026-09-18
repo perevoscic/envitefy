@@ -16,6 +16,8 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 
 ## Creation Product Name
 
+- Sign-up form navigation preference (September 18, 2026): Create Event opens a chooser with the account's enabled event categories plus Sign-up Form, placing the saved default first. Hide the Sign-up Forms sidebar collection for regular accounts without published forms; explicitly saved drafts stay in Drafts. Show the collection immediately for admins and accounts whose signup source or default creation intent is signup forms. Admins retain the full creation menu. Do not briefly expose all categories while preferences load or reset to all categories after a failed refresh.
+
 - Product naming (September 15, 2026): the former Envitefy Concierge is **Envitefy Create**. Use **Create with Envitefy** for creation buttons and **Create** in compact navigation; chat-specific controls may say New chat or Chat history. Public introductions use `/envitefy-create`, with `/envitefy-concierge` redirecting there. Keep `/chat`, existing API routes, saved data keys, event URLs and legacy asset filenames compatible. Earlier Concierge references in these notes refer to the same current creation feature.
 
 ## Explicit Draft Saves
@@ -26,6 +28,10 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 - Keep publishing separate from saving progress. Preserve the chosen destination after saving, and resume each saved draft in its matching editor with its artwork and form fields.
 
 ## Template Gallery Standard
+
+- Signup inline editing preference (September 18, 2026): replace the separate Event details accordion with pencil controls beside the title, group, welcome, organizer, date and location on the template. Reuse InlineEditableText for wording and open only the relevant date/location/planning fields beside the header, with Done and Cancel. Keep section Move handles visible on phones and support pointer, touch and keyboard sorting plus move buttons. Guest previews have no editing controls; all changes remain in memory until explicitly saved.
+
+- Signup form composition preference (September 18, 2026): after choosing a gallery theme, open Build form directly, with Preview & publish as the second view. Design is an optional tool panel, not a required first step. New forms keep the chosen artwork but have no fabricated event details or demo bookings. Add registration places, volunteer roles, items, time slots, custom slots and information sections by clicking or dragging; keep move buttons for touch/keyboard, explicit Remove with Undo, and protect slots with responses. Keep follow-up questions separate from signup slots and contact settings. Existing saved forms retain their contents. Guest preview submissions are local tests only; explicit draft saves and publish remain separate. This supersedes the older four-step signup wizard preference.
 
 - Celebration content individuality (September 15, 2026): birthdays, weddings, anniversaries, baby showers and gender reveals carry their theme into section geometry, headings and cards. Keep the explicit per-design assignments in `scripts/build-celebration-art-directions.cjs` and the shared `celebration-materials` styling aligned between editors and guest pages. Preserve original hero artwork and existing wedding compositions. Use restrained CSS gradients; do not add SVG background patterns.
 

@@ -12,6 +12,7 @@ export type SidebarPage =
   | "aiThreads"
   | "myEvents"
   | "schedules"
+  | "signupForms"
   | "drafts"
   | "invitedEvents"
   | "admin"
@@ -19,7 +20,7 @@ export type SidebarPage =
 
 export type EventSidebarMode = "owner" | "guest";
 
-export type EventListPage = "myEvents" | "invitedEvents" | "schedules";
+export type EventListPage = "myEvents" | "invitedEvents" | "schedules" | "signupForms";
 
 export type CompactNavItemId = "home" | "studio" | "snap" | "create" | "myEvents" | "invitedEvents";
 
@@ -311,6 +312,7 @@ export function createSidebarIconLookup(icons: Record<string, any>) {
     "Upload Event": icons.Upload,
     "Smart sign-up forms": icons.FileEdit,
     "Sign up": icons.FileEdit,
+    "Sign-up Form": icons.ClipboardList,
     Birthdays: icons.Cake,
     Weddings: icons.SidebarWeddingMenuIcon,
     Anniversaries: icons.HeartHandshake,
@@ -1020,6 +1022,7 @@ export function buildGroupedEventLists(args: {
     myEvents: createGroupedBuckets(),
     invitedEvents: createGroupedBuckets(),
     schedules: createGroupedBuckets(),
+    signupForms: createGroupedBuckets(),
   };
 
   const today = new Date();
@@ -1030,12 +1033,12 @@ export function buildGroupedEventLists(args: {
     if (!row || typeof row !== "object") continue;
     const data = ((row as HistoryRow).data || {}) as Record<string, any>;
     const isInvited = isInvitedHistoryEvent(data, args.isInvitedEventLikeRecord);
-    if (data?.signupForm && !isInvited) continue;
+    const isOwnedSignup = Boolean(data?.signupForm) && !isInvited;
 
     const isDraft = isEventDraft(data);
     if (isDraft) continue;
     const schedule = getSportsScheduleSummary(data, row.title);
-    const targetList: EventListPage = schedule ? "schedules" : "myEvents";
+    const targetList: EventListPage = isOwnedSignup ? "signupForms" : schedule ? "schedules" : "myEvents";
     const presentation = resolveSavedScanPresentation(data, row.title || "");
     const normalizedCategoryRaw = normalizeCategoryLabel(
       presentation.category ||
@@ -1058,10 +1061,12 @@ export function buildGroupedEventLists(args: {
     const defaultHref = args.buildEventPath(row.id, row.title, undefined, publicSlug || null);
     const shouldOpenProductFirst = isSidebarProductPreviewFirstEvent(data, row.title);
     const primaryOutput = getSidebarPrimaryProductOutput(data, row.title);
-    const publicHref = shouldOpenProductFirst
+    const publicHref = isOwnedSignup
+      ? `/smart-signup-form/${buildSidebarEventSlugSegment(row.id, row.title, publicSlug)}`
+      : shouldOpenProductFirst
       ? buildSidebarProductPath(row, data, args.buildEventPath)
       : defaultHref;
-    const ownerHref = defaultHref;
+    const ownerHref = isOwnedSignup ? publicHref : defaultHref;
     const hasOwnerRsvp = !isInvited && args.canShowOwnerRsvpDashboard(data);
     const rawShareStatus = String(data?.shareStatus || "")
       .trim()
@@ -1089,7 +1094,7 @@ export function buildGroupedEventLists(args: {
       href: publicHref,
       publicHref,
       ownerHref,
-      productKind: resolveSidebarProductKind(primaryOutput),
+      productKind: isOwnedSignup ? "signup" : resolveSidebarProductKind(primaryOutput),
       hasOwnerRsvp,
       isInvited,
       openMode,
@@ -1130,6 +1135,10 @@ export function buildGroupedEventLists(args: {
     schedules: {
       upcoming: sortGroupedSections(bucketsByList.schedules.upcoming),
       past: [],
+    },
+    signupForms: {
+      upcoming: sortGroupedSections(bucketsByList.signupForms.upcoming),
+      past: sortGroupedSections(bucketsByList.signupForms.past),
     },
   };
 }

@@ -21,7 +21,7 @@ import { getEventStartIso, isInvitedEventLikeRecord } from "@/lib/dashboard-data
 import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
 import { buildOwnerEventViewHref } from "@/lib/event-preview-viewport";
 import { normalizePrimarySignupSource } from "@/lib/product-scopes";
-import { getCreateActionForSignupIntent } from "@/lib/signup-intent";
+import { normalizeSignupIntent } from "@/lib/signup-intent";
 import type { SportPreferences } from "@/lib/sports-preferences";
 import { resolveEditHref } from "@/utils/event-edit-route";
 import { isSportsPreviewFirstEvent } from "@/utils/event-navigation";
@@ -50,6 +50,7 @@ import type { EventContextTab, EventRouteAlias } from "./sidebar-context";
 const MOBILE_SIDEBAR_SCROLL_LOCK_CLASS = "sidebar-mobile-open";
 const CREATED_EVENT_CONTEXT_STORAGE_KEY = "envitefy:created-event-context:v1";
 const OPEN_EVENT_LIST_SIDEBAR_EVENT = "envitefy:sidebar:open-event-list";
+const EMPTY_TEMPLATE_KEYS: TemplateKey[] = [];
 
 type InferredEventListItem = {
   source: EventListPage;
@@ -78,6 +79,7 @@ type LeftSidebarControllerArgs = {
     featureVisibility: {
       visibleTemplateKeys: TemplateKey[];
       sportPreferences: SportPreferences;
+      hasLoadedPreferences: boolean;
     };
     primarySignupSource: PrimarySignupSource | null;
     productScopes: string[] | undefined;
@@ -130,7 +132,7 @@ export type LeftSidebarControllerViewModel = {
   setMenuOpen: Dispatch<SetStateAction<boolean>>;
   hasCreateEventAccess: boolean;
   createEntryLabel: string;
-  useGymnasticsDirectCreate: boolean;
+  isSignupFormsDefault: boolean;
   createMenuOptionCount: number;
   createMenuItems: Array<{ label: string; href: string }>;
   otherCreateMenuItems: Array<{ label: string; href: string }>;
@@ -139,9 +141,11 @@ export type LeftSidebarControllerViewModel = {
   isAdmin: boolean;
   createdEventsCount: number;
   schedulesCount: number;
+  signupFormsCount: number;
   invitedEventsCount: number;
   myEventsGrouped: ReturnType<typeof buildGroupedEventLists>["myEvents"];
   schedulesGrouped: ReturnType<typeof buildGroupedEventLists>["schedules"];
+  signupFormsGrouped: ReturnType<typeof buildGroupedEventLists>["signupForms"];
   invitedEventsGrouped: ReturnType<typeof buildGroupedEventLists>["invitedEvents"];
   showPastMyEvents: boolean;
   setShowPastMyEvents: React.Dispatch<React.SetStateAction<boolean>>;
@@ -174,6 +178,7 @@ export type LeftSidebarControllerViewModel = {
   startNewAiChat: () => void;
   openMyEventsPage: () => void;
   openSchedulesPage: () => void;
+  openSignupFormsPage: () => void;
   openDraftsPage: () => void;
   onDraftNavigate: () => void;
   openInvitedEventsPage: () => void;
@@ -401,10 +406,10 @@ export function useLeftSidebarController({
   );
 
   const effectivePrimarySignupSource = profilePrimarySignupSource ?? primarySignupSource;
-  const defaultCreateAction = getCreateActionForSignupIntent(defaultCreateIntent);
-  const createEntryLabel = defaultCreateAction?.ctaLabel || "Create Event";
-  const useGymnasticsDirectCreate =
-    !defaultCreateAction && effectivePrimarySignupSource === "gymnastics";
+  const createEntryLabel = "Create Event";
+  const preferredCreateIntent = defaultCreateIntent || effectivePrimarySignupSource;
+  const isSignupFormsDefault = normalizeSignupIntent(defaultCreateIntent) === "signup_forms" ||
+    effectivePrimarySignupSource === "signup_forms";
   const isOpen = !isCollapsed;
   const isCompact = isDesktop && !isOpen;
   const sidebarWidth = isCompact ? SIDEBAR_COLLAPSED_REM : SIDEBAR_WIDTH_REM;
@@ -643,6 +648,7 @@ export function useLeftSidebarController({
     if (ownerNavigationPendingRef.current) return;
     if (invitedNavigationPendingRef.current) return;
     if (pathname?.startsWith("/event/")) return;
+    if (pathname?.startsWith("/smart-signup-form/")) return;
     if (sidebarPage === "eventContext") return;
     clearEventContext();
     setSidebarPage("root");
@@ -935,17 +941,19 @@ export function useLeftSidebarController({
     } catch {}
   }, [clearEventContext, collapseSidebarOnTouch, router, setSidebarPage]);
 
-  const visibleTemplateKeys = featureVisibility.visibleTemplateKeys;
+  const visibleTemplateKeys = featureVisibility.hasLoadedPreferences
+    ? featureVisibility.visibleTemplateKeys : EMPTY_TEMPLATE_KEYS;
   const sportPreferences = featureVisibility.sportPreferences;
   const isCreateRouteActive = useMemo(() => isCreateEventRoute(pathname), [pathname]);
-  const canRenderCreateEventNavigation = isAdmin || isCreateRouteActive;
+  const canRenderCreateEventNavigation = status === "authenticated";
   const visibleTemplateLinks = useMemo(
     () =>
       canRenderCreateEventNavigation
-        ? getTemplateLinks(visibleTemplateKeys, productScopes, sportPreferences)
+        ? isAdmin ? getTemplateLinks() : getTemplateLinks(visibleTemplateKeys, productScopes, sportPreferences)
         : [],
     [
       canRenderCreateEventNavigation,
+      isAdmin,
       productScopes,
       sportPreferences,
       visibleTemplateKeys,
@@ -967,12 +975,15 @@ export function useLeftSidebarController({
             visibleTemplateKeys,
             productScopes,
             sportPreferences,
+            { isAdmin, defaultCreateIntent: preferredCreateIntent },
           ).flatMap(
             (section) => section.items,
           )
         : [],
     [
       canRenderCreateEventNavigation,
+      isAdmin,
+      preferredCreateIntent,
       productScopes,
       sportPreferences,
       visibleTemplateKeys,
@@ -988,8 +999,8 @@ export function useLeftSidebarController({
   const hasCreateEventAccess = useMemo(
     () =>
       canRenderCreateEventNavigation &&
-      (useGymnasticsDirectCreate || createMenuOptionCount > 0),
-    [canRenderCreateEventNavigation, createMenuOptionCount, useGymnasticsDirectCreate],
+      createMenuOptionCount > 0,
+    [canRenderCreateEventNavigation, createMenuOptionCount],
   );
 
   useEffect(() => {
@@ -1003,11 +1014,11 @@ export function useLeftSidebarController({
   }, [activeCreateItem, pathname]);
 
   useEffect(() => {
-    if (!pathname?.startsWith("/event")) {
+    if (!isCreateRouteActive) {
       setLastCreateSelection(null);
       setForcedCreateActiveLabel(null);
     }
-  }, [pathname]);
+  }, [isCreateRouteActive]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1060,31 +1071,14 @@ export function useLeftSidebarController({
       setSidebarPage("root");
       return;
     }
-    if (useGymnasticsDirectCreate) {
-      clearEventContext();
-      setSidebarPage("root");
-      collapseSidebarOnTouch();
-      router.push("/event/gymnastics");
-      return;
-    }
-    if (defaultCreateAction) {
-      clearEventContext();
-      setSidebarPage("root");
-      collapseSidebarOnTouch();
-      router.push(defaultCreateAction.href);
-      return;
-    }
+    clearEventContext();
     setIsCollapsed(false);
     setSidebarPage("createEvent");
   }, [
     clearEventContext,
-    collapseSidebarOnTouch,
-    defaultCreateAction,
     hasCreateEventAccess,
-    router,
     setIsCollapsed,
     setSidebarPage,
-    useGymnasticsDirectCreate,
   ]);
 
   const openAiThreadsPage = useCallback(() => {
@@ -1139,6 +1133,10 @@ export function useLeftSidebarController({
   );
   const openSchedulesPage = useCallback(
     () => openCompactEventsPage("schedules"),
+    [openCompactEventsPage],
+  );
+  const openSignupFormsPage = useCallback(
+    () => openCompactEventsPage("signupForms"),
     [openCompactEventsPage],
   );
   const openDraftsPage = useCallback(() => {
@@ -1291,6 +1289,9 @@ export function useLeftSidebarController({
   const myEventsGrouped = groupedEventLists.myEvents;
   const schedulesGrouped = groupedEventLists.schedules;
   const schedulesCount = countGroupedEventItems(schedulesGrouped.upcoming);
+  const signupFormsGrouped = groupedEventLists.signupForms;
+  const signupFormsCount = countGroupedEventItems(signupFormsGrouped.upcoming) +
+    countGroupedEventItems(signupFormsGrouped.past);
   const invitedEventsGrouped = groupedEventLists.invitedEvents;
   const createdEventsCount = useMemo(
     () => countGroupedEventItems(myEventsGrouped.upcoming),
@@ -1338,6 +1339,11 @@ export function useLeftSidebarController({
       const scheduleMatch = findInSections("schedules", "upcoming", schedulesGrouped.upcoming);
       if (scheduleMatch) return scheduleMatch;
 
+      const signupMatch =
+        findInSections("signupForms", "upcoming", signupFormsGrouped.upcoming) ||
+        findInSections("signupForms", "past", signupFormsGrouped.past);
+      if (signupMatch) return signupMatch;
+
       const ownedMatch =
         findInSections("myEvents", "upcoming", myEventsGrouped.upcoming) ||
         findInSections("myEvents", "past", myEventsGrouped.past);
@@ -1352,6 +1358,8 @@ export function useLeftSidebarController({
       myEventsGrouped.past,
       myEventsGrouped.upcoming,
       schedulesGrouped.upcoming,
+      signupFormsGrouped.upcoming,
+      signupFormsGrouped.past,
     ],
   );
 
@@ -1409,7 +1417,7 @@ export function useLeftSidebarController({
       .toLowerCase();
     if (createdHint !== "true" && createdHint !== "1") return;
     const inferred = findEventListItemFromPath(pathname);
-    if (inferred && (inferred.source === "myEvents" || inferred.source === "schedules")) {
+    if (inferred && inferred.source !== "invitedEvents") {
       const { item, bucket } = inferred;
       const { row } = item;
       const title = row.title || item.title || "Untitled event";
@@ -1538,7 +1546,7 @@ export function useLeftSidebarController({
   useEffect(() => {
     const onOpenEventList = (event: Event) => {
       const page = (event as CustomEvent<{ page?: EventListPage }>).detail?.page;
-      if (page !== "myEvents" && page !== "invitedEvents" && page !== "schedules") return;
+      if (page !== "myEvents" && page !== "invitedEvents" && page !== "schedules" && page !== "signupForms") return;
       setEventContextSourcePage(page);
       setEventSidebarMode(page === "invitedEvents" ? "guest" : "owner");
       setSidebarPage(page);
@@ -1593,7 +1601,7 @@ export function useLeftSidebarController({
   const openOwnerEventContext = useCallback(
     (item: GroupedEventItem) => {
       const { row, openMode } = item;
-      const sourcePage: EventListPage = item.schedule ? "schedules" : "myEvents";
+      const sourcePage: EventListPage = item.productKind === "signup" ? "signupForms" : item.schedule ? "schedules" : "myEvents";
       const title = row.title || "Untitled event";
       const publicHref = item.publicHref || item.href;
       const rowData =
@@ -1817,7 +1825,7 @@ export function useLeftSidebarController({
     setMenuOpen,
     hasCreateEventAccess,
     createEntryLabel,
-    useGymnasticsDirectCreate,
+    isSignupFormsDefault,
     createMenuOptionCount,
     createMenuItems,
     otherCreateMenuItems,
@@ -1826,9 +1834,11 @@ export function useLeftSidebarController({
     isAdmin,
     createdEventsCount,
     schedulesCount,
+    signupFormsCount,
     invitedEventsCount,
     myEventsGrouped,
     schedulesGrouped,
+    signupFormsGrouped,
     invitedEventsGrouped,
     showPastMyEvents,
     setShowPastMyEvents,
@@ -1856,6 +1866,7 @@ export function useLeftSidebarController({
     startNewAiChat,
     openMyEventsPage,
     openSchedulesPage,
+    openSignupFormsPage,
     openDraftsPage,
     onDraftNavigate,
     openInvitedEventsPage,

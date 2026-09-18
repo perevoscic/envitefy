@@ -61,6 +61,7 @@ test("all six themes roundtrip, preserve signup content, and keep readable accen
 
 test("public and participant projections remove other contacts while retaining accurate quantities", () => {
   let value = form(); value.sections[0].slots[0].capacity = 5;
+  value.settings.maxQuantityPerSlot = 2;
   const first = mutations.mutateSignupReservation(value, reserve(value, { note: "private note" }), actor("alex")); value = first.form;
   value = mutations.mutateSignupReservation(value, reserve(value, { slots: [{ ...reserve(value).slots[0], quantity: 2 }] }), actor("blair")).form;
   const publicForm = projectSignupForm(value), guest = projectSignupForm(value, { userId: "alex" });
@@ -91,7 +92,7 @@ test("reservation ownership, signed identities, windows, quantity and slot limit
 test("waitlist promotion preserves confirmed places and only promotes when space becomes available", () => {
   const value = form(); value.settings.waitlistEnabled = true;
   const first = mutations.mutateSignupReservation(value, reserve(value), actor("alex"));
-  const second = mutations.mutateSignupReservation(first.form, reserve(value), actor("blair"));
+  const second = mutations.mutateSignupReservation(first.form, reserve(value, { acceptWaitlist: true }), actor("blair"));
   assert.equal(second.response.status, "waitlisted");
   const cancelled = mutations.mutateSignupReservation(second.form, { action: "cancel", signupId: first.response.id }, actor("alex"));
   assert.equal(cancelled.form.responses.find(r => r.userId === "blair").status, "confirmed");
@@ -164,7 +165,10 @@ test("a normalized-store failure rolls back the event change", async () => {
 
 test("every header layout uses the same saved photo sources and has decorative images", () => {
   const React = nativeRequire("react"), { renderToStaticMarkup } = nativeRequire("react-dom/server");
-  const Header = load("src/components/smart-signup-form/SignupTemplateHeader.tsx").default;
+  const Header = load("src/components/smart-signup-form/SignupTemplateHeader.tsx", {
+    "lucide-react": new Proxy({}, { get: (_, name) => name === "__esModule" ? true : props => React.createElement("svg", props) }),
+    "@/components/templates/TemplateEditorContext": { useTemplateEditor: () => null },
+  }).default;
   const value = form();
   value.header.images = ["one", "two", "three"].map(id => ({ id, name: id, dataUrl: `/${id}.webp`, type: "image/webp" }));
   const expected = { "header-1": 1, "header-2": 1, "header-3": 1, "header-4": 2, "header-5": 2, "header-6": 3, none: 0 };

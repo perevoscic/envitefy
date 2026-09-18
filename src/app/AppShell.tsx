@@ -33,6 +33,10 @@ const MARKETING_PATHS = new Set([
 ]);
 
 function isMarketingPath(pathname: string) {
+  // Signup templates are public to browse, but remain part of the signed-in workspace.
+  if (templateCategoryForPath(pathname)?.slug === "signup-forms" && isPublicTemplatePath(pathname)) {
+    return false;
+  }
   return MARKETING_PATHS.has(pathname) || Boolean(templateCategoryForPath(pathname)) || isPublicTemplatePath(pathname);
 }
 

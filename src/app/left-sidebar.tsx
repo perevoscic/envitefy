@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  ClipboardList,
   FileEdit,
   Footprints,
   Gauge,
@@ -283,6 +284,7 @@ const sidebarIconLookup = createSidebarIconLookup({
   Camera,
   Car,
   Clock,
+  ClipboardList,
   FileEdit,
   Footprints,
   GraduationCap,
@@ -458,6 +460,8 @@ function RootNavigationPanel({
   isAdmin,
   createdEventsCount,
   schedulesCount,
+  signupFormsCount,
+  isSignupFormsDefault,
   draftsCount,
   onHome,
   onSnapUpload,
@@ -465,6 +469,7 @@ function RootNavigationPanel({
   onCreate,
   onMyEvents,
   onSchedules,
+  onSignupForms,
   onDrafts,
   onAdmin,
 }: {
@@ -478,6 +483,8 @@ function RootNavigationPanel({
   isAdmin: boolean;
   createdEventsCount: number;
   schedulesCount: number;
+  signupFormsCount: number;
+  isSignupFormsDefault: boolean;
   draftsCount: number;
   onHome: () => void;
   onSnapUpload: () => void;
@@ -485,6 +492,7 @@ function RootNavigationPanel({
   onCreate: () => void;
   onMyEvents: () => void;
   onSchedules: () => void;
+  onSignupForms: () => void;
   onDrafts: () => void;
   onAdmin: () => void;
 }) {
@@ -506,6 +514,9 @@ function RootNavigationPanel({
   const isSchedulesActive = sidebarPage === "schedules" ||
     (sidebarPage === "eventContext" && eventContextSourcePage === "schedules") ||
     (isViewingEventFromListInRoot && eventContextSourcePage === "schedules");
+  const isSignupFormsActive = sidebarPage === "signupForms" ||
+    (sidebarPage === "eventContext" && eventContextSourcePage === "signupForms") ||
+    (isViewingEventFromListInRoot && eventContextSourcePage === "signupForms");
 
   return (
     <nav aria-label="Main navigation" className="space-y-5 pt-2">
@@ -520,6 +531,9 @@ function RootNavigationPanel({
       <div className="space-y-1.5 border-t border-violet-200/40 pt-4">
         <SidebarLink link={{ label: "My Events", icon: <SidebarMyEventsMenuIcon size={20} active={isMyEventsActive} />, onClick: onMyEvents, active: isMyEventsActive, badge: createdEventsCount }} />
         <SidebarLink link={{ label: "Schedules", icon: <Trophy />, onClick: onSchedules, active: isSchedulesActive, badge: schedulesCount }} />
+        {isAdmin || isSignupFormsDefault || signupFormsCount > 0 ? (
+          <SidebarLink link={{ label: "Sign-up Forms", icon: <ClipboardList aria-hidden="true" />, onClick: onSignupForms, active: isSignupFormsActive, badge: signupFormsCount }} />
+        ) : null}
         <SidebarLink link={{ label: "Drafts", icon: <FileEdit />, onClick: onDrafts, active: isDraftsActive, badge: draftsCount }} />
       </div>
       {isAdmin ? (
@@ -748,6 +762,8 @@ function EventListPanel({
   pastRowOpacityClass,
   onBack,
   scheduleList = false,
+  signupList = false,
+  createAction,
 }: {
   title: string;
   grouped: { upcoming: GroupedEventSection[]; past: GroupedEventSection[] };
@@ -761,6 +777,8 @@ function EventListPanel({
   pastRowOpacityClass: string;
   onBack: () => void;
   scheduleList?: boolean;
+  signupList?: boolean;
+  createAction?: ReactNode;
 }) {
   const getMonthLabel = (item: GroupedEventItem) =>
     scheduleList && item.schedule ? item.schedule.itemsLabel : getSidebarEventDateLabels(item).heading;
@@ -769,7 +787,7 @@ function EventListPanel({
     items.map((item, index) => {
       const isActive = isHistoryRowActive(item.row.id);
       const CategoryIcon =
-        sidebarIconLookup[item.category as keyof typeof sidebarIconLookup] || PartyPopper;
+        signupList ? ClipboardList : sidebarIconLookup[item.category as keyof typeof sidebarIconLookup] || PartyPopper;
       const monthLabel = getMonthLabel(item);
       const dateLabel = scheduleList && item.schedule
         ? formatSportsScheduleSummary(item.schedule)
@@ -853,6 +871,7 @@ function EventListPanel({
   return (
     <SidebarListPanel title={title} onBack={onBack}>
       <div className="space-y-3">
+        {createAction}
         {grouped.upcoming.length === 0 && grouped.past.length === 0 ? (
           <div
             className={`${SIDEBAR_SUBMENU_CARD_CLASS} rounded-[24px] border-dashed px-4 py-6 text-center text-sm text-[#7e76b9]`}
@@ -865,7 +884,7 @@ function EventListPanel({
               <div
                 className={`${SIDEBAR_SUBMENU_CARD_CLASS} rounded-[24px] border-dashed px-4 py-6 text-center text-sm text-[#7e76b9]`}
               >
-                No upcoming events.
+                {signupList ? "No upcoming sign-up forms." : "No upcoming events."}
               </div>
             ) : (
               <div className="space-y-1">
@@ -880,9 +899,10 @@ function EventListPanel({
                     <button
                       type="button"
                       onClick={() => setPastExpanded((prev) => !prev)}
-                      className="nav-chrome-menu-card nav-chrome-motion inline-flex items-center gap-1 rounded-full border border-[rgba(117,103,177,0.18)] bg-white/88 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-[var(--nav-chrome-muted)] shadow-[0_10px_22px_rgba(96,81,154,0.08)] hover:bg-white"
+                      aria-expanded={pastExpanded}
+                      className="nav-chrome-menu-card nav-chrome-motion inline-flex min-h-11 items-center gap-1 rounded-full border border-[rgba(117,103,177,0.18)] bg-white/88 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-[var(--nav-chrome-muted)] shadow-[0_10px_22px_rgba(96,81,154,0.08)] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
                     >
-                      <span>{pastExpanded ? "Hide past events" : "Show past events"}</span>
+                      <span>{signupList ? (pastExpanded ? "Hide past forms" : "Show past forms") : (pastExpanded ? "Hide past events" : "Show past events")}</span>
                       <ChevronRight
                         size={12}
                         className={`transition-transform ${pastExpanded ? "rotate-90" : ""}`}
@@ -1352,9 +1372,11 @@ export default function LeftSidebar() {
       viewModel.eventSidebarMode === "owner");
   const showEventContextPanel =
     viewModel.sidebarPage === "eventContext" &&
-    !(["myEvents", "schedules"].includes(viewModel.eventContextSourcePage) && viewModel.eventSidebarMode === "owner");
+    !(["myEvents", "schedules", "signupForms"].includes(viewModel.eventContextSourcePage) && viewModel.eventSidebarMode === "owner");
   const showSchedulesPanel = viewModel.sidebarPage === "schedules" ||
     (viewModel.sidebarPage === "eventContext" && viewModel.eventContextSourcePage === "schedules" && viewModel.eventSidebarMode === "owner");
+  const showSignupFormsPanel = viewModel.sidebarPage === "signupForms" ||
+    (viewModel.sidebarPage === "eventContext" && viewModel.eventContextSourcePage === "signupForms" && viewModel.eventSidebarMode === "owner");
   const myEventsPanelTransform = showOwnerEventsPanel
     ? "translateX(0%)"
     : viewModel.sidebarPage === "eventContext" && viewModel.eventContextSourcePage === "myEvents"
@@ -1568,6 +1590,8 @@ export default function LeftSidebar() {
                       isAdmin={viewModel.isAdmin}
                       createdEventsCount={viewModel.createdEventsCount}
                       schedulesCount={viewModel.schedulesCount}
+                      signupFormsCount={viewModel.signupFormsCount}
+                      isSignupFormsDefault={viewModel.isSignupFormsDefault}
                       draftsCount={drafts.length}
                       onHome={viewModel.goHomeFromSidebar}
                       onSnapUpload={viewModel.handleRootSnapNavigate}
@@ -1575,6 +1599,7 @@ export default function LeftSidebar() {
                       onCreate={viewModel.openCreateEventPage}
                       onMyEvents={viewModel.openMyEventsPage}
                       onSchedules={viewModel.openSchedulesPage}
+                      onSignupForms={viewModel.openSignupFormsPage}
                       onDrafts={viewModel.openDraftsPage}
                       onAdmin={viewModel.openAdminPage}
                     />
@@ -1700,6 +1725,39 @@ export default function LeftSidebar() {
                   </div>
 
                   <div
+                    className={`${SIDEBAR_LIST_PANEL_CLASS} z-[15]`}
+                    style={panelStyle(showSignupFormsPanel ? "translateX(0%)" : "translateX(100%)", showSignupFormsPanel)}
+                    data-sidebar-detail-panel
+                    inert={viewModel.isCompact || !showSignupFormsPanel}
+                    aria-hidden={!showSignupFormsPanel}
+                  >
+                    <EventListPanel
+                      title="Sign-up Forms"
+                      signupList
+                      grouped={viewModel.signupFormsGrouped}
+                      emptyStateCopy="Your published sign-up forms will appear here. Saved work is in Drafts."
+                      emptyPastCopy="No past sign-up forms."
+                      isHistoryRowActive={viewModel.isHistoryRowActive}
+                      onRowClick={viewModel.openOwnerEventContext}
+                      pastExpanded={viewModel.showPastMyEvents}
+                      setPastExpanded={viewModel.setShowPastMyEvents}
+                      showPendingBadge={false}
+                      pastRowOpacityClass="opacity-75 saturate-75"
+                      onBack={viewModel.backToRoot}
+                      createAction={
+                        <Link
+                          href="/signup-forms/templates"
+                          onClick={viewModel.onDraftNavigate}
+                          className="flex min-h-11 items-center gap-2 rounded-xl bg-violet-600 px-3 py-3 text-sm font-semibold text-white transition-colors hover:bg-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2"
+                        >
+                          <Plus size={18} aria-hidden="true" />
+                          Create sign-up form
+                        </Link>
+                      }
+                    />
+                  </div>
+
+                  <div
                     className={`${SIDEBAR_LIST_PANEL_CLASS} z-[20]`}
                     style={panelStyle(
                       invitedEventsPanelTransform,
@@ -1754,7 +1812,8 @@ export default function LeftSidebar() {
                       backLabel={
                         viewModel.eventContextSourcePage === "invitedEvents"
                           ? "Invited Events"
-                          : viewModel.eventContextSourcePage === "schedules" ? "Schedules" : "My Events"
+                          : viewModel.eventContextSourcePage === "schedules" ? "Schedules"
+                          : viewModel.eventContextSourcePage === "signupForms" ? "Sign-up Forms" : "My Events"
                       }
                     />
                   </div>

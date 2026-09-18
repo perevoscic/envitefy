@@ -17,7 +17,6 @@ import {
   getTemplateLinks,
 } from "@/config/navigation-config";
 import type { SportPreferences } from "@/lib/sports-preferences";
-import { getCreateActionForSignupIntent } from "@/lib/signup-intent";
 
 type CalendarProviderKey = "google" | "microsoft" | "apple";
 
@@ -46,11 +45,6 @@ export const NAV_LINKS: Array<{
     href: "/event/gymnastics",
     match: (path) =>
       path.startsWith("/event") && !path.startsWith("/event/new"),
-  },
-  {
-    label: "Smart sign-up",
-    href: "/smart-signup-form",
-    match: (path) => path.startsWith("/smart-signup-form"),
   },
 ];
 
@@ -168,22 +162,23 @@ export function CreateEventMenu({
   productScopes,
   sportPreferences,
   isAdmin = false,
+  defaultCreateIntent,
 }: {
   onSelect?: () => void;
   visibleTemplateKeys?: Parameters<typeof getCreateEventSections>[0];
   productScopes?: string[];
   sportPreferences?: SportPreferences;
   isAdmin?: boolean;
+  defaultCreateIntent?: string | null;
 }) {
-  if (!isAdmin) return null;
-
   const sections = getCreateEventSections(
     visibleTemplateKeys,
     productScopes,
     sportPreferences,
+    { isAdmin, defaultCreateIntent },
   );
   return (
-    <div className="flex min-w-[1260px] max-w-[1400px] flex-row flex-nowrap gap-10 overflow-x-auto px-2">
+    <div className="flex max-w-[min(1400px,90vw)] flex-row flex-wrap gap-6 px-2">
       {sections.map((section) => (
         <div
           key={section.title}
@@ -475,8 +470,7 @@ export default function TopNav() {
   const showMobileStickyBar = mobileScrolled;
   const showMobileFloatingMenu = !mobileScrolled;
   const createMenuTop = navIsScrolled ? 72 : 90;
-  const defaultCreateAction = getCreateActionForSignupIntent(defaultCreateIntent);
-  const createNavLabel = defaultCreateAction?.ctaLabel || "+ Create Event";
+  const createNavLabel = "+ Create Event";
 
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const myEventsRef = useRef<HTMLDivElement | null>(null);
@@ -677,7 +671,6 @@ export default function TopNav() {
           </div>
           <nav className="flex items-center gap-3 text-sm font-semibold text-[#564d7a]">
             {NAV_LINKS.map((link) => {
-              if (link.label === "New Event" && !isAdmin) return null;
               const active = link.match(pathname || "");
               if (link.label === "New Event") {
                 return (
@@ -707,16 +700,17 @@ export default function TopNav() {
                     </button>
                     <div
                       style={{ top: `${createMenuTop}px` }}
-                      className="fixed left-1/2 -translate-x-1/2 mt-2 w-full max-w-[95vw] origin-top transform opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex justify-center"
+                      className="fixed left-1/2 -translate-x-1/2 mt-2 w-full max-w-[95vw] origin-top transform opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200 z-50 flex justify-center"
                       suppressHydrationWarning
                     >
                       <div className="nav-chrome-menu-card rounded-[1.75rem] p-4 text-sm">
                         {isHydrated && (
                           <CreateEventMenu
-                            visibleTemplateKeys={visibleTemplateKeys}
+                            visibleTemplateKeys={featureVisibility.hasLoadedPreferences ? visibleTemplateKeys : []}
                             productScopes={productScopes}
                             sportPreferences={featureVisibility.sportPreferences}
                             isAdmin={isAdmin}
+                            defaultCreateIntent={defaultCreateIntent}
                           />
                         )}
                       </div>

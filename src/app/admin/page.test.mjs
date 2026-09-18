@@ -77,24 +77,26 @@ test("main sidebar admin entry opens the admin chooser before loading a section"
   assert.doesNotMatch(sidebar, /href="\/admin"\s+onClick=\{onAdmin\}/);
 });
 
-test("create event navigation is admin-only", () => {
+test("create event navigation shares account preferences while admins retain the full menu", () => {
   const controller = readSource("src/app/left-sidebar.controller.ts");
   const topNav = readSource("src/components/navigation/TopNav.tsx");
 
   assert.match(
     controller,
-    /isAdmin \? getTemplateLinks\(visibleTemplateKeys, productScopes\) : \[\]/,
+    /isAdmin \? getTemplateLinks\(\) : getTemplateLinks\(visibleTemplateKeys, productScopes, sportPreferences\)/,
   );
   assert.match(
     controller,
-    /isAdmin\s*\?\s*getCreateEventSections\(visibleTemplateKeys, productScopes\)/s,
+    /\{ isAdmin, defaultCreateIntent: preferredCreateIntent \}/,
   );
   assert.match(
     controller,
-    /\(\) => isAdmin && \(useGymnasticsDirectCreate \|\| createMenuOptionCount > 0\)/,
+    /const canRenderCreateEventNavigation = status === "authenticated";/,
   );
-  assert.match(topNav, /if \(!isAdmin\) return null;/);
-  assert.match(topNav, /if \(link\.label === "New Event" && !isAdmin\) return null;/);
+  assert.doesNotMatch(topNav, /if \(!isAdmin\) return null;/);
+  assert.doesNotMatch(topNav, /if \(link\.label === "New Event" && !isAdmin\) return null;/);
+  assert.match(topNav, /\{ isAdmin, defaultCreateIntent \}/);
+  assert.match(topNav, /visibleTemplateKeys=\{featureVisibility\.hasLoadedPreferences \? visibleTemplateKeys : \[\]\}/);
   assert.match(topNav, /isAdmin=\{isAdmin\}/);
 });
 

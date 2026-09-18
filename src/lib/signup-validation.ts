@@ -45,7 +45,15 @@ export function validateSignupPublish(form: SignupForm): SignupIssue[] {
       step: "build",
       message: "Add at least one named signup slot.",
     });
-  for (const section of form.sections)
+  for (const section of form.sections) {
+    for (const limit of [section.maxSelectionsPerPerson, section.maxQuantityPerSlot]) {
+      if (limit != null && (!Number.isInteger(limit) || limit < 1 || limit > 50))
+        issues.push({
+          field: "signup-slots",
+          step: "build",
+          message: `Use a whole-number section limit from 1 to 50 for ${section.title || "each section"}, or leave it blank.`,
+        });
+    }
     for (const slot of section.slots) {
       if (!slot.label.trim())
         issues.push({
@@ -69,6 +77,13 @@ export function validateSignupPublish(form: SignupForm): SignupIssue[] {
           message: `The end time for ${slot.label || "a slot"} must follow its start time.`,
         });
     }
+  }
+  if (form.questions.some((question) => !question.prompt.trim()))
+    issues.push({
+      field: "signup-questions",
+      step: "build",
+      message: "Write or remove each empty question.",
+    });
   const opens = form.settings.signupOpensAt
     ? parseCalendarDateTimeToIso(form.settings.signupOpensAt, form.timezone)
     : null;

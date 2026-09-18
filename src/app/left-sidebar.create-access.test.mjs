@@ -7,12 +7,12 @@ const repoRoot = process.cwd();
 
 const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
-test("left sidebar renders create navigation for admins and active builder routes", () => {
+test("left sidebar renders personalized create navigation for signed-in accounts", () => {
   const source = readSource("src/app/left-sidebar.controller.ts");
 
   assert.match(
     source,
-    /const canRenderCreateEventNavigation = isAdmin \|\| isCreateRouteActive;/,
+    /const canRenderCreateEventNavigation = status === "authenticated";/,
   );
   assert.match(
     source,
@@ -20,8 +20,12 @@ test("left sidebar renders create navigation for admins and active builder route
   );
   assert.match(
     source,
-    /const hasCreateEventAccess = useMemo\(\s*\(\) =>\s*canRenderCreateEventNavigation &&\s*\(useGymnasticsDirectCreate \|\| createMenuOptionCount > 0\),\s*\[canRenderCreateEventNavigation, createMenuOptionCount, useGymnasticsDirectCreate\],?\s*\)/s,
+    /const hasCreateEventAccess = useMemo\(\s*\(\) =>\s*canRenderCreateEventNavigation &&\s*createMenuOptionCount > 0,\s*\[canRenderCreateEventNavigation, createMenuOptionCount\],?\s*\)/s,
   );
+  assert.match(source, /featureVisibility\.hasLoadedPreferences\s*\? featureVisibility\.visibleTemplateKeys : EMPTY_TEMPLATE_KEYS/);
+  const openCreate = source.slice(source.indexOf("const openCreateEventPage ="), source.indexOf("const openAiThreadsPage ="));
+  assert.match(openCreate, /setSidebarPage\("createEvent"\)/);
+  assert.doesNotMatch(openCreate, /router\.push/);
 });
 
 test("left sidebar controller resets create panel state when create access disappears", () => {

@@ -1,6 +1,8 @@
 "use client";
 // Keep signup CSS in the route stylesheet, including when the editor is loaded on the client.
 import "@/components/smart-signup-form/signup-editor.module.css";
+import "@/components/smart-signup-form/signup-composer.module.css";
+import "@/components/events/inline-editable-text.module.css";
 import "@/components/smart-signup-form/signup-theme.module.css";
 import dynamic from "next/dynamic";
 import type { TemplateCategory } from "@/lib/template-categories";

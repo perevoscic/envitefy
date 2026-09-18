@@ -6,10 +6,10 @@ import SmartSignupWizard from "@/components/smart-signup-form/Wizard";
 import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
 import { useTemplateEditor, useTemplateState } from "@/components/templates/TemplateEditorContext";
 import { getPublicTemplate } from "@/lib/public-template-catalog";
-import { createSignupTemplateForm } from "@/lib/signup-starters";
+import { createEmptySignupTemplateForm } from "@/lib/signup-starters";
 import { buildTemplateDraftPayload } from "@/lib/template-draft-payload";
 import type { SignupForm } from "@/types/signup";
-import { createDefaultSignupForm, sanitizeSignupForm } from "@/utils/signup";
+import { sanitizeSignupForm } from "@/utils/signup";
 
 export default function SignupTemplatesPage() {
   const router = useRouter();
@@ -20,11 +20,11 @@ export default function SignupTemplatesPage() {
     const template = templateEditor
       ? getPublicTemplate("signup-forms", templateEditor.templateId)
       : null;
-    return template ? createSignupTemplateForm(template) : createDefaultSignupForm();
+    return createEmptySignupTemplateForm(template || undefined);
   });
 
   useEffect(() => {
-    if (!templateEditor) setForm(createDefaultSignupForm());
+    if (!templateEditor) setForm(createEmptySignupTemplateForm());
   }, []);
 
   const submit = async (e: React.FormEvent) => {

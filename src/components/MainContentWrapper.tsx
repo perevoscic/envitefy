@@ -94,7 +94,7 @@ export function MainContentWrapper({
         paddingBottom: "max(0px, env(safe-area-inset-bottom))",
         paddingLeft,
         "--app-sidebar-width": paddingLeft,
-        ...(isSettingsRoute ? { "--app-content-top-inset": paddingTop } : null),
+        "--app-content-top-inset": paddingTop,
         ...(isEventSharePage ? { [EVENT_SKIN_TOP_OFFSET_VAR]: eventSkinTopOffset } : null),
       } as CSSProperties}
       data-static-illustration="true"

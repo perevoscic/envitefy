@@ -1,7 +1,7 @@
 "use client";
 import { useTemplateEditor } from "@/components/templates/TemplateEditorContext";
 
-import { Check, Link, Navigation, Share2 } from "lucide-react";
+import { CalendarPlus, Check, Link, Navigation, Share2 } from "lucide-react";
 import { useState } from "react";
 import CalendarAction from "@/components/CalendarAction";
 import { buildGoogleMapsDirectionsHref } from "@/lib/directions";
@@ -28,6 +28,7 @@ export default function EventGuestActions({
   inverse = false,
   timezone,
   allDay: suppliedAllDay,
+  compactMobile = false,
 }: {
   title?: string;
   start?: string | null;
@@ -41,6 +42,7 @@ export default function EventGuestActions({
   inverse?: boolean;
   timezone?: string;
   allDay?: boolean;
+  compactMobile?: boolean;
 }) {
   const [message, setMessage] = useState("");
   const [copied, setCopied] = useState(false);
@@ -69,7 +71,10 @@ export default function EventGuestActions({
   }
 
   const handleShare = async () => {
-    if (templateEditor) { await templateEditor.requestSave(); return; }
+    if (templateEditor) {
+      await templateEditor.requestSave();
+      return;
+    }
     setCopied(false);
     setManualShareUrl("");
     const shareUrl = resolvePublicEventShareUrl({
@@ -109,7 +114,7 @@ export default function EventGuestActions({
   return (
     <section
       aria-label="Plan your visit"
-      className={styles.actions}
+      className={`${styles.actions} ${compactMobile ? styles.compactMobile : ""}`}
       style={inverse ? { color: "#ffffff" } : undefined}
     >
       {start &&
@@ -128,9 +133,21 @@ export default function EventGuestActions({
           })}
         </p>
       ) : null}
-      <div className="flex flex-wrap items-start justify-center gap-3">
+      <div className={`${styles.actionRow} flex flex-wrap items-start justify-center gap-3`}>
         {links ? (
-          <CalendarAction links={links} className={buttonClass} />
+          <CalendarAction links={links} className={buttonClass}>
+            {compactMobile
+              ? (label) => (
+                  <>
+                    <CalendarPlus className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span className={styles.fullLabel}>{label}</span>
+                    <span className={styles.shortLabel} aria-hidden="true">
+                      Calendar
+                    </span>
+                  </>
+                )
+              : undefined}
+          </CalendarAction>
         ) : null}
         {destination ? (
           <a
@@ -138,17 +155,34 @@ export default function EventGuestActions({
             target="_blank"
             rel="noopener noreferrer"
             className={buttonClass}
+            aria-label="Get directions"
           >
-            <Navigation className="h-4 w-4" aria-hidden="true" /> Get directions
+            <Navigation className="h-4 w-4" aria-hidden="true" />
+            <span className={styles.fullLabel}>Get directions</span>
+            {compactMobile && (
+              <span className={styles.shortLabel} aria-hidden="true">
+                Directions
+              </span>
+            )}
           </a>
         ) : null}
-        <button type="button" onClick={() => void handleShare()} className={buttonClass}>
+        <button
+          type="button"
+          onClick={() => void handleShare()}
+          className={buttonClass}
+          aria-label={copied ? "Link copied" : "Share event"}
+        >
           {copied ? (
             <Check className="h-4 w-4" aria-hidden="true" />
           ) : (
             <Share2 className="h-4 w-4" aria-hidden="true" />
           )}{" "}
-          {copied ? "Link copied" : "Share event"}
+          <span className={styles.fullLabel}>{copied ? "Link copied" : "Share event"}</span>
+          {compactMobile && (
+            <span className={styles.shortLabel} aria-hidden="true">
+              {copied ? "Copied" : "Share"}
+            </span>
+          )}
         </button>
       </div>
       {message ? (

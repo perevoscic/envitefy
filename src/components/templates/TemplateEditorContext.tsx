@@ -57,6 +57,7 @@ export type TemplateEditorRuntime = {
   templateId: string;
   initial: EditorSnapshot;
   authenticated: boolean;
+  published?: boolean;
   record: (key: string, value: DraftValue) => void;
   requestSave: () => Promise<void>;
   persist: (payload: TemplateHistoryPayload, status: "draft" | "published") => Promise<void>;
@@ -100,9 +101,15 @@ export function useTemplateSearchParams() {
         const category = saved && getTemplateCategory(saved.category);
         if (active && category && typeof saved.templateId === "string") {
           const href = `${templateEditorHref(category.slug, saved.templateId)}?edit=${encodeURIComponent(id || "")}`;
-          router.replace(search.get("editor") === "menu"
-            ? buildOwnerEventEditHref(href, ownerEventEditorReturnHref(search) || undefined, search.get("eventColor") || undefined)
-            : href);
+          router.replace(
+            search.get("editor") === "menu"
+              ? buildOwnerEventEditHref(
+                  href,
+                  ownerEventEditorReturnHref(search) || undefined,
+                  search.get("eventColor") || undefined,
+                )
+              : href,
+          );
         }
       })
       .catch(() => {});
@@ -144,6 +151,7 @@ export default function TemplateEditorProvider({
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [published, setPublished] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
@@ -208,6 +216,7 @@ export default function TemplateEditorProvider({
               : "This draft is unavailable for this account.",
           );
         const row = await response.json();
+        setPublished(row.data?.status === "published");
         const stored = row.data?.templateEditor;
         if (!stored || stored.category !== category)
           throw new Error("This event uses a different editor.");
@@ -350,8 +359,22 @@ export default function TemplateEditorProvider({
       const current = draft.current;
       if (key === "data" || key === "form") setEditorReady(true);
       if (!current) return;
-      const editable = ["data", "form", "themeId", "advancedState", "activeTemplateId", "activeVariationId", "newHost", "newRegistry", "newEvent", "newItem", "tempHotel", "tempAirport"].includes(key);
-      if (editable && (!interacted.current || !Object.hasOwn(savedFields.current, key))) savedFields.current[key] = JSON.stringify(value);
+      const editable = [
+        "data",
+        "form",
+        "themeId",
+        "advancedState",
+        "activeTemplateId",
+        "activeVariationId",
+        "newHost",
+        "newRegistry",
+        "newEvent",
+        "newItem",
+        "tempHotel",
+        "tempAirport",
+      ].includes(key);
+      if (editable && (!interacted.current || !Object.hasOwn(savedFields.current, key)))
+        savedFields.current[key] = JSON.stringify(value);
       if (JSON.stringify(current.snapshot[key]) === JSON.stringify(value)) return;
       const wasPresent = Object.hasOwn(current.snapshot, key);
       current.snapshot = { ...current.snapshot, [key]: value };
@@ -365,8 +388,13 @@ export default function TemplateEditorProvider({
         trackTemplateEvent("template_first_edit", category, templateId);
       }
       if (editable) {
-        if (!Object.hasOwn(savedFields.current, key)) savedFields.current[key] = JSON.stringify(value);
-        setDirty(Object.entries(savedFields.current).some(([field, saved]) => JSON.stringify(current.snapshot[field]) !== saved));
+        if (!Object.hasOwn(savedFields.current, key))
+          savedFields.current[key] = JSON.stringify(value);
+        setDirty(
+          Object.entries(savedFields.current).some(
+            ([field, saved]) => JSON.stringify(current.snapshot[field]) !== saved,
+          ),
+        );
       }
     },
     [category, templateId],
@@ -392,9 +420,15 @@ export default function TemplateEditorProvider({
           authenticated,
           remoteMedia: remoteMedia.current,
         });
-        savedFields.current = Object.fromEntries(Object.keys(savedFields.current).map((key) => [key, JSON.stringify(current.snapshot[key])]));
+        savedFields.current = Object.fromEntries(
+          Object.keys(savedFields.current).map((key) => [
+            key,
+            JSON.stringify(current.snapshot[key]),
+          ]),
+        );
         setDirty(false);
         window.dispatchEvent(new CustomEvent("history:updated", { detail: { id: eventId } }));
+        setPublished(nextStatus === "published");
         trackTemplateEvent(
           nextStatus === "draft" ? "template_draft_saved" : "template_published",
           category,
@@ -412,9 +446,11 @@ export default function TemplateEditorProvider({
         );
         if (nextStatus === "published") {
           await deleteTemplateDraft(current.id).catch(() => {});
-          progress.allowNavigation(() => router.push(
-            category === "signup-forms" ? `/smart-signup-form/${eventId}` : `/event/${eventId}`,
-          ));
+          progress.allowNavigation(() =>
+            router.push(
+              category === "signup-forms" ? `/smart-signup-form/${eventId}` : `/event/${eventId}`,
+            ),
+          );
         }
       } finally {
         busyRef.current = false;
@@ -490,6 +526,7 @@ export default function TemplateEditorProvider({
       templateId,
       initial: initial || {},
       authenticated,
+      published,
       record,
       requestSave,
       persist,
@@ -505,7 +542,7 @@ export default function TemplateEditorProvider({
         return url;
       },
     }),
-    [category, templateId, initial, authenticated, record, requestSave, persist],
+    [category, templateId, initial, authenticated, published, record, requestSave, persist],
   );
 
   const returnUrl = `${templateEditorHref(category, templateId)}?${editId && !draft.current ? `edit=${encodeURIComponent(editId)}` : `draft=${draft.current?.id || ""}`}`;
@@ -514,15 +551,14 @@ export default function TemplateEditorProvider({
       <div className={styles.shell}>
         <div className="relative z-40 shrink-0 border-b border-[#ded5ca] bg-[#fffcf7]/95 px-4 py-3 backdrop-blur sm:px-8">
           <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-3">
-            <Link
-              href={`/${category}/templates`}
-              className="text-sm font-semibold text-[#59405c]"
-            >
+            <Link href={`/${category}/templates`} className="text-sm font-semibold text-[#59405c]">
               ← {info.name} templates
             </Link>
             <p className="text-xs text-[#746775]">
               {authenticated
-                ? "Save a private draft, then publish when ready."
+                ? category === "signup-forms" && published
+                  ? "Publish signup updates the live page. Save as private draft makes the page private until you publish again."
+                  : "Save a private draft, then publish when ready."
                 : "Customize freely. An account is required to save and share."}
             </p>
             <div className="flex items-center gap-3">
@@ -540,7 +576,13 @@ export default function TemplateEditorProvider({
                 onClick={() => void requestSave()}
                 className="rounded-full bg-[#59405c] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
               >
-                {busy ? "Saving…" : authenticated ? "Save draft" : "Save and continue"}
+                {busy
+                  ? "Saving…"
+                  : authenticated
+                    ? category === "signup-forms" && published
+                      ? "Save as private draft"
+                      : "Save draft"
+                    : "Save and continue"}
               </button>
             </div>
           </div>
@@ -573,7 +615,7 @@ export default function TemplateEditorProvider({
                   type="button"
                   className="rounded-full bg-[#59405c] px-4 py-2 text-sm text-white"
                   onClick={async () => {
-                                    await writeQueue.current.catch(() => {});
+                    await writeQueue.current.catch(() => {});
                     if (draft.current) await deleteTemplateDraft(draft.current.id).catch(() => {});
                     draft.current = {
                       version: 1,
@@ -629,10 +671,18 @@ export default function TemplateEditorProvider({
         {initial ? (
           <div
             className={styles.workspace}
-            onInputCapture={() => { interacted.current = true; }}
-            onChangeCapture={() => { interacted.current = true; }}
-            onPointerDownCapture={() => { interacted.current = true; }}
-            onKeyDownCapture={() => { interacted.current = true; }}
+            onInputCapture={() => {
+              interacted.current = true;
+            }}
+            onChangeCapture={() => {
+              interacted.current = true;
+            }}
+            onPointerDownCapture={() => {
+              interacted.current = true;
+            }}
+            onKeyDownCapture={() => {
+              interacted.current = true;
+            }}
             key={generation}
             inert={busy || authOpen || resetOpen ? true : undefined}
           >

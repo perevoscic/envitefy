@@ -130,6 +130,22 @@ test("landing context survives galleries and generic signup; an explicit new cat
     assert.equal(intents.normalizeSignupPath(invalid), null);
 });
 
+test("sign-up form acquisition defaults to the gallery without unrelated event categories", () => {
+  for (const path of ["/signup-forms", "/signup-forms/templates", "/signup-forms/templates/editorial--clean-clear/customize", "/templates/signup"]) {
+    const context = intents.resolveSignupContext({ path });
+    assert.equal(context.intent, "signup_forms", path);
+    const defaults = buildSignupDefaults(context.intent, context.path);
+    assert.equal(defaults.defaultCreateIntent, "signup_forms");
+    assert.deepEqual(defaults.visibleTemplateKeys, []);
+    assert.deepEqual(resolveVisibility(defaults).quickAccess, QUICK_ACCESS_DEFAULT);
+    assert.equal(intents.getCreateActionForSignupIntent(defaults.defaultCreateIntent).href, "/signup-forms/templates");
+  }
+  assert.deepEqual(intents.resolveSignupContext({ path: "/", previousIntent: "signup_forms", previousPath: "/signup-forms" }), {
+    intent: "signup_forms", source: "signup_forms", path: "/signup-forms",
+  });
+  assert.equal(intents.signupIntentForMarketingPath("/smart-signup-form/received-invitation"), null);
+});
+
 test("create menus show only the selected sport and let settings add more categories", () => {
   const { getTemplateLinks } = load("src/config/navigation-config.tsx");
   for (const sport of ["gymnastics", "football"]) {
@@ -139,6 +155,72 @@ test("create menus show only the selected sport and let settings add more catego
     const expanded = getTemplateLinks([...defaults.visibleTemplateKeys, "weddings"], ["snap"], defaults.sportPreferences);
     assert.ok(expanded.some((link) => link.href === "/event/weddings"));
   }
+});
+
+test("Create Event offers sign-up forms alongside enabled categories and respects the preferred order", () => {
+  const { getCreateEventSections, getTemplateLinks } = load("src/config/navigation-config.tsx");
+  const items = (keys, options = {}, preferences) => getCreateEventSections(keys, ["snap"], preferences, options).flatMap((section) => section.items);
+  const hrefs = (links) => links.map((link) => link.href);
+  const formHref = "/signup-forms/templates";
+  assert.deepEqual(hrefs(items([])), [formHref]);
+  assert.deepEqual(hrefs(items(["birthdays"])), ["/event/birthdays", formHref]);
+  assert.deepEqual(hrefs(items(["birthdays"], { defaultCreateIntent: "signup_forms" })), [formHref, "/event/birthdays"]);
+  assert.deepEqual(hrefs(items(["birthdays"], { defaultCreateIntent: "weddings" })), ["/event/birthdays", formHref]);
+  assert.deepEqual(hrefs(items(["birthdays", "weddings"], { defaultCreateIntent: "weddings" })), ["/event/weddings", "/event/birthdays", formHref]);
+  for (const intent of ["football", "gymnastics"]) {
+    const defaults = buildSignupDefaults(intent);
+    assert.deepEqual(hrefs(items(defaults.visibleTemplateKeys, { defaultCreateIntent: intent }, defaults.sportPreferences)), [`/event/${intent}`, formHref]);
+  }
+  assert.deepEqual(new Set(hrefs(items([], { isAdmin: true }))), new Set([...hrefs(getTemplateLinks()), formHref]));
+});
+
+test("sign-up galleries and editors keep Create Event active without classifying published forms as creation", () => {
+  const { getCreateEventSections, isCreateEventRoute, findActiveCreateEventItem } = load("src/config/navigation-config.tsx");
+  const items = getCreateEventSections([]).flatMap((section) => section.items);
+  for (const path of ["/signup-forms/templates", "/signup-forms/templates/editorial--clean-clear/customize?draft=1", "/templates/signup", "/smart-signup-form"]) {
+    assert.equal(isCreateEventRoute(path), true, path);
+    assert.equal(findActiveCreateEventItem(path, items)?.label, "Sign-up Form", path);
+  }
+  for (const path of ["/signup-forms", "/smart-signup-form/published-form"]) {
+    assert.equal(isCreateEventRoute(path), false, path);
+    assert.equal(findActiveCreateEventItem(path, items), null, path);
+  }
+});
+
+test("preference loading and failed refreshes do not reveal unrelated creation categories", async () => {
+  const state = [];
+  let stateIndex = 0;
+  let payload = null;
+  const { useFeatureVisibility } = evaluate(readFileSync("src/hooks/useFeatureVisibility.ts", "utf8"), "src/hooks/useFeatureVisibility.ts", {
+    react: {
+      useState: (initial) => {
+        const index = stateIndex++;
+        if (!(index in state)) state[index] = initial;
+        return [state[index], (value) => { state[index] = value; }];
+      },
+      useCallback: (callback) => callback,
+      useEffect: () => {},
+    },
+  }, {
+    fetch: async () => ({ ok: Boolean(payload), json: async () => payload }),
+  });
+  const render = () => { stateIndex = 0; return useFeatureVisibility(); };
+  const { getCreateEventSections } = load("src/config/navigation-config.tsx");
+  const menuHrefs = (preferences) => getCreateEventSections(preferences.hasLoadedPreferences ? preferences.visibleTemplateKeys : [], ["snap"], preferences.sportPreferences).flatMap((section) => section.items.map((item) => item.href));
+  let preferences = render();
+  assert.deepEqual(menuHrefs(preferences), ["/signup-forms/templates"]);
+  await preferences.refresh();
+  preferences = render();
+  assert.equal(preferences.hasLoadedPreferences, false);
+  assert.deepEqual(menuHrefs(preferences), ["/signup-forms/templates"]);
+  payload = buildSignupDefaults("football");
+  await preferences.refresh();
+  preferences = render();
+  assert.equal(preferences.hasLoadedPreferences, true);
+  assert.deepEqual(menuHrefs(preferences), ["/event/football", "/signup-forms/templates"]);
+  payload = null;
+  await preferences.refresh();
+  assert.deepEqual(menuHrefs(render()), ["/event/football", "/signup-forms/templates"]);
 });
 
 test("signup-source primes category cookies for Google and generic forms and rejects invalid intent", async () => {
@@ -170,7 +252,8 @@ test("signup-source primes category cookies for Google and generic forms and rej
   assert.equal((await POST(request({ intent: "admin" }))).status, 400);
 });
 
-test("email signup forwards category and original path into account creation", async () => {
+for (const intent of ["football", "signup_forms"]) test(`email signup forwards ${intent} and original path into account creation`, async () => {
+  const signupPath = intent === "signup_forms" ? "/signup-forms" : "/football";
   let saved;
   const { POST } = load("src/app/api/auth/signup/route.ts", {
     "next/server": responseMock(),
@@ -188,18 +271,18 @@ test("email signup forwards category and original path into account creation", a
         email: "test@example.test",
         password: "test-only-password",
         signupSource: "snap",
-        signupIntent: "football",
+        signupIntent: intent,
       }),
       headers: {
         cookie:
-          "envitefy_signup_source=football; envitefy_signup_intent=football; envitefy_signup_path=/football",
+          `envitefy_signup_source=${intent}; envitefy_signup_intent=${intent}; envitefy_signup_path=${signupPath}`,
       },
     }),
   );
   assert.equal(res.status, 200);
-  assert.equal(saved.signupSource, "football");
-  assert.equal(saved.signupIntent, "football");
-  assert.equal(saved.signupPath, "/football");
+  assert.equal(saved.signupSource, intent);
+  assert.equal(saved.signupIntent, intent);
+  assert.equal(saved.signupPath, signupPath);
   assert.equal(res.cookies.get("envitefy_signup_path").value, "");
 });
 
@@ -243,13 +326,14 @@ test("middleware records visits, but ignores prefetches and signed-in browsing",
   );
 });
 
-test("Google signup uses the same category defaults, while existing accounts remain unchanged", async () => {
+for (const intent of ["football", "signup_forms"]) test(`Google signup preserves ${intent} defaults, while existing accounts remain unchanged`, async () => {
+  const signupPath = intent === "signup_forms" ? "/signup-forms" : "/football";
   let saved;
   let existing = false;
   const cookies = {
-    envitefy_signup_source: "football",
-    envitefy_signup_intent: "football",
-    envitefy_signup_path: "/football",
+    envitefy_signup_source: intent,
+    envitefy_signup_intent: intent,
+    envitefy_signup_path: signupPath,
   };
   const auth = load("src/lib/auth.ts", {
     "next-auth": {},
@@ -274,8 +358,8 @@ test("Google signup uses the same category defaults, while existing accounts rem
   };
   const callback = auth.getAuthOptions().callbacks.signIn;
   assert.equal(await callback(args), true);
-  assert.equal(saved.signupIntent, "football");
-  assert.equal(saved.signupPath, "/football");
+  assert.equal(saved.signupIntent, intent);
+  assert.equal(saved.signupPath, signupPath);
   existing = true;
   saved = null;
   assert.equal(await callback(args), true);

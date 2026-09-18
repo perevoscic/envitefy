@@ -91,7 +91,7 @@ const CREATE_ACTION_BY_INTENT: Record<
   signup_forms: {
     label: "Sign-up Form",
     ctaLabel: "+ Sign-up Form",
-    href: "/templates/signup",
+    href: "/signup-forms/templates",
   },
   gender_reveal: {
     label: "Gender Reveal",

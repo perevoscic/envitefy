@@ -277,9 +277,9 @@ const SectionCard = ({
   onSlotRemove: (sectionId: string, slotId: string) => void;
   onAddSlot: (sectionId: string) => void;
 }) => (
-  <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-4 shadow-sm">
+  <div data-signup-editor-surface="panel" className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-4 shadow-sm">
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <div className="flex-1 min-w-0 space-y-3">
+      <div data-signup-editor-fields className="flex-1 min-w-0 space-y-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Section title
@@ -341,6 +341,7 @@ const SectionCard = ({
           onClick={() => onRemove(section)}
           className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-white text-sm text-red-600 transition hover:bg-red-50"
           title="Remove section"
+          data-signup-editor-destructive
         >
           ✕
         </button>
@@ -350,10 +351,11 @@ const SectionCard = ({
       {section.slots.map((slot, slotIndex) => (
         <div
           key={slot.id}
+          data-signup-editor-surface="soft"
           className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 space-y-3"
         >
           <div className="flex flex-wrap items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
+            <div data-signup-editor-fields className="flex-1 min-w-0">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Slot label
               </label>
@@ -403,6 +405,7 @@ const SectionCard = ({
                 onClick={() => onSlotRemove(section.id, slot.id)}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-white text-xs text-red-600 transition hover:bg-red-50"
                 title="Remove slot"
+                data-signup-editor-destructive
               >
                 ✕
               </button>
@@ -499,6 +502,7 @@ const SectionCard = ({
     <button
       type="button"
       onClick={() => onAddSlot(section.id)}
+      data-signup-editor-add
       className="inline-flex items-center gap-2 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50/50 px-4 py-2.5 text-sm font-semibold text-blue-600 transition hover:bg-blue-100/70 hover:border-blue-400"
     >
       + Add slot
@@ -4607,7 +4611,7 @@ const SignupBuilder: React.FC<Props> = ({
 
       {showSettings && (
         <div className="space-y-6">
-          <div className="space-y-4 bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+          <div data-signup-editor-surface="panel" className="space-y-4 bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
             {/* Allow multiple slots */}
             <label className="flex items-start gap-4 group cursor-pointer">
               <div className="relative flex-shrink-0 mt-0.5">
@@ -4646,7 +4650,7 @@ const SignupBuilder: React.FC<Props> = ({
                 </div>
               </div>
               <div className="flex-1">
-                <div className="font-semibold text-gray-900 mb-0.5">
+                <div data-signup-editor-label className="font-semibold text-gray-900 mb-0.5">
                   Allow guests to claim multiple slots
                 </div>
                 <p className="text-sm text-gray-600">
@@ -4719,7 +4723,7 @@ const SignupBuilder: React.FC<Props> = ({
                 </div>
               </div>
               <div className="flex-1">
-                <div className="font-semibold text-gray-900 mb-0.5">
+                <div data-signup-editor-label className="font-semibold text-gray-900 mb-0.5">
                   Enable automatic waitlist
                 </div>
                 <p className="text-sm text-gray-600">
@@ -4766,7 +4770,7 @@ const SignupBuilder: React.FC<Props> = ({
                 </div>
               </div>
               <div className="flex-1">
-                <div className="font-semibold text-gray-900 mb-0.5">
+                <div data-signup-editor-label className="font-semibold text-gray-900 mb-0.5">
                   Show remaining spots to guests
                 </div>
                 <p className="text-sm text-gray-600">
@@ -4813,7 +4817,7 @@ const SignupBuilder: React.FC<Props> = ({
                 </div>
               </div>
               <div className="flex-1">
-                <div className="font-semibold text-gray-900 mb-0.5">
+                <div data-signup-editor-label className="font-semibold text-gray-900 mb-0.5">
                   Collect mobile numbers
                 </div>
                 <p className="text-sm text-gray-600">
@@ -4858,7 +4862,7 @@ const SignupBuilder: React.FC<Props> = ({
                 </div>
               </div>
               <div className="flex-1">
-                <div className="font-semibold text-gray-900 mb-0.5">
+                <div data-signup-editor-label className="font-semibold text-gray-900 mb-0.5">
                   Collect alternate email
                 </div>
                 <p className="text-sm text-gray-600">
@@ -4949,6 +4953,7 @@ const SignupBuilder: React.FC<Props> = ({
           <button
             type="button"
             onClick={handleAddSection}
+            data-signup-editor-add
             className="inline-flex items-center gap-2 rounded-lg border-2 border-dashed border-amber-300 bg-amber-50/50 px-4 py-2.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-100/70 hover:border-amber-400"
           >
             + Add another section
@@ -4957,7 +4962,7 @@ const SignupBuilder: React.FC<Props> = ({
       )}
 
       {showQuestions && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-4 shadow-sm">
+        <div data-signup-editor-surface="panel" className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-4 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
@@ -4971,6 +4976,7 @@ const SignupBuilder: React.FC<Props> = ({
             <button
               type="button"
               onClick={handleAddQuestion}
+              data-signup-editor-add
               className="inline-flex items-center gap-2 rounded-lg border-2 border-dashed border-amber-300 bg-amber-50/50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100/70 hover:border-amber-400"
             >
               + Question
@@ -4981,6 +4987,7 @@ const SignupBuilder: React.FC<Props> = ({
               {(form.questions || []).map((question, index) => (
                 <div
                   key={question.id}
+                  data-signup-editor-surface="soft"
                   className="rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-4 space-y-3"
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -5013,7 +5020,7 @@ const SignupBuilder: React.FC<Props> = ({
                             }
                             className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500/20"
                           />
-                          <span className="text-gray-700">
+                          <span data-signup-editor-label className="text-gray-700">
                             Required to submit
                           </span>
                         </label>
@@ -5028,14 +5035,14 @@ const SignupBuilder: React.FC<Props> = ({
                             }
                             className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500/20"
                           />
-                          <span className="text-gray-700">
+                          <span data-signup-editor-label className="text-gray-700">
                             Use a multi-line answer box
                           </span>
                         </label>
                       </div>
                     </div>
                     <div className="flex flex-col gap-2">
-                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-gray-300 bg-white text-xs font-semibold text-gray-600">
+                      <span data-signup-editor-surface="panel" className="inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-gray-300 bg-white text-xs font-semibold text-gray-600">
                         #{index + 1}
                       </span>
                       <button
@@ -5043,6 +5050,7 @@ const SignupBuilder: React.FC<Props> = ({
                         onClick={() => handleQuestionRemove(question.id)}
                         className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-white text-xs text-red-600 transition hover:bg-red-50"
                         title="Remove question"
+                        data-signup-editor-destructive
                       >
                         ✕
                       </button>

@@ -7,8 +7,10 @@ import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import EventPreviewViewport from "@/components/EventPreviewViewport";
 import EventGuestActions from "@/components/event-templates/EventGuestActions";
 import SignupPageRenderer from "@/components/smart-signup-form/SignupPageRenderer";
+import SignupOwnerActions from "@/components/smart-signup-form/SignupOwnerActions";
 import EventCanvas from "@/components/EventCanvas";
 import SignupViewer from "@/components/smart-signup-form/SignupViewer";
+import { AcceptSignupInvitation } from "@/components/smart-signup-form/SignupSharing";
 import { absoluteUrl } from "@/lib/absolute-url";
 import { authOptions } from "@/lib/auth";
 import {
@@ -16,9 +18,13 @@ import {
   getEventHistoryPublicRenderBySlugOrId,
   getUserIdByEmail,
   isEventSharedWithUser,
+  isEventSharePendingForUser,
 } from "@/lib/db";
 import { isEventDraft } from "@/lib/event-draft-access";
-import { buildEmbeddedEventPreviewHref, eventPreviewReturnHref } from "@/lib/event-preview-viewport";
+import {
+  buildEmbeddedEventPreviewHref,
+  eventPreviewReturnHref,
+} from "@/lib/event-preview-viewport";
 import { combineVenueAndLocation } from "@/lib/mappers";
 import { toPublicShareMediaUrl } from "@/lib/share-image";
 import { projectSignupForm } from "@/lib/signup-projection";
@@ -369,16 +375,21 @@ export default async function SignupPage({
   }
 
   if (!isOwner && !recipientAccepted && !isPublicSignupPage) {
+    const pending = userId ? await isEventSharePendingForUser(row.id, userId) : false;
     return (
       <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
         <main className="mx-auto w-full max-w-2xl px-5 py-14 space-y-4">
           <h1 className="text-3xl font-bold text-neutral-900 text-center">
-            Access limited to invitees
+            {pending ? "You're invited" : "Access limited to invitees"}
           </h1>
-          <p className="text-center text-neutral-700">
-            This sign-up is restricted to contacts the organizer invited. Please ask them to share
-            access with your account before you continue.
-          </p>
+          {pending ? (
+            <AcceptSignupInvitation eventId={row.id} />
+          ) : (
+            <p className="text-center text-neutral-700">
+              This sign-up is restricted to contacts the organizer invited. Please ask them to share
+              access with your account before you continue.
+            </p>
+          )}
         </main>
       </div>
     );
@@ -408,8 +419,19 @@ export default async function SignupPage({
       <EventCanvas className="min-h-screen">
         <SignupPageRenderer
           form={visibleForm}
+          ownerActions={
+            isOwner && !ownerPreviewMode ? (
+              <SignupOwnerActions
+                eventId={row.id}
+                eventTitle={row.title || "Smart sign-up"}
+                eventData={data}
+                form={visibleForm}
+              />
+            ) : undefined
+          }
           actions={
             <EventGuestActions
+              compactMobile
               shareUrl={`/smart-signup-form/${canonicalSegment}`}
               eventId={row.id}
               title={signupForm.title || row.title || "Signup form"}
@@ -430,8 +452,6 @@ export default async function SignupPage({
             viewerId={userId}
             viewerName={session?.user?.name || null}
             viewerEmail={sessionEmail}
-            ownerEventTitle={row.title || "Smart sign-up"}
-            ownerEventData={isOwner ? data : undefined}
           />
         </SignupPageRenderer>
       </EventCanvas>

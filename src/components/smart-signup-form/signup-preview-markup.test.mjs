@@ -37,6 +37,12 @@ function load(relative, mocks, cache = new Map()) {
 }
 const baseMocks = {
   "lucide-react": {
+    Pencil: (props) => React.createElement("svg", props),
+    Check: (props) => React.createElement("svg", props),
+    X: (props) => React.createElement("svg", props),
+    Copy: (props) => React.createElement("svg", props),
+    GripVertical: (props) => React.createElement("svg", props),
+    Trash2: (props) => React.createElement("svg", props),
     Upload: (props) => React.createElement("svg", props),
     ImagePlus: (props) => React.createElement("svg", props),
     RotateCcw: (props) => React.createElement("svg", props),
@@ -56,15 +62,37 @@ test("device preview hides signup editing tools while preserving the sign-up boa
     eventId: "school",
     initialForm: form,
     viewerKind: "owner",
-    ownerEventTitle: "School event",
-    ownerEventData: { signupForm: form },
   };
   const regular = renderToStaticMarkup(React.createElement(Viewer, props));
-  assert.match(regular, /Edit event/);
+  assert.doesNotMatch(regular, /Edit event|Duplicate form/);
   assert.match(regular, /Host dashboard/);
-  const preview = renderToStaticMarkup(React.createElement(Viewer, { ...props, hideOwnerTools: true }));
+  const preview = renderToStaticMarkup(
+    React.createElement(Viewer, { ...props, hideOwnerTools: true }),
+  );
   assert.match(preview, /Sign-up board/);
   assert.doesNotMatch(preview, /Edit event|Duplicate form|Host dashboard/);
+});
+
+test("signup owner actions render above the hero, separate from the response board", () => {
+  const Page = load("src/components/smart-signup-form/SignupPageRenderer.tsx", baseMocks).default;
+  const OwnerActions = load(
+    "src/components/smart-signup-form/SignupOwnerActions.tsx",
+    baseMocks,
+  ).default;
+  const form = createSignupThemeForm("harvest-table");
+  const ownerActions = React.createElement(OwnerActions, {
+    eventId: "school",
+    eventTitle: "School event",
+    eventData: { signupForm: form },
+    form,
+  });
+  const html = renderToStaticMarkup(React.createElement(Page, { form, ownerActions }));
+  assert.equal((html.match(/aria-label="Manage signup form"/g) || []).length, 1);
+  assert.ok(html.indexOf('aria-label="Manage signup form"') < html.indexOf("<h1"));
+  assert.match(html, /aria-label="Edit event"/);
+  assert.match(html, /aria-label="Duplicate form"/);
+  const guest = renderToStaticMarkup(React.createElement(Page, { form }));
+  assert.doesNotMatch(guest, /Manage signup form|Edit event|Duplicate form/);
 });
 
 test("all 150 templates retain a distinct curated design through saving and rendering", () => {
@@ -185,7 +213,7 @@ test("every signup catalog item renders an inert artwork thumbnail without form 
   }
 });
 
-function verifyMarkup(html) {
+function verifyMarkup(html, expectDesignPanel = true) {
   let depth = 0;
   for (const tag of html.matchAll(/<\/?button\b[^>]*>/g)) {
     depth += tag[0].startsWith("</") ? -1 : 1;
@@ -193,12 +221,9 @@ function verifyMarkup(html) {
   }
   assert.equal(depth, 0);
   assert.doesNotMatch(html, /Make it feel like your event|Explore all 150 designs|Use [^"]+ theme/);
-  for (const label of [
-    "Color palette",
-    "Typography",
-    "Header layout",
-    "Fine-tune the design",
-  ]) {
+  for (const label of expectDesignPanel
+    ? ["Color palette", "Typography", "Header layout", "Fine-tune the design"]
+    : []) {
     assert.ok(html.includes(label), label);
   }
   assert.doesNotMatch(html, /Photos &amp; artwork|Search artwork|Choose artwork/);
@@ -214,14 +239,25 @@ test("design editor retains customization controls without repeating template se
 });
 
 test("direct photo selection changes only the selected signup gallery image", () => {
-  const Actions = load("src/components/smart-signup-form/SignupImageActions.tsx", baseMocks).default;
+  const Actions = load(
+    "src/components/smart-signup-form/SignupImageActions.tsx",
+    baseMocks,
+  ).default;
   const form = createSignupThemeForm("harvest-table");
   form.appearance.headerLayout = "header-6";
   form.header.images = [0, 1, 2].map((index) => ({
-    id: `photo-${index}`, name: `Photo ${index}`, type: "image/webp", dataUrl: `/photo-${index}.webp`,
+    id: `photo-${index}`,
+    name: `Photo ${index}`,
+    type: "image/webp",
+    dataUrl: `/photo-${index}.webp`,
   }));
   let updated;
-  const controls = Actions({ form, onChange: (value) => { updated = value; } }).props.children;
+  const controls = Actions({
+    form,
+    onChange: (value) => {
+      updated = value;
+    },
+  }).props.children;
   controls[1].props.onChange("data:image/png;base64,aW1hZ2U=");
   assert.equal(updated.header.images[1].dataUrl, "data:image/png;base64,aW1hZ2U=");
   assert.equal(updated.header.images[1].id, "photo-1");
@@ -232,18 +268,23 @@ test("direct photo selection changes only the selected signup gallery image", ()
   assert.equal(updated.appearance.headerLayout, "header-6");
 });
 
-test("wizard keeps customization outside the form and connects the publish button to the form", () => {
-  const wizardMocks = {
-    ...baseMocks,
-    "./SignupBuilder": { __esModule: true, default: () => null },
-    "./SignupDetailsEditor": { __esModule: true, default: () => null },
-  };
-  for (const step of ["design", "review"]) {
+test("composer replaces the four-step wizard and keeps guest preview separate from editing", () => {
+  for (const step of ["design", "details", "build", "review"]) {
     const Wizard = load("src/components/smart-signup-form/Wizard.tsx", {
-      ...wizardMocks,
+      ...baseMocks,
+      "./SignupContentEditor": {
+        __esModule: true,
+        default: () => React.createElement("div", null, "Editable sections"),
+      },
+      "./SignupDetailsEditor": { __esModule: true, default: () => null },
       "@/components/templates/TemplateEditorContext": {
         useTemplateEditor: () => null,
         useTemplateState: () => React.useState(step),
+      },
+      react: {
+        ...React,
+        useState: (initial) =>
+          React.useState(initial === "build" ? (step === "review" ? "review" : "build") : initial),
       },
     }).default;
     const html = renderToStaticMarkup(
@@ -253,19 +294,539 @@ test("wizard keeps customization outside the form and connects the publish butto
         onSubmit() {},
       }),
     );
-    const [, formId, formContents] = html.match(/<form id="([^"]+)"[^>]*>([\s\S]*?)<\/form>/);
-    assert.doesNotMatch(formContents, /Color palette|Design customization/);
-    if (step === "design") {
-      verifyMarkup(html);
-      assert.match(formContents, /Live page preview/);
-      assert.match(formContents, /aria-label="Change hero image"/);
-      assert.match(formContents, /type="file"/);
-      assert.match(html, /<aside aria-label="Design customization"/);
-      assert.ok(html.indexOf("</form>") < html.indexOf("<aside"));
+    verifyMarkup(html, false);
+    assert.doesNotMatch(html, /Signup editor views/);
+    assert.doesNotMatch(html, /Step [1-4] of 4|Start with a little structure/);
+    if (step === "review") {
+      assert.doesNotMatch(
+        html,
+        /Ready to publish|Your draft stays private until you publish|Guest preview — try it|Test signups are never saved/,
+      );
+      assert.match(html, /Publish signup/);
+      assert.doesNotMatch(html, /Change hero image|Editable sections/);
     } else {
-      assert.doesNotMatch(formContents, /Change hero image|Choose hero image/);
-      assert.ok(html.includes(`type="submit" form="${formId}"`));
-      assert.doesNotMatch(html, /<aside/);
+      assert.match(html, /Editable sections/);
+      assert.match(html, /Form tools/);
+      assert.match(html, /Registration places/);
+      assert.match(html, /Change hero image/);
+      assert.doesNotMatch(html, /Color palette/);
     }
+  }
+});
+
+test("starters switch immediately for every untouched template and protect edited slot definitions", () => {
+  const { getPublicTemplates } = load("src/lib/public-template-catalog.ts", baseMocks);
+  const {
+    createSignupTemplateForm,
+    applySignupStarter,
+    signupStarterNeedsConfirmation,
+    SIGNUP_STARTERS,
+  } = load("src/lib/signup-starters.ts", baseMocks);
+  const { sanitizeSignupForm } = load("src/utils/signup.ts", baseMocks);
+  for (const template of getPublicTemplates("signup-forms")) {
+    const sample = createSignupTemplateForm(template);
+    assert.equal(signupStarterNeedsConfirmation(sample), false, template.id);
+    assert.equal(
+      signupStarterNeedsConfirmation(sanitizeSignupForm(sample)),
+      false,
+      `saved ${template.id}`,
+    );
+  }
+  const form = createSignupTemplateForm({
+    id: "editorial--clean-clear",
+    name: "Clean & Clear",
+    heroImage: "/sample.webp",
+  });
+  form.title = "My own event title";
+  form.settings.collectPhone = true;
+  let selected = form;
+  for (const starter of SIGNUP_STARTERS) {
+    selected = applySignupStarter(selected, starter.id);
+    assert.equal(signupStarterNeedsConfirmation(selected), false, starter.id);
+    assert.equal(selected.starterId, starter.id);
+    assert.deepEqual(
+      selected.sections[0].slots.map((slot) => slot.label),
+      [...starter.slots],
+    );
+    assert.equal(selected.title, form.title);
+    assert.equal(selected.settings.collectPhone, true);
+    assert.deepEqual(selected.appearance, form.appearance);
+    assert.deepEqual(selected.questions, form.questions);
+    assert.deepEqual(selected.header, form.header);
+  }
+  for (const edit of [
+    (value) => {
+      value.sections[0].title = "My section";
+    },
+    (value) => {
+      value.sections[0].description = "My instructions";
+    },
+    (value) => {
+      value.sections[0].slots[0].label = "My slot";
+    },
+    (value) => {
+      value.sections[0].slots[0].capacity = 17;
+    },
+    (value) => {
+      value.sections[0].slots[0].notes = "My notes";
+    },
+    (value) => {
+      value.sections[0].slots[0].startTime = "09:15";
+    },
+    (value) => {
+      value.sections[0].slots[0].endTime = "10:45";
+    },
+    (value) => {
+      value.sections[0].slots.reverse();
+    },
+    (value) => {
+      value.sections[0].slots.pop();
+    },
+    (value) => {
+      value.sections.push({ id: "added", title: "My empty section", slots: [] });
+    },
+    (value) => {
+      value.responses.push({ id: "existing-response", slots: [] });
+    },
+  ]) {
+    const edited = structuredClone(form);
+    edit(edited);
+    assert.equal(signupStarterNeedsConfirmation(edited), true);
+    const appended = applySignupStarter(edited, "potluck", true);
+    assert.deepEqual(appended.sections.slice(0, -1), edited.sections);
+    assert.deepEqual(appended.responses, edited.responses);
+    assert.deepEqual(appended.settings, edited.settings);
+  }
+});
+
+test("new signup templates keep all 150 designs without introducing fictional event data", () => {
+  const { createEmptySignupTemplateForm } = load("src/lib/signup-starters.ts", baseMocks);
+  const { getPublicTemplates } = load("src/lib/public-template-catalog.ts", baseMocks);
+  for (const template of getPublicTemplates("signup-forms")) {
+    const form = createEmptySignupTemplateForm(template);
+    assert.equal(form.appearance.designId, template.id);
+    assert.equal(form.header.backgroundImage.dataUrl, template.heroImage);
+    assert.equal(form.title, "");
+    assert.equal(form.start, null);
+    assert.equal(form.location, null);
+    assert.equal(form.header.creatorName, "");
+    assert.equal(form.locationMode, "tba");
+    assert.deepEqual(form.sections, []);
+    assert.deepEqual(form.questions, []);
+    assert.deepEqual(form.responses, []);
+  }
+});
+
+test("section placement, copying and persistence retain IDs, instructions and existing responses", () => {
+  const { createEmptySignupTemplateForm } = load("src/lib/signup-starters.ts", baseMocks);
+  const { placeSignupSection, copySignupSection, signupSectionHasResponses } = load(
+    "src/lib/signup-composer.ts",
+    baseMocks,
+  );
+  const { sanitizeSignupForm } = load("src/utils/signup.ts", baseMocks);
+  const { validateSignupPublish } = load("src/lib/signup-validation.ts", baseMocks);
+  let form = createEmptySignupTemplateForm();
+  form.title = "School day";
+  form = placeSignupSection(form, { kind: "block", id: "registration" });
+  const registration = form.sections[0];
+  form = placeSignupSection(form, { kind: "block", id: "info" }, registration.id);
+  form.sections[0].description = "Meet at the front entrance.";
+  const info = form.sections[0];
+  form = placeSignupSection(form, { kind: "section", id: registration.id }, info.id);
+  assert.equal(form.sections[0].id, registration.id);
+  const saved = sanitizeSignupForm(JSON.parse(JSON.stringify(form)));
+  assert.equal(saved.sections[1].description, "Meet at the front entrance.");
+  assert.equal(saved.sections[1].kind, "info");
+  assert.equal(saved.sections[1].slots.length, 0);
+  assert.equal(validateSignupPublish(form).length, 0);
+  const copy = copySignupSection(registration);
+  assert.notEqual(copy.id, registration.id);
+  assert.notEqual(copy.slots[0].id, registration.slots[0].id);
+  form.responses = [
+    {
+      id: "response",
+      status: "confirmed",
+      slots: [{ sectionId: registration.id, slotId: registration.slots[0].id, quantity: 1 }],
+    },
+  ];
+  assert.equal(signupSectionHasResponses(form, registration.id), true);
+  assert.equal(signupSectionHasResponses(form, registration.id, registration.slots[0].id), true);
+  assert.equal(signupSectionHasResponses(form, info.id), false);
+  const moved = placeSignupSection(form, { kind: "section", id: registration.id });
+  assert.deepEqual(moved.responses, form.responses);
+  assert.equal(moved.sections.at(-1).id, registration.id);
+  assert.deepEqual(moved.header, form.header);
+  assert.deepEqual(moved.settings, form.settings);
+  const projected = {
+    ...form,
+    responses: [],
+    availability: [
+      { sectionId: registration.id, slotId: registration.slots[0].id, confirmed: 1, waitlisted: 0 },
+    ],
+  };
+  assert.equal(signupSectionHasResponses(projected, registration.id), true);
+});
+
+test("empty questions are surfaced before publish and text alone cannot publish a signup", () => {
+  const { createEmptySignupTemplateForm } = load("src/lib/signup-starters.ts", baseMocks);
+  const { placeSignupSection } = load("src/lib/signup-composer.ts", baseMocks);
+  const { validateSignupPublish } = load("src/lib/signup-validation.ts", baseMocks);
+  let form = createEmptySignupTemplateForm();
+  form.title = "Title";
+  form = placeSignupSection(form, { kind: "block", id: "info" });
+  form.questions = [{ id: "q1", prompt: "", required: true }];
+  const issues = validateSignupPublish(form);
+  assert.ok(issues.some((issue) => issue.field === "signup-slots"));
+  assert.ok(issues.some((issue) => issue.field === "signup-questions"));
+});
+
+test("optional form headings preserve hidden, custom and inherited wording through saving", () => {
+  const { sanitizeSignupForm } = load("src/utils/signup.ts", baseMocks);
+  const Viewer = load("src/components/smart-signup-form/SignupViewer.tsx", baseMocks).default;
+  const form = createSignupThemeForm("harvest-table");
+  const render = (value) =>
+    renderToStaticMarkup(
+      React.createElement(Viewer, { eventId: "preview", initialForm: value, viewerKind: "guest" }),
+    );
+  assert.match(render(sanitizeSignupForm(form)), /Sign-up board/);
+  const hidden = sanitizeSignupForm({ ...form, boardTitle: "", boardDescription: "" });
+  assert.equal(hidden.boardTitle, "");
+  assert.equal(hidden.boardDescription, "");
+  assert.doesNotMatch(render(hidden), /Sign-up board|Every contribution counts/);
+  const custom = sanitizeSignupForm({
+    ...form,
+    boardTitle: "Garden helpers",
+    boardDescription: "Choose your activity.",
+  });
+  assert.match(render(custom), /Garden helpers/);
+  assert.match(render(custom), /Choose your activity\./);
+});
+
+const nodes = (node) =>
+  !node
+    ? []
+    : Array.isArray(node)
+      ? node.flatMap(nodes)
+      : React.isValidElement(node)
+        ? [node, ...nodes(node.props.children)]
+        : [];
+const nodeText = (node) =>
+  !node
+    ? ""
+    : Array.isArray(node)
+      ? node.map(nodeText).join("")
+      : React.isValidElement(node)
+        ? nodeText(node.props.children)
+        : String(node);
+
+test("section editor removes and restores content, protects signed-up slots and supports drop ordering", () => {
+  const { placeSignupSection } = load("src/lib/signup-composer.ts", baseMocks);
+  const { createEmptySignupTemplateForm } = load("src/lib/signup-starters.ts", baseMocks);
+  let form = placeSignupSection(createEmptySignupTemplateForm(), {
+    kind: "block",
+    id: "registration",
+  });
+  form = placeSignupSection(form, { kind: "block", id: "info" });
+  const hookState = [];
+  let cursor = 0;
+  const Editor = load("src/components/smart-signup-form/SignupContentEditor.tsx", {
+    ...baseMocks,
+    "@dnd-kit/core": {
+      ...nativeRequire("@dnd-kit/core"),
+      useSensors: (...sensors) => sensors,
+      useSensor: (sensor) => sensor,
+    },
+    react: {
+      ...React,
+      useState(initial) {
+        const i = cursor++;
+        if (!(i in hookState)) hookState[i] = initial;
+        return [
+          hookState[i],
+          (value) => {
+            hookState[i] = value;
+          },
+        ];
+      },
+    },
+  }).default;
+  let drag = null;
+  const render = () => {
+    cursor = 0;
+    return nodes(
+      Editor({
+        form,
+        onChange: (next) => {
+          form = next;
+        },
+        drag,
+        onDrag: (value) => {
+          drag = value;
+        },
+        onAdd() {},
+      }),
+    );
+  };
+  const original = structuredClone(form);
+  render()
+    .find((node) => node.type === "button" && nodeText(node) === "Remove")
+    .props.onClick();
+  assert.equal(form.sections.length, 1);
+  render()
+    .find((node) => node.type === "button" && nodeText(node) === "Undo")
+    .props.onClick();
+  assert.deepEqual(form.sections, original.sections);
+  const registration = form.sections[0];
+  form.responses = [{ slots: [{ sectionId: registration.id, slotId: registration.slots[0].id }] }];
+  const remove = render().find((node) => node.type === "button" && nodeText(node) === "Remove");
+  assert.equal(remove.props.disabled, true);
+  remove.props.onClick();
+  assert.equal(form.sections.length, 2);
+  drag = { kind: "section", id: form.sections[1].id };
+  render()
+    .find((node) => node.props.sectionId === registration.id)
+    .props.onDrop({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(form.sections[0].kind, "info");
+  assert.equal(form.sections[1].id, registration.id);
+  assert.equal(form.responses.length, 1);
+  render()
+    .find((node) => node.props.onDragEnd && node.props.sensors)
+    .props.onDragEnd({ active: { id: registration.id }, over: { id: form.sections[0].id } });
+  assert.equal(form.sections[0].id, registration.id);
+  assert.equal(form.responses.length, 1);
+});
+
+test("header pencils update canonical details and are omitted from guest pages", () => {
+  const Header = load(
+    "src/components/smart-signup-form/SignupTemplateHeader.tsx",
+    baseMocks,
+  ).default;
+  let form = createSignupThemeForm("harvest-table");
+  const render = () =>
+    nodes(
+      Header({
+        form,
+        editing: {
+          onChange: (next) => {
+            form = next;
+          },
+          details: null,
+          onDetails() {},
+        },
+      }),
+    );
+  render()
+    .find((node) => node.props.label === "Event title")
+    .props.onChange("Neighborhood feast");
+  render()
+    .find((node) => node.props.label === "Welcome message")
+    .props.onChange("Join us outside.");
+  render()
+    .find((node) => node.props.label === "Organizer name")
+    .props.onChange("Garden club");
+  assert.equal(form.title, "Neighborhood feast");
+  assert.equal(form.description, "Join us outside.");
+  assert.equal(form.header.creatorName, "Garden club");
+  const editable = renderToStaticMarkup(
+    React.createElement(Header, {
+      form,
+      editing: { onChange() {}, details: null, onDetails() {} },
+    }),
+  );
+  assert.match(editable, /Edit event title/);
+  assert.match(editable, /Edit date and time/);
+  const guest = renderToStaticMarkup(React.createElement(Header, { form }));
+  assert.match(guest, /Neighborhood feast/);
+  assert.doesNotMatch(guest, /<button|Edit event title|Arrival &amp; other details/);
+});
+
+test("cancelling inline date edits restores dates without reverting other edits", () => {
+  const original = createSignupThemeForm("harvest-table");
+  let form = { ...original, start: "2026-10-24T10:00", title: "Changed separately" };
+  let closed = false;
+  const Editor = load("src/components/smart-signup-form/SignupHeaderDetailsEditor.tsx", {
+    ...baseMocks,
+    react: {
+      ...React,
+      useState: () => [original],
+      useEffect() {},
+      useRef: () => ({ current: null }),
+    },
+  }).default;
+  const tree = nodes(
+    Editor({
+      form,
+      section: "schedule",
+      onChange: (next) => {
+        form = next;
+      },
+      onClose: () => {
+        closed = true;
+      },
+    }),
+  );
+  tree.find((node) => node.type === "button" && nodeText(node) === "Cancel").props.onClick();
+  assert.equal(form.start, original.start);
+  assert.equal(form.title, "Changed separately");
+  assert.equal(closed, true);
+});
+
+test("saved waitlisted signups expose working edit and cancel actions", async () => {
+  const form = createSignupThemeForm("harvest-table");
+  form.settings.maxQuantityPerSlot = 3;
+  form.sections[0].slots[0].capacity = 2;
+  const response = {
+    id: "parent-signup",
+    userId: "parent",
+    name: "Test parent",
+    email: "parent@example.test",
+    guests: 0,
+    status: "waitlisted",
+    slots: [{ sectionId: form.sections[0].id, slotId: form.sections[0].slots[0].id, quantity: 3 }],
+    answers: [],
+    createdAt: "2026-09-18T12:00:00Z",
+    updatedAt: "2026-09-18T12:00:00Z",
+  };
+  form.responses = [response];
+  const state = [];
+  let cursor = 0;
+  const requests = [];
+  const oldFetch = globalThis.fetch,
+    oldFrame = globalThis.requestAnimationFrame;
+  globalThis.requestAnimationFrame = () => 0;
+  globalThis.fetch = async (_url, options) => {
+    const payload = JSON.parse(options.body);
+    requests.push(payload);
+    const saved = {
+      ...response,
+      ...payload,
+      id: response.id,
+      status: payload.action === "cancel" ? "cancelled" : "confirmed",
+    };
+    return {
+      ok: true,
+      json: async () => ({ signupForm: { ...form, responses: [saved] }, response: saved }),
+    };
+  };
+  try {
+    const Viewer = load("src/components/smart-signup-form/SignupViewer.tsx", {
+      ...baseMocks,
+      react: {
+        ...React,
+        useState(initial) {
+          const i = cursor++;
+          if (!(i in state)) state[i] = typeof initial === "function" ? initial() : initial;
+          return [
+            state[i],
+            (value) => {
+              state[i] = typeof value === "function" ? value(state[i]) : value;
+            },
+          ];
+        },
+        useEffect() {},
+        useMemo: (fn) => fn(),
+        useRef: (value) => ({ current: value }),
+      },
+    }).default;
+    const render = () => {
+      cursor = 0;
+      return nodes(
+        Viewer({
+          eventId: "field-day",
+          initialForm: form,
+          viewerKind: "guest",
+          viewerId: "parent",
+        }),
+      );
+    };
+    const button = (text) =>
+      render().find((node) => node.type === "button" && nodeText(node) === text);
+    assert.ok(button("Cancel my signup"));
+    button("Edit my signup").props.onClick();
+    await render()
+      .find((node) => node.type === "form")
+      .props.onSubmit({ preventDefault() {} });
+    assert.equal(requests.length, 0, "invalid edits must not send a reservation");
+    const quantity = render().find(
+      (node) => node.type === "input" && node.props["aria-label"]?.startsWith("Quantity for"),
+    );
+    assert.equal(quantity.props["aria-invalid"], true);
+    quantity.props.onChange({ target: { value: "1" } });
+    await render()
+      .find((node) => node.type === "form")
+      .props.onSubmit({ preventDefault() {} });
+    assert.equal(requests[0].signupId, "parent-signup");
+    assert.equal(requests[0].slots[0].quantity, 1);
+    assert.equal(requests[0].name, "Test parent");
+    await button("Cancel my signup").props.onClick();
+    assert.deepEqual(requests[1], { action: "cancel", signupId: "parent-signup" });
+  } finally {
+    globalThis.fetch = oldFetch;
+    globalThis.requestAnimationFrame = oldFrame;
+  }
+});
+
+test("interactive preview submits locally and never calls a reservation API", async () => {
+  const hookState = [];
+  let cursor = 0;
+  let calls = 0;
+  const nativeFetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    calls++;
+    throw new Error("Preview must not send requests");
+  };
+  try {
+    const Viewer = load("src/components/smart-signup-form/SignupViewer.tsx", {
+      ...baseMocks,
+      react: {
+        ...React,
+        useState(initial) {
+          const i = cursor++;
+          if (!(i in hookState)) hookState[i] = typeof initial === "function" ? initial() : initial;
+          return [
+            hookState[i],
+            (value) => {
+              hookState[i] = typeof value === "function" ? value(hookState[i]) : value;
+            },
+          ];
+        },
+        useEffect() {},
+        useMemo: (fn) => fn(),
+        useRef: (value) => ({ current: value }),
+      },
+    }).default;
+    const form = createSignupThemeForm("harvest-table");
+    const render = () => {
+      cursor = 0;
+      return nodes(
+        Viewer({
+          eventId: "preview",
+          initialForm: form,
+          viewerKind: "guest",
+          interactivePreview: true,
+        }),
+      );
+    };
+    render()
+      .find((node) => node.type === "button" && nodeText(node) === "Select")
+      .props.onClick();
+    render()
+      .find((node) => node.type === "input" && node.props["aria-label"] === "Your name")
+      .props.onChange({ target: { value: "Preview guest" } });
+    render()
+      .find((node) => node.type === "input" && node.props["aria-label"] === "Email address")
+      .props.onChange({ target: { value: "preview@example.test" } });
+    await render()
+      .find((node) => node.type === "form")
+      .props.onSubmit({ preventDefault() {} });
+    assert.equal(calls, 0);
+    assert.ok(
+      hookState.includes(
+        "Test signup complete. Your selections would be confirmed. Nothing was submitted and no places were reserved.",
+      ),
+    );
+    assert.deepEqual(form.responses, []);
+  } finally {
+    globalThis.fetch = nativeFetch;
   }
 });
