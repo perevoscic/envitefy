@@ -22,6 +22,7 @@ import {
   normalizeSignupQuantity,
   remainingCapacityForSlot,
 } from "@/utils/signup";
+import SignupRecovery from "./SignupRecovery";
 import SignupSharing from "./SignupSharing";
 import themeStyles from "./signup-theme.module.css";
 
@@ -638,6 +639,9 @@ const SignupViewer: React.FC<Props> = ({
         </header>
       )}
       <EventGuestPlanningNotes value={form.guestPlanning} />
+      {!myResponse && viewerKind !== "owner" && !requiresInvitation && eventId !== "preview" && (
+        <SignupRecovery eventId={eventId} />
+      )}
       {viewerKind === "owner" && !hideOwnerTools && eventId !== "preview" && (
         <SignupSharing eventId={eventId} requiresInvitation={requiresInvitation} />
       )}
@@ -1082,7 +1086,9 @@ const SignupViewer: React.FC<Props> = ({
             <div className="text-xs text-[var(--signup-muted)]">
               {viewerId
                 ? "You can return to this page to view or update your signup."
-                : "No account needed. Return using this browser to view, edit or cancel your signup."}
+                : form.settings.collectEmail
+                  ? "No account needed. Use the private link in your confirmation email to edit or cancel on any device."
+                  : "No account needed. Return using this browser to edit or cancel, or ask the organizer for help."}
             </div>
             <div className="flex items-center gap-2">
               {editingResponse && (
@@ -1116,7 +1122,10 @@ const SignupViewer: React.FC<Props> = ({
       )}
 
       {myResponse && (
-        <div className="rounded-xl border border-[var(--signup-border)] bg-[var(--signup-page)] p-4">
+        <div
+          id="my-signup"
+          className="scroll-mt-6 rounded-xl border border-[var(--signup-border)] bg-[var(--signup-page)] p-4"
+        >
           <p className="text-sm font-semibold text-[var(--signup-text)]">
             Your status:{" "}
             <span

@@ -6,6 +6,7 @@ import test from "node:test";
 import ts from "typescript";
 
 const nativeRequire = createRequire(import.meta.url);
+process.env.SIGNUP_MANAGEMENT_SECRET = "signup-management-test-secret-only";
 function loader(mocks = {}) {
   const cache = new Map();
   function load(relative) {
@@ -37,6 +38,13 @@ const load = loader();
 const { allowsPublicSignup } = load("src/lib/signup-access.ts");
 const { createSignupThemeForm } = load("src/lib/signup-starters.ts");
 const { createSignupGuestToken, signupGuestId } = load("src/lib/signup-guest-cookie.ts");
+const {
+  createSignupManagementToken,
+  managedSignupResponseId,
+  normalizeSignupContact,
+  signupManagementCookieName,
+  SIGNUP_MANAGEMENT_MAX_AGE,
+} = load("src/lib/signup-management.ts");
 
 function setup() {
   const form = createSignupThemeForm("harvest-table");
@@ -54,7 +62,9 @@ function setup() {
   let shared = false;
   let draftDenied = false;
   const mail = [];
-  const route = loader({
+  const recoveryMail = [];
+  const limits = new Map();
+  const appLoad = loader({
     "next-auth": {
       getServerSession: async () =>
         userId ? { user: { email: `${userId}@example.com`, name: userId } } : null,
@@ -70,6 +80,14 @@ function setup() {
       getEventHistoryById: async () => row,
       isEventSharedWithUser: async () => shared,
       listShareRecipientUserIdsForEvent: async () => [],
+      consumeSignupRecoveryLimit: async (keys) => {
+        for (const { key, limit } of keys) {
+          assert.ok(!key.includes("@"));
+          limits.set(key, (limits.get(key) || 0) + 1);
+          if (limits.get(key) > limit) return false;
+        }
+        return true;
+      },
       mutateSignupEvent: async (_id, change) => {
         const next = change(row);
         row = { ...row, data: next.data };
@@ -80,9 +98,13 @@ function setup() {
       sendSignupConfirmationEmail: async (message) => {
         mail.push(message);
       },
+      sendSignupRecoveryEmail: async (message) => recoveryMail.push(message),
     },
     "@/lib/absolute-url": { absoluteUrl: async (value) => `https://example.com${value}` },
-  })("src/app/api/history/[id]/signup/route.ts");
+  });
+  const route = appLoad("src/app/api/history/[id]/signup/route.ts");
+  const recover = appLoad("src/app/api/history/[id]/signup/recover/route.ts");
+  const manage = appLoad("src/app/api/history/[id]/signup/manage/route.ts");
   const url = "https://example.com/api/history/event/signup";
   const context = { params: Promise.resolve({ id: "event" }) };
   const reservation = (extra = {}) => ({
@@ -96,6 +118,25 @@ function setup() {
   return {
     row: () => row,
     mail,
+    recoveryMail,
+    recover: (contact, origin = "https://example.com") =>
+      recover.POST(
+        new Request(`${url}/recover`, {
+          method: "POST",
+          headers: { origin, "Content-Type": "application/json" },
+          body: JSON.stringify({ contact }),
+        }),
+        context,
+      ),
+    manage: (token, origin = "https://example.com") =>
+      manage.POST(
+        new Request(`${url}/manage`, {
+          method: "POST",
+          headers: { origin, "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        }),
+        context,
+      ),
     reservation,
     signIn: (value) => {
       userId = value;
@@ -226,4 +267,227 @@ test("guest tokens are random and invalid cookies cannot become an identity", ()
   assert.equal(signupGuestId(first).length, 64);
   for (const value of [null, "", "guest", "one@example.com", signupGuestId(first)])
     assert.equal(signupGuestId(value), null);
+});
+
+const tokenFrom = (url) => new URLSearchParams(new URL(url).hash.slice(1)).get("token");
+const managementCookie = (response) =>
+  response.cookies.get(signupManagementCookieName("event"))?.value;
+
+test("confirmation links restore only the matching signup in a new browser and permit editing and cancellation", async () => {
+  const app = setup();
+  const original = await app.post(app.reservation());
+  const originalCookie = original.headers.get("set-cookie").split(";")[0];
+  const first = (await original.json()).response;
+  await app.post(app.reservation({ email: "two@example.com", name: "Guest Two" }));
+  const other = app.row().data.signupForm.responses[1];
+  assert.deepEqual((await (await app.get()).json()).signupForm.responses, []);
+  assert.ok(app.mail[0].manageUrl.includes("/manage#token="));
+  const token = tokenFrom(app.mail[0].manageUrl);
+  const restored = await app.manage(token);
+  assert.equal(restored.status, 200);
+  assert.match(restored.headers.get("set-cookie"), /HttpOnly/);
+  const cookie = `${signupManagementCookieName("event")}=${managementCookie(restored)}`;
+  const body = await (await app.get(cookie)).json();
+  assert.equal(body.myResponseId, first.id);
+  assert.deepEqual(
+    body.signupForm.responses.map((entry) => entry.id),
+    [first.id],
+  );
+  assert.ok(!JSON.stringify(body).includes(token));
+  assert.equal((await app.post({ action: "cancel", signupId: other.id }, cookie)).status, 403);
+  const changed = await app.post(
+    app.reservation({
+      signupId: first.id,
+      note: "Changed on another device",
+      email: "new@example.com",
+    }),
+    cookie,
+  );
+  assert.equal(changed.status, 200);
+  const renewedCookie = `${signupManagementCookieName("event")}=${managementCookie(changed)}`;
+  assert.equal((await (await app.get(renewedCookie)).json()).myResponseId, first.id);
+  assert.equal((await app.manage(token)).status, 400);
+  // Original browser stays authorized; a recovery must not invalidate its cookie.
+  assert.equal((await (await app.get(originalCookie)).json()).myResponseId, first.id);
+  assert.equal(
+    (await app.post({ action: "cancel", signupId: first.id }, renewedCookie)).status,
+    200,
+  );
+  assert.equal((await app.manage(tokenFrom(app.mail.at(-1).manageUrl))).status, 400);
+});
+
+test("recovery uses saved email, accepts normalized phone lookup, and keeps matches private", async () => {
+  const app = setup();
+  await app.post(app.reservation());
+  // An old signup needs no backfill or existing recovery token.
+  app.row().data.signupForm.responses[0].phone = "(850) 555-0123";
+  const byEmail = await (await app.recover("ONE@EXAMPLE.COM")).json();
+  assert.equal(app.recoveryMail[0].toEmail, "one@example.com");
+  await app.recover("+1 850 555 0123");
+  assert.equal(app.recoveryMail[1].toEmail, "one@example.com");
+  assert.equal(app.recoveryMail[1].links.length, 1);
+  assert.deepEqual(await (await app.recover("missing@example.com")).json(), byEmail);
+  assert.equal(app.recoveryMail.length, 2);
+  assert.ok(!JSON.stringify(byEmail).includes("one@example.com"));
+  assert.ok(!JSON.stringify(byEmail).includes("token="));
+  assert.equal((await app.recover("555")).status, 400);
+  assert.equal((await app.recover("one@example.com", "https://unrelated.example")).status, 403);
+  assert.equal(normalizeSignupContact("850-555-0123"), normalizeSignupContact("+1 850 555 0123"));
+});
+
+test("recovery groups multiple signups per email and limits repeated sends across email and phone", async () => {
+  const app = setup();
+  await app.post(app.reservation());
+  await app.post(app.reservation({ name: "Another family member" }));
+  app.row().data.signupForm.responses.forEach((response) => {
+    response.phone = "8505550123";
+  });
+  for (const contact of [
+    "one@example.com",
+    "8505550123",
+    "+1 8505550123",
+    "one@example.com",
+    "one@example.com",
+  ]) {
+    assert.equal((await app.recover(contact)).status, 200);
+  }
+  assert.equal(app.recoveryMail.length, 3);
+  assert.equal(app.recoveryMail[0].links.length, 2);
+  assert.notEqual(app.recoveryMail[0].links[0].url, app.recoveryMail[0].links[1].url);
+});
+
+test("management tokens reject tampering, expiry, wrong events, contact changes, cancellation and missing secrets", async () => {
+  const app = setup();
+  await app.post(app.reservation());
+  const form = app.row().data.signupForm;
+  const response = form.responses[0];
+  const now = Date.now();
+  const token = createSignupManagementToken("event", response, now);
+  assert.equal(managedSignupResponseId(token, "event", form, now), response.id);
+  assert.equal(managedSignupResponseId(token, "another-event", form, now), null);
+  assert.equal(
+    managedSignupResponseId(token, "event", form, now + SIGNUP_MANAGEMENT_MAX_AGE * 1000),
+    null,
+  );
+  assert.equal(managedSignupResponseId(`${token.slice(0, -1)}!`, "event", form, now), null);
+  const payload = JSON.parse(Buffer.from(token.split(".")[0], "base64url").toString());
+  payload[1] = "different-response";
+  assert.equal(
+    managedSignupResponseId(
+      `${Buffer.from(JSON.stringify(payload)).toString("base64url")}.${token.split(".")[1]}`,
+      "event",
+      form,
+    ),
+    null,
+  );
+  assert.equal((await app.manage(token, "https://unrelated.example")).status, 403);
+  response.email = "changed@example.com";
+  assert.equal(managedSignupResponseId(token, "event", form), null);
+  response.email = "one@example.com";
+  response.status = "cancelled";
+  assert.equal(managedSignupResponseId(token, "event", form), null);
+  response.status = "confirmed";
+  const secretNames = ["SIGNUP_MANAGEMENT_SECRET", "NEXTAUTH_SECRET", "AUTH_SECRET"];
+  const secrets = secretNames.map((name) => process.env[name]);
+  try {
+    for (const name of secretNames) delete process.env[name];
+    assert.equal(managedSignupResponseId(token, "event", form), null);
+    assert.throws(
+      () => createSignupManagementToken("event", response),
+      /requires an authentication secret/,
+    );
+  } finally {
+    secretNames.forEach((name, index) => {
+      if (secrets[index] !== undefined) process.env[name] = secrets[index];
+    });
+  }
+});
+
+test("private forms and drafts do not gain anonymous access through recovery links", async () => {
+  const app = setup();
+  await app.post(app.reservation());
+  const token = tokenFrom(app.mail[0].manageUrl);
+  app.row().data.visibility = "private";
+  assert.equal((await app.manage(token)).status, 400);
+  await app.recover("one@example.com");
+  assert.equal(app.recoveryMail.length, 0);
+  delete app.row().data.visibility;
+  app.setDraft();
+  assert.equal((await app.manage(token)).status, 400);
+  await app.recover("one@example.com");
+  assert.equal(app.recoveryMail.length, 0);
+});
+
+test("origin checks accept the public proxy hostname but reject unrelated or missing origins", () => {
+  const { hasSameSignupOrigin } = load("src/lib/signup-request-origin.ts");
+  const local = { host: "127.0.0.1:3000", origin: "http://127.0.0.1:3000" };
+  assert.equal(
+    hasSameSignupOrigin(new Request("http://localhost:3000/api", { headers: local })),
+    true,
+  );
+  const proxy = {
+    host: "internal:3000",
+    "x-forwarded-host": "envitefy.com",
+    "x-forwarded-proto": "https",
+    origin: "https://envitefy.com",
+  };
+  assert.equal(
+    hasSameSignupOrigin(new Request("http://internal:3000/api", { headers: proxy })),
+    true,
+  );
+  assert.equal(
+    hasSameSignupOrigin(
+      new Request("http://internal:3000/api", {
+        headers: { ...proxy, origin: "https://unrelated.example" },
+      }),
+    ),
+    false,
+  );
+  delete proxy.origin;
+  assert.equal(
+    hasSameSignupOrigin(new Request("http://internal:3000/api", { headers: proxy })),
+    false,
+  );
+});
+
+test("confirmation and recovery emails contain private management links in HTML and plain text", async () => {
+  const sent = [];
+  const previousFrom = process.env.SES_FROM_EMAIL_SIGNUP;
+  process.env.SES_FROM_EMAIL_SIGNUP = "no-reply@example.com";
+  const email = loader({
+    "@/lib/db": {},
+    "@aws-sdk/client-sesv2": {
+      SESv2Client: class {
+        async send(command) {
+          sent.push(command.input);
+          return { MessageId: "test-only" };
+        }
+      },
+      SendEmailCommand: class {
+        constructor(input) {
+          this.input = input;
+        }
+      },
+    },
+  })("src/lib/email.ts");
+  try {
+    const app = setup();
+    await app.post(app.reservation());
+    await email.sendSignupConfirmationEmail(app.mail[0]);
+    const content = sent[0].Content.Simple.Body;
+    assert.match(content.Html.Data, /Manage my signup/);
+    assert.ok(content.Html.Data.includes(app.mail[0].manageUrl));
+    assert.ok(content.Text.Data.includes(app.mail[0].manageUrl));
+    await email.sendSignupRecoveryEmail({
+      toEmail: "one@example.com",
+      eventTitle: "Breakfast",
+      links: [{ name: "Guest One", url: app.mail[0].manageUrl }],
+    });
+    assert.deepEqual(sent[1].Destination.ToAddresses, ["one@example.com"]);
+    assert.ok(sent[1].Content.Simple.Body.Html.Data.includes(app.mail[0].manageUrl));
+    assert.ok(sent[1].Content.Simple.Body.Text.Data.includes(app.mail[0].manageUrl));
+  } finally {
+    if (previousFrom === undefined) delete process.env.SES_FROM_EMAIL_SIGNUP;
+    else process.env.SES_FROM_EMAIL_SIGNUP = previousFrom;
+  }
 });

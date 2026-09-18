@@ -59,6 +59,31 @@ const baseMocks = {
 };
 const { createSignupThemeForm } = load("src/lib/signup-starters.ts", baseMocks);
 
+test("public guests can find their signup without exposing recovery inside owner tools or previews", () => {
+  const Viewer = load("src/components/smart-signup-form/SignupViewer.tsx", baseMocks).default;
+  const props = {
+    eventId: "school",
+    initialForm: createSignupThemeForm("harvest-table"),
+    viewerKind: "guest",
+  };
+  const guest = renderToStaticMarkup(React.createElement(Viewer, props));
+  assert.match(guest, /Already signed up\? Find my signup/);
+  assert.match(guest, /Email or phone number/);
+  assert.match(guest, /Email my link/);
+  assert.doesNotMatch(
+    renderToStaticMarkup(React.createElement(Viewer, { ...props, viewerKind: "owner" })),
+    /Already signed up/,
+  );
+  assert.doesNotMatch(
+    renderToStaticMarkup(React.createElement(Viewer, { ...props, eventId: "preview" })),
+    /Already signed up/,
+  );
+  assert.doesNotMatch(
+    renderToStaticMarkup(React.createElement(Viewer, { ...props, requiresInvitation: true })),
+    /Already signed up/,
+  );
+});
+
 test("device preview hides signup editing tools while preserving the sign-up board", () => {
   const Viewer = load("src/components/smart-signup-form/SignupViewer.tsx", baseMocks).default;
   const form = createSignupThemeForm("harvest-table");

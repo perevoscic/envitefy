@@ -623,6 +623,7 @@ export async function sendSignupConfirmationEmail(params: {
   userName?: string | null;
   eventTitle: string;
   eventUrl?: string | null;
+  manageUrl?: string | null;
   form: SignupForm;
   response: SignupResponse;
 }): Promise<void> {
@@ -728,14 +729,15 @@ export async function sendSignupConfirmationEmail(params: {
       ${slotSummaries.length ? `<p style="margin:8px 0 0 0; font-size:14px;"><strong>Selections:</strong><br/> ${slotSummaries.map((s) => `• ${s}`).join("<br/>")}</p>` : ""}
     </div>
     ${headerPreview}
+    ${params.manageUrl ? '<p style="font-size:14px;line-height:1.6">Use your private link to edit or cancel your signup from any browser or device. No account needed. Keep this link private; it expires in 30 days. You can request another from the signup form.</p>' : ""}
   `;
 
   const html = createEmailTemplate({
     preheader,
     title: `${status} for ${params.eventTitle}`,
     body,
-    buttonText: params.eventUrl ? "View Sign-up" : undefined,
-    buttonUrl: params.eventUrl || undefined,
+    buttonText: params.manageUrl ? "Manage my signup" : params.eventUrl ? "View Sign-up" : undefined,
+    buttonUrl: params.manageUrl || params.eventUrl || undefined,
   });
 
   const text = [
@@ -745,7 +747,8 @@ export async function sendSignupConfirmationEmail(params: {
     slotSummaries.length
       ? `Selections:\n${slotSummaries.map((s) => `- ${s}`).join("\n")}`
       : undefined,
-    params.eventUrl ? `Open: ${params.eventUrl}` : undefined,
+    params.manageUrl ? `Manage my signup: ${params.manageUrl}\nUse this private link on any device. No account needed. It expires in 30 days; request another from the signup form.` : undefined,
+    params.eventUrl ? `Open signup form: ${params.eventUrl}` : undefined,
   ]
     .filter(Boolean)
     .join("\n");
@@ -793,6 +796,34 @@ export async function sendSignupConfirmationEmail(params: {
     });
     throw err;
   }
+}
+
+export async function sendSignupRecoveryEmail(params: {
+  toEmail: string;
+  eventTitle: string;
+  links: { name: string; url: string }[];
+}): Promise<void> {
+  const from = process.env.SES_FROM_EMAIL_SIGNUP || process.env.SES_FROM_EMAIL_NO_REPLY;
+  assertEnv("SES_FROM_EMAIL_SIGNUP or SES_FROM_EMAIL_NO_REPLY", from);
+  const explanation = "Use your private link to view, edit or cancel your signup from any browser or device. No account needed. These links expire in 30 days. If you did not request this email, you can ignore it.";
+  const html = createEmailTemplate({
+    title: `Manage your signup: ${params.eventTitle}`,
+    preheader: "Your private signup management link",
+    body: `<p>${escapeHtml(explanation)}</p>${params.links.length > 1 ? params.links.map((link) => `<p><strong>${escapeHtml(link.name)}</strong><br/><a href="${escapeHtml(link.url)}">Manage my signup</a></p>`).join("") : ""}<p>Keep this email private. Anyone with your link can manage that signup.</p>`,
+    buttonText: params.links.length === 1 ? "Manage my signup" : undefined,
+    buttonUrl: params.links.length === 1 ? params.links[0].url : undefined,
+  });
+  await getSes().send(new SendEmailCommand({
+    FromEmailAddress: from,
+    Destination: { ToAddresses: [params.toEmail] },
+    Content: { Simple: {
+      Subject: { Data: `Manage your signup: ${params.eventTitle}` },
+      Body: {
+        Text: { Data: `${explanation}\n\n${params.links.map((link) => `${link.name}: ${link.url}`).join("\n\n")}\n\nKeep this email private.` },
+        Html: { Data: html },
+      },
+    } },
+  }));
 }
 
 // escapeHtml is now imported from email-template.ts

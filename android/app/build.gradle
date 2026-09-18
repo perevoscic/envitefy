@@ -2,19 +2,72 @@ plugins {
     id "com.android.application"
 }
 
+// Local values stay in an ignored file; CI can supply the same values via env.
+def signingProperties = new Properties()
+def signingPropertiesFile = rootProject.file("signing.properties")
+if (signingPropertiesFile.exists()) {
+    signingPropertiesFile.withInputStream { signingProperties.load(it) }
+}
+def signingValue = { String property, String environment ->
+    providers.environmentVariable(environment).orNull ?: signingProperties.getProperty(property)
+}
+def releaseStoreFile = signingValue("storeFile", "ENVITEFY_ANDROID_KEYSTORE")
+def releaseStorePassword = signingValue("storePassword", "ENVITEFY_ANDROID_STORE_PASSWORD")
+def releaseKeyAlias = signingValue("keyAlias", "ENVITEFY_ANDROID_KEY_ALIAS")
+def releaseKeyPassword = signingValue("keyPassword", "ENVITEFY_ANDROID_KEY_PASSWORD")
+def hasReleaseSigning = [releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword].every { it }
+def releaseVersionCode = providers.gradleProperty("envitefyVersionCode").getOrElse("1").toInteger()
+if (releaseVersionCode < 1) {
+    throw new GradleException("envitefyVersionCode must be a positive integer.")
+}
+
 android {
     namespace "com.envitefy.app"
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.envitefy.app"
         minSdk 23
-        targetSdk 35
-        versionCode 1
-        versionName "1.0.0"
+        targetSdk 36
+        versionCode releaseVersionCode
+        versionName providers.gradleProperty("envitefyVersionName").getOrElse("1.0.0")
+    }
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                storeFile rootProject.file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            debuggable false
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+        }
     }
 }
 
+def validateEnvitefyReleaseSigning = tasks.register("validateEnvitefyReleaseSigning") {
+    doLast {
+        if (!hasReleaseSigning) {
+            throw new GradleException("Release signing is required. Configure android/signing.properties or ENVITEFY_ANDROID_* variables. See android/README.md. Debug builds do not need an upload key.")
+        }
+        if (!rootProject.file(releaseStoreFile).isFile()) {
+            throw new GradleException("The configured Android upload keystore does not exist.")
+        }
+    }
+}
+tasks.matching { it.name == "preReleaseBuild" }.configureEach {
+    dependsOn validateEnvitefyReleaseSigning
+}
+
 dependencies {
-    implementation "com.google.androidbrowserhelper:androidbrowserhelper:2.6.2"
+    implementation "com.google.androidbrowserhelper:androidbrowserhelper:2.7.3"
 }

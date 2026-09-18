@@ -20,13 +20,26 @@ import {
   signupGuestCookieName,
   signupGuestId,
 } from "@/lib/signup-guest-cookie";
-import { ownSignupResponseId, withoutSignupGuestId } from "@/lib/signup-identity";
+import {
+  ownSignupResponseId,
+  type SignupIdentity,
+  withoutSignupGuestId,
+} from "@/lib/signup-identity";
+import {
+  createSignupManagementToken,
+  managedSignupResponseId,
+  readSignupManagementToken,
+  SIGNUP_MANAGEMENT_MAX_AGE,
+  signupManagementCookieName,
+  signupManagementUrl,
+} from "@/lib/signup-management";
 import {
   mutateSignupReservation,
   readStoredSignup,
   SignupMutationError,
 } from "@/lib/signup-mutations";
 import { projectSignupForm } from "@/lib/signup-projection";
+import { hasSameSignupOrigin } from "@/lib/signup-request-origin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,7 +61,11 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
         { status: 403 },
       );
     const form = readStoredSignup(row.data?.signupForm);
-    const identity = { userId, guestId: signupGuestId(readSignupGuestToken(req, id)) };
+    const identity = {
+      userId,
+      guestId: signupGuestId(readSignupGuestToken(req, id)),
+      managedResponseId: managedSignupResponseId(readSignupManagementToken(req, id), id, form),
+    };
     return NextResponse.json(
       {
         signupForm: projectSignupForm(form, { isOwner, ...identity }),
@@ -65,7 +82,7 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
   try {
     const { id } = await context.params;
     const origin = req.headers.get("origin");
-    if (origin && origin !== new URL(req.url).origin)
+    if (origin && !hasSameSignupOrigin(req))
       return NextResponse.json({ error: "Open the signup page to continue." }, { status: 403 });
     const denied = await guardDraftRequest(id, false);
     if (denied) return denied;
@@ -75,7 +92,7 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
     const body: unknown = await req.json().catch(() => null);
     const currentGuestToken = readSignupGuestToken(req, id);
     const guestToken = currentGuestToken || (!userId ? createSignupGuestToken() : null);
-    const identity = { userId, guestId: signupGuestId(guestToken) };
+    const identity: SignupIdentity = { userId, guestId: signupGuestId(guestToken) };
     const shared = userId ? await isEventSharedWithUser(id, userId) : false;
     const saved = await mutateSignupEvent(id, (row) => {
       if (isEventDraft(row.data)) throw new SignupMutationError("Not found", 404);
@@ -86,6 +103,11 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
           403,
         );
       const form = readStoredSignup(row.data?.signupForm);
+      identity.managedResponseId = managedSignupResponseId(
+        readSignupManagementToken(req, id),
+        id,
+        form,
+      );
       const change = mutateSignupReservation(form, body, {
         ...identity,
         email,
@@ -115,6 +137,9 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
           userName: response.name,
           eventTitle: form.title || saved.row.title || "Signup",
           eventUrl: await absoluteUrl(`/smart-signup-form/${id}`),
+          manageUrl: allowsPublicSignup(saved.row.data)
+            ? signupManagementUrl(id, response)
+            : undefined,
           form,
           response,
         });
@@ -143,6 +168,20 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
         path: "/",
         maxAge: 60 * 60 * 24 * 365,
       });
+    }
+    if (identity.managedResponseId && response?.id === identity.managedResponseId) {
+      // Keep this verified browser authorized if the participant changes their contact details.
+      result.cookies.set(
+        signupManagementCookieName(id),
+        createSignupManagementToken(id, response),
+        {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          maxAge: SIGNUP_MANAGEMENT_MAX_AGE,
+        },
+      );
     }
     return result;
   } catch (error) {

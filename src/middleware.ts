@@ -82,7 +82,7 @@ const isEventSharePath = (pathname: string) => {
 
 const isSmartSignupSharePath = (pathname: string) => {
   const normalized = stripTrailingSlash(pathname);
-  return /^\/smart-signup-form\/[^/]+$/.test(normalized);
+  return /^\/smart-signup-form\/[^/]+(?:\/manage)?$/.test(normalized);
 };
 
 const isStudioCardSharePath = (pathname: string) => {
@@ -251,6 +251,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/media/") ||
     pathname.startsWith("/icons/") ||
     pathname.startsWith("/videos/") ||
+    pathname === "/.well-known/assetlinks.json" ||
     pathname === "/manifest.webmanifest" ||
     pathname === "/robots.txt" ||
     pathname === "/llms.txt" ||

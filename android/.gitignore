@@ -1,0 +1,11 @@
+# Machine-local build files and credentials. Never commit signing material.
+.gradle*/
+build/
+app/build/
+local.properties
+signing.properties
+.signing/
+*.jks
+*.keystore
+*.p12
+

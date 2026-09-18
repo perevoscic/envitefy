@@ -25,7 +25,7 @@ const strings = readFileSync(
 );
 
 test("android TWA sets white top status bar and purple bottom navigation bar", () => {
-  assert.match(buildGradle, /com\.google\.androidbrowserhelper:androidbrowserhelper:2\.6\.2/);
+  assert.match(buildGradle, /com\.google\.androidbrowserhelper:androidbrowserhelper:2\.7\.3/);
   assert.match(manifest, /com\.google\.androidbrowserhelper\.trusted\.LauncherActivity/);
   assert.match(manifest, /android:name="asset_statements"/);
   assert.match(strings, /delegate_permission\/common\.handle_all_urls/);

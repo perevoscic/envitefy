@@ -152,7 +152,7 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
   const isEventShare = pathname && isEventSharePath(pathname);
   const isStudioCardShare = pathname && isStudioCardSharePath(pathname);
   const isSignupShare =
-    normalizedPathname && /^\/smart-signup-form\/[^/]+$/.test(normalizedPathname);
+    normalizedPathname && /^\/smart-signup-form\/[^/]+(?:\/manage)?$/.test(normalizedPathname);
   const isLandingShowcase = pathname && isLandingShowcasePath(pathname);
   const hasNoSession = serverSession === null || (!serverSession && status === "unauthenticated");
 

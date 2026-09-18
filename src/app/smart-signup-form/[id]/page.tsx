@@ -31,6 +31,7 @@ import { toPublicShareMediaUrl } from "@/lib/share-image";
 import { allowsPublicSignup } from "@/lib/signup-access";
 import { signupGuestCookieName, signupGuestId } from "@/lib/signup-guest-cookie";
 import { ownSignupResponseId } from "@/lib/signup-identity";
+import { managedSignupResponseId, signupManagementCookieName } from "@/lib/signup-management";
 import { projectSignupForm } from "@/lib/signup-projection";
 import { isIndexablePublicSmartSignupData } from "@/lib/smart-signup-indexing";
 import type { SignupForm } from "@/types/signup";
@@ -398,8 +399,13 @@ export default async function SignupPage({
     );
   }
 
-  const guestId = signupGuestId((await cookies()).get(signupGuestCookieName(row.id))?.value);
-  const identity = { userId, guestId };
+  const signupCookies = await cookies();
+  const guestId = signupGuestId(signupCookies.get(signupGuestCookieName(row.id))?.value);
+  const identity = {
+    userId,
+    guestId,
+    managedResponseId: managedSignupResponseId(signupCookies.get(signupManagementCookieName(row.id))?.value, row.id, signupForm),
+  };
   const visibleForm = projectSignupForm(signupForm, { isOwner, ...identity });
   if (ownerPreviewMode && !ownerPreviewEmbedded) {
     return (

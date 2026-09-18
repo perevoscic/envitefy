@@ -5349,6 +5349,40 @@ function isTableMissingError(err: unknown): boolean {
 
 // Smart sign-up forms (normalized storage)
 /** Serialize signup definitions and reservations on the event row, then commit both stores. */
+/** Shared across app instances; stores only keyed hashes, never email addresses or IPs. */
+export async function consumeSignupRecoveryLimit(keys: { key: string; limit: number }[]): Promise<boolean> {
+  await ensureOnce("signup_recovery_limits", async () => {
+    await query(`create table if not exists signup_recovery_limits (
+      key text primary key,
+      attempts integer not null,
+      resets_at timestamptz not null
+    )`);
+    await query("create index if not exists signup_recovery_limits_expiry on signup_recovery_limits (resets_at)");
+  });
+  return withClient(async (client) => {
+    await client.query("begin");
+    try {
+      await client.query("delete from signup_recovery_limits where resets_at < now()");
+      for (const { key, limit } of [...keys].sort((a, b) => a.key.localeCompare(b.key))) {
+        const result = await client.query<{ attempts: number }>(
+          `insert into signup_recovery_limits (key, attempts, resets_at) values ($1, 1, now() + interval '15 minutes')
+           on conflict (key) do update set attempts = signup_recovery_limits.attempts + 1
+           returning attempts`, [key],
+        );
+        if (result.rows[0].attempts > limit) {
+          await client.query("commit");
+          return false;
+        }
+      }
+      await client.query("commit");
+      return true;
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    }
+  });
+}
+
 export async function mutateSignupEvent<T>(
   eventId: string,
   mutate: (row: EventHistoryRow) => { data: Record<string, any>; result: T },
