@@ -1,13 +1,22 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Check, Copy } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useId, useState } from "react";
 
 type Recipient = { id: string; name: string; email: string; status: "pending" | "accepted" };
 const actionClass =
   "min-h-11 rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-4 py-2 text-sm font-semibold disabled:opacity-50";
 
-export default function SignupSharing({ eventId }: { eventId: string }) {
+export default function SignupSharing({
+  eventId,
+  requiresInvitation = false,
+}: {
+  eventId: string;
+  requiresInvitation?: boolean;
+}) {
+  const linkId = useId();
   const [link, setLink] = useState("");
+  const [copied, setCopied] = useState(false);
   const [email, setEmail] = useState("");
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [message, setMessage] = useState("");
@@ -48,44 +57,63 @@ export default function SignupSharing({ eventId }: { eventId: string }) {
     >
       <h3 className="font-semibold">Share your signup</h3>
       <p className="text-sm">
-        Signup access is invitation-only. Participants need an Envitefy account, an invitation to
-        that account, and must accept before signing up. A copied link does not grant access.
+        {requiresInvitation
+          ? "This form is limited to invited accounts. Participants must accept their invitation before signing up."
+          : "Anyone with this link can sign up. No Envitefy account or invitation is needed."}
       </p>
-      <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          className={actionClass}
-          disabled={!link}
-          onClick={async () => {
-            try {
-              await navigator.clipboard.writeText(link);
-              setMessage("Signup link copied. Share it with invited participants.");
-            } catch {
-              setMessage("Copy the signup link from the field below.");
-            }
-          }}
-        >
-          Copy signup link
-        </button>
-        <button
-          type="button"
-          className={actionClass}
-          aria-expanded={open}
-          onClick={() => setOpen(!open)}
-        >
-          Invite people &amp; check access
-        </button>
+      <div className="space-y-1">
+        <label htmlFor={linkId} className="block text-sm">
+          Signup link
+        </label>
+        <div className="relative">
+          <input
+            id={linkId}
+            readOnly
+            value={link}
+            onFocus={(e) => e.target.select()}
+            className="min-h-11 w-full min-w-0 rounded-lg border border-[var(--signup-border)] bg-[var(--signup-page)] pl-3 pr-14"
+          />
+          <button
+            type="button"
+            className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-r-lg text-[var(--signup-text)] transition hover:bg-[var(--signup-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
+            aria-label={copied ? "Signup link copied" : "Copy signup link"}
+            title={copied ? "Copied" : "Copy signup link"}
+            disabled={!link}
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(link);
+                setCopied(true);
+                setMessage("Signup link copied.");
+              } catch {
+                setCopied(false);
+                setMessage("Select and copy the signup link from the field.");
+              }
+            }}
+          >
+            {copied ? (
+              <Check size={18} aria-hidden="true" />
+            ) : (
+              <Copy size={18} aria-hidden="true" />
+            )}
+          </button>
+        </div>
       </div>
-      <label className="block text-sm">
-        Signup link
-        <input
-          readOnly
-          value={link}
-          onFocus={(e) => e.target.select()}
-          className="mt-1 min-h-11 w-full min-w-0 rounded-lg border border-[var(--signup-border)] bg-[var(--signup-page)] px-3"
-        />
-      </label>
-      {open && (
+      <div className="flex flex-wrap gap-3">
+        <a href="#signup-host-dashboard" className={`${actionClass} inline-flex items-center`}>
+          View host dashboard
+        </a>
+        {requiresInvitation && (
+          <button
+            type="button"
+            className={actionClass}
+            aria-expanded={open}
+            onClick={() => setOpen(!open)}
+          >
+            Invite people &amp; check access
+          </button>
+        )}
+      </div>
+      {requiresInvitation && open && (
         <div className="space-y-3 border-t border-[var(--signup-border)] pt-4">
           <form
             className="flex flex-wrap gap-3"

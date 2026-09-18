@@ -228,14 +228,19 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
                     </p>
                   </div>
                 )}
-                {panel === "design" && (
-                  <div>
-                    <p className={composer.panelNote}>
-                      Your selected theme is already applied. These changes are optional.
-                    </p>
-                    <SignupDesignPanel form={form} onChange={onChange} />
-                  </div>
-                )}
+                <div hidden={panel !== "design"}>
+                  <p className={composer.panelNote}>
+                    Create a custom look or fine-tune your selected design.
+                  </p>
+                  <SignupDesignPanel
+                    form={form}
+                    onChange={onChange}
+                    onUseTheme={() => {
+                      setPanel("add");
+                      setMobileToolsOpen(false);
+                    }}
+                  />
+                </div>
                 {panel === "settings" && <SignupSettingsEditor form={form} onChange={onChange} />}
               </div>
             </aside>

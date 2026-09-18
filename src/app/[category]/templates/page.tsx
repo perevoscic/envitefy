@@ -3,7 +3,10 @@ import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery"
 import TemplateGalleryLayout from "@/components/templates/TemplateGalleryLayout";
 import { getTemplateCategory } from "@/lib/template-categories";
 
-type Props = { params: Promise<{ category: string }> };
+type Props = {
+  params: Promise<{ category: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
 export async function generateMetadata({ params }: Props) {
   const category = getTemplateCategory((await params).category);
   if (!category) return {};
@@ -13,14 +16,19 @@ export async function generateMetadata({ params }: Props) {
     alternates: { canonical: `/${category.slug}/templates` },
   };
 }
-export default async function TemplatesPage({ params }: Props) {
+export default async function TemplatesPage({ params, searchParams }: Props) {
   const { category: slug } = await params;
   const category = getTemplateCategory(slug);
   if (!category) notFound();
   if (slug !== category.slug) redirect(`/${category.slug}/templates`);
+  const query = await searchParams;
   return (
     <TemplateGalleryLayout category={category.slug}>
-      <PublicTemplateGallery category={category.slug} />
+      <PublicTemplateGallery
+        category={category.slug}
+        customThemeRequested={query?.customTheme === "1"}
+        customThemeExpired={query?.themeExpired === "1"}
+      />
     </TemplateGalleryLayout>
   );
 }

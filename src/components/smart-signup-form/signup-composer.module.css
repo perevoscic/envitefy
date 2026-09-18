@@ -132,6 +132,24 @@
 .content {
   padding: clamp(0.75rem, 2vw, 1.5rem);
 }
+.content[data-custom-theme="true"] {
+  --editor-paper: var(--signup-surface);
+  --editor-ink: var(--signup-text);
+  --editor-muted: var(--signup-muted);
+  --editor-line: var(--signup-border);
+  --editor-accent: var(--signup-accent);
+  --editor-soft: var(--signup-soft);
+}
+.content[data-signup-board="outline"] .section { border-radius: 1.5rem; }
+.content[data-signup-board="outline"] .slot { border-radius: .75rem; background: transparent; }
+.content[data-signup-board="tickets"] .section { background: var(--signup-soft); border: 0; }
+.content[data-signup-board="tickets"] .slot { border: 1px dashed var(--signup-accent); border-left: 5px solid var(--signup-accent); background: var(--signup-surface); }
+.content[data-signup-board="tiles"] .slot { border-radius: 0; border-top: 5px solid var(--signup-accent); }
+.content[data-signup-board="tiles"] .slot:nth-child(even) { background: var(--signup-soft); }
+.content[data-signup-board="menu"] .section { border: 1px solid var(--signup-accent); outline: 1px solid var(--signup-accent); outline-offset: -6px; }
+.content[data-signup-board="menu"] .slot { border: 0; border-bottom: 1px dotted var(--signup-accent); border-radius: 0; background: transparent; }
+.content[data-signup-board="ledger"] .section { border-radius: 0; }
+.content[data-signup-board="ledger"] .slot { border: 0; border-bottom: 1px solid var(--signup-border); border-radius: 0; background: transparent; }
 .headingOptions {
   margin-block: 0.5rem 1rem;
   padding: 0.75rem;

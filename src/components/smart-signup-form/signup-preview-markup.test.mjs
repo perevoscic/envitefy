@@ -46,8 +46,12 @@ const baseMocks = {
     Upload: (props) => React.createElement("svg", props),
     ImagePlus: (props) => React.createElement("svg", props),
     RotateCcw: (props) => React.createElement("svg", props),
+    Sparkles: (props) => React.createElement("svg", props),
+    Undo2: (props) => React.createElement("svg", props),
   },
   "next/navigation": { useRouter: () => ({}) },
+  "next-auth/react": { useSession: () => ({ status: "authenticated", update: async () => {} }) },
+  "@/components/auth/AuthModal": { __esModule: true, default: () => null },
   "@/components/EventDeleteModal": { __esModule: true, default: () => null },
   "@/components/templates/TemplateEditorContext": { useTemplateEditor: () => null },
   "@/utils/media-upload-client": { validateClientUploadFile: () => null },
@@ -309,8 +313,43 @@ test("composer replaces the four-step wizard and keeps guest preview separate fr
       assert.match(html, /Form tools/);
       assert.match(html, /Registration places/);
       assert.match(html, /Change hero image/);
-      assert.doesNotMatch(html, /Color palette/);
+      // Keep the optional panel mounted so switching tools retains a custom brief and Undo.
+      assert.match(html, /<div hidden="">[\s\S]*Color palette/);
     }
+  }
+});
+
+test("custom recipes render the saved composition and board without exposing editing controls to guests", () => {
+  const { applySignupCustomTheme } = load("src/lib/signup-custom-theme.ts", baseMocks);
+  const Page = load("src/components/smart-signup-form/SignupPageRenderer.tsx", baseMocks).default;
+  for (const board of ["ledger", "menu", "outline", "tiles", "tickets"]) {
+    const form = applySignupCustomTheme(createSignupThemeForm("harvest-table"), {
+      version: 1,
+      name: "Custom woodland",
+      description: "Sage paper and watercolor woodland.",
+      composition: "botanical",
+      board,
+      motif: "sprig",
+      reverse: false,
+      fontPair: "friendly",
+      colors: {
+        page: "#F3F2EE",
+        surface: "#FFFFFF",
+        soft: "#E8ECF2",
+        ink: "#222D40",
+        accent: "#354B72",
+        secondary: "#91A889",
+      },
+    });
+    const html = renderToStaticMarkup(React.createElement(Page, { form }));
+    assert.match(html, /data-signup-design="custom"/);
+    assert.match(html, /data-composition="botanical"/);
+    assert.ok(html.includes(`data-signup-board="${board}"`));
+    assert.match(html, /--signup-secondary:#91A889/);
+    assert.doesNotMatch(
+      html,
+      /Create with Envitefy|Undo design change|Edit event title|Describe your design/,
+    );
   }
 });
 
@@ -829,4 +868,409 @@ test("interactive preview submits locally and never calls a reservation API", as
   } finally {
     globalThis.fetch = nativeFetch;
   }
+});
+
+function themeDialogHarness(form, callbacks = {}) {
+  const state = [];
+  let cursor = 0;
+  const hooks = {
+    ...React,
+    useId: () => "theme-test",
+    useMemo: (fn) => fn(),
+    useEffect: () => {},
+    useState(initial) {
+      const i = cursor++;
+      if (!(i in state)) state[i] = typeof initial === "function" ? initial() : initial;
+      return [
+        state[i],
+        (value) => {
+          state[i] = typeof value === "function" ? value(state[i]) : value;
+        },
+      ];
+    },
+    useRef(initial) {
+      const i = cursor++;
+      if (!(i in state)) state[i] = { current: initial };
+      return state[i];
+    },
+  };
+  const Dialog = load("src/components/smart-signup-form/SignupCustomThemeDialog.tsx", {
+    ...baseMocks,
+    react: hooks,
+  }).default;
+  const render = () => {
+    cursor = 0;
+    return nodes(Dialog({ form, onUseTheme() {}, onClose() {}, ...callbacks }));
+  };
+  const button = (text) =>
+    render().find((node) => node.type === "button" && nodeText(node).includes(text));
+  return {
+    render,
+    button,
+    describe(text) {
+      render()
+        .find((node) => node.type === "textarea")
+        .props.onChange({ target: { value: text } });
+    },
+  };
+}
+
+const dialogRecipe = {
+  version: 1,
+  name: "Woodland",
+  description: "Soft woodland colors",
+  composition: "botanical",
+  board: "outline",
+  motif: "sprig",
+  reverse: false,
+  fontPair: "friendly",
+  colors: {
+    page: "#F3F2EE",
+    surface: "#FFFFFF",
+    soft: "#E8ECF2",
+    ink: "#222D40",
+    accent: "#354B72",
+    secondary: "#91A889",
+  },
+};
+
+test("theme dialog isolates generated options, supports refinement and only accepts on Use this theme", async (t) => {
+  const form = createSignupThemeForm("harvest-table");
+  const original = structuredClone(form);
+  const accepted = [];
+  let closed = 0;
+  const requests = [];
+  t.mock.method(globalThis, "fetch", async (_url, options) => {
+    requests.push(JSON.parse(options.body));
+    return Response.json({
+      theme: { ...dialogRecipe, name: requests.length === 1 ? "Woodland" : "Refined woodland" },
+      details: { title: "Must not replace the existing event" },
+    });
+  });
+  const dialog = themeDialogHarness(form, {
+    onUseTheme: (value) => accepted.push(value),
+    onClose: () => closed++,
+  });
+  assert.equal(dialog.button("Use this theme"), undefined);
+  dialog.describe("Woodland with sage green");
+  await dialog.button("Create with Envitefy").props.onClick();
+  assert.deepEqual(form, original);
+  assert.equal(accepted.length, 0);
+  assert.equal(requests[0].generateArtwork, false);
+  assert.equal(requests[0].includeContent, false);
+  assert.ok(
+    dialog.render().some((node) => node.props.form?.appearance?.customTheme?.name === "Woodland"),
+  );
+  dialog.button("Describe a change").props.onClick();
+  dialog.describe("Make the colors cooler");
+  await dialog.button("Update theme").props.onClick();
+  assert.equal(requests[1].currentTheme.name, "Woodland");
+  assert.deepEqual(form, original);
+  dialog.button("Previous design").props.onClick();
+  dialog.button("Use this theme").props.onClick();
+  assert.equal(accepted.length, 1);
+  assert.equal(accepted[0].appearance.customTheme.name, "Woodland");
+  assert.equal(accepted[0].title, undefined);
+  assert.equal(accepted[0].details, undefined);
+  dialog
+    .render()
+    .find((node) => node.props["aria-label"] === "Close custom theme dialog")
+    .props.onClick();
+  assert.equal(closed, 1);
+  assert.deepEqual(form, original);
+});
+
+test("cancel aborts generation and a late response cannot apply a theme", async (t) => {
+  const form = createSignupThemeForm("harvest-table");
+  let respond;
+  let signal;
+  let accepted = false;
+  t.mock.method(globalThis, "fetch", (_url, options) => {
+    signal = options.signal;
+    return new Promise((resolve) => {
+      respond = resolve;
+    });
+  });
+  const dialog = themeDialogHarness(form, {
+    onUseTheme: () => {
+      accepted = true;
+    },
+  });
+  dialog.describe("Quiet woodland");
+  const generation = dialog.button("Create with Envitefy").props.onClick();
+  assert.ok(dialog.button("Cancel generation"));
+  dialog.button("Cancel generation").props.onClick();
+  assert.equal(signal.aborted, true);
+  respond(Response.json({ theme: dialogRecipe }));
+  await generation;
+  assert.equal(accepted, false);
+  assert.equal(dialog.button("Use this theme"), undefined);
+});
+
+test("new theme previews use display placeholders without putting demo content into the accepted form", async (t) => {
+  const { createEmptySignupTemplateForm } = load("src/lib/signup-starters.ts", baseMocks);
+  const form = createEmptySignupTemplateForm();
+  let accepted;
+  t.mock.method(globalThis, "fetch", async (_url, options) => {
+    assert.equal(JSON.parse(options.body).generateArtwork, true);
+    return Response.json({
+      theme: dialogRecipe,
+      artwork: { dataUrl: "data:image/webp;base64,AAAA" },
+    });
+  });
+  const dialog = themeDialogHarness(form, {
+    isNew: true,
+    onUseTheme: (value) => {
+      accepted = value;
+    },
+  });
+  dialog.describe("Woodland volunteer signup");
+  await dialog.button("Create with Envitefy").props.onClick();
+  const page = dialog.render().find((node) => node.props.form?.appearance?.customTheme);
+  assert.equal(page.props.form.title, "Your event title");
+  dialog.button("Use this theme").props.onClick();
+  const { restoreSignupTheme } = load("src/lib/signup-custom-theme.ts", baseMocks);
+  const next = restoreSignupTheme(form, accepted);
+  assert.equal(next.title, "");
+  assert.deepEqual(next.sections, []);
+  assert.deepEqual(next.responses, []);
+  assert.equal(next.start, null);
+});
+
+test("new signup briefs survive preview, refinement, undo and acceptance without fabricated content", async (t) => {
+  const { createEmptySignupTemplateForm } = load("src/lib/signup-starters.ts", baseMocks);
+  const { applySignupThemeDetails } = load("src/lib/signup-theme-brief.ts", baseMocks);
+  const { restoreSignupTheme } = load("src/lib/signup-custom-theme.ts", baseMocks);
+  const form = createEmptySignupTemplateForm();
+  const original = structuredClone(form);
+  const details = {
+    title: "See you at the Pole - Breakfast",
+    description: "Bring donuts or muffins. We are a tree nut / peanut free school.",
+    organizerName: "Kayra Ayala",
+    start: "2026-09-23T07:00",
+    timezone: "America/Chicago",
+    venue: "Upper School Campus",
+    location: "10745 US Hwy 98 W., Miramar Beach, FL 32550",
+    sections: [
+      {
+        title: "Breakfast",
+        description: null,
+        purpose: "items",
+        slots: [
+          { label: "Donuts", capacity: null, notes: "Tree nut / peanut free" },
+          { label: "Muffins", capacity: null, notes: "Tree nut / peanut free" },
+        ],
+      },
+    ],
+  };
+  const requests = [];
+  let accepted;
+  t.mock.method(globalThis, "fetch", async (_url, options) => {
+    requests.push(JSON.parse(options.body));
+    return Response.json({
+      theme: { ...dialogRecipe, name: requests.length === 1 ? "Original" : "Refined" },
+      details: requests.length === 1 ? details : { title: "Breakfast at the Pole" },
+      ...(requests.length === 1
+        ? {
+            artwork: { dataUrl: "data:image/webp;base64,AAAA", width: 325, height: 217 },
+            artworkSource: "reference",
+          }
+        : {}),
+    });
+  });
+  const dialog = themeDialogHarness(form, {
+    isNew: true,
+    onUseTheme: (value) => {
+      accepted = value;
+    },
+  });
+  dialog.describe(details.description);
+  await dialog.button("Create with Envitefy").props.onClick();
+  let preview = dialog.render().find((node) => node.props.form?.appearance?.customTheme).props.form;
+  assert.equal(preview.title, details.title);
+  assert.equal(preview.header.creatorName, details.organizerName);
+  assert.equal(preview.sections[0].slots.length, 2);
+  assert.equal(preview.appearance.imageFilterEnabled, false);
+  assert.equal(preview.appearance.imageFit, "contain");
+  assert.equal(requests[0].includeContent, true);
+  assert.deepEqual(form, original);
+  dialog.button("Describe a change").props.onClick();
+  dialog.describe("Make the heading more classic");
+  await dialog.button("Update theme").props.onClick();
+  assert.deepEqual(requests[1].currentDetails, details);
+  assert.equal(requests[1].generateArtwork, false);
+  preview = dialog.render().find((node) => node.props.form?.appearance?.customTheme).props.form;
+  assert.equal(preview.title, "Breakfast at the Pole");
+  assert.equal(preview.start, details.start);
+  assert.equal(preview.sections[0].slots[0].capacity, null);
+  assert.equal(preview.appearance.imageFit, "contain");
+  dialog.button("Previous design").props.onClick();
+  dialog.button("Use this theme").props.onClick();
+  const result = applySignupThemeDetails(restoreSignupTheme(form, accepted), accepted.details);
+  assert.equal(result.title, details.title);
+  assert.equal(result.description, details.description);
+  assert.equal(result.location, details.location);
+  assert.equal(result.header.creatorName, "Kayra Ayala");
+  assert.deepEqual(
+    result.sections[0].slots.map((slot) => slot.label),
+    ["Donuts", "Muffins"],
+  );
+  assert.deepEqual(result.responses, []);
+  assert.equal(result.end, null);
+  assert.deepEqual(form, original);
+});
+
+function themeEditorHarness(preview, options = {}) {
+  const state = [];
+  const effects = [];
+  let cursor = 0;
+  let progress;
+  let consumed = 0;
+  let reads = 0;
+  const writes = [];
+  const redirects = [];
+  const search = new URLSearchParams(options.search || "themePreview=generated-token");
+  const hooks = {
+    ...React,
+    useMemo: (fn) => fn(),
+    useCallback: (fn) => fn,
+    useState(initial) {
+      const i = cursor++;
+      if (!(i in state)) state[i] = typeof initial === "function" ? initial() : initial;
+      return [
+        state[i],
+        (value) => {
+          state[i] = typeof value === "function" ? value(state[i]) : value;
+        },
+      ];
+    },
+    useRef(initial) {
+      const i = cursor++;
+      if (!(i in state)) state[i] = { current: initial };
+      return state[i];
+    },
+    useEffect(effect) {
+      const i = cursor++;
+      if (!(i in state)) {
+        state[i] = { effectIndex: effects.length };
+        effects.push(effect);
+      }
+      effects[state[i].effectIndex] = effect;
+    },
+  };
+  const storage = load("src/lib/template-draft-storage.ts", baseMocks);
+  const Provider = load("src/components/templates/TemplateEditorContext.tsx", {
+    ...baseMocks,
+    react: hooks,
+    "@/lib/privacy-preferences": { hasAnalyticsConsent: () => false },
+    "next/navigation": {
+      useRouter: () => ({ replace: (href) => redirects.push(href) }),
+      useSearchParams: () => search,
+    },
+    "@/lib/signup-theme-handoff": {
+      takeSignupTheme: () => {
+        consumed++;
+        return consumed === 1 ? preview : null;
+      },
+    },
+    "@/lib/template-draft-storage": {
+      ...storage,
+      readTemplateDraft: async () => {
+        reads++;
+        return options.saved || null;
+      },
+      retainDraftMedia: async () => {},
+      writeTemplateDraft: async (draft) => writes.push(structuredClone(draft)),
+    },
+    "@/lib/template-draft-handoff": {
+      saveTemplateDraftToAccount: async ({ draft }) => {
+        draft.eventId = "saved-event";
+        return draft.eventId;
+      },
+    },
+    "@/components/UnsavedProgressProvider": {
+      useUnsavedProgress: (value) => {
+        progress = value;
+        return { allowNavigation: (fn) => fn() };
+      },
+    },
+  }).default;
+  const render = () => {
+    cursor = 0;
+    return Provider({
+      category: "signup-forms",
+      templateId: "editorial--clean-clear",
+      children: null,
+    }).props.value;
+  };
+  return {
+    render,
+    effects,
+    search,
+    writes,
+    redirects,
+    progress: () => progress,
+    reads: () => reads,
+    consumed: () => consumed,
+  };
+}
+
+test("theme handoff bypasses unrelated browser drafts, survives Strict Mode and remains dirty until saved", async (t) => {
+  const { createEmptySignupTemplateForm } = load("src/lib/signup-starters.ts", baseMocks);
+  const form = createEmptySignupTemplateForm();
+  const { applySignupCustomTheme } = load("src/lib/signup-custom-theme.ts", baseMocks);
+  const preview = applySignupCustomTheme(form, dialogRecipe);
+  const harness = themeEditorHarness(preview);
+  harness.render();
+  // Strict Mode runs setup, cleanup, setup before asynchronous initialization finishes.
+  const cleanup = harness.effects[0]();
+  cleanup();
+  harness.effects[0]();
+  await new Promise((resolve) => setImmediate(resolve));
+  const runtime = harness.render();
+  assert.equal(harness.consumed(), 1);
+  assert.equal(harness.reads(), 0);
+  assert.equal(harness.writes.length, 0);
+  assert.deepEqual(runtime.initial.form, JSON.parse(JSON.stringify(preview)));
+  assert.equal(harness.progress().dirty, true);
+  runtime.record("form", runtime.initial.form);
+  harness.render();
+  assert.equal(harness.progress().dirty, true);
+  const previousWindow = globalThis.window;
+  const urls = [];
+  globalThis.window = {
+    dispatchEvent() {},
+    history: { replaceState: (_state, _title, href) => urls.push(href) },
+  };
+  t.after(() => {
+    if (previousWindow === undefined) delete globalThis.window;
+    else globalThis.window = previousWindow;
+  });
+  await runtime.persist({ title: "" }, "draft");
+  harness.render();
+  assert.equal(harness.progress().dirty, false);
+  assert.equal(harness.writes.length, 1);
+  assert.deepEqual(harness.writes[0].snapshot.form.appearance.customTheme, dialogRecipe);
+  assert.deepEqual(urls, [
+    "/signup-forms/templates/editorial--clean-clear/customize?edit=saved-event",
+  ]);
+  runtime.record("form", { ...runtime.initial.form, title: "Edited just after saving" });
+  harness.search.delete("themePreview");
+  harness.search.set("edit", "saved-event");
+  harness.render();
+  harness.effects[0]();
+  await new Promise((resolve) => setImmediate(resolve));
+  harness.render();
+  assert.equal(harness.reads(), 0);
+  assert.equal(harness.progress().dirty, true, "replacing the URL must not mark later edits saved");
+});
+
+test("a missing theme preview returns to the dialog without reopening or overwriting browser drafts", async () => {
+  const harness = themeEditorHarness(null);
+  harness.render();
+  harness.effects[0]();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(harness.reads(), 0);
+  assert.equal(harness.writes.length, 0);
+  assert.deepEqual(harness.redirects, ["/signup-forms/templates?customTheme=1&themeExpired=1"]);
 });

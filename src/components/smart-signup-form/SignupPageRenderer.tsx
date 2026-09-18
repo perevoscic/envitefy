@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
-import { getSignupDesign } from "@/lib/signup-designs";
-import { resolveSignupThemeStyle } from "@/lib/signup-themes";
+import { resolveSignupDesign, resolveSignupThemeStyle, signupContrast } from "@/lib/signup-themes";
 import type { SignupForm } from "@/types/signup";
-import SignupTemplateHeader from "./SignupTemplateHeader";
+import SignupFormFooter from "./SignupFormFooter";
 import type { SignupHeaderEditing } from "./SignupHeaderDetailsEditor";
+import SignupTemplateHeader from "./SignupTemplateHeader";
 import SignupViewer from "./SignupViewer";
 import styles from "./signup-theme.module.css";
 
@@ -29,14 +29,17 @@ export default function SignupPageRenderer({
   interactivePreview?: boolean;
   editing?: SignupHeaderEditing;
 }) {
-  const design = getSignupDesign(form.appearance?.designId);
+  const design = resolveSignupDesign(form.appearance);
+  const themeStyle = resolveSignupThemeStyle(form);
+  const pageColor = String(themeStyle["--signup-page" as keyof typeof themeStyle] || "#F3F2EE");
+  const inverseFooter = signupContrast(pageColor, "#FFFFFF") > signupContrast(pageColor, "#000000");
   const hasHeaderArtwork =
     form.appearance?.headerLayout !== "none" &&
     Boolean(form.header?.backgroundImage || form.header?.images?.length);
   return (
     <div
       className={`${styles.page} ${className}`}
-      style={resolveSignupThemeStyle(form)}
+      style={themeStyle}
       data-signup-theme={form.appearance?.themeId || "legacy"}
       data-signup-design={design?.id}
       data-signup-composition={design?.composition}
@@ -64,6 +67,7 @@ export default function SignupPageRenderer({
             interactivePreview={interactivePreview}
           />
         )}
+        <SignupFormFooter inverse={inverseFooter} />
       </div>
     </div>
   );

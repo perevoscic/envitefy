@@ -14,6 +14,13 @@
   display: grid;
   gap: 1.25rem;
 }
+.formFooter {
+  margin-top: 0.75rem;
+  padding: 1.5rem 1rem;
+  border-top: 1px solid var(--signup-border, #dedcd5);
+  color: var(--signup-text, #222d40);
+  text-align: center;
+}
 .ownerActions {
   position: absolute;
   top: 0.5rem;
@@ -95,7 +102,7 @@
   overflow-wrap: anywhere;
 }
 .eyebrow {
-  color: var(--signup-accent);
+  color: var(--signup-accent-text, var(--signup-accent));
   font-size: 0.72rem;
   font-weight: 650;
   text-transform: uppercase;
@@ -177,8 +184,19 @@
 .board input:not([type="checkbox"]):not([type="radio"]),
 .board textarea,
 .board select {
+  /* Keep the app's input and autofill rules aligned with this form's theme. */
+  --foreground: var(--signup-text);
+  --surface: var(--signup-surface);
+  color: var(--signup-text) !important;
+  -webkit-text-fill-color: var(--signup-text) !important;
   font-family: var(--signup-body-font);
   font-size: 1rem;
+}
+.board input::placeholder,
+.board textarea::placeholder {
+  color: var(--signup-muted) !important;
+  -webkit-text-fill-color: var(--signup-muted) !important;
+  opacity: 1;
 }
 .board button {
   min-height: 2.75rem;
@@ -276,11 +294,20 @@
   display: block;
   object-fit: cover;
 }
+/* Supplied artwork retains its complete composition, including flags and logos. */
+.composition[data-composition][data-image-fit="contain"] .artwork {
+  height: auto;
+  min-height: 0;
+  aspect-ratio: var(--signup-image-ratio, 3 / 2);
+  align-self: start;
+  border-radius: 8px;
+  transform: none;
+}
 .ornament {
   position: absolute;
   width: 54px;
   height: 54px;
-  color: var(--signup-accent);
+  color: var(--signup-accent-text, var(--signup-accent));
   top: 16px;
   right: 20px;
   pointer-events: none;
@@ -554,6 +581,9 @@
 .page[data-signup-composition="marquee"] {
   background: var(--signup-text);
 }
+.page[data-signup-design="custom"][data-signup-composition="marquee"] {
+  background: var(--signup-page);
+}
 .composition[data-composition="marquee"] {
   color: var(--signup-on-accent);
   background: var(--signup-accent);
@@ -685,7 +715,7 @@
 }
 .board[data-signup-board="ledger"] .slotNumber {
   display: block;
-  color: var(--signup-accent);
+  color: var(--signup-accent-text, var(--signup-accent));
   font:
     650 0.8rem ui-monospace,
     monospace;
@@ -722,7 +752,7 @@
 }
 .board[data-signup-board="tickets"] .slotNumber {
   display: block;
-  color: var(--signup-accent);
+  color: var(--signup-accent-text, var(--signup-accent));
   font:
     650 0.8rem ui-monospace,
     monospace;
@@ -751,9 +781,9 @@
   background: transparent;
 }
 .board[data-signup-board] [data-signup-select] {
-  border-color: var(--signup-accent);
+  border-color: var(--signup-accent-text, var(--signup-accent));
   border-radius: 0;
-  color: var(--signup-accent);
+  color: var(--signup-accent-text, var(--signup-accent));
 }
 .board[data-signup-board="outline"] [data-signup-select],
 .board[data-signup-board="menu"] [data-signup-select] {

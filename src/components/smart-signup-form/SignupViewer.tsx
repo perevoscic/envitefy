@@ -4,16 +4,15 @@ import Link from "next/link";
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
 import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
-import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
-import { getSignupDesign } from "@/lib/signup-designs";
 import { signupResponsesCsv } from "@/lib/signup-export";
-import { resolveSignupThemeStyle } from "@/lib/signup-themes";
-import { signupWindowMessage } from "@/lib/signup-validation";
 import {
+  type SignupReservationInput,
   signupQuantityLimit,
   validateSignupReservation,
-  type SignupReservationInput,
 } from "@/lib/signup-reservation-validation";
+import { resolveSignupDesign, resolveSignupThemeStyle } from "@/lib/signup-themes";
+import { signupWindowMessage } from "@/lib/signup-validation";
+import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
 import type { SignupForm, SignupResponse } from "@/types/signup";
 import {
   countConfirmedForSlot,
@@ -23,8 +22,8 @@ import {
   normalizeSignupQuantity,
   remainingCapacityForSlot,
 } from "@/utils/signup";
-import themeStyles from "./signup-theme.module.css";
 import SignupSharing from "./SignupSharing";
+import themeStyles from "./signup-theme.module.css";
 
 type ViewerKind = "owner" | "guest" | "readonly";
 
@@ -35,6 +34,8 @@ type Props = {
   viewerId?: string | null;
   viewerName?: string | null;
   viewerEmail?: string | null;
+  viewerResponseId?: string | null;
+  requiresInvitation?: boolean;
   hideOwnerTools?: boolean;
   interactivePreview?: boolean;
 };
@@ -58,6 +59,7 @@ type SignupApiResponse = {
   signupForm?: SignupForm;
   response?: SignupResponse;
   status?: string;
+  myResponseId?: string | null;
 };
 
 type SlotSelectionMap = Record<string, number>;
@@ -123,6 +125,8 @@ const SignupViewer: React.FC<Props> = ({
   viewerId,
   viewerName,
   viewerEmail,
+  viewerResponseId,
+  requiresInvitation = false,
   hideOwnerTools = false,
   interactivePreview = false,
 }) => {
@@ -132,6 +136,7 @@ const SignupViewer: React.FC<Props> = ({
   const [selectedSlots, setSelectedSlots] = useState<SlotSelectionMap>({});
   const [name, setName] = useState<string>(
     ((!isTestPreview &&
+      viewerId &&
       initialForm.responses.find((response) => response.userId === viewerId)?.name) ||
       viewerName ||
       "") as string,
@@ -152,6 +157,10 @@ const SignupViewer: React.FC<Props> = ({
   const [acceptWaitlist, setAcceptWaitlist] = useState(false);
   const [resultStatus, setResultStatus] = useState("confirmed");
   const [testAttempt, setTestAttempt] = useState(0);
+  const [myResponseId, setMyResponseId] = useState(viewerResponseId || null);
+  useEffect(() => {
+    setMyResponseId(viewerResponseId || null);
+  }, [viewerResponseId]);
 
   const feedback = serverMessage;
   const windowMessage = signupWindowMessage(form);
@@ -168,6 +177,7 @@ const SignupViewer: React.FC<Props> = ({
       if (!result.ok || !data.signupForm)
         throw new Error(data.error || "Unable to refresh availability.");
       setForm(data.signupForm);
+      if (data.myResponseId !== undefined) setMyResponseId(data.myResponseId);
       setServerMessage("Availability updated.");
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Unable to refresh availability.");
@@ -193,13 +203,16 @@ const SignupViewer: React.FC<Props> = ({
     () =>
       isTestPreview
         ? null
-        : findSignupResponseForUser(
+        : form.responses.find(
+            (response) => response.id === myResponseId && response.status !== "cancelled",
+          ) ||
+          findSignupResponseForUser(
             form,
             viewerId || undefined,
             viewerEmail || undefined,
             undefined, // phone not available in viewer props initially
           ),
-    [form, viewerId, viewerEmail, isTestPreview],
+    [form, myResponseId, viewerId, viewerEmail, isTestPreview],
   );
 
   const lastResponseId = useRef<string | null | undefined>(undefined);
@@ -404,6 +417,7 @@ const SignupViewer: React.FC<Props> = ({
       if (editingResponse && !myResponse) cancelEdit();
       setForm(data.signupForm);
       setEditingResponse(null);
+      if (data.myResponseId !== undefined) setMyResponseId(data.myResponseId);
       setSelectedSlots({});
       setAttempted(false);
       setResultStatus(data.response?.status || data.status || "confirmed");
@@ -440,6 +454,7 @@ const SignupViewer: React.FC<Props> = ({
       setForm(data.signupForm);
       setEditingResponse(null);
       setAttempted(false);
+      if (data.myResponseId !== undefined) setMyResponseId(data.myResponseId);
       setServerMessage("Cancelled. Thanks for letting us know!");
       setSelectedSlots({});
       setNote("");
@@ -609,7 +624,7 @@ const SignupViewer: React.FC<Props> = ({
   return (
     <section
       style={resolveSignupThemeStyle(form)}
-      data-signup-board={getSignupDesign(form.appearance?.designId)?.board}
+      data-signup-board={resolveSignupDesign(form.appearance)?.board}
       className={`${themeStyles.board} rounded-2xl border border-[var(--signup-border)] bg-[var(--signup-surface)] p-5 sm:p-6 space-y-5 shadow-sm`}
     >
       {(boardTitle || boardDescription) && (
@@ -624,7 +639,7 @@ const SignupViewer: React.FC<Props> = ({
       )}
       <EventGuestPlanningNotes value={form.guestPlanning} />
       {viewerKind === "owner" && !hideOwnerTools && eventId !== "preview" && (
-        <SignupSharing eventId={eventId} />
+        <SignupSharing eventId={eventId} requiresInvitation={requiresInvitation} />
       )}
 
       {feedback && !isTestPreview && (
@@ -1065,7 +1080,9 @@ const SignupViewer: React.FC<Props> = ({
           )}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
             <div className="text-xs text-[var(--signup-muted)]">
-              You can return to this page to view or update your signup.
+              {viewerId
+                ? "You can return to this page to view or update your signup."
+                : "No account needed. Return using this browser to view, edit or cancel your signup."}
             </div>
             <div className="flex items-center gap-2">
               {editingResponse && (
@@ -1148,7 +1165,10 @@ const SignupViewer: React.FC<Props> = ({
       )}
 
       {viewerKind === "owner" && !hideOwnerTools && (
-        <div className="rounded-2xl border border-[var(--signup-border)] bg-[var(--signup-surface)] p-5 space-y-4 shadow-sm">
+        <div
+          id="signup-host-dashboard"
+          className="scroll-mt-6 rounded-2xl border border-[var(--signup-border)] bg-[var(--signup-surface)] p-5 space-y-4 shadow-sm"
+        >
           <header className="flex flex-wrap items-center justify-between gap-4">
             <h3 className="text-lg font-bold text-[var(--signup-text)]">Host dashboard</h3>
           </header>

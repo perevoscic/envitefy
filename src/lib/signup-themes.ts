@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
-import { getSignupDesign, SIGNUP_DESIGN_PALETTES } from "@/lib/signup-designs";
+import { normalizeSignupCustomTheme } from "@/lib/signup-custom-theme";
+import { getSignupDesign, SIGNUP_DESIGN_PALETTES, type SignupDesign } from "@/lib/signup-designs";
 import type {
   SignupAppearance,
   SignupFontPair,
@@ -183,6 +184,7 @@ export function createSignupAppearance(
     slotLayout: design?.board === "ledger" || design?.board === "menu" ? "rows" : "cards",
     density: "comfortable",
     imagePosition: { x: 50, y: 50 },
+    imageFit: "cover",
     imageFilterEnabled: true,
   };
 }
@@ -194,6 +196,7 @@ export function normalizeSignupAppearance(value: unknown): SignupAppearance | nu
   if (!theme) return null;
   const design = typeof raw.designId === "string" ? getSignupDesign(raw.designId) : undefined;
   const base = createSignupAppearance(theme.id, design?.id || "");
+  const customTheme = normalizeSignupCustomTheme(raw.customTheme);
   const position =
     raw.imagePosition && typeof raw.imagePosition === "object"
       ? (raw.imagePosition as Record<string, unknown>)
@@ -202,14 +205,15 @@ export function normalizeSignupAppearance(value: unknown): SignupAppearance | nu
     typeof value === "number" && Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 50;
   return {
     ...base,
-    designId: design?.id,
+    designId: customTheme ? undefined : design?.id,
+    ...(customTheme ? { customTheme } : {}),
     palette: raw.palette === "soft" || raw.palette === "ink" ? raw.palette : "original",
     fontPair: SIGNUP_FONT_PAIRS.some((pair) => pair.id === raw.fontPair)
       ? (raw.fontPair as SignupFontPair)
       : base.fontPair,
     headerLayout: SIGNUP_HEADER_LAYOUTS.some((layout) => layout.id === raw.headerLayout)
       ? (raw.headerLayout as SignupHeaderLayout)
-      : design
+      : design || customTheme
         ? "designed"
         : theme.headerLayout,
     slotLayout: raw.slotLayout === "rows" ? "rows" : "cards",
@@ -218,6 +222,7 @@ export function normalizeSignupAppearance(value: unknown): SignupAppearance | nu
       ? { accent: raw.accent }
       : {}),
     imagePosition: { x: coordinate(position.x), y: coordinate(position.y) },
+    imageFit: raw.imageFit === "contain" ? "contain" : "cover",
     imageFilterEnabled: raw.imageFilterEnabled !== false,
   };
 }
@@ -239,7 +244,10 @@ export function applySignupTheme(form: SignupForm, id: SignupThemeId): SignupFor
   const theme = getSignupTheme(id)!;
   return {
     ...form,
-    appearance: { ...createSignupAppearance(id), imageFilterEnabled: form.appearance?.imageFilterEnabled !== false },
+    appearance: {
+      ...createSignupAppearance(id),
+      imageFilterEnabled: form.appearance?.imageFilterEnabled !== false,
+    },
     header: {
       ...form.header,
       backgroundColor: null,
@@ -260,7 +268,8 @@ export function resolveSignupThemeStyle(form: SignupForm): CSSProperties {
   const appearance = normalizeSignupAppearance(form.appearance);
   const theme = getSignupTheme(appearance?.themeId) || SIGNUP_THEMES[0];
   const design = getSignupDesign(appearance?.designId);
-  const colors = design ? SIGNUP_DESIGN_PALETTES[design.palette] : theme;
+  const customColors = appearance?.customTheme?.colors;
+  const colors = customColors || (design ? SIGNUP_DESIGN_PALETTES[design.palette] : theme);
   const font =
     SIGNUP_FONT_PAIRS.find((pair) => pair.id === appearance?.fontPair) || SIGNUP_FONT_PAIRS[0];
   const custom = appearance?.accent;
@@ -270,25 +279,57 @@ export function resolveSignupThemeStyle(form: SignupForm): CSSProperties {
       : appearance?.palette === "ink"
         ? colors.ink
         : colors.accent;
+  const accentText =
+    customColors &&
+    [customColors.page, customColors.surface, customColors.soft].some(
+      (color) => signupContrast(accent, color) < 4.5,
+    )
+      ? colors.ink
+      : accent;
   return {
     "--signup-page": appearance
       ? appearance.palette === "soft"
         ? colors.soft
         : colors.page
       : form.header?.backgroundColor || "#F5F5F4",
-    "--signup-surface": design ? SIGNUP_DESIGN_PALETTES[design.palette].surface : "#FFFFFF",
+    "--signup-surface":
+      customColors?.surface ||
+      (design ? SIGNUP_DESIGN_PALETTES[design.palette].surface : "#FFFFFF"),
     "--signup-text": appearance ? colors.ink : "#222D40",
-    "--signup-muted": design ? `color-mix(in srgb, ${colors.ink} 80%, ${colors.page})` : "#5D625F",
-    "--signup-border": design ? `color-mix(in srgb, ${colors.ink} 24%, ${colors.page})` : "#DEDCD5",
+    "--signup-muted":
+      design || customColors ? `color-mix(in srgb, ${colors.ink} 80%, ${colors.page})` : "#5D625F",
+    "--signup-border":
+      design || customColors ? `color-mix(in srgb, ${colors.ink} 24%, ${colors.page})` : "#DEDCD5",
     "--signup-accent": accent,
-    "--signup-on-accent": "#FFFFFF",
+    "--signup-accent-text": accentText,
+    "--signup-on-accent": signupContrast(accent, "#FFFFFF") >= 4.5 ? "#FFFFFF" : "#000000",
     "--signup-soft": colors.soft,
-    "--signup-secondary": design ? SIGNUP_DESIGN_PALETTES[design.palette].secondary : theme.soft,
-    "--signup-focus": accent,
+    "--signup-secondary":
+      customColors?.secondary ||
+      (design ? SIGNUP_DESIGN_PALETTES[design.palette].secondary : theme.soft),
+    "--signup-focus": accentText,
     "--signup-heading-font": font.heading,
     "--signup-body-font": font.body,
     "--signup-radius": appearance?.slotLayout === "rows" ? "0.5rem" : "1rem",
     "--signup-slot-padding": appearance?.density === "compact" ? "0.75rem" : "1rem",
     "--signup-gap": appearance?.density === "compact" ? "0.5rem" : "0.85rem",
   } as CSSProperties;
+}
+
+export function resolveSignupDesign(
+  appearance?: SignupAppearance | null,
+): SignupDesign | undefined {
+  const custom = normalizeSignupCustomTheme(appearance?.customTheme);
+  if (!custom) return getSignupDesign(appearance?.designId);
+  return {
+    id: "custom",
+    name: custom.name,
+    composition: custom.composition,
+    board: custom.board,
+    motif: custom.motif,
+    reverse: custom.reverse,
+    fontPair: appearance?.fontPair || custom.fontPair,
+    palette: "slate",
+    artwork: "",
+  };
 }

@@ -3245,10 +3245,21 @@ export async function getEventHistoryOwnerById(
 }
 
 function buildEventHistoryPublicDataProjectionSql(dataSql: string, idSql: string): string {
-  const base = `((coalesce(${dataSql}, '{}'::jsonb) - 'ocrText' - 'calendarSync') #- '{templateEditor,snapshot}' #- '{attachment,dataUrl}' #- '{profileImage,dataUrl}' #- '{signupForm,header,backgroundImage,dataUrl}')`;
-  const withoutThumbnail = `case
-    when coalesce(${dataSql}->>'thumbnail', '') like 'data:%' then (${base} - 'thumbnail')
+  const base = `((coalesce(${dataSql}, '{}'::jsonb) - 'ocrText' - 'calendarSync') #- '{templateEditor,snapshot}' #- '{attachment,dataUrl}' #- '{profileImage,dataUrl}')`;
+  // Header sanitization requires a URL. Keep uploaded URLs, and serve inline
+  // artwork through the existing access-checked media route instead of dropping it.
+  const signupHeaderUrl = `${dataSql}#>>'{signupForm,header,backgroundImage,dataUrl}'`;
+  const withSignupArtwork = `case
+    when coalesce(${signupHeaderUrl}, '') like 'data:%' then jsonb_set(
+      ${base}, '{signupForm,header,backgroundImage,dataUrl}',
+      to_jsonb('/api/events/' || ${idSql}::text || '/thumbnail?variant=signup-header&v=' || md5(${signupHeaderUrl})),
+      false
+    )
     else ${base}
+  end`;
+  const withoutThumbnail = `case
+    when coalesce(${dataSql}->>'thumbnail', '') like 'data:%' then ((${withSignupArtwork}) - 'thumbnail')
+    else (${withSignupArtwork})
   end`;
   const withoutHero = `case
     when coalesce(${dataSql}->>'heroImage', '') like 'data:%' then (${withoutThumbnail} - 'heroImage')

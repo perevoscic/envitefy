@@ -1,16 +1,23 @@
 "use client";
 
+import { Sparkles } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import TemplateAutoLoader from "@/components/events/TemplateAutoLoader";
 import CategoryGalleryBackdrop from "@/components/events/CategoryGalleryBackdrop";
 import { categoryGalleryPageClassName } from "@/components/events/category-gallery-page";
+import TemplateAutoLoader from "@/components/events/TemplateAutoLoader";
 import {
   TemplateMasonryCard,
   TemplateMasonryGrid,
 } from "@/components/events/TemplateMasonryGallery";
+import SignupCustomThemeDialog from "@/components/smart-signup-form/SignupCustomThemeDialog";
 import { getPublicTemplates } from "@/lib/public-template-catalog";
+import { restoreSignupTheme } from "@/lib/signup-custom-theme";
+import { createEmptySignupTemplateForm } from "@/lib/signup-starters";
+import { applySignupThemeDetails } from "@/lib/signup-theme-brief";
+import { stageSignupTheme } from "@/lib/signup-theme-handoff";
 import {
   getTemplateCategory,
   type TemplateCategory,
@@ -25,10 +32,17 @@ export { default as PublicTemplatePreview } from "./CategoryTemplateThumbnail";
 export default function PublicTemplateGallery({
   category,
   featured = false,
+  customThemeRequested = false,
+  customThemeExpired = false,
 }: {
   category: TemplateCategory;
   featured?: boolean;
+  customThemeRequested?: boolean;
+  customThemeExpired?: boolean;
 }) {
+  const router = useRouter();
+  const [customThemeOpen, setCustomThemeOpen] = useState(customThemeRequested);
+  const [customThemeForm] = useState(createEmptySignupTemplateForm);
   const { status } = useSession();
   const info = getTemplateCategory(category)!;
   const templates = getPublicTemplates(category);
@@ -122,6 +136,53 @@ export default function PublicTemplateGallery({
             </Link>
           )}
         </div>
+        {category === "signup-forms" && !featured && (
+          <div className="mb-8 flex flex-col gap-5 rounded-2xl border border-[#d7c6dc] bg-white/90 p-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-4">
+              <Sparkles className="mt-1 shrink-0 text-[#72527e]" size={24} aria-hidden />
+              <div>
+                <h2 className="font-serif text-2xl">Have something unique in mind?</h2>
+                <p className="mt-2 max-w-xl text-sm leading-6 text-[#746775]">
+                  Share your idea, event details, and inspiration. Preview a custom signup before
+                  making it yours.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCustomThemeOpen(true)}
+              aria-label="Create a custom sign-up theme with Envitefy"
+              className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-full bg-[#684675] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#52375d] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#684675]"
+            >
+              Create with Envitefy →
+            </button>
+          </div>
+        )}
+        {category === "signup-forms" && !featured && customThemeOpen && (
+          <SignupCustomThemeDialog
+            form={customThemeForm}
+            isNew
+            initialMessage={
+              customThemeExpired
+                ? "That preview is no longer available. Describe your idea to create a new one."
+                : undefined
+            }
+            onClose={() => {
+              setCustomThemeOpen(false);
+              if (customThemeRequested)
+                window.history.replaceState(null, "", "/signup-forms/templates");
+            }}
+            onUseTheme={(theme) => {
+              const token = stageSignupTheme(
+                applySignupThemeDetails(restoreSignupTheme(customThemeForm, theme), theme.details),
+              );
+              setCustomThemeOpen(false);
+              router.push(
+                `${templateEditorHref("signup-forms", "editorial--clean-clear")}?themePreview=${encodeURIComponent(token)}`,
+              );
+            }}
+          />
+        )}
         {resume && (
           <Link
             href={`${templateEditorHref(category, resume.templateId)}?draft=${resume.id}`}

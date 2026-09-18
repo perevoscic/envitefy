@@ -44,6 +44,7 @@ export type SignupResponseStatus = "confirmed" | "waitlisted" | "cancelled";
 export type SignupResponse = {
   id: string;
   userId?: string | null;
+  guestId?: string | null;
   name: string;
   email?: string | null;
   phone?: string | null;
@@ -169,7 +170,29 @@ export type SignupAppearance = {
   density: "comfortable" | "compact";
   accent?: string;
   imagePosition: { x: number; y: number };
+  imageFit?: "cover" | "contain";
   imageFilterEnabled?: boolean;
+  customTheme?: SignupCustomTheme;
+};
+
+/** A saved design recipe, independent of the gallery catalog. No executable CSS or markup. */
+export type SignupCustomTheme = {
+  version: 1;
+  name: string;
+  description: string;
+  composition: import("@/lib/signup-designs").SignupComposition;
+  board: "ledger" | "menu" | "outline" | "tiles" | "tickets";
+  motif: import("@/lib/signup-designs").SignupMotif;
+  reverse: boolean;
+  fontPair: SignupFontPair;
+  colors: {
+    page: string;
+    surface: string;
+    soft: string;
+    ink: string;
+    accent: string;
+    secondary: string;
+  };
 };
 
 export type SignupHeaderImageAsset = {

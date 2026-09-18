@@ -446,6 +446,21 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           ],
         },
         {
+          id: "custom-signup-themes",
+          name: "Custom sign-up themes with Envitefy Create",
+          availability: "specialized",
+          customerPromise:
+            "Turn a visual idea into a coordinated sign-up page, then build the form in the same editor.",
+          proofPoints: [
+            "A focused dialog accepts a design idea, pasted event details and optional reference image. Organizers can reuse their exact artwork or generate a new interpretation of its subject and style, then review a coordinated preview with the event facts and requested signup items they supplied before opening the builder.",
+            "Use this theme accepts the preview. Describe a change refines it, while Redesign with Envitefy offers the same flow for existing forms. Closing the dialog leaves the current design, event details, slots, questions, and responses intact.",
+            "Custom designs stay in editor memory until explicitly saved. The saved design is preserved when reopening, previewing, and publishing the signup form.",
+          ],
+          sellWhen: [
+            "The organizer wants a unique visual theme for a volunteer day, school activity, gathering, or branded signup that goes beyond the gallery designs.",
+          ],
+        },
+        {
           id: "guest-reminders-updates",
           name: "Guest reminders and updates",
           availability: "event-dependent",

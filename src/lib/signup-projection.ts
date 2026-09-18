@@ -1,12 +1,13 @@
 import type { SignupForm } from "@/types/signup";
 import { countConfirmedForSlot, countWaitlistedForSlot } from "@/utils/signup";
+import { ownsSignupResponse, type SignupIdentity, withoutSignupGuestId } from "./signup-identity";
 
 /** Contacts and answers are never part of the public board payload. */
 export function projectSignupForm(
   form: SignupForm,
-  viewer: { isOwner?: boolean; userId?: string | null } = {},
+  viewer: SignupIdentity & { isOwner?: boolean } = {},
 ): SignupForm {
-  if (viewer.isOwner) return form;
+  if (viewer.isOwner) return { ...form, responses: form.responses.map(withoutSignupGuestId) };
   const availability = form.sections.flatMap((section) =>
     section.slots.map((slot) => ({
       sectionId: section.id,
@@ -18,8 +19,8 @@ export function projectSignupForm(
   return {
     ...form,
     availability,
-    responses: viewer.userId
-      ? form.responses.filter((response) => response.userId === viewer.userId)
-      : [],
+    responses: form.responses
+      .filter((response) => ownsSignupResponse(response, viewer))
+      .map(withoutSignupGuestId),
   };
 }

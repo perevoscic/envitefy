@@ -4,6 +4,7 @@ import "@/components/smart-signup-form/signup-editor.module.css";
 import "@/components/smart-signup-form/signup-composer.module.css";
 import "@/components/events/inline-editable-text.module.css";
 import "@/components/smart-signup-form/signup-theme.module.css";
+import "@/components/smart-signup-form/signup-custom-theme.module.css";
 import dynamic from "next/dynamic";
 import type { TemplateCategory } from "@/lib/template-categories";
 import TemplateEditorProvider from "./TemplateEditorContext";

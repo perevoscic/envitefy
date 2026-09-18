@@ -81,7 +81,9 @@ export default function SignupContentEditor({ form, onChange, drag, onDrag, onAd
     },
   });
   return (
-    <div className={styles.content}>
+    <div className={styles.content}
+      data-custom-theme={form.appearance?.customTheme ? "true" : undefined}
+      data-signup-board={form.appearance?.customTheme?.board}>
       <div className={styles.sectionHeading}>
         <div>
           <h2>Your form sections</h2>

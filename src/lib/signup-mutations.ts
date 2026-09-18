@@ -6,8 +6,9 @@ import {
   rebalanceSignupWaitlist,
   sanitizeSignupForm,
 } from "@/utils/signup";
-import { signupWindowMessage, validateSignupPublish } from "./signup-validation";
+import { ownsSignupResponse, type SignupIdentity } from "./signup-identity";
 import { validateSignupReservation } from "./signup-reservation-validation";
+import { signupWindowMessage, validateSignupPublish } from "./signup-validation";
 
 export class SignupMutationError extends Error {
   constructor(
@@ -76,7 +77,7 @@ export function updateSignupDefinition(
   return next;
 }
 
-type Actor = { userId: string; email: string; name?: string | null; isOwner: boolean };
+type Actor = SignupIdentity & { email?: string | null; name?: string | null; isOwner: boolean };
 export function mutateSignupReservation(
   form: SignupForm,
   payload: unknown,
@@ -84,6 +85,8 @@ export function mutateSignupReservation(
   now = new Date(),
 ): { form: SignupForm; response?: SignupResponse } {
   if (!record(payload)) throw new SignupMutationError("Invalid signup request.");
+  if (!actor.userId && !actor.guestId)
+    throw new SignupMutationError("Your signup session expired. Refresh and try again.", 401);
   const action = payload.action;
   if (action === "set-open") {
     if (!actor.isOwner)
@@ -99,7 +102,7 @@ export function mutateSignupReservation(
       "That signup no longer exists. Refresh the page and try again.",
       404,
     );
-  if (existing && !actor.isOwner && existing.userId !== actor.userId)
+  if (existing && !actor.isOwner && !ownsSignupResponse(existing, actor))
     throw new SignupMutationError("You can only update your own signup.", 403);
   const nowIso = now.toISOString();
   if (action === "cancel") {
@@ -118,7 +121,7 @@ export function mutateSignupReservation(
   if (windowMessage) throw new SignupMutationError(windowMessage, 409);
   if (
     !signupId &&
-    form.responses.some((entry) => entry.userId === actor.userId && entry.status !== "cancelled")
+    form.responses.some((entry) => ownsSignupResponse(entry, actor) && entry.status !== "cancelled")
   )
     throw new SignupMutationError("You already have a signup. Use Edit signup to change it.", 409);
   if (!Array.isArray(payload.slots) || !payload.slots.length || payload.slots.length > 200)
@@ -204,6 +207,7 @@ export function mutateSignupReservation(
   const response: SignupResponse = {
     id: existing?.id || generateSignupId(),
     userId: existing ? existing.userId : actor.userId,
+    guestId: existing ? existing.guestId : actor.userId ? null : actor.guestId,
     name,
     email,
     phone,

@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import Script from "next/script";
 import { getServerSession } from "next-auth";
 import { cache } from "react";
-import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
+import EventCanvas from "@/components/EventCanvas";
 import EventPreviewViewport from "@/components/EventPreviewViewport";
 import EventGuestActions from "@/components/event-templates/EventGuestActions";
-import SignupPageRenderer from "@/components/smart-signup-form/SignupPageRenderer";
+import SignupFormFooter from "@/components/smart-signup-form/SignupFormFooter";
 import SignupOwnerActions from "@/components/smart-signup-form/SignupOwnerActions";
-import EventCanvas from "@/components/EventCanvas";
-import SignupViewer from "@/components/smart-signup-form/SignupViewer";
+import SignupPageRenderer from "@/components/smart-signup-form/SignupPageRenderer";
 import { AcceptSignupInvitation } from "@/components/smart-signup-form/SignupSharing";
+import SignupViewer from "@/components/smart-signup-form/SignupViewer";
 import { absoluteUrl } from "@/lib/absolute-url";
 import { authOptions } from "@/lib/auth";
 import {
@@ -27,6 +28,9 @@ import {
 } from "@/lib/event-preview-viewport";
 import { combineVenueAndLocation } from "@/lib/mappers";
 import { toPublicShareMediaUrl } from "@/lib/share-image";
+import { allowsPublicSignup } from "@/lib/signup-access";
+import { signupGuestCookieName, signupGuestId } from "@/lib/signup-guest-cookie";
+import { ownSignupResponseId } from "@/lib/signup-identity";
 import { projectSignupForm } from "@/lib/signup-projection";
 import { isIndexablePublicSmartSignupData } from "@/lib/smart-signup-indexing";
 import type { SignupForm } from "@/types/signup";
@@ -89,7 +93,8 @@ function resolveSignupDescription(
   signupForm: SignupForm,
   indexable: boolean,
 ): string {
-  if (!indexable) return "View this private Envitefy smart sign-up form.";
+  if (!indexable && !allowsPublicSignup(row.data))
+    return "View this private Envitefy smart sign-up form.";
   const data = isRecord(row.data) ? row.data : {};
   const title = resolveSignupTitle(row, signupForm);
   const sectionCount = signupForm.sections.length;
@@ -313,7 +318,7 @@ export default async function SignupPage({
   const data = (row.data as any) || {};
   const signupForm = resolveSignupForm(row);
   if (!signupForm) return notFound();
-  const isPublicSignupPage = isIndexablePublicSmartSignupData(data);
+  const isPublicSignupPage = allowsPublicSignup(data);
   const canonicalUrl = await absoluteUrl(`/smart-signup-form/${canonicalSegment}`);
   const signupHeaderImageUrl = await resolveSignupHeaderImageUrl(row, signupForm);
   const smartSignupStructuredData = buildSmartSignupJsonLd({
@@ -341,7 +346,7 @@ export default async function SignupPage({
   const recipientAccepted = userId ? (await isEventSharedWithUser(row.id, userId)) === true : false;
   const viewerKind: "owner" | "guest" | "readonly" = isOwner
     ? "owner"
-    : sessionEmail && recipientAccepted
+    : isPublicSignupPage || (sessionEmail && recipientAccepted)
       ? "guest"
       : "readonly";
 
@@ -366,9 +371,7 @@ export default async function SignupPage({
               Sign in / Sign up
             </a>
           </div>
-          <footer className="border-t border-gray-200 py-8 text-center">
-            <EnvitefyEventBranding category="Smart Sign-up" />
-          </footer>
+          <SignupFormFooter />
         </main>
       </div>
     );
@@ -395,10 +398,9 @@ export default async function SignupPage({
     );
   }
 
-  const visibleForm = projectSignupForm(signupForm, {
-    isOwner,
-    userId: recipientAccepted ? userId : null,
-  });
+  const guestId = signupGuestId((await cookies()).get(signupGuestCookieName(row.id))?.value);
+  const identity = { userId, guestId };
+  const visibleForm = projectSignupForm(signupForm, { isOwner, ...identity });
   if (ownerPreviewMode && !ownerPreviewEmbedded) {
     return (
       <EventPreviewViewport
@@ -448,6 +450,8 @@ export default async function SignupPage({
             eventId={row.id}
             initialForm={visibleForm}
             viewerKind={viewerKind}
+            viewerResponseId={ownSignupResponseId(signupForm, identity)}
+            requiresInvitation={!isPublicSignupPage}
             hideOwnerTools={ownerPreviewMode}
             viewerId={userId}
             viewerName={session?.user?.name || null}

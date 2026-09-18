@@ -21,7 +21,9 @@ import AuthModal from "@/components/auth/AuthModal";
 import { getFamilyTemplateDesign } from "@/lib/family-template-designs";
 import { hasAnalyticsConsent } from "@/lib/privacy-preferences";
 import { BRIDAL_PRESETS, getPublicTemplate } from "@/lib/public-template-catalog";
-import { getSignupTemplateTheme } from "@/lib/signup-starters";
+import { createEmptySignupTemplateForm, getSignupTemplateTheme } from "@/lib/signup-starters";
+import { takeSignupTheme } from "@/lib/signup-theme-handoff";
+import type { SignupForm } from "@/types/signup";
 import { createSignupAppearance } from "@/lib/signup-themes";
 import { getSportEventPreset, getSportStyleThemeIds } from "@/lib/sport-event-presets";
 import {
@@ -171,6 +173,10 @@ export default function TemplateEditorProvider({
   const writeQueue = useRef<Promise<void>>(Promise.resolve());
   const editId = search?.get("edit");
   const requestedDraft = search?.get("draft");
+  const themePreview =
+    category === "signup-forms" && !editId && !requestedDraft ? search?.get("themePreview") : null;
+  const themeHandoff = useRef<{ token: string; form: SignupForm } | null>(null);
+  const savedThemeEventId = useRef<string | null>(null);
   const info = getTemplateCategory(category)!;
 
   const flush = useCallback(async () => {
@@ -194,17 +200,42 @@ export default function TemplateEditorProvider({
   }, []);
 
   useEffect(() => {
+    // Replacing the temporary URL after saving must not reload over newer in-memory edits.
+    if (editId && savedThemeEventId.current === editId && draft.current?.eventId === editId) return;
     let cancelled = false;
     async function initialize() {
       let saved: TemplateDraft | null = null;
-      try {
-        saved = await readTemplateDraft(category, requestedDraft || undefined);
-      } catch {
-        setStorageReady(false);
-        setError(
-          "Temporary browser storage is unavailable. Keep this tab open; email signup can save your work here.",
-        );
-      }
+      if (themePreview) {
+        // Let Strict Mode clean up its first effect before consuming the one-use handoff.
+        await Promise.resolve();
+        if (cancelled) return;
+        const form =
+          themeHandoff.current?.token === themePreview
+            ? themeHandoff.current.form
+            : takeSignupTheme(themePreview);
+        if (!form) {
+          router.replace("/signup-forms/templates?customTheme=1&themeExpired=1");
+          return;
+        }
+        themeHandoff.current = { token: themePreview, form };
+        saved = {
+          version: 1,
+          id: crypto.randomUUID(),
+          category,
+          templateId,
+          updatedAt: Date.now(),
+          assets: {},
+          snapshot: { form: JSON.parse(JSON.stringify(form)) as DraftValue },
+        };
+      } else
+        try {
+          saved = await readTemplateDraft(category, requestedDraft || undefined);
+        } catch {
+          setStorageReady(false);
+          setError(
+            "Temporary browser storage is unavailable. Keep this tab open; email signup can save your work here.",
+          );
+        }
       if (editId) {
         const response = await fetch(`/api/history/${encodeURIComponent(editId)}`, {
           credentials: "include",
@@ -333,9 +364,11 @@ export default function TemplateEditorProvider({
         Object.entries(current.assets).map(([key, blob]) => [replacements[key] || key, blob]),
       );
       draft.current = current;
-      savedFields.current = {};
-      interacted.current = false;
-      setDirty(false);
+      savedFields.current = themePreview
+        ? { form: JSON.stringify(createEmptySignupTemplateForm()) }
+        : {};
+      interacted.current = Boolean(themePreview);
+      setDirty(Boolean(themePreview));
       setInitial(current.snapshot);
       trackTemplateEvent("template_editor_view", category, templateId);
     }
@@ -345,7 +378,7 @@ export default function TemplateEditorProvider({
     return () => {
       cancelled = true;
     };
-  }, [category, templateId, requestedDraft, editId, router, loadAttempt]);
+  }, [category, templateId, requestedDraft, editId, themePreview, router, loadAttempt]);
 
   useEffect(
     () => () => {
@@ -444,6 +477,16 @@ export default function TemplateEditorProvider({
             ? "Draft saved. Only you can view it until you publish."
             : "Published.",
         );
+        if (themePreview && nextStatus === "draft") {
+          // A saved draft must reload from its durable account record, not the consumed preview.
+          savedThemeEventId.current = eventId;
+          themeHandoff.current = null;
+          window.history.replaceState(
+            null,
+            "",
+            `${templateEditorHref(category, templateId)}?edit=${encodeURIComponent(eventId)}`,
+          );
+        }
         if (nextStatus === "published") {
           await deleteTemplateDraft(current.id).catch(() => {});
           progress.allowNavigation(() =>
@@ -457,7 +500,7 @@ export default function TemplateEditorProvider({
         setBusy(false);
       }
     },
-    [authenticated, category, templateId, info.historyCategory, flush, router],
+    [authenticated, category, templateId, themePreview, info.historyCategory, flush, router],
   );
 
   const saveDraft = useCallback(async () => {

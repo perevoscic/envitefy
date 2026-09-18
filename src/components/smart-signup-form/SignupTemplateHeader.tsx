@@ -1,18 +1,17 @@
 "use client";
 
 import { Pencil } from "lucide-react";
+import type { CSSProperties, ReactNode } from "react";
 import InlineEditableText from "@/components/events/InlineEditableText";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
-import type { ReactNode } from "react";
 import { formatSignupDateRange } from "@/lib/signup-display";
-import { getSignupDesign } from "@/lib/signup-designs";
-import { resolveSignupThemeStyle } from "@/lib/signup-themes";
+import { resolveSignupDesign, resolveSignupThemeStyle } from "@/lib/signup-themes";
 import type { SignupForm } from "@/types/signup";
 import SignupDesignOrnament from "./SignupDesignOrnament";
-import styles from "./signup-theme.module.css";
-import composer from "./signup-composer.module.css";
-import SignupHeaderDetailsEditor, { type SignupHeaderEditing } from "./SignupHeaderDetailsEditor";
 import type { SignupDetailsSection } from "./SignupDetailsEditor";
+import SignupHeaderDetailsEditor, { type SignupHeaderEditing } from "./SignupHeaderDetailsEditor";
+import composer from "./signup-composer.module.css";
+import styles from "./signup-theme.module.css";
 
 export default function SignupTemplateHeader({
   form,
@@ -32,14 +31,17 @@ export default function SignupTemplateHeader({
   editing?: SignupHeaderEditing;
 }) {
   const header = form.header;
-  const design = getSignupDesign(form.appearance?.designId);
+  const design = resolveSignupDesign(form.appearance);
   const requestedLayout = form.appearance?.headerLayout || header?.templateId || "header-1";
   const layout = requestedLayout === "designed" && !design ? "header-3" : requestedLayout;
   const gallery = (header?.images || []).filter(Boolean);
   const cover = gallery[0] || header?.backgroundImage;
   const portrait = layout === "header-4" ? gallery[1] : gallery[0] || header?.backgroundImage;
   const position = form.appearance?.imagePosition;
-  const imageStyle = { objectPosition: position ? `${position.x}% ${position.y}%` : "center" };
+  const imageStyle: CSSProperties = {
+    objectPosition: position ? `${position.x}% ${position.y}%` : "center",
+    ...(form.appearance?.imageFit === "contain" ? { objectFit: "contain" } : {}),
+  };
   const split =
     (layout === "header-1" || layout === "header-2" || layout === "header-4") && portrait;
   const detailPencil = (section: SignupDetailsSection, label: string) =>
@@ -203,10 +205,16 @@ export default function SignupTemplateHeader({
       >
         <section
           className={styles.composition}
-          style={resolveSignupThemeStyle(form)}
+          style={
+            {
+              ...resolveSignupThemeStyle(form),
+              "--signup-image-ratio": `${cover?.width || 3} / ${cover?.height || 2}`,
+            } as CSSProperties
+          }
           data-composition={design.composition}
           data-reverse={design.reverse || undefined}
           data-without-image={!cover || undefined}
+          data-image-fit={form.appearance?.imageFit}
         >
           {cover && (
             <div className={styles.artwork}>

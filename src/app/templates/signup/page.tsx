@@ -7,6 +7,7 @@ import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraf
 import { useTemplateEditor, useTemplateState } from "@/components/templates/TemplateEditorContext";
 import { getPublicTemplate } from "@/lib/public-template-catalog";
 import { createEmptySignupTemplateForm } from "@/lib/signup-starters";
+import { resolveSignupThemeStyle } from "@/lib/signup-themes";
 import { buildTemplateDraftPayload } from "@/lib/template-draft-payload";
 import type { SignupForm } from "@/types/signup";
 import { sanitizeSignupForm } from "@/utils/signup";
@@ -67,9 +68,15 @@ export default function SignupTemplatesPage() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-[1536px] px-4 py-6 space-y-4 sm:px-6">
+    <main
+      className="mx-auto w-full max-w-[1536px] px-4 py-6 space-y-4 sm:px-6"
+      style={resolveSignupThemeStyle(form)}
+    >
       <header className="flex items-center justify-between">
-        <h1 className="text-sm font-semibold uppercase tracking-widest text-stone-500">
+        <h1
+          className="text-sm font-semibold uppercase tracking-widest"
+          style={{ color: "var(--signup-text, #222D40)" }}
+        >
           Your signup page
         </h1>
       </header>

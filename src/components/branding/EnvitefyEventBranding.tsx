@@ -14,6 +14,8 @@ const EVENT_CATEGORY_LABELS: Record<string, string> = {
   bridalshowers: "Bridal Showers",
   signup: "Sign-ups",
   signups: "Sign-ups",
+  signupform: "Sign-up Forms",
+  signupforms: "Sign-up Forms",
   smartsignupform: "Sign-ups",
   genderreveal: "Gender Reveals",
   genderreveals: "Gender Reveals",
@@ -79,9 +81,7 @@ export default function EnvitefyEventBranding({
           tone={inverse ? "light" : "gradient"}
         />
       </a>
-      <p className="text-[10px] font-medium tracking-[0.16em]">
-        CREATE | SHARE | ENJOY
-      </p>
+      <p className="text-[10px] font-medium tracking-[0.16em]">CREATE | SHARE | ENJOY</p>
       <p className="mt-1 flex flex-wrap items-center justify-center gap-x-1 text-xs">
         <strong className="font-bold">Created with Envitefy {categoryLabel}</strong>{" "}
         <a
