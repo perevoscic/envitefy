@@ -119,7 +119,13 @@ test("artwork contract selects exactly one composition and correct text policy",
   assert.doesNotMatch(flyer, /bottom 30% free/);
   const live = buildProductArtworkPrompt(event, undefined, copy, "live_card", 0);
   assert.match(live, /APPROVED_ARTWORK_TEXT/);
+  assert.match(live, /Paint only this celebration title/);
+  assert.match(live, /guest-action buttons/);
+  assert.match(live, /Never glue words together/);
   assert.match(live, /actions overlay the bottom edge of the artwork/);
+  assert.doesNotMatch(live, /readable supporting details/);
+  assert.doesNotMatch(live, /123 Oak Street/);
+  assert.doesNotMatch(live, /October 24, 2099/);
   assert.doesNotMatch(live, /bottom 30%/);
   const property = { ...event, propertyImageUrls: ["one", "two"] };
   const collage = buildProductArtworkPrompt(property, undefined, null, "live_card", 2);
@@ -157,7 +163,11 @@ test("flyer export preserves the complete composition without cropping or painti
 });
 test("approved copy protects names, milestone, all stops and wording across typography layouts", () => {
   const birthday = { ...event, title: "LIVIA", honoreeName: "Livia", ageOrMilestone: "10" };
-  assert.deepEqual(approvedArtworkText(birthday, "live_card"), ["LIVIA", "Turning 10!"]);
+  assert.deepEqual(approvedArtworkText(birthday, "live_card"), ["Livia is turning 10"]);
+  assert.deepEqual(approvedArtworkText({ ...birthday, title: "Livia is turning 10" }, "live_card"), [
+    "Livia is turning 10",
+  ]);
+  assert.doesNotMatch(approvedArtworkText(birthday, "live_card").join("\n"), /Garden Hall|4 PM|Join us/);
   assert.deepEqual(compareArtworkText(["LIVIA IS TURNING 10!"], ["10!", "Livia", "is turning"]), []);
   assert.deepEqual(compareArtworkText(["LIVIA IS TURNING 10!"], ["LIVIA IS TURNING 16!"]), ["missing_copy", "unexpected_text"]);
   assert.deepEqual(compareArtworkText(["Livia", "123 Oak Street"], ["Livia"]), ["missing_copy"]);

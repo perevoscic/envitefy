@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { fallbackExtractConciergeDraft } from "../../lib/concierge/fallback.ts";
+import { resolveLiveCardOverlayActions } from "../../lib/live-card-overlay-actions.ts";
 import { buildChatShowcasePreview } from "./chat-preview-adapters.ts";
 
 const draft = () => ({
@@ -47,6 +48,14 @@ test("disabled RSVP and skipped gift links do not become live-card actions", () 
   assert.equal(details.rsvpName, "");
   assert.equal(details.rsvpContact, "");
   assert.equal(details.registryLink, "");
+  assert.deepEqual(
+    resolveLiveCardOverlayActions({
+      category: details.category,
+      hasLocation: Boolean(details.location),
+      hasRegistry: Boolean(details.registryLink),
+    }),
+    ["rsvp", "details", "location", "calendar"],
+  );
 });
 
 test("a date-only draft does not present an invented start time for calendar actions", () => {

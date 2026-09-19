@@ -7,6 +7,8 @@ type NativeShareInput = {
 const INTERNAL_INSTRUCTION_COPY_PATTERNS = [
   /\bUse the [^.]{1,80}? Envitefy template family\.?/gi,
   /\bPreserve the full event flow in the generated live card and guest-facing details\.?/gi,
+  /\bKeep this event flow in Overview and Location button dialogs only; do not paint it on the artwork\.?/gi,
+  /\bLive Card artwork may paint only the celebration title[\s\S]*?never glue words together\.?/gi,
   /\bGenerate website hero\/background artwork for the event page\.[^.]*\.?/gi,
   /\bDo not bake large title text[\s\S]*?in HTML\.?/gi,
   /\bAdditional event stops?:\s*/gi,

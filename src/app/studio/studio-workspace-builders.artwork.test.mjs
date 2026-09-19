@@ -21,5 +21,5 @@ test("birthday artwork receives the host's exact headline and complete visual br
   const request = buildStudioRequest(details, "both", "page");
   assert.equal(request.event.title, details.eventTitle);
   assert.equal(request.event.userIdea, theme);
-  assert.equal(getDisplayTitle({ ...details, eventTitle: "" }), "Livia's 10th Birthday");
+  assert.equal(getDisplayTitle({ ...details, eventTitle: "" }), "Livia is turning 10");
 });

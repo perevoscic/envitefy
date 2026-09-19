@@ -11,7 +11,7 @@ test("studio builders make birthday name and age the default title anchor", () =
   const source = readSource("src/app/studio/studio-workspace-builders.ts");
 
   assert.match(source, /function buildBirthdayHeadline\(details: EventDetails\)/);
-  assert.match(source, /return `\$\{name\}'s \$\{toOrdinal\(age\)\} Birthday`;/);
+  assert.match(source, /turning \$\{age\}/);
   assert.match(source, /return `\$\{name\} Celebrates \$\{age\}`;/);
   assert.match(source, /buildBirthdayHeadline\(details\)/);
   assert.match(source, /export function getStudioThemeLine\(details: EventDetails\)/);

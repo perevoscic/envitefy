@@ -48,10 +48,9 @@ test("studio builders preserve Game Day RSVP opt-in while retaining compact form
     /rsvpContact: categorySupportsRsvp \? clean\(details\.rsvpContact\) \|\| null : null,/,
   );
   assert.match(surfaceSource, /const categorySupportsRsvp = supportsStudioCategoryRsvp/);
-  assert.match(
-    surfaceSource,
-    /visible:\s*\(categorySupportsRsvp \|\| Boolean\(directRsvpHref\) \|\| hasDirectEnvitefyRsvp\) &&/s,
-  );
+  assert.match(surfaceSource, /resolveLiveCardOverlayActions/);
+  assert.match(surfaceSource, /visible: overlayActionKeys.includes\("rsvp"\)/);
+  assert.match(surfaceSource, /visible: overlayActionKeys.includes\("calendar"\)/);
   assert.match(
     sanitizeSource,
     /callToAction: resolveStudioCallToAction\(\s*fallbackDetails,\s*readString\(value\.callToAction\),\s*fallbackDetails\.calloutText,\s*\)/s,

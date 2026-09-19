@@ -370,7 +370,8 @@ test("/chat is the OpenAI-backed concierge creator", () => {
     /canReuseCurrentImage && draftStudioInvite[\s\S]{0,120}refreshGeneratedDraftInviteMetadata/,
   );
   assert.match(client, /function additionalLocationNarrative/);
-  assert.match(client, /Preserve the full event flow in the generated live card/);
+  assert.match(client, /Keep this event flow in Overview and Location button dialogs only/);
+  assert.match(client, /Live Card artwork may paint only the celebration title/);
   assert.match(client, /await preloadGeneratedPreviewImage\(studioInvite\.imageUrl\);/);
   assert.match(client, /if \(draftStudioInvite && !liveCardEventId\)/);
   assert.match(client, /function isAffirmativeReply/);
@@ -582,6 +583,7 @@ test("/chat reserves fullscreen device previews for event pages", () => {
 
 test("/chat live-card preview overlays guest actions and keeps Preview and Publish at the bottom", () => {
   const preview = readSource("src/app/chat/ChatProductPreview.tsx");
+  const liveCardSurface = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
   const dialog = readSource("src/components/ArtworkPreviewDialog.tsx");
   const dialogCss = readSource("src/components/ArtworkPreviewDialog.module.css");
   const liveCardPreview = preview.slice(preview.indexOf("{isLiveCard ? ("), preview.indexOf("{artworkNotice"));
@@ -593,6 +595,12 @@ test("/chat live-card preview overlays guest actions and keeps Preview and Publi
 
   assert.match(liveCardPreview, /actionsPlacement="overlay"/);
   assert.doesNotMatch(liveCardPreview, /actionsPlacement="above"/);
+  assert.match(liveCardSurface, /resolveLiveCardOverlayActions/);
+  assert.match(liveCardSurface, /overlayActionKeys.includes\("rsvp"\)/);
+  assert.match(liveCardSurface, /overlayActionKeys.includes\("calendar"\)/);
+  assert.match(liveCardSurface, /resolveLiveCardOverlayActions/);
+  assert.match(liveCardSurface, /overlayActionKeys.includes\("rsvp"\)/);
+  assert.match(liveCardSurface, /overlayActionKeys.includes\("calendar"\)/);
   assert.doesNotMatch(previewActions, /Edit in chat/);
   assert.match(previewActions, />[\s\S]*?<span className="whitespace-nowrap">Preview<\/span>/);
   assert.match(previewActions, /\{isPublishing \? publishBusyLabel : publishActionLabel\}/);

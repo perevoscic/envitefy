@@ -21,7 +21,7 @@ test("studio builders frame birthday themes as birthday-party concepts", () => {
   );
   assert.match(
     source,
-    /Use Event Details as the source for guest-facing specificity, invitation copy, and factual grounding\. Do not let Design Idea-only nouns become visible copy\./,
+    /Use Event Details for guest-action dialogs \(Overview, Location, RSVP, Calendar\)\. Do not paint when, where, movie, dinner, or venue facts as invitation copy on the artwork\. Do not let Design Idea-only nouns become visible copy\./,
   );
 });
 
