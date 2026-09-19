@@ -1,5 +1,6 @@
 import type { ConciergeEventDraft } from "./types.ts";
-import { hasVisualChangeWords, stripArtworkPreservationInstructions } from "./visual-direction.ts";
+import { stripArtworkPreservationInstructions } from "./visual-direction.ts";
+import { isArtworkDirection } from "./artwork-edit-scope.ts";
 
 export type ArtworkTextMode = "headline" | "complete_invitation" | "none";
 
@@ -13,7 +14,7 @@ export function shouldRegenerateGeneratedDraftImageForEdit(args: {
   const { previousDraft: before, nextDraft: after, artworkTextMode } = args;
   // Explicit requests can target image elements without changing structured facts.
   const visualRequest = stripArtworkPreservationInstructions(args.userMessage);
-  if (hasVisualChangeWords(visualRequest)) return true;
+  if (isArtworkDirection(visualRequest)) return true;
   const changed = (field: keyof ConciergeEventDraft) =>
     JSON.stringify(before[field] ?? null) !== JSON.stringify(after[field] ?? null);
   if (["theme", "tone", "eventType"].some((field) => changed(field as keyof ConciergeEventDraft)))

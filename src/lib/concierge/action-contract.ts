@@ -7,6 +7,7 @@ import {
 } from "../creation/source-evidence.ts";
 import { validCalendarDate } from "./readiness.ts";
 import type { ConciergeEventAction, EventAsset, EventAssetType } from "./types.ts";
+import { isArtworkOnlyEdit, type ArtworkEventIdentity } from "./artwork-edit-scope.ts";
 
 const stringFields = [
   "title",
@@ -105,6 +106,7 @@ export function parseEventActionContract(
   value: unknown,
   message: string,
   assets: EventAsset[],
+  identity: ArtworkEventIdentity = { eventType: "unknown", honoreeName: null, ageOrMilestone: null },
 ): ConciergeEventAction[] {
   if (
     !matchesSchema(value, EVENT_ACTION_SCHEMA) ||
@@ -113,6 +115,7 @@ export function parseEventActionContract(
   )
     return [];
   const actions: ConciergeEventAction[] = [];
+  const artworkOnly = isArtworkOnlyEdit(message, identity);
   for (const action of value.actions) {
     if (!isRecord(action)) continue;
     const supported =
@@ -131,6 +134,7 @@ export function parseEventActionContract(
         )
           continue;
         const field = edit.field;
+        if (artworkOnly && field !== "theme" && field !== "tone") continue;
         if (Object.hasOwn(patch, field)) return [];
         if (edit.operation === "clear") {
           if (edit.value !== null || ["title", "timezone", "category"].includes(field)) continue;
@@ -173,7 +177,7 @@ export function parseEventActionContract(
         assetType: action.assetType as EventAssetType,
         brief: action.brief,
       });
-    } else if (action.type === "update_asset" && supported && typeof action.assetId === "string") {
+    } else if (!artworkOnly && action.type === "update_asset" && supported && typeof action.assetId === "string") {
       const asset = assets.find((item) => item.id === action.assetId);
       if (!asset) continue;
       const patch = {

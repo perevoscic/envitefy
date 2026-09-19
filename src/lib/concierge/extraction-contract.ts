@@ -5,6 +5,7 @@ import {
   strictObject,
 } from "../creation/source-evidence.ts";
 import type { ConciergeEventDraft, ConciergeMessageRequest } from "./types.ts";
+import { isArtworkOnlyEdit, isSameCreationEvent } from "./artwork-edit-scope.ts";
 
 const STRING_FIELDS = [
   "title",
@@ -89,6 +90,7 @@ export const CONCIERGE_EXTRACTION_INSTRUCTION = [
   "PRIVATE_DIRECTION (theme/tone) is separate from public event facts. Never leak prompts, budgets, workload, access codes or private contact details into guest copy. Respect hostBrief privacy preferences and requested languages. Do not add features or actions the app has not performed.",
   "Preserve the complete explicit visual brief in theme/tone: subjects, number of subjects, poses, expressions, materials, lighting, palette, lettering treatment, composition and exclusions. Do not reduce a detailed scene to a generic category or adjective. An exact headline is a title correction; preserve its spelling and punctuation.",
   "Treat visual corrections as changes to the artwork even when event facts stay the same. 'NO band memebrer, maket erhe text to bu cursvie in Livia is trunin 10' means remove all band members and render the existing birthday headline in cursive. Save the subject exclusion and font choice in theme/tone; preserve the existing name, age and headline wording unless an actual replacement is requested. Resolve common spelling errors in instructions without printing those errors on the invitation. Latest explicit exclusions override earlier positive subject suggestions.",
+  "For every event type and output format, appearance-only edits may change theme/tone but not event facts or approved copy. A new design is still the same event; a theme referencing another event category does not change the event type. Preserve names, milestones, dates, times, venues, later stops, RSVP, gifts and source evidence. Removing pictured activities or printed labels does not cancel the actual plan. Mixed requests may change only the explicitly requested facts. Never replace known facts with draft titles, TBD or other placeholders.",
   "When explicitly asked to write/translate/revise wording, return actual polished previewCopy now in every requested language; keep missing logistics empty and preserve approved wording on unrelated edits. Otherwise previewCopy is null. Never invent guest facts, contact instructions, venue brands or gift preferences. If online RSVP is off, preserve only explicitly requested manual replies.",
 ].join("\n");
 
@@ -129,10 +131,13 @@ export function parseConciergeEdits(
     request.ocrContext?.sourceEvidence?.sourceText || request.ocrContext?.ocrText || "";
   const seen = new Set<string>();
   const conversation = conciergeExtractionConversation(request, currentDraft);
+  const artworkOnly = !request.ocrContext && Boolean(request.draft && currentDraft &&
+    isSameCreationEvent(request.draft, currentDraft) && isArtworkOnlyEdit(request.message || "", request.draft));
   for (const edit of value.edits) {
     if (!isRecord(edit) || typeof edit.field !== "string" || typeof edit.sourceText !== "string")
       continue;
     const field = edit.field;
+    if (artworkOnly && field !== "theme" && field !== "tone") continue;
     const sourceText = edit.sourceText;
     if (seen.has(field)) return null;
     seen.add(field);
@@ -192,6 +197,6 @@ export function parseConciergeEdits(
     }
     accepted.push(field);
   }
-  if (isRecord(value.previewCopy)) patch.previewCopy = value.previewCopy;
+  if (!artworkOnly && isRecord(value.previewCopy)) patch.previewCopy = value.previewCopy;
   return { patch, cleared, accepted };
 }

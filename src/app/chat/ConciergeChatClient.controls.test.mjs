@@ -33,8 +33,7 @@ function harness(overrides = {}) {
     isSending: true,
   };
   const scope = {
-    isCommittingEvent: false, isListening: false, isBusy: true,
-    dictationRef: { current: { cancel: noop } },
+    isCommittingEvent: false, isBusy: true,
     conversationVersionRef: { current: 0 },
     responseAbortRef: { current: new AbortController() },
     generationAbortRef: { current: new AbortController() },
@@ -129,36 +128,149 @@ test("Cancel does not pretend to undo an event save already in progress", () => 
   assert.equal(h.scope.responseAbortRef.current.signal.aborted, false);
 });
 
-function renderComposer({ busy = false, listening = false, text = "" } = {}) {
+function renderComposer({ busy = false, text = "" } = {}) {
   const icon = (name) => (props) => React.createElement("svg", { ...props, "data-icon": name });
   const container = ({ children, className }) => React.createElement("div", { className }, children);
   return renderToStaticMarkup(load("composer", {
     React, cn: (...classes) => classes.filter(Boolean).join(" "),
     isEmptyState: false, isCompactEmptyComposer: false, isBusy: busy,
-    isListening: listening, isCommittingEvent: false, isUploading: false,
+    isCommittingEvent: false, isUploading: false,
     isGeneratingCard: busy, isPublishingCard: false, canSubmitComposer: true,
     liveCardEventId: null, draft: {}, input: text, selectionPills: null, error: null,
     composerCardRef: { current: null }, fileInputRef: { current: null },
     handleSubmit: noop, handleSelectedSnapFile: noop, handleComposerValueChange: noop,
-    submitComposerInput: noop, handleVoiceInput: noop, handleCancelChat: noop,
+    submitComposerInput: noop, handleStarterCategoryChoice: noop, handleCancelChat: noop,
+    ChatCategoryMenu: ({ disabled }) => React.createElement("button", { disabled, "aria-label": "Choose event category" }, "+"),
     setIsComposerFocused: noop, getUploadAcceptAttribute: () => "image/*", busyLabel: "Generating invite",
     PromptInput: container, PromptInputActions: container, PromptInputAction: container,
     PromptInputTextarea: (props) => React.createElement("textarea", props),
-    Mic: icon("mic"), Square: icon("stop"), ArrowUp: icon("send"), Loader2: icon("loading"), X: icon("cancel"),
+    ArrowUp: icon("send"), Loader2: icon("loading"), X: icon("cancel"),
   }));
 }
 
-test("active chat keeps a dedicated mic beside Send and a visible Cancel, with no plus menu", () => {
+test("active chat offers categories beside Send and Cancel without voice input", () => {
   for (const text of ["", "More wedding details"]) {
     const html = renderComposer({ text });
-    assert.match(html, /aria-label="Use voice input"/);
+    assert.match(html, /aria-label="Choose event category"/);
     assert.match(html, /aria-label="Send"/);
     assert.match(html, /Cancel chat and return to dashboard/);
-    assert.doesNotMatch(html, /<details|Uploads and suggestions|data-icon="plus"/);
+    assert.doesNotMatch(html, /voice input|dictation|microphone/);
   }
   const busy = renderComposer({ busy: true });
   assert.match(busy, /aria-label="Cancel current response or generation"/);
-  const listening = renderComposer({ listening: true });
-  assert.match(listening, /aria-label="Stop voice input"/);
-  assert.match(listening, /disabled=""[^>]+aria-label="Send"/);
+  assert.match(busy, /disabled="" aria-label="Choose event category"/);
+  assert.match(busy, /disabled=""[^>]+aria-label="Send"/);
+});
+
+function categoryHarness({ active = false, thread = null, busy = false } = {}) {
+  const state = { input: "Livia, September 25", draft: active ? { title: "Livia's birthday" } : null, selected: null, resets: 0 };
+  const scope = {
+    isBusy: busy, isEmptyState: !active, threadId: thread,
+    CELEBRATION_STARTER_TILES: [{ prompt: "Birthday", color: "text-pink-600" }],
+    pendingStarterCategoryRef: { current: null },
+    setSelectedStarterCategory: (tile) => { state.selected = tile; },
+    updateComposerSelection: noop, focusComposerAtEnd: noop,
+    resetConversation: () => { state.draft = null; state.input = ""; state.resets += 1; },
+    progress: { requestLeave: (callback) => { state.leave = callback; }, markSaved: noop, allowNavigation: (callback) => callback() },
+    router: { push: (href) => { state.href = href; }, replace: (href) => { state.href = href; } },
+  };
+  return { state, scope, choose: load("handleStarterCategoryChoice", scope) };
+}
+
+const birthday = { label: "Birthdays", prompt: "Birthday", href: "/event/birthdays" };
+
+test("choosing a category before the first message preserves typed details", () => {
+  const h = categoryHarness();
+  h.choose(birthday);
+  assert.equal(h.state.input, "Livia, September 25");
+  assert.equal(h.state.selected.prompt, "Birthday");
+  assert.equal(h.state.resets, 0);
+  assert.equal(h.state.leave, undefined);
+});
+
+test("category changes in an active chat wait for the unsaved-progress decision", () => {
+  const h = categoryHarness({ active: true });
+  h.choose(birthday);
+  assert.equal(h.state.draft.title, "Livia's birthday");
+  assert.equal(h.state.resets, 0);
+  assert.equal(h.state.selected, null);
+  h.state.leave();
+  assert.equal(h.state.resets, 1);
+  assert.equal(h.state.selected.prompt, "Birthday");
+});
+
+test("a new category survives leaving a saved thread and signup navigation is guarded", () => {
+  const h = categoryHarness({ active: true, thread: "saved-thread" });
+  h.choose(birthday);
+  h.state.leave();
+  assert.equal(h.state.href, "/chat");
+  assert.equal(h.scope.pendingStarterCategoryRef.current.prompt, "Birthday");
+  const signup = categoryHarness({ active: true });
+  signup.choose({ label: "Sign-up Form", prompt: "Sign-up Form", href: "/signup-forms/templates" });
+  assert.equal(signup.state.href, undefined);
+  signup.state.leave();
+  assert.equal(signup.state.href, "/signup-forms/templates");
+  assert.equal(signup.state.resets, 0);
+});
+
+test("Generate now starts generation for the current draft and respects readiness", () => {
+  const draft = { title: "Livia's birthday" };
+  const generated = [];
+  const scope = {
+    React, shouldShowGenerateReply: true, canGenerateProduct: true, draft,
+    isGeneratingCard: false, setIsReadyChatComposerOpen: noop,
+    generateProductForDraft: value => generated.push(value),
+    Sparkles: () => null, Loader2: () => null,
+  };
+  const action = load("generateReplyAction", scope);
+  assert.match(renderToStaticMarkup(action), /Generate now/);
+  action.props.onClick();
+  assert.deepEqual(generated, [draft]);
+  load("generateReplyAction", { ...scope, canGenerateProduct: false }).props.onClick();
+  assert.equal(generated.length, 1);
+  assert.equal(load("generateReplyAction", { ...scope, shouldShowGenerateReply: false }), null);
+});
+
+function generationHarness(generate) {
+  const state = { view: "chat", views: [], phase: null, error: null, messages: [] };
+  const scope = {
+    conversationVersionRef: { current: 0 }, normalizeDraftProductOutputs: draft => draft,
+    isReadyProductDraft: () => true, setError: value => { state.error = value; },
+    setPhase: value => { state.phase = value; },
+    setMobileView: value => { state.view = value; state.views.push(value); },
+    setGenerationStage: noop, setStreamingPreviewImage: noop,
+    uploadedLiveCardSourceImageUrl: async () => null,
+    generateStudioInviteForDraft: generate, effectiveSelectedProductLabel: "Live Card",
+    newMessage: (role, text) => ({ role, text }), preloadGeneratedPreviewImage: async () => {},
+    setDraft: noop, setDraftStudioInvite: noop, setGeneratedInviteImageUrl: noop,
+    setLiveCardEventId: noop, setLiveCardTitle: noop, setLiveCardSummary: noop,
+    draftHeadline: draft => draft.title, liveCardSummaryFromDraft: () => ({}),
+    effectiveSelectedProductOutput: "live_card", notifyCreationThreadsChanged: noop,
+    setMessages: update => { state.messages = update(state.messages); },
+  };
+  return { state, scope, generate: load("generateProductForDraft", scope) };
+}
+
+test("generation opens preview immediately and completion preserves a return to chat", async () => {
+  let complete;
+  const h = generationHarness(() => new Promise(resolve => { complete = resolve; }));
+  const pending = h.generate({ title: "Livia's birthday", canPersist: true });
+  assert.equal(h.state.view, "preview");
+  await Promise.resolve();
+  h.scope.setMobileView("chat");
+  complete({ imageUrl: "birthday.webp" });
+  await pending;
+  assert.equal(h.state.view, "chat");
+  assert.equal(h.state.phase, "card_ready");
+  assert.deepEqual(h.state.views, ["preview", "chat"]);
+  assert.equal(h.state.messages.length, 1);
+});
+
+test("failed generation returns to chat with the error and a retryable draft", async () => {
+  const h = generationHarness(async () => { throw new Error("Please retry generation."); });
+  await h.generate({ title: "Livia's birthday", canPersist: true });
+  assert.equal(h.state.view, "chat");
+  assert.equal(h.state.phase, "ready_to_generate");
+  assert.equal(h.state.error, "Please retry generation.");
+  assert.equal(h.state.messages.length, 0);
 });

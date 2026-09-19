@@ -91,7 +91,7 @@ export function MainContentWrapper({
           : undefined,
         // Settings applies the inset to its cards so its page gradient reaches the navbar.
         paddingTop: isSettingsRoute ? "0px" : paddingTop,
-        paddingBottom: "max(0px, env(safe-area-inset-bottom))",
+        paddingBottom: isChatRoute ? "0px" : "max(0px, env(safe-area-inset-bottom))",
         paddingLeft,
         "--app-sidebar-width": paddingLeft,
         "--app-content-top-inset": paddingTop,

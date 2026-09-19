@@ -5,6 +5,7 @@ import OpenAI from "openai";
 import { hasRequiredCopyLanguages, provisionalInvitationCopy, requestsInvitationCopy } from "./copy-workflow.ts";
 import { normalizeHostBrief } from "./host-brief.ts";
 import { hasVisualChangeWords, stripArtworkPreservationInstructions } from "./visual-direction.ts";
+import { isArtworkOnlyEdit, isSameCreationEvent } from "./artwork-edit-scope.ts";
 import { applyHostPrivacy } from "./host-privacy.ts";
 import { extractRsvpContactDetails } from "./rsvp-details.ts";
 import { extractExplicitEventLocation, extractExplicitEventTitle, extractExplicitRsvpEnabled, extractNamedAge, hasExplicitEventSchedule, hasStalePreviewFacts, pairedHonorees } from "./conversation-edits.ts";
@@ -288,10 +289,22 @@ function reconciledMissingFields(
 export function normalizeConciergeDraft(
   value: unknown,
   fallback: ConciergeEventDraft,
-  options: { message?: string | null; previousDraft?: ConciergeEventDraft | null } = {},
+  options: { message?: string | null; previousDraft?: ConciergeEventDraft | null; artworkOnly?: boolean } = {},
 ): ConciergeEventDraft {
   const record = asRecord(value);
   const eventData = asRecord(record.eventData);
+  const artworkOnly = options.artworkOnly ?? Boolean(options.previousDraft &&
+    isSameCreationEvent(options.previousDraft, fallback) &&
+    isArtworkOnlyEdit(options.message || "", options.previousDraft));
+  if (artworkOnly) {
+    // An appearance edit has no authority over event facts or approved copy,
+    // even if the model returns them or normalization would reinterpret them.
+    return {
+      ...fallback,
+      theme: mergeVisualDirection(firstDraftString(record.theme, eventData.theme), fallback.theme, options.message || ""),
+      tone: mergeVisualDirection(firstDraftString(record.tone, eventData.tone), fallback.tone, options.message || ""),
+    };
+  }
   // Output selection is resolved from the customer's request, never a model's
   // incidental mention of a format in generated copy.
   let requestedOutputs = [...fallback.requestedOutputs];
@@ -330,8 +343,9 @@ export function normalizeConciergeDraft(
       : fallback.sourceContext.hasUsableContext,
   };
   const sourceMaterialRecord = asRecord(record.sourceMaterial);
-  const sourceMaterial = sourceMaterialRecord
+  const sourceMaterial = Object.keys(sourceMaterialRecord).length
     ? {
+        ...fallback.sourceMaterial,
         ocrText: cleanString(sourceMaterialRecord.ocrText) || null,
         fieldsGuess: asRecord(sourceMaterialRecord.fieldsGuess),
         category: cleanString(sourceMaterialRecord.category) || null,
@@ -533,6 +547,7 @@ export function normalizeConciergeDraft(
     requestedOutputs,
     sourceContext,
     sourceMaterial,
+    sourceResolutions: fallback.sourceResolutions,
     eventPurpose,
     eventType,
     title,
@@ -724,6 +739,8 @@ async function extractWithOpenAi(
   const normalized = normalizeConciergeDraft(request.retryReply ? { previewCopy: { body: retryCopy.body, subheadline: retryCopy.subheadline } } : parsedDraft, fallback, {
     message: request.retryReply ? "" : request.message || "",
     previousDraft: request.draft,
+    artworkOnly: !request.retryReply && !request.ocrContext && Boolean(request.draft &&
+      isSameCreationEvent(request.draft, fallback) && isArtworkOnlyEdit(request.message || "", request.draft)),
   });
   if (!request.retryReply) {
     const explicitlyClearedFields = new Set(fallback.explicitlyClearedFields || []);

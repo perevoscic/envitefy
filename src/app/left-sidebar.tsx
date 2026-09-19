@@ -1427,7 +1427,7 @@ export default function LeftSidebar() {
         <button
           data-app-navigation="reveal"
           type="button"
-          className="nav-chrome-pill-secondary nav-chrome-motion fixed left-3 top-[max(0.35rem,env(safe-area-inset-top))] z-[6600] inline-flex h-10 w-10 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation items-center justify-center rounded-full lg:hidden"
+          className="nav-chrome-pill-secondary nav-chrome-motion fixed left-[max(0.75rem,env(safe-area-inset-left))] top-[calc(var(--envitefy-chat-layout-top,0px)+max(0.35rem,env(safe-area-inset-top)))] z-[6600] inline-flex h-10 w-10 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation items-center justify-center rounded-full lg:hidden"
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();

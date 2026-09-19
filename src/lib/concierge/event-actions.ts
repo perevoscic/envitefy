@@ -12,7 +12,7 @@ import {
 } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { buildEventAssetContent } from "./assets.ts";
-import { isExternalPlatformActionRequest } from "./creation-intent.ts";
+import { isExternalPlatformActionRequest, normalizeCreationEventType } from "./creation-intent.ts";
 import {
   createEventAsset,
   listEventAssets,
@@ -565,7 +565,12 @@ async function planWithOpenAi(params: {
   recordCreationModelRun({ model, workload: "correction", startedAt, outcome, usage: response.usage });
   if (outcome !== "success") return null;
   const parsed = asRecord(parseAiJson(choice?.message?.content));
-  const actions = parseEventActionContract(parsed, params.message, params.assets);
+  const eventData = asRecord(params.event.data);
+  const actions = parseEventActionContract(parsed, params.message, params.assets, {
+    eventType: normalizeCreationEventType(eventData.eventType || eventData.category),
+    honoreeName: firstCompactString(eventData.honoreeName, eventData.birthdayName, eventData.childName),
+    ageOrMilestone: firstCompactString(eventData.ageOrMilestone, eventData.age),
+  });
   if (!actions.length) return null;
   return {
     actions,

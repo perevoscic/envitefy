@@ -3,6 +3,7 @@ import * as chrono from "chrono-node";
 import { extractExplicitEventLocation, extractExplicitEventTitle, extractExplicitRsvpEnabled, extractNamedAge, hasStalePreviewFacts, normalizeEventScheduleText, pairedHonorees, possessiveBirthdayMilestone } from "./conversation-edits.ts";
 import { extractRsvpContactDetails, RSVP_PHONE_PATTERN } from "./rsvp-details.ts";
 import { extractVisualDirection, stripArtworkPreservationInstructions } from "./visual-direction.ts";
+import { isArtworkDirection, isArtworkOnlyEdit } from "./artwork-edit-scope.ts";
 import { conciergeCapabilityAnswer } from "./capabilities.ts";
 import { copyRequirementsChanged, provisionalInvitationCopy, requestsInvitationCopy } from "./copy-workflow.ts";
 import { updateHostBrief } from "./host-brief.ts";
@@ -330,7 +331,9 @@ function detectEventType(text: string, previous?: ConciergeEventDraft | null): C
   ) {
     return previous.eventType;
   }
-  const haystack = text.toLowerCase();
+  const haystack = (previous?.eventType && previous.eventType !== "unknown"
+    ? text.replace(/\b(?:birthday|wedding|baby\s+shower|gender\s+reveal|bridal\s+shower|graduation|gymnastics|game\s+day|football)(?:[- ](?:inspired|themed))?\s+(?:theme|style|background|artwork|design)\b/gi, "")
+    : text).toLowerCase();
   if (/\b(birthday|turning|turns|bday)\b/.test(haystack)) return "birthday";
   if (possessiveBirthdayMilestone(text)) return "birthday";
   if (/\b(wedding|married|marriage|bride|groom)\b/.test(haystack)) return "wedding";
@@ -631,7 +634,7 @@ function detectTheme(text: string, previous?: ConciergeEventDraft | null) {
   }
 
   const interestParts = [
-    text.match(/\b(?:watch|see)\s+([^,.;\n]{2,70}?)\s+(?:at|@)\b/i)?.[1],
+    text.match(/\b(?:watch|see)\s+([^,.;\n]{2,70}?)(?=\s+(?:at|@|then|and then)\b|[.;\n]|$)/i)?.[1],
     text.match(/\b(?:likes?|loves?|is\s+into)\s+([^.;\n]{2,90})/i)?.[1],
   ]
     .map((value) =>
@@ -1052,10 +1055,11 @@ function withConversationState(
   draft: ConciergeEventDraft,
   previous: ConciergeEventDraft | null | undefined,
   message: string,
+  artworkOnly = false,
 ): ConciergeEventDraft {
   const next: ConciergeEventDraft = {
     ...draft,
-    hostBrief: draft.sourceContext.boundary && draft.sourceContext.boundary !== "envitefy_question"
+    hostBrief: artworkOnly || draft.sourceContext.boundary && draft.sourceContext.boundary !== "envitefy_question"
       ? previous?.hostBrief : updateHostBrief(draft.hostBrief || previous?.hostBrief, message),
     copyStatus: previous?.copyStatus,
     pendingReply: previous?.pendingReply || null,
@@ -1064,7 +1068,7 @@ function withConversationState(
   if (previous?.copyStatus && cleanString(draft.previewCopy.body) !== cleanString(previous.previewCopy.body)) next.copyStatus = "needs_update";
   const changedCopyRequirements = previous?.copyStatus && copyRequirementsChanged(previous, next);
   if (changedCopyRequirements) next.copyStatus = "needs_update";
-  if ((!draft.sourceContext.boundary || draft.sourceContext.boundary === "envitefy_question") && (requestsInvitationCopy(message) || changedCopyRequirements && previous.copyStatus === "provisional")) {
+  if (!artworkOnly && (!draft.sourceContext.boundary || draft.sourceContext.boundary === "envitefy_question") && (requestsInvitationCopy(message) || changedCopyRequirements && previous.copyStatus === "provisional")) {
     const provisional = provisionalInvitationCopy(next);
     if (provisional) { next.previewCopy = provisional; next.copyStatus = "provisional"; }
     else next.copyStatus = "needs_update";
@@ -1162,9 +1166,21 @@ function shouldStartFreshEvent(message: string, previous?: ConciergeEventDraft |
   if (/\b(i|we)\s+(got|received|have)\b[\s\S]{0,80}\b(invite|invitation)\b/i.test(text)) {
     return true;
   }
-  if (!/\b(create|make|build|design|generate|draft)\b/i.test(text)) return false;
+  if (!/\b(create|make|build|design|generate|draft|start|plan)\b/i.test(text)) return false;
+  // A new background/design is still the same event. Requiring an event
+  // transition here prevents a visual correction from erasing every fact.
+  const explicitNewEvent = /\b(?:new|another|separate|different)\s+(?:(?:birthday|wedding|baby\s+shower|bridal\s+shower|gender\s+reveal|graduation|football|gymnastics|anniversary)\s+)?(?:event|party|celebration|invitation|invite|live\s*card|event\s*page)\b/i.test(text);
+  const requestedType = detectEventType(text);
+  const sameEventType = requestedType === previous.eventType || requestedType === "unknown";
+  const requestedHonoree = extractNamedAge(text)?.name || possessiveBirthdayMilestone(text)?.name;
+  const differentHonoree = requestedHonoree && previous.honoreeName && requestedHonoree.toLowerCase() !== previous.honoreeName.toLowerCase();
+  if (!explicitNewEvent && !differentHonoree) {
+    if (sameEventType) return false;
+    // A category mentioned as a visual reference is not an event transition.
+    if (isArtworkDirection(text) && !/\b(?:birthday|wedding|baby\s+shower|bridal\s+shower|gender\s+reveal|graduation|football|gymnastics)\s+(?:event|party|invitation|invite|live\s*card|event\s*page)\b/i.test(text)) return false;
+  }
   if (
-    /\b(this|that|current|existing|same|matching|add|switch|change|refine|update|edit)\b/i.test(
+    /\b(this|that|current|existing|same|matching|add|switch|change|refine|update|edit|remove|restyle|redesign)\b/i.test(
       text,
     )
   ) {
@@ -1570,6 +1586,8 @@ function stripLeadingTimeFromLocation(value: string | null) {
     "",
   );
   const withoutTrailingIntent = withoutTime
+    .replace(/\s+(?:at|from)\s+(?:\d{1,2}:\d{2}(?:\s*(?:a\.?m\.?|p\.?m\.?))?|\d{1,2}\s*(?:a\.?m\.?|p\.?m\.?))\b[\s\S]*$/i, "")
+    .replace(/\s+(?:(?:and\s+)?then\b|(?:we(?:'re|’re|\s+are)?\s+)?(?:going\s+to|will)\s+(?:watch|see|have|eat|go)\b)[\s\S]*$/i, "")
     .replace(/\s*[,;]?\s+\b(?:and\s+)?rsvps?\b[\s\S]*$/i, "")
     .replace(
       /\s+(?:for|with)\s+(?:about\s+)?\d{1,4}\s*(?:guests?|kids?|children|peoples?|attendees|invitees)\b[\s\S]*$/i,
@@ -2816,6 +2834,30 @@ export function fallbackExtractConciergeDraft(args: {
   const sourceContext = blockingBoundary
     ? { ...resolvedSourceContext, boundary: blockingBoundary }
     : { ...resolvedSourceContext, boundary: null };
+  if (previous && !args.ocrContext && !blocksCreation && isArtworkOnlyEdit(message, previous)) {
+    const detectedTheme = detectTheme(detailText, previous);
+    const visualDirection = stripArtworkPreservationInstructions(message).trim();
+    const theme = !visualDirection || detectedTheme?.includes(visualDirection)
+      ? detectedTheme
+      : [detectedTheme, visualDirection].filter(Boolean).join(" ").slice(-6000);
+    const tone = detectTone(detailText, previous);
+    const next = {
+      ...previous,
+      theme,
+      tone,
+      requestedOutputs,
+      outputs: toLegacyOutputs(requestedOutputs),
+      knowledgeAnswer: null,
+      assistantGuidance: null,
+      sourceContext,
+    };
+    if (previous.currentQuestion !== "date_confirmation") {
+      Object.assign(next, deriveCreationStatus({ ...next, tone: tone || theme }));
+    }
+    // Keep canonical facts, approved copy and upload evidence together. Artwork
+    // wording must never be re-parsed as a name, venue, date or RSVP answer.
+    return withConversationState(next, previous, message, true);
+  }
   if (!previous && !privateDataMutationRequest && isStandaloneLostContextReply(message)) {
     return buildEmptyConversationDraft({
       sessionDraft,

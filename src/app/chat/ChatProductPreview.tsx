@@ -54,7 +54,6 @@ type ChatProductPreviewProps = {
   onEdit: () => void;
   rsvp: RsvpPreviewBadge;
   weatherContext: ConciergeWeatherContext | null;
-  mobileView: "chat" | "preview";
 };
 
 function cleanPreviewText(value: unknown): string {
@@ -195,7 +194,6 @@ export default function ChatProductPreview({
   publishBusyLabel = "Publishing...",
   isPublishing,
   onPublish,
-  mobileView,
   skinLabel,
   rsvp,
   weatherContext,
@@ -269,11 +267,7 @@ export default function ChatProductPreview({
   return (
     <aside
       aria-label={`${panelOutputLabel} preview`}
-      className={`min-h-0 min-w-0 flex-col overflow-hidden bg-[#f8f7fb]/96 backdrop-blur-xl lg:static lg:border-l lg:border-[#e5dff0] lg:bg-white/58 ${
-        mobileView === "preview"
-          ? "fixed inset-x-0 bottom-0 top-[calc(env(safe-area-inset-top)+3.25rem)] z-30 flex rounded-t-[1.75rem] shadow-[0_-24px_70px_rgba(35,24,72,0.18)] lg:rounded-none lg:shadow-none"
-          : "hidden lg:flex"
-      }`}
+      className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-[#f8f7fb]/96 backdrop-blur-xl lg:border-l lg:border-[#e5dff0] lg:bg-white/58"
     >
       <div className="flex h-full min-h-0 flex-col">
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-5 pt-3 sm:px-6 lg:pt-6">
@@ -335,6 +329,14 @@ export default function ChatProductPreview({
 
             {isLiveCard ? (
               <section aria-label="Interactive guest preview" className="relative">
+                <button
+                  type="button"
+                  onClick={onEdit}
+                  className="absolute right-3 top-3 z-30 inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/80 bg-white/95 px-4 text-xs font-semibold text-[#5c4cd5] shadow-sm backdrop-blur-md transition hover:bg-[#f3edff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
+                >
+                  <Pencil className="size-3.5" aria-hidden="true" />
+                  Edit in chat
+                </button>
                 <div
                   className="mx-auto w-full max-w-[min(100%,max(16rem,calc((100svh-16rem)*2/3)))] lg:max-w-full"
                   inert={isGenerating}
