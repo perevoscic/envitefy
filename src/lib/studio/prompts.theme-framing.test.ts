@@ -756,7 +756,7 @@ test("studio invitation image prompt keeps game day imagery grounded in provided
   assert.doesNotMatch(prompt, /Parking \/ Arrival: Lot C/);
   assert.match(
     prompt,
-    /Only the approved subject\/title is permitted as visible invitation text in page\/live-card images; keep it sparse, readable, and intentionally designed\./,
+    /Only the approved celebration title is permitted as visible invitation text in page\/live-card images; keep it sparse, readable, and intentionally designed\./,
   );
 });
 
@@ -781,7 +781,7 @@ test("page live-card prompts require baked-in raster text and preserve a clear b
   );
   assert.match(
     prompt,
-    /Only the approved subject\/title is permitted as visible invitation text in page\/live-card images; keep it sparse, readable, and intentionally designed\./,
+    /Only the approved celebration title is permitted as visible invitation text in page\/live-card images; keep it sparse, readable, and intentionally designed\./,
   );
   assert.match(prompt, /resolve the final visible text line well above the bottom action buttons/);
   assert.match(prompt, /Approved invitation copy to use verbatim/);

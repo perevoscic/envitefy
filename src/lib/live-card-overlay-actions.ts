@@ -1,5 +1,3 @@
-import { supportsStudioCategoryRsvp } from "@/app/studio/studio-workspace-field-config";
-
 export type LiveCardOverlayActionKey =
   | "rsvp"
   | "details"
@@ -17,6 +15,10 @@ export type LiveCardOverlayActionInput = {
   hasOpenHouseLogo?: boolean;
 };
 
+function categorySupportsLiveCardRsvp(category?: string | null): boolean {
+  return (category || "").trim() !== "Game Day";
+}
+
 /**
  * Usual Live Card chrome overlaid on the artwork.
  * RSVP and Calendar stay on the card even when chat said "no rsvp" or calendar links are still forming.
@@ -30,7 +32,7 @@ export function resolveLiveCardOverlayActions(
     keys.push("details");
     if (input.hasOpenHouseAgent) keys.push("rsvp");
     if (input.hasOpenHouseLogo) keys.push("logo");
-  } else if (supportsStudioCategoryRsvp(input.category)) {
+  } else if (categorySupportsLiveCardRsvp(input.category)) {
     keys.push("rsvp", "details");
   } else {
     keys.push("details");

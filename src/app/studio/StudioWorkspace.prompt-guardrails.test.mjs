@@ -104,7 +104,7 @@ test("studio public copy strips internal generation instructions from descriptio
   );
   assert.match(
     builderSource,
-    /stripStudioInternalInstructions\(previous\?\.description\) \|\|\s*buildDescription\(details\)/,
+    /buildDescription\(details\) \|\|\s*stripStudioInternalInstructions\(previous\?\.description\)/,
   );
   assert.match(
     builderSource,
@@ -124,7 +124,8 @@ test("studio product contracts separate live-card title art from typeset flyers 
   const contracts = readSource("src/lib/studio/product-contract.ts");
   assert.match(prompts, /complete visible-text whitelist/);
   assert.match(prompts, /No visible words, letters, numbers/);
-  assert.match(contracts, /bottom 30% free/);
-  assert.match(contracts, /5 × 7 inch printable flyer/);
+  assert.match(contracts, /paint only the approved celebration title/);
+  assert.match(contracts, /guest-action buttons/);
+  assert.match(contracts, /5 × 7 inch printable invitation/);
   assert.match(contracts, /Text-free website hero/);
 });
