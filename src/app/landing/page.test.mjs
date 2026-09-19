@@ -490,7 +490,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.doesNotMatch(signedOutNavConfig, /label: "Pricing"/);
   assert.doesNotMatch(signedOutNavConfig, /label: "Help"/);
 
-  assert.match(scrollAwareBottomNav, /document\.querySelector\("#hero, #landing-hero"\)/);
+  assert.match(scrollAwareBottomNav, /#hero, #landing-hero, main > section:first-of-type:not\(#templates\)/);
   assert.match(scrollAwareBottomNav, /new IntersectionObserver/);
   assert.match(scrollAwareBottomNav, /!entry\.isIntersecting/);
   assert.match(scrollAwareBottomNav, /threshold: \[0\]/);
@@ -521,7 +521,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.doesNotMatch(bottomNav, /<MenuBottomSheet/);
   assert.doesNotMatch(bottomNav, /action === "signin"/);
   assert.match(signedOutPageChrome, /<HeroTopNav/);
-  assert.match(signedOutPageChrome, /<BottomNav/);
+  assert.match(signedOutPageChrome, /<ScrollAwareBottomNav/);
   assert.match(signedOutPageChrome, /<MenuBottomSheet/);
   assert.match(signedOutPageChrome, /<ConciergeSheet/);
   assert.match(signedOutPageChrome, /<AuthModal/);
@@ -541,10 +541,9 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
     signedOutPageChrome,
     /const signupSuccessRedirectUrl = createAction\?\.href \|\| "\/chat"/,
   );
-  assert.match(
-    signedOutPageChrome,
-    /router\.push\(href\.startsWith\("#"\) \? `\/\$\{href\}` : href\)/,
-  );
+  assert.match(signedOutPageChrome, /marketingPageNavLinks\(pathname \|\| ""\)/);
+  assert.match(signedOutPageChrome, /navLinks=\{pageNavLinks\}/);
+  assert.match(signedOutPageChrome, /items=\{bottomNavItems\}/);
   assert.match(showcasePage, /<SignedOutPageChrome/);
   assert.match(showcasePage, /activeBottomNavLabel="Examples"/);
   assert.match(showcasePage, /topNavVariant="transparent-light"/);
@@ -574,7 +573,8 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(menuBottomSheet, /\/logo\.png/);
   assert.match(menuBottomSheet, /brightness-0 invert/);
   assert.doesNotMatch(menuBottomSheet, /envitefy-wordmark-white\.svg/);
-  assert.match(menuBottomSheet, /signedOutMobileMenuLinks\.map/);
+  assert.match(menuBottomSheet, /navLinks = signedOutMobileMenuLinks/);
+  assert.match(menuBottomSheet, /navLinks\.map/);
   assert.match(menuBottomSheet, /aria-label="Signed-out mobile menu"/);
   assert.match(menuBottomSheet, /Start Creating/);
   assert.match(menuBottomSheet, /Sign In/);

@@ -14,7 +14,7 @@ import {
 } from "react";
 import LoginForm from "@/components/auth/LoginForm";
 import SignupForm from "@/components/auth/SignupForm";
-import { signedOutMobileMenuLinks } from "@/config/navigation";
+import { signedOutMobileMenuLinks, type SignedOutMobileMenuLink } from "@/config/navigation";
 import type { SignupIntent, SignupSource } from "@/lib/signup-intent";
 import { useModalDialog } from "@/hooks/useModalDialog";
 
@@ -27,6 +27,7 @@ type MenuBottomSheetProps = {
   signupSuccessRedirectUrl?: string;
   signupSource?: SignupSource;
   signupIntent?: SignupIntent;
+  navLinks?: SignedOutMobileMenuLink[];
 };
 
 const closeDragOffset = 84;
@@ -40,11 +41,13 @@ export default function MenuBottomSheet({
   signupSuccessRedirectUrl = successRedirectUrl,
   signupSource,
   signupIntent,
+  navLinks = signedOutMobileMenuLinks,
 }: MenuBottomSheetProps) {
   const dragControls = useDragControls();
   const [authMode, setAuthMode] = useState<AuthMode | null>(null);
   const authActive = authMode !== null;
   const dialogRef = useRef<HTMLElement | null>(null);
+  const pendingHashRef = useRef<string | null>(null);
 
   const closeSheet = useCallback(() => {
     onOpenChange(false);
@@ -55,6 +58,20 @@ export default function MenuBottomSheet({
   useEffect(() => {
     if (!open) {
       setAuthMode(null);
+      const href = pendingHashRef.current;
+      pendingHashRef.current = null;
+      if (href) {
+        const frame = window.requestAnimationFrame(() => {
+          const target = document.getElementById(href.slice(1));
+          if (!target) return;
+          window.history.pushState(null, "", href);
+          window.scrollTo({
+            top: target.getBoundingClientRect().top + window.scrollY - 100,
+            behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+          });
+        });
+        return () => window.cancelAnimationFrame(frame);
+      }
     }
   }, [open]);
 
@@ -154,17 +171,17 @@ export default function MenuBottomSheet({
                 {!authActive ? (
                   <motion.nav
                     key="menu"
-                    className="absolute inset-0 overflow-hidden pb-1 text-right"
+                    className="absolute inset-0 overflow-y-auto overscroll-y-contain pb-1 text-right [-webkit-overflow-scrolling:touch]"
                     aria-label="Signed-out mobile menu"
                     initial={{ x: 0, opacity: 1 }}
                     animate={{ x: 0, opacity: 1 }}
                     exit={{ x: "-105%", opacity: 0 }}
                     transition={{ duration: 0.28, ease: "easeOut" }}
                   >
-                    <div className="grid gap-1">
+                    <div className="grid gap-0">
                       <button
                         type="button"
-                        className="nav-chrome-motion flex w-full items-center justify-end gap-2 rounded-2xl px-4 py-3 text-right text-base font-semibold text-white transition hover:bg-white/[0.08] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f]"
+                        className="nav-chrome-motion flex min-h-11 w-full items-center justify-end gap-2 rounded-2xl px-4 py-1.5 text-right text-base font-semibold text-white transition hover:bg-white/[0.08] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f]"
                         onClick={() => setAuthMode("signup")}
                       >
                         Start Creating
@@ -173,19 +190,25 @@ export default function MenuBottomSheet({
 
                       <button
                         type="button"
-                        className="nav-chrome-motion flex w-full items-center justify-end gap-2 rounded-2xl px-4 py-3 text-right text-base font-semibold text-white/74 transition hover:bg-white/[0.08] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f]"
+                        className="nav-chrome-motion flex min-h-11 w-full items-center justify-end gap-2 rounded-2xl px-4 py-1.5 text-right text-base font-semibold text-white/74 transition hover:bg-white/[0.08] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f]"
                         onClick={() => setAuthMode("login")}
                       >
                         Sign In
                         <LogIn className="h-4 w-4" aria-hidden="true" />
                       </button>
 
-                      {signedOutMobileMenuLinks.map((link) => (
+                      {navLinks.map((link) => (
                         <Link
                           key={`${link.label}:${link.href}`}
                           href={link.href}
-                          className="nav-chrome-motion w-full rounded-2xl px-4 py-3 text-right text-base font-semibold text-white/74 transition hover:bg-white/[0.08] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f]"
-                          onClick={closeSheet}
+                          className="nav-chrome-motion flex min-h-11 w-full items-center justify-end rounded-2xl px-4 py-1.5 text-right text-base font-semibold text-white/74 transition hover:bg-white/[0.08] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f]"
+                          onClick={(event) => {
+                            if (link.href.startsWith("#")) {
+                              event.preventDefault();
+                              pendingHashRef.current = link.href;
+                            }
+                            closeSheet();
+                          }}
                         >
                           {link.label}
                         </Link>

@@ -22,7 +22,7 @@ import ScenicBackground, {
 } from "@/components/marketing/ScenicBackground";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
-import { publicUseCasePrimaryNavLinks, signedOutMobileMenuLinks } from "@/config/navigation";
+import { marketingPageNavLinks } from "@/config/navigation";
 
 const SNAP_SCENE_ORDER = [
   "snap",
@@ -660,8 +660,7 @@ export default function SnapLanding() {
       <ScenicBackground scene={activeScene} scenes={SNAP_SCENES} />
 
       <HeroTopNav
-        navLinks={[...publicUseCasePrimaryNavLinks]}
-        mobileNavLinks={[...signedOutMobileMenuLinks]}
+        navLinks={marketingPageNavLinks("/snap")}
         variant="transparent-dark"
         primaryCtaLabel="Let's create"
         authenticatedPrimaryHref="/chat"

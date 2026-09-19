@@ -16,10 +16,8 @@ test("/gymnastics renders the shared hero nav without duplicating the current pa
   assert.match(gymnasticsLanding, /<ScenicBackground/);
   assert.match(gymnasticsLanding, /useActiveScene\(GYMNASTICS_SCENE_ORDER, "hero"\)/);
   assert.match(gymnasticsLanding, /<HeroTopNav/);
-  assert.match(gymnasticsLanding, /publicUseCasePrimaryNavLinks/);
-  assert.match(gymnasticsLanding, /signedOutMobileMenuLinks/);
-  assert.match(gymnasticsLanding, /navLinks=\{\[...publicUseCasePrimaryNavLinks\]\}/);
-  assert.match(gymnasticsLanding, /mobileNavLinks=\{\[...signedOutMobileMenuLinks\]\}/);
+  assert.match(gymnasticsLanding, /navLinks=\{marketingPageNavLinks\("\/gymnastics"\)\}/);
+  assert.doesNotMatch(gymnasticsLanding, /publicUseCasePrimaryNavLinks|signedOutMobileMenuLinks/);
   assert.match(gymnasticsLanding, /variant="transparent-dark"/);
   assert.match(gymnasticsLanding, /primaryCtaLabel="Let's create"/);
   assert.match(gymnasticsLanding, /brandHref="\/"/);

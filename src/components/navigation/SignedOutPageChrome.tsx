@@ -1,13 +1,14 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Eye, Home, LayoutTemplate, Menu, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
-import BottomNav from "@/components/navigation/BottomNav";
+import ScrollAwareBottomNav from "@/components/navigation/ScrollAwareBottomNav";
 import ConciergeSheet from "@/components/navigation/ConciergeSheet";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import MenuBottomSheet from "@/components/navigation/MenuBottomSheet";
-import { publicUseCasePrimaryNavLinks, signedOutMobileMenuLinks } from "@/config/navigation";
+import { marketingPageNavLinks, type SignedOutBottomNavItem } from "@/config/navigation";
 import {
   getCreateActionForSignupIntent,
   signupIntentForMarketingPath,
@@ -21,8 +22,6 @@ type SignedOutPageChromeProps = {
   topNavVariant?: "default" | "glass-dark" | "transparent-dark" | "transparent-light";
 };
 
-const signedOutPageNavLinks = [...publicUseCasePrimaryNavLinks];
-
 export default function SignedOutPageChrome({
   activeBottomNavLabel = "Create",
   brandHref = "/",
@@ -35,6 +34,7 @@ export default function SignedOutPageChrome({
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pageNavLinks = useMemo(() => marketingPageNavLinks(pathname || ""), [pathname]);
 
   const openAuth = useCallback((mode: "login" | "signup") => {
     setAuthMode(mode);
@@ -51,6 +51,16 @@ export default function SignedOutPageChrome({
   const signupSuccessRedirectUrl = createAction?.href || "/chat";
   const successRedirectUrl =
     authMode === "signup" ? signupSuccessRedirectUrl : loginSuccessRedirectUrl;
+  const templateLink = pageNavLinks.find((link) => link.label === "Templates");
+  const sectionLink = pageNavLinks.find((link) => link.label === "How it works") ??
+    pageNavLinks.find((link) => link.href.startsWith("#") && link !== templateLink);
+  const bottomNavItems: SignedOutBottomNavItem[] = [
+    { label: "Home", href: "/", icon: Home, purpose: "Go to the main landing page." },
+    ...(templateLink ? [{ ...templateLink, icon: LayoutTemplate, purpose: "Browse this category's templates." }] : []),
+    { label: "Create", href: "#concierge", icon: Sparkles, action: "concierge", featured: true, purpose: "Create with Envitefy." },
+    ...(sectionLink ? [{ ...sectionLink, icon: Eye, purpose: sectionLink.label }] : []),
+    { label: "Menu", href: "#menu", icon: Menu, action: "menu", purpose: "Open the page menu." },
+  ];
 
   useEffect(() => {
     const auth = searchParams?.get("auth");
@@ -58,15 +68,11 @@ export default function SignedOutPageChrome({
     openAuth(auth);
   }, [openAuth, searchParams]);
 
-  const openLandingHash = (href: string) => {
-    router.push(href.startsWith("#") ? `/${href}` : href);
-  };
-
   return (
     <>
       <HeroTopNav
-        navLinks={signedOutPageNavLinks}
-        mobileNavLinks={[...signedOutMobileMenuLinks]}
+        navLinks={pageNavLinks}
+        mobileNavLinks={pageNavLinks}
         primaryCtaLabel={templateCategory ? "Browse templates" : "Let's create"}
         authenticatedPrimaryHref={primaryCreateHref}
         brandHref={brandHref}
@@ -78,16 +84,15 @@ export default function SignedOutPageChrome({
         }
       />
 
-      <div className="fixed inset-x-0 bottom-0 z-50 md:hidden">
-        <BottomNav
-          initialActiveLabel={activeBottomNavLabel}
-          onConciergeSelect={() => setAssistantOpen(true)}
-          onHashSelect={openLandingHash}
-          onMenuSelect={() => setMobileMenuOpen(true)}
-        />
-      </div>
+      <ScrollAwareBottomNav
+        initialActiveLabel={activeBottomNavLabel}
+        items={bottomNavItems}
+        onConciergeSelect={() => setAssistantOpen(true)}
+        onMenuSelect={() => setMobileMenuOpen(true)}
+      />
 
       <MenuBottomSheet
+        navLinks={pageNavLinks}
         open={mobileMenuOpen}
         onOpenChange={setMobileMenuOpen}
         successRedirectUrl={loginSuccessRedirectUrl}

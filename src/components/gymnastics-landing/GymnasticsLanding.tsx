@@ -29,7 +29,7 @@ import ScenicBackground, {
 } from "@/components/marketing/ScenicBackground";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
-import { publicUseCasePrimaryNavLinks, signedOutMobileMenuLinks } from "@/config/navigation";
+import { marketingPageNavLinks } from "@/config/navigation";
 import { landingHeroGalleries } from "@/lib/landing-hero-galleries";
 import styles from "./GymnasticsLanding.module.css";
 import GymnasticsLandingFaq from "./GymnasticsLandingFaq";
@@ -337,8 +337,7 @@ export default function GymnasticsLanding() {
     >
       <ScenicBackground scene={activeScene} scenes={GYMNASTICS_SCENES} />
       <HeroTopNav
-        navLinks={[...publicUseCasePrimaryNavLinks]}
-        mobileNavLinks={[...signedOutMobileMenuLinks]}
+        navLinks={marketingPageNavLinks("/gymnastics")}
         variant="transparent-dark"
         primaryCtaLabel="Browse templates"
         authenticatedPrimaryHref="/chat"

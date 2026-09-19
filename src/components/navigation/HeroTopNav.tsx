@@ -349,7 +349,7 @@ export default function HeroTopNav({
 
         setActiveNavHref(pendingMobileHashHref);
         window.scrollTo({
-          top: pendingTarget.getBoundingClientRect().top + window.scrollY,
+          top: pendingTarget.getBoundingClientRect().top + window.scrollY - 100,
           behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
             ? "auto"
             : "smooth",
@@ -409,7 +409,7 @@ export default function HeroTopNav({
 
       setActiveNavHref(href);
       window.scrollTo({
-        top: target.getBoundingClientRect().top + window.scrollY,
+        top: target.getBoundingClientRect().top + window.scrollY - 100,
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
       });
     };
@@ -706,7 +706,7 @@ export default function HeroTopNav({
                   </div>
 
                   <nav
-                    className="mt-8 flex flex-1 flex-col items-end justify-start gap-1 pb-8 text-right"
+                    className="mt-8 flex flex-1 flex-col items-end justify-start gap-0 pb-8 text-right"
                     aria-label="Hero navigation"
                   >
                     {resolvedMobileNavLinks.map((link) => {
@@ -724,7 +724,7 @@ export default function HeroTopNav({
                                 : undefined
                             }
                             className={cx(
-                              "nav-chrome-motion relative w-full rounded-2xl px-4 py-3 text-right text-base font-semibold transition",
+                              "nav-chrome-motion relative flex min-h-11 w-full items-center justify-end rounded-2xl px-4 py-1.5 text-right text-base font-semibold transition",
                               isActive
                                 ? useDarkMobileMenu
                                   ? "text-white"

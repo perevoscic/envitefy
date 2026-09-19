@@ -87,3 +87,73 @@ export const signedOutMobileMenuLinks: SignedOutMobileMenuLink[] = [
   { label: "Privacy", href: "/privacy" },
   { label: "Terms", href: "/terms" },
 ];
+
+const marketingSectionLinks: Record<string, SignedOutMobileMenuLink[]> = {
+  "/signup-forms": [
+    { label: "Templates", href: "#templates" },
+    { label: "How it works", href: "#how-it-works" },
+    { label: "FAQ", href: "#faq" },
+  ],
+  "/birthdays": [
+    { label: "Templates", href: "#templates" },
+    { label: "Live preview", href: "#birthday-live-page" },
+    { label: "How it works", href: "#birthday-start" },
+  ],
+  "/anniversaries": [{ label: "Templates", href: "#templates" }],
+  "/weddings": [
+    { label: "Templates", href: "#templates" },
+    { label: "Collections", href: "#collections" },
+    { label: "Planning", href: "#timeline" },
+    { label: "Reviews", href: "#reviews" },
+  ],
+  "/baby-showers": [
+    { label: "Templates", href: "#templates" },
+    { label: "Registries", href: "#registries" },
+    { label: "How it works", href: "#how-it-works" },
+  ],
+  "/bridal-showers": [
+    { label: "Templates", href: "#templates" },
+    { label: "Design studio", href: "#bridal-studio" },
+    { label: "Collections", href: "#bridal-collections" },
+  ],
+  "/gender-reveal": [
+    { label: "Templates", href: "#templates" },
+    { label: "How it works", href: "#reveal-start" },
+  ],
+  "/sport-events": [{ label: "Templates", href: "#templates" }],
+  "/football": [
+    { label: "Templates", href: "#templates" },
+    { label: "Features", href: "#features" },
+    { label: "How it works", href: "#how-it-works" },
+  ],
+  "/gymnastics": [
+    { label: "Templates", href: "/gymnastics/templates" },
+    { label: "Features", href: "#features" },
+    { label: "How it works", href: "#how-it-works" },
+    { label: "Preview", href: "#preview" },
+    { label: "FAQ", href: "#faq" },
+  ],
+  "/snap": [
+    { label: "How it works", href: "#how-it-works" },
+    { label: "Use cases", href: "#use-cases" },
+    { label: "FAQ", href: "#faq" },
+  ],
+};
+
+/** Keep the full product directory on the main landing; other pages stay local. */
+export function marketingPageNavLinks(pathname: string): SignedOutMobileMenuLink[] {
+  const path = pathname.replace(/\/+$/, "") || "/";
+  if (path === "/" || path === "/landing") return [...signedOutMobileMenuLinks];
+
+  const categoryPath = `/${path.split("/")[1]}`;
+  const sectionLinks = marketingSectionLinks[categoryPath] ?? [];
+  return [
+    { label: "Home", href: "/" },
+    ...sectionLinks.map((link) => ({
+      ...link,
+      href: path !== categoryPath && link.href.startsWith("#")
+        ? `${categoryPath}${link.href}`
+        : link.href,
+    })),
+  ];
+}

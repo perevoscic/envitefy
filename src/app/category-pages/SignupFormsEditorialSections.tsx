@@ -321,7 +321,7 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
         </div>
       </section>
 
-      <section className="bg-[#f8f9ff] px-5 py-20 sm:px-8 sm:py-28 lg:px-10">
+      <section id="how-it-works" className="hash-anchor-below-fixed-nav bg-[#f8f9ff] px-5 py-20 sm:px-8 sm:py-28 lg:px-10">
         <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.8fr)]">
           <div className="relative min-h-[34rem] overflow-hidden rounded-[2.25rem]">
             <Image
@@ -372,7 +372,7 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
         </div>
       </section>
 
-      <section className="bg-[#eef2ff] px-5 py-20 sm:px-8 sm:py-24 lg:px-10">
+      <section id="faq" className="hash-anchor-below-fixed-nav bg-[#eef2ff] px-5 py-20 sm:px-8 sm:py-24 lg:px-10">
         <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,1fr)]">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#3c55ad]">

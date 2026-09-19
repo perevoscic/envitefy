@@ -156,7 +156,7 @@ export default function UseCaseLandingView({ page }: { page: UseCasePage }) {
       />
 
       <main>
-        <section className="relative isolate flex min-h-[100svh] items-end overflow-hidden">
+        <section id="landing-hero" className="relative isolate flex min-h-[100svh] items-end overflow-hidden">
           <LandingHeroMedia
             images={
               page.slug in landingHeroGalleries

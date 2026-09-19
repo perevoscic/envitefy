@@ -33,7 +33,7 @@ function scrollToHash(href: string) {
 
   window.history.pushState(null, "", href);
   window.scrollTo({
-    top: target.getBoundingClientRect().top + window.scrollY,
+    top: target.getBoundingClientRect().top + window.scrollY - 100,
     behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
   });
   return true;
@@ -93,7 +93,7 @@ export default function BottomNav({
         aria-label="Signed-out mobile navigation"
         className="mx-auto mb-[max(0.45rem,env(safe-area-inset-bottom))] w-[calc(100%_-_1.5rem)] max-w-[27rem] select-none rounded-[1.65rem] border border-white/90 bg-[radial-gradient(circle_at_50%_-45%,rgba(139,92,246,0.2),transparent_52%),linear-gradient(145deg,rgba(255,255,255,0.98),rgba(244,241,250,0.96))] px-2.5 pb-2 pt-2 text-[#352742] shadow-[0_16px_42px_rgba(54,39,84,0.2),inset_0_1px_0_rgba(255,255,255,0.96)] backdrop-blur-2xl"
       >
-        <div className="grid grid-cols-5 items-end gap-0.5">
+        <div className="grid auto-cols-fr grid-flow-col items-end gap-0.5">
           {items.map((item) => {
             const Icon = item.icon;
             const isFeatured = Boolean(item.featured);

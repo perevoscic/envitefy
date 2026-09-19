@@ -16,10 +16,8 @@ test("/snap renders the new landing component with key sections", () => {
   assert.match(page, /getServerSession\(authOptions as any\)/);
   assert.match(page, /AuthenticatedSnapUploadStart/);
   assert.match(page, /<SnapLaunchCards processInPage \/>/);
-  assert.match(snapLanding, /publicUseCasePrimaryNavLinks/);
-  assert.match(snapLanding, /signedOutMobileMenuLinks/);
-  assert.match(snapLanding, /navLinks=\{\[...publicUseCasePrimaryNavLinks\]\}/);
-  assert.match(snapLanding, /mobileNavLinks=\{\[...signedOutMobileMenuLinks\]\}/);
+  assert.match(snapLanding, /navLinks=\{marketingPageNavLinks\("\/snap"\)\}/);
+  assert.doesNotMatch(snapLanding, /publicUseCasePrimaryNavLinks|signedOutMobileMenuLinks/);
   assert.match(snapLanding, /variant="transparent-dark"/);
   assert.match(snapLanding, /primaryCtaLabel="Let's create"/);
   assert.match(snapLanding, /brandHref="\/"/);
