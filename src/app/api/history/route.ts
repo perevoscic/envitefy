@@ -1,5 +1,6 @@
 import { updateSignupDefinition, SignupMutationError } from "@/lib/signup-mutations";
 import { isEventDraft } from "@/lib/event-draft-access";
+import { adminErrorResponse, requireAdminSession } from "@/lib/admin/require-admin";
 import { isClientDraftId } from "@/lib/event-draft-access";
 import { createHash } from "node:crypto";
 import { after, NextResponse } from "next/server";
@@ -329,6 +330,10 @@ export async function POST(req: Request) {
     }
     if (!userId) return NextResponse.json({ error: "Sign in to save your event" }, { status: 401 });
     const body = await req.json().catch(() => ({}));
+    if (body.data?.createdVia === "livecard-builder" || body.data?.liveCardBuilder) {
+      try { await requireAdminSession(); }
+      catch (error) { return adminErrorResponse(error); }
+    }
     const requestedSlug = body.publicSlug === undefined ? null : validateCustomEventPublicSlug(body.publicSlug);
     if (requestedSlug?.error) return NextResponse.json({ error: requestedSlug.error }, { status: 400 });
     if (body.clientDraftId !== undefined && !isClientDraftId(body.clientDraftId)) return NextResponse.json({ error: "Invalid draft identity" }, { status: 400 });

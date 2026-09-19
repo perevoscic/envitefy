@@ -13,6 +13,8 @@ export type LiveCardOverlayActionInput = {
   hasRegistry?: boolean;
   hasOpenHouseAgent?: boolean;
   hasOpenHouseLogo?: boolean;
+  /** Undefined keeps the existing card's category-specific navigation. */
+  rsvpEnabled?: boolean;
 };
 
 function categorySupportsLiveCardRsvp(category?: string | null): boolean {
@@ -21,7 +23,7 @@ function categorySupportsLiveCardRsvp(category?: string | null): boolean {
 
 /**
  * Usual Live Card chrome overlaid on the artwork.
- * RSVP and Calendar stay on the card even when chat said "no rsvp" or calendar links are still forming.
+ * Legacy cards keep their category navigation. Guided cards explicitly choose RSVP visibility.
  * Registry appears only when a gift/registry link exists.
  */
 export function resolveLiveCardOverlayActions(
@@ -32,7 +34,7 @@ export function resolveLiveCardOverlayActions(
     keys.push("details");
     if (input.hasOpenHouseAgent) keys.push("rsvp");
     if (input.hasOpenHouseLogo) keys.push("logo");
-  } else if (categorySupportsLiveCardRsvp(input.category)) {
+  } else if (input.rsvpEnabled ?? categorySupportsLiveCardRsvp(input.category)) {
     keys.push("rsvp", "details");
   } else {
     keys.push("details");

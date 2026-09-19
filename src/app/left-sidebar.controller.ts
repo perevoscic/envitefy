@@ -172,6 +172,7 @@ export type LeftSidebarControllerViewModel = {
   goHomeFromSidebar: () => void;
   goStudioFromSidebar: () => void;
   handleRootSnapNavigate: () => void;
+  handleRootLiveCardNavigate: () => void;
   openCreateEventPage: () => void;
   openAiThreadsPage: () => void;
   openAiThread: (threadId: string) => void;
@@ -939,6 +940,13 @@ export function useLeftSidebarController({
     try {
       router.push("/snap");
     } catch {}
+  }, [clearEventContext, collapseSidebarOnTouch, router, setSidebarPage]);
+
+  const handleRootLiveCardNavigate = useCallback(() => {
+    clearEventContext();
+    setSidebarPage("root");
+    collapseSidebarOnTouch();
+    router.push("/livacards-invites");
   }, [clearEventContext, collapseSidebarOnTouch, router, setSidebarPage]);
 
   const visibleTemplateKeys = featureVisibility.hasLoadedPreferences
@@ -1860,6 +1868,7 @@ export function useLeftSidebarController({
     goHomeFromSidebar,
     goStudioFromSidebar,
     handleRootSnapNavigate,
+    handleRootLiveCardNavigate,
     openCreateEventPage,
     openAiThreadsPage,
     openAiThread,

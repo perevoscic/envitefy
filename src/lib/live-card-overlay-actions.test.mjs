@@ -2,6 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { resolveLiveCardOverlayActions } from "./live-card-overlay-actions.ts";
 
+test("guided Live Cards honor explicit RSVP switches without removing default buttons", () => {
+  assert.deepEqual(resolveLiveCardOverlayActions({ category: "Birthday", hasLocation: true, rsvpEnabled: false }), ["details", "location", "calendar"]);
+  assert.deepEqual(resolveLiveCardOverlayActions({ category: "Game Day", hasLocation: true, rsvpEnabled: true, hasRegistry: true }), ["rsvp", "details", "location", "calendar", "registry"]);
+});
+
 test("birthday Live Cards keep RSVP, Overview, Location, and Calendar on the artwork overlay", () => {
   assert.deepEqual(
     resolveLiveCardOverlayActions({

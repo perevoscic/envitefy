@@ -465,6 +465,7 @@ function RootNavigationPanel({
   draftsCount,
   onHome,
   onSnapUpload,
+  onLiveCard,
   onAiThreads,
   onCreate,
   onMyEvents,
@@ -488,6 +489,7 @@ function RootNavigationPanel({
   draftsCount: number;
   onHome: () => void;
   onSnapUpload: () => void;
+  onLiveCard: () => void;
   onAiThreads: () => void;
   onCreate: () => void;
   onMyEvents: () => void;
@@ -523,6 +525,7 @@ function RootNavigationPanel({
       <div className="space-y-1.5">
         <SidebarLink link={{ label: "Home", href: "/", icon: <Home />, onClick: onHome, active: isHomeActive }} />
         <SidebarLink link={{ label: "Snap / Upload", icon: <Upload />, onClick: onSnapUpload, active: isSnapUploadActive }} />
+        {isAdmin && <SidebarLink link={{ label: "Live Card / Invite", icon: <Mail />, onClick: onLiveCard, active: pathname === "/livacards-invites" }} />}
         <SidebarLink link={{ label: "Envitefy Create", icon: <ConciergeLogoIcon size={20} isActive={isChatActive} />, onClick: onAiThreads, active: isChatActive }} />
         {hasCreateEventAccess ? (
           <SidebarLink link={{ label: createEntryLabel, icon: <Plus />, onClick: onCreate, active: isCreateEntryActive }} />
@@ -1595,6 +1598,7 @@ export default function LeftSidebar() {
                       draftsCount={drafts.length}
                       onHome={viewModel.goHomeFromSidebar}
                       onSnapUpload={viewModel.handleRootSnapNavigate}
+                      onLiveCard={viewModel.handleRootLiveCardNavigate}
                       onAiThreads={viewModel.openAiThreadsPage}
                       onCreate={viewModel.openCreateEventPage}
                       onMyEvents={viewModel.openMyEventsPage}

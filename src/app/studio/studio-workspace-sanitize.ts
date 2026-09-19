@@ -233,6 +233,9 @@ export function sanitizeEventDetails(value: unknown): EventDetails {
 
   details.product = value.product ? resolveStudioProduct(value.product) : undefined;
   details.rsvpEnabled = typeof value.rsvpEnabled === "boolean" ? value.rsvpEnabled : undefined;
+  if (isRecord(value.actionVisibility) && typeof value.actionVisibility.rsvp === "boolean") {
+    details.actionVisibility = { rsvp: value.actionVisibility.rsvp };
+  }
   details.guestInstructions = Array.isArray(value.guestInstructions) ? value.guestInstructions.map(readString).filter(Boolean) : [];
   details.requiredArtworkLines = Array.isArray(value.requiredArtworkLines) ? value.requiredArtworkLines.map(readString).filter(Boolean) : [];
   if (isRecord(value.pageTypography)) {

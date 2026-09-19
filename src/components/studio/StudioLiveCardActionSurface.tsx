@@ -87,6 +87,7 @@ export type LiveCardEventDetails = {
   rsvpContact?: string;
   rsvpDeadline?: string;
   rsvpEnabled?: boolean;
+  actionVisibility?: { rsvp: boolean };
   rsvpMode?: string;
   rsvpUrl?: string;
   eventId?: string;
@@ -398,7 +399,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
 
   const calendar = useCalendarAction({ links: calendarLinks });
   const posterFirstHeroCard = isPosterFirstHeroCard(invitationData);
-  const categorySupportsRsvp = supportsStudioCategoryRsvp(readString(details?.category));
+  const categorySupportsRsvp = details?.actionVisibility?.rsvp ?? supportsStudioCategoryRsvp(readString(details?.category));
   const openHouseAgentCard = isOpenHouseLiveCard(details);
   const detailsDescription = readString(details?.detailsDescription);
   const secondaryDescription =
@@ -593,11 +594,13 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
         openHouse: openHouseAgentCard,
         hasLocation: locationActions.length > 0,
         hasRegistry: Boolean(registryHref),
+        rsvpEnabled: details?.actionVisibility?.rsvp,
         hasOpenHouseAgent: hasOpenHouseAgentInfo,
         hasOpenHouseLogo: hasOpenHouseLogoInfo,
       }),
     [
       details?.category,
+      details?.actionVisibility?.rsvp,
       hasOpenHouseAgentInfo,
       hasOpenHouseLogoInfo,
       locationActions.length,

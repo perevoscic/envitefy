@@ -43,6 +43,8 @@ export type EventDetails = {
   product?: import("@/lib/studio/product-contract").StudioProduct;
   approvedWording?: string;
   rsvpEnabled?: boolean;
+  /** Explicit button choices from the guided Live Card builder. */
+  actionVisibility?: { rsvp: boolean };
   timezone?: string;
   category: InviteCategory;
   sourceMediaMode: "none" | "flyer" | "subjectPhotos";

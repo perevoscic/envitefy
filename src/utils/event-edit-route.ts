@@ -90,6 +90,7 @@ function isScannedOrUploadedEvent(eventData: unknown): boolean {
 }
 
 export function resolveArtworkEditHref(eventId: string, eventData: unknown): string | null {
+  if (asRecord(eventData)?.createdVia === "livecard-builder") return `/livacards-invites?edit=${encodeURIComponent(eventId)}`;
   if (!hasEditableStudioArtwork(eventData)) return null;
   return `/studio?editEvent=${encodeURIComponent(eventId)}`;
 }
@@ -99,6 +100,7 @@ export function resolveArtworkEditHref(eventId: string, eventData: unknown): str
  * for other event types, goes directly to customize.
  */
 export const buildEditLink = (eventId: string, eventData: any, eventTitle: string): string => {
+  if (eventData?.createdVia === "livecard-builder") return `/livacards-invites?edit=${encodeURIComponent(eventId)}`;
   if (eventData?.scanSchedule?.items?.length) return `/event/schedule/customize?edit=${encodeURIComponent(eventId)}`;
   try {
     const manualHref = manualEventEditHref(eventId, eventData);
@@ -153,6 +155,7 @@ export const buildEditLink = (eventId: string, eventData: any, eventTitle: strin
 };
 
 export const resolveEditHref = (eventId: string, eventData: any, eventTitle: string): string => {
+  if (eventData?.createdVia === "livecard-builder") return `/livacards-invites?edit=${encodeURIComponent(eventId)}`;
   if (eventData?.scanSchedule?.items?.length) return `/event/schedule/customize?edit=${encodeURIComponent(eventId)}`;
   const manualHref = manualEventEditHref(eventId, eventData);
   if (manualHref) return manualHref;
