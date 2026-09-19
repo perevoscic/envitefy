@@ -1,10 +1,30 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import * as chrono from "chrono-node";
+import { normalizeEventScheduleText, resolveFuzzyMonth } from "./conversation-edits.ts";
 import { normalizeConciergeDraft } from "./extract.ts";
 import { buildAssistantMessage, fallbackExtractConciergeDraft, repairMisparsedBirthdayDraft } from "./fallback.ts";
 
 const screenshotMessage = "Livia, 10 years old, on septmeber 25th.";
+
+test("month typo repair preserves time corrections and only repairs day numbers", () => {
+  for (const word of ["not", "now", "for", "noon"]) {
+    assert.equal(resolveFuzzyMonth(word), null, word);
+  }
+  for (const message of [
+    "We finish at 5 PM, not 4 PM.",
+    "The bus returns at 3:00 PM, not 2:30 PM.",
+    "We finish at 5, not 4.",
+    "It starts at 3 PM, not 2pm.",
+    "spee 4 PM", "spee4:30", "spee 4 a.m.",
+  ]) {
+    assert.equal(normalizeEventScheduleText(message), message);
+  }
+  assert.equal(normalizeEventScheduleText("spee 26thth at 4 PM"), "September 26th at 4 PM");
+  assert.equal(normalizeEventScheduleText("sept26 at 4 PM"), "September 26 at 4 PM");
+  assert.equal(normalizeEventScheduleText("for 2 hours"), "");
+});
+
 function expectSeptember25(draft) {
   const now = new Date();
   const candidate = new Date(now.getFullYear(), 8, 25, 12);
@@ -175,7 +195,7 @@ test("a spaced Saturday 26th is a calendar date and Saturday 26 kids is not", ()
 test("a stated party time remains distinct from the birthday age", () => {
   const draft = fallbackExtractConciergeDraft({ message: "Livia, 10 years old, on septmeber 25th at 4 pm." });
   expectSeptember25(draft);
-  assert.equal(new Date(draft.startISO).getHours(), 16);
+  assert.equal(new Intl.DateTimeFormat("en-GB", { timeZone: draft.timezone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(draft.startISO)), "16:00");
   assert.equal(draft.ageOrMilestone, "10");
 });
 

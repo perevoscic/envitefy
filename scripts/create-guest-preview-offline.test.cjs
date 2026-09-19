@@ -55,20 +55,19 @@ function contrastRatio(foreground, surface, underneath) {
   const a = luminance(fg); const b = luminance(channels); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
-test("archived artwork stays fully visible and controls stay outside it at mobile and desktop sizes", { timeout: 120000 }, async () => {
+test("artwork fits the viewport with guest actions and Share/Close overlaid on the card", { timeout: 120000 }, async () => {
   const artifacts = artworkFiles(path.join(campaign, "cases"));
   if (process.env.REQUIRE_CREATE_CAMPAIGN_ARCHIVES === "1") assert.ok(artifacts.length >= 200, "full campaign verification requires all archived images");
   const before = hashes(artifacts);
   const globalSource = fs.readFileSync("src/app/globals.css", "utf8").replace('@import "tailwindcss";', '@import "tailwindcss" source(none);\n@source "../components/ArtworkPreviewDialog.tsx";\n@source "../components/concierge/ConciergeEventWebsite.tsx";\n@source "../components/studio/StudioShowcaseLiveCard.tsx";\n@source "../components/studio/StudioLiveCardActionSurface.tsx";');
-  const builtCss = path.resolve(".next-dev/static/css/app/layout.css");
-  const stylesheet = fs.existsSync(builtCss) ? { css: fs.readFileSync(builtCss, "utf8") } : await postcss([tailwind()]).process(globalSource, { from: path.resolve("src/app/globals.css") });
+  const stylesheet = await postcss([tailwind()]).process(globalSource, { from: path.resolve("src/app/globals.css") });
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
   let blockedRequests = 0;
   await page.route("**/*", (route) => { blockedRequests++; return route.abort(); });
   const imageUrl = artifacts.length ? `data:image/webp;base64,${fs.readFileSync(artifacts[0]).toString("base64")}` : `data:image/svg+xml;base64,${Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900"><rect width="600" height="900" fill="white" stroke="black" stroke-width="16"/><text x="20" y="45" font-size="28">September 23 test fixture</text><text x="20" y="875" font-size="28">Full composition edge</text></svg>').toString("base64")}`;
   const preview = { id: "offline-regression", title: "September 23 workshop", imageUrl, invitationData: { heroTextMode: "image", eventDetails: { eventDate: "2026-09-23", startTime: "14:00", endTime: "16:00", timezone: "America/Chicago", venueName: "Maple Center", location: "Room B, 23 Oak Street", rsvpEnabled: true } } };
-  const html = renderToStaticMarkup(React.createElement(ArtworkDialog, { open: true, title: "Artwork preview", onClose() {} }, React.createElement(Card, { preview, previewMode: true })));
+  const html = renderToStaticMarkup(React.createElement(ArtworkDialog, { open: true, title: "Artwork preview", onClose() {}, onShare() {} }, React.createElement(Card, { preview, previewMode: true, actionsPlacement: "overlay" })));
   const outDir = path.join(campaign, "implementation");
   fs.mkdirSync(outDir, { recursive: true });
   const measurements = [];
@@ -81,15 +80,24 @@ test("archived artwork stays fully visible and controls stay outside it at mobil
         const frame = document.querySelector("[data-live-card-artwork]").getBoundingClientRect();
         const image = document.querySelector("[data-live-card-artwork] img");
         const imageBox = image.getBoundingClientRect();
-        const rail = document.querySelector("[data-live-card-actions-placement]").getBoundingClientRect();
+        const rail = document.querySelector("[data-live-card-rail-layout]").getBoundingClientRect();
         const close = document.querySelector('[aria-label="Close preview"]').getBoundingClientRect();
-        return { width: innerWidth, height: innerHeight, frame: { x: frame.x, y: frame.y, width: frame.width, height: frame.height, bottom: frame.bottom }, image: { width: imageBox.width, height: imageBox.height, fit: getComputedStyle(image).objectFit }, rail: { y: rail.y, bottom: rail.bottom }, close: { bottom: close.bottom }, overflow: document.documentElement.scrollWidth > innerWidth };
+        const share = document.querySelector('[aria-label="Share"]').getBoundingClientRect();
+        const bounds = (rect) => ({ x: rect.x, y: rect.y, width: rect.width, height: rect.height, right: rect.right, bottom: rect.bottom });
+        return { width: innerWidth, height: innerHeight, frame: bounds(frame), image: { width: imageBox.width, height: imageBox.height, fit: getComputedStyle(image).objectFit }, rail: bounds(rail), close: bounds(close), share: bounds(share), overflow: document.documentElement.scrollWidth > innerWidth };
       });
       measurements.push(result);
       assert.ok(Math.abs(result.frame.width / result.frame.height - 2 / 3) < 0.002, JSON.stringify(result));
       assert.equal(result.image.fit, "contain");
-      assert.ok(result.rail.y >= result.frame.bottom - 1, "guest rail must not cover artwork");
-      assert.ok(result.close.bottom <= result.frame.y, "close control must not cover artwork");
+      assert.ok(result.frame.width > 0 && result.frame.height > 0);
+      assert.ok(result.frame.x >= 0 && result.frame.y >= 0 && result.frame.right <= width + 1 && result.frame.bottom <= height + 1, JSON.stringify(result));
+      assert.ok(result.rail.y >= result.frame.y + result.frame.height / 2 && result.rail.y < result.frame.bottom && result.rail.bottom <= result.frame.bottom + 1, "guest rail stays inside the bottom of the artwork");
+      for (const control of [result.share, result.close]) {
+        assert.ok(control.width >= 44 && control.height >= 44, "Share and Close have 44px targets");
+        assert.ok(control.x >= result.frame.x && control.right <= result.frame.right + 1 && control.y >= result.frame.y && control.bottom <= result.frame.bottom, "Share and Close stay inside the card");
+        assert.ok(control.y <= result.frame.y + 16, "Share and Close stay at the top of the card");
+      }
+      assert.ok(result.share.x < result.frame.x + result.frame.width / 2 && result.close.x > result.frame.x + result.frame.width / 2, "Share is top-left and Close is top-right");
       assert.equal(result.overflow, false);
       if (width === 390 || width === 844) await page.screenshot({ path: path.join(outDir, `guest-preview-${width}.png`), fullPage: true });
     }

@@ -97,7 +97,9 @@ test("studio preview preserves full poster artwork with guest controls overlaid 
   assert.match(surfaceSource, /buildLiveCardLocationActions/);
   assert.match(surfaceSource, /buildLiveCardDirectionsHref/);
   assert.match(surfaceSource, /label: registryActionLabel/);
-  assert.match(surfaceSource, /visible: Boolean\(registryHref\)/);
+  assert.match(surfaceSource, /resolveLiveCardOverlayActions\(\{/);
+  assert.match(surfaceSource, /hasRegistry: Boolean\(registryHref\)/);
+  assert.match(surfaceSource, /visible: overlayActionKeys\.includes\("registry"\)/);
   assert.match(surfaceSource, /"registryLink",/);
   assert.match(surfaceSource, /Visit \{registryActionLabel\}/);
   assert.match(surfaceSource, /locationActions\.length > 0/);

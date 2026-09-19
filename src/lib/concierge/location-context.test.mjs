@@ -156,11 +156,17 @@ test("deliberately cleared locations stay removed on later turns even if AI prop
   assert.equal(cleared.draft.location, null);
   assert.equal(cleared.draft.venue, null);
   assert.deepEqual(cleared.draft.explicitlyClearedFields, ["location", "venue"]);
-  const next = await extractConciergeDraft({ message: "26th September", draft: cleared.draft, chatMessages: history }, ai([locationEdit()]));
-  assert.equal(next.usedAi, true);
-  assert.equal(next.draft.location, null);
-  assert.equal(next.draft.venue, null);
-  assert.deepEqual(next.draft.explicitlyClearedFields, ["location", "venue"]);
+  let previous = cleared.draft;
+  for (const [reply, expectedAi] of [["26th September", false], ["3pm", true]]) {
+    let calls = 0;
+    const next = await extractConciergeDraft({ message: reply, draft: previous, chatMessages: history }, ai([locationEdit()], () => { calls += 1; }));
+    assert.equal(next.usedAi, expectedAi, reply);
+    assert.equal(calls, expectedAi ? 1 : 0, reply);
+    assert.equal(next.draft.location, null);
+    assert.equal(next.draft.venue, null);
+    assert.deepEqual(next.draft.explicitlyClearedFields, ["location", "venue"]);
+    previous = next.draft;
+  }
 });
 
 test("a fresh event cannot recover facts from the preceding event's conversation", () => {

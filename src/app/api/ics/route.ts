@@ -25,7 +25,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "A valid start and optional end are required" }, { status: 400 });
   }
 
-  const cal = ical({ name: "Scanned Events", timezone: floating ? null : timezone });
+  // Native Dates carry absolute instants. Setting ical-generator's timezone
+  // makes it serialize their server-local clock without a UTC suffix.
+  const cal = ical({ name: "Scanned Events" });
+  if (timezone && !floating) cal.x("X-WR-TIMEZONE", timezone);
   // Present as an invitation so iOS can show an explicit Accept/Add flow
   cal.method(("REQUEST" as unknown) as ICalCalendarMethod);
   const evt = cal.createEvent({

@@ -49,12 +49,9 @@ test("one natural correction independently updates title, schedule, location and
   assert.equal(draft.rsvpEnabled, false);
   assert.equal(draft.numberOfGuests, 28);
   assert.ok(!draft.missingFields.includes("rsvpContact"));
-  const start = new Date(draft.startISO);
-  const end = new Date(draft.endISO);
-  assert.equal(start.getMonth(), 9);
-  assert.equal(start.getDate(), 24);
-  assert.equal(start.getHours(), 16);
-  assert.equal(end.getHours(), 19);
+  assert.equal(draft.timezone, "America/Chicago");
+  assert.equal(draft.startISO, "2026-10-24T21:00:00.000Z");
+  assert.equal(draft.endISO, "2026-10-25T00:00:00.000Z");
 });
 
 test("moving the date does not overwrite the venue even when a later clause mentions location", () => {

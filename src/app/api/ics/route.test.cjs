@@ -13,11 +13,36 @@ test("ICS exports the approved clock, room and Unicode public instructions", asy
   const res = await GET(new Request(`https://envitefy.com/api/ics?${params}`));
   assert.equal(res.status, 200);
   const body = (await res.text()).replace(/\r\n /g, "");
-  assert.match(body, /DTSTART(?:;[^:]*)?:20260923T(?:190000Z|140000)/);
-  assert.match(body, /DTEND(?:;[^:]*)?:20260923T(?:210000Z|160000)/);
+  assert.match(body, /\r\nDTSTART:20260923T190000Z\r\n/);
+  assert.match(body, /\r\nDTEND:20260923T210000Z\r\n/);
+  assert.match(body, /X-WR-TIMEZONE:America\/Chicago/);
   assert.match(body, /LOCATION:Maple Center\\, Room B\\, 23 Oak Street/);
   assert.match(body, /No gifts\\, please\./);
   assert.match(body, /¡Bienvenidos!/);
+});
+test("ICS preserves absolute timestamps across offsets and daylight-saving transitions", async () => {
+  for (const [start, end, timezone, expectedStart, expectedEnd] of [
+    ["2026-11-01T01:30:00-05:00", "2026-11-01T01:30:00-06:00", "America/Chicago", "20261101T063000Z", "20261101T073000Z"],
+    ["2026-09-24T00:30:00+09:00", "2026-09-24T02:00:00+09:00", "Asia/Tokyo", "20260923T153000Z", "20260923T170000Z"],
+  ]) {
+    const params = new URLSearchParams({ start, end, timezone });
+    const res = await GET(new Request(`https://envitefy.com/api/ics?${params}`));
+    assert.equal(res.status, 200);
+    const body = await res.text();
+    assert.ok(body.includes(`\r\nDTSTART:${expectedStart}\r\n`), body);
+    assert.ok(body.includes(`\r\nDTEND:${expectedEnd}\r\n`), body);
+  }
+});
+
+test("all-day dates and explicitly floating times keep their requested representation", async () => {
+  for (const [options, expected] of [
+    [{ start: "2026-09-23", end: "2026-09-24", allDay: "true", timezone: "America/Chicago" }, "DTSTART;VALUE=DATE:20260923"],
+    [{ start: "2026-09-23T14:00:00.000Z", floating: "1", timezone: "America/Chicago" }, "DTSTART:20260923T140000"],
+  ]) {
+    const res = await GET(new Request(`https://envitefy.com/api/ics?${new URLSearchParams(options)}`));
+    assert.equal(res.status, 200);
+    assert.ok((await res.text()).includes(`\r\n${expected}\r\n`));
+  }
 });
 test("unknown end remains absent in ICS and invalid timestamps return 400", async () => {
   const res = await GET(new Request("https://envitefy.com/api/ics?title=Workshop&start=2026-09-23T19:00:00.000Z"));

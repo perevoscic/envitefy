@@ -211,6 +211,8 @@ function editDistance(left: string, right: string) {
 export function resolveFuzzyMonth(word: string): number | null {
   const cleaned = word.toLowerCase().replace(/[^a-z]/g, "");
   if (cleaned.length < 3) return null;
+  // These schedule words resemble short month aliases but are not date typos.
+  if (/^(not|now|for|noon)$/.test(cleaned)) return null;
   if (/^(sun|mon|tue|wed|thu|fri|sat)/.test(cleaned)) return null;
   const hits = new Set<number>();
   MONTH_NAMES.forEach((name, index) => {
@@ -329,11 +331,11 @@ export function parseWeekdayAndDay(message: string): ParsedWeekdayAndDay | null 
 /** Normalize date spelling only beside a day number, and remove non-schedule age/duration phrases. */
 export function normalizeEventScheduleText(message: string, options: { allowBareAge?: boolean } = {}): string {
   let text = normalizeOrdinalGlitches(message);
-  text = text.replace(/\b([a-z]{3,10})(\d{1,2}(?:st|nd|rd|th)?)\b/gi, (all, word: string, day: string) => {
+  text = text.replace(/\b([a-z]{3,10})(\d{1,2}(?:st|nd|rd|th)?)\b(?!\s*(?::|[ap]\.?m\.?\b))/gi, (all, word: string, day: string) => {
     const month = resolveFuzzyMonth(word);
     return month ? `${MONTH_NAMES[month - 1]} ${day}` : all;
   });
-  text = text.replace(/\b([a-z]{3,10})(?=\s+\d{1,2}(?:st|nd|rd|th)?\b)/gi, (word: string) => {
+  text = text.replace(/\b([a-z]{3,10})(?=\s+\d{1,2}(?:st|nd|rd|th)?\b(?!\s*(?::|[ap]\.?m\.?\b)))/gi, (word: string) => {
     const month = resolveFuzzyMonth(word);
     return month ? MONTH_NAMES[month - 1] : word;
   });
