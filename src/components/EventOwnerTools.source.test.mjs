@@ -67,7 +67,7 @@ test("owner workspace keeps public actions in the header and not duplicated unde
   assert.doesNotMatch(headerBlock[0], /sm:order-3/);
   assert.match(
     source,
-    /flex w-full min-w-0 justify-center lg:sticky lg:top-5 lg:h-\[calc\(100dvh-2\.5rem\)\] lg:translate-x-6 lg:items-center lg:justify-end lg:self-start xl:translate-x-10/,
+    /hidden w-full min-w-0 lg:sticky lg:top-5 lg:flex lg:h-\[calc\(100dvh-2\.5rem\)\] lg:items-center lg:justify-end lg:self-start/,
   );
   assert.match(source, /className="mx-auto w-full max-w-\[430px\]"/);
   assert.match(source, /heightMode="auto"/);
@@ -199,7 +199,7 @@ test("owner workspace live product uses card fallback data instead of a blank na
   assert.doesNotMatch(source, />\s*Event preview\s*</);
 });
 
-test("concierge-created products edit through their original chat thread", () => {
+test("draft resume retains chat while owner workspaces use owner-specific edit routing", () => {
   const source = readSource("src/utils/event-edit-route.ts");
 
   assert.match(source, /function resolveConciergeEditHref\(eventData: unknown\): string \| null/);
@@ -207,6 +207,9 @@ test("concierge-created products edit through their original chat thread", () =>
   assert.match(source, /\/chat\?thread=\$\{encodeURIComponent\(threadId\)\}/);
   assert.match(source, /const conciergeEditHref = resolveConciergeEditHref\(eventData\);/);
   assert.match(source, /if \(conciergeEditHref\) return conciergeEditHref;/);
+  const ownerSource = readSource("src/components/EventOwnerTools.tsx");
+  assert.match(ownerSource, /resolveOwnerEditHref\(eventId, eventData, eventTitle, ownerHref\)/);
+  assert.doesNotMatch(ownerSource, /\bresolveEditHref\(/);
 });
 
 test("generated card artwork opens the dashboard Design tab without losing details edit", () => {

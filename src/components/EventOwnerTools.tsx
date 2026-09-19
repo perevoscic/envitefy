@@ -36,7 +36,7 @@ import {
   getPrimaryEventProductOutput,
   isCardFirstEventProduct,
 } from "@/utils/event-product-route";
-import { resolveArtworkEditHref, resolveEditHref } from "@/utils/event-edit-route";
+import { resolveArtworkEditHref, resolveOwnerEditHref } from "@/utils/event-edit-route";
 import { trackEventInteraction } from "@/utils/event-tracking-client";
 import { buildStudioCardPath } from "@/utils/event-url";
 
@@ -720,15 +720,15 @@ export default function EventOwnerTools({
     setSelectedEventEditHref,
     setActiveEventTab,
   } = useSidebar();
+  const ownerHref = eventOwnerHref || `/event/${encodeURIComponent(eventId)}`;
   const resolvedEditHref = useMemo(
-    () => resolveEditHref(eventId, eventData, eventTitle),
-    [eventData, eventId, eventTitle],
+    () => resolveOwnerEditHref(eventId, eventData, eventTitle, ownerHref),
+    [eventData, eventId, eventTitle, ownerHref],
   );
   const resolvedArtworkEditHref = useMemo(
     () => resolveArtworkEditHref(eventId, eventData),
     [eventData, eventId],
   );
-  const ownerHref = eventOwnerHref || `/event/${encodeURIComponent(eventId)}`;
   const designHref = buildOwnerTabHref(ownerHref, eventId, "design");
   const primaryEditHref = resolvedArtworkEditHref ? designHref : resolvedEditHref;
   const [currentEventTitle, setCurrentEventTitle] = useState(eventTitle);
@@ -910,7 +910,7 @@ export default function EventOwnerTools({
           />
         </section>
 
-        <aside className="flex w-full min-w-0 justify-center lg:sticky lg:top-5 lg:h-[calc(100dvh-2.5rem)] lg:translate-x-6 lg:items-center lg:justify-end lg:self-start xl:translate-x-10">
+        <aside className="hidden w-full min-w-0 lg:sticky lg:top-5 lg:flex lg:h-[calc(100dvh-2.5rem)] lg:items-center lg:justify-end lg:self-start">
           <EventProductPreview
             eventId={eventId}
             eventTitle={currentEventTitle}

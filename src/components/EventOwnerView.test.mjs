@@ -45,6 +45,7 @@ const mocks = {
   },
   "@/utils/event-edit-route": {
     resolveEditHref: (id) => `/event/${id}?edit=${id}`,
+    resolveOwnerEditHref: (id) => `/event/${id}?edit=${id}`,
     resolveArtworkEditHref: (_id, data) => (data?.coverImageUrl ? "/studio?editEvent=meet" : null),
   },
   "@/utils/event-tracking-client": { trackEventInteraction() {} },

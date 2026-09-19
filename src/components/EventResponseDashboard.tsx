@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import OwnerRsvpEditor from "@/components/OwnerRsvpEditor";
 
 type RsvpStats = {
   yes: number;
@@ -329,11 +330,12 @@ export default function EventResponseDashboard({
 
         {activeTab === "rsvps" ? (
           <RsvpResponsesPanel
+            eventId={eventId}
+            eventData={eventData}
             responses={responses}
             stats={displayStats}
             responseRate={responseRate}
             loading={loading}
-            editHref={editHref}
           />
         ) : null}
 
@@ -399,17 +401,19 @@ function ContactCell({ row }: { row: RsvpResponse }) {
 }
 
 function RsvpResponsesPanel({
+  eventId,
+  eventData,
   responses,
   stats,
   responseRate,
   loading,
-  editHref,
 }: {
+  eventId: string;
+  eventData: Record<string, unknown> | null;
   responses: RsvpResponse[];
   stats: RsvpStats;
   responseRate: number;
   loading: boolean;
-  editHref: string;
 }) {
   return (
     <section className="space-y-4" aria-label="RSVP responses">
@@ -446,14 +450,7 @@ function RsvpResponsesPanel({
 
       <section className="owner-workspace-glass-panel relative overflow-hidden rounded-[28px] border border-black/5 bg-white/86 shadow-sm">
         <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 sm:px-5">
-          <h4 className="text-lg font-semibold text-slate-950">Guest responses</h4>
-          <Link
-            href={editHref}
-            className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
-          >
-            <Pencil size={13} />
-            Edit RSVP
-          </Link>
+          <OwnerRsvpEditor key={eventId} eventId={eventId} eventData={eventData} />
         </div>
 
         <div className="overflow-x-auto">

@@ -154,6 +154,25 @@ export const buildEditLink = (eventId: string, eventData: any, eventTitle: strin
   }
 };
 
+/** Owner actions edit the saved event in its workspace, even when it was created in chat. */
+export function resolveOwnerEditHref(
+  eventId: string,
+  eventData: unknown,
+  eventTitle: string,
+  ownerHref?: string,
+): string {
+  const editHref = resolveEditHref(eventId, eventData, eventTitle);
+  if (!/^\/chat(?:[/?#]|$)/.test(editHref)) return editHref;
+  if (!hasEditableStudioArtwork(eventData)) return `/events/${encodeURIComponent(eventId)}/manage`;
+
+  const url = new URL(ownerHref || buildEventPath(eventId, eventTitle), "https://envitefy.local");
+  for (const key of ["edit", "editor", "preview", "embed", "returnTo", "view"]) {
+    url.searchParams.delete(key);
+  }
+  url.searchParams.set("tab", "design");
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
 export const resolveEditHref = (eventId: string, eventData: any, eventTitle: string): string => {
   if (eventData?.createdVia === "livecard-builder") return `/livacards-invites?edit=${encodeURIComponent(eventId)}`;
   if (eventData?.scanSchedule?.items?.length) return `/event/schedule/customize?edit=${encodeURIComponent(eventId)}`;

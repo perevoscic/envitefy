@@ -92,7 +92,7 @@ import type { SignupForm } from "@/types/signup";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { findFirstEmail, findFirstUrl, normalizeUrlValue } from "@/utils/contact";
 import { resolveEventCelebrationKind } from "@/utils/event-celebration";
-import { buildEditLink, resolveEditHref } from "@/utils/event-edit-route";
+import { resolveEditHref, resolveOwnerEditHref } from "@/utils/event-edit-route";
 import { buildOwnerEventEditHref } from "@/lib/event-preview-viewport";
 import {
   buildEventProductPath,
@@ -1389,14 +1389,14 @@ export default async function EventPage({
   }
   if (editParam && canEditCreatedEvent && readRouteSearchParam((awaitedSearchParams as any)?.editor) === "menu") {
     const editUrl = new URL(
-      discoveryEditConfig?.customizeUrl || resolveEditHref(row.id, data, title),
+      discoveryEditConfig?.customizeUrl || resolveOwnerEditHref(row.id, data, title, ownerEventHref),
       "https://envitefy.local",
     );
     editUrl.searchParams.delete("embed");
     redirect(buildOwnerEventEditHref(`${editUrl.pathname}${editUrl.search}`, ownerEventHref, readRouteSearchParam((awaitedSearchParams as any)?.eventColor)));
   }
   if (editParam && canEditCreatedEvent && !discoveryEditConfig) {
-    const editUrl = resolveEditHref(row.id, data, title);
+    const editUrl = resolveOwnerEditHref(row.id, data, title, ownerEventHref);
     redirect(editUrl);
   }
 
@@ -1409,7 +1409,7 @@ export default async function EventPage({
         eventId={row.id}
         title={title}
         publicHref={publicEventHref}
-        editHref={resolveEditHref(row.id, data, title)}
+        editHref={resolveOwnerEditHref(row.id, data, title, ownerEventHref)}
         mobileEditInEvent={isGymnasticsTemplate && canEditCreatedEvent}
         backgroundColor={eventPageBackgroundColor}
         entryContext={createdParam ? {
@@ -1846,7 +1846,7 @@ export default async function EventPage({
       timings: timing.toObject(),
     });
   }
-  const editHref = buildEditLink(row.id, data, title);
+  const editHref = resolveOwnerEditHref(row.id, data, title, ownerEventHref);
 
   // Redirect legacy id/slug-id/alias URLs to the canonical public slug.
   if (awaitedParams.id !== canonicalSegment || autoAccept) {
@@ -2539,7 +2539,7 @@ export default async function EventPage({
             <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
               {canEditCreatedEvent && (
                 <Link
-                  href={buildEditLink(row.id, data, title)}
+                  href={editHref}
                   className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors rounded-md"
                   title="Edit event"
                 >
@@ -2636,7 +2636,7 @@ export default async function EventPage({
             <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
               {canEditCreatedEvent && (
                 <Link
-                  href={buildEditLink(row.id, data, title)}
+                  href={editHref}
                   className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors rounded-md"
                   title="Edit event"
                 >
@@ -2770,7 +2770,7 @@ export default async function EventPage({
       <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
         {canEditCreatedEvent && (
           <Link
-            href={buildEditLink(row.id, data, title)}
+            href={editHref}
             className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
             title="Edit event"
           >
@@ -2864,7 +2864,7 @@ export default async function EventPage({
       <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
         {canEditCreatedEvent && (
           <Link
-            href={buildEditLink(row.id, data, title)}
+            href={editHref}
             className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
             title="Edit event"
           >
@@ -2958,7 +2958,7 @@ export default async function EventPage({
       <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
         {canEditCreatedEvent && (
           <Link
-            href={buildEditLink(row.id, data, title)}
+            href={editHref}
             className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
             title="Edit event"
           >
@@ -3117,7 +3117,7 @@ export default async function EventPage({
       <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
         {canEditCreatedEvent && (
           <Link
-            href={buildEditLink(row.id, data, title)}
+            href={editHref}
             className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
             title="Edit event"
           >
@@ -3450,7 +3450,7 @@ export default async function EventPage({
         mobileEditHref={
           isGymnasticsTemplate && canEditCreatedEvent && ownerPreviewEmbedded
             ? buildOwnerEventEditHref(
-                resolveEditHref(row.id, data, title),
+                resolveOwnerEditHref(row.id, data, title, ownerEventHref),
                 ownerEventHref,
                 eventPageBackgroundColor,
               )

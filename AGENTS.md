@@ -152,6 +152,8 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
 
 ## Feature Maps
 
+- Owner RSVP editing and preview (September 19, 2026): Edit RSVP opens inline Host name, Phone and Email fields with explicit Save and Cancel. All editing actions from the owner dashboard and owner previews must stay in event editing surfaces, never return to Create chat; use owner-specific edit routing. Keep card artwork in the right-hand preview column on desktop. On smaller screens, omit the stacked card below the workspace and use the header Preview action to open it.
+
 - Owner workspace header (September 19, 2026, corrected): keep the visible Owner workspace label. Remove only the separate View current card/event button. Use an eye-icon Preview action immediately beside Delete in the header action row, with the Preview text visible on phones too. Keep the existing current-product preview dialog and Share action.
 
 - Mobile event controls preference (September 15, 2026): keep the owner-view device selector centered, with a circular vertical three-dot button on the right opening labeled Preview, Edit, Share and Delete actions. Keep desktop actions visible and preserve templates that already place their mobile Edit beside guest actions. Narrow football game cards put compact Directions and Calendar buttons in one row with 44px targets, full accessible labels, the saved calendar provider and editable directions wording preserved.

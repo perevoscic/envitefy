@@ -23,7 +23,7 @@ import { buildOwnerEventViewHref } from "@/lib/event-preview-viewport";
 import { normalizePrimarySignupSource } from "@/lib/product-scopes";
 import { normalizeSignupIntent } from "@/lib/signup-intent";
 import type { SportPreferences } from "@/lib/sports-preferences";
-import { resolveEditHref } from "@/utils/event-edit-route";
+import { resolveOwnerEditHref } from "@/utils/event-edit-route";
 import { isSportsPreviewFirstEvent } from "@/utils/event-navigation";
 import { buildEventPath } from "@/utils/event-url";
 import {
@@ -1436,7 +1436,7 @@ export function useLeftSidebarController({
       setSelectedEventTitle(title);
       setSelectedEventHref(publicHref);
       setSelectedEventOwnerHref(ownerHref);
-      setSelectedEventEditHref(resolveEditHref(row.id, row.data, title));
+      setSelectedEventEditHref(resolveOwnerEditHref(row.id, row.data, title, ownerHref));
       setActiveEventTab("dashboard");
       setEventSidebarMode("owner");
       setEventContextSourcePage(inferred.source);
@@ -1454,7 +1454,11 @@ export function useLeftSidebarController({
     setSelectedEventTitle(pending.title);
     setSelectedEventHref(pending.href);
     setSelectedEventOwnerHref(pending.ownerHref);
-    setSelectedEventEditHref(pending.editHref || resolveEditHref(pending.id, null, pending.title));
+    setSelectedEventEditHref(
+      pending.editHref && !/^\/chat(?:[/?#]|$)/.test(pending.editHref)
+        ? pending.editHref
+        : resolveOwnerEditHref(pending.id, null, pending.title, pending.ownerHref),
+    );
     setActiveEventTab("dashboard");
     setEventSidebarMode("owner");
     setEventContextSourcePage("myEvents");
@@ -1641,7 +1645,7 @@ export function useLeftSidebarController({
       setSelectedEventTitle(title);
       setSelectedEventHref(publicHref);
       setSelectedEventOwnerHref(ownerHref);
-      setSelectedEventEditHref(resolveEditHref(row.id, row.data, title));
+      setSelectedEventEditHref(resolveOwnerEditHref(row.id, row.data, title, ownerHref));
       setActiveEventTab("design");
       setEventSidebarMode("owner");
       setEventContextSourcePage(sourcePage);

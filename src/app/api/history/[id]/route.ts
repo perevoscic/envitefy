@@ -27,6 +27,7 @@ import { deleteEventHistoryWithCleanup } from "@/lib/event-cleanup";
 import { isEventDraft } from "@/lib/event-draft-access";
 import { findTransientEventMedia } from "@/lib/event-media";
 import { invalidateUserHistory } from "@/lib/history-cache";
+import { buildOwnerRsvpSettingsPatch, validateOwnerRsvpSettings } from "@/lib/owner-rsvp-settings";
 import {
   readStoredSignup,
   SignupMutationError,
@@ -211,13 +212,28 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   }
   const titleInput = typeof body.title === "string" ? body.title.trim() : undefined;
   const hasTitleUpdate = Boolean(titleInput);
-  const hasDataUpdate = body && (body.category != null || body.data != null || requestedSlug);
+  let rsvpSettingsPatch: Record<string, unknown> | null = null;
+  if (body.rsvpSettings !== undefined) {
+    try {
+      rsvpSettingsPatch = buildOwnerRsvpSettingsPatch(
+        existing.data || {},
+        validateOwnerRsvpSettings(body.rsvpSettings),
+      );
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Invalid RSVP contact details." },
+        { status: 400 },
+      );
+    }
+  }
+  const hasDataUpdate =
+    body && (body.category != null || body.data != null || requestedSlug || rsvpSettingsPatch);
 
   let updatedRow = claimedRow;
   let changed = false;
 
   if (hasDataUpdate) {
-    const incomingData = body.data;
+    const incomingData = rsvpSettingsPatch || body.data;
     const incomingCategory = body.category;
     const existingAccessControl = (existing.data && (existing.data as any).accessControl) || null;
     const processedData =

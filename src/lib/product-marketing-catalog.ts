@@ -373,6 +373,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           proofPoints: [
             "Host views can organize yes, maybe, no, pending, response counts, recent replies, and guest details.",
             "Supported event dashboards expose headcounts and RSVP progress with the event.",
+            "Owners can edit the RSVP host name, phone and email directly in the RSVP workspace, with explicit Save and Cancel controls.",
             "Specialized pages can keep guest messages, meal information, allergy notes, or other answers with each response.",
           ],
           sellWhen: [
