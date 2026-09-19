@@ -15,6 +15,7 @@ import {
   upsertCreationSession,
 } from "./event-storage.ts";
 import { normalizeRequestedOutputs } from "./creation-intent.ts";
+import { signupFormHandoff, signupSelectionHandoff } from "./signup-handoff.ts";
 import { extractConciergeDraft, normalizeConciergeDraft } from "./extract.ts";
 import { parseCreationGeneratedPreview } from "./generated-preview.ts";
 import {
@@ -406,13 +407,32 @@ export async function resumeCreationSession(params: {
   };
 }
 
+/** A handoff is a chat reply only, including when a client asks to persist the turn. */
+export function creationSignupHandoff(request: CreationIntakeRequest, resolvedDraft?: ConciergeEventDraft): CreationIntakeResult | null {
+  if (request.action === "save") return null;
+  const assistantMessage = signupFormHandoff(request.message || "")
+    || signupSelectionHandoff(request.requestedOutputs, request.starterCategory || request.activeContext?.selectedCategory)
+    || signupSelectionHandoff(resolvedDraft?.requestedOutputs, resolvedDraft?.eventType);
+  if (!assistantMessage) return null;
+  return {
+    ok: true,
+    draft: request.draft || fallbackExtractConciergeDraft({ message: "Create a signup form." }),
+    assistantMessage,
+    suggestedReplies: [],
+    canSave: false,
+    chatMessages: appendAssistantChatMessage(normalizeChatMessages(request.chatMessages), assistantMessage),
+  };
+}
+
 export async function resolveCreationIntakeDraft(params: {
   request: CreationIntakeRequest;
   timing?: TimingRecorder;
-}) {
+}): Promise<CreationIntakeResult | { draft: ConciergeEventDraft }> {
   const request = params.request;
+  const handoff = creationSignupHandoff(request);
+  if (handoff) return handoff;
   const isSaveAction = request.action === "save";
-  return isSaveAction
+  const result = isSaveAction
     ? {
         draft:
           request.draft ||
@@ -449,6 +469,10 @@ export async function resolveCreationIntakeDraft(params: {
           action: request.action || "message",
           starterCategory: request.starterCategory || null,
         }));
+  const extractedHandoff = "assistantMessage" in result
+    && result.assistantMessage === signupSelectionHandoff(["signup_form"])
+    ? creationSignupHandoff({ ...request, requestedOutputs: ["signup_form"] }) : null;
+  return extractedHandoff || creationSignupHandoff(request, result.draft) || result;
 }
 
 export async function handleCreationIntake(params: {
@@ -456,10 +480,13 @@ export async function handleCreationIntake(params: {
   request: CreationIntakeRequest;
   timing?: TimingRecorder;
 }): Promise<CreationIntakeResult> {
+  const handoff = creationSignupHandoff(params.request);
+  if (handoff) return handoff;
   const result = await resolveCreationIntakeDraft({
     request: params.request,
     timing: params.timing,
   });
+  if ("ok" in result) return result;
   return finalizeCreationIntake({
     ...params,
     result,
@@ -474,6 +501,8 @@ export async function finalizeCreationIntake(params: {
   timing?: TimingRecorder;
 }): Promise<CreationIntakeResult> {
   const request = params.request;
+  const handoff = creationSignupHandoff(request, params.result.draft);
+  if (handoff) return handoff;
   const isSaveAction = request.action === "save";
   const result = params.result;
   let draft = {

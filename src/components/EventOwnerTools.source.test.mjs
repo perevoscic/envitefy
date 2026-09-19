@@ -25,7 +25,9 @@ test("owner workspace keeps public actions in the header and not duplicated unde
   assert.match(source, /flex flex-wrap items-center justify-between gap-3/);
   assert.match(source, /flex shrink-0 flex-wrap items-center justify-end gap-2/);
   assert.match(source, /aria-label="Share"/);
-  assert.match(source, /viewCurrentLabel=\{`View current \$\{productName\}`\}/);
+  assert.match(source, /aria-label="Preview"/);
+  assert.doesNotMatch(source, /viewCurrentLabel|View current/);
+  assert.match(source, />\s*Owner workspace\s*</);
   assert.match(source, /aria-label="Edit"/);
   assert.match(
     source,
@@ -47,7 +49,7 @@ test("owner workspace keeps public actions in the header and not duplicated unde
   assert.match(source, /onCloseAutoFocus=/);
   assert.match(source, /preview=\{productViewerMode === "changes" \? effectivePreview : currentProduct\}/);
   assert.match(source, /<span className="hidden sm:inline">Share<\/span>/);
-  assert.match(source, /<span>\{viewCurrentLabel\}<\/span>/);
+  assert.match(source, /<span>Preview<\/span>/);
   assert.doesNotMatch(source, /<span className="hidden sm:inline">Edit<\/span>/);
   const headerBlock = source.match(
     /function OwnerWorkspaceHeader[\s\S]*?(?=\nfunction OwnerTabContent)/,
@@ -55,7 +57,7 @@ test("owner workspace keeps public actions in the header and not duplicated unde
   assert.ok(headerBlock, "expected OwnerWorkspaceHeader block");
   assert.match(
     headerBlock[0],
-    /href=\{editHref\}[\s\S]*onClick=\{onShare\}[\s\S]*onClick=\{onViewCurrent\}/,
+    /href=\{editHref\}[\s\S]*onClick=\{onViewCurrent\}[\s\S]*<EventDeleteModal[\s\S]*onClick=\{onShare\}/,
   );
   assert.doesNotMatch(headerBlock[0], /rounded-2xl border border-slate-200 bg-white/);
   assert.doesNotMatch(headerBlock[0], /rounded-2xl bg-slate-950 text-white/);
@@ -65,7 +67,7 @@ test("owner workspace keeps public actions in the header and not duplicated unde
   assert.doesNotMatch(headerBlock[0], /sm:order-3/);
   assert.match(
     source,
-    /hidden min-w-0 lg:sticky lg:top-5 lg:flex lg:h-\[calc\(100dvh-2\.5rem\)\] lg:translate-x-6 lg:items-center lg:justify-end lg:self-start xl:translate-x-10/,
+    /flex w-full min-w-0 justify-center lg:sticky lg:top-5 lg:h-\[calc\(100dvh-2\.5rem\)\] lg:translate-x-6 lg:items-center lg:justify-end lg:self-start xl:translate-x-10/,
   );
   assert.match(source, /className="mx-auto w-full max-w-\[430px\]"/);
   assert.match(source, /heightMode="auto"/);
@@ -82,11 +84,21 @@ test("owner workspace keeps public actions in the header and not duplicated unde
   assert.match(previewBlock[0], /lg:h-\[min\(760px,calc\(100dvh-2\.5rem\)\)\]/);
   assert.match(previewBlock[0], /heightMode\?: "fixed" \| "auto";/);
   assert.match(previewBlock[0], /const autoHeight = heightMode === "auto";/);
+  assert.match(previewBlock[0], /const isStudioCard = preview\.surface === "studio-card" && Boolean\(preview\.imageUrl\);/);
+  assert.match(previewBlock[0], /actionsPlacement="overlay"/);
+  assert.doesNotMatch(previewBlock[0], /fitToContainer/);
+  assert.match(previewBlock[0], /overflow-visible !border-0 !bg-transparent/);
+  assert.match(previewBlock[0], /autoHeight \|\| isStudioCard/);
   assert.match(previewBlock[0], /"flex h-full w-full items-center justify-center"/);
   assert.match(previewBlock[0], /"flex w-full items-center justify-center"/);
-  assert.match(previewBlock[0], /!h-full !w-auto !max-w-full !rounded-\[28px\]/);
-  assert.match(previewBlock[0], /!w-full !max-w-full !rounded-\[28px\]/);
+  assert.match(previewBlock[0], /!h-auto !w-full !max-w-full !rounded-\[28px\] !border-0 !bg-transparent/);
+  assert.match(previewBlock[0], /style=\{\{ width: "100%" \}\}/);
   assert.doesNotMatch(previewBlock[0], /\bp-3\b/);
+  const liveCardCss = readSource("src/components/studio/StudioShowcaseLiveCard.module.css");
+  assert.match(
+    liveCardCss,
+    /@container \(min-width: 80px\) and \(min-height: 80px\)/,
+  );
 });
 
 test("owner workspace exposes Dashboard RSVPs Messages and Design tabs", () => {
@@ -179,7 +191,8 @@ test("owner workspace live product uses card fallback data instead of a blank na
   );
   assert.match(source, /function buildFallbackInvitationData/);
   assert.match(source, /asRecord\(studioCard\?\.invitationData\) \|\| buildFallbackInvitationData/);
-  assert.match(source, /preview\.surface === "studio-card" && preview\.imageUrl/);
+  assert.match(source, /preview\.surface === "studio-card" && Boolean\(preview\.imageUrl\)/);
+  assert.match(source, /isStudioCard && preview\.imageUrl/);
   assert.match(source, /<iframe/);
   assert.match(source, /src=\{embeddedPreviewUrl\}/);
   assert.doesNotMatch(source, /pointer-events-none h-full w-full border-0 bg-white/);

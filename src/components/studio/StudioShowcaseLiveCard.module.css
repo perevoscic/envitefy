@@ -1,0 +1,23 @@
+.artworkSlot {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  container-type: size;
+}
+
+/* Only use container-query sizing when the slot actually has room.
+   A 0x0 size container makes cqw/cqh resolve to 0 and hides the card. */
+@container (min-width: 80px) and (min-height: 80px) {
+  .fittedArtwork {
+    --artwork-preview-width: min(100cqw, calc(100cqh * var(--live-card-aspect-ratio)));
+    --artwork-preview-height: calc(var(--artwork-preview-width) / var(--live-card-aspect-ratio));
+  }
+}
+
+.fittedArtwork img {
+  object-fit: contain;
+}

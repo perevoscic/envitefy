@@ -4,7 +4,7 @@
     env(safe-area-inset-top, 0px) -
     env(safe-area-inset-bottom, 0px)
   );
-  --artwork-preview-max-art-height: max(8rem, calc(var(--artwork-preview-available-height) - 10rem));
+  --artwork-preview-max-art-height: max(8rem, calc(var(--artwork-preview-available-height) * 0.9));
   --artwork-preview-width: min(
     calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)),
     calc(var(--artwork-preview-max-art-height) * var(--artwork-preview-ratio))
@@ -25,25 +25,17 @@
   object-fit: contain;
 }
 
+.share,
 .close {
   position: absolute;
-  top: -52px;
-  right: 0;
-  z-index: 100;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.content [data-live-card-share] {
   top: 12px;
-  right: auto;
-  left: 12px;
-  width: 44px;
-  height: 44px;
-  padding: 10px;
+  z-index: 100;
 }
 
-.content [data-live-card-share] > svg {
-  width: 21px;
-  height: 21px;
+.share {
+  left: 12px;
+}
+
+.close {
+  right: 12px;
 }

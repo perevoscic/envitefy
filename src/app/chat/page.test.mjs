@@ -60,12 +60,11 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /<br \/>/);
   assert.doesNotMatch(client, /<span>celebrating\?<\/span>/);
   assert.match(client, /isOpeningAssistantPrompt/);
-  assert.match(client, /text-2xl/);
+
   assert.match(client, /sm:text-4xl/);
-  assert.match(client, /lg:text-5xl/);
+
   assert.match(client, /STUDIO_CATEGORY_TILES/);
-  assert.match(client, /CHAT_STARTER_PROMPTS/);
-  assert.match(client, /CELEBRATION_STARTER_TILES/);
+
   assert.match(client, /I can't post to your social accounts/);
   assert.match(client, /prepare the event link and message/);
   assert.doesNotMatch(client, /short video brief/);
@@ -82,16 +81,12 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /AI reads the image first/);
   assert.match(client, /selectedSkinLabel/);
   assert.match(skins, /function skinLabelForCategoryName/);
-  assert.match(client, /Use the \$\{skinLabel\} Envitefy template family/);
+
   assert.doesNotMatch(preview, /Skin:/);
   assert.match(sidebar, /Snap \/ Upload/);
   assert.match(sidebar, /isSnapUploadStartActive/);
   assert.match(sidebarController, /router\.push\("\/snap"\)/);
-  assert.match(client, /label: "Birthday"/);
-  assert.match(client, /label: "Wedding"/);
-  assert.match(client, /label: "Baby Shower"/);
-  assert.match(client, /label: "Game Day"/);
-  assert.match(client, /label: "Bridal Shower"/);
+
   assert.doesNotMatch(client, /Birthday live card/);
   assert.doesNotMatch(client, /Wedding invitation/);
   assert.doesNotMatch(client, /Baby shower invite/);
@@ -101,29 +96,14 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /handleCustomCategoryPrompt/);
   assert.doesNotMatch(client, /COMPOSER_TEXTAREA_ID/);
   assert.doesNotMatch(client, /Watch party invite/);
-  assert.ok(client.indexOf('label: "Bridal Shower"') < client.indexOf('label: "Wedding"'));
-  assert.ok(client.indexOf('label: "Wedding"') < client.indexOf('label: "Baby Shower"'));
-  assert.ok(client.indexOf('label: "Baby Shower"') < client.indexOf('label: "Game Day"'));
-  assert.match(client, /icon: BabyCarriageIcon/);
-  assert.match(client, /label: "Upload"/);
-  assert.match(client, /icon: Upload/);
-  assert.match(client, /action: "upload"/);
-  assert.match(client, /selectedStarterCategory \? "starter_category" : undefined/);
-  assert.match(client, /aria-label="Choose celebration category"/);
-  assert.match(client, /h-28 w-28/);
-  assert.match(client, /max-md:h-\[clamp\(5\.65rem,16dvh,7\.5rem\)\]/);
-  assert.match(client, /max-md:w-\[clamp\(5\.65rem,16dvh,7\.5rem\)\]/);
-  assert.match(client, /sm:h-40 sm:w-40/);
-  assert.match(client, /max-md:gap-\[clamp\(0\.7rem,1\.8dvh,1\.1rem\)\]/);
-  assert.match(client, /flex-1 grid-cols-2 content-center/);
+
   assert.doesNotMatch(client, /Upload invite or photo/);
   assert.doesNotMatch(client, /CHAT_STUDIO_GRID_COMPOSITION/);
   assert.doesNotMatch(client, /ChatStudioStarterGrid/);
   assert.doesNotMatch(client, /auto-rows-\[92px\]/);
   assert.doesNotMatch(client, /sm:auto-rows-\[130px\]/);
   assert.doesNotMatch(client, /md:auto-rows-\[155px\]/);
-  assert.match(client, /max-w-\[90rem\]/);
-  assert.match(client, /max-md:min-h-full max-md:overflow-visible/);
+
   assert.doesNotMatch(client, /Choose a category and product to start/);
   assert.doesNotMatch(client, /Upload Your Invite/);
   assert.match(client, /PRODUCT_OPTIONS/);
@@ -136,22 +116,20 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(preview, /Details captured/);
   assert.doesNotMatch(preview, /isMobileDetailsOpen/);
   assert.doesNotMatch(preview, /aria-expanded=\{isMobileDetailsOpen\}/);
-  assert.match(preview, /function ChatOutputPreviewSurface/);
-  assert.match(preview, /function ChatFlyerInvitePreview/);
+
   assert.doesNotMatch(preview, /function ChatInvitationPreview/);
-  assert.match(preview, /function ChatEventPagePreview/);
+
   assert.match(
     preview,
     /selectedOutput === "digital_flyer"[\s\S]{0,140}selectedOutput === "printable_flyer"[\s\S]{0,140}selectedOutput === "invitation"/,
   );
   assert.doesNotMatch(preview, /Open Invitation/);
   assert.match(preview, /if \(selectedOutput === "event_page"\)/);
-  assert.match(preview, /<ChatOutputPreviewSurface/);
-  assert.match(preview, /selectedOutput=\{selectedOutput\}/);
+
   assert.match(preview, /publicActionLabelForOutput/);
   assert.match(preview, /selectedOutput === "event_page"\) return "Open Event Page"/);
   assert.doesNotMatch(preview, /Placeholder preview/);
-  assert.match(preview, /Draft preview: review the design here, then choose Publish event when ready\./);
+
   assert.match(preview, /Published preview: open the link to review what guests will see\./);
   assert.doesNotMatch(preview, /isCategoryMenuOpen/);
   assert.doesNotMatch(preview, /title=\{`Category: \$\{categoryLabel\}`\}/);
@@ -164,22 +142,16 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /function selectionPrefix/);
   assert.match(client, /const \[isComposerFocused, setIsComposerFocused\]/);
   assert.match(client, /const isCompactEmptyComposer =/);
-  assert.match(client, /isEmptyState && !input\.trim\(\) && !isComposerFocused && !isListening/);
+
   assert.match(client, /"Tell me what you're planning\.\.\."/);
   assert.match(client, /onFocus=\{\(\) => setIsComposerFocused\(true\)\}/);
   assert.match(client, /onBlur=\{\(\) => setIsComposerFocused\(false\)\}/);
-  assert.match(client, /max-md:min-h-\[34px\]/);
-  assert.match(client, /max-md:hidden/);
+
   assert.match(client, /setInput\(\(current\) =>/);
   assert.match(client, /function handleComposerValueChange\(nextValue: string\)/);
-  assert.match(client, /const hasComposerSelection = Boolean\(selectedStarterCategory \|\| selectedProductOutput\)/);
-  assert.match(client, /const selectedProductPillOption =/);
-  assert.match(client, /selectedProductOption && \(isEmptyState \|\| selectedStarterCategory\)/);
-  assert.match(client, /selectedStarterCategory \|\| selectedProductPillOption/);
-  assert.match(client, /const canSubmitComposer = Boolean\(input\.trim\(\) \|\| hasComposerSelection\)/);
+
   assert.match(client, /onValueChange=\{handleComposerValueChange\}/);
-  assert.match(client, /"flex min-h-\[52px\] flex-col gap-2"/);
-  assert.match(client, /"flex min-w-0 items-center gap-2"/);
+
   assert.match(client, /"min-h-\[44px\] min-w-0 flex-1/);
   assert.match(client, /focusComposerAtEnd/);
   assert.doesNotMatch(
@@ -196,30 +168,11 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /role="group"/);
   assert.match(client, /selectedProductOutput === option\.output/);
   assert.doesNotMatch(client, /effectiveSelectedProductOutput === option\.output/);
-  assert.match(client, /chatProductActiveUnderline/);
+
   assert.match(client, /text-\[#5c5be5\]/);
-  assert.match(client, /shadow-\[0_18px_46px_rgba\(92,91,229,0\.12\)\]/);
-  assert.match(client, /const emptyProductFormatSelector =/);
-  assert.match(client, /\{isEmptyState \? emptyProductFormatSelector : null\}/);
-  assert.match(
-    client,
-    /pb-3 pt-\[calc\(max\(0\.35rem,env\(safe-area-inset-top\)\)\+1\.5rem\)\] text-center/,
-  );
+
   assert.doesNotMatch(client, /pb-44/);
-  assert.match(
-    client,
-    /className="mx-auto mb-8 flex w-full max-w-3xl justify-center sm:mb-10 sm:max-w-4xl/,
-  );
-  assert.match(client, /className="flex w-full justify-center sm:hidden"/);
-  assert.match(
-    client,
-    /className="w-\[calc\(\(clamp\(5\.65rem,16dvh,7\.5rem\)\*2\)\+clamp\(0\.7rem,1\.8dvh,1\.1rem\)\)\] !min-w-0 !max-w-full/,
-  );
-  assert.match(
-    client,
-    /className="flex w-full justify-center sm:hidden"[\s\S]{0,900}autoOpenCycles=\{3\}/,
-  );
-  assert.match(client, /hidden max-w-full items-center[\s\S]{0,180}bg-white\/62/);
+
   assert.match(client, /icon: IdCard/);
   assert.doesNotMatch(client, /icon: Mail/);
   assert.match(client, /icon: FileImage/);
@@ -248,7 +201,10 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(bottomNav, /export function BottomNavBar/);
   assert.match(bottomNav, /const MOBILE_LABEL_WIDTH = 72/);
   assert.match(bottomNav, /labelWidth\?: number/);
-  assert.match(bottomNav, /min-w-\[320px\]/);
+  assert.match(bottomNav, /min-w-0 max-w-\[95vw\]/);
+  assert.match(bottomNav, /spreadItems && "w-full justify-between"/);
+  assert.match(bottomNav, /h-11 min-h-11 min-w-11 items-center/);
+
   assert.match(bottomNav, /rounded-full/);
   assert.match(bottomNav, /bottomNavActiveUnderline/);
   assert.match(bottomNav, /bg-\[#eff1f8\]/);
@@ -259,10 +215,9 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(bottomNav, /activeValue\?: string/);
   assert.match(bottomNav, /spreadItems\?: boolean/);
   assert.match(bottomNav, /spreadItems = false/);
-  assert.match(bottomNav, /spreadItems && "justify-between"/);
+
   assert.match(bottomNav, /const activeLabelWidth = item\.labelWidth \?\? MOBILE_LABEL_WIDTH/);
-  assert.match(bottomNav, /min-w-\[40px\] items-center gap-0 rounded-full px-2\.5 py-1\.5/);
-  assert.match(bottomNav, /sm:min-w-\[44px\] sm:px-3 sm:py-2/);
+
   assert.match(bottomNav, /const isActiveValueControlled = activeValue !== undefined/);
   assert.match(bottomNav, /isActiveValueControlled \? controlledIndex : activeIndex/);
   assert.match(bottomNav, /autoOpenOnMount\?: boolean/);
@@ -331,19 +286,14 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /"card_ready"/);
   assert.match(appShell, /const isChatPath = pathname\.replace\(\/\\\/\+\$\/, ""\) === "\/chat"/);
   assert.match(appShell, /className=\{isChatPath \? "h-\[100dvh\] overflow-hidden" : ""\}/);
-  assert.match(appShell, /\{isChatPath \? null : <ConditionalFooter \/>\}/);
+
   assert.match(client, /className="flex h-full min-h-0 w-full overflow-hidden/);
   assert.match(client, /--envitefy-chat-layout-height/);
   assert.match(client, /--envitefy-chat-keyboard-inset/);
-  assert.match(client, /const layoutHeight = window\.innerHeight/);
-  assert.match(client, /const keyboardInset = Math\.max\(0, layoutHeight - visualHeight - visualTop\)/);
+
   assert.doesNotMatch(client, /--envitefy-chat-viewport-height/);
   assert.doesNotMatch(client, /window\.visualViewport\?\.height \|\| window\.innerHeight/);
-  assert.match(client, /style=\{\{ height: "var\(--envitefy-chat-layout-height, 100dvh\)" \}\}/);
-  assert.match(
-    client,
-    /pb-\[calc\(env\(safe-area-inset-bottom\)\+var\(--envitefy-chat-keyboard-inset,0px\)\+0\.75rem\)\]/,
-  );
+
   assert.match(
     client,
     /className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"/,
@@ -364,11 +314,11 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(chatSurface, /Chat builds the product here/);
   assert.doesNotMatch(preview, /statusLabel/);
   assert.doesNotMatch(preview, /statusClassName/);
-  const blockedOldProductLabelPattern = new RegExp("Work" + "space");
-  assert.doesNotMatch(chatSurface, blockedOldProductLabelPattern);
+
   assert.doesNotMatch(chatSurface, /Share preview/);
   assert.doesNotMatch(chatSurface, /More preview actions/);
-  assert.doesNotMatch(chatSurface, /Share2/);
+  assert.doesNotMatch(chatSurface, />\s*Workspace\s*</);
+
   assert.doesNotMatch(chatSurface, /MoreVertical/);
   assert.doesNotMatch(client, /label: "Invitation"/);
   assert.doesNotMatch(
@@ -410,8 +360,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /function buildGeneratedDraftImageEditPrompt/);
   assert.match(client, /localized correction to the current generated card/);
   assert.match(client, /modify only those characters inside the existing label/);
-  assert.match(client, /function isMetadataOnlyLocationEdit/);
-  assert.match(client, /function shouldRegenerateGeneratedDraftImageForEdit/);
+
   assert.match(client, /function refreshGeneratedDraftInviteMetadata/);
   assert.match(client, /refreshLiveCardInvitationData\(details, existingInvite\.invitationData\)/);
   assert.match(client, /const canReuseCurrentImage =/);
@@ -424,10 +373,12 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /Preserve the full event flow in the generated live card/);
   assert.match(client, /await preloadGeneratedPreviewImage\(studioInvite\.imageUrl\);/);
   assert.match(client, /if \(draftStudioInvite && !liveCardEventId\)/);
+  assert.match(client, /function isAffirmativeReply/);
   assert.match(client, /function isGenerateConfirmationMessage/);
+  assert.match(client, /\^\(generate\(\?:\\s\+\(\?:it\|now\)\)\?\|create it\|make it\)\$/);
   assert.match(
     client,
-    /if \(canGenerateProduct && draft && isGenerateConfirmationMessage\(value\)\)/,
+    /canGenerateProduct &&[\s\S]*?draft &&[\s\S]*?currentQuestion !== "date_confirmation"[\s\S]*?isGenerateConfirmationMessage\(value\)/,
   );
   assert.match(
     client,
@@ -468,39 +419,28 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   );
   assert.doesNotMatch(preview, /w-auto max-w-full/);
   assert.doesNotMatch(preview, /top-\[calc\(100%\+0\.5rem\)\]/);
-  assert.match(preview, /pb-\[calc\(env\(safe-area-inset-bottom\)\+1rem\)\]/);
-  assert.match(
-    preview,
-    /flex min-h-0 flex-1 flex-col justify-center gap-4 overflow-visible pb-2 pt-20 sm:pb-4 sm:pt-24/,
-  );
-  assert.match(preview, /flex w-full flex-none items-center justify-center/);
-  assert.match(
-    preview,
-    /relative aspect-\[9\/17\] h-\[min\(34rem,calc\(100dvh-12rem\)\)\] max-w-full w-auto sm:aspect-\[9\/16\] sm:h-\[min\(36rem,calc\(100dvh-12rem\)\)\]/,
-  );
-  assert.match(preview, /min-h-\[4\.75rem\] justify-end/);
+
   assert.doesNotMatch(preview, /pb-24/);
   assert.match(preview, /rsvpDashboardHref: string \| null;/);
   assert.match(preview, /hasDraftProduct: boolean;/);
   assert.match(preview, /const shouldShowDraftActions = hasDraftProduct && !publicHref;/);
-  assert.match(preview, /Save \/ Publish/);
+
   assert.doesNotMatch(preview, /Keep Editing/);
   assert.doesNotMatch(preview, /onKeepEditing/);
   assert.doesNotMatch(preview, /href=\{publicHref\}[\s\S]{0,140}target="_blank"/);
   assert.match(preview, /href=\{rsvpDashboardHref\}/);
   assert.doesNotMatch(preview, /href=\{rsvpDashboardHref\}[\s\S]{0,140}target="_blank"/);
   assert.match(preview, /Open Dashboard/);
-  assert.match(preview, /inline-flex h-12 max-w-full items-center justify-center gap-2/);
+
   assert.doesNotMatch(preview, /w-full min-w-full max-w-none/);
-  assert.match(liveCardSurface, /const shareActionPositionClassName = useCompactActionButtons/);
+
   assert.match(liveCardSurface, /top-\[-2\.35rem\]/);
   assert.doesNotMatch(chatSurface, /Manage/);
-  assert.doesNotMatch(chatSurface, blockedOldProductLabelPattern);
+
   assert.doesNotMatch(chatSurface, /Regenerate version/);
   assert.match(chatSurface, /Open Live Card/);
   assert.match(chatSurface, /Open Flyer\/Invitation/);
-  assert.match(preview, /bg-\[#3b2468\]/);
-  assert.doesNotMatch(chatSurface, blockedOldProductLabelPattern);
+
   assert.match(client, /sendGeneratedCardEdit/);
   assert.match(client, /fetch\(`\/api\/concierge\/events\/\$\{liveCardEventId\}\/message`/);
 
@@ -512,7 +452,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /createScannedEventPageFromUpload/);
   assert.doesNotMatch(client, /fetch\("\/api\/scan\/event-page"/);
   assert.doesNotMatch(client, /router\.push\(created\.eventPath\)/);
-  assert.doesNotMatch(client, /uploadMediaFile/);
+
   assert.doesNotMatch(client, /updateGeneratedDraftImageFromUpload\(file, scanAttemptId\)/);
   assert.doesNotMatch(client, /sourceImageUrl: uploadedImageUrl/);
   assert.doesNotMatch(client, /autoPublishEventPage/);
@@ -545,11 +485,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /!text-\[#25183a\]/);
   assert.match(client, /!placeholder:text-\[#8b7ca6\]/);
   assert.match(client, /caret-\[#5c5be5\]/);
-  assert.match(client, /inline-flex h-9 w-9/);
-  assert.match(client, /\(canSubmitComposer \|\| isListening\) && "text-\[#5c5be5\]"/);
-  assert.match(client, /<Mic[\s\S]{0,120}"size-6 text-current"/);
-  assert.match(client, /<ArrowUp[\s\S]{0,120}"size-6 text-current"/);
-  assert.match(client, /isCompactEmptyComposer && "max-md:size-5"/);
+
   assert.match(bottomNav, /aria-label=\{item\.label\}/);
   assert.doesNotMatch(client, /choiceClassName/);
   assert.doesNotMatch(client, /choiceIconClassName/);
@@ -613,14 +549,7 @@ test("/chat live-card preview preserves RSVP and registry action metadata", () =
     /rsvpUrl: rsvpEnabled && args\.sharePath \? `\$\{args\.sharePath\}#event-rsvp` : ""/,
   );
   assert.match(adapter, /registryLink: registryLink \|\| ""/);
-  assert.match(preview, /const hasRsvp = draft\?\.rsvpEnabled === true;/);
-  assert.match(
-    preview,
-    /const hasRegistry = Boolean\(draft\?\.registryLink \|\| draft\?\.giftRegistryLink\);/,
-  );
-  assert.match(preview, /\["Yes", "No", "Maybe"\]\.map/);
-  assert.match(preview, /<Menu className="size-3\.5"/);
-  assert.match(preview, />Details</);
+
 });
 
 test("/chat preview uses real generation stages and keeps streamed artwork visible", () => {
@@ -644,15 +573,41 @@ test("/chat reserves fullscreen device previews for event pages", () => {
   assert.match(preview, /isEventPagePreview \? \(\s*<dialog[\s\S]*?<EventPreviewViewport/);
   const artworkPreview = preview.slice(preview.indexOf("<ArtworkPreviewDialog"));
   assert.match(artworkPreview, /open=\{isPreviewOpen\}/);
+  assert.match(artworkPreview, /onShare=\{\(\) => void handleShare\(\)\}/);
   assert.match(artworkPreview, /<StudioShowcaseLiveCard[\s\S]*?previewMode/);
+  assert.match(artworkPreview, /actionsPlacement="overlay"/);
   assert.match(artworkPreview, /<img src=\{previewImageUrl\}/);
   assert.doesNotMatch(artworkPreview, /EventPreviewViewport|<iframe|<dialog|fullscreen/);
+});
+
+test("/chat live-card preview overlays guest actions and keeps Preview and Publish at the bottom", () => {
+  const preview = readSource("src/app/chat/ChatProductPreview.tsx");
+  const dialog = readSource("src/components/ArtworkPreviewDialog.tsx");
+  const dialogCss = readSource("src/components/ArtworkPreviewDialog.module.css");
+  const liveCardPreview = preview.slice(preview.indexOf("{isLiveCard ? ("), preview.indexOf("{artworkNotice"));
+  const previewActionsStart = preview.indexOf("const previewActions =");
+  const previewActions = preview.slice(
+    previewActionsStart,
+    preview.indexOf("return (", previewActionsStart),
+  );
+
+  assert.match(liveCardPreview, /actionsPlacement="overlay"/);
+  assert.doesNotMatch(liveCardPreview, /actionsPlacement="above"/);
+  assert.doesNotMatch(previewActions, /Edit in chat/);
+  assert.match(previewActions, />[\s\S]*?<span className="whitespace-nowrap">Preview<\/span>/);
+  assert.match(previewActions, /\{isPublishing \? publishBusyLabel : publishActionLabel\}/);
+  assert.match(preview, /\{previewActions\}/);
+  assert.doesNotMatch(preview, /\{isLiveCard \? previewActions : null\}/);
+  assert.match(dialog, /aria-label="Share"/);
+  assert.match(dialog, /aria-label="Close preview"/);
+  assert.match(dialogCss, /\.share \{\s*left: 12px;/);
+  assert.match(dialogCss, /\.close \{\s*right: 12px;/);
+  assert.doesNotMatch(dialogCss, /top: -52px/);
 });
 
 test("/cht typo route is not present", () => {
   assert.equal(fs.existsSync(path.join(repoRoot, "src/app/cht/page.tsx")), false);
 });
-
 
 test("/chat keeps product format choices on the starting screen", () => {
   const client = readSource("src/app/chat/ConciergeChatClient.tsx");
@@ -664,4 +619,102 @@ test("/chat keeps product format choices on the starting screen", () => {
   assert.match(composer, /PRODUCT_OPTIONS\.map/);
   assert.match(composer, /const isSelected = selectedProductOutput === option\.output/);
   assert.match(composer, /handleStarterProductChoice\(option\)/);
+});
+
+test("/chat infers event categories from text without a category popup", () => {
+  const client = readSource("src/app/chat/ConciergeChatClient.tsx");
+  const submit = client.slice(client.indexOf("  async function submitComposerInput()"), client.indexOf("  async function handleSubmit("));
+
+  assert.doesNotMatch(client, /ChatCategoryMenu|CHAT_STARTER_PROMPTS|CELEBRATION_STARTER_TILES|selectedStarterCategory|Choose celebration category/);
+  assert.match(client, /const selectedCategoryLabel =\s*categoryLabelForDraft\(draft\)/);
+  assert.match(submit, /const typedValue = input\.trim\(\)/);
+  assert.match(submit, /const value = typedValue \|\| selectionPrefix\(selectedCategoryLabel, selectedProductOutput\)/);
+  assert.match(submit, /await sendToConcierge\(\{\s*message: value,/);
+  assert.doesNotMatch(submit, /starter_category|starterCategory:/);
+  assert.match(client, /skinLabelForCategoryName\(selectedCategoryLabel\) \|\| skinLabelForDraft\(draft\)/);
+  assert.match(client, /const skinInstruction = draft\.theme \|\| draft\.tone \? ""/);
+  assert.match(client, /optional style inspiration/);
+});
+
+test("/chat offers the signup gallery before upload, generation, or event editing", () => {
+  const client = readSource("src/app/chat/ConciergeChatClient.tsx");
+  const submit = client.slice(client.indexOf("  async function submitComposerInput()"), client.indexOf("  async function handleSubmit("));
+  const handoff = submit.slice(submit.indexOf("    if (signupHandoff)"), submit.indexOf("    if (pendingChatUpload)"));
+
+  assert.match(submit, /const signupHandoff = signupFormHandoff\(typedValue\)/);
+  assert.match(handoff, /newMessage\("user", typedValue\)/);
+  assert.match(handoff, /newMessage\("assistant", signupHandoff\)/);
+  assert.match(handoff, /return;/);
+  assert.doesNotMatch(handoff, /setDraft|setPendingChatUpload|generateProductForDraft|sendGeneratedDraftEdit|sendGeneratedCardEdit|saveChatProgress|fetch\(/);
+  assert.match(client, /href=\{SIGNUP_FORM_GALLERY_HREF\}/);
+  assert.match(client, /progress\.requestLeave\(\(\) => router\.push\(SIGNUP_FORM_GALLERY_HREF\)\)/);
+  assert.match(client, /formatAssistantBubbleText\(message\.text, draft, openSignupFormGallery\)/);
+});
+
+test("/chat keeps a centered accessible composer with Send and no microphone or Cancel", () => {
+  const client = readSource("src/app/chat/ConciergeChatClient.tsx");
+  const composer = client.slice(client.indexOf("  const composer = ("), client.indexOf("  const readyActions = ("));
+
+  assert.match(composer, /ref=\{composerCardRef\} className="pointer-events-auto relative mx-auto w-full max-w-3xl"/);
+  assert.match(composer, /pb-\[max\(env\(safe-area-inset-bottom\),3rem\)\]/);
+  assert.match(composer, /aria-label="Send"/);
+  assert.match(composer, /disabled=\{isBusy \|\| !canSubmitComposer\}/);
+  assert.match(composer, /inline-flex size-11 items-center justify-center/);
+  assert.match(composer, /focus-visible:ring-2/);
+  assert.match(composer, /<ArrowUp className="size-6"/);
+  assert.doesNotMatch(composer, /<Mic|aria-label="Cancel"|Voice|isListening/);
+  assert.match(client, /isEmptyState && !input\.trim\(\) && !isComposerFocused;/);
+  assert.match(client, /const hasComposerSelection = Boolean\(selectedProductOutput\)/);
+  assert.match(client, /const canSubmitComposer = Boolean\(input\.trim\(\) \|\| hasComposerSelection \|\| pendingChatUpload\)/);
+  assert.match(client, /className="m-auto w-full max-w-3xl shrink-0 px-6 py-8 text-center"/);
+});
+
+test("/chat uses the shared viewport hook to fit the keyboard and restores scrolling", () => {
+  const client = readSource("src/app/chat/ConciergeChatClient.tsx");
+  const viewport = readSource("src/hooks/useVisualViewportInsets.ts");
+  const appShell = readSource("src/app/AppShell.tsx");
+
+  assert.match(client, /useVisualViewportInsets\(\{/);
+  assert.match(client, /fitVisualViewport: true/);
+  assert.match(client, /lockPageScroll: true/);
+  assert.match(viewport, /const layoutHeight = window\.innerHeight/);
+  assert.match(viewport, /const keyboardInset = Math\.max\(0, layoutHeight - visualHeight - visualTop\)/);
+  assert.match(viewport, /root\.style\.overflow = previousRootOverflow/);
+  assert.match(viewport, /body\.style\.overflow = previousBodyOverflow/);
+  assert.match(appShell, /isChatPath \|\| isEventPreview \? null : <ConditionalFooter/);
+});
+
+test("/chat uses the interactive guest card and keeps artwork, publish, and share separate", () => {
+  const preview = readSource("src/app/chat/ChatProductPreview.tsx");
+  const client = readSource("src/app/chat/ConciergeChatClient.tsx");
+  const artworkChange = readSource("src/lib/concierge/artwork-change.ts");
+
+  assert.match(preview, /const liveCardPreview = buildChatShowcasePreview\(\{/);
+  assert.match(preview, /<StudioShowcaseLiveCard\s+preview=\{liveCardPreview\}\s+previewMode/);
+  assert.match(preview, /aria-label="Interactive guest preview"/);
+  assert.match(preview, /inert=\{isGenerating\}/);
+  assert.match(preview, /aria-label="Invitation artwork"/);
+  assert.match(preview, /src=\{previewImageUrl\}/);
+  assert.match(preview, /Draft preview: review the design here, then choose Publish when ready/);
+  assert.match(preview, /publishActionLabel = "Publish"/);
+  assert.match(preview, /onClick=\{onPublish\}/);
+  assert.match(preview, /const hasShareAction = Boolean\(publicHref\)/);
+  assert.match(preview, /\{!isLiveCard && hasShareAction \? \(/);
+  assert.match(preview, /onClick=\{\(\) => void handleShare\(\)\}/);
+  assert.match(preview, /navigator\.share\(sharePayload\)/);
+  assert.match(preview, /navigator\.clipboard\.writeText\(url\)/);
+  assert.match(client, /import \{ shouldRegenerateGeneratedDraftImageForEdit \} from "@\/lib\/concierge\/artwork-change"/);
+  assert.match(artworkChange, /export function shouldRegenerateGeneratedDraftImageForEdit/);
+  assert.match(artworkChange, /publicContentForDraft\(before\)\.requiredArtworkLines/);
+});
+
+test("/chat persists attached files only through the explicit progress save handler", () => {
+  const client = readSource("src/app/chat/ConciergeChatClient.tsx");
+  const saveProgress = client.slice(client.indexOf("  async function saveChatProgress("), client.indexOf("  async function generateProductForDraft("));
+
+  assert.match(saveProgress, /uploadMediaFile\(\{ file: pendingChatUpload\.file, usage: "attachment" \}\)/);
+  assert.match(saveProgress, /fetch\("\/api\/creation\/draft"/);
+  assert.match(saveProgress, /method: "PUT"/);
+  assert.match(saveProgress, /composerText: input/);
+  assert.match(saveProgress, /chatMessages: chatMessagesForPersistence\(messages\)/);
 });

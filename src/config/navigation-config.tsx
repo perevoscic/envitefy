@@ -170,7 +170,6 @@ export function getCreateEventSections(
   options: {
     isAdmin?: boolean;
     defaultCreateIntent?: string | null;
-    includeSignupForm?: boolean;
   } = {},
 ): CreateEventSection[] {
   const links = options.isAdmin
@@ -182,7 +181,7 @@ export function getCreateEventSections(
       .filter((link) => link.section === section)
       .map(({ label, href, icon }) => ({ label, href, icon })),
   })).filter((section) => section.items.length > 0);
-  if (options.includeSignupForm !== false) sections.push({
+  sections.push({
     title: "Sign-ups",
     items: [{
       label: "Sign-up Form",

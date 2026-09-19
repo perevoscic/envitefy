@@ -100,10 +100,13 @@ test("studio preview preserves full poster artwork with guest controls overlaid 
   assert.match(surfaceSource, /visible: Boolean\(registryHref\)/);
   assert.match(surfaceSource, /"registryLink",/);
   assert.match(surfaceSource, /Visit \{registryActionLabel\}/);
-  assert.match(surfaceSource, /locationActions\.length > 1/);
+  assert.match(surfaceSource, /locationActions\.length > 0/);
   assert.match(surfaceSource, /locationActions\.map/);
-  assert.match(surfaceSource, /primaryLocationAction\.label/);
-  assert.match(surfaceSource, /Get Directions/);
+  assert.match(surfaceSource, /Directions to \{locationAction\.shortName\}/);
+  assert.match(surfaceSource, /<span className="sm:hidden">\{locationAction\.shortName\}<\/span>/);
+  assert.match(surfaceSource, /backdrop-blur-md/);
+  assert.doesNotMatch(surfaceSource, /bg-black\/35 backdrop-blur-sm/);
+  assert.doesNotMatch(surfaceSource, /Get Directions/);
   assert.match(locationSource, /INLINE_STREET_ADDRESS_PATTERN/);
   assert.match(locationSource, /detailsDescription/);
   assert.match(locationSource, /SECONDARY_DESTINATION_PATTERN/);
@@ -121,10 +124,13 @@ test("studio preview preserves full poster artwork with guest controls overlaid 
     showcaseSource,
     /const usesPosterArtFrame = preview\.invitationData\.heroTextMode === "image";/,
   );
-  assert.match(showcaseSource, /usesPosterArtFrame \? "aspect-\[2\/3\] rounded/);
   assert.match(
     showcaseSource,
-    /usesPosterArtFrame \? "object-contain" : "object-cover"/,
+    /usesPosterArtFrame\s*\?\s*"aspect-\[2\/3\] rounded-\[1\.5rem\]"/,
+  );
+  assert.match(
+    showcaseSource,
+    /usesPosterArtFrame \? "object-contain object-center" : "object-cover object-center"/,
   );
   assert.match(showcaseSource, /placement="overlay"/);
   assert.match(phonePaneSource, /aspect-\[2\/3\]/);

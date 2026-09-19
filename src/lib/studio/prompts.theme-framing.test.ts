@@ -66,6 +66,11 @@ test("studio live-card prompt keeps birthday themes tied to the celebration type
     /Jurassic Park should become a Jurassic Park birthday party, not just jungle foliage and dinosaurs\./,
   );
   assert.match(prompt, /themeStyle should name the celebration version of the concept/);
+  assert.match(
+    prompt,
+    /If the user specified a visual design, palette, balloons, or atmosphere, that is the artwork scene\./,
+  );
+  assert.doesNotMatch(prompt, /If the venue wording implies a venue type such as a theater/);
 });
 
 test("studio invitation image prompt keeps custom themes invitation-ready", () => {

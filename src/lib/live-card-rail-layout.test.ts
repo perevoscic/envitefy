@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getLiveCardRailLayout } from "./live-card-rail-layout.ts";
+import { getLiveCardPanelAlignment, getLiveCardRailLayout } from "./live-card-rail-layout.ts";
 
 test("showcase rail uses a centered cluster for six visible actions", () => {
   assert.equal(
@@ -32,4 +32,14 @@ test("showcase rail falls back to default outside the closed showcase state", ()
     getLiveCardRailLayout({ showcaseMode: true, isClosed: false, buttonCount: 6 }),
     "default",
   );
+});
+
+test("guest action panels sit above the button that opened them", () => {
+  assert.equal(getLiveCardPanelAlignment({ activeIndex: 0, buttonCount: 2 }), "start");
+  assert.equal(getLiveCardPanelAlignment({ activeIndex: 1, buttonCount: 2 }), "end");
+  assert.equal(getLiveCardPanelAlignment({ activeIndex: 0, buttonCount: 3 }), "start");
+  assert.equal(getLiveCardPanelAlignment({ activeIndex: 1, buttonCount: 3 }), "center");
+  assert.equal(getLiveCardPanelAlignment({ activeIndex: 2, buttonCount: 3 }), "end");
+  assert.equal(getLiveCardPanelAlignment({ activeIndex: -1, buttonCount: 2 }), "center");
+  assert.equal(getLiveCardPanelAlignment({ activeIndex: 0, buttonCount: 1 }), "center");
 });

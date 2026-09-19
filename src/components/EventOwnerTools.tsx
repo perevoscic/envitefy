@@ -30,8 +30,8 @@ import EventDeleteModal from "@/components/EventDeleteModal";
 import EventResponseDashboard from "@/components/EventResponseDashboard";
 import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileTopbarSuppressor";
 import { SharedStudioCardFrame } from "@/components/studio/SharedStudioCardPage";
-import { hasActionableRsvp } from "@/lib/dashboard-data";
 import { requestCardEdit } from "@/lib/card-edit-client";
+import { hasActionableRsvp } from "@/lib/dashboard-data";
 import {
   getPrimaryEventProductOutput,
   isCardFirstEventProduct,
@@ -788,9 +788,8 @@ export default function EventOwnerTools({
     : preview;
   const productName = preview.surface === "studio-card" ? "card" : "event";
   const openProductViewer = (mode: "current" | "changes") => {
-    productViewerTrigger.current = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
+    productViewerTrigger.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setProductViewerMode(mode);
   };
 
@@ -857,9 +856,7 @@ export default function EventOwnerTools({
 
   return (
     <main className="min-h-[100dvh] w-full px-3 pb-5 pt-[calc(var(--app-mobile-topbar-offset,4rem)+1.35rem)] text-slate-950 sm:px-6 lg:px-8 lg:py-5">
-      <div
-        className="mx-auto grid w-full max-w-[1380px] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,410px)] xl:grid-cols-[minmax(0,1fr)_430px]"
-      >
+      <div className="mx-auto grid w-full max-w-[1380px] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,410px)] xl:grid-cols-[minmax(0,1fr)_430px]">
         <section className="min-w-0 space-y-3 sm:space-y-4">
           <OwnerWorkspaceHeader
             eventId={eventId}
@@ -867,7 +864,6 @@ export default function EventOwnerTools({
             dateLine={effectivePreview.dateLine}
             timeLine={effectivePreview.timeLine}
             locationLine={effectivePreview.locationLine}
-            viewCurrentLabel={`View current ${productName}`}
             editHref={primaryEditHref}
             detailsEditHref={resolvedArtworkEditHref ? resolvedEditHref : null}
             onViewCurrent={() => openProductViewer("current")}
@@ -914,7 +910,7 @@ export default function EventOwnerTools({
           />
         </section>
 
-        <aside className="hidden min-w-0 lg:sticky lg:top-5 lg:flex lg:h-[calc(100dvh-2.5rem)] lg:translate-x-6 lg:items-center lg:justify-end lg:self-start xl:translate-x-10">
+        <aside className="flex w-full min-w-0 justify-center lg:sticky lg:top-5 lg:h-[calc(100dvh-2.5rem)] lg:translate-x-6 lg:items-center lg:justify-end lg:self-start xl:translate-x-10">
           <EventProductPreview
             eventId={eventId}
             eventTitle={currentEventTitle}
@@ -927,10 +923,18 @@ export default function EventOwnerTools({
       <OwnerProductViewer
         open={productViewerMode !== null}
         heading={productViewerMode === "changes" ? "Proposed changes" : `Current ${productName}`}
-        description={productViewerMode === "changes" ? "Review your changes before saving." : "The saved version your guests can open."}
+        description={
+          productViewerMode === "changes"
+            ? "Review your changes before saving."
+            : "The saved version your guests can open."
+        }
         returnLabel={activeOwnerTab === "design" ? "Back to editing" : "Back to dashboard"}
         eventId={eventId}
-        eventTitle={productViewerMode === "changes" ? currentEventTitle : savedProductOverride?.title || eventTitle}
+        eventTitle={
+          productViewerMode === "changes"
+            ? currentEventTitle
+            : savedProductOverride?.title || eventTitle
+        }
         preview={productViewerMode === "changes" ? effectivePreview : currentProduct}
         publicUrl={publicUrl}
         embeddedPreviewUrl={embeddedPreviewHref}
@@ -1071,24 +1075,29 @@ function EventProductPreview({
   heightMode?: "fixed" | "auto";
 }) {
   const autoHeight = heightMode === "auto";
+  const isStudioCard = preview.surface === "studio-card" && Boolean(preview.imageUrl);
 
   return (
     <section
-      className={`owner-workspace-glass relative overflow-hidden rounded-[28px] border border-white/70 bg-slate-950 shadow-[0_24px_70px_rgba(79,70,128,0.16)] backdrop-blur-xl ${
-        autoHeight
-          ? "h-auto min-h-0 !border-0 !bg-transparent !shadow-none !backdrop-blur-none before:!hidden"
+      className={`owner-workspace-glass relative w-full rounded-[28px] ${
+        autoHeight || isStudioCard
+          ? "overflow-visible !border-0 !bg-transparent !shadow-none !backdrop-blur-none before:!hidden"
+          : "overflow-hidden border border-white/70 bg-slate-950 shadow-[0_24px_70px_rgba(79,70,128,0.16)] backdrop-blur-xl"
+      } ${
+        autoHeight || isStudioCard
+          ? "h-auto min-h-0"
           : "h-[min(680px,calc(100dvh-5rem))] min-h-[480px] lg:h-[min(760px,calc(100dvh-2.5rem))] lg:max-h-[760px]"
       } ${className}`.trim()}
       aria-label="Product preview"
     >
       <div
         className={
-          autoHeight
+          autoHeight || isStudioCard
             ? "flex w-full items-center justify-center"
             : "flex h-full w-full items-center justify-center"
         }
       >
-        {preview.surface === "studio-card" && preview.imageUrl ? (
+        {isStudioCard && preview.imageUrl ? (
           <SharedStudioCardFrame
             eventId={eventId}
             title={eventTitle}
@@ -1096,17 +1105,10 @@ function EventProductPreview({
             invitationData={preview.invitationData as any}
             positions={preview.positions as any}
             shareUrl={publicUrl}
-            className={
-              autoHeight
-                ? "flex w-full items-center justify-center"
-                : "flex h-full w-full items-center justify-center"
-            }
-            frameClassName={
-              autoHeight
-                ? "!aspect-[9/17] !w-full !max-w-full !rounded-[28px] !border-0 shadow-none sm:!aspect-[9/16]"
-                : "!h-full !w-auto !max-w-full !rounded-[28px] !border-0 shadow-none"
-            }
-            style={autoHeight ? undefined : { width: "100%", height: "100%" }}
+            actionsPlacement="overlay"
+            className="flex w-full items-center justify-center"
+            frameClassName="!h-auto !w-full !max-w-full !rounded-[28px] !border-0 !bg-transparent shadow-none"
+            style={{ width: "100%" }}
           />
         ) : publicUrl ? (
           <div
@@ -1183,7 +1185,6 @@ function OwnerWorkspaceHeader({
   dateLine,
   timeLine,
   locationLine,
-  viewCurrentLabel,
   editHref,
   detailsEditHref,
   onViewCurrent,
@@ -1194,7 +1195,6 @@ function OwnerWorkspaceHeader({
   dateLine: string;
   timeLine: string;
   locationLine: string;
-  viewCurrentLabel: string;
   editHref: string;
   detailsEditHref: string | null;
   onViewCurrent: () => void;
@@ -1221,6 +1221,16 @@ function OwnerWorkspaceHeader({
                 <Pencil size={20} strokeWidth={2.2} aria-hidden="true" />
               </Link>
             ) : null}
+            <button
+              type="button"
+              onClick={onViewCurrent}
+              aria-label="Preview"
+              aria-haspopup="dialog"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full px-3 text-sm font-semibold text-slate-950 transition hover:bg-violet-50 hover:text-[#786bd6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"
+            >
+              <Eye size={20} strokeWidth={2.2} aria-hidden="true" />
+              <span>Preview</span>
+            </button>
             <EventDeleteModal
               eventId={eventId}
               eventTitle={title}
@@ -1268,15 +1278,6 @@ function OwnerWorkspaceHeader({
             ) : null}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={onViewCurrent}
-          aria-haspopup="dialog"
-          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-violet-700 px-4 py-3 text-sm font-bold text-white shadow-[0_8px_20px_rgba(109,40,217,0.16)] transition hover:bg-violet-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300 sm:w-auto sm:px-6"
-        >
-          <Eye size={20} strokeWidth={2.2} aria-hidden="true" />
-          <span>{viewCurrentLabel}</span>
-        </button>
       </div>
     </header>
   );
@@ -1508,7 +1509,10 @@ function OwnerProductViewer({
         <Dialog.Overlay className="fixed inset-0 z-[7000] bg-slate-950/40 backdrop-blur-sm" />
         <Dialog.Content
           className="fixed inset-0 z-[7001] flex flex-col bg-[#f5f3ff] pt-[env(safe-area-inset-top)] shadow-2xl outline-none sm:inset-x-auto sm:inset-y-4 sm:left-1/2 sm:w-[min(560px,calc(100%-2rem))] sm:-translate-x-1/2 sm:rounded-[28px]"
-          onCloseAutoFocus={(event) => { event.preventDefault(); onReturnFocus(); }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            onReturnFocus();
+          }}
         >
           <div className="shrink-0 border-b border-violet-100 px-4 pb-4 pt-2">
             <Dialog.Close asChild>
@@ -1520,8 +1524,12 @@ function OwnerProductViewer({
                 <span>{returnLabel}</span>
               </button>
             </Dialog.Close>
-            <Dialog.Title className="mt-1 text-xl font-semibold text-slate-950">{heading}</Dialog.Title>
-            <Dialog.Description className="mt-1 text-sm text-slate-600">{description}</Dialog.Description>
+            <Dialog.Title className="mt-1 text-xl font-semibold text-slate-950">
+              {heading}
+            </Dialog.Title>
+            <Dialog.Description className="mt-1 text-sm text-slate-600">
+              {description}
+            </Dialog.Description>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
             <div className="flex min-h-full items-center justify-center">

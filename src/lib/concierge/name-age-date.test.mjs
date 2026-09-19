@@ -86,6 +86,92 @@ test("the movie birthday message captures the facts despite turnig and asks spec
   }
 });
 
+test("a typo month and doubled ordinal such as spee 26thth is September 26", () => {
+  let draft = fallbackExtractConciergeDraft({
+    message: "Livia is turnig 10. the are going to watch Forgotten islan at amc grand boulevard. she like katseyes and needoh. no rsvp",
+  });
+  draft = fallbackExtractConciergeDraft({ message: "spee 26thth", draft });
+  const start = draft.startISO
+    ? new Date(draft.startISO)
+    : chrono.parseDate(draft.dateText, new Date(), { forwardDate: true });
+  assert.ok(start, draft.dateText);
+  assert.equal(start.getMonth(), 8);
+  assert.equal(start.getDate(), 26);
+  assert.notEqual(draft.currentQuestion, "date");
+  assert.doesNotMatch(buildAssistantMessage(draft), /What date is Livia|still need the year|still need the month/i);
+  draft = fallbackExtractConciergeDraft({ message: "yes", draft });
+  assert.match(draft.dateText || "", /September 26/i);
+  assert.notEqual(draft.currentQuestion, "date");
+  assert.doesNotMatch(buildAssistantMessage(draft), /still need the year|still need the month/i);
+});
+
+test("year and month fragments complete a date already started in chat", () => {
+  let draft = fallbackExtractConciergeDraft({
+    message: "Birthday live card for Livia turning 10 at AMC Grand Boulevard at 4pm",
+  });
+  draft = fallbackExtractConciergeDraft({
+    message: "2026",
+    draft,
+    recentUserMessages: ["spee 26thth"],
+  });
+  const yearStart = chrono.parseDate(draft.dateText, new Date(), { forwardDate: true });
+  assert.ok(yearStart, draft.dateText);
+  assert.equal(yearStart.getMonth(), 8);
+  assert.equal(yearStart.getDate(), 26);
+  assert.equal(yearStart.getFullYear(), 2026);
+
+  draft = fallbackExtractConciergeDraft({
+    message: "Birthday live card for Livia turning 10 at AMC Grand Boulevard at 4pm",
+  });
+  draft = fallbackExtractConciergeDraft({
+    message: "September",
+    draft,
+    recentUserMessages: ["spee 26thth", "2026"],
+  });
+  const monthStart = chrono.parseDate(draft.dateText, new Date(), { forwardDate: true });
+  assert.ok(monthStart, draft.dateText);
+  assert.equal(monthStart.getMonth(), 8);
+  assert.equal(monthStart.getDate(), 26);
+});
+
+test("a compact Saturday the 26th reply captures the date instead of asking again", () => {
+  let draft = fallbackExtractConciergeDraft({
+    message: "Livia is turnig 10. the are going to watch Forgotten islan at amc grand boulevard. she like katseyes and needoh. no rsvp",
+  });
+  draft = fallbackExtractConciergeDraft({ message: "Sat26tth, 4 rsvps", draft });
+  const start = draft.startISO
+    ? new Date(draft.startISO)
+    : chrono.parseDate(draft.dateText, new Date(), { forwardDate: true });
+  assert.ok(start, draft.dateText);
+  assert.equal(start.getDate(), 26);
+  assert.equal(start.getDay(), 6);
+  assert.equal(draft.numberOfGuests, 4);
+  assert.equal(draft.rsvpEnabled, true);
+  assert.notEqual(draft.currentQuestion, "date");
+  assert.doesNotMatch(buildAssistantMessage(draft), /What date is Livia/i);
+  assert.doesNotMatch(buildAssistantMessage(draft), /have4|Whatdate|plannning/i);
+});
+
+test("a spaced Saturday 26th is a calendar date and Saturday 26 kids is not", () => {
+  const dateDraft = fallbackExtractConciergeDraft({
+    message: "Birthday live card for Livia turning 10",
+  });
+  const saturdayThe26th = fallbackExtractConciergeDraft({
+    message: "Saturday the 26th",
+    draft: dateDraft,
+  });
+  const kids = fallbackExtractConciergeDraft({
+    message: "Saturday 26 kids",
+    draft: dateDraft,
+  });
+  const parsed = chrono.parseDate(saturdayThe26th.dateText, new Date(), { forwardDate: true });
+  assert.ok(parsed);
+  assert.equal(parsed.getDate(), 26);
+  assert.equal(parsed.getDay(), 6);
+  assert.doesNotMatch(kids.dateText || "", /26/);
+  assert.equal(kids.numberOfGuests, 26);
+});
+
 test("a stated party time remains distinct from the birthday age", () => {
   const draft = fallbackExtractConciergeDraft({ message: "Livia, 10 years old, on septmeber 25th at 4 pm." });
   expectSeptember25(draft);

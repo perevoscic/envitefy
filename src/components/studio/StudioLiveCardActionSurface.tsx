@@ -2,7 +2,6 @@
 
 import type { PanInfo } from "framer-motion";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import * as Dialog from "@radix-ui/react-dialog";
 import {
   CalendarDays,
   CheckCircle2,
@@ -15,6 +14,7 @@ import {
   Mail,
   MapPin,
   MessageSquare,
+  Navigation,
   Phone,
   Share2,
   UserRound,
@@ -34,7 +34,7 @@ import {
   buildLiveCardDirectionsHref,
   buildLiveCardLocationActions,
 } from "@/lib/live-card-locations";
-import { getLiveCardRailLayout } from "@/lib/live-card-rail-layout";
+import { getLiveCardPanelAlignment, getLiveCardRailLayout } from "@/lib/live-card-rail-layout";
 import {
   buildLiveCardRsvpOutboundHref,
   LIVE_CARD_RSVP_CHOICES,
@@ -137,7 +137,7 @@ type StudioLiveCardActionSurfaceProps = {
   onDragEnd?: (key: LiveCardButtonKey, position: LiveCardButtonPosition) => void;
   showExtendedDetails?: boolean;
   registryHelperText?: string | null;
-  placement?: "overlay" | "below";
+  placement?: "overlay" | "below" | "above";
 };
 
 const EMPTY_POSITIONS: Record<LiveCardButtonKey, LiveCardButtonPosition> = {
@@ -370,43 +370,20 @@ function OverviewDetailRow(props: { label: string; value: string; emphasized?: b
   );
 }
 
-function LiveCardPreviewPanel({ children, enabled, onClose }: {
+function LiveCardPreviewPanel({
+  children,
+}: {
   children: ReactNode;
-  enabled: boolean;
-  onClose: () => void;
+  enabled?: boolean;
+  onClose?: () => void;
 }) {
-  const [trigger] = useState(() => typeof document !== "undefined" ? document.activeElement : null);
-  const shouldRestoreFocus = useRef(true);
-  if (!enabled) return children;
-  return (
-    <Dialog.Root open modal={false} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <Dialog.Close asChild>
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-label="Close card popup"
-          className="pointer-events-auto absolute inset-0 z-[80] bg-black/35 backdrop-blur-sm"
-        />
-      </Dialog.Close>
-      <Dialog.Content
-        aria-describedby={undefined}
-        onInteractOutside={() => { shouldRestoreFocus.current = false; }}
-        onCloseAutoFocus={(event) => {
-          event.preventDefault();
-          if (shouldRestoreFocus.current && trigger instanceof HTMLElement) trigger.focus();
-        }}
-        className="pointer-events-none absolute inset-0 z-[90] flex min-h-0 items-center justify-center p-3 outline-none"
-      >
-        {children}
-      </Dialog.Content>
-    </Dialog.Root>
-  );
+  return children;
 }
 
 export default function StudioLiveCardActionSurface(props: StudioLiveCardActionSurfaceProps) {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
-  const actionsBelow = props.placement === "below";
+  const actionsOutsideArtwork = props.placement === "below" || props.placement === "above";
   const invitationData = props.invitationData || null;
   const details = invitationData?.eventDetails || null;
   const [calendarTimeZone, setCalendarTimeZone] = useState<string | null>(null);
@@ -640,7 +617,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     };
 
     return [
-      ...(actionsBelow && props.onShare ? [{
+      ...(actionsOutsideArtwork && props.onShare ? [{
         key: "share" as const,
         label: shareState === "pending" ? "Sharing..." : shareState === "success" ? "Copied!" : "Share",
         icon: shareState === "pending" ? Loader2 : shareState === "success" ? CheckCircle2 : Share2,
@@ -675,7 +652,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       },
     ].filter((button) => button.visible);
   }, [
-    actionsBelow,
+    actionsOutsideArtwork,
     props.onShare,
     shareState,
     props.activeTab,
@@ -697,7 +674,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   ]);
 
   const isActionRailClosed = props.activeTab === "none";
-  const shouldHideClosedRailLabels = props.showcaseMode && !actionsBelow;
+  const shouldHideClosedRailLabels = props.showcaseMode && !actionsOutsideArtwork;
   const useExpandedActionButtons = !props.showcaseMode;
   const useCompactActionButtons = props.buttonChromeSize === "compact";
   const showcaseRailLayout = getLiveCardRailLayout({
@@ -705,13 +682,25 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     isClosed: isActionRailClosed,
     buttonCount: buttonConfigs.length,
   });
+  const panelAlignment = getLiveCardPanelAlignment({
+    activeIndex: buttonConfigs.findIndex((button) => button.key === props.activeTab),
+    buttonCount: buttonConfigs.length,
+  });
+  const dockedPanelAlignClass =
+    panelAlignment === "end" ? "self-end" : panelAlignment === "start" ? "self-start" : "self-center";
+  const overlayPanelPositionClass =
+    panelAlignment === "end"
+      ? "absolute bottom-32 right-2 left-auto sm:right-4"
+      : panelAlignment === "start"
+        ? "absolute bottom-32 left-2 right-auto sm:left-4"
+        : "absolute bottom-32 left-1/2 -translate-x-1/2";
   const defaultActionRailClassName = `grid w-full min-w-0 grid-flow-col auto-cols-fr items-stretch ${
     props.previewMode ? "gap-2 px-1" : props.showcaseMode ? "gap-2 px-2" : useCompactActionButtons ? "gap-1.5 px-2.5" : "gap-3 px-1"
   }`;
   const actionRailWrapperClassName =
     showcaseRailLayout === "cluster" ? "flex w-full justify-center px-2" : "w-full";
   const actionRailClassName =
-    actionsBelow && buttonConfigs.length > 5
+    actionsOutsideArtwork && buttonConfigs.length > 5
       ? "grid w-full grid-cols-3 gap-2"
       : showcaseRailLayout === "cluster"
       ? "grid w-fit max-w-full grid-flow-col auto-cols-max items-stretch justify-center gap-1.5 sm:gap-2"
@@ -761,12 +750,12 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   }`;
 
   return (
-    <div ref={surfaceRef} data-live-card-actions-placement={actionsBelow ? "below" : "overlay"} className={actionsBelow
+    <div ref={surfaceRef} data-live-card-actions-placement={props.placement || "overlay"} className={actionsOutsideArtwork
       ? "pointer-events-none flex flex-col rounded-xl bg-white px-2 pt-3 pb-1"
       : `pointer-events-none absolute inset-0 flex flex-col ${props.previewMode ? "px-0 pb-1 pt-6" : "px-0 pb-1 pt-6 sm:px-4 sm:pt-7 md:p-8 md:pb-2"}`}>
 
       {calendar.dialog}
-      {props.onShare && !actionsBelow ? (
+      {props.onShare && !actionsOutsideArtwork ? (
         <button
           data-live-card-share
           type="button"
@@ -783,7 +772,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
           <ShareActionIcon className={shareActionIconClassName} />
         </button>
       ) : null}
-      {openHouseAgentCard && posterFirstHeroCard && !actionsBelow ? (
+      {openHouseAgentCard && posterFirstHeroCard && !actionsOutsideArtwork ? (
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[32%] bg-gradient-to-t from-black/62 via-black/30 to-transparent"
@@ -792,19 +781,19 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       <div className="flex h-full min-h-0 flex-col justify-end">
         <AnimatePresence initial={false}>
           {props.activeTab !== "none" && props.activeTab !== "share" ? (
-            <LiveCardPreviewPanel enabled={Boolean(props.previewMode) || actionsBelow} onClose={() => props.onActiveTabChange("none")}>
+            <LiveCardPreviewPanel enabled={Boolean(props.previewMode) || actionsOutsideArtwork} onClose={() => props.onActiveTabChange("none")}>
             <motion.div
               initial={reducedMotion ? false : { opacity: 0, y: 10, scale: 0.94 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.96 }}
               data-live-card-panel
+              data-live-card-panel-align={panelAlignment}
               role="region"
               aria-label={`${props.activeTab} details`}
-              className={`pointer-events-auto z-50 border border-neutral-200 bg-white/95 shadow-2xl backdrop-blur-2xl ${props.previewMode || actionsBelow
-                ? "relative min-h-0 max-h-full w-full max-w-[24rem] overflow-y-auto overscroll-contain rounded-2xl p-4 [&_button]:min-h-11 [&_button]:min-w-11 [&_a]:min-h-11 [&_a]:min-w-11 [&_input]:min-h-11 [&_input]:text-base [&_label]:text-xs [&_label]:text-neutral-600"
-                : "absolute bottom-32 left-1/2 h-auto max-h-[calc(100%-9rem)] w-[calc(100%-1rem)] max-w-[22rem] -translate-x-1/2 overflow-y-auto rounded-3xl p-6 sm:w-[calc(100%-2rem)]"}`}
+              className={`pointer-events-auto z-50 border border-neutral-200 bg-white/90 shadow-2xl backdrop-blur-md ${props.previewMode || actionsOutsideArtwork
+                ? `relative min-h-0 max-h-full w-full max-w-[24rem] ${dockedPanelAlignClass} mx-3 overflow-y-auto overscroll-contain rounded-2xl p-4 [&_button]:min-h-11 [&_button]:min-w-11 [&_a]:min-h-11 [&_a]:min-w-11 [&_input]:min-h-11 [&_input]:text-base [&_label]:text-xs [&_label]:text-neutral-600`
+                : `${overlayPanelPositionClass} h-auto max-h-[calc(100%-9rem)] w-[calc(100%-1rem)] max-w-[22rem] overflow-y-auto rounded-3xl p-6 sm:w-[calc(100%-2rem)]`}`}
             >
-              {props.previewMode || actionsBelow ? <Dialog.Title className="sr-only">{props.activeTab} details</Dialog.Title> : null}
               <div className="mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg bg-neutral-100 p-2 text-neutral-900">
@@ -1142,7 +1131,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                 ) : null}
 
                 {props.activeTab === "location" ? (
-                  locationActions.length > 1 ? (
+                  locationActions.length > 0 ? (
                     <div className="space-y-3">
                       {locationActions.map((locationAction) => (
                         <div
@@ -1162,38 +1151,19 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                                   "noopener,noreferrer",
                                 )
                               }
-                              className="inline-flex w-auto items-center justify-center gap-2 rounded-xl bg-neutral-900 px-4 py-2 text-xs font-bold text-white"
-                              aria-label={`Get directions to ${locationAction.label}`}
+                              className="inline-flex min-h-11 w-auto cursor-pointer items-center justify-center gap-2 rounded-xl bg-neutral-900 px-4 py-2 text-xs font-bold text-white"
+                              aria-label={`Directions to ${locationAction.shortName}`}
                             >
-                              <ExternalLink className="h-3 w-3" />
-                              Get Directions
+                              <Navigation className="h-4 w-4" aria-hidden="true" />
+                              <span className="hidden sm:inline">
+                                Directions to {locationAction.shortName}
+                              </span>
+                              <span className="sm:hidden">{locationAction.shortName}</span>
                             </button>
                           </div>
                         </div>
                       ))}
                     </div>
-                  ) : primaryLocationAction ? (
-                    <>
-                      <p className="text-sm font-medium text-neutral-900">
-                        {primaryLocationAction.label}
-                      </p>
-                      <div className="mt-4 flex justify-center">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            window.open(
-                              buildLiveCardDirectionsHref(primaryLocationAction.mapQuery),
-                              "_blank",
-                              "noopener,noreferrer",
-                            )
-                          }
-                          className="inline-flex w-auto items-center justify-center gap-2 rounded-xl bg-neutral-900 px-4 py-2 text-xs font-bold text-white"
-                        >
-                          <ExternalLink className="h-3 w-3" />
-                          Get Directions
-                        </button>
-                      </div>
-                    </>
                   ) : null
                 ) : null}
 
@@ -1226,7 +1196,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
 
         <div
           className={`pointer-events-none shrink-0 ${
-            actionsBelow ? "hidden" : posterFirstHeroCard
+            actionsOutsideArtwork ? "hidden" : posterFirstHeroCard
               ? "max-md:min-h-[min(14svh,4rem)] min-h-[min(8svh,2.4rem)] md:min-h-[min(6svh,2rem)]"
               : "max-md:min-h-[min(18svh,5.5rem)] min-h-[min(10svh,3rem)] md:min-h-[min(8svh,2.5rem)]"
           }`}
@@ -1247,12 +1217,12 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
             <div className={actionRailClassName}>
               {buttonConfigs.map((button) => {
                 const Icon = button.icon;
-                const position = actionsBelow ? EMPTY_POSITIONS[button.key] : props.positions?.[button.key] || EMPTY_POSITIONS[button.key];
+                const position = actionsOutsideArtwork ? EMPTY_POSITIONS[button.key] : props.positions?.[button.key] || EMPTY_POSITIONS[button.key];
                 const isPressed = props.activeTab === button.key;
                 return (
                   <motion.div
                     key={button.key}
-                    drag={!actionsBelow && Boolean(props.onDragEnd) && props.isDesignMode}
+                    drag={!actionsOutsideArtwork && Boolean(props.onDragEnd) && props.isDesignMode}
                     dragMomentum={false}
                     onDragEnd={(_, info: PanInfo) =>
                       props.onDragEnd?.(button.key, {
@@ -1282,7 +1252,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                     >
                       <div
                         className={`rounded-full border backdrop-blur-md transition-all duration-200 ${
-                          props.previewMode || actionsBelow
+                          props.previewMode || actionsOutsideArtwork
                             ? "p-2.5"
                             : useCompactActionButtons
                             ? "p-2 md:p-2.5"
@@ -1292,7 +1262,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                                 ? "p-2 md:p-2.5"
                                 : "p-2.5 md:p-3"
                         } ${
-                          actionsBelow
+                          actionsOutsideArtwork
                             ? isPressed
                               ? "border-violet-300 bg-violet-100 shadow-sm"
                               : "border-slate-200 bg-white/90 shadow-sm group-hover:border-violet-300 group-hover:bg-violet-50"
@@ -1307,7 +1277,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                       >
                         <Icon
                           className={`${
-                            props.previewMode || actionsBelow
+                            props.previewMode || actionsOutsideArtwork
                               ? "h-5 w-5"
                               : useCompactActionButtons
                               ? "h-4 w-4 md:h-5 md:w-5"
@@ -1317,13 +1287,13 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                                   ? "h-4 w-4 md:h-5 md:w-5"
                                   : "h-5 w-5 md:h-6 md:w-6"
                           } ${
-                            actionsBelow ? "text-slate-700" : isPressed ? "text-neutral-950" : "text-white"
+                            actionsOutsideArtwork ? "text-slate-700" : isPressed ? "text-neutral-950" : "text-white"
                           }`}
                         />
                       </div>
                       <span
-                        className={`${button.key === "calendar" ? "!whitespace-normal !overflow-visible" : ""} max-w-full text-center font-bold leading-tight ${actionsBelow ? "text-slate-700" : "text-white drop-shadow-md"} ${
-                          props.previewMode || actionsBelow
+                        className={`${button.key === "calendar" ? "!whitespace-normal !overflow-visible" : ""} max-w-full text-center font-bold leading-tight ${actionsOutsideArtwork ? "text-slate-700" : "text-white drop-shadow-md"} ${
+                          props.previewMode || actionsOutsideArtwork
                             ? "text-xs tracking-normal"
                             : useCompactActionButtons
                               ? "truncate text-[6px] uppercase tracking-[0.14em] sm:text-[7px] md:text-[8px]"

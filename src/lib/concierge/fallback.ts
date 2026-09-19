@@ -1,7 +1,7 @@
 import { attachCreationReadiness, getCreationReadiness } from "./readiness.ts";
 import * as chrono from "chrono-node";
 import { localClockToIso } from "../creation/calendar-validation.ts";
-import { extractExplicitEventLocation, extractExplicitEventTitle, extractExplicitRsvpEnabled, extractNamedAge, hasExplicitEventSchedule, hasStalePreviewFacts, normalizeEventScheduleText, pairedHonorees, possessiveBirthdayMilestone } from "./conversation-edits.ts";
+import { extractExplicitEventLocation, extractExplicitEventTitle, extractExplicitRsvpEnabled, extractNamedAge, hasExplicitEventSchedule, hasStalePreviewFacts, normalizeEventScheduleText, pairedHonorees, parseFuzzyMonthAndDay, parseWeekdayAndDay, possessiveBirthdayMilestone, resolveFuzzyMonth } from "./conversation-edits.ts";
 import { extractRsvpContactDetails, RSVP_PHONE_PATTERN } from "./rsvp-details.ts";
 import { extractVisualDirection, stripArtworkPreservationInstructions } from "./visual-direction.ts";
 import { isArtworkDirection, isArtworkOnlyEdit } from "./artwork-edit-scope.ts";
@@ -10,6 +10,7 @@ import { copyRequirementsChanged, provisionalInvitationCopy, requestsInvitationC
 import { updateHostBrief } from "./host-brief.ts";
 import { applyHostPrivacy } from "./host-privacy.ts";
 import { semanticKindForMessage, updatePublicContent } from "./public-content.ts";
+import { signupFormHandoff, signupSelectionHandoff } from "./signup-handoff.ts";
 import {
   classifyCreationBoundary,
   cleanCreationString,
@@ -356,12 +357,15 @@ function detectEventType(text: string, previous?: ConciergeEventDraft | null): C
   if (/\banniversary\b/.test(haystack)) return "anniversary";
   if (/\b(birthday|turning|turns|bday)\b/.test(haystack)) return "birthday";
   if (possessiveBirthdayMilestone(text)) return "birthday";
-  if (/\b(wedding|married|marriage|bride|groom)\b/.test(haystack)) return "wedding";
+  // A named occasion is stronger evidence than incidental people or baby details.
+  // A bridal shower may mention the wedding; a reveal may mention a baby girl.
+  if (/\bgender\s+reveal\b/.test(haystack)) return "gender_reveal";
   if (/\bbridal\s+shower\b/.test(haystack)) return "bridal_shower";
+  if (/\bbaby\s+(?:shower|sprinkle)\b/.test(haystack)) return "baby_shower";
+  if (/\b(wedding|married|marriage|bride|groom)\b/.test(haystack)) return "wedding";
   if (/\b(baby shower|sprinkle|baby\s+boy|baby\s+girl)\b/.test(haystack)) {
     return "baby_shower";
   }
-  if (/\bgender\s+reveal\b/.test(haystack)) return "gender_reveal";
   if (/\b(graduation|graduate|commencement|class of)\b/.test(haystack)) return "graduation";
   if (
     /\b(gymnastics|gym\s+meet|meet\s+schedule)\b/.test(haystack) ||
@@ -372,7 +376,7 @@ function detectEventType(text: string, previous?: ConciergeEventDraft | null): C
   if (/\b(football|touchdown|tailgate)\b/.test(haystack)) return "football";
   if (/\b(game\s+day|gameday|watch\s+party)\b/.test(haystack)) return "game_day";
   if (
-    /\b(sports?\s+event|soccer|basketball|baseball|volleyball|pickleball|tennis|swim(?:ming)?|softball|lacrosse|wrestling|track(?:\s+and\s+field)?)\b/.test(haystack)
+    /\b(sports?(?:\s+event)?|soccer|basketball|baseball|volleyball|pickleball|tennis|swim(?:ming)?|softball|lacrosse|wrestling|hockey|cheerleading|cheer\s+(?:clinic|practice|competition)|dance\s+(?:clinic|practice|competition|recital|class|performance|event)|ballet|track(?:\s+(?:and|&)\s+field)?)\b/.test(haystack)
   ) {
     return "sport_event";
   }
@@ -731,6 +735,7 @@ function detectGuestCount(text: string, previous?: ConciergeEventDraft | null) {
       /\b(?:guest count|guest list|guests?|kids?|children|peoples?|attendees|invitees)\s*(?:is|should be|:)?\s*(\d{1,4})\b/i,
     ) ||
     text.match(/\b(\d{1,4})\s*(?:guests?|kids?|children|peoples?|attendees|invitees)\b/i) ||
+    text.match(/\b([1-9]\d{0,3})\s*rsvps?\b/i) ||
     text.match(/\b(?:yes\s+)?(?:collect|track|include|enable|add)\s+(?:rsvps?\s+)?(?:for\s+)?(?:about\s+)?(\d{1,4})\b/i);
   const contextual = expectsGuestCount
     ? text.match(
@@ -807,6 +812,7 @@ function detectRsvpEnabled(
       text,
     ) ||
     /\brsvps?\s+for\s+\d{1,4}\b/i.test(text) ||
+    /\b[1-9]\d{0,3}\s*rsvps?\b/i.test(text) ||
     /\brsvp\s+(?:page|tracking|collection|responses?)\b/i.test(text) ||
     /\brsvp\s+(?:contact|deadline)\b/i.test(text) ||
     /\b(?:rsvp|respond)\s+by\b/i.test(text) ||
@@ -2026,6 +2032,32 @@ function isDateConfirmationRejection(text: string) {
   return /^(no|nope|not quite|wrong|another date|something else|different date)$/i.test(text);
 }
 
+function isDateFragmentReply(text: string) {
+  const cleaned = cleanString(text?.replace(/[.!?]+$/g, "")) || "";
+  if (!cleaned) return false;
+  if (isDateConfirmationAffirmation(cleaned) || isDateConfirmationRejection(cleaned)) return true;
+  if (/^\s*20\d{2}\s*$/.test(cleaned)) return true;
+  if (resolveFuzzyMonth(cleaned)) return true;
+  if (/^\s*\d{1,2}(?:st|nd|rd|th|tth)+\s*$/i.test(cleaned)) return true;
+  return !hasExplicitEventSchedule(cleaned) && cleaned.split(/\s+/).length <= 4;
+}
+
+/** Keep a day-bearing date ahead of a later year/month-only reply. */
+function stitchDateFragmentReply(current: string, recent: string[] = []) {
+  const parts = [current, ...recent].map((part) => cleanString(part) || "").filter(Boolean);
+  const unique = [...new Set(parts)];
+  const withResolvedDay = unique.filter((part) => Boolean(parseFuzzyMonthAndDay(part) || parseWeekdayAndDay(part)));
+  const years = unique.filter((part) => /^\s*20\d{2}\s*$/.test(part));
+  const months = unique.filter((part) => {
+    const cleaned = part.replace(/[.!?]+$/g, "").trim();
+    return Boolean(resolveFuzzyMonth(cleaned)) && !/\d/.test(cleaned);
+  });
+  const remaining = unique.filter(
+    (part) => !withResolvedDay.includes(part) && !years.includes(part) && !months.includes(part),
+  );
+  return [...withResolvedDay, ...remaining, ...months, ...years].join("\n");
+}
+
 function detectAmbiguousDateConfirmation(
   text: string,
   previous?: ConciergeEventDraft | null,
@@ -2201,32 +2233,50 @@ export function parseChrono(text: string, previous?: ConciergeEventDraft | null)
   const explicitTimezone = suppliedTimeZone(text);
   if (explicitTimezone && previous) previous = { ...previous, timezone: explicitTimezone };
   const cleaned = cleanString(text?.replace(/[.!?]+$/g, "")) || "";
-  if (previous?.currentQuestion === "date_confirmation") {
-    if (isDateConfirmationAffirmation(cleaned)) {
-      return {
-        dateText: previous.dateText || null,
-        timeText: previous.timeText || null,
-        startISO: previous.startISO || null,
-        endISO: previous.endISO || null,
-        needsConfirmation: false,
-      };
-    }
-    if (isDateConfirmationRejection(cleaned)) {
-      return {
-        dateText: null,
-        timeText: null,
-        startISO: null,
-        endISO: null,
-        needsConfirmation: false,
-      };
+  const expectsDate =
+    previous?.currentQuestion === "date" ||
+    previous?.currentQuestion === "date_confirmation" ||
+    previous?.missingFields?.[0] === "date";
+  if (previous && expectsDate && isDateConfirmationAffirmation(cleaned) && previous.dateText) {
+    return {
+      dateText: previous.dateText,
+      timeText: previous.timeText || null,
+      startISO: previous.startISO || null,
+      endISO: previous.endISO || null,
+      needsConfirmation: false,
+    };
+  }
+  if (previous?.currentQuestion === "date_confirmation" && isDateConfirmationRejection(cleaned)) {
+    return {
+      dateText: null,
+      timeText: null,
+      startISO: null,
+      endISO: null,
+      needsConfirmation: false,
+    };
+  }
+
+  let scheduleInput = text;
+  if (previous && expectsDate && previous.dateText) {
+    if (/^\s*20\d{2}\s*$/.test(cleaned)) {
+      scheduleInput = `${previous.dateText} ${cleaned}`;
+    } else if (resolveFuzzyMonth(cleaned) && /\d{1,2}/.test(previous.dateText)) {
+      scheduleInput = `${cleaned} ${previous.dateText}`;
     }
   }
 
-  const ambiguousDate = detectAmbiguousDateConfirmation(text, previous);
+  const ambiguousDate = detectAmbiguousDateConfirmation(scheduleInput, previous);
   if (ambiguousDate) return ambiguousDate;
 
+  const weekdayDay = parseWeekdayAndDay(scheduleInput);
+  const monthDay = weekdayDay ? null : parseFuzzyMonthAndDay(scheduleInput);
+  const compactDay = weekdayDay || monthDay;
+  const scheduleSource = compactDay
+    ? scheduleInput.replace(compactDay.sourceText, compactDay.dateText)
+    : scheduleInput;
+
   // An instruction to write or generate "now" does not schedule the event for now.
-  const eventScheduleText = normalizeEventScheduleText(text, { allowBareAge: previous?.eventType === "birthday" || /\bbirthday\b/i.test(text) });
+  const eventScheduleText = normalizeEventScheduleText(scheduleSource, { allowBareAge: previous?.eventType === "birthday" || /\bbirthday\b/i.test(scheduleSource) });
   const scheduleText = !/\b(?:starts?|begins?|happening|event is|party is)\s+now\b/i.test(eventScheduleText) && !/^\s*(?:right\s+)?now[.!?]?\s*$/i.test(eventScheduleText)
     ? eventScheduleText.replace(/\bnow\b/gi, "") : eventScheduleText;
   const parsed = chrono.parse(scheduleText, new Date(), { forwardDate: true });
@@ -2235,6 +2285,15 @@ export function parseChrono(text: string, previous?: ConciergeEventDraft | null)
   const candidates = parsed.filter((result) => !result.tags().has("result/relativeDate") && parsedTimeRole(scheduleText, result) !== "superseded");
   const first = candidates[0] || parsed[0];
   if (!first) {
+    if (compactDay) {
+      return {
+        dateText: compactDay.dateText,
+        timeText: previous?.timeText || null,
+        startISO: previous?.startISO || null,
+        endISO: previous?.endISO || null,
+        needsConfirmation: compactDay.needsConfirmation,
+      };
+    }
     return {
       dateText: previous?.dateText || null,
       timeText: previous?.timeText || null,
@@ -2246,7 +2305,9 @@ export function parseChrono(text: string, previous?: ConciergeEventDraft | null)
 
   const timezone = explicitTimezone || previous?.timezone || DEFAULT_TIMEZONE;
   const previousClock = savedClock(previous?.startISO, timezone);
-  const calendar = candidates.find(parsedHasCalendarDate);
+  const calendar =
+    candidates.find((result) => result.start.isCertain("day")) ||
+    (compactDay ? null : candidates.find(parsedHasCalendarDate));
   const timed = candidates.filter((result) => result.start.isCertain("hour") && parsedTimeRole(scheduleText, result) !== "end");
   const auxiliary = (result: chrono.ParsedResult) => /\b(?:arriv(?:e|al)|warm[- ]?up|doors?\s+(?:open|opens)|check[- ]in)\s*(?:starts?\s*)?(?:at|is|from|:)?\s*$/i.test(scheduleText.slice(0, result.index));
   const primary = timed.find((result) => !auxiliary(result) && /\b(?:kickoff|tip[- ]off|(?:event|practice|competition|meet|game|show|ceremony|party)?\s*(?:starts?|begins?))\s*(?:at|is|from|:)?\s*$/i.test(scheduleText.slice(0, result.index)))
@@ -2276,11 +2337,14 @@ export function parseChrono(text: string, previous?: ConciergeEventDraft | null)
   }
   const invalidEnd = Boolean(startISO && endISO && Date.parse(endISO) <= Date.parse(startISO));
   return {
-    dateText: calendar ? cleanString(calendar.text) : previous?.dateText || null,
+    dateText: calendar ? cleanString(calendar.text) : compactDay?.dateText || previous?.dateText || null,
     timeText: hour !== null ? formatClockTime(hour, minute) : previous?.timeText || null,
     startISO,
     endISO: invalidEnd ? null : endISO,
-    needsConfirmation: invalidEnd || Boolean(hasDate && hour !== null && !startISO),
+    needsConfirmation:
+      Boolean(compactDay?.needsConfirmation) ||
+      invalidEnd ||
+      Boolean(hasDate && hour !== null && !startISO),
   };
 }
 
@@ -2761,7 +2825,7 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
     return "Got it. I won't create an event from that.";
   }
   if (draft.sourceContext.boundary === "off_domain") {
-    return "I can help with Envitefy event products, RSVP, uploads, guest pages, and event edits. Tell me what you're creating or choose a category.";
+    return "I can help with Envitefy event products, RSVP, uploads, guest pages, and event edits. Tell me what you're creating.";
   }
   if (draft.sourceContext.boundary === "external_action") {
     return "I can prepare the event link and message for you to share. I can't post to your social accounts or contact guests from this chat.";
@@ -2795,7 +2859,7 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
     draft.missingFields[0] === "eventPurpose"
   ) {
     if (!draft.requestedOutputs.length) {
-      return "What are we celebrating?\nUpload from the main menu, choose a category, or describe the event.";
+      return "What are we celebrating?\nDescribe the event, or upload an invitation from the main menu.";
     }
     return outputQuestion(draft.requestedOutputs[0] || "live_card");
   }
@@ -2938,8 +3002,19 @@ export function fallbackExtractConciergeDraft(args: {
   activeContext?: ConciergeActiveContext | null;
   action?: ConciergeAction;
   starterCategory?: string | null;
+  recentUserMessages?: string[] | null;
 }): ConciergeEventDraft {
   const message = cleanString(args.message) || "";
+  const handoff = args.action !== "save"
+    ? signupFormHandoff(message) || signupSelectionHandoff(args.requestedOutputs, args.starterCategory || args.activeContext?.selectedCategory)
+    : null;
+  if (handoff) {
+    return args.draft || buildEmptyConversationDraft({
+      requestedOutputs: [],
+      sourceContext: resolveCreationSourceContext({ message: "", previous: null, activeContext: null, ocrContext: null }),
+      knowledgeAnswer: handoff,
+    });
+  }
   const selectedCategory = cleanString(args.activeContext?.selectedCategory);
   const inferenceMessage = mergeStarterCategory(
     message,
@@ -3204,7 +3279,21 @@ export function fallbackExtractConciergeDraft(args: {
   const ageOrMilestoneSkipped = ageOrMilestone
     ? false
     : Boolean(previous?.ageOrMilestoneSkipped || detectAgeOrMilestoneSkipped(message, previous));
-  const chronoResult = parseChrono(labeledDetails.whenText || text, previous);
+  const askingForDate =
+    previous?.currentQuestion === "date" ||
+    previous?.currentQuestion === "date_confirmation" ||
+    previous?.missingFields?.[0] === "date";
+  const dateReplyCleaned = cleanString(message?.replace(/[.!?]+$/g, "")) || "";
+  const scheduleText = labeledDetails.whenText || (
+    askingForDate &&
+    isDateFragmentReply(message) &&
+    args.recentUserMessages?.length &&
+    !isDateConfirmationAffirmation(dateReplyCleaned) &&
+    !isDateConfirmationRejection(dateReplyCleaned)
+      ? stitchDateFragmentReply(text, args.recentUserMessages)
+      : text
+  );
+  const chronoResult = parseChrono(scheduleText, previous);
   const fieldStartIso = isoFromField(fieldsGuess.start);
   const fieldEndIso = isoFromField(fieldsGuess.end);
   const shouldKeepPreviousLocation = shouldPreservePreviousLocationDuringRsvpReply(

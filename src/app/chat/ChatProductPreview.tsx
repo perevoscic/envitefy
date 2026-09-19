@@ -270,14 +270,86 @@ export default function ChatProductPreview({
     }
   }
 
+  const previewActions = (
+        <div role="group" aria-label="Preview controls" className="z-40 shrink-0 bg-transparent px-4 pb-[calc(env(safe-area-inset-bottom)+0.85rem)] pt-3 sm:px-6">
+          <div className="mx-auto grid w-full max-w-[34rem] grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setIsPreviewOpen(true)}
+              disabled={isGenerating || !hasGeneratedProduct}
+              aria-haspopup="dialog"
+              className="disabled:cursor-wait disabled:opacity-50 inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-2xl border border-[#d8caff] bg-white px-4 text-sm font-black text-[#3b2468] shadow-sm transition hover:border-[#c2aef3] hover:bg-[#fbf9ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
+            >
+              <Expand className="size-4 shrink-0" aria-hidden="true" />
+              <span className="whitespace-nowrap">Preview</span>
+            </button>
+            {publicHref ? (
+              <a
+                href={publicHref}
+                className="inline-flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-[#24183e] px-4 py-2 text-sm font-black text-white shadow-lg shadow-[#24183e]/20 transition hover:bg-[#180f2d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
+              >
+                <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
+                <span className="min-w-0 break-words text-center">{publicActionLabel}</span>
+              </a>
+            ) : shouldShowDraftActions ? (
+              <button
+                type="button"
+                onClick={onPublish}
+                disabled={isPublishing || isGenerating}
+                className="inline-flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-[#24183e] px-4 py-2 text-sm font-black text-white shadow-lg shadow-[#24183e]/20 transition hover:bg-[#180f2d] disabled:cursor-wait disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
+              >
+                {isPublishing ? (
+                  <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
+                ) : (
+                  <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
+                )}
+                <span className="min-w-0 break-words text-center">
+                  {isPublishing ? publishBusyLabel : publishActionLabel}
+                </span>
+              </button>
+            ) : (
+              <span className="inline-flex h-12 min-w-0 items-center justify-center rounded-2xl border border-[#e4dff0] bg-[#f8f6fb] px-4 text-sm font-black text-[#8a819b]">
+                Reviewing
+              </span>
+            )}
+            {!isLiveCard && hasShareAction ? (
+              <button
+                type="button"
+                onClick={() => void handleShare()}
+                className="col-span-full inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-2xl border border-[#d8caff] bg-[#fbf9ff] px-4 text-sm font-black text-[#3b2468] transition hover:border-[#c2aef3] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
+              >
+                {shareState === "copied" ? (
+                  <Copy className="size-4 shrink-0" aria-hidden="true" />
+                ) : (
+                  <Share2 className="size-4 shrink-0" aria-hidden="true" />
+                )}
+                <span className="truncate">
+                  {shareState === "copied" ? "Link copied" : "Share"}
+                </span>
+              </button>
+            ) : null}
+            {isFlyer && previewImageUrl && !isGenerating ? <ArtworkDownloadButton imageUrl={previewImageUrl} title={summary.headline} className="col-span-2" /> : null}
+            {rsvpDashboardHref ? (
+              <a
+                href={rsvpDashboardHref}
+                className="col-span-full inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-2xl border border-[#d8caff] bg-white px-4 text-sm font-black text-[#3b2468] transition hover:border-[#c2aef3] hover:bg-[#fbf9ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
+              >
+                <LayoutDashboard className="size-4 shrink-0" aria-hidden="true" />
+                <span className="truncate">Open Dashboard</span>
+              </a>
+            ) : null}
+          </div>
+        </div>
+  );
+
   return (
     <aside
       aria-label={`${panelOutputLabel} preview`}
       className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-[#f8f7fb]/96 backdrop-blur-xl lg:border-l lg:border-[#e5dff0] lg:bg-white/58"
     >
       <div className="flex h-full min-h-0 flex-col">
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-5 pt-3 sm:px-6 lg:pt-6">
-          <div className="mx-auto flex w-full max-w-[34rem] flex-col gap-3">
+        <div className={isLiveCard ? "min-h-0 flex-1 overflow-hidden p-3 sm:p-4" : "min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-5 pt-3 sm:px-6 lg:pt-6"}>
+          <div className={`mx-auto flex w-full max-w-[34rem] flex-col gap-3 ${isLiveCard ? "h-full min-h-0" : ""}`}>
             {isEventPagePreview && draft?.scanSchedule ? <ScannedSchedule schedule={draft.scanSchedule} interactive={false} /> : null}
             {isLiveCard ? (
               <h2 className="sr-only">{summary.headline}</h2>
@@ -334,22 +406,16 @@ export default function ChatProductPreview({
             )}
 
             {isLiveCard ? (
-              <section aria-label="Interactive guest preview" className="relative">
-                <button
-                  type="button"
-                  onClick={onEdit}
-                  className="absolute right-3 top-3 z-30 inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/80 bg-white/95 px-4 text-xs font-semibold text-[#5c4cd5] shadow-sm backdrop-blur-md transition hover:bg-[#f3edff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
-                >
-                  <Pencil className="size-3.5" aria-hidden="true" />
-                  Edit in chat
-                </button>
+              <section aria-label="Interactive guest preview" className="relative flex min-h-0 flex-1 flex-col">
                 <div
-                  className="mx-auto w-full max-w-[min(100%,max(16rem,calc((100svh-16rem)*2/3)))] lg:max-w-full"
+                  className="min-h-0 w-full flex-1"
                   inert={isGenerating}
                 >
                   <StudioShowcaseLiveCard
                     preview={liveCardPreview}
                     previewMode
+                    actionsPlacement="overlay"
+                    fitToContainer
                     imageLoading="eager"
                     className="!rounded-[1.5rem]"
                   />
@@ -368,9 +434,6 @@ export default function ChatProductPreview({
                     {currentBuildStep}
                   </div>
                 ) : null}
-                <p className="mt-2 text-center text-xs leading-5 text-[#5d5174]">
-                  Tap the card buttons to try the guest experience.
-                </p>
               </section>
             ) : (
               <section aria-label="Invitation artwork" className="relative overflow-hidden rounded-[1.5rem] bg-white shadow-[0_22px_60px_rgba(35,24,72,0.12)]">
@@ -391,7 +454,7 @@ export default function ChatProductPreview({
             )}
 
             {artworkNotice ? <p role="status" className="rounded-2xl bg-amber-50 px-4 py-3 text-sm leading-5 text-amber-900">{artworkNotice}</p> : null}
-            <section className="grid gap-3" aria-label="Saved event details">
+            {!isLiveCard ? <section className="grid gap-3" aria-label="Saved event details">
               <DetailRow
                 icon={<CalendarDays className="size-4" aria-hidden="true" />}
                 label="When"
@@ -412,83 +475,15 @@ export default function ChatProductPreview({
                 label="Weather"
                 value={weatherStatusText(weatherContext)}
               />
-            </section>
+            </section> : null}
 
-            <p className="px-2 text-center text-xs leading-5 text-[#5d5174]">
+            {!isLiveCard ? <p className="px-2 text-center text-xs leading-5 text-[#5d5174]">
               {previewProcessStatus}
-            </p>
+            </p> : null}
           </div>
         </div>
 
-        <div className="z-40 shrink-0 border-t border-[#e6e1ee] bg-white/92 px-4 pb-[calc(env(safe-area-inset-bottom)+0.85rem)] pt-3 shadow-[0_-16px_44px_rgba(35,24,72,0.1)] backdrop-blur-xl sm:px-6">
-          <div className="mx-auto grid w-full max-w-[34rem] grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setIsPreviewOpen(true)}
-              disabled={isGenerating || !hasGeneratedProduct}
-              aria-haspopup="dialog"
-              className="disabled:cursor-wait disabled:opacity-50 inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-2xl border border-[#d8caff] bg-white px-4 text-sm font-black text-[#3b2468] shadow-sm transition hover:border-[#c2aef3] hover:bg-[#fbf9ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
-            >
-              <Expand className="size-4 shrink-0" aria-hidden="true" />
-              <span className="whitespace-nowrap">Preview</span>
-            </button>
-            {publicHref ? (
-              <a
-                href={publicHref}
-                className="inline-flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-[#24183e] px-4 py-2 text-sm font-black text-white shadow-lg shadow-[#24183e]/20 transition hover:bg-[#180f2d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
-              >
-                <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
-                <span className="min-w-0 break-words text-center">{publicActionLabel}</span>
-              </a>
-            ) : shouldShowDraftActions ? (
-              <button
-                type="button"
-                onClick={onPublish}
-                disabled={isPublishing || isGenerating}
-                className="inline-flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-[#24183e] px-4 py-2 text-sm font-black text-white shadow-lg shadow-[#24183e]/20 transition hover:bg-[#180f2d] disabled:cursor-wait disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
-              >
-                {isPublishing ? (
-                  <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
-                ) : (
-                  <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
-                )}
-                <span className="min-w-0 break-words text-center">
-                  {isPublishing ? publishBusyLabel : publishActionLabel}
-                </span>
-              </button>
-            ) : (
-              <span className="inline-flex h-12 min-w-0 items-center justify-center rounded-2xl border border-[#e4dff0] bg-[#f8f6fb] px-4 text-sm font-black text-[#8a819b]">
-                Reviewing
-              </span>
-            )}
-            {hasShareAction ? (
-              <button
-                type="button"
-                onClick={() => void handleShare()}
-                className="col-span-2 inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-2xl border border-[#d8caff] bg-[#fbf9ff] px-4 text-sm font-black text-[#3b2468] transition hover:border-[#c2aef3] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
-              >
-                {shareState === "copied" ? (
-                  <Copy className="size-4 shrink-0" aria-hidden="true" />
-                ) : (
-                  <Share2 className="size-4 shrink-0" aria-hidden="true" />
-                )}
-                <span className="truncate">
-                  {shareState === "copied" ? "Link copied" : "Share"}
-                </span>
-              </button>
-            ) : null}
-            {isFlyer && previewImageUrl && !isGenerating ? <ArtworkDownloadButton imageUrl={previewImageUrl} title={summary.headline} className="col-span-2" /> : null}
-            {rsvpDashboardHref ? (
-              <a
-                href={rsvpDashboardHref}
-                className="col-span-2 inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-2xl border border-[#d8caff] bg-white px-4 text-sm font-black text-[#3b2468] transition hover:border-[#c2aef3] hover:bg-[#fbf9ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
-              >
-                <LayoutDashboard className="size-4 shrink-0" aria-hidden="true" />
-                <span className="truncate">Open Dashboard</span>
-              </a>
-            ) : null}
-          </div>
-        </div>
+        {previewActions}
       </div>
       {isEventPagePreview ? (
         <dialog
@@ -509,11 +504,13 @@ export default function ChatProductPreview({
           title={`${summary.headline} preview`}
           aspectRatio={isLiveCard && liveCardPreview.invitationData.heroTextMode !== "image" ? 9 / 16 : 2 / 3}
           onClose={() => setIsPreviewOpen(false)}
+          onShare={() => void handleShare()}
         >
           {isLiveCard ? (
             <StudioShowcaseLiveCard
-              preview={liveCardPreview}
+              preview={{ ...liveCardPreview, sharePath: undefined }}
               previewMode
+              actionsPlacement="overlay"
               imageLoading="eager"
               className="!rounded-[1.5rem]"
             />

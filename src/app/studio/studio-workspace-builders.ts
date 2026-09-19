@@ -562,7 +562,7 @@ export function buildLinks(details: EventDetails) {
 function buildStudioThemeFramingGuidance(details: EventDetails) {
   const categoryThemeFraming: Record<InviteCategory, string> = {
     Birthday:
-      "Interpret the user's theme words as a birthday-party version of that idea, not a generic standalone scene. If the user says Jurassic Park, make it feel like a Jurassic Park birthday party with birthday decor such as balloons, cake, candles, wrapped gifts, themed desserts, party tablescapes, and celebration energy instead of only jungle scenery or dinosaurs. Let the honoree name, age or milestone, and venue type shape the scene when those details are available so the result feels personalized rather than generic.",
+      "Interpret the user's theme words as a birthday-party version of that idea, not a generic standalone scene. If the user says Jurassic Park, make it feel like a Jurassic Park birthday party with birthday decor such as balloons, cake, candles, wrapped gifts, themed desserts, party tablescapes, and celebration energy instead of only jungle scenery or dinosaurs. Let the honoree name and age or milestone shape the birthday. If the user gave a palette, balloons, atmosphere, or other visual design, follow that design instead of painting the venue, movie, or restaurant as the scene.",
     Wedding:
       "Interpret the user's theme words as a wedding or save-the-date version of that idea, with ceremony, reception, stationery, floral, and romantic celebration cues instead of generic scenery. Let venue type, floral direction, and formality cues steer the setting, and do not inflate a single-evening event into an unsupported wedding-weekend concept.",
     "Open House":
@@ -632,6 +632,11 @@ export function buildStudioVisualDirection(details: EventDetails) {
       "Apply the Design Idea to artwork, palette, composition, mood, and themeStyle while still expressing the selected category clearly.",
     );
     instructions.push(buildStudioThemeFramingGuidance(details));
+    if (/\b(?:balloo?n+s?|atmosphere|(?:light\s+)?(?:purple|pink|lavender|lilac|violet)|palette)\b/i.test(combinedDirection)) {
+      instructions.push(
+        "Follow the user's requested palette, balloons, and atmosphere as the artwork scene. Do not replace that design with the venue, movie, restaurant, or itinerary.",
+      );
+    }
     if (eventDetails) {
       instructions.push(
         "Use Event Details as the source for guest-facing specificity, invitation copy, and factual grounding. Do not let Design Idea-only nouns become visible copy.",
@@ -690,8 +695,9 @@ export function buildStudioCategoryGuardrails(details: EventDetails) {
 
   const categorySpecificGuardrailsByType: Record<InviteCategory, string[]> = {
     Birthday: [
-      "Use honoree name, age or milestone, and venue context when present so the image feels like a real hosted birthday instead of a generic theme scene.",
-      "If the venue implies a theater, arcade, restaurant, park, or backyard, reflect that type of place without inventing brand signage or unsupported architectural details.",
+      "Use honoree name and age or milestone so the image feels like a real hosted birthday instead of a generic theme scene.",
+      "If the user specified a visual design, palette, balloons, or atmosphere, that is the artwork scene. Venue, movie title, restaurant, and itinerary are guest facts for the card details, not the picture unless the user asked to show that place.",
+      "Only use venue type as the setting when the user did not give a visual design. Do not invent brand signage or unsupported architectural details.",
     ],
     Wedding: [
       "Use venue type, floral direction, and formality cues to make the invitation feel like a credible ceremony, reception, or save-the-date rather than generic romance imagery.",

@@ -9,6 +9,12 @@ const positive = [
   "Create a signup form for September 23, 2026.",
   "How do I make a sign up sheet?",
   "Does Envitefy have sign-up forms?",
+  "Can I create a signup form without an account?",
+  "Where is the signup form link?",
+  "Give me the signup form gallery link.",
+  "Create a sign up page.",
+  "Can you create signups?",
+  "Can I make a signup?",
   "Can you build a sign‑up form for volunteers?",
   "I need a volunteer signup.",
   "Make a potluck sheet.",
@@ -18,6 +24,7 @@ const positive = [
 ];
 const negative = [
   "How do I sign up for an account?", "Create an account signup form.",
+  "How do I enable account signups?", "Disable the signup form.",
   "I cannot log in or sign up.", "Can guests RSVP to my birthday?",
   "Invite volunteers to the school picnic on September 23, 2026.",
   "Create an invitation without a signup form.", "Don't create a sign-up sheet.",
@@ -29,19 +36,20 @@ const negative = [
 
 test("form handoff recognizes requests and inquiries without confusing RSVP, account access or existing links", () => {
   assert.equal(SIGNUP_FORM_GALLERY_HREF, "/signup-forms/templates");
-  for (const message of positive) assert.match(signupFormHandoff(message), /\[Browse sign-up templates\]\(\/signup-forms\/templates\)/, message);
+  for (const message of positive) assert.match(signupFormHandoff(message), /template gallery: \/signup-forms\/templates$/, message);
   for (const message of negative) assert.equal(signupFormHandoff(message), null, message);
 });
 
 test("signup requests retain an existing draft and start no generatable draft or extractor call", async () => {
   const existing = fallbackExtractConciergeDraft({ message: "Create an event page for Nora's birthday on September 23, 2026 at 2 PM at Maple Hall." });
   const snapshot = structuredClone(existing);
+  let providerCalls = 0;
   for (const draft of [null, existing]) {
     const message = positive[0];
     const fallback = fallbackExtractConciergeDraft({ message, draft });
     const extracted = await extractConciergeDraft({ message, draft, requestedOutputs: ["signup_form"] }, {
       openAiApiKey: "offline-test",
-      createOpenAiClient: () => { throw new Error("Signup handoff must not call a provider"); },
+      createOpenAiClient: () => { providerCalls += 1; throw new Error("Signup handoff must not call a provider"); },
     });
     assert.equal(extracted.usedAi, false);
     assert.equal(extracted.canSave, false);
@@ -59,6 +67,7 @@ test("signup requests retain an existing draft and start no generatable draft or
     }
   }
   assert.deepEqual(existing, snapshot);
+  assert.equal(providerCalls, 0);
 });
 
 test("signup persona response is deterministic and never invokes a provider", async () => {

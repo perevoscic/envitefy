@@ -16,6 +16,7 @@ test("the actual intake stream gives the persona the previous state and returns 
     "@/lib/concierge/fallback": { buildAssistantMessage: () => "The details are in this chat." },
     "@/lib/concierge/copy-workflow": { nextPendingReply: () => null },
     "@/lib/concierge/intake": {
+      creationSignupHandoff: () => null,
       resolveCreationIntakeDraft: async () => ({ draft: structuredClone(draft) }),
       finalizeCreationIntake: async input => { finalized = input; return { ok: true, draft: input.result.draft, assistantMessage: input.assistantMessageOverride }; },
     },

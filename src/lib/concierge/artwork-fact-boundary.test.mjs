@@ -8,6 +8,7 @@ import { getCreationReadiness } from "./readiness.ts";
 import { shouldRegenerateGeneratedDraftImageForEdit } from "./artwork-change.ts";
 import { buildConciergeHistoryPayload } from "./history-payload.ts";
 import { buildChatShowcasePreview } from "../../app/chat/chat-preview-adapters.ts";
+import { SIGNUP_FORM_GALLERY_HREF } from "./signup-handoff.ts";
 
 const eventTypes = ["birthday", "wedding", "baby_shower", "gender_reveal", "bridal_shower", "graduation", "gym_meet", "game_day", "football", "sport_event", "field_trip", "open_house", "housewarming", "appointment", "workshop", "special_event", "smart_signup", "general"];
 const formats = ["live_card", "digital_flyer", "event_page"];
@@ -85,7 +86,9 @@ test("the edit contract rejects unrelated clears, replacements and fabricated co
 });
 
 for (const eventType of eventTypes) {
-  test(`${eventType}: a faulty AI response cannot replace facts on the way to generation or saving`, async () => {
+  test(eventType === "smart_signup"
+    ? "legacy signup drafts hand off without a model call or fact changes"
+    : `${eventType}: a faulty AI response cannot replace facts on the way to generation or saving`, async () => {
     const before = fixture(eventType);
     const message = "Remove the pizza illustration and use purple cursive lettering.";
     let modelCalled = false;
@@ -96,6 +99,13 @@ for (const eventType of eventTypes) {
         return { choices: [{ finish_reason: "stop", message: { content: JSON.stringify(brokenModel(message)) } }] };
       } } } }),
     });
+    if (eventType === "smart_signup") {
+      assert.equal(modelCalled, false);
+      assert.deepEqual(result.draft, before);
+      assert.equal(result.canSave, false);
+      assert.ok(result.assistantMessage.includes(SIGNUP_FORM_GALLERY_HREF));
+      return;
+    }
     assert.equal(modelCalled, true);
     assertPreserved(before, result.draft, eventType);
     assert.match(result.draft.theme, /Purple floral artwork/);

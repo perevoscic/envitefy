@@ -2,6 +2,7 @@ import { EVENT_ACTION_SCHEMA, parseEventActionContract } from "./action-contract
 import { resolveScheduleCorrection } from "../creation/calendar-validation.ts";
 import { creationModelBudget, creationTimeoutMs, recordCreationModelRun } from "../creation/openai-workloads.ts";
 import OpenAI from "openai";
+import { signupFormHandoff } from "./signup-handoff.ts";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { normalizeCanonicalStartFields } from "@/lib/dashboard-data";
 import {
@@ -607,6 +608,8 @@ export async function buildEventActionPlan(params: {
   history: Array<{ role: string; content: string }>;
   weatherContext?: ConciergeWeatherContext | null;
 }): Promise<EventActionPlan> {
+  const handoff = signupFormHandoff(params.message);
+  if (handoff) return { actions: [], assistantMessage: handoff, suggestedReplies: [] };
   const guardedPlan = guardedEventAssistantPlan(params.message);
   if (guardedPlan) return guardedPlan;
   if (shouldResolveConciergeWeatherContext(params.message)) {

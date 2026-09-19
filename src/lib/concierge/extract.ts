@@ -2,13 +2,14 @@ import { CONCIERGE_EXTRACTION_SCHEMA, CONCIERGE_EXTRACTION_INSTRUCTION, concierg
 import { attachCreationReadiness, validCalendarDate } from "./readiness.ts";
 import { creationModelBudget, creationTimeoutMs, recordCreationModelRun } from "../creation/openai-workloads.ts";
 import OpenAI from "openai";
+import { signupFormHandoff, signupSelectionHandoff } from "./signup-handoff.ts";
 import { hasRequiredCopyLanguages, provisionalInvitationCopy, requestsInvitationCopy } from "./copy-workflow.ts";
 import { normalizeHostBrief } from "./host-brief.ts";
 import { hasVisualChangeWords, stripArtworkPreservationInstructions } from "./visual-direction.ts";
 import { isArtworkOnlyEdit, isSameCreationEvent } from "./artwork-edit-scope.ts";
 import { applyHostPrivacy } from "./host-privacy.ts";
 import { extractRsvpContactDetails } from "./rsvp-details.ts";
-import { extractExplicitEventLocation, extractExplicitEventTitle, extractExplicitRsvpEnabled, extractNamedAge, hasExplicitEventSchedule, hasStalePreviewFacts, pairedHonorees } from "./conversation-edits.ts";
+import { extractExplicitEventLocation, extractExplicitEventTitle, extractExplicitRsvpEnabled, extractNamedAge, hasExplicitEventSchedule, hasStalePreviewFacts, pairedHonorees, resolveFuzzyMonth } from "./conversation-edits.ts";
 import {
   createCreationSessionId,
   deriveCreationStatus,
@@ -802,6 +803,18 @@ export async function extractConciergeDraft(
   deps: ExtractDeps = {},
 ): Promise<ExtractionResult> {
   const message = request.message || "";
+  const handoff = request.action !== "save"
+    ? signupFormHandoff(message) || signupSelectionHandoff(request.requestedOutputs, request.starterCategory || request.activeContext?.selectedCategory)
+    : null;
+  if (handoff) {
+    return {
+      draft: request.draft || fallbackExtractConciergeDraft({ message: "Create a signup form." }),
+      assistantMessage: handoff,
+      suggestedReplies: [],
+      canSave: false,
+      usedAi: false,
+    };
+  }
   const source: ConciergeSource = request.ocrContext
     ? message
       ? "mixed"
@@ -816,8 +829,29 @@ export async function extractConciergeDraft(
     activeContext: request.activeContext || null,
     action: request.action || "message",
     starterCategory: request.starterCategory || null,
+    recentUserMessages: (request.chatMessages || [])
+      .filter((item) => item.role === "user" && item.text && item.text !== message)
+      .map((item) => item.text)
+      .slice(-8),
   });
+  const fallbackHandoff = request.action !== "save" ? signupSelectionHandoff(fallback.requestedOutputs, fallback.eventType) : null;
+  if (fallbackHandoff) return {
+    draft: request.draft || fallbackExtractConciergeDraft({ message: "Create a signup form." }),
+    assistantMessage: fallbackHandoff, suggestedReplies: [], canSave: false, usedAi: false,
+  };
 
+  const dateReplyTurn = Boolean(
+    request.draft &&
+      (request.draft.currentQuestion === "date" ||
+        request.draft.currentQuestion === "date_confirmation" ||
+        request.draft.missingFields[0] === "date"),
+  );
+  const dateReplyText = message.trim().replace(/[.!?]+$/g, "");
+  const isDateReply =
+    dateReplyTurn &&
+    (hasExplicitEventSchedule(message) ||
+      /^(yes|yep|yeah|correct|right|that'?s right|that is right|20\d{2})$/i.test(dateReplyText) ||
+      Boolean(resolveFuzzyMonth(dateReplyText)));
   const shouldUseDeterministicFastPath =
     (fallback.sourceContext.boundary === "envitefy_question" && !requestsInvitationCopy(message)) ||
     fallback.sourceContext.boundary === "non_creation" ||
@@ -827,6 +861,7 @@ export async function extractConciergeDraft(
     fallback.sourceContext.boundary === "unsafe_guest_data" ||
     fallback.sourceContext.boundary === "ambiguous_edit" ||
     fallback.currentQuestion === "invite_source" ||
+    isDateReply ||
     isNonCreationRequest(message) ||
     (isGreetingMessage(message) && !request.draft && !request.ocrContext) ||
     (shouldSkipOpenAiForCreationRequest({ request, fallbackDraft: fallback }) && !requestsInvitationCopy(message));
@@ -849,6 +884,11 @@ export async function extractConciergeDraft(
         openAiApiKey: apiKey,
       });
       if (aiDraft) {
+        const resolvedHandoff = request.action !== "save" ? signupSelectionHandoff(aiDraft.requestedOutputs, aiDraft.eventType) : null;
+        if (resolvedHandoff) return {
+          draft: request.draft || fallbackExtractConciergeDraft({ message: "Create a signup form." }),
+          assistantMessage: resolvedHandoff, suggestedReplies: [], canSave: false, usedAi: true,
+        };
         return {
           draft: aiDraft,
           assistantMessage: buildAssistantMessage(aiDraft),

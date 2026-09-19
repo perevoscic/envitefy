@@ -136,6 +136,7 @@ export function extractExplicitRsvpEnabled(message: string): boolean | null {
     [`\\bset\\s+${subject}\\s+to\\s+(?:off|on)\\b`, null],
     [`\\b(?:disable|remove|skip|without|no)\\s+${subject}\\b`, false],
     [`\\b(?:enable|add)\\s+${subject}\\b`, true],
+    ["\\b[1-9]\\d{0,3}\\s*rsvps?\\b", true],
     ["\\brsvps?\\s+(?:by|via)\\s+(?:phone|text|email|call)\\s+only\\b", false],
   ] as const) {
     for (const match of message.matchAll(new RegExp(pattern, "gi"))) {
@@ -180,12 +181,161 @@ function isSingleMonthTypo(word: string, month: string): boolean {
   return longer.length === shorter.length + 1 && [...longer].some((_letter, index) => longer.slice(0, index) + longer.slice(index + 1) === shorter);
 }
 
+function monthAliases(name: string) {
+  const aliases = [name.toLowerCase(), name.slice(0, 3).toLowerCase()];
+  if (name.length >= 4) aliases.push(name.slice(0, 4).toLowerCase());
+  return aliases;
+}
+
+function editDistance(left: string, right: string) {
+  if (left === right) return 0;
+  const rows = left.length + 1;
+  const cols = right.length + 1;
+  const grid = Array.from({ length: rows }, () => Array<number>(cols).fill(0));
+  for (let row = 0; row < rows; row += 1) grid[row][0] = row;
+  for (let col = 0; col < cols; col += 1) grid[0][col] = col;
+  for (let row = 1; row < rows; row += 1) {
+    for (let col = 1; col < cols; col += 1) {
+      const cost = left[row - 1] === right[col - 1] ? 0 : 1;
+      grid[row][col] = Math.min(
+        grid[row - 1][col] + 1,
+        grid[row][col - 1] + 1,
+        grid[row - 1][col - 1] + cost,
+      );
+    }
+  }
+  return grid[left.length][right.length];
+}
+
+/** Resolve month fragments and nearby typos such as spee, sept, septmeber. */
+export function resolveFuzzyMonth(word: string): number | null {
+  const cleaned = word.toLowerCase().replace(/[^a-z]/g, "");
+  if (cleaned.length < 3) return null;
+  if (/^(sun|mon|tue|wed|thu|fri|sat)/.test(cleaned)) return null;
+  const hits = new Set<number>();
+  MONTH_NAMES.forEach((name, index) => {
+    const lower = name.toLowerCase();
+    const aliases = monthAliases(name);
+    const prefix = lower.startsWith(cleaned);
+    const closeAlias = aliases.some((alias) => {
+      if (alias === cleaned || isSingleMonthTypo(cleaned, alias)) return true;
+      if (alias.length >= 3 && alias.length <= 4 && cleaned[0] === alias[0] && editDistance(cleaned, alias) <= 2) {
+        return true;
+      }
+      return false;
+    });
+    if (prefix || closeAlias) hits.add(index + 1);
+  });
+  return hits.size === 1 ? [...hits][0] : null;
+}
+
+function normalizeOrdinalGlitches(text: string) {
+  return text.replace(/\b(\d{1,2})((?:st|nd|rd|th|t)+)\b/gi, (all, digits) => {
+    const day = Number.parseInt(digits, 10);
+    if (!Number.isFinite(day) || day < 1 || day > 31) return all;
+    return ordinalDay(day);
+  });
+}
+
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+function ordinalDay(day: number) {
+  const suffix =
+    day % 100 >= 11 && day % 100 <= 13
+      ? "th"
+      : day % 10 === 1
+        ? "st"
+        : day % 10 === 2
+          ? "nd"
+          : day % 10 === 3
+            ? "rd"
+            : "th";
+  return `${day}${suffix}`;
+}
+
+function weekdayIndex(value: string) {
+  const key = value.toLowerCase();
+  if (key.startsWith("sun")) return 0;
+  if (key.startsWith("mon")) return 1;
+  if (key.startsWith("tue")) return 2;
+  if (key.startsWith("wed")) return 3;
+  if (key.startsWith("thu")) return 4;
+  if (key.startsWith("fri")) return 5;
+  if (key.startsWith("sat")) return 6;
+  return null;
+}
+
+const WEEKDAY_DAY_PATTERN =
+  /\b(sun(?:day)?|mon(?:day)?|tue(?:s(?:day)?)?|wed(?:nesday)?|thu(?:r(?:s(?:day)?)?)?|fri(?:day)?|sat(?:urday)?)\s*(?:the\s+)?[,.]?\s*(\d{1,2})(tth|st|nd|rd|th|d)?(?!\s*(?:[:\d]|a\.?m\.?|p\.?m\.?))\b/gi;
+
+function resolveWeekdayAndDay(weekday: number, day: number) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let matching: Date | null = null;
+  for (let offset = 0; offset < 24; offset += 1) {
+    const candidate = new Date(today.getFullYear(), today.getMonth() + offset, day, 12, 0, 0, 0);
+    if (candidate.getDate() !== day || candidate < today) continue;
+    if (candidate.getDay() === weekday) {
+      matching = candidate;
+      break;
+    }
+  }
+  if (!matching) return null;
+  const daysOut = Math.round((matching.getTime() - today.getTime()) / 86_400_000);
+  return {
+    dateText: `${MONTH_NAMES[matching.getMonth()]} ${ordinalDay(day)}`,
+    needsConfirmation: daysOut > 60,
+  };
+}
+
+export type ParsedWeekdayAndDay = {
+  sourceText: string;
+  dateText: string;
+  timeText: null;
+  startISO: null;
+  endISO: null;
+  needsConfirmation: boolean;
+};
+
+/** Compact weekday+day replies such as Sat26tth or Sat 26th, not "Saturday 26 kids". */
+export function parseWeekdayAndDay(message: string): ParsedWeekdayAndDay | null {
+  if (!message) return null;
+  for (const match of message.matchAll(new RegExp(WEEKDAY_DAY_PATTERN.source, "gi"))) {
+    const day = Number.parseInt(match[2] || "", 10);
+    const suffix = (match[3] || "").toLowerCase();
+    if (!Number.isFinite(day) || day < 1 || day > 31) continue;
+    const glued = !/\s/.test(match[0].replace(/[,.]/g, ""));
+    if (!suffix && !glued) continue;
+    if (!suffix && glued && day <= 7) continue;
+    const weekday = weekdayIndex(match[1] || "");
+    if (weekday == null) continue;
+    const resolved = resolveWeekdayAndDay(weekday, day);
+    if (!resolved) continue;
+    return {
+      sourceText: match[0],
+      dateText: resolved.dateText,
+      timeText: null,
+      startISO: null,
+      endISO: null,
+      needsConfirmation: resolved.needsConfirmation,
+    };
+  }
+  return null;
+}
+
 /** Normalize date spelling only beside a day number, and remove non-schedule age/duration phrases. */
 export function normalizeEventScheduleText(message: string, options: { allowBareAge?: boolean } = {}): string {
-  const months = ["January", "February", "August", "September", "October", "November", "December"];
-  let text = message.replace(/\b([a-z]{5,10})(?=\s+\d{1,2}(?:st|nd|rd|th)?\b)/gi, (word: string) => {
-    const matches = months.filter((month) => isSingleMonthTypo(word.toLowerCase(), month.toLowerCase()));
-    return matches.length === 1 ? matches[0] : word;
+  let text = normalizeOrdinalGlitches(message);
+  text = text.replace(/\b([a-z]{3,10})(\d{1,2}(?:st|nd|rd|th)?)\b/gi, (all, word: string, day: string) => {
+    const month = resolveFuzzyMonth(word);
+    return month ? `${MONTH_NAMES[month - 1]} ${day}` : all;
+  });
+  text = text.replace(/\b([a-z]{3,10})(?=\s+\d{1,2}(?:st|nd|rd|th)?\b)/gi, (word: string) => {
+    const month = resolveFuzzyMonth(word);
+    return month ? MONTH_NAMES[month - 1] : word;
   });
   text = text
     .replace(/\b\d{1,3}\s*(?:[- ]\s*)?(?:years?|yrs?)\s*(?:[- ]\s*)?old\b/gi, "")
@@ -196,7 +346,42 @@ export function normalizeEventScheduleText(message: string, options: { allowBare
   return text;
 }
 
+export type ParsedFuzzyMonthAndDay = {
+  sourceText: string;
+  dateText: string;
+  needsConfirmation: boolean;
+};
+
+/** Compact month+day replies such as spee 26thth or sept26. */
+export function parseFuzzyMonthAndDay(message: string): ParsedFuzzyMonthAndDay | null {
+  if (!message) return null;
+  const normalized = normalizeEventScheduleText(message);
+  const match = normalized.match(
+    /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})(?:st|nd|rd|th)?\b/i,
+  );
+  if (!match) return null;
+  const month = MONTH_NAMES.findIndex((name) => name.toLowerCase() === match[1].toLowerCase()) + 1;
+  const day = Number.parseInt(match[2] || "", 10);
+  if (month < 1 || !Number.isFinite(day) || day < 1 || day > 31) return null;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let year = now.getFullYear();
+  let start = new Date(year, month - 1, day, 12, 0, 0, 0);
+  if (start.getMonth() !== month - 1 || start.getDate() !== day) return null;
+  if (start < today) {
+    year += 1;
+    start = new Date(year, month - 1, day, 12, 0, 0, 0);
+  }
+  const original = message.match(/\b([a-z]{3,10})\s*(\d{1,2}(?:st|nd|rd|th|tth)+)\b/i);
+  return {
+    sourceText: original?.[0] || match[0],
+    dateText: `${MONTH_NAMES[month - 1]} ${ordinalDay(day)}`,
+    needsConfirmation: start.getFullYear() !== now.getFullYear(),
+  };
+}
+
 export function hasExplicitEventSchedule(message: string): boolean {
+  if (parseWeekdayAndDay(message) || parseFuzzyMonthAndDay(message)) return true;
   return chrono.parse(normalizeEventScheduleText(message), new Date(), { forwardDate: true })
     .some((result) => !result.tags().has("result/relativeDate") && (result.start.isCertain("day") || result.start.isCertain("hour")));
 }

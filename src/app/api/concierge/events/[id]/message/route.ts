@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { conciergeApiErrorMessage } from "@/lib/concierge/api-errors";
+import { signupFormHandoff } from "@/lib/concierge/signup-handoff";
 import { applyEventActions, buildEventActionPlan } from "@/lib/concierge/event-actions";
 import {
   appendConversationMessage,
@@ -93,6 +94,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       );
     }
 
+    const handoff = signupFormHandoff(message);
+    if (handoff) {
+      return timedJson(timing, {
+        ok: true,
+        event: { id: event.id, title: event.title, data: asRecord(event.data) },
+        assets: await listEventAssets(eventId, userId),
+        assistantMessage: handoff,
+        actions: [],
+        suggestedReplies: [],
+        weatherContext: null,
+      });
+    }
     const thread = await timing.time("db_write", () =>
       getOrCreateEventThread({
         userId,

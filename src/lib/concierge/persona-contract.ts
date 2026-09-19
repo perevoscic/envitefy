@@ -33,10 +33,30 @@ export function buildPersonaTurnReceipt(draft: ConciergeEventDraft, previous?: C
   };
 }
 
+/** Reject mashed tokens the model sometimes streams, such as have4 or Whatdate. */
+export function looksGarbledPersonaCopy(text: string, draft?: Pick<ConciergeEventDraft, "honoreeName"> | null): boolean {
+  const stripped = text
+    .replace(/\bhttps?:\/\/\S+/gi, " ")
+    .replace(/\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b/g, " ")
+    .replace(/\b\d{1,2}:\d{2}\b/g, " ")
+    .replace(/\b\d{1,2}\s*[ap]\.?m\.?\b/gi, " ")
+    .replace(/\b\d{1,2}(?:st|nd|rd|th)\b/gi, " ");
+  if (/[a-z]\d|\d[a-z]/.test(stripped)) return true;
+  if (/([A-Za-z])\1{2,}/.test(stripped)) return true;
+  if (/\bWhat(?!ever\b|sApp\b|['’]s\b)[a-z]{4,}\b/.test(text)) return true;
+  const honoree = (draft?.honoreeName || "").replace(/[^\p{L}'’]/gu, "");
+  if (honoree.length >= 3) {
+    const escaped = honoree.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (new RegExp(`\\b${escaped}[A-Za-z]{2,}\\b`, "i").test(text)) return true;
+  }
+  return false;
+}
+
 /** Guard complete sentences before emitting them, including words split over stream chunks. */
 export function guardPersonaSentence(text: string, draft: ConciergeEventDraft, receipt: ReturnType<typeof buildPersonaTurnReceipt>): string {
   const trailing = text.match(/\s*$/)?.[0] || "";
   const replace = (value: string) => `${value}${trailing}`;
+  if (looksGarbledPersonaCopy(text, draft)) return "";
   if (/\b(?:I(?:['’]ve| have)?|we(?:['’]ve| have)?)\s+(?:successfully\s+)?(?:saved|published|sent|generated)\b|\b(?:is|are|was|has been|have been|already)\s+(?:now\s+)?(?:saved|published)\b/i.test(text)) {
     return replace("Your progress is in this chat. Use Save progress to save it, or Publish when you are ready.");
   }

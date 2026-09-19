@@ -32,7 +32,8 @@ export function getCreationReadiness(draft: ConciergeEventDraft | null): Creatio
   );
   const canSaveDraft = Boolean(draft.canPersist && !contextBlocked);
   const canPreview =
-    canSaveDraft && draft.requestedOutputs.length > 0 && Boolean(draft.title || draft.eventPurpose);
+    canSaveDraft && draft.currentQuestion !== "what_are_we_celebrating" &&
+    draft.requestedOutputs.length > 0 && Boolean(draft.title || draft.eventPurpose);
   const plan = getRequirementPlan(draft);
   const publishBlockers: string[] = plan.requiredFields.filter(
     (field) => !requirementFieldSatisfied(field, draft),

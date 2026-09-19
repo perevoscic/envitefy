@@ -3,8 +3,8 @@
 import { X } from "lucide-react";
 import Link from "next/link";
 import { type CSSProperties, type ReactNode, useCallback, useState } from "react";
-import EventCelebrationOverlay from "@/components/EventCelebrationOverlay";
 import ArtworkDownloadButton from "@/components/ArtworkDownloadButton";
+import EventCelebrationOverlay from "@/components/EventCelebrationOverlay";
 import LiveCardArtworkFrame from "@/components/studio/LiveCardArtworkFrame";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface, {
@@ -16,6 +16,7 @@ import StudioLiveCardActionSurface, {
 import type { EventCelebrationKind } from "@/utils/event-celebration";
 import { trackEventInteraction } from "@/utils/event-tracking-client";
 import { resolveNativeShareData } from "@/utils/native-share";
+import styles from "./StudioShowcaseLiveCard.module.css";
 
 type SharedStudioCardProps = {
   eventId?: string | null;
@@ -36,6 +37,8 @@ type SharedStudioCardFrameProps = SharedStudioCardProps & {
   topRightAction?: ReactNode;
   onClose?: () => void;
   style?: CSSProperties;
+  actionsPlacement?: "auto" | "above" | "overlay";
+  fitToContainer?: boolean;
 };
 
 export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
@@ -43,6 +46,10 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
   const [shareState, setShareState] = useState<"idle" | "pending" | "success">("idle");
   const invitationData = props.invitationData || null;
   const usesPosterArtFrame = invitationData?.heroTextMode === "image";
+  const placeActionsAbove = props.actionsPlacement === "above";
+  const placeActionsOverlay = props.actionsPlacement === "overlay";
+  const useOutsideActions = !placeActionsOverlay && (usesPosterArtFrame || placeActionsAbove);
+  const fitToContainer = Boolean(props.fitToContainer);
   const cardFrameWidth = usesPosterArtFrame
     ? "min(calc(100vw - 2rem), calc((100dvh - 13rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) * 2 / 3))"
     : "min(calc(100vw - 2rem), calc((100dvh - 13rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) * 9 / 16))";
@@ -83,23 +90,40 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
     }
   }
 
-  return (
-    <div className={props.className || ""} style={props.style}>
-      <div
-        className={`relative mx-auto ${usesPosterArtFrame ? "bg-transparent" : "rounded-[3rem] bg-neutral-900"} ${
-          props.frameClassName || ""
-        }`}
-        style={{ width: props.style?.width ? undefined : cardFrameWidth }}
-      >
-        <LiveCardArtworkFrame imageUrl={props.imageUrl} className={`${usesPosterArtFrame ? "aspect-[2/3] rounded-[1.5rem]" : "aspect-[9/16] rounded-[inherit]"} ${props.artworkClassName || ""}`}>
-        <img
-          src={props.imageUrl}
-          alt={props.title}
-          className={`absolute inset-0 h-full w-full ${usesPosterArtFrame ? "object-contain" : "object-cover"} object-center`}
-          referrerPolicy="no-referrer"
-        />
-        <LiveCardHeroTextOverlay invitationData={invitationData} />
-        {!usesPosterArtFrame ? <StudioLiveCardActionSurface
+  const outsideActions = useOutsideActions ? (
+    <div className="shrink-0">
+      <StudioLiveCardActionSurface
+        placement={placeActionsAbove ? "above" : "below"}
+        title={props.title}
+        invitationData={invitationData}
+        activeTab={activeTab}
+        onActiveTabChange={setActiveTab}
+        shareUrl={props.shareUrl}
+        fallbackShareUrlToWindowLocation
+        onShare={props.topRightAction ? undefined : () => void handleShare()}
+        shareState={shareState}
+        previewMode={props.embeddedPreview}
+        showExtendedDetails={usesPosterArtFrame}
+      />
+    </div>
+  ) : null;
+
+  const artwork = (
+    <LiveCardArtworkFrame
+      imageUrl={props.imageUrl}
+      className={`${usesPosterArtFrame ? "aspect-[2/3] rounded-[1.5rem]" : "aspect-[9/16] rounded-[inherit]"} ${
+        fitToContainer ? styles.fittedArtwork : ""
+      } ${props.artworkClassName || ""}`}
+    >
+      <img
+        src={props.imageUrl}
+        alt={props.title}
+        className={`absolute inset-0 h-full w-full ${usesPosterArtFrame ? "object-contain" : "object-cover"} object-center`}
+        referrerPolicy="no-referrer"
+      />
+      <LiveCardHeroTextOverlay invitationData={invitationData} />
+      {placeActionsOverlay || (!usesPosterArtFrame && !placeActionsAbove) ? (
+        <StudioLiveCardActionSurface
           placement="overlay"
           title={props.title}
           invitationData={invitationData}
@@ -108,33 +132,55 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
           positions={props.positions}
           shareUrl={props.shareUrl}
           fallbackShareUrlToWindowLocation
-          sharePosition={props.onClose ? "left" : "right"}
+          sharePosition="left"
           onShare={props.topRightAction ? undefined : () => void handleShare()}
           shareState={shareState}
-        /> : null}
-        {props.topRightAction}
-        </LiveCardArtworkFrame>
-        {usesPosterArtFrame ? <StudioLiveCardActionSurface
-          placement="below"
-          title={props.title}
-          invitationData={invitationData}
-          activeTab={activeTab}
-          onActiveTabChange={setActiveTab}
-          shareUrl={props.shareUrl}
-          fallbackShareUrlToWindowLocation
-          onShare={props.topRightAction ? undefined : () => void handleShare()}
-          shareState={shareState}
-          previewMode={props.embeddedPreview}
-          showExtendedDetails
-        /> : null}
-        {usesPosterArtFrame ? <ArtworkDownloadButton imageUrl={props.imageUrl} title={props.title} className="mt-2" /> : null}
+        />
+      ) : null}
+      {props.topRightAction}
+    </LiveCardArtworkFrame>
+  );
+
+  return (
+    <div className={props.className || ""} style={props.style}>
+      <div
+        className={`relative mx-auto ${
+          usesPosterArtFrame || placeActionsAbove
+            ? "bg-transparent"
+            : "rounded-[3rem] bg-neutral-900"
+        } ${placeActionsAbove || fitToContainer ? "flex flex-col gap-3 !bg-transparent" : ""} ${
+          fitToContainer ? "h-full min-h-0" : ""
+        } ${props.frameClassName || ""}`}
+        style={{ width: props.style?.width ? undefined : cardFrameWidth }}
+      >
+        {placeActionsAbove ? outsideActions : null}
+        {fitToContainer ? (
+          <div
+            className={styles.artworkSlot}
+            style={
+              { "--live-card-aspect-ratio": usesPosterArtFrame ? 2 / 3 : 9 / 16 } as CSSProperties
+            }
+          >
+            {artwork}
+          </div>
+        ) : (
+          artwork
+        )}
+        {!placeActionsAbove ? outsideActions : null}
+        {usesPosterArtFrame && !placeActionsOverlay ? (
+          <ArtworkDownloadButton imageUrl={props.imageUrl} title={props.title} className="mt-2" />
+        ) : null}
         {props.onClose ? (
           <button
             type="button"
             onClick={props.onClose}
             aria-label="Close preview"
             title="Close preview"
-            className={`${usesPosterArtFrame ? "relative ml-auto mt-2 flex" : "absolute right-3 top-5 inline-flex"} z-30 size-11 cursor-pointer items-center justify-center rounded-full border border-white/40 bg-white/90 text-slate-950 shadow-lg backdrop-blur-md transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-700 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950`}
+            className={`${
+              usesPosterArtFrame || placeActionsAbove
+                ? "relative ml-auto mt-2 flex"
+                : "absolute right-3 top-5 inline-flex"
+            } z-30 size-11 cursor-pointer items-center justify-center rounded-full border border-white/40 bg-white/90 text-slate-950 shadow-lg backdrop-blur-md transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-700 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950`}
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
@@ -163,9 +209,10 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
   }, [props.returnHref]);
 
   return (
-    <div className={`relative isolate flex min-h-[100dvh] w-full flex-col max-md:pt-[env(safe-area-inset-top)] ${usesPosterArtFrame ? "bg-slate-50" : "bg-neutral-950"}`}>
+    <div
+      className={`relative isolate flex min-h-[100dvh] w-full flex-col max-md:pt-[env(safe-area-inset-top)] ${usesPosterArtFrame ? "bg-slate-50" : "bg-neutral-950"}`}
+    >
       {props.celebrationKind ? <EventCelebrationOverlay kind={props.celebrationKind} /> : null}
-
 
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden>
         <img
@@ -175,7 +222,13 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
           className="h-full w-full scale-110 object-cover opacity-35 blur-3xl"
           referrerPolicy="no-referrer"
         />
-        <div className={usesPosterArtFrame ? "absolute inset-0 bg-white/80" : "absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.16),_rgba(10,10,10,0.24)_30%,_rgba(10,10,10,0.82)_100%)]"} />
+        <div
+          className={
+            usesPosterArtFrame
+              ? "absolute inset-0 bg-white/80"
+              : "absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.16),_rgba(10,10,10,0.24)_30%,_rgba(10,10,10,0.82)_100%)]"
+          }
+        />
       </div>
 
       <main className="relative z-0 flex min-h-0 flex-1 flex-col">

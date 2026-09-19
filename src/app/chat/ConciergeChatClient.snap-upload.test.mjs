@@ -31,20 +31,20 @@ test("chat snap upload exposes retry controls on failure", () => {
   assert.match(source, /failedSnapUpload/);
 });
 
-test("chat upload queues the picked file before product selection", () => {
+test("chat upload waits for Send and carries the chosen format and user notes", () => {
   const source = readSource("src/app/chat/ConciergeChatClient.tsx");
 
   assert.match(source, /type PendingChatUpload/);
-  assert.match(source, /type PendingUploadComposerSubmission/);
-  assert.match(source, /isUploadStarterTile\(selectedStarterCategory\)/);
-  assert.match(source, /setPendingUploadSubmission\(\{/);
+  assert.doesNotMatch(source, /PendingUploadComposerSubmission|isUploadStarterTile|selectedStarterCategory/);
   assert.match(source, /setPendingChatUpload\(\{ file, source \}\)/);
-  assert.match(source, /pendingChatUpload && selectedProductOutput/);
+  assert.match(source, /if \(pendingChatUpload\) \{\s*if \(!canAttachFlyer\) return;\s*const upload = pendingChatUpload;/);
   assert.match(
     source,
-    /routeSelectedSnapFile\(upload\.file, upload\.source, selectedProductOutput, typedValue\)/,
+    /routeSelectedSnapFile\(upload\.file, upload\.source, selectedProductOutput \|\| undefined, typedValue, typedValue \|\| undefined\)/,
   );
   assert.match(source, /openSnapUploadPicker\(\)/);
+  assert.match(source, /ref=\{fileInputRef\}[\s\S]{0,140}type="file"[\s\S]{0,140}getUploadAcceptAttribute\("attachment"\)/);
+  assert.match(source, /handleSelectedSnapFile\(event\.currentTarget\.files\?\.\[0\], "upload"\)/);
   assert.match(source, /label=\{pendingChatUpload.file.name\}/);
   assert.match(source, /`\$\{userEchoOverride\.trim\(\)\} - Uploaded 1 file`/);
   assert.match(source, /User note: \$\{uploadPrompt\.trim\(\)\}/);
@@ -76,15 +76,15 @@ test("date confirmation replies bypass streaming and object errors are normalize
   assert.doesNotMatch(source, /throw new Error\(payload\?\.error \|\| "Concierge request failed\."\)/);
 });
 
-test("chat live-card uploads can drive the preview image", () => {
+test("chat live-card and event-page uploads can drive the preview image", () => {
   const source = readSource("src/app/chat/ConciergeChatClient.tsx");
 
   assert.match(source, /createObjectUrlPreview\(file\)/);
   assert.match(source, /setUploadedPreviewImageUrl\(uploadPreviewUrl\)/);
   assert.match(
     source,
-    /effectiveSelectedProductOutput === "live_card" \? uploadedPreviewImageUrl : null/,
+    /canUploadFlyerToOutput\(effectiveSelectedProductOutput\) \? uploadedPreviewImageUrl : null/,
   );
-  assert.match(source, /uploadedLiveCardSourceImageUrl/);
+  assert.match(source, /uploadedFlyerSourceImageUrl/);
   assert.match(source, /sourceImageUrl,\s*\}\)/);
 });

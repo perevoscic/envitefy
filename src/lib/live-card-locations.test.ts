@@ -15,10 +15,14 @@ test("buildLiveCardLocationActions extracts a primary venue and a lunch destinat
   });
 
   assert.equal(actions.length, 2);
-  assert.deepEqual(actions.map((action) => action.label), [
-    "AMC Boulevard 10",
-    "Pazzo Santa Rosa Beach",
-  ]);
+  assert.deepEqual(
+    actions.map((action) => action.label),
+    ["Movie at AMC Boulevard 10", "Lunch at Pazzo Santa Rosa Beach"],
+  );
+  assert.deepEqual(
+    actions.map((action) => action.shortName),
+    ["AMC", "Pazzo"],
+  );
   assert.equal(actions[0]?.source, "primary");
   assert.equal(actions[1]?.source, "details");
   assert.equal(actions[0]?.mapQuery, "AMC Boulevard 10, 465 Grand Boulevard, Miramar Beach, FL");
@@ -26,7 +30,7 @@ test("buildLiveCardLocationActions extracts a primary venue and a lunch destinat
     getLiveCardPrimaryLocationLabel({
       location: "AMC Boulevard 10 465 Grand Boulevard, Miramar Beach, FL",
     }),
-    "AMC Boulevard 10",
+    "Movie at AMC Boulevard 10",
   );
 });
 
@@ -58,7 +62,7 @@ test("buildLiveCardLocationActions dedupes detail destinations that repeat the p
   });
 
   assert.equal(actions.length, 1);
-  assert.equal(actions[0]?.label, "AMC Boulevard 10");
+  assert.equal(actions[0]?.label, "Movie at AMC Boulevard 10");
 });
 
 test("buildLiveCardLocationActions ignores generic detail destinations", () => {
@@ -68,7 +72,30 @@ test("buildLiveCardLocationActions ignores generic detail destinations", () => {
   });
 
   assert.equal(actions.length, 1);
-  assert.equal(actions[0]?.label, "AMC Boulevard 10");
+  assert.equal(actions[0]?.label, "Movie at AMC Boulevard 10");
+});
+
+test("buildLiveCardLocationActions titles a movie venue and a dinner stop", () => {
+  const actions = buildLiveCardLocationActions({
+    venueName: "AMC Grand Blvd",
+    location: "AMC Grand Blvd, Miramar Beach, FL",
+    additionalLocations: [
+      {
+        label: "Dinner",
+        venue: "Pazzo",
+        location: "Santa Rosa Beach, FL",
+      },
+    ],
+  });
+
+  assert.deepEqual(
+    actions.map((action) => action.label),
+    ["Movie at AMC Grand Blvd", "Dinner at Pazzo SRB"],
+  );
+  assert.deepEqual(
+    actions.map((action) => action.shortName),
+    ["AMC", "Pazzo"],
+  );
 });
 
 test("buildLiveCardDirectionsHref builds a preferred directions URL", () => {

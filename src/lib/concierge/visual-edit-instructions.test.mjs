@@ -9,6 +9,17 @@ import { extractVisualDirection, hasVisualChangeWords, normalizeArtworkEditLangu
 const correction = "NO band memebrer, maket erhe text to bu cursvie in Livia is trunin 10";
 const base = () => fallbackExtractConciergeDraft({ message: "Create a birthday live card for Livia turning 10 on September 26 2099 at 3pm at AMC Grand Boulevard. Use a Katseye and NeeDoh studio theme. No RSVP." });
 
+test("likes-and-design wording is captured as visual direction instead of ignored", () => {
+  const message = "she likes light purple, and a design wht birthday ballons and atmosphere";
+  assert.match(extractVisualDirection(message), /light purple/i);
+  assert.match(extractVisualDirection(message), /ballons/i);
+  const draft = fallbackExtractConciergeDraft({
+    message: `Birthday live card for Livia turning 10 on September 26 2099 at 3pm at AMC Grand Boulevard. ${message}`,
+  });
+  assert.match(draft.theme || "", /light purple/i);
+  assert.match(draft.theme || "", /ballons/i);
+});
+
 test("the reported correction preserves the subject exclusion and cursive instruction despite typos", () => {
   const before = base();
   const after = fallbackExtractConciergeDraft({ message: correction, draft: before });

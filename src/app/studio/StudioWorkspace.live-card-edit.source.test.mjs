@@ -184,9 +184,12 @@ test("live card modal hides preview-only image edit and design controls without 
   assert.match(surfaceSource, /data-live-card-trigger/);
   assert.match(
     surfaceSource,
-    /import \{ getLiveCardRailLayout \} from "@\/lib\/live-card-rail-layout";/,
+    /import \{ getLiveCardPanelAlignment, getLiveCardRailLayout \} from "@\/lib\/live-card-rail-layout";/,
   );
   assert.match(surfaceSource, /const showcaseRailLayout = getLiveCardRailLayout\(\{/);
+  assert.match(surfaceSource, /const panelAlignment = getLiveCardPanelAlignment\(\{/);
+  assert.match(surfaceSource, /data-live-card-panel-align=\{panelAlignment\}/);
+  assert.match(surfaceSource, /self-end/);
   assert.match(surfaceSource, /data-live-card-rail-layout=\{showcaseRailLayout\}/);
   assert.doesNotMatch(surfaceSource, /inline-flex w-fit max-w-\[calc\(100%-0\.25rem\)\]/);
   assert.doesNotMatch(surfaceSource, /justify-between gap-0/);

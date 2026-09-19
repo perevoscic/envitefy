@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 import ts from "typescript";
+import { signupFormHandoff } from "./signup-handoff.ts";
 
 const routes = [
   "src/app/api/creation/intake/route.ts",
@@ -22,10 +23,12 @@ function loadRoute(path) {
     "next-auth": { getServerSession: async () => ({ user: { id: "offline-owner" } }) },
     "@/lib/auth": { authOptions: {}, resolveSessionUserId: async () => "offline-owner" },
     "@/lib/concierge/api-errors": { conciergeApiErrorMessage: (_error, fallback) => fallback },
+    "@/lib/concierge/signup-handoff": { signupFormHandoff },
     "@/lib/concierge/generated-preview": { parseCreationGeneratedPreview: () => null },
     "@/lib/concierge/fallback": { buildAssistantMessage: record("fallback", "In this chat.") },
     "@/lib/concierge/copy-workflow": { nextPendingReply: () => null },
     "@/lib/concierge/intake": {
+      creationSignupHandoff: () => null,
       handleCreationIntake: record("intake", { ok: true }),
       resolveCreationIntakeDraft: record("extract", { draft: {} }),
       finalizeCreationIntake: record("persist", { ok: true }),

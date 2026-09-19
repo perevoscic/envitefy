@@ -393,7 +393,8 @@ function buildOccasionThemeGuardrails(event: StudioEventDetails, artworkOnly = f
       "- For birthdays, make the theme read as a birthday party with birthday decor and celebration cues. Example: Jurassic Park should become a Jurassic Park birthday party, not just jungle foliage and dinosaurs.",
       "- When appropriate, themeStyle should name the celebration version of the concept, such as Jurassic birthday adventure instead of only jungle dinosaurs.",
       "- When Honoree Name or Age or Milestone is provided, let those details shape the concept so the result feels like that person's party rather than a generic themed scene.",
-      "- If the venue wording implies a venue type such as a theater, arcade, park, restaurant, or backyard, reflect that venue context in the celebration scene without inventing branded signage or unsupported venue features.",
+      "- If the user specified a visual design, palette, balloons, or atmosphere, that is the artwork scene. Venue, movie title, restaurant, and itinerary are guest facts, not the picture unless the user asked to show that place.",
+      "- Only use venue type as the setting when the user did not give a visual design. Do not invent branded signage or unsupported venue features.",
     ];
   }
 

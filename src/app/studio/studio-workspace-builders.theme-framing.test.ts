@@ -13,6 +13,8 @@ test("studio builders frame birthday themes as birthday-party concepts", () => {
   assert.match(source, /Interpret the user's theme words as a birthday-party version of that idea/);
   assert.match(source, /Jurassic Park birthday party/);
   assert.match(source, /balloons, cake, candles, wrapped gifts, themed desserts/);
+  assert.match(source, /follow that design instead of painting the venue, movie, or restaurant as the scene/);
+  assert.match(source, /Venue, movie title, restaurant, and itinerary are guest facts for the card details/);
   assert.match(
     source,
     /Apply the Design Idea to artwork, palette, composition, mood, and themeStyle while still expressing the selected category clearly\./,

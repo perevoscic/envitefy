@@ -77,5 +77,8 @@ test("active chat composer omits preview promotion and persistent product choice
   const composer = client.slice(client.indexOf("const composer ="), client.indexOf("const readyActions ="));
   assert.match(composer, /\{isEmptyState \? \(\s*<div\s*role="group"\s*aria-label="Choose product format"/);
   assert.doesNotMatch(client, /Generate draft preview|Review the design first|shouldShowReadyActions/);
-  assert.match(client, /canGenerateProduct && draft && isGenerateConfirmationMessage\(value\)/);
+  assert.match(
+    client,
+    /canGenerateProduct &&[\s\S]*?draft &&[\s\S]*?currentQuestion !== "date_confirmation"[\s\S]*?isGenerateConfirmationMessage\(value\)/,
+  );
 });

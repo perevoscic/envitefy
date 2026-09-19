@@ -916,6 +916,16 @@ export function deriveCreationStatus(args: {
   }
   const canPersist = canPersistCreationDraft(args);
   const hasMeaningfulContext = canPersist;
+  const identityDescriptions = [args.eventPurpose, args.title]
+    .map(cleanCreationString)
+    .filter((value): value is string => Boolean(value));
+  const needsOccasionClarification =
+    args.eventType === "unknown" &&
+    !args.sourceContext.hasUsableContext &&
+    args.sourceContext.detectedSourceIntent !== "received_invite" &&
+    identityDescriptions.every((value) =>
+      /^(?:(?:please|can|could|would|you|i|we|need|want|like|to|make|create|build|design|generate|write|a|an|the|my|our|this|for|event|invitation|invite|flyer|live|card|page|shower|draft)\b[\s.,!?]*)+$/i.test(value),
+    );
   const missingFields: string[] = [];
   const plan = getRequirementPlan({
     eventType: args.eventType,
@@ -933,7 +943,7 @@ export function deriveCreationStatus(args: {
     };
   }
 
-  if (!hasMeaningfulContext) {
+  if (!hasMeaningfulContext || needsOccasionClarification) {
     missingFields.push("eventPurpose");
     return {
       draftStatus: args.requestedOutputs.length ? "needs_event_details" : "needs_source_or_event",

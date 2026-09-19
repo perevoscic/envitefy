@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 import ts from "typescript";
+import * as signupHandoff from "./signup-handoff.ts";
 import { parseCreationGeneratedPreview } from "./generated-preview.ts";
 import { persistDraftPreview } from "../../app/chat/draft-preview-storage.ts";
 
@@ -74,6 +75,7 @@ function fixture() {
     "./fallback.ts": { repairMisparsedBirthdayDraft: (draft) => draft },
   });
   const intake = loadModule("./intake.ts", {
+    "./signup-handoff.ts": signupHandoff,
     "@/lib/dashboard-cache": {},
     "@/lib/public-asset-url": {},
     "@/lib/db": {},

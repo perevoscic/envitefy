@@ -64,6 +64,17 @@ test("headline and local calendar-date acknowledgments follow their real project
   assert.match((await faultyPersona(["I updated the date."], timeOnly, previous)).result.assistantMessage, /unchanged/);
 });
 
+test("garbled persona copy is replaced by the deterministic fallback", async () => {
+  const { result, deltas } = await faultyPersona(
+    ["I have4 guestsnotted as theplannning countdown in thedraftt. Whatdate is Liviaia's birthdayccelebration?"],
+    { ...BASE_DRAFT, honoreeName: "Livia" },
+  );
+  assert.equal(result.usedAi, false);
+  assert.equal(result.assistantMessage, "The details are in this chat.");
+  assert.match(deltas.join(""), /The details are in this chat/);
+  assert.doesNotMatch(deltas.join(""), /have4|Whatdate|plannning|Liviaia/);
+});
+
 test("an already supplied date is not requested again by the streamed persona", async () => {
   const draft = { ...BASE_DRAFT, dateText: "September 23, 2026", currentQuestion: "location" };
   const { result, deltas } = await faultyPersona(["What date should the event be?"], draft);

@@ -3,7 +3,7 @@ import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { conciergeApiErrorMessage } from "@/lib/concierge/api-errors";
 import { buildAssistantMessage } from "@/lib/concierge/fallback";
 import { nextPendingReply } from "@/lib/concierge/copy-workflow";
-import { finalizeCreationIntake, resolveCreationIntakeDraft } from "@/lib/concierge/intake";
+import { creationSignupHandoff, finalizeCreationIntake, resolveCreationIntakeDraft } from "@/lib/concierge/intake";
 import { streamConciergePersona } from "@/lib/concierge/persona";
 import type {
   ConciergeMessageResponse,
@@ -90,11 +90,27 @@ export async function POST(req: Request) {
 
         try {
           abortController.signal.throwIfAborted();
+          const handoff = creationSignupHandoff(request);
+          if (handoff) {
+            send("assistant_delta", { text: handoff.assistantMessage });
+            send("assistant_done", { assistantMessage: handoff.assistantMessage, usedAi: false });
+            send("state", handoff);
+            send("done", { ok: true });
+            return;
+          }
           const result = await resolveCreationIntakeDraft({
             request,
             timing,
           });
           abortController.signal.throwIfAborted();
+          const resolvedHandoff = "ok" in result ? result : creationSignupHandoff(request, result.draft);
+          if (resolvedHandoff) {
+            send("assistant_delta", { text: resolvedHandoff.assistantMessage });
+            send("assistant_done", { assistantMessage: resolvedHandoff.assistantMessage, usedAi: false });
+            send("state", resolvedHandoff);
+            send("done", { ok: true });
+            return;
+          }
           const responseDraft = result.draft;
           const fallbackMessage = buildAssistantMessage(responseDraft);
           const weatherContext = await timing.time("weather_context", () =>

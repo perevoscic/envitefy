@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 import LiveCardArtworkFrame from "@/components/studio/LiveCardArtworkFrame";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface, {
@@ -9,6 +9,7 @@ import StudioLiveCardActionSurface, {
 } from "@/components/studio/StudioLiveCardActionSurface";
 import type { StudioShowcasePreview } from "@/lib/studio/showcase-previews";
 import { resolveNativeShareData } from "@/utils/native-share";
+import styles from "./StudioShowcaseLiveCard.module.css";
 
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
@@ -27,6 +28,8 @@ type StudioShowcaseLiveCardProps = {
   activeTab?: LiveCardActiveTab;
   onActiveTabChange?: (tab: LiveCardActiveTab) => void;
   showcaseOverlay?: ReactNode;
+  actionsPlacement?: "auto" | "above" | "overlay";
+  fitToContainer?: boolean;
 };
 
 export default function StudioShowcaseLiveCard({
@@ -42,6 +45,8 @@ export default function StudioShowcaseLiveCard({
   activeTab,
   onActiveTabChange,
   showcaseOverlay,
+  actionsPlacement = "auto",
+  fitToContainer = false,
 }: StudioShowcaseLiveCardProps) {
   const [internalActiveTab, setInternalActiveTab] = useState<LiveCardActiveTab>(
     preview.initialActiveTab || "none",
@@ -138,64 +143,13 @@ export default function StudioShowcaseLiveCard({
     }
   };
 
-  return (
-    <div
-      className={cx(
-        usesPosterArtFrame ? "relative bg-transparent" : "relative rounded-[2.2rem] bg-neutral-950",
-        !usesPosterArtFrame && showcaseMode && "bg-transparent",
-        className,
-      )}
-    >
-      <LiveCardArtworkFrame imageUrl={preview.imageUrl} className={usesPosterArtFrame ? "aspect-[2/3] rounded-[1.5rem]" : "aspect-[9/16] rounded-[inherit]"}>
-      {canOptimizeImage ? (
-        <Image
-          src={preview.imageUrl}
-          alt={preview.title}
-          fill
-          loading={imageLoading}
-          fetchPriority={imageFetchPriority}
-          sizes={showcaseMode ? "300px" : "(min-width: 768px) 420px, 92vw"}
-          className={usesPosterArtFrame ? "object-contain object-center" : "object-cover object-center"}
-        />
-      ) : (
-        <img
-          src={preview.imageUrl}
-          alt={preview.title}
-          loading={imageLoading}
-          fetchPriority={imageFetchPriority}
-          decoding="async"
-          className={`absolute inset-0 h-full w-full ${usesPosterArtFrame ? "object-contain" : "object-cover"} object-center`}
-        />
-      )}
-      {!usesPosterArtFrame ? <div className="absolute inset-0 bg-black/20" /> : null}
-      <LiveCardHeroTextOverlay invitationData={preview.invitationData} />
-      {!usesPosterArtFrame ? <div
-        className={cx(
-          "absolute inset-0",
-          !usesPosterArtFrame && compactChrome &&
-            (showcaseMode ? "origin-bottom scale-y-[0.92]" : "origin-bottom scale-[0.88]"),
-          interactive ? "pointer-events-auto" : "pointer-events-none",
-        )}
-      >
-        <StudioLiveCardActionSurface
-          placement="overlay"
-          title={preview.title}
-          invitationData={preview.invitationData}
-          positions={preview.positions}
-          activeTab={resolvedActiveTab}
-          onActiveTabChange={handleActiveTabChange}
-          onShare={preview.sharePath ? handleShare : undefined}
-          shareUrl={shareUrl}
-          fallbackShareUrlToWindowLocation={false}
-          shareState={shareState}
-          showcaseMode={showcaseMode}
-          buttonChromeSize={buttonChromeSize}
-          previewMode={previewMode}
-        />
-      </div> : null}
-      </LiveCardArtworkFrame>
-      {usesPosterArtFrame ? <StudioLiveCardActionSurface
-        placement="below"
+  const placeActionsAbove = actionsPlacement === "above";
+  const placeActionsOverlay = actionsPlacement === "overlay";
+  const useOutsideActions = !placeActionsOverlay && (usesPosterArtFrame || placeActionsAbove);
+  const outsideActions = useOutsideActions ? (
+    <div className={cx("shrink-0", !interactive && "pointer-events-none")}>
+      <StudioLiveCardActionSurface
+        placement={placeActionsAbove ? "above" : "below"}
         title={preview.title}
         invitationData={preview.invitationData}
         activeTab={resolvedActiveTab}
@@ -207,7 +161,87 @@ export default function StudioShowcaseLiveCard({
         showcaseMode={showcaseMode}
         buttonChromeSize={buttonChromeSize}
         previewMode={previewMode}
-      /> : null}
+      />
+    </div>
+  ) : null;
+
+  return (
+    <div
+      className={cx(
+        usesPosterArtFrame ? "relative bg-transparent" : "relative rounded-[2.2rem] bg-neutral-950",
+        !usesPosterArtFrame && showcaseMode && "bg-transparent",
+        fitToContainer && "flex h-full min-h-0 flex-col gap-3 !bg-transparent",
+        className,
+      )}
+    >
+      {placeActionsAbove ? outsideActions : null}
+      <div
+        className={fitToContainer ? styles.artworkSlot : "rounded-[inherit]"}
+        style={{ "--live-card-aspect-ratio": usesPosterArtFrame ? 2 / 3 : 9 / 16 } as CSSProperties}
+      >
+        <LiveCardArtworkFrame
+          imageUrl={preview.imageUrl}
+          className={cx(
+            usesPosterArtFrame
+              ? "aspect-[2/3] rounded-[1.5rem]"
+              : "aspect-[9/16] rounded-[inherit]",
+            fitToContainer && styles.fittedArtwork,
+          )}
+        >
+          {canOptimizeImage ? (
+            <Image
+              src={preview.imageUrl}
+              alt={preview.title}
+              fill
+              loading={imageLoading}
+              fetchPriority={imageFetchPriority}
+              sizes={showcaseMode ? "300px" : "(min-width: 768px) 420px, 92vw"}
+              className={
+                usesPosterArtFrame ? "object-contain object-center" : "object-cover object-center"
+              }
+            />
+          ) : (
+            <img
+              src={preview.imageUrl}
+              alt={preview.title}
+              loading={imageLoading}
+              fetchPriority={imageFetchPriority}
+              decoding="async"
+              className={`absolute inset-0 h-full w-full ${usesPosterArtFrame ? "object-contain" : "object-cover"} object-center`}
+            />
+          )}
+          {!usesPosterArtFrame ? <div className="absolute inset-0 bg-black/20" /> : null}
+          <LiveCardHeroTextOverlay invitationData={preview.invitationData} />
+          {placeActionsOverlay || (!usesPosterArtFrame && !placeActionsAbove) ? (
+            <div
+              className={cx(
+                "absolute inset-0",
+                !usesPosterArtFrame &&
+                  compactChrome &&
+                  (showcaseMode ? "origin-bottom scale-y-[0.92]" : "origin-bottom scale-[0.88]"),
+                interactive ? "pointer-events-auto" : "pointer-events-none",
+              )}
+            >
+              <StudioLiveCardActionSurface
+                placement="overlay"
+                title={preview.title}
+                invitationData={preview.invitationData}
+                positions={preview.positions}
+                activeTab={resolvedActiveTab}
+                onActiveTabChange={handleActiveTabChange}
+                onShare={preview.sharePath ? handleShare : undefined}
+                shareUrl={shareUrl}
+                fallbackShareUrlToWindowLocation={false}
+                shareState={shareState}
+                showcaseMode={showcaseMode}
+          buttonChromeSize={buttonChromeSize}
+          previewMode={previewMode}
+        />
+            </div>
+          ) : null}
+        </LiveCardArtworkFrame>
+      </div>
+      {!placeActionsAbove ? outsideActions : null}
       {showcaseOverlay}
     </div>
   );

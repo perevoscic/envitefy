@@ -1,7 +1,8 @@
 import OpenAI from "openai";
+import { signupFormHandoff, signupSelectionHandoff } from "./signup-handoff.ts";
 import { CONCIERGE_CAPABILITIES, conciergeCapabilityAnswer, conciergeServiceFallback } from "./capabilities.ts";
 import { invitationCopyAnswer, requestsInvitationCopy } from "./copy-workflow.ts";
-import { buildPersonaTurnReceipt, createPersonaSentenceStream, guardPersonaSentence } from "./persona-contract.ts";
+import { buildPersonaTurnReceipt, createPersonaSentenceStream, guardPersonaSentence, looksGarbledPersonaCopy } from "./persona-contract.ts";
 import {
   openAiChatTemperatureParam,
   resolveConciergeOpenAiPersonaModel,
@@ -184,6 +185,8 @@ export async function streamConciergePersona(
   deps: PersonaDeps = {},
 ): Promise<StreamConciergePersonaResult> {
   params.signal?.throwIfAborted();
+  const handoff = signupFormHandoff(params.message) || signupSelectionHandoff(params.draft.requestedOutputs, params.draft.eventType);
+  if (handoff) return streamFallback(handoff, params.onDelta);
   if (shouldUseDeterministicFallback(params.draft, params.fallbackMessage)) {
     return streamFallback(params.fallbackMessage, params.onDelta);
   }
@@ -315,8 +318,8 @@ export async function streamConciergePersona(
 
     clearFirstOutputTimer();
     const assistantMessage = safeStream.finish().trim();
-    if (!assistantMessage) {
-      return { ...streamFallback(unavailableMessage, params.onDelta), unavailable: true };
+    if (!assistantMessage || looksGarbledPersonaCopy(assistantMessage, params.draft)) {
+      return streamFallback(fallbackMessage, params.onDelta);
     }
     if (copyAnswer) params.onDelta(`\n\n${copyAnswer}`);
     return {

@@ -4,6 +4,7 @@ import test from "node:test";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import ts from "typescript";
+import { SIGNUP_FORM_GALLERY_HREF, signupFormHandoff } from "../../lib/concierge/signup-handoff.ts";
 
 const source = fs.readFileSync(new URL("./ConciergeChatClient.tsx", import.meta.url), "utf8");
 const ast = ts.createSourceFile("chat.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -22,6 +23,7 @@ function load(name, scope) {
   return new Function(...Object.keys(scope), `${code}; return ${name};`)(...Object.values(scope));
 }
 const noop = () => {};
+const canUploadFlyerToOutput = load("canUploadFlyerToOutput", {});
 function harness(overrides = {}) {
   const state = {
     messages: [
@@ -45,15 +47,15 @@ function harness(overrides = {}) {
     isReadyProductDraft: (draft) => draft.ready,
     newMessage: (role, text) => ({ role, text, id: String(Math.random()) }),
     focusComposerAtEnd: noop, refocusComposerAfterResponse: noop,
-    messages: state.messages, phase: "collecting_details", selectedStarterCategory: null,
+    messages: state.messages, phase: "collecting_details",
     selectedProductOutput: "live_card", selectedSkinLabel: null,
-    starterSelectionLabel: () => null, categoryLabelForDraft: () => "wedding",
+    categoryLabelForDraft: () => "wedding",
     skinLabelForCategoryName: () => null, chatMessagesForPersistence: (messages) => messages,
     withConciergeTiming: (url) => url, CREATION_INTAKE_URL: "/intake",
     conciergeClientErrorMessage: (error) => String(error),
     ...overrides,
   };
-  for (const name of ["IsSending", "RestoringProgress", "IsStreamingAssistant", "IsUploading", "ChatUploadStage", "StreamingPreviewImage", "GenerationStage", "Error", "FailedRequest", "FailedSnapUpload", "Phase", "MobileView", "Messages", "SelectedStarterCategory", "Draft"]) {
+  for (const name of ["IsSending", "RestoringProgress", "IsStreamingAssistant", "IsUploading", "ChatUploadStage", "StreamingPreviewImage", "GenerationStage", "Error", "FailedRequest", "FailedSnapUpload", "Phase", "MobileView", "Messages", "Draft"]) {
     const key = name[0].toLowerCase() + name.slice(1);
     scope[`set${name}`] = (value) => { state[key] = typeof value === "function" ? value(state[key]) : value; };
   }
@@ -98,7 +100,7 @@ test("leaving the conversation during artwork generation ignores a late complete
   let completeGeneration;
   const h = harness({
     normalizeDraftProductOutputs: (draft) => draft,
-    uploadedLiveCardSourceImageUrl: async () => null,
+    uploadedFlyerSourceImageUrl: async () => null,
     generateStudioInviteForDraft: () => new Promise((resolve) => { completeGeneration = resolve; }),
   });
   const generation = load("generateProductForDraft", h.scope)(h.state.draft);
@@ -111,7 +113,7 @@ test("leaving the conversation during artwork generation ignores a late complete
   assert.equal(h.state.error, null);
 });
 
-function renderComposer({ busy = false, text = "" } = {}) {
+function renderComposer({ busy = false, text = "", output = null, upload = null } = {}) {
   const icon = (name) => (props) => React.createElement("svg", { ...props, "data-icon": name });
   const container = ({ children, className }) => React.createElement("div", { className }, children);
   return renderToStaticMarkup(load("composer", {
@@ -119,80 +121,263 @@ function renderComposer({ busy = false, text = "" } = {}) {
     isEmptyState: false, isCompactEmptyComposer: false, isBusy: busy,
     isUploading: false,
     isGeneratingCard: busy, isPublishingCard: false, canSubmitComposer: true,
+    canAttachFlyer: !busy && canUploadFlyerToOutput(output), canUploadFlyerToOutput,
+    selectedProductOutput: output, pendingChatUpload: upload, openSnapUploadPicker: noop,
     liveCardEventId: null, draft: {}, input: text, selectionPills: null, error: null,
     composerCardRef: { current: null }, fileInputRef: { current: null },
     handleSubmit: noop, handleSelectedSnapFile: noop, handleComposerValueChange: noop,
-    submitComposerInput: noop, handleStarterCategoryChoice: noop,
-    ChatCategoryMenu: ({ disabled }) => React.createElement("button", { disabled, "aria-label": "Choose event category" }, "+"),
+    submitComposerInput: noop,
     setIsComposerFocused: noop, getUploadAcceptAttribute: () => "image/*", busyLabel: "Generating invite",
     PromptInput: container, PromptInputActions: container, PromptInputAction: container,
     PromptInputTextarea: (props) => React.createElement("textarea", props),
-    ArrowUp: icon("send"), Loader2: icon("loading"),
+    ArrowUp: icon("send"), Loader2: icon("loading"), Plus: icon("upload"),
   }));
 }
 
-test("active chat offers categories beside Send without Cancel or voice input", () => {
+test("active chat offers Send without a category popup, Cancel, or voice input", () => {
   for (const text of ["", "More wedding details"]) {
     const html = renderComposer({ text });
-    assert.match(html, /aria-label="Choose event category"/);
+    assert.doesNotMatch(html, /Choose event category|Start an event|role="dialog"/);
     assert.match(html, /aria-label="Send"/);
     assert.doesNotMatch(html, /Cancel|voice input|dictation|microphone/);
   }
   const busy = renderComposer({ busy: true });
   assert.doesNotMatch(busy, /Cancel/);
-  assert.match(busy, /disabled="" aria-label="Choose event category"/);
   assert.match(busy, /disabled=""[^>]+aria-label="Send"/);
 });
 
-function categoryHarness({ active = false, thread = null, busy = false } = {}) {
-  const state = { input: "Livia, September 25", draft: active ? { title: "Livia's birthday" } : null, selected: null, resets: 0 };
+test("upload plus is active only for an explicitly selected Live Card or Event Page", () => {
+  for (const output of [null, "digital_flyer", "printable", "invitation", "signup_form", "live_card", "event_page"]) {
+    for (const busy of [false, true]) {
+      const html = renderComposer({ output, busy });
+      const button = html.match(/<button[^>]*aria-label="Upload your flyer"[^>]*>/)?.[0];
+      const fileInput = html.match(/<input[^>]*type="file"[^>]*>/)?.[0];
+      assert.ok(button);
+      assert.ok(fileInput);
+      const enabled = !busy && ["live_card", "event_page"].includes(output);
+      assert.equal(button.includes('disabled=""'), !enabled, `${output}, busy=${busy}`);
+      assert.equal(fileInput.includes('disabled=""'), !enabled);
+      assert.match(button, /aria-describedby="chat-upload-help"/);
+      assert.match(button, /size-11/);
+    }
+  }
+});
+
+test("opening and cancelling the picker preserves the attachment, notes, and retry state", () => {
+  for (const enabled of [false, true]) {
+    let clicks = 0;
+    const open = load("openSnapUploadPicker", {
+      canAttachFlyer: enabled, fileInputRef: { current: { click: () => { clicks += 1; } } },
+      setError: () => assert.fail("Opening the picker must not clear existing state"),
+    });
+    open();
+    assert.equal(clicks, Number(enabled));
+  }
+  const select = load("handleSelectedSnapFile", { canAttachFlyer: true });
+  select(null, "upload");
+});
+
+test("picking a valid flyer only stages it; invalid files preserve the existing attachment", () => {
+  const file = { name: "september-23.webp", type: "image/webp" };
+  const previous = { file: { name: "existing.webp" }, source: "upload" };
+  for (const enabled of [false, true]) {
+    for (const invalid of [false, true]) {
+      const state = { pending: previous, error: null, focused: false, input: "Keep September 23 at 3 PM" };
+      const select = load("handleSelectedSnapFile", {
+        canAttachFlyer: enabled, validateClientUploadFile: () => invalid ? "File too large" : null,
+        setError: value => { state.error = value; }, setFailedRequest: noop, setFailedSnapUpload: noop,
+        setPendingChatUpload: value => { state.pending = value; },
+        focusComposerAtEnd: () => { state.focused = true; },
+      });
+      select(file, "upload");
+      assert.deepEqual(state.pending, enabled && !invalid ? { file, source: "upload" } : previous);
+      assert.equal(state.error, enabled && invalid ? "File too large" : null);
+      assert.equal(state.focused, enabled && !invalid);
+      assert.equal(state.input, "Keep September 23 at 3 PM");
+    }
+  }
+});
+
+function submissionHarness(overrides = {}) {
+  const state = { input: "Create a birthday invitation for Livia on September 23", messages: [], sent: [], focused: false };
+  const unexpected = () => { throw new Error("Unexpected generation, save, upload, or edit"); };
   const scope = {
-    isBusy: busy, isEmptyState: !active, threadId: thread,
-    CELEBRATION_STARTER_TILES: [{ prompt: "Birthday", color: "text-pink-600" }],
-    pendingStarterCategoryRef: { current: null },
-    setSelectedStarterCategory: (tile) => { state.selected = tile; },
-    updateComposerSelection: noop, focusComposerAtEnd: noop,
-    resetConversation: () => { state.draft = null; state.input = ""; state.resets += 1; },
-    progress: { requestLeave: (callback) => { state.leave = callback; }, markSaved: noop, allowNavigation: (callback) => callback() },
-    router: { push: (href) => { state.href = href; }, replace: (href) => { state.href = href; } },
+    isBusy: false, input: state.input, signupFormHandoff, canAttachFlyer: true,
+    pendingChatUpload: null, selectedProductOutput: "live_card", selectedCategoryLabel: null,
+    draft: null, draftStudioInvite: null, liveCardEventId: null,
+    canSaveReceivedInvite: false, canGenerateProduct: false,
+    isGenerateConfirmationMessage: () => false, shouldRefocusComposerRef: { current: false },
+    setInput: value => { state.input = value; },
+    setMessages: update => { state.messages = update(state.messages); },
+    newMessage: (role, text) => ({ role, text }),
+    focusComposerAtEnd: () => { state.focused = true; },
+    sendToConcierge: async request => { state.sent.push(request); },
+    sendGeneratedDraftEdit: unexpected, sendGeneratedCardEdit: unexpected,
+    generateProductForDraft: unexpected, saveReceivedInviteDraft: unexpected,
+    routeSelectedSnapFile: unexpected, setDraft: unexpected, setPendingChatUpload: unexpected,
+    ...overrides,
   };
-  return { state, scope, choose: load("handleStarterCategoryChoice", scope) };
+  return { state, scope, submit: load("submitComposerInput", scope) };
 }
 
-const birthday = { label: "Birthdays", prompt: "Birthday", href: "/event/birthdays" };
-
-test("choosing a category before the first message preserves typed details", () => {
-  const h = categoryHarness();
-  h.choose(birthday);
-  assert.equal(h.state.input, "Livia, September 25");
-  assert.equal(h.state.selected.prompt, "Birthday");
-  assert.equal(h.state.resets, 0);
-  assert.equal(h.state.leave, undefined);
+test("Send forwards an attached flyer with its chosen output and the user's instructions", async () => {
+  const upload = { file: { name: "birthday.webp" }, source: "upload" };
+  const note = "Keep September 23 at 3 PM and the original artwork";
+  for (const output of ["live_card", "event_page"]) {
+    let attachment = upload;
+    const requests = [];
+    const h = submissionHarness({
+      input: note, pendingChatUpload: upload, selectedProductOutput: output,
+      setPendingChatUpload: value => { attachment = value; },
+      routeSelectedSnapFile: async (...args) => { requests.push(args); },
+    });
+    await h.submit();
+    assert.deepEqual(requests, [[upload.file, "upload", output, note, note]]);
+    assert.equal(attachment, null);
+    assert.equal(h.state.input, "");
+    assert.deepEqual(h.state.sent, []);
+  }
 });
 
-test("category changes in an active chat wait for the unsaved-progress decision", () => {
-  const h = categoryHarness({ active: true });
-  h.choose(birthday);
-  assert.equal(h.state.draft.title, "Livia's birthday");
-  assert.equal(h.state.resets, 0);
-  assert.equal(h.state.selected, null);
-  h.state.leave();
-  assert.equal(h.state.resets, 1);
-  assert.equal(h.state.selected.prompt, "Birthday");
+test("switching an attached flyer to an unsupported output blocks Send without losing the file or notes", async () => {
+  const upload = { file: { name: "birthday.webp" }, source: "upload" };
+  for (const output of [null, "digital_flyer"]) {
+    const h = submissionHarness({ pendingChatUpload: upload, selectedProductOutput: output, canAttachFlyer: false });
+    await h.submit();
+    assert.equal(h.state.input, h.scope.input);
+    assert.deepEqual(h.state.sent, []);
+    assert.equal(load("canSubmitComposer", {
+      input: h.scope.input, hasComposerSelection: Boolean(output), pendingChatUpload: upload, canAttachFlyer: false,
+    }), false);
+    assert.match(renderComposer({ output, upload }), /Select Live Card or Event Page to use this upload, or remove the file/);
+    await load("routeSelectedSnapFile", { selectedProductOutput: output, isBusy: false, canUploadFlyerToOutput })(upload.file, "upload");
+  }
 });
 
-test("a new category survives leaving a saved thread and signup navigation is guarded", () => {
-  const h = categoryHarness({ active: true, thread: "saved-thread" });
-  h.choose(birthday);
-  h.state.leave();
-  assert.equal(h.state.href, "/chat");
-  assert.equal(h.scope.pendingStarterCategoryRef.current.prompt, "Birthday");
-  const signup = categoryHarness({ active: true });
-  signup.choose({ label: "Sign-up Form", prompt: "Sign-up Form", href: "/signup-forms/templates" });
-  assert.equal(signup.state.href, undefined);
-  signup.state.leave();
-  assert.equal(signup.state.href, "/signup-forms/templates");
-  assert.equal(signup.state.resets, 0);
+test("upload retries retain the originally chosen output and instructions", async () => {
+  const file = { name: "september-23.webp", type: "image/webp" };
+  const requests = [];
+  const state = { messages: [], error: null, failed: null, failScan: true };
+  const scope = {
+    selectedProductOutput: "event_page", isBusy: false, canUploadFlyerToOutput,
+    conversationVersionRef: { current: 0 }, validateClientUploadFile: () => null,
+    setError: value => { state.error = value; }, setFailedRequest: noop,
+    setFailedSnapUpload: value => { state.failed = value; }, setIsUploading: noop,
+    uploadAbortRef: { current: null }, setChatUploadStage: noop,
+    createObjectUrlPreview: () => "blob:flyer", setUploadedPreviewImageUrl: noop,
+    setUploadedPreviewFileName: noop, uploadedFileLabel: file => file.name,
+    createClientAttemptId: () => "scan", newMessage: (role, text) => ({ id: text, role, text }),
+    setMessages: update => { state.messages = update(state.messages); }, reportClientLog: noop,
+    runSnapOcrUpload: async () => { if (state.failScan) throw new Error("Scan failed"); return {}; },
+    buildChatOcrContext: () => ({}), sendToConcierge: async request => { requests.push(request); return { ok: true, draft: {} }; },
+    normalizeDraftProductOutputs: draft => draft, isReadyProductDraft: () => false,
+    chatUploadFailureMessage: message => message, fileInputRef: { current: null },
+  };
+  const route = load("routeSelectedSnapFile", scope);
+  await route(file, "upload", "event_page", "Keep September 23 at 3 PM", "Use my flyer");
+  assert.deepEqual(state.failed, {
+    file, source: "upload", requestedOutput: "event_page", uploadPrompt: "Keep September 23 at 3 PM",
+    userEchoOverride: "Use my flyer", error: "Scan failed",
+  });
+  state.failScan = false;
+  await load("retryFailedSnapUpload", { failedSnapUpload: state.failed, isBusy: false, routeSelectedSnapFile: route })();
+  assert.equal(state.error, null);
+  assert.equal(state.failed, null);
+  assert.equal(requests.length, 1);
+  assert.deepEqual(requests[0].requestedOutputs, ["event_page"]);
+  assert.match(requests[0].message, /User note: Keep September 23 at 3 PM/);
+});
+
+test("Live Card and Event Page generation carry forward the supplied source artwork", async () => {
+  for (const output of ["live_card", "event_page", "digital_flyer"]) {
+    const saved = [];
+    const url = await load("uploadedFlyerSourceImageUrl", {
+      canUploadFlyerToOutput, effectiveSelectedProductOutput: output,
+      uploadedPreviewImageUrl: "blob:original-flyer", uploadedPreviewFileName: "my-flyer.webp",
+      persistImageMediaValue: async media => { saved.push(media); return "/media/original-flyer.webp"; },
+    })();
+    assert.equal(url, output === "digital_flyer" ? null : "/media/original-flyer.webp");
+    assert.deepEqual(saved, output === "digital_flyer" ? [] : [{ value: "blob:original-flyer", fileName: "my-flyer.webp" }]);
+  }
+});
+
+test("typed event requests reach inference with their output choice and no manual category", async () => {
+  const h = submissionHarness();
+  await h.submit();
+  assert.deepEqual(h.state.sent, [{
+    message: "Create a birthday invitation for Livia on September 23",
+    requestedOutputs: ["live_card"],
+  }]);
+  assert.equal(h.state.input, "");
+});
+
+test("sign-up inquiries hand off before upload, creation, saved-event edits, or artwork generation", async () => {
+  for (const active of [
+    {},
+    { draft: { title: "Livia's birthday", dateText: "September 23", requestedOutputs: ["live_card"] }, canGenerateProduct: true },
+    { draftStudioInvite: { imageUrl: "birthday.webp" } },
+    { liveCardEventId: "saved-event" },
+    { pendingChatUpload: { file: { name: "invitation.webp" }, source: "upload" } },
+  ]) {
+    const before = structuredClone(active);
+    const h = submissionHarness({ input: "Can you make a sign-up form for volunteers?", ...active });
+    await h.submit();
+    assert.deepEqual(active, before);
+    assert.deepEqual(h.state.sent, []);
+    assert.equal(h.state.messages.length, 2);
+    assert.equal(h.state.messages[0].role, "user");
+    assert.equal(h.state.messages[1].role, "assistant");
+    assert.ok(h.state.messages[1].text.includes(SIGNUP_FORM_GALLERY_HREF));
+    assert.equal(h.state.input, "");
+    assert.equal(h.state.focused, true);
+  }
+});
+
+test("signup gallery reply renders a real accessible link and protects unsaved work on navigation", () => {
+  let leave, destination, prevented = false;
+  const open = load("openSignupFormGallery", {
+    SIGNUP_FORM_GALLERY_HREF,
+    progress: { requestLeave: next => { leave = next; } },
+    router: { push: href => { destination = href; } },
+  });
+  const render = load("renderSignupGalleryLine", { React, SIGNUP_FORM_GALLERY_HREF });
+  const elements = render(signupFormHandoff("Where are the signup forms?"), open);
+  const html = renderToStaticMarkup(React.createElement(React.Fragment, null, elements));
+  assert.match(html, /href="\/signup-forms\/templates"/);
+  assert.match(html, />Browse sign-up templates<\/a>/);
+  const link = elements[1].props.children[0];
+  const event = { button: 0, preventDefault: () => { prevented = true; } };
+  link.props.onClick({ ...event, ctrlKey: true });
+  assert.equal(prevented, false);
+  assert.equal(leave, undefined);
+  link.props.onClick(event);
+  assert.equal(prevented, true);
+  assert.equal(destination, undefined);
+  leave();
+  assert.equal(destination, SIGNUP_FORM_GALLERY_HREF);
+});
+
+test("a gallery-only inquiry does not create progress to save, while real event work stays protected", () => {
+  const scope = {
+    draft: null, draftStudioInvite: null, input: "", selectedProductOutput: null,
+    pendingChatUpload: null, restoringProgress: false, liveCardEventId: null, isBusy: false,
+    signupFormHandoff, chatMessagesForPersistence: messages => messages,
+    useEventProgress: options => options,
+    messages: [{ role: "user", text: "Where are your signup forms?" }],
+  };
+  assert.equal(load("progress", scope).enabled, false);
+  assert.equal(load("progress", { ...scope, draft: { title: "September 23 birthday" } }).enabled, true);
+  assert.equal(load("progress", { ...scope, messages: [{ role: "user", text: "Livia's birthday is September 23" }] }).enabled, true);
+});
+
+test("sign-up gallery replies do not advertise Generate now for an existing ready draft", () => {
+  const scope = {
+    hasReadyDraftProduct: true, canGenerateProduct: true, isGeneratingCard: false,
+    draft: {}, getCreationReadiness: () => ({ canPublish: true }), failedRequest: null, failedSnapUpload: null,
+    SIGNUP_FORM_GALLERY_HREF, visibleMessages: [{ role: "assistant", text: signupFormHandoff("Create a signup sheet") }],
+  };
+  assert.equal(load("shouldShowGenerateReply", scope), false);
+  assert.equal(load("shouldShowGenerateReply", { ...scope, visibleMessages: [{ role: "assistant", text: "Ready to generate your birthday card." }] }), true);
 });
 
 test("Generate now starts generation for the current draft and respects readiness", () => {
@@ -221,7 +406,7 @@ function generationHarness(generate) {
     setPhase: value => { state.phase = value; },
     setMobileView: value => { state.view = value; state.views.push(value); },
     setGenerationStage: noop, setStreamingPreviewImage: noop,
-    uploadedLiveCardSourceImageUrl: async () => null,
+    uploadedFlyerSourceImageUrl: async () => null,
     generateStudioInviteForDraft: generate, effectiveSelectedProductLabel: "Live Card",
     newMessage: (role, text) => ({ role, text }), preloadGeneratedPreviewImage: async () => {},
     setDraft: noop, setDraftStudioInvite: noop, setGeneratedInviteImageUrl: noop,

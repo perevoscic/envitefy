@@ -736,22 +736,19 @@ test("baby shower event-page product prompt stays no-RSVP and guest-facing", () 
 
 test("baby shower details capture honoree instead of repeating shower question", () => {
   const first = fallbackExtractConciergeDraft({
-    message: "Create a Baby Shower Smart Sign-up Form.",
-    action: "starter_category",
-    starterCategory: "Baby Shower",
+    message: "Create a Baby Shower Event Page.",
   });
   const draft = fallbackExtractConciergeDraft({
     message:
-      "Mia baby shower on Sunday August 9 2026 at 1 PM at Greenhouse Cafe, 410 Palm Ave, Dallas, TX.",
+      "Mia baby shower on September 23, 2026 at 1 PM at Greenhouse Cafe, 410 Palm Ave, Dallas, TX.",
     draft: first,
-    starterCategory: "Baby Shower",
   });
   const assistant = buildAssistantMessage(draft);
 
   assert.equal(draft.eventType, "baby_shower");
   assert.equal(draft.honoreeName, "Mia");
   assert.equal(draft.title, "Mia's baby shower");
-  assert.equal(draft.currentQuestion, null);
+  assert.equal(draft.currentQuestion, "rsvpEnabled");
   assert.doesNotMatch(assistant, /Who are we celebrating/i);
   assert.doesNotMatch(assistant, /Baby Shower Mia/i);
 });
@@ -815,8 +812,8 @@ test("tentative location comments preserve the address and mark location flexibl
 test("skip gift link on non-gift products stays concise and dismissed", () => {
   let draft = fallbackExtractConciergeDraft({
     message:
-      "Taylor and Morgan gender reveal on Saturday September 12 2026 at 2 PM at Cedar Park Pavilion, Austin, TX.",
-    requestedOutputs: ["signup_form"],
+      "Create an event page for a watercolor workshop on September 23, 2026 at 2 PM at Cedar Park Pavilion, Austin, TX. No RSVP. Theme and tone: teal watercolor and welcoming.",
+    requestedOutputs: ["event_page"],
   });
 
   draft = fallbackExtractConciergeDraft({ message: "Skip gift link.", draft });
@@ -827,7 +824,7 @@ test("skip gift link on non-gift products stays concise and dismissed", () => {
   assert.equal(draft.giftPromptDismissed, true);
   assert.equal(skippedAgain.giftPromptDismissed, true);
   assert.match(firstSkip, /No gift link added/i);
-  assert.match(firstSkip, /smart sign-up form is ready/i);
+  assert.match(firstSkip, /event page is ready/i);
   assert.match(secondSkip, /Already skipped/i);
   assert.doesNotMatch(firstSkip, /Honoree:/i);
   assert.doesNotMatch(secondSkip, /Honoree:/i);
@@ -1166,6 +1163,24 @@ test("vibe replies do not satisfy missing honoree names", () => {
   assert.match(buildAssistantMessage(vibe), /Who is the birthday for/i);
 });
 
+test("compact Saturday-the-26th replies confirm the next matching calendar date", () => {
+  const first = fallbackExtractConciergeDraft({
+    message: "Birthday Live Card for Livia turning 10 at AMC Grand Boulevard. no rsvp",
+  });
+  const draft = fallbackExtractConciergeDraft({
+    message: "Sat26tth, 4 rsvps",
+    draft: first,
+  });
+
+  assert.equal(first.currentQuestion, "date");
+  assert.match(draft.dateText || "", /September 26th/);
+  assert.equal(draft.numberOfGuests, 4);
+  assert.equal(draft.rsvpEnabled, true);
+  assert.equal(draft.currentQuestion, "date_confirmation");
+  assert.match(buildAssistantMessage(draft), /did you mean September 26th, or another date/i);
+  assert.doesNotMatch(buildAssistantMessage(draft), /What date is Livia/i);
+});
+
 test("typo-like date replies are confirmed before moving to location", () => {
   const first = fallbackExtractConciergeDraft({
     message: "Birthday Live Card for Ava turning 7 with a lot of flower",
@@ -1418,7 +1433,7 @@ test("birthday live-card prompt aggregates inline name age venue and interests",
   assert.equal(draft.honoreeName, "Lara");
   assert.equal(draft.ageOrMilestone, "7");
   assert.equal(draft.title, "Lara is turning 7");
-  assert.match(draft.dateText || "", /may 23 at 2PM/i);
+  assert.match(draft.dateText || "", /may 23(?:rd)? at 2PM/i);
   assert.equal(draft.timeText, "2:00 PM");
   assert.equal(draft.location, "AMC theater in Grand Boulevard");
   assert.equal(draft.previewCopy.locationLine, "AMC theater in Grand Boulevard");
@@ -1696,12 +1711,14 @@ test("product and time corrections preserve the existing event title", () => {
   assert.match(buildAssistantMessage(draft), /7:00 PM/);
 
   let signup = fallbackExtractConciergeDraft({
-    message: "Neighborhood potluck on June 20 2026 at 5 PM at Community Center.",
+    message: "Neighborhood potluck on September 23, 2026 at 5 PM at Community Center.",
   });
+  const existingInvite = structuredClone(signup);
   signup = fallbackExtractConciergeDraft({ message: "Use a signup form.", draft: signup });
 
   assert.equal(signup.eventPurpose, "Neighborhood potluck");
-  assert.deepEqual(signup.requestedOutputs, ["signup_form"]);
+  assert.deepEqual(signup, existingInvite);
+  assert.ok(!signup.requestedOutputs.includes("signup_form"));
   assert.doesNotMatch(signup.title || "", /Use a signup form/i);
 });
 

@@ -1,9 +1,12 @@
 import type { ConciergeEventDraft } from "./types.ts";
+import { SIGNUP_FORM_GALLERY_HREF } from "./signup-handoff.ts";
 
 /** Contract for /chat's current creation path, not every specialized event builder. */
 export const CONCIERGE_CAPABILITIES = {
   workflow:
     "Generate draft preview creates artwork for review. It does not publish an event page. Publish is a separate action after review. A chat summary is not an interactive form.",
+  categoryRouting:
+    "Infer the event category from the user's description and use its relevant guidance. Ask a brief occasion question when ambiguous. There is no category chooser inside chat.",
   formats: {
     "Live card":
       "A visual invitation with event details, calendar/location actions and standard RSVP when enabled. A Live Card is not a Sign-up Form and cannot collect volunteer roles, item claims or time-slot bookings. Sign-up Forms use their separate builder.",
@@ -17,7 +20,7 @@ export const CONCIERGE_CAPABILITIES = {
   householdRsvp:
     "Separate adult/child counts exist in specialized Envitefy flows, but this chat cannot configure those fields. Choosing Event Page instead of Live Card does not enable them.",
   customForms:
-    "This chat cannot configure arbitrary RSVP questions, independent per-activity headcounts, an automatic waitlist or snack-claim slots. Smart sign-up is a separate builder for sign-up needs; it is not created merely by describing those needs in chat.",
+    `This chat cannot configure arbitrary RSVP questions, independent per-activity headcounts, an automatic waitlist or snack-claim slots. Sign-up forms use a separate builder. For sign-up form requests or questions, provide this gallery link and preserve the current event: ${SIGNUP_FORM_GALLERY_HREF}`,
   capacity:
     "The draft guest count is a planning figure, not an enforced capacity limit or automatic waitlist.",
   privacy:
@@ -36,7 +39,7 @@ export function conciergeCapabilityAnswer(message: string): string | null {
   const answers: string[] = [];
   if (/\blive[ -]?card\b/i.test(message) && /\bsign[ -]?up\s+(?:form|sheet)\b/i.test(message)) {
     answers.push(
-      "A Live Card is an invitation with event details and optional RSVP; it is not a Sign-up Form. For volunteer roles, items or time slots, use the separate Sign-up Form builder.",
+      `A Live Card is an invitation with event details and optional RSVP; it is not a Sign-up Form. For volunteer roles, items or time slots, use the separate Sign-up Form builder: ${SIGNUP_FORM_GALLERY_HREF}`,
     );
   }
   if (/\bdownload(?:ed|able)?\b/i.test(message) && /\b(?:flyer|invitation|invite|image|artwork)\b/i.test(message)) {
@@ -86,7 +89,7 @@ export function conciergeCapabilityAnswer(message: string): string | null {
     /\b(?:pick|slot|select|coordinate|sign.?up)\b/i.test(message)
   ) {
     answers.push(
-      "For guests to claim specific snacks or slots, use the separate Smart sign-up builder. A snack note in this invitation will not create those controls.",
+      `For guests to claim specific snacks or slots, use the separate Smart sign-up builder: ${SIGNUP_FORM_GALLERY_HREF}. A snack note in this invitation will not create those controls.`,
     );
   }
   if (
