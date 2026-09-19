@@ -119,23 +119,11 @@ export function pickFirst(...values: Array<string | null | undefined>) {
   return "";
 }
 
-function toOrdinal(value: string): string {
-  const parsed = Number.parseInt(clean(value), 10);
-  if (!Number.isFinite(parsed)) return clean(value);
-  const mod100 = parsed % 100;
-  if (mod100 >= 11 && mod100 <= 13) return `${parsed}th`;
-  const mod10 = parsed % 10;
-  if (mod10 === 1) return `${parsed}st`;
-  if (mod10 === 2) return `${parsed}nd`;
-  if (mod10 === 3) return `${parsed}rd`;
-  return `${parsed}th`;
-}
-
 function buildBirthdayHeadline(details: EventDetails): string {
   const name = clean(details.name);
   const age = clean(details.age);
   if (name && /^\d+$/.test(age)) {
-    return `${name}'s ${toOrdinal(age)} Birthday`;
+    return `${name} ${/\s(?:and|&)\s/i.test(name) ? "are" : "is"} turning ${age}`;
   }
   if (name && age) {
     return `${name} Celebrates ${age}`;
@@ -639,7 +627,7 @@ export function buildStudioVisualDirection(details: EventDetails) {
     }
     if (eventDetails) {
       instructions.push(
-        "Use Event Details as the source for guest-facing specificity, invitation copy, and factual grounding. Do not let Design Idea-only nouns become visible copy.",
+        "Use Event Details for guest-action dialogs (Overview, Location, RSVP, Calendar). Do not paint when, where, movie, dinner, or venue facts as invitation copy on the artwork. Do not let Design Idea-only nouns become visible copy.",
       );
     }
   }
@@ -1072,7 +1060,7 @@ export function buildStudioRequest(
     ? `Selected image finish preset: ${imageFinishPreset.label}. Apply a ${imageFinishPreset.label} finish with ${imageFinishPreset.description}.`
     : "";
   const studioGuardrails =
-    "Preserve exact spelling from the approved event wording. Compose lettering, subjects, lighting and background together across the full canvas. Live-card actions overlay the bottom edge of the artwork; keep essential lettering and faces clear of them while continuing the scene behind the controls. Do not add a blank band or black footer. Respect the product contract for which wording belongs in the image. No faux buttons, interface elements, device frames, status bars, notches or phone chrome.";
+    "Preserve exact spelling from the approved event wording. Use normal English word spacing; never glue words together. Compose lettering, subjects, lighting and background together across the full canvas. Live-card actions overlay the bottom edge of the artwork; keep essential lettering and faces clear of them while continuing the scene behind the controls. Do not add a blank band or black footer. Live Card artwork may paint only the celebration title. When, where, movie, dinner, RSVP and calendar facts belong in the guest-action buttons, not in the raster. Do not paint RSVP, Overview, Location, Calendar, or Registry labels. No faux buttons, interface elements, device frames, status bars, notches or phone chrome.";
   return {
     mode,
     surface,

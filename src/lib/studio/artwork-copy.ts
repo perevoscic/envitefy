@@ -62,18 +62,31 @@ export function uniquePublicText(lines: Array<string | null | undefined>): strin
   });
 }
 
+function isBirthdayArtworkEvent(event: StudioEventDetails): boolean {
+  const category = event.category?.toLowerCase() || "";
+  return /\bbirthday/.test(category) && !/anniversary/i.test(event.semanticKind || "");
+}
+
+/** One celebration line for Live Card lettering, e.g. "Livia is turning 10". */
+export function liveCardCelebrationTitle(event: StudioEventDetails): string {
+  const title = event.title?.trim() || "";
+  const honoree = event.honoreeName?.trim() || "";
+  const milestone = event.ageOrMilestone?.trim() || "";
+  if (isBirthdayArtworkEvent(event) && honoree && /^\d+$/.test(milestone)) {
+    const celebration = `${honoree} ${/\s(?:and|&)\s/i.test(honoree) ? "are" : "is"} turning ${milestone}`;
+    if (!title) return celebration;
+    const lower = title.toLowerCase();
+    if (lower === honoree.toLowerCase()) return celebration;
+    if (lower.includes(honoree.toLowerCase()) && (lower.includes(milestone) || /\bturning\b/.test(lower))) {
+      return title;
+    }
+  }
+  return title;
+}
+
 export function artworkHeadlineBlocks(event: StudioEventDetails): string[] {
-  const blocks = [event.title];
-  if (event.honoreeName && !event.title.toLowerCase().includes(event.honoreeName.toLowerCase())) {
-    blocks.push(event.honoreeName);
-  }
-  const milestone = event.ageOrMilestone?.trim();
-  if (milestone && !event.title.toLowerCase().includes(milestone.toLowerCase())) {
-    blocks.push(/^\d+$/.test(milestone) && event.category?.toLowerCase() === "birthday" && !/anniversary/i.test(event.semanticKind || "")
-      ? `Turning ${milestone}!`
-      : milestone);
-  }
-  return blocks;
+  const title = liveCardCelebrationTitle(event);
+  return title ? [title] : [];
 }
 
 export function approvedArtworkText(event: StudioEventDetails, product: StudioProduct, copy: StudioLiveCardMetadata | null = null): string[] {

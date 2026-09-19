@@ -90,7 +90,7 @@ export function productContract(product: StudioProduct) {
     safeMargin: 72,
     imageText: "headline" as const,
     description:
-      "Live card: integrate the approved headline, names, supplied milestone and every explicitly required artwork line into the artwork. Use the entire canvas for composition. Interactive actions overlay the bottom edge of the artwork; continue the scene behind them, keeping essential lettering and faces above the controls. Do not add a blank band or black footer. Other dates, addresses, and logistics live in the detail panels unless explicitly included in the approved artwork lines.",
+      "Live card: paint only the approved celebration title (for example \"Livia is turning 10\") plus any explicitly required artwork lines. Use correct English word spacing; never glue words together. When, where, movie, dinner, RSVP and calendar facts belong in the guest-action buttons (RSVP, Overview, Location, Calendar, Registry), not in the raster. Do not paint those button labels. Interactive actions overlay the bottom edge of the artwork; continue the scene behind them, keeping essential lettering and faces above the controls. Do not add a blank band or black footer.",
   };
 }
 

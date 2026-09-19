@@ -1146,11 +1146,13 @@ function buildStudioDetailsFromDraft(draft: ConciergeEventDraft): EventDetails {
     specialInstructions: [
       skinInstruction,
       locationNarrative
-        ? `Preserve the full event flow in the generated live card and guest-facing details. ${locationNarrative}`
+        ? `Keep this event flow in Overview and Location button dialogs only; do not paint it on the artwork. ${locationNarrative}`
         : null,
       isEventPageProduct
         ? "Generate website hero/background artwork for the event page. Do not bake large title text, date/time, address, faux buttons, phone chrome, or website UI into the image because the event page renders real navigation, headings, schedule, location, RSVP form, calendar actions, and registry links in HTML."
-        : null,
+        : draft.requestedOutputs.includes("live_card")
+          ? "Live Card artwork may paint only the celebration title. Put when, where, movie, dinner, time, venue, RSVP and calendar facts in the guest-action buttons. Do not paint those facts or RSVP, Overview, Location, Calendar, or Registry labels. Use normal English word spacing; never glue words together."
+          : null,
     ]
       .filter(Boolean)
       .join(" "),

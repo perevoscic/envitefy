@@ -1250,7 +1250,8 @@ export function buildExistingInvitationImageEditPrompt(editInstruction?: string 
     "Preserve all unrelated approved visible text, numbers, punctuation, typography, photos, room/property images, layout, crop, perspective, lighting, colors, and spacing. Remove faux interface controls, device frames and forbidden footer strips even when already present. Preservation never overrides required wording, safety copy or the no-fake-controls rule.",
     "Use the full canvas for the requested composition. Keep essential lettering readable and inset from the edges; live-card action buttons overlay the bottom edge of the artwork. Continue the scene behind the controls without adding a blank band or black footer, and keep essential lettering and faces clear of them. Do not invent product packaging, taglines, or tiny decorative lettering; express themes through recognizable imagery. Preserve the original birthday wording unless its change was requested.",
     "If replacing text, use the requested replacement text exactly and do not convert month names to numeric date format.",
-    "Do not add new words, dates, facts, symbols, panels, footers, watermarks or QR codes unless the approved localized edit explicitly requests that wording. Never draw actionable interface elements, fake buttons, share or heart controls, device frames or footer controls.",
+    "Do not add new words, dates, venues, movie titles, dinner plans, facts, symbols, panels, footers, watermarks or QR codes unless the approved localized edit explicitly requests that wording. Never draw actionable interface elements, fake buttons, Overview, Location, RSVP, Calendar labels, share or heart controls, device frames or footer controls.",
+    "Use normal English word spacing. Never glue words together.",
   ].join("\n");
 }
 
@@ -1488,9 +1489,11 @@ export function buildInvitationImagePrompt(
             "- Treat existing raster typography and signage as locked: when repainting nearby pixels, keep text sharp, legible, and faithful to the source unless the edit explicitly targets that text.",
           ]
         : [
-            "- Only the approved subject/title is permitted as visible invitation text in page/live-card images; keep it sparse, readable, and intentionally designed.",
+            "- Only the approved celebration title is permitted as visible invitation text in page/live-card images; keep it sparse, readable, and intentionally designed.",
+            "- Use normal English word spacing and spelling. Never glue words together (never write Joinus, turningg10, Overerview, Locatortion, or Grandboulverad).",
             "- Do not scatter text across the entire card. Use a clear hierarchy in the upper and middle zones and keep the lower action-button zone free of visible wording.",
             "- Do not embed faux footer microtype, button labels, RSVP instructions, or UI-like labels anywhere in the image.",
+            "- Do not paint guest-action labels such as RSVP, Overview, Location, Calendar, Registry, or Add to calendar. The app renders those buttons.",
             "- For live-card images, reserve the entire lower button area for app controls: no property facts, agent names, prices, addresses, feature lists, contact details, or decorative labels may appear there.",
           ]
       : [

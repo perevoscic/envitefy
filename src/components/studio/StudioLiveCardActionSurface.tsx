@@ -42,6 +42,7 @@ import {
   parseLiveCardRsvpContact,
   shouldShowLiveCardDescriptionSection,
 } from "@/lib/live-card-rsvp";
+import { resolveLiveCardOverlayActions } from "@/lib/live-card-overlay-actions";
 import { isRsvpMailtoHref, openRsvpMailtoHref } from "@/utils/rsvp-mailto";
 
 export type LiveCardActiveTab =
@@ -407,10 +408,11 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   const directRsvpHref = normalizeLiveCardActionHref(details?.rsvpUrl);
   const directRsvpEventId = readString(details?.eventId);
   const hasDirectEnvitefyRsvp = Boolean(
-    (directRsvpEventId || props.previewMode && details?.rsvpEnabled === true) &&
+    (directRsvpEventId &&
       (details?.rsvpEnabled === true ||
         readString(details?.rsvpMode).toLowerCase() === "envitefy" ||
-        directRsvpHref),
+        directRsvpHref)) ||
+      (props.previewMode && categorySupportsRsvp && !openHouseAgentCard),
   );
   const [directRsvpChoice, setDirectRsvpChoice] = useState<LiveCardRsvpResponseKey | null>(null);
   const [directRsvpName, setDirectRsvpName] = useState("");
@@ -584,35 +586,46 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     }
   };
 
+  const overlayActionKeys = useMemo(
+    () =>
+      resolveLiveCardOverlayActions({
+        category: readString(details?.category),
+        openHouse: openHouseAgentCard,
+        hasLocation: locationActions.length > 0,
+        hasRegistry: Boolean(registryHref),
+        hasOpenHouseAgent: hasOpenHouseAgentInfo,
+        hasOpenHouseLogo: hasOpenHouseLogoInfo,
+      }),
+    [
+      details?.category,
+      hasOpenHouseAgentInfo,
+      hasOpenHouseLogoInfo,
+      locationActions.length,
+      openHouseAgentCard,
+      registryHref,
+    ],
+  );
+
   const buttonConfigs = useMemo(() => {
     const detailsButtonConfig = {
       key: "details" as const,
       label: openHouseAgentCard ? "Property" : "Overview",
       icon: openHouseAgentCard ? House : ClipboardList,
-      visible: Boolean(invitationData),
+      visible: overlayActionKeys.includes("details"),
       onClick: () => props.onActiveTabChange(props.activeTab === "details" ? "none" : "details"),
     };
     const rsvpButtonConfig = {
       key: "rsvp" as const,
       label: openHouseAgentCard ? "Realtor" : "RSVP",
       icon: openHouseAgentCard ? UserRound : MessageSquare,
-      visible:
-        (categorySupportsRsvp || Boolean(directRsvpHref) || hasDirectEnvitefyRsvp) &&
-        (openHouseAgentCard
-          ? hasOpenHouseAgentInfo
-          : Boolean(
-              readString(details?.rsvpName) ||
-                readString(details?.rsvpContact) ||
-                directRsvpHref ||
-                hasDirectEnvitefyRsvp,
-            )),
+      visible: overlayActionKeys.includes("rsvp"),
       onClick: () => props.onActiveTabChange(props.activeTab === "rsvp" ? "none" : "rsvp"),
     };
     const logoButtonConfig = {
       key: "logo" as const,
       label: "Logo",
       icon: ImageIcon,
-      visible: openHouseAgentCard && hasOpenHouseLogoInfo,
+      visible: overlayActionKeys.includes("logo"),
       onClick: () => props.onActiveTabChange(props.activeTab === "logo" ? "none" : "logo"),
     };
 
@@ -631,7 +644,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
         key: "location" as const,
         label: "Location",
         icon: MapPin,
-        visible: locationActions.length > 0,
+        visible: overlayActionKeys.includes("location"),
         onClick: () =>
           props.onActiveTabChange(props.activeTab === "location" ? "none" : "location"),
       },
@@ -639,14 +652,14 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
         key: "calendar" as const,
         label: calendar.label,
         icon: CalendarDays,
-        visible: Boolean(calendarLinks),
+        visible: overlayActionKeys.includes("calendar"),
         onClick: () => { props.onActiveTabChange("none"); calendar.open(); },
       },
       {
         key: "registry" as const,
         label: registryActionLabel,
         icon: Gift,
-        visible: Boolean(registryHref),
+        visible: overlayActionKeys.includes("registry"),
         onClick: () =>
           props.onActiveTabChange(props.activeTab === "registry" ? "none" : "registry"),
       },
@@ -657,20 +670,11 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     shareState,
     props.activeTab,
     props.onActiveTabChange,
-    calendarLinks,
     calendar.label,
     calendar.open,
-    categorySupportsRsvp,
-    details,
-    directRsvpHref,
-    hasDirectEnvitefyRsvp,
-    hasOpenHouseAgentInfo,
-    hasOpenHouseLogoInfo,
-    invitationData,
-    locationActions.length,
     openHouseAgentCard,
+    overlayActionKeys,
     registryActionLabel,
-    registryHref,
   ]);
 
   const isActionRailClosed = props.activeTab === "none";
