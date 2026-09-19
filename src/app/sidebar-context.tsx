@@ -69,13 +69,9 @@ function readStoredSidebarCollapsed() {
 function readInitialMobileSidebarCollapsed() {
   const stored = readStoredSidebarCollapsed();
   if (stored !== null) return stored;
-  if (typeof window === "undefined") return false;
-  const supportsMatchMedia = typeof window.matchMedia === "function";
-  const isTouch = supportsMatchMedia
-    ? window.matchMedia("(hover: none), (pointer: coarse)").matches
-    : false;
-  const isNarrow = supportsMatchMedia ? window.matchMedia("(max-width: 1023px)").matches : false;
-  return isTouch || isNarrow;
+  // This state is used only on mobile. A first desktop visit must not pre-open
+  // the mobile drawer when the viewport later narrows; desktop pin/peek is separate.
+  return true;
 }
 
 export const useSidebar = () => {

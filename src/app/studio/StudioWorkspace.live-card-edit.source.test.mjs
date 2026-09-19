@@ -114,7 +114,7 @@ test("live card existing-image detail edits pass previous details for surgical p
   );
   assert.match(
     builderSource,
-    /function buildExistingImageEditInstruction\(\s*details: EventDetails,\s*refinement: string,\s*previousDetails\?: EventDetails,/,
+    /function buildExistingImageEditInstruction\(\s*details: EventDetails,\s*product: StudioProduct,\s*refinement: string,\s*previousDetails\?: EventDetails,/,
   );
   assert.match(
     builderSource,

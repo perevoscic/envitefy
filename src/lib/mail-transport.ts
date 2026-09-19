@@ -1,4 +1,7 @@
 import nodemailer from "nodemailer";
+import { randomUUID } from "node:crypto";
+import { readFile, realpath, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 export type TransactionalEmail = {
   from: string;
@@ -8,6 +11,35 @@ export type TransactionalEmail = {
   html: string;
   replyTo?: string;
 };
+
+/** Explicit development-only campaign capture; never a delivery fallback. */
+async function captureCampaignEmail(message: TransactionalEmail): Promise<boolean> {
+  const mailDir = process.env.ENVITEFY_CAMPAIGN_MAIL_DIR;
+  if (!mailDir) return false;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Campaign email capture cannot run in production.");
+  }
+  const runtimeDir = process.env.ENVITEFY_CAMPAIGN_RUNTIME_DIR;
+  if (!runtimeDir) throw new Error("Campaign email capture requires its runtime directory.");
+  const campaignRoot = await realpath(path.join(process.cwd(), ".qa", "create-campaign"));
+  const runtimeRoot = await realpath(runtimeDir);
+  const resolvedMailDir = await realpath(mailDir);
+  const relativeRuntime = path.relative(campaignRoot, runtimeRoot);
+  if (!relativeRuntime || relativeRuntime.startsWith("..") || path.isAbsolute(relativeRuntime) || resolvedMailDir !== path.join(runtimeRoot, "mail")) {
+    throw new Error("Campaign email capture must stay inside its owned runtime directory.");
+  }
+  const marker: { kind?: string; runtimeDir?: string } = JSON.parse(
+    await readFile(path.join(runtimeRoot, ".campaign-runtime.json"), "utf8"),
+  );
+  if (marker.kind !== "envitefy-create-campaign" || marker.runtimeDir !== runtimeRoot) {
+    throw new Error("Campaign email capture requires a valid runtime marker.");
+  }
+  const transport = nodemailer.createTransport({ streamTransport: true, buffer: true, newline: "unix" });
+  const result = await transport.sendMail(message);
+  if (!Buffer.isBuffer(result.message)) throw new Error("Campaign mail capture requires a buffered message.");
+  await writeFile(path.join(resolvedMailDir, `${Date.now()}-${randomUUID()}.eml`), result.message, { mode: 0o600 });
+  return true;
+}
 
 export function zohoSmtpOptions() {
   const host = process.env.SMTP_HOST?.trim();
@@ -35,6 +67,7 @@ export function zohoSmtpOptions() {
 export async function sendTransactionalEmail(message: TransactionalEmail): Promise<void> {
   let stage = "configuration";
   try {
+    if (await captureCampaignEmail(message)) return;
     const transporter = nodemailer.createTransport(zohoSmtpOptions());
     stage = "delivery";
     const result: {

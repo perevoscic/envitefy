@@ -749,6 +749,22 @@ function chatMessagesFromSnapshots(
   return mapped;
 }
 
+function mergePendingMessagesIntoSnapshots(
+  snapshots: CreationChatMessageSnapshot[],
+  pendingMessages: ChatMessage[] = [],
+): ChatMessage[] {
+  const mapped = chatMessagesFromSnapshots(snapshots);
+  if (!pendingMessages.length) return mapped;
+  const seenIds = new Set(mapped.map((message) => message.id));
+  const seenBodies = new Set(mapped.map((message) => `${message.role}:${message.text.trim()}`));
+  const missingPendingMessages = pendingMessages.filter((message) => {
+    if (message.type === "upload_status" || !message.text.trim()) return false;
+    if (seenIds.has(message.id)) return false;
+    return !seenBodies.has(`${message.role}:${message.text.trim()}`);
+  });
+  return missingPendingMessages.length ? [...missingPendingMessages, ...mapped] : mapped;
+}
+
 function chatMessagesForPersistence(
   current: ChatMessage[],
   pending: ChatMessage[] = [],
@@ -1424,6 +1440,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const isChatAtBottomRef = useRef(true);
   const chatViewportSizeRef = useRef({ width: 0, height: 0 });
   const shouldRefocusComposerRef = useRef(false);
+<<<<<<< ours
+<<<<<<< ours
   const responseAbortRef = useRef<AbortController | null>(null);
   const uploadAbortRef = useRef<AbortController | null>(null);
   const conversationVersionRef = useRef(0);
@@ -1435,6 +1453,12 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     responseAbortRef.current = null;
   }, []);
   const unsentDraftId = useRef<string | null>(null);
+=======
+  const messagesRef = useRef<ChatMessage[]>([]);
+>>>>>>> theirs
+=======
+  const messagesRef = useRef<ChatMessage[]>([]);
+>>>>>>> theirs
   const [input, setInput] = useState("");
   const [selectedProductOutput, setSelectedProductOutput] = useState<RequestedOutput | null>(null);
   const [selectedStarterCategory, setSelectedStarterCategory] =
@@ -1472,6 +1496,10 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const [isReadyChatComposerOpen, setIsReadyChatComposerOpen] = useState(false);
   const scanStatusFromQuery = searchParams.get("scanStatus");
   const scanErrorFromQuery = searchParams.get("scanError");
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   useEffect(() => {
     if (!scanStatusFromQuery) return;
@@ -2427,7 +2455,15 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     starterCategory?: string | null;
     echo?: string;
     suppressUserEcho?: boolean;
+<<<<<<< ours
+<<<<<<< ours
     retryReply?: boolean;
+=======
+    pendingMessages?: ChatMessage[];
+>>>>>>> theirs
+=======
+    pendingMessages?: ChatMessage[];
+>>>>>>> theirs
   }): Promise<ConciergeStreamStatePayload | null> {
     const message = params.message.trim();
     if (!message && !params.ocrContext) return null;
@@ -2505,8 +2541,21 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         requestedOutputs,
         starterCategory: params.starterCategory || null,
         action,
+<<<<<<< ours
+<<<<<<< ours
         retryReply: params.retryReply === true,
         chatMessages: chatMessagesForPersistence(messages, userMessage ? [userMessage] : []),
+=======
+=======
+>>>>>>> theirs
+        chatMessages: chatMessagesForPersistence(messagesRef.current, [
+          ...(params.pendingMessages || []),
+          ...(userMessage ? [userMessage] : []),
+        ]),
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
       };
       const isExplicitProductChoice =
         Boolean(params.requestedOutputs?.length) &&
@@ -2595,7 +2644,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       notifyCreationThreadsChanged();
       const assistantMessage = newMessage("assistant", json.assistantMessage);
       if (json.chatMessages?.length) {
-        setMessages(chatMessagesFromSnapshots(json.chatMessages));
+        setMessages(mergePendingMessagesIntoSnapshots(json.chatMessages, params.pendingMessages));
       }
       if (isReadyProductDraft(json.draft)) {
         setIsReadyChatComposerOpen(false);
@@ -2771,6 +2820,12 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
 
     setInput("");
     shouldRefocusComposerRef.current = true;
+    if (pendingChatUpload && selectedProductOutput) {
+      const upload = pendingChatUpload;
+      setPendingChatUpload(null);
+      await routeSelectedSnapFile(upload.file, upload.source, selectedProductOutput, typedValue);
+      return;
+    }
     if (canSaveReceivedInvite && isGenerateConfirmationMessage(value)) {
       await saveReceivedInviteDraft();
       return;
@@ -2808,9 +2863,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     if (isBusy) return;
     setSelectedProductOutput(option.output);
     if (pendingChatUpload) {
-      const upload = pendingChatUpload;
-      setPendingChatUpload(null);
-      void routeSelectedSnapFile(upload.file, upload.source, option.output);
+      updateComposerSelection();
+      shouldRefocusComposerRef.current = true;
+      focusComposerAtEnd();
       return;
     }
     updateComposerSelection();
@@ -2885,8 +2940,16 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     file: File | null | undefined,
     source: "camera" | "upload",
     requestedOutputOverride?: RequestedOutput,
+<<<<<<< ours
+<<<<<<< ours
     uploadPrompt = "",
     userEchoOverride?: string,
+=======
+    uploadInstructions?: string,
+>>>>>>> theirs
+=======
+    uploadInstructions?: string,
+>>>>>>> theirs
   ) {
     if (!file || isBusy) return;
     const conversationVersion = conversationVersionRef.current;
@@ -2908,11 +2971,26 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setUploadedPreviewFileName(uploadPreviewUrl ? uploadedFileLabel(file) : null);
     const scanAttemptId = createClientAttemptId("scan");
     const uploadRequestedOutput = requestedOutputOverride || selectedProductOutput || "live_card";
+    const trimmedUploadInstructions = uploadInstructions?.trim();
+    const uploadUserMessage = newMessage(
+      "user",
+      trimmedUploadInstructions
+        ? `Uploaded 1 file\n\n${trimmedUploadInstructions}`
+        : "Uploaded 1 file",
+    );
     const statusMessage = newMessage("assistant", "Preparing upload...", "upload_status");
+<<<<<<< ours
+<<<<<<< ours
     const userEcho = userEchoOverride?.trim()
       ? `${userEchoOverride.trim()} - Uploaded 1 file`
       : "Uploaded 1 file";
     setMessages((prev) => [...prev, newMessage("user", userEcho), statusMessage]);
+=======
+    setMessages((prev) => [...prev, uploadUserMessage, statusMessage]);
+>>>>>>> theirs
+=======
+    setMessages((prev) => [...prev, uploadUserMessage, statusMessage]);
+>>>>>>> theirs
     const updateUploadStatus = (text: string) => {
       setMessages((prev) =>
         prev.map((message) => (message.id === statusMessage.id ? { ...message, text } : message)),
@@ -2944,11 +3022,24 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         ? `Create an event from this uploaded file. User note: ${uploadPrompt.trim()}`
         : "Create an event from this uploaded file.";
       const intakeResult = await sendToConcierge({
+<<<<<<< ours
+<<<<<<< ours
         message: uploadInstruction,
+=======
+        message: trimmedUploadInstructions
+          ? `Create an event from this uploaded file. User notes: ${trimmedUploadInstructions}`
+          : "Create an event from this uploaded file.",
+>>>>>>> theirs
+=======
+        message: trimmedUploadInstructions
+          ? `Create an event from this uploaded file. User notes: ${trimmedUploadInstructions}`
+          : "Create an event from this uploaded file.",
+>>>>>>> theirs
         action: "ocr_result",
         ocrContext: buildChatOcrContext(ocrResult, scanAttemptId),
         requestedOutputs: [uploadRequestedOutput],
         suppressUserEcho: true,
+        pendingMessages: [uploadUserMessage],
       });
       if (conversationVersion !== conversationVersionRef.current) return;
       if (!intakeResult?.ok) {
@@ -3063,6 +3154,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
           >
             {message.type === "upload_status" ? (
+<<<<<<< ours
               <div className="flex max-w-[94%] items-start gap-2 sm:max-w-[min(88%,48rem)]">
                 <ConciergeChatAvatar />
                 <div
@@ -3074,6 +3166,20 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                     <Loader2 className="size-4 animate-spin text-[#5c5be5]" aria-hidden="true" />
                     {message.text}
                   </span>
+=======
+              <div
+                className="flex max-w-[94%] items-start gap-2 sm:max-w-[88%]"
+                role="status"
+                aria-live="polite"
+              >
+                <ConciergeChatAvatar className="animate-pulse" />
+                <div className="inline-flex min-w-0 items-center gap-2 rounded-full border border-[#eadfff] bg-white/86 px-4 py-2 text-sm text-[#5f5289] shadow-sm">
+                  <Loader2 className="size-4 animate-spin text-[#5c5be5]" aria-hidden="true" />
+                  {message.text}
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
                 </div>
               </div>
             ) : message.role === "user" ? (

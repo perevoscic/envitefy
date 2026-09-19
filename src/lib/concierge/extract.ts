@@ -26,6 +26,7 @@ import {
   fallbackExtractConciergeDraft,
   parseChrono,
   rescueOcrDateRangeAndDoorsOpen,
+  synchronizeReturnStops,
 } from "./fallback.ts";
 import { updateConversationState } from "./conversation-state.ts";
 import { shouldSkipOpenAiForCreationRequest } from "./fast-paths.ts";
@@ -322,6 +323,12 @@ export function normalizeConciergeDraft(
     record.eventType ?? eventData.eventType ?? eventData.category,
     fallback.eventType,
   );
+  // A model citation of “not hosting a birthday” cannot override the explicit
+  // gymnastics occasion already resolved from the same user request.
+  if (
+    eventType === "birthday" && fallback.eventType === "gym_meet" &&
+    /\b(?:not|no|never)\s+(?:(?:hosting|planning|creating|having|a|an|the|another|new)\s+){0,4}(?:birthday|bday)\b/i.test(options.message || "")
+  ) eventType = fallback.eventType;
   const sourceRecord =
     record.sourceContext && typeof record.sourceContext === "object"
       ? (record.sourceContext as Record<string, unknown>)
@@ -360,7 +367,11 @@ export function normalizeConciergeDraft(
   const recoveredNameAndAge = !options.previousDraft?.titleConfirmed && !options.previousDraft?.honoreeName && /\b\d{1,3}\s+years?\s+old\b/i.test(options.previousDraft?.title || "")
     ? extractNamedAge(options.previousDraft?.title || "") : null;
   const sourceNameAndAge = statedNameAndAge || recoveredNameAndAge;
-  const preferUserSchedule = Boolean(statedNameAndAge || recoveredNameAndAge && hasExplicitEventSchedule(options.message || ""));
+  const explicitEndSchedule = options.previousDraft && options.message
+    ? parseChrono(options.message, options.previousDraft) : null;
+  const explicitEndCorrection = explicitEndSchedule?.endTimeCorrection || null;
+  const userSchedule = explicitEndCorrection && explicitEndSchedule ? explicitEndSchedule : fallback;
+  const preferUserSchedule = Boolean(explicitEndCorrection || statedNameAndAge || recoveredNameAndAge && hasExplicitEventSchedule(options.message || ""));
   const title = explicitTitle || (fallback.titleConfirmed || sourceNameAndAge || /\s(?:and|&)\s/.test(fallback.honoreeName || "") ? fallback.title : null)
     || sanitizeGuestTitle(firstDraftString(record.title, eventData.title, eventData.headlineTitle)) || sanitizeGuestTitle(fallback.title);
   if (
@@ -372,15 +383,15 @@ export function normalizeConciergeDraft(
   ) {
     eventType = "unknown";
   }
-  const dateText = preferUserSchedule ? fallback.dateText :
+  const dateText = preferUserSchedule ? userSchedule.dateText :
     sourceGroundedSchedule?.dateText ||
     firstDraftString(record.dateText, eventData.dateText, eventData.date) ||
     fallback.dateText;
-  const timeText = preferUserSchedule ? fallback.timeText :
+  const timeText = preferUserSchedule ? userSchedule.timeText :
     sourceGroundedSchedule?.timeText ||
     firstDraftString(record.timeText, eventData.timeText, eventData.time) ||
     fallback.timeText;
-  const startISO = preferUserSchedule ? fallback.startISO :
+  const startISO = preferUserSchedule ? userSchedule.startISO :
     sourceGroundedSchedule?.startISO ||
     validIsoOrNull(record.startISO) ||
     validIsoOrNull(record.startAt) ||
@@ -389,7 +400,7 @@ export function normalizeConciergeDraft(
     validIsoOrNull(eventData.startAt) ||
     validIsoOrNull(eventData.start) ||
     fallback.startISO;
-  const endISO = preferUserSchedule ? fallback.endISO :
+  const endISO = preferUserSchedule ? userSchedule.endISO :
     sourceGroundedSchedule?.endISO ||
     validIsoOrNull(record.endISO) ||
     validIsoOrNull(record.endAt) ||
@@ -403,7 +414,7 @@ export function normalizeConciergeDraft(
   const explicitLocation = extractExplicitEventLocation(options.message || "");
   const resolvedLocation = explicitLocation || location || fallback.location || venue || fallback.venue;
   const resolvedVenue = explicitLocation || venue || fallback.venue || location || fallback.location;
-  const additionalLocations = normalizeAdditionalLocations(
+  const additionalLocations = synchronizeReturnStops(normalizeAdditionalLocations(
     [
       record.additionalLocations,
       record.locations,
@@ -414,7 +425,7 @@ export function normalizeConciergeDraft(
       fallback.additionalLocations,
     ],
     { venue: resolvedVenue || null, location: resolvedLocation || null },
-  );
+  ), explicitEndCorrection);
   const honoreeName =
     pairedHonorees(explicitTitle || "") ||
     sourceNameAndAge?.name ||

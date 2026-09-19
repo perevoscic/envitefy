@@ -1,5 +1,6 @@
 import { attachCreationReadiness, getCreationReadiness } from "./readiness.ts";
 import * as chrono from "chrono-node";
+import { localClockToIso } from "../creation/calendar-validation.ts";
 import { extractExplicitEventLocation, extractExplicitEventTitle, extractExplicitRsvpEnabled, extractNamedAge, hasStalePreviewFacts, normalizeEventScheduleText, pairedHonorees, possessiveBirthdayMilestone } from "./conversation-edits.ts";
 import { extractRsvpContactDetails, RSVP_PHONE_PATTERN } from "./rsvp-details.ts";
 import { extractVisualDirection, stripArtworkPreservationInstructions } from "./visual-direction.ts";
@@ -324,6 +325,17 @@ function mergeStarterCategory(message: string, starterCategory?: string | null) 
 }
 
 function detectEventType(text: string, previous?: ConciergeEventDraft | null): ConciergeEventType {
+  // An explicit exclusion is not evidence for that occasion: a gymnast can say
+  // “not hosting a birthday” without turning the meet into a birthday draft.
+  text = text.replace(/\b(?:not|no|never)\s+(?:(?:hosting|planning|creating|having|a|an|the|another|new)\s+){0,4}(?:birthday|bday|wedding|baby\s+shower|bridal\s+shower|gender\s+reveal|graduation|gymnastics|football|game\s+day|watch\s+party)\b/gi, "");
+  if (
+    previous?.eventType && previous.eventType !== "unknown" &&
+    isLocationCorrectionMessage(text) &&
+    !/\b(?:event\s+(?:type|category)|(?:it['’]s|it\s+is|this\s+is|actually)\s+(?:a|an))\b/i.test(text)
+  ) {
+    // Venue names (for example “Wedding Hall”) describe the place, not a new event category.
+    return previous.eventType;
+  }
   if (
     firstMissingField(previous) === "tone" &&
     previous?.eventType &&
@@ -1073,11 +1085,48 @@ function withConversationState(
     if (provisional) { next.previewCopy = provisional; next.copyStatus = "provisional"; }
     else next.copyStatus = "needs_update";
   }
+  if (!draft.sourceContext.boundary || draft.sourceContext.boundary === "envitefy_question") {
+    const exactWording = explicitGuestWording(message, previous?.copyStatus === "ready" ? previous.previewCopy.body : null);
+    if (exactWording !== null) {
+      next.previewCopy = { ...next.previewCopy, body: exactWording };
+      next.copyStatus = "ready";
+    }
+  }
   const privateDraft = applyHostPrivacy(next, previous);
   if (privateDraft.hostBrief?.privacyPreferences?.some((note) => note.kind === "contact_private") && !privateDraft.sourceContext.boundary && privateDraft.currentQuestion !== "date_confirmation") {
     Object.assign(privateDraft, deriveCreationStatus({ ...privateDraft, tone: privateDraft.tone || privateDraft.theme }));
   }
   return attachCreationReadiness(privateDraft, previous, message);
+}
+
+function quotedGuestLine(text: string) {
+  const match = text.trimStart().match(/^["“‘']([\s\S]{1,500}?)["”’'](?=\s*(?:[.,;:!?]|$|and\b|with\b))/);
+  return match ? { value: match[1], remaining: text.trimStart().slice(match[0].length) } : null;
+}
+
+/** Explicitly supplied guest lines are approved copy, not disposable art direction. */
+function explicitGuestWording(message: string, approvedBody: string | null): string | null {
+  const replacement = message.match(/\b(?:replace|change)\s+(?:the\s+)?(?:exact\s+)?(?:line|phrase|wording)\s*/i);
+  if (replacement && approvedBody) {
+    const oldLine = quotedGuestLine(message.slice(replacement.index! + replacement[0].length));
+    const newLine = oldLine && quotedGuestLine(oldLine.remaining.replace(/^\s*(?:with|to)\s+/i, ""));
+    if (oldLine && newLine && approvedBody.includes(oldLine.value)) return approvedBody.replaceAll(oldLine.value, newLine.value);
+  }
+  const instruction = message.match(/\b(?:keep|use|include|print|preserve|add)\s+(?:(?:both|these|the|this|following|my|our)\s+)*(?:exact|verbatim)\s+(?:lines?|wording|copy|text|phrases?)\s*:?\s*/i);
+  if (!instruction) return null;
+  let remaining = message.slice(instruction.index! + instruction[0].length);
+  const lines: string[] = [];
+  for (let index = 0; index < 8; index += 1) {
+    const line = quotedGuestLine(remaining);
+    if (!line) break;
+    lines.push(line.value);
+    const separator = line.remaining.match(/^\s*(?:,\s*(?:and\s+)?|and\s+)(?=["“‘'])/i);
+    if (!separator) break;
+    remaining = line.remaining.slice(separator[0].length);
+  }
+  if (!lines.length) return null;
+  const existing = approvedBody || "";
+  return [existing, ...lines.filter((line) => !existing.includes(line))].filter(Boolean).join("\n\n");
 }
 
 function missingDetailForUser(field: string | null | undefined) {
@@ -1243,6 +1292,17 @@ function asksEnvitefyKnowledgeQuestion(message: string) {
   return /\b(envitefy|concierge|rsvp|live\s*card|event\s+page|flyer|invitation|invite|registry|gift\s*list|wishlist|smart\s+sign[-\s]?up|signup|upload|snap|ocr|my\s+events|invited\s+events|guest\s+page|public\s+event|calendar|passcode)\b/i.test(
     text,
   );
+}
+
+function asksAboutCurrentDraft(message: string) {
+  const text = cleanString(message) || "";
+  if (!/[?]$/.test(text) && !/^(?:what|how|can|could|does|do|is|are|will|would|where|why|should|tell me|explain)\b/i.test(text)) return false;
+  // A polite command still edits the event. In contrast, “If I edit it later,
+  // will it update?” asks about behavior and supplies no replacement fact.
+  const action = "(?:change|update|set|move|switch|replace|rename|remove|add|write|draft|translate|create|generate|design|publish|make|put|include|turn)";
+  if (new RegExp(`\\b(?:can|could|would|will)\\s+(?:you|we)\\s+(?:please\\s+)?${action}\\b`, "i").test(text)) return false;
+  if (new RegExp(`(?:^|[.!?;]\\s*|\\band\\s+)(?:please\\s+)?${action}\\b`, "i").test(text)) return false;
+  return true;
 }
 
 function isStatePreservingConversationMessage(
@@ -1582,6 +1642,9 @@ function stripLeadingTimeFromLocation(value: string | null) {
     /^\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+(?:at|@)\s+/i,
     "",
   ).replace(
+    /^(?:\d{1,2}:\d{2}\s*(?:a\.?m\.?|p\.?m\.?)?|\d{1,2}\s*(?:a\.?m\.?|p\.?m\.?))\s*,\s*(?!(?:not|instead|rather)\b)(?=[\p{L}\d])/iu,
+    "",
+  ).replace(
     /^\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+(?:on\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tomorrow)\s+(?:at|@)\s+/i,
     "",
   );
@@ -1599,6 +1662,11 @@ function stripLeadingTimeFromLocation(value: string | null) {
     )
     .replace(/\s+and\s+(?:save|add|keep)\s+(?:it|this|the\s+invite)?$/i, "");
   if (/^\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?$/i.test(withoutTrailingIntent)) {
+    return null;
+  }
+  // A clock correction or range after “at” supplies no place, even with an old time attached.
+  const clock = "\\d{1,2}(?::\\d{2})?\\s*(?:a\\.?m\\.?|p\\.?m\\.?)";
+  if (new RegExp(`^${clock}(?:\\s*[,–—-]?\\s*(?:not|instead\\s+of|rather\\s+than|to|until|[–—-])\\s*${clock})*[.!?]*$`, "i").test(withoutTrailingIntent)) {
     return null;
   }
   return cleanString(withoutTrailingIntent);
@@ -1663,7 +1731,21 @@ function detectLabeledInviteDetails(text: string): LabeledInviteDetails {
 }
 
 function isLocationCorrectionMessage(text: string) {
-  return Boolean(extractExplicitEventLocation(text)) || /\b(?:set|change|update|move|switch)\s+(?:the\s+)?(?:location|venue|place|address|where)\b/i.test(text) || /\bmove\s+it\s+(?:to|at|@)\b/i.test(text) || /\b(?:correction|actually|instead)\b[^.;]{0,40}\b(?:move|switch|change|update)\s+it\s+(?:to|at|@)\b/i.test(text);
+  return Boolean(extractExplicitEventLocation(text)) || /\b(?:set|change|update|move|switch)\s+(?:the\s+)?(?:location|venue|place|address|where)\b/i.test(text) || /\b(?:location|venue|place|address)\s+(?:should\s+be|is|will\s+be)\s+/i.test(text) || /\bmove\s+it\s+(?:to|at|@)\b/i.test(text) || /\b(?:correction|actually|instead)\b[^.;]{0,40}\b(?:move|switch|change|update)\s+it\s+(?:to|at|@)\b/i.test(text);
+}
+
+function cleanLocationCorrectionValue(value: string | undefined) {
+  if (!value) return null;
+  const corrected = value.split(/\s*,\s*(?:not|instead\s+of)\s+|[;!?\n]\s*|\s+(?:and\s+)?(?:keep|turn|disable|enable|set|change)\s+(?:the|online|rsvp|it)\b/i)[0]?.trim() || "";
+  // Commas belong to addresses. Sentence stops end the value, while St./Dr./Ave. remain intact.
+  let end = corrected.length;
+  for (const match of corrected.matchAll(/\.(?=\s|$)/g)) {
+    const precedingWord = corrected.slice(0, match.index).match(/\b([A-Za-z]+)$/)?.[1] || "";
+    if (/^(?:St|Ste|Dr|Mr|Mrs|Ms|Mt|Ave|Blvd|Rd|Ln|Ct|Apt|No)$/i.test(precedingWord) && match.index + 1 < corrected.length) continue;
+    end = match.index;
+    break;
+  }
+  return cleanString(corrected.slice(0, end)) || null;
 }
 
 function detectLocationCorrection(text: string) {
@@ -1673,7 +1755,7 @@ function detectLocationCorrection(text: string) {
   const cleaned = cleanString(text?.replace(/[.!?]+$/g, "")) || "";
   const direct = cleaned.match(/\b(?:set|change|update|move|switch)\s+(?:the\s+)?(?:location|venue|place|address|where)\s+(?:to|as)\s+(.+)/i)?.[1] || cleaned.match(/\b(?:location|venue|place|address)\s+(?:should\s+be|is|will\s+be)\s+(.+)/i)?.[1] || cleaned.match(/\b(?:move|switch|change|update)\s+it\s+(?:to|at|@)\s+(.+)/i)?.[1] ||
     cleaned.match(/\b(?:instead|actually)\s+(?:make\s+it\s+)?(?:at|@|to)\s+(.+)/i)?.[1];
-  const value = direct?.split(/[.;!?]\s*|\s+(?:and\s+)?(?:keep|turn|disable|enable|set|change)\s+(?:the|online|rsvp|it)\b/i)[0]?.trim();
+  const value = cleanLocationCorrectionValue(direct);
   // “Move it to Saturday at four” edits the schedule, even if another clause mentions the venue.
   const startsWithTime = value && chrono.parse(value, new Date(), { forwardDate: true })[0]?.index === 0;
   if (startsWithTime || /^(?:unchanged|the same|same as before)$/i.test(value || "")) return null;
@@ -1868,6 +1950,7 @@ function detectLocationFollowUp(text: string, previous?: ConciergeEventDraft | n
   if (/^(yes|no|ok|okay|thanks?|not sure)$/i.test(cleaned)) return null;
   if (/^(?:skip(?:\s+(?:it|gift\s+link|registry))?|no\s+(?:gift\s+link|registry|gifts(?:\s+please)?|thanks))$/i.test(cleaned)) return null;
   if (/^\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?$/i.test(cleaned)) return null;
+  if (/\b(?:starts?|ends?|begins?|returns?|finishes?)\s+(?:at\s+)?\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)\b/i.test(cleaned)) return null;
   if (requestsInvitationCopy(cleaned) || /^(?:(?:actually|please)\s*[,—-]?\s*)?(?:(?:the\s+)?(?:date|time|title|budget|RSVP|invitation|wording)\b|(?:change|move|switch|set|keep|turn|write|draft|translate)\b)/i.test(cleaned)) return null;
   const temporal = chrono.parse(cleaned)[0];
   if (temporal && /^(?:(?:it'?s|it is|on|at)\s+)?$/i.test(cleaned.slice(0, temporal.index).trim())
@@ -2007,7 +2090,114 @@ function combinePreviousDateWithParsedTime(args: {
   };
 }
 
-export function parseChrono(text: string, previous?: ConciergeEventDraft | null) {
+function parsedTimeRole(text: string, parsed: chrono.ParsedResult) {
+  const prefix = text.slice(0, parsed.index);
+  if (/\b(?:not|instead\s+of|rather\s+than)\s*$/i.test(prefix)) return "superseded";
+  if (/\b(?:ends?|ending|end\s+time|finish(?:es)?|finish\s+time|wraps?\s+up|returns?|return\s+time|gets?\s+back|back|pick[\s-]?up(?:\s+time)?)\s*(?:(?:is|at|to|will\s+be|should\s+be|for|by)\s*)?(?:around\s+)?$/i.test(prefix)) return "end";
+  return "start";
+}
+
+type EndTimeCorrection = { previousTimeText: string | null; timeText: string; returns: boolean };
+type ParsedEventSchedule = {
+  dateText: string | null;
+  timeText: string | null;
+  startISO: string | null;
+  endISO: string | null;
+  needsConfirmation: boolean;
+  endTimeCorrection?: EndTimeCorrection;
+};
+
+function clockMinutes(value: string) {
+  const clock = value.trim().match(/^(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?$/i);
+  if (!clock) return null;
+  return (Number(clock[1]) % 12 + (clock[3].toLowerCase() === "p" ? 12 : 0)) * 60 + Number(clock[2] || 0);
+}
+
+function synchronizeEndTimeLabel(value: string | null | undefined, correction: EndTimeCorrection, allowBare = false) {
+  if (!value) return value || null;
+  const clock = "\\d{1,2}(?::\\d{2})?\\s*(?:a\\.?m\\.?|p\\.?m\\.?)\\b";
+  const previousMinutes = correction.previousTimeText ? clockMinutes(correction.previousTimeText) : null;
+  const replace = (whole: string, prefix: string, oldTime: string) =>
+    previousMinutes === null || clockMinutes(oldTime) === previousMinutes ? `${prefix}${correction.timeText}` : whole;
+  let next = value.replace(new RegExp(`((?:\\d{1,2}(?::\\d{2})?\\s*(?:a\\.?m\\.?|p\\.?m\\.?)?)\\s*(?:[-–—]|to|until|through)\\s*)(${clock})`, "gi"), replace);
+  next = next.replace(new RegExp(`(\\b(?:ends?|finish(?:es)?|returns?|gets?\\s+back)\\s*(?:(?:at|by|is)\\s*)?)(${clock})`, "gi"), replace);
+  if (allowBare && clockMinutes(next) !== null && (previousMinutes === null || clockMinutes(next) === previousMinutes)) return correction.timeText;
+  return next;
+}
+
+export function synchronizeReturnStops(locations: ConciergeAdditionalLocation[], correction: EndTimeCorrection | null) {
+  if (!correction?.returns) return locations;
+  return locations.map((stop) => {
+    const returnLabel = /\b(?:return|returning|pickup|pick[- ]up)\b/i.test(stop.label || "");
+    const returnClock = /\b(?:returns?|gets?\s+back)\s*(?:at\s+|by\s+|is\s+)?\d/i.test(stop.timeText || "");
+    if (!returnLabel && !returnClock) return stop;
+    return {
+      ...stop,
+      timeText: synchronizeEndTimeLabel(stop.timeText, correction, returnLabel),
+      description: synchronizeEndTimeLabel(stop.description, correction),
+    };
+  });
+}
+
+/** An end/return reply supplies a boundary; it must not replace the event start. */
+function parseEndOnlySchedule(
+  text: string,
+  parsed: chrono.ParsedResult[],
+  previous?: ConciergeEventDraft | null,
+) {
+  const timed = parsed.filter((result) => result.start.isCertain("hour"));
+  const ending = timed.find((result) => parsedTimeRole(text, result) === "end");
+  if (!ending || timed.some((result) => parsedTimeRole(text, result) === "start")) return null;
+  const preserved = {
+    dateText: previous?.dateText || null,
+    timeText: previous?.timeText || null,
+    startISO: previous?.startISO || null,
+    endISO: previous?.endISO || null,
+    needsConfirmation: false,
+  };
+  if (!previous?.startISO || !Number.isFinite(Date.parse(previous.startISO))) return preserved;
+
+  try {
+    const timezone = previous.timezone || DEFAULT_TIMEZONE;
+    const calendarParts = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone, year: "numeric", month: "numeric", day: "numeric",
+    }).formatToParts(new Date(previous.startISO));
+    const calendarNumber = (type: "year" | "month" | "day") =>
+      Number(calendarParts.find((part) => part.type === type)?.value);
+    const hasCalendarDate = parsedHasCalendarDate(ending);
+    const rawHour = ending.start.get("hour") || 0;
+    const hour = shouldPreferPmForBareHour(ending.text, rawHour) ? rawHour + 12 : rawHour;
+    const clock = {
+      year: hasCalendarDate ? ending.start.get("year")! : calendarNumber("year"),
+      month: hasCalendarDate ? ending.start.get("month")! : calendarNumber("month"),
+      day: hasCalendarDate ? ending.start.get("day")! : calendarNumber("day"),
+      hour, minute: ending.start.get("minute") || 0,
+    };
+    const explicitOffset = ending.start.isCertain("timezoneOffset") ? ending.start.get("timezoneOffset") : null;
+    const endISO = explicitOffset === null
+      ? localClockToIso(clock, timezone)
+      : new Date(Date.UTC(clock.year, clock.month - 1, clock.day, clock.hour, clock.minute) - explicitOffset * 60000).toISOString();
+    if (!endISO || Date.parse(endISO) <= Date.parse(previous.startISO)) {
+      return { ...preserved, needsConfirmation: true };
+    }
+    const displayTime = new Intl.DateTimeFormat("en-US", { timeZone: timezone, hour: "numeric", minute: "2-digit" });
+    const previousEnd = new Date(previous.endISO || "");
+    const endTimeCorrection: EndTimeCorrection = {
+      previousTimeText: Number.isFinite(previousEnd.getTime()) ? displayTime.format(previousEnd) : null,
+      timeText: displayTime.format(new Date(endISO)),
+      returns: /\b(?:returns?|return\s+time|gets?\s+back|back)\s*(?:(?:is|at|to|will\s+be|should\s+be|for|by)\s*)?(?:around\s+)?$/i.test(text.slice(0, ending.index)),
+    };
+    return {
+      ...preserved, endISO, endTimeCorrection,
+      dateText: synchronizeEndTimeLabel(preserved.dateText, endTimeCorrection),
+      timeText: synchronizeEndTimeLabel(preserved.timeText, endTimeCorrection),
+    };
+  } catch {
+    return { ...preserved, needsConfirmation: true };
+  }
+}
+
+export function parseChrono(text: string, previous?: ConciergeEventDraft | null): ParsedEventSchedule {
   const cleaned = cleanString(text?.replace(/[.!?]+$/g, "")) || "";
   if (previous?.currentQuestion === "date_confirmation") {
     if (isDateConfirmationAffirmation(cleaned)) {
@@ -2038,6 +2228,8 @@ export function parseChrono(text: string, previous?: ConciergeEventDraft | null)
   const scheduleText = !/\b(?:starts?|begins?|happening|event is|party is)\s+now\b/i.test(eventScheduleText) && !/^\s*(?:right\s+)?now[.!?]?\s*$/i.test(eventScheduleText)
     ? eventScheduleText.replace(/\bnow\b/gi, "") : eventScheduleText;
   const parsed = chrono.parse(scheduleText, new Date(), { forwardDate: true });
+  const endOnlySchedule = parseEndOnlySchedule(scheduleText, parsed, previous);
+  if (endOnlySchedule) return endOnlySchedule;
   const first = parsed.find((result) => !result.tags().has("result/relativeDate")) || parsed[0];
   if (!first) {
     return {
@@ -2924,7 +3116,9 @@ export function fallbackExtractConciergeDraft(args: {
     }, previous, message);
   }
   const hasNewEventDetails = Boolean(explicitTitle || extractExplicitEventLocation(message) || pairedHonorees(message)) || extractExplicitRsvpEnabled(message) !== null || /\b(?:turning|turns|rsvp (?:by|deadline)|on (?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)|(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}|\d{1,2}:\d{2}|\d{1,2}\s*(?:am|pm))\b/i.test(message);
-  if (!hasNewEventDetails && !blockingBoundary && !privateDataMutationRequest && asksEnvitefyKnowledgeQuestion(message)) {
+  if (!hasNewEventDetails && !blockingBoundary && !privateDataMutationRequest && (
+    asksEnvitefyKnowledgeQuestion(message) || (previous && asksAboutCurrentDraft(message))
+  )) {
     const knowledgeAnswer = buildEnvitefyKnowledgeAnswer(message, previous);
     if (previous) {
       return withConversationState({
@@ -2957,7 +3151,11 @@ export function fallbackExtractConciergeDraft(args: {
   }
   const source: ConciergeSource =
     args.source || (args.ocrContext ? (message ? "mixed" : "upload") : previous?.source || "text");
-  const eventType = blocksCreation ? "unknown" : detectEventType(text, previous);
+  // A persistent picker label can be coarser than the actual event (Game Day includes football).
+  // Only a fresh selection may override known identity; subsequent messages supply their own facts.
+  const eventTypeText = previous?.eventType && previous.eventType !== "unknown" && args.action !== "starter_category"
+    ? detailText : text;
+  const eventType = blocksCreation ? "unknown" : detectEventType(eventTypeText, previous);
   const relationship = detectRelationship(text, previous);
   const fieldsGuess = args.ocrContext?.fieldsGuess || {};
   const rescuedOcrSchedule = rescueOcrDateRangeAndDoorsOpen(
@@ -3006,9 +3204,14 @@ export function fallbackExtractConciergeDraft(args: {
       previous?.location ||
       previous?.venue ||
       null;
-  const additionalLocations = shouldKeepPreviousLocation
+  const venue = previous?.venue && location === previous.location ? previous.venue : location;
+  const detectedAdditionalLocations = shouldKeepPreviousLocation
     ? previous?.additionalLocations || []
     : detectAdditionalLocations(locationFactText, location, previous);
+  const additionalLocations = synchronizeReturnStops(
+    detectedAdditionalLocations,
+    chronoResult.endTimeCorrection || null,
+  );
   const theme = detectTheme(detailText, previous);
   const receivedInviteWithoutSource =
     sourceContext.detectedSourceIntent === "received_invite" && !sourceContext.hasUsableContext;
@@ -3038,8 +3241,16 @@ export function fallbackExtractConciergeDraft(args: {
   const commandOnlyDraftUpdate = Boolean(
     previous && (isCommandOnlyDraftUpdate(message) || isBirthdayClarificationOnly(message, previous)),
   );
+  // A capability question describes what the host needs help with, not a new
+  // guest-facing event title. Explicit facts and title corrections still flow
+  // through their dedicated extractors above.
+  const conversationQuestion = Boolean(
+    previous && !hasNewEventDetails &&
+    /^(?:can|could|would|will|does|do|is|are|how|what|why|which)\b/i.test(message.trim()) &&
+    message.includes("?"),
+  );
   const canUseRawMessageAsEventPurpose =
-    !commandOnlyDraftUpdate && (hasCreationSignal || requestedOutputs.length > 0);
+    !commandOnlyDraftUpdate && !conversationQuestion && (hasCreationSignal || requestedOutputs.length > 0);
   const rawMessageEventPurpose =
     canUseRawMessageAsEventPurpose && isMeaningfulEventText(message, requestedOutputs)
       ? cleanCreationString(message)
@@ -3189,7 +3400,7 @@ export function fallbackExtractConciergeDraft(args: {
     previous.ageOrMilestone === ageOrMilestone &&
     !hasStalePreviewFacts(previous.previewCopy.body, previous, {
       startISO, endISO, timezone: firstString(fieldsGuess.timezone) || previous?.timezone || DEFAULT_TIMEZONE,
-      location, venue: location, rsvpContact, rsvpDeadline, rsvpEnabled,
+      location, venue, rsvpContact, rsvpDeadline, rsvpEnabled,
     })
   ) {
     // Schedule, place and headline have their own fields; editing them should not erase approved prose.
@@ -3231,7 +3442,7 @@ export function fallbackExtractConciergeDraft(args: {
     endISO,
     timezone: firstString(fieldsGuess.timezone) || previous?.timezone || DEFAULT_TIMEZONE,
     location,
-    venue: location,
+    venue,
     additionalLocations,
     rsvpEnabled,
     rsvpDeadline,

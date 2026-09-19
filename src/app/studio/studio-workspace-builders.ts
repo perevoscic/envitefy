@@ -1,4 +1,4 @@
-import { resolveStudioProduct } from "@/lib/studio/product-contract";
+import { resolveStudioProduct, type StudioProduct } from "@/lib/studio/product-contract";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
 import type { LiveCardRsvpChoice } from "@/lib/live-card-rsvp";
 import { resolveStudioImageFinishPreset } from "@/lib/studio/image-finish-presets";
@@ -870,6 +870,7 @@ function quoteStudioEditText(value: string): string {
 
 function buildExistingImageEditInstruction(
   details: EventDetails,
+  product: StudioProduct,
   refinement: string,
   previousDetails?: EventDetails,
 ): string {
@@ -917,6 +918,7 @@ function buildExistingImageEditInstruction(
   }
 
   if (
+    product === "live_card" &&
     nextVisibleLocation &&
     previousVisibleLocation &&
     previousVisibleLocation !== nextVisibleLocation
@@ -929,6 +931,7 @@ function buildExistingImageEditInstruction(
     );
   }
   if (
+    product === "live_card" &&
     nextVisibleLocation &&
     previousStreetAddress &&
     previousStreetAddress !== nextVisibleLocation &&
@@ -1031,7 +1034,7 @@ export function buildStudioRequest(
   const refinement = clean(editPrompt);
   const sourceImage = clean(sourceImageDataUrl);
   const editInstruction = sourceImage
-    ? buildExistingImageEditInstruction(details, refinement, previousDetails)
+    ? buildExistingImageEditInstruction(details, product, refinement, previousDetails)
     : "";
   const designIdea = sanitizeStudioDesignIdea(details.theme);
   const categorySupportsRsvp = supportsStudioCategoryRsvp(details.category);

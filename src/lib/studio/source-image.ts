@@ -1,7 +1,8 @@
 import * as vercelBlob from "@vercel/blob";
+import { parseDataUrlBase64 } from "../../utils/data-url.ts";
+import { resolveCampaignSourceImage } from "../campaign-media.ts";
 import { extractAppOwnedBlobProxyPathname } from "../event-media.ts";
 import { isRemoteMediaUrl } from "../upload-config.ts";
-import { parseDataUrlBase64 } from "../../utils/data-url.ts";
 
 export type StudioResolvedSourceImage = {
   mimeType: string;
@@ -145,6 +146,9 @@ export async function resolveStudioSourceImage(
   if (blobProxyPathname) {
     return loadBlobProxySource(blobProxyPathname);
   }
+
+  const campaignImage = await resolveCampaignSourceImage(trimmed);
+  if (campaignImage) return campaignImage;
 
   if (isRemoteMediaUrl(trimmed)) {
     return loadRemoteImageSource(trimmed);
