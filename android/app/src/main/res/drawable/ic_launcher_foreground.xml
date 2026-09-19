@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Keep the supplied e/plane artwork inside the adaptive icon's safe zone. -->
+<!-- Preserve the transparent brand mark's 256:165 aspect ratio within the safe zone. -->
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:inset="22%">
+    android:insetLeft="22%"
+    android:insetRight="22%"
+    android:insetTop="31.953125%"
+    android:insetBottom="31.953125%">
     <bitmap
-        android:src="@drawable/envitefy_icon"
+        android:src="@drawable/envitefy_icon_foreground"
         android:gravity="fill"
+        android:tint="#FFFFFF"
+        android:tintMode="src_in"
         android:filter="true" />
 </inset>

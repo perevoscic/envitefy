@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="@color/envitefy_icon_background" />
+    <!-- Opaque, edge-to-edge color: Android supplies the final launcher mask. -->
+    <gradient
+        android:angle="315"
+        android:startColor="@color/envitefy_icon_blue"
+        android:endColor="@color/envitefy_icon_purple"
+        android:type="linear" />
 </shape>

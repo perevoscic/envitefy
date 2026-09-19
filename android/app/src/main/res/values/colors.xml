@@ -2,5 +2,6 @@
 <resources>
     <color name="envitefy_status_bar">#FFFFFF</color>
     <color name="envitefy_navigation_bar">#8D7BE9</color>
-    <color name="envitefy_icon_background">#FFFFFF</color>
+    <color name="envitefy_icon_blue">#1F6AFF</color>
+    <color name="envitefy_icon_purple">#790A99</color>
 </resources>

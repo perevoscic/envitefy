@@ -12,5 +12,5 @@ for (const [density, size] of Object.entries({ mdpi: 48, hdpi: 72, xhdpi: 96, xx
   copyFileSync(resolve(root, `public/icons/icon-${size}.png`), resolve(destination, "ic_launcher.png"));
 }
 mkdirSync(resolve(resources, "drawable-nodpi"), { recursive: true });
-copyFileSync(resolve(root, "public/icons/icon-512.png"), resolve(resources, "drawable-nodpi/envitefy_icon.png"));
-console.log("Android launcher icons copied from public/icons without modifying the artwork.");
+copyFileSync(resolve(root, "public/icons/android-foreground.png"), resolve(resources, "drawable-nodpi/envitefy_icon_foreground.png"));
+console.log("Android launcher assets copied from public/icons; adaptive foreground color and background are set in XML.");

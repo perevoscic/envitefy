@@ -28,10 +28,10 @@ cache avoids changing legacy tracked `.gradle` cache files in this repository.
 Artifacts are `app/build/outputs/apk/release/app-release.apk` (direct install)
 and `app/build/outputs/bundle/release/app-release.aab` (Play upload).
 
-Default version is `1.0.2` / code `4`. Increment the code for every subsequent upload:
+Default version is `1.0.3` / code `5`. Increment the code for every subsequent upload:
 
 ```powershell
-.\gradlew.bat --project-cache-dir .gradle-local :app:bundleRelease -PenvitefyVersionCode=5 -PenvitefyVersionName=1.0.3
+.\gradlew.bat --project-cache-dir .gradle-local :app:bundleRelease -PenvitefyVersionCode=6 -PenvitefyVersionName=1.0.4
 ```
 
 ## Upload signing
@@ -108,11 +108,15 @@ component at launch on API 25+, and Android throws if the component is missing.
 
 ## Icons and device access
 
-Launcher artwork comes unchanged from `public/icons/icon-{48,72,96,144,192,512}.png`.
+Legacy launcher artwork comes unchanged from `public/icons/icon-{48,72,96,144,192}.png`.
 Run `node android/scripts/sync-icons.mjs` from the repository root after an approved
-brand-asset update. Density-specific PNGs support older devices; Android 8+ uses
-the original 512px artwork inset into an adaptive icon so circular and other
-launcher masks retain the e/plane. No separate round or redrawn logo is needed.
+brand-asset update. Density-specific PNGs support older devices. Android 8+ uses
+`public/icons/android-foreground.png`, copied unchanged from the existing
+transparent `public/brand/e-only.png`, with a white XML tint. Its 256:165 aspect
+ratio and safe-zone placement are preserved. A separate, opaque blue-purple
+gradient fills the entire background. Never inset a pre-rounded square over a
+white background: that caused the visible white frame in 1.0.2. Android supplies
+the circle/squircle mask; neither layer adds a border or an inner rounded card.
 The Play Store listing's icon is separate from the installed launcher icon.
 
 - **Camera:** the site's Snap controls already use an image file input with
