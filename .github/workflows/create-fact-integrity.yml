@@ -22,6 +22,12 @@ jobs:
         run: npm run typecheck
       - name: Install Chromium for isolated campaign checks
         run: npx playwright install --with-deps chromium
+      - name: Install and verify FFmpeg for artwork checks
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          ffmpeg -version
+          ffprobe -version
       - name: Check Create facts, prompts, output contracts and guest actions offline
         run: npm run test:create-remediation
       - name: Check rendered previews and RSVP recovery with external requests blocked
