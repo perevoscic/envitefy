@@ -1,5 +1,11 @@
 import { isEventDraft } from "./event-draft-access";
 
+export function signupAccessInstructions(requiresInvitation: boolean): string {
+  return requiresInvitation
+    ? "This form is limited to invited accounts. Participants must sign in and accept their invitation before signing up. Sharing the link alone does not grant access."
+    : "Anyone with this link can sign up. No Envitefy account or invitation is needed.";
+}
+
 const record = (value: unknown): Record<string, unknown> | null =>
   value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)

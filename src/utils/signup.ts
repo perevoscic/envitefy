@@ -1,15 +1,16 @@
 import { normalizeEventGuestPlanning } from "@/lib/event-guest-planning";
+import { allowsPublicSignup } from "@/lib/signup-access";
 import { normalizeSignupAppearance } from "@/lib/signup-themes";
 import {
   SignupForm,
+  SignupFormHeader,
   SignupFormSection,
-  SignupFormSlot,
   SignupFormSettings,
+  SignupFormSlot,
+  SignupHeaderImageAsset,
   SignupQuestion,
   SignupResponse,
   SignupResponseStatus,
-  SignupFormHeader,
-  SignupHeaderImageAsset,
   SignupSafetyFlags,
 } from "@/types/signup";
 
@@ -28,7 +29,7 @@ export const DEFAULT_SIGNUP_SETTINGS: SignupFormSettings = {
   collectPhone: true,
   collectEmail: true,
   showRemainingSpots: true,
-  autoRemindersHoursBefore: [24, 2],
+  autoRemindersHoursBefore: [],
   hideParticipantNames: false,
   signupOpensAt: null,
   signupClosesAt: null,
@@ -332,6 +333,7 @@ const sanitizeSignupHeaderImage = (raw: unknown): SignupHeaderImageAsset | null 
 
 export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
   const presentation = {
+    ...(!allowsPublicSignup({ signupForm: form }) ? { visibility: "restricted" as const } : {}),
     ...(typeof form.boardTitle === "string"
       ? { boardTitle: form.boardTitle.trim().slice(0, 180) }
       : {}),

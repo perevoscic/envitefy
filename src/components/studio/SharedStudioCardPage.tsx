@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import Link from "next/link";
 import { type CSSProperties, type ReactNode, useCallback, useState } from "react";
 import EventCelebrationOverlay from "@/components/EventCelebrationOverlay";
+import ArtworkDownloadButton from "@/components/ArtworkDownloadButton";
 import LiveCardArtworkFrame from "@/components/studio/LiveCardArtworkFrame";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface, {
@@ -98,7 +99,7 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
           referrerPolicy="no-referrer"
         />
         <LiveCardHeroTextOverlay invitationData={invitationData} />
-        <StudioLiveCardActionSurface
+        {!usesPosterArtFrame ? <StudioLiveCardActionSurface
           placement="overlay"
           title={props.title}
           invitationData={invitationData}
@@ -110,16 +111,30 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
           sharePosition={props.onClose ? "left" : "right"}
           onShare={props.topRightAction ? undefined : () => void handleShare()}
           shareState={shareState}
-        />
+        /> : null}
         {props.topRightAction}
         </LiveCardArtworkFrame>
+        {usesPosterArtFrame ? <StudioLiveCardActionSurface
+          placement="below"
+          title={props.title}
+          invitationData={invitationData}
+          activeTab={activeTab}
+          onActiveTabChange={setActiveTab}
+          shareUrl={props.shareUrl}
+          fallbackShareUrlToWindowLocation
+          onShare={props.topRightAction ? undefined : () => void handleShare()}
+          shareState={shareState}
+          previewMode={props.embeddedPreview}
+          showExtendedDetails
+        /> : null}
+        {usesPosterArtFrame ? <ArtworkDownloadButton imageUrl={props.imageUrl} title={props.title} className="mt-2" /> : null}
         {props.onClose ? (
           <button
             type="button"
             onClick={props.onClose}
             aria-label="Close preview"
             title="Close preview"
-            className="absolute right-3 top-5 z-30 inline-flex size-11 cursor-pointer items-center justify-center rounded-full border border-white/40 bg-white/90 text-slate-950 shadow-lg backdrop-blur-md transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:right-5 sm:top-6 md:right-8 md:top-8"
+            className={`${usesPosterArtFrame ? "relative ml-auto mt-2 flex" : "absolute right-3 top-5 inline-flex"} z-30 size-11 cursor-pointer items-center justify-center rounded-full border border-white/40 bg-white/90 text-slate-950 shadow-lg backdrop-blur-md transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-700 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950`}
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>

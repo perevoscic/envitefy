@@ -8,12 +8,12 @@ export const CONCIERGE_CAPABILITIES = {
     "Live card":
       "A visual invitation with event details, calendar/location actions and standard RSVP when enabled.",
     "Flyer/Invitation":
-      "Invitation artwork to review and share; standard RSVP can be attached when enabled.",
+      "Invitation artwork to review and share. Once generated and accepted, its image can be downloaded with Download. The downloaded image has no interactive RSVP controls; share the published event link for RSVP when enabled.",
     "Event page":
       "A fuller event website with detail sections, schedule, location, calendar actions and standard RSVP when enabled.",
   },
   standardRsvp:
-    "The current chat-created RSVP collects the guest's name, email and yes/no/maybe response. RSVP contact and deadline can be set in the draft.",
+    "The current chat-created RSVP collects the guest's name, email and yes/no/maybe response. Gender Reveal also asks Team Pink or Team Blue while guessing is enabled, and requires a guess for Yes. Guessing starts enabled unless disabled or locked by the event configuration. RSVP contact and deadline can be set in the draft.",
   householdRsvp:
     "Separate adult/child counts exist in specialized Envitefy flows, but this chat cannot configure those fields. Choosing Event Page instead of Live Card does not enable them.",
   customForms:
@@ -34,6 +34,16 @@ export function conciergeCapabilityAnswer(message: string): string | null {
   )
     return null;
   const answers: string[] = [];
+  if (/\bdownload(?:ed|able)?\b/i.test(message) && /\b(?:flyer|invitation|invite|image|artwork)\b/i.test(message)) {
+    answers.push(
+      "Once the artwork is generated and accepted, you can use Download to save the flyer image. The image itself has no working RSVP buttons; share the published event link as well if you enable RSVP.",
+    );
+  }
+  if (/\b(?:gender|boy|girl)\b/i.test(message) && /\b(?:guess|guesses|vote|rsvp)\b/i.test(message)) {
+    answers.push(
+      "Gender Reveal RSVP asks Team Pink or Team Blue while guessing is enabled and requires a guess for Yes. Guessing starts enabled unless the event configuration disables or locks it. The guest's guess does not reveal the result.",
+    );
+  }
   if (
     /\b(?:generate|publish|preview|button)\b/i.test(message) &&
     /\b(?:publish|live|private|preview|button|what happens)\b/i.test(message)

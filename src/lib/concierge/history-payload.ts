@@ -1,5 +1,6 @@
 import { scanScheduleHistoryFields } from "../scan-schedule.ts";
 import { canPersistCreationDraft, rsvpTrackingEnabled } from "./creation-intent.ts";
+import { publicContentForDraft, publicContentLines } from "./public-content.ts";
 import {
   sanitizeConciergePreviewCopy,
   sanitizeConciergePublicEventData,
@@ -15,6 +16,7 @@ const CATEGORY_LABELS: Record<ConciergeEventDraft["eventType"], string> = {
   unknown: "General Event",
   birthday: "Birthday",
   wedding: "Wedding",
+  anniversary: "Anniversary",
   baby_shower: "Baby Shower",
   gender_reveal: "Gender Reveal",
   bridal_shower: "Bridal Shower",
@@ -328,20 +330,20 @@ function normalizeAdditionalLocations(
   return locations.slice(0, 8);
 }
 
-function isoDate(value: unknown): string {
+function isoDate(value: unknown, timezone = "America/Chicago"): string {
   const raw = cleanString(value);
   if (!raw) return "";
-  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
   const date = new Date(raw);
-  return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
+  return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
 }
 
-function timeTextFromIso(value: unknown): string {
+function timeTextFromIso(value: unknown, timezone?: string): string {
   const raw = cleanString(value);
   if (!raw) return "";
   const date = new Date(raw);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return date.toLocaleTimeString("en-US", { timeZone: timezone || "America/Chicago", hour: "numeric", minute: "2-digit" });
 }
 
 function liveCardImageUrlForDraft(draft: ConciergeEventDraft) {
@@ -391,11 +393,13 @@ export function buildConciergeHistoryPayload(
       .filter((value, index, values) => value && values.indexOf(value) === index)
       .join(", ") ||
     null;
-  const description =
+  const baseDescription =
     cleanString(safePreviewCopy.body) ||
     (draft.eventType === "birthday" && draft.honoreeName
       ? `Join us to celebrate ${draft.honoreeName}.`
       : `Join us for ${title}.`);
+  const description = [baseDescription, ...publicContentLines(draft.publicContent).filter((line) => !baseDescription.includes(line))].join("\n\n");
+  const publicContent = publicContentForDraft(draft);
   const liveCardHeadline = cleanString(safePreviewCopy.headline) || title;
   const liveCardSubheadline = cleanString(safePreviewCopy.subheadline) || category;
   const rawLiveCardCta = cleanString(safePreviewCopy.cta);
@@ -435,9 +439,14 @@ export function buildConciergeHistoryPayload(
       category,
       occasion: cleanString(draft.eventPurpose) || category,
       eventTitle: liveCardHeadline,
-      eventDate: isoDate(draft.startISO || draft.dateText),
-      startTime: cleanString(draft.timeText) || timeTextFromIso(draft.startISO),
-      endTime: timeTextFromIso(draft.endISO),
+      eventDate: isoDate(draft.startISO || draft.dateText, draft.timezone),
+      startTime: timeTextFromIso(draft.startISO, draft.timezone) || (/^\d{1,2}(?::\d{2})?\s*[ap]m$/i.test(draft.timeText || "") ? draft.timeText : ""),
+      endTime: timeTextFromIso(draft.endISO, draft.timezone),
+      calendarStartISO: draft.startISO,
+      calendarEndISO: draft.endISO,
+      timeZone: draft.timezone,
+      timezone: draft.timezone,
+      ...publicContent,
       venueName: eventPlace.venue || "",
       location: locationLine || eventPlace.location || eventPlace.venue || "",
       detailsDescription: description,
@@ -457,6 +466,11 @@ export function buildConciergeHistoryPayload(
   liveCardInvitationData.eventDetails = {
     ...(isRecord(liveCardInvitationData.eventDetails) ? liveCardInvitationData.eventDetails : {}),
     additionalLocations,
+    ...publicContent,
+    calendarStartISO: draft.startISO,
+    calendarEndISO: draft.endISO,
+    timeZone: draft.timezone,
+    timezone: draft.timezone,
   };
   const liveCardPositions = isRecord(studioInvitePositions) ? studioInvitePositions : null;
   const requestedOutputs = Array.from(new Set(draft.requestedOutputs.map(canonicalProductOutput)));
@@ -519,6 +533,7 @@ export function buildConciergeHistoryPayload(
       ownerDefaultSurface,
       category,
       eventType: draft.eventType,
+      ...publicContent,
       title,
       coverImageUrl: liveCardImageUrl,
       thumbnail: liveCardImageUrl,
@@ -587,6 +602,11 @@ export function buildConciergeHistoryPayload(
         headline: liveCardHeadline,
         subheadline: liveCardSubheadline,
         body: description,
+        ...publicContent,
+        calendarStartISO: draft.startISO,
+        calendarEndISO: draft.endISO,
+        timezone: draft.timezone,
+        pageTypography: isRecord(liveCardInvitationData.eventDetails) ? liveCardInvitationData.eventDetails.pageTypography : undefined,
         scheduleLine,
         locationLine,
         additionalLocations,

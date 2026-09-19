@@ -123,6 +123,7 @@ function formatScheduleLine(startIso: string | null, timeFound: unknown, timezon
 
 function eventTypeFromText(category: string | null, title: string | null, ocrText: string | null) {
   const haystack = [category, title, ocrText].filter(Boolean).join("\n").toLowerCase();
+  if (/\banniversary\b/.test(haystack)) return "anniversary";
   if (/\bbirthday|bday|turns?\s+\d+|turning\s+\d+/.test(haystack)) return "birthday";
   if (/\bwedding|reception|ceremony\b/.test(haystack)) return "wedding";
   if (/\bgender\s+reveal\b/.test(haystack)) return "gender_reveal";
@@ -146,6 +147,7 @@ function categoryLabelForEventType(eventType: ConciergeEventType, fallback: stri
   const labels: Record<ConciergeEventType, string> = {
     unknown: "General Events",
     birthday: "Birthdays",
+    anniversary: "Anniversaries",
     wedding: "Weddings",
     baby_shower: "Baby Showers",
     gender_reveal: "Gender Reveal",
@@ -224,7 +226,7 @@ function stringArray(value: unknown): string[] {
 function normalizeAdditionalLocations(value: unknown): OcrSecondaryLocation[] {
   if (!Array.isArray(value)) return [];
   return value
-    .map((item) => {
+    .map<OcrSecondaryLocation | null>((item) => {
       const record = asRecord(item);
       const location = firstString(record.location, record.address);
       if (!location) return null;

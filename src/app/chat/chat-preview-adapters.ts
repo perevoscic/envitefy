@@ -1,6 +1,11 @@
 import type { LiveCardInvitationData } from "@/components/studio/StudioLiveCardActionSurface";
 import type { ConciergeEventDraft, RequestedOutput } from "@/lib/concierge/types";
 import type { StudioShowcasePreview } from "@/lib/studio/showcase-previews";
+import type { ConciergeEventWebsiteProps } from "@/components/concierge/ConciergeEventWebsite";
+import { buildLiveCardCalendarLinks } from "../../lib/live-card-calendar.ts";
+import { formatGuestSchedule, publicGuestInstructions } from "../../lib/guest-event-details.ts";
+import { publicContentForDraft } from "../../lib/concierge/public-content.ts";
+import { parseGenderRevealConfig } from "../../lib/gender-reveal.ts";
 
 export type ChatPreviewSummary = {
   headline: string;
@@ -60,7 +65,7 @@ function normalizeAdditionalLocations(draft: ConciergeEventDraft | null) {
 function categoryLabel(draft: ConciergeEventDraft | null): string {
   if (!draft?.eventType || draft.eventType === "unknown") return "Custom Invite";
   if (draft.eventType === "baby_shower") return "Baby Shower";
-  if (draft.eventType === "gender_reveal") return "Baby Shower";
+  if (draft.eventType === "gender_reveal") return "Gender Reveal";
   if (draft.eventType === "bridal_shower") return "Bridal Shower";
   if (
     draft.eventType === "gym_meet" ||
@@ -127,6 +132,8 @@ export function buildChatShowcasePreview(args: {
     eventDetails: {
       eventId: args.eventId || "",
       category,
+      eventKind: draft?.eventType,
+      genderReveal: parseGenderRevealConfig(draft),
       occasion: cleanString(draft?.eventPurpose) || category,
       eventTitle: title,
       eventDate: eventDateFromIso(draft?.startISO, draft?.timezone) || isoDate(draft?.dateText),
@@ -134,6 +141,9 @@ export function buildChatShowcasePreview(args: {
       endTime: timeTextFromIso(draft?.endISO, draft?.timezone),
       calendarStartISO: draft?.timeText ? cleanString(draft.startISO) || "" : "",
       calendarEndISO: cleanString(draft?.endISO) || "",
+      timezone: draft?.timezone || "",
+      guestInstructions: publicGuestInstructions({ ...(draft ? publicContentForDraft(draft) : {}), giftNote: draft?.giftNote, giftPreferenceNote: draft?.giftPreferenceNote }),
+      semanticKind: draft?.semanticKind || null,
       venueName: cleanString(draft?.venue) || "",
       location: cleanString(draft?.location) || cleanString(draft?.venue) || "",
       additionalLocations,
@@ -155,5 +165,38 @@ export function buildChatShowcasePreview(args: {
     invitationData,
     initialActiveTab: "none",
     sharePath: args.sharePath || undefined,
+  };
+}
+
+/** The same page renderer is used before saving and after publication. */
+export function buildChatEventWebsitePreview(args: Parameters<typeof buildChatShowcasePreview>[0]): ConciergeEventWebsiteProps {
+  const preview = buildChatShowcasePreview(args);
+  const draft = args.draft;
+  const details = preview.invitationData.eventDetails;
+  const contact = draft?.rsvpContact?.trim() || "";
+  const registry = draft?.registryLink || draft?.giftRegistryLink;
+  return {
+    eventId: args.eventId || "",
+    title: args.summary.headline,
+    category: categoryLabel(draft),
+    subheadline: args.summary.subheadline,
+    description: draft?.previewCopy?.body || draft?.eventPurpose,
+    whenLabel: formatGuestSchedule(details || {}) || args.summary.scheduleLine,
+    venueName: draft?.venue,
+    location: draft?.location,
+    additionalLocations: normalizeAdditionalLocations(draft),
+    imageUrl: args.imageUrl,
+    shareUrl: args.sharePath,
+    calendarLinks: buildLiveCardCalendarLinks(args.summary.headline, preview.invitationData, draft?.timezone || null),
+    showRsvp: draft?.rsvpEnabled === true,
+    directRsvpEnabled: draft?.rsvpEnabled === true,
+    rsvpName: draft?.rsvpName,
+    rsvpEmail: contact.includes("@") ? contact : null,
+    rsvpPhone: contact && !contact.includes("@") ? contact : null,
+    registryLinks: registry ? [{ label: "Registry", url: registry }] : [],
+    guestInstructions: publicGuestInstructions({ ...(draft ? publicContentForDraft(draft) : {}), giftNote: draft?.giftNote, giftPreferenceNote: draft?.giftPreferenceNote }),
+    rsvpDeadline: draft?.rsvpDeadline,
+    genderRevealConfig: parseGenderRevealConfig(draft),
+    previewMode: true,
   };
 }

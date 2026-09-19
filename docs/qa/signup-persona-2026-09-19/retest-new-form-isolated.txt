@@ -1,0 +1,104 @@
+- banner:
+  - button "Open navigation":
+  - link "Envitefy home":
+    - /url: /
+- link:
+  - /url: /
+- button:
+- button:
+  - generic: Back
+- paragraph: Create Event
+- region:
+  - button:
+    - generic: Birthdays
+  - button:
+    - generic: Weddings
+  - button:
+    - generic: Anniversaries
+  - button:
+    - generic: Baby Showers
+  - button:
+    - generic: Gender Reveal
+  - button:
+    - generic: Football
+  - button:
+    - generic: Sports
+  - button:
+    - generic: Sign-up Form
+- button:
+  - generic: [organizer] (Admin)
+  - generic: [organizer email]
+- link "← Signup forms templates":
+  - /url: /signup-forms/templates
+- paragraph: Save a private draft, then publish when ready.
+- button "Start over"
+- button "Save draft"
+- main:
+  - heading "Your signup page" [level=1]
+  - heading "Build your signup form" [level=2]
+  - paragraph: Your design is ready. Add your details and the sections you need.
+  - button "Change hero image":
+    - text: Change image
+  - switch "Template image filter" [checked]: Filter on
+  - paragraph:
+    - generic: Add group or organization
+    - button "Edit group or organization":
+  - heading "Add your event title Edit event title" [level=1]:
+    - text: Add your event title
+    - button "Edit event title":
+  - paragraph:
+    - generic: Add a welcome message
+    - button "Edit welcome message":
+  - text: Date to be announced
+  - button "Edit date and time":
+  - generic: Location to be announced
+  - button "Edit location":
+  - generic: Add organizer
+  - button "Edit organizer name":
+  - generic: Arrival & other details
+  - button "Edit arrival and other details":
+  - heading "Your form sections" [level=2]
+  - paragraph: Drag the Move handle to arrange sections, or use the arrow buttons.
+  - button "+ Add section"
+  - generic "Form heading & introduction (optional)"
+  - heading "What are people signing up for?" [level=3]
+  - paragraph: Your theme is ready. Add places, jobs, items, or times to start your form.
+  - button "+ Add section"
+  - status
+  - heading "Questions for participants" [level=2]
+  - paragraph: Optional. Guests answer these after choosing their slots. Name and contact details are collected separately.
+  - button "+ Add question"
+  - link "Envitefy Sign-up Forms (opens in a new tab)":
+    - /url: https://envitefy.com
+    - img "envitefy":
+      - generic: envitefy
+  - paragraph: CREATE | SHARE | ENJOY
+  - paragraph:
+    - strong: Created with Envitefy Sign-up Forms
+    - link "Create now":
+      - /url: https://envitefy.com/
+  - navigation "Follow Envitefy":
+    - list:
+      - link "Envitefy on Instagram (opens in a new tab)":
+        - /url: https://www.instagram.com/envitefy/
+        - generic: Envitefy on Instagram (opens in a new tab)
+      - link "Envitefy on Facebook (opens in a new tab)":
+        - /url: https://www.facebook.com/envitefy/
+        - generic: Envitefy on Facebook (opens in a new tab)
+      - link "Envitefy on YouTube (opens in a new tab)":
+        - /url: https://www.youtube.com/@envitefy
+        - generic: Envitefy on YouTube (opens in a new tab)
+      - link "Envitefy on TikTok (opens in a new tab)":
+        - /url: https://www.tiktok.com/@envitefy
+        - generic: Envitefy on TikTok (opens in a new tab)
+      - link "Envitefy on Reddit (opens in a new tab)":
+        - /url: https://www.reddit.com/user/envitefy/
+        - generic: Envitefy on Reddit (opens in a new tab)
+  - complementary "Form tools":
+    - group "Editor tools":
+      - button "Add sections" [pressed]
+      - button "Design"
+      - button "Settings"
+  - generic: Changes stay private until you publish.
+  - button "Preview & publish →"
+- alert: Make it yours | Envitefy

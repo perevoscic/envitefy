@@ -1,0 +1,123 @@
+- banner:
+  - button "Open navigation":
+  - link "Envitefy home":
+    - /url: /
+- link:
+  - /url: /
+- button:
+- button:
+  - generic: Back
+- paragraph: Sign-up Forms
+- region:
+  - link:
+    - /url: /signup-forms/templates
+    - text: Create sign-up form
+  - paragraph: Sep 2026
+  - button:
+    - generic: "Smart Sign Up:"
+    - generic: See you at the Pole
+    - generic: Sep 23, 2026
+  - paragraph: Oct 2026
+  - button:
+    - generic: "Smart Sign Up:"
+    - generic: TEST — Maple Grove Parent Conferences
+    - generic: Oct 22, 2026
+  - button:
+    - generic: "Smart Sign Up:"
+    - generic: TEST — Maple Grove Field Day
+    - generic: Oct 23, 2026
+  - paragraph: Date to confirm
+  - button:
+    - generic: "Smart Sign Up:"
+    - generic: TEST — Room 3 Fall Class Party
+    - generic: Date to confirm
+  - button:
+    - generic: "Smart Sign Up:"
+    - generic: TEST — Room Mom Fall Party Retest
+    - generic: Date to confirm
+- button:
+  - generic: [organizer] (Admin)
+  - generic: [organizer email]
+- main:
+  - navigation "Manage signup form":
+    - link "Edit event":
+      - /url: /signup-forms/templates/editorial--harvest-table/customize?edit=87e831a2-97b4-4abe-b1e9-78f8dd17ab6f
+    - button "Duplicate form":
+    - button "Delete event":
+  - heading "TEST — Room Mom Fall Party Retest" [level=1]
+  - generic: Date to be announced
+  - generic: Location to be announced
+  - region "Plan your visit":
+    - button "Share event":
+      - generic: Share
+  - region "Share signup":
+    - heading "Share your signup" [level=3]
+    - paragraph: Anyone with this link can sign up. No Envitefy account or invitation is needed.
+    - generic: Signup link
+    - textbox "Signup link": http://localhost:3001/smart-signup-form/test-room-mom-fall-party-retest
+    - button "Copy signup link":
+    - link "View host dashboard":
+      - /url: "#signup-host-dashboard"
+  - status: Availability updated.
+  - button "Refresh availability"
+  - status: This signup is closed. Please contact the organizer if you need to make a change.
+  - heading "Snacks and supplies" [level=3]
+  - paragraph: Quantities count items.
+  - generic: Fruit trays
+  - generic: 0/3 claimed · 3 open
+  - button "Select Fruit trays" [disabled]: Select
+  - generic: Juice packs
+  - generic: 0/4 claimed · 4 open
+  - button "Select Juice packs" [disabled]: Select
+  - generic: Napkin packs
+  - generic: 0/2 claimed · 2 open
+  - button "Select Napkin packs" [disabled]: Select
+  - heading "Volunteer roles" [level=3]
+  - paragraph: Fictional QA event. Helpers check in with the room parent.
+  - paragraph: Choose up to 1 option in this section. Quantities count people.
+  - generic: Set up
+  - generic: 0/2 claimed · 2 open
+  - button "Select Set up" [disabled]: Select
+  - generic: Clean up
+  - generic: 0/1 claimed · 1 open
+  - button "Select Clean up" [disabled]: Select
+  - heading "Host dashboard" [level=3]
+  - heading "Snacks and supplies" [level=4]
+  - paragraph: Counted in items
+  - paragraph: 0 confirmed · 9 of 9 remaining
+  - heading "Volunteer roles" [level=4]
+  - paragraph: Counted in people
+  - paragraph: 0 confirmed · 3 of 3 remaining
+  - textbox "Search participants":
+    - /placeholder: Search name, email, slot, or answer
+  - button "Export CSV"
+  - button "Reopen signups"
+  - heading "Cancelled (for audit trail)" [level=4]
+  - generic: QA Room Parent — fictional — 9/19/2026, 11:35 AM
+  - link "Envitefy Sign-up Forms (opens in a new tab)":
+    - /url: https://envitefy.com
+    - img "envitefy":
+      - generic: envitefy
+  - paragraph: CREATE | SHARE | ENJOY
+  - paragraph:
+    - strong: Created with Envitefy Sign-up Forms
+    - link "Create now":
+      - /url: https://envitefy.com/
+  - navigation "Follow Envitefy":
+    - list:
+      - link "Envitefy on Instagram (opens in a new tab)":
+        - /url: https://www.instagram.com/envitefy/
+        - generic: Envitefy on Instagram (opens in a new tab)
+      - link "Envitefy on Facebook (opens in a new tab)":
+        - /url: https://www.facebook.com/envitefy/
+        - generic: Envitefy on Facebook (opens in a new tab)
+      - link "Envitefy on YouTube (opens in a new tab)":
+        - /url: https://www.youtube.com/@envitefy
+        - generic: Envitefy on YouTube (opens in a new tab)
+      - link "Envitefy on TikTok (opens in a new tab)":
+        - /url: https://www.tiktok.com/@envitefy
+        - generic: Envitefy on TikTok (opens in a new tab)
+      - link "Envitefy on Reddit (opens in a new tab)":
+        - /url: https://www.reddit.com/user/envitefy/
+        - generic: Envitefy on Reddit (opens in a new tab)
+- alert: TEST — Room Mom Fall Party Retest — Envitefy

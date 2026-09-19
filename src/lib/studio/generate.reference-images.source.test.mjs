@@ -64,8 +64,9 @@ test("studio generation normalizes risky themes before prompt building and retur
   );
   assert.match(
     source,
-    /const normalizedRequest =\s*themeNormalization\.riskLevel === "block"\s*\?\s*request\s*:\s*studioGenerationDeps\.applyStudioThemeNormalization\(request, themeNormalization\);/s,
+    /const normalizedBase =\s*themeNormalization\.riskLevel === "block"\s*\?\s*request\s*:\s*studioGenerationDeps\.applyStudioThemeNormalization\(request, themeNormalization\);/s,
   );
+  assert.match(source, /const normalizedRequest = \{ \.\.\.normalizedBase \};/);
   assert.match(
     source,
     /buildProductCopyPrompt\(normalizedRequest\.event, normalizedRequest\.guidance, product\)/,

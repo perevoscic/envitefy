@@ -1,0 +1,41 @@
+/* Scoped unlayered rules must win over the site's global heading colors. */
+.page .heroCopy {
+  max-width: 48rem;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: rgb(2 6 23 / 88%);
+  color: #fff;
+}
+
+.page .heroTitle {
+  color: #fff;
+  font-size: calc(clamp(2.5rem, 6vw, 4.5rem) * var(--event-page-type-scale, 1));
+  overflow-wrap: anywhere;
+}
+
+.page .body {
+  font-size: calc(1.125rem * var(--event-page-type-scale, 1));
+}
+
+.page[data-event-page-foreground="dark"] .heroCopy {
+  background: rgb(255 255 255 / 96%);
+  color: #0f172a;
+}
+
+.page[data-event-page-foreground="dark"] .heroCopy :is(h1, p) {
+  color: #0f172a;
+}
+
+.page[data-event-page-foreground="dark"] .heroCopy button {
+  background: #0f172a;
+  color: #fff;
+}
+
+.page :is(a, button):focus-visible {
+  outline: 3px solid #7c3aed;
+  outline-offset: 3px;
+}
+
+.page :is(section, [id="schedule"]) {
+  scroll-margin-top: 6rem;
+}

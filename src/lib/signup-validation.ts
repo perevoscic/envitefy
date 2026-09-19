@@ -2,6 +2,20 @@ import { parseCalendarDateTimeToIso } from "@/lib/calendar-date-time";
 import type { SignupForm } from "@/types/signup";
 
 export type SignupIssue = { field: string; step: "details" | "build"; message: string };
+
+export function signupPublishWarnings(form: SignupForm): SignupIssue[] {
+  return form.sections
+    .filter(
+      (section) =>
+        section.purpose === "times" &&
+        section.slots.some((slot) => !slot.startTime || !slot.endTime),
+    )
+    .map((section) => ({
+      field: `signup-section-${section.id}`,
+      step: "build",
+      message: `${section.title || "Time slots"} has choices without a start or end time. Add times or remove those choices before sharing appointments.`,
+    }));
+}
 export function validateSignupPublish(form: SignupForm): SignupIssue[] {
   const issues: SignupIssue[] = [];
   if (!form.title.trim())

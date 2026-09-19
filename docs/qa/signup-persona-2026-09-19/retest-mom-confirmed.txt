@@ -1,0 +1,69 @@
+- main:
+  - heading "TEST — Room Mom Fall Party Retest" [level=1]
+  - generic: Date to be announced
+  - generic: Location to be announced
+  - region "Plan your visit":
+    - button "Share event":
+      - generic: Share event
+  - status: Signup confirmed. The saved commitments are shown below.
+  - button "Refresh availability"
+  - heading "Snacks and supplies" [level=3]
+  - paragraph: Quantities count items.
+  - generic: Fruit trays
+  - generic: 0/3 claimed · 3 open
+  - button "Select Fruit trays" [disabled]: Select
+  - generic: Juice packs
+  - generic: 2/4 claimed · 2 open
+  - generic: Confirmed
+  - spinbutton "Quantity for Juice packs" [disabled]: "2"
+  - button "Deselect Juice packs" [disabled] [pressed]: Selected ✓
+  - generic: Napkin packs
+  - generic: 0/2 claimed · 2 open
+  - button "Select Napkin packs" [disabled]: Select
+  - heading "Volunteer roles" [level=3]
+  - paragraph: Fictional QA event. Helpers check in with the room parent.
+  - paragraph: Choose up to 1 option in this section. Quantities count people.
+  - generic: Set up
+  - generic: 1/2 claimed · 1 open
+  - generic: Confirmed
+  - spinbutton "Quantity for Set up" [disabled]: "1"
+  - button "Deselect Set up" [disabled] [pressed]: Selected ✓
+  - generic: Clean up
+  - generic: 0/1 claimed · 1 open
+  - button "Select Clean up" [disabled]: Select
+  - paragraph: "Your status: Confirmed"
+  - paragraph: "Snacks and supplies: Juice packs ×2; Volunteer roles: Set up"
+  - button "Edit my signup"
+  - button "Cancel my signup"
+  - dialog:
+    - heading "Sign-up confirmed!" [level=3]
+    - paragraph: Your signup is confirmed. Your selected slots are saved below. You can return to this page to view or update them.
+    - status: No email address was provided, so no confirmation email was sent. You can manage your signup from this browser.
+    - button "Got it"
+  - link "Envitefy Sign-up Forms (opens in a new tab)":
+    - /url: https://envitefy.com
+    - img "envitefy":
+      - generic: envitefy
+  - paragraph: CREATE | SHARE | ENJOY
+  - paragraph:
+    - strong: Created with Envitefy Sign-up Forms
+    - link "Create now":
+      - /url: https://envitefy.com/
+  - navigation "Follow Envitefy":
+    - list:
+      - link "Envitefy on Instagram (opens in a new tab)":
+        - /url: https://www.instagram.com/envitefy/
+        - generic: Envitefy on Instagram (opens in a new tab)
+      - link "Envitefy on Facebook (opens in a new tab)":
+        - /url: https://www.facebook.com/envitefy/
+        - generic: Envitefy on Facebook (opens in a new tab)
+      - link "Envitefy on YouTube (opens in a new tab)":
+        - /url: https://www.youtube.com/@envitefy
+        - generic: Envitefy on YouTube (opens in a new tab)
+      - link "Envitefy on TikTok (opens in a new tab)":
+        - /url: https://www.tiktok.com/@envitefy
+        - generic: Envitefy on TikTok (opens in a new tab)
+      - link "Envitefy on Reddit (opens in a new tab)":
+        - /url: https://www.reddit.com/user/envitefy/
+        - generic: Envitefy on Reddit (opens in a new tab)
+- alert

@@ -1,5 +1,5 @@
+import type { LucideIcon } from "lucide-react";
 import type {
-  LucideIcon,
   StudioGenerateMode,
   StudioGenerateRequest,
   StudioGenerateResponse,

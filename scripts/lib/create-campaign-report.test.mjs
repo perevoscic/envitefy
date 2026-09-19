@@ -4,6 +4,19 @@ import { renderCampaignReport, reviewScenarioFacts, summarizeCampaignCoverage } 
 import { buildCampaignScenarios } from "./create-campaign-scenarios.mjs";
 
 const manifest = { runId: "fixture", cases: buildCampaignScenarios(), budgetUsd: 10 };
+test("coverage separates completed review from the original browser needs-review checkpoint", () => {
+  const report = renderCampaignReport(manifest, [{
+    caseId: manifest.cases[0].id, status: "failed", stage: "needs_review", reviewRequired: false,
+    scores: Object.fromEntries(["understanding", "factualAccuracy", "usefulQuestions", "qaAccuracy", "conversationFlow", "visualFidelity", "usability", "completion"].map(key => [key, 2])),
+    findings: [{ id: "copy-lost", title: "Required copy is missing", fixed: false, verified: true, kind: "product" }],
+  }], {}, { review: { verifiedFixes: { "copy-lost": "A previous unit-level copy guard passed." } } });
+  assert.match(report.html, /Review completion/);
+  assert.match(report.html, /Complete/);
+  assert.match(report.html, /Awaiting review \(original browser checkpoint\)/);
+  assert.match(report.html, /class="status failed">failed/);
+  assert.doesNotMatch(report.markdown, /fixed.*Required copy is missing/);
+  assert.match(report.markdown, /Historical scoped verification/);
+});
 test("additional authorization reports only new spending without resetting prior cost", () => {
   const report = renderCampaignReport(manifest, [], {
     budgetUsd: 59.245399873, spentUsd: 34.245399873, reservedUsd: 1,

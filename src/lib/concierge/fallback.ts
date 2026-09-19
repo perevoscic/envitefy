@@ -1,7 +1,7 @@
 import { attachCreationReadiness, getCreationReadiness } from "./readiness.ts";
 import * as chrono from "chrono-node";
 import { localClockToIso } from "../creation/calendar-validation.ts";
-import { extractExplicitEventLocation, extractExplicitEventTitle, extractExplicitRsvpEnabled, extractNamedAge, hasStalePreviewFacts, normalizeEventScheduleText, pairedHonorees, possessiveBirthdayMilestone } from "./conversation-edits.ts";
+import { extractExplicitEventLocation, extractExplicitEventTitle, extractExplicitRsvpEnabled, extractNamedAge, hasExplicitEventSchedule, hasStalePreviewFacts, normalizeEventScheduleText, pairedHonorees, possessiveBirthdayMilestone } from "./conversation-edits.ts";
 import { extractRsvpContactDetails, RSVP_PHONE_PATTERN } from "./rsvp-details.ts";
 import { extractVisualDirection, stripArtworkPreservationInstructions } from "./visual-direction.ts";
 import { isArtworkDirection, isArtworkOnlyEdit } from "./artwork-edit-scope.ts";
@@ -9,6 +9,7 @@ import { conciergeCapabilityAnswer } from "./capabilities.ts";
 import { copyRequirementsChanged, provisionalInvitationCopy, requestsInvitationCopy } from "./copy-workflow.ts";
 import { updateHostBrief } from "./host-brief.ts";
 import { applyHostPrivacy } from "./host-privacy.ts";
+import { semanticKindForMessage, updatePublicContent } from "./public-content.ts";
 import {
   classifyCreationBoundary,
   cleanCreationString,
@@ -57,6 +58,12 @@ import type {
 } from "./types.ts";
 
 const DEFAULT_TIMEZONE = "America/Chicago";
+function suppliedTimeZone(text: string): string | null {
+  const value = text.match(/\b(?:Africa|America|Antarctica|Asia|Atlantic|Australia|Europe|Indian|Pacific)\/[A-Za-z_]+(?:\/[A-Za-z_]+)?\b/)?.[0];
+  if (!value) return null;
+  try { new Intl.DateTimeFormat("en-US", { timeZone: value }).format(); return value; }
+  catch { return null; }
+}
 const GIFT_FRIENDLY_EVENT_TYPES = new Set<ConciergeEventType>([
   "birthday",
   "wedding",
@@ -147,14 +154,14 @@ function cleanMessageEventPurpose(value: string | null, requestedOutputs: Reques
   if (!cleaned) return null;
   cleaned = cleaned
     .replace(
-      /^(?:please\s+)?(?:make|create|build|turn|convert|draft|design|generate|write)\s+(?:me\s+)?(?:a|an|the)?\s*/i,
+      /^(?:please\s+)?(?:make|create|build|turn|convert|draft|design|generate|write)\s+(?:me\s+)?(?:(?:an|a|the)\s+)?/i,
       "",
     )
     .replace(
-      /^(?:as\s+)?(?:a|an|the)?\s*(?:live\s*card|event\s*page|digital\s+flyer|flyer\s*(?:\/|&|\+|and)?\s*(?:invite|invitation)?|invite|invitation|rsvp\s+page|smart\s+sign[-\s]?up|signup\s+form|product)\s*(?:of|for|about|from|with)?\s*(?:a|an|the)?\s*/i,
+      /^(?:as\s+)?(?:(?:an|a|the)\s+)?(?:live\s*card|event\s*page|digital\s+flyer|flyer\s*(?:\/|&|\+|and)?\s*(?:invite|invitation)?|invitation|invite|rsvp\s+page|smart\s+sign[-\s]?up|signup\s+form|product)\s*(?:(?:of|for|about|from|with)\s+)?(?:(?:an|a|the)\s+)?/i,
       "",
     )
-    .replace(/^(?:of|for|about)\s+(?:a|an|the)?\s*/i, "");
+    .replace(/^(?:of|for|about)\s+(?:(?:an|a|the)\s+)?/i, "");
   for (const output of requestedOutputs) {
     cleaned = cleaned.replace(new RegExp(output.replace(/_/g, "\\s*"), "gi"), " ");
   }
@@ -346,6 +353,7 @@ function detectEventType(text: string, previous?: ConciergeEventDraft | null): C
   const haystack = (previous?.eventType && previous.eventType !== "unknown"
     ? text.replace(/\b(?:birthday|wedding|baby\s+shower|gender\s+reveal|bridal\s+shower|graduation|gymnastics|game\s+day|football)(?:[- ](?:inspired|themed))?\s+(?:theme|style|background|artwork|design)\b/gi, "")
     : text).toLowerCase();
+  if (/\banniversary\b/.test(haystack)) return "anniversary";
   if (/\b(birthday|turning|turns|bday)\b/.test(haystack)) return "birthday";
   if (possessiveBirthdayMilestone(text)) return "birthday";
   if (/\b(wedding|married|marriage|bride|groom)\b/.test(haystack)) return "wedding";
@@ -364,7 +372,7 @@ function detectEventType(text: string, previous?: ConciergeEventDraft | null): C
   if (/\b(football|touchdown|tailgate)\b/.test(haystack)) return "football";
   if (/\b(game\s+day|gameday|watch\s+party)\b/.test(haystack)) return "game_day";
   if (
-    /\b(sports?\s+event|soccer|basketball|baseball|volleyball|pickleball|tennis)\b/.test(haystack)
+    /\b(sports?\s+event|soccer|basketball|baseball|volleyball|pickleball|tennis|swim(?:ming)?|softball|lacrosse|wrestling|track(?:\s+and\s+field)?)\b/.test(haystack)
   ) {
     return "sport_event";
   }
@@ -390,6 +398,8 @@ function detectRelationship(text: string, previous?: ConciergeEventDraft | null)
 }
 
 function detectAge(text: string, previous?: ConciergeEventDraft | null) {
+  const anniversary = text.match(/\b(\d{1,3})(?:st|nd|rd|th|[- ]year)?\s+anniversary\b/i);
+  if (anniversary) return anniversary[1];
   const stated = extractNamedAge(text, { allowBareAge: previous?.eventType === "birthday" || /\bbirthday\b/i.test(text) });
   if (stated) return stated.age;
   const milestone = possessiveBirthdayMilestone(text);
@@ -427,7 +437,7 @@ function isAgeOrMilestoneSkipReply(message: string) {
 }
 
 function detectAgeOrMilestoneSkipped(message: string, previous?: ConciergeEventDraft | null) {
-  if (!previous || previous.eventType !== "birthday") return false;
+  if (previous?.eventType !== "birthday") return false;
   if (firstMissingField(previous) !== "ageOrMilestone") return false;
   return isAgeOrMilestoneSkipReply(message);
 }
@@ -960,6 +970,8 @@ function detectGiftPreferenceNote(
     fieldsGuess.giftPreference,
   );
   if (direct) return direct;
+  const exactNoGifts = text.match(/\bno gifts?\s*,\s*please[.!]?/i);
+  if (exactNoGifts) return exactNoGifts[0];
   const noGifts = text.match(
     /\b(?:no gifts?|gifts?\s+(?:are\s+)?optional|your presence is (?:our|the) gift|gift cards?(?:\s+(?:are\s+)?(?:preferred|welcome|okay|ok|fine))?)\b[^.!,;]*/i,
   );
@@ -1071,6 +1083,9 @@ function withConversationState(
 ): ConciergeEventDraft {
   const next: ConciergeEventDraft = {
     ...draft,
+    publicContent: artworkOnly || draft.sourceContext.boundary && draft.sourceContext.boundary !== "envitefy_question"
+      ? previous?.publicContent : updatePublicContent(previous?.publicContent || draft.publicContent, message),
+    semanticKind: artworkOnly ? previous?.semanticKind : semanticKindForMessage(message, previous?.semanticKind || draft.semanticKind),
     hostBrief: artworkOnly || draft.sourceContext.boundary && draft.sourceContext.boundary !== "envitefy_question"
       ? previous?.hostBrief : updateHostBrief(draft.hostBrief || previous?.hostBrief, message),
     copyStatus: previous?.copyStatus,
@@ -1146,10 +1161,10 @@ function missingDetailForUser(field: string | null | undefined) {
 function duplicateEventInputMessage(draft: ConciergeEventDraft) {
   const missing = draft.currentQuestion || draft.missingFields[0];
   if (missing) {
-    return `I already have those details saved — we’re just missing ${missingDetailForUser(missing)}.`;
+    return `I already have those details in this chat — we’re just missing ${missingDetailForUser(missing)}.`;
   }
   return draft.canPersist
-    ? "I already have those details saved — everything still looks ready."
+    ? "I already have those details in this chat — everything still looks ready."
     : "I already have that saved. We’re almost there.";
 }
 
@@ -1253,7 +1268,11 @@ function isWeatherSideQuestion(message: string) {
 }
 
 function isPrivateDataMutationRequest(message: string) {
-  const text = cleanString(message) || "";
+  // Evaluate affirmative clauses independently. An exclusion is not permission
+  // to expose a secret, and a safe clause must not conceal a later unsafe one.
+  const text = (cleanString(message) || "").split(/[.!?;]|\bbut\b|\band\s+(?=(?:add|show|publish|include|reveal|expose)\b)/i)
+    .filter((clause) => !/\b(?:do\s+not|don['’]?t|never)\s+(?:add|include|show|publish|reveal|expose|put|give|send)\b|\b(?:without|remove|hide|omit|exclude|no)\s+(?:the\s+|any\s+|a\s+)?(?:door\s+code|access\s+code|gate\s+code|password|secret|private\s+data)\b/i.test(clause))
+    .join(". ");
   return (
     /\b(change|update|set|modify|switch|show|reveal|expose|give|send|tell|put|include|add|publish|bypass|make|what\s+is|what's)\b/i.test(
       text,
@@ -1390,7 +1409,7 @@ function buildStatePreservingConversationAnswer(message: string, previous: Conci
   } else if (/\bi\s+(already\s+)?gave\s+you\s+the\s+name\b/i.test(text)) {
     opener = previous.honoreeName
       ? `You're right - I have ${previous.honoreeName} as the featured name.`
-      : "You're right to call that out. I do not have a usable featured name saved yet.";
+      : "You're right to call that out. I do not have a usable featured name in this chat yet.";
   } else if (
     /\b(?:you\s+already\s+(?:asked|have)\s+(?:for\s+)?rsvp|forgot\s+rsvp|dropped\s+(?:the\s+)?rsvp|you\s+(?:lost|dropped|forgot)\s+(?:the\s+)?rsvp)\b/i.test(
       text,
@@ -1403,10 +1422,10 @@ function buildStatePreservingConversationAnswer(message: string, previous: Conci
           : "You're right - I have RSVP enabled."
         : previous.rsvpEnabled === false
           ? "You're right - I have RSVP turned off."
-          : "You're right to check. I do not have an RSVP choice saved yet.";
+          : "You're right to check. I do not have an RSVP choice in this chat yet.";
   } else if (/^why would i do that\??$/i.test(text)) {
     opener =
-      "Generating creates the actual shareable invite from these saved details, including the visual style once you provide it.";
+      "Generating creates the actual shareable invite from the details in this chat, including the visual style once you provide it.";
   }
   return [opener, currentDraftContinuation(previous)].filter(Boolean).join("\n\n");
 }
@@ -1912,12 +1931,13 @@ function detectAdditionalLocations(
     const label = titleCaseLocationLabel(match[1] || "Location");
     const location = cleanDetectedLocation(match[2] || "");
     if (!location) continue;
+    const parsedTime = chrono.parse(match[0]).find((result) => result.start.isCertain("hour"));
     add({
       label,
       venue: location,
       location,
       address: null,
-      timeText: null,
+      timeText: parsedTime ? formatClockTime(parsedTime.start.get("hour")!, parsedTime.start.get("minute") || 0) : null,
       description: null,
       mapQuery: location,
     });
@@ -1988,12 +2008,11 @@ function dateFromMonthDay(month: number, day: number) {
     start = new Date(year, month - 1, day, 12, 0, 0, 0);
   }
 
-  const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
   return {
     dateText: `${MONTH_NAMES[month - 1]} ${ordinalDay(day)}`,
     timeText: null,
-    startISO: start.toISOString(),
-    endISO: end.toISOString(),
+    startISO: null,
+    endISO: null,
   };
 }
 
@@ -2062,32 +2081,13 @@ function parsedHasCalendarDate(parsed: chrono.ParsedResult) {
   );
 }
 
-function combinePreviousDateWithParsedTime(args: {
-  previous: ConciergeEventDraft;
-  parsedStart: Date;
-  parsedEnd: Date;
-}) {
-  const previousStart = new Date(args.previous.startISO || "");
-  if (Number.isNaN(previousStart.getTime())) return null;
-
-  const nextStart = new Date(previousStart);
-  nextStart.setHours(args.parsedStart.getHours(), args.parsedStart.getMinutes(), 0, 0);
-  const previousEnd = new Date(args.previous.endISO || "");
-  const durationMs =
-    !Number.isNaN(previousEnd.getTime()) && previousEnd.getTime() > previousStart.getTime()
-      ? previousEnd.getTime() - previousStart.getTime()
-      : args.parsedEnd.getTime() > args.parsedStart.getTime()
-        ? args.parsedEnd.getTime() - args.parsedStart.getTime()
-        : 2 * 60 * 60 * 1000;
-  const nextEnd = new Date(nextStart.getTime() + durationMs);
-
-  return {
-    dateText: args.previous.dateText || null,
-    timeText: nextStart.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
-    startISO: nextStart.toISOString(),
-    endISO: nextEnd.toISOString(),
-    needsConfirmation: false,
-  };
+function savedClock(iso: string | null | undefined, timezone: string) {
+  if (!iso || !Number.isFinite(Date.parse(iso))) return null;
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", { timeZone: timezone, year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", hourCycle: "h23" }).formatToParts(new Date(iso));
+    const number = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((part) => part.type === type)?.value);
+    return { year: number("year"), month: number("month"), day: number("day"), hour: number("hour"), minute: number("minute") };
+  } catch { return null; }
 }
 
 function parsedTimeRole(text: string, parsed: chrono.ParsedResult) {
@@ -2198,6 +2198,8 @@ function parseEndOnlySchedule(
 }
 
 export function parseChrono(text: string, previous?: ConciergeEventDraft | null): ParsedEventSchedule {
+  const explicitTimezone = suppliedTimeZone(text);
+  if (explicitTimezone && previous) previous = { ...previous, timezone: explicitTimezone };
   const cleaned = cleanString(text?.replace(/[.!?]+$/g, "")) || "";
   if (previous?.currentQuestion === "date_confirmation") {
     if (isDateConfirmationAffirmation(cleaned)) {
@@ -2230,7 +2232,8 @@ export function parseChrono(text: string, previous?: ConciergeEventDraft | null)
   const parsed = chrono.parse(scheduleText, new Date(), { forwardDate: true });
   const endOnlySchedule = parseEndOnlySchedule(scheduleText, parsed, previous);
   if (endOnlySchedule) return endOnlySchedule;
-  const first = parsed.find((result) => !result.tags().has("result/relativeDate")) || parsed[0];
+  const candidates = parsed.filter((result) => !result.tags().has("result/relativeDate") && parsedTimeRole(scheduleText, result) !== "superseded");
+  const first = candidates[0] || parsed[0];
   if (!first) {
     return {
       dateText: previous?.dateText || null,
@@ -2241,28 +2244,43 @@ export function parseChrono(text: string, previous?: ConciergeEventDraft | null)
     };
   }
 
-  const start = first.start.date();
-  const end = first.end?.date() || new Date(start.getTime() + 2 * 60 * 60 * 1000);
-  const hasHour = first.start.isCertain("hour");
-  const preferPm = hasHour && shouldPreferPmForBareHour(first.text, start.getHours());
-  const displayStart = preferPm ? new Date(start.getTime() + 12 * 60 * 60 * 1000) : start;
-  const displayEnd = preferPm ? new Date(end.getTime() + 12 * 60 * 60 * 1000) : end;
-  if (previous?.startISO && hasHour && !parsedHasCalendarDate(first)) {
-    const combined = combinePreviousDateWithParsedTime({
-      previous,
-      parsedStart: displayStart,
-      parsedEnd: displayEnd,
-    });
-    if (combined) return combined;
+  const timezone = explicitTimezone || previous?.timezone || DEFAULT_TIMEZONE;
+  const previousClock = savedClock(previous?.startISO, timezone);
+  const calendar = candidates.find(parsedHasCalendarDate);
+  const timed = candidates.filter((result) => result.start.isCertain("hour") && parsedTimeRole(scheduleText, result) !== "end");
+  const auxiliary = (result: chrono.ParsedResult) => /\b(?:arriv(?:e|al)|warm[- ]?up|doors?\s+(?:open|opens)|check[- ]in)\s*(?:starts?\s*)?(?:at|is|from|:)?\s*$/i.test(scheduleText.slice(0, result.index));
+  const primary = timed.find((result) => !auxiliary(result) && /\b(?:kickoff|tip[- ]off|(?:event|practice|competition|meet|game|show|ceremony|party)?\s*(?:starts?|begins?))\s*(?:at|is|from|:)?\s*$/i.test(scheduleText.slice(0, result.index)))
+    || timed.find((result) => !auxiliary(result)) || (timed.length === 1 ? timed[0] : null);
+  const previousDate = previousClock || (previous?.dateText ? chrono.parse(previous.dateText, new Date(), { forwardDate: true }).find(parsedHasCalendarDate)?.start : null);
+  const datePart = (part: "year" | "month" | "day") => calendar?.start.get(part) ?? (previousDate && "get" in previousDate ? previousDate.get(part) : previousDate?.[part]) ?? null;
+  const year = datePart("year"), month = datePart("month"), day = datePart("day");
+  const hourValue = primary?.start.get("hour") ?? previousClock?.hour ?? null;
+  const hour = hourValue !== null && primary && shouldPreferPmForBareHour(primary.text, hourValue) ? hourValue + 12 : hourValue;
+  const minute = primary?.start.get("minute") ?? previousClock?.minute ?? 0;
+  const hasDate = year !== null && month !== null && day !== null;
+  const explicitOffset = primary?.start.isCertain("timezoneOffset") ? primary.start.get("timezoneOffset") : null;
+  const toIso = (parts: { year: number; month: number; day: number; hour: number; minute: number }) => explicitOffset != null
+    ? new Date(Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute) - explicitOffset * 60000).toISOString()
+    : localClockToIso(parts, timezone);
+  const startISO = hasDate && hour !== null ? toIso({ year, month, day, hour, minute }) : null;
+  const ending = candidates.find((result) => result.start.isCertain("hour") && parsedTimeRole(scheduleText, result) === "end");
+  const endParts = primary?.end?.isCertain("hour") ? primary.end : ending?.start;
+  let endISO: string | null = null;
+  if (startISO && hasDate && endParts?.isCertain("hour")) {
+    const endHour = endParts.get("hour")!;
+    endISO = toIso({ year, month, day, hour: shouldPreferPmForBareHour(ending?.text || primary?.text || "", endHour) ? endHour + 12 : endHour, minute: endParts.get("minute") || 0 });
+    if (primary?.end?.isCertain("day")) endISO = toIso({ year: primary.end.get("year")!, month: primary.end.get("month")!, day: primary.end.get("day")!, hour: endHour, minute: endParts.get("minute") || 0 });
+  } else if (startISO && previous?.startISO && previous.endISO) {
+    const duration = Date.parse(previous.endISO) - Date.parse(previous.startISO);
+    if (Number.isFinite(duration) && duration > 0) endISO = new Date(Date.parse(startISO) + duration).toISOString();
   }
+  const invalidEnd = Boolean(startISO && endISO && Date.parse(endISO) <= Date.parse(startISO));
   return {
-    dateText: cleanString(first.text) || previous?.dateText || null,
-    timeText: hasHour
-      ? displayStart.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
-      : previous?.timeText || null,
-    startISO: displayStart.toISOString(),
-    endISO: displayEnd.toISOString(),
-    needsConfirmation: false,
+    dateText: calendar ? cleanString(calendar.text) : previous?.dateText || null,
+    timeText: hour !== null ? formatClockTime(hour, minute) : previous?.timeText || null,
+    startISO,
+    endISO: invalidEnd ? null : endISO,
+    needsConfirmation: invalidEnd || Boolean(hasDate && hour !== null && !startISO),
   };
 }
 
@@ -2389,6 +2407,7 @@ function buildTitle(args: {
   }
   if (args.eventType === "birthday" && args.honoreeName) return `${args.honoreeName}'s birthday`;
   if (args.eventType === "wedding" && args.honoreeName) return `${args.honoreeName} wedding`;
+  if (args.eventType === "anniversary" && args.honoreeName) return `${args.honoreeName} — ${args.ageOrMilestone ? `${args.ageOrMilestone} year ` : ""}anniversary`;
   if (args.eventType === "bridal_shower" && args.honoreeName)
     return `${args.honoreeName}'s bridal shower`;
   if (args.eventType === "baby_shower" && args.honoreeName)
@@ -3001,7 +3020,7 @@ export function fallbackExtractConciergeDraft(args: {
     Array.isArray(args.requestedOutputs) && args.requestedOutputs.length > 0;
   const replacesPreviousOutputs = Boolean(previous && isProductSwitchCommand(message));
   const requestedOutputs = blocksCreation
-    ? []
+    ? normalizeRequestedOutputs(args.requestedOutputs || previous?.requestedOutputs, { text: "", previous, defaultOutput: null })
     : normalizeRequestedOutputs(
         hasExplicitOutputs
           ? args.requestedOutputs
@@ -3089,6 +3108,7 @@ export function fallbackExtractConciergeDraft(args: {
     !previous.currentQuestion &&
     !privateDataMutationRequest &&
     !blockingBoundary &&
+    !hasExplicitEventSchedule(message) && !extractRsvpContactDetails(message) &&
     isReadyStatusQuestion(message)
   ) {
     const next = {
@@ -3250,7 +3270,7 @@ export function fallbackExtractConciergeDraft(args: {
     message.includes("?"),
   );
   const canUseRawMessageAsEventPurpose =
-    !commandOnlyDraftUpdate && !conversationQuestion && (hasCreationSignal || requestedOutputs.length > 0);
+    !previousEventPurpose && !commandOnlyDraftUpdate && !conversationQuestion && (hasCreationSignal || requestedOutputs.length > 0);
   const rawMessageEventPurpose =
     canUseRawMessageAsEventPurpose && isMeaningfulEventText(message, requestedOutputs)
       ? cleanCreationString(message)
@@ -3271,11 +3291,12 @@ export function fallbackExtractConciergeDraft(args: {
   const eventPurpose =
     blocksCreation || (receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails)
       ? null
-      : extractedEventPurpose ||
+      : explicitTitle || extractedEventPurpose ||
+        clarifiedBirthdayEventPurpose ||
+        previousEventPurpose ||
         sportEventPurpose ||
         messageEventPurpose ||
-        clarifiedBirthdayEventPurpose ||
-        previousEventPurpose;
+        explicitTitle;
   const titleCandidate =
     explicitTitle ||
     (previous?.titleConfirmed ? previous.title : null) ||
@@ -3440,7 +3461,7 @@ export function fallbackExtractConciergeDraft(args: {
     timeText,
     startISO,
     endISO,
-    timezone: firstString(fieldsGuess.timezone) || previous?.timezone || DEFAULT_TIMEZONE,
+    timezone: firstString(fieldsGuess.timezone) || suppliedTimeZone(text) || previous?.timezone || DEFAULT_TIMEZONE,
     location,
     venue,
     additionalLocations,

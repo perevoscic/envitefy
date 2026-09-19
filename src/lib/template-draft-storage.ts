@@ -17,8 +17,19 @@ export type TemplateDraft = {
   assets: Record<string, Blob>;
   eventId?: string;
   signupRevision?: number;
+  signupRequiresInvitation?: boolean;
   pendingSave?: boolean;
 };
+
+/** A gallery choice starts a new signup; only an explicit browser resume restores one. */
+export function readTemplateEditorDraft(
+  category: string,
+  draftId?: string | null,
+  eventId?: string | null,
+): Promise<TemplateDraft | null> {
+  if (category === "signup-forms" && (eventId || !draftId)) return Promise.resolve(null);
+  return readTemplateDraft(category, draftId || undefined);
+}
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {

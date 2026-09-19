@@ -1,0 +1,48 @@
+- link "← Signup forms templates":
+  - /url: /signup-forms/templates
+- paragraph: Customize freely. An account is required to save and share.
+- button "Start over"
+- button "Save and continue"
+- paragraph: Progress is saved only when you choose Save. Browser drafts are kept for 7 days.
+- main:
+  - heading "Your signup page" [level=1]
+  - heading "Preview & publish" [level=2]
+  - paragraph: Try the guest experience before you share it.
+  - strong: Before you publish
+  - list:
+    - button "Give your signup a title."
+    - button "Add at least one named signup slot."
+  - heading "Your signup" [level=1]
+  - generic: Date to be announced
+  - generic: Location to be announced
+  - link "Envitefy Sign-up Forms (opens in a new tab)":
+    - /url: https://envitefy.com
+    - img "envitefy":
+      - generic: envitefy
+  - paragraph: CREATE | SHARE | ENJOY
+  - paragraph:
+    - strong: Created with Envitefy Sign-up Forms
+    - link "Create now":
+      - /url: https://envitefy.com/
+  - navigation "Follow Envitefy":
+    - list:
+      - link "Envitefy on Instagram (opens in a new tab)":
+        - /url: https://www.instagram.com/envitefy/
+        - generic: Envitefy on Instagram (opens in a new tab)
+      - link "Envitefy on Facebook (opens in a new tab)":
+        - /url: https://www.facebook.com/envitefy/
+        - generic: Envitefy on Facebook (opens in a new tab)
+      - link "Envitefy on YouTube (opens in a new tab)":
+        - /url: https://www.youtube.com/@envitefy
+        - generic: Envitefy on YouTube (opens in a new tab)
+      - link "Envitefy on TikTok (opens in a new tab)":
+        - /url: https://www.tiktok.com/@envitefy
+        - generic: Envitefy on TikTok (opens in a new tab)
+      - link "Envitefy on Reddit (opens in a new tab)":
+        - /url: https://www.reddit.com/user/envitefy/
+        - generic: Envitefy on Reddit (opens in a new tab)
+  - strong: Who can sign up?
+  - paragraph: Invited contacts can sign in and claim slots after accepting your invitation. Publishing keeps your existing sharing permissions; the page link alone does not grant signup access. After publishing, use “Invite people & check access” to send invitations and see who has accepted. Participants need an Envitefy account first.
+  - button "← Back to editing"
+  - button "Save and continue" [active]
+- alert

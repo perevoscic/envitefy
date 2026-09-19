@@ -1,9 +1,12 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { useTheme } from "@/app/providers";
 import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
 import { openRsvpMailtoHref } from "@/utils/rsvp-mailto";
+import { buildGuestRsvpSubmission, guestRsvpGuessRules } from "@/lib/guest-rsvp";
+import type { GenderRevealConfig } from "@/lib/gender-reveal";
 
 type ResponseIntent = "attend" | "decline" | "maybe" | null;
 
@@ -24,6 +27,9 @@ type EventRsvpPromptProps = {
   shareUrl?: string | null;
   allowDirectRsvp?: boolean;
   variant?: "default" | "wedding-scan";
+  previewMode?: boolean;
+  genderRevealConfig?: GenderRevealConfig;
+  rsvpDeadline?: string | null;
 };
 
 const RSVP_OPTIONS: Array<{
@@ -68,12 +74,18 @@ export default function EventRsvpPrompt({
   shareUrl,
   allowDirectRsvp = false,
   variant = "default",
+  previewMode = false,
+  genderRevealConfig,
+  rsvpDeadline,
 }: EventRsvpPromptProps) {
   const { theme } = useTheme();
+  const lastTrigger = useRef<HTMLButtonElement | null>(null);
   const [intent, setIntent] = useState<ResponseIntent>(null);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [sender, setSender] = useState<StoredSender>(initialSender);
   const [error, setError] = useState<string | null>(null);
+  const [genderGuess, setGenderGuess] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [declineModalOpen, setDeclineModalOpen] = useState(false);
   const [declineLines, setDeclineLines] = useState<string[]>([]);
@@ -81,7 +93,7 @@ export default function EventRsvpPrompt({
     setMounted(true);
   }, []);
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || previewMode) return;
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
@@ -94,12 +106,12 @@ export default function EventRsvpPrompt({
         });
       }
     } catch {}
-  }, [mounted]);
+  }, [mounted, previewMode]);
 
   const [existingRsvp, setExistingRsvp] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!mounted || !eventId) return;
+    if (!mounted || !eventId || previewMode) return;
     try {
       const stored = localStorage.getItem(`envitefy_rsvp_${eventId}`);
       if (stored) setExistingRsvp(stored);
@@ -118,28 +130,13 @@ export default function EventRsvpPrompt({
     };
     window.addEventListener("rsvp-submitted", handler);
     return () => window.removeEventListener("rsvp-submitted", handler);
-  }, [mounted, eventId]);
+  }, [mounted, eventId, previewMode]);
 
-  useEffect(() => {
-    if (!modalOpen && !declineModalOpen) return;
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      setModalOpen(false);
-      setDeclineModalOpen(false);
-      setDeclineLines([]);
-      setIntent(null);
-      setError(null);
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [modalOpen, declineModalOpen]);
 
   const hasPhone = Boolean(rsvpPhone);
   const hasEmail = Boolean(rsvpEmail);
   const hasUrl = Boolean(rsvpUrl);
-  const hasDirectRsvp = Boolean(eventId && allowDirectRsvp);
+  const hasDirectRsvp = Boolean((eventId || previewMode) && allowDirectRsvp);
   const isWeddingScanVariant = variant === "wedding-scan";
   if (!hasPhone && !hasEmail && !hasUrl && !hasDirectRsvp) {
     return null;
@@ -148,7 +145,7 @@ export default function EventRsvpPrompt({
     return null;
   }
 
-  const contactMode: "direct" | "sms" | "email" = hasEmail
+  const contactMode: "direct" | "sms" | "email" = hasDirectRsvp ? "direct" : hasEmail
     ? "email"
     : hasPhone
       ? "sms"
@@ -157,6 +154,7 @@ export default function EventRsvpPrompt({
   const rsvpContactForMode =
     contactMode === "email" ? rsvpEmail || "" : contactMode === "sms" ? rsvpPhone || "" : "";
   const resolvedCategory = eventCategory || (isWeddingScanVariant ? "Wedding" : null);
+  const guessRules = guestRsvpGuessRules(resolvedCategory, intent ? responseKeyForIntent(intent) : "maybe", genderRevealConfig, rsvpDeadline);
 
   const buildOutboundHrefForIntent = (nextIntent: NonNullable<ResponseIntent>) => {
     const senderName = `${sender.firstName.trim()} ${sender.lastName.trim()}`.trim();
@@ -180,180 +178,36 @@ export default function EventRsvpPrompt({
     window.location.href = href;
   };
 
-  const _handleDecline = async () => {
-    // Submit "no" RSVP to API if eventId is available
-    if (eventId) {
-      try {
-        const senderName =
-          sender.firstName && sender.lastName
-            ? `${sender.firstName.trim()} ${sender.lastName.trim()}`.trim()
-            : undefined;
-
-        console.log("[RSVP] Submitting decline:", {
-          eventId,
-          email: sender.email,
-          name: senderName,
-        });
-
-        const res = await fetch(`/api/events/${eventId}/rsvp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            response: "no",
-            email: sender.email.trim() || undefined,
-            name: senderName || undefined,
-          }),
-        });
-        const data = await res.json();
-        console.log("[RSVP] Decline response:", {
-          ok: res.ok,
-          status: res.status,
-          data,
-        });
-        if (res.ok && data.ok) {
-          console.log("[RSVP] Dispatching rsvp-submitted event");
-          try { localStorage.setItem(`envitefy_rsvp_${eventId}`, "no"); } catch {}
-          setExistingRsvp("no");
-          window.dispatchEvent(new CustomEvent("rsvp-submitted", { detail: { eventId, response: "no" } }));
-        } else {
-          console.error(
-            "RSVP submission failed:",
-            data.error || "Unknown error"
-          );
-        }
-      } catch (err) {
-        console.error("Failed to submit RSVP to API:", err);
-      }
-    }
-
-    setModalOpen(false);
-    setIntent(null);
-    setError(null);
-  };
-
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!intent) return;
+    if (!intent || submitting || previewMode) return;
     if (!sender.firstName.trim() || !sender.lastName.trim()) {
-      setError("Please enter both first and last name.");
-      return;
+      setError("Please enter both first and last name."); return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sender.email.trim())) {
-      setError("Please enter a valid email.");
-      return;
-    }
-    setError(null);
+    setError(null); setSubmitting(true);
     try {
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sender));
-      }
-    } catch {}
-
-    // Submit RSVP to API if eventId is available
-    if (eventId) {
-      try {
-        const senderName =
-          `${sender.firstName.trim()} ${sender.lastName.trim()}`.trim();
-        const rsvpResponse =
-          intent === "attend" ? "yes" : intent === "maybe" ? "maybe" : "no";
-        const res = await fetch(`/api/events/${eventId}/rsvp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            response: rsvpResponse,
-            name: senderName,
-            email: sender.email.trim(),
-          }),
+      const submission = buildGuestRsvpSubmission({
+        response: responseKeyForIntent(intent), name: [sender.firstName.trim(), sender.lastName.trim()].join(" "),
+        email: sender.email, category: resolvedCategory, genderGuess, genderRevealConfig, rsvpDeadline,
+      });
+      if (eventId && hasDirectRsvp) {
+        const res = await fetch(`/api/events/${encodeURIComponent(eventId)}/rsvp`, {
+          method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(submission),
         });
-        const data = await res.json();
-        if (res.ok && data.ok) {
-          try { localStorage.setItem(`envitefy_rsvp_${eventId}`, rsvpResponse); } catch {}
-          setExistingRsvp(rsvpResponse);
-          window.dispatchEvent(new CustomEvent("rsvp-submitted", { detail: { eventId, response: rsvpResponse } }));
-        } else {
-          console.error(
-            "RSVP submission failed:",
-            data.error || "Unknown error"
-          );
-        }
-      } catch (err) {
-        console.error("Failed to submit RSVP to API:", err);
+        const data = await res.json().catch(() => null) as { ok?: boolean; error?: string } | null;
+        if (!res.ok || !data?.ok) throw new Error(data?.error || "Your RSVP could not be sent. Please try again.");
+        try { localStorage.setItem(`envitefy_rsvp_${eventId}`, submission.response); } catch {}
+        setExistingRsvp(submission.response);
+        window.dispatchEvent(new CustomEvent("rsvp-submitted", { detail: { eventId, response: submission.response } }));
       }
-    }
-
-    if (!isDirectOnlyRsvp) {
-      openOutboundComposerForIntent(intent);
-    }
-    setModalOpen(false);
-    setIntent(null);
-  };
-
-  const _handleEmailIntent = async (nextIntent: ResponseIntent) => {
-    if (!rsvpEmail || !nextIntent) return;
-
-    // Submit RSVP to API if eventId is available
-    if (eventId && nextIntent !== "decline") {
-      try {
-        const rsvpResponse =
-          nextIntent === "attend"
-            ? "yes"
-            : nextIntent === "maybe"
-            ? "maybe"
-            : "no";
-        const senderName = `${sender.firstName.trim()} ${sender.lastName.trim()}`.trim();
-        const res = await fetch(`/api/events/${eventId}/rsvp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            response: rsvpResponse,
-            name: senderName || undefined,
-            email: sender.email.trim() || undefined,
-          }),
-        });
-        const data = await res.json();
-        if (res.ok && data.ok) {
-          try { localStorage.setItem(`envitefy_rsvp_${eventId}`, rsvpResponse); } catch {}
-          setExistingRsvp(rsvpResponse);
-          window.dispatchEvent(new CustomEvent("rsvp-submitted", { detail: { eventId, response: rsvpResponse } }));
-        } else {
-          console.error(
-            "RSVP submission failed:",
-            data.error || "Unknown error"
-          );
-        }
-      } catch (err) {
-        console.error("Failed to submit RSVP to API:", err);
-        // Continue with email flow even if API call fails
+      try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sender)); } catch {}
+      if (!isDirectOnlyRsvp) {
+        openOutboundComposerForIntent(intent);
       }
-    }
-
-    const eventLabel = eventTitle?.trim() || "the event";
-    const salutation = rsvpName?.trim() || "there";
-    let bodyCore = "";
-    if (nextIntent === "attend") {
-      bodyCore = `I'm excited to attend ${eventLabel}.`;
-    } else if (nextIntent === "maybe") {
-      bodyCore = `I might be able to attend ${eventLabel}, and I'll confirm soon.`;
-    } else if (nextIntent === "decline") {
-      bodyCore = `Unfortunately, I won't be able to attend ${eventLabel}.`;
-    } else {
-      return;
-    }
-    const lines = [`Hi ${salutation},`, "", bodyCore];
-    if (shareUrl) {
-      lines.push("", `Event link: ${shareUrl}`);
-    }
-    lines.push("", "Sent via SnapMyDate · envitefy.com");
-    const subject = `RSVP for ${eventTitle?.trim() || "your event"}`;
-    const href = `mailto:${encodeURIComponent(
-      rsvpEmail
-    )}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
-      lines.join("\n")
-    )}`;
-    openRsvpMailtoHref(href);
+      setModalOpen(false); setDeclineModalOpen(false); setIntent(null);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Your RSVP could not be sent. Please try again.");
+    } finally { setSubmitting(false); }
   };
 
   const clearAndClose = () => {
@@ -443,7 +297,7 @@ export default function EventRsvpPrompt({
         className={
           isWeddingScanVariant
             ? "inline-flex items-center gap-2 rounded-full border border-black/5 bg-white px-4 py-2 text-sm font-medium text-[#2f261e] shadow-[0_12px_30px_rgba(37,26,10,0.08)]"
-            : "inline-flex items-center gap-2 rounded-xl border border-[#ddd4f8] bg-[#f7f2ff] px-3 py-1.5 text-sm font-semibold text-[#3f3269]"
+            : "inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#ddd4f8] bg-[#f7f2ff] px-3 py-1.5 text-sm font-semibold text-[#3f3269]"
         }
       >
         <span aria-hidden="true">{icon}</span>
@@ -453,6 +307,7 @@ export default function EventRsvpPrompt({
   }
 
   return (
+    <Dialog.Root open={modalOpen || declineModalOpen} onOpenChange={(open) => { if (!open && !submitting) { setModalOpen(false); setDeclineModalOpen(false); setIntent(null); setError(null); } }}>
     <div className="space-y-3">
       {hasUrl ? (
         <a
@@ -462,7 +317,7 @@ export default function EventRsvpPrompt({
           className={
             isWeddingScanVariant
               ? "inline-flex min-h-11 items-center gap-2 rounded-full border border-black/5 bg-white px-4 py-2 text-sm font-medium tracking-[0.08em] text-[#2f261e] uppercase shadow-[0_14px_32px_rgba(37,26,10,0.08)] transition hover:-translate-y-[1px] hover:bg-[#fbf7f1]"
-              : "inline-flex items-center gap-2 rounded-xl border border-[#ddd4f8] bg-[#f7f2ff] px-3 py-1.5 text-sm font-semibold text-[#3f3269] shadow-sm transition hover:border-[#cabcf0] hover:bg-white"
+              : "inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#ddd4f8] bg-[#f7f2ff] px-3 py-1.5 text-sm font-semibold text-[#3f3269] shadow-sm transition hover:border-[#cabcf0] hover:bg-white"
           }
         >
           <span aria-hidden="true">🔗</span>
@@ -476,11 +331,11 @@ export default function EventRsvpPrompt({
           <button
             key={option.intent}
             type="button"
-            onClick={() => openModalFor(option.intent)}
+            onClick={(event) => { lastTrigger.current = event.currentTarget; openModalFor(option.intent); }}
             className={
               isWeddingScanVariant
                 ? "inline-flex min-h-11 items-center gap-2 rounded-full border border-black/5 bg-white/95 px-4 py-2 text-sm font-medium tracking-[0.08em] text-[#2f261e] uppercase shadow-[0_14px_32px_rgba(37,26,10,0.08)] transition hover:-translate-y-[1px] hover:bg-[#fbf7f1]"
-                : "inline-flex items-center gap-2 rounded-xl border border-[#ddd4f8] bg-white/90 px-3 py-1.5 text-sm font-semibold text-[#3f3269] shadow-sm transition hover:border-[#cabcf0] hover:bg-[#f7f2ff]"
+                : "inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#ddd4f8] bg-white/90 px-3 py-1.5 text-sm font-semibold text-[#3f3269] shadow-sm transition hover:border-[#cabcf0] hover:bg-[#f7f2ff]"
             }
           >
             <span aria-hidden="true">{option.icon}</span>
@@ -490,21 +345,25 @@ export default function EventRsvpPrompt({
       </div>
       )}
 
+      <Dialog.Portal>
       {declineModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           {/* Force modal to follow site theme tokens; avoid OS auto-dark */}
-          <div
+          <Dialog.Content
+            onCloseAutoFocus={(event) => { event.preventDefault(); lastTrigger.current?.focus(); }}
+            aria-describedby={undefined}
             role="dialog"
             aria-modal="true"
             aria-labelledby="rsvp-decline-title"
-            className="relative w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-2xl"
+            className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-xl border border-border bg-surface p-6 shadow-2xl"
             style={{ colorScheme: theme }}
           >
             <button
               type="button"
               aria-label="Close"
+              disabled={submitting}
               onClick={closeDeclineModal}
-              className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md text-foreground/70 hover:bg-foreground/10 hover:text-foreground"
+              className="absolute right-3 top-3 inline-flex h-11 w-11 items-center justify-center rounded-md text-foreground/70 hover:bg-foreground/10 hover:text-foreground"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -521,9 +380,9 @@ export default function EventRsvpPrompt({
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            <h3 id="rsvp-decline-title" className="text-lg font-semibold rsvp-heading">
-              Thanks for the RSVP
-            </h3>
+            <Dialog.Title asChild><h3 id="rsvp-decline-title" className="text-lg font-semibold rsvp-heading">
+              Confirm your RSVP
+            </h3></Dialog.Title>
             <div className="mt-3 space-y-2 text-sm text-foreground/80">
               {declineLines.map((line, index) => (
                 <p key={index}>{line}</p>
@@ -531,57 +390,7 @@ export default function EventRsvpPrompt({
             </div>
             <form
               className="mt-5 space-y-3"
-              onSubmit={async (event) => {
-                event.preventDefault();
-                // Require first/last name before recording decline
-                if (!sender.firstName.trim() || !sender.lastName.trim()) {
-                  setError("Please enter both first and last name.");
-                  return;
-                }
-                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sender.email.trim())) {
-                  setError("Please enter a valid email.");
-                  return;
-                }
-                setError(null);
-                try {
-                  if (typeof window !== "undefined") {
-                    window.localStorage.setItem(
-                      STORAGE_KEY,
-                      JSON.stringify(sender)
-                    );
-                  }
-                } catch {}
-
-                // Submit RSVP 'no' to API
-                if (eventId) {
-                  try {
-                    const senderName =
-                      `${sender.firstName.trim()} ${sender.lastName.trim()}`.trim();
-                    const res = await fetch(`/api/events/${eventId}/rsvp`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      credentials: "include",
-                      body: JSON.stringify({
-                        response: "no",
-                        name: senderName,
-                        email: sender.email.trim(),
-                      }),
-                    });
-                    const data = await res.json();
-                    if (res.ok && data.ok) {
-                      try { localStorage.setItem(`envitefy_rsvp_${eventId}`, "no"); } catch {}
-                      setExistingRsvp("no");
-                      window.dispatchEvent(new CustomEvent("rsvp-submitted", { detail: { eventId, response: "no" } }));
-                    }
-                  } catch {}
-                }
-                if (!isDirectOnlyRsvp) {
-                  openOutboundComposerForIntent("decline");
-                }
-                setDeclineModalOpen(false);
-                setDeclineLines([]);
-                setIntent(null);
-              }}
+              onSubmit={handleSubmit}
             >
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <label className="text-sm">
@@ -632,27 +441,29 @@ export default function EventRsvpPrompt({
                 />
               </label>
               {error ? (
-                <p className="text-sm text-rose-600 dark:text-rose-300">
+                <p role="alert" className="text-sm text-rose-600 dark:text-rose-300">
                   {error}
                 </p>
               ) : null}
               <div className="flex justify-end gap-3">
                 <button
                   type="button"
-                  onClick={closeDeclineModal}
-                  className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm font-medium btn-cancel-white hover:bg-foreground/5"
+                  disabled={submitting}
+              onClick={closeDeclineModal}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm font-medium btn-cancel-white hover:bg-foreground/5"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-1.5 text-sm font-semibold text-on-primary hover:opacity-95"
+                  disabled={previewMode || submitting}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-md bg-primary px-4 py-1.5 text-sm font-semibold text-on-primary hover:opacity-95"
                 >
-                  Send RSVP
+                  {previewMode ? "Preview only" : submitting ? "Sending…" : "Send RSVP"}
                 </button>
               </div>
             </form>
-          </div>
+          </Dialog.Content>
         </div>
       )}
 
@@ -661,18 +472,21 @@ export default function EventRsvpPrompt({
       {modalOpen && intent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           {/* Force modal to follow site theme tokens; avoid OS auto-dark */}
-          <div
+          <Dialog.Content
+            onCloseAutoFocus={(event) => { event.preventDefault(); lastTrigger.current?.focus(); }}
+            aria-describedby={undefined}
             role="dialog"
             aria-modal="true"
             aria-labelledby="rsvp-introduce-title"
-            className="relative w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-2xl"
+            className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-xl border border-border bg-surface p-6 shadow-2xl"
             style={{ colorScheme: theme }}
           >
             <button
               type="button"
               aria-label="Close"
+              disabled={submitting}
               onClick={clearAndClose}
-              className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md text-foreground/70 hover:bg-foreground/10 hover:text-foreground"
+              className="absolute right-3 top-3 inline-flex h-11 w-11 items-center justify-center rounded-md text-foreground/70 hover:bg-foreground/10 hover:text-foreground"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -689,15 +503,21 @@ export default function EventRsvpPrompt({
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            <h3 id="rsvp-introduce-title" className="text-lg font-semibold rsvp-heading">
+            <Dialog.Title asChild><h3 id="rsvp-introduce-title" className="text-lg font-semibold rsvp-heading">
               Introduce yourself
-            </h3>
+            </h3></Dialog.Title>
             <p className="mt-2 text-sm text-foreground/70">
               {isDirectOnlyRsvp
                 ? "We’ll send your RSVP directly to the host."
                 : "We’ll open your message after you share who is reaching out."}
             </p>
             <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
+              {guessRules.collect ? <label className="block text-sm">
+                <span>Team guess{guessRules.required ? " (required)" : " (optional)"}</span>
+                <select value={genderGuess} onChange={(event) => setGenderGuess(event.target.value)} required={guessRules.required} className="mt-1 min-h-11 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground">
+                  <option value="">Choose a team</option><option value="pink">Team Pink</option><option value="blue">Team Blue</option>
+                </select>
+              </label> : null}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <label className="text-sm">
                   <span className="text-foreground/70">First name</span>
@@ -747,29 +567,33 @@ export default function EventRsvpPrompt({
                 />
               </label>
               {error ? (
-                <p className="text-sm text-rose-600 dark:text-rose-300">
+                <p role="alert" className="text-sm text-rose-600 dark:text-rose-300">
                   {error}
                 </p>
               ) : null}
               <div className="flex justify-end gap-3 pt-1">
                 <button
                   type="button"
-                  onClick={clearAndClose}
-                  className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm font-medium btn-cancel-white hover:bg-foreground/5"
+                  disabled={submitting}
+              onClick={clearAndClose}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm font-medium btn-cancel-white hover:bg-foreground/5"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-1.5 text-sm font-semibold text-on-primary hover:opacity-95"
+                  disabled={previewMode || submitting}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-md bg-primary px-4 py-1.5 text-sm font-semibold text-on-primary hover:opacity-95"
                 >
-                  {isDirectOnlyRsvp ? "Send RSVP" : "Continue"}
+                  {previewMode ? "Preview only" : submitting ? "Sending…" : isDirectOnlyRsvp ? "Send RSVP" : "Continue"}
                 </button>
               </div>
             </form>
-          </div>
+          </Dialog.Content>
         </div>
       )}
+      </Dialog.Portal>
     </div>
+    </Dialog.Root>
   );
 }

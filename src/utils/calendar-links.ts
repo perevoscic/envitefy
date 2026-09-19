@@ -5,7 +5,7 @@ export type CalendarLinkArgs = {
   description: string;
   location: string;
   startIso: string;
-  endIso: string;
+  endIso: string | null;
   timezone?: string;
   allDay: boolean;
   reminders: number[] | null;
@@ -95,14 +95,14 @@ function buildGoogleCalendarUrl({
   description: string;
   location: string;
   startIso: string;
-  endIso: string;
+  endIso: string | null;
   allDay: boolean;
   timezone: string;
 }): string {
   const encode = encodeURIComponent;
   const dates = allDay
-    ? `${toGoogleDateOnly(startIso)}/${toGoogleDateOnly(endIso)}`
-    : `${toGoogleTimestamp(startIso)}/${toGoogleTimestamp(endIso)}`;
+    ? `${toGoogleDateOnly(startIso)}/${toGoogleDateOnly(endIso || startIso)}`
+    : `${toGoogleTimestamp(startIso)}/${toGoogleTimestamp(endIso || startIso)}`;
   let url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encode(
     title || "Event"
   )}&details=${encode(description || "")}&location=${encode(
@@ -126,7 +126,7 @@ function buildOutlookComposeUrl({
   description: string;
   location: string;
   startIso: string;
-  endIso: string;
+  endIso: string | null;
   allDay: boolean;
 }): string {
   const params = new URLSearchParams({
@@ -134,7 +134,7 @@ function buildOutlookComposeUrl({
     allday: String(Boolean(allDay)),
     subject: title || "Event",
     startdt: allDay ? startIso.slice(0, 10) : toOutlookParam(startIso),
-    enddt: allDay ? endIso.slice(0, 10) : toOutlookParam(endIso),
+    ...(endIso ? { enddt: allDay ? endIso.slice(0, 10) : toOutlookParam(endIso) } : {}),
     location: location || "",
     body: description || "",
     path: "/calendar/view/Month",
@@ -156,7 +156,7 @@ function buildIcsLinks({
   description: string;
   location: string;
   startIso: string;
-  endIso: string;
+  endIso: string | null;
   allDay: boolean;
   reminders: number[] | null;
   recurrence: string | null;
@@ -164,7 +164,7 @@ function buildIcsLinks({
   const params = new URLSearchParams({
     title: title || "Event",
     start: startIso,
-    end: endIso,
+    ...(endIso ? { end: endIso } : {}),
     location: location || "",
     description: description || "",
     timezone: "",

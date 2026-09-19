@@ -245,6 +245,52 @@ test("shift generation bounds the final shift and rejects invalid or excessive g
   ])
     assert.throws(() => generateSignupShifts(...args));
 });
+test("teachers get exactly four appointments and repeat generation cannot duplicate them", () => {
+  const { appendSignupTimeSlots } = load("src/lib/signup-composer.ts");
+  const { signupPublishWarnings } = load("src/lib/signup-validation.ts");
+  const value = form();
+  const section = createSignupBlock("times");
+  assert.equal(section.slots.length, 0);
+  const generated = generateSignupShifts("15:00", "16:00", 15, 1, "Appointment");
+  const next = appendSignupTimeSlots(value, section, generated);
+  assert.equal(next.slots.length, 4);
+  assert.deepEqual(next.slots.map((s) => s.label), ["Appointment 1", "Appointment 2", "Appointment 3", "Appointment 4"]);
+  assert.throws(() => appendSignupTimeSlots(value, next, generated), /already exist/);
+  value.sections = [next];
+  assert.deepEqual(signupPublishWarnings(value), []);
+  next.slots.push({ id: "untimed", label: "Needs a time", capacity: 1 });
+  assert.equal(signupPublishWarnings(value).length, 1);
+});
+test("replacing legacy starters is explicit and preserves authored, booked, and waitlisted choices", () => {
+  const { appendSignupTimeSlots, replaceableSignupStarterIds } = load("src/lib/signup-composer.ts");
+  const value = form();
+  const section = { ...createSignupBlock("times"), id: "times", slots: [
+    { id: "starter", label: "First shift", capacity: 1 },
+    { id: "edited", label: "Second shift", capacity: 1, notes: "Check in at office" },
+    { id: "booked", label: "Second shift", capacity: 1 },
+    { id: "waitlisted", label: "First shift", capacity: 1 },
+    { id: "authored", label: "Interpreter appointment", capacity: 1 },
+  ] };
+  value.responses = [response("parent", [slot("times", "booked")])];
+  value.availability = [{ sectionId: "times", slotId: "waitlisted", confirmed: 0, waitlisted: 1 }];
+  assert.deepEqual(replaceableSignupStarterIds(value, section), ["starter"]);
+  const generated = generateSignupShifts("15:00", "16:00", 15, 1);
+  assert.equal(appendSignupTimeSlots(value, section, generated).slots.length, 9);
+  const replaced = appendSignupTimeSlots(value, section, generated, true);
+  assert.equal(replaced.slots.length, 8);
+  assert.deepEqual(replaced.slots.slice(0, 4), section.slots.slice(1));
+});
+test("school use cases support punctuation, word order, and style searches", () => {
+  const { getPublicTemplates, matchesPublicTemplateSearch } = load("src/lib/public-template-catalog.ts");
+  const templates = getPublicTemplates("signup-forms");
+  for (const query of ["parent teacher", "parent–teacher conferences", "class party", "classroom party", "room parent", "PTA", "appointments", "party class"]) {
+    const matches = templates.filter((template) => matchesPublicTemplateSearch(template, query));
+    assert.ok(matches.some((t) => t.id === "editorial--school-days"), query);
+    assert.ok(matches.every((t) => t.audience === "School & Education"), query);
+  }
+  assert.ok(templates.some((t) => matchesPublicTemplateSearch(t, "harvest table")));
+  assert.equal(templates.filter((t) => matchesPublicTemplateSearch(t, "zzzzunknown")).length, 0);
+});
 test("Field Day starter preserves current content and adds editable, persistable sections", () => {
   const f = form();
   f.settings.maxSlotsPerPerson = 2;
@@ -286,6 +332,12 @@ test("header date range includes end time and event timezone", () => {
   assert.match(label, /9:00/);
   assert.match(label, /12:00/);
   assert.match(label, /CDT/);
+});
+test("date labels normalize ICU whitespace so server and browser hydrate identically", (t) => {
+  const { formatSignupDateRange } = load("src/lib/signup-display.ts");
+  const event = { start: "2026-10-22T15:00", end: "2026-10-22T16:00", timezone: "America/Chicago" };
+  t.mock.method(Intl.DateTimeFormat.prototype, "formatRange", () => "October 22, 2026, 3:00\u2009–\u20094:00\u202fPM CDT");
+  assert.equal(formatSignupDateRange(event), "October 22, 2026, 3:00 – 4:00 PM CDT");
 });
 test("invitation roster is owner-only and never cached publicly", async () => {
   let session = null,

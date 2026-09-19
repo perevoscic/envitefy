@@ -1,4 +1,8 @@
 import { composeFlyerExport } from "./flyer-export.ts";
+import { compileArtworkContract, artworkContractConflictMessage, STUDIO_ARTWORK_PROMPT_MAX_CHARACTERS } from "./artwork-copy.ts";
+import { prepareStudioImageGeometry, validateStudioImageGeometry, type StudioImageGeometry } from "./image-geometry.ts";
+import { resolveProductEditPlan } from "./product-edit-plan.ts";
+import { requestedStudioPalette } from "./palette.ts";
 import { createGenerationTracker, type GenerationOptions } from "./generation-progress.ts";
 import { applyVerifiedCopy, verifyStudioArtwork, type ArtworkCheck } from "./output-checks.ts";
 import { buildProductCopyPrompt, buildProductArtworkPrompt } from "./product-prompts.ts";
@@ -40,7 +44,9 @@ function artworkFailureMessage(check: ArtworkCheck, editing: boolean): string {
     ["requested_change_not_applied", "style_mismatch", "reference_mismatch"].includes(issue),
   );
   const problem = visualChangeFailed
-    ? "The artwork did not match the requested visual changes after one repair attempt."
+    ? editing
+      ? "The artwork did not match the requested visual changes after one repair attempt."
+      : "The artwork did not match the requested design after one repair attempt."
     : "The artwork did not pass its lettering and layout checks after one repair attempt.";
   return `${problem} ${editing ? "Your previous image is unchanged. Retry the artwork edit." : "Please try generating again."}`;
 }
@@ -90,6 +96,8 @@ function getOrderedStudioReferenceImageUrls(
 }
 
 export const studioGenerationDeps = {
+  prepareStudioImageGeometry,
+  validateStudioImageGeometry,
   composeFlyerExport,
   verifyStudioArtwork,
   applyStudioThemeNormalization,
@@ -109,24 +117,60 @@ export async function generateStudioInvitation(
   options: GenerationOptions = {},
 ): Promise<StudioGenerateResponse> {
   const tracker = createGenerationTracker(options);
-  const imageOptions = {
-    signal: options.signal,
-    onPartialImage: options.onProgress ? (url: string) => tracker.preview(url, true) : undefined,
-  };
   const provider = studioGenerationDeps.resolveStudioProvider();
   const mode = request.mode || "both";
   const surface = request.surface || (mode === "both" || mode === "text" ? "page" : "image");
   const product = resolveStudioProduct(request.product, surface);
+  const imageOptions = {
+    signal: options.signal,
+    size: (product === "event_page" ? "1536x1024" : "1024x1536") as StudioImageGeometry["size"],
+    onPartialImage: options.onProgress ? (url: string) => tracker.preview(url, true) : undefined,
+  };
+  let artworkContract = compileArtworkContract(request.event, product);
+  if (mode !== "text" && buildProductArtworkPrompt(request.event, request.guidance, null, product, 0).length > STUDIO_ARTWORK_PROMPT_MAX_CHARACTERS) artworkContract.blockedIssues.push("artwork_prompt_too_long");
+  const diagnostics: NonNullable<StudioGenerateResponse["diagnostics"]> = {
+    version: 1, contractId: artworkContract.id, operation: request.imageEdit ? "edit" : "initial", outcome: "provider_failed", checks: [],
+  };
+  if (artworkContract.blockedIssues.length) {
+    diagnostics.outcome = "contract_blocked";
+    return { ok: false, mode, product, liveCard: null, invitation: null, imageDataUrl: null, warnings: [], artworkContract, diagnostics,
+      errors: { image: { code: "invalid_artwork_contract", message: artworkContractConflictMessage(artworkContract.blockedIssues), retryable: false, provider } }, timings: tracker.finish() };
+  }
+  const requestedEditPlan = resolveProductEditPlan(product, request.imageEdit?.editInstruction || "");
+  if (requestedEditPlan.unsupportedPageChanges.length) {
+    diagnostics.outcome = "contract_blocked";
+    return { ok: false, mode, product, liveCard: null, invitation: null, imageDataUrl: null, warnings: [], artworkContract, diagnostics,
+      errors: { image: { code: "unsupported_page_change", message: "That event-page font or layout change is not supported in chat yet. You can request larger lettering, readable contrast, or dark/light text. Your page and artwork are unchanged.", retryable: false, provider } }, timings: tracker.finish() };
+  }
+  if (request.imageEdit && !requestedEditPlan.hasRasterChanges && Object.keys(requestedEditPlan.pageTypography).length) {
+    diagnostics.outcome = "contract_blocked";
+    return { ok: false, mode, product, liveCard: null, invitation: null, imageDataUrl: null, warnings: [], artworkContract, diagnostics,
+      errors: { image: { code: "page_typography_only", message: "Apply this lettering change to the event page; its artwork does not need regeneration.", retryable: false, provider } }, timings: tracker.finish() };
+  }
   let qualityCheck: StudioGenerateResponse["qualityCheck"] = "unavailable";
+  let expectedGeometry: StudioImageGeometry;
+  try {
+    expectedGeometry = await tracker.measure("preparing", () => studioGenerationDeps.prepareStudioImageGeometry(product, request.imageEdit?.sourceImageDataUrl));
+    imageOptions.size = expectedGeometry.size;
+  } catch (error) {
+    diagnostics.outcome = "contract_blocked";
+    return { ok: false, mode, product, liveCard: null, invitation: null, imageDataUrl: null, warnings: [], artworkContract, diagnostics,
+      errors: { image: { code: "invalid_source_geometry", message: error instanceof Error ? error.message : "The source image could not be verified. Reattach it before editing.", retryable: false, provider } }, timings: tracker.finish() };
+  }
   const themeNormalization = await tracker.measure("preparing", () => studioGenerationDeps.normalizeStudioTheme({
     provider,
     event: request.event,
     guidance: request.guidance,
   }));
-  const normalizedRequest =
+  const normalizedBase =
     themeNormalization.riskLevel === "block"
       ? request
       : studioGenerationDeps.applyStudioThemeNormalization(request, themeNormalization);
+  const normalizedRequest = { ...normalizedBase };
+  if (normalizedRequest.imageEdit && product === "event_page") {
+    const editPlan = resolveProductEditPlan(product, normalizedRequest.imageEdit.editInstruction || "");
+    normalizedRequest.imageEdit = { ...normalizedRequest.imageEdit, editInstruction: editPlan.rasterInstruction };
+  }
   const warnings: string[] = [];
   let liveCard: StudioLiveCardMetadata | null = null;
   let invitation: StudioGenerateResponse["invitation"] = null;
@@ -163,6 +207,8 @@ export async function generateStudioInvitation(
     warnings.push(...textResult.warnings);
     if (textResult.ok) {
       liveCard = applyVerifiedCopy(normalizedRequest.event, sanitizeStudioLiveCardVisibleCopy(normalizedRequest.event, textResult.liveCard));
+      const explicitPalette = requestedStudioPalette(normalizedRequest.guidance?.colorPalette);
+      if (explicitPalette) liveCard.palette = explicitPalette;
       liveCard.creativePlan = validateCreativePlan(normalizedRequest.event, product, liveCard.creativePlan);
       invitation = liveCard.invitation;
     } else {
@@ -172,6 +218,8 @@ export async function generateStudioInvitation(
   }
 
   if (wantsImage) {
+    artworkContract = compileArtworkContract(normalizedRequest.event, product, liveCard);
+    diagnostics.contractId = artworkContract.id;
     const editingExistingImage = Boolean(normalizedRequest.imageEdit?.sourceImageDataUrl);
     const orderedReferenceImageUrls = editingExistingImage
       ? undefined
@@ -185,9 +233,17 @@ export async function generateStudioInvitation(
       const artworkPrompt = buildProductArtworkPrompt(normalizedRequest.event, normalizedRequest.guidance, liveCard, product, referenceImages.length);
       const imagePrompt = editingExistingImage
         ? product === "live_card"
-          ? buildExistingInvitationImageEditPrompt(normalizedRequest.imageEdit?.editInstruction)
+          ? [buildExistingInvitationImageEditPrompt(normalizedRequest.imageEdit?.editInstruction), `Required approved artwork lines must be present even if missing in the source: ${JSON.stringify(artworkContract.requiredText)}. Content contract: ${artworkContract.id}.`].join("\n")
+          : product === "event_page"
+            ? ["Edit the supplied text-free event-page hero. Only apply these image changes; page typography is rendered separately.", normalizedRequest.imageEdit?.editInstruction, artworkPrompt].filter(Boolean).join("\n")
           : ["Edit the complete supplied invitation. Update lettering to the current approved wording, preserving the design and unrelated artwork. Apply the requested visual changes.", normalizedRequest.imageEdit?.editInstruction, artworkPrompt].filter(Boolean).join("\n")
         : artworkPrompt;
+      if (artworkContract.blockedIssues.length || imagePrompt.length > STUDIO_ARTWORK_PROMPT_MAX_CHARACTERS) {
+        if (imagePrompt.length > STUDIO_ARTWORK_PROMPT_MAX_CHARACTERS) artworkContract.blockedIssues.push("artwork_prompt_too_long");
+        diagnostics.outcome = "contract_blocked";
+        return { ok: false, mode, product, liveCard, invitation, imageDataUrl: null, warnings: [], artworkContract, diagnostics,
+          errors: { image: { code: "invalid_artwork_contract", message: artworkContractConflictMessage(artworkContract.blockedIssues), retryable: false, provider } }, timings: tracker.finish() };
+      }
       const imageResult = await tracker.measure("generating", async () => editingExistingImage
         ? provider === "openai"
           ? await studioGenerationDeps.editInvitationImageWithOpenAi(
@@ -215,10 +271,22 @@ export async function generateStudioInvitation(
       warnings.push(...imageResult.warnings);
       if (imageResult.ok) {
         let artwork = imageResult.imageDataUrl;
-        tracker.preview(artwork, false);
         const checkContext = { imageEdit: normalizedRequest.imageEdit, references: referenceImages, liveCard, guidance: normalizedRequest.guidance };
-        let checked: ArtworkCheck = await tracker.measure("checking", () => studioGenerationDeps.verifyStudioArtwork(artwork, normalizedRequest.event, product, checkContext));
-        if (checked.status === "failed" && !isLayoutReview(checked, product)) {
+        const checkCandidate = async (candidate: string): Promise<ArtworkCheck> => {
+          const geometry = await studioGenerationDeps.validateStudioImageGeometry(candidate, expectedGeometry);
+          options.signal?.throwIfAborted();
+          if (!geometry.ok) return { status: "failed", issues: [geometry.issue], repairInstructions: [geometry.message] };
+          tracker.preview(candidate, false);
+          return tracker.measure("checking", () => studioGenerationDeps.verifyStudioArtwork(candidate, normalizedRequest.event, product, checkContext));
+        };
+        let checked: ArtworkCheck = await checkCandidate(artwork);
+        const recordCheck = (attempt: "initial" | "repair", check: ArtworkCheck) => diagnostics.checks.push({
+          attempt, status: check.status, issues: check.issues.slice(0, 24),
+          repairInstructions: (check.repairInstructions || []).slice(0, 24).map((line) => line.slice(0, 1200)),
+          ...(check.unavailableReason ? { unavailableReason: check.unavailableReason } : {}),
+        });
+        recordCheck("initial", checked);
+        if (checked.status === "failed" && !checked.issues.includes("invalid_image") && !isLayoutReview(checked, product)) {
           const repairPrompt = [
             imagePrompt,
             `Targeted quality repair: ${checked.issues.join(", ")}.`,
@@ -228,27 +296,35 @@ export async function generateStudioInvitation(
               : "Fix only these observed defects, retaining the approved facts, subject and design.",
           ].join("\n");
           const repairSource = normalizedRequest.imageEdit?.sourceImageDataUrl || artwork;
+          if (repairPrompt.length > STUDIO_ARTWORK_PROMPT_MAX_CHARACTERS) {
+            artworkContract.blockedIssues.push("artwork_prompt_too_long");
+            diagnostics.outcome = "contract_blocked";
+            return { ok: false, mode, product, liveCard, invitation, imageDataUrl: null, warnings: [], artworkContract, diagnostics,
+              errors: { image: { code: "invalid_artwork_contract", message: artworkContractConflictMessage(artworkContract.blockedIssues), retryable: false, provider } }, timings: tracker.finish() };
+          }
           const repaired = await tracker.measure("repairing", () => provider === "openai"
             ? studioGenerationDeps.editInvitationImageWithOpenAi(repairPrompt, repairSource, undefined, imageOptions)
             : studioGenerationDeps.editInvitationImageWithGemini(repairPrompt, repairSource));
           if (repaired.ok) {
             artwork = repaired.imageDataUrl;
-            tracker.preview(artwork, false);
-            checked = await tracker.measure("checking", () => studioGenerationDeps.verifyStudioArtwork(artwork, normalizedRequest.event, product, checkContext));
+            checked = await checkCandidate(artwork);
+            recordCheck("repair", checked);
             // A failed image cannot be accepted merely because the repair verifier timed out.
             if (checked.status === "unavailable") checked = { status: "failed", issues: ["repair_unverified"] };
           }
         }
         const layoutReview = isLayoutReview(checked, product);
         qualityCheck = layoutReview ? "needs_review" : checked.status;
+        diagnostics.outcome = layoutReview ? "needs_review" : checked.status === "passed" ? "accepted" : checked.status === "unavailable" ? "unverified" : "rejected";
         if (layoutReview) warnings.push("Preview ready. Check the artwork framing before saving.");
         if (checked.status === "failed" && !layoutReview) {
-          errors.image = { code: "image_quality_failed", message: artworkFailureMessage(checked, editingExistingImage), provider, retryable: true };
+          errors.image = { code: "image_quality_failed", message: checked.issues.includes("invalid_image") ? "The generated image could not be decoded. Retry generation; your previously accepted image is unchanged." : artworkFailureMessage(checked, editingExistingImage), provider, retryable: true };
         } else {
           if (checked.status === "unavailable") warnings.push("Automatic artwork verification was unavailable; review the preview before sharing.");
           try {
             imageDataUrl = await tracker.measure("exporting", () => studioGenerationDeps.composeFlyerExport(artwork, normalizedRequest.event, liveCard, product));
           } catch (error) {
+            diagnostics.outcome = "provider_failed";
             errors.image = { code: "export_failed", message: error instanceof Error ? error.message : "Flyer export failed.", provider, retryable: false };
           }
         }
@@ -274,6 +350,8 @@ export async function generateStudioInvitation(
     mode,
     product,
     qualityCheck,
+    artworkContract,
+    diagnostics,
     artworkTextMode: !request.imageEdit ? productContract(product).imageText : undefined,
     liveCard,
     invitation,

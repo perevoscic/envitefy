@@ -1,5 +1,6 @@
 import type { SourceEvidence } from "../creation/source-evidence.ts";
 import type { HostBrief } from "./host-brief.ts";
+import type { ConciergePublicContent, ConciergeSemanticKind } from "./public-content.ts";
 
 export type CreationIntent =
   | "create_output"
@@ -14,6 +15,7 @@ export type ConciergeEventType =
   | "unknown"
   | "birthday"
   | "wedding"
+  | "anniversary"
   | "baby_shower"
   | "gender_reveal"
   | "bridal_shower"
@@ -337,6 +339,8 @@ export type ConciergeEventDraft = {
   sourceMaterial?: ConciergeSourceMaterial | null;
   eventPurpose: string | null;
   eventType: ConciergeEventType;
+  publicContent?: ConciergePublicContent;
+  semanticKind?: ConciergeSemanticKind;
   title: string | null;
   ownership: "owned" | "invited" | "unknown";
   draftStatus: CreationDraftStatus;

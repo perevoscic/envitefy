@@ -18,6 +18,7 @@ import GoogleAnalyticsRouteTracker from "@/components/GoogleAnalyticsRouteTracke
 import PrivacyControls from "@/components/PrivacyControls";
 import PwaInstallToast from "@/components/PwaInstallToast";
 import UnsavedProgressProvider from "@/components/UnsavedProgressProvider";
+import NativeIOSBridge from "@/components/NativeIOSBridge";
 import ThemeColorSync from "@/components/ThemeColorSync";
 import { ThemeKey, ThemeVariant, resolveThemeCssVariables } from "@/themes";
 
@@ -106,6 +107,7 @@ export default function Providers({
       refetchOnWindowFocus={process.env.NODE_ENV === "production"}
     >
       <UnsavedProgressProvider>
+      <NativeIOSBridge />
       <SidebarProvider>
         <ThemeProvider>
           <RegisterServiceWorker />

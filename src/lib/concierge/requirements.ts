@@ -229,6 +229,7 @@ const DEFAULT_SUGGESTED_REPLIES: Partial<Record<RequirementField, string[]>> = {
 };
 
 const CATEGORY_REQUIREMENTS: Record<ConciergeEventType, CategoryRequirement> = {
+  anniversary: { label: "anniversary", requiredFields: [], intakeQuestions: [] },
   unknown: {
     label: "event",
     requiredFields: ["eventPurpose", "date", "time", "location"],

@@ -1,0 +1,23 @@
+{
+  "name": "Envitefy",
+  "bundleId": "com.envitefy.app",
+  "sku": "envitefy-ios",
+  "primaryLocale": "en-US",
+  "platform": "IOS",
+  "primaryCategory": "LIFESTYLE",
+  "secondaryCategory": "PRODUCTIVITY",
+  "version": "1.0.0",
+  "build": "1",
+  "minimumIOS": "17.0",
+  "supportUrl": "https://envitefy.com/contact",
+  "marketingUrl": "https://envitefy.com",
+  "privacyPolicyUrl": "https://envitefy.com/privacy",
+  "subtitle": "Invitations, events & RSVPs",
+  "keywords": "invitations,rsvp,events,party,wedding,birthday,signup,volunteer,calendar,schedule",
+  "promotionalText": "Bring your event together with invitations, event pages, RSVPs and sign-up forms, all connected to your Envitefy account.",
+  "description": "Bring your event together with Envitefy.\n\nCreate invitations and event pages for celebrations, school activities, sports and community gatherings. Start with a design, upload an invitation or flyer, or describe your event with Envitefy Create.\n\nKeep event information in one place\nShare dates, locations, schedules and details through an event link. Collect RSVPs or build sign-up forms for volunteer roles, items and time slots.\n\nMake it yours\nChoose artwork and templates, adjust wording, and preview your event before sharing it. Save a draft when you want to return later.\n\nPlan across devices\nUse your existing Envitefy account and access the same saved events on the website and iPhone. Open directions, use calendar links and share event links with guests.\n\nEnvitefy requires an internet connection. Available tools depend on the event type and your account.",
+  "whatsNew": "The first iPhone release of Envitefy.",
+  "registrationStatus": "blocked-membership",
+  "appStoreAppleId": null,
+  "teamId": null
+}

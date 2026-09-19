@@ -323,6 +323,10 @@ export function normalizeConciergeDraft(
     record.eventType ?? eventData.eventType ?? eventData.category,
     fallback.eventType,
   );
+  const sameEventFollowup = Boolean(options.previousDraft && isSameCreationEvent(options.previousDraft, fallback));
+  const explicitlyChangesIdentity = /\b(?:event\s+(?:type|category|purpose)|(?:actually|instead|it['’]s|it\s+is|this\s+is)\s+(?:a|an)\s+(?:birthday|anniversary|wedding|workshop|graduation|clinic|practice|open\s+house))\b/i.test(options.message || "");
+  if (sameEventFollowup && !explicitlyChangesIdentity) eventType = fallback.eventType;
+  if (fallback.eventType === "anniversary") eventType = "anniversary";
   // A model citation of “not hosting a birthday” cannot override the explicit
   // gymnastics occasion already resolved from the same user request.
   if (
@@ -359,9 +363,9 @@ export function normalizeConciergeDraft(
       }
     : fallback.sourceMaterial || null;
   const sourceGroundedSchedule = rescueOcrDateRangeAndDoorsOpen(sourceMaterial?.ocrText);
-  const eventPurpose =
-    firstDraftString(record.eventPurpose, eventData.eventPurpose, eventData.purpose) ||
-    fallback.eventPurpose;
+  const eventPurpose = sameEventFollowup && fallback.eventPurpose && !explicitlyChangesIdentity
+    ? fallback.eventPurpose
+    : firstDraftString(record.eventPurpose, eventData.eventPurpose, eventData.purpose) || fallback.eventPurpose;
   const explicitTitle = extractExplicitEventTitle(options.message || "");
   const statedNameAndAge = extractNamedAge(options.message || "", { allowBareAge: fallback.eventType === "birthday" });
   const recoveredNameAndAge = !options.previousDraft?.titleConfirmed && !options.previousDraft?.honoreeName && /\b\d{1,3}\s+years?\s+old\b/i.test(options.previousDraft?.title || "")
@@ -371,8 +375,8 @@ export function normalizeConciergeDraft(
     ? parseChrono(options.message, options.previousDraft) : null;
   const explicitEndCorrection = explicitEndSchedule?.endTimeCorrection || null;
   const userSchedule = explicitEndCorrection && explicitEndSchedule ? explicitEndSchedule : fallback;
-  const preferUserSchedule = Boolean(explicitEndCorrection || statedNameAndAge || recoveredNameAndAge && hasExplicitEventSchedule(options.message || ""));
-  const title = explicitTitle || (fallback.titleConfirmed || sourceNameAndAge || /\s(?:and|&)\s/.test(fallback.honoreeName || "") ? fallback.title : null)
+  const preferUserSchedule = Boolean(explicitEndCorrection || statedNameAndAge || recoveredNameAndAge && hasExplicitEventSchedule(options.message || "") || sameEventFollowup && options.message && !hasExplicitEventSchedule(options.message));
+  const title = explicitTitle || (fallback.titleConfirmed || sameEventFollowup && !explicitlyChangesIdentity || sourceNameAndAge || /\s(?:and|&)\s/.test(fallback.honoreeName || "") ? fallback.title : null)
     || sanitizeGuestTitle(firstDraftString(record.title, eventData.title, eventData.headlineTitle)) || sanitizeGuestTitle(fallback.title);
   if (
     eventType === "general" &&
@@ -426,13 +430,15 @@ export function normalizeConciergeDraft(
     ],
     { venue: resolvedVenue || null, location: resolvedLocation || null },
   ), explicitEndCorrection);
-  const honoreeName =
+  const preservePersonalFacts = sameEventFollowup && !explicitlyChangesIdentity && !/\b(?:honoree|name\s+is|names\s+are|turning|birthday\s+for|aged?)\b/i.test(options.message || "") && options.previousDraft?.currentQuestion !== "honoreeName" && options.previousDraft?.currentQuestion !== "ageOrMilestone";
+  const audienceOnly = /\b(?:teens?|adults?|beginners?|children|students?)\s+(?:ages?\s+)?\d|\bages?\s+\d+\s*(?:\+|and\s+up|to|[-–])/i.test(options.message || "");
+  const honoreeName = preservePersonalFacts || audienceOnly && !sourceNameAndAge ? fallback.honoreeName :
     pairedHonorees(explicitTitle || "") ||
     sourceNameAndAge?.name ||
     (fallback.honoreeName && /\s(?:and|&)\s/.test(fallback.honoreeName) ? fallback.honoreeName : null) ||
     firstDraftString(record.honoreeName, eventData.honoreeName, eventData.birthdayName) ||
     fallback.honoreeName;
-  const ageOrMilestone =
+  const ageOrMilestone = preservePersonalFacts || audienceOnly && !sourceNameAndAge ? fallback.ageOrMilestone :
     sourceNameAndAge?.age ||
     firstDraftString(record.ageOrMilestone, eventData.ageOrMilestone, eventData.age) ||
     fallback.ageOrMilestone;
@@ -492,11 +498,11 @@ export function normalizeConciergeDraft(
     fallback.rsvpDeadline ||
     null;
   const rsvpName =
-    rsvpEnabled === false ? null : suppliedRsvp?.name || firstDraftString(record.rsvpName, eventData.rsvpName, rsvpRecord.name, eventRsvpRecord.name) ||
+    suppliedRsvp?.name || firstDraftString(record.rsvpName, eventData.rsvpName, rsvpRecord.name, eventRsvpRecord.name) ||
     fallback.rsvpName ||
     null;
   const rsvpContact =
-    rsvpEnabled === false ? null : suppliedRsvp?.contact || firstDraftString(
+    suppliedRsvp?.contact || firstDraftString(
       record.rsvpContact,
       eventData.rsvpContact,
       rsvpRecord.contact,
@@ -515,15 +521,16 @@ export function normalizeConciergeDraft(
     fallback.registryLink ||
     fallback.giftRegistryLink ||
     null;
-  const giftNote =
-    firstDraftString(record.giftNote, eventData.giftNote) || fallback.giftNote || null;
+  const giftQuestion = /\?/.test(options.message || "") && !/\b(?:can|could|would)\s+you\s+(?:add|include|use|write|change)\b/i.test(options.message || "");
+  const suppliedGiftPreference = !giftQuestion && (/\b(?:gifts?|registry|wishlist|wish\s+list)\b/i.test(options.message || "") || /^(?:registryLink|giftPreferenceNote)$/.test(options.previousDraft?.currentQuestion || ""));
+  const giftNote = (suppliedGiftPreference ? firstDraftString(record.giftNote, eventData.giftNote) : null) || fallback.giftNote || null;
   const giftPreferenceNote =
-    firstDraftString(
+    (suppliedGiftPreference ? firstDraftString(
       record.giftPreferenceNote,
       eventData.giftPreferenceNote,
       eventData.registryNote,
       eventData.giftPreference,
-    ) ||
+    ) : null) ||
     fallback.giftPreferenceNote ||
     null;
   const giftPromptDismissed =
@@ -561,6 +568,8 @@ export function normalizeConciergeDraft(
     sourceResolutions: fallback.sourceResolutions,
     eventPurpose,
     eventType,
+    publicContent: fallback.publicContent,
+    semanticKind: fallback.semanticKind,
     title,
     titleConfirmed: Boolean(explicitTitle || fallback.titleConfirmed),
     explicitlyClearedFields: fallback.explicitlyClearedFields || [],

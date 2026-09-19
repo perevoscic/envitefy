@@ -85,7 +85,7 @@ export function StudioCategoryGrid({
   );
 
   const gridItems: StudioCategoryGridItem[] = [
-    ...EDITORIAL_GRID_COMPOSITION.flatMap((tileKey) => {
+    ...EDITORIAL_GRID_COMPOSITION.flatMap<StudioCategoryGridItem>((tileKey) => {
       if (tileKey === "upload") {
         return [{ kind: "upload", key: "upload" } satisfies StudioCategoryGridItem];
       }

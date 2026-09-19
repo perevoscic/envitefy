@@ -141,13 +141,15 @@ export function SignupFormsHeroContent({ page }: { page: UseCasePage }) {
         </h1>
         <p className="mt-6 max-w-2xl text-base leading-7 text-white/88 drop-shadow-[0_2px_14px_rgba(0,0,0,0.85)] sm:text-lg sm:leading-8">
           Create a polished signup page, share one link, and always know what is filled, what is
-          open, and who to remind.
+          open, and who is bringing what.
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <Link
             href={createHref}
             className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#18214d] shadow-[0_22px_54px_rgba(0,0,0,0.24)] transition hover:-translate-y-0.5"
-          >Browse templates</Link>
+          >
+            Browse templates
+          </Link>
           <Link
             href={page.secondaryHref}
             className="inline-flex min-h-12 items-center rounded-full border border-white/32 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/18"
@@ -200,7 +202,7 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
               {[
                 [Clock3, "Time slots and shifts"],
                 [PackageCheck, "Items and quantities"],
-                [Bell, "Updates and reminders"],
+                [Bell, "Confirmation emails"],
                 [LinkIcon, "One shareable link"],
               ].map(([Icon, label]) => {
                 const FeatureIcon = Icon as typeof Clock3;
@@ -265,10 +267,10 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
             </h2>
             <p className="mt-6 max-w-xl text-lg leading-8 text-white/68">
               Limits close full slots automatically. Live counts show what still needs attention.
-              Reminders go to the right people—not the entire group.
+              Confirmation emails include each guest’s choices and a private link to make changes.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
-              {["Set capacity", "Prevent duplicates", "Send targeted reminders"].map((item) => (
+              {["Set capacity", "Prevent overbooking", "Track responses"].map((item) => (
                 <span
                   key={item}
                   className="rounded-full border border-white/18 bg-white/8 px-4 py-2 text-sm font-semibold text-white/82"
@@ -321,7 +323,10 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
         </div>
       </section>
 
-      <section id="how-it-works" className="hash-anchor-below-fixed-nav bg-[#f8f9ff] px-5 py-20 sm:px-8 sm:py-28 lg:px-10">
+      <section
+        id="how-it-works"
+        className="hash-anchor-below-fixed-nav bg-[#f8f9ff] px-5 py-20 sm:px-8 sm:py-28 lg:px-10"
+      >
         <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.8fr)]">
           <div className="relative min-h-[34rem] overflow-hidden rounded-[2.25rem]">
             <Image
@@ -353,7 +358,7 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
                 [ClipboardList, "Start with a structure that already makes sense"],
                 [Users, "Collect names, quantities, and notes"],
                 [QrCode, "Share by link or QR code"],
-                [Bell, "Update the page and remind only who needs it"],
+                [Bell, "Update the page and export responses for follow-up"],
               ].map(([Icon, text]) => {
                 const ItemIcon = Icon as typeof ClipboardList;
                 return (
@@ -367,12 +372,17 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
             <Link
               href={createHref}
               className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#18214d] px-6 py-3 text-sm font-bold text-white shadow-[0_18px_50px_rgba(24,33,77,0.22)] transition hover:-translate-y-0.5"
-            >Browse templates</Link>
+            >
+              Browse templates
+            </Link>
           </div>
         </div>
       </section>
 
-      <section id="faq" className="hash-anchor-below-fixed-nav bg-[#eef2ff] px-5 py-20 sm:px-8 sm:py-24 lg:px-10">
+      <section
+        id="faq"
+        className="hash-anchor-below-fixed-nav bg-[#eef2ff] px-5 py-20 sm:px-8 sm:py-24 lg:px-10"
+      >
         <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,1fr)]">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#3c55ad]">
@@ -420,7 +430,9 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
             <Link
               href={createHref}
               className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#18214d] transition hover:-translate-y-0.5"
-            >Browse templates</Link>
+            >
+              Browse templates
+            </Link>
             <Link
               href={page.secondaryHref}
               className="inline-flex min-h-12 items-center rounded-full border border-white/35 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur"

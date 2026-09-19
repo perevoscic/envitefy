@@ -1,4 +1,5 @@
 import { buildEventPath } from "@/utils/event-url";
+import { isGenderRevealEventData, parseGenderRevealConfig } from "@/lib/gender-reveal";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
@@ -35,6 +36,13 @@ export function withDirectRsvpInvitationData(args: {
     ...args.invitationData,
     eventDetails: {
       ...eventDetails,
+      // Studio's visual category may be Baby Shower; guest validation follows the saved event.
+      ...(isGenderRevealEventData(data) ? {
+        category: "Gender Reveal",
+        eventKind: "gender_reveal",
+        genderReveal: parseGenderRevealConfig(data),
+        rsvpDeadline: readFirstString(data.rsvpDeadline, rsvp?.deadline, data.rsvp),
+      } : {}),
       eventId: args.row.id,
       rsvpEnabled: true,
       rsvpMode: readFirstString(eventDetails.rsvpMode, "envitefy"),

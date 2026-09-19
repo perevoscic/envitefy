@@ -74,6 +74,18 @@ const baseMocks = {
 };
 const { createSignupThemeForm } = load("src/lib/signup-starters.ts", baseMocks);
 
+test("guest preview and sharing describe actual public or invitation access", () => {
+  const Page = load("src/components/smart-signup-form/SignupPageRenderer.tsx", baseMocks).default;
+  const Share = load("src/components/smart-signup-form/SignupSharing.tsx", baseMocks).default;
+  const form = createSignupThemeForm("harvest-table");
+  const render = (requiresInvitation) => renderToStaticMarkup(React.createElement(Page, { form, interactivePreview: true, requiresInvitation }));
+  assert.match(render(false), /No account needed/);
+  assert.doesNotMatch(render(true), /No account needed/);
+  assert.match(render(true), /sign in and accept an invitation/);
+  assert.match(renderToStaticMarkup(React.createElement(Share, { eventId: "test", requiresInvitation: false })), /Anyone with this link can sign up/);
+  assert.match(renderToStaticMarkup(React.createElement(Share, { eventId: "test", requiresInvitation: true })), /Sharing the link alone does not grant access/);
+});
+
 test("public guests can find their signup without exposing recovery inside owner tools or previews", () => {
   const Viewer = load("src/components/smart-signup-form/SignupViewer.tsx", baseMocks).default;
   const props = {
@@ -1169,7 +1181,7 @@ function themeEditorHarness(preview, options = {}) {
   let reads = 0;
   const writes = [];
   const redirects = [];
-  const search = new URLSearchParams(options.search || "themePreview=generated-token");
+  const search = new URLSearchParams(options.search ?? "themePreview=generated-token");
   const hooks = {
     ...React,
     useMemo: (fn) => fn(),
@@ -1254,6 +1266,18 @@ function themeEditorHarness(preview, options = {}) {
     consumed: () => consumed,
   };
 }
+
+test("ordinary signup gallery entry initializes empty even when another browser draft exists", async () => {
+  const saved = { id: "other", eventId: "other-event", snapshot: { form: { title: "Other class party" } } };
+  const editor = themeEditorHarness(null, { search: "", saved });
+  editor.render();
+  editor.effects[0]();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.deepEqual(editor.render().initial, {});
+  assert.equal(editor.reads(), 0);
+  assert.equal(editor.consumed(), 0);
+  assert.deepEqual(editor.writes, []);
+});
 
 test("theme handoff bypasses unrelated browser drafts, survives Strict Mode and remains dirty until saved", async (t) => {
   const { createEmptySignupTemplateForm } = load("src/lib/signup-starters.ts", baseMocks);

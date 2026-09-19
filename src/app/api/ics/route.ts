@@ -21,8 +21,8 @@ export async function GET(request: Request) {
   // intakeId not used
   // const intakeId = searchParams.get("intakeId");
 
-  if (!start || !end) {
-    return NextResponse.json({ error: "Missing start or end" }, { status: 400 });
+  if (!start || !Number.isFinite(Date.parse(start)) || (end && (!Number.isFinite(Date.parse(end)) || Date.parse(end) < Date.parse(start)))) {
+    return NextResponse.json({ error: "A valid start and optional end are required" }, { status: 400 });
   }
 
   const cal = ical({ name: "Scanned Events", timezone: floating ? null : timezone });
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
   const evt = cal.createEvent({
     id: (globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `${Date.now()}-${Math.random()}`),
     start: new Date(start),
-    end: new Date(end),
+    ...(end ? { end: new Date(end) } : {}),
     allDay,
     summary: title,
     location,

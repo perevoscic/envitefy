@@ -157,6 +157,15 @@ function resultFor(scenario, results) {
   };
 }
 
+function reviewCompletion(result) {
+  const complete = CAMPAIGN_SCORE_DIMENSIONS.every(name => normalizeScore(result.scores?.[name]) !== null);
+  return complete && result.reviewRequired !== true ? "Complete" : "Pending / incomplete";
+}
+
+function browserCheckpoint(result) {
+  return result.stage === "needs_review" ? "Awaiting review (original browser checkpoint)" : result.stage;
+}
+
 /** Latest recorded browser attempts only. Execution coverage never awards quality passes. */
 export function summarizeCampaignCoverage(scenarios, caseResults = []) {
   const results = normalizedResults(caseResults);
@@ -507,8 +516,7 @@ export function renderCampaignReport(manifest, caseResults = [], ledger = {}, au
       verifiedFixes[finding.id]
         ? {
             ...finding,
-            fixed: true,
-            detail: `${textDetails(finding.detail)} Fix verification: ${verifiedFixes[finding.id]}`,
+            detail: `${textDetails(finding.detail)} Historical scoped verification: ${verifiedFixes[finding.id]} This does not close a later observed failure.`,
           }
         : finding,
     );
@@ -636,11 +644,11 @@ export function renderCampaignReport(manifest, caseResults = [], ledger = {}, au
       : []),
     "## Coverage",
     "",
-    "| Case | Persona | Status | Stage | Evidence |",
-    "| --- | --- | --- | --- | --- |",
+    "| Case | Persona | Quality verdict | Review completion | Browser checkpoint | Evidence |",
+    "| --- | --- | --- | --- | --- | --- |",
     ...cases.map(
       (result) =>
-        `| ${escapeMarkdown(result.caseId)} | ${escapeMarkdown(result.scenario.persona)} | ${result.status} | ${escapeMarkdown(result.stage)} | ${result.evidence.map((item) => `[${escapeMarkdown(evidenceLabel(item))}](${item.href})`).join("; ") || "None recorded"} |`,
+        `| ${escapeMarkdown(result.caseId)} | ${escapeMarkdown(result.scenario.persona)} | ${result.status} | ${reviewCompletion(result)} | ${escapeMarkdown(browserCheckpoint(result))} | ${result.evidence.map((item) => `[${escapeMarkdown(evidenceLabel(item))}](${item.href})`).join("; ") || "None recorded"} |`,
     ),
     "",
     "## Findings",
@@ -702,7 +710,7 @@ export function renderCampaignReport(manifest, caseResults = [], ledger = {}, au
   const caseRows = cases
     .map(
       (result, index) =>
-        `<tr><td><a href="#case-${index}">${escapeHtml(result.caseId)}</a></td><td>${escapeHtml(result.scenario.persona)}</td><td><span class="status ${result.status}">${result.status}</span></td><td>${escapeHtml(result.stage)}</td><td>${result.evidence.map((item) => `<a href="${escapeHtml(item.href)}">${escapeHtml(evidenceLabel(item))}</a>`).join("<br>") || "None recorded"}</td></tr>`,
+        `<tr><td><a href="#case-${index}">${escapeHtml(result.caseId)}</a></td><td>${escapeHtml(result.scenario.persona)}</td><td><span class="status ${result.status}">${result.status}</span></td><td>${reviewCompletion(result)}</td><td>${escapeHtml(browserCheckpoint(result))}</td><td>${result.evidence.map((item) => `<a href="${escapeHtml(item.href)}">${escapeHtml(evidenceLabel(item))}</a>`).join("<br>") || "None recorded"}</td></tr>`,
     )
     .join("");
   const gallery = cases
@@ -756,7 +764,7 @@ ${responsiveSummary ? `<p>${escapeHtml(responsiveSummary)}</p>` : ""}
 ${responsiveGallery ? `<div class="gallery">${responsiveGallery}</div>` : ""}
 ${limitations.length ? `<h2>Limits of this run</h2><ul>${limitations.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
 ${historicalLimitations.length ? `<h2>Historical first-cycle notes</h2><p>These describe the earlier review, not the current execution checkpoint.</p><ul>${historicalLimitations.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
-<h2>Coverage</h2><div class="table-scroll"><table id="case-coverage"><thead><tr><th>Case</th><th>Persona</th><th>Status</th><th>Stage</th><th>Evidence</th></tr></thead><tbody>${caseRows}</tbody></table></div>
+<h2>Coverage</h2><p>Quality verdict and review completion are separate from the original browser checkpoint. A recovered original is not a successful redesign.</p><div class="table-scroll"><table id="case-coverage"><thead><tr><th>Case</th><th>Persona</th><th>Quality verdict</th><th>Review completion</th><th>Browser checkpoint</th><th>Evidence</th></tr></thead><tbody>${caseRows}</tbody></table></div>
 <h2>Artifact gallery</h2>${gallery ? `<div class="gallery">${gallery}</div>` : "<p>No verified existing image evidence has been recorded.</p>"}
 <h2>Findings</h2>${issueHtml}<h2>Case reviews and Q&amp;A</h2>${reviews}<h2>Recorded conversations</h2>${transcripts}</main></body></html>`;
   return { markdown: `${md.join("\n")}\n`, html };

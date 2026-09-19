@@ -1,0 +1,37 @@
+✔ signup email notice distinguishes delivery failure from a saved reservation (8.9094ms)
+✔ guest preview and sharing describe actual public or invitation access (1993.6729ms)
+✔ public guests can find their signup without exposing recovery inside owner tools or previews (124.7442ms)
+✔ device preview hides signup editing tools while preserving the sign-up board (101.6444ms)
+✔ signup owner actions render above the hero, separate from the response board (167.7731ms)
+✔ all 150 templates retain a distinct curated design through saving and rendering (684.1878ms)
+✔ designed headers retain empty-image and legacy-layout choices (162.9376ms)
+✔ every signup catalog item renders an inert artwork thumbnail without form controls (248.6037ms)
+✔ design editor retains customization controls without repeating template selection (3603.0994ms)
+✔ direct photo selection changes only the selected signup gallery image (35.3568ms)
+✔ composer replaces the four-step wizard and keeps guest preview separate from editing (799.474ms)
+✔ custom recipes render the saved composition and board without exposing editing controls to guests (169.9915ms)
+✔ starters switch immediately for every untouched template and protect edited slot definitions (227.4977ms)
+✔ new signup templates keep all 150 designs without introducing fictional event data (142.2205ms)
+✔ section placement, copying and persistence retain IDs, instructions and existing responses (134.6923ms)
+✔ empty questions are surfaced before publish and text alone cannot publish a signup (114.5199ms)
+✔ optional form headings preserve hidden, custom and inherited wording through saving (176.0223ms)
+✔ section editor removes and restores content, protects signed-up slots and supports drop ordering (400.2623ms)
+✔ header pencils update canonical details and are omitted from guest pages (69.5612ms)
+✔ cancelling inline date edits restores dates without reverting other edits (18.7646ms)
+✔ saved waitlisted signups expose working edit and cancel actions (114.7153ms)
+✔ interactive preview submits locally and never calls a reservation API (143.0756ms)
+✔ theme dialog isolates generated options, supports refinement and only accepts on Use this theme (212.7264ms)
+✔ cancel aborts generation and a late response cannot apply a theme (126.6432ms)
+✔ new theme previews use display placeholders without putting demo content into the accepted form (181.6742ms)
+✔ new signup briefs survive preview, refinement, undo and acceptance without fabricated content (244.568ms)
+✔ ordinary signup gallery entry initializes empty even when another browser draft exists (150.5496ms)
+✔ theme handoff bypasses unrelated browser drafts, survives Strict Mode and remains dirty until saved (225.1748ms)
+✔ a missing theme preview returns to the dialog without reopening or overwriting browser drafts (188.2564ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 29
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11417.871

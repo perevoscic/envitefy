@@ -18,6 +18,11 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm run test:create-facts
-      - name: Check chat viewport and keyboard behavior
-        run: node --test src/hooks/useVisualViewportInsets.test.mjs
+      - name: Check application TypeScript before running regressions
+        run: npm run typecheck
+      - name: Install Chromium for isolated campaign checks
+        run: npx playwright install --with-deps chromium
+      - name: Check Create facts, prompts, output contracts and guest actions offline
+        run: npm run test:create-remediation
+      - name: Check rendered previews and RSVP recovery with external requests blocked
+        run: npm run test:create-browser

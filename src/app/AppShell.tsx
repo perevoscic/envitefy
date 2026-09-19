@@ -93,7 +93,7 @@ export default function AppShell({
   );
   const isChatPath = pathname.replace(/\/+$/, "") === "/chat";
   const isEventPreview = searchParams?.get("preview") === "owner";
-  const showAppChrome = isAuthenticated && !onMarketing && !isStudioCardShare && !isCreateLanding && !isEventPreview;
+  const showAppChrome = isAuthenticated && !onMarketing && !isStudioCardShare && !isCreateLanding && !isEventPreview && !pathname.startsWith("/mobile/");
   const isRedirectingFromMarketing = pathname === "/landing" && isAuthenticated;
   const isLightweightLanding = pathname === "/event" && !isAuthenticated;
 

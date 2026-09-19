@@ -3,6 +3,7 @@ import type { ConciergeEventDraft, ConciergeEventType } from "./types";
 const CATEGORY_LABEL_BY_EVENT_TYPE: Partial<Record<ConciergeEventType, string>> = {
   birthday: "Birthday",
   wedding: "Wedding",
+  anniversary: "Anniversary",
   baby_shower: "Baby Shower",
   gender_reveal: "Baby Shower",
   bridal_shower: "Bridal Shower",

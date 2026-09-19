@@ -47,6 +47,7 @@ export function updateSignupDefinition(
   }
   const next = {
     ...incoming,
+    ...(current?.visibility === "restricted" ? { visibility: "restricted" as const } : {}),
     responses: current?.responses || [],
     revision: (current?.revision || 0) + 1,
   };

@@ -1,0 +1,2320 @@
+{
+  "sources": [
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/anniversary--digital_flyer.json",
+      "sha256": "336d2be5e43ea3a150769e5a8c9533c4cf460c17e3f465ec171360487acdd6ab",
+      "bytes": 20577
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/anniversary--event_page-before-1789792444404.json",
+      "sha256": "4319b1b32a90a8608c23a148f25e2763e813381a901d9637efa526442c785978",
+      "bytes": 7566
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/anniversary--event_page-before-1789794472489.json",
+      "sha256": "4319b1b32a90a8608c23a148f25e2763e813381a901d9637efa526442c785978",
+      "bytes": 7566
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/anniversary--event_page-before-1789795211793.json",
+      "sha256": "4319b1b32a90a8608c23a148f25e2763e813381a901d9637efa526442c785978",
+      "bytes": 7566
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/anniversary--event_page.json",
+      "sha256": "7edbed7d7cf34f16da70ac7b1e85de27cd9f9371eeef9f593bbb75497dc24946",
+      "bytes": 16108
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/anniversary--live_card.json",
+      "sha256": "0e065c9fe17986d0fbb6f79d212690abe9d573e6dd29684cb560b775ea0d6c56",
+      "bytes": 16900
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/appointment--digital_flyer.json",
+      "sha256": "cd13b7c910478bac00336a63c95597b12bd20d277b4bb844f071b8ec42b9ef2d",
+      "bytes": 13549
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/appointment--event_page.json",
+      "sha256": "57857a137b654431a54ff8c7d214ba0551c0ffc737a91d55c48f482167cbf1df",
+      "bytes": 14326
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/appointment--live_card.json",
+      "sha256": "bb1b980efe7fa638b22fe13b1fc950bcfa89858b2467ef715c43d5eec15cc893",
+      "bytes": 13602
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/baby_shower--digital_flyer-before-1789794602945.json",
+      "sha256": "056189fdf4868b0f8cb1793c227f1d0c8c5221af77c81ef1f2cdf88d62d6530d",
+      "bytes": 5316
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/baby_shower--digital_flyer-before-1789795211817.json",
+      "sha256": "056189fdf4868b0f8cb1793c227f1d0c8c5221af77c81ef1f2cdf88d62d6530d",
+      "bytes": 5316
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/baby_shower--digital_flyer.json",
+      "sha256": "71429736645180e66fcdf48d07931e1c45dd77ab8341a91b20b3e14e2e305899",
+      "bytes": 14017
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/baby_shower--event_page.json",
+      "sha256": "4d9f16f0abfe1de9a71412c0d5b7bd03efb992509b0de71175c643416a3b0d08",
+      "bytes": 16800
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/baby_shower--live_card.json",
+      "sha256": "ce1a0ea2086c84dbbffea4a2f2250006591779e3ae7fba196fce4f474533a5ce",
+      "bytes": 14757
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/baseball--digital_flyer.json",
+      "sha256": "4b099f01ce77f910d8bf8076556b3dd65aafe5873483f689177873b74c2d630e",
+      "bytes": 15473
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/baseball--event_page.json",
+      "sha256": "2cbef02549005165c6f2425e3428f4227e0876abaf0a5aa139b9043e83d20903",
+      "bytes": 12737
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/baseball--live_card.json",
+      "sha256": "b5de8708506b93977b4c259a04679c2bf658bd42e29e05fbd886cd81634b1789",
+      "bytes": 15715
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/basketball--digital_flyer.json",
+      "sha256": "00af7da1481b505d4b09911286eeeb7599b9b61bc10389ef0ec5b92a71e0f04d",
+      "bytes": 15605
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/basketball--event_page.json",
+      "sha256": "8ba09630e3a602bb01ab8a8c220ff9f38238eb20ba13fee38a227395b94c4992",
+      "bytes": 12400
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/basketball--live_card.json",
+      "sha256": "daa4ae00ada62503cf407d78459a69f072283a2d41787dc43b1a51dd94874932",
+      "bytes": 12159
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/birthday--digital_flyer.json",
+      "sha256": "ccc07a2636e14e407c65c709bdc47065e308ee493ae4e2319ea494821037152b",
+      "bytes": 14927
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/birthday--event_page.json",
+      "sha256": "b4af8a74c7a7ac229e530af703c7d33e623fe6bb56053461e7bc65c1f2545199",
+      "bytes": 13525
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/birthday--live_card-before-1789791561469.json",
+      "sha256": "b67e378b9c65f509c5938f4a09ec0a7fd82608514ad29c43108d03267cefa475",
+      "bytes": 8303
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/birthday--live_card-before-1789792132452.json",
+      "sha256": "b67e378b9c65f509c5938f4a09ec0a7fd82608514ad29c43108d03267cefa475",
+      "bytes": 8303
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/birthday--live_card-before-1789792748127.json",
+      "sha256": "53a030d469c45200e9abdf29ccfc844deaf780c89fbaa4476db6cdc4a9f2772a",
+      "bytes": 10826
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/birthday--live_card-before-1789828685459.json",
+      "sha256": "5a398a8e2c3dd0188ebf2f08ccecfebb0b5cb73a49f2b1e652c4cd6bc3422969",
+      "bytes": 13515
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/birthday--live_card.json",
+      "sha256": "563bee4e9e7cfe5a982f5b479799213899abadd47be1753d39e41872d12b5372",
+      "bytes": 14761
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/bridal_shower--digital_flyer.json",
+      "sha256": "35f46e33bb46f2a023cbc6f2908deff7616039d8efd45114a7716696becd2e2d",
+      "bytes": 15244
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/bridal_shower--event_page.json",
+      "sha256": "002b1aa63cb91e4e9b4176b26be95ea1405a8af5e54bb1ed7dae1854159dea72",
+      "bytes": 14087
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/bridal_shower--live_card.json",
+      "sha256": "6861972cde2220dfd53706673592f9756985627d3e2fc76a14b6d167999b8254",
+      "bytes": 14425
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/cheerleading--digital_flyer.json",
+      "sha256": "3952f77cfe4d733ff714c167db827562dc5e9be388f884bdbfbfef12b364952e",
+      "bytes": 15832
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/cheerleading--event_page.json",
+      "sha256": "8f3f407c02a39caa995627cacccd07f0a75bd44b73e60e84ff1b978ac9af637a",
+      "bytes": 11470
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/cheerleading--live_card.json",
+      "sha256": "0590cc6360c5c36fd4696acff46ebc464ed773aed5ac36edeb1871ed9a488635",
+      "bytes": 10947
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/dance--digital_flyer.json",
+      "sha256": "dc5dfa99251a20ff78b67888bdeedf1a710c2eb2150224572d13fbcba3ac92a1",
+      "bytes": 14595
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/dance--event_page.json",
+      "sha256": "c2830bbc63ae869d68f9c09c12c71030d618e7e43fe3dcda89af0b9d18fe518e",
+      "bytes": 11484
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/dance--live_card.json",
+      "sha256": "c16c7c49c09a2ebde0fc7ec460669bb35f6df919c2075f1b3f33052e8ac3de73",
+      "bytes": 18359
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/field_trip--digital_flyer.json",
+      "sha256": "d6a03c4d5c3799e4cb928f0bdb46fb49823f85e57393ac084e99dfa23392000c",
+      "bytes": 15084
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/field_trip--event_page-before-1789792236452.json",
+      "sha256": "82df77efb2838db93378416efb5fd301f8d15025b5c593c117e3857f91f1ec60",
+      "bytes": 8681
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/field_trip--event_page-before-1789792839852.json",
+      "sha256": "82df77efb2838db93378416efb5fd301f8d15025b5c593c117e3857f91f1ec60",
+      "bytes": 8681
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/field_trip--event_page-before-1789793713083.json",
+      "sha256": "bf9367c96a6fa0389a973caf6960b1b642ea64991fd7098c1e992718a053f13e",
+      "bytes": 16204
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/field_trip--event_page-before-1789794003187.json",
+      "sha256": "bf9367c96a6fa0389a973caf6960b1b642ea64991fd7098c1e992718a053f13e",
+      "bytes": 16204
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/field_trip--event_page.json",
+      "sha256": "d5ec2cd5fba27f58e523df265eb455c5ebdc69e72f719a6b700909a518b08a96",
+      "bytes": 20230
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/field_trip--live_card.json",
+      "sha256": "1c6bd8b01c8c5c77fdafd41a64599e83ccf8b825fd1a7cfc1ad3becff5e4f82e",
+      "bytes": 12689
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/football--digital_flyer-before-1789792296373.json",
+      "sha256": "abecc01345570f06170e8e9beb4592cb44df622f3f4b7c3016fbe19c4d123358",
+      "bytes": 7495
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/football--digital_flyer-before-1789792956048.json",
+      "sha256": "abecc01345570f06170e8e9beb4592cb44df622f3f4b7c3016fbe19c4d123358",
+      "bytes": 7495
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/football--digital_flyer-before-1789793861307.json",
+      "sha256": "abecc01345570f06170e8e9beb4592cb44df622f3f4b7c3016fbe19c4d123358",
+      "bytes": 7495
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/football--digital_flyer-before-1789794206752.json",
+      "sha256": "b2929e0034e10f3d3bfbfc8303adbc349e6e9ea4f80aa60cf5bfbbd272ee8f36",
+      "bytes": 14774
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/football--digital_flyer.json",
+      "sha256": "4f3f5b3cd627885001566b092be3c7298e386d63ec385fa5e5aeb100f4d757af",
+      "bytes": 30905
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/football--event_page.json",
+      "sha256": "0a4f630c96a04fb3c3c62003458f14dd71217b103266110fa727d2828c1d5518",
+      "bytes": 12108
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/football--live_card.json",
+      "sha256": "da25ffddadd7322ef7e07e0708581ba702ea6ab1943e4bb1163f34f231113d42",
+      "bytes": 12071
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/game_day--digital_flyer.json",
+      "sha256": "82a2415aee399e32386e137cfd5479e356fe802fb5db2babf9c86589ea05c5b2",
+      "bytes": 16375
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/game_day--event_page-before-1789828408357.json",
+      "sha256": "e17f08b1983a48fe95bac68443bd7c1a2aec34dbb143a248b03c9f7ef9cd9b73",
+      "bytes": 14614
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/game_day--event_page.json",
+      "sha256": "5cdf7a9d9f408301815c2b0a829915714c9cbaa33628f7f8d65ad80435cb3c86",
+      "bytes": 14463
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/game_day--live_card.json",
+      "sha256": "c0c0ef7fb91b49ae34130decdef6c9bb9c564420868048a958b4d0d17128197a",
+      "bytes": 14660
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/gender_reveal--digital_flyer.json",
+      "sha256": "283952f4bd1e1b593ba4f43b04ca8abe4cec3fec45edce67b9f1468076375fa1",
+      "bytes": 17476
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/gender_reveal--event_page.json",
+      "sha256": "20d38a9ea38bd51d6f2d1614aa1b059d7bc805881825100af862712bf7925944",
+      "bytes": 15737
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/gender_reveal--live_card.json",
+      "sha256": "17f3a9724f5a30addfc5bce3bea7ab7b52f3b20932ca5d6d3cff014017daf96d",
+      "bytes": 13639
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/general--digital_flyer.json",
+      "sha256": "af87b6bde5bbde905d405e3fa71f3728fd2caf4a595df25bc5697d7897b1afb3",
+      "bytes": 12397
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/general--event_page.json",
+      "sha256": "93b8f7aa63ded3679a53d87fadb802e2a06613a62579716b096fa73e7b6d94e2",
+      "bytes": 12492
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/general--live_card.json",
+      "sha256": "5510847a4182cec3c83a76d0a5f10f431cba3d244d3fc7b4ced97e5ff182478f",
+      "bytes": 10935
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/graduation--digital_flyer.json",
+      "sha256": "1eebe1b2b73b1a83a53412a4db8f33a0b9ef8f7207b258e646e63e71956b79f8",
+      "bytes": 16164
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/graduation--event_page.json",
+      "sha256": "a050b8c560e2ff9966a87e7777a7266036c47450ffaaaec4d6b2699c0c1e6c65",
+      "bytes": 12957
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/graduation--live_card.json",
+      "sha256": "40f9f6f358bbe7f28669d77aad35c5411b79cce388bfae97200bddf5c4996b9b",
+      "bytes": 16757
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/gymnastics--digital_flyer.json",
+      "sha256": "8a4d591046b4847953b346f57a6c413801db5f65a5be4401b6624de507fe0bb1",
+      "bytes": 20536
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/gymnastics--event_page.json",
+      "sha256": "51aa6bf4531178161c91bb0b4cf1393923dfeca001ae0966e240b6259a91cdd4",
+      "bytes": 14976
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/gymnastics--live_card-before-1789792360199.json",
+      "sha256": "35569a3792eef1c62c8a7eaa893bdc53d511bd8b68ff7513440a6f3d70051a81",
+      "bytes": 8174
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/gymnastics--live_card-before-1789793062689.json",
+      "sha256": "35569a3792eef1c62c8a7eaa893bdc53d511bd8b68ff7513440a6f3d70051a81",
+      "bytes": 8174
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/gymnastics--live_card-before-1789794344165.json",
+      "sha256": "35e4634f4e247368b245f6bf233b339f1d182dc6fde31324fa8e9456ca6f6d4b",
+      "bytes": 19674
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/gymnastics--live_card.json",
+      "sha256": "af7248016aec6cecce315e0bbfeddd42943a63e8ad3e6bd764f4183d92ce6bcc",
+      "bytes": 21455
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/hockey--digital_flyer.json",
+      "sha256": "b5a36b8313d781e85f20eff3113b7a133689467fb0628972c251a24ba2fab455",
+      "bytes": 14823
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/hockey--event_page.json",
+      "sha256": "903e544421903740159efd7d989dd71bbc51cc7df5ad4c551f854f3cb1b4cd05",
+      "bytes": 11027
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/hockey--live_card.json",
+      "sha256": "93b40b830db576c51d0b95119b82cdcfe4aa3909208b1ce3377f1a2a4d342fb6",
+      "bytes": 12648
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/housewarming--digital_flyer.json",
+      "sha256": "40dab9d62d3107639fe3d032c647495f6a8fcd89333d00f37b0a969ab79bc7be",
+      "bytes": 16232
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/housewarming--event_page.json",
+      "sha256": "d812b1893341c592efc20ec1b6e04a0d9e8459f02db8ef5c3ee3e7d010d39fe2",
+      "bytes": 12013
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/housewarming--live_card.json",
+      "sha256": "7255520239af37bab39db1c36e27768f6f5d4964f20cb5b8a27373d2d7708fc6",
+      "bytes": 10959
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/lacrosse--digital_flyer.json",
+      "sha256": "ad452529418efe0da73e0d972b73ba4a034f7186ad765a500a75a8b5388a9232",
+      "bytes": 14794
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/lacrosse--event_page.json",
+      "sha256": "3a8c19bef3fb4921f53d9b4fe2e6d2932e992193e6571d22ddd0248643c6ddb3",
+      "bytes": 11858
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/lacrosse--live_card.json",
+      "sha256": "058ecfa66d1c889b2214bc91b286401b4e19cff4176b3fc7b5e8ecc1f3b0efaf",
+      "bytes": 13696
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/open_house--digital_flyer.json",
+      "sha256": "2c0ae1fdc59a582d5bb6d3d363e273eb64225f0373333a8076d22e05ac7f2190",
+      "bytes": 14049
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/open_house--event_page.json",
+      "sha256": "853a81595b611c4b4606bc10014fe6ca5b568d49c33130cba5cbf2fcab3050c2",
+      "bytes": 11660
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/open_house--live_card.json",
+      "sha256": "24a2c98d02d9c48ed14896e430aa9297f2769b69584dade20267513fb2a1d49e",
+      "bytes": 15924
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/soccer--digital_flyer.json",
+      "sha256": "4e1ee6ca205800d12e0e9e8127a9910cf62787a9af631d71e89313c52cf162c5",
+      "bytes": 14108
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/soccer--event_page.json",
+      "sha256": "bd8e4e053b2256380be044e27a4bd74e443adbaecabdd205eaebfd07f65c2da2",
+      "bytes": 11512
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/soccer--live_card.json",
+      "sha256": "6c6a082d6a1a8e09d7a18798e445a594a3e6f6fd64f2b664dfb08e51b358e20c",
+      "bytes": 11029
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/softball--digital_flyer.json",
+      "sha256": "998c6bb826c4704c952d95fe69484f9c7a4f0506a5805415383764b3f7d92178",
+      "bytes": 15712
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/softball--event_page.json",
+      "sha256": "0504a1d25d369731848867a2979da632f476b2380aa15072a77a311c6999373c",
+      "bytes": 10600
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/softball--live_card.json",
+      "sha256": "265b652b6613a50fe959d781d900ae5cb353463cd1f3baa92d54f4367549bcfc",
+      "bytes": 11704
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/special_event--digital_flyer.json",
+      "sha256": "746ffeadd665091fcf135208e14d3b4156899840a08bcff6a2d7e94bd9b4be34",
+      "bytes": 17999
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/special_event--event_page.json",
+      "sha256": "7fd86848bfec177dab060c32635ba3d821dc1cea808729bc3d9e2da5cdb45baf",
+      "bytes": 13164
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/special_event--live_card.json",
+      "sha256": "66ceb94331d09f60ae5a3a9dc79c8fe88df8ae175bb33368a4ec62bd639b441e",
+      "bytes": 13833
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/sport_event--digital_flyer.json",
+      "sha256": "028c68317c8415fa0d2b90b6ee8dc6166ecc925114af416b0a3830b8bc08cc14",
+      "bytes": 16538
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/sport_event--event_page.json",
+      "sha256": "bd249a37c72373b4ea867a6a5fddedabd4f6b907c58481ccbf5d0dcec75373d3",
+      "bytes": 14758
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/sport_event--live_card.json",
+      "sha256": "a0f642be38bee70b1f720de86aefd6fcbe3e2ea28ee70326e7d5d0a55aa79094",
+      "bytes": 13368
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/swimming--digital_flyer.json",
+      "sha256": "fd497c37be6ae428443bbe7e12bc92325e62ad6be59bf7276b0495f0b3111c2b",
+      "bytes": 15358
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/swimming--event_page.json",
+      "sha256": "4e82e027890e2f0b8ee920b30ae8b9c5cceb665817e1ee8f5942e36f6e0f1caf",
+      "bytes": 13990
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/swimming--live_card.json",
+      "sha256": "d0bacb6571e98a5c4a6cab1124cb1084d66430fe1615f9794339da7fe95d7ce5",
+      "bytes": 14195
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/tennis--digital_flyer.json",
+      "sha256": "4416c6b65e0f1f0b1adbb39f6c96e4afe97e37449c1672713a44d4942be7679d",
+      "bytes": 15169
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/tennis--event_page.json",
+      "sha256": "8c898f603a65bd40cc7fbe523951ad10c93c03503a2a0dca650b9f88b5428e7e",
+      "bytes": 10682
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/tennis--live_card.json",
+      "sha256": "31324a167afa77cfa9825f77759f2b1557311ec1179e74a974d58a88e0a36f91",
+      "bytes": 14641
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/track_field--digital_flyer.json",
+      "sha256": "bfad5d698368fe7b60c7634f26a89a8047590f4f293bfe73bc0f93172ef49dba",
+      "bytes": 16383
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/track_field--event_page.json",
+      "sha256": "883c1a12b2227f261c5b80f55c1e851e26ecc681a838f6035bf805e79a3f1723",
+      "bytes": 11146
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/track_field--live_card-before-1789828535478.json",
+      "sha256": "c66dd5d7eb619121ef1dfe205dd2436eeeed0fe055d6e16f3012e14afbcee674",
+      "bytes": 9306
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/track_field--live_card.json",
+      "sha256": "477b6b029caef5b7b35cfad5c3e2d7019b4bc526287ca3dc3cd480bdd832a53a",
+      "bytes": 13012
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/volleyball--digital_flyer.json",
+      "sha256": "d54fa8ff6c38fb85c480824fdefc36a9f128c1a141ed78d29cc8ba640b006cbb",
+      "bytes": 14940
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/volleyball--event_page.json",
+      "sha256": "ad642a288b117494b1f5c9764708759dc23acbfc0139f1cad05252f553c2d964",
+      "bytes": 12849
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/volleyball--live_card.json",
+      "sha256": "4d53c21d9a9f66dd6fccfef378fc1f4fb160bdf24080ec5febbb691b80a1c4b0",
+      "bytes": 15584
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/wedding--digital_flyer.json",
+      "sha256": "49b44ce1c1895e5f278db9a8b8022f6eaaab2c11169516de0a421d6f3e39ec78",
+      "bytes": 16284
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/wedding--event_page.json",
+      "sha256": "cc51c270ae8ba9a92334db79790840d94b7c04f91ffd925a07b0a3d0b921f290",
+      "bytes": 12913
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/wedding--live_card.json",
+      "sha256": "6ecd304252a1291cd1caffc3494f0396954c1ebb33bfc554476aba8ca5250c3c",
+      "bytes": 17568
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/workshop--digital_flyer.json",
+      "sha256": "bbcce64cc38839239529f840f9c3b2c99ddd8cacb7c48c0652020dd4227d365c",
+      "bytes": 14844
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/workshop--event_page-before-1789828236729.json",
+      "sha256": "dddc6f833e84157f13583fe4d4bce7b247adab0a520674d782ca276f14a6d5a4",
+      "bytes": 9176
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/workshop--event_page.json",
+      "sha256": "997808234257fac43e5493f4654457c839c645f750b670869f2f3911db5fae19",
+      "bytes": 14332
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/workshop--live_card.json",
+      "sha256": "d7bb896e2003cb5d48b00ddc034e53dcec4106eea76546ff8921115e600248ef",
+      "bytes": 18086
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/wrestling--digital_flyer.json",
+      "sha256": "711f1d0833feabc1cf2cfc9c260abf2b7110360d56ac599470c1f349adee3f5b",
+      "bytes": 13926
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/wrestling--event_page.json",
+      "sha256": "9460190aad9f9ef9fe8533249d4a05299e3490cf2c0c8edb78634f4664b9de6a",
+      "bytes": 11314
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/wrestling--live_card-before-1789828848251.json",
+      "sha256": "cc7aa5f4e97c9634baad829ec1900a52d40c39bab0cbbe67ec5ce17b4dae66e3",
+      "bytes": 12095
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/reviews/wrestling--live_card.json",
+      "sha256": "7df4a5c1606322eaf5feefdc41e23f359ba011b887c927b07c4ac1c0076f3c48",
+      "bytes": 14595
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/result-before-1789785919182.json",
+      "sha256": "57f2d1fc6e2c2c940a1891282204e5ae71689e67bbc1cd0f50e6a4050707f1cc",
+      "bytes": 4308
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/result-before-1789791561469.json",
+      "sha256": "34b5ff9d60184ff0513f18751d151e9155a64cac4e656b13f760174bb1e2fdd0",
+      "bytes": 44180
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/result-before-1789792132452.json",
+      "sha256": "2595a68dfbe1c1cc9c8677feb0a5a64e1a780d063ffe0d16ce310dac32f43d31",
+      "bytes": 2707
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/result-before-1789792748127.json",
+      "sha256": "69b03e03a72f07a9ff77db8cf7a18295e514a362191cca0aac70bd00f9a7b47e",
+      "bytes": 53260
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/result-before-1789828685459.json",
+      "sha256": "c106b61a3e98c58268898b38f0b2af781ce325b4d11f2c1b0a807db8083107da",
+      "bytes": 53721
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/result.json",
+      "sha256": "5ab028630f369d38e513f7189b22262f9e803686da50d9a3c3e535fc060a3c07",
+      "bytes": 102022
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/attempts/2026-09-19T04-19-21-498Z/result.json",
+      "sha256": "f2b7a314039859ede1ef25e759c0086492ed7d74e2b9ddc75087a8bcd2505fb5",
+      "bytes": 1748
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/attempts/2026-09-19T04-19-21-498Z/adjudicated-result.json",
+      "sha256": "2595a68dfbe1c1cc9c8677feb0a5a64e1a780d063ffe0d16ce310dac32f43d31",
+      "bytes": 2707
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/attempts/2026-09-19T04-28-52-456Z/result.json",
+      "sha256": "0a6afb36b417eef8cf83bf1bbcf89f7445c22300b48ad6f594bc0420b3f965d7",
+      "bytes": 36761
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/attempts/2026-09-19T04-28-52-456Z/adjudicated-result.json",
+      "sha256": "69b03e03a72f07a9ff77db8cf7a18295e514a362191cca0aac70bd00f9a7b47e",
+      "bytes": 53260
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/attempts/2026-09-19T04-39-08-132Z/result.json",
+      "sha256": "de10afe7e4008f2ff2375b062c44de9940f3e928450e4de6d9c19321dceefaf1",
+      "bytes": 37215
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/attempts/2026-09-19T04-39-08-132Z/adjudicated-result.json",
+      "sha256": "c106b61a3e98c58268898b38f0b2af781ce325b4d11f2c1b0a807db8083107da",
+      "bytes": 53721
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/attempts/2026-09-19T14-38-05-462Z/result.json",
+      "sha256": "9cc746d9518caadf513fde9d3d645dcb3342f069fd9c13fc3f0145618ddd74cd",
+      "bytes": 78003
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/attempts/2026-09-19T14-38-05-462Z/adjudicated-result.json",
+      "sha256": "5ab028630f369d38e513f7189b22262f9e803686da50d9a3c3e535fc060a3c07",
+      "bytes": 102022
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/result-before-1789792236452.json",
+      "sha256": "84302650f4e32b2c187d92152a7b45ed18176bd34d349c313882128b36799bbf",
+      "bytes": 38162
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/result-before-1789792839852.json",
+      "sha256": "8a4fb255ec2da47db313e81c3528eedf478919d5330e97aaaa58f87954c4c4cd",
+      "bytes": 48439
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/result-before-1789793713083.json",
+      "sha256": "1a419c6d40fc27c4e82f4c3195dab7b7f659b5c7b4736e06e2a083119400a385",
+      "bytes": 68803
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/result-before-1789794003187.json",
+      "sha256": "1713da3807d364ffe63478726f891057229a5aad8448823e5338597ff8468709",
+      "bytes": 70881
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/result.json",
+      "sha256": "801df83bca3e4b3013b04a47f7838d74bf443fe4bbc2e8e608e9739c74282298",
+      "bytes": 92219
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/attempts/2026-09-19T02-59-08-047Z/result.json",
+      "sha256": "f9e14b2f8ecc60c2e5cd0f9ae22b62e713a2b23d91c7312657e6b0a2f0da364a",
+      "bytes": 31488
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/attempts/2026-09-19T04-30-36-455Z/result.json",
+      "sha256": "9f4bc7b14e9c3c25411f174e9305c8ccb72d67062ef152469aabdf7a758d6d62",
+      "bytes": 35084
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/attempts/2026-09-19T04-30-36-455Z/adjudicated-result.json",
+      "sha256": "8a4fb255ec2da47db313e81c3528eedf478919d5330e97aaaa58f87954c4c4cd",
+      "bytes": 48439
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/attempts/2026-09-19T04-40-39-855Z/result.json",
+      "sha256": "7afbbb6de15661709d6760e83bbef2b2db6402ede5f55ef07ed2f28fb99ec934",
+      "bytes": 47565
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/attempts/2026-09-19T04-40-39-855Z/adjudicated-result.json",
+      "sha256": "1a419c6d40fc27c4e82f4c3195dab7b7f659b5c7b4736e06e2a083119400a385",
+      "bytes": 68803
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/attempts/2026-09-19T04-55-13-088Z/result.json",
+      "sha256": "a2251ab5f538e374be0a617e0c2b97ea11d588242a765993a73a78e0fe075b8c",
+      "bytes": 49761
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/attempts/2026-09-19T04-55-13-088Z/adjudicated-result.json",
+      "sha256": "1713da3807d364ffe63478726f891057229a5aad8448823e5338597ff8468709",
+      "bytes": 70881
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/attempts/2026-09-19T05-00-03-193Z/result.json",
+      "sha256": "f17010d0525efe23aa0d616f714bdec819a6342e1459e7bfb4784efe61e34510",
+      "bytes": 71389
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/attempts/2026-09-19T05-00-03-193Z/adjudicated-result.json",
+      "sha256": "801df83bca3e4b3013b04a47f7838d74bf443fe4bbc2e8e608e9739c74282298",
+      "bytes": 92219
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/result-before-1789792296373.json",
+      "sha256": "7e8159246924bb273ee55c813f604ae356e7b3b43ed22035db16bd2d5825a33b",
+      "bytes": 36747
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/result-before-1789792956048.json",
+      "sha256": "cc154409c785f91e7c15c194c6c7c2271ec93aa4ef2058c8c0cfc4ae93003f10",
+      "bytes": 61553
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/result-before-1789793861307.json",
+      "sha256": "f4e89f0ab7d9ff886f2ed183d04f76ae132100aa9c14308f8e6f482757c2af5c",
+      "bytes": 67943
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/result-before-1789794206752.json",
+      "sha256": "1130643a12e85241e2b4e6de4ec133cd2b1c5f8a81e448d2eec9026991ad59ef",
+      "bytes": 66409
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/result.json",
+      "sha256": "e08f381042fb7cc0cc69455a21823baa4fe46316cb96ebe122b0136a33a3afce",
+      "bytes": 79859
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/attempts/2026-09-19T02-59-42-056Z/result.json",
+      "sha256": "0813be5f31b04d0c2460c91428ba37626c8c8c80817ae8b65ee1124f5d558dda",
+      "bytes": 30705
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/attempts/2026-09-19T04-31-36-377Z/result.json",
+      "sha256": "766207167282854c464e20535086ff526eadf3aa99180d94554cdce0d2208dce",
+      "bytes": 46978
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/attempts/2026-09-19T04-31-36-377Z/adjudicated-result.json",
+      "sha256": "cc154409c785f91e7c15c194c6c7c2271ec93aa4ef2058c8c0cfc4ae93003f10",
+      "bytes": 61553
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/attempts/2026-09-19T04-42-36-052Z/result.json",
+      "sha256": "c419b43ba53660e52853c835a6258d691acf40d01a9b5fcb2d1c18691526fba3",
+      "bytes": 46692
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/attempts/2026-09-19T04-42-36-052Z/adjudicated-result.json",
+      "sha256": "f4e89f0ab7d9ff886f2ed183d04f76ae132100aa9c14308f8e6f482757c2af5c",
+      "bytes": 67943
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/attempts/2026-09-19T04-57-41-311Z/result.json",
+      "sha256": "9b2097bbd3e261679839603fd153feb224430100b526df422cb7dc5043d3221a",
+      "bytes": 48612
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/attempts/2026-09-19T04-57-41-311Z/adjudicated-result.json",
+      "sha256": "1130643a12e85241e2b4e6de4ec133cd2b1c5f8a81e448d2eec9026991ad59ef",
+      "bytes": 66409
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/attempts/2026-09-19T05-03-26-757Z/result.json",
+      "sha256": "6d968f0780d3917bd8ecc58020ab976979410f3546c50bc5f0d039688885de7a",
+      "bytes": 62351
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/attempts/2026-09-19T05-03-26-757Z/adjudicated-result.json",
+      "sha256": "e08f381042fb7cc0cc69455a21823baa4fe46316cb96ebe122b0136a33a3afce",
+      "bytes": 79859
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gymnastics--live_card/result-before-1789792360199.json",
+      "sha256": "6172f817597b4543684773480b3d4bb743610d7559d158eaa5a4ea9227f9d06b",
+      "bytes": 35907
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gymnastics--live_card/result-before-1789793062689.json",
+      "sha256": "7182a89b17896846cc859c354abb08887faf3d0b3d784a821832ddafbe219ec5",
+      "bytes": 53710
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gymnastics--live_card/result-before-1789794344165.json",
+      "sha256": "bdbd9bb0d77e9c03a5f9fe5fe3b1be78cbd4f8a2ef16179efc91be2bd2e3ba47",
+      "bytes": 74640
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gymnastics--live_card/result.json",
+      "sha256": "6b4b353775bb310c5333c9cace152d0be6d492fc1a471acdfbdc684994ea282b",
+      "bytes": 86230
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gymnastics--live_card/attempts/2026-09-19T03-01-47-670Z/result.json",
+      "sha256": "5b7e2af4874415c2b0c67020ac931d66544d1b7a0d0bea33a0e8a3ab876e6c20",
+      "bytes": 30516
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gymnastics--live_card/attempts/2026-09-19T04-32-40-202Z/result.json",
+      "sha256": "71cb04345ff05572838d9fd966ec9c5d192f1bf75f86c695badd1be09b184797",
+      "bytes": 37179
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gymnastics--live_card/attempts/2026-09-19T04-32-40-202Z/adjudicated-result.json",
+      "sha256": "7182a89b17896846cc859c354abb08887faf3d0b3d784a821832ddafbe219ec5",
+      "bytes": 53710
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gymnastics--live_card/attempts/2026-09-19T04-44-22-692Z/result.json",
+      "sha256": "5543e7a00f1f136f0e4d25995f7fd44ab9c3408f108986fdf06baee1f85c6055",
+      "bytes": 53768
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gymnastics--live_card/attempts/2026-09-19T04-44-22-692Z/adjudicated-result.json",
+      "sha256": "bdbd9bb0d77e9c03a5f9fe5fe3b1be78cbd4f8a2ef16179efc91be2bd2e3ba47",
+      "bytes": 74640
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gymnastics--live_card/attempts/2026-09-19T05-05-44-168Z/result.json",
+      "sha256": "b7f5ecac13bbf710d1ca948977eb5b24fc48b56229958acf6e682a6e6e6c1632",
+      "bytes": 65419
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gymnastics--live_card/attempts/2026-09-19T05-05-44-168Z/adjudicated-result.json",
+      "sha256": "6b4b353775bb310c5333c9cace152d0be6d492fc1a471acdfbdc684994ea282b",
+      "bytes": 86230
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/anniversary--event_page/result-before-1789792444404.json",
+      "sha256": "dc967230d14689928572d3834e077fcb3ab4f5c000c0c8eb2e131fa6c023091f",
+      "bytes": 38856
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/anniversary--event_page/result-before-1789794472489.json",
+      "sha256": "e27c5a616f6750611aad86e957f8bdbb59e2a29f9a52113ccc307c78fc7cdeaa",
+      "bytes": 2232
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/anniversary--event_page/result.json",
+      "sha256": "9656e44974db68245084645e7bf66e06ffaa514503b877a360c2ac8f2858181f",
+      "bytes": 91389
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/anniversary--event_page/attempts/2026-09-19T03-02-15-137Z/result.json",
+      "sha256": "c5161d8bf76acfedcba2eb3b53043b0e5bf84fe2be555c730b43ab0e18a532a7",
+      "bytes": 33111
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/anniversary--event_page/attempts/2026-09-19T04-34-04-407Z/result.json",
+      "sha256": "2d1f1651e4ddd2f3a036c8449ea31b3120dc4f54ac22ef1e3c1a2210bb56f184",
+      "bytes": 1163
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/anniversary--event_page/attempts/2026-09-19T04-34-04-407Z/adjudicated-result.json",
+      "sha256": "e27c5a616f6750611aad86e957f8bdbb59e2a29f9a52113ccc307c78fc7cdeaa",
+      "bytes": 2232
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/anniversary--event_page/attempts/2026-09-19T05-07-52-493Z/result.json",
+      "sha256": "571cc21dc6b97557ac6e6b4cb1d120a49f1aa62f4eb77d41e9812ca0b21336d5",
+      "bytes": 71874
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/anniversary--event_page/attempts/2026-09-19T05-07-52-493Z/adjudicated-result.json",
+      "sha256": "9656e44974db68245084645e7bf66e06ffaa514503b877a360c2ac8f2858181f",
+      "bytes": 91389
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baby_shower--digital_flyer/result-before-1789794602945.json",
+      "sha256": "bee2cc238b87fbfba9569af288c8405bd38fe817c2017bfbd0e24d038fff31e3",
+      "bytes": 36657
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baby_shower--digital_flyer/result.json",
+      "sha256": "cb4ba352ddcfae277c49886b204be4509cae3d277a86ab8c63d02de0ac8ae36e",
+      "bytes": 86729
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baby_shower--digital_flyer/attempts/2026-09-19T03-02-26-238Z/result.json",
+      "sha256": "c7fbf27371785e8dc9de769fe3c7c5fa739fa67173a74bea91fa64c666b19bb4",
+      "bytes": 30594
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baby_shower--digital_flyer/attempts/2026-09-19T05-10-02-948Z/result.json",
+      "sha256": "7f59e860304c549689a3d0051846e4099c762e54f0325c377c49f706e83f4c51",
+      "bytes": 69181
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baby_shower--digital_flyer/attempts/2026-09-19T05-10-02-948Z/adjudicated-result.json",
+      "sha256": "cb4ba352ddcfae277c49886b204be4509cae3d277a86ab8c63d02de0ac8ae36e",
+      "bytes": 86729
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--digital_flyer/result.json",
+      "sha256": "438b7377807f5846d0e0d3d3aec2af59645ae0a2d8caad765c2959957bea6def",
+      "bytes": 88504
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--digital_flyer/attempts/2026-09-19T06-00-30-819Z/result.json",
+      "sha256": "e19ca5e9df06d00f4730a619757f98bb2fbf74198eed4622785e29259511ce03",
+      "bytes": 70995
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--digital_flyer/attempts/2026-09-19T06-00-30-819Z/adjudicated-result.json",
+      "sha256": "438b7377807f5846d0e0d3d3aec2af59645ae0a2d8caad765c2959957bea6def",
+      "bytes": 88504
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--event_page/result.json",
+      "sha256": "08f7ffea53b2e7f2f7ab89cfe49bf00a4da1cfb5479428a46b6e1dde767668a9",
+      "bytes": 89181
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--event_page/attempts/2026-09-19T06-02-25-627Z/result.json",
+      "sha256": "be36485eaf74b8f40009af83eb6596c95ae4809b13b45b202f7a961fc84be242",
+      "bytes": 71711
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--event_page/attempts/2026-09-19T06-02-25-627Z/adjudicated-result.json",
+      "sha256": "08f7ffea53b2e7f2f7ab89cfe49bf00a4da1cfb5479428a46b6e1dde767668a9",
+      "bytes": 89181
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wedding--live_card/result.json",
+      "sha256": "12d65f08e5645214274100e1cbae5fd610c8bb307b397d88c556c827bafde79a",
+      "bytes": 86051
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wedding--live_card/attempts/2026-09-19T05-11-57-944Z/result.json",
+      "sha256": "9a34447e307cdb71cfd84a06be2d5f938190ece8476415cd547634a90f281eb7",
+      "bytes": 69788
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wedding--live_card/attempts/2026-09-19T05-11-57-944Z/adjudicated-result.json",
+      "sha256": "12d65f08e5645214274100e1cbae5fd610c8bb307b397d88c556c827bafde79a",
+      "bytes": 86051
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wedding--digital_flyer/result.json",
+      "sha256": "f063895a2aee4a0d63f0883e1ce2c3fcb473c7f0166f581264a8b4f9451c397e",
+      "bytes": 88179
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wedding--digital_flyer/attempts/2026-09-19T06-04-07-804Z/result.json",
+      "sha256": "44bf0d04889d8467272be186aba1c2d5518d9eefe347dfcc712b84fb3d63eff4",
+      "bytes": 70682
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wedding--digital_flyer/attempts/2026-09-19T06-04-07-804Z/adjudicated-result.json",
+      "sha256": "f063895a2aee4a0d63f0883e1ce2c3fcb473c7f0166f581264a8b4f9451c397e",
+      "bytes": 88179
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wedding--event_page/result.json",
+      "sha256": "9c820e973095bc01a80df16b4e92e0783714014e4fa9741c8fd35f4fa237dce8",
+      "bytes": 85863
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wedding--event_page/attempts/2026-09-19T06-05-57-096Z/result.json",
+      "sha256": "4f7b52776d2277658d9d0927cd0d92f5d2c48cde1cc9ab764320d8c22f8fc8e3",
+      "bytes": 69587
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wedding--event_page/attempts/2026-09-19T06-05-57-096Z/adjudicated-result.json",
+      "sha256": "9c820e973095bc01a80df16b4e92e0783714014e4fa9741c8fd35f4fa237dce8",
+      "bytes": 85863
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/anniversary--live_card/result.json",
+      "sha256": "90275982da2d379c0c1092f657b14b4f9a0bc603d7b5fef6098c6c3fc9d2232c",
+      "bytes": 87693
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/anniversary--live_card/attempts/2026-09-19T06-07-38-814Z/result.json",
+      "sha256": "b76b568894983fb43c20afd29507a0c0ced910089eba27210021a010e70356b5",
+      "bytes": 71381
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/anniversary--live_card/attempts/2026-09-19T06-07-38-814Z/adjudicated-result.json",
+      "sha256": "90275982da2d379c0c1092f657b14b4f9a0bc603d7b5fef6098c6c3fc9d2232c",
+      "bytes": 87693
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/anniversary--digital_flyer/result.json",
+      "sha256": "5637df5d4d45d5c24ad0f78435d1ec580a05283fcefbefd8e0676a21a32704c6",
+      "bytes": 98308
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/anniversary--digital_flyer/attempts/2026-09-19T06-09-13-025Z/result.json",
+      "sha256": "6956b2bf1533bf655387c354863ce325ac9def6319107d74de3a9f8466a7c574",
+      "bytes": 80757
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/anniversary--digital_flyer/attempts/2026-09-19T06-09-13-025Z/adjudicated-result.json",
+      "sha256": "5637df5d4d45d5c24ad0f78435d1ec580a05283fcefbefd8e0676a21a32704c6",
+      "bytes": 98308
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baby_shower--live_card/result.json",
+      "sha256": "20ab9781afd8442e6470c9e2733e4f28c20cafac7c562a357f5ebb2708b41bf3",
+      "bytes": 88707
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baby_shower--live_card/attempts/2026-09-19T06-11-10-621Z/result.json",
+      "sha256": "2a50b43354e2f1b9dfe417bb02f9cb33ac0ad931d876a41899d85314a3f48466",
+      "bytes": 67880
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baby_shower--live_card/attempts/2026-09-19T06-11-10-621Z/adjudicated-result.json",
+      "sha256": "20ab9781afd8442e6470c9e2733e4f28c20cafac7c562a357f5ebb2708b41bf3",
+      "bytes": 88707
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baby_shower--event_page/result.json",
+      "sha256": "540492dc2d588c054365b1110c5ce020eee47e9c7451d9516258503be2d51812",
+      "bytes": 91860
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baby_shower--event_page/attempts/2026-09-19T06-13-21-874Z/result.json",
+      "sha256": "47d765b8480fcbe8586e316e4864b58bdd5918bfc596e9218c898165154468f0",
+      "bytes": 70898
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baby_shower--event_page/attempts/2026-09-19T06-13-21-874Z/adjudicated-result.json",
+      "sha256": "540492dc2d588c054365b1110c5ce020eee47e9c7451d9516258503be2d51812",
+      "bytes": 91860
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gender_reveal--live_card/result.json",
+      "sha256": "1922d98f2e8007b8f9d2e5db8dd5e68df209fc5031bea9eb6d2a319fd6f46e4b",
+      "bytes": 91701
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gender_reveal--live_card/attempts/2026-09-19T06-15-27-471Z/result.json",
+      "sha256": "3dd03a4c8ae628bd1c93967539c4f5141cbada2a50dff900db405868ab9fd649",
+      "bytes": 67651
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gender_reveal--live_card/attempts/2026-09-19T06-15-27-471Z/adjudicated-result.json",
+      "sha256": "1922d98f2e8007b8f9d2e5db8dd5e68df209fc5031bea9eb6d2a319fd6f46e4b",
+      "bytes": 91701
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gender_reveal--digital_flyer/result.json",
+      "sha256": "9c4682814c0a4f6a9bff442a783640b8aac779c74dd7eb40f86bcd3a9cb3da78",
+      "bytes": 86243
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gender_reveal--digital_flyer/attempts/2026-09-19T05-13-46-702Z/result.json",
+      "sha256": "3f28056bf20a2b4465e49d85a4bb3568b77eb2b11f2f33bb33c86a8ec878fc51",
+      "bytes": 68670
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gender_reveal--digital_flyer/attempts/2026-09-19T05-13-46-702Z/adjudicated-result.json",
+      "sha256": "9c4682814c0a4f6a9bff442a783640b8aac779c74dd7eb40f86bcd3a9cb3da78",
+      "bytes": 86243
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gender_reveal--event_page/result.json",
+      "sha256": "45e7f82819ea026e91312f7a41743b9e440bcaae2a82490882a52cc10879f866",
+      "bytes": 91051
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gender_reveal--event_page/attempts/2026-09-19T06-18-13-047Z/result.json",
+      "sha256": "0ab04bc765d2798678b68c7d6b269caaf96bc1c7f8a3a46fa03a83273d8e2104",
+      "bytes": 73516
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gender_reveal--event_page/attempts/2026-09-19T06-18-13-047Z/adjudicated-result.json",
+      "sha256": "45e7f82819ea026e91312f7a41743b9e440bcaae2a82490882a52cc10879f866",
+      "bytes": 91051
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/bridal_shower--live_card/result.json",
+      "sha256": "bf991f48d88e54972a5ce10e8bce1e47c11f4c1af0759d7c57a31ffeb0ac44fb",
+      "bytes": 87085
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/bridal_shower--live_card/attempts/2026-09-19T06-19-58-581Z/result.json",
+      "sha256": "1e3cacccaa50acee8b9023dd82cdb4151962e07ec347fbd7aeab9ed3c4443a85",
+      "bytes": 66230
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/bridal_shower--live_card/attempts/2026-09-19T06-19-58-581Z/adjudicated-result.json",
+      "sha256": "bf991f48d88e54972a5ce10e8bce1e47c11f4c1af0759d7c57a31ffeb0ac44fb",
+      "bytes": 87085
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/bridal_shower--digital_flyer/result.json",
+      "sha256": "f07c62c6bf8682c5b42d3d4a94a8dbb005bbe25f51985b1fa10cde163ade2226",
+      "bytes": 84081
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/bridal_shower--digital_flyer/attempts/2026-09-19T06-21-53-313Z/result.json",
+      "sha256": "714b94eba2db7045a9691551e22726cec3179ff4904495321d9d9186aa40564b",
+      "bytes": 66512
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/bridal_shower--digital_flyer/attempts/2026-09-19T06-21-53-313Z/adjudicated-result.json",
+      "sha256": "f07c62c6bf8682c5b42d3d4a94a8dbb005bbe25f51985b1fa10cde163ade2226",
+      "bytes": 84081
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/bridal_shower--event_page/result.json",
+      "sha256": "17f28efd6de9fce1cafd902fb706a96054e02e7975dfc05caad7ce9d73631c72",
+      "bytes": 84742
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/bridal_shower--event_page/attempts/2026-09-19T05-15-44-022Z/result.json",
+      "sha256": "5bb31d2cea14180d7005ba2ca1442a39167dfd4eb8333b2c7f5949621cfc5bf8",
+      "bytes": 67212
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/bridal_shower--event_page/attempts/2026-09-19T05-15-44-022Z/adjudicated-result.json",
+      "sha256": "17f28efd6de9fce1cafd902fb706a96054e02e7975dfc05caad7ce9d73631c72",
+      "bytes": 84742
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/graduation--live_card/result.json",
+      "sha256": "32d402a0e4ff6201c16aa12c0021dacfaecaaae7ac10cce43b265479c790eaa3",
+      "bytes": 89929
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/graduation--live_card/attempts/2026-09-19T05-17-33-084Z/result.json",
+      "sha256": "e6aa127987d3b7b6fe9c69aaed3fc8b1813889085248311eea675cb777b814c9",
+      "bytes": 69117
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/graduation--live_card/attempts/2026-09-19T05-17-33-084Z/adjudicated-result.json",
+      "sha256": "32d402a0e4ff6201c16aa12c0021dacfaecaaae7ac10cce43b265479c790eaa3",
+      "bytes": 89929
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/graduation--digital_flyer/result.json",
+      "sha256": "a91b4358f27cf1c7927908c05ca0c6e3b2efe0db9c361706b5fc36b659ee93dd",
+      "bytes": 87978
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/graduation--digital_flyer/attempts/2026-09-19T06-23-44-776Z/result.json",
+      "sha256": "c0dbc2bbb4344e5ae693abefb5739a71ff708b7493d54cb43a9b303dc9250ffe",
+      "bytes": 70444
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/graduation--digital_flyer/attempts/2026-09-19T06-23-44-776Z/adjudicated-result.json",
+      "sha256": "a91b4358f27cf1c7927908c05ca0c6e3b2efe0db9c361706b5fc36b659ee93dd",
+      "bytes": 87978
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/graduation--event_page/result.json",
+      "sha256": "cb789f9c9928a2c43c06dea1c73c7ac971d6245e8a1b0db65d36de27054326ba",
+      "bytes": 89436
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/graduation--event_page/attempts/2026-09-19T06-25-29-959Z/result.json",
+      "sha256": "da495494e7fcb8e4338ebf1dad56d1c8a7b5f86bbb2346ea278b75b746df8b2b",
+      "bytes": 71943
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/graduation--event_page/attempts/2026-09-19T06-25-29-959Z/adjudicated-result.json",
+      "sha256": "cb789f9c9928a2c43c06dea1c73c7ac971d6245e8a1b0db65d36de27054326ba",
+      "bytes": 89436
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gymnastics--digital_flyer/result.json",
+      "sha256": "906a9b5e87a2fe023103f52712b7e38d8ca6970f1990e68a230c2c04c9f3b8c0",
+      "bytes": 83741
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gymnastics--digital_flyer/attempts/2026-09-19T06-27-02-976Z/result.json",
+      "sha256": "49ac196eb5a1d8c0df7741d51a0c205aa36e9efbdc24959f948dff37ab2d609c",
+      "bytes": 66206
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gymnastics--digital_flyer/attempts/2026-09-19T06-27-02-976Z/adjudicated-result.json",
+      "sha256": "906a9b5e87a2fe023103f52712b7e38d8ca6970f1990e68a230c2c04c9f3b8c0",
+      "bytes": 83741
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gymnastics--event_page/result.json",
+      "sha256": "669fdddc646bd7857a985ce919062c55c564d4ae7ad3cd31dc8c98fcf518b5e4",
+      "bytes": 90160
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gymnastics--event_page/attempts/2026-09-19T06-28-48-189Z/result.json",
+      "sha256": "66846dfeeac9a2a92eca93d20fd31782719e0f8cb72d45ac0a6c709e475896e3",
+      "bytes": 72665
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/gymnastics--event_page/attempts/2026-09-19T06-28-48-189Z/adjudicated-result.json",
+      "sha256": "669fdddc646bd7857a985ce919062c55c564d4ae7ad3cd31dc8c98fcf518b5e4",
+      "bytes": 90160
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/game_day--live_card/result.json",
+      "sha256": "7de2c4b8dd0d18ae51a9553ba47c3dbe4ca75fb9cd787e283f563e77e1d18338",
+      "bytes": 87173
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/game_day--live_card/attempts/2026-09-19T06-30-32-133Z/result.json",
+      "sha256": "abf7002855f2e588c3d66880c42317b3d2a0345fae1ed8698cee5b0c00011e9c",
+      "bytes": 66537
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/game_day--live_card/attempts/2026-09-19T06-30-32-133Z/adjudicated-result.json",
+      "sha256": "7de2c4b8dd0d18ae51a9553ba47c3dbe4ca75fb9cd787e283f563e77e1d18338",
+      "bytes": 87173
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/game_day--digital_flyer/result.json",
+      "sha256": "caa8c8fb733fef38a8076afc1e3e7c51b2d01797bb7b1f4a78b4d82e5ea3bcb2",
+      "bytes": 83512
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/game_day--digital_flyer/attempts/2026-09-19T05-19-42-089Z/result.json",
+      "sha256": "c8a90c7fd9eb43bf292f76d9bb9e1c2613f74beeff9097082e9bd34a36f3d061",
+      "bytes": 66004
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/game_day--digital_flyer/attempts/2026-09-19T05-19-42-089Z/adjudicated-result.json",
+      "sha256": "caa8c8fb733fef38a8076afc1e3e7c51b2d01797bb7b1f4a78b4d82e5ea3bcb2",
+      "bytes": 83512
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/game_day--event_page/result-before-1789828408357.json",
+      "sha256": "c2f186a43b7026c476e8850e3a2b5b8dc1e746c76800ff394d2a9273747a66b0",
+      "bytes": 84324
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/game_day--event_page/result.json",
+      "sha256": "1fb464077f3fe82174943371b4eea2bc58d728aeb86cc6b2f798c71b0fc3b054",
+      "bytes": 96929
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/game_day--event_page/attempts/2026-09-19T06-32-43-522Z/result.json",
+      "sha256": "ea9300d9f41989ef88f3bf0bdc70ec16af49cf1cf5a23307f6ca409d7cb280e8",
+      "bytes": 68073
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/game_day--event_page/attempts/2026-09-19T06-32-43-522Z/adjudicated-result.json",
+      "sha256": "c2f186a43b7026c476e8850e3a2b5b8dc1e746c76800ff394d2a9273747a66b0",
+      "bytes": 84324
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/game_day--event_page/attempts/2026-09-19T14-33-28-362Z/result.json",
+      "sha256": "0e0f8ee5392fb335f450e5a7f10b88ce3563df1aa0eec6f25353e798be27d3b7",
+      "bytes": 76039
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/game_day--event_page/attempts/2026-09-19T14-33-28-362Z/adjudicated-result.json",
+      "sha256": "1fb464077f3fe82174943371b4eea2bc58d728aeb86cc6b2f798c71b0fc3b054",
+      "bytes": 96929
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--live_card/result-before-1789820126508.json",
+      "sha256": "9135c3ff9c85e698ebe145343d0e4ed0453297cc50af45101d785ddbf9128ca0",
+      "bytes": 2815
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--live_card/result.json",
+      "sha256": "9156f8e023ac9935883db29f87823948e83a80bd632512a1e89735543a537313",
+      "bytes": 84467
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--live_card/attempts/2026-09-19T12-08-16-132Z/result.json",
+      "sha256": "9c15c70eb279b8bb56b785ecee3e490c2beaf4f938caf0bad288223180a914d3",
+      "bytes": 1856
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--live_card/attempts/2026-09-19T12-08-16-132Z/adjudicated-result.json",
+      "sha256": "9135c3ff9c85e698ebe145343d0e4ed0453297cc50af45101d785ddbf9128ca0",
+      "bytes": 2815
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--live_card/attempts/2026-09-19T12-15-26-511Z/result.json",
+      "sha256": "0f52bbe09d0ddb94c5273c45625055d1816801da150fc9a30986db085654ecae",
+      "bytes": 63730
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--live_card/attempts/2026-09-19T12-15-26-511Z/adjudicated-result.json",
+      "sha256": "9156f8e023ac9935883db29f87823948e83a80bd632512a1e89735543a537313",
+      "bytes": 84467
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--event_page/result.json",
+      "sha256": "cd9a12d771e9099cb44f25f7978b68cba1b944f67990436945d0f2393de32c66",
+      "bytes": 83869
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--event_page/attempts/2026-09-19T12-17-58-624Z/result.json",
+      "sha256": "cd6e8abf80b42e20f15e277a39a3b1d04318705bb4074a0761bdef0859c070ac",
+      "bytes": 66402
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/football--event_page/attempts/2026-09-19T12-17-58-624Z/adjudicated-result.json",
+      "sha256": "cd9a12d771e9099cb44f25f7978b68cba1b944f67990436945d0f2393de32c66",
+      "bytes": 83869
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/sport_event--live_card/result.json",
+      "sha256": "4c4cac5538cf91bcf3c24b7404b7095f36112482e2113649e565ac34087675cd",
+      "bytes": 87594
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/sport_event--live_card/attempts/2026-09-19T12-19-47-834Z/result.json",
+      "sha256": "0e60bd79c654823f9b22aa8f8afd19ad9b372cbef5f5a53cc3d48518e218c716",
+      "bytes": 63615
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/sport_event--live_card/attempts/2026-09-19T12-19-47-834Z/adjudicated-result.json",
+      "sha256": "4c4cac5538cf91bcf3c24b7404b7095f36112482e2113649e565ac34087675cd",
+      "bytes": 87594
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/sport_event--digital_flyer/result.json",
+      "sha256": "b825217b0d20e4fffbf15a98effd6680debb563bd9f497c20c5f65b39cee9ee6",
+      "bytes": 89589
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/sport_event--digital_flyer/attempts/2026-09-19T12-27-23-886Z/result.json",
+      "sha256": "d119c2189baeee342143e9aa9ce3ba5e3b1b7e2aad14023a7d80bdd16a32a710",
+      "bytes": 72080
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/sport_event--digital_flyer/attempts/2026-09-19T12-27-23-886Z/adjudicated-result.json",
+      "sha256": "b825217b0d20e4fffbf15a98effd6680debb563bd9f497c20c5f65b39cee9ee6",
+      "bytes": 89589
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/sport_event--event_page/result.json",
+      "sha256": "862f028f2575223ad4edf9eb1c279dc64dcde1ae684eef7514a51decc66372d1",
+      "bytes": 88951
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/sport_event--event_page/attempts/2026-09-19T05-21-57-335Z/result.json",
+      "sha256": "6739d2196e194e15728e15b739ebee1d707c125c326d05bca905337928fad845",
+      "bytes": 67990
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/sport_event--event_page/attempts/2026-09-19T05-21-57-335Z/adjudicated-result.json",
+      "sha256": "862f028f2575223ad4edf9eb1c279dc64dcde1ae684eef7514a51decc66372d1",
+      "bytes": 88951
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--live_card/result.json",
+      "sha256": "25c72d56eec163451feba4b933e77eab8a1a457b54f93cd669c33751eadb2979",
+      "bytes": 94829
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--live_card/attempts/2026-09-19T12-29-42-831Z/result.json",
+      "sha256": "7013f7b274ce44ad916c4c56207905497152e17118180216876d6ae868b77811",
+      "bytes": 74200
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--live_card/attempts/2026-09-19T12-29-42-831Z/adjudicated-result.json",
+      "sha256": "25c72d56eec163451feba4b933e77eab8a1a457b54f93cd669c33751eadb2979",
+      "bytes": 94829
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--digital_flyer/result.json",
+      "sha256": "1caa251b6b1ab25ea7acd88c05a685dceaf0978658e6b25dc19ed07b3e2943c6",
+      "bytes": 86848
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--digital_flyer/attempts/2026-09-19T12-32-06-828Z/result.json",
+      "sha256": "3942378378183aa1c4a6e9d4d787b795b5212ac34ba8b46b17b06333f1d52212",
+      "bytes": 69316
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/field_trip--digital_flyer/attempts/2026-09-19T12-32-06-828Z/adjudicated-result.json",
+      "sha256": "1caa251b6b1ab25ea7acd88c05a685dceaf0978658e6b25dc19ed07b3e2943c6",
+      "bytes": 86848
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/open_house--live_card/result.json",
+      "sha256": "593f28cfe25fb0e663e849a78f55d4ad094e57a0f1e287d23a2be8dbaf710abc",
+      "bytes": 81950
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/open_house--live_card/attempts/2026-09-19T05-23-59-282Z/result.json",
+      "sha256": "733ccc53420773a8cfdf4d447562852618ffe32ae5447abdcbcc3c2f45e08fbc",
+      "bytes": 64472
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/open_house--live_card/attempts/2026-09-19T05-23-59-282Z/adjudicated-result.json",
+      "sha256": "593f28cfe25fb0e663e849a78f55d4ad094e57a0f1e287d23a2be8dbaf710abc",
+      "bytes": 81950
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/open_house--digital_flyer/result.json",
+      "sha256": "c66feee948899d71b77cd221abfdd976976bc896d17f7547d87fe99696a3375a",
+      "bytes": 87619
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/open_house--digital_flyer/attempts/2026-09-19T12-34-07-526Z/result.json",
+      "sha256": "7f13fc7de7c6081c6b1d3435ea8276fe69292927f9cf79ea0e1279a73ae1303d",
+      "bytes": 70087
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/open_house--digital_flyer/attempts/2026-09-19T12-34-07-526Z/adjudicated-result.json",
+      "sha256": "c66feee948899d71b77cd221abfdd976976bc896d17f7547d87fe99696a3375a",
+      "bytes": 87619
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/open_house--event_page/result.json",
+      "sha256": "cdcd25bd1a23f51488152502bec3eb3f7d4acb4b497c2faef3f208de6b6c3259",
+      "bytes": 89765
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/open_house--event_page/attempts/2026-09-19T12-35-51-186Z/result.json",
+      "sha256": "65c81d9fc6086c0f252e2b3f3f064b347d4e9fc8e245238eb3d8f264cc600fbd",
+      "bytes": 72274
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/open_house--event_page/attempts/2026-09-19T12-35-51-186Z/adjudicated-result.json",
+      "sha256": "cdcd25bd1a23f51488152502bec3eb3f7d4acb4b497c2faef3f208de6b6c3259",
+      "bytes": 89765
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/housewarming--live_card/result.json",
+      "sha256": "17dabce92f5d04fcf41a50926672a90f46fc31415510555949c115cc326db5a2",
+      "bytes": 87759
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/housewarming--live_card/attempts/2026-09-19T12-37-41-536Z/result.json",
+      "sha256": "2f209a1361674fc9f9bc8a725f976228c39b54942e0d9236e69b1c9cd0502b4c",
+      "bytes": 69281
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/housewarming--live_card/attempts/2026-09-19T12-37-41-536Z/adjudicated-result.json",
+      "sha256": "17dabce92f5d04fcf41a50926672a90f46fc31415510555949c115cc326db5a2",
+      "bytes": 87759
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/housewarming--digital_flyer/result.json",
+      "sha256": "a60850ce801b39b6247a8b130d199c20a04c1438807346541df02c2352f8d97e",
+      "bytes": 86553
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/housewarming--digital_flyer/attempts/2026-09-19T05-25-42-506Z/result.json",
+      "sha256": "df5bf80e858858a58f29f11983a2ba8c9c03526f9405d8d794c0670f73785581",
+      "bytes": 64793
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/housewarming--digital_flyer/attempts/2026-09-19T05-25-42-506Z/adjudicated-result.json",
+      "sha256": "a60850ce801b39b6247a8b130d199c20a04c1438807346541df02c2352f8d97e",
+      "bytes": 86553
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/housewarming--event_page/result.json",
+      "sha256": "37a6a95c176784187a956d02e25280acc365f8ff08b590ff9831bf5bd8cddaad",
+      "bytes": 92414
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/housewarming--event_page/attempts/2026-09-19T12-39-55-833Z/result.json",
+      "sha256": "01e7509707bcce0a4dacd32cfa4ae578f73caaec7faf15591441ab71f4ef3e35",
+      "bytes": 70728
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/housewarming--event_page/attempts/2026-09-19T12-39-55-833Z/adjudicated-result.json",
+      "sha256": "37a6a95c176784187a956d02e25280acc365f8ff08b590ff9831bf5bd8cddaad",
+      "bytes": 92414
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/appointment--live_card/result.json",
+      "sha256": "c9c3502ec497055d411fe891f60ba4cfdaabdfe16698aa767ad5d172b14148d0",
+      "bytes": 93061
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/appointment--live_card/attempts/2026-09-19T12-42-23-980Z/result.json",
+      "sha256": "3860ae75660babc42dcc553fd22fe6c0f5439fde675544513b582d803bd40e8d",
+      "bytes": 72152
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/appointment--live_card/attempts/2026-09-19T12-42-23-980Z/adjudicated-result.json",
+      "sha256": "c9c3502ec497055d411fe891f60ba4cfdaabdfe16698aa767ad5d172b14148d0",
+      "bytes": 93061
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/appointment--digital_flyer/result.json",
+      "sha256": "137c72f7fa1aa75583ab84ee549a302bffe7020cf5f426f6ccc856d4087fbad6",
+      "bytes": 91734
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/appointment--digital_flyer/attempts/2026-09-19T12-44-19-560Z/result.json",
+      "sha256": "fd92ed26be785db9ffe165a197dd509cb7a01c8463bfee1bb17c92cc0bed69c0",
+      "bytes": 74224
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/appointment--digital_flyer/attempts/2026-09-19T12-44-19-560Z/adjudicated-result.json",
+      "sha256": "137c72f7fa1aa75583ab84ee549a302bffe7020cf5f426f6ccc856d4087fbad6",
+      "bytes": 91734
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/appointment--event_page/result.json",
+      "sha256": "2f4394ae6609fa60d419acf3e0d8931c169ac8d57ca6247561b7b2885db69060",
+      "bytes": 86448
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/appointment--event_page/attempts/2026-09-19T05-28-14-633Z/result.json",
+      "sha256": "905852491f2597ca6c8afb9a257bb913974f9c77eef18d811056ea9220544ad3",
+      "bytes": 68943
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/appointment--event_page/attempts/2026-09-19T05-28-14-633Z/adjudicated-result.json",
+      "sha256": "2f4394ae6609fa60d419acf3e0d8931c169ac8d57ca6247561b7b2885db69060",
+      "bytes": 86448
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/workshop--live_card/result.json",
+      "sha256": "1c4063771f74729be71f00ac5fa72172f05a791dce39d33a0120c21bf667832d",
+      "bytes": 88923
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/workshop--live_card/attempts/2026-09-19T05-29-52-820Z/result.json",
+      "sha256": "2b52e62e959584bd6bf32dd9edc1e75a81b458ccff606cb0459ac2dbaa07bdc9",
+      "bytes": 64961
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/workshop--live_card/attempts/2026-09-19T05-29-52-820Z/adjudicated-result.json",
+      "sha256": "1c4063771f74729be71f00ac5fa72172f05a791dce39d33a0120c21bf667832d",
+      "bytes": 88923
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/workshop--digital_flyer/result.json",
+      "sha256": "2541ecc141f1872967ec2f6f589b047eb1722003a51860c7520590c59991ef77",
+      "bytes": 89975
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/workshop--digital_flyer/attempts/2026-09-19T12-46-04-534Z/result.json",
+      "sha256": "028526fd3efcf8514a0ce55e97dd6999318015902e992c63aedae3afd0f79e87",
+      "bytes": 72505
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/workshop--digital_flyer/attempts/2026-09-19T12-46-04-534Z/adjudicated-result.json",
+      "sha256": "2541ecc141f1872967ec2f6f589b047eb1722003a51860c7520590c59991ef77",
+      "bytes": 89975
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/workshop--event_page/result-before-1789828236729.json",
+      "sha256": "45f3406bf322b5c8d35fe6e51f276adc50fa96a096210744271e95b4bf78ae7a",
+      "bytes": 60301
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/workshop--event_page/result.json",
+      "sha256": "ecba41446f4ba188a065005fdd11638151c2e33ee23d291e33f0ebac9a314ec9",
+      "bytes": 94444
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/workshop--event_page/attempts/2026-09-19T12-47-52-473Z/result.json",
+      "sha256": "5e9087e6305e5a11ea6e031a2ba3190d2122a61e84526a276773d1154b9a48ca",
+      "bytes": 43786
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/workshop--event_page/attempts/2026-09-19T12-47-52-473Z/adjudicated-result.json",
+      "sha256": "45f3406bf322b5c8d35fe6e51f276adc50fa96a096210744271e95b4bf78ae7a",
+      "bytes": 60301
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/workshop--event_page/attempts/2026-09-19T14-30-36-734Z/result.json",
+      "sha256": "8dfb14361df1b05bb05e2b2c13db35ebd2db5f3b973fc911e3a791b73a6fbe82",
+      "bytes": 73828
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/workshop--event_page/attempts/2026-09-19T14-30-36-734Z/adjudicated-result.json",
+      "sha256": "ecba41446f4ba188a065005fdd11638151c2e33ee23d291e33f0ebac9a314ec9",
+      "bytes": 94444
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/special_event--live_card/result.json",
+      "sha256": "dcfccc21e50899e482070d44e7701b8c13916eb3d9edbb56c86c35ada71651e7",
+      "bytes": 94443
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/special_event--live_card/attempts/2026-09-19T12-49-18-473Z/result.json",
+      "sha256": "16cbc42d9dcb37208cfb47461731b75aee22efce17906b4f35ac960cd0b273b6",
+      "bytes": 69246
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/special_event--live_card/attempts/2026-09-19T12-49-18-473Z/adjudicated-result.json",
+      "sha256": "dcfccc21e50899e482070d44e7701b8c13916eb3d9edbb56c86c35ada71651e7",
+      "bytes": 94443
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/special_event--digital_flyer/result.json",
+      "sha256": "2574a074d37dd8a4c9b09437af9f3fda80d540e7e42583dae8f74e7ebcc218c7",
+      "bytes": 92960
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/special_event--digital_flyer/attempts/2026-09-19T05-32-17-039Z/result.json",
+      "sha256": "1505bba5dbb11906bdfe0bc2a58bfc92b266e987e0b4b1c14ec2e1a00ab83034",
+      "bytes": 67535
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/special_event--digital_flyer/attempts/2026-09-19T05-32-17-039Z/adjudicated-result.json",
+      "sha256": "2574a074d37dd8a4c9b09437af9f3fda80d540e7e42583dae8f74e7ebcc218c7",
+      "bytes": 92960
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/special_event--event_page/result.json",
+      "sha256": "3121e2d2f837fbb2144e1c1cc790a1faa3a8b465774fad34dcfc405336552696",
+      "bytes": 95751
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/special_event--event_page/attempts/2026-09-19T12-51-47-038Z/result.json",
+      "sha256": "141e2fde26aefa907bbddca3c56c0327e3b342a3f86fda3e5e7d1e184bf60ab7",
+      "bytes": 73574
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/special_event--event_page/attempts/2026-09-19T12-51-47-038Z/adjudicated-result.json",
+      "sha256": "3121e2d2f837fbb2144e1c1cc790a1faa3a8b465774fad34dcfc405336552696",
+      "bytes": 95751
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/general--live_card/result.json",
+      "sha256": "5981153dcc5640af5eae602f4e40f7c980a36714fb4da4049cc11500ef8435c1",
+      "bytes": 92806
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/general--live_card/attempts/2026-09-19T12-53-55-292Z/result.json",
+      "sha256": "079500ebc6846b1cc7e3b5dd01e60021332d559f81cdc002b7e43ea9887e3065",
+      "bytes": 68898
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/general--live_card/attempts/2026-09-19T12-53-55-292Z/adjudicated-result.json",
+      "sha256": "5981153dcc5640af5eae602f4e40f7c980a36714fb4da4049cc11500ef8435c1",
+      "bytes": 92806
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/general--digital_flyer/result.json",
+      "sha256": "97b7c2e7291da0077553564a963aa55a852ac3d6bb16c5f7c31e7a11aed742b7",
+      "bytes": 87193
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/general--digital_flyer/attempts/2026-09-19T12-56-21-979Z/result.json",
+      "sha256": "93959ce1ce05b255e5eac9d998aa4e6b798b5c974f8c1f61e34125d0b02dbf5f",
+      "bytes": 69736
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/general--digital_flyer/attempts/2026-09-19T12-56-21-979Z/adjudicated-result.json",
+      "sha256": "97b7c2e7291da0077553564a963aa55a852ac3d6bb16c5f7c31e7a11aed742b7",
+      "bytes": 87193
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/general--event_page/result.json",
+      "sha256": "5561e79399c65409b8db204827960c3365fe92dce0517f3b08ef12cf5569550d",
+      "bytes": 81710
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/general--event_page/attempts/2026-09-19T05-34-47-817Z/result.json",
+      "sha256": "9d6d14c497f17cfc61da70e18dda56670ce84d20354a226437669128b9eb674a",
+      "bytes": 64259
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/general--event_page/attempts/2026-09-19T05-34-47-817Z/adjudicated-result.json",
+      "sha256": "5561e79399c65409b8db204827960c3365fe92dce0517f3b08ef12cf5569550d",
+      "bytes": 81710
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/dance--live_card/result.json",
+      "sha256": "f7cc8be997d3bfdeb33bb894ad2f816913499ca940d011eb242b196222e04728",
+      "bytes": 86263
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/dance--live_card/attempts/2026-09-19T05-36-18-467Z/result.json",
+      "sha256": "dcaf8563672bb0be4d945c12bcdddd264d1b3c14694eeae19f32f411a6c982f8",
+      "bytes": 62350
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/dance--live_card/attempts/2026-09-19T05-36-18-467Z/adjudicated-result.json",
+      "sha256": "f7cc8be997d3bfdeb33bb894ad2f816913499ca940d011eb242b196222e04728",
+      "bytes": 86263
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/dance--digital_flyer/result.json",
+      "sha256": "dcc583dcd154e46285420f50fa58b0348dadf3a7da572c8568677c7fff4b12e3",
+      "bytes": 84946
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/dance--digital_flyer/attempts/2026-09-19T12-58-05-490Z/result.json",
+      "sha256": "6ceb84d99f9a9b0ac2b76519be0270ee50d149d865419f812ca0ff0dc0fa60d3",
+      "bytes": 67478
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/dance--digital_flyer/attempts/2026-09-19T12-58-05-490Z/adjudicated-result.json",
+      "sha256": "dcc583dcd154e46285420f50fa58b0348dadf3a7da572c8568677c7fff4b12e3",
+      "bytes": 84946
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/dance--event_page/result.json",
+      "sha256": "a38f6f4d4c3db3b799967b7634d262a076f4213541f62c005b207e403f02dff5",
+      "bytes": 91457
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/dance--event_page/attempts/2026-09-19T12-59-53-244Z/result.json",
+      "sha256": "bef899776d031b542592641baaf9e3a4aab79152ce68d4e4afecf83dce2a1961",
+      "bytes": 70701
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/dance--event_page/attempts/2026-09-19T12-59-53-244Z/adjudicated-result.json",
+      "sha256": "a38f6f4d4c3db3b799967b7634d262a076f4213541f62c005b207e403f02dff5",
+      "bytes": 91457
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/cheerleading--live_card/result.json",
+      "sha256": "ac3596ab452113b961c34eb6842e5348cb10956860be1ddc7aa643588f3bdac2",
+      "bytes": 90263
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/cheerleading--live_card/attempts/2026-09-19T13-02-01-336Z/result.json",
+      "sha256": "59e0896890134f9bb1eea84ca16c3310a0846a448d78538b604f696afd631044",
+      "bytes": 69456
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/cheerleading--live_card/attempts/2026-09-19T13-02-01-336Z/adjudicated-result.json",
+      "sha256": "ac3596ab452113b961c34eb6842e5348cb10956860be1ddc7aa643588f3bdac2",
+      "bytes": 90263
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/cheerleading--digital_flyer/result.json",
+      "sha256": "040ccded40703d51629ef7951a20e148630e34dc7c4b9d73579837fa46738102",
+      "bytes": 81352
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/cheerleading--digital_flyer/attempts/2026-09-19T05-38-53-165Z/result.json",
+      "sha256": "4f094ab079f5e8baf1745800e6990ec0552f071398bea32c938af12bafb03258",
+      "bytes": 63793
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/cheerleading--digital_flyer/attempts/2026-09-19T05-38-53-165Z/adjudicated-result.json",
+      "sha256": "040ccded40703d51629ef7951a20e148630e34dc7c4b9d73579837fa46738102",
+      "bytes": 81352
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/cheerleading--event_page/result.json",
+      "sha256": "a63f372a3bf9f225a9c7a6c25de47b08539cf658ce929a7f351d9bcb02c9576d",
+      "bytes": 89125
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/cheerleading--event_page/attempts/2026-09-19T13-04-02-348Z/result.json",
+      "sha256": "1a3b85c9e4fdb0fb100a9542693f692ae82633a1a9b3c8da37d364f504bd1e8c",
+      "bytes": 71607
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/cheerleading--event_page/attempts/2026-09-19T13-04-02-348Z/adjudicated-result.json",
+      "sha256": "a63f372a3bf9f225a9c7a6c25de47b08539cf658ce929a7f351d9bcb02c9576d",
+      "bytes": 89125
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/basketball--live_card/result.json",
+      "sha256": "5b80916ce0e2b8504d8be861c58e31b8ce630c1fa1375fa487db764dc5dde50f",
+      "bytes": 93681
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/basketball--live_card/attempts/2026-09-19T13-05-38-606Z/result.json",
+      "sha256": "9caa2fe337f8b797a02d138c3d6e7865b61b09bfa11a40766c37c4c0f77c29ab",
+      "bytes": 69720
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/basketball--live_card/attempts/2026-09-19T13-05-38-606Z/adjudicated-result.json",
+      "sha256": "5b80916ce0e2b8504d8be861c58e31b8ce630c1fa1375fa487db764dc5dde50f",
+      "bytes": 93681
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/basketball--digital_flyer/result.json",
+      "sha256": "3b276b4a29aa9a16efb148204a5767db223dfda1a3444fe6aef4179f6e4eb89e",
+      "bytes": 88259
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/basketball--digital_flyer/attempts/2026-09-19T13-08-02-768Z/result.json",
+      "sha256": "35ce18d883473fd1f10990a4a9656397cd109a95d1817759d1d9f32281fa9d06",
+      "bytes": 70763
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/basketball--digital_flyer/attempts/2026-09-19T13-08-02-768Z/adjudicated-result.json",
+      "sha256": "3b276b4a29aa9a16efb148204a5767db223dfda1a3444fe6aef4179f6e4eb89e",
+      "bytes": 88259
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/basketball--event_page/result.json",
+      "sha256": "935c6dbdabd9784d8cafb1ad5fa6087a92fe1d94b451f164fd082c77bbc6a676",
+      "bytes": 88438
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/basketball--event_page/attempts/2026-09-19T05-40-42-612Z/result.json",
+      "sha256": "32a04e56f45612674da5068b5e1404700473b4cb6483118595a6e6074c03e907",
+      "bytes": 67491
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/basketball--event_page/attempts/2026-09-19T05-40-42-612Z/adjudicated-result.json",
+      "sha256": "935c6dbdabd9784d8cafb1ad5fa6087a92fe1d94b451f164fd082c77bbc6a676",
+      "bytes": 88438
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baseball--live_card/result.json",
+      "sha256": "34e6386d2bf459f83f9fd6c0c10109f765f61e6e7d3c7d92cf0392321f8067b1",
+      "bytes": 81068
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baseball--live_card/attempts/2026-09-19T05-42-42-716Z/result.json",
+      "sha256": "638de133b263c7b7ae14ea44d6cccf662e0bceba5abc333680e1ea5bb4d6bab8",
+      "bytes": 63615
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baseball--live_card/attempts/2026-09-19T05-42-42-716Z/adjudicated-result.json",
+      "sha256": "34e6386d2bf459f83f9fd6c0c10109f765f61e6e7d3c7d92cf0392321f8067b1",
+      "bytes": 81068
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baseball--digital_flyer/result.json",
+      "sha256": "76f83a526f933979e0b7c5056d6d13d54615b0d1ec2ae3bf046ae0ce2d62db1f",
+      "bytes": 91540
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baseball--digital_flyer/attempts/2026-09-19T13-09-48-592Z/result.json",
+      "sha256": "20d8a30556446ab9f8ac564e9997cc58fd2f82919f930df887325c20b0bdb261",
+      "bytes": 70730
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baseball--digital_flyer/attempts/2026-09-19T13-09-48-592Z/adjudicated-result.json",
+      "sha256": "76f83a526f933979e0b7c5056d6d13d54615b0d1ec2ae3bf046ae0ce2d62db1f",
+      "bytes": 91540
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baseball--event_page/result.json",
+      "sha256": "75c1d1e59503c64349a304db7edf04be823c95dee76a57afd81065e90aadf887",
+      "bytes": 93437
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baseball--event_page/attempts/2026-09-19T13-11-58-445Z/result.json",
+      "sha256": "9b8889c9f03990657701f8899c5fa5e84177fede2219ab74bbc9596081b1eed5",
+      "bytes": 72520
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/baseball--event_page/attempts/2026-09-19T13-11-58-445Z/adjudicated-result.json",
+      "sha256": "75c1d1e59503c64349a304db7edf04be823c95dee76a57afd81065e90aadf887",
+      "bytes": 93437
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/softball--live_card/result.json",
+      "sha256": "1bf5cbbe6a1ca604ee43901aebac81a211438aee4d60c968876153fe44208237",
+      "bytes": 90882
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/softball--live_card/attempts/2026-09-19T13-13-56-497Z/result.json",
+      "sha256": "b0466da4c9befc0f0f4626edc17f6a506647329ef3953a56c068b5c69cc7729b",
+      "bytes": 68958
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/softball--live_card/attempts/2026-09-19T13-13-56-497Z/adjudicated-result.json",
+      "sha256": "1bf5cbbe6a1ca604ee43901aebac81a211438aee4d60c968876153fe44208237",
+      "bytes": 90882
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/softball--digital_flyer/result.json",
+      "sha256": "c2f5173f9ff0b3e47c0da621891d5f183c88b9cd918ef4610989fc163041b960",
+      "bytes": 82891
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/softball--digital_flyer/attempts/2026-09-19T05-44-21-438Z/result.json",
+      "sha256": "ce8e99e690f814f368e5a837cbcd3ce9ef39df4768ecdd781159a73c15568f2c",
+      "bytes": 64202
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/softball--digital_flyer/attempts/2026-09-19T05-44-21-438Z/adjudicated-result.json",
+      "sha256": "c2f5173f9ff0b3e47c0da621891d5f183c88b9cd918ef4610989fc163041b960",
+      "bytes": 82891
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/softball--event_page/result.json",
+      "sha256": "48d63f13b405a5d74872d9df26d72df22cd446252e68317bd8b257d19938f8b5",
+      "bytes": 89595
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/softball--event_page/attempts/2026-09-19T13-16-00-195Z/result.json",
+      "sha256": "7e0b2819505d1255708b4251f273ba9699b442cf475d19d4c162d406cd6514c3",
+      "bytes": 70949
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/softball--event_page/attempts/2026-09-19T13-16-00-195Z/adjudicated-result.json",
+      "sha256": "48d63f13b405a5d74872d9df26d72df22cd446252e68317bd8b257d19938f8b5",
+      "bytes": 89595
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/soccer--live_card/result.json",
+      "sha256": "1c8aa6193cee6cde0f5697785eb9691d226a15fd23ac128a7c745c5e07d5ed2c",
+      "bytes": 90493
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/soccer--live_card/attempts/2026-09-19T13-17-35-559Z/result.json",
+      "sha256": "0af77b3c5ce0929550d77602d39799eb38f3ab5203973f11553c0ceeb7401e88",
+      "bytes": 69777
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/soccer--live_card/attempts/2026-09-19T13-17-35-559Z/adjudicated-result.json",
+      "sha256": "1c8aa6193cee6cde0f5697785eb9691d226a15fd23ac128a7c745c5e07d5ed2c",
+      "bytes": 90493
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/soccer--digital_flyer/result.json",
+      "sha256": "e5909a1dd27d9c1e9e775e22cd9d021c34254a37c4b46255cad7e6096961d1e0",
+      "bytes": 87913
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/soccer--digital_flyer/attempts/2026-09-19T13-19-29-991Z/result.json",
+      "sha256": "79656b31764b133c763e3786a43be75bf1a10b115bdd1cb70dd8c9c30aac85c6",
+      "bytes": 70469
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/soccer--digital_flyer/attempts/2026-09-19T13-19-29-991Z/adjudicated-result.json",
+      "sha256": "e5909a1dd27d9c1e9e775e22cd9d021c34254a37c4b46255cad7e6096961d1e0",
+      "bytes": 87913
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/soccer--event_page/result.json",
+      "sha256": "150996187f5a1433f605ef82c2eca153ac0b98ee693a4f31c709391ec0058865",
+      "bytes": 83648
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/soccer--event_page/attempts/2026-09-19T05-46-06-653Z/result.json",
+      "sha256": "fadfc5a989d02863f43cce8b79d804c150f15ac3104193e5a3140e66f47a4abd",
+      "bytes": 66207
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/soccer--event_page/attempts/2026-09-19T05-46-06-653Z/adjudicated-result.json",
+      "sha256": "150996187f5a1433f605ef82c2eca153ac0b98ee693a4f31c709391ec0058865",
+      "bytes": 83648
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/volleyball--live_card/result.json",
+      "sha256": "81c6f1ec2d8f12f968faa0fa2ffd84563abaaacad8ddb8b9dcba21e155ad602b",
+      "bytes": 87692
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/volleyball--live_card/attempts/2026-09-19T05-47-43-002Z/result.json",
+      "sha256": "089caada272892ba1fa9e42eeea4135b3897fec955be9c17ce9bd8af3e2793dd",
+      "bytes": 65699
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/volleyball--live_card/attempts/2026-09-19T05-47-43-002Z/adjudicated-result.json",
+      "sha256": "81c6f1ec2d8f12f968faa0fa2ffd84563abaaacad8ddb8b9dcba21e155ad602b",
+      "bytes": 87692
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/volleyball--digital_flyer/result.json",
+      "sha256": "9c68d55da5922636a9f2d3368766f754e481775b23062f65e09d9e1075e8b2a4",
+      "bytes": 90124
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/volleyball--digital_flyer/attempts/2026-09-19T13-21-18-746Z/result.json",
+      "sha256": "62b80af216d435c5e76a1e2e5f723dd2d2aede59c599269760f0d7bcc82db1f4",
+      "bytes": 71441
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/volleyball--digital_flyer/attempts/2026-09-19T13-21-18-746Z/adjudicated-result.json",
+      "sha256": "9c68d55da5922636a9f2d3368766f754e481775b23062f65e09d9e1075e8b2a4",
+      "bytes": 90124
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/volleyball--event_page/result.json",
+      "sha256": "84ff4e796b965941091fd2d08113eab71f1be88e1934a9c159c1fb1030fb3b91",
+      "bytes": 96975
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/volleyball--event_page/attempts/2026-09-19T13-23-03-102Z/result.json",
+      "sha256": "2ab55e57fcea4064425526159cd1c7d663f6f24b19056a7ef79e46f3b477dd4e",
+      "bytes": 74845
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/volleyball--event_page/attempts/2026-09-19T13-23-03-102Z/adjudicated-result.json",
+      "sha256": "84ff4e796b965941091fd2d08113eab71f1be88e1934a9c159c1fb1030fb3b91",
+      "bytes": 96975
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/hockey--live_card/result-before-1789825753290.json",
+      "sha256": "05ef5aa5d15124817b4b7fe9730a2fd8699155947ed90c10a385a3d1ab2f7fbd",
+      "bytes": 51150
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/hockey--live_card/result.json",
+      "sha256": "b65d721afb4c2a2545201e9c733a33151246f6a482bcc16d0f6437eeb9b769cb",
+      "bytes": 92463
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/hockey--live_card/attempts/2026-09-19T13-25-05-988Z/result.json",
+      "sha256": "aad77d35cbed371897048b192584375b216c582ed2de52b585dd462ccecff775",
+      "bytes": 34100
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/hockey--live_card/attempts/2026-09-19T13-25-05-988Z/adjudicated-result.json",
+      "sha256": "05ef5aa5d15124817b4b7fe9730a2fd8699155947ed90c10a385a3d1ab2f7fbd",
+      "bytes": 51150
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/hockey--live_card/attempts/2026-09-19T13-49-13-293Z/result.json",
+      "sha256": "bf3f339e14439272211980d8ed24d477b795fd5232d068b688bcf92c32ec7281",
+      "bytes": 68572
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/hockey--live_card/attempts/2026-09-19T13-49-13-293Z/adjudicated-result.json",
+      "sha256": "b65d721afb4c2a2545201e9c733a33151246f6a482bcc16d0f6437eeb9b769cb",
+      "bytes": 92463
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/hockey--digital_flyer/result.json",
+      "sha256": "41f4423640aabf37cd8744bc3a517c6dd7f81176ec29fb19677318fe7666ef05",
+      "bytes": 80901
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/hockey--digital_flyer/attempts/2026-09-19T05-49-42-975Z/result.json",
+      "sha256": "ae295eb9c2cbf1f5e7b1edb04f392f79aeb6842b2458227cae2c11fcb56abbbc",
+      "bytes": 63420
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/hockey--digital_flyer/attempts/2026-09-19T05-49-42-975Z/adjudicated-result.json",
+      "sha256": "41f4423640aabf37cd8744bc3a517c6dd7f81176ec29fb19677318fe7666ef05",
+      "bytes": 80901
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/hockey--event_page/result.json",
+      "sha256": "9b828c3d22b9060b96586807883edca6f87afc0cec2001a4612d5c9033d2fc15",
+      "bytes": 90681
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/hockey--event_page/attempts/2026-09-19T13-52-30-396Z/result.json",
+      "sha256": "26d41b152c9a45bc3b823b551e872f4db15b769cabf14c549b7d8cd4da4b1542",
+      "bytes": 69912
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/hockey--event_page/attempts/2026-09-19T13-52-30-396Z/adjudicated-result.json",
+      "sha256": "9b828c3d22b9060b96586807883edca6f87afc0cec2001a4612d5c9033d2fc15",
+      "bytes": 90681
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/lacrosse--live_card/result.json",
+      "sha256": "eb651a54df31e6820687b8cba262006bba28ff724a65e3d15045371654e02285",
+      "bytes": 95192
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/lacrosse--live_card/attempts/2026-09-19T13-54-42-366Z/result.json",
+      "sha256": "fa472ab1c35be61875c8ff8a7b06295ca43e12415c420468d2b12f35607d4a90",
+      "bytes": 70086
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/lacrosse--live_card/attempts/2026-09-19T13-54-42-366Z/adjudicated-result.json",
+      "sha256": "eb651a54df31e6820687b8cba262006bba28ff724a65e3d15045371654e02285",
+      "bytes": 95192
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/lacrosse--digital_flyer/result.json",
+      "sha256": "034c9588b0dc3ed15508a37550a877d654418cdf1899110e249fb205199a75d1",
+      "bytes": 88927
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/lacrosse--digital_flyer/attempts/2026-09-19T13-57-22-073Z/result.json",
+      "sha256": "b7eb7197c7e5cde43735467dadc89b65c6497216bd10a2d1a5ffbcea40e62a58",
+      "bytes": 70274
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/lacrosse--digital_flyer/attempts/2026-09-19T13-57-22-073Z/adjudicated-result.json",
+      "sha256": "034c9588b0dc3ed15508a37550a877d654418cdf1899110e249fb205199a75d1",
+      "bytes": 88927
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/lacrosse--event_page/result.json",
+      "sha256": "9848e31e591d5ca34f9089e54ba3a88ae2517d660dabed39e2c52eb903b87929",
+      "bytes": 87425
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/lacrosse--event_page/attempts/2026-09-19T05-51-35-728Z/result.json",
+      "sha256": "2da3f754a4046675f45ae682b439b987f37d71aabd8bb5012273f8d9e15c3d8a",
+      "bytes": 65446
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/lacrosse--event_page/attempts/2026-09-19T05-51-35-728Z/adjudicated-result.json",
+      "sha256": "9848e31e591d5ca34f9089e54ba3a88ae2517d660dabed39e2c52eb903b87929",
+      "bytes": 87425
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/tennis--live_card/result.json",
+      "sha256": "f5a96554cca1d7ec5750d66a59a62181e8b5422921b42abec47832fd16b62b73",
+      "bytes": 84146
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/tennis--live_card/attempts/2026-09-19T05-53-41-704Z/result.json",
+      "sha256": "e8313e8376f0545e587268df09a47115c79744f10fc87b105a0400757e49053c",
+      "bytes": 63394
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/tennis--live_card/attempts/2026-09-19T05-53-41-704Z/adjudicated-result.json",
+      "sha256": "f5a96554cca1d7ec5750d66a59a62181e8b5422921b42abec47832fd16b62b73",
+      "bytes": 84146
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/tennis--digital_flyer/result.json",
+      "sha256": "a3afb61056e28cdfdedb5026aae152f7fc384b983b17c5e7fde0235c533a24f1",
+      "bytes": 87561
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/tennis--digital_flyer/attempts/2026-09-19T13-59-11-906Z/result.json",
+      "sha256": "2edc62853556864a7d2bbeae844564e4152b3e037f68a3b06e5fe7e279ee9c62",
+      "bytes": 70118
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/tennis--digital_flyer/attempts/2026-09-19T13-59-11-906Z/adjudicated-result.json",
+      "sha256": "a3afb61056e28cdfdedb5026aae152f7fc384b983b17c5e7fde0235c533a24f1",
+      "bytes": 87561
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/tennis--event_page/result.json",
+      "sha256": "4c508c63351ee3520039fb299158a706fd7d69835cb89a4105baa0baca6c63a5",
+      "bytes": 88060
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/tennis--event_page/attempts/2026-09-19T14-00-55-959Z/result.json",
+      "sha256": "fc283dee0d0b96b431ca6e63fe892fce27886b4ddfa87f2948611f3e286f6227",
+      "bytes": 70620
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/tennis--event_page/attempts/2026-09-19T14-00-55-959Z/adjudicated-result.json",
+      "sha256": "4c508c63351ee3520039fb299158a706fd7d69835cb89a4105baa0baca6c63a5",
+      "bytes": 88060
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/track_field--live_card/result-before-1789828535478.json",
+      "sha256": "01ac135ead207605143692615ec4e42caa7b3ec12cd3a45f529a7eab607f02fa",
+      "bytes": 56758
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/track_field--live_card/result.json",
+      "sha256": "8627f7ce3902dfff84d5f2292ca8215163e39e008e425fae6061abc39196c33d",
+      "bytes": 92104
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/track_field--live_card/attempts/2026-09-19T14-02-32-195Z/result.json",
+      "sha256": "9f327edabc1f24c015a870861f8a6b9c8a4d4a1046bd4f4e875fee30b724c783",
+      "bytes": 40218
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/track_field--live_card/attempts/2026-09-19T14-02-32-195Z/adjudicated-result.json",
+      "sha256": "01ac135ead207605143692615ec4e42caa7b3ec12cd3a45f529a7eab607f02fa",
+      "bytes": 56758
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/track_field--live_card/attempts/2026-09-19T14-35-35-481Z/result.json",
+      "sha256": "4960337f76cb97d112b6798f6167eb74e1bf81a3a4a6f39baddb152f426c0fdd",
+      "bytes": 68160
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/track_field--live_card/attempts/2026-09-19T14-35-35-481Z/adjudicated-result.json",
+      "sha256": "8627f7ce3902dfff84d5f2292ca8215163e39e008e425fae6061abc39196c33d",
+      "bytes": 92104
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/track_field--digital_flyer/result.json",
+      "sha256": "64816a3c4502427e650317f20ad5e206005bc9c3bf3e5657a475f0922ffd7ddf",
+      "bytes": 81688
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/track_field--digital_flyer/attempts/2026-09-19T05-55-41-954Z/result.json",
+      "sha256": "9a70c00895e6da8334196225046614b202d3ae4be1aa90fc7f7b5665b51571f0",
+      "bytes": 64142
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/track_field--digital_flyer/attempts/2026-09-19T05-55-41-954Z/adjudicated-result.json",
+      "sha256": "64816a3c4502427e650317f20ad5e206005bc9c3bf3e5657a475f0922ffd7ddf",
+      "bytes": 81688
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/track_field--event_page/result.json",
+      "sha256": "2305e154151174e0f423cffaf64d4b90af25cdd3ef305087c3991ae26b104633",
+      "bytes": 89302
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/track_field--event_page/attempts/2026-09-19T14-03-51-743Z/result.json",
+      "sha256": "52130f1ecc0f9447f0e9a2689259e0d81474099909819a54a6fb21618ba79449",
+      "bytes": 71797
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/track_field--event_page/attempts/2026-09-19T14-03-51-743Z/adjudicated-result.json",
+      "sha256": "2305e154151174e0f423cffaf64d4b90af25cdd3ef305087c3991ae26b104633",
+      "bytes": 89302
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/swimming--live_card/result.json",
+      "sha256": "18b6ce0af38023a927ca89f9bb70c3e8a18059879f98676ecc714197af3003b0",
+      "bytes": 89818
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/swimming--live_card/attempts/2026-09-19T14-05-25-800Z/result.json",
+      "sha256": "96f92db5eecde29e199a2f51caa66cdc128596043b903947b9bf0b5522124854",
+      "bytes": 65857
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/swimming--live_card/attempts/2026-09-19T14-05-25-800Z/adjudicated-result.json",
+      "sha256": "18b6ce0af38023a927ca89f9bb70c3e8a18059879f98676ecc714197af3003b0",
+      "bytes": 89818
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/swimming--digital_flyer/result.json",
+      "sha256": "716c2b6ca55dcb818104fd22cb146695bc5cd3db36c08eb3cd0dcfa7d677fecd",
+      "bytes": 84196
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/swimming--digital_flyer/attempts/2026-09-19T14-07-52-769Z/result.json",
+      "sha256": "c035b69de765a76b4aaa63843313cdb5bedd61ec0a93ea1cd043d75c854fa1df",
+      "bytes": 66689
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/swimming--digital_flyer/attempts/2026-09-19T14-07-52-769Z/adjudicated-result.json",
+      "sha256": "716c2b6ca55dcb818104fd22cb146695bc5cd3db36c08eb3cd0dcfa7d677fecd",
+      "bytes": 84196
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/swimming--event_page/result.json",
+      "sha256": "0df5483e3e8b6a5006a66e48216e8b45f2d9050e4061cc9d517eb4dcedf33191",
+      "bytes": 83939
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/swimming--event_page/attempts/2026-09-19T05-57-27-234Z/result.json",
+      "sha256": "6126aa9fc61919b50d98c141b83895d01ca1a3cb8b5417ad3924497fb5efa015",
+      "bytes": 66473
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/swimming--event_page/attempts/2026-09-19T05-57-27-234Z/adjudicated-result.json",
+      "sha256": "0df5483e3e8b6a5006a66e48216e8b45f2d9050e4061cc9d517eb4dcedf33191",
+      "bytes": 83939
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wrestling--live_card/result-before-1789828848251.json",
+      "sha256": "aedd1c2f1050128540b98666d8a2f8aecb2069838420b04f34c00a24b7298dee",
+      "bytes": 50946
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wrestling--live_card/result.json",
+      "sha256": "d9f2beac41ff65734007709e7e407d2a9f7f9d49c3bc1beb154bcd3f909adc4f",
+      "bytes": 92611
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wrestling--live_card/attempts/2026-09-19T05-59-09-677Z/result.json",
+      "sha256": "96827ef65f779c0ed06a08aebc435c70ba1441ca2926f4221f80653f1fe4e960",
+      "bytes": 34427
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wrestling--live_card/attempts/2026-09-19T05-59-09-677Z/adjudicated-result.json",
+      "sha256": "aedd1c2f1050128540b98666d8a2f8aecb2069838420b04f34c00a24b7298dee",
+      "bytes": 50946
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wrestling--live_card/attempts/2026-09-19T14-40-48-256Z/result.json",
+      "sha256": "96e283a17229d183088d0eca9efc223d58d00e7d1a92a83ac675a68f1061566b",
+      "bytes": 68699
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wrestling--live_card/attempts/2026-09-19T14-40-48-256Z/adjudicated-result.json",
+      "sha256": "d9f2beac41ff65734007709e7e407d2a9f7f9d49c3bc1beb154bcd3f909adc4f",
+      "bytes": 92611
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wrestling--digital_flyer/result.json",
+      "sha256": "d18a4cdae59f5dd7710454d06b653578c332d1b0dcbfddb0b522ff40eb15f966",
+      "bytes": 87820
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wrestling--digital_flyer/attempts/2026-09-19T14-09-40-139Z/result.json",
+      "sha256": "a1d12598e0d8447202eaf202ea44c8ac7d99d199b9e382be44bab9903af332b7",
+      "bytes": 70336
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wrestling--digital_flyer/attempts/2026-09-19T14-09-40-139Z/adjudicated-result.json",
+      "sha256": "d18a4cdae59f5dd7710454d06b653578c332d1b0dcbfddb0b522ff40eb15f966",
+      "bytes": 87820
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wrestling--event_page/result.json",
+      "sha256": "5dbcd0c743e45cc507d34455057fffbd42f4be75ac575f3ebe0e88c7d05fe2ea",
+      "bytes": 89340
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wrestling--event_page/attempts/2026-09-19T14-11-20-647Z/result.json",
+      "sha256": "9885d439375bd33569bdbeae271980f5e89d64ddbed05e9b751d62b3f8cdfb07",
+      "bytes": 71860
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/cases/wrestling--event_page/attempts/2026-09-19T14-11-20-647Z/adjudicated-result.json",
+      "sha256": "5dbcd0c743e45cc507d34455057fffbd42f4be75ac575f3ebe0e88c7d05fe2ea",
+      "bytes": 89340
+    },
+    {
+      "path": ".qa/create-campaign/2026-09-18/campaign-review.json",
+      "sha256": "5f9b779119004a732339c652d626e4e5dbc68d67cde7a4e887be89412f1345e1",
+      "bytes": 16665
+    }
+  ],
+  "note": "Original files retain authoritative text. No source was changed to make this plan pass."
+}

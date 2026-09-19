@@ -2,6 +2,75 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { streamConciergePersona } from "./persona.ts";
 
+async function faultyPersona(chunks, draft = BASE_DRAFT, previousDraft = draft) {
+  const deltas = [];
+  let payload;
+  const result = await streamConciergePersona({
+    message: "Use September 23, 2026 and keep the current details.",
+    chatMessages: [], draft, previousDraft, fallbackMessage: "The details are in this chat.",
+    onDelta: text => deltas.push(text),
+  }, {
+    openAiApiKey: "offline-test-key",
+    createOpenAiClient: () => ({ chat: { completions: { create: async request => {
+      payload = JSON.parse(request.messages.at(-1).content);
+      return (async function* () { for (const content of chunks) yield { choices: [{ delta: { content } }] }; })();
+    } } } }),
+  });
+  return { result, deltas, payload };
+}
+
+test("intake replies cannot claim an explicit save when the model splits saved across chunks", async () => {
+  const { result, deltas } = await faultyPersona(["I've sa", "ved your schedule."]);
+  assert.doesNotMatch(result.assistantMessage, /(?:I've|I have) saved/i);
+  assert.doesNotMatch(deltas.join(""), /(?:I've|I have) saved/i);
+  assert.match(result.assistantMessage, /in this chat/i);
+});
+
+test("persona receives an actual change receipt, complete clock and persistence state", async () => {
+  const previous = { ...BASE_DRAFT, startISO: "2026-09-23T19:00:00.000Z", endISO: null, title: "Rivera gathering" };
+  const next = { ...previous, endISO: "2026-09-23T21:00:00.000Z" };
+  const { payload } = await faultyPersona(["The end time is 4 PM."], next, previous);
+  assert.equal(payload.turnReceipt.persistence, "in_memory");
+  assert.deepEqual(payload.turnReceipt.changedFields, ["endISO"]);
+  assert.equal(payload.currentDraft.endISO, next.endISO);
+  assert.equal(payload.currentDraft.timezone, "America/Chicago");
+});
+
+test("a failed state change cannot be acknowledged as successfully applied", async () => {
+  const { result } = await faultyPersona(["I changed the title to Workshop draft."]);
+  assert.doesNotMatch(result.assistantMessage, /I changed the title/);
+  assert.match(result.assistantMessage, /unchanged/i);
+});
+
+test("an end-time change cannot justify a claim that an unrelated title was changed", async () => {
+  const previous = { ...BASE_DRAFT, title: "September 23 Workshop", endISO: null };
+  const next = { ...previous, endISO: "2026-09-23T21:00:00.000Z" };
+  const { result } = await faultyPersona(["I changed the title to Birthday draft."], next, previous);
+  assert.doesNotMatch(result.assistantMessage, /I changed the title/);
+  assert.match(result.assistantMessage, /unchanged/);
+});
+
+test("headline and local calendar-date acknowledgments follow their real projections", async () => {
+  const previous = { ...BASE_DRAFT, titleConfirmed: false, startISO: "2026-09-23T19:00:00.000Z" };
+  const next = { ...previous, previewCopy: { ...previous.previewCopy, headline: "Lantern Workshop" } };
+  const headline = await faultyPersona(["I updated the headline to Lantern Workshop."], next, previous);
+  assert.match(headline.result.assistantMessage, /I updated the headline/);
+  const bodyOnly = { ...previous, previewCopy: { ...previous.previewCopy, body: "Bring water." } };
+  assert.match((await faultyPersona(["I updated the headline."], bodyOnly, previous)).result.assistantMessage, /unchanged/);
+  // Date-boundary fixture: the original day is September23; correction crosses midnight locally.
+  const dateChange = { ...previous, startISO: "2026-09-24T19:00:00.000Z" };
+  assert.match((await faultyPersona(["I updated the date."], dateChange, previous)).result.assistantMessage, /I updated the date/);
+  const timeOnly = { ...previous, startISO: "2026-09-23T20:00:00.000Z" };
+  assert.match((await faultyPersona(["I updated the date."], timeOnly, previous)).result.assistantMessage, /unchanged/);
+});
+
+test("an already supplied date is not requested again by the streamed persona", async () => {
+  const draft = { ...BASE_DRAFT, dateText: "September 23, 2026", currentQuestion: "location" };
+  const { result, deltas } = await faultyPersona(["What date should the event be?"], draft);
+  assert.doesNotMatch(deltas.join(""), /what date/i);
+  assert.match(result.assistantMessage, /September 23, 2026/);
+});
+
 const BASE_DRAFT = {
   intent: "create_event",
   creationSessionId: "session_test",
@@ -335,7 +404,8 @@ test("persona preserves streamed token spacing", async () => {
     ),
   );
 
-  assert.deepEqual(deltas, ["Beautiful", ", when", " should this happen?"]);
+  // Sentence buffering guards completed-action claims before they become visible.
+  assert.equal(deltas.join(""), "Beautiful, when should this happen?");
   assert.equal(result.assistantMessage, "Beautiful, when should this happen?");
   assert.equal(result.usedAi, true);
 });
@@ -522,8 +592,9 @@ test("persona does not expose default timezone copy", async () => {
     ),
   );
 
-  assert.doesNotMatch(JSON.stringify(requestPayload?.messages?.at(-1) || null), /timezone/i);
-  assert.doesNotMatch(JSON.stringify(requestPayload?.messages?.at(-1) || null), /America\/Chicago/);
+  // Internal context needs the event zone to interpret canonical instants correctly;
+  // the following assertions still prohibit exposing default-zone jargon to guests.
+  assert.equal(JSON.parse(requestPayload.messages.at(-1).content).currentDraft.timezone, "America/Chicago");
   assert.match(
     requestPayload?.messages?.[0]?.content || "",
     /Never mention default or IANA timezone/,

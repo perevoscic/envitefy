@@ -1,0 +1,60 @@
+- main:
+  - heading "TEST — Teacher Conferences Retest" [level=1]
+  - generic: October 22, 2026, 3:00 – 4:00 PM CDT
+  - generic: Location to be announced
+  - region "Plan your visit":
+    - paragraph: Ends Oct 22, 4:00 PM
+    - button "Add to calendar":
+      - generic: Add to calendar
+    - button "Share event":
+      - generic: Share event
+  - generic "Already signed up? Find my signup"
+  - status: Cancelled. Thanks for letting us know!
+  - button "Refresh availability"
+  - heading "Parent–teacher appointments" [level=3]
+  - paragraph: Choose up to 1 option in this section. Quantities count people.
+  - generic: Appointment 1
+  - generic: 3:00 PM – 3:15 PM
+  - generic: 0/1 claimed · 1 open
+  - button "Select Appointment 1": Select
+  - generic: Appointment 2
+  - generic: 3:15 PM – 3:30 PM
+  - generic: 0/1 claimed · 1 open
+  - button "Select Appointment 2": Select
+  - generic: Appointment 3
+  - generic: 3:30 PM – 3:45 PM
+  - generic: 0/1 claimed · 1 open
+  - button "Select Appointment 3": Select
+  - generic: Appointment 4
+  - generic: 3:45 PM – 4:00 PM
+  - generic: 0/1 claimed · 1 open
+  - button "Select Appointment 4": Select
+  - generic: No account needed. Return using this browser to edit or cancel, or ask the organizer for help.
+  - button "Save my sign-up"
+  - link "Envitefy Sign-up Forms (opens in a new tab)":
+    - /url: https://envitefy.com
+    - img "envitefy":
+      - generic: envitefy
+  - paragraph: CREATE | SHARE | ENJOY
+  - paragraph:
+    - strong: Created with Envitefy Sign-up Forms
+    - link "Create now":
+      - /url: https://envitefy.com/
+  - navigation "Follow Envitefy":
+    - list:
+      - link "Envitefy on Instagram (opens in a new tab)":
+        - /url: https://www.instagram.com/envitefy/
+        - generic: Envitefy on Instagram (opens in a new tab)
+      - link "Envitefy on Facebook (opens in a new tab)":
+        - /url: https://www.facebook.com/envitefy/
+        - generic: Envitefy on Facebook (opens in a new tab)
+      - link "Envitefy on YouTube (opens in a new tab)":
+        - /url: https://www.youtube.com/@envitefy
+        - generic: Envitefy on YouTube (opens in a new tab)
+      - link "Envitefy on TikTok (opens in a new tab)":
+        - /url: https://www.tiktok.com/@envitefy
+        - generic: Envitefy on TikTok (opens in a new tab)
+      - link "Envitefy on Reddit (opens in a new tab)":
+        - /url: https://www.reddit.com/user/envitefy/
+        - generic: Envitefy on Reddit (opens in a new tab)
+- alert

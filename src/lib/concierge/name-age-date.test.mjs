@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import * as chrono from "chrono-node";
 import { normalizeConciergeDraft } from "./extract.ts";
 import { buildAssistantMessage, fallbackExtractConciergeDraft, repairMisparsedBirthdayDraft } from "./fallback.ts";
 
@@ -8,7 +9,11 @@ function expectSeptember25(draft) {
   const now = new Date();
   const candidate = new Date(now.getFullYear(), 8, 25, 12);
   const year = candidate < new Date(now.getFullYear(), now.getMonth(), now.getDate()) ? now.getFullYear() + 1 : now.getFullYear();
-  const start = new Date(draft.startISO);
+  const start = draft.startISO ? new Date(draft.startISO) : chrono.parseDate(draft.dateText, now, { forwardDate: true });
+  if (!draft.timeText) {
+    assert.equal(draft.startISO, null, "An unknown clock must not fabricate a noon instant");
+    assert.equal(draft.endISO, null);
+  }
   assert.equal(start.getMonth(), 8);
   assert.equal(start.getDate(), 25);
   assert.equal(start.getFullYear(), year);
@@ -96,7 +101,7 @@ test("event durations and anniversary counts are not honoree ages or event dates
   ]) {
     const draft = fallbackExtractConciergeDraft({ message });
     assert.notEqual(draft.eventType, "birthday", message);
-    assert.equal(draft.ageOrMilestone, null, message);
+    assert.equal(draft.ageOrMilestone, /anniversary/.test(message) ? "10" : null, message);
     assert.equal(draft.honoreeName, null, message);
     assert.equal(draft.timeText, null, message);
     expectSeptember25(draft);

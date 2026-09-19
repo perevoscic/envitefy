@@ -25,14 +25,15 @@ export default function MapEmbed({
   // Access NEXT_PUBLIC env var directly (available at build time in client components)
   // In Next.js, NEXT_PUBLIC_* vars are embedded at build time
   const mapKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || null;
+  const locationQuery = query?.trim() || undefined;
 
   const searchUrl = buildGoogleMapsSearchUrl(
     latitude,
     longitude,
-    query || undefined
+    locationQuery
   );
   const embedUrl = mapKey
-    ? buildGoogleMapsEmbedUrl(latitude, longitude, query || undefined, mapKey)
+    ? buildGoogleMapsEmbedUrl(latitude, longitude, locationQuery, mapKey)
     : null;
 
   if (!embedUrl || embedUrl.startsWith("https://www.google.com/maps/search")) {
@@ -84,7 +85,7 @@ export default function MapEmbed({
     >
       <iframe
         src={embedUrl}
-        title={`Map for ${address}`}
+        title={`Map for ${locationQuery || `${latitude}, ${longitude}`}`}
         width="100%"
         height="400"
         style={{ border: 0 }}

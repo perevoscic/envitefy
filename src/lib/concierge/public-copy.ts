@@ -119,6 +119,7 @@ export function guestSubheadlineForEvent(args: {
     return "Birthday celebration";
   }
   if (args.eventType === "wedding") return "Celebrate with us";
+  if (args.eventType === "anniversary") return "Anniversary celebration";
   if (args.eventType === "baby_shower") return "Baby shower celebration";
   if (args.eventType === "gender_reveal") return "Gender reveal celebration";
   if (args.eventType === "bridal_shower") return "Bridal shower celebration";
@@ -128,7 +129,8 @@ export function guestSubheadlineForEvent(args: {
     args.eventType === "football" ||
     args.eventType === "sport_event"
   ) {
-    return "Game day details";
+    const activity = args.title?.match(/\b(?:clinic|practice|scrimmage|skills\s+day|showcase|tryouts?)\b/i)?.[0];
+    return activity ? `${activity[0].toUpperCase()}${activity.slice(1)} details` : "Game day details";
   }
   if (args.eventType === "field_trip") return "Trip details";
   if (args.eventType === "open_house") return "Open house details";

@@ -1,0 +1,16 @@
+{
+  "purpose": "Explicit distribution gate. Set items to true only after recording evidence in docs/ios-release-plan.md.",
+  "checks": {
+    "paidMembershipAndAppRecord": false,
+    "webHandoffDeployedAndMigrationApplied": false,
+    "xcodeBuildAndUnitTests": false,
+    "physicalDeviceFeatureParity": false,
+    "appleLoginOrEquivalentReviewRequirement": false,
+    "inAppAccountDeletion": false,
+    "paymentsAndSubscriptionsReview": false,
+    "websiteTrackingAndPrivacyAudit": false,
+    "appPrivacyAndAgeRatingCompleted": false,
+    "exportComplianceCompleted": false,
+    "realDeviceScreenshotsAndReviewAccount": false
+  }
+}

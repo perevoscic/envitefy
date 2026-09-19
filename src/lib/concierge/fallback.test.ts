@@ -790,7 +790,7 @@ test("duplicate event input does not repeat the same missing question", () => {
 
   assert.equal(repeated.honoreeName, "Leo");
   assert.equal(repeated.currentQuestion, "rsvpEnabled");
-  assert.match(assistant, /already have those details saved/i);
+  assert.match(assistant, /already have those details in this chat/i);
   assert.doesNotMatch(assistant, /Should Envitefy collect RSVPs/i);
 });
 
@@ -1289,7 +1289,8 @@ test("date-only drafts keep asking for time instead of treating startISO as expl
   });
 
   assert.equal(draft.timeText, null);
-  assert.ok(draft.startISO);
+  assert.equal(draft.startISO, null);
+  assert.equal(draft.endISO, null);
   assert.equal(draft.currentQuestion, "time");
   assert.match(draft.missingFields.join(","), /time/);
 });

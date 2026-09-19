@@ -24,7 +24,11 @@ export function formatSignupDateRange(
         : {}),
       timeZone: dateOnly ? "UTC" : form.timezone || "UTC",
     });
-    return end && end > start ? formatter.formatRange(start, end) : formatter.format(start);
+    // Node and browsers use different ICU spacing (thin/nonbreaking spaces).
+    // Keep server and client markup identical without losing the event timezone.
+    return (
+      end && end > start ? formatter.formatRange(start, end) : formatter.format(start)
+    ).replace(/\s+/g, " ");
   } catch {
     return form.start;
   }

@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export async function DELETE(
   _req: Request,
-  context: { params: Promise<{ id: string }> | { id: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
   try {
     const session: any = await getServerSession(authOptions as any);

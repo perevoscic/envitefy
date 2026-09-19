@@ -169,7 +169,7 @@ export default function StudioShowcaseLiveCard({
       )}
       {!usesPosterArtFrame ? <div className="absolute inset-0 bg-black/20" /> : null}
       <LiveCardHeroTextOverlay invitationData={preview.invitationData} />
-      <div
+      {!usesPosterArtFrame ? <div
         className={cx(
           "absolute inset-0",
           !usesPosterArtFrame && compactChrome &&
@@ -192,8 +192,22 @@ export default function StudioShowcaseLiveCard({
           buttonChromeSize={buttonChromeSize}
           previewMode={previewMode}
         />
-      </div>
+      </div> : null}
       </LiveCardArtworkFrame>
+      {usesPosterArtFrame ? <StudioLiveCardActionSurface
+        placement="below"
+        title={preview.title}
+        invitationData={preview.invitationData}
+        activeTab={resolvedActiveTab}
+        onActiveTabChange={handleActiveTabChange}
+        onShare={preview.sharePath ? handleShare : undefined}
+        shareUrl={shareUrl}
+        fallbackShareUrlToWindowLocation={false}
+        shareState={shareState}
+        showcaseMode={showcaseMode}
+        buttonChromeSize={buttonChromeSize}
+        previewMode={previewMode}
+      /> : null}
       {showcaseOverlay}
     </div>
   );

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Native target has no SDKs or required-reason APIs. This is NOT the App Store privacy label.
+     Inventory the loaded website and complete app-store/release-status.json before distribution. -->
+<plist version="1.0"><dict>
+  <key>NSPrivacyAccessedAPITypes</key><array/>
+</dict></plist>

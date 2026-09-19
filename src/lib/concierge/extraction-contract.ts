@@ -6,6 +6,27 @@ import {
 } from "../creation/source-evidence.ts";
 import type { ConciergeEventDraft, ConciergeMessageRequest } from "./types.ts";
 import { isArtworkOnlyEdit, isSameCreationEvent } from "./artwork-edit-scope.ts";
+import { extractExplicitEventTitle } from "./conversation-edits.ts";
+
+const FIELD_SUBJECTS: Record<string, RegExp> = {
+  title: /\b(?:title|headline|name\s+(?:it|the\s+event)|call\s+(?:it|the\s+event))\b/i,
+  eventPurpose: /\b(?:purpose|occasion|celebrating|event\s+(?:is|for)|this\s+is)\b/i,
+  eventType: /\b(?:type|category|occasion|this\s+is|it['’]s|actually)\b/i,
+  dateText: /\bdate\b/i, timeText: /\b(?:time|starts?|begins?|ends?|returns?)\b/i,
+  startISO: /\b(?:start|date|time)\b/i, endISO: /\b(?:end|return|finish)\b/i,
+  location: /\b(?:location|venue|address|place|where)\b/i, venue: /\b(?:location|venue|address|place|where)\b/i,
+  honoreeName: /\b(?:name|honoree|featured|person|couple|graduate)\b/i,
+  ageOrMilestone: /\b(?:age|milestone|turning|years?)\b/i,
+  rsvpName: /\b(?:rsvp|host|contact|organizer)\b/i,
+  rsvpContact: /\b(?:rsvp|host|contact|email|phone)\b/i,
+  rsvpDeadline: /\b(?:rsvp|deadline)\b/i,
+  registryLink: /\b(?:registry|wishlist|gift|link)\b/i,
+  giftNote: /\b(?:gift|present|wishlist|registry)\b/i,
+  giftPreferenceNote: /\b(?:gift|present|wishlist|registry)\b/i,
+  additionalLocations: /\b(?:location|stop|ceremony|reception|dinner|venue|after.party)\b/i,
+  theme: /\b(?:theme|style|artwork|background|palette|design)\b/i,
+  tone: /\b(?:tone|style|mood|feel|vibe)\b/i,
+};
 
 const STRING_FIELDS = [
   "title",
@@ -87,6 +108,7 @@ export const CONCIERGE_EXTRACTION_INSTRUCTION = [
   "An affirmative RSVP instruction with a phone or email already requests RSVP: 'RSVP at 555-123-4567, Priya' supplies rsvpEnabled=true, rsvpContact=555-123-4567 and rsvpName=Priya. Capture the contact name before OR after the phone/email. Do not leave RSVP undecided or ask to enable it again. Explicit no-RSVP, online-RSVP-off or manual-only choices take priority, including a saved off choice until the host asks to enable it. An unrelated venue phone, hypothetical example or question is not an RSVP instruction. Interests may precede logistics in the same message; continue extracting after the interests sentence and keep the venue separate from the RSVP clause.",
   "Date interpretation, readiness, questions, permissions, ownership, source intent, requested products, hostBrief planning memory and publishing belong to application code. Do not return or edit them. startISO/endISO may only be set from an explicitly supplied ISO timestamp; use dateText/timeText for natural language dates so code can resolve them. timezone only when explicitly supplied.",
   "Resolve short replies using the current question and references using the provided active context. Preserve joint honorees and exact confirmed titles. Return each field once. Keep additionalLocations as the full updated list when explicitly changed, including every ceremony/reception/after-party location. Questions, examples, assistant suggestions, sidebar complaints and negated formats are not new event facts.",
+  "Anniversary is a distinct eventType; an anniversary milestone is never birthday age. An audience such as adults, teens aged 13+, players ages 10–12 or beginners never supplies honoreeName or a person's age. Keep clinic, practice, scrimmage, watch-party and school-open-house purpose; a visual sports/property category must not rewrite that purpose. Required public safety, equipment, eligibility and exact-copy requirements are maintained by application code separately from theme/tone. Online RSVP off does not remove an explicitly supplied manual contact. A date without a clock leaves startISO/endISO empty; never invent noon or a default two-hour duration.",
   "PRIVATE_DIRECTION (theme/tone) is separate from public event facts. Never leak prompts, budgets, workload, access codes or private contact details into guest copy. Respect hostBrief privacy preferences and requested languages. Do not add features or actions the app has not performed.",
   "Preserve the complete explicit visual brief in theme/tone: subjects, number of subjects, poses, expressions, materials, lighting, palette, lettering treatment, composition and exclusions. Do not reduce a detailed scene to a generic category or adjective. An exact headline is a title correction; preserve its spelling and punctuation.",
   "Treat visual corrections as changes to the artwork even when event facts stay the same. 'NO band memebrer, maket erhe text to bu cursvie in Livia is trunin 10' means remove all band members and render the existing birthday headline in cursive. Save the subject exclusion and font choice in theme/tone; preserve the existing name, age and headline wording unless an actual replacement is requested. Resolve common spelling errors in instructions without printing those errors on the invitation. Latest explicit exclusions override earlier positive subject suggestions.",
@@ -148,6 +170,12 @@ export function parseConciergeEdits(
         ? conversation.findLast((item) => item.role === "user" && item.text.includes(sourceText))?.text || ""
         : transcript;
     if (!edit.sourceText.trim() || !source.includes(edit.sourceText)) continue;
+    const readOnlyQuestion = /\?/.test(sourceText) && /^(?:can|could|would|will|does|do|is|are|how|what|why|which)\b/i.test(sourceText.trim()) && !/^(?:can|could|would|will)\s+you\s+(?:please\s+)?(?:set|change|use|add|include|remove|rename|write|make)\b/i.test(sourceText.trim());
+    if (edit.source === "latest_user_message" && readOnlyQuestion) continue;
+    if (edit.source === "latest_user_message" && request.draft && currentDraft && isSameCreationEvent(request.draft, currentDraft)) {
+      if (field === "title" && currentDraft.title && !extractExplicitEventTitle(source)) continue;
+      if ((field === "eventPurpose" || field === "eventType") && !FIELD_SUBJECTS[field].test(sourceText)) continue;
+    }
     if (fromHistory) {
       const relatedFields = field === "location" || field === "venue" ? ["location", "venue"] : [field];
       if (
@@ -176,6 +204,7 @@ export function parseConciergeEdits(
         field === "timezone"
       )
         continue;
+      if (!/\b(?:remove|clear|delete|forget|omit|drop|leave\s+(?:it\s+)?blank|no\s+longer|do\s+not\s+include|don['’]?t\s+include)\b/i.test(sourceText) || FIELD_SUBJECTS[field] && !FIELD_SUBJECTS[field].test(sourceText)) continue;
       patch[field] = field === "additionalLocations" ? [] : null;
       cleared.push(field);
     } else {

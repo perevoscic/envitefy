@@ -1,24 +1,35 @@
 "use client";
 import { useState } from "react";
-import type { SignupFormSection } from "@/types/signup";
-import { generateSignupShifts } from "@/lib/signup-composer";
+import {
+  appendSignupTimeSlots,
+  generateSignupShifts,
+  replaceableSignupStarterIds,
+} from "@/lib/signup-composer";
+import type { SignupForm, SignupFormSection } from "@/types/signup";
 import styles from "./signup-composer.module.css";
 
 export default function SignupSectionRules({
   section,
+  form,
   onChange,
 }: {
   section: SignupFormSection;
+  form: SignupForm;
   onChange: (section: SignupFormSection) => void;
 }) {
   const [start, setStart] = useState("09:00");
   const [end, setEnd] = useState("12:00");
   const [minutes, setMinutes] = useState(30);
-  const [capacity, setCapacity] = useState(2);
+  const [capacity, setCapacity] = useState(section.purpose === "times" ? 1 : 2);
+  const [replaceStarters, setReplaceStarters] = useState(false);
+  const starterIds = replaceableSignupStarterIds(form, section);
   const [message, setMessage] = useState("");
   return (
-    <details className={styles.headingOptions}>
-      <summary>Section rules &amp; shift times</summary>
+    <details
+      className={styles.headingOptions}
+      open={section.purpose === "times" && section.slots.length === 0}
+    >
+      <summary>Section rules &amp; time slots</summary>
       <div className={styles.slotRow}>
         <label className={styles.field}>
           Section type
@@ -37,7 +48,7 @@ export default function SignupSectionRules({
           >
             <option value="registration">Attendance / registration</option>
             <option value="volunteers">Volunteer roles</option>
-            <option value="times">Volunteer shifts / time slots</option>
+            <option value="times">Appointments / time slots</option>
             <option value="items">Items to bring</option>
             <option value="custom">Custom signup</option>
           </select>
@@ -92,22 +103,22 @@ export default function SignupSectionRules({
       </p>
       {(section.purpose === "times" || section.purpose === "volunteers") && (
         <div className={styles.headingOptions}>
-          <h4>Generate shifts</h4>
+          <h4>{section.purpose === "times" ? "Generate appointments" : "Generate shifts"}</h4>
           <p>
-            Shifts use the event day and timezone. New shifts are added; existing slots and signups
-            are kept.
+            Time slots use the event day and timezone. Existing choices and signups are kept.
+            Identical time ranges are skipped.
           </p>
           <div className={styles.slotRow}>
             <label className={styles.field}>
-              First shift starts
+              First slot starts
               <input type="time" value={start} onChange={(e) => setStart(e.target.value)} />
             </label>
             <label className={styles.field}>
-              Last shift ends
+              Last slot ends
               <input type="time" value={end} onChange={(e) => setEnd(e.target.value)} />
             </label>
             <label className={styles.field}>
-              Minutes per shift
+              Minutes per slot
               <input
                 type="number"
                 min={5}
@@ -117,7 +128,7 @@ export default function SignupSectionRules({
               />
             </label>
             <label className={styles.field}>
-              People per shift
+              People per slot
               <input
                 type="number"
                 min={1}
@@ -127,19 +138,40 @@ export default function SignupSectionRules({
               />
             </label>
           </div>
+          {starterIds.length > 0 && (
+            <label className={styles.check}>
+              <input
+                type="checkbox"
+                checked={replaceStarters}
+                onChange={(event) => setReplaceStarters(event.target.checked)}
+              />
+              Replace {starterIds.length} untimed starter {starterIds.length === 1 ? "row" : "rows"}{" "}
+              (First shift / Second shift). Edited rows and rows with signups are kept.
+            </label>
+          )}
           <button
             type="button"
             onClick={() => {
               try {
-                const slots = generateSignupShifts(start, end, minutes, capacity);
-                onChange({ ...section, slots: [...section.slots, ...slots] });
-                setMessage(`${slots.length} shifts added. Save or publish when ready.`);
+                const slots = generateSignupShifts(
+                  start,
+                  end,
+                  minutes,
+                  capacity,
+                  section.purpose === "times" ? "Appointment" : "Volunteer shift",
+                );
+                const next = appendSignupTimeSlots(form, section, slots, replaceStarters);
+                const added = next.slots.filter(
+                  (slot) => !section.slots.some((current) => current.id === slot.id),
+                ).length;
+                onChange(next);
+                setMessage(`${added} time slots added. Save or publish when ready.`);
               } catch (error) {
-                setMessage(error instanceof Error ? error.message : "Check the shift times.");
+                setMessage(error instanceof Error ? error.message : "Check the time slots.");
               }
             }}
           >
-            Add generated shifts
+            Add generated time slots
           </button>
           <p role="status">{message}</p>
         </div>

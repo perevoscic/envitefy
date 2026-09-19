@@ -1,5 +1,7 @@
 # Follow-up work from the Create campaign
 
+The [complete remediation and release plan](create-campaign-remediation-plan.md) now expands this summary into an exhaustive finding register, 28 fix packages, regression requirements and deployment gates. It prioritizes prompt/chat correctness and uses existing artwork for offline validation; no new artwork was generated for the plan.
+
 The current evidence does not support release readiness. Multiple journeys reach publish successfully while losing the chosen format, title, time, or required guest instructions. These findings come from agent-simulated users, not customer interviews. Per-case claims and artifacts are in `.qa/create-campaign/2026-09-18/index.html`; the exact attempted and remaining matrix is recorded there.
 
 The completed matrix now covers all **93 combinations** (31 families × three outputs). Every latest attempt has accepted initial artwork, explicit save/resume, local publication and an anonymous guest journey. **83** have a successful distinct appearance edit; **56** pass the complete technical guest-action checks. Those milestones do not establish prompt or visual quality. The additional $30 continuation recorded **$26.760582056**, leaving **$3.239417944** with no pending requests; lifetime recorded API cost is **$56.005981929**. All 49 prior results are preserved, including exact archived originals for intentionally retried cases. New attempts after the date instruction use **September 23, 2026**.

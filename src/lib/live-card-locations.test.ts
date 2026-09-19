@@ -21,7 +21,7 @@ test("buildLiveCardLocationActions extracts a primary venue and a lunch destinat
   ]);
   assert.equal(actions[0]?.source, "primary");
   assert.equal(actions[1]?.source, "details");
-  assert.match(actions[0]?.mapQuery || "", /AMC Boulevard 10 465 Grand Boulevard/);
+  assert.equal(actions[0]?.mapQuery, "AMC Boulevard 10, 465 Grand Boulevard, Miramar Beach, FL");
   assert.equal(
     getLiveCardPrimaryLocationLabel({
       location: "AMC Boulevard 10 465 Grand Boulevard, Miramar Beach, FL",

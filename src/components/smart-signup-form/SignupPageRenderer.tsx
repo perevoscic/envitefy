@@ -17,6 +17,7 @@ export default function SignupPageRenderer({
   className = "",
   imageLoading,
   interactivePreview = false,
+  requiresInvitation = false,
   editing,
 }: {
   form: SignupForm;
@@ -27,6 +28,7 @@ export default function SignupPageRenderer({
   className?: string;
   imageLoading?: "eager" | "lazy";
   interactivePreview?: boolean;
+  requiresInvitation?: boolean;
   editing?: SignupHeaderEditing;
 }) {
   const design = resolveSignupDesign(form.appearance);
@@ -65,6 +67,7 @@ export default function SignupPageRenderer({
             initialForm={form}
             viewerKind={interactivePreview ? "guest" : "readonly"}
             interactivePreview={interactivePreview}
+            requiresInvitation={requiresInvitation}
           />
         )}
         <SignupFormFooter inverse={inverseFooter} />

@@ -539,7 +539,7 @@ export const useCasePages = [
     title: "Online signup forms that stay organized after people respond",
     metadataTitle: "Online Signup Forms for Events | Envitefy",
     description:
-      "Create polished signup pages for volunteers, potlucks, teams, classes, fundraisers, and group events with slots, limits, reminders, and one shareable link.",
+      "Create polished signup pages for volunteers, potlucks, teams, classes, fundraisers, and group events with slots, limits, confirmations, and one shareable link.",
     keywords: [
       "online signup forms",
       "free signup sheet",
@@ -568,16 +568,16 @@ export const useCasePages = [
     ],
     proofTitle: "A signup link that does not turn into spreadsheet cleanup.",
     proofBody:
-      "Envitefy helps organizers collect names, slots, quantities, notes, reminders, and event details from one clean public page.",
+      "Envitefy helps organizers collect names, slots, quantities, notes, and event details from one clean public page.",
     preview: {
       eventTitle: "Spring Carnival Volunteers",
-      eventMeta: "Booths, shifts, supplies, reminders",
+      eventMeta: "Booths, shifts, supplies, responses",
       statusRows: [
         { label: "Snack slots claimed", value: "12" },
         { label: "Volunteer shifts", value: "18" },
         { label: "Still needed", value: "14" },
       ],
-      chips: ["Copy link", "QR", "Reminder"],
+      chips: ["Copy link", "QR", "Responses"],
     },
     features: [
       {
@@ -598,7 +598,7 @@ export const useCasePages = [
       {
         icon: "link",
         title: "Share once, update anytime",
-        body: "Send one form link, make edits after publishing, and keep reminders connected to the event.",
+        body: "Send one form link, make edits after publishing, and track responses in the Host dashboard.",
       },
     ],
     steps: [
@@ -612,7 +612,7 @@ export const useCasePages = [
       },
       {
         title: "Share the live form",
-        body: "Use one link for signups, updates, reminders, and event details.",
+        body: "Use one link for signups, updates, and event details.",
       },
     ],
     audience: ["teachers", "team parents", "volunteer coordinators", "church groups", "work teams"],
@@ -636,7 +636,8 @@ export const useCasePages = [
       },
       {
         question: "Can Envitefy send reminders?",
-        answer: "Envitefy is built around guest updates and reminder-friendly event workflows.",
+        answer:
+          "Signup confirmation emails include each guest’s choices and a private link to update or cancel. Automatic reminders are not currently sent. Export responses from the Host dashboard to follow up through your usual email or group channel.",
       },
       {
         question: "Can I use signup forms for school, sports, church, or work events?",

@@ -1,0 +1,100 @@
+- generic "Sidebar":
+  - link "Envitefy home":
+    - /url: /
+  - button "Keep sidebar open":
+  - navigation "Main navigation":
+    - link "Home":
+      - /url: /
+    - button "Snap / Upload":
+    - button "Envitefy Create":
+    - button "Create Event":
+    - button "My Events, 11":
+    - button "Schedules, 3":
+    - button "Sign-up Forms, 6":
+    - button "Drafts, 1":
+    - button "Admin":
+  - button "Account menu for [organizer] (Admin)"
+- main:
+  - navigation "Manage signup form":
+    - link "Edit event":
+      - /url: /signup-forms/templates/editorial--school-days/customize?edit=e1492bac-58ad-417c-a997-98d1d95751f9
+      - generic: Edit
+    - button "Duplicate form":
+      - generic: Duplicate
+    - button "Delete event":
+      - generic: Delete
+  - heading "TEST — Teacher Conferences Retest" [level=1]
+  - generic: October 22, 2026, 3:00 – 4:00 PM CDT
+  - generic: Location to be announced
+  - region "Plan your visit":
+    - paragraph: Ends Oct 22, 4:00 PM
+    - button "Add to calendar":
+      - generic: Add to calendar
+    - button "Share event":
+      - generic: Share event
+  - region "Share signup":
+    - heading "Share your signup" [level=3]
+    - paragraph: Anyone with this link can sign up. No Envitefy account or invitation is needed.
+    - generic: Signup link
+    - textbox "Signup link": http://localhost:3001/smart-signup-form/test-teacher-conferences-retest
+    - button "Copy signup link":
+    - link "View host dashboard":
+      - /url: "#signup-host-dashboard"
+  - status: Availability updated.
+  - button "Refresh availability"
+  - status: This signup is closed. Please contact the organizer if you need to make a change.
+  - heading "Parent–teacher appointments" [level=3]
+  - paragraph: Choose up to 1 option in this section. Quantities count people.
+  - generic: Appointment 1
+  - generic: 3:00 PM – 3:15 PM
+  - generic: 0/1 claimed · 1 open
+  - button "Select Appointment 1" [disabled]: Select
+  - generic: Appointment 2
+  - generic: 3:15 PM – 3:30 PM
+  - generic: 0/1 claimed · 1 open
+  - button "Select Appointment 2" [disabled]: Select
+  - generic: Appointment 3
+  - generic: 3:30 PM – 3:45 PM
+  - generic: 0/1 claimed · 1 open
+  - button "Select Appointment 3" [disabled]: Select
+  - generic: Appointment 4
+  - generic: 3:45 PM – 4:00 PM
+  - generic: 0/1 claimed · 1 open
+  - button "Select Appointment 4" [disabled]: Select
+  - heading "Host dashboard" [level=3]
+  - heading "Parent–teacher appointments" [level=4]
+  - paragraph: Counted in people
+  - paragraph: 0 confirmed · 4 of 4 remaining
+  - textbox "Search participants":
+    - /placeholder: Search name, email, slot, or answer
+  - button "Export CSV"
+  - button "Reopen signups"
+  - heading "Cancelled (for audit trail)" [level=4]
+  - generic: QA Parent — fictional — 9/19/2026, 11:39 AM
+  - link "Envitefy Sign-up Forms (opens in a new tab)":
+    - /url: https://envitefy.com
+    - img "envitefy":
+      - generic: envitefy
+  - paragraph: CREATE | SHARE | ENJOY
+  - paragraph:
+    - strong: Created with Envitefy Sign-up Forms
+    - link "Create now":
+      - /url: https://envitefy.com/
+  - navigation "Follow Envitefy":
+    - list:
+      - link "Envitefy on Instagram (opens in a new tab)":
+        - /url: https://www.instagram.com/envitefy/
+        - generic: Envitefy on Instagram (opens in a new tab)
+      - link "Envitefy on Facebook (opens in a new tab)":
+        - /url: https://www.facebook.com/envitefy/
+        - generic: Envitefy on Facebook (opens in a new tab)
+      - link "Envitefy on YouTube (opens in a new tab)":
+        - /url: https://www.youtube.com/@envitefy
+        - generic: Envitefy on YouTube (opens in a new tab)
+      - link "Envitefy on TikTok (opens in a new tab)":
+        - /url: https://www.tiktok.com/@envitefy
+        - generic: Envitefy on TikTok (opens in a new tab)
+      - link "Envitefy on Reddit (opens in a new tab)":
+        - /url: https://www.reddit.com/user/envitefy/
+        - generic: Envitefy on Reddit (opens in a new tab)
+- alert: TEST — Teacher Conferences Retest

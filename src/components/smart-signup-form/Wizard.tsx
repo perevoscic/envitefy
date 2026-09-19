@@ -3,16 +3,21 @@
 import { useState } from "react";
 import EventCanvas from "@/components/EventCanvas";
 import { useTemplateEditor } from "@/components/templates/TemplateEditorContext";
+import { allowsPublicSignup, signupAccessInstructions } from "@/lib/signup-access";
 import {
-  COMPOSER_DRAG_TYPE,
-  SIGNUP_BLOCKS,
-  placeSignupSection,
   addFieldDayStarter,
+  COMPOSER_DRAG_TYPE,
   type ComposerDrag,
+  placeSignupSection,
+  SIGNUP_BLOCKS,
   type SignupBlockId,
 } from "@/lib/signup-composer";
 import { resolveSignupThemeStyle } from "@/lib/signup-themes";
-import { type SignupIssue, validateSignupPublish } from "@/lib/signup-validation";
+import {
+  type SignupIssue,
+  signupPublishWarnings,
+  validateSignupPublish,
+} from "@/lib/signup-validation";
 import type { SignupForm } from "@/types/signup";
 import SignupContentEditor from "./SignupContentEditor";
 import SignupDesignPanel from "./SignupDesignPanel";
@@ -20,8 +25,8 @@ import type { SignupDetailsSection } from "./SignupDetailsEditor";
 import SignupImageActions from "./SignupImageActions";
 import SignupPageRenderer from "./SignupPageRenderer";
 import SignupSettingsEditor from "./SignupSettingsEditor";
-import styles from "./signup-editor.module.css";
 import composer from "./signup-composer.module.css";
+import styles from "./signup-editor.module.css";
 
 type Props = {
   form: SignupForm;
@@ -42,6 +47,10 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
   const [submitError, setSubmitError] = useState("");
   const [showErrors, setShowErrors] = useState(false);
   const issues = validateSignupPublish(form);
+  const warnings = signupPublishWarnings(form);
+  const requiresInvitation =
+    Boolean(editor?.signupRequiresInvitation) ||
+    !allowsPublicSignup({ status: "published", signupForm: form });
   const focus = (id: string) =>
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
@@ -121,14 +130,31 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
                 </ul>
               </div>
             )}
-            <SignupPageRenderer form={form} interactivePreview />
+            {warnings.length > 0 && (
+              <div className={styles.notice}>
+                <strong>Check your appointment times</strong>
+                <ul>
+                  {warnings.map((issue) => (
+                    <li key={issue.message}>
+                      <button type="button" onClick={() => fixIssue(issue)}>
+                        {issue.message}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <SignupPageRenderer
+              form={form}
+              interactivePreview
+              requiresInvitation={requiresInvitation}
+            />
             <div className={styles.notice}>
               <strong>Who can sign up?</strong>
               <p>
-                Invited contacts can sign in and claim slots after accepting your invitation.
-                Publishing keeps your existing sharing permissions; the page link alone does not
-                grant signup access. After publishing, use “Invite people & check access” to send
-                invitations and see who has accepted. Participants need an Envitefy account first.
+                {!editor?.published &&
+                  "Your draft is private until you publish. After publishing: "}
+                {signupAccessInstructions(requiresInvitation)}
               </p>
             </div>
           </div>

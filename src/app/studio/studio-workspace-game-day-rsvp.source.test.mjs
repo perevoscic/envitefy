@@ -23,7 +23,7 @@ test("studio field config makes Game Day a no-RSVP compact form with sports-firs
   assert.match(source, /"Check the live card for game details and arrival info\."/);
 });
 
-test("studio builders and surfaces strip Game Day RSVP from validation, preview, and publish defaults", () => {
+test("studio builders preserve Game Day RSVP opt-in while retaining compact form defaults", () => {
   const workspaceSource = readSource("src/app/studio/StudioWorkspace.tsx");
   const builderSource = readSource("src/app/studio/studio-workspace-builders.ts");
   const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
@@ -35,7 +35,7 @@ test("studio builders and surfaces strip Game Day RSVP from validation, preview,
   );
   assert.match(
     builderSource,
-    /if \(!supportsStudioCategoryRsvp\(details\.category\)\) return undefined;/,
+    /if \(!\(details\.rsvpEnabled \?\? supportsStudioCategoryRsvp\(details\.category\)\)\) return undefined;/,
   );
   assert.match(builderSource, /resolveStudioCallToAction\(/);
   assert.match(builderSource, /resolveStudioRsvpMessage\(/);
@@ -50,7 +50,7 @@ test("studio builders and surfaces strip Game Day RSVP from validation, preview,
   assert.match(surfaceSource, /const categorySupportsRsvp = supportsStudioCategoryRsvp/);
   assert.match(
     surfaceSource,
-    /visible:\s*categorySupportsRsvp &&\s*\(openHouseAgentCard\s*\?\s*hasOpenHouseAgentInfo\s*:\s*Boolean\(readString\(details\?\.rsvpName\) \|\| readString\(details\?\.rsvpContact\)\)\),/s,
+    /visible:\s*\(categorySupportsRsvp \|\| Boolean\(directRsvpHref\) \|\| hasDirectEnvitefyRsvp\) &&/s,
   );
   assert.match(
     sanitizeSource,

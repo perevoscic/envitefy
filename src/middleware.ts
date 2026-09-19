@@ -30,6 +30,7 @@ const PUBLIC_UNAUTH_PATHS = new Set([
   "/privacy",
   "/terms",
   "/verify-request",
+  "/mobile/sign-in",
   "/forgot",
   "/reset",
   "/snap",

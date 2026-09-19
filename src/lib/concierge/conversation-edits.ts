@@ -19,6 +19,7 @@ const PRODUCT_NAMES: Array<[RequestedOutput, string]> = [
 
 /** A format mentioned in a question is not a format the customer ordered. */
 export function isProductAdviceQuestion(message: string): boolean {
+  if (!message.includes("?") && !/^(?:which|whether|what|how|can|could|does|is|would|do\s+I|should|compare|explain)\b/i.test(message.trim())) return false;
   return (
     /\b(?:which|whether|difference|compare|enough|better|do I need|should (?:I|we) use|(?:can|does|is|would) (?:a|an|the|one))\b/i.test(
       message,
@@ -80,9 +81,12 @@ export function requestedProductEdits(message: string): {
 
 /** Extract only the requested value, including apostrophes inside quoted names. */
 export function extractExplicitEventTitle(message: string): string | null {
+  const orderedTitle = message.match(/\b(?:I\s+need|we\s+need|create|make|design)\s+(?:an?\s+)?(?:event\s+page|live\s*card|(?:downloadable\s+|digital\s+)?flyer(?:\s+or\s+invitation)?|invitation)\s+for\s+(.{2,140}?)(?=\s*\([^)]{1,45}\)\s*[.!]|\.\s+(?:It['’]s|The\s+date|On\s+)|[.!]\s*$)/i)?.[1]?.trim();
+  if (orderedTitle && !/\b(?:on|at)\s+(?:\d|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|January|February|March|April|May|June|July|August|September|October|November|December)\b/i.test(orderedTitle)) return orderedTitle;
   const titleContext =
     /\b(?:title|headline|rename|call (?:it|this|the event)|name (?:it|the event))\b/i.test(message);
   const starts = [
+    /\b(?:event|page|workshop|party|celebration|flyer|invitation|live\s*card)\s+(?:called|named|titled)\s+/gi,
     /\btitle\s+(?:it|this|the event)\s+(?:as\s+)?(?:exactly\s+)?/gi,
     /\b(?:event\s+)?(?:title|headline)\s+(?:must be|should be|to read)\s*(?:exactly\s*)?[:=]?\s*/gi,
     /\b(?:rename\s+(?:this\s+event|the\s+event|it)|(?:set|change|fix|update|keep)\s+(?:the\s+)?(?:event\s+)?(?:title|headline))\s+(?:to|as)\s*(?:exactly\s*)?/gi,
@@ -159,7 +163,7 @@ export function extractNamedAge(message: string, options: { allowBareAge?: boole
   const matches = patterns.flatMap((pattern) => [...message.matchAll(pattern)]).sort((a, b) => (a.index || 0) - (b.index || 0));
   for (const match of matches) {
     const candidate = match[1].replace(/^(?:(?:birthday|bday|event(?:\s+page)?|live\s*card|flyer(?:\s+invitation)?|invitation|for|fro|honoree|name|daughter|son|mum|mom|dad)\s+)+/i, "");
-    if (!candidate || /^(?:I|she|he|they|it|we|our|my|the|is|are|for|turning|birthday|bday|event|party|workshop|company|business|anniversary|January|February|March|April|May|June|July|August|September|October|November|December)$/i.test(candidate)) continue;
+    if (!candidate || /^(?:I|she|he|they|it|we|our|my|the|is|are|for|turning|birthday|bday|event|party|workshop|company|business|anniversary|adults?|teens?|children|kids|students?|beginners?|January|February|March|April|May|June|July|August|September|October|November|December)$/i.test(candidate)) continue;
     if (Number(match[2]) > 120 || /\b(?:anniversary|hours?|minutes?|days?)\b/i.test(match[0])) continue;
     return { name: candidate[0].toUpperCase() + candidate.slice(1), age: match[2] };
   }
@@ -262,6 +266,8 @@ export function hasStalePreviewFacts(body: string, previous: PreviewCopyFacts, n
 }
 
 export function pairedHonorees(message: string): string | null {
+  const anniversary = message.match(/\b([\p{Lu}][\p{L}'’-]{1,30})\s+(and|&)\s+([\p{Lu}][\p{L}'’-]{1,30}?)['’]s\s+(?:\d{1,3}(?:st|nd|rd|th)?\s+)?[Aa]nniversary\b/u);
+  if (anniversary) return `${anniversary[1]} ${anniversary[2]} ${anniversary[3]}`;
   const pair = "([\\p{Lu}][\\p{L}'’-]{1,30})\\s+(?:and|&)\\s+([\\p{Lu}][\\p{L}'’-]{1,30}?)";
   const match =
     message.match(new RegExp(`\\b(?:twins|children|kids)[:,]?\\s+${pair}(?=[, .]|$)`, "u")) ||

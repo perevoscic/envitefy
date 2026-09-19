@@ -1,0 +1,231 @@
+- banner:
+  - button "Open navigation":
+  - link "Envitefy home":
+    - /url: /
+- link:
+  - /url: /
+- button:
+- button:
+  - generic: Back
+- paragraph: Create Event
+- region:
+  - button:
+    - generic: Birthdays
+  - button:
+    - generic: Weddings
+  - button:
+    - generic: Anniversaries
+  - button:
+    - generic: Baby Showers
+  - button:
+    - generic: Gender Reveal
+  - button:
+    - generic: Football
+  - button:
+    - generic: Sports
+  - button:
+    - generic: Sign-up Form
+- button:
+  - generic: [organizer] (Admin)
+  - generic: [organizer email]
+- link "← Signup forms templates":
+  - /url: /signup-forms/templates
+- paragraph: Save a private draft, then publish when ready.
+- button "Start over"
+- button "Save draft"
+- main:
+  - heading "Your signup page" [level=1]
+  - heading "Build your signup form" [level=2]
+  - paragraph: Your design is ready. Add your details and the sections you need.
+  - button "Change hero image":
+    - text: Change image
+  - switch "Template image filter" [checked]: Filter on
+  - paragraph:
+    - generic: Add group or organization
+    - button "Edit group or organization":
+  - heading "TEST — Room Mom Fall Party Retest Edit event title" [level=1]:
+    - text: TEST — Room Mom Fall Party Retest
+    - button "Edit event title":
+  - paragraph:
+    - generic: Add a welcome message
+    - button "Edit welcome message":
+  - text: Date to be announced
+  - button "Edit date and time":
+  - generic: Location to be announced
+  - button "Edit location":
+  - generic: Add organizer
+  - button "Edit organizer name":
+  - generic: Arrival & other details
+  - button "Edit arrival and other details":
+  - heading "Your form sections" [level=2]
+  - paragraph: Drag the Move handle to arrange sections, or use the arrow buttons.
+  - button "+ Add section"
+  - generic "Form heading & introduction (optional)"
+  - button "Drag Snacks and supplies to reorder":
+    - generic: Move
+  - generic: Signup section · 3 slots
+  - button "Move Snacks and supplies up" [disabled]: ↑
+  - button "Move Snacks and supplies down": ↓
+  - button "Duplicate Snacks and supplies":
+  - button "Remove":
+    - generic: Remove
+  - text: Section title
+  - textbox "Section title":
+    - /placeholder: Give this section a name
+    - text: Snacks and supplies
+  - text: Instructions (optional)
+  - textbox "Instructions (optional)":
+    - /placeholder: What should guests know?
+  - generic "Section rules & time slots"
+  - option "Attendance / registration"
+  - option "Volunteer roles"
+  - option "Appointments / time slots"
+  - option "Items to bring" [selected]
+  - option "Custom signup"
+  - text: What can someone sign up for?
+  - textbox "What can someone sign up for?":
+    - /placeholder: e.g. Bring dessert or help at the welcome desk
+    - text: Fruit trays
+  - text: Places / quantity
+  - spinbutton "Places / quantity": "3"
+  - generic "Time & notes"
+  - button "Move Fruit trays up" [disabled]: ↑
+  - button "Move Fruit trays down": ↓
+  - button "Duplicate Fruit trays":
+  - button "Remove Fruit trays":
+  - text: What can someone sign up for?
+  - textbox "What can someone sign up for?":
+    - /placeholder: e.g. Bring dessert or help at the welcome desk
+    - text: Juice packs
+  - text: Places / quantity
+  - spinbutton "Places / quantity": "4"
+  - generic "Time & notes"
+  - button "Move Juice packs up": ↑
+  - button "Move Juice packs down": ↓
+  - button "Duplicate Juice packs":
+  - button "Remove Juice packs":
+  - text: What can someone sign up for?
+  - textbox "What can someone sign up for?":
+    - /placeholder: e.g. Bring dessert or help at the welcome desk
+    - text: Napkin packs
+  - text: Places / quantity
+  - spinbutton "Places / quantity": "2"
+  - generic "Time & notes"
+  - button "Move Napkin packs up": ↑
+  - button "Move Napkin packs down" [disabled]: ↓
+  - button "Duplicate Napkin packs":
+  - button "Remove Napkin packs":
+  - button "+ Add slot"
+  - button "Drag Volunteer roles to reorder":
+    - generic: Move
+  - generic: Signup section · 2 slots
+  - button "Move Volunteer roles up": ↑
+  - button "Move Volunteer roles down" [disabled]: ↓
+  - button "Duplicate Volunteer roles":
+  - button "Remove":
+    - generic: Remove
+  - text: Section title
+  - textbox "Section title":
+    - /placeholder: Give this section a name
+    - text: Volunteer roles
+  - text: Instructions (optional)
+  - textbox "Instructions (optional)":
+    - /placeholder: What should guests know?
+    - text: Fictional QA event. Helpers check in with the room parent.
+  - generic "Section rules & time slots"
+  - option "Attendance / registration"
+  - option "Volunteer roles" [selected]
+  - option "Appointments / time slots"
+  - option "Items to bring"
+  - option "Custom signup"
+  - text: What can someone sign up for?
+  - textbox "What can someone sign up for?":
+    - /placeholder: e.g. Bring dessert or help at the welcome desk
+    - text: Set up
+  - text: Places / quantity
+  - spinbutton "Places / quantity": "2"
+  - generic "Time & notes"
+  - button "Move Set up up" [disabled]: ↑
+  - button "Move Set up down": ↓
+  - button "Duplicate Set up":
+  - button "Remove Set up":
+  - text: What can someone sign up for?
+  - textbox "What can someone sign up for?":
+    - /placeholder: e.g. Bring dessert or help at the welcome desk
+    - text: Clean up
+  - text: Places / quantity
+  - spinbutton "Places / quantity": "1"
+  - generic "Time & notes"
+  - button "Move Clean up up": ↑
+  - button "Move Clean up down" [disabled]: ↓
+  - button "Duplicate Clean up":
+  - button "Remove Clean up":
+  - button "+ Add slot"
+  - button "+ Add section"
+  - status
+  - heading "Questions for participants" [level=2]
+  - paragraph: Optional. Guests answer these after choosing their slots. Name and contact details are collected separately.
+  - button "+ Add question"
+  - link "Envitefy Sign-up Forms (opens in a new tab)":
+    - /url: https://envitefy.com
+    - img "envitefy":
+      - generic: envitefy
+  - paragraph: CREATE | SHARE | ENJOY
+  - paragraph:
+    - strong: Created with Envitefy Sign-up Forms
+    - link "Create now":
+      - /url: https://envitefy.com/
+  - navigation "Follow Envitefy":
+    - list:
+      - link "Envitefy on Instagram (opens in a new tab)":
+        - /url: https://www.instagram.com/envitefy/
+        - generic: Envitefy on Instagram (opens in a new tab)
+      - link "Envitefy on Facebook (opens in a new tab)":
+        - /url: https://www.facebook.com/envitefy/
+        - generic: Envitefy on Facebook (opens in a new tab)
+      - link "Envitefy on YouTube (opens in a new tab)":
+        - /url: https://www.youtube.com/@envitefy
+        - generic: Envitefy on YouTube (opens in a new tab)
+      - link "Envitefy on TikTok (opens in a new tab)":
+        - /url: https://www.tiktok.com/@envitefy
+        - generic: Envitefy on TikTok (opens in a new tab)
+      - link "Envitefy on Reddit (opens in a new tab)":
+        - /url: https://www.reddit.com/user/envitefy/
+        - generic: Envitefy on Reddit (opens in a new tab)
+  - complementary "Form tools":
+    - group "Editor tools":
+      - button "Add sections"
+      - button "Design"
+      - button "Settings" [active] [pressed]
+    - button "Done with tools"
+    - heading "Contact details" [level=3]
+    - paragraph: Name is always collected after guests choose a slot.
+    - checkbox "Require email" [checked]
+    - text: Require email
+    - checkbox "Require phone number"
+    - text: Require phone number
+    - paragraph: When an email is collected, guests receive a confirmation with their choices and a private link to update or cancel. Automatic reminders are not currently sent. Use the Host dashboard to export responses and follow up through your usual email or group channel.
+    - heading "Overall form limits" [level=3]
+    - paragraph: Set section-specific limits beside each section. These limits apply across the whole form.
+    - text: Each person can choose
+    - combobox "Each person can choose":
+      - option "One slot"
+      - option "Multiple slots" [selected]
+    - text: Maximum choices across the whole form
+    - spinbutton "Maximum choices across the whole form"
+    - text: Default maximum quantity per choice
+    - spinbutton "Default maximum quantity per choice": "1"
+    - checkbox "Ask how many extra guests are attending"
+    - text: Ask how many extra guests are attending
+    - checkbox "Offer a waitlist when full" [checked]
+    - text: Offer a waitlist when full
+    - checkbox "Prevent bookings beyond capacity" [checked]
+    - text: Prevent bookings beyond capacity
+    - checkbox "Show remaining places" [checked]
+    - text: Show remaining places
+    - checkbox "Hide participant names"
+    - text: Hide participant names
+    - generic "Signup window"
+  - generic: Changes stay private until you publish.
+  - button "Preview & publish →"
+- alert

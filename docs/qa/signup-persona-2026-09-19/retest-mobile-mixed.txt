@@ -1,0 +1,105 @@
+- banner:
+  - button "Open navigation":
+  - link "Envitefy home":
+    - /url: /
+- link:
+  - /url: /
+- button:
+- button:
+  - generic: Back
+- paragraph: Create Event
+- region:
+  - button:
+    - generic: Birthdays
+  - button:
+    - generic: Weddings
+  - button:
+    - generic: Anniversaries
+  - button:
+    - generic: Baby Showers
+  - button:
+    - generic: Gender Reveal
+  - button:
+    - generic: Football
+  - button:
+    - generic: Sports
+  - button:
+    - generic: Sign-up Form
+- button:
+  - generic: [organizer] (Admin)
+  - generic: [organizer email]
+- link "← Signup forms templates":
+  - /url: /signup-forms/templates
+- paragraph: Save a private draft, then publish when ready.
+- button "Start over"
+- button "Save draft"
+- main:
+  - heading "Your signup page" [level=1]
+  - heading "Preview & publish" [level=2]
+  - paragraph: Try the guest experience before you share it.
+  - heading "TEST — Room Mom Fall Party Retest" [level=1]
+  - generic: Date to be announced
+  - generic: Location to be announced
+  - heading "Snacks and supplies" [level=3]
+  - paragraph: Quantities count items.
+  - generic: Fruit trays
+  - generic: 0/3 claimed · 3 open
+  - button "Select Fruit trays": Select
+  - generic: Juice packs
+  - generic: 0/4 claimed · 4 open
+  - spinbutton "Quantity for Juice packs": "2"
+  - button "Deselect Juice packs" [pressed]: Selected ✓
+  - generic: Napkin packs
+  - generic: 0/2 claimed · 2 open
+  - button "Select Napkin packs": Select
+  - heading "Volunteer roles" [level=3]
+  - paragraph: Fictional QA event. Helpers check in with the room parent.
+  - paragraph: Choose up to 1 option in this section. Quantities count people.
+  - generic: Set up
+  - generic: 0/2 claimed · 2 open
+  - spinbutton "Quantity for Set up": "1"
+  - button "Deselect Set up" [pressed]: Selected ✓
+  - generic: Clean up
+  - generic: 0/1 claimed · 1 open
+  - button "Select Clean up": Select
+  - heading "Your details" [level=3]
+  - generic: Name (required)
+  - textbox "Your name": QA Room Parent — fictional
+  - generic: Email for confirmation (required)
+  - textbox "Email address"
+  - generic: Notes for the host (optional)
+  - textbox "Additional note"
+  - status: Test signup complete. Your selections would be confirmed. Nothing was submitted and no places were reserved.
+  - generic: No account needed. Use the private link in your confirmation email to edit or cancel on any device.
+  - button "Test signup" [active]
+  - link "Envitefy Sign-up Forms (opens in a new tab)":
+    - /url: https://envitefy.com
+    - img "envitefy":
+      - generic: envitefy
+  - paragraph: CREATE | SHARE | ENJOY
+  - paragraph:
+    - strong: Created with Envitefy Sign-up Forms
+    - link "Create now":
+      - /url: https://envitefy.com/
+  - navigation "Follow Envitefy":
+    - list:
+      - link "Envitefy on Instagram (opens in a new tab)":
+        - /url: https://www.instagram.com/envitefy/
+        - generic: Envitefy on Instagram (opens in a new tab)
+      - link "Envitefy on Facebook (opens in a new tab)":
+        - /url: https://www.facebook.com/envitefy/
+        - generic: Envitefy on Facebook (opens in a new tab)
+      - link "Envitefy on YouTube (opens in a new tab)":
+        - /url: https://www.youtube.com/@envitefy
+        - generic: Envitefy on YouTube (opens in a new tab)
+      - link "Envitefy on TikTok (opens in a new tab)":
+        - /url: https://www.tiktok.com/@envitefy
+        - generic: Envitefy on TikTok (opens in a new tab)
+      - link "Envitefy on Reddit (opens in a new tab)":
+        - /url: https://www.reddit.com/user/envitefy/
+        - generic: Envitefy on Reddit (opens in a new tab)
+  - strong: Who can sign up?
+  - paragraph: "Your draft is private until you publish. After publishing: Anyone with this link can sign up. No Envitefy account or invitation is needed."
+  - button "← Back to editing"
+  - button "Publish signup"
+- alert: Make it yours | Envitefy

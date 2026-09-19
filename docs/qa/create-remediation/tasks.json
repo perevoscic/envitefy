@@ -1,0 +1,1289 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-19T15:43:19.165Z",
+  "sourceCampaign": ".qa/create-campaign/2026-09-18",
+  "mode": "implementation_with_remaining_acceptance",
+  "dependencyPolicy": "These resolved task IDs define sequencing. Workstream prose dependencies are interface context; work can overlap after the prerequisite contract is agreed.",
+  "tasks": [
+    {
+      "id": "CHAT-01",
+      "title": "Apply user changes as scoped, provenance-backed transactions",
+      "priority": "P0",
+      "owner": "Facts/conversation worker",
+      "wave": 1,
+      "sourcePlan": "chat-facts-plan.md",
+      "modules": [
+        "src/lib/concierge/extraction-contract.ts",
+        "src/lib/concierge/extract.ts",
+        "src/lib/concierge/fallback.ts",
+        "src/lib/concierge/artwork-edit-scope.ts",
+        "src/lib/concierge/conversation-edits.ts",
+        "src/lib/concierge/types.ts"
+      ],
+      "implementation": [
+        "Introduce a versioned canonical draft transaction boundary over existing types. A turn produces intent plus field operations citing user/source spans; apply only fields addressed by that turn. Keep normalized state, generated copy and persistence status distinct.",
+        "Never use an address correction, contact answer, style command, capability question or raw prompt as eventPurpose. Store instructions separately from event facts. Explicit clear and explicit new event remain supported and must not resurrect history.",
+        "Attach source-message identity, exact source span, provenance, retraction/supersession and field confidence to event facts. User corrections outrank uploads; assistant advice never becomes confirmed fact automatically.",
+        "Compute dependent title/copy/schedule projections after the transaction, then validate against the original approved facts as well as the previous state. Preserve accepted artwork until a replacement passes its own gate.",
+        "Record a small transaction receipt with changed fields, rejected fields, unresolved questions and current revision for the response planner. Use revision checks to reject stale async results; do not introduce autosaving."
+      ],
+      "acceptance": [
+        "Zero unrelated canonical field changes across the 93-case mutation matrix.",
+        "No raw correction/prompt string becomes title, purpose, occasion or public description.",
+        "Existing explicit-save and appearance-only fact integrity protections pass unchanged; a saved earlier draft survives Discard."
+      ],
+      "offlineTests": [
+        "Replay every archived transcript turn in original order with archived extractor responses and injected malformed/overbroad edits.",
+        "For all 93 briefs, exercise room-only, end-only, contact-only, appearance-only, mixed fact/style, explicit clear, duplicate turn, new event, stale response and resume; compare unrelated fields against the original user-approved facts.",
+        "Exercise sources and normal conversation fallback independently, including an unavailable model path."
+      ],
+      "status": "implemented_with_remaining_acceptance",
+      "dependencies": [
+        "REL-01"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/chat-facts.md",
+      "remainingAcceptance": [
+        "Universal per-field transaction/provenance history and full mutation replay remain."
+      ]
+    },
+    {
+      "id": "CHAT-02",
+      "title": "Keep output choice, full event identity and semantic category stable",
+      "priority": "P0",
+      "owner": "Facts/conversation worker",
+      "wave": 1,
+      "sourcePlan": "chat-facts-plan.md",
+      "modules": [
+        "src/lib/concierge/types.ts",
+        "src/lib/concierge/creation-intent.ts",
+        "src/lib/concierge/fallback.ts",
+        "src/lib/concierge/requirements.ts",
+        "src/lib/concierge/public-copy.ts",
+        "src/lib/concierge/skins.ts",
+        "src/lib/concierge/history-payload.ts",
+        "src/app/chat/ConciergeChatClient.tsx",
+        "src/app/chat/chat-preview-adapters.ts"
+      ],
+      "implementation": [
+        "Treat selected/requested output as explicit independent state, preserved through refusals, questions, corrections and generation. Change it only on explicit product-switch intent, with supported aliases resolved once.",
+        "Represent semantic event kind and activity separately from legacy renderer/visual category: anniversary milestone differs from birthday age; clinic/practice/scrimmage/watch party differs from game; school open house differs from property listing.",
+        "Keep full user title authoritative. Derive display titles only when absent; placeholders never outrank a supplied title. Preserve apostrophes, joint names and exact spelling without appending a second possessive.",
+        "Separate named people, teams/organizations and eligible audience/age ranges. Teens 13+ must become audience eligibility, never honoree Teens or milestone 13.",
+        "Require requested product, generated product, preview renderer, saved primaryOutput and published renderer to agree. Block generation/publish on known mismatch and surface the actual unresolved field."
+      ],
+      "acceptance": [
+        "All 93 briefs preserve chosen output and complete supplied title at every stage.",
+        "Anniversary never becomes birthday age; teens remain audience; school never acquires realtor controls.",
+        "A correction cannot change the event semantic kind, subject identity or selected product unless explicitly requested."
+      ],
+      "offlineTests": [
+        "Anniversary three formats including both original Event Page attempts; wedding Event Page; housewarming three formats.",
+        "Workshop title plus adults/teens13+, sports station title, school/property open house, noncompetitive clinic, early malformed graduation/bridal-shower possessives.",
+        "Property open house and birthday positive controls ensure appropriate category behavior remains supported; explicitly switch output and explicitly start a new event."
+      ],
+      "status": "offline_fixes_implemented_pending_qualification",
+      "dependencies": [
+        "CHAT-01"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/chat-facts.md",
+      "remainingAcceptance": [
+        "Complete original-scope release qualification; see workstream report for exact limits."
+      ]
+    },
+    {
+      "id": "CHAT-03",
+      "title": "Use one typed schedule for clocks, itinerary and every export",
+      "priority": "P0",
+      "owner": "Facts/conversation worker",
+      "wave": 1,
+      "sourcePlan": "chat-facts-plan.md",
+      "modules": [
+        "src/lib/concierge/fallback.ts (parseChrono and corrections)",
+        "src/lib/concierge/extract.ts",
+        "src/lib/concierge/types.ts",
+        "src/lib/creation/calendar-validation.ts",
+        "src/app/chat/ConciergeChatClient.tsx (buildStudioDetailsFromDraft)",
+        "src/app/chat/chat-preview-adapters.ts",
+        "src/lib/concierge/history-payload.ts",
+        "src/app/studio/studio-workspace-builders.ts"
+      ],
+      "implementation": [
+        "Model event date, timezone, confirmed primary start/end, and labeled schedule entries with audience role/locationId as distinct data. Keep original source text for each value.",
+        "Choose a primary event clock from explicit event/competition/kickoff/show/meet semantics; arrival, warmup, doors and awards remain schedule entries. Ask one focused question if truly ambiguous. Never silently pick noon or the earliest auxiliary time.",
+        "Leave unsupplied end null. Treat event-end and segment-end independently; overall6:30PM cannot imply vows2–6:30PM when dinner starts5PM.",
+        "Resolve local date/time in the explicitly chosen IANA zone and derive instants centrally. Date-only changes retain clock and zone; end-only changes retain start and only update the identified end/return segment.",
+        "Serialize clean canonical instants separately from human schedule labels. Export calendars from instants, never parse rendered prose; display start/end and itinerary using one locale formatter. Always preserve the supplied year in the factual contract.",
+        "Maintain backward-compatible migration for saved legacy drafts, validating ambiguous legacy prose rather than inventing missing clocks."
+      ],
+      "acceptance": [
+        "All explicit user clocks match canonical and exported instants; multi-time cases have no noon substitution.",
+        "No unknown end becomes a fabricated timestamp; no whole-event end is attached to a segment without evidence.",
+        "Every known primary end and all supplied labeled itinerary entries reach the visible guest schedule; no duplicate dinner or lost5PM.",
+        "Calendar stays available when canonical times are sufficient, without relying on natural-language parsing."
+      ],
+      "offlineTests": [
+        "Original football Flyer, gymnastics all formats, swimming all formats, dance Flyer, anniversary two-location dinner, field-trip opening and return correction.",
+        "New fixtures use September23,2026; preserve original archived fixtures unchanged for truthful replay. Include noon/midnight,12-hour/24-hour, overnight, multi-day,DST transition/nonexistent/duplicate local clock and date-only change.",
+        "Use clock/timezone-frozen tests; compare Google/Microsoft/ICS semantics and display lines using the same canonical values."
+      ],
+      "status": "implemented_with_remaining_acceptance",
+      "dependencies": [
+        "CHAT-01"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/chat-facts.md",
+      "remainingAcceptance": [
+        "Universal typed itinerary segments, legacy/OCR migration, complex multiday/DST/zone-only changes remain."
+      ]
+    },
+    {
+      "id": "CHAT-04",
+      "title": "Normalize full locations and itinerary roles without dropping or duplicating them",
+      "priority": "P0",
+      "owner": "Facts/conversation worker",
+      "wave": 1,
+      "sourcePlan": "chat-facts-plan.md",
+      "modules": [
+        "src/lib/concierge/types.ts (ConciergeAdditionalLocation)",
+        "src/lib/concierge/fallback.ts (location and stop extraction)",
+        "src/lib/concierge/extract.ts",
+        "src/lib/concierge/history-payload.ts",
+        "src/app/chat/ConciergeChatClient.tsx (additionalLocationNarrative and adapter)",
+        "src/app/studio/studio-workspace-builders.ts"
+      ],
+      "implementation": [
+        "Give itinerary entries stable identity and purpose labels linked to normalized location objects (venueName,room,street,locality,mapQuery). Resolve same venue to the active location reference.",
+        "Apply time-only and room-only edits by path; preserve all untouched venue facts and every later-stop clock.",
+        "Deduplicate by role/location/time identity, never by venue alone: two activities may intentionally share one venue.",
+        "Provide shared full-location and concise-display functions. Calendar and Directions receive the complete normalized venue+room+address; display never concatenates an already-complete location twice."
+      ],
+      "acceptance": [
+        "Corrected venue and room survive save/resume and all export adapters exactly once.",
+        "Time-only changes never alter location identity; room correction never removes other venues.",
+        "No fabricated address is required when the host supplies only a venue name."
+      ],
+      "offlineTests": [
+        "Anniversary vow renewal/dinner2PM/5PM/overall6:30PM and all historical missing-time variants; wedding same-venue ceremony/reception without invented reception time; field-trip return-only correction.",
+        "Capture-replay venue fixtures covering street-only, named venue without address, RoomA→RoomB, shared venue and two different stops."
+      ],
+      "status": "implemented_with_remaining_acceptance",
+      "dependencies": [
+        "CHAT-03"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/chat-facts.md",
+      "remainingAcceptance": [
+        "Stable itinerary/location role IDs and same-venue role acceptance remain."
+      ]
+    },
+    {
+      "id": "CHAT-05",
+      "title": "Promote supplied guest requirements into a public content contract",
+      "priority": "P0/P1",
+      "owner": "Facts/conversation worker",
+      "wave": 1,
+      "sourcePlan": "chat-facts-plan.md",
+      "modules": [
+        "src/lib/concierge/types.ts",
+        "src/lib/concierge/extraction-contract.ts",
+        "src/lib/concierge/extract.ts",
+        "src/lib/concierge/host-brief.ts",
+        "src/lib/concierge/public-copy.ts",
+        "src/app/chat/ConciergeChatClient.tsx (buildStudioDetailsFromDraft)",
+        "src/lib/concierge/history-payload.ts",
+        "src/app/studio/studio-workspace-builders.ts"
+      ],
+      "implementation": [
+        "Add typed guest requirements with stable IDs, exact user provenance, content kind, audience, display priority, visibility, obligation (required/optional/prohibited) and copy policy (semantic/verbatim). Do not overload giftPreferenceNote or private style.",
+        "Capture positive obligations and negative exclusions separately: non-contact session plus no-contact-drills; battery lanterns only plus no open flame; bring gear plus no fabricated assignments. A successful exclusion does not excuse missing positive content.",
+        "Project a single approved content contract to generation, HTML, overview, save/resume and calendar descriptions. Include all required facts on the appropriate surface without forcing logistics into text-free Event Page hero art.",
+        "Explicitly allocate presentation per format: Flyer is self-contained, Live Card may use visible artwork plus accessible details, Event Page uses HTML. User demand for prominence must be represented as layout priority rather than a chat-only promise.",
+        "Prevent paid generation when required content is absent, classified as private without justification, or conflicts with model exclusion instructions. Surface missing facts inline and allow correction without a new art call.",
+        "Preserve supplied no-gifts/dress/gear/safety facts through style edits and exports; absence of a pictured object is distinct from failure to state a guest instruction."
+      ],
+      "acceptance": [
+        "100% supplied required guest facts have a traceable destination in the final content projection; P0 safety/eligibility facts cannot silently drop.",
+        "User-approved safety/guest facts are never excluded as private style or unapproved claims.",
+        "No appearance-only turn, contact answer, calendar export or explicit save drops these requirements.",
+        "Regression suite distinguishes factual data loss, display omission and existing raster limitation so pre-generation guards can be proven without new artwork."
+      ],
+      "offlineTests": [
+        "Every93 immutable/effective brief and all requirement-related historical findings; compare requirement coverage at each stage, not merely prior draft equality.",
+        "Lantern battery/no-open-flame, lacrosse prominent non-contact, hockey player/family gear, workshop13+/materials, field-trip lunch/water, wedding garden formal, football roles/arrival, swimminggear, sports stations, appointment early arrival, school main-office/drop-in, wrestling supervision.",
+        "Negative controls: private address/contact stays private; equipment props in artwork do not count as explicit bring instructions; unknown price/capacity/lanes/scores stay unknown."
+      ],
+      "status": "implemented_with_remaining_acceptance",
+      "dependencies": [
+        "CHAT-01",
+        "CHAT-02"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/chat-facts.md",
+      "remainingAcceptance": [
+        "Unify uploaded-source requirements and broaden multilingual extraction acceptance."
+      ]
+    },
+    {
+      "id": "CHAT-06",
+      "title": "Keep exact approved copy and language structure independent of generated prose",
+      "priority": "P0/P1",
+      "owner": "Facts/conversation worker",
+      "wave": 1,
+      "sourcePlan": "chat-facts-plan.md",
+      "modules": [
+        "src/lib/concierge/copy-workflow.ts",
+        "src/lib/concierge/types.ts",
+        "src/lib/concierge/extract.ts",
+        "src/lib/concierge/fallback.ts",
+        "src/lib/concierge/public-copy.ts",
+        "src/app/chat/ConciergeChatClient.tsx:2065",
+        "src/app/studio/studio-workspace-builders.ts",
+        "src/lib/studio/product-prompts.ts"
+      ],
+      "implementation": [
+        "Store exact-copy blocks separately with text,language,order,line-break policy,surface requirement,prominence and source reference. User exact text is approved on capture; explicit optional suggestions remain proposed until accepted.",
+        "Build body text from approved blocks plus fact-derived prose. Never replace an approved block because copyStatus changes or unrelated facts arrive; copyStatus describes proposal state, not whether supplied text exists.",
+        "Send exact blocks and required fact coverage to image plan/quality checking, saved data and HTML; validators must not mark an actually approved safety line as unauthorized.",
+        "For Event Pages render required words and language blocks in HTML rather than asking a text-free hero to print them. For existing raster-only text absent from old art, offline tests establish the contract fix but do not claim the old image is repaired."
+      ],
+      "acceptance": [
+        "Every user-required exact block reaches final generation and guest contracts unchanged except an explicit user edit.",
+        "Distinct requested lines/languages remain distinct in HTML/export where the contract requires them.",
+        "A plan cannot both require and exclude the same approved text; offline preflight rejects the conflict before any paid request."
+      ],
+      "offlineTests": [
+        "Graduation On to the next adventure across3 formats; Birthday slogan original and retry; baby-shower English/Spanish two-line copy; lantern approved safety line in rejected edit; lacrosse prominent non-contact.",
+        "Unrelated room/contact/end/appearance turns, explicit edit/remove of just one block, multiline bilingual preservation, punctuation/Unicode apostrophes, supported language isolation."
+      ],
+      "status": "offline_fixes_implemented_pending_qualification",
+      "dependencies": [
+        "CHAT-05"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/chat-facts.md",
+      "remainingAcceptance": [
+        "Complete original-scope release qualification; see workstream report for exact limits."
+      ]
+    },
+    {
+      "id": "CHAT-07",
+      "title": "Remove unsupported public defaults and make unknown facts remain unknown",
+      "priority": "P1",
+      "owner": "Facts/conversation worker",
+      "wave": 1,
+      "sourcePlan": "chat-facts-plan.md",
+      "modules": [
+        "src/app/studio/studio-workspace-builders.ts:getRegistryText",
+        "src/app/studio/studio-workspace-field-config.ts",
+        "src/lib/concierge/public-copy.ts",
+        "src/lib/concierge/copy-workflow.ts",
+        "src/lib/concierge/types.ts"
+      ],
+      "implementation": [
+        "Use explicit nullable public facts. Remove unsolicited gift-policy fallback; renderer placeholder/help text must never serialize as an event fact.",
+        "Only derive generic descriptions when no supplied purpose/guest copy exists; placeholders are editing affordances, not approved publication text.",
+        "Define one precedence order: explicit latest user facts/preferences, retained approved facts, accepted template defaults where applicable, optional suggestions. Never transform unknown price/capacity/court/lanes/partner/score/school/year into assertions.",
+        "Handle gift preference as its own valid public fact when supplied, including No gifts; do not remove legitimate gift content as a side effect of eliminating defaults."
+      ],
+      "acceptance": [
+        "No unsupported gift/registry/public fact is generated or persisted when absent from source.",
+        "Existing explicit gift policy remains visible in intended surfaces and exports.",
+        "Test reporting distinguishes intermediate prompt defects from observed final public assertions."
+      ],
+      "offlineTests": [
+        "All generation requests with registryNote fallback, including intermediate-only Live Card occurrences and final visible Flyer occurrences.",
+        "Positive gift/registry/no-gifts cases and intentionally empty registry; unknown price/capacity/lane/score/school/graduation-year controls."
+      ],
+      "status": "offline_fixes_implemented_pending_qualification",
+      "dependencies": [
+        "CHAT-05"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/chat-facts.md",
+      "remainingAcceptance": [
+        "Complete original-scope release qualification; see workstream report for exact limits."
+      ]
+    },
+    {
+      "id": "CHAT-08",
+      "title": "Interpret negated privacy instructions and preserve safe parts of a request",
+      "priority": "P0",
+      "owner": "Facts/conversation worker",
+      "wave": 1,
+      "sourcePlan": "chat-facts-plan.md",
+      "modules": [
+        "src/lib/concierge/fallback.ts:isPrivateDataMutationRequest",
+        "src/lib/concierge/creation-intent.ts:classifyCreationBoundary",
+        "src/lib/concierge/host-privacy.ts",
+        "src/lib/concierge/host-brief.ts",
+        "src/lib/concierge/extraction-contract.ts"
+      ],
+      "implementation": [
+        "Parse operation polarity and target within clauses: omit/remove/do-not-invent is a constraint, not a request to expose/change a secret.",
+        "Represent unsafe operations as rejected operations while preserving safe event facts, requested product and valid prior state. Refusal text should identify the actual boundary and continue the safe task when possible.",
+        "Keep access decisions in server authorization, never in model-provided flags. No prompt or clause classifier can grant access to another account or fabricate a private code.",
+        "Add mixed-clause and quoted-example cases so a negative clause cannot mask a separate positive unauthorized operation."
+      ],
+      "acceptance": [
+        "All benign omission fixtures proceed with selected product intact and no private data invented.",
+        "All actual unauthorized account/secret operations remain blocked server-side.",
+        "Safe facts are not discarded when a separate clause is refused."
+      ],
+      "offlineTests": [
+        "Housewarming all formats exact opening and follow-up; Do not add/invent/show a door code; keep address private; remove my contact from invitation.",
+        "Positive unauthorized reveal/change-owner/access-token requests remain refused; mixed safe edit plus unauthorized operation preserves safe draft and product.",
+        "Quoted instructions from attachments remain source data, not privileged instructions."
+      ],
+      "status": "offline_fixes_implemented_pending_qualification",
+      "dependencies": [
+        "CHAT-01"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/chat-facts.md",
+      "remainingAcceptance": [
+        "Complete original-scope release qualification; see workstream report for exact limits."
+      ]
+    },
+    {
+      "id": "CHAT-09",
+      "title": "Make replies, Q&A and questions reflect actual state and supported actions",
+      "priority": "P0/P1",
+      "owner": "Facts/conversation worker",
+      "wave": 1,
+      "sourcePlan": "chat-facts-plan.md",
+      "modules": [
+        "src/lib/concierge/persona.ts",
+        "src/lib/concierge/capabilities.ts",
+        "src/lib/concierge/fallback.ts",
+        "src/lib/concierge/requirements.ts",
+        "src/lib/concierge/readiness.ts",
+        "src/lib/concierge/conversation-state.ts",
+        "src/lib/concierge/intake.ts"
+      ],
+      "implementation": [
+        "Build a structured response plan from the committed transaction receipt: applied changes, unresolved facts, pending proposal, capability references and persistence stage. Critical applied/saved/published claims render from this trusted plan, not free-form self-report.",
+        "Use in this draft for memory-only progress, saved only after successful explicit persistence, published only after successful publish. Save failures keep editing state and preserve navigation intent.",
+        "When a Q&A asks for an already-supplied note to appear, route it through requirement/copy storage or clearly present it as an unapplied suggestion; do not say included before it is represented.",
+        "Tie capability answers to versioned executable capabilities for the selected format/category. For school forms/price/registry/assignments, avoid invented future operations and give a real supported route or a clear unresolved limitation.",
+        "Derive next required question from unresolved typed fields; remember answered/skipped optional fields across factual/style turns. A model reply must not reopen an optional guest-count question or silently discard a supplied end.",
+        "Test combined query+edit requests: answer the question and apply only supplied facts. Never promote illustrative examples to confirmed events."
+      ],
+      "acceptance": [
+        "Zero accomplished-action/persistence claims without corresponding successful state receipts.",
+        "Zero required content promises missing from the resulting contract; future optional suggestions are labelled and not silently stored.",
+        "No repeated already-answered or explicitly skipped optional question; required missing facts still ask one concrete question.",
+        "Every capability assertion has a passing behavior test for the selected format, or is explicitly described as unverified/unavailable."
+      ],
+      "offlineTests": [
+        "All93 archived Q&A answers, evaluated with exact question-turn state and actual delivered state; keep appropriate-but-unexercised capabilities explicitly unverified.",
+        "Baby Shower, Field Trip, Gymnastics and Workshop saved-before-save claims; field-trip repeated optional guest count and school-form link; gymnastics end-time advice; basketball already-included claim; tennis unsupported assignments.",
+        "Model outage/fallback, successful save, save failure, publish failure, repeat questions, accepted limitations and simultaneous factual plus capability request."
+      ],
+      "status": "implemented_with_remaining_acceptance",
+      "dependencies": [
+        "CHAT-01",
+        "CHAT-02",
+        "CHAT-03",
+        "CHAT-05",
+        "CHAT-08",
+        "CHAT-10"
+      ],
+      "implementationEvidence": "docs/qa/create-remediation-implementation.md",
+      "remainingAcceptance": [
+        "Qualify the actual extraction/persona models in a capped text-only run with image endpoints blocked."
+      ]
+    },
+    {
+      "id": "CHAT-10",
+      "title": "Separate RSVP enablement, host contact, booking intent and category capability",
+      "priority": "P0/P1",
+      "owner": "Facts/conversation worker",
+      "wave": 1,
+      "sourcePlan": "chat-facts-plan.md",
+      "modules": [
+        "src/lib/concierge/rsvp-details.ts",
+        "src/lib/concierge/fallback.ts:detectRsvpEnabled",
+        "src/lib/concierge/extraction-contract.ts",
+        "src/lib/concierge/types.ts",
+        "src/app/chat/ConciergeChatClient.tsx:buildStudioDetailsFromDraft",
+        "src/app/studio/studio-workspace-builders.ts",
+        "src/app/studio/studio-workspace-field-config.ts"
+      ],
+      "implementation": [
+        "Represent contact information, permission to display it, response mode and booking capability separately. An explicit no-booking instruction must not erase a supplied organizer or contact.",
+        "Use effective RSVP mode consistently in all adapters, not raw visual category support for one field and explicit override for another.",
+        "For self-contained Flyers include supplied public contact as requested even when online form is off; hide it only for explicit privacy or exclusion.",
+        "Resolve genuine contradictory user instructions with one concrete question rather than choosing a default. Backend and renderer capability policy must agree for school and category-specific forms."
+      ],
+      "acceptance": [
+        "Supplied public organizer/contact survives all generation and persistence adapters under the selected mode.",
+        "No-booking never implies unrelated host contact erasure.",
+        "Visible/enabled RSVP form configuration agrees with backend required fields; requests preserve state and give actionable errors on failure."
+      ],
+      "offlineTests": [
+        "All sports/Game Day Flyer contact omissions plus Live Card intermediate-only gaps; appointment allformats with no-booking and later RSVP contact; school vsproperty openhouse.",
+        "RSVP on/off/manual/contact-only/private contact; explicit off followed by contact without explicit enable; venue phone must not become RSVP contact."
+      ],
+      "status": "offline_fixes_implemented_pending_qualification",
+      "dependencies": [
+        "CHAT-02",
+        "CHAT-05"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/chat-facts.md",
+      "remainingAcceptance": [
+        "Complete original-scope release qualification; see workstream report for exact limits."
+      ]
+    },
+    {
+      "id": "ART-01",
+      "title": "Compile one approved content contract before planning, generation, edits and verification",
+      "priority": "P0",
+      "owner": "Artwork contract worker",
+      "wave": 2,
+      "sourcePlan": "art-contracts-plan.md",
+      "modules": [
+        "src/lib/studio/types.ts",
+        "src/lib/studio/artwork-copy.ts",
+        "src/lib/studio/product-contract.ts",
+        "src/lib/studio/product-prompts.ts",
+        "src/lib/studio/output-checks.ts",
+        "src/app/studio/studio-workspace-builders.ts",
+        "src/app/chat/ConciergeChatClient.tsx"
+      ],
+      "implementation": [
+        "Introduce a typed, versioned creation specification built from canonical approved facts: content blocks have stable IDs, purpose (identity, schedule, eligibility, preparation, safety, contact, gift), exact/semantic wording requirement, source turn/evidence, importance, and intended surfaces. Separate visual direction and private notes.",
+        "Compile product-specific ArtworkSpec, PageSpec and GuestActionSpec from that one specification. Live Card defaults to headline imagery plus actual detail panels; explicit show-this-line-on-the-card requests add an approved artwork block. Flyer includes all supplied essential logistics/contact and required copy. Event Page raster stays text-free while required copy goes into HTML.",
+        "Make the creative plan select block IDs and layout treatment instead of inventing or excluding factual text through textPlacement prose. Assert planned text, generation text and verifier text agree before a paid call. Missing required fields or mutually incompatible surface instructions return a concrete local resolution state.",
+        "Do not silently remove an explicit artwork request to satisfy the headline default. If the request exceeds the supported format, offer a concrete composition or format choice and accurately describe where each line will appear; preserve all content while unresolved.",
+        "Bind copy contract/version/hash to accepted artwork and edit request. Appearance-only edits retain the approved content contract; factual or exact-copy corrections produce an explicit delta. Keep source evidence independent of model prose.",
+        "Preserve the already fixed Flyer street-address edit behavior and fact-preservation guards. Fix upstream fact assignment rather than printing private guidance wholesale."
+      ],
+      "acceptance": [
+        "No required content is silently lost or reclassified as private style/gift metadata.",
+        "Planner, image generator, verifier, page renderer and action builders refer to one approved content version.",
+        "Every explicit on-artwork line is either supported and required or remains visibly unresolved before generation; no false promise."
+      ],
+      "offlineTests": [
+        "Replay birthday latest opening/request: Ready, set, celebrate! is a required artwork block, appears in the compiled image/verifier payload exactly once and cannot be lost by headline normalization.",
+        "Replay Lantern Flyer request and archived expected-copy reproduction: both battery-only/no-open-flame clauses are in required artwork and guest copy; adding the correct safety line is not unexpected_text, omitting it is missing_copy.",
+        "Use Lacrosse non-contact requirement, Hockey equipment/warm layers, Workshop eligibility/materials, Field Trip lunch/water and bilingual Baby Shower fixtures across the observed 31 families × three products (93 cases). Add printable_flyer as a separate future offline coverage extension; it was not part of the observed93. Assert intended surface coverage, not a requirement to place every note in every raster.",
+        "Mock a creative plan that excludes a required safety line or promises a line absent from the compiled contract; reject locally with zero image calls. Mock only visual motifs to ensure they never become event facts.",
+        "Exercise correction, Q&A, appearance edit, save/resume and publish with a fake provider returning existing assets; inspect the same contract and required content at every boundary."
+      ],
+      "status": "implemented_with_remaining_acceptance",
+      "dependencies": [
+        "CHAT-02",
+        "CHAT-03",
+        "CHAT-04",
+        "CHAT-05",
+        "CHAT-06",
+        "CHAT-07"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/art-contracts.md",
+      "remainingAcceptance": [
+        "Visible layout capacity resolution beyond provider input limits remains."
+      ]
+    },
+    {
+      "id": "ART-02",
+      "title": "Route each requested change to its real surface",
+      "priority": "P0",
+      "owner": "Artwork contract worker",
+      "wave": 2,
+      "sourcePlan": "art-contracts-plan.md",
+      "modules": [
+        "src/app/chat/ConciergeChatClient.tsx",
+        "src/app/studio/studio-workspace-builders.ts",
+        "src/lib/concierge/artwork-edit-scope.ts",
+        "src/lib/concierge/visual-direction.ts",
+        "src/lib/studio/product-contract.ts",
+        "src/lib/studio/product-prompts.ts",
+        "src/lib/studio/output-checks.ts",
+        "src/lib/studio/generate.ts"
+      ],
+      "implementation": [
+        "Parse an edit into independent typed deltas: event facts/copy, raster imagery, artwork lettering, page typography/layout and guest actions. Resolve target using selected product and accepted artworkTextMode; do not use one giant free-text edit for every surface.",
+        "For Event Pages, darker background edits the raster or configured hero treatment; larger readable lettering changes HTML typography/foreground. A typography-only edit makes zero image calls. For Flyers and Live Cards, lettering changes can remain raster edits when text belongs to that artwork.",
+        "Send only image-target requirements into requestedArtworkRequirements and image QA. Test page typography/contrast on the actual page; report completion per requested delta rather than saying the entire request succeeded because one image changed.",
+        "Keep in-memory accepted state and proposed state separate. Commit every validated compatible delta together; if image edit fails, retain prior accepted image/facts and explain which requested part remains unapplied. Do not make a user repeat a valid factual correction because an appearance operation failed.",
+        "Use product/accepted content policy for visible address, date and time corrections. Preserve uploaded source wording when its explicit contract includes logistics; do not apply new-card headline defaults to unrelated existing artwork."
+      ],
+      "acceptance": [
+        "No image is rejected for an HTML-only font requirement.",
+        "HTML-only changes require no raster generation.",
+        "Every completed requested change is verified on the surface where it is visible; unsuccessful changes remain explicit."
+      ],
+      "offlineTests": [
+        "Replay the actual Field Trip darker/larger request and assert text-free image prompt contains no font requirement, PageSpec contains larger readable type and mock image QA checks only background change.",
+        "Across four products test fact-only, style-only, wording-only, mixed edit, new-event and new-design requests; count provider calls and inspect only permitted deltas.",
+        "With existing hero/card assets, browser-test rendered heading size and contrast, full approved copy and truthful per-delta completion after one branch fails.",
+        "Retain real builder address regression tests so Flyer location correction preserves its full address while Live Card metadata and source-artwork policy remain consistent."
+      ],
+      "status": "implemented_with_remaining_acceptance",
+      "dependencies": [
+        "ART-01"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/art-contracts.md",
+      "remainingAcceptance": [
+        "Additional font families and layout operations are explicitly unsupported, not silently sent to raster."
+      ]
+    },
+    {
+      "id": "ART-03",
+      "title": "Make quality decisions consistent with required copy and prohibited interface chrome",
+      "priority": "P0",
+      "owner": "Artwork contract worker",
+      "wave": 2,
+      "sourcePlan": "art-contracts-plan.md",
+      "modules": [
+        "src/lib/studio/output-checks.ts",
+        "src/lib/studio/artwork-copy.ts",
+        "src/lib/studio/generate.ts",
+        "src/lib/studio/prompts.ts",
+        "src/lib/studio/product-prompts.ts",
+        "src/lib/studio/types.ts"
+      ],
+      "implementation": [
+        "Have QA consume ArtworkSpec and edit delta directly. Add typed requirement results with stable IDs, region, observed evidence, expected value, issue severity and concrete repair instruction; include faux_controls/device_frame/forbidden_footer independently from lettering.",
+        "Retain deterministic missing/unexpected wording checks as a layer, but compare required content and explicit correction deltas on edits too. Preserve valid existing source wording without reimposing an unrelated new-card whitelist; do not silently bless an old required-copy defect.",
+        "Do not allow preservation instructions to override essential factual correctness, exact required wording or no-fake-controls contract. Keep initial candidate defects distinct from new edit regressions and surface both accurately.",
+        "Treat missing/wrong facts, required safety copy, fake actionable controls and essential clipping as blocking. Classify aesthetic/harmless decorative observations separately; avoid passing critical defects through a generic unsafe_placement warning.",
+        "Represent unavailable/incomplete/refused checker outcomes distinctly and persist their reasons. Do not report passed; prohibit silent publication of known blocked artifacts. Unknown review state must remain visible and require an explicit review choice, rather than appearing equivalent to an automatic pass.",
+        "Keep typography normalization permissive for case, decorative punctuation and line breaks, while preserving names/contact/URL punctuation and associations via structured evidence. Tests must protect bilingual strings and repeated legitimately distinct blocks."
+      ],
+      "acceptance": [
+        "Known annotated false accepts cannot pass the application decision policy when QA reports their evidence.",
+        "No rejected candidate is exported, saved as accepted, or called a successful redesign.",
+        "Quality warnings remain visible through save/resume/share; known critical defects cannot be published as passed."
+      ],
+      "offlineTests": [
+        "Create a human-labeled fixture manifest for accepted Baby Shower/Gymnastics fake controls, rejected Wrestling faux footer and Track logistics strip using existing WebPs only; record exact regions and expected issue kind.",
+        "Mock QA responses against those labels to prove orchestration blocks/repairs fake controls, cannot downgrade missing safety text to needs_review, and does not count repair-unverified as success.",
+        "Verify that current no-fake-controls exclusions occur in both generation and verification contracts and preservation policy excludes forbidden UI pixels; exercise behavior through parsed request/result objects rather than source-string-only tests.",
+        "Run deterministic copy comparison tests with birthday slogan, bilingual text, address/contact punctuation, reordered lines and source edit deltas. Absent requested text fails even when source also omitted it.",
+        "Render existing accepted images with actual action layers to measure obstruction separately from provider composition checks."
+      ],
+      "status": "offline_fixes_implemented_pending_qualification",
+      "dependencies": [
+        "ART-01"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/art-contracts.md",
+      "remainingAcceptance": [
+        "Complete original-scope release qualification; see workstream report for exact limits."
+      ]
+    },
+    {
+      "id": "ART-04",
+      "title": "Diagnose failures and perform one targeted, safe repair with truthful recovery",
+      "priority": "P0",
+      "owner": "Artwork contract worker",
+      "wave": 2,
+      "sourcePlan": "art-contracts-plan.md",
+      "modules": [
+        "src/lib/studio/generate.ts",
+        "src/lib/studio/output-checks.ts",
+        "src/lib/studio/types.ts",
+        "src/lib/studio/generation-response.ts",
+        "src/lib/studio/generation-progress.ts",
+        "src/app/chat/ConciergeChatClient.tsx"
+      ],
+      "implementation": [
+        "Record a bounded, versioned GenerationAttempt with request/contract ID, accepted source hash, candidate hash, stage, provider request ID, typed QA results for first and repaired candidate, targeted repair instructions, outcome and cost. Retain private raw evidence only in protected diagnostics; expose concise user-facing reasons without provider prompts or contact data in logs.",
+        "Use stage-specific first-generation/edit/refusal/transport/verifier-unavailable/export messages. Name the unresolved requirement (for example required slogan missing) and offer retry of that operation while retaining draft and prior accepted art.",
+        "Build repair instructions from typed requirement failures and original immutable facts. For edits preserve original accepted source while applying precise delta and diagnosed repair; for initial generation use current candidate. Avoid blindly appending contradictory free-text prompts.",
+        "Keep one automatic repair cap, cancellation and idempotent operation IDs. A user retry is separate and visible; never silently loop paid calls or mutate settled accepted state after cancellation.",
+        "Persist accepted, rejected and unverified assets as distinct states. UI preview may show a labeled work-in-progress candidate but only accepted result can replace the saved artifact. Report successful recovery separately from successful redesign.",
+        "Block contradictory specs locally before the provider, with actionable correction instead of spending a generation and repair cycle on an impossible contract."
+      ],
+      "acceptance": [
+        "Every failure is attributable to a stage and concrete requirement or known unavailable check.",
+        "A recovered original never counts as successful appearance edit.",
+        "One automatic repair maximum, no background duplicate paid call, preserved approved draft/source on every failure branch."
+      ],
+      "offlineTests": [
+        "Replay archived initial Birthday/Wrestling/Track rejection and Birthday/Appointment/Event Page edit rejection through fake providers; assert one repair maximum, stable accepted image/fact hashes and correct stage-specific messages.",
+        "Inject failed, incomplete, refused, timed-out and unavailable vision results; simulate repair failure, export failure, stream truncation, navigation/cancellation and delayed success. Assert no false success, stale replacement or autosave.",
+        "Mock first candidate failed then repaired passed; verify diagnostics preserve both candidates and only repaired accepted output is exported.",
+        "Round-trip generation diagnostics through response serialization and save/resume without leaking private prompts or authentication/contact details into general logs."
+      ],
+      "status": "implemented_with_remaining_acceptance",
+      "dependencies": [
+        "ART-02",
+        "ART-03"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/art-contracts.md",
+      "remainingAcceptance": [
+        "Durable redacted attempt/cost ledger and production alerts/rollout configuration remain."
+      ]
+    },
+    {
+      "id": "ART-05",
+      "title": "Preserve explicit subjects, activities and palette over category defaults",
+      "priority": "P1",
+      "owner": "Artwork contract worker",
+      "wave": 2,
+      "sourcePlan": "art-contracts-plan.md",
+      "modules": [
+        "src/lib/studio/product-prompts.ts",
+        "src/lib/studio/product-contract.ts",
+        "src/lib/studio/output-checks.ts",
+        "src/lib/concierge/visual-direction.ts",
+        "src/lib/studio/theme-normalization.ts",
+        "src/app/studio/studio-workspace-builders.ts"
+      ],
+      "implementation": [
+        "Give the specification allowed focal activities/subjects and explicit prohibited substitutions. Differentiate optional decoration from imagery that implies an offered station, venue feature, score, tournament or service.",
+        "Validate creativePlan focal subjects against known activities before image generation; visual inspiration from a sport/wedding theme must never reclassify event facts.",
+        "Use explicit subject corrections and scoped exclusions without flattening negation. Keep approved copy stable when theme changes; mark actual event replacement separately.",
+        "Keep provider/theme normalization from changing approved content. Treat requested gear instructions as text requirements, not satisfied by merely drawing the object.",
+        "Resolve visual precedence once: explicit user palette and latest intentional change override template/category defaults. Supply one consistent palette contract to planner/generator/verifier; use category colors only when unspecified. Keep same palette edits must preserve the approved colors while allowing requested luminance/contrast adjustments."
+      ],
+      "acceptance": [
+        "No plan claims or visually proposes unsupplied event activities or substitutes a different occasion.",
+        "Instruction coverage requires readable guest text, not merely a depicted prop.",
+        "Explicit palette has no contradictory category default in any generation/edit/QA input.",
+        "Previously correct sport/palette examples remain valid."
+      ],
+      "offlineTests": [
+        "Replay Sport Event station list and reject a mock plan adding tennis/volleyball as activities; allow clearly decorative unspecified texture without inventing an activity.",
+        "Replay softball yellow-ball, cheer pom-poms, supervised wrestling, non-contact Lacrosse and no-scores/brackets briefs; inspect planned subject/activity constraints.",
+        "Use existing correct assets as positive controls and review labels for known wrong imagery; exercise correction patterns use X not Y and that is X not Y, plus typo-tolerant lettering edits.",
+        "Replay Football navy/silver and Game Day green/cream request1/request2: compiled guidance/creative plan no longer injects navy/gold defaults. Test unspecified palette still permits category defaults and explicit later palette correction replaces the earlier approved value."
+      ],
+      "status": "implemented_with_remaining_acceptance",
+      "dependencies": [
+        "ART-01"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/art-contracts.md",
+      "remainingAcceptance": [
+        "Bounded semantic/palette guards still require live visual qualification."
+      ]
+    },
+    {
+      "id": "ART-06",
+      "title": "Compose concise, readable, deterministic approved copy",
+      "priority": "P1",
+      "owner": "Artwork contract worker",
+      "wave": 2,
+      "sourcePlan": "art-contracts-plan.md",
+      "modules": [
+        "src/lib/studio/artwork-copy.ts",
+        "src/lib/studio/output-checks.ts",
+        "src/app/studio/studio-workspace-builders.ts",
+        "src/lib/studio/product-prompts.ts"
+      ],
+      "implementation": [
+        "Format display strings from canonical dates/times/timezone using locale-aware structured functions; preserve explicit language and time convention, separate primary event range from arrival/warmup/return segments.",
+        "Deduplicate factual blocks by stable semantic identity, not substring deletion or raw word count; preserve distinct supplied stops/times and two intentionally similar names.",
+        "Remove boilerplate duplicates and all unsupplied gift/contact defaults before planning. Protect exact wording and essential guest instructions; do not shorten them silently to fit art.",
+        "Give copy blocks role/priority and supported layout capacity; choose a readable layout or explain a real format limit rather than making every block tiny.",
+        "Keep exact source wording when explicitly requested, including meaningful accents/punctuation; presentation formatting must not change factual content."
+      ],
+      "acceptance": [
+        "One normalized, accurate display string per fact/segment; no raw prompt/correction fragments in guest copy.",
+        "Required user wording and logistics take precedence over optional decoration or generated filler.",
+        "No gift/contact claim without user-supplied or explicitly approved source."
+      ],
+      "offlineTests": [
+        "Snapshot compiled display blocks for every archived Flyer; no mixed 12/24-hour clock, duplicate venue/Room B or technical timezone label unless explicitly requested.",
+        "Replay Anniversary dinner duplicate, Field Trip repeated departure, Open House duplicate title/venue and Birthday no-gifts line; verify exactly one meaningful block per fact while all requested instructions survive.",
+        "Use existing Flyer assets for mobile visual annotations and real full-resolution preview tests; distinguish pre-existing small raster lettering from DOM action overlap."
+      ],
+      "status": "offline_fixes_implemented_pending_qualification",
+      "dependencies": [
+        "ART-01"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/art-contracts.md",
+      "remainingAcceptance": [
+        "Complete original-scope release qualification; see workstream report for exact limits."
+      ]
+    },
+    {
+      "id": "ART-07",
+      "title": "Preserve product geometry and verify asset/export lifecycle",
+      "priority": "P1",
+      "owner": "Artwork contract worker",
+      "wave": 2,
+      "sourcePlan": "art-contracts-plan.md",
+      "modules": [
+        "src/lib/studio/openai.ts",
+        "src/lib/studio/generate.ts",
+        "src/lib/studio/flyer-export.ts",
+        "src/lib/studio/generation-response.ts",
+        "src/lib/media-upload.ts",
+        "scripts/lib/create-campaign-artwork.mjs"
+      ],
+      "implementation": [
+        "Pass explicit product/output dimensions through initial generation, edits and repairs; honor options.size in OpenAI edit API and stream branch. Preserve accepted source geometry unless a requested format/aspect change is explicit.",
+        "Validate candidate dimensions and final composition before acceptance. Avoid silent aspect changes or cropping in export; use supported contain layouts and separate intentional hero crop configuration.",
+        "Keep original model output, accepted delivery asset, rejected candidates and downloadable rendition linked by hashes and state. Browser thumbnails must not replace full-resolution download sources.",
+        "For newly generated Envitefy assets follow existing standing WebP conversion/verification/exact-original cleanup rule. Keep diagnostic metadata and only delete exact originals after verified replacement; never delete unrelated uploads or evidence.",
+        "Specify download rendering separately: requested print dimensions/density or share image rendition, correct MIME/extension and decoded dimensions. Preserve full composition, transparency and intended colors."
+      ],
+      "acceptance": [
+        "Edits/repairs cannot silently change product orientation.",
+        "Accepted preview, saved artwork and download refer to the intended approved artifact.",
+        "Generated asset cleanup occurs only after actual replacement verification."
+      ],
+      "offlineTests": [
+        "Mock initial/edit/repair provider calls for all four products and assert consistent requested dimensions including streamed edit; use existing landscape/portrait assets to test validation.",
+        "Decode existing assets and verify export corner/edge markers preserve full composition with contain fit. Test print dimensions1500×2100 at300DPI using local transforms without new art generation.",
+        "Exercise direct download with existing verified WebP/source artifacts; inspect bytes/MIME/name/dimensions rather than merely clicking a link.",
+        "Retain artifact-delivery-check and exact originals-to-WebP provenance invariants. Simulate conversion/decode failure and confirm original retained."
+      ],
+      "status": "implemented_with_remaining_acceptance",
+      "dependencies": [
+        "ART-02"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/art-contracts.md",
+      "remainingAcceptance": [
+        "Accepted-source hash/lifecycle linkage and rejected asset cleanup ledger remain."
+      ]
+    },
+    {
+      "id": "GR01",
+      "title": "Show the complete accepted artwork at every preview size",
+      "priority": "P1",
+      "owner": "Preview/UI agent",
+      "wave": 3,
+      "sourcePlan": "guest-release-plan.md",
+      "modules": [
+        "src/app/chat/ChatProductPreview.tsx",
+        "src/components/ArtworkPreviewDialog.tsx",
+        "src/components/ArtworkPreviewDialog.module.css",
+        "src/components/studio/StudioShowcaseLiveCard.tsx",
+        "src/components/studio/LiveCardArtworkFrame.tsx",
+        "src/components/EventPreviewViewport.tsx"
+      ],
+      "implementation": [
+        "Derive the fitted artwork rectangle from the verified intrinsic dimensions and available bounds; use contain for complete text-bearing artwork. Keep poster versus overlay-text contracts explicit.",
+        "For native mobile EventPreviewViewport preserve full-width native CSS, no scale/device padding or reserved hero toolbar band. Let event content scroll underneath floating controls as the standing product rule requires.",
+        "Preserve composition/aspect intent through accepted appearance edits. A text-free Event Page background can crop only within its approved focal/subject safe zone; do not require raster text that belongs in page HTML."
+      ],
+      "acceptance": [
+        "Zero newly clipped approved text or required composition edges on archived text-bearing assets.",
+        "Preview and guest artwork contain the same accepted asset/version; no hidden crop override.",
+        "Device switching/closing preview changes no draft, accepted artwork, selected format or persistence state."
+      ],
+      "offlineTests": [
+        "Replay all archived 2:3 Live Cards into the actual dialog at 320, 360, 390, 430, 768 and 1440 CSS px, portrait/landscape and 200% zoom.",
+        "Assert image rendered bounds match contain math and all four source edges remain visible; inspect screenshot diffs for birthday, gymnastics, football, anniversary, workshop, wrestling and hockey.",
+        "Replay landscape and portrait Field Trip Event Page assets with a fixed focal point and verify the subject is not silently cut off."
+      ],
+      "status": "offline_fixes_implemented_pending_qualification",
+      "dependencies": [
+        "ART-07"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/guest-flows.md",
+      "remainingAcceptance": [
+        "Complete original-scope release qualification; see workstream report for exact limits."
+      ]
+    },
+    {
+      "id": "GR02",
+      "title": "Preview the real Event Page and enforce actual title contrast",
+      "priority": "P1",
+      "owner": "Preview/UI agent",
+      "wave": 3,
+      "sourcePlan": "guest-release-plan.md",
+      "modules": [
+        "src/app/chat/ChatProductPreview.tsx",
+        "src/components/concierge/ConciergeEventWebsite.tsx",
+        "src/app/event/[id]/page.tsx",
+        "src/components/EventPreviewViewport.tsx",
+        "src/app/globals.css"
+      ],
+      "implementation": [
+        "Extract one typed Event Page view model and reuse the real renderer for in-memory preview and publication; preview mode must inhibit writes, not hide content or actions.",
+        "Scope heading/theme styles so themed hero foreground wins correctly without broad global !important patches. Set explicit local surface/foreground tokens and a tested legibility overlay.",
+        "Keep HTML title, body, schedule, RSVP and location in the preview so creators can review the exact deliverable. Preserve the artwork-first hero and category individuality."
+      ],
+      "acceptance": [
+        "All required guest text/actions visible in preview and publication with identical values.",
+        "Computed text contrast at least 4.5:1 for normal text and 3:1 for large text across approved hero surfaces; visually review image-backed text.",
+        "No claim of new image-model reliability from these renderer-only checks."
+      ],
+      "offlineTests": [
+        "Mount archived Event Page props through both preview and public adapters; compare normalized DOM text, critical links, computed colors and screenshot crops.",
+        "Dark/light app themes, all 31 families, dark edited artwork and mobile/desktop. Use loaded production CSS so cascade bugs cannot hide in component-only tests."
+      ],
+      "status": "offline_fixes_implemented_pending_qualification",
+      "dependencies": [
+        "ART-01",
+        "ART-02"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/guest-flows.md",
+      "remainingAcceptance": [
+        "Complete original-scope release qualification; see workstream report for exact limits."
+      ]
+    },
+    {
+      "id": "GR03",
+      "title": "Keep guest controls readable and clear of required artwork copy",
+      "priority": "P1",
+      "owner": "Preview/UI agent",
+      "wave": 3,
+      "sourcePlan": "guest-release-plan.md",
+      "modules": [
+        "src/components/studio/StudioLiveCardActionSurface.tsx",
+        "src/components/studio/StudioShowcaseLiveCard.tsx",
+        "src/components/ArtworkPreviewDialog.module.css",
+        "src/components/concierge/ConciergeEventWebsite.tsx",
+        "src/lib/studio/product-contract.ts",
+        "src/lib/studio/prompts.ts"
+      ],
+      "implementation": [
+        "For self-contained Flyers, render real controls outside the artwork surface or in a collapsible layer that does not obscure essential content; keep the full composition intact.",
+        "For Live Cards, use the explicit composition safe-zone contract and contrasting button surfaces; validate actual control/text intersections at runtime preview sizes.",
+        "Ensure one genuine toolbar, 44px product tap targets, accessible names, keyboard focus and pointer pass-through outside interactive elements.",
+        "Upstream prompt contract forbids painted Share/RSVP/More controls; verifier flags archived examples. If an existing raster contains a fake button, clearly treat it as failed evidence—do not pretend a UI-only change removes it."
+      ],
+      "acceptance": [
+        "Zero overlap of actual controls with required text in all 93 archived compositions where required-copy regions are known.",
+        "All interactive targets meet 44×44 px product rule and accessible name/focus behavior.",
+        "Action label and control contrast verified against their real surface; shadow alone does not establish contrast."
+      ],
+      "offlineTests": [
+        "Replay Birthday and Baby Shower exact no-gifts copy, Gymnastics address, Volleyball Room B/address, Wrestling/Anniversary headings and pale Bridal Shower/Hockey labels.",
+        "Measure real control bounding boxes against known required-copy regions; keyboard navigation must never move focus entirely behind persistent UI. Perform manual screenshots because raster letters are not DOM accessibility nodes."
+      ],
+      "status": "offline_fixes_implemented_pending_qualification",
+      "dependencies": [
+        "ART-01",
+        "ART-03"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/guest-flows.md",
+      "remainingAcceptance": [
+        "Complete original-scope release qualification; see workstream report for exact limits."
+      ]
+    },
+    {
+      "id": "GR04",
+      "title": "Render complete, readable schedules and nonduplicated locations",
+      "priority": "P1",
+      "owner": "Guest contract agent",
+      "wave": 3,
+      "sourcePlan": "guest-release-plan.md",
+      "modules": [
+        "src/components/studio/StudioLiveCardActionSurface.tsx",
+        "src/components/concierge/ConciergeEventWebsite.tsx",
+        "src/lib/event-website-schedule.ts",
+        "src/lib/live-card-locations.ts",
+        "src/app/chat/ConciergeChatClient.tsx",
+        "src/app/studio/studio-workspace-builders.ts",
+        "src/app/event/[id]/page.tsx"
+      ],
+      "implementation": [
+        "Introduce one locale-aware display formatter over canonical event timezone, date and start/end; never parse display strings back into authoritative event facts.",
+        "Represent venue/room/street/city and itinerary stops structurally, deduplicate identical components once and retain distinct legitimate stops.",
+        "Carry arrival/doors/departure/return/competition times as labelled secondary items, not repetitions of the primary event range.",
+        "Format exact same approved logistics for page/Card/Flyer prompt payloads: one human-readable date, consistent clock style, clear timezone label when relevant; no machine timezone/ISO boilerplate."
+      ],
+      "acceptance": [
+        "Known event end displayed in every relevant summary; no invented end, overlap or duplicated stop.",
+        "Venue+Room B+street address represented exactly once and all original distinct locations retained.",
+        "Locale/timezone consistent across chat recap, preview, public details and Calendar. Existing raster formatting defects stay marked unresolved until valid delivery path replaces them."
+      ],
+      "offlineTests": [
+        "Assert supplied 2–4 PM and 2–3 PM appear as ranges, unknown end remains absent, and September 23 is displayed consistently.",
+        "Replay Anniversary vow/dinner, Field Trip departure/return, school drop-in, graduation and Game Day; preserve separate timings and addresses exactly once.",
+        "Assert prompt logistics text is normalized before any model call and render archived pages with the new formatter; no new raster generation."
+      ],
+      "status": "offline_fixes_implemented_pending_qualification",
+      "dependencies": [
+        "CHAT-03",
+        "CHAT-04",
+        "CHAT-05",
+        "CHAT-06"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/guest-flows.md",
+      "remainingAcceptance": [
+        "Complete original-scope release qualification; see workstream report for exact limits."
+      ]
+    },
+    {
+      "id": "GR05",
+      "title": "Unify Calendar/ICS payloads and restore Calendar availability",
+      "priority": "P0",
+      "owner": "Guest contract agent",
+      "wave": 3,
+      "sourcePlan": "guest-release-plan.md",
+      "modules": [
+        "src/lib/live-card-calendar.ts",
+        "src/lib/calendar-description.ts",
+        "src/lib/calendar-date-time.ts",
+        "src/utils/calendar-links.ts",
+        "src/app/api/ics/route.ts",
+        "src/app/event/[id]/page.tsx",
+        "src/components/studio/StudioLiveCardActionSurface.tsx",
+        "src/app/chat/ConciergeChatClient.tsx"
+      ],
+      "implementation": [
+        "Use a shared calendar event projection from authoritative instants, event timezone, canonical composed location, required public instructions and labelled itinerary; both page and Card paths call it.",
+        "Prefer explicit event timezone/instants, never viewer timezone for a known event; treat viewer-zone/unknown-end fallback as a contract decision, not silent invented facts.",
+        "Drive action availability from valid canonical calendar facts, not a display startTime regex. Keep planned missing details explicit and request clarification if required.",
+        "Escape/fold ICS correctly and preserve Unicode/multiline notes; keep Google/Outlook/ICS semantically identical."
+      ],
+      "acceptance": [
+        "All 93 canonical calendar fixtures agree with approved facts; available-action fixtures show the expected Calendar control.",
+        "Zero wrong instants, missing required venue/room or required practical description among affected cases; all three providers agree.",
+        "External provider UI acceptance and account OAuth remain separate staging followups; captured URLs are not evidence of completed external events."
+      ],
+      "offlineTests": [
+        "Decode Google dates/ctz/location/details, Outlook start/end/location/body and parsed ICS DTSTART/DTEND/LOCATION/DESCRIPTION for all 93 archived saved payloads.",
+        "Golden expected records come from the approved original/effective brief, never just a previous wrong draft. September 23, Chicago 2–4 PM, room correction, required safety/gear/no-gifts and itinerary need explicit assertions.",
+        "Replay publication where Calendar vanished (Gymnastics Live/Flyer, Football Flyer, Dance Flyer, Swimming Live/Flyer, Field Trip Flyer) and assert the real button/menu exists and yields valid links.",
+        "Add future timezone/DST/overnight/multiday cases as new coverage; label these preventive tests rather than campaign-observed bugs."
+      ],
+      "status": "offline_fixes_implemented_pending_qualification",
+      "dependencies": [
+        "CHAT-03",
+        "CHAT-04",
+        "CHAT-05",
+        "CHAT-10"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/guest-flows.md",
+      "remainingAcceptance": [
+        "Complete original-scope release qualification; see workstream report for exact limits."
+      ]
+    },
+    {
+      "id": "GR06",
+      "title": "Offer Directions for every approved physical location",
+      "priority": "P1",
+      "owner": "Guest contract agent",
+      "wave": 3,
+      "sourcePlan": "guest-release-plan.md",
+      "modules": [
+        "src/components/concierge/ConciergeEventWebsite.tsx",
+        "src/lib/live-card-locations.ts",
+        "src/lib/directions.ts",
+        "src/app/event/[id]/page.tsx",
+        "scripts/lib/create-campaign-guest.mjs"
+      ],
+      "implementation": [
+        "Reuse canonical location actions for Event Pages; render a labelled Directions link per distinct physical stop, including room/venue in visible context.",
+        "Encode query/destination safely and suppress the action for an unprovided/nonphysical location. Retain accessibility labels that name the destination.",
+        "Keep checker URL support aligned with actual supported Maps forms and retain historical false-negative annotations."
+      ],
+      "acceptance": [
+        "Every approved physical Event Page location exposes a working encoded handoff.",
+        "Historical valid Maps checker failures remain infrastructure-only and do not inflate product defect counts.",
+        "External navigation/route quality remains explicitly untested until controlled staging checks."
+      ],
+      "offlineTests": [
+        "Exercise each real Event Page Directions link with archived single/multilocation payloads; parse approved /maps/search query and /maps/dir destination forms.",
+        "Assert no invented location or duplicate dinner/return action; ensure corrected Room B is present when supplied."
+      ],
+      "status": "offline_fixes_implemented_pending_qualification",
+      "dependencies": [
+        "CHAT-04"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/guest-flows.md",
+      "remainingAcceptance": [
+        "Complete original-scope release qualification; see workstream report for exact limits."
+      ]
+    },
+    {
+      "id": "GR07",
+      "title": "Make RSVP UI, mode and endpoint requirements one contract",
+      "priority": "P0",
+      "owner": "Guest contract agent",
+      "wave": 3,
+      "sourcePlan": "guest-release-plan.md",
+      "modules": [
+        "src/components/EventRsvpPrompt.tsx",
+        "src/components/studio/StudioLiveCardActionSurface.tsx",
+        "src/components/concierge/ConciergeEventWebsite.tsx",
+        "src/app/api/events/[id]/rsvp/route.ts",
+        "src/lib/gender-reveal.ts",
+        "src/lib/live-card-rsvp.ts",
+        "src/app/studio/studio-workspace-builders.ts",
+        "src/app/studio/studio-workspace-field-config.ts"
+      ],
+      "implementation": [
+        "Build one validated RSVP configuration/field schema and share it between draft, guest renderer and endpoint; category defaults must not introduce an invisible required answer.",
+        "Render and submit configured genderGuess or explicitly configure it optional; preserve entered fields on errors, announce an actionable error, and show success only after confirmed persistence.",
+        "Separate no-booking-form from no-RSVP intent. Use explicit selected mode and do not let assistant plans contradict it.",
+        "Use effective RSVP support consistently for organizer/contact serialization and Flyer copy. Preserve supplied contact through initial generation, appearance edits and save/resume."
+      ],
+      "acceptance": [
+        "No form can require a field it cannot collect; all configured anonymous responses persist successfully and failures remain recoverable.",
+        "RSVP mode and actual contact agree with the host approved intent through all transitions.",
+        "Email tests use the local sink now; a real Zoho SMTP staging test is separate and must preserve standing provider, signature and public-link rules."
+      ],
+      "offlineTests": [
+        "Replay real Gender Reveal guest Yes/No/Maybe with required and optional guesses against the isolated endpoint/database; confirm persisted response, validation error and no duplicate writes on retry.",
+        "Compare Event Page and Live Card RSVP configuration for the same draft, including informational appointment and school open house.",
+        "Assert all supplied sports Flyer contact details survive generation payload, approved copy and export metadata without provider calls."
+      ],
+      "status": "offline_fixes_implemented_pending_qualification",
+      "dependencies": [
+        "CHAT-10",
+        "GR08"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/guest-flows.md",
+      "remainingAcceptance": [
+        "Complete original-scope release qualification; see workstream report for exact limits."
+      ]
+    },
+    {
+      "id": "GR08",
+      "title": "Separate school/community open houses from property listings",
+      "priority": "P1",
+      "owner": "Guest contract agent with prompt agent",
+      "wave": 3,
+      "sourcePlan": "guest-release-plan.md",
+      "modules": [
+        "src/components/studio/StudioLiveCardActionSurface.tsx",
+        "src/app/studio/studio-workspace-builders.ts",
+        "src/app/studio/studio-workspace-field-config.ts",
+        "src/lib/studio/prompts.ts",
+        "src/lib/concierge/extract.ts",
+        "src/app/chat/ConciergeChatClient.tsx"
+      ],
+      "implementation": [
+        "Add/derive explicit approved open-house context (school/community/property); use real-estate actions only on positive property/listing evidence, never the bare phrase open house.",
+        "Prompt, generation builder and guest action renderer must consume that same context. Ask one clarifying question when ambiguous instead of fabricating a listing.",
+        "School/community uses event information/RSVP and retains main-office/drop-in/teacher instructions; property listings retain authorized realtor/logo/tour controls."
+      ],
+      "acceptance": [
+        "School fixtures route consistently across all three formats, the property positive control retains property features, and ambiguous cases ask for clarification.",
+        "No fabricated listing facts or agent contact."
+      ],
+      "offlineTests": [
+        "Replay the three archived school formats, an explicit property listing positive control and an ambiguous open house; compare prompt constraints and rendered actions.",
+        "No Property/Realtor label, listing requirement or suppressed RSVP for school context. Preserve correct current Event Page behavior."
+      ],
+      "status": "offline_fixes_implemented_pending_qualification",
+      "dependencies": [
+        "CHAT-02"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/guest-flows.md",
+      "remainingAcceptance": [
+        "Complete original-scope release qualification; see workstream report for exact limits."
+      ]
+    },
+    {
+      "id": "GR09",
+      "title": "Deliver a real downloadable Flyer file",
+      "priority": "P1",
+      "owner": "Preview/UI agent with export owner",
+      "wave": 3,
+      "sourcePlan": "guest-release-plan.md",
+      "modules": [
+        "src/app/chat/ChatProductPreview.tsx",
+        "src/app/card/[id]/page.tsx",
+        "src/components/studio/StudioLiveCardActionSurface.tsx",
+        "src/lib/studio/flyer-export.ts",
+        "src/lib/studio/product-contract.ts",
+        "src/app/studio/studio-workspace-api.ts"
+      ],
+      "implementation": [
+        "Wire a clearly labelled Download Flyer action to the accepted verified export in preview and published owner flow, with guest access according to product sharing rules.",
+        "Use a same-origin authorized streaming/download endpoint or verified blob download with correct Content-Disposition, sanitized filename and content type. Do not copy a rendered browser screenshot or include UI chrome.",
+        "Keep generation originals/archives under standing WebP delivery cleanup; downloadable format is an explicit product contract, not permission to retain unverified PNG temporary files.",
+        "Track the accepted artwork revision so rejected edits cannot be downloaded as final."
+      ],
+      "acceptance": [
+        "Download is discoverable within one action from the Flyer result and yields a verified file for all 31 Flyer cases.",
+        "The file contains the entire accepted composition with correct filename/content type; no invalid blob or navigation-only substitute.",
+        "Do not claim image content defects are fixed merely by downloading it."
+      ],
+      "offlineTests": [
+        "Use archived WebPs to exercise the actual export/download click, capture file bytes, decode, verify format/dimensions/aspect/DPI for the requested contract and verify no UI buttons are baked into the export.",
+        "Validate wrong/expired URLs, cross-origin art, interrupted downloads and restricted draft access without network providers."
+      ],
+      "status": "offline_fixes_implemented_pending_qualification",
+      "dependencies": [
+        "ART-01",
+        "ART-06"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/guest-flows.md",
+      "remainingAcceptance": [
+        "Complete original-scope release qualification; see workstream report for exact limits."
+      ]
+    },
+    {
+      "id": "GR10",
+      "title": "Keep save status truthful and mobile navigation predictable",
+      "priority": "P1",
+      "owner": "Chat state agent with Preview/UI agent",
+      "wave": 3,
+      "sourcePlan": "guest-release-plan.md",
+      "modules": [
+        "src/app/chat/ConciergeChatClient.tsx",
+        "src/lib/concierge/intake.ts",
+        "src/components/UnsavedProgressProvider.tsx",
+        "src/app/sidebar-context.tsx",
+        "src/app/left-sidebar.tsx",
+        "src/app/left-sidebar.controller.ts"
+      ],
+      "implementation": [
+        "Feed the assistant explicit in-memory/saved/published state and reserve Saved wording for acknowledged successful writes; describe factual edits as updated until saved.",
+        "Retain explicit Save/Discard/Keep editing behavior and saved draft identity. No autosave on opening, turns, artwork generation, pagehide or tab changes.",
+        "Consolidate duplicate mobile menu controls while preserving existing drawer open/close, focus and inert behavior."
+      ],
+      "acceptance": [
+        "No assistant/UI save claim without a successful persistence acknowledgment for the same revision.",
+        "No implicit draft writes throughout 93 replay flows; explicit Save/Resume remains passing.",
+        "Exactly one visible Open navigation control at mobile breakpoints; the closed drawer does not intercept pointer or focus."
+      ],
+      "offlineTests": [
+        "Replay unsaved Saved-claim findings with the write recorder and model response fixtures; assert no Saved claim before an explicit acknowledgment.",
+        "Save failure keeps the editor open; Discard restores the last saved state; Resume opens the matching editor with accepted artwork; the navigation destination is retained.",
+        "Test fresh mobile, desktop resized to mobile, explicit opening, Escape, focus restoration and the keyboard composer; retain the closed drawer regression."
+      ],
+      "status": "implemented_with_remaining_acceptance",
+      "dependencies": [
+        "CHAT-01",
+        "CHAT-09"
+      ],
+      "implementationEvidence": ".qa/create-campaign/2026-09-18/implementation/guest-flows.md",
+      "remainingAcceptance": [
+        "Full browser Save/Discard/Keep editing, concurrent tabs and legacy navigation matrix remain."
+      ]
+    },
+    {
+      "id": "GR11",
+      "title": "Make reports, review status and infrastructure results unambiguous",
+      "priority": "P1",
+      "owner": "QA/integration agent",
+      "wave": 0,
+      "sourcePlan": "guest-release-plan.md",
+      "modules": [
+        "scripts/lib/create-campaign-report.mjs",
+        "scripts/lib/create-campaign-reconciliation.mjs",
+        "scripts/lib/create-campaign-guest.mjs",
+        "scripts/lib/create-campaign-network.mjs",
+        "scripts/lib/create-campaign-timeout.mjs",
+        "scripts/lib/create-campaign-browser.mjs",
+        "scripts/lib/create-campaign-budget.mjs",
+        "scripts/lib/create-campaign-execution.mjs"
+      ],
+      "implementation": [
+        "Show separate Technical journey (published/recovered/interrupted), Review (complete/pending), Quality verdict, Last checkpoint and Open defect count. Explain failed means quality failed, not necessarily failed publication.",
+        "Derive Review complete from exact attemptId/resultFinishedAt bound reviews; preserve the raw stage in evidence only or label it Last automation checkpoint.",
+        "Retain provider, verifier, fallback and capture status per attempt. A preserved original after a rejected edit is recovery, not a successful redesign.",
+        "Keep bounded response/CDP capture timeouts, stale-lock recovery, ledger reservations and isolated email/media; add regression replays for each previous failure."
+      ],
+      "acceptance": [
+        "The screenshot example Birthday row reads Published / Review complete / Needs fixes, with the underlying needs_review checkpoint clearly explained.",
+        "Every finding maps to an issue and test; no original evidence is overwritten, and no historical failure is counted as current quality without latest reproduction.",
+        "All ledger reservations settle; recorded spending is distinguished from Codex usage and invoice reconciliation."
+      ],
+      "offlineTests": [
+        "Use report fixtures for published+review complete+quality failed, passed, pending review, original retained after rejected edit, budget deferred and capture interruption; expect human-readable labels.",
+        "Re-run the 127-test harness suite and extend failure injection; validate Maps search links correctly, exact attempt binding, all review/evidence paths and JSON pointers, and asset checksums.",
+        "Retry without doubling charges/refunds; abort leaves no pending network/CDP promises and records an explicit stopped status; zero external model requests during offline playback."
+      ],
+      "status": "offline_fixes_implemented_pending_qualification",
+      "dependencies": [
+        "REL-01"
+      ],
+      "implementationEvidence": "docs/qa/create-remediation-implementation.md",
+      "remainingAcceptance": [
+        "Complete original-scope release qualification; see workstream report for exact limits."
+      ]
+    },
+    {
+      "id": "REL-01",
+      "title": "Freeze the current baseline, reproduce failures and reconcile existing diagnostics",
+      "priority": "P0",
+      "owner": "Integration lead",
+      "wave": 0,
+      "implementation": [
+        "Isolate/rebase the current source and record commit, diff, configuration and evidence hashes.",
+        "Establish a failing offline fixture for every open finding or a named investigation when evidence is incomplete.",
+        "Reproduce historical compiler/linter diagnostics on this baseline; resolve actual current failures without attributing unrelated changes to this campaign.",
+        "Install a network-denied mock provider seam; preserve original campaign data and all positive regression behavior."
+      ],
+      "acceptance": [
+        "Frozen source and test commands are reproducible.",
+        "Every known finding has a task and source evidence.",
+        "No paid provider calls occur during offline verification."
+      ],
+      "status": "implemented_with_remaining_acceptance",
+      "dependencies": [],
+      "implementationEvidence": "docs/qa/create-remediation-implementation.md",
+      "remainingAcceptance": [
+        "Current working tree includes unrelated concurrent edits; this is not an isolated release commit."
+      ]
+    },
+    {
+      "id": "REL-02",
+      "title": "Complete independent offline regression across all 93 crosses and lifecycle boundaries",
+      "priority": "P0",
+      "owner": "Independent verifier",
+      "wave": 4,
+      "implementation": [
+        "Replay all 93 briefs and captured faulty extraction paths with all 117 Q&A assertions.",
+        "Use existing 200 WebP fixtures for real browser previews/guest actions and negative verifier tests.",
+        "Exercise revision races, explicit saves/discard, legacy saved events, accessibility, network failure and canceled work.",
+        "Run fact-integrity, affected behavioral suites, campaign harness, Biome, available editor diagnostics and independent type checking."
+      ],
+      "acceptance": [
+        "Every confirmed flaw has passing before/after regression evidence; original verdicts remain intact.",
+        "Actual guest API and exported-file assertions pass.",
+        "Zero live provider calls; missing text in archived artwork is not relabeled fixed."
+      ],
+      "status": "implemented_with_remaining_acceptance",
+      "dependencies": [
+        "CHAT-01",
+        "CHAT-02",
+        "CHAT-03",
+        "CHAT-04",
+        "CHAT-05",
+        "CHAT-06",
+        "CHAT-07",
+        "CHAT-08",
+        "CHAT-09",
+        "CHAT-10",
+        "ART-01",
+        "ART-02",
+        "ART-03",
+        "ART-04",
+        "ART-05",
+        "ART-06",
+        "ART-07",
+        "GR01",
+        "GR02",
+        "GR03",
+        "GR04",
+        "GR05",
+        "GR06",
+        "GR07",
+        "GR08",
+        "GR09",
+        "GR10",
+        "GR11"
+      ],
+      "implementationEvidence": "docs/qa/create-remediation-implementation.md",
+      "remainingAcceptance": [
+        "All93 deterministic replay and200-image bounds are not93 full saved/published/backend journeys or117 live Q&A re-scores."
+      ]
+    },
+    {
+      "id": "REL-03",
+      "title": "Qualify staging, production operations and rollback before deployment",
+      "priority": "P0",
+      "owner": "Release owner",
+      "wave": 5,
+      "implementation": [
+        "Run production staging checks, old-payload compatibility, controlled integration checks and rollout/rollback rehearsals.",
+        "Correlate revision, prompt/contract, output, verification, latency and spend without logging private content.",
+        "After offline fixes, qualify actual streaming chat/extraction/persona prompts in a later capped text-only live run with image endpoints blocked; compare with independently captured user requirements. No calls happen during planning.",
+        "Keep a later image-provider canary and real participant research explicitly separate from this no-new-art phase."
+      ],
+      "acceptance": [
+        "All main-plan deployment gates pass with linked evidence.",
+        "No release claim relies only on ignored build errors or offline prompt snapshots.",
+        "Live chat and provider/pixel-quality qualification remain separately pending until exercised; no deploy is performed by this planning task."
+      ],
+      "status": "not_qualified",
+      "dependencies": [
+        "REL-02"
+      ],
+      "implementationEvidence": "docs/qa/create-remediation-implementation.md",
+      "remainingAcceptance": [
+        "Freeze a reproducible release candidate, qualify isolated staging integrations, production telemetry and rollback; then separately qualify live text/image and real-user experience."
+      ]
+    }
+  ],
+  "implementationUpdatedAt": "2026-09-19T17:39:56.328Z",
+  "implementationReport": "../create-remediation-implementation.md"
+}

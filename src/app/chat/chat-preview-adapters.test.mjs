@@ -54,3 +54,10 @@ test("a date-only draft does not present an invented start time for calendar act
   assert.equal(details.startTime, "");
   assert.equal(details.calendarStartISO, "");
 });
+
+test("generated reveal preview carries canonical event identity and enabled guess settings", () => {
+  const details = build({ ...draft(), eventType: "gender_reveal", dateText: "September 23, 2026", startISO: "2026-09-23T19:00:00.000Z", endISO: null }).invitationData.eventDetails;
+  assert.equal(details.category, "Gender Reveal");
+  assert.equal(details.eventKind, "gender_reveal");
+  assert.equal(details.genderReveal.guessesEnabled, true);
+});

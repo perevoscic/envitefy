@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Client } from "pg";
+import { describeDatabaseError } from "@/lib/database-errors";
 
 // Force Node runtime for socket + TLS
 export const runtime = "nodejs";
@@ -18,7 +19,7 @@ export async function GET() {
     const r = await client.query("select now() as now");
     await client.end();
     return NextResponse.json({ ok: true, ms: Date.now() - start, now: r.rows[0].now });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    return NextResponse.json({ ok: false, error: describeDatabaseError(e) }, { status: 500 });
   }
 }

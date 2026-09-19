@@ -2,6 +2,7 @@
 import { Check, Copy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
+import { signupAccessInstructions } from "@/lib/signup-access";
 
 type Recipient = { id: string; name: string; email: string; status: "pending" | "accepted" };
 const actionClass =
@@ -56,11 +57,7 @@ export default function SignupSharing({
       className="rounded-xl border border-[var(--signup-border)] bg-[var(--signup-surface)] p-4 space-y-3"
     >
       <h3 className="font-semibold">Share your signup</h3>
-      <p className="text-sm">
-        {requiresInvitation
-          ? "This form is limited to invited accounts. Participants must accept their invitation before signing up."
-          : "Anyone with this link can sign up. No Envitefy account or invitation is needed."}
-      </p>
+      <p className="text-sm">{signupAccessInstructions(requiresInvitation)}</p>
       <div className="space-y-1">
         <label htmlFor={linkId} className="block text-sm">
           Signup link

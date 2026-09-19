@@ -45,18 +45,9 @@ test("chat upload queues the picked file before product selection", () => {
     /routeSelectedSnapFile\(upload\.file, upload\.source, selectedProductOutput, typedValue\)/,
   );
   assert.match(source, /openSnapUploadPicker\(\)/);
-<<<<<<< ours
   assert.match(source, /label=\{pendingChatUpload.file.name\}/);
   assert.match(source, /`\$\{userEchoOverride\.trim\(\)\} - Uploaded 1 file`/);
   assert.match(source, /User note: \$\{uploadPrompt\.trim\(\)\}/);
-=======
-  assert.match(source, />\s*\+1\s*<\/span>/);
-  assert.match(source, /trimmedUploadInstructions/);
-  assert.match(source, /`Uploaded 1 file\\n\\n\$\{trimmedUploadInstructions\}`/);
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
   assert.doesNotMatch(source, /Choose what this upload should become\./);
   assert.doesNotMatch(source, /ariaLabel="Choose upload product format"/);
   assert.doesNotMatch(source, /Uploaded \$\{uploadedFileLabel\(file\)\}/);

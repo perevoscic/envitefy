@@ -58,6 +58,24 @@ export type PublicTemplate = {
   keywords?: string;
 };
 const styleNames = { stadium: "Stadium", club: "Club", tournament: "Tournament" };
+const schoolSignupKeywords =
+  "field day school classroom teacher parents pta pto volunteer supplies parent teacher conferences appointments class party classroom party room parent room mom class celebration";
+
+export function matchesPublicTemplateSearch(template: PublicTemplate, query: string): boolean {
+  const normalize = (text: string) =>
+    text
+      .normalize("NFKD")
+      .toLowerCase()
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .trim();
+  const searchable = normalize(
+    `${template.name} ${template.description} ${template.style} ${template.audience || ""} ${template.keywords || ""}`,
+  );
+  return normalize(query)
+    .split(/\s+/)
+    .every((word) => searchable.includes(word));
+}
 const sportGalleryArtwork: Record<string, string> = {
   football: "/images/landing/sports/sports-editorial-football.webp",
   baseball: "/images/landing/sports/sports-editorial-baseball.webp",
@@ -118,7 +136,7 @@ export function getPublicTemplates(category: TemplateCategory): PublicTemplate[]
           ...(theme.id === "school-days"
             ? {
                 audience: "School & Education",
-                keywords: "field day school classroom teacher parents pta pto volunteer supplies",
+                keywords: schoolSignupKeywords,
               }
             : {}),
           heroImage: theme.artwork,
@@ -133,11 +151,10 @@ export function getPublicTemplates(category: TemplateCategory): PublicTemplate[]
               name: design.name,
               description: `Make ${design.name.toLowerCase()} your own with signup sections, questions, and slots.`,
               style: group,
-              ...(/school|classroom|teacher|field.day|pta|pto|recess/i.test(design.name)
+              ...(/school|classroom|teacher|field.day|pta|pto|recess|conference/i.test(design.name)
                 ? {
                     audience: "School & Education",
-                    keywords:
-                      "field day school classroom teacher parents pta pto volunteer supplies",
+                    keywords: schoolSignupKeywords,
                   }
                 : {}),
               heroImage: design.artworkPath || design.path,

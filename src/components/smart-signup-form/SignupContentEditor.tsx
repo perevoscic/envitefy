@@ -17,17 +17,17 @@ import {
 import { Copy, GripVertical, Trash2 } from "lucide-react";
 import { useState } from "react";
 import {
+  type ComposerDrag,
   copySignupSection,
   moveSignupItem,
   placeSignupSection,
   signupSectionHasResponses,
-  type ComposerDrag,
 } from "@/lib/signup-composer";
 import type { SignupForm, SignupFormSection, SignupFormSlot } from "@/types/signup";
 import { createSignupSlot, generateSignupId } from "@/utils/signup";
-import styles from "./signup-composer.module.css";
-import SignupSortableSection, { SignupDragHandle } from "./SignupSortableSection";
 import SignupSectionRules from "./SignupSectionRules";
+import SignupSortableSection, { SignupDragHandle } from "./SignupSortableSection";
+import styles from "./signup-composer.module.css";
 
 type Props = {
   form: SignupForm;
@@ -81,9 +81,11 @@ export default function SignupContentEditor({ form, onChange, drag, onDrag, onAd
     },
   });
   return (
-    <div className={styles.content}
+    <div
+      className={styles.content}
       data-custom-theme={form.appearance?.customTheme ? "true" : undefined}
-      data-signup-board={form.appearance?.customTheme?.board}>
+      data-signup-board={form.appearance?.customTheme?.board}
+    >
       <div className={styles.sectionHeading}>
         <div>
           <h2>Your form sections</h2>
@@ -270,7 +272,7 @@ export default function SignupContentEditor({ form, onChange, drag, onDrag, onAd
                   </label>
                   {section.kind !== "info" && (
                     <>
-                      <SignupSectionRules section={section} onChange={updateSection} />
+                      <SignupSectionRules form={form} section={section} onChange={updateSection} />
                       <div className={styles.slotList}>
                         {section.slots.map((slot, slotIndex) => {
                           const protectedSlot = signupSectionHasResponses(

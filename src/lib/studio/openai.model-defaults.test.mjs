@@ -122,3 +122,14 @@ test("scan heroes request portrait dimensions without changing landscape page de
   await generateInvitationImageWithOpenAi("Hero", undefined, "event_page", { size: "1024x1536" });
   assert.deepEqual(sizes, ["1536x1024", "1024x1536"]);
 });
+
+test("edited Event Page heroes forward explicit landscape dimensions to the actual provider request", async () => {
+  mock.method(openAiStudioDeps, "resolveStudioSourceImage", async () => ({ mimeType: "image/png", data: "U09VUkNF" }));
+  mock.method(openAiStudioDeps, "toUploadableImage", async () => "source-image");
+  mock.method(openAiStudioDeps, "getOpenAiClient", () => ({ images: { edit: async (request) => {
+    assert.equal(request.size, "1536x1024");
+    return { data: [{ b64_json: "VEVTVA==" }] };
+  } } }));
+  const result = await editInvitationImageWithOpenAi("Darken the hero background.", "/api/blob/existing.webp", undefined, { size: "1536x1024" });
+  assert.equal(result.ok, true);
+});

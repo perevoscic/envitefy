@@ -4,7 +4,7 @@ import path from "node:path";
 import test from "node:test";
 
 function readSource(relPath) {
-  return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
+  return fs.readFileSync(path.join(process.cwd(), relPath), "utf8").replace(/\r\n/g, "\n");
 }
 
 test("studio marketing showcase uses a centered active-card carousel", () => {
@@ -39,7 +39,7 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
   assert.match(source, /const suppressShowcaseClickRef = useRef\(false\);/);
   assert.match(
     source,
-    /const handleShowcasePointerDown = \(\s*index: number,\s*event: React\.PointerEvent<HTMLDivElement>,/,
+    /const handleShowcasePointerDown = \(\s*index: number,\s*event: React\.PointerEvent<HTMLDivElement>,?\s*\)/,
   );
   assert.match(
     source,

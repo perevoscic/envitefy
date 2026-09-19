@@ -35,6 +35,7 @@ function harness(overrides = {}) {
   const scope = {
     isCommittingEvent: false, isBusy: true,
     conversationVersionRef: { current: 0 },
+    messagesRef: { current: state.messages },
     responseAbortRef: { current: new AbortController() },
     generationAbortRef: { current: new AbortController() },
     uploadAbortRef: { current: new AbortController() },
@@ -101,6 +102,20 @@ test("a cancelled non-streaming response cannot overwrite the draft or clear a n
   assert.equal(h.state.draft.ready, true);
   assert.equal(h.state.isSending, true);
   assert.equal(h.state.failedRequest, null);
+});
+
+test("a superseded intake cannot overwrite the newer request or clear its busy state", async () => {
+  let completeOld;
+  const h = harness({ fetch: () => new Promise(resolve => { completeOld = resolve; }) });
+  const pending = load("sendToConcierge", h.scope)({ message: "Move to 3 PM", ocrContext: {} });
+  const old = h.scope.responseAbortRef.current;
+  h.scope.responseAbortRef.current = new AbortController();
+  old.abort();
+  h.state.isSending = true;
+  completeOld({ ok: true, json: async () => ({ ok: true, draft: { title: "stale" } }) });
+  assert.equal(await pending, null);
+  assert.equal(h.state.draft.ready, true);
+  assert.equal(h.state.isSending, true);
 });
 
 test("Cancel during artwork generation ignores a late completed image", async () => {

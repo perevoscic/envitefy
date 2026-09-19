@@ -39,15 +39,15 @@ test("studio live-card builders preserve local invitation data and default gener
   assert.match(source, /export function refreshLiveCardInvitationData\(/);
   assert.match(
     source,
-    /const title = stripStudioInternalInstructions\(previous\?\.title\) \|\| getDisplayTitle\(details\);/,
+    /const title = getDisplayTitle\(details\);/,
   );
   assert.match(
     source,
-    /const scheduleLine = clean\(previous\?\.scheduleLine\) \|\| buildDeterministicScheduleLine\(details\);/,
+    /const scheduleLine = buildDeterministicScheduleLine\(details\);/,
   );
   assert.match(
     source,
-    /const locationLine = resolveLiveCardVisibleLocationLine\(details, previous\?\.locationLine\);/,
+    /const locationLine = uniquePublicText\(\[details\.venueName \|\| details\.ceremonyVenue \|\| details\.receptionVenue, details\.location\]\)\.join\(" · "\);/,
   );
   assert.match(source, /export function resolveLiveCardVisibleLocationLine\(/);
   assert.match(source, /if \(looksLikeStreetAddress\(previous\)\) return venue;/);

@@ -2,6 +2,7 @@
 
 import { isAllowedStudioReferenceImageUrl } from "@/lib/studio/reference-image-url";
 import type { StudioGenerateMode } from "@/lib/studio/types";
+import { StudioGenerationRequestError } from "@/lib/studio/generation-error";
 import { readGenerationStream, type GenerationOptions } from "@/lib/studio/generation-progress";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
 import { buildStudioRequest } from "./studio-workspace-builders";
@@ -130,7 +131,7 @@ export async function requestStudioGeneration(
       data?.errors?.text?.message ||
       (isRecord(rawData) && typeof rawData.message === "string" ? rawData.message : "") ||
       `Studio generation failed with status ${response.status}.`;
-    throw new Error(errorMessage);
+    throw new StudioGenerationRequestError(errorMessage, data);
   }
 
   if (sourceImageDataUrl && mode !== "text" && !data.imageUrl && !data.imageDataUrl) {

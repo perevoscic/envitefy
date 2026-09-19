@@ -14,6 +14,9 @@ import {
   randomUUID,
   timingSafeEqual,
 } from "node:crypto";
+import { setDefaultResultOrder } from "node:dns";
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
 import { promisify } from "node:util";
 import { Pool, PoolClient, QueryResult, type QueryResultRow } from "pg";
 import {
@@ -28,6 +31,7 @@ import { normalizeCanonicalStartFields } from "@/lib/dashboard-data";
 import {
   describeDatabaseError,
   isDatabaseUnavailableError,
+  normalizeDatabaseError,
 } from "@/lib/database-errors";
 import type {
   CanonicalDiscoveryParse,
@@ -75,6 +79,8 @@ declare global {
   // eslint-disable-next-line no-var
   var __pgPool: Pool | undefined;
   // eslint-disable-next-line no-var
+  var __pgPoolCreating: Promise<Pool> | undefined;
+  // eslint-disable-next-line no-var
   var __pgUnhandledGuard: boolean | undefined;
 }
 
@@ -106,112 +112,152 @@ function isTransientPgError(err: unknown): boolean {
 
 export { isDatabaseUnavailableError } from "@/lib/database-errors";
 
-function getPool(): Pool {
-  if (!global.__pgPool) {
-    const databaseUrl = process.env.DATABASE_URL as string | undefined;
-    assertEnv("DATABASE_URL", databaseUrl);
-    // Build SSL config based on env. Do exactly one of:
-    // - PGSSL_DISABLE_VERIFY=true => ssl: { rejectUnauthorized: false }
-    // - PGSSL_CA_BASE64 set       => ssl: { ca, rejectUnauthorized: true }
-    // - otherwise: do not set ssl here (allow DATABASE_URL to determine)
-    let ssl: { rejectUnauthorized: boolean; ca?: string } | undefined;
-    const disableVerify = (process.env.PGSSL_DISABLE_VERIFY || "").toLowerCase();
-    const caBase64 = process.env.PGSSL_CA_BASE64 as string | undefined;
-    if (disableVerify === "1" || disableVerify === "true") {
-      ssl = { rejectUnauthorized: false };
-    } else if (caBase64 && caBase64.trim().length > 0) {
-      try {
-        const ca = Buffer.from(caBase64, "base64").toString("utf8");
-        ssl = { rejectUnauthorized: true, ca };
-      } catch {
-        ssl = undefined;
-      }
-    }
+try {
+  setDefaultResultOrder("ipv4first");
+} catch {
+  // Older Node runtimes may not expose DNS result-order control.
+}
 
-    // If we are passing an explicit ssl object, strip sslmode/ssl params from the URL
-    // to avoid conflicts, since constructor options should be the single source of truth.
-    let connectionStringToUse: string = databaseUrl;
+type PgSslConfig = { rejectUnauthorized: boolean; ca?: string; servername?: string };
+
+async function resolvePoolConnection(databaseUrl: string, ssl: PgSslConfig | undefined) {
+  let connectionString = databaseUrl;
+  let resolvedSsl = ssl;
+  try {
+    const url = new URL(databaseUrl);
     if (ssl) {
-      try {
-        const url = new URL(databaseUrl);
-        url.searchParams.delete("sslmode");
-        url.searchParams.delete("ssl");
-        connectionStringToUse = url.toString();
-      } catch {
-        // If URL parsing fails, fall back to original string
-        connectionStringToUse = databaseUrl;
-      }
+      url.searchParams.delete("sslmode");
+      url.searchParams.delete("ssl");
     }
+    if (url.hostname && !isIP(url.hostname)) {
+      const { address } = await lookup(url.hostname, { family: 4 });
+      if (resolvedSsl) resolvedSsl = { ...resolvedSsl, servername: url.hostname };
+      url.hostname = address;
+    }
+    connectionString = url.toString();
+  } catch {
+    connectionString = databaseUrl;
+  }
+  return { connectionString, ssl: resolvedSsl };
+}
 
-    const parsedPoolMax = Number.parseInt(process.env.PG_POOL_MAX || "8", 10);
-    const poolMax = Number.isFinite(parsedPoolMax) && parsedPoolMax > 0 ? parsedPoolMax : 8;
-    const poolConfig: any = { connectionString: connectionStringToUse, max: poolMax };
-    // Timeouts to prevent hanging requests causing upstream 504s
-    const connectTimeoutMs = Number.parseInt(process.env.PG_CONNECT_TIMEOUT_MS || "5000", 10);
-    const idleTimeoutMs = Number.parseInt(process.env.PG_IDLE_TIMEOUT_MS || "30000", 10);
-    const statementTimeoutMs = Number.parseInt(process.env.PG_STATEMENT_TIMEOUT_MS || "15000", 10);
-    if (Number.isFinite(connectTimeoutMs)) poolConfig.connectionTimeoutMillis = connectTimeoutMs;
-    if (Number.isFinite(idleTimeoutMs)) poolConfig.idleTimeoutMillis = idleTimeoutMs;
-    poolConfig.keepAlive = true;
-    poolConfig.allowExitOnIdle = false;
-    if (ssl) poolConfig.ssl = ssl;
-    global.__pgPool = new Pool(poolConfig);
-    global.__pgPool.on("error", (err: Error) => {
-      const severity = (err as any).severity;
-      const code = (err as any).code;
-      console.error("[db pool] idle client error", {
-        message: err.message,
-        severity,
-        code,
-      });
-      if (severity === "FATAL" || /terminated unexpectedly/i.test(err.message)) {
-        console.warn("[db pool] FATAL error — destroying pool for fresh reconnect");
-        const dead = global.__pgPool;
-        global.__pgPool = undefined;
-        dead?.end().catch(() => {});
-      }
-      if (isAuthenticationPgError(err)) {
-        pgAuthErrorCount += 1;
-        if (pgAuthErrorCount >= PG_AUTH_ERROR_THRESHOLD) {
-          pgAuthBackoffUntil = Date.now() + PG_AUTH_BACKOFF_MS;
-          console.warn(
-            `[db] Pausing new Postgres connections for ${PG_AUTH_BACKOFF_MS}ms after repeated authentication failures`,
-          );
-        }
-      }
-    });
-    // Ensure long queries also timeout server-side
-    const timeoutValue = Math.max(1000, statementTimeoutMs);
-    global.__pgPool.on("connect", (client: PoolClient) => {
-      client.query(`SET statement_timeout TO ${timeoutValue}`).catch((err: Error) => {
-        console.warn("[db pool] SET statement_timeout failed on new connection", err.message);
-      });
-    });
-
-    if (!global.__pgUnhandledGuard) {
-      global.__pgUnhandledGuard = true;
-      process.on("unhandledRejection", (reason: any) => {
-        if (
-          reason &&
-          typeof reason === "object" &&
-          (reason.severity === "FATAL" ||
-            reason.code === "XX000" ||
-            /terminated unexpectedly|check out connection.*pool.*timeout/i.test(
-              String(reason.message || ""),
-            ))
-        ) {
-          console.error("[db pool] swallowed pg unhandledRejection", reason.message);
-          return;
-        }
-        throw reason;
-      });
+async function createPgPool(): Promise<Pool> {
+  const databaseUrl = process.env.DATABASE_URL as string | undefined;
+  assertEnv("DATABASE_URL", databaseUrl);
+  // Build SSL config based on env. Do exactly one of:
+  // - PGSSL_DISABLE_VERIFY=true => ssl: { rejectUnauthorized: false }
+  // - PGSSL_CA_BASE64 set       => ssl: { ca, rejectUnauthorized: true }
+  // - otherwise: do not set ssl here (allow DATABASE_URL to determine)
+  let ssl: PgSslConfig | undefined;
+  const disableVerify = (process.env.PGSSL_DISABLE_VERIFY || "").toLowerCase();
+  const caBase64 = process.env.PGSSL_CA_BASE64 as string | undefined;
+  if (disableVerify === "1" || disableVerify === "true") {
+    ssl = { rejectUnauthorized: false };
+  } else if (caBase64 && caBase64.trim().length > 0) {
+    try {
+      const ca = Buffer.from(caBase64, "base64").toString("utf8");
+      ssl = { rejectUnauthorized: true, ca };
+    } catch {
+      ssl = undefined;
     }
   }
-  return global.__pgPool;
+
+  const resolved = await resolvePoolConnection(databaseUrl, ssl);
+  const parsedPoolMax = Number.parseInt(process.env.PG_POOL_MAX || "8", 10);
+  const poolMax = Number.isFinite(parsedPoolMax) && parsedPoolMax > 0 ? parsedPoolMax : 8;
+  const poolConfig: any = { connectionString: resolved.connectionString, max: poolMax };
+  // Timeouts to prevent hanging requests causing upstream 504s
+  const connectTimeoutMs = Number.parseInt(process.env.PG_CONNECT_TIMEOUT_MS || "5000", 10);
+  const idleTimeoutMs = Number.parseInt(process.env.PG_IDLE_TIMEOUT_MS || "30000", 10);
+  const statementTimeoutMs = Number.parseInt(process.env.PG_STATEMENT_TIMEOUT_MS || "15000", 10);
+  if (Number.isFinite(connectTimeoutMs)) poolConfig.connectionTimeoutMillis = connectTimeoutMs;
+  if (Number.isFinite(idleTimeoutMs)) poolConfig.idleTimeoutMillis = idleTimeoutMs;
+  poolConfig.keepAlive = true;
+  poolConfig.allowExitOnIdle = false;
+  if (resolved.ssl) poolConfig.ssl = resolved.ssl;
+  const pool = new Pool(poolConfig);
+  pool.on("error", (err: Error) => {
+    const severity = (err as any).severity;
+    const code = (err as any).code;
+    console.error("[db pool] idle client error", {
+      message: err.message,
+      severity,
+      code,
+    });
+    if (severity === "FATAL" || /terminated unexpectedly/i.test(err.message)) {
+      console.warn("[db pool] FATAL error — destroying pool for fresh reconnect");
+      const dead = global.__pgPool;
+      global.__pgPool = undefined;
+      dead?.end().catch(() => {});
+    }
+    if (isAuthenticationPgError(err)) {
+      pgAuthErrorCount += 1;
+      if (pgAuthErrorCount >= PG_AUTH_ERROR_THRESHOLD) {
+        pgAuthBackoffUntil = Date.now() + PG_AUTH_BACKOFF_MS;
+        console.warn(
+          `[db] Pausing new Postgres connections for ${PG_AUTH_BACKOFF_MS}ms after repeated authentication failures`,
+        );
+      }
+    }
+  });
+  // Ensure long queries also timeout server-side
+  const timeoutValue = Math.max(1000, statementTimeoutMs);
+  pool.on("connect", (client: PoolClient) => {
+    client.query(`SET statement_timeout TO ${timeoutValue}`).catch((err: Error) => {
+      console.warn("[db pool] SET statement_timeout failed on new connection", err.message);
+    });
+  });
+
+  if (!global.__pgUnhandledGuard) {
+    global.__pgUnhandledGuard = true;
+    process.on("unhandledRejection", (reason: any) => {
+      if (
+        reason &&
+        typeof reason === "object" &&
+        (reason.severity === "FATAL" ||
+          reason.code === "XX000" ||
+          /terminated unexpectedly|check out connection.*pool.*timeout/i.test(
+            String(reason.message || ""),
+          ))
+      ) {
+        console.error("[db pool] swallowed pg unhandledRejection", reason.message);
+        return;
+      }
+      throw reason;
+    });
+  }
+  global.__pgPool = pool;
+  return pool;
+}
+
+async function getPool(): Promise<Pool> {
+  if (global.__pgPool) return global.__pgPool;
+  if (!global.__pgPoolCreating) {
+    global.__pgPoolCreating = createPgPool().finally(() => {
+      global.__pgPoolCreating = undefined;
+    });
+  }
+  return global.__pgPoolCreating;
+}
+
+function shouldRetryPoolConnect(err: unknown): boolean {
+  if (!isTransientPgError(err)) return false;
+  const message = describeDatabaseError(err);
+  return !/timeout exceeded when trying to connect|PG_AUTH_BACKOFF/i.test(message);
+}
+
+async function connectPoolClient(pool: Pool): Promise<PoolClient> {
+  try {
+    return await pool.connect();
+  } catch (err) {
+    if (!shouldRetryPoolConnect(err)) throw err;
+    await new Promise<void>((resolve) => setTimeout(resolve, 150));
+    return await pool.connect();
+  }
 }
 
 async function withClient<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
-  const pool = getPool();
+  const pool = await getPool();
   if (pgAuthBackoffUntil > Date.now()) {
     const err: any = new Error(
       "Database authentication temporarily paused after repeated failures",
@@ -222,7 +268,7 @@ async function withClient<T>(callback: (client: PoolClient) => Promise<T>): Prom
 
   let client: PoolClient;
   try {
-    client = await pool.connect();
+    client = await connectPoolClient(pool);
     pgAuthErrorCount = 0;
   } catch (err) {
     if (isAuthenticationPgError(err)) {
@@ -234,7 +280,20 @@ async function withClient<T>(callback: (client: PoolClient) => Promise<T>): Prom
         );
       }
     }
-    throw err;
+    if (isTransientPgError(err) && global.__pgPool === pool) {
+      console.warn("[db] Recreating Postgres pool after connect failure", describeDatabaseError(err));
+      global.__pgPool = undefined;
+      pool.end().catch(() => {});
+      try {
+        const freshPool = await getPool();
+        client = await connectPoolClient(freshPool);
+        pgAuthErrorCount = 0;
+      } catch (retryErr) {
+        throw normalizeDatabaseError(retryErr);
+      }
+    } else {
+      throw normalizeDatabaseError(err);
+    }
   }
   let hadError = false;
   const onClientError = (err: Error) => {

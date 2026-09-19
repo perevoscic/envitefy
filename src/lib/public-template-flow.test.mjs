@@ -347,6 +347,41 @@ test("IndexedDB roundtrip retains photos, section, identity and latest category 
   }
 });
 
+test("new gallery signup saves a separate event while explicit resume retains the original", async () => {
+  const original = globalThis.indexedDB;
+  try {
+    globalThis.indexedDB = memoryIndexedDb();
+    const { createEmptySignupTemplateForm } = loadTs("src/lib/signup-starters.ts");
+    const first = { version: 1, id: crypto.randomUUID(), category: "signup-forms",
+      templateId: "editorial--school-days", updatedAt: Date.now(), assets: {},
+      snapshot: { form: { ...createEmptySignupTemplateForm(), title: "Class party A" } } };
+    const rows = new Map();
+    const request = async (url, options) => {
+      const body = JSON.parse(options.body);
+      const id = options.method === "POST" ? crypto.randomUUID() : url.split("/").at(-1);
+      const row = { id, ...body };
+      rows.set(id, row);
+      return Response.json(row);
+    };
+    const save = (draft) => handoff.saveTemplateDraftToAccount({ draft,
+      payload: { title: draft.snapshot.form.title, data: { signupForm: draft.snapshot.form } },
+      category: "signup-forms", templateId: draft.templateId, status: "draft",
+      authenticated: true, remoteMedia: {}, request });
+    const a = await save(first);
+    await storage.writeTemplateDraft(first);
+    const unchanged = structuredClone(rows.get(a));
+    assert.equal(await storage.readTemplateEditorDraft("signup-forms"), null);
+    assert.equal(await storage.readTemplateEditorDraft("signup-forms", null, a), null);
+    const second = { ...first, id: crypto.randomUUID(), eventId: undefined,
+      templateId: "editorial--harvest-table", snapshot: { form: { ...createEmptySignupTemplateForm(), title: "Potluck B" } } };
+    const b = await save(second);
+    assert.notEqual(a, b);
+    assert.equal(rows.size, 2);
+    assert.deepEqual(rows.get(a), unchanged);
+    assert.deepEqual(await storage.readTemplateEditorDraft("signup-forms", first.id), first);
+  } finally { globalThis.indexedDB = original; }
+});
+
 test("storage errors are surfaced, never reported as successful retention", async () => {
   const original = globalThis.indexedDB;
   try {

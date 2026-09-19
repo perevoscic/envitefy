@@ -13,7 +13,7 @@ import {
   TemplateMasonryGrid,
 } from "@/components/events/TemplateMasonryGallery";
 import SignupCustomThemeDialog from "@/components/smart-signup-form/SignupCustomThemeDialog";
-import { getPublicTemplates } from "@/lib/public-template-catalog";
+import { getPublicTemplates, matchesPublicTemplateSearch } from "@/lib/public-template-catalog";
 import { restoreSignupTheme } from "@/lib/signup-custom-theme";
 import { createEmptySignupTemplateForm } from "@/lib/signup-starters";
 import { applySignupThemeDetails } from "@/lib/signup-theme-brief";
@@ -78,10 +78,7 @@ export default function PublicTemplateGallery({
         (filter) =>
           !selectedFilters[filter.key] ||
           String(template[filter.key]) === selectedFilters[filter.key],
-      ) &&
-      `${template.name} ${template.description} ${template.style} ${template.audience || ""} ${template.keywords || ""}`
-        .toLowerCase()
-        .includes(query.trim().toLowerCase()),
+      ) && matchesPublicTemplateSearch(template, query),
   );
   const shown = featured ? templates.slice(0, 6) : filtered.slice(0, visible);
   useEffect(() => {

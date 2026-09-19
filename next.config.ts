@@ -21,7 +21,8 @@ const nextConfig = (phase: string): NextConfig => ({
     }));
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
+    tsconfigPath: "tsconfig.application.json",
   },
   // Only enable standalone output for production builds.
   // `next dev` is more stable when it runs without standalone packaging artifacts.

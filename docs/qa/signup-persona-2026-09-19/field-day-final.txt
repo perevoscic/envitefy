@@ -1,0 +1,26 @@
+✔ section rules permit one shift and multiple donations, but reject two shifts in both preview and server (4.9443ms)
+✔ preview and server enforce overall limits, quantities and required answers (0.4392ms)
+✔ quantities larger than total capacity cannot enter an impossible waitlist (0.2018ms)
+✔ mixed available/unavailable choices require explicit consent before whole-request waitlisting (0.6836ms)
+✔ a waitlisted response can be corrected without losing its identity or answers (0.8128ms)
+✔ cancellation remains available when closed and releases capacity; other parents cannot edit (6.6501ms)
+✔ an organizer can correct or cancel a waitlisted parent (0.3733ms)
+✔ section units and limits persist, while old quantity limits are retained without adding headcount (1.1043ms)
+✔ shift generation bounds the final shift and rejects invalid or excessive generation (0.5056ms)
+✔ teachers get exactly four appointments and repeat generation cannot duplicate them (75.8117ms)
+✔ replacing legacy starters is explicit and preserves authored, booked, and waitlisted choices (55.0286ms)
+✔ school use cases support punctuation, word order, and style searches (426.4038ms)
+✔ Field Day starter preserves current content and adds editable, persistable sections (0.4776ms)
+✔ school designs are discoverable through Field Day use-case keywords (95.2556ms)
+✔ publishing rejects invalid section limits (21.3363ms)
+✔ header date range includes end time and event timezone (7.8724ms)
+✔ date labels normalize ICU whitespace so server and browser hydrate identically (7.3008ms)
+✔ invitation roster is owner-only and never cached publicly (24.8563ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1673.8954

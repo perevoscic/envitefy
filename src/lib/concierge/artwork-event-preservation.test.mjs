@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { publicContentForDraft } from "./public-content.ts";
 import fs from "node:fs";
 import ts from "typescript";
 import { fallbackExtractConciergeDraft } from "./fallback.ts";
@@ -129,8 +130,8 @@ test("the chat image request receives the preserved facts and latest artwork dir
   const names = new Set(["draftHeadline", "draftSubheadline", "uniqueDisplayLine", "additionalLocationLine", "additionalLocationNarrative", "studioCategoryForDraft", "dateInputFromDraft", "localDateInputFromIso", "timeInputFromDraft", "draftVisualDirection", "buildStudioDetailsFromDraft"]);
   const helpers = ast.statements.filter(node => ts.isFunctionDeclaration(node) && names.has(node.name?.text));
   assert.equal(helpers.length, names.size);
-  const build = new Function("stringValue", "createInitialDetails", "skinLabelForDraft", `${ts.transpile(helpers.map(node => node.getText(ast)).join("\n"))}; return buildStudioDetailsFromDraft;`)(
-    value => typeof value === "string" ? value.trim() || null : null, () => ({}), () => "Birthday",
+  const build = new Function("stringValue", "createInitialDetails", "skinLabelForDraft", "publicContentForDraft", `${ts.transpile(helpers.map(node => node.getText(ast)).join("\n"))}; return buildStudioDetailsFromDraft;`)(
+    value => typeof value === "string" ? value.trim() || null : null, () => ({}), () => "Birthday", publicContentForDraft,
   );
   const draft = fallbackExtractConciergeDraft({ message: artworkCorrection, draft: birthdayDraft() });
   const details = build(draft);
@@ -138,7 +139,7 @@ test("the chat image request receives the preserved facts and latest artwork dir
   assert.equal(details.name, "Livia");
   assert.equal(details.age, "10");
   assert.equal(details.eventDate, "2099-09-25");
-  assert.equal(details.startTime, "4:00 PM");
+  assert.equal(details.startTime, "16:00");
   assert.equal(details.venueName, "AMC theater Grand Boulevard");
   assert.equal(details.location, details.venueName);
   assert.equal(details.additionalLocations[0].location, "Parkside Santa Rosa beach");

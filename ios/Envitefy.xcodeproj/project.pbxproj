@@ -1,0 +1,51 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+		A7103B5293F142CEBBB68605 = { isa = PBXFileReference; lastKnownFileType = "sourcecode.swift"; path = "AppConfiguration.swift"; sourceTree = "<group>"; };
+		5C6B8B10CF811BFC3388E4BC = { isa = PBXBuildFile; fileRef = A7103B5293F142CEBBB68605; };
+		C7693EFDB221CAD181F9B0D0 = { isa = PBXFileReference; lastKnownFileType = "sourcecode.swift"; path = "AuthenticationCoordinator.swift"; sourceTree = "<group>"; };
+		E0CEA1AA7A73A56A8C40273B = { isa = PBXBuildFile; fileRef = C7693EFDB221CAD181F9B0D0; };
+		86D465092A29DB63402DC3F2 = { isa = PBXFileReference; lastKnownFileType = "sourcecode.swift"; path = "BrowserModel.swift"; sourceTree = "<group>"; };
+		08E0ABED3E1C4AC7A0BA5409 = { isa = PBXBuildFile; fileRef = 86D465092A29DB63402DC3F2; };
+		60FD132D0744A274860EB0BB = { isa = PBXFileReference; lastKnownFileType = "sourcecode.swift"; path = "ContentView.swift"; sourceTree = "<group>"; };
+		AA0A5C4BFF213C0E93D001F5 = { isa = PBXBuildFile; fileRef = 60FD132D0744A274860EB0BB; };
+		76CCE4729B2B04B8B3EA8EB8 = { isa = PBXFileReference; lastKnownFileType = "sourcecode.swift"; path = "EnvitefyApp.swift"; sourceTree = "<group>"; };
+		D5CE12146B41A33D4826B814 = { isa = PBXBuildFile; fileRef = 76CCE4729B2B04B8B3EA8EB8; };
+		A54381D49BD3BE1416BB971E = { isa = PBXFileReference; lastKnownFileType = "folder.assetcatalog"; path = "Assets.xcassets"; sourceTree = "<group>"; };
+		257A96EDCCE20020F20F1A95 = { isa = PBXBuildFile; fileRef = A54381D49BD3BE1416BB971E; };
+		10ADD10ADB9A8EDB04BE5308 = { isa = PBXFileReference; lastKnownFileType = "text.plist.xml"; path = "PrivacyInfo.xcprivacy"; sourceTree = "<group>"; };
+		01BE46E99A0A65BEC3B9D0C3 = { isa = PBXBuildFile; fileRef = 10ADD10ADB9A8EDB04BE5308; };
+		E191B852C5B42F796FF85F0C = { isa = PBXFileReference; lastKnownFileType = "text.plist.xml"; path = "Info.plist"; sourceTree = "<group>"; };
+		A94DED5E3EAF8824E42AC8AE = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfigurationTests.swift; sourceTree = "<group>"; };
+		042E8C1135B2F5AAA3DCFE35 = { isa = PBXBuildFile; fileRef = A94DED5E3EAF8824E42AC8AE; };
+		76304AEA8FE0D705DFA8CF93 = { isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Envitefy.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		629EE28FE4537B0DEB1F56EE = { isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EnvitefyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9EE67FE495A76C735223A7FC = { isa = PBXGroup; children = (D4392A05693D658218A0A9B9, 31BCADF29425B3FAC57AAD8D, F73982DF12C42E4933883868,); sourceTree = "<group>"; };
+		D4392A05693D658218A0A9B9 = { isa = PBXGroup; children = (A7103B5293F142CEBBB68605, C7693EFDB221CAD181F9B0D0, 86D465092A29DB63402DC3F2, 60FD132D0744A274860EB0BB, 76CCE4729B2B04B8B3EA8EB8, A54381D49BD3BE1416BB971E, 10ADD10ADB9A8EDB04BE5308, E191B852C5B42F796FF85F0C,); path = Envitefy; sourceTree = "<group>"; };
+		31BCADF29425B3FAC57AAD8D = { isa = PBXGroup; children = (A94DED5E3EAF8824E42AC8AE,); path = EnvitefyTests; sourceTree = "<group>"; };
+		F73982DF12C42E4933883868 = { isa = PBXGroup; children = (76304AEA8FE0D705DFA8CF93, 629EE28FE4537B0DEB1F56EE,); name = Products; sourceTree = "<group>"; };
+		8F70E1FD4FA4AD3E927466FA = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (5C6B8B10CF811BFC3388E4BC, E0CEA1AA7A73A56A8C40273B, 08E0ABED3E1C4AC7A0BA5409, AA0A5C4BFF213C0E93D001F5, D5CE12146B41A33D4826B814,); runOnlyForDeploymentPostprocessing = 0; };
+		DA8F5EE116A07E9E2023554A = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (257A96EDCCE20020F20F1A95, 01BE46E99A0A65BEC3B9D0C3,); runOnlyForDeploymentPostprocessing = 0; };
+		DB2371576BADB8FCBB54D2E6 = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		BF83EB699F97894CAD9D8C0E = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (042E8C1135B2F5AAA3DCFE35,); runOnlyForDeploymentPostprocessing = 0; };
+		FB5C90EB018036720C0D5774 = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		93EC86C4F60B4A9B85EA4A21 = { isa = XCBuildConfiguration; buildSettings = { IPHONEOS_DEPLOYMENT_TARGET = "17.0"; SDKROOT = "iphoneos"; SWIFT_VERSION = "5.0"; CLANG_ENABLE_MODULES = "YES"; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; DEBUG_INFORMATION_FORMAT = "dwarf"; ENABLE_TESTABILITY = "YES"; }; name = Debug; };
+		32481942E5D5666576CB067B = { isa = XCBuildConfiguration; buildSettings = { IPHONEOS_DEPLOYMENT_TARGET = "17.0"; SDKROOT = "iphoneos"; SWIFT_VERSION = "5.0"; CLANG_ENABLE_MODULES = "YES"; SWIFT_OPTIMIZATION_LEVEL = "-O"; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; ENABLE_TESTABILITY = "NO"; }; name = Release; };
+		12E4F258B5D7789BBC19257B = { isa = XCConfigurationList; buildConfigurations = (93EC86C4F60B4A9B85EA4A21, 32481942E5D5666576CB067B,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		D32D515BBE91347C1EF7653C = { isa = XCBuildConfiguration; buildSettings = { CODE_SIGN_STYLE = "Automatic"; DEVELOPMENT_TEAM = ""; TARGETED_DEVICE_FAMILY = "1,2"; PRODUCT_NAME = "$(TARGET_NAME)"; MARKETING_VERSION = "1.0.0"; CURRENT_PROJECT_VERSION = "1"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks"; PRODUCT_BUNDLE_IDENTIFIER = "com.envitefy.app"; INFOPLIST_FILE = "Envitefy/Info.plist"; ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon"; ENABLE_PREVIEWS = "YES"; SUPPORTS_MACCATALYST = "NO"; SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = "NO"; SWIFT_EMIT_LOC_STRINGS = "YES"; }; name = Debug; };
+		D2E9F648D2593CFDC0FE4E8B = { isa = XCBuildConfiguration; buildSettings = { CODE_SIGN_STYLE = "Automatic"; DEVELOPMENT_TEAM = ""; TARGETED_DEVICE_FAMILY = "1,2"; PRODUCT_NAME = "$(TARGET_NAME)"; MARKETING_VERSION = "1.0.0"; CURRENT_PROJECT_VERSION = "1"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks"; PRODUCT_BUNDLE_IDENTIFIER = "com.envitefy.app"; INFOPLIST_FILE = "Envitefy/Info.plist"; ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon"; ENABLE_PREVIEWS = "YES"; SUPPORTS_MACCATALYST = "NO"; SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = "NO"; SWIFT_EMIT_LOC_STRINGS = "YES"; }; name = Release; };
+		C6A582B28F0EB821BF176C3C = { isa = XCConfigurationList; buildConfigurations = (D32D515BBE91347C1EF7653C, D2E9F648D2593CFDC0FE4E8B,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		22223992D166D6EFF5C0DE50 = { isa = XCBuildConfiguration; buildSettings = { CODE_SIGN_STYLE = "Automatic"; DEVELOPMENT_TEAM = ""; TARGETED_DEVICE_FAMILY = "1,2"; PRODUCT_NAME = "$(TARGET_NAME)"; MARKETING_VERSION = "1.0.0"; CURRENT_PROJECT_VERSION = "1"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks"; PRODUCT_BUNDLE_IDENTIFIER = "com.envitefy.app.tests"; GENERATE_INFOPLIST_FILE = "YES"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Envitefy.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Envitefy"; BUNDLE_LOADER = "$(TEST_HOST)"; }; name = Debug; };
+		88B00792F181FCC85AA059E1 = { isa = XCBuildConfiguration; buildSettings = { CODE_SIGN_STYLE = "Automatic"; DEVELOPMENT_TEAM = ""; TARGETED_DEVICE_FAMILY = "1,2"; PRODUCT_NAME = "$(TARGET_NAME)"; MARKETING_VERSION = "1.0.0"; CURRENT_PROJECT_VERSION = "1"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks"; PRODUCT_BUNDLE_IDENTIFIER = "com.envitefy.app.tests"; GENERATE_INFOPLIST_FILE = "YES"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Envitefy.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Envitefy"; BUNDLE_LOADER = "$(TEST_HOST)"; }; name = Release; };
+		0F2D546C71BFAB88C78A685D = { isa = XCConfigurationList; buildConfigurations = (22223992D166D6EFF5C0DE50, 88B00792F181FCC85AA059E1,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		2BEF88D86FCAB635DB16CE53 = { isa = PBXContainerItemProxy; containerPortal = 89E2FB5E4E6E018ED9987DBB; proxyType = 1; remoteGlobalIDString = 501CBCE683356CF68495A6E9; remoteInfo = Envitefy; };
+		579F8A399D57A3A47995AE84 = { isa = PBXTargetDependency; target = 501CBCE683356CF68495A6E9; targetProxy = 2BEF88D86FCAB635DB16CE53; };
+		501CBCE683356CF68495A6E9 = { isa = PBXNativeTarget; buildConfigurationList = C6A582B28F0EB821BF176C3C; buildPhases = (8F70E1FD4FA4AD3E927466FA, DB2371576BADB8FCBB54D2E6, DA8F5EE116A07E9E2023554A,); buildRules = (); dependencies = (); name = Envitefy; productName = Envitefy; productReference = 76304AEA8FE0D705DFA8CF93; productType = "com.apple.product-type.application"; };
+		0E50236B9CA2D5A174A7A012 = { isa = PBXNativeTarget; buildConfigurationList = 0F2D546C71BFAB88C78A685D; buildPhases = (BF83EB699F97894CAD9D8C0E, FB5C90EB018036720C0D5774,); buildRules = (); dependencies = (579F8A399D57A3A47995AE84,); name = EnvitefyTests; productName = EnvitefyTests; productReference = 629EE28FE4537B0DEB1F56EE; productType = "com.apple.product-type.bundle.unit-test"; };
+		89E2FB5E4E6E018ED9987DBB = { isa = PBXProject; attributes = { BuildIndependentTargetsInParallel = YES; LastUpgradeCheck = 1600; TargetAttributes = { 0E50236B9CA2D5A174A7A012 = { TestTargetID = 501CBCE683356CF68495A6E9; }; }; }; buildConfigurationList = 12E4F258B5D7789BBC19257B; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = 9EE67FE495A76C735223A7FC; productRefGroup = F73982DF12C42E4933883868; projectDirPath = ""; projectRoot = ""; targets = (501CBCE683356CF68495A6E9, 0E50236B9CA2D5A174A7A012,); };
+	};
+	rootObject = 89E2FB5E4E6E018ED9987DBB;
+}

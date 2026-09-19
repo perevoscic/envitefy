@@ -32,6 +32,14 @@ export type StudioLikenessStrength = "strict" | "balanced" | "creative";
 export type StudioVisualStyleMode = "photoreal" | "editorial_cinematic" | "playful_stylized";
 
 export type EventDetails = {
+  /** Canonical event identity; category may select a shared studio visual family. */
+  eventKind?: string;
+  guestInstructions?: string[];
+  requiredArtworkLines?: string[];
+  semanticKind?: string | null;
+  pageTypography?: import("@/lib/studio/product-edit-plan").PageTypography;
+  calendarStartISO?: string;
+  calendarEndISO?: string;
   product?: import("@/lib/studio/product-contract").StudioProduct;
   approvedWording?: string;
   rsvpEnabled?: boolean;
@@ -153,6 +161,8 @@ export type ButtonPosition = {
 };
 
 export type InvitationData = {
+  diagnostics?: import("@/lib/studio/types").StudioGenerationDiagnostics;
+  artworkContract?: import("@/lib/studio/artwork-copy").ApprovedArtworkContract;
   artworkTextMode?: import("@/lib/concierge/artwork-change").ArtworkTextMode;
   artworkNotice?: string;
   creativePlan?: import("@/lib/studio/product-contract").StudioCreativePlan;
@@ -205,7 +215,7 @@ export type MediaItem = {
 export type FieldConfig = {
   label: string;
   key: keyof EventDetails;
-  type: "text" | "number" | "date" | "time" | "checkbox" | "textarea" | "select";
+  type: "text" | "number" | "date" | "time" | "checkbox" | "textarea" | "select" | "url";
   options?: string[];
   placeholder?: string;
   required?: boolean;

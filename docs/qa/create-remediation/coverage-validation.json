@@ -1,0 +1,157 @@
+{
+  "generatedAt": "2026-09-19T15:43:19.165Z",
+  "mode": "planning_artifact_integrity_only_not_application_tests",
+  "result": "passed",
+  "counts": {
+    "sourceFiles": 463,
+    "uniqueCaseFindingKeys": 584,
+    "variants": 595,
+    "qaAssertions": 117,
+    "currentCases": 93,
+    "mappedFindings": 584,
+    "mappedCases": 93,
+    "observedFixPackages": 28,
+    "executionPackages": 3,
+    "supplementaryNarrativeItems": 4,
+    "validatedJsonPointers": 2888,
+    "evidenceReferences": 1845,
+    "unmappedFindings": 0
+  },
+  "classifications": {
+    "observed_product_issue_reproduce_and_fix": 390,
+    "raw_assertion_requires_adjudication": 36,
+    "historical_regression_replay": 47,
+    "corrected_checker_result_preserve_control": 34,
+    "execution_stop_classify_and_retest": 17,
+    "infrastructure_or_operational_control": 20,
+    "raw_assertion_corroborated_by_review": 27,
+    "observation_requires_reproduction": 4,
+    "bounded_verified_fix_retest_guard": 9
+  },
+  "sourceIntegrity": "All 463 structured source hashes verified against the inventory at generation time.",
+  "dependencyGraph": "All task IDs resolve and graph is acyclic.",
+  "evidenceRebindings": [
+    {
+      "findingKey": "anniversary--event_page::anniversary-end-time-disagrees-with-iso",
+      "originalPath": ".qa/create-campaign/2026-09-18/cases/anniversary--event_page/result.json",
+      "resolvedPath": ".qa/create-campaign/2026-09-18/cases/anniversary--event_page/attempts/2026-09-19T03-02-15-137Z/result.json",
+      "resultFinishedAt": "2026-09-19T03:02:26.041Z"
+    },
+    {
+      "findingKey": "anniversary--event_page::anniversary-event-page-and-title-not-captured",
+      "originalPath": ".qa/create-campaign/2026-09-18/cases/anniversary--event_page/result.json",
+      "resolvedPath": ".qa/create-campaign/2026-09-18/cases/anniversary--event_page/attempts/2026-09-19T03-02-15-137Z/result.json",
+      "resultFinishedAt": "2026-09-19T03:02:26.041Z"
+    },
+    {
+      "findingKey": "anniversary--event_page::anniversary-time-location-pairing-lost",
+      "originalPath": ".qa/create-campaign/2026-09-18/cases/anniversary--event_page/result.json",
+      "resolvedPath": ".qa/create-campaign/2026-09-18/cases/anniversary--event_page/attempts/2026-09-19T03-02-15-137Z/result.json",
+      "resultFinishedAt": "2026-09-19T03:02:26.041Z"
+    },
+    {
+      "findingKey": "baby_shower--digital_flyer::baby-shower-supplied-title-not-in-generation-headline",
+      "originalPath": ".qa/create-campaign/2026-09-18/cases/baby_shower--digital_flyer/result.json",
+      "resolvedPath": ".qa/create-campaign/2026-09-18/cases/baby_shower--digital_flyer/attempts/2026-09-19T03-02-26-238Z/result.json",
+      "resultFinishedAt": "2026-09-19T03:02:37.245Z"
+    },
+    {
+      "findingKey": "birthday--live_card::birthday-approved-slogan-not-in-generation-copy",
+      "originalPath": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/result.json",
+      "resolvedPath": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/result-before-1789791561469.json",
+      "resultFinishedAt": "2026-09-19T02:45:54.243Z"
+    },
+    {
+      "findingKey": "birthday--live_card::birthday-generation-budget-block",
+      "originalPath": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/result.json",
+      "resolvedPath": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/result-before-1789791561469.json",
+      "resultFinishedAt": "2026-09-19T02:45:54.243Z"
+    },
+    {
+      "findingKey": "birthday--live_card::birthday-theme-prompt-fragment",
+      "originalPath": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/result.json",
+      "resolvedPath": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/result-before-1789791561469.json",
+      "resultFinishedAt": "2026-09-19T02:45:54.243Z"
+    },
+    {
+      "findingKey": "birthday--live_card::birthday-unsupplied-end-time",
+      "originalPath": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/result.json",
+      "resolvedPath": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/result-before-1789791561469.json",
+      "resultFinishedAt": "2026-09-19T02:45:54.243Z"
+    },
+    {
+      "findingKey": "field_trip--event_page::field-trip-corrected-return-stale-display-times",
+      "originalPath": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/result.json",
+      "resolvedPath": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/attempts/2026-09-19T02-59-08-047Z/result.json",
+      "resultFinishedAt": "2026-09-19T02:59:41.818Z"
+    },
+    {
+      "findingKey": "field_trip--event_page::field-trip-preview-headline-raw-prompt",
+      "originalPath": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/result.json",
+      "resolvedPath": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/attempts/2026-09-19T02-59-08-047Z/result.json",
+      "resultFinishedAt": "2026-09-19T02:59:41.818Z"
+    },
+    {
+      "findingKey": "field_trip--event_page::field-trip-school-form-link-unverified",
+      "originalPath": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/result.json",
+      "resolvedPath": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/attempts/2026-09-19T02-59-08-047Z/result.json",
+      "resultFinishedAt": "2026-09-19T02:59:41.818Z"
+    },
+    {
+      "findingKey": "field_trip--event_page::field-trip-venue-name-overwritten",
+      "originalPath": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/result.json",
+      "resolvedPath": ".qa/create-campaign/2026-09-18/cases/field_trip--event_page/attempts/2026-09-19T02-59-08-047Z/result.json",
+      "resultFinishedAt": "2026-09-19T02:59:41.818Z"
+    },
+    {
+      "findingKey": "football--digital_flyer::football-address-correction-changes-category",
+      "originalPath": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/result.json",
+      "resolvedPath": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/attempts/2026-09-19T02-59-42-056Z/result.json",
+      "resultFinishedAt": "2026-09-19T02:59:54.382Z"
+    },
+    {
+      "findingKey": "football--digital_flyer::football-arrival-home-away-not-in-generation-facts",
+      "originalPath": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/result.json",
+      "resolvedPath": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/attempts/2026-09-19T02-59-42-056Z/result.json",
+      "resultFinishedAt": "2026-09-19T02:59:54.382Z"
+    },
+    {
+      "findingKey": "football--digital_flyer::football-theme-changes-on-rsvp-contact",
+      "originalPath": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/result.json",
+      "resolvedPath": ".qa/create-campaign/2026-09-18/cases/football--digital_flyer/attempts/2026-09-19T02-59-42-056Z/result.json",
+      "resultFinishedAt": "2026-09-19T02:59:54.382Z"
+    },
+    {
+      "findingKey": "gymnastics--live_card::gymnastics-labeled-schedule-not-preserved",
+      "originalPath": ".qa/create-campaign/2026-09-18/cases/gymnastics--live_card/result.json",
+      "resolvedPath": ".qa/create-campaign/2026-09-18/cases/gymnastics--live_card/attempts/2026-09-19T03-01-47-670Z/result.json",
+      "resultFinishedAt": "2026-09-19T03:02:14.849Z"
+    },
+    {
+      "findingKey": "gymnastics--live_card::gymnastics-negated-birthday-becomes-category",
+      "originalPath": ".qa/create-campaign/2026-09-18/cases/gymnastics--live_card/result.json",
+      "resolvedPath": ".qa/create-campaign/2026-09-18/cases/gymnastics--live_card/attempts/2026-09-19T03-01-47-670Z/result.json",
+      "resultFinishedAt": "2026-09-19T03:02:14.849Z"
+    },
+    {
+      "findingKey": "gymnastics--live_card::gymnastics-unsaved-progress-called-saved",
+      "originalPath": ".qa/create-campaign/2026-09-18/cases/gymnastics--live_card/result.json",
+      "resolvedPath": ".qa/create-campaign/2026-09-18/cases/gymnastics--live_card/attempts/2026-09-19T03-01-47-670Z/result.json",
+      "resultFinishedAt": "2026-09-19T03:02:14.849Z"
+    },
+    {
+      "findingKey": "gymnastics--live_card::gymnastics-venue-and-organizer-fragments",
+      "originalPath": ".qa/create-campaign/2026-09-18/cases/gymnastics--live_card/result.json",
+      "resolvedPath": ".qa/create-campaign/2026-09-18/cases/gymnastics--live_card/attempts/2026-09-19T03-01-47-670Z/result.json",
+      "resultFinishedAt": "2026-09-19T03:02:14.849Z"
+    }
+  ],
+  "evidenceLimitations": [
+    {
+      "findingKey": "birthday--live_card::birthday-generation-budget-block",
+      "path": ".qa/create-campaign/2026-09-18/cases/birthday--live_card/stopped.png",
+      "note": "Historical evidence uses a mutable top-level path without an established archived binding. File existence is verified, but it is not claimed to be an attempt-bound visual fixture. Use the bound transcript/result and retain this limitation."
+    }
+  ],
+  "errors": []
+}

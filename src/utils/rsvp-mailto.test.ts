@@ -5,6 +5,7 @@ import {
   buildRsvpMailAppChoices,
   getRsvpMailPlatform,
   isRsvpMailtoHref,
+  openRsvpMailtoHref,
 } from "./rsvp-mailto.ts";
 
 test("isRsvpMailtoHref accepts only mailto links", () => {
@@ -12,6 +13,21 @@ test("isRsvpMailtoHref accepts only mailto links", () => {
   assert.equal(isRsvpMailtoHref(" MAILTO:host@example.com"), true);
   assert.equal(isRsvpMailtoHref("https://example.com"), false);
   assert.equal(isRsvpMailtoHref("sms:+15551234567"), false);
+  assert.equal(isRsvpMailtoHref(null), false);
+  assert.equal(isRsvpMailtoHref(undefined), false);
+  assert.equal(isRsvpMailtoHref(""), false);
+});
+
+test("opening missing or non-mail RSVP links is a no-op in a browser", (context) => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, "window");
+  Object.defineProperty(globalThis, "window", { configurable: true, value: {} });
+  context.after(() => {
+    if (original) Object.defineProperty(globalThis, "window", original);
+    else Reflect.deleteProperty(globalThis, "window");
+  });
+  for (const href of [null, undefined, "", "https://example.com/rsvp"]) {
+    assert.equal(openRsvpMailtoHref(href), false);
+  }
 });
 
 test("getRsvpMailPlatform distinguishes macOS from touch iPadOS", () => {

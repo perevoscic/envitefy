@@ -1,0 +1,2207 @@
+{
+  "count": 117,
+  "assertions": [
+    {
+      "caseId": "anniversary--digital_flyer",
+      "attemptId": "2026-09-19T06-09-13-025Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/anniversary--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the page show the vow renewal and dinner as two different locations without mixing up the times?",
+      "answer": "Yes. An Event Page is the clearest fit: it can present a schedule with separate entries for the vow renewal, 2:00–6:30 PM at Maple Community Center, Room A, and dinner at 5:00 PM at Example Garden Room, each with its own address. That avoids implying both events occur at one venue.\n\nYour current Flyer/Invitation can still be designed with the same clearly labeled two-location schedule, but it is a single piece of artwork rather than a full guest-facing page.",
+      "expectedBehavior": "Keep the two supplied locations and times distinct and preserve the anniversary milestone.",
+      "verdict": "partially correct capability explanation; supplied-fact handling fails",
+      "detail": null,
+      "assertionId": "QA-001",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "anniversary--event_page",
+      "attemptId": "2026-09-19T03-02-15-137Z",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/anniversary--event_page-before-1789792444404.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the page show the vow renewal and dinner as two different locations without mixing up the times?",
+      "verdict": "correct_capability_but_state_not_preserved",
+      "detail": null,
+      "assertionId": "QA-002",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "anniversary--event_page",
+      "attemptId": "2026-09-19T03-02-15-137Z",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/anniversary--event_page-before-1789794472489.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the page show the vow renewal and dinner as two different locations without mixing up the times?",
+      "verdict": "correct_capability_but_state_not_preserved",
+      "detail": null,
+      "assertionId": "QA-003",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "anniversary--event_page",
+      "attemptId": "2026-09-19T03-02-15-137Z",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/anniversary--event_page-before-1789795211793.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the page show the vow renewal and dinner as two different locations without mixing up the times?",
+      "verdict": "correct_capability_but_state_not_preserved",
+      "detail": null,
+      "assertionId": "QA-004",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "anniversary--event_page",
+      "attemptId": "2026-09-19T05-07-52-493Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/anniversary--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the page show the vow renewal and dinner as two different locations without mixing up the times?",
+      "answer": "Yes. An event page can present a clear schedule with separate entries: Vow Renewal at 2:00 PM at Maple Community Center, Room A, followed by Dinner at 5:00 PM at Example Garden Room, ending at 6:30 PM. That format is the best fit for keeping the two locations and times distinct.",
+      "expectedBehavior": "Keep the two supplied locations and times distinct, including the 5 PM dinner.",
+      "verdict": "correct_capability_not_realized",
+      "detail": null,
+      "assertionId": "QA-005",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "anniversary--live_card",
+      "attemptId": "2026-09-19T06-07-38-814Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/anniversary--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the page show the vow renewal and dinner as two different locations without mixing up the times?",
+      "answer": "The assistant promises Vow Renewal at 2 PM, Dinner at 5 PM and 6:30 PM overall end.",
+      "expectedBehavior": "Two labeled locations retain their specific times and the primary overall range.",
+      "verdict": "failed",
+      "detail": null,
+      "assertionId": "QA-006",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "appointment--digital_flyer",
+      "attemptId": "2026-09-19T12-44-19-560Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/appointment--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Does this create a booking in my photographer's calendar automatically?",
+      "answer": "No. This creates invitation artwork only; it does not automatically book time on a photographer’s calendar or connect to a scheduling system.\n\nFor this confirmed Rivera family session, the simplest approach is to use the flyer as an appointment reminder and keep the calendar booking managed separately.",
+      "expectedBehavior": "Do not claim an external booking or calendar write occurred; explain available calendar actions.",
+      "verdict": "Correct on automatic booking, incomplete on calendar options",
+      "detail": null,
+      "assertionId": "QA-007",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "appointment--event_page",
+      "attemptId": "2026-09-19T05-28-14-633Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/appointment--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Does this create a booking in my photographer's calendar automatically?",
+      "answer": "No. The event page does not create or sync a booking in your photographer’s calendar automatically. It can show the confirmed appointment details and offer calendar actions for viewers, but the photographer’s calendar booking needs to be managed separately.",
+      "expectedBehavior": "Do not claim an external booking or calendar write occurred; explain available calendar actions.",
+      "verdict": "correct",
+      "detail": null,
+      "assertionId": "QA-008",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "appointment--live_card",
+      "attemptId": "2026-09-19T12-42-23-980Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/appointment--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Does this create a booking in my photographer's calendar automatically?",
+      "answer": "No. A live card only presents the confirmed appointment details; it does not create or sync a booking in your photographer’s calendar.\n\nFor this one Rivera family session, treat the card as a clear appointment confirmation and add the September 23, 2026, 2:00–3:00 PM session to the photographer’s calendar separately.",
+      "expectedBehavior": "Do not claim an external booking or calendar write occurred; explain available calendar actions.",
+      "verdict": "passed",
+      "detail": null,
+      "assertionId": "QA-009",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "baby_shower--digital_flyer",
+      "attemptId": "2026-09-19T03-02-26-238Z",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/baby_shower--digital_flyer-before-1789794602945.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the flyer keep both English and Spanish wording exactly as I give it?",
+      "verdict": "correct_for_captured_text_state",
+      "detail": null,
+      "assertionId": "QA-010",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "baby_shower--digital_flyer",
+      "attemptId": "2026-09-19T03-02-26-238Z",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/baby_shower--digital_flyer-before-1789795211817.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the flyer keep both English and Spanish wording exactly as I give it?",
+      "verdict": "correct_for_captured_text_state",
+      "detail": null,
+      "assertionId": "QA-011",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "baby_shower--digital_flyer",
+      "attemptId": "2026-09-19T05-10-02-948Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/baby_shower--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the flyer keep both English and Spanish wording exactly as I give it?",
+      "answer": "Yes. The flyer can preserve both English and Spanish wording exactly as you provide it, including:\n\n“A little sunshine is on the way”\n“Un rayito de sol viene en camino”\n\nI’ll keep the bilingual text readable and unchanged in the artwork.",
+      "expectedBehavior": "Preserve both supplied language lines exactly; do not invent a translation, registry, or baby's sex.",
+      "verdict": "correct",
+      "detail": null,
+      "assertionId": "QA-012",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "baby_shower--event_page",
+      "attemptId": "2026-09-19T06-13-21-874Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/baby_shower--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the flyer keep both English and Spanish wording exactly as I give it?",
+      "answer": "Yes. A flyer can preserve both English and Spanish lines exactly as you provide them, including:\n\n“A little sunshine is on the way”\n“Un rayito de sol viene en camino”\n\nFor this event, I’d keep them as separate, equally prominent lines for clear bilingual reading.",
+      "expectedBehavior": "Preserve both supplied language lines exactly; do not invent a translation, registry, or baby's sex.",
+      "verdict": "partial",
+      "detail": null,
+      "assertionId": "QA-013",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "baby_shower--live_card",
+      "attemptId": "2026-09-19T06-11-10-621Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/baby_shower--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the flyer keep both English and Spanish wording exactly as I give it?",
+      "answer": "The assistant says yes and clarifies that the selected format is Live Card; the same exact-copy approach can apply to a flyer.",
+      "expectedBehavior": "Retain both exact lines without changing the selected output just because a capability question mentions another format.",
+      "verdict": "passed_wording_with_preview_readability_failure",
+      "detail": null,
+      "assertionId": "QA-014",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "baseball--digital_flyer",
+      "attemptId": "2026-09-19T13-09-48-592Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/baseball--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I include equipment instructions without creating a fake game opponent?",
+      "answer": "Yes. Include a simple “Bring a glove and water” line under clinic details, and describe it as throwing and fielding practice. No opponent, game matchup, or score needs to appear.",
+      "expectedBehavior": "Preserve clinic intent, equipment, and age range without invented match facts.",
+      "verdict": "Partially fulfilled: exclusions honored, required equipment omitted",
+      "detail": null,
+      "assertionId": "QA-015",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "baseball--event_page",
+      "attemptId": "2026-09-19T13-11-58-445Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/baseball--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I include equipment instructions without creating a fake game opponent?",
+      "answer": "Yes. We can include a “What to Bring” section telling players ages 10–12 to bring a glove and water, plus a clinic overview for throwing and fielding practice. It will stay clearly framed as a skills clinic, with no opponent, matchup, or score.",
+      "expectedBehavior": "Preserve clinic intent, equipment, and age range without invented match facts.",
+      "verdict": "partially_correct_but_unfulfilled",
+      "detail": null,
+      "assertionId": "QA-016",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "baseball--live_card",
+      "attemptId": "2026-09-19T05-42-42-716Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/baseball--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I include equipment instructions without creating a fake game opponent?",
+      "answer": "Yes. The Live card can clearly say: “Players ages 10–12: please bring a glove and water. We’ll focus on throwing and fielding skills.” I’d keep it framed as a clinic rather than a game, with no opponent or score mentioned.",
+      "expectedBehavior": "Retain supplied equipment/eligibility/practice details without fabricating an opponent or score.",
+      "verdict": "partial_no_fabrication_but_instruction_delivery_failed",
+      "detail": null,
+      "assertionId": "QA-017",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "basketball--digital_flyer",
+      "attemptId": "2026-09-19T13-08-02-768Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/basketball--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I mark this as a scrimmage so parents do not mistake it for a league game?",
+      "answer": "Yes — it’s clearly marked as “Cedar Hawks Basketball Scrimmage,” and I’ll add “Practice Scrimmage — Not a League Final” so parents won’t mistake it for a league game.",
+      "expectedBehavior": "Retain scrimmage wording and do not invent league standings or scores.",
+      "verdict": "Partially fulfilled",
+      "detail": null,
+      "assertionId": "QA-018",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "basketball--event_page",
+      "attemptId": "2026-09-19T05-40-42-612Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/basketball--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I mark this as a scrimmage so parents do not mistake it for a league game?",
+      "answer": "Yes — it’s clearly labeled “Cedar Hawks Basketball Scrimmage,” with “Practice scrimmage — not a league final” included in the event details so parents won’t mistake it for a league game.",
+      "expectedBehavior": "Retain scrimmage wording and do not invent league standings or scores.",
+      "verdict": "partially_inaccurate_inclusion_claim",
+      "detail": null,
+      "assertionId": "QA-019",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "basketball--live_card",
+      "attemptId": "2026-09-19T13-05-38-606Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/basketball--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I mark this as a scrimmage so parents do not mistake it for a league game?",
+      "answer": "Yes. The card can state “Practice Scrimmage — Not a League Game” prominently near the matchup, so parents have a clear distinction.",
+      "expectedBehavior": "Retain scrimmage wording and do not invent league standings or scores.",
+      "verdict": "partial_scrimmage_title_retained_promised_clarification_missing",
+      "detail": null,
+      "assertionId": "QA-020",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "birthday--digital_flyer",
+      "attemptId": "2026-09-19T06-00-30-819Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/birthday--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the guests RSVP from the downloadable flyer or invitation, or do I have to message everyone separately?",
+      "answer": "Guests can RSVP from the shared invitation link when RSVP is enabled; they’ll enter their name and email and choose yes, no, or maybe. You’ll need to share the invitation or link with guests yourself, but you do not need to collect replies separately by message.",
+      "expectedBehavior": "Explain the actual RSVP capability of the selected format; do not promise automatic guest messaging.",
+      "verdict": "correct for the shared link; local form verified",
+      "detail": null,
+      "assertionId": "QA-021",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "birthday--event_page",
+      "attemptId": "2026-09-19T06-02-25-627Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/birthday--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the guests RSVP from the event page, or do I have to message everyone separately?",
+      "answer": "Guests can RSVP directly on the event page. They’ll enter their name and email, then choose yes, no, or maybe; responses are kept with Nora’s event rather than scattered across messages.",
+      "expectedBehavior": "Explain the actual RSVP capability of the selected format; do not promise automatic guest messaging.",
+      "verdict": "pass",
+      "detail": null,
+      "assertionId": "QA-022",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "birthday--live_card",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/birthday--live_card-before-1789791561469.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the guests RSVP from the live card, or do I have to message everyone separately?",
+      "answer": "Guests can RSVP directly from the Live card using the RSVP action. They’ll enter their name and email, then choose yes, no, or maybe; responses stay attached to Nora’s event rather than getting lost in separate messages.",
+      "expectedBehavior": "Explain the actual RSVP capability of the selected format; do not promise automatic guest messaging.",
+      "verdict": "mostly_correct",
+      "detail": null,
+      "assertionId": "QA-023",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "birthday--live_card",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/birthday--live_card-before-1789792132452.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the guests RSVP from the live card, or do I have to message everyone separately?",
+      "answer": "Guests can RSVP directly from the Live card using the RSVP action. They’ll enter their name and email, then choose yes, no, or maybe; responses stay attached to Nora’s event rather than getting lost in separate messages.",
+      "expectedBehavior": "Explain the actual RSVP capability of the selected format; do not promise automatic guest messaging.",
+      "verdict": "mostly_correct",
+      "detail": null,
+      "assertionId": "QA-024",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "birthday--live_card",
+      "attemptId": "2026-09-19T04-28-52-456Z",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/birthday--live_card-before-1789792748127.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the guests RSVP from the live card, or do I have to message everyone separately?",
+      "answer": "Guests can RSVP directly from the live card using the RSVP action. They’ll enter their name and email and choose yes, no, or maybe, so you won’t need to collect replies separately.",
+      "expectedBehavior": "Explain standard RSVP on the chosen format without promising automatic invitations or messaging.",
+      "verdict": "correct",
+      "detail": null,
+      "assertionId": "QA-025",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "birthday--live_card",
+      "attemptId": "2026-09-19T04-39-08-132Z",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/birthday--live_card-before-1789828685459.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the guests RSVP from the live card, or do I have to message everyone separately?",
+      "answer": "Guests can RSVP directly from Nora’s Live card using the visible RSVP action. They’ll enter their name and email, then choose yes, no, or maybe—so you can share the card link rather than message everyone separately.",
+      "expectedBehavior": "Explain supported live-card RSVP without promising automatic guest messaging.",
+      "verdict": "correct",
+      "detail": null,
+      "assertionId": "QA-026",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "birthday--live_card",
+      "attemptId": "2026-09-19T14-38-05-462Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/birthday--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the guests RSVP from the live card, or do I have to message everyone separately?",
+      "answer": "Guests can RSVP directly from the live card. It will include a visible RSVP action where they enter their name and email and choose yes, no, or maybe, so you do not need to message each guest separately.",
+      "expectedBehavior": "Explain the actual RSVP capability of the selected format; do not promise automatic guest messaging.",
+      "verdict": "passed_direct_rsvp_capability_with_choice_coverage_limit",
+      "detail": null,
+      "assertionId": "QA-027",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "bridal_shower--digital_flyer",
+      "attemptId": "2026-09-19T06-21-53-313Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/bridal_shower--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I leave the registry off and add a real link later?",
+      "answer": "Yes. The registry can stay off for now, and you can add a real link later when you have it.",
+      "expectedBehavior": "Explain editing of available fields without generating a registry URL.",
+      "verdict": "supported explanation; later edit not exercised",
+      "detail": null,
+      "assertionId": "QA-028",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "bridal_shower--event_page",
+      "attemptId": "2026-09-19T05-15-44-022Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/bridal_shower--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I leave the registry off and add a real link later?",
+      "answer": "Yes. We can leave the registry off now and add the real link later when you have it.",
+      "expectedBehavior": "Explain editing of available fields without generating a registry URL.",
+      "verdict": "absence_verified_later_edit_not_exercised",
+      "detail": null,
+      "assertionId": "QA-029",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "bridal_shower--live_card",
+      "attemptId": "2026-09-19T06-19-58-581Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/bridal_shower--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I leave the registry off and add a real link later?",
+      "answer": "Yes, it can stay off for now and the real link can be added later.",
+      "expectedBehavior": "Do not fabricate or show a registry when none is supplied; support a later real link.",
+      "verdict": "passed_current_state_later_edit_untested",
+      "detail": null,
+      "assertionId": "QA-030",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "cheerleading--digital_flyer",
+      "attemptId": "2026-09-19T05-38-53-165Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/cheerleading--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can this look like cheerleading without changing it into a football event?",
+      "answer": "Yes. I’ll keep the design centered on a cheer showcase: teal-and-white pom-poms, motion ribbons, megaphone or bow accents, and performance-style typography—without footballs, field markings, helmets, or game language.",
+      "expectedBehavior": "Preserve cheer activity and avoid football substitution.",
+      "verdict": "correct; visual promise fulfilled",
+      "detail": null,
+      "assertionId": "QA-031",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "cheerleading--event_page",
+      "attemptId": "2026-09-19T13-04-02-348Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/cheerleading--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can this look like cheerleading without changing it into a football event?",
+      "answer": "Yes. I’ll keep the design centered on cheerleading: teal-and-white pom-poms, motion, team-spirit energy, and showcase-stage cues, with no football imagery, field graphics, or game language.",
+      "expectedBehavior": "Preserve the cheer activity and supplied event facts.",
+      "verdict": "correct",
+      "detail": null,
+      "assertionId": "QA-032",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "cheerleading--live_card",
+      "attemptId": "2026-09-19T13-02-01-336Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/cheerleading--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can this look like cheerleading without changing it into a football event?",
+      "answer": "Yes. I’ll use unmistakable cheer elements such as pom-poms, motion lines, megaphone-style accents, team-spirit typography, and teal-and-white energy—without footballs, fields, touchdowns, or game-day language. The wording will stay centered on the squad’s showcase performance.",
+      "expectedBehavior": "Preserve the cheer activity and supplied event facts.",
+      "verdict": "passed_subject_preserved",
+      "detail": null,
+      "assertionId": "QA-033",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "dance--digital_flyer",
+      "attemptId": "2026-09-19T12-58-05-490Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/dance--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can you keep performer arrival separate from when guests should come?",
+      "answer": "Yes. The flyer will show “Performers arrive: 1 PM” separately from the guest-facing “Audience doors open: 1:30 PM” and “Showtime: 2 PM,” so guests have a clear arrival time without confusion.",
+      "expectedBehavior": "Distinguish performer arrival, doors, and show time.",
+      "verdict": "Fulfilled for visible time distinction; underlying schedule metadata fails separately",
+      "detail": null,
+      "assertionId": "QA-034",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "dance--event_page",
+      "attemptId": "2026-09-19T12-59-53-244Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/dance--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can you keep performer arrival separate from when guests should come?",
+      "answer": "Yes. I’ll keep “Performers arrive at 1:00 PM” as a separate performer call time, while guest-facing details show “Doors open at 1:30 PM” and “Show begins at 2:00 PM.”",
+      "expectedBehavior": "Distinguish performer arrival, doors, and show time.",
+      "verdict": "incorrect_promise",
+      "detail": null,
+      "assertionId": "QA-035",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "dance--live_card",
+      "attemptId": "2026-09-19T05-36-18-467Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/dance--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can you keep performer arrival separate from when guests should come?",
+      "answer": "Yes. I’ll list performer arrival separately as “Performers: arrive at 1:00 PM,” while guest-facing details will say “Doors open at 1:30 PM” and “Show: 2:00–4:00 PM.”",
+      "expectedBehavior": "Retain separately labeled performer arrival, guest doors and show timing.",
+      "verdict": "failed_promised_behavior_not_delivered",
+      "detail": null,
+      "assertionId": "QA-036",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "field_trip--digital_flyer",
+      "attemptId": "2026-09-19T12-32-06-828Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/field_trip--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can parents sign a legally binding permission slip here, or should I link our school's form?",
+      "answer": "Parents can use the RSVP to respond yes, no, or maybe, but it can’t collect a legally binding permission signature or a custom school consent form. I recommend linking your school’s official permission-slip form in the flyer or invitation; it keeps consent in your district-approved process while the RSVP remains a simple attendance check.",
+      "expectedBehavior": "Explain the actual product capability and avoid claiming legally binding school consent; recommend the school's supplied form when appropriate.",
+      "verdict": "Correct and appropriately bounded",
+      "detail": null,
+      "assertionId": "QA-037",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "field_trip--event_page",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/field_trip--event_page-before-1789792236452.json",
+      "pointer": "/qaResults/0",
+      "question": "Can parents sign a legally binding permission slip here, or should I link our school's form?",
+      "answer": "Use your school’s official permission form and link it on the Event page. The built-in RSVP only collects a parent’s name, email, and yes/no/maybe response, so it is not a legally binding permission-slip tool.",
+      "expectedBehavior": "Explain actual product capability, avoid claiming a school-consent/signature service, and recommend the school's own form.",
+      "verdict": "partially_verified",
+      "detail": null,
+      "assertionId": "QA-038",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "field_trip--event_page",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/field_trip--event_page-before-1789792839852.json",
+      "pointer": "/qaResults/0",
+      "question": "Can parents sign a legally binding permission slip here, or should I link our school's form?",
+      "answer": "Use your school’s official permission form and link it on the Event page. The built-in RSVP only collects a parent’s name, email, and yes/no/maybe response, so it is not a legally binding permission-slip tool.",
+      "expectedBehavior": "Explain actual product capability, avoid claiming a school-consent/signature service, and recommend the school's own form.",
+      "verdict": "partially_verified",
+      "detail": null,
+      "assertionId": "QA-039",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "field_trip--event_page",
+      "attemptId": "2026-09-19T04-40-39-855Z",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/field_trip--event_page-before-1789793713083.json",
+      "pointer": "/qaResults/0",
+      "question": "Can parents sign a legally binding permission slip here, or should I link our school's form?",
+      "answer": "Use your school’s official permission-slip form. This Event page’s RSVP can only collect a parent’s name, email, and yes/no/maybe response, so it isn’t a legally binding signature tool.\n\nAdd the school form as a link on the page and make completion of that form the required permission step.",
+      "expectedBehavior": "Do not represent ordinary RSVP as a school permission-signature tool; explain actual capability and defer permission to the school's supplied form.",
+      "verdict": "correct core limitation; school-form link workflow unverified",
+      "detail": null,
+      "assertionId": "QA-040",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "field_trip--event_page",
+      "attemptId": "2026-09-19T04-40-39-855Z",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/field_trip--event_page-before-1789794003187.json",
+      "pointer": "/qaResults/0",
+      "question": "Can parents sign a legally binding permission slip here, or should I link our school's form?",
+      "answer": "Use your school’s official permission-slip form. This Event page’s RSVP can only collect a parent’s name, email, and yes/no/maybe response, so it isn’t a legally binding signature tool.\n\nAdd the school form as a link on the page and make completion of that form the required permission step.",
+      "expectedBehavior": "Do not represent ordinary RSVP as a school permission-signature tool; explain actual capability and defer permission to the school's supplied form.",
+      "verdict": "correct core limitation; school-form link workflow unverified",
+      "detail": null,
+      "assertionId": "QA-041",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "field_trip--event_page",
+      "attemptId": "2026-09-19T05-00-03-193Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/field_trip--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can parents sign a legally binding permission slip here, or should I link our school's form?",
+      "answer": "Parents can’t sign a legally binding permission slip through this Event page’s standard RSVP. Link your school’s official permission form instead; the page can direct families there while RSVP remains a simple yes, no, or maybe response.",
+      "expectedBehavior": "State the basic RSVP capability accurately and do not present attendance responses as permission signatures.",
+      "verdict": "correct",
+      "detail": null,
+      "assertionId": "QA-042",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "field_trip--live_card",
+      "attemptId": "2026-09-19T12-29-42-831Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/field_trip--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can parents sign a legally binding permission slip here, or should I link our school's form?",
+      "answer": "Use your school’s official permission-slip form. The live card’s RSVP only collects a parent’s name, email, and yes/no/maybe response, so it isn’t suitable for legally binding consent or signatures.\n\nAdd the school form link to the card once you have the approved URL, and keep the RSVP as a simple attendance response.",
+      "expectedBehavior": "Explain the actual product capability and avoid claiming legally binding school consent; recommend the school's supplied form when appropriate.",
+      "verdict": "passed_capability_explanation",
+      "detail": null,
+      "assertionId": "QA-043",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "football--digital_flyer",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/football--digital_flyer-before-1789792296373.json",
+      "pointer": "/qaResults/0",
+      "question": "Can a downloaded flyer have working RSVP buttons, or would I share a link too?",
+      "answer": "A downloaded flyer is artwork, so its RSVP button will not be interactive. Share the flyer alongside the event link, where families can RSVP yes, no, or maybe. For a single shareable item with a working RSVP action, a live card or event page is the better fit; the flyer can still serve as the visual game-day announcement.",
+      "expectedBehavior": "Distinguish static artwork from interactive online actions without claiming image buttons work.",
+      "verdict": "correct",
+      "detail": null,
+      "assertionId": "QA-044",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "football--digital_flyer",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/football--digital_flyer-before-1789792956048.json",
+      "pointer": "/qaResults/0",
+      "question": "Can a downloaded flyer have working RSVP buttons, or would I share a link too?",
+      "answer": "A downloaded flyer is artwork, so its RSVP button will not be interactive. Share the flyer alongside the event link, where families can RSVP yes, no, or maybe. For a single shareable item with a working RSVP action, a live card or event page is the better fit; the flyer can still serve as the visual game-day announcement.",
+      "expectedBehavior": "Distinguish static artwork from interactive online actions without claiming image buttons work.",
+      "verdict": "correct",
+      "detail": null,
+      "assertionId": "QA-045",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "football--digital_flyer",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/football--digital_flyer-before-1789793861307.json",
+      "pointer": "/qaResults/0",
+      "question": "Can a downloaded flyer have working RSVP buttons, or would I share a link too?",
+      "answer": "A downloaded flyer is artwork, so its RSVP button will not be interactive. Share the flyer alongside the event link, where families can RSVP yes, no, or maybe. For a single shareable item with a working RSVP action, a live card or event page is the better fit; the flyer can still serve as the visual game-day announcement.",
+      "expectedBehavior": "Distinguish static artwork from interactive online actions without claiming image buttons work.",
+      "verdict": "correct",
+      "detail": null,
+      "assertionId": "QA-046",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "football--digital_flyer",
+      "attemptId": "2026-09-19T04-42-36-052Z",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/football--digital_flyer-before-1789794206752.json",
+      "pointer": "/qaResults/0",
+      "question": "Can a downloaded flyer have working RSVP buttons, or would I share a link too?",
+      "answer": "A downloaded flyer is artwork, so its RSVP button will not be interactive. Share the event link alongside the flyer so families can RSVP there with yes, no, or maybe; the flyer can still include an RSVP callout for Coach Alex.",
+      "expectedBehavior": "Explain that downloaded raster artwork cannot provide interactive RSVP, while an online event link can.",
+      "verdict": "correct",
+      "detail": null,
+      "assertionId": "QA-047",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "football--digital_flyer",
+      "attemptId": "2026-09-19T05-03-26-757Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/football--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can a downloaded flyer have working RSVP buttons, or would I share a link too?",
+      "answer": "A downloaded Flyer/Invitation is shareable artwork, but its RSVP action is not a working button inside the downloaded file. To collect RSVPs, share the event link alongside it, where guests can respond yes, no, or maybe with their name and email.\n\nA simple approach is to post or message the flyer with: “RSVP through the event link.”",
+      "expectedBehavior": "Distinguish static downloaded artwork from interactive online actions.",
+      "verdict": "correct; online RSVP verified, file download not exercised",
+      "detail": null,
+      "assertionId": "QA-048",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "football--event_page",
+      "attemptId": "2026-09-19T12-17-58-624Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/football--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can a downloaded flyer have working RSVP buttons, or would I share a link too?",
+      "answer": "A downloaded flyer is static, so its RSVP button will not be interactive. Share the Event page link alongside the flyer; that page can include the RSVP action for guests to respond yes, no, or maybe.",
+      "expectedBehavior": "Distinguish a static image download from interactive online actions; do not claim image buttons work.",
+      "verdict": "correct",
+      "detail": null,
+      "assertionId": "QA-049",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "football--live_card",
+      "attemptId": "2026-09-19T12-15-26-511Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/football--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can a downloaded flyer have working RSVP buttons, or would I share a link too?",
+      "answer": "A downloaded flyer is static, so its RSVP button won’t work. Share the event link alongside it, or use the Live card link directly; that gives families the working RSVP action.",
+      "expectedBehavior": "Distinguish a static image download from interactive online actions; do not claim image buttons work.",
+      "verdict": "passed",
+      "detail": null,
+      "assertionId": "QA-050",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "game_day--digital_flyer",
+      "attemptId": "2026-09-19T05-19-42-089Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/game_day--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Will people understand this is a watch party instead of a team playing at the venue?",
+      "answer": "Yes. I’d make the main line explicit: “Join us to watch the game together,” rather than using sports imagery that could suggest a live match. The flyer can also say “Watch Party” prominently, so the purpose is clear at a glance.",
+      "expectedBehavior": "Keep a watch party and avoid fabricated teams, fixture facts or ticket/betting details.",
+      "verdict": "correct; watch-party distinction visibly fulfilled",
+      "detail": null,
+      "assertionId": "QA-051",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "game_day--event_page",
+      "attemptId": "2026-09-19T06-32-43-522Z",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/game_day--event_page-before-1789828408357.json",
+      "pointer": "/qaResults/0",
+      "question": "Will people understand this is a watch party instead of a team playing at the venue?",
+      "answer": "Yes. The page can state it plainly: “Join the neighbors to watch the game together at Maple Community Center—this is a viewing party, not a game or fixture at the venue.”\n\nThat wording removes the ambiguity while keeping the relaxed, living-room feel.",
+      "expectedBehavior": "Keep the event a watch party and avoid invented matchups or competition facts.",
+      "verdict": "pass",
+      "detail": null,
+      "assertionId": "QA-052",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "game_day--event_page",
+      "attemptId": "2026-09-19T14-33-28-362Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/game_day--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Will people understand this is a watch party instead of a team playing at the venue?",
+      "answer": "Yes. The page can state plainly: “Join neighbors to watch the game together at Maple Community Center.” That makes clear it’s a viewing gathering, not a live team fixture at the venue.",
+      "expectedBehavior": "Keep the event a watch party and avoid invented matchups or competition facts.",
+      "verdict": "correct",
+      "detail": null,
+      "assertionId": "QA-053",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "game_day--live_card",
+      "attemptId": "2026-09-19T06-30-32-133Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/game_day--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Will people understand this is a watch party instead of a team playing at the venue?",
+      "answer": "Yes, use watch-the-game-together wording and an afternoon with neighbors rather than an on-site match.",
+      "expectedBehavior": "Clearly portray a social watch party, without fixture details or unsupported scores/opponents/prices.",
+      "verdict": "passed_observed_intent",
+      "detail": null,
+      "assertionId": "QA-054",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "gender_reveal--digital_flyer",
+      "attemptId": "2026-09-19T05-13-46-702Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/gender_reveal--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Will the invite reveal an answer if I have not told you one?",
+      "answer": "No. The invitation will not reveal a boy or girl or imply a known result. It will simply invite guests to find out together, exactly as you requested.",
+      "expectedBehavior": "Keep the result unknown and honor requested discover-together copy.",
+      "verdict": "unknown-result promise fulfilled; discover-together wording promise not fulfilled",
+      "detail": null,
+      "assertionId": "QA-055",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "gender_reveal--event_page",
+      "attemptId": "2026-09-19T06-18-13-047Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/gender_reveal--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Will the invite reveal an answer if I have not told you one?",
+      "answer": "No. Since you haven’t provided a result, the event page will only invite guests to find out together and will not announce a boy or girl.",
+      "expectedBehavior": "Confirm missing reveal information stays unknown; do not infer or fabricate the result.",
+      "verdict": "partial",
+      "detail": null,
+      "assertionId": "QA-056",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "gender_reveal--live_card",
+      "attemptId": "2026-09-19T06-15-27-471Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/gender_reveal--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Will the invite reveal an answer if I have not told you one?",
+      "answer": "No; it will invite guests to find out together and not reveal or imply a boy or girl.",
+      "expectedBehavior": "No invented result, with neutral shared-discovery invitation wording.",
+      "verdict": "passed_no_disclosure_partial_wording",
+      "detail": null,
+      "assertionId": "QA-057",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "general--digital_flyer",
+      "attemptId": "2026-09-19T12-56-21-979Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/general--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Do I need to choose a more specific category, or can this stay a simple gathering?",
+      "answer": "It can absolutely stay a simple gathering. That fits Maple Neighbors Get-Together well and keeps the flyer focused on the casual tea-and-conversation invitation rather than forcing a category.",
+      "expectedBehavior": "Support a general event without forcing or inventing a specific occasion.",
+      "verdict": "Correct category advice",
+      "detail": null,
+      "assertionId": "QA-058",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "general--event_page",
+      "attemptId": "2026-09-19T05-34-47-817Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/general--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Do I need to choose a more specific category, or can this stay a simple gathering?",
+      "answer": "It can absolutely stay a simple gathering. That fits Maple Neighbors Get-Together well and keeps the Event page welcoming without forcing a formal category.",
+      "expectedBehavior": "Support a general event without forcing or inventing a specific occasion.",
+      "verdict": "correct",
+      "detail": null,
+      "assertionId": "QA-059",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "general--live_card",
+      "attemptId": "2026-09-19T12-53-55-292Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/general--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Do I need to choose a more specific category, or can this stay a simple gathering?",
+      "answer": "It can stay a simple gathering. That fits a casual neighborhood conversation with tea, and it keeps the Live card clear without adding an unnecessary label.",
+      "expectedBehavior": "Support a general event without forcing or inventing a specific occasion.",
+      "verdict": "passed",
+      "detail": null,
+      "assertionId": "QA-060",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "graduation--digital_flyer",
+      "attemptId": "2026-09-19T06-23-44-776Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/graduation--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can this celebrate graduation without guessing a school name?",
+      "answer": "Yes. The invitation can celebrate Leo finishing his program without naming a school or graduation year. It will simply use “Leo’s Graduation Celebration” and “On to the next adventure.”",
+      "expectedBehavior": "Keep the school and graduation year absent unless supplied.",
+      "verdict": "no-school/year promise fulfilled; exact-line promise unfulfilled",
+      "detail": null,
+      "assertionId": "QA-061",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "graduation--event_page",
+      "attemptId": "2026-09-19T06-25-29-959Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/graduation--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can this celebrate graduation without guessing a school name?",
+      "answer": "Yes. The event page can celebrate Leo finishing his program without naming a school or graduation year. It will simply say Leo’s Graduation Celebration and use “On to the next adventure.”",
+      "expectedBehavior": "Keep the school and graduation year absent unless supplied.",
+      "verdict": "partial",
+      "detail": null,
+      "assertionId": "QA-062",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "graduation--live_card",
+      "attemptId": "2026-09-19T05-17-33-084Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/graduation--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can this celebrate graduation without guessing a school name?",
+      "answer": "Yes. It can simply celebrate Leo finishing his program, using “On to the next adventure,” without naming or implying any school or graduation year.",
+      "expectedBehavior": "Avoid inventing a school or graduation year and preserve the explicitly requested line.",
+      "verdict": "exclusions_honored_exact_copy_not_delivered",
+      "detail": null,
+      "assertionId": "QA-063",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "gymnastics--digital_flyer",
+      "attemptId": "2026-09-19T06-27-02-976Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/gymnastics--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I show warmup, competition, and awards separately so my family arrives on time?",
+      "answer": "Yes. I’ll display them as three distinct schedule lines so it’s easy to scan:\n\nWarmup: 1 PM\nCompetition: 2 PM\nAwards: 4 PM\n\nThe 4:30 PM end time can remain off the flyer since you asked to use only the listed details.",
+      "expectedBehavior": "Preserve all three schedule entries and distinguish the primary competition time from warmup.",
+      "verdict": "partially fulfilled labels; contradictory end-time guidance and wrong canonical start",
+      "detail": null,
+      "assertionId": "QA-064",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "gymnastics--event_page",
+      "attemptId": "2026-09-19T06-28-48-189Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/gymnastics--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I show warmup, competition, and awards separately so my family arrives on time?",
+      "answer": "Yes. The event page can show a clear schedule with separate entries for Warmup at 1 PM, Competition at 2 PM, and Awards at 4 PM, plus the event ending at 4:30 PM. That’s the simplest way to help family members plan their arrival without confusing the competition start time.",
+      "expectedBehavior": "Preserve all three schedule entries and distinguish the primary competition time from warmup.",
+      "verdict": "partial",
+      "detail": null,
+      "assertionId": "QA-065",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "gymnastics--live_card",
+      "attemptId": "2026-09-19T03-01-47-670Z",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/gymnastics--live_card-before-1789792360199.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I show warmup, competition, and awards separately so my family arrives on time?",
+      "verdict": "partially_verified",
+      "detail": null,
+      "assertionId": "QA-066",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "gymnastics--live_card",
+      "attemptId": "2026-09-19T03-01-47-670Z",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/gymnastics--live_card-before-1789793062689.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I show warmup, competition, and awards separately so my family arrives on time?",
+      "verdict": "partially_verified",
+      "detail": null,
+      "assertionId": "QA-067",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "gymnastics--live_card",
+      "attemptId": "2026-09-19T04-44-22-692Z",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/gymnastics--live_card-before-1789794344165.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I show warmup, competition, and awards separately so my family arrives on time?",
+      "answer": "Yes. The Live card can show each milestone as a separate schedule line so family can plan around it:\n\nWarmup: 1 PM\nCompetition: 2 PM\nAwards: 4 PM\n\nThe event concludes at 4:30 PM.",
+      "expectedBehavior": "Retain all three labels and distinguish the competition start from warmup and awards.",
+      "verdict": "correct stated schedule; conflicting primary timestamp remains",
+      "detail": null,
+      "assertionId": "QA-068",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "gymnastics--live_card",
+      "attemptId": "2026-09-19T05-05-44-168Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/gymnastics--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I show warmup, competition, and awards separately so my family arrives on time?",
+      "answer": "Yes. I’ll display the schedule as three distinct lines so it’s easy to scan:\n\nWarmup: 1 PM\nCompetition: 2 PM\nAwards: 4 PM\n\nThe card can also note that the meet ends at 4:30 PM.",
+      "expectedBehavior": "Keep each supplied phase and time distinct in the actual guest schedule, preserve the 4:30 PM end and avoid confusing the primary competition time.",
+      "verdict": "partially_fulfilled",
+      "detail": null,
+      "assertionId": "QA-069",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "hockey--digital_flyer",
+      "attemptId": "2026-09-19T05-49-42-975Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/hockey--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can you distinguish ice hockey from field hockey?",
+      "answer": "Yes. This is clearly ice hockey: it takes place at a rink, uses ice-hockey protective gear, and the icy blue/charcoal rink-line design will reflect that. I won’t use field-hockey imagery such as grass, turf, or outdoor field markings.",
+      "expectedBehavior": "Preserve ice rink setting and equipment without field hockey imagery.",
+      "verdict": "correct; visual distinction fulfilled",
+      "detail": null,
+      "assertionId": "QA-070",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "hockey--event_page",
+      "attemptId": "2026-09-19T13-52-30-396Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/hockey--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can you distinguish ice hockey from field hockey?",
+      "answer": "Yes. This draft is clearly for ice hockey: the rink setting, full protective gear, warm layers for families, and rink-line visual treatment all distinguish it from field hockey.",
+      "expectedBehavior": "Preserve ice rink setting and equipment without field hockey imagery.",
+      "verdict": "correct",
+      "detail": null,
+      "assertionId": "QA-071",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "hockey--live_card",
+      "attemptId": "2026-09-19T13-49-13-293Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/hockey--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can you distinguish ice hockey from field hockey?",
+      "answer": "Yes. This is clearly ice hockey: it’s played on a rink with skates, sticks, a puck, and full protective gear. Field hockey is played outdoors or on turf with a ball and different equipment.\n\nYour Live card will use ice-hockey cues: rink lines, icy blue and charcoal, plus the warm-layer note for families.",
+      "expectedBehavior": "Preserve ice rink setting and equipment without field hockey imagery.",
+      "verdict": "passed_sport_distinction_partial_promised_note",
+      "detail": null,
+      "assertionId": "QA-072",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "housewarming--digital_flyer",
+      "attemptId": "2026-09-19T05-25-42-506Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/housewarming--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "If I edit the address later, will the shared online version update?",
+      "answer": "Yes. Once you publish a shared online event page or live card, edits to its address update the shared version. A downloaded flyer is static, so you’d need to download and resend an updated file.",
+      "expectedBehavior": "Distinguish persisted online updates from old downloaded images and explain any save/apply step.",
+      "verdict": "conceptually sound; post-publication behavior not tested in this attempt",
+      "detail": null,
+      "assertionId": "QA-073",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "housewarming--event_page",
+      "attemptId": "2026-09-19T12-39-55-833Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/housewarming--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "If I edit the address later, will the shared online version update?",
+      "answer": "Yes. Once you generate and publish an event page, editing the address updates the shared online version at the same link.",
+      "expectedBehavior": "Describe current online edit behavior accurately and distinguish previously downloaded images.",
+      "verdict": "partially_verified",
+      "detail": null,
+      "assertionId": "QA-074",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "housewarming--live_card",
+      "attemptId": "2026-09-19T12-37-41-536Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/housewarming--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "If I edit the address later, will the shared online version update?",
+      "answer": "Yes. Once the live card is published, editing its address updates the shared online version at the same link.",
+      "expectedBehavior": "Describe current online edit behavior accurately and distinguish previously downloaded images.",
+      "verdict": "partial_online_answer_later_edit_untested",
+      "detail": null,
+      "assertionId": "QA-075",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "lacrosse--digital_flyer",
+      "attemptId": "2026-09-19T13-57-22-073Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/lacrosse--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the non-contact note stay prominent after a redesign?",
+      "answer": "Yes. The redesigned Flyer/Invitation will keep “Non-Contact Skills Session” prominent near the headline, with a clear visual callout so it isn’t lost among the lacrosse imagery or event details.",
+      "expectedBehavior": "Keep the explicit non-contact constraint through artwork edits.",
+      "verdict": "Not fulfilled",
+      "detail": null,
+      "assertionId": "QA-076",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "lacrosse--event_page",
+      "attemptId": "2026-09-19T05-51-35-728Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/lacrosse--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the non-contact note stay prominent after a redesign?",
+      "answer": "Yes. The redesign will keep the non-contact message prominent and will not advertise contact drills, while retaining the forest green, gold, and lacrosse-stick look.",
+      "expectedBehavior": "Keep the explicit non-contact constraint through artwork edits.",
+      "verdict": "promised_prominence_not_fulfilled",
+      "detail": null,
+      "assertionId": "QA-077",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "lacrosse--live_card",
+      "attemptId": "2026-09-19T13-54-42-366Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/lacrosse--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can the non-contact note stay prominent after a redesign?",
+      "answer": "Yes. I’ll keep “Non-contact skills session” as a prominent, high-visibility line in the redesigned Live card, and continue to exclude contact drills from both the artwork and wording.",
+      "expectedBehavior": "Keep the explicit non-contact constraint through artwork edits.",
+      "verdict": "failed_prominent_non_contact_copy_missing",
+      "detail": null,
+      "assertionId": "QA-078",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "open_house--digital_flyer",
+      "attemptId": "2026-09-19T12-34-07-526Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/open_house--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I say drop in any time during the window instead of assigning everyone an appointment?",
+      "answer": "Yes. “Drop in anytime from 2:00–4:00 PM” is a clear, welcoming alternative to appointments and keeps the open house flexible for families.\n\nProposed wording: Families are welcome to drop in anytime between 2:00 and 4:00 PM to meet teachers and see classrooms.",
+      "expectedBehavior": "Show the supplied drop-in window without inventing booked appointments.",
+      "verdict": "Correct advice, not fulfilled in actual copy",
+      "detail": null,
+      "assertionId": "QA-079",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "open_house--event_page",
+      "attemptId": "2026-09-19T12-35-51-186Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/open_house--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I say drop in any time during the window instead of assigning everyone an appointment?",
+      "answer": "Yes. Use: “Drop in any time between 2:00 and 4:00 PM—no appointment needed.”\n\nThe event page RSVP can collect a simple yes, no, or maybe, but it won’t assign arrival times.",
+      "expectedBehavior": "Show the supplied drop-in window without inventing booked appointments.",
+      "verdict": "correct_answer_not_delivered",
+      "detail": null,
+      "assertionId": "QA-080",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "open_house--live_card",
+      "attemptId": "2026-09-19T05-23-59-282Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/open_house--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I say drop in any time during the window instead of assigning everyone an appointment?",
+      "answer": "Yes. I’d use: “Drop in anytime between 2:00 and 4:00 PM.” It makes the open house more flexible for families and avoids implying assigned appointments.",
+      "expectedBehavior": "Support a drop-in window without inventing booked appointments.",
+      "verdict": "answer_correct_delivery_incomplete",
+      "detail": null,
+      "assertionId": "QA-081",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "soccer--digital_flyer",
+      "attemptId": "2026-09-19T13-19-29-991Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/soccer--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can parents add this to their calendars without me connecting their accounts?",
+      "answer": "Yes. Parents can use the shared event link to view the match details and add it to their own calendars; you do not need to connect anyone’s calendar account.",
+      "expectedBehavior": "Describe the guest calendar action accurately; never claim automatic writes to guests' calendars.",
+      "verdict": "Fulfilled in observed guest handoff",
+      "detail": null,
+      "assertionId": "QA-082",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "soccer--event_page",
+      "attemptId": "2026-09-19T05-46-06-653Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/soccer--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can parents add this to their calendars without me connecting their accounts?",
+      "answer": "Yes. The event page can include an add-to-calendar action using the event details, so parents can add it to their own calendars without you connecting any accounts.",
+      "expectedBehavior": "Describe the guest calendar action accurately; never claim automatic writes to guests' calendars.",
+      "verdict": "correct",
+      "detail": null,
+      "assertionId": "QA-083",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "soccer--live_card",
+      "attemptId": "2026-09-19T13-17-35-559Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/soccer--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can parents add this to their calendars without me connecting their accounts?",
+      "answer": "Yes. The live card can include an Add to Calendar action using the event date, time, and location, so parents can add it to their own calendars without connecting any accounts.",
+      "expectedBehavior": "Describe the guest calendar action accurately; never claim automatic writes to guests' calendars.",
+      "verdict": "passed_guest_initiated_calendar",
+      "detail": null,
+      "assertionId": "QA-084",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "softball--digital_flyer",
+      "attemptId": "2026-09-19T05-44-21-438Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/softball--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can you make sure the artwork says softball and uses a yellow ball?",
+      "answer": "Yes. The artwork direction now explicitly requires the word “softball” and a yellow softball, with the purple-and-white palette retained.",
+      "expectedBehavior": "Respect softball subject and yellow ball without relabeling it baseball.",
+      "verdict": "correct; visual promise fulfilled",
+      "detail": null,
+      "assertionId": "QA-085",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "softball--event_page",
+      "attemptId": "2026-09-19T13-16-00-195Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/softball--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can you make sure the artwork says softball and uses a yellow ball?",
+      "answer": "Yes — the artwork direction explicitly includes the word “softball” and a yellow softball, with purple and white as the supporting colors.",
+      "expectedBehavior": "Respect softball subject and yellow ball without relabeling it baseball.",
+      "verdict": "correct",
+      "detail": null,
+      "assertionId": "QA-086",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "softball--live_card",
+      "attemptId": "2026-09-19T13-13-56-497Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/softball--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can you make sure the artwork says softball and uses a yellow ball?",
+      "answer": "Yes — the artwork direction will clearly feature the word “Softball” and a yellow softball, with the purple-and-white palette.",
+      "expectedBehavior": "Respect softball subject and yellow ball without relabeling it baseball.",
+      "verdict": "passed",
+      "detail": null,
+      "assertionId": "QA-087",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "special_event--digital_flyer",
+      "attemptId": "2026-09-19T05-32-17-039Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/special_event--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can you keep the safety instruction visible instead of hiding it in decorative text?",
+      "answer": "Yes — the safety instruction will be a prominent, readable line in the Flyer/Invitation design, separate from the decorative lantern artwork:\n\nBattery-powered lanterns only. Open flames are not allowed.",
+      "expectedBehavior": "Required safety line is present and readable in delivered output; no visible flames.",
+      "verdict": "failed visible-copy promise",
+      "detail": null,
+      "assertionId": "QA-088",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "special_event--event_page",
+      "attemptId": "2026-09-19T12-51-47-038Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/special_event--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can you keep the safety instruction visible instead of hiding it in decorative text?",
+      "answer": "Yes. The safety instruction will stay as a prominent, clearly legible notice separate from the decorative night-sky and lantern artwork:\n\nBattery-powered lanterns only. Open flames are not allowed.",
+      "expectedBehavior": "Retain the explicit safety instruction visibly and do not depict flame lanterns.",
+      "verdict": "incorrect_promise",
+      "detail": null,
+      "assertionId": "QA-089",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "special_event--live_card",
+      "attemptId": "2026-09-19T12-49-18-473Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/special_event--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can you keep the safety instruction visible instead of hiding it in decorative text?",
+      "answer": "Yes. The safety instruction will stay prominent and clearly legible in plain, non-decorative text: “Battery-powered lanterns only. Open flames are not allowed.”",
+      "expectedBehavior": "Retain the explicit safety instruction visibly and do not depict flame lanterns.",
+      "verdict": "partial_final_raster_visible_canonical_copy_missing",
+      "detail": null,
+      "assertionId": "QA-090",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "sport_event--digital_flyer",
+      "attemptId": "2026-09-19T12-27-23-886Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/sport_event--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I explain the different activity stations without making them separate events?",
+      "answer": "Yes. Keep Community Multi-Sport Afternoon as one event and add a short “Stations” section to the flyer, such as:\n\nBasketball Station: friendly skill-building activities\nSoccer Station: welcoming drills and play\nNo experience needed — join in at your own pace\n\nThat keeps the invitation clear and avoids separate schedules or RSVPs for each activity.",
+      "expectedBehavior": "Preserve the single event and describe supplied activities without invented brackets or registration places.",
+      "verdict": "Conceptually correct; expected station copy not delivered",
+      "detail": null,
+      "assertionId": "QA-091",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "sport_event--event_page",
+      "attemptId": "2026-09-19T05-21-57-335Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/sport_event--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I explain the different activity stations without making them separate events?",
+      "answer": "Yes. On the event page, describe basketball and soccer as activity stations within the same Community Multi-Sport Afternoon, not separate events. A simple “Activity Stations” section can explain that guests can rotate through friendly, skills-focused stations at their own pace.",
+      "expectedBehavior": "Preserve the single event and describe supplied activities without invented brackets or registration places.",
+      "verdict": "reasonable_guidance_not_realized_in_output",
+      "detail": null,
+      "assertionId": "QA-092",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "sport_event--live_card",
+      "attemptId": "2026-09-19T12-19-47-834Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/sport_event--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I explain the different activity stations without making them separate events?",
+      "answer": "Yes. Keep this as one Community Multi-Sport Afternoon and add a short “Stations” section in the live card, such as:\n\nBasketball Skills Station\nPractice dribbling, passing, and shooting at your own pace.\n\nSoccer Skills Station\nTry footwork, passing, and friendly skill-building activities.\n\nThis keeps the plan clear without turning each activity into a separate event.",
+      "expectedBehavior": "Preserve the single event and describe supplied activities without invented brackets or registration places.",
+      "verdict": "partial_advice_correct_delivery_incomplete",
+      "detail": null,
+      "assertionId": "QA-093",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "swimming--digital_flyer",
+      "attemptId": "2026-09-19T14-07-52-769Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/swimming--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can warmup and the meet start both appear without guessing lanes?",
+      "answer": "Yes. The flyer can clearly show “Warmup at 1 PM” and “Meet starts at 2 PM,” with the event ending at 4 PM, while stating “No lane assignments are available.” No lane details will be implied.",
+      "expectedBehavior": "Keep warmup distinct and leave lane assignments unspecified.",
+      "verdict": "Visible clocks and no-invention requirement fulfilled; promised availability line missing",
+      "detail": null,
+      "assertionId": "QA-094",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "swimming--event_page",
+      "attemptId": "2026-09-19T05-57-27-234Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/swimming--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can warmup and the meet start both appear without guessing lanes?",
+      "answer": "Yes. The Event page can list both Warmup at 1 PM and Meet starts at 2 PM, and it will state that lane assignments are not available—without assigning or implying any lanes.",
+      "expectedBehavior": "Keep warmup distinct and leave lane assignments unspecified.",
+      "verdict": "partially_fulfilled_missing_unavailable_lanes_statement",
+      "detail": null,
+      "assertionId": "QA-095",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "swimming--live_card",
+      "attemptId": "2026-09-19T14-05-25-800Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/swimming--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can warmup and the meet start both appear without guessing lanes?",
+      "answer": "Yes. The Live card can clearly list “Warmup at 1 PM” and “Meet starts at 2 PM,” along with the 4:00 PM end time, without assigning or implying any lanes. It can also note that lane assignments are not available.",
+      "expectedBehavior": "Keep warmup distinct and leave lane assignments unspecified.",
+      "verdict": "partial_schedule_prose_retained_normalization_broken",
+      "detail": null,
+      "assertionId": "QA-096",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "tennis--digital_flyer",
+      "attemptId": "2026-09-19T13-59-11-906Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/tennis--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I leave court assignments off until we know them?",
+      "answer": "Yes. Leave court assignments off for now; the flyer can simply say that court numbers and partners will be assigned later.",
+      "expectedBehavior": "Do not fabricate court assignments, partners, or tournament brackets.",
+      "verdict": "Core request fulfilled with a wording caveat",
+      "detail": null,
+      "assertionId": "QA-097",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "tennis--event_page",
+      "attemptId": "2026-09-19T14-00-55-959Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/tennis--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I leave court assignments off until we know them?",
+      "answer": "Yes. I’ll leave court assignments and partners off the event page until you have them.",
+      "expectedBehavior": "Do not fabricate court assignments, partners, or tournament brackets.",
+      "verdict": "correct",
+      "detail": null,
+      "assertionId": "QA-098",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "tennis--live_card",
+      "attemptId": "2026-09-19T05-53-41-704Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/tennis--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I leave court assignments off until we know them?",
+      "answer": "Yes. Court assignments can stay off the Live card until they’re confirmed. Keeping them out now makes the card cleaner and avoids guests relying on details that may change.",
+      "expectedBehavior": "Do not invent court numbers or partners.",
+      "verdict": "passed_observed_answer_and_outputs",
+      "detail": null,
+      "assertionId": "QA-099",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "track_field--digital_flyer",
+      "attemptId": "2026-09-19T05-55-41-954Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/track_field--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can you list both sprint and long jump without guessing race distances?",
+      "answer": "Yes. I’ll list the activities as “Sprint drills and long-jump technique” without naming any race distances or results.",
+      "expectedBehavior": "Preserve named activities without invented race distances, times, or results.",
+      "verdict": "promise_unfulfilled; no invented distances observed",
+      "detail": null,
+      "assertionId": "QA-100",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "track_field--event_page",
+      "attemptId": "2026-09-19T14-03-51-743Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/track_field--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can you list both sprint and long jump without guessing race distances?",
+      "answer": "Yes. I’ll list the planned activities simply as sprint drills and long-jump technique, with no race distances, results, or qualifying times added.",
+      "expectedBehavior": "Preserve named activities without invented race distances, times, or results.",
+      "verdict": "partially_correct_but_unfulfilled",
+      "detail": null,
+      "assertionId": "QA-101",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "track_field--live_card",
+      "attemptId": "2026-09-19T14-02-32-195Z",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/track_field--live_card-before-1789828535478.json",
+      "pointer": "/qaResults/0",
+      "question": "Can you list both sprint and long jump without guessing race distances?",
+      "answer": "Yes. I’ll list the planned activities as “Sprint drills and long-jump technique” without adding any race distances or results.",
+      "expectedBehavior": "Preserve named activities without invented race distances, times, or results.",
+      "verdict": "partial_no_inventions_activity_list_not_delivered",
+      "detail": null,
+      "assertionId": "QA-102",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "track_field--live_card",
+      "attemptId": "2026-09-19T14-35-35-481Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/track_field--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can you list both sprint and long jump without guessing race distances?",
+      "answer": "Yes. The activity line can read: “Sprint drills and long-jump technique.” No race distances, results, or qualifying times will be added.",
+      "expectedBehavior": "Preserve named activities without invented race distances, times, or results.",
+      "verdict": "partial_no_inventions_activity_line_missing",
+      "detail": null,
+      "assertionId": "QA-103",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "volleyball--digital_flyer",
+      "attemptId": "2026-09-19T13-21-18-746Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/volleyball--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can you keep indoor volleyball clear in both the wording and the design?",
+      "answer": "Yes. I’ll make “Indoor Volleyball Open Practice” prominent in the wording and use a gym-court setting with an indoor net, court lines, and coral-and-navy graphics. I’ll avoid sand, beach scenery, tropical elements, and tournament framing.",
+      "expectedBehavior": "Preserve indoor context and required equipment.",
+      "verdict": "Partially fulfilled: design correct, wording incomplete",
+      "detail": null,
+      "assertionId": "QA-104",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "volleyball--event_page",
+      "attemptId": "2026-09-19T13-23-03-102Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/volleyball--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can you keep indoor volleyball clear in both the wording and the design?",
+      "answer": "Yes. The page wording will explicitly say “indoor volleyball open practice,” and the artwork will use a coral-and-navy indoor court setting with a volleyball net—no sand, beach, or beach-tournament elements.",
+      "expectedBehavior": "Preserve indoor context and required equipment.",
+      "verdict": "partially_fulfilled",
+      "detail": null,
+      "assertionId": "QA-105",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "volleyball--live_card",
+      "attemptId": "2026-09-19T05-47-43-002Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/volleyball--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can you keep indoor volleyball clear in both the wording and the design?",
+      "answer": "Yes. The wording will say “Indoor Volleyball Open Practice” and include “Wear non-marking shoes and bring knee pads.” The coral-and-navy artwork will show an indoor court and volleyball net only, with no sand, beach, sun, or tournament cues.",
+      "expectedBehavior": "Preserve indoor practice meaning in wording and artwork, including the supplied equipment instructions.",
+      "verdict": "partial_visual_pass_wording_failure",
+      "detail": null,
+      "assertionId": "QA-106",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "wedding--digital_flyer",
+      "attemptId": "2026-09-19T06-04-07-804Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/wedding--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I keep the ceremony time separate from when the reception starts?",
+      "answer": "Yes. We can list the ceremony and reception as separate schedule lines while keeping both at Maple Community Center, Room A. Share the reception start time, and I’ll add it without changing any other details.",
+      "expectedBehavior": "Explain how multiple times can be shown without replacing the main ceremony time.",
+      "verdict": "appropriate clarification; separate-time capability not exercised",
+      "detail": null,
+      "assertionId": "QA-107",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "wedding--event_page",
+      "attemptId": "2026-09-19T06-05-57-096Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/wedding--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I keep the ceremony time separate from when the reception starts?",
+      "answer": "Yes. We can list the ceremony at 2:00 PM and add a separate reception start time at the same venue. What time should the reception begin?",
+      "expectedBehavior": "Explain how multiple times can be shown without replacing the main ceremony time.",
+      "verdict": "partial",
+      "detail": null,
+      "assertionId": "QA-108",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "wedding--live_card",
+      "attemptId": "2026-09-19T05-11-57-944Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/wedding--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I keep the ceremony time separate from when the reception starts?",
+      "answer": "Yes. You can show the ceremony at 2:00 PM and list the reception with its own start time on the live card. That keeps the schedule clear for guests; share the reception start time when you’re ready, and I’ll add it without changing the other details.",
+      "expectedBehavior": "Recognize separately labeled activity times without inventing a reception start.",
+      "verdict": "reasonable_answer_delivery_not_exercised",
+      "detail": null,
+      "assertionId": "QA-109",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "workshop--digital_flyer",
+      "attemptId": "2026-09-19T12-46-04-534Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/workshop--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I add a price later without you choosing one now?",
+      "answer": "Yes. I’ll leave the price off for now, and you can add it later once it’s confirmed.",
+      "expectedBehavior": "Keep unsupplied pricing and capacity blank and explain supported later edits.",
+      "verdict": "Correct for leaving price unspecified",
+      "detail": null,
+      "assertionId": "QA-110",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "workshop--event_page",
+      "attemptId": "2026-09-19T12-47-52-473Z",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/workshop--event_page-before-1789828236729.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I add a price later without you choosing one now?",
+      "answer": "Yes. We can leave the price off for now and add it later when you’ve confirmed it; I won’t choose one.",
+      "expectedBehavior": "Keep unsupplied pricing and capacity blank and explain supported later edits.",
+      "verdict": "correct_for_observed_scope",
+      "detail": null,
+      "assertionId": "QA-111",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "workshop--event_page",
+      "attemptId": "2026-09-19T14-30-36-734Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/workshop--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I add a price later without you choosing one now?",
+      "answer": "Yes. I’ll leave the price off for now, so you can add it later once it’s confirmed.",
+      "expectedBehavior": "Keep unsupplied pricing and capacity blank and explain supported later edits.",
+      "verdict": "correct_with_unverified_later_edit",
+      "detail": null,
+      "assertionId": "QA-112",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "workshop--live_card",
+      "attemptId": "2026-09-19T05-29-52-820Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/workshop--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can I add a price later without you choosing one now?",
+      "answer": "Yes. You can add a price later; I won’t choose or display one now.",
+      "expectedBehavior": "Leave price blank without inventing a fee or capacity.",
+      "verdict": "passed_observed_answer_and_current_state",
+      "detail": null,
+      "assertionId": "QA-113",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "wrestling--digital_flyer",
+      "attemptId": "2026-09-19T14-09-40-139Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/wrestling--digital_flyer.json",
+      "pointer": "/qaResults/0",
+      "question": "Can this stay a practice announcement without made-up brackets?",
+      "answer": "Yes. It will remain a supervised technique-practice announcement, with no brackets, weight classes, tournament language, or invented competition details.",
+      "expectedBehavior": "Preserve practice intent and omit unknown weight classes or brackets.",
+      "verdict": "Core exclusion satisfied; explicit supervised-practice wording omitted",
+      "detail": null,
+      "assertionId": "QA-114",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "wrestling--event_page",
+      "attemptId": "2026-09-19T14-11-20-647Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/wrestling--event_page.json",
+      "pointer": "/qaResults/0",
+      "question": "Can this stay a practice announcement without made-up brackets?",
+      "answer": "Yes. The event page will stay a supervised wrestling technique-practice announcement, not a tournament, and it will state that no weight classes or brackets are assigned.",
+      "expectedBehavior": "Preserve practice intent and omit unknown weight classes or brackets.",
+      "verdict": "partially_fulfilled",
+      "detail": null,
+      "assertionId": "QA-115",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "wrestling--live_card",
+      "attemptId": "2026-09-19T05-59-09-677Z",
+      "latest": false,
+      "source": ".qa/create-campaign/2026-09-18/reviews/wrestling--live_card-before-1789828848251.json",
+      "pointer": "/qaResults/0",
+      "question": "Can this stay a practice announcement without made-up brackets?",
+      "answer": "Yes. It will remain a supervised technique-practice announcement, with no tournament framing, weight classes, brackets, or invented match details.",
+      "expectedBehavior": "Retain practice intent and omit unknown weight classes or brackets.",
+      "verdict": "passed_observed_exclusions_final_delivery_unverified",
+      "detail": null,
+      "assertionId": "QA-116",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    },
+    {
+      "caseId": "wrestling--live_card",
+      "attemptId": "2026-09-19T14-40-48-256Z",
+      "latest": true,
+      "source": ".qa/create-campaign/2026-09-18/reviews/wrestling--live_card.json",
+      "pointer": "/qaResults/0",
+      "question": "Can this stay a practice announcement without made-up brackets?",
+      "answer": "Yes. The live card will stay clearly framed as a supervised wrestling technique practice, not a tournament, and it will not include brackets, weight classes, or competitive match-up language.",
+      "expectedBehavior": "Preserve practice intent and omit unknown weight classes or brackets.",
+      "verdict": "mostly_passed_practice_identity_preserved_supervision_copy_missing",
+      "detail": null,
+      "assertionId": "QA-117",
+      "taskRefs": [
+        "CHAT-09",
+        "REL-02"
+      ],
+      "requirement": "Replay the actual streamed response and resulting draft/deliverable; preserve successful behavior and correct unsupported promises.",
+      "status": "planned_regression_assertion_not_automatically_a_defect"
+    }
+  ]
+}

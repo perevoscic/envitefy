@@ -35,5 +35,8 @@ test("studio category upload accepts attachments and opens a poster-first live c
   assert.doesNotMatch(source, /navigateWorkspace\("create", "details", nextDetails\.category\);/);
   assert.match(source, /onUploadInvitation=\{handleCategoryStepUpload\}/);
   assert.match(source, /isInvitationUploading=\{isInvitationUploading\}/);
-  assert.match(source, /invitationUploadError=\{invitationUploadError\}/);
+  assert.match(
+    source,
+    /invitationUploadError=\{\s*invitationUploadError \|\| \(editEventIdParam \? generationNote : null\)\s*\}/,
+  );
 });

@@ -1,4 +1,4 @@
-export function isRsvpMailtoHref(href: string | null | undefined): href is string {
+export function isRsvpMailtoHref(href: string | null | undefined): boolean {
   return typeof href === "string" && href.trim().toLowerCase().startsWith("mailto:");
 }
 
@@ -234,7 +234,9 @@ function openIosMailChooser(mailtoHref: string) {
 }
 
 export function openRsvpMailtoHref(href: string | null | undefined): boolean {
-  if (typeof window === "undefined" || !isRsvpMailtoHref(href)) return false;
+  if (typeof window === "undefined" || typeof href !== "string" || !isRsvpMailtoHref(href)) {
+    return false;
+  }
 
   const mailtoHref = href.trim();
   if (getRsvpMailPlatform() === "ios") {

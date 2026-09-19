@@ -8,6 +8,7 @@ type InstallSignal =
   | "storage"
   | "legacy-storage"
   | "navigator-standalone"
+  | "native-ios"
   | "display-mode-standalone"
   | "display-mode-fullscreen"
   | "display-mode-minimal-ui"
@@ -105,6 +106,7 @@ export const getInitialInstalledAppState = (
   win?: Window
 ): InstalledAppState => {
   if (!win) return CHECKING_STATE;
+  if (/EnvitefyIOS\//.test(win.navigator.userAgent || "")) return createState("installed", "native-ios");
 
   const storedState = getStoredInstallState(win);
   if (storedState) return storedState;

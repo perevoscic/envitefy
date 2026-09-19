@@ -211,6 +211,7 @@ function buildStudioMarketingShowcasePath(title: string) {
 }
 
 const heroPreview: StudioMarketingCardConfig = {
+  id: "studio-marketing-summer-gala",
   title: "Summer Gala 2026",
   imageUrl: "/images/studio/invite-hero-gala.webp",
   sharePath: buildStudioMarketingShowcasePath("Summer Gala 2026"),
@@ -235,6 +236,7 @@ const heroPreview: StudioMarketingCardConfig = {
 };
 
 const birthdayPreview: StudioMarketingCardConfig = {
+  id: "studio-marketing-mila-birthday",
   title: "Mila Turns 8",
   imageUrl: "/images/studio/invite-birthday-bash.webp",
   wideImageUrl: "/images/marketing/use-case-birthday.webp",
@@ -259,6 +261,7 @@ const birthdayPreview: StudioMarketingCardConfig = {
 };
 
 const weddingPreview: StudioMarketingCardConfig = {
+  id: "studio-marketing-elena-marcus-wedding",
   title: "Elena & Marcus",
   imageUrl: "/images/studio/invite-wedding-weekend.webp",
   wideImageUrl: "/images/marketing/use-case-wedding.webp",
@@ -285,6 +288,7 @@ const weddingPreview: StudioMarketingCardConfig = {
 };
 
 const babyPreview: StudioMarketingCardConfig = {
+  id: "studio-marketing-baby-bloom-shower",
   title: "Baby Bloom Shower",
   imageUrl: "/images/studio/invite-baby-shower.webp",
   wideImageUrl: "/images/marketing/use-case-baby.webp",
@@ -311,6 +315,7 @@ const babyPreview: StudioMarketingCardConfig = {
 };
 
 const schoolPreview: StudioMarketingCardConfig = {
+  id: "studio-marketing-spring-field-day",
   title: "Spring Field Day",
   imageUrl: "/images/studio/invite-school-event.webp",
   wideImageUrl: "/images/marketing/use-case-school.webp",
@@ -335,6 +340,7 @@ const schoolPreview: StudioMarketingCardConfig = {
 };
 
 const communityPreview: StudioMarketingCardConfig = {
+  id: "studio-marketing-neighborhood-night-market",
   title: "Neighborhood Night Market",
   imageUrl: "/images/marketing/use-case-community.webp",
   wideImageUrl: "/images/marketing/use-case-community.webp",
@@ -358,6 +364,7 @@ const communityPreview: StudioMarketingCardConfig = {
 };
 
 const teamPreview: StudioMarketingCardConfig = {
+  id: "studio-marketing-team-offsite",
   title: "Studio Team Offsite",
   imageUrl: "/images/studio/invite-team-offsite.webp",
   wideImageUrl: "/images/marketing/use-case-team.webp",
@@ -382,6 +389,7 @@ const teamPreview: StudioMarketingCardConfig = {
 };
 
 const showcaseBirthdayPreview: StudioMarketingCardConfig = {
+  id: "studio-marketing-lara-dino-adventure",
   title: "Lara's Dino-Adventure",
   imageUrl: "/api/blob/event-media/upload-9f766086-693e-45aa-9813-bfe97f095651/header/display.webp",
   sharePath: buildStudioMarketingShowcasePath("Lara's Dino-Adventure"),
@@ -404,6 +412,7 @@ const showcaseBirthdayPreview: StudioMarketingCardConfig = {
 };
 
 const showcaseGameDayPreview: StudioMarketingCardConfig = {
+  id: "studio-marketing-panther-game-night",
   title: "Panther Game Night",
   imageUrl: "/api/blob/event-media/upload-8cc5fc5f-deb5-4083-a3a2-daeb53602a51/header/display.webp",
   sharePath: buildStudioMarketingShowcasePath("Panther Game Night"),
@@ -425,6 +434,7 @@ const showcaseGameDayPreview: StudioMarketingCardConfig = {
 };
 
 const showcaseBridalPreview: StudioMarketingCardConfig = {
+  id: "studio-marketing-madeline-garden-brunch",
   title: "Madeline's Garden Brunch",
   imageUrl: "/api/blob/event-media/upload-c23c3d9e-45b5-4822-a8c8-b8892289de3e/header/display.webp",
   sharePath: buildStudioMarketingShowcasePath("Madeline's Garden Brunch"),
@@ -447,6 +457,7 @@ const showcaseBridalPreview: StudioMarketingCardConfig = {
 };
 
 const showcaseBabyPreview: StudioMarketingCardConfig = {
+  id: "studio-marketing-elena-blue-bear-shower",
   title: "Elena's Blue Bear Shower",
   imageUrl: "/api/blob/event-media/upload-66ac676d-ad60-4391-b974-ec67199cbe77/header/display.webp",
   sharePath: buildStudioMarketingShowcasePath("Elena's Blue Bear Shower"),
@@ -469,6 +480,7 @@ const showcaseBabyPreview: StudioMarketingCardConfig = {
 };
 
 const showcaseAnniversaryPreview: StudioMarketingCardConfig = {
+  id: "studio-marketing-silver-anniversary-soiree",
   title: "Silver Anniversary Soirée",
   imageUrl: "/api/blob/event-media/upload-767b4cbd-a67b-43b4-8339-1b2afe60016b/header/display.webp",
   sharePath: buildStudioMarketingShowcasePath("Silver Anniversary Soirée"),
@@ -491,6 +503,7 @@ const showcaseAnniversaryPreview: StudioMarketingCardConfig = {
 };
 
 const showcaseMuseumPreview: StudioMarketingCardConfig = {
+  id: "studio-marketing-museum-discovery-day",
   title: "Museum Discovery Day",
   imageUrl: "/api/blob/event-media/upload-b9b6e1f6-f6bc-47a2-b036-2088b8366e47/header/display.webp",
   sharePath: buildStudioMarketingShowcasePath("Museum Discovery Day"),

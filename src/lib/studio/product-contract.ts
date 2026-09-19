@@ -1,9 +1,12 @@
-import { strictObject, stringList } from "../creation/source-evidence.ts";
+import { isRecord, matchesSchema, strictObject, stringList } from "../creation/source-evidence.ts";
 import type { StudioEventDetails, StudioGenerateSurface } from "./types.ts";
+import { compileArtworkContract } from "./artwork-copy.ts";
 
 export type StudioProduct = "live_card" | "digital_flyer" | "printable_flyer" | "event_page";
 export const EVENT_PAGE_SECTIONS = ["details", "schedule", "location", "rsvp", "registry"] as const;
 export type StudioCreativePlan = {
+  /** Assigned by the compiler; model prose cannot change approved copy coverage. */
+  approvedTextBlockIds?: string[];
   concept: string;
   focalSubject: string;
   layout: "single_scene" | "property_collage";
@@ -19,6 +22,16 @@ export const CREATIVE_PLAN_SCHEMA = strictObject({
   sections: { type: "array", items: { type: "string", enum: EVENT_PAGE_SECTIONS } },
   exclusions: stringList,
 });
+
+export function normalizeCreativePlan(value: unknown): StudioCreativePlan | undefined {
+  if (!isRecord(value)) return undefined;
+  const { approvedTextBlockIds, ...modelPlan } = value;
+  if (!matchesSchema(modelPlan, CREATIVE_PLAN_SCHEMA)) return undefined;
+  return {
+    ...(modelPlan as StudioCreativePlan),
+    ...(Array.isArray(approvedTextBlockIds) ? { approvedTextBlockIds: approvedTextBlockIds.filter((id): id is string => typeof id === "string") } : {}),
+  };
+}
 
 export function resolveStudioProduct(
   product: unknown,
@@ -77,7 +90,7 @@ export function productContract(product: StudioProduct) {
     safeMargin: 72,
     imageText: "headline" as const,
     description:
-      "Live card: integrate the approved headline, names, and supplied milestone into the artwork. Use the entire canvas for composition. Interactive actions overlay the bottom edge of the artwork; continue the scene behind them, keeping essential lettering and faces above the controls. Do not add a blank band or black footer. Dates, addresses, and other logistics live in the detail panels.",
+      "Live card: integrate the approved headline, names, supplied milestone and every explicitly required artwork line into the artwork. Use the entire canvas for composition. Interactive actions overlay the bottom edge of the artwork; continue the scene behind them, keeping essential lettering and faces above the controls. Do not add a blank band or black footer. Other dates, addresses, and logistics live in the detail panels unless explicitly included in the approved artwork lines.",
   };
 }
 
@@ -110,15 +123,23 @@ export function validateCreativePlan(
   plan?: StudioCreativePlan,
 ): StudioCreativePlan {
   const defaults = defaultCreativePlan(event, product);
+  const sports = /\b(?:basketball|soccer|football|baseball|softball|volleyball|lacrosse|hockey|tennis|swimming|wrestling|gymnastics|cheerleading)\b/gi;
+  const supplied = new Set(([event.title, event.sportType, event.semanticKind, event.userIdea, event.description, ...(event.guestInstructions || [])].filter(Boolean).join(" ").toLowerCase().match(sports) || []));
+  const proposed = `${plan?.concept || ""} ${plan?.focalSubject || ""}`.toLowerCase().match(sports) || [];
+  const unsupportedSubject = supplied.size > 0 && proposed.some((subject) => !supplied.has(subject));
   return {
     ...(plan || defaults),
+    ...(unsupportedSubject ? { concept: defaults.concept, focalSubject: defaults.focalSubject } : {}),
+    approvedTextBlockIds: compileArtworkContract(event, product).blocks.filter((block) => block.surface === "artwork").map((block) => block.id),
     layout:
       plan?.layout === "property_collage" && (event.propertyImageUrls?.length || 0) > 1
         ? "property_collage"
         : plan
           ? "single_scene"
           : defaults.layout,
-    textPlacement: plan?.textPlacement?.trim() || defaults.textPlacement,
+    // Model-authored prose cannot promise copy that the image contract excludes.
+    // The user's lettering direction remains in guidance, separate from required content.
+    textPlacement: defaults.textPlacement,
     sections: defaults.sections,
   };
 }

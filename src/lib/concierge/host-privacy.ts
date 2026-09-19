@@ -88,6 +88,10 @@ export function applyHostPrivacy(draft: ConciergeEventDraft, previous?: Concierg
     location: privateAddress ? placeholder : draft.location,
     venue: privateAddress ? placeholder : draft.venue,
     rsvpContact: privateContact ? null : draft.rsvpContact,
+    publicContent: draft.publicContent ? {
+      ...draft.publicContent,
+      items: draft.publicContent.items.filter((item) => !containsPrivateFact(item.text)),
+    } : undefined,
     additionalLocations,
     previewCopy,
     copyStatus: proseChanged ? "needs_update" : draft.copyStatus,

@@ -15,15 +15,15 @@ import {
   useRef,
   useState,
 } from "react";
+import AuthModal from "@/components/auth/AuthModal";
 import { useUnsavedProgress } from "@/components/UnsavedProgressProvider";
 import { buildOwnerEventEditHref, ownerEventEditorReturnHref } from "@/lib/event-preview-viewport";
-import AuthModal from "@/components/auth/AuthModal";
 import { getFamilyTemplateDesign } from "@/lib/family-template-designs";
 import { hasAnalyticsConsent } from "@/lib/privacy-preferences";
 import { BRIDAL_PRESETS, getPublicTemplate } from "@/lib/public-template-catalog";
+import { allowsPublicSignup } from "@/lib/signup-access";
 import { createEmptySignupTemplateForm, getSignupTemplateTheme } from "@/lib/signup-starters";
 import { takeSignupTheme } from "@/lib/signup-theme-handoff";
-import type { SignupForm } from "@/types/signup";
 import { createSignupAppearance } from "@/lib/signup-themes";
 import { getSportEventPreset, getSportStyleThemeIds } from "@/lib/sport-event-presets";
 import {
@@ -40,12 +40,13 @@ import {
   type DraftValue,
   deleteTemplateDraft,
   type EditorSnapshot,
-  readTemplateDraft,
+  readTemplateEditorDraft,
   replaceDraftMedia,
   retainDraftMedia,
   type TemplateDraft,
   writeTemplateDraft,
 } from "@/lib/template-draft-storage";
+import type { SignupForm } from "@/types/signup";
 import { validateClientUploadFile } from "@/utils/media-upload-client";
 import styles from "./template-editor.module.css";
 
@@ -60,6 +61,7 @@ export type TemplateEditorRuntime = {
   initial: EditorSnapshot;
   authenticated: boolean;
   published?: boolean;
+  signupRequiresInvitation?: boolean;
   record: (key: string, value: DraftValue) => void;
   requestSave: () => Promise<void>;
   persist: (payload: TemplateHistoryPayload, status: "draft" | "published") => Promise<void>;
@@ -176,7 +178,7 @@ export default function TemplateEditorProvider({
   const themePreview =
     category === "signup-forms" && !editId && !requestedDraft ? search?.get("themePreview") : null;
   const themeHandoff = useRef<{ token: string; form: SignupForm } | null>(null);
-  const savedThemeEventId = useRef<string | null>(null);
+  const savedEventId = useRef<string | null>(null);
   const info = getTemplateCategory(category)!;
 
   const flush = useCallback(async () => {
@@ -201,7 +203,7 @@ export default function TemplateEditorProvider({
 
   useEffect(() => {
     // Replacing the temporary URL after saving must not reload over newer in-memory edits.
-    if (editId && savedThemeEventId.current === editId && draft.current?.eventId === editId) return;
+    if (editId && savedEventId.current === editId && draft.current?.eventId === editId) return;
     let cancelled = false;
     async function initialize() {
       let saved: TemplateDraft | null = null;
@@ -229,7 +231,7 @@ export default function TemplateEditorProvider({
         };
       } else
         try {
-          saved = await readTemplateDraft(category, requestedDraft || undefined);
+          saved = await readTemplateEditorDraft(category, requestedDraft, editId);
         } catch {
           setStorageReady(false);
           setError(
@@ -265,6 +267,13 @@ export default function TemplateEditorProvider({
                 : {}),
             },
             signupRevision: row.data?.signupForm?.revision,
+            signupRequiresInvitation:
+              category === "signup-forms" &&
+              !allowsPublicSignup({
+                ...row.data,
+                status: "published",
+                draftStatus: "published",
+              }),
             assets: {},
             eventId: editId,
           };
@@ -477,9 +486,9 @@ export default function TemplateEditorProvider({
             ? "Draft saved. Only you can view it until you publish."
             : "Published.",
         );
-        if (themePreview && nextStatus === "draft") {
-          // A saved draft must reload from its durable account record, not the consumed preview.
-          savedThemeEventId.current = eventId;
+        if (category === "signup-forms" && nextStatus === "draft") {
+          // Reload must reopen this saved form, including a previously temporary theme preview.
+          savedEventId.current = eventId;
           themeHandoff.current = null;
           window.history.replaceState(
             null,
@@ -570,6 +579,7 @@ export default function TemplateEditorProvider({
       initial: initial || {},
       authenticated,
       published,
+      signupRequiresInvitation: draft.current?.signupRequiresInvitation,
       record,
       requestSave,
       persist,
@@ -672,6 +682,7 @@ export default function TemplateEditorProvider({
                     window.history.replaceState(null, "", templateEditorHref(category, templateId));
                     remoteMedia.current = {};
                     setEditorReady(false);
+                    setPublished(false);
                     setInitial({});
                     setGeneration((n) => n + 1);
                     setMessage("");

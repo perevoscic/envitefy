@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { describeDatabaseError, isDatabaseUnavailableError } from "./database-errors.ts";
+import {
+  describeDatabaseError,
+  isDatabaseUnavailableError,
+  normalizeDatabaseError,
+} from "./database-errors.ts";
 
 test("recognizes a direct database connection error", () => {
   assert.equal(
@@ -15,6 +19,17 @@ test("recognizes connection errors nested inside AggregateError", () => {
 
   assert.equal(isDatabaseUnavailableError(aggregate), true);
   assert.equal(describeDatabaseError(aggregate), "[EACCES] connect EACCES 127.0.0.1:5432");
+  const normalized = normalizeDatabaseError(aggregate);
+  assert.equal(normalized.message, "[EACCES] connect EACCES 127.0.0.1:5432");
+  assert.equal(normalized.code, "EACCES");
+});
+
+test("empty AggregateError connect failures keep a usable message", () => {
+  const aggregate = new AggregateError([]);
+  assert.equal(isDatabaseUnavailableError(aggregate), true);
+  const normalized = normalizeDatabaseError(aggregate);
+  assert.equal(normalized.message, "Database connection unavailable");
+  assert.notEqual(normalized.message, "");
 });
 
 test("recognizes connection errors nested through cause", () => {

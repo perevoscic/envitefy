@@ -6,6 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { hideAuthTransition, showAuthTransition } from "@/utils/authTransition";
+import { startNativeIOSSignIn } from "@/lib/native-ios";
 
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
@@ -72,6 +73,7 @@ export default function LoginForm({
   };
 
   const onGoogleSignIn = async () => {
+    if (startNativeIOSSignIn({ returnTo: successRedirectUrl, mode: "login" })) return;
     setSubmitting(true);
     try {
       showAuthTransition("Opening Google sign in...");

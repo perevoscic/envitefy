@@ -909,7 +909,7 @@ const SignupViewer: React.FC<Props> = ({
                 {form.settings.collectEmail && (
                   <div>
                     <label className="block text-sm font-medium text-[var(--signup-text)] mb-2">
-                      Email for reminders (required)
+                      Email for confirmation (required)
                     </label>
                     <input
                       aria-label="Email address"
@@ -1093,11 +1093,13 @@ const SignupViewer: React.FC<Props> = ({
           )}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
             <div className="text-xs text-[var(--signup-muted)]">
-              {viewerId
-                ? "You can return to this page to view or update your signup."
-                : form.settings.collectEmail
-                  ? "No account needed. Use the private link in your confirmation email to edit or cancel on any device."
-                  : "No account needed. Return using this browser to edit or cancel, or ask the organizer for help."}
+              {requiresInvitation
+                ? "Participants must sign in and accept an invitation before signing up."
+                : viewerId
+                  ? "You can return to this page to view or update your signup."
+                  : form.settings.collectEmail
+                    ? "No account needed. Use the private link in your confirmation email to edit or cancel on any device."
+                    : "No account needed. Return using this browser to edit or cancel, or ask the organizer for help."}
             </div>
             <div className="flex items-center gap-2">
               {editingResponse && (

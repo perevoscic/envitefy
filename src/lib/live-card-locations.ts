@@ -1,4 +1,5 @@
 import { buildPreferredDirectionsHref } from "./directions.ts";
+import { composeGuestLocation, isPhysicalGuestLocation } from "./guest-event-details.ts";
 
 export type LiveCardLocationSource = "primary" | "details";
 
@@ -57,12 +58,7 @@ function makeLocationId(source: LiveCardLocationSource, label: string, fallbackI
 }
 
 function combineVenueAndLocation(venue: string, location: string) {
-  if (!venue) return location;
-  if (!location) return venue;
-  const venueKey = normalizeComparableText(venue);
-  const locationKey = normalizeComparableText(location);
-  if (!venueKey || !locationKey || locationKey.includes(venueKey)) return location;
-  return `${venue} ${location}`;
+  return composeGuestLocation(venue, location);
 }
 
 function findInlineStreetAddress(value: string): { venue: string; address: string } | null {
@@ -198,7 +194,7 @@ function extractStructuredLocationActions(value: unknown): LiveCardLocationActio
       source: "details",
     });
   }
-  return actions;
+  return actions.filter((action) => isPhysicalGuestLocation(action.mapQuery));
 }
 
 function isDuplicateLocationAction(
@@ -241,7 +237,7 @@ export function buildLiveCardLocationActions(
     }
   }
 
-  return actions;
+  return actions.filter((action) => isPhysicalGuestLocation(action.mapQuery));
 }
 
 export function buildLiveCardDirectionsHref(mapQuery: string) {

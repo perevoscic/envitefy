@@ -31,7 +31,7 @@ test("meet discovery removes schedule-session prompt profiles and schedule-grid 
   assert.match(facade, /from "@\/lib\/meet-discovery\/parse"/);
   assert.match(
     source,
-    /type ParsePromptProfile =\s*\|\s*"overview_core"\s*\|\s*"parent_public";/,
+    /type ParsePromptProfile =\s*(?:\|\s*)?"overview_core"\s*\|\s*"parent_public";/,
   );
   assert.doesNotMatch(source, /GYM_DISCOVERY_SCHEDULE_GRID_ENABLED/);
   assert.doesNotMatch(source, /stripGymScheduleGridsFromParseResult/);
@@ -53,7 +53,7 @@ test("meet discovery classifier and schema only model the surviving attendee-fir
   );
   assert.match(
     source,
-    /return uniqueBy\(\["overview_core", "parent_public"\], \(item\) => item\)\.slice\(0, 2\);/,
+    /return uniqueBy<ParsePromptProfile>\(\["overview_core", "parent_public"\], \(item\) => item\)\.slice\(0, 2\);/,
   );
 });
 

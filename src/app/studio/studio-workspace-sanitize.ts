@@ -1,5 +1,5 @@
-import { CREATIVE_PLAN_SCHEMA, resolveStudioProduct, type StudioCreativePlan } from "@/lib/studio/product-contract";
-import { matchesSchema } from "@/lib/creation/source-evidence";
+import { normalizeCreativePlan, resolveStudioProduct } from "@/lib/studio/product-contract";
+import type { ApprovedArtworkContract } from "@/lib/studio/artwork-copy";
 import { readCardRegistryLink } from "@/lib/studio/card-registry";
 import { GENERATION_STAGE_LABELS, type GenerationStage, type GenerationTimings } from "@/lib/studio/generation-progress";
 import {
@@ -7,6 +7,7 @@ import {
   normalizeLiveCardMetadata,
   type StudioGenerateApiResponse,
   type StudioGenerationError,
+  type StudioGenerationDiagnostics,
   type StudioThemeNormalization,
 } from "@/lib/studio/types";
 import { resolveCoverImageUrlFromEventData } from "@/lib/upload-config";
@@ -232,7 +233,20 @@ export function sanitizeEventDetails(value: unknown): EventDetails {
 
   details.product = value.product ? resolveStudioProduct(value.product) : undefined;
   details.rsvpEnabled = typeof value.rsvpEnabled === "boolean" ? value.rsvpEnabled : undefined;
+  details.guestInstructions = Array.isArray(value.guestInstructions) ? value.guestInstructions.map(readString).filter(Boolean) : [];
+  details.requiredArtworkLines = Array.isArray(value.requiredArtworkLines) ? value.requiredArtworkLines.map(readString).filter(Boolean) : [];
+  if (isRecord(value.pageTypography)) {
+    details.pageTypography = {
+      scale: typeof value.pageTypography.scale === "number" && Number.isFinite(value.pageTypography.scale) ? Math.min(1.5, Math.max(1, value.pageTypography.scale)) : undefined,
+      contrast: value.pageTypography.contrast === "high" ? "high" : undefined,
+      foreground: value.pageTypography.foreground === "dark" || value.pageTypography.foreground === "light" ? value.pageTypography.foreground : undefined,
+    };
+  }
   const stringKeys: Array<keyof EventDetails> = [
+    "eventKind",
+    "semanticKind",
+    "calendarStartISO",
+    "calendarEndISO",
     "approvedWording",
     "timezone",
     "sourceFlyerUrl",
@@ -394,7 +408,6 @@ export function sanitizeEventDetails(value: unknown): EventDetails {
           };
         })
         .filter((item) => item && (item.venue || item.location || item.address))
-        .slice(0, 8)
     : [];
   if (details.sourceMediaMode === "flyer") {
     details.guestImageUrls = [];
@@ -445,7 +458,9 @@ export function sanitizeInvitationData(
 
   return {
     title: readString(value.title) || getDisplayTitle(fallbackDetails),
-    creativePlan: matchesSchema(value.creativePlan, CREATIVE_PLAN_SCHEMA) ? value.creativePlan as StudioCreativePlan : undefined,
+    creativePlan: normalizeCreativePlan(value.creativePlan),
+    diagnostics: sanitizeGenerationDiagnostics(value.diagnostics),
+    artworkContract: sanitizeArtworkContract(value.artworkContract),
     subtitle: readString(value.subtitle) || buildStudioSubtitleFallback(fallbackDetails),
     description:
       readString(value.description) ||
@@ -796,6 +811,37 @@ export function restoreHydratedMediaItems(items: MediaItem[]): MediaItem[] {
   });
 }
 
+function sanitizeGenerationDiagnostics(value: unknown): StudioGenerationDiagnostics | undefined {
+  if (!isRecord(value) || value.version !== 1 || typeof value.contractId !== "string" || (value.operation !== "initial" && value.operation !== "edit") || !Array.isArray(value.checks)) return undefined;
+  const outcome = value.outcome;
+  if (outcome !== "accepted" && outcome !== "needs_review" && outcome !== "rejected" && outcome !== "unverified" && outcome !== "provider_failed" && outcome !== "contract_blocked") return undefined;
+  const checks: StudioGenerationDiagnostics["checks"] = [];
+  for (const check of value.checks.slice(0, 2)) {
+    if (!isRecord(check) || (check.attempt !== "initial" && check.attempt !== "repair") || (check.status !== "passed" && check.status !== "failed" && check.status !== "unavailable")) return undefined;
+    checks.push({ attempt: check.attempt, status: check.status,
+      issues: Array.isArray(check.issues) ? check.issues.map(readString).filter(Boolean).slice(0, 24) : [],
+      repairInstructions: Array.isArray(check.repairInstructions) ? check.repairInstructions.map(readString).filter(Boolean).slice(0, 24).map((line) => line.slice(0, 1200)) : [],
+      ...(readString(check.unavailableReason) ? { unavailableReason: readString(check.unavailableReason) } : {}),
+    });
+  }
+  return { version: 1, contractId: value.contractId, operation: value.operation, outcome, checks };
+}
+
+function sanitizeArtworkContract(value: unknown): ApprovedArtworkContract | undefined {
+  if (!isRecord(value) || value.version !== 1 || typeof value.id !== "string" || !Array.isArray(value.blocks)) return undefined;
+  if (!["live_card", "digital_flyer", "printable_flyer", "event_page"].includes(readString(value.product))) return undefined;
+  const blocks: ApprovedArtworkContract["blocks"] = [];
+  for (const block of value.blocks) {
+    if (!isRecord(block) || typeof block.id !== "string" || typeof block.text !== "string" || (block.surface !== "artwork" && block.surface !== "page")) return undefined;
+    blocks.push({ id: block.id, text: block.text, surface: block.surface });
+  }
+  const lines = (input: unknown): string[] => Array.isArray(input) ? input.map(readString).filter(Boolean) : [];
+  return { version: 1, id: value.id, product: resolveStudioProduct(value.product), blocks,
+    approvedText: lines(value.approvedText), requiredText: lines(value.requiredText), pageText: lines(value.pageText),
+    prohibited: ["faux_controls", "device_frame", "forbidden_footer"], blockedIssues: lines(value.blockedIssues),
+  };
+}
+
 function sanitizeGenerationTimings(value: unknown): GenerationTimings | undefined {
   if (!isRecord(value) || !isRecord(value.stagesMs)) return undefined;
   const validMs = (ms: unknown): ms is number => typeof ms === "number" && Number.isFinite(ms) && ms >= 0;
@@ -843,6 +889,11 @@ export function sanitizeStudioGenerateResponse(value: unknown): StudioGenerateAp
     return {
       ok: false,
       mode,
+      product: resolveStudioProduct(value.product),
+      timings: sanitizeGenerationTimings(value.timings),
+      qualityCheck: value.qualityCheck === "failed" ? "failed" : "unavailable",
+      diagnostics: sanitizeGenerationDiagnostics(value.diagnostics),
+      artworkContract: sanitizeArtworkContract(value.artworkContract),
       liveCard: null,
       invitation: null,
       imageDataUrl: null,
@@ -858,6 +909,8 @@ export function sanitizeStudioGenerateResponse(value: unknown): StudioGenerateAp
   return {
     ok: true,
     mode,
+    diagnostics: sanitizeGenerationDiagnostics(value.diagnostics),
+    artworkContract: sanitizeArtworkContract(value.artworkContract),
     product: resolveStudioProduct(value.product),
     timings: sanitizeGenerationTimings(value.timings),
     qualityCheck: value.qualityCheck === "passed" || value.qualityCheck === "failed" || value.qualityCheck === "needs_review" ? value.qualityCheck : "unavailable",

@@ -4,34 +4,31 @@
     env(safe-area-inset-top, 0px) -
     env(safe-area-inset-bottom, 0px)
   );
-  --artwork-preview-height: calc(var(--artwork-preview-available-height) * 0.9);
+  --artwork-preview-max-art-height: max(8rem, calc(var(--artwork-preview-available-height) - 10rem));
   --artwork-preview-width: min(
     calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)),
-    calc(var(--artwork-preview-height) * var(--artwork-preview-ratio))
+    calc(var(--artwork-preview-max-art-height) * var(--artwork-preview-ratio))
   );
+  --artwork-preview-height: calc(var(--artwork-preview-width) / var(--artwork-preview-ratio));
   position: fixed;
-  top: calc(
-    env(safe-area-inset-top, 0px) +
-    (var(--artwork-preview-available-height) - var(--artwork-preview-height)) /
-    2
-  );
+  top: 50%;
   left: calc((100vw + env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) / 2);
   z-index: 7001;
   width: var(--artwork-preview-width);
-  height: var(--artwork-preview-height);
-  transform: translateX(-50%);
+  height: auto;
+  transform: translate(-50%, -50%);
   outline: none;
 }
 
-/* Fill the preview edge to edge while preserving the artwork's proportions. */
+/* Text-bearing artwork must expose all four edges, independent of viewport ratio. */
 .content [data-live-card-artwork] > div > img {
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .close {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: -52px;
+  right: 0;
   z-index: 100;
   display: flex;
   justify-content: flex-end;

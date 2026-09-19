@@ -1,5 +1,4 @@
-import { CREATIVE_PLAN_SCHEMA, resolveStudioProduct, type StudioProduct, type StudioCreativePlan } from "./product-contract.ts";
-import { matchesSchema } from "../creation/source-evidence.ts";
+import { normalizeCreativePlan, resolveStudioProduct, type StudioProduct, type StudioCreativePlan } from "./product-contract.ts";
 export type StudioGenerateMode = "text" | "image" | "both";
 export type StudioGenerateSurface = "page" | "image";
 export type StudioProvider = "gemini" | "openai";
@@ -9,6 +8,11 @@ export type StudioVisualStyleMode = "photoreal" | "editorial_cinematic" | "playf
 export type StudioThemeNormalizationRisk = "safe" | "rewrite" | "block";
 
 export type StudioEventDetails = {
+  /** Public requirements supplied by the user; never design/private notes. */
+  guestInstructions?: string[];
+  /** Exact lines explicitly requested on the artwork (HTML for event-page heroes). */
+  requiredArtworkLines?: string[];
+  semanticKind?: string | null;
   approvedWording?: string | null;
   rsvpEnabled?: boolean | null;
   additionalLocations?: Array<{ label?: string | null; venue?: string | null; location?: string | null; address?: string | null; timeText?: string | null; description?: string | null }>;
@@ -135,7 +139,23 @@ export type StudioGenerationError = {
   status?: number;
 };
 
+export type StudioGenerationDiagnostics = {
+  version: 1;
+  contractId: string;
+  operation: "initial" | "edit";
+  outcome: "accepted" | "needs_review" | "rejected" | "unverified" | "provider_failed" | "contract_blocked";
+  checks: Array<{
+    attempt: "initial" | "repair";
+    status: "passed" | "failed" | "unavailable";
+    issues: string[];
+    repairInstructions: string[];
+    unavailableReason?: string;
+  }>;
+};
+
 export type StudioGenerateResponse = {
+  diagnostics?: StudioGenerationDiagnostics;
+  artworkContract?: import("./artwork-copy.ts").ApprovedArtworkContract;
   artworkTextMode?: import("../concierge/artwork-change.ts").ArtworkTextMode;
   timings?: import("./generation-progress.ts").GenerationTimings;
   product?: StudioProduct;
@@ -155,6 +175,11 @@ export type StudioGenerateResponse = {
 };
 
 export type StudioGenerateFailureResponse = {
+  diagnostics?: StudioGenerationDiagnostics;
+  artworkContract?: import("./artwork-copy.ts").ApprovedArtworkContract;
+  product?: StudioProduct;
+  qualityCheck?: StudioGenerateResponse["qualityCheck"];
+  timings?: StudioGenerateResponse["timings"];
   ok: false;
   mode: StudioGenerateMode;
   liveCard: null;
@@ -226,6 +251,9 @@ function normalizeEvent(value: unknown): StudioEventDetails | null {
   if (!title) return null;
   return {
     title,
+    guestInstructions: normalizePublicLines((value as any).guestInstructions),
+    requiredArtworkLines: normalizePublicLines((value as any).requiredArtworkLines),
+    semanticKind: safeNullableString((value as any).semanticKind),
     approvedWording: safeNullableString((value as any).approvedWording),
     rsvpEnabled: typeof (value as any).rsvpEnabled === "boolean" ? (value as any).rsvpEnabled : null,
     additionalLocations: normalizeAdditionalEventLocations((value as any).additionalLocations),
@@ -268,6 +296,12 @@ function normalizeEvent(value: unknown): StudioEventDetails | null {
     propertyImageUrls: normalizeReferenceImageUrls((value as any).propertyImageUrls),
     realtorImageUrls: normalizeReferenceImageUrls((value as any).realtorImageUrls),
   };
+}
+
+function normalizePublicLines(value: unknown): string[] {
+  return Array.isArray(value)
+    ? [...new Set(value.filter((line): line is string => typeof line === "string").map((line) => line.trim()).filter(Boolean))]
+    : [];
 }
 
 function normalizeGuidance(value: unknown): StudioGenerationGuidance | undefined {
@@ -439,7 +473,7 @@ export function normalizeLiveCardMetadata(value: unknown): StudioLiveCardMetadat
   }
 
   return {
-    creativePlan: matchesSchema((value as Record<string, unknown>).creativePlan, CREATIVE_PLAN_SCHEMA) ? (value as { creativePlan: StudioCreativePlan }).creativePlan : undefined,
+    creativePlan: normalizeCreativePlan((value as Record<string, unknown>).creativePlan),
     title,
     description,
     palette,
@@ -456,7 +490,7 @@ export function normalizeLiveCardMetadata(value: unknown): StudioLiveCardMetadat
 
 function normalizeAdditionalEventLocations(value: unknown): NonNullable<StudioEventDetails["additionalLocations"]> {
   if (!Array.isArray(value)) return [];
-  return value.filter((item): item is Record<string, unknown> => item !== null && typeof item === "object" && !Array.isArray(item)).slice(0, 12).map((item) => ({
+  return value.filter((item): item is Record<string, unknown> => item !== null && typeof item === "object" && !Array.isArray(item)).map((item) => ({
     label: safeNullableString(item.label), venue: safeNullableString(item.venue), location: safeNullableString(item.location), address: safeNullableString(item.address), timeText: safeNullableString(item.timeText), description: safeNullableString(item.description),
   }));
 }

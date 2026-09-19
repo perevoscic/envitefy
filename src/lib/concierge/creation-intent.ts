@@ -53,6 +53,7 @@ const RSVP_CAPABLE_OUTPUTS = new Set<RequestedOutput>([
 ]);
 
 const ALWAYS_RSVP_EVENT_TYPES = new Set<ConciergeEventType>([
+  "anniversary",
   "birthday",
   "wedding",
   "baby_shower",
@@ -125,6 +126,7 @@ export function shouldAskRsvpGuestCount(args: {
 }
 
 const EVENT_TYPES = new Set<ConciergeEventType>([
+  "anniversary",
   "unknown",
   "birthday",
   "wedding",
@@ -147,6 +149,8 @@ const EVENT_TYPES = new Set<ConciergeEventType>([
 ]);
 
 const EVENT_TYPE_ALIASES: Record<string, ConciergeEventType> = {
+  anniversary: "anniversary",
+  anniversaries: "anniversary",
   "birthday invite": "birthday",
   "birthday party": "birthday",
   birthdays: "birthday",
@@ -282,6 +286,7 @@ function hasReceivedInviteLanguage(text: string): boolean {
 
 function asksForEnvitefyProductOrEdit(text: string): boolean {
   if (hasReceivedInviteLanguage(text)) return true;
+  if (/\b(?:I|we)\s+(?:need|want|would\s+like)\s+(?:an?\s+)?(?:event\s+page|live\s*card|(?:downloadable\s+|digital\s+)?flyer(?:\s+or\s+invitation)?|invitation)\b/i.test(text)) return true;
   if (
     asksForCoreProductBundle(text) ||
     asksForFlyerProduct(text) ||

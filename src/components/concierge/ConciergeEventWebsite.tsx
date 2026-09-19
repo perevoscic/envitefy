@@ -8,7 +8,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useState } from "react";
 import CalendarAction from "@/components/CalendarAction";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
@@ -16,6 +16,10 @@ import EventTrackedLink from "@/components/EventTrackedLink";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
 import { scanScheduleWhen } from "@/lib/scan-schedule";
 import type { EventWebsiteScheduleItem } from "@/lib/event-website-schedule";
+import { composeGuestLocation, isPhysicalGuestLocation, publicGuestInstructions } from "@/lib/guest-event-details";
+import { buildLiveCardDirectionsHref } from "@/lib/live-card-locations";
+import type { GenderRevealConfig } from "@/lib/gender-reveal";
+import styles from "./ConciergeEventWebsite.module.css";
 
 type CalendarLinks = {
   google: string;
@@ -44,7 +48,7 @@ type SourceFactSection = {
   items?: string[];
 };
 
-type ConciergeEventWebsiteProps = {
+export type ConciergeEventWebsiteProps = {
   eventId: string;
   title: string;
   category: string;
@@ -69,6 +73,12 @@ type ConciergeEventWebsiteProps = {
   registryLinks?: RegistryLink[];
   scheduleItems?: EventWebsiteScheduleItem[];
   actions?: ReactNode;
+  guestInstructions?: string[];
+  requiredArtworkLines?: string[];
+  pageTypography?: { scale?: number; contrast?: "high"; foreground?: "dark" | "light" } | null;
+  previewMode?: boolean;
+  genderRevealConfig?: GenderRevealConfig;
+  rsvpDeadline?: string | null;
 };
 
 function clean(value: unknown): string {
@@ -81,7 +91,7 @@ function uniqueLine(...values: Array<string | null | undefined>) {
 }
 
 function locationLine(location: EventLocation) {
-  return uniqueLine(location.venue, location.location || location.address);
+  return composeGuestLocation(location.venue, location.location || location.address);
 }
 
 function formatDateTime(value: string | null | undefined) {
@@ -135,11 +145,19 @@ export default function ConciergeEventWebsite({
   registryLinks = [],
   scheduleItems = [],
   actions,
+  guestInstructions = [],
+  requiredArtworkLines = [],
+  pageTypography,
+  previewMode = false,
+  genderRevealConfig,
+  rsvpDeadline,
 }: ConciergeEventWebsiteProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const displayWhen =
     clean(whenLabel) || uniqueLine(dateLabel, timeLabel) || "Date to be announced";
-  const displayLocation = uniqueLine(venueName, location) || "Location to be announced";
+  const physicalLocation = composeGuestLocation(venueName, location);
+  const displayLocation = physicalLocation || "Location to be announced";
+  const requiredLines = publicGuestInstructions({ guestInstructions, requiredArtworkLines });
   const visibleAdditionalLocations = additionalLocations
     .map((item) => ({
       ...item,
@@ -169,7 +187,7 @@ export default function ConciergeEventWebsite({
   ];
 
   return (
-    <main className="min-h-screen bg-[#f7f8fb] text-slate-950">
+    <main data-event-page-foreground={pageTypography?.foreground || "light"} className={`${styles.page} min-h-screen bg-[#f7f8fb] text-slate-950`} style={{ "--event-page-type-scale": Math.max(1, Math.min(1.5, pageTypography?.scale || 1)) } as CSSProperties}>
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <a href="#top" className="min-w-0">
@@ -192,7 +210,7 @@ export default function ConciergeEventWebsite({
             <button
               type="button"
               onClick={() => setMenuOpen((value) => !value)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-800 md:hidden"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-800 md:hidden"
               aria-label="Toggle menu"
               aria-expanded={menuOpen}
             >
@@ -211,22 +229,21 @@ export default function ConciergeEventWebsite({
         ) : null}
       </header>
 
-      <section id="top" className="relative overflow-hidden bg-slate-950">
+      <section id="top" data-event-page-hero className="relative overflow-hidden bg-slate-950">
         {heroImage ? (
           <img
             src={heroImage}
             alt={`${title} event artwork`}
-            className="absolute inset-0 h-full w-full object-cover opacity-75"
+            className="block h-auto w-full object-contain"
             referrerPolicy="no-referrer"
           />
         ) : null}
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,6,23,0.9),rgba(15,23,42,0.58),rgba(15,23,42,0.18))]" />
-        <div className="relative mx-auto grid min-h-[76vh] max-w-6xl content-end px-4 pb-14 pt-24 sm:px-6 lg:pb-20">
-          <div className="max-w-3xl">
+        <div className="relative mx-auto grid max-w-6xl px-4 py-6 sm:px-6 lg:py-10">
+          <div className={styles.heroCopy}>
             <p className="text-xs font-black uppercase tracking-[0.26em] text-white/72">
               {category || "Event"}
             </p>
-            <h1 className="mt-4 text-5xl font-black leading-[0.92] text-white sm:text-7xl">
+            <h1 className={`${styles.heroTitle} mt-4 font-black leading-[1.02]`}>
               {title}
             </h1>
             {subheadline ? (
@@ -258,7 +275,10 @@ export default function ConciergeEventWebsite({
           <h2 className="mt-3 text-3xl font-black text-slate-950 sm:text-4xl">
             Details for the day
           </h2>
-          <p className="mt-5 text-lg leading-8 text-slate-600">{body}</p>
+          <p className={`${styles.body} mt-5 whitespace-pre-line leading-8 text-slate-600`}>{body}</p>
+          {requiredLines.length ? <ul className="mt-5 space-y-3 text-base leading-7 text-slate-700">
+            {requiredLines.filter((line) => !body.includes(line)).map((line) => <li key={line} className="whitespace-pre-line">{line}</li>)}
+          </ul> : null}
           {visibleSourceSections.length ? (
             <div className="mt-8 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-violet-700">
@@ -347,6 +367,7 @@ export default function ConciergeEventWebsite({
                 <p className="mt-1 text-base font-bold text-slate-950">{displayLocation}</p>
               </div>
             </div>
+            {isPhysicalGuestLocation(physicalLocation) ? <a href={buildLiveCardDirectionsHref(physicalLocation)} target="_blank" rel="noreferrer" aria-label={`Directions to ${physicalLocation}`} className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm font-bold text-slate-950"><MapPin className="h-4 w-4" aria-hidden="true" />Directions</a> : null}
             {visibleAdditionalLocations.length ? (
               <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
                 {visibleAdditionalLocations.map((item, index) => (
@@ -355,6 +376,7 @@ export default function ConciergeEventWebsite({
                       {clean(item.label) || "Additional Location"}
                     </p>
                     <p className="mt-1 text-sm font-bold text-slate-950">{item.line}</p>
+                    {isPhysicalGuestLocation(item.line) ? <a href={buildLiveCardDirectionsHref(item.line)} target="_blank" rel="noreferrer" aria-label={`Directions to ${item.line}`} className="inline-flex min-h-11 items-center text-sm font-bold text-violet-700">Directions</a> : null}
                     {item.timeText || item.description ? (
                       <p className="mt-1 text-sm text-slate-500">
                         {[clean(item.timeText), clean(item.description)].filter(Boolean).join(" - ")}
@@ -420,6 +442,9 @@ export default function ConciergeEventWebsite({
                 eventCategory={category}
                 shareUrl={shareUrl}
                 allowDirectRsvp={directRsvpEnabled}
+                previewMode={previewMode}
+                genderRevealConfig={genderRevealConfig}
+                rsvpDeadline={rsvpDeadline}
               />
             </div>
           </div>

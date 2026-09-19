@@ -17,6 +17,11 @@ registerHooks({
 
 const { generateStudioInvitation, studioGenerationDeps } = await import("./generate.ts");
 
+test.beforeEach(() => {
+  mock.method(studioGenerationDeps, "prepareStudioImageGeometry", async (product) => product === "event_page" ? { width: 1536, height: 1024, size: "1536x1024" } : { width: 1024, height: 1536, size: "1024x1536" });
+  mock.method(studioGenerationDeps, "validateStudioImageGeometry", async () => ({ ok: true, width: 1024, height: 1536 }));
+});
+
 test.afterEach(() => {
   mock.restoreAll();
 });

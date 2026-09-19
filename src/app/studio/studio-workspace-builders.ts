@@ -1,4 +1,5 @@
 import { resolveStudioProduct, type StudioProduct } from "@/lib/studio/product-contract";
+import { uniquePublicText } from "@/lib/studio/artwork-copy";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
 import type { LiveCardRsvpChoice } from "@/lib/live-card-rsvp";
 import { resolveStudioImageFinishPreset } from "@/lib/studio/image-finish-presets";
@@ -69,35 +70,16 @@ export function stripStudioInternalInstructions(value: string | null | undefined
   return stripped
     .replace(/\s+([,.;:!?])/g, "$1")
     .replace(/(?:^|\s)[,.;:!?]+(?=\s|$)/g, " ")
-    .replace(/\s{2,}/g, " ")
+    .replace(/[^\S\r\n]{2,}/g, " ")
     .trim();
 }
 
 function normalizeDescriptionComparable(value: string) {
   return value
+    .normalize("NFKC")
     .toLowerCase()
-    .replace(/\b(?:turning|turns|turned)\b/g, "turn")
-    .replace(/[^a-z0-9]+/g, " ")
-    .split(" ")
-    .filter(
-      (token) =>
-        token &&
-        ![
-          "a",
-          "an",
-          "are",
-          "as",
-          "celebrate",
-          "for",
-          "is",
-          "join",
-          "the",
-          "they",
-          "to",
-          "us",
-        ].includes(token),
-    )
-    .join(" ");
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function pushUniqueDescriptionPart(parts: string[], value: string | null | undefined) {
@@ -108,9 +90,7 @@ function pushUniqueDescriptionPart(parts: string[], value: string | null | undef
     parts.some((part) => {
       const comparablePart = normalizeDescriptionComparable(part);
       return (
-        comparablePart === comparableNext ||
-        comparablePart.includes(comparableNext) ||
-        comparableNext.includes(comparablePart)
+        comparablePart === comparableNext
       );
     })
   ) {
@@ -306,7 +286,6 @@ export function getRegistryText(details: EventDetails) {
     details.giftNote,
     details.bringABookNote,
     details.registryLink ? "Registry available for guests." : "",
-    "Your presence is the best gift.",
   );
 }
 
@@ -501,7 +480,7 @@ export function resolveStudioCallToAction(
   ...candidates: Array<string | null | undefined>
 ): string {
   if (details.rsvpEnabled === false) return "View details";
-  const categorySupportsRsvp = supportsStudioCategoryRsvp(details.category);
+  const categorySupportsRsvp = details.rsvpEnabled ?? supportsStudioCategoryRsvp(details.category);
   for (const candidate of candidates) {
     const next = clean(candidate);
     if (!next) continue;
@@ -516,7 +495,7 @@ export function resolveStudioRsvpMessage(
   ...candidates: Array<string | null | undefined>
 ): string {
   if (details.rsvpEnabled === false) return "";
-  const categorySupportsRsvp = supportsStudioCategoryRsvp(details.category);
+  const categorySupportsRsvp = details.rsvpEnabled ?? supportsStudioCategoryRsvp(details.category);
   for (const candidate of candidates) {
     const next = clean(candidate);
     if (!next) continue;
@@ -557,13 +536,15 @@ function buildOpenHouseContextNotes(details: EventDetails): string[] {
 
 export function buildDescription(details: EventDetails) {
   const parts: string[] = [];
+  pushUniqueDescriptionPart(parts, details.approvedWording);
   pushUniqueDescriptionPart(parts, details.detailsDescription);
   pushUniqueDescriptionPart(parts, details.message);
   pushUniqueDescriptionPart(parts, details.activityNote);
   pushUniqueDescriptionPart(parts, details.calloutText);
+  for (const note of [...(details.guestInstructions || []), ...(details.requiredArtworkLines || [])]) pushUniqueDescriptionPart(parts, note);
   for (const note of buildGameDayContextNotes(details)) pushUniqueDescriptionPart(parts, note);
   for (const note of buildOpenHouseContextNotes(details)) pushUniqueDescriptionPart(parts, note);
-  return stripStudioInternalInstructions(parts.join(" "));
+  return stripStudioInternalInstructions(parts.join("\n"));
 }
 
 export function buildLinks(details: EventDetails) {
@@ -591,7 +572,7 @@ function buildStudioThemeFramingGuidance(details: EventDetails) {
     "Bridal Shower":
       "Interpret the user's theme words as a bridal-shower version of that idea, with bridal-party decor, gift-table, brunch or tea-party styling, and elevated celebration cues instead of generic scenery. Favor one polished hosted moment, such as a brunch table or tea service, instead of a collage of repeated garden scenes.",
     Anniversary:
-      "Interpret the user's theme words as an anniversary celebration version of that idea, with couple-focused party styling, elegant decor, and relationship-celebration cues instead of generic scenery. If the milestone implies a traditional material or palette such as silver or gold, let that influence the decor and color story.",
+      "Interpret the user's theme words as an anniversary celebration version of that idea, with couple-focused party styling, elegant decor, and relationship-celebration cues instead of generic scenery. Follow the user's explicit palette first; traditional milestone materials may influence decor only when no palette was supplied.",
     Housewarming:
       "Interpret the user's theme words as a housewarming celebration version of that idea, with welcoming home-party decor, hosting details, and lived-in gathering cues instead of generic scenery. Let the home style and hosting style shape the scene so it feels like a real gathering instead of an empty real-estate rendering.",
     "Field Trip/Day":
@@ -859,7 +840,7 @@ function formatStudioVisibleDate(details: EventDetails): string {
 
 export function buildDeterministicScheduleLine(details: EventDetails): string {
   const date = formatStudioVisibleDate(details);
-  const time = formatVisibleCardTime(getStudioEventStartTime(details));
+  const time = uniquePublicText([formatVisibleCardTime(getStudioEventStartTime(details)), formatVisibleCardTime(getStudioEventEndTime(details))]).join(" – ");
   if (date && time) return `${date} at ${time}`;
   return date;
 }
@@ -874,6 +855,8 @@ function buildExistingImageEditInstruction(
   refinement: string,
   previousDetails?: EventDetails,
 ): string {
+  // Page copy is HTML. Keep its explicit edit request separate from card lettering policies.
+  if (product === "event_page") return refinement;
   const instructions: string[] = [];
   const previousDate = previousDetails ? formatStudioVisibleDate(previousDetails) : "";
   const nextDate = formatStudioVisibleDate(details);
@@ -963,7 +946,7 @@ function buildExistingImageEditInstruction(
     "Do not redesign, recompose, regenerate, crop, zoom, restyle, or rewrite any unrelated part of the image. A requested theme change permits changes to background, decorative imagery, palette, and lighting.",
   );
   instructions.push(
-    "Keep unrelated visible text, photos, listing facts, icons, logos, stats, bottom image strips, layout, lighting, colors, and spacing unchanged. Preserve the existing wording during a theme change unless a wording change was also requested.",
+    "Keep unrelated approved visible text, photos, listing facts, layout, lighting, colors, and spacing unchanged. Preserve the existing wording during a theme change unless a wording change was also requested. Remove faux interface controls, device frames and forbidden footer strips even when present in the source; preservation never overrides required wording or these prohibitions.",
   );
 
   return instructions.join(" ");
@@ -1037,7 +1020,7 @@ export function buildStudioRequest(
     ? buildExistingImageEditInstruction(details, product, refinement, previousDetails)
     : "";
   const designIdea = sanitizeStudioDesignIdea(details.theme);
-  const categorySupportsRsvp = supportsStudioCategoryRsvp(details.category);
+  const categorySupportsRsvp = details.rsvpEnabled ?? supportsStudioCategoryRsvp(details.category);
   const baseDescription = buildDescription(details);
   const internalInstructions = clean(details.specialInstructions);
   const sanitizedGuestImageUrls = hasStudioSubjectReferencePhotos(details)
@@ -1089,6 +1072,9 @@ export function buildStudioRequest(
     surface,
     product,
     event: {
+      guestInstructions: details.guestInstructions || [],
+      requiredArtworkLines: details.requiredArtworkLines || [],
+      semanticKind: details.semanticKind || null,
       approvedWording: details.approvedWording || null,
       rsvpEnabled: details.rsvpEnabled ?? categorySupportsRsvp,
       additionalLocations: details.additionalLocations || [],
@@ -1177,6 +1163,9 @@ export function buildStudioRequest(
       audience: pickFirst(details.invitedWho, details.audience, "Guests") || null,
       colorPalette:
         clean(details.colors) ||
+        (/\b(?:navy|silver|green|cream|gold|blue|red|pink|purple|orange|black|white|teal)\b/i.test(designIdea)
+          ? `Follow the colors explicitly described in the user design idea: ${designIdea}`
+          : null) ||
         (details.category === "Open House"
           ? "Architectural neutrals, deep charcoal, warm white, and refined teal or gold accents"
           : null) ||
@@ -1261,14 +1250,14 @@ export function refreshLiveCardInvitationData(
 ): InvitationData {
   const fallbackTheme = getThemeColors(details);
   const description =
-    stripStudioInternalInstructions(previous?.description) ||
     buildDescription(details) ||
+    stripStudioInternalInstructions(previous?.description) ||
     "Celebrate together with a beautifully designed invitation.";
-  const title = stripStudioInternalInstructions(previous?.title) || getDisplayTitle(details);
+  const title = getDisplayTitle(details);
   const subtitle =
     stripStudioInternalInstructions(previous?.subtitle) || buildStudioSubtitleFallback(details);
-  const scheduleLine = clean(previous?.scheduleLine) || buildDeterministicScheduleLine(details);
-  const locationLine = resolveLiveCardVisibleLocationLine(details, previous?.locationLine);
+  const scheduleLine = buildDeterministicScheduleLine(details);
+  const locationLine = uniquePublicText([details.venueName || details.ceremonyVenue || details.receptionVenue, details.location]).join(" · ");
   const callToAction = resolveStudioCallToAction(
     details,
     previous?.callToAction,
@@ -1292,6 +1281,8 @@ export function refreshLiveCardInvitationData(
     creativePlan: previous?.creativePlan,
     artworkTextMode: previous?.artworkTextMode,
     artworkNotice: previous?.artworkNotice,
+    diagnostics: previous?.diagnostics,
+    artworkContract: previous?.artworkContract,
     heroTextMode,
     theme: {
       primaryColor: clean(previous?.theme?.primaryColor) || fallbackTheme.primaryColor,
@@ -1374,7 +1365,7 @@ export function normalizeStudioExternalUrl(value: string): string {
 }
 
 export function buildStudioRsvpLine(details: EventDetails): string | undefined {
-  if (!supportsStudioCategoryRsvp(details.category)) return undefined;
+  if (!(details.rsvpEnabled ?? supportsStudioCategoryRsvp(details.category))) return undefined;
   const hostName = readString(details.rsvpName);
   const hostContact = readString(details.rsvpContact);
   const deadline = formatDate(details.rsvpDeadline);
@@ -1393,21 +1384,22 @@ export function getStudioShareTitle(item: MediaItem): string {
 export function buildStudioPublishPayload(item: MediaItem, imageUrl: string | null) {
   const details = item.details;
   const title = getStudioShareTitle(item);
-  const startISO = toIsoFromLocalDateTime(
+  const startISO = details.calendarStartISO || toIsoFromLocalDateTime(
     getStudioEventDate(details),
     getStudioEventStartTime(details),
   );
-  const endISO = toIsoFromLocalDateTime(
+  const endISO = details.calendarEndISO || toIsoFromLocalDateTime(
     getStudioEventDate(details),
     getStudioEventEndTime(details),
   );
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  const timezone = details.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   const category = normalizeStudioEventCategory(details.category);
   const descriptionParts = [
     item.data?.description,
     readString(details.detailsDescription),
     readString(details.message),
-    readString(details.specialInstructions),
+    ...(details.guestInstructions || []),
+    ...(details.requiredArtworkLines || []),
     ...buildGameDayContextNotes(details),
     ...buildOpenHouseContextNotes(details),
     readString(details.optionalLink)

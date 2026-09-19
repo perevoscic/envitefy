@@ -15,6 +15,10 @@ import SignupViewer from "@/components/smart-signup-form/SignupViewer";
 import { absoluteUrl } from "@/lib/absolute-url";
 import { authOptions } from "@/lib/auth";
 import {
+  describeDatabaseError,
+  isDatabaseUnavailableError,
+} from "@/lib/database-errors";
+import {
   type EventHistoryPublicRow,
   getEventHistoryPublicRenderBySlugOrId,
   getUserIdByEmail,
@@ -73,6 +77,22 @@ function readDate(value: unknown): string | null {
   if (!trimmed) return null;
   const parsed = new Date(trimmed);
   return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) || !Number.isNaN(parsed.getTime()) ? trimmed : null;
+}
+
+function signupUnavailablePage() {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
+      <main className="mx-auto w-full max-w-2xl px-5 py-14 space-y-4">
+        <h1 className="text-3xl font-bold text-neutral-900 text-center">
+          This sign-up form is temporarily unavailable
+        </h1>
+        <p className="text-center text-neutral-700">
+          Please refresh in a moment. If this keeps happening, try again later.
+        </p>
+        <SignupFormFooter />
+      </main>
+    </div>
+  );
 }
 
 function resolveSignupForm(row: EventHistoryPublicRow): SignupForm | null {
@@ -237,7 +257,21 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const awaitedParams = await params;
-  const row = await getCachedSignupEventBySlugOrId(awaitedParams.id, null);
+  let row: EventHistoryPublicRow | null = null;
+  try {
+    row = await getCachedSignupEventBySlugOrId(awaitedParams.id, null);
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) throw error;
+    console.warn(
+      "[smart-signup-form] metadata skipped; database unavailable",
+      describeDatabaseError(error),
+    );
+    return {
+      title: "Smart sign-up — Envitefy",
+      description: "View an Envitefy smart sign-up form.",
+      robots: { index: false, follow: false },
+    };
+  }
   if (!row) {
     return {
       title: "Smart sign-up — Envitefy",
@@ -299,8 +333,19 @@ export default async function SignupPage({
   const ownerPreviewEmbedded = ownerPreviewMode && query.embed === "dashboard-preview";
   const session: any = await getServerSession(authOptions as any);
   const sessionEmail = (session?.user?.email as string | undefined) || null;
-  const userId = sessionEmail ? await getUserIdByEmail(sessionEmail) : null;
-  const row = await getCachedSignupEventBySlugOrId(awaitedParams.id, userId);
+  let userId: string | null = null;
+  let row: EventHistoryPublicRow | null = null;
+  try {
+    userId = sessionEmail ? await getUserIdByEmail(sessionEmail) : null;
+    row = await getCachedSignupEventBySlugOrId(awaitedParams.id, userId);
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) throw error;
+    console.warn(
+      "[smart-signup-form] page skipped; database unavailable",
+      describeDatabaseError(error),
+    );
+    return signupUnavailablePage();
+  }
   if (!row) return notFound();
   if (row.user_id === userId && isEventDraft(row.data) && row.data?.templateEditor)
     redirect(resolveEditHref(row.id, row.data, row.title));

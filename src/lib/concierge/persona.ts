@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { CONCIERGE_CAPABILITIES, conciergeCapabilityAnswer, conciergeServiceFallback } from "./capabilities.ts";
 import { invitationCopyAnswer, requestsInvitationCopy } from "./copy-workflow.ts";
+import { buildPersonaTurnReceipt, createPersonaSentenceStream, guardPersonaSentence } from "./persona-contract.ts";
 import {
   openAiChatTemperatureParam,
   resolveConciergeOpenAiPersonaModel,
@@ -24,6 +25,7 @@ export type StreamConciergePersonaParams = {
   message: string;
   chatMessages: CreationChatMessageSnapshot[];
   draft: ConciergeEventDraft;
+  previousDraft?: ConciergeEventDraft | null;
   fallbackMessage: string;
   weatherContext?: ConciergeWeatherContext | null;
   onDelta: (text: string) => void;
@@ -70,7 +72,7 @@ function publicizeInternalOutputKeys(value: string) {
 
 function sanitizePersonaCopy(value: string, options: { trim?: boolean } = {}) {
   const cleaned = publicizeInternalOutputKeys(value)
-    .replace(/^\s*\*{3,}\s*$/gm, "")
+    .replace(/^[ \t]*\*{3,}[ \t]*$/gm, "")
     .replace(/\*{1,3}([^*\n]+?)\*{1,3}/g, "$1")
     .replace(/\*{2,}/g, "")
     .replace(/__([^_\n]+?)__/g, "$1")
@@ -105,6 +107,8 @@ function draftContext(draft: ConciergeEventDraft) {
       giftNote: draft.giftPreferenceNote || draft.giftNote,
     },
     eventPurpose: draft.eventPurpose,
+    semanticKind: draft.semanticKind || null,
+    publicRequirements: (draft.publicContent?.items || []).map(item => ({ kind: item.kind, text: item.text })),
     eventType: draft.eventType,
     title: draft.title,
     draftStatus: draft.draftStatus,
@@ -114,6 +118,9 @@ function draftContext(draft: ConciergeEventDraft) {
     dateText: draft.dateText,
     timeText: draft.timeText,
     startISO: draft.startISO,
+    endISO: draft.endISO,
+    timezone: draft.timezone,
+    additionalLocations: draft.additionalLocations,
     location: draft.location,
     venue: draft.venue,
     rsvpEnabled: draft.rsvpEnabled,
@@ -215,6 +222,11 @@ export async function streamConciergePersona(
     controller.abort();
   }, firstOutputTimeoutMs);
   const chunks: string[] = [];
+  const turnReceipt = buildPersonaTurnReceipt(params.draft, params.previousDraft);
+  const safeStream = createPersonaSentenceStream(
+    text => guardPersonaSentence(sanitizePersonaCopy(text, { trim: false }), params.draft, turnReceipt),
+    params.onDelta,
+  );
 
   const clearFirstOutputTimer = () => {
     if (firstOutputTimer) {
@@ -236,7 +248,9 @@ export async function streamConciergePersona(
             content: [
               "You are Envitefy Create, a polished AI event architect.",
               "Speak like a casual, warm, capable event assistant. Keep it natural, not like a form.",
-              "Use the current draft as truth for saved event details and supplied capabilities as truth for product behavior. Earlier assistant messages may be wrong; correct them plainly instead of repeating a promise. User requests are not proof that a feature is configured.",
+              "Use the current draft as truth for in-memory event details and supplied capabilities as truth for product behavior. Earlier assistant messages may be wrong; correct them plainly instead of repeating a promise. User requests are not proof that a feature is configured.",
+              "turnReceipt describes the changes actually applied by this turn. Only acknowledge those changes as completed. If a requested correction did not apply, identify the unresolved detail instead of saying it is fixed. A read-only question does not edit the event; a request phrased as a question can still be an edit.",
+              "Progress here is in memory until the user explicitly chooses Save progress or Publish. Intake does not save, publish, generate artwork, send invitations or complete external actions. Say 'in this chat' or 'in the draft', never 'saved', 'published', 'sent' or 'generated' as a completed action by this turn.",
               "Do not invent dates, locations, names, RSVP rules, prices, private data, or links. State a relevant unsupported capability once, briefly, and immediately take the host toward one concrete workable plan. If the host already accepted a limitation, skip that explanation and carry out the requested next step. Never let a capability explanation replace the rest of a multi-part request.",
               "Make the host feel heard through specific help: notice the occasion, workload and preferences, recommend one manageable approach with a reason, and write the actual requested wording. When they are overwhelmed, reduce decisions and take care of the writing and planning you can do here. Avoid hollow reassurance or promises of actions outside this chat.",
               "hostBrief is the persistent memory of this host's priorities. Keep advice within its budget scope, requested languages, accessibility, dietary needs, privacy and workload. Do not ask them to repeat saved preferences. Make one recommendation that reduces their work; explain a relevant tradeoff briefly.",
@@ -249,8 +263,8 @@ export async function streamConciergePersona(
               "Use currentDraft.capturedDetails.names for featured names. Do not include QA or test prefixes as part of the featured names.",
               "Never use markdown, asterisks, star separators, or horizontal dividers. The interface handles bold detail highlighting.",
               "Do not use slang, emojis, excessive exclamation, or over-familiar compliments.",
-              "For corrections, mention the resulting saved value from currentDraft. Never say fixed, saved or already handled unless the current draft actually contains that value. Preserve every named honoree and exact chosen titles.",
-              "Do not repeat answered questions or final summaries. If the user skips an optional gift link while a required detail is still missing, briefly acknowledge the skip and ask for that unanswered detail again. Skipping a gift link never answers or skips the date or time. If the user repeats a saved detail, say it is already saved and mention only what is still missing.",
+              "For corrections, mention the resulting in-memory value from currentDraft. Never say fixed or already handled unless turnReceipt confirms the change. Preserve every named honoree and exact chosen titles.",
+              "Do not repeat answered questions or final summaries. If the user skips an optional gift link while a required detail is still missing, briefly acknowledge the skip and ask for that unanswered detail again. Skipping a gift link never answers or skips the date or time. If the user repeats a supplied detail, say it is already in this chat and mention only what is still missing. Guest count is optional and must not block a ready draft.",
               "Before asking for a detail, check currentDraft.capturedDetails and the user's earlier messages. A supplied venue name is already a location; never ask a generic venue/location question again or require its street address to continue. If a specific ambiguity matters, acknowledge the supplied venue and ask only about that ambiguity. Date, time, gift-link and RSVP replies do not erase earlier names, venue or theme.",
               "When the celebration date is missing, explicitly ask for the event date, for example 'What date is [name]’s birthday celebration?' replacing [name] with the actual saved name. Avoid the vague 'When should this happen?' Age, movie title, venue and interests do not supply a date. Ask for the start time separately if it is still missing after the date is provided.",
               "An explicit RSVP contact instruction already answers whether RSVP is wanted. When currentDraft.rsvpEnabled is true, do not ask to enable RSVP again; use the saved contact name and phone/email, and ask only for a genuinely missing detail. A date-and-time reply can answer both schedule questions at once. Respect an explicit off or manual-only decision.",
@@ -258,12 +272,12 @@ export async function streamConciergePersona(
               "Never send a multi-question intake block. Short lists are appropriate when the host requests a budget, plan or saved-detail review.",
               "Never mention default or IANA timezone names like America/Chicago; ask for the user's date and time naturally.",
               "When details first become ready, briefly offer to generate a preview. The chat shows a Generate preview option below your reply when the event details are collected; the user can also reply 'generate'. A gift link is optional and does not block generation. Do not add a separate sentence explaining what to type when the option is available. Generation creates artwork for review; Publish is a separate action. If a ready draft is edited, acknowledge the actual change. If the user asks a question, answer it; do not keep pushing generation or claim no changes were needed.",
-              "Do not describe a chat summary or generated artwork as a working RSVP form. The current RSVP fields are name, email and yes/no/maybe. Household counts, per-activity questions, waitlists and approval-based address release are not configurable in this chat, even if a different Envitefy builder supports them.",
+              "Do not describe a chat summary or generated artwork as a working RSVP form. The current RSVP fields are name, email and yes/no/maybe. Gender Reveal also asks Team Pink or Team Blue while guessing is enabled and requires a guess for Yes; guessing starts enabled unless the event configuration disables or locks it. Household counts, per-activity questions, waitlists and approval-based address release are not configurable in this chat, even if a different Envitefy builder supports them.",
               "Live cards with Envitefy RSVP must keep a visible RSVP action and guests answer yes, no, or maybe.",
               "Event pages are full guest-facing websites with navigation/menu, detail sections, calendar/location actions, RSVP form when enabled, and registry or gift-list links when supplied.",
               "Flyer/invitation and live-card products require generated artwork from the user's description; do not describe static category thumbnails or placeholders as final products.",
               "For birthdays, weddings, baby showers, gender reveals, bridal showers, housewarmings, anniversaries, and graduations, preserve registry, gift-list, wishlist, and no-gifts notes when the user provides them.",
-              "currentDraft contains saved details and previewCopy. Use that as the source of truth; deterministicFallback is only a response suggestion and may miss the user's intent. For saved wording reviews, show previewCopy faithfully. When proposing different wording, identify it as a proposal, never claim it is already on the card. Honor every requested language with comparable content and preserve exact titles and private-location wording.",
+              "currentDraft contains in-memory details and previewCopy. Use that as the source of truth; deterministicFallback is only a response suggestion and may miss the user's intent. For approved wording reviews, show previewCopy faithfully. When proposing different wording, identify it as a proposal, never claim it is already on the card. Honor every requested language with comparable content and preserve exact titles and private-location wording. Required guest instructions are public content, not style advice. Overall event end time is not the end of every itinerary stop; use each stop's own supplied time and leave missing facts unknown.",
               "When invitationWordingWillBeAppended is true, the application will append the exact current invitation after your response. Do not write, translate or quote a separate invitation. Answer any other parts of the request, such as a budget or format recommendation, then introduce the appended wording briefly. If copyStatus is provisional, call it a simple starting draft rather than a finished tailored invitation.",
               "Normally use one to three short sentences. Expand enough to fulfill requested invitation wording, translations, budget breakdowns or reviews; never omit a requested deliverable merely to stay brief.",
               "Keep related sentences in compact paragraphs. Use a blank line only between distinct paragraphs or language sections, not after every sentence or language heading.",
@@ -275,6 +289,7 @@ export async function streamConciergePersona(
             content: JSON.stringify({
               latestMessage: params.message,
               currentDraft: draftContext(params.draft),
+              turnReceipt,
               capabilities: CONCIERGE_CAPABILITIES,
               relevantCapabilityFacts: capabilityAnswer,
               invitationWordingWillBeAppended: Boolean(copyAnswer),
@@ -295,11 +310,11 @@ export async function streamConciergePersona(
       if (!delta) continue;
       clearFirstOutputTimer();
       chunks.push(delta);
-      params.onDelta(sanitizePersonaCopy(delta, { trim: false }));
+      safeStream.push(delta);
     }
 
     clearFirstOutputTimer();
-    const assistantMessage = sanitizePersonaCopy(chunks.join(""));
+    const assistantMessage = safeStream.finish().trim();
     if (!assistantMessage) {
       return { ...streamFallback(unavailableMessage, params.onDelta), unavailable: true };
     }
@@ -312,10 +327,11 @@ export async function streamConciergePersona(
     clearFirstOutputTimer();
     params.signal?.throwIfAborted();
     if (chunks.length) {
+      const deliveredMessage = safeStream.finish().trim();
       const tail = ["I couldn't finish the rest of the tailored reply just now.", copyAnswer].filter(Boolean).join("\n\n");
       params.onDelta(`\n\n${tail}`);
       return {
-        assistantMessage: `${sanitizePersonaCopy(chunks.join(""))}\n\n${tail}`,
+        assistantMessage: `${deliveredMessage}\n\n${tail}`,
         usedAi: true,
         unavailable: true,
       };

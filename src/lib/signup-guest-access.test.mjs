@@ -36,6 +36,23 @@ function loader(mocks = {}) {
 }
 const load = loader();
 const { allowsPublicSignup } = load("src/lib/signup-access.ts");
+test("private form flags survive normalization and explicit saves", () => {
+  const { sanitizeSignupForm } = load("src/utils/signup.ts");
+  const { updateSignupDefinition } = load("src/lib/signup-mutations.ts");
+  const { createDefaultSignupForm } = load("src/utils/signup.ts");
+  for (const flags of [{ visibility: "private" }, { publicVisibility: "invite_only" }, { publicPage: false }, { isPublic: "false" }, { public: "0" }]) {
+    const form = { ...createDefaultSignupForm(), ...flags };
+    const normalized = sanitizeSignupForm(form);
+    assert.equal(normalized.visibility, "restricted");
+    assert.equal(allowsPublicSignup({ status: "published", signupForm: normalized }), false);
+    const saved = updateSignupDefinition(form, { ...normalized, visibility: undefined }, true);
+    assert.equal(allowsPublicSignup({ status: "published", signupForm: saved }), false);
+  }
+  const ordinary = sanitizeSignupForm(createDefaultSignupForm());
+  assert.equal(allowsPublicSignup({ status: "published", signupForm: ordinary }), true);
+  assert.equal(allowsPublicSignup({ status: "draft", signupForm: ordinary }), false);
+  assert.equal(allowsPublicSignup({ status: "published", visibility: "private", signupForm: ordinary }), false);
+});
 const { createSignupThemeForm } = load("src/lib/signup-starters.ts");
 const { createSignupGuestToken, signupGuestId } = load("src/lib/signup-guest-cookie.ts");
 const {

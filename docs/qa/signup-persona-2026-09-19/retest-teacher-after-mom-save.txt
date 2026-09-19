@@ -1,0 +1,219 @@
+- generic "Sidebar":
+  - link "Envitefy home":
+    - /url: /
+  - button "Keep sidebar open":
+  - navigation "Main navigation":
+    - link "Home":
+      - /url: /
+    - button "Snap / Upload":
+    - button "Envitefy Create":
+    - button "Create Event":
+    - button "My Events, 11":
+    - button "Schedules, 3":
+    - button "Sign-up Forms, 5":
+    - button "Drafts, 2":
+    - button "Admin":
+  - button "Account menu for [organizer] (Admin)"
+- link "← Signup forms templates":
+  - /url: /signup-forms/templates
+- paragraph: Save a private draft, then publish when ready.
+- button "Start over"
+- button "Save draft"
+- main:
+  - heading "Your signup page" [level=1]
+  - heading "Build your signup form" [level=2]
+  - paragraph: Your design is ready. Add your details and the sections you need.
+  - button "Change hero image":
+    - text: Change image
+  - switch "Template image filter" [checked]: Filter on
+  - paragraph:
+    - generic: Add group or organization
+    - button "Edit group or organization":
+  - heading "TEST — Teacher Conferences Retest Edit event title" [level=1]:
+    - text: TEST — Teacher Conferences Retest
+    - button "Edit event title":
+  - paragraph:
+    - generic: Add a welcome message
+    - button "Edit welcome message":
+  - text: October 22, 2026, 3:00 – 4:00 PM CDT
+  - button "Edit date and time":
+  - generic: Location to be announced
+  - button "Edit location":
+  - generic: Add organizer
+  - button "Edit organizer name":
+  - generic: Arrival & other details
+  - button "Edit arrival and other details":
+  - heading "Your form sections" [level=2]
+  - paragraph: Drag the Move handle to arrange sections, or use the arrow buttons.
+  - button "+ Add section"
+  - generic "Form heading & introduction (optional)"
+  - button "Drag Parent–teacher appointments to reorder":
+    - generic: Move
+  - generic: Signup section · 4 slots
+  - button "Move Parent–teacher appointments up" [disabled]: ↑
+  - button "Move Parent–teacher appointments down" [disabled]: ↓
+  - button "Duplicate Parent–teacher appointments":
+  - button "Remove":
+    - generic: Remove
+  - text: Section title
+  - textbox "Section title":
+    - /placeholder: Give this section a name
+    - text: Parent–teacher appointments
+  - text: Instructions (optional)
+  - textbox "Instructions (optional)":
+    - /placeholder: What should guests know?
+  - generic "Section rules & time slots"
+  - option "Attendance / registration"
+  - option "Volunteer roles"
+  - option "Appointments / time slots" [selected]
+  - option "Items to bring"
+  - option "Custom signup"
+  - text: What can someone sign up for?
+  - textbox "What can someone sign up for?":
+    - /placeholder: e.g. Bring dessert or help at the welcome desk
+    - text: Appointment 1
+  - text: Places / quantity
+  - spinbutton "Places / quantity": "1"
+  - generic "Time & notes"
+  - text: Starts at
+  - textbox "Starts at": 15:00
+  - text: Ends at
+  - textbox "Ends at": 15:15
+  - text: Notes
+  - textbox "Notes"
+  - button "Move Appointment 1 up" [disabled]: ↑
+  - button "Move Appointment 1 down": ↓
+  - button "Duplicate Appointment 1":
+  - button "Remove Appointment 1":
+  - text: What can someone sign up for?
+  - textbox "What can someone sign up for?":
+    - /placeholder: e.g. Bring dessert or help at the welcome desk
+    - text: Appointment 2
+  - text: Places / quantity
+  - spinbutton "Places / quantity": "1"
+  - generic "Time & notes"
+  - text: Starts at
+  - textbox "Starts at": 15:15
+  - text: Ends at
+  - textbox "Ends at": 15:30
+  - text: Notes
+  - textbox "Notes"
+  - button "Move Appointment 2 up": ↑
+  - button "Move Appointment 2 down": ↓
+  - button "Duplicate Appointment 2":
+  - button "Remove Appointment 2":
+  - text: What can someone sign up for?
+  - textbox "What can someone sign up for?":
+    - /placeholder: e.g. Bring dessert or help at the welcome desk
+    - text: Appointment 3
+  - text: Places / quantity
+  - spinbutton "Places / quantity": "1"
+  - generic "Time & notes"
+  - text: Starts at
+  - textbox "Starts at": 15:30
+  - text: Ends at
+  - textbox "Ends at": 15:45
+  - text: Notes
+  - textbox "Notes"
+  - button "Move Appointment 3 up": ↑
+  - button "Move Appointment 3 down": ↓
+  - button "Duplicate Appointment 3":
+  - button "Remove Appointment 3":
+  - text: What can someone sign up for?
+  - textbox "What can someone sign up for?":
+    - /placeholder: e.g. Bring dessert or help at the welcome desk
+    - text: Appointment 4
+  - text: Places / quantity
+  - spinbutton "Places / quantity": "1"
+  - generic "Time & notes"
+  - text: Starts at
+  - textbox "Starts at": 15:45
+  - text: Ends at
+  - textbox "Ends at": 16:00
+  - text: Notes
+  - textbox "Notes"
+  - button "Move Appointment 4 up": ↑
+  - button "Move Appointment 4 down" [disabled]: ↓
+  - button "Duplicate Appointment 4":
+  - button "Remove Appointment 4":
+  - button "+ Add slot"
+  - button "+ Add section"
+  - text: or drag a section here
+  - status
+  - heading "Questions for participants" [level=2]
+  - paragraph: Optional. Guests answer these after choosing their slots. Name and contact details are collected separately.
+  - text: Question
+  - textbox "Question":
+    - /placeholder: e.g. Any dietary requirements?
+    - text: Which grade and classroom?
+  - checkbox "Required" [checked]
+  - text: Required
+  - text: Answer length
+  - combobox "Answer length":
+    - option "Short answer" [selected]
+    - option "Long answer"
+  - button "Move question up" [disabled]: ↑
+  - button "Move question down" [disabled]: ↓
+  - button "Remove"
+  - button "+ Add question"
+  - link "Envitefy Sign-up Forms (opens in a new tab)":
+    - /url: https://envitefy.com
+    - img "envitefy":
+      - generic: envitefy
+  - paragraph: CREATE | SHARE | ENJOY
+  - paragraph:
+    - strong: Created with Envitefy Sign-up Forms
+    - link "Create now":
+      - /url: https://envitefy.com/
+  - navigation "Follow Envitefy":
+    - list:
+      - link "Envitefy on Instagram (opens in a new tab)":
+        - /url: https://www.instagram.com/envitefy/
+        - generic: Envitefy on Instagram (opens in a new tab)
+      - link "Envitefy on Facebook (opens in a new tab)":
+        - /url: https://www.facebook.com/envitefy/
+        - generic: Envitefy on Facebook (opens in a new tab)
+      - link "Envitefy on YouTube (opens in a new tab)":
+        - /url: https://www.youtube.com/@envitefy
+        - generic: Envitefy on YouTube (opens in a new tab)
+      - link "Envitefy on TikTok (opens in a new tab)":
+        - /url: https://www.tiktok.com/@envitefy
+        - generic: Envitefy on TikTok (opens in a new tab)
+      - link "Envitefy on Reddit (opens in a new tab)":
+        - /url: https://www.reddit.com/user/envitefy/
+        - generic: Envitefy on Reddit (opens in a new tab)
+  - complementary "Form tools":
+    - group "Editor tools":
+      - button "Add sections" [pressed]
+      - button "Design"
+      - button "Settings"
+    - heading "Add to your form" [level=3]
+    - paragraph: Click to add. On desktop, drag a section into place.
+    - button "+ Field Day starter Add volunteer shifts, supplies, instructions, and a classroom question. Existing sections stay in place.":
+      - strong: + Field Day starter
+      - generic: Add volunteer shifts, supplies, instructions, and a classroom question. Existing sections stay in place.
+    - button "+ Registration places A place at a class, gathering, or event.":
+      - strong: + Registration places
+      - generic: A place at a class, gathering, or event.
+    - button "+ Volunteer roles People to help with specific jobs.":
+      - strong: + Volunteer roles
+      - generic: People to help with specific jobs.
+    - button "+ Items to bring Food, supplies, or things to contribute.":
+      - strong: + Items to bring
+      - generic: Food, supplies, or things to contribute.
+    - button "+ Time slots Shifts, appointments, or session times.":
+      - strong: + Time slots
+      - generic: Shifts, appointments, or session times.
+    - button "+ Custom signup section Start with your own labels and quantities.":
+      - strong: + Custom signup section
+      - generic: Start with your own labels and quantities.
+    - button "+ Instructions / text Directions, what to expect, or a helpful note.":
+      - strong: + Instructions / text
+      - generic: Directions, what to expect, or a helpful note.
+    - button "Questions for participants Add short or long answers below your signup sections.":
+      - strong: Questions for participants
+      - generic: Add short or long answers below your signup sections.
+    - paragraph: Every added section can be edited, duplicated, moved, or removed. Name and contact details follow the slot selection.
+  - generic: Changes stay private until you publish.
+  - button "Preview & publish →"
+- alert

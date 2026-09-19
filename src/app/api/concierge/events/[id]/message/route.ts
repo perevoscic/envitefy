@@ -78,7 +78,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const body = (await timing.time("body_parse", () =>
       req.json().catch(() => ({})),
     )) as ConciergeEventMessageRequest;
-    const message = typeof body.message === "string" ? body.message.slice(0, 12000).trim() : "";
+    if (typeof body.message === "string" && body.message.length > 12000) {
+      return timedJson(timing, {
+        ok: false,
+        error: "Your message exceeds 12,000 characters. Please split it into shorter messages so every detail is included.",
+      }, { status: 400 });
+    }
+    const message = typeof body.message === "string" ? body.message.trim() : "";
     if (!message) {
       return timedJson(
         timing,

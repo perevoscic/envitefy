@@ -24,6 +24,8 @@ test("smart signup pages are noindexed by default and index only explicit public
 
   assert.match(source, /export async function generateMetadata/);
   assert.match(source, /robots: \{ index: false, follow: false \}/);
+  assert.match(source, /isDatabaseUnavailableError/);
+  assert.match(source, /This sign-up form is temporarily unavailable/);
   assert.match(source, /id="ld-smart-signup-form"/);
   assert.match(source, /viewerKind: "owner" \| "guest" \| "readonly"/);
   assert.match(source, /"@type": "RegisterAction"/);

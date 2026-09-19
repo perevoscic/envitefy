@@ -8,6 +8,10 @@ import { normalizeArtworkEditLanguage, requestedArtworkRequirements } from "@/li
 import { GENERATION_STAGE_LABELS, type GenerationStage } from "@/lib/studio/generation-progress";
 import { getCreationReadiness } from "@/lib/concierge/readiness";
 import { resolveStudioProduct } from "@/lib/studio/product-contract";
+import { resolveProductEditPlan, type PageTypography } from "@/lib/studio/product-edit-plan";
+import { publicContentForDraft } from "@/lib/concierge/public-content";
+import { buildPersonaTurnReceipt, guardPersonaSentence } from "@/lib/concierge/persona-contract";
+import { conciergeCapabilityAnswer } from "@/lib/concierge/capabilities";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowUp,
@@ -586,6 +590,7 @@ const CHAT_STARTER_PROMPTS = [
 const PREVIEW_CATEGORY_BY_EVENT_TYPE: Partial<Record<ConciergeEventType, string>> = {
   birthday: "Birthday",
   wedding: "Wedding",
+  anniversary: "Anniversary",
   baby_shower: "Baby Shower",
   gender_reveal: "Baby Shower",
   bridal_shower: "Bridal Shower",
@@ -1144,12 +1149,13 @@ function outputLabelsFromUnknown(value: unknown, fallback: string[]) {
 function studioCategoryForDraft(draft: ConciergeEventDraft): InviteCategory {
   if (draft.eventType === "birthday") return "Birthday";
   if (draft.eventType === "wedding") return "Wedding";
+  if (draft.eventType === "anniversary") return "Anniversary";
   if (draft.eventType === "baby_shower" || draft.eventType === "gender_reveal") {
     return "Baby Shower";
   }
   if (draft.eventType === "bridal_shower") return "Bridal Shower";
   if (draft.eventType === "field_trip") return "Field Trip/Day";
-  if (draft.eventType === "open_house") return "Open House";
+  if (draft.eventType === "open_house") return draft.semanticKind === "school_open_house" ? "Custom Invite" : "Open House";
   if (draft.eventType === "housewarming") return "Housewarming";
   if (
     draft.eventType === "gym_meet" ||
@@ -1186,12 +1192,16 @@ function localDateInputFromIso(value: string | null, timeZone?: string | null): 
   return year && month && day ? `${year}-${month}-${day}` : raw.slice(0, 10);
 }
 
-function timeInputFromDraft(value: string | null): string {
+function timeInputFromDraft(value: string | null, timezone = "UTC"): string {
   const raw = stringValue(value);
   if (!raw) return "";
   const date = new Date(raw);
   if (!Number.isNaN(date.getTime()) && /^\d{4}-\d{2}-\d{2}/.test(raw)) {
-    return date.toTimeString().slice(0, 5);
+    try {
+      return new Intl.DateTimeFormat("en-GB", { timeZone: timezone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(date);
+    } catch {
+      return date.toISOString().slice(11, 16);
+    }
   }
   return raw;
 }
@@ -1230,15 +1240,21 @@ function buildStudioDetailsFromDraft(draft: ConciergeEventDraft): EventDetails {
 
   return {
     ...details,
+    ...publicContentForDraft(draft),
     category,
+    eventKind: draft.eventType,
     eventTitle: headline,
     eventDate: dateInputFromDraft(draft),
-    startTime: stringValue(draft.timeText) || timeInputFromDraft(draft.startISO),
-    endTime: timeInputFromDraft(draft.endISO),
+    startTime: timeInputFromDraft(draft.startISO, draft.timezone) || stringValue(draft.timeText) || "",
+    endTime: timeInputFromDraft(draft.endISO, draft.timezone),
+    calendarStartISO: draft.startISO || undefined,
+    calendarEndISO: draft.endISO || undefined,
+    timezone: draft.timezone,
+    rsvpEnabled,
     venueName,
     location,
     additionalLocations: draft.additionalLocations || [],
-    detailsDescription: [body, locationNarrative].filter(Boolean).join(" "),
+    detailsDescription: body,
     message: draftSubheadline(draft),
     specialInstructions: [
       skinInstruction,
@@ -1321,7 +1337,7 @@ function buildGeneratedDraftImageEditPrompt(args: {
     "If the old and new visible text differ by only one or two characters, modify only those characters inside the existing label, unless a new lettering style was requested; then restyle the full requested headline.",
   );
   instructions.push(
-    "Keep all unrelated artwork, characters, props, colors, typography style, layout, chips, icons, and text exactly the same.",
+    "Keep unrelated approved artwork, characters, props, colors, typography style and event text. Remove any fake interactive buttons, toolbars or phone chrome; do not preserve those defects.",
   );
 
   return instructions.join(" ");
@@ -1330,8 +1346,13 @@ function buildGeneratedDraftImageEditPrompt(args: {
 function refreshGeneratedDraftInviteMetadata(
   existingInvite: GeneratedInvitePayload,
   updatedDraft: ConciergeEventDraft,
+  pageTypography?: PageTypography,
 ): GeneratedInvitePayload {
-  const details = buildStudioDetailsFromDraft(updatedDraft);
+  const details = { ...buildStudioDetailsFromDraft(updatedDraft),
+    product: resolveStudioProduct(updatedDraft.requestedOutputs[0]),
+    approvedWording: updatedDraft.copyStatus === "ready" ? updatedDraft.previewCopy.body : undefined,
+    pageTypography: pageTypography || existingInvite.invitationData.eventDetails.pageTypography,
+  };
   return {
     imageUrl: existingInvite.imageUrl,
     invitationData: refreshLiveCardInvitationData(details, existingInvite.invitationData),
@@ -1440,8 +1461,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const isChatAtBottomRef = useRef(true);
   const chatViewportSizeRef = useRef({ width: 0, height: 0 });
   const shouldRefocusComposerRef = useRef(false);
-<<<<<<< ours
-<<<<<<< ours
   const responseAbortRef = useRef<AbortController | null>(null);
   const uploadAbortRef = useRef<AbortController | null>(null);
   const conversationVersionRef = useRef(0);
@@ -1453,12 +1472,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     responseAbortRef.current = null;
   }, []);
   const unsentDraftId = useRef<string | null>(null);
-=======
   const messagesRef = useRef<ChatMessage[]>([]);
->>>>>>> theirs
-=======
-  const messagesRef = useRef<ChatMessage[]>([]);
->>>>>>> theirs
   const [input, setInput] = useState("");
   const [selectedProductOutput, setSelectedProductOutput] = useState<RequestedOutput | null>(null);
   const [selectedStarterCategory, setSelectedStarterCategory] =
@@ -2061,6 +2075,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       editPrompt?: string | null;
       sourceImageUrl?: string | null;
       previousDraft?: ConciergeEventDraft | null;
+      pageTypography?: PageTypography;
     } = {},
   ): Promise<GeneratedInvitePayload> {
     const conversationVersion = conversationVersionRef.current;
@@ -2072,6 +2087,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       approvedWording: draftToGenerate.copyStatus === "ready" ? draftToGenerate.previewCopy.body : undefined,
       rsvpEnabled: draftToGenerate.rsvpEnabled === true,
       timezone: draftToGenerate.timezone,
+      pageTypography: options.pageTypography || draftStudioInvite?.invitationData.eventDetails.pageTypography,
     };
     const sourceImageUrl = stringValue(options.sourceImageUrl);
     const editPrompt = stringValue(options.editPrompt);
@@ -2116,6 +2132,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       imageUrl,
       invitationData: {
         ...buildInvitationData(generatedDetails, response),
+        diagnostics: response.diagnostics,
+        artworkContract: response.artworkContract,
         artworkTextMode: response.artworkTextMode || (sourceImageUrl ? draftStudioInvite?.invitationData.artworkTextMode : undefined),
         artworkNotice: response.qualityCheck === "unavailable"
           ? "Automatic artwork review was unavailable. Please check the lettering and event details before sharing."
@@ -2281,6 +2299,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     if (!trimmed || !draft) return;
     const conversationVersion = conversationVersionRef.current;
     const responseController = new AbortController();
+    responseAbortRef.current?.abort();
     responseAbortRef.current = responseController;
 
     const fullRedesign = isGeneratedDraftFullRedesignRequest(trimmed);
@@ -2326,51 +2345,72 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       }
 
       const updatedDraft = normalizeDraftProductOutputs(json.draft);
-      if (conversationVersion !== conversationVersionRef.current) return;
+      if (conversationVersion !== conversationVersionRef.current || responseController.signal.aborted || responseAbortRef.current !== responseController) return;
       const existingDraftImageUrl = draftStudioInvite?.imageUrl || generatedInviteImageUrl;
+      const product = resolveStudioProduct(updatedDraft.requestedOutputs[0]);
+      const productEdit = resolveProductEditPlan(product, trimmed);
+      if (productEdit.unsupportedPageChanges.length) {
+        throw new Error("That page font or layout change is not supported yet. You can request larger lettering, clearer contrast, or light or dark text. Your current page is unchanged.");
+      }
+      const previousTypography = draftStudioInvite?.invitationData.eventDetails.pageTypography || {};
+      const pageTypography = { ...previousTypography, ...productEdit.pageTypography };
+      if (productEdit.pageTypography.scale) {
+        pageTypography.scale = Math.min(1.5, (previousTypography.scale || 1) * productEdit.pageTypography.scale);
+      }
+      const typographyChanged = JSON.stringify(previousTypography) !== JSON.stringify(pageTypography);
+      const turnReceipt = buildPersonaTurnReceipt(updatedDraft, draft);
+      const typographyOnly = product === "event_page" && Object.keys(productEdit.pageTypography).length > 0 && !productEdit.hasRasterChanges;
+      const outputChanged = product !== resolveStudioProduct(draft.requestedOutputs[0]);
       const canReuseCurrentImage =
         !fullRedesign &&
+        !outputChanged &&
         Boolean(draftStudioInvite) &&
-        !shouldRegenerateGeneratedDraftImageForEdit({
-          userMessage: trimmed,
+        (typographyOnly || !shouldRegenerateGeneratedDraftImageForEdit({
+          userMessage: product === "event_page" ? productEdit.rasterInstruction : trimmed,
           previousDraft: draft,
           nextDraft: updatedDraft,
-          artworkTextMode: draftStudioInvite?.invitationData.artworkTextMode,
-        });
+          artworkTextMode: product === "event_page" ? "none" : draftStudioInvite?.invitationData.artworkTextMode,
+        }));
       const studioInvite =
         canReuseCurrentImage && draftStudioInvite
-          ? refreshGeneratedDraftInviteMetadata(draftStudioInvite, updatedDraft)
+          ? refreshGeneratedDraftInviteMetadata(draftStudioInvite, updatedDraft, pageTypography)
           : await generateStudioInviteForDraft(updatedDraft, {
               editPrompt: fullRedesign
                 ? buildGeneratedDraftFullRedesignPrompt(trimmed)
-                : buildGeneratedDraftImageEditPrompt({
+                : product === "event_page" ? productEdit.rasterInstruction : buildGeneratedDraftImageEditPrompt({
                     userMessage: trimmed,
                     previousDraft: draft,
                     nextDraft: updatedDraft,
                   }),
               sourceImageUrl: fullRedesign ? null : existingDraftImageUrl,
               previousDraft: fullRedesign ? null : draft,
+              pageTypography,
             });
       const updatedMessage = newMessage(
         "assistant",
         fullRedesign
           ? "I generated a completely new draft design from scratch. Review it in the preview, then keep chatting or save/publish when it looks right."
           : canReuseCurrentImage
-            ? "I updated the event details. The artwork is unchanged."
+            ? typographyOnly
+              ? typographyChanged ? "I updated the page lettering in the preview. Your artwork is unchanged." : "The page already has these lettering settings. The supported text-size limit is 150%."
+              : turnReceipt.changedFields.length
+                ? "I updated the event details. The artwork is unchanged."
+                : conciergeCapabilityAnswer(trimmed) || guardPersonaSentence(json.assistantMessage || "The event details are unchanged in this chat.", updatedDraft, turnReceipt)
             : "I updated the artwork in the draft preview. Review it, then keep chatting or save/publish when it looks right.",
       );
-      if (conversationVersion !== conversationVersionRef.current) return;
+      if (conversationVersion !== conversationVersionRef.current || responseController.signal.aborted || responseAbortRef.current !== responseController) return;
       if (!canReuseCurrentImage) {
         await preloadGeneratedPreviewImage(studioInvite.imageUrl);
       }
-      if (conversationVersion !== conversationVersionRef.current) return;
+      if (conversationVersion !== conversationVersionRef.current || responseController.signal.aborted || responseAbortRef.current !== responseController) return;
       setDraft(updatedDraft);
+      selectProductOutputForDraft(updatedDraft);
       setDraftStudioInvite(studioInvite);
       setStreamingPreviewImage(null);
       setGeneratedInviteImageUrl(studioInvite.imageUrl);
       setLiveCardEventId(null);
       setLiveCardTitle(draftHeadline(updatedDraft));
-      setLiveCardSummary(liveCardSummaryFromDraft(updatedDraft, effectiveSelectedProductOutput));
+      setLiveCardSummary(liveCardSummaryFromDraft(updatedDraft, updatedDraft.requestedOutputs[0] || effectiveSelectedProductOutput));
       setWeatherContext(json.weatherContext || null);
 
       setPhase("card_ready");
@@ -2378,13 +2418,13 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       setMessages((prev) => [...prev, updatedMessage]);
       notifyCreationThreadsChanged();
     } catch (err) {
-      if (conversationVersion !== conversationVersionRef.current) return;
+      if (conversationVersion !== conversationVersionRef.current || responseController.signal.aborted || responseAbortRef.current !== responseController) return;
       setStreamingPreviewImage(null);
 
       setPhase("card_ready");
       setError(err instanceof Error ? err.message : "Draft update failed.");
     } finally {
-      if (conversationVersion === conversationVersionRef.current) {
+      if (conversationVersion === conversationVersionRef.current && responseAbortRef.current === responseController) {
         if (responseAbortRef.current === responseController) responseAbortRef.current = null;
         setIsSending(false);
         refocusComposerAfterResponse();
@@ -2455,15 +2495,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     starterCategory?: string | null;
     echo?: string;
     suppressUserEcho?: boolean;
-<<<<<<< ours
-<<<<<<< ours
     retryReply?: boolean;
-=======
     pendingMessages?: ChatMessage[];
->>>>>>> theirs
-=======
-    pendingMessages?: ChatMessage[];
->>>>>>> theirs
   }): Promise<ConciergeStreamStatePayload | null> {
     const message = params.message.trim();
     if (!message && !params.ocrContext) return null;
@@ -2482,6 +2515,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     }
     setSelectedStarterCategory(null);
     const responseController = new AbortController();
+    responseAbortRef.current?.abort();
     responseAbortRef.current = responseController;
     let streamAssistantId: string | null = null;
     let streamedAssistantText = "";
@@ -2541,21 +2575,11 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         requestedOutputs,
         starterCategory: params.starterCategory || null,
         action,
-<<<<<<< ours
-<<<<<<< ours
         retryReply: params.retryReply === true,
-        chatMessages: chatMessagesForPersistence(messages, userMessage ? [userMessage] : []),
-=======
-=======
->>>>>>> theirs
         chatMessages: chatMessagesForPersistence(messagesRef.current, [
           ...(params.pendingMessages || []),
           ...(userMessage ? [userMessage] : []),
         ]),
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
       };
       const isExplicitProductChoice =
         Boolean(params.requestedOutputs?.length) &&
@@ -2584,7 +2608,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         }
         const finalState = await readConciergeIntakeStream(response, {
           onDelta: (text) => {
-            if (responseController.signal.aborted) return;
+            if (responseController.signal.aborted || responseAbortRef.current !== responseController || conversationVersion !== conversationVersionRef.current) return;
             streamedAssistantText += text;
             setIsStreamingAssistant(true);
             setMessages((prev) =>
@@ -2594,7 +2618,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             );
           },
           onAssistantDone: (assistantMessage) => {
-            if (responseController.signal.aborted) return;
+            if (responseController.signal.aborted || responseAbortRef.current !== responseController || conversationVersion !== conversationVersionRef.current) return;
             streamedAssistantText = assistantMessage;
             setMessages((prev) =>
               prev.map((item) =>
@@ -2603,7 +2627,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             );
           },
           onState: (json) => {
-            if (responseController.signal.aborted) return;
+            if (responseController.signal.aborted || responseAbortRef.current !== responseController || conversationVersion !== conversationVersionRef.current) return;
             setDraft(json.draft);
             selectProductOutputForDraft(json.draft);
             setWeatherContext(json.weatherContext || null);
@@ -2620,6 +2644,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             setPhase(isReady ? "ready_to_generate" : "collecting_details");
           },
         });
+        if (responseController.signal.aborted || responseAbortRef.current !== responseController || conversationVersion !== conversationVersionRef.current) return null;
         if (!finalState) throw new Error("Envitefy Create stream ended before draft state arrived.");
         return finalState;
       }
@@ -2632,7 +2657,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         body: JSON.stringify(requestBody),
       });
       const json = (await response.json().catch(() => null)) as ConciergeMessageResponse | null;
-      if (conversationVersion !== conversationVersionRef.current) return null;
+      if (conversationVersion !== conversationVersionRef.current || responseController.signal.aborted || responseAbortRef.current !== responseController) return null;
       if (!response.ok || !json?.ok) {
         throw new Error(
           conciergeClientErrorMessage(json && !json.ok ? json.error : json, "Envitefy Create request failed."),
@@ -2675,7 +2700,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       setFailedRequest({ ...params, error: errorMessage });
       return null;
     } finally {
-      if (conversationVersion === conversationVersionRef.current) {
+      if (conversationVersion === conversationVersionRef.current && responseAbortRef.current === responseController) {
         if (responseAbortRef.current === responseController) responseAbortRef.current = null;
         setIsStreamingAssistant(false);
         setIsSending(false);
@@ -2820,12 +2845,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
 
     setInput("");
     shouldRefocusComposerRef.current = true;
-    if (pendingChatUpload && selectedProductOutput) {
-      const upload = pendingChatUpload;
-      setPendingChatUpload(null);
-      await routeSelectedSnapFile(upload.file, upload.source, selectedProductOutput, typedValue);
-      return;
-    }
     if (canSaveReceivedInvite && isGenerateConfirmationMessage(value)) {
       await saveReceivedInviteDraft();
       return;
@@ -2940,16 +2959,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     file: File | null | undefined,
     source: "camera" | "upload",
     requestedOutputOverride?: RequestedOutput,
-<<<<<<< ours
-<<<<<<< ours
     uploadPrompt = "",
     userEchoOverride?: string,
-=======
-    uploadInstructions?: string,
->>>>>>> theirs
-=======
-    uploadInstructions?: string,
->>>>>>> theirs
   ) {
     if (!file || isBusy) return;
     const conversationVersion = conversationVersionRef.current;
@@ -2971,26 +2982,12 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setUploadedPreviewFileName(uploadPreviewUrl ? uploadedFileLabel(file) : null);
     const scanAttemptId = createClientAttemptId("scan");
     const uploadRequestedOutput = requestedOutputOverride || selectedProductOutput || "live_card";
-    const trimmedUploadInstructions = uploadInstructions?.trim();
-    const uploadUserMessage = newMessage(
-      "user",
-      trimmedUploadInstructions
-        ? `Uploaded 1 file\n\n${trimmedUploadInstructions}`
-        : "Uploaded 1 file",
-    );
-    const statusMessage = newMessage("assistant", "Preparing upload...", "upload_status");
-<<<<<<< ours
-<<<<<<< ours
     const userEcho = userEchoOverride?.trim()
       ? `${userEchoOverride.trim()} - Uploaded 1 file`
       : "Uploaded 1 file";
-    setMessages((prev) => [...prev, newMessage("user", userEcho), statusMessage]);
-=======
+    const uploadUserMessage = newMessage("user", userEcho);
+    const statusMessage = newMessage("assistant", "Preparing upload...", "upload_status");
     setMessages((prev) => [...prev, uploadUserMessage, statusMessage]);
->>>>>>> theirs
-=======
-    setMessages((prev) => [...prev, uploadUserMessage, statusMessage]);
->>>>>>> theirs
     const updateUploadStatus = (text: string) => {
       setMessages((prev) =>
         prev.map((message) => (message.id === statusMessage.id ? { ...message, text } : message)),
@@ -3022,19 +3019,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         ? `Create an event from this uploaded file. User note: ${uploadPrompt.trim()}`
         : "Create an event from this uploaded file.";
       const intakeResult = await sendToConcierge({
-<<<<<<< ours
-<<<<<<< ours
         message: uploadInstruction,
-=======
-        message: trimmedUploadInstructions
-          ? `Create an event from this uploaded file. User notes: ${trimmedUploadInstructions}`
-          : "Create an event from this uploaded file.",
->>>>>>> theirs
-=======
-        message: trimmedUploadInstructions
-          ? `Create an event from this uploaded file. User notes: ${trimmedUploadInstructions}`
-          : "Create an event from this uploaded file.",
->>>>>>> theirs
         action: "ocr_result",
         ocrContext: buildChatOcrContext(ocrResult, scanAttemptId),
         requestedOutputs: [uploadRequestedOutput],
@@ -3154,7 +3139,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
           >
             {message.type === "upload_status" ? (
-<<<<<<< ours
               <div className="flex max-w-[94%] items-start gap-2 sm:max-w-[min(88%,48rem)]">
                 <ConciergeChatAvatar />
                 <div
@@ -3166,20 +3150,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                     <Loader2 className="size-4 animate-spin text-[#5c5be5]" aria-hidden="true" />
                     {message.text}
                   </span>
-=======
-              <div
-                className="flex max-w-[94%] items-start gap-2 sm:max-w-[88%]"
-                role="status"
-                aria-live="polite"
-              >
-                <ConciergeChatAvatar className="animate-pulse" />
-                <div className="inline-flex min-w-0 items-center gap-2 rounded-full border border-[#eadfff] bg-white/86 px-4 py-2 text-sm text-[#5f5289] shadow-sm">
-                  <Loader2 className="size-4 animate-spin text-[#5c5be5]" aria-hidden="true" />
-                  {message.text}
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
                 </div>
               </div>
             ) : message.role === "user" ? (
@@ -3541,6 +3511,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       selectedOutput={effectiveSelectedProductOutput}
       previewImageUrl={currentPreviewImage}
       artworkNotice={draftStudioInvite?.invitationData.artworkNotice}
+      pageTypography={draftStudioInvite?.invitationData.eventDetails.pageTypography}
       isGenerating={isGeneratingCard || isUpdatingPreview}
       hasStreamingPreview={Boolean(streamingPreviewImage)}
       currentBuildStep={GENERATION_STAGE_LABELS[generationStage]}

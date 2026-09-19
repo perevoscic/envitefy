@@ -1,14 +1,16 @@
 import { buildCalendarLinks } from "../utils/calendar-links.ts";
 import { addCalendarDays, parseCalendarDateTimeToIso } from "./calendar-date-time.ts";
+import { composeGuestLocation, publicGuestInstructions, type PublicGuestContent } from "./guest-event-details.ts";
 
 type LiveCardCalendarData = {
   description?: string;
-  eventDetails?: {
+  eventDetails?: PublicGuestContent & {
     eventDate?: string;
     startTime?: string;
     endTime?: string;
     calendarStartISO?: string;
     calendarEndISO?: string;
+    timezone?: string;
     location?: string;
     venueName?: string;
     detailsDescription?: string;
@@ -50,22 +52,23 @@ function explicitInstant(value?: string): string | null {
   return parseCalendarDateTimeToIso(input, "UTC");
 }
 
-/** Resolve unzoned card times in the viewer's browser zone, never the server's zone. */
+/** Canonical event facts win; legacy cards without an event zone use the viewer zone. */
 export function buildLiveCardCalendarLinks(
   title: string,
   invitationData: LiveCardCalendarData | null | undefined,
   viewerTimeZone: string | null,
 ) {
-  if (!viewerTimeZone) return null;
   const details = invitationData?.eventDetails;
   if (!details) return null;
+  const timezone = details.timezone?.trim() || viewerTimeZone;
+  if (!timezone && !explicitInstant(details.calendarStartISO)) return null;
   const range = clockRange(details.startTime?.trim() || "");
   const eventDate = details.eventDate?.trim() || "";
   const savedStart = explicitInstant(details.calendarStartISO);
   const startIso =
     savedStart ||
     (/^\d{4}-\d{2}-\d{2}$/.test(eventDate) && range.start
-      ? parseCalendarDateTimeToIso(`${eventDate}T${range.start}`, viewerTimeZone)
+      ? parseCalendarDateTimeToIso(`${eventDate}T${range.start}`, timezone || "UTC")
       : null);
   // An absent or unparseable time must not silently become midnight (or an invented 2 PM).
   if (!startIso) return null;
@@ -74,25 +77,28 @@ export function buildLiveCardCalendarLinks(
   if (!savedStart) {
     const endClock = clockTime(details.endTime?.trim() || "") || range.end;
     if (endClock) {
-      endIso = parseCalendarDateTimeToIso(`${eventDate}T${endClock}`, viewerTimeZone);
+      endIso = parseCalendarDateTimeToIso(`${eventDate}T${endClock}`, timezone || "UTC");
       if (endIso && endIso < startIso) {
         const nextDay = addCalendarDays(eventDate, 1);
         endIso = nextDay
-          ? parseCalendarDateTimeToIso(`${nextDay}T${endClock}`, viewerTimeZone)
+          ? parseCalendarDateTimeToIso(`${nextDay}T${endClock}`, timezone || "UTC")
           : null;
       }
     }
   }
   if (!endIso || endIso <= startIso) {
-    endIso = new Date(Date.parse(startIso) + 2 * 60 * 60 * 1000).toISOString();
+    endIso = null;
   }
   return buildCalendarLinks({
     title: title || "Event",
-    description: invitationData?.description?.trim() || details.detailsDescription?.trim() || "",
-    location: details.location?.trim() || details.venueName?.trim() || "",
+    description: [...new Set([
+      invitationData?.description?.trim(), details.detailsDescription?.trim(),
+      ...publicGuestInstructions(details),
+    ].filter(Boolean))].join("\n\n"),
+    location: composeGuestLocation(details.venueName, details.location),
     startIso,
     endIso,
-    timezone: viewerTimeZone,
+    timezone: timezone || "UTC",
     allDay: false,
     reminders: null,
     recurrence: null,

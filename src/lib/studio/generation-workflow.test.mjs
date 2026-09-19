@@ -12,6 +12,10 @@ registerHooks({ resolve(specifier, context, next) {
   return next(specifier, context);
 } });
 const { generateStudioInvitation, studioGenerationDeps: deps } = await import("./generate.ts");
+test.beforeEach(() => {
+  mock.method(deps, "prepareStudioImageGeometry", async (product) => product === "event_page" ? { width: 1536, height: 1024, size: "1536x1024" } : { width: 1024, height: 1536, size: "1024x1536" });
+  mock.method(deps, "validateStudioImageGeometry", async () => ({ ok: true, width: 1024, height: 1536 }));
+});
 const { generateAndPersistInvitation, generationResponseDeps, invitationResponseStream } = await import("./generation-response.ts");
 const { readGenerationStream } = await import("./generation-progress.ts");
 const { createInitialDetails, sanitizeInvitationData, sanitizeStudioGenerateResponse } = await import("../../app/studio/studio-workspace-sanitize.ts");
@@ -130,4 +134,31 @@ test("artwork contract and QA notice survive saving, reopening, and detail refre
   assert.equal(generated.artworkTextMode, "headline");
   assert.equal(generated.timings.firstPreviewMs, 2);
   assert.equal(sanitizeStudioGenerateResponse({ ...result(), timings: { totalMs: -1, stagesMs: {} } }).timings, undefined);
+});
+
+test("failure telemetry correlates content versions and outcomes without logging private copy or repair text", async () => {
+  const records = [];
+  mock.method(generationResponseDeps, "recordRun", (record) => records.push(record));
+  mock.method(generationResponseDeps, "generateStudioInvitation", async () => ({
+    ...result(), ok: false, imageDataUrl: null, qualityCheck: "failed",
+    artworkContract: { id: "art-v1-1234", version: 1, approvedText: ["private@example.invalid"] },
+    diagnostics: { operation: "edit", outcome: "rejected", checks: [{ issues: ["missing_copy", "private@example.invalid"], repairInstructions: ["Private event address and phone"] }] },
+  }));
+  await generateAndPersistInvitation(request);
+  assert.equal(records.length, 1);
+  assert.equal(records[0].contractId, "art-v1-1234");
+  assert.equal(records[0].contractVersion, 1);
+  assert.equal(records[0].outcome, "rejected");
+  assert.equal(records[0].checkCount, 1);
+  assert.deepEqual(records[0].issueCodes, ["missing_copy", "other_quality_issue"]);
+  assert.doesNotMatch(JSON.stringify(records), /private@|Private event|repairInstructions|approvedText|imageDataUrl/i);
+  assert.match(records[0].requestId, /^[a-f0-9-]+$/);
+});
+test("unexpected provider failure is counted without leaking its message", async () => {
+  const records = [];
+  mock.method(generationResponseDeps, "recordRun", (record) => records.push(record));
+  mock.method(generationResponseDeps, "generateStudioInvitation", async () => { throw new Error("Private user prompt: secret@example.invalid"); });
+  await assert.rejects(generateAndPersistInvitation(request), /Private user prompt/);
+  assert.equal(records[0].outcome, "error");
+  assert.doesNotMatch(JSON.stringify(records), /secret@|Private user prompt/);
 });

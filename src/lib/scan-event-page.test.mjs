@@ -2,6 +2,26 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildScanEventPageHistoryPayload } from "./scan-event-page.ts";
 
+test("anniversary scan keeps its occasion instead of using birthday or wedding semantics", () => {
+  const payload = buildScanEventPageHistoryPayload({
+    source: "upload",
+    scanAttemptId: "scan-anniversary-september-23",
+    ocr: {
+      category: "Anniversary",
+      ocrText: "Sam and Alex's 25th Wedding Anniversary on September 23, 2026 at 2 PM.",
+      fieldsGuess: {
+        title: "Sam and Alex's 25th Wedding Anniversary",
+        start: "2026-09-23T19:00:00.000Z",
+        timeFound: true,
+      },
+    },
+  });
+
+  assert.equal(payload.title, "Sam and Alex's 25th Wedding Anniversary");
+  assert.equal(payload.data.category, "Anniversaries");
+  assert.equal(payload.data.eventType, "anniversary");
+});
+
 test("scan event page payload publishes invite scans without requiring a date", () => {
   const payload = buildScanEventPageHistoryPayload({
     source: "upload",

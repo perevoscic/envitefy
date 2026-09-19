@@ -26,6 +26,9 @@ import { supportsStudioCategoryRsvp } from "@/app/studio/studio-workspace-field-
 import { useCalendarAction } from "@/components/CalendarAction";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
 import { buildLiveCardCalendarLinks } from "@/lib/live-card-calendar";
+import { formatGuestSchedule, isPropertyOpenHouse, publicGuestInstructions } from "@/lib/guest-event-details";
+import { buildGuestRsvpSubmission, guestRsvpCategory, guestRsvpGuessRules } from "@/lib/guest-rsvp";
+import { parseGenderRevealConfig } from "@/lib/gender-reveal";
 import { buildLiveCardDetailsWelcomeMessage } from "@/lib/live-card-event-details";
 import {
   buildLiveCardDirectionsHref,
@@ -39,10 +42,6 @@ import {
   parseLiveCardRsvpContact,
   shouldShowLiveCardDescriptionSection,
 } from "@/lib/live-card-rsvp";
-import {
-  formatTimeLabelEn,
-  formatWeekdayMonthDayOrdinalEn,
-} from "@/utils/format-month-day-ordinal";
 import { isRsvpMailtoHref, openRsvpMailtoHref } from "@/utils/rsvp-mailto";
 
 export type LiveCardActiveTab =
@@ -66,12 +65,20 @@ export type LiveCardButtonPositions = Partial<Record<LiveCardButtonKey, LiveCard
 
 export type LiveCardEventDetails = {
   category?: string;
+  eventKind?: string;
   occasion?: string;
   eventDate?: string;
   startTime?: string;
   endTime?: string;
   calendarStartISO?: string;
   calendarEndISO?: string;
+  timezone?: string;
+  guestInstructions?: string[];
+  requiredArtworkLines?: string[];
+  giftNote?: string;
+  giftPreferenceNote?: string;
+  giftGuidance?: string;
+  semanticKind?: string | null;
   venueName?: string;
   location?: string;
   eventTitle?: string;
@@ -152,16 +159,9 @@ function normalizeComparableText(value: string) {
 }
 
 function formatDate(dateStr: string) {
-  if (!dateStr || !dateStr.includes("-")) return dateStr;
+  if (!dateStr?.includes("-")) return dateStr;
   const [year, month, day] = dateStr.split("-");
   return `${month}.${day}.${year}`;
-}
-
-function formatCalendarSummary(dateStr: string, timeStr: string) {
-  const dateLabel = formatWeekdayMonthDayOrdinalEn(dateStr);
-  if (!dateLabel) return "";
-  const timeLabel = formatTimeLabelEn(timeStr);
-  return timeLabel ? `${dateLabel} at ${timeLabel}` : dateLabel;
 }
 
 function getRegistryText(details: LiveCardEventDetails | null | undefined) {
@@ -208,11 +208,9 @@ function getRegistryPanelTitle(details: LiveCardEventDetails | null | undefined)
 }
 
 function isOpenHouseLiveCard(details: LiveCardEventDetails | null | undefined) {
-  const blob = [readString(details?.category), readString(details?.occasion)]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-  return /\bopen house|real estate|real-estate|listing\b/.test(blob);
+  return isPropertyOpenHouse({ ...details,
+    listingUrl: readString(details?.listingUrl), realtorName: readString(details?.realtorName), brokerageName: readString(details?.brokerageName),
+  });
 }
 
 function getOpenHouseListingUrl(details: LiveCardEventDetails | null | undefined) {
@@ -267,10 +265,16 @@ function renderExtraDetailFields(details: LiveCardEventDetails | null | undefine
   const entries = Object.entries(details).filter(([key, value]) => {
     if (!value || typeof value === "boolean") return false;
     if (Array.isArray(value)) return false;
+    if (typeof value === "object") return false;
     return ![
       "category",
       "name",
       "age",
+      "eventTitle",
+      "occasion",
+      "giftNote",
+      "giftPreferenceNote",
+      "giftGuidance",
       "detailsDescription",
       "guestImageUrls",
       "coupleNames",
@@ -298,6 +302,17 @@ function renderExtraDetailFields(details: LiveCardEventDetails | null | undefine
       "visualStyleMode",
       "theme",
       "gender",
+      "calendarStartISO",
+      "calendarEndISO",
+      "timezone",
+      "eventId",
+      "rsvpMode",
+      "rsvpUrl",
+      "semanticKind",
+      "eventKind",
+      "guestInstructions",
+      "requiredArtworkLines",
+      "pageTypography",
     ].includes(key);
   });
 
@@ -423,6 +438,9 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   const [directRsvpChoice, setDirectRsvpChoice] = useState<LiveCardRsvpResponseKey | null>(null);
   const [directRsvpName, setDirectRsvpName] = useState("");
   const [directRsvpEmail, setDirectRsvpEmail] = useState("");
+  const [directRsvpGenderGuess, setDirectRsvpGenderGuess] = useState("");
+  const genderRevealConfig = parseGenderRevealConfig(details);
+  const guessRules = guestRsvpGuessRules(guestRsvpCategory(details), directRsvpChoice || "maybe", genderRevealConfig, details?.rsvpDeadline);
   const [directRsvpStatus, setDirectRsvpStatus] = useState<
     "idle" | "submitting" | "success" | "error"
   >("idle");
@@ -477,16 +495,13 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   );
   const overviewTitle =
     readString(invitationData?.title) || readString(details?.eventTitle) || readString(props.title);
-  const overviewWhere = primaryLocationAction?.label || "";
-  const overviewWhen = formatCalendarSummary(
-    readString(details?.eventDate),
-    readString(details?.startTime),
-  );
+  const overviewWhere = primaryLocationAction?.mapQuery || "";
+  const overviewWhen = formatGuestSchedule({ eventDate: readString(details?.eventDate), startTime: readString(details?.startTime), endTime: readString(details?.endTime) });
   const hasOverviewSummary = Boolean(
     overviewTitle || detailsWelcome || overviewWhere || overviewWhen,
   );
   const shouldRenderDetailsDescription = Boolean(
-    detailsDescription && (props.showExtendedDetails || !hasOverviewSummary),
+    detailsDescription,
   );
   const shouldRenderSecondaryDescription =
     shouldShowLiveCardDescriptionSection(readString(details?.message)) &&
@@ -576,11 +591,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       const response = await fetch(`/api/events/${encodeURIComponent(directRsvpEventId)}/rsvp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          response: directRsvpChoice,
-          name,
-          email,
-        }),
+        body: JSON.stringify(buildGuestRsvpSubmission({ response: directRsvpChoice, name, email, category: guestRsvpCategory(details), genderGuess: directRsvpGenderGuess, genderRevealConfig, rsvpDeadline: details?.rsvpDeadline })),
       });
       const payload = (await response.json().catch(() => null)) as { error?: string } | null;
       if (!response.ok) throw new Error(payload?.error || "Failed to send RSVP.");
@@ -751,7 +762,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
 
   return (
     <div ref={surfaceRef} data-live-card-actions-placement={actionsBelow ? "below" : "overlay"} className={actionsBelow
-      ? "pointer-events-none flex flex-col bg-transparent px-1 pt-3 pb-1"
+      ? "pointer-events-none flex flex-col rounded-xl bg-white px-2 pt-3 pb-1"
       : `pointer-events-none absolute inset-0 flex flex-col ${props.previewMode ? "px-0 pb-1 pt-6" : "px-0 pb-1 pt-6 sm:px-4 sm:pt-7 md:p-8 md:pb-2"}`}>
 
       {calendar.dialog}
@@ -1002,6 +1013,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                                       required
                                     />
                                   </label>
+                                  {guessRules.collect ? <label className="block text-xs font-bold text-neutral-600">Team guess{guessRules.required ? " (required)" : " (optional)"}<select value={directRsvpGenderGuess} onChange={(event) => setDirectRsvpGenderGuess(event.target.value)} required={guessRules.required} className="mt-1 min-h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-base text-neutral-900"><option value="">Choose a team</option><option value="pink">Team Pink</option><option value="blue">Team Blue</option></select></label> : null}
                                   {directRsvpStatus === "error" && directRsvpError ? (
                                     <p className="text-xs font-semibold text-rose-600">
                                       {directRsvpError}
@@ -1124,6 +1136,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                         <p className="mt-1 text-sm text-neutral-900">{secondaryDescription}</p>
                       </div>
                     ) : null}
+                    {publicGuestInstructions(details).filter((line) => !detailsDescription.includes(line)).map((line) => <p key={line} className="whitespace-pre-line text-sm leading-relaxed text-neutral-900">{line}</p>)}
                     {props.showExtendedDetails ? renderExtraDetailFields(details) : null}
                   </div>
                 ) : null}
@@ -1261,7 +1274,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                       aria-expanded={button.key === "calendar" && !calendar.hasDefault ? calendar.isOpen : undefined}
                       disabled={button.key === "share" && shareState === "pending"}
                       data-live-card-trigger
-                      className={`group flex min-w-0 flex-col items-center justify-start ${
+                      className={`group flex min-h-11 min-w-11 flex-col items-center justify-start ${
                         useCompactActionButtons ? "gap-0.5 py-0 md:gap-0.5" : "gap-1 py-1 md:gap-2"
                       } h-full w-full px-0.5 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${
                         props.isDesignMode ? "cursor-move" : ""

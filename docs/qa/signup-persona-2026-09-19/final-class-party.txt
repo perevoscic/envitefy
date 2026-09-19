@@ -1,0 +1,100 @@
+- generic "Sidebar":
+  - link "Envitefy home":
+    - /url: /
+  - button "Keep sidebar open":
+  - navigation "Main navigation":
+    - link "Home":
+      - /url: /
+    - button "Snap / Upload":
+    - button "Envitefy Create":
+    - button "Create Event":
+    - button "My Events, 11":
+    - button "Schedules, 3":
+    - button "Sign-up Forms, 4":
+    - button "Drafts, 1":
+    - button "Admin":
+  - button "Account menu for Ruslan Josan (Admin)"
+- main:
+  - navigation "Manage signup form":
+    - link "Edit event":
+      - /url: /signup-forms/templates/editorial--harvest-table/customize?edit=298bec5c-8d4a-4e84-b101-7daf855cc730
+      - generic: Edit
+    - button "Duplicate form":
+      - generic: Duplicate
+    - button "Delete event":
+      - generic: Delete
+  - heading "TEST — Room 3 Fall Class Party" [level=1]
+  - generic: Date to be announced
+  - generic: Location to be announced
+  - region "Plan your visit":
+    - button "Share event":
+      - generic: Share event
+  - region "Share signup":
+    - heading "Share your signup" [level=3]
+    - paragraph: Anyone with this link can sign up. No Envitefy account or invitation is needed.
+    - generic: Signup link
+    - textbox "Signup link": http://localhost:3001/smart-signup-form/test-room-3-fall-class-party
+    - button "Copy signup link":
+    - link "View host dashboard":
+      - /url: "#signup-host-dashboard"
+  - button "Refresh availability"
+  - status: This signup is closed. Please contact the organizer if you need to make a change.
+  - heading "Volunteer roles" [level=3]
+  - paragraph: Choose up to 1 option in this section. Quantities count people.
+  - generic: Set up
+  - generic: 0/2 claimed · 2 open
+  - button "Select Set up" [disabled]: Select
+  - generic: Clean up
+  - generic: 0/1 claimed · 1 open
+  - button "Select Clean up" [disabled]: Select
+  - heading "Snacks and supplies" [level=3]
+  - paragraph: Please bring nut-free snacks. Quantities are trays or packs as labeled.
+  - paragraph: Quantities count items.
+  - generic: Fruit trays
+  - generic: 0/3 claimed · 3 open
+  - button "Select Fruit trays" [disabled]: Select
+  - generic: Juice boxes (pack of 10)
+  - generic: 0/4 claimed · 4 open
+  - button "Select Juice boxes (pack of 10)" [disabled]: Select
+  - generic: Napkins (pack of 25)
+  - generic: 0/2 claimed · 2 open
+  - button "Select Napkins (pack of 25)" [disabled]: Select
+  - heading "Host dashboard" [level=3]
+  - heading "Volunteer roles" [level=4]
+  - paragraph: Counted in people
+  - paragraph: 0 confirmed · 3 of 3 remaining
+  - heading "Snacks and supplies" [level=4]
+  - paragraph: Counted in items
+  - paragraph: 0 confirmed · 9 of 9 remaining
+  - textbox "Search participants":
+    - /placeholder: Search name, email, slot, or answer
+  - button "Export CSV"
+  - button "Reopen signups"
+  - paragraph: Your first signup will appear here.
+  - link "Envitefy Sign-up Forms (opens in a new tab)":
+    - /url: https://envitefy.com
+    - img "envitefy":
+      - generic: envitefy
+  - paragraph: CREATE | SHARE | ENJOY
+  - paragraph:
+    - strong: Created with Envitefy Sign-up Forms
+    - link "Create now":
+      - /url: https://envitefy.com/
+  - navigation "Follow Envitefy":
+    - list:
+      - link "Envitefy on Instagram (opens in a new tab)":
+        - /url: https://www.instagram.com/envitefy/
+        - generic: Envitefy on Instagram (opens in a new tab)
+      - link "Envitefy on Facebook (opens in a new tab)":
+        - /url: https://www.facebook.com/envitefy/
+        - generic: Envitefy on Facebook (opens in a new tab)
+      - link "Envitefy on YouTube (opens in a new tab)":
+        - /url: https://www.youtube.com/@envitefy
+        - generic: Envitefy on YouTube (opens in a new tab)
+      - link "Envitefy on TikTok (opens in a new tab)":
+        - /url: https://www.tiktok.com/@envitefy
+        - generic: Envitefy on TikTok (opens in a new tab)
+      - link "Envitefy on Reddit (opens in a new tab)":
+        - /url: https://www.reddit.com/user/envitefy/
+        - generic: Envitefy on Reddit (opens in a new tab)
+- alert

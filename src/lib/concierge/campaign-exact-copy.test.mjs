@@ -6,6 +6,7 @@ import { fallbackExtractConciergeDraft } from "./fallback.ts";
 import { normalizeConciergeDraft } from "./extract.ts";
 import { buildProductArtworkPrompt, buildProductCopyPrompt } from "../studio/product-prompts.ts";
 import { resolveStudioProduct } from "../studio/product-contract.ts";
+import { publicContentForDraft } from "./public-content.ts";
 
 const exactLines = ["Ready, set, celebrate!", "No gifts, please."];
 const opening = `Nora is turning 7. Create a birthday invitation on October 30, 2099 at 2 PM at Maple Community Center, Austin, TX. Please keep the exact lines '${exactLines[0]}' and '${exactLines[1]}'. Rainbow theme.`;
@@ -60,8 +61,8 @@ test("the actual chat generation details mark exact guest copy approved for the 
   const names = new Set(["draftHeadline", "draftSubheadline", "uniqueDisplayLine", "additionalLocationLine", "additionalLocationNarrative", "studioCategoryForDraft", "dateInputFromDraft", "localDateInputFromIso", "timeInputFromDraft", "draftVisualDirection", "buildStudioDetailsFromDraft"]);
   const helpers = ast.statements.filter(node => ts.isFunctionDeclaration(node) && names.has(node.name?.text));
   assert.equal(helpers.length, names.size);
-  const build = new Function("stringValue", "createInitialDetails", "skinLabelForDraft", `${ts.transpile(helpers.map(node => node.getText(ast)).join("\n"))}; return buildStudioDetailsFromDraft;`)(
-    value => typeof value === "string" ? value.trim() || null : null, () => ({}), () => "Birthday",
+  const build = new Function("stringValue", "createInitialDetails", "skinLabelForDraft", "publicContentForDraft", `${ts.transpile(helpers.map(node => node.getText(ast)).join("\n"))}; return buildStudioDetailsFromDraft;`)(
+    value => typeof value === "string" ? value.trim() || null : null, () => ({}), () => "Birthday", publicContentForDraft,
   );
   let detailsStatement;
   function visit(node) {
@@ -72,9 +73,9 @@ test("the actual chat generation details mark exact guest copy approved for the 
   }
   visit(ast);
   assert.ok(detailsStatement);
-  const buildGenerationDetails = new Function("buildStudioDetailsFromDraft", "resolveStudioProduct", "draftToGenerate", `${ts.transpile(detailsStatement.getText(ast))}; return details;`);
+  const buildGenerationDetails = new Function("buildStudioDetailsFromDraft", "resolveStudioProduct", "draftToGenerate", "options", "draftStudioInvite", `${ts.transpile(detailsStatement.getText(ast))}; return details;`);
   for (const output of ["live_card", "digital_flyer", "event_page"]) {
-    const details = buildGenerationDetails(build, resolveStudioProduct, journey(output));
+    const details = buildGenerationDetails(build, resolveStudioProduct, journey(output), {}, null);
     assert.equal(details.approvedWording, exactLines.join("\n\n"));
     assert.match(details.detailsDescription, /Ready, set, celebrate!/);
     const event = { title: details.eventTitle, category: details.category, description: details.detailsDescription, approvedWording: details.approvedWording };

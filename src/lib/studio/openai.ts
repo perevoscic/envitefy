@@ -369,7 +369,7 @@ async function postOpenAiImageEdit(
     if (options.onPartialImage) return {
       ok: true, warnings,
       imageDataUrl: await streamOpenAiImage(client, {
-        model, image: uploadables, prompt, size: resolveImageSize(),
+        model, image: uploadables, prompt, size: options.size ?? resolveImageSize(),
         quality: resolveImageQuality(), background: resolveImageBackground(model), n: 1,
       }, options),
     };
@@ -377,7 +377,7 @@ async function postOpenAiImageEdit(
       model,
       image: uploadables,
       prompt,
-      size: resolveImageSize(),
+      size: options.size ?? resolveImageSize(),
       quality: resolveImageQuality(),
       background: resolveImageBackground(model),
       n: 1,

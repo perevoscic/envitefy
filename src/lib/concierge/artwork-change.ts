@@ -1,6 +1,7 @@
 import type { ConciergeEventDraft } from "./types.ts";
 import { stripArtworkPreservationInstructions } from "./visual-direction.ts";
 import { isArtworkDirection } from "./artwork-edit-scope.ts";
+import { publicContentForDraft } from "./public-content.ts";
 
 export type ArtworkTextMode = "headline" | "complete_invitation" | "none";
 
@@ -17,6 +18,7 @@ export function shouldRegenerateGeneratedDraftImageForEdit(args: {
   if (isArtworkDirection(visualRequest)) return true;
   const changed = (field: keyof ConciergeEventDraft) =>
     JSON.stringify(before[field] ?? null) !== JSON.stringify(after[field] ?? null);
+  if (artworkTextMode !== "none" && JSON.stringify(publicContentForDraft(before).requiredArtworkLines) !== JSON.stringify(publicContentForDraft(after).requiredArtworkLines)) return true;
   if (["theme", "tone", "eventType"].some((field) => changed(field as keyof ConciergeEventDraft)))
     return true;
   if (
@@ -45,5 +47,6 @@ export function shouldRegenerateGeneratedDraftImageForEdit(args: {
     "registryLink",
     "giftRegistryLink",
     "previewCopy",
+    "publicContent",
   ].some((field) => changed(field as keyof ConciergeEventDraft));
 }

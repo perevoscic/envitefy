@@ -21,10 +21,12 @@ import type {
   ConciergeWeatherContext,
   RequestedOutput,
 } from "@/lib/concierge/types";
-import { buildChatShowcasePreview, type ChatPreviewSummary } from "./chat-preview-adapters";
+import { buildChatShowcasePreview, buildChatEventWebsitePreview, type ChatPreviewSummary } from "./chat-preview-adapters";
 import ScannedSchedule from "@/components/ScannedSchedule";
 import EventPreviewViewport from "@/components/EventPreviewViewport";
 import ArtworkPreviewDialog from "@/components/ArtworkPreviewDialog";
+import ConciergeEventWebsite from "@/components/concierge/ConciergeEventWebsite";
+import ArtworkDownloadButton from "@/components/ArtworkDownloadButton";
 
 type RsvpPreviewBadge = {
   count: number;
@@ -38,6 +40,7 @@ type ChatProductPreviewProps = {
   selectedOutput: RequestedOutput;
   previewImageUrl: string;
   artworkNotice?: string;
+  pageTypography?: { scale?: number; contrast?: "high"; foreground?: "dark" | "light" };
   isGenerating: boolean;
   hasStreamingPreview?: boolean;
   currentBuildStep: string;
@@ -198,10 +201,12 @@ export default function ChatProductPreview({
   rsvp,
   weatherContext,
   onEdit,
+  pageTypography,
 }: ChatProductPreviewProps) {
   const [shareState, setShareState] = useState<"idle" | "copied">("idle");
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const isEventPagePreview = selectedOutput === "event_page";
+  const isFlyer = ["digital_flyer", "printable_flyer", "invitation"].includes(selectedOutput);
   const previewDialogRef = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     if (!isPreviewOpen || !isEventPagePreview) return;
@@ -238,6 +243,7 @@ export default function ChatProductPreview({
     sharePath: publicHref,
     eventId: liveEventId,
   });
+  const eventPagePreview = buildChatEventWebsitePreview({ draft, summary, selectedOutput, imageUrl: previewImageUrl, sharePath: publicHref, eventId: liveEventId });
 
   async function handleShare() {
     if (!publicHref || typeof window === "undefined") return;
@@ -471,6 +477,7 @@ export default function ChatProductPreview({
                 </span>
               </button>
             ) : null}
+            {isFlyer && previewImageUrl && !isGenerating ? <ArtworkDownloadButton imageUrl={previewImageUrl} title={summary.headline} className="col-span-2" /> : null}
             {rsvpDashboardHref ? (
               <a
                 href={rsvpDashboardHref}
@@ -492,9 +499,7 @@ export default function ChatProductPreview({
         >
           {isPreviewOpen ? (
             <EventPreviewViewport title={summary.headline} onClose={() => setIsPreviewOpen(false)}>
-              <div className="flex min-h-[100dvh] items-center justify-center bg-[#f8f7fb] p-4">
-                <img src={previewImageUrl} alt={summary.headline} className="max-h-[calc(100dvh-2rem)] max-w-full rounded-2xl object-contain" />
-              </div>
+              <ConciergeEventWebsite {...eventPagePreview} pageTypography={pageTypography} />
             </EventPreviewViewport>
           ) : null}
         </dialog>

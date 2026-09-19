@@ -58,8 +58,13 @@ export async function POST(req: Request) {
     const body = (await timing.time("body_parse", () =>
       req.json().catch(() => ({})),
     )) as CreationIntakeRequest;
-    const message =
-      typeof body.message === "string" ? body.message.slice(0, MAX_MESSAGE_LENGTH) : "";
+    const message = typeof body.message === "string" ? body.message : "";
+    if (message.length > MAX_MESSAGE_LENGTH) {
+      return responseWithJsonError(
+        "Your message exceeds 12,000 characters. Please split it into shorter messages so every detail is included.",
+        400,
+      );
+    }
     const action = body.action || "message";
     if (!message.trim() && !body.ocrContext && action !== "save") {
       return responseWithJsonError("Send a message or upload context.", 400);
@@ -104,6 +109,7 @@ export async function POST(req: Request) {
               message,
               chatMessages,
               draft: responseDraft,
+              previousDraft: request.draft,
               fallbackMessage,
               weatherContext,
               signal: abortController.signal,

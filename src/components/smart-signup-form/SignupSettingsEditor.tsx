@@ -38,6 +38,11 @@ export default function SignupSettingsEditor({
       <p>Name is always collected after guests choose a slot.</p>
       {toggle("collectEmail", "Require email")}
       {toggle("collectPhone", "Require phone number")}
+      <p>
+        When an email is collected, guests receive a confirmation with their choices and a private
+        link to update or cancel. Automatic reminders are not currently sent. Use the Host dashboard
+        to export responses and follow up through your usual email or group channel.
+      </p>
       <h3>Overall form limits</h3>
       <p>
         Set section-specific limits beside each section. These limits apply across the whole form.

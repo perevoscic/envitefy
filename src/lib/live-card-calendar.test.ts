@@ -24,10 +24,10 @@ test("the reported Saturday 3 PM card exports the same instant to every calendar
     const google = new URL(links.google).searchParams;
     const outlook = new URL(links.outlook).searchParams;
     const apple = new URL(links.appleInline, "http://localhost").searchParams;
-    assert.equal(google.get("dates"), "20260926T200000Z/20260926T220000Z", time);
+    assert.equal(google.get("dates"), "20260926T200000Z/20260926T200000Z", time);
     assert.equal(google.get("ctz"), "America/Chicago");
     assert.equal(outlook.get("startdt"), "2026-09-26T20:00:00.000Z");
-    assert.equal(outlook.get("enddt"), "2026-09-26T22:00:00.000Z");
+    assert.equal(outlook.get("enddt"), null);
     assert.equal(apple.get("start"), outlook.get("startdt"));
     assert.equal(apple.get("end"), outlook.get("enddt"));
     assert.equal(apple.get("floating"), "0");

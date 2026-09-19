@@ -84,8 +84,8 @@ test("event route branches football discovery/template events into the football 
     source.indexOf("if (shouldRenderFootballPage)") < source.indexOf("if (isSimpleTemplate)"),
     "football renderer branch should run before the generic SimpleTemplateView branch",
   );
-  assert.match(source, /if \(editParam && canEditCreatedEvent && isFootballDiscoveryTemplate\) \{/);
-  assert.match(source, /redirect\("\/event"\)/);
+  assert.match(source, /if \(editParam && canEditCreatedEvent && \(isGymnasticsDiscoveryTemplate \|\| isFootballDiscoveryTemplate\)\) \{/);
+  assert.match(source, /redirect\(buildOwnerEventEditHref\(/);
   assert.match(source, /import BasketballSkin from "@\/components\/BasketballSkin";/);
   assert.match(source, /import BirthdaySkin from "@\/components\/BirthdaySkin";/);
   assert.match(source, /import FootballSkin from "@\/components\/FootballSkin";/);
@@ -164,7 +164,7 @@ test("event route branches football discovery/template events into the football 
     "birthday OCR skin branch should run before the birthday renderer branch",
   );
   assert.match(source, /const isBirthdayRendererEvent =/);
-  assert.match(source, /categoryNormalized === "birthdays" && createdVia === "birthday-renderer"/);
+  assert.match(source, /\(categoryNormalized === "birthdays" \|\| categoryNormalized === "anniversaries"\) &&\s*createdVia === "birthday-renderer"/);
   assert.match(source, /const birthdayThemeId = variationId \|\| BIRTHDAY_THEMES\[0\]\?\.id;/);
   assert.match(source, /const birthdayThemeBase = data\.theme\?\.layout/);
   assert.match(source, /const hideHostDashboard =/);
@@ -324,11 +324,7 @@ test("event route disconnects the retired legacy event page fallback", () => {
 
   assert.notEqual(simpleTemplateBranch, -1);
   assert.notEqual(notFoundAfterTemplates, -1);
-  assert.notEqual(retiredFallback, -1);
-  assert.ok(
-    notFoundAfterTemplates < retiredFallback,
-    "unknown events should 404 before the retired legacy event page can render",
-  );
+  assert.equal(retiredFallback, -1, "the retired legacy renderer should be removed entirely");
 });
 
 test("event route shows deleted event copy for missing event rows", () => {
@@ -422,9 +418,12 @@ test("event route renders concierge live cards with public details and direct RS
   assert.match(source, /Boolean\(rsvpRecord\?\.isEnabled\)/);
   assert.match(source, /Boolean\(rsvpRecord\?\.direct\)/);
   assert.match(source, /const showPublicRsvp =/);
-  assert.match(source, /allowDirectRsvp=\{directRsvpEnabled\}/);
-  assert.match(source, /eventTitle=\{publicEventTitle\}/);
-  assert.match(source, /\{publicEventSubheadline\}/);
+  assert.match(source, /if \(cardFirstCanonical && !ownerToolsTab && !showOwnerEventView\)/);
+  const cardSource = readSource("src/app/card/[id]/page.tsx");
+  assert.match(cardSource, /withDirectRsvpInvitationData\(/);
+  assert.match(source, /directRsvpEnabled=\{directRsvpEnabled\}/);
+  assert.match(source, /title=\{publicEventTitle\}/);
+  assert.match(source, /subheadline=\{publicEventSubheadline\}/);
 });
 
 test("event route renders concierge event pages as full website products", () => {

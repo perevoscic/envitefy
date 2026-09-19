@@ -38,7 +38,9 @@ export function createGenerationTracker(options: GenerationOptions = {}) {
       if (stage === "generating" || stage === "repairing") timings.imageAttempts++;
       const start = Date.now();
       try {
-        return await work();
+        const result = await work();
+        options.signal?.throwIfAborted();
+        return result;
       } finally {
         timings.stagesMs[stage] = (timings.stagesMs[stage] || 0) + Date.now() - start;
       }

@@ -31,7 +31,7 @@ export const SIGNUP_BLOCKS = [
     name: "Time slots",
     description: "Shifts, appointments, or session times.",
     title: "Choose a time",
-    labels: ["First shift", "Second shift"],
+    labels: [],
     capacity: 1,
   },
   {
@@ -132,6 +132,7 @@ export function generateSignupShifts(
   end: string,
   interval: number,
   capacity: number,
+  label = "Volunteer shift",
 ) {
   const minutes = (value: string) => {
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) return Number.NaN;
@@ -148,16 +149,16 @@ export function generateSignupShifts(
     interval > 720 ||
     Math.ceil((to - from) / interval) > 100
   )
-    throw new Error("Choose 5–720 minutes per shift, with no more than 100 shifts.");
+    throw new Error("Choose 5–720 minutes per time slot, with no more than 100 slots.");
   if (!Number.isInteger(capacity) || capacity < 1 || capacity > 999)
-    throw new Error("Choose 1–999 people per shift.");
+    throw new Error("Choose 1–999 people per time slot.");
   const clock = (value: number) =>
     `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
   return Array.from({ length: Math.ceil((to - from) / interval) }, (_, index) => {
     const begins = from + index * interval,
       ends = Math.min(to, begins + interval);
     return createSignupSlot({
-      label: `Volunteer shift ${index + 1}`,
+      label: `${label} ${index + 1}`,
       capacity,
       startTime: clock(begins),
       endTime: clock(ends),
@@ -165,9 +166,48 @@ export function generateSignupShifts(
   });
 }
 
+/** Legacy placeholder rows can be removed only by an explicit choice, never with bookings. */
+export function replaceableSignupStarterIds(
+  form: SignupForm,
+  section: SignupFormSection,
+): string[] {
+  if (section.purpose !== "times") return [];
+  return section.slots
+    .filter(
+      (slot) =>
+        ["First shift", "Second shift"].includes(slot.label) &&
+        slot.capacity === 1 &&
+        !slot.startTime &&
+        !slot.endTime &&
+        !slot.notes &&
+        !signupSectionHasResponses(form, section.id, slot.id),
+    )
+    .map((slot) => slot.id);
+}
+
+export function appendSignupTimeSlots(
+  form: SignupForm,
+  section: SignupFormSection,
+  generated: SignupFormSection["slots"],
+  replaceStarters = false,
+): SignupFormSection {
+  const removeIds = replaceStarters ? replaceableSignupStarterIds(form, section) : [];
+  const existing = section.slots.filter((slot) => !removeIds.includes(slot.id));
+  const additions = generated.filter(
+    (slot) =>
+      !existing.some(
+        (current) => current.startTime === slot.startTime && current.endTime === slot.endTime,
+      ),
+  );
+  if (!additions.length)
+    throw new Error("These time slots already exist. Choose a different time range.");
+  return { ...section, slots: [...existing, ...additions] };
+}
+
 export function addFieldDayStarter(form: SignupForm): SignupForm {
   const shifts = {
     ...createSignupBlock("times"),
+    slots: ["First shift", "Second shift"].map((label) => createSignupSlot({ label, capacity: 1 })),
     title: "Field Day volunteers",
     description: "Choose one shift. Add the times and arrival instructions for your school.",
   };

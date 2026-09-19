@@ -89,6 +89,8 @@ export type SignupSafetyFlags = {
 };
 
 export type SignupForm = {
+  /** Canonical restriction retained from legacy private/invite-only flags. */
+  visibility?: "restricted";
   boardTitle?: string;
   boardDescription?: string;
   appearance?: SignupAppearance | null;

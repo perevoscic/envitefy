@@ -11,6 +11,7 @@ import {
 } from "@/lib/legal-versions";
 import type { SignupIntent, SignupSource } from "@/lib/signup-intent";
 import { hideAuthTransition, showAuthTransition } from "@/utils/authTransition";
+import { startNativeIOSSignIn } from "@/lib/native-ios";
 
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
@@ -210,6 +211,7 @@ export default function SignupForm({
 
   const onGoogleSignUp = async () => {
     if (!allowGoogleAuth) return;
+    if (startNativeIOSSignIn({ returnTo: successRedirectUrl, mode: "signup", intent: signupIntent || signupSource })) return;
     setSubmitting(true);
     setMessage(null);
     setLegalError(null);

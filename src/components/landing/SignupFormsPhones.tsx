@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Calendar,
-  CheckCircle2,
-  ClipboardList,
-  MinusCircle,
-} from "lucide-react";
+import { Calendar, CheckCircle2, ClipboardList, MinusCircle } from "lucide-react";
 
 type Props = {
   className?: string;
@@ -50,9 +45,7 @@ const schedule: ScheduleEntry[] = [
 
 export default function SignupFormsPhones({ className = "" }: Props) {
   return (
-    <div
-      className={`relative flex h-[640px] items-center justify-center ${className}`}
-    >
+    <div className={`relative flex h-[640px] items-center justify-center ${className}`}>
       {/* Background Glow */}
       <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[140%] w-[140%] rounded-full bg-gradient-to-tr from-emerald-200/60 via-teal-100/60 to-transparent blur-3xl -z-10" />
 
@@ -71,9 +64,7 @@ export default function SignupFormsPhones({ className = "" }: Props) {
               <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.25em] opacity-90">
                 Smart sign-ups
               </p>
-              <h2 className="font-serif text-3xl text-white">
-                Classroom Snacks
-              </h2>
+              <h2 className="font-serif text-3xl text-white">Classroom Snacks</h2>
             </div>
             <div className="absolute -bottom-6 right-6 flex h-12 w-12 items-center justify-center rounded-full bg-white text-teal-600 shadow-lg transition-transform hover:-translate-y-1">
               <ClipboardList size={20} />
@@ -98,17 +89,13 @@ export default function SignupFormsPhones({ className = "" }: Props) {
 
               <div className="mt-6 border-t border-slate-100 pt-6">
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="font-serif text-sm font-bold text-slate-800">
-                    Progress
-                  </span>
-                  <span className="text-[11px] text-slate-400">
-                    5 slots filled
-                  </span>
+                  <span className="font-serif text-sm font-bold text-slate-800">Progress</span>
+                  <span className="text-[11px] text-slate-400">5 slots filled</span>
                 </div>
                 <div className="flex gap-2 text-[11px] text-slate-500">
                   <div className="flex items-center gap-2 rounded-lg border border-slate-100 px-3 py-2">
                     <CheckCircle2 className="text-teal-600" size={16} />
-                    Auto reminders
+                    Confirmations
                   </div>
                   <div className="flex items-center gap-2 rounded-lg border border-slate-100 px-3 py-2">
                     <Calendar className="text-teal-600" size={16} />
@@ -130,12 +117,8 @@ export default function SignupFormsPhones({ className = "" }: Props) {
           <CheckCircle2 size={16} />
         </div>
         <div>
-          <p className="text-[10px] font-bold uppercase text-slate-400">
-            New signup
-          </p>
-          <p className="text-xs font-semibold text-slate-800">
-            Sarah added Chips & Dip
-          </p>
+          <p className="text-[10px] font-bold uppercase text-slate-400">New signup</p>
+          <p className="text-xs font-semibold text-slate-800">Sarah added Chips & Dip</p>
         </div>
       </div>
 
@@ -147,12 +130,8 @@ export default function SignupFormsPhones({ className = "" }: Props) {
           <MinusCircle size={16} className="text-red-600" />
         </div>
         <div>
-          <p className="text-[10px] font-bold uppercase text-slate-400">
-            Slot filled
-          </p>
-          <p className="text-xs font-semibold text-slate-800">
-            Water case now full
-          </p>
+          <p className="text-[10px] font-bold uppercase text-slate-400">Slot filled</p>
+          <p className="text-xs font-semibold text-slate-800">Water case now full</p>
         </div>
       </div>
 
@@ -186,8 +165,8 @@ function SlotCard({ title, detail, state }: Slot) {
         isSigned
           ? "border-green-200 bg-green-50/60"
           : isFull
-          ? "border-red-200 bg-red-50/50"
-          : "border-slate-200"
+            ? "border-red-200 bg-red-50/50"
+            : "border-slate-200"
       }`}
     >
       <div className="flex items-center gap-3">
@@ -202,11 +181,7 @@ function SlotCard({ title, detail, state }: Slot) {
           <p className="text-sm font-semibold text-slate-800">{title}</p>
           <p
             className={`text-xs font-medium ${
-              isSigned
-                ? "text-green-600"
-                : isFull
-                ? "text-red-600"
-                : "text-slate-500"
+              isSigned ? "text-green-600" : isFull ? "text-red-600" : "text-slate-500"
             }`}
           >
             {detail}
