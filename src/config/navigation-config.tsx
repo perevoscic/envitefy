@@ -167,7 +167,11 @@ export function getCreateEventSections(
   visibleTemplateKeys?: TemplateKey[],
   productScopes?: string[],
   sportPreferences?: SportPreferences,
-  options: { isAdmin?: boolean; defaultCreateIntent?: string | null } = {},
+  options: {
+    isAdmin?: boolean;
+    defaultCreateIntent?: string | null;
+    includeSignupForm?: boolean;
+  } = {},
 ): CreateEventSection[] {
   const links = options.isAdmin
     ? getTemplateLinks()
@@ -178,7 +182,7 @@ export function getCreateEventSections(
       .filter((link) => link.section === section)
       .map(({ label, href, icon }) => ({ label, href, icon })),
   })).filter((section) => section.items.length > 0);
-  sections.push({
+  if (options.includeSignupForm !== false) sections.push({
     title: "Sign-ups",
     items: [{
       label: "Sign-up Form",

@@ -33,7 +33,7 @@ function harness(overrides = {}) {
     isSending: true,
   };
   const scope = {
-    isCommittingEvent: false, isBusy: true,
+    isBusy: true,
     conversationVersionRef: { current: 0 },
     messagesRef: { current: state.messages },
     responseAbortRef: { current: new AbortController() },
@@ -57,35 +57,10 @@ function harness(overrides = {}) {
     const key = name[0].toLowerCase() + name.slice(1);
     scope[`set${name}`] = (value) => { state[key] = typeof value === "function" ? value(state[key]) : value; };
   }
-  return { state, scope, cancel: () => load("handleCancelChat", scope)() };
+  return { state, scope };
 }
 
-test("idle Cancel requests guarded dashboard navigation without discarding progress", () => {
-  const h = harness({ isBusy: false });
-  h.cancel();
-  assert.equal(h.state.destination, undefined);
-  assert.equal(h.state.draft.ready, true);
-  h.state.navigate();
-  assert.equal(h.state.destination, "/");
-});
-
-test("busy Cancel aborts all active work, preserves useful messages and the existing artwork", () => {
-  const artwork = { imageUrl: "saved-in-memory.webp" };
-  const h = harness({ draftStudioInvite: artwork });
-  const controllers = [h.scope.responseAbortRef.current, h.scope.generationAbortRef.current, h.scope.uploadAbortRef.current];
-  h.cancel();
-  assert.ok(controllers.every((controller) => controller.signal.aborted));
-  assert.equal(h.scope.conversationVersionRef.current, 1);
-  assert.equal(h.scope.draftStudioInvite, artwork);
-  assert.equal(h.state.phase, "card_ready");
-  assert.equal(h.state.isSending, false);
-  assert.equal(h.state.isUploading, false);
-  assert.ok(h.state.messages.some((message) => message.id === "partial"));
-  assert.ok(!h.state.messages.some((message) => message.id === "empty"));
-  assert.match(h.state.messages.at(-1).text, /Stopped/);
-});
-
-test("a cancelled non-streaming response cannot overwrite the draft or clear a newer busy state", async () => {
+test("leaving the conversation prevents a late non-streaming response from replacing newer state", async () => {
   let resolveFetch;
   let signal;
   const h = harness({ fetch: (_url, options) => {
@@ -94,7 +69,8 @@ test("a cancelled non-streaming response cannot overwrite the draft or clear a n
   } });
   const response = load("sendToConcierge", h.scope)({ message: "Confirm the date", ocrContext: {} });
   assert.ok(signal);
-  h.cancel();
+  h.scope.conversationVersionRef.current += 1;
+  h.scope.responseAbortRef.current.abort();
   h.state.isSending = true;
   resolveFetch({ ok: true, json: async () => ({ ok: true, draft: { title: "stale result" } }) });
   assert.equal(await response, null);
@@ -118,7 +94,7 @@ test("a superseded intake cannot overwrite the newer request or clear its busy s
   assert.equal(h.state.isSending, true);
 });
 
-test("Cancel during artwork generation ignores a late completed image", async () => {
+test("leaving the conversation during artwork generation ignores a late completed image", async () => {
   let completeGeneration;
   const h = harness({
     normalizeDraftProductOutputs: (draft) => draft,
@@ -128,19 +104,11 @@ test("Cancel during artwork generation ignores a late completed image", async ()
   const generation = load("generateProductForDraft", h.scope)(h.state.draft);
   await Promise.resolve();
   assert.equal(typeof completeGeneration, "function");
-  h.cancel();
+  h.scope.conversationVersionRef.current += 1;
   completeGeneration({ imageUrl: "late-image.webp" });
   await generation;
-  assert.equal(h.state.phase, "ready_to_generate");
   assert.equal(h.scope.draftStudioInvite, null);
   assert.equal(h.state.error, null);
-});
-
-test("Cancel does not pretend to undo an event save already in progress", () => {
-  const h = harness({ isCommittingEvent: true });
-  h.cancel();
-  assert.equal(h.scope.conversationVersionRef.current, 0);
-  assert.equal(h.scope.responseAbortRef.current.signal.aborted, false);
 });
 
 function renderComposer({ busy = false, text = "" } = {}) {
@@ -149,30 +117,29 @@ function renderComposer({ busy = false, text = "" } = {}) {
   return renderToStaticMarkup(load("composer", {
     React, cn: (...classes) => classes.filter(Boolean).join(" "),
     isEmptyState: false, isCompactEmptyComposer: false, isBusy: busy,
-    isCommittingEvent: false, isUploading: false,
+    isUploading: false,
     isGeneratingCard: busy, isPublishingCard: false, canSubmitComposer: true,
     liveCardEventId: null, draft: {}, input: text, selectionPills: null, error: null,
     composerCardRef: { current: null }, fileInputRef: { current: null },
     handleSubmit: noop, handleSelectedSnapFile: noop, handleComposerValueChange: noop,
-    submitComposerInput: noop, handleStarterCategoryChoice: noop, handleCancelChat: noop,
+    submitComposerInput: noop, handleStarterCategoryChoice: noop,
     ChatCategoryMenu: ({ disabled }) => React.createElement("button", { disabled, "aria-label": "Choose event category" }, "+"),
     setIsComposerFocused: noop, getUploadAcceptAttribute: () => "image/*", busyLabel: "Generating invite",
     PromptInput: container, PromptInputActions: container, PromptInputAction: container,
     PromptInputTextarea: (props) => React.createElement("textarea", props),
-    ArrowUp: icon("send"), Loader2: icon("loading"), X: icon("cancel"),
+    ArrowUp: icon("send"), Loader2: icon("loading"),
   }));
 }
 
-test("active chat offers categories beside Send and Cancel without voice input", () => {
+test("active chat offers categories beside Send without Cancel or voice input", () => {
   for (const text of ["", "More wedding details"]) {
     const html = renderComposer({ text });
     assert.match(html, /aria-label="Choose event category"/);
     assert.match(html, /aria-label="Send"/);
-    assert.match(html, /Cancel chat and return to dashboard/);
-    assert.doesNotMatch(html, /voice input|dictation|microphone/);
+    assert.doesNotMatch(html, /Cancel|voice input|dictation|microphone/);
   }
   const busy = renderComposer({ busy: true });
-  assert.match(busy, /aria-label="Cancel current response or generation"/);
+  assert.doesNotMatch(busy, /Cancel/);
   assert.match(busy, /disabled="" aria-label="Choose event category"/);
   assert.match(busy, /disabled=""[^>]+aria-label="Send"/);
 });

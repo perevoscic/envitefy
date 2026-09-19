@@ -1630,8 +1630,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     previewImageForDraft(draft);
   const selectedCategoryLabel =
     starterSelectionLabel(selectedStarterCategory) || categoryLabelForDraft(draft);
-  // A committed publish/save cannot be undone by aborting the browser request.
-  const isCommittingEvent = isPublishingCard || (Boolean(liveCardEventId) && isSending);
   const hasComposerSelection = Boolean(selectedStarterCategory || selectedProductOutput);
   const canSubmitComposer = Boolean(input.trim() || hasComposerSelection || pendingChatUpload);
   const selectedSkinLabel =
@@ -1698,47 +1696,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setMobileView("chat");
     setIsReadyChatComposerOpen(false);
     setMessages([newMessage("assistant", initialAssistantPrompt)]);
-  }
-
-  function handleCancelChat() {
-    if (isCommittingEvent) return;
-    if (!isBusy) {
-      progress.requestLeave(() => router.push("/"));
-      return;
-    }
-
-    // Invalidate late results before aborting so a stopped request cannot replace
-    // the current draft, clear a newer request's state, or start another stage.
-    conversationVersionRef.current += 1;
-    responseAbortRef.current?.abort();
-    generationAbortRef.current?.abort();
-    uploadAbortRef.current?.abort();
-    responseAbortRef.current = null;
-    generationAbortRef.current = null;
-    uploadAbortRef.current = null;
-    setIsSending(false);
-    setRestoringProgress(false);
-    setIsStreamingAssistant(false);
-    setIsUploading(false);
-    setChatUploadStage("idle");
-    setStreamingPreviewImage(null);
-    setGenerationStage("preparing");
-    setError(null);
-    setFailedRequest(null);
-    setFailedSnapUpload(null);
-    setPhase(
-      draftStudioInvite || liveCardEventId
-        ? "card_ready"
-        : draft && isReadyProductDraft(draft)
-          ? "ready_to_generate"
-          : "collecting_details",
-    );
-    setMobileView("chat");
-    setMessages((current) => [
-      ...current.filter((message) => message.type !== "upload_status" && message.text.trim()),
-      newMessage("system", "Stopped. Your progress is still here; you can keep chatting when you're ready."),
-    ]);
-    focusComposerAtEnd();
   }
 
   function focusComposerAtEnd() {
@@ -3124,7 +3081,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
 
   const chatThread = (
     <div
-      className="flex min-h-full w-full min-w-0 flex-col justify-start gap-5 px-3 py-5 sm:px-6 lg:px-8 lg:py-8 [&_p]:[overflow-wrap:anywhere]"
+      className="mx-auto flex min-h-full w-full max-w-3xl min-w-0 flex-col justify-start gap-5 py-5 lg:py-8 [&_p]:[overflow-wrap:anywhere]"
       role="log"
       aria-live="polite"
       aria-relevant="additions text"
@@ -3314,9 +3271,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
 
   const composer = (
     <div
-      className="pointer-events-none z-30 flex w-full min-w-0 shrink-0 flex-col items-stretch px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 sm:px-6 lg:px-8 lg:pb-4"
+      className="pointer-events-none z-30 flex w-full min-w-0 shrink-0 flex-col items-stretch px-3 pb-[max(env(safe-area-inset-bottom),3rem)] pt-2 sm:px-6 lg:px-8"
     >
-      <div ref={composerCardRef} className="pointer-events-auto relative w-full">
+      <div ref={composerCardRef} className="pointer-events-auto relative mx-auto w-full max-w-3xl">
         {isEmptyState ? (
           <div
             role="group"
@@ -3371,14 +3328,14 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             onSubmit={() => void submitComposerInput()}
             disabled={isUploading || isGeneratingCard || isPublishingCard}
             className={cn(
-              "w-full border-[#d8caff] bg-[#fbf9ff] p-2 text-[#25183a] shadow-[0_18px_46px_rgba(93,63,155,0.18),inset_0_1px_0_rgba(255,255,255,0.9)] ring-1 ring-white/75 backdrop-blur transition-all duration-300",
-              isCompactEmptyComposer && "max-md:rounded-[1.4rem] max-md:p-1.5",
+              "w-full rounded-[1.75rem] border-[#e2d9ef] bg-[#fbf9ff] p-1.5 text-[#25183a] shadow-[0_4px_20px_rgba(64,43,96,0.08)] transition-[border-color,box-shadow] duration-200 focus-within:border-[#b6a0e6] focus-within:shadow-[0_4px_24px_rgba(93,63,155,0.12)]",
+              isCompactEmptyComposer && "max-md:rounded-[1.4rem]",
               isBusy && "!border-[#c4b5fd]",
             )}
           >
             <div
               className={cn(
-                "flex min-h-[52px] flex-col justify-center gap-2",
+                "flex min-h-11 flex-col justify-center gap-2",
                 isCompactEmptyComposer && "max-md:min-h-[42px]",
               )}
             >
@@ -3411,7 +3368,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                     <button
                       type="submit"
                       disabled={isBusy || !canSubmitComposer}
-                      className="inline-flex size-11 items-center justify-center rounded-full text-[#5c5be5] transition hover:bg-[#f1ebff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex size-11 items-center justify-center rounded-full bg-[#5c5be5] text-white transition-colors hover:bg-[#4f4ed2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#eee8f6] disabled:text-[#8b7ca6]"
                       aria-label="Send"
                     >
                       {isBusy ? (
@@ -3426,26 +3383,13 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             </div>
           </PromptInput>
         </form>
-        <div className="mt-1 flex min-h-11 items-center justify-end gap-3 px-1">
-          <button
-            type="button"
-            onClick={handleCancelChat}
-            disabled={isCommittingEvent}
-            aria-label={isBusy ? "Cancel current response or generation" : "Cancel chat and return to dashboard"}
-            title={isCommittingEvent ? "Finishing your saved event update" : undefined}
-            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-full px-3 text-sm font-medium text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-wait disabled:opacity-50"
-          >
-            <X className="size-4" aria-hidden="true" />
-            {isCommittingEvent ? "Saving…" : "Cancel"}
-          </button>
-        </div>
         {error ? <p role="alert" className="mt-2 max-h-[15dvh] overflow-y-auto [overflow-wrap:anywhere] text-sm font-medium text-red-600">{error}</p> : null}
       </div>
     </div>
   );
 
   const readyActions = (
-    <div className="pointer-events-none flex w-full min-w-0 shrink-0 flex-col items-stretch px-3 py-2 sm:px-6 lg:px-8">
+    <div className="pointer-events-none mx-auto flex w-full max-w-3xl min-w-0 shrink-0 flex-col items-stretch py-2">
       <div className="pointer-events-auto w-full">
         {shouldShowGiftRegistryPrompt ? (
           <div className="mb-2 rounded-[1.35rem] border border-[#ded2f5] bg-white/96 p-3 text-[#4f3a73] shadow-[0_14px_34px_rgba(93,63,155,0.12)] ring-1 ring-white/80 backdrop-blur">
@@ -3585,7 +3529,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                   }}
                   data-chat-messages="true"
                   className={cn(
-                    "min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]",
+                    "min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 sm:px-6 lg:px-8 [-webkit-overflow-scrolling:touch]",
                     isEmptyState && "flex flex-col",
                   )}
                 >

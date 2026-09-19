@@ -12,6 +12,23 @@ import { guestRsvpGuessRules } from "../guest-rsvp.ts";
 const make = (message, draft) => fallbackExtractConciergeDraft({ message, draft, requestedOutputs: draft?.requestedOutputs || ["event_page"] });
 const opening = "Create an event page. Title: 'Community Swim Practice'. September 23, 2026. Practice starts at 2 PM at Maple Pool, Austin, TX. Bring goggles and a towel. No diving. Beginners ages 13+ welcome.";
 
+test("Live Card questions distinguish the separate signup builder without changing the selected product", () => {
+  assert.match(CONCIERGE_CAPABILITIES.formats["Live card"], /not a Sign-up Form/);
+  const previous = fallbackExtractConciergeDraft({
+    message: "Create a live card for a workshop on September 23, 2026 at 2 PM at Maple Center.",
+    requestedOutputs: ["live_card"],
+  });
+  for (const message of ["Can a Live Card be a sign-up form?", "Is a livecard a signup sheet?", "What is the difference between a live card and a sign up form?"]) {
+    const answer = conciergeCapabilityAnswer(message);
+    assert.match(answer, /not a Sign-up Form/);
+    assert.match(answer, /separate Sign-up Form builder/);
+    const next = make(message, previous);
+    assert.deepEqual(next.requestedOutputs, previous.requestedOutputs);
+    assert.equal(next.eventType, previous.eventType);
+    assert.equal(next.title, previous.title);
+  }
+});
+
 test("download Q&A promises an image only after acceptance and preserves existing event facts", () => {
   const message = "Can I download this flyer?";
   const answer = conciergeCapabilityAnswer(message);

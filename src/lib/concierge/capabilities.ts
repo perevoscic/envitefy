@@ -6,7 +6,7 @@ export const CONCIERGE_CAPABILITIES = {
     "Generate draft preview creates artwork for review. It does not publish an event page. Publish is a separate action after review. A chat summary is not an interactive form.",
   formats: {
     "Live card":
-      "A visual invitation with event details, calendar/location actions and standard RSVP when enabled.",
+      "A visual invitation with event details, calendar/location actions and standard RSVP when enabled. A Live Card is not a Sign-up Form and cannot collect volunteer roles, item claims or time-slot bookings. Sign-up Forms use their separate builder.",
     "Flyer/Invitation":
       "Invitation artwork to review and share. Once generated and accepted, its image can be downloaded with Download. The downloaded image has no interactive RSVP controls; share the published event link for RSVP when enabled.",
     "Event page":
@@ -34,6 +34,11 @@ export function conciergeCapabilityAnswer(message: string): string | null {
   )
     return null;
   const answers: string[] = [];
+  if (/\blive[ -]?card\b/i.test(message) && /\bsign[ -]?up\s+(?:form|sheet)\b/i.test(message)) {
+    answers.push(
+      "A Live Card is an invitation with event details and optional RSVP; it is not a Sign-up Form. For volunteer roles, items or time slots, use the separate Sign-up Form builder.",
+    );
+  }
   if (/\bdownload(?:ed|able)?\b/i.test(message) && /\b(?:flyer|invitation|invite|image|artwork)\b/i.test(message)) {
     answers.push(
       "Once the artwork is generated and accepted, you can use Download to save the flyer image. The image itself has no working RSVP buttons; share the published event link as well if you enable RSVP.",

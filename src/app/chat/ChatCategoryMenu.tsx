@@ -1,7 +1,7 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { Baby, Cake, ClipboardList, Gift, Heart, PartyPopper, Plus, Trophy, X } from "lucide-react";
+import { Baby, Cake, Gift, Heart, PartyPopper, Plus, Trophy, X } from "lucide-react";
 import { useState } from "react";
 import { getCreateEventSections } from "@/config/navigation-config";
 import { useMenu } from "@/contexts/MenuContext";
@@ -24,7 +24,6 @@ function categoryIcon(prompt: string) {
   if (prompt === "Wedding" || prompt === "Anniversary") return Heart;
   if (prompt === "Baby Shower") return Baby;
   if (prompt === "Gender Reveal") return Gift;
-  if (prompt === "Sign-up Form") return ClipboardList;
   return Trophy;
 }
 
@@ -48,6 +47,7 @@ export default function ChatCategoryMenu({
         {
           isAdmin: menu.isAdmin,
           defaultCreateIntent: menu.defaultCreateIntent,
+          includeSignupForm: false,
         },
       )
     : [];
@@ -104,6 +104,10 @@ export default function ChatCategoryMenu({
                 </>
               )}
             </div>
+          ) : sections.length === 0 ? (
+            <p className="py-6 text-sm text-[#76648f]">
+              No event categories are enabled. Enable event categories in Settings to choose one here.
+            </p>
           ) : (
             sections.map((section) => (
               <section key={section.title} className="mt-5">

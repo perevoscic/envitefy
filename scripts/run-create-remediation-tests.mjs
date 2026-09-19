@@ -6,6 +6,7 @@ const files = [
   ...scripts["test:create-facts"].replace(/^node --test /, "").split(" "),
   ...scripts["test:create-campaign"].replace(/^node --test /, "").split(" "),
   "src/lib/concierge/persona.test.mjs",
+  "src/app/chat/ChatCategoryMenu.test.cjs",
   "src/lib/concierge/generated-preview.test.mjs",
   "src/app/chat/ConciergeChatClient.contract.test.mjs",
   "src/app/api/creation/intake/stream/route.test.mjs",
