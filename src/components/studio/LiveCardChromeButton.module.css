@@ -1,0 +1,27 @@
+.glass {
+  border-color: rgb(255 255 255 / 28%);
+  background-color: rgb(255 255 255 / 18%);
+  color: white;
+  box-shadow: 0 12px 28px rgb(0 0 0 / 34%), 0 0 16px rgb(255 255 255 / 10%),
+    inset 0 1px 0 rgb(255 255 255 / 16%);
+  backdrop-filter: blur(12px);
+}
+
+.glass:hover {
+  border-color: rgb(255 255 255 / 42%);
+  background-color: rgb(255 255 255 / 24%);
+}
+
+.darkGlass {
+  border-color: rgb(255 255 255 / 30%);
+  background-color: rgb(0 0 0 / 30%);
+  color: white;
+  box-shadow: 0 10px 24px rgb(0 0 0 / 34%), 0 0 12px rgb(255 255 255 / 12%),
+    inset 0 1px 0 rgb(255 255 255 / 14%);
+  backdrop-filter: blur(12px);
+}
+
+.darkGlass:hover {
+  border-color: rgb(255 255 255 / 45%);
+  background-color: rgb(255 255 255 / 22%);
+}

@@ -139,6 +139,8 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
     /if \(isOwner && !explicitOwnerPreview\) \{\s*redirect\(ownerWorkspaceHref\);\s*\}/s,
   );
   assert.match(pageSource, /buildOwnerPreviewSearch\(returnHref, ownerPreviewEmbedded\)/);
+  assert.match(pageSource, /const ownerPreviewEmbedded = isOwner && explicitOwnerPreview &&/);
+  assert.match(pageSource, /const returnHref = isOwner && explicitOwnerPreview/);
   assert.doesNotMatch(pageSource, /EventPreviewViewport|fullscreen/);
   assert.match(sharedPageSource, /returnHref\?: string \| null;/);
   assert.match(sharedPageSource, /aria-label="Close preview"/);

@@ -48,6 +48,7 @@ import {
 import { resolveLiveCardOverlayActions } from "@/lib/live-card-overlay-actions";
 import { isRsvpMailtoHref, openRsvpMailtoHref } from "@/utils/rsvp-mailto";
 import styles from "./StudioLiveCardActionSurface.module.css";
+import chromeStyles from "./LiveCardChromeButton.module.css";
 
 export type LiveCardActiveTab =
   | "none"
@@ -759,10 +760,10 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   const shareActionChromeClassName = posterFirstHeroCard
     ? shareActionPressed
       ? "border-white/85 bg-white/92 shadow-[0_16px_34px_rgba(0,0,0,0.42),0_0_22px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.82)]"
-      : "border-white/28 bg-white/18 shadow-[0_12px_28px_rgba(0,0,0,0.34),0_0_16px_rgba(255,255,255,0.1),inset_0_1px_0_rgba(255,255,255,0.16)] hover:border-white/42 hover:bg-white/24"
+      : chromeStyles.glass
     : shareActionPressed
       ? "border-white/85 bg-white shadow-[0_14px_28px_rgba(0,0,0,0.42),0_0_18px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.78),inset_0_-4px_10px_rgba(15,23,42,0.12)]"
-      : "border-white/30 bg-black/30 shadow-[0_10px_24px_rgba(0,0,0,0.34),0_0_12px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.14)] hover:border-white/45 hover:bg-white/22";
+      : chromeStyles.darkGlass;
   const shareActionPositionClassName = props.sharePosition === "left"
     ? "left-3 top-3"
     : useCompactActionButtons

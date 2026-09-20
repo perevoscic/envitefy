@@ -116,8 +116,14 @@ test("artwork fits the viewport with guest actions and Share/Close overlaid on t
         const result = await page.evaluate(() => {
           const frame = document.querySelector("[data-live-card-artwork]");
           const bounds = (element) => { const { x, y, width, height, right, bottom } = element.getBoundingClientRect(); return { x, y, width, height, right, bottom }; };
+          const close = document.querySelector('[aria-label="Close preview"]');
+          const share = document.querySelector('[data-live-card-share]');
+          const chrome = (element) => { const style = getComputedStyle(element); return {background:style.backgroundColor, color:style.color, border:style.borderColor, shadow:style.boxShadow, blur:style.backdropFilter}; };
           return {
             frame: bounds(frame),
+            close: bounds(close),
+            closeChrome: chrome(close),
+            shareChrome: chrome(share),
             background: getComputedStyle(document.querySelector("main").parentElement).backgroundColor,
             controls: [...document.querySelectorAll("[data-live-card-trigger]")].map(bounds),
             fit: getComputedStyle(frame.querySelector("img")).objectFit,
@@ -131,6 +137,8 @@ test("artwork fits the viewport with guest actions and Share/Close overlaid on t
         assert.match(result.background, /^(rgb\(10, 10, 10\)|oklch\(0\.145 0 (none|0)\))$/);
         assert.equal(result.overflow, false, "public card fits without page scrolling");
         assert.equal(result.controls.length, withRegistry ? 5 : 4);
+        assert.ok(result.close.width >= 44 && result.close.height >= 44, "public guest card always includes a usable Close button");
+        assert.deepEqual(result.closeChrome, result.shareChrome, "Close matches the Share glass styling");
         for (let index = 0; index < result.controls.length; index++) {
           const control = result.controls[index];
           assert.ok(control.width >= 44 && control.height >= 44, "guest controls keep usable touch targets");

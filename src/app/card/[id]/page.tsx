@@ -419,14 +419,14 @@ export default async function SharedCardPage(props: {
   const userId = await resolveSessionUserId(session);
   const isOwner = Boolean(userId && sharedCard.row.user_id && userId === sharedCard.row.user_id);
   const explicitOwnerPreview = readSearchParam(awaitedSearchParams.preview) === "owner";
-  const ownerPreviewEmbedded = explicitOwnerPreview && readSearchParam(awaitedSearchParams.embed) === "dashboard-preview";
+  const ownerPreviewEmbedded = isOwner && explicitOwnerPreview && readSearchParam(awaitedSearchParams.embed) === "dashboard-preview";
   const ownerWorkspaceHref = `${buildEventPath(
     sharedCard.row.id,
     sharedCard.title,
     undefined,
     sharedCard.row.public_slug,
   )}?tab=design`;
-  const returnHref = explicitOwnerPreview
+  const returnHref = isOwner && explicitOwnerPreview
     ? sanitizeInternalReturnHref(readSearchParam(awaitedSearchParams.returnTo)) ||
       ownerWorkspaceHref
     : "";

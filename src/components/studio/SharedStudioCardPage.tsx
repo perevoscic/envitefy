@@ -9,6 +9,7 @@ import EventCelebrationOverlay from "@/components/EventCelebrationOverlay";
 import LiveCardArtworkFrame from "@/components/studio/LiveCardArtworkFrame";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface, {
+  isPosterFirstHeroCard,
   type LiveCardActiveTab,
   type LiveCardButtonPositions,
   type LiveCardInvitationData,
@@ -18,6 +19,7 @@ import type { EventCelebrationKind } from "@/utils/event-celebration";
 import { trackEventInteraction } from "@/utils/event-tracking-client";
 import { resolveNativeShareData } from "@/utils/native-share";
 import styles from "./StudioShowcaseLiveCard.module.css";
+import chromeStyles from "./LiveCardChromeButton.module.css";
 
 type SharedStudioCardProps = {
   eventId?: string | null;
@@ -121,7 +123,7 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
         useOutsideActions
           ? "relative ml-auto mt-2 flex"
           : "absolute right-3 top-3 inline-flex"
-      } z-30 size-11 cursor-pointer items-center justify-center rounded-full border border-white/40 bg-white/90 text-slate-950 shadow-lg backdrop-blur-md transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-700 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950`}
+      } z-30 size-11 cursor-pointer items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${isPosterFirstHeroCard(invitationData) ? chromeStyles.glass : chromeStyles.darkGlass}`}
     >
       <X className="h-5 w-5" aria-hidden="true" />
     </button>

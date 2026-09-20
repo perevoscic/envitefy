@@ -4,10 +4,11 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Share2, X } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { useArtworkAspectRatio } from "@/hooks/use-artwork-aspect-ratio";
+import chromeStyles from "./studio/LiveCardChromeButton.module.css";
 import styles from "./ArtworkPreviewDialog.module.css";
 
 const chromeButtonClassName =
-  "inline-flex size-11 items-center justify-center rounded-full border border-white/40 bg-white/90 text-slate-950 shadow-sm transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white";
+  `${chromeStyles.glass} inline-flex size-11 cursor-pointer items-center justify-center rounded-full border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white`;
 
 /** Center artwork in the available screen, with Share and Close in opposite top corners. */
 export default function ArtworkPreviewDialog({
