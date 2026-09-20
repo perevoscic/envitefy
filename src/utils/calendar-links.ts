@@ -1,4 +1,5 @@
 import { buildCalendarDescription } from "../lib/calendar-description.ts";
+import { normalizeCalendarTimeZone, parseCalendarDateTimeToIso } from "../lib/calendar-date-time.ts";
 
 export type CalendarLinkArgs = {
   title: string;
@@ -100,18 +101,44 @@ function buildGoogleCalendarUrl({
   timezone: string;
 }): string {
   const encode = encodeURIComponent;
-  const dates = allDay
-    ? `${toGoogleDateOnly(startIso)}/${toGoogleDateOnly(endIso || startIso)}`
-    : `${toGoogleTimestamp(startIso)}/${toGoogleTimestamp(endIso || startIso)}`;
+  const startOnly = !allDay && !endIso ? googleStartOnlyDate(startIso, timezone) : null;
+  const dateParts = [allDay ? toGoogleDateOnly(startIso) : startOnly?.date || toGoogleTimestamp(startIso)];
+  if (endIso) dateParts.push(allDay ? toGoogleDateOnly(endIso) : toGoogleTimestamp(endIso));
+  const dates = dateParts.join("/");
   let url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encode(
     title || "Event"
   )}&details=${encode(description || "")}&location=${encode(
     location || ""
   )}&dates=${dates}`;
-  if (timezone) {
-    url += `&ctz=${encode(timezone)}`;
+  const calendarZone = startOnly?.timezone || timezone;
+  if (calendarZone) {
+    url += `&ctz=${encode(calendarZone)}`;
   }
   return url;
+}
+
+/** Google parses a single dates value as a local clock, even with a Z suffix.
+ * Pair it with ctz rather than duplicating the start as a fabricated end.
+ * Google's editor may still supply its own default duration. */
+function googleStartOnlyDate(iso: string, timezone: string): { date: string; timezone: string } {
+  const zone = normalizeCalendarTimeZone(timezone);
+  const utc = { date: toGoogleTimestamp(iso).replace(/Z$/, ""), timezone: "UTC" };
+  try {
+    const instant = new Date(iso);
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
+    }).formatToParts(instant);
+    const value = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value || "00";
+    const local = `${value("year")}-${value("month")}-${value("day")}T${value("hour")}:${value("minute")}:${value("second")}`;
+    const roundTrip = parseCalendarDateTimeToIso(local, zone);
+    // A repeated daylight-saving clock can name two instants. Use UTC if the
+    // local clock would select a different occurrence from the supplied start.
+    if (!roundTrip || Math.floor(Date.parse(roundTrip) / 1000) !== Math.floor(instant.getTime() / 1000)) return utc;
+    return { date: local.replace(/[-:]/g, ""), timezone: zone };
+  } catch {
+    return utc;
+  }
 }
 
 function buildOutlookComposeUrl({

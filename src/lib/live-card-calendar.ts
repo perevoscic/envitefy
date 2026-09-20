@@ -74,7 +74,7 @@ export function buildLiveCardCalendarLinks(
   if (!startIso) return null;
 
   let endIso = savedStart ? explicitInstant(details.calendarEndISO) : null;
-  if (!savedStart) {
+  if (!endIso) {
     const endClock = clockTime(details.endTime?.trim() || "") || range.end;
     if (endClock) {
       endIso = parseCalendarDateTimeToIso(`${eventDate}T${endClock}`, timezone || "UTC");

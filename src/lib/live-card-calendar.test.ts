@@ -24,7 +24,7 @@ test("the reported Saturday 3 PM card exports the same instant to every calendar
     const google = new URL(links.google).searchParams;
     const outlook = new URL(links.outlook).searchParams;
     const apple = new URL(links.appleInline, "http://localhost").searchParams;
-    assert.equal(google.get("dates"), "20260926T200000Z/20260926T200000Z", time);
+    assert.equal(google.get("dates"), "20260926T150000", time);
     assert.equal(google.get("ctz"), "America/Chicago");
     assert.equal(outlook.get("startdt"), "2026-09-26T20:00:00.000Z");
     assert.equal(outlook.get("enddt"), null);
@@ -48,7 +48,10 @@ test("unzoned card times use the viewer's zone and the offset on the event date"
   ]) {
     const links = build("3 PM", date, zone);
     assert.ok(links);
-    assert.equal(new URL(links.google).searchParams.get("dates")?.split("/")[0], expected, zone);
+    const google = new URL(links.google).searchParams;
+    assert.equal(google.get("dates"), `${date.replace(/-/g, "")}T150000`, zone);
+    assert.equal(google.get("ctz"), zone);
+    assert.equal(new URL(links.outlook).searchParams.get("startdt")?.replace(/[-:]/g, "").replace(".000", ""), expected, zone);
   }
 });
 
@@ -61,8 +64,25 @@ test("noon and midnight are distinct and do not move to the previous local day",
   ]) {
     const links = build(time);
     assert.ok(links);
-    assert.equal(new URL(links.google).searchParams.get("dates")?.split("/")[0], expected);
+    assert.equal(new URL(links.google).searchParams.get("dates"), `20260926T${time === "12 AM" || time === "midnight" ? "000000" : "120000"}`);
+    assert.equal(new URL(links.outlook).searchParams.get("startdt")?.replace(/[-:]/g, "").replace(".000", ""), expected);
   }
+});
+
+test("a saved start with no end exports only the start, but a provided end clock is preserved", () => {
+  const details = {
+    eventDate: "2026-09-26", startTime: "4 PM", calendarStartISO: "2026-09-26T21:00:00.000Z",
+    timezone: "America/Chicago",
+  };
+  const withoutEnd = buildLiveCardCalendarLinks("Birthday", {eventDetails:details}, "America/Los_Angeles");
+  assert.ok(withoutEnd);
+  assert.equal(new URL(withoutEnd.google).searchParams.get("dates"), "20260926T160000");
+  assert.equal(new URL(withoutEnd.google).searchParams.get("ctz"), "America/Chicago");
+  assert.equal(new URL(withoutEnd.outlook).searchParams.has("enddt"), false);
+  assert.equal(new URL(withoutEnd.appleDownload, "https://envitefy.com").searchParams.has("end"), false);
+  const withEnd = buildLiveCardCalendarLinks("Birthday", {eventDetails:{...details, endTime:"6 PM"}}, "America/Los_Angeles");
+  assert.ok(withEnd);
+  assert.equal(new URL(withEnd.google).searchParams.get("dates"), "20260926T210000Z/20260926T230000Z");
 });
 
 test("explicit end times and natural clock ranges preserve duration, including overnight", () => {

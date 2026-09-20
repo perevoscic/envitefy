@@ -2,6 +2,41 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildCalendarLinks } from "./calendar-links.ts";
 
+test("an unknown end is omitted from every provider without changing the start instant", () => {
+  const links = buildCalendarLinks({ title: "Birthday", description: "Movie then dinner", location: "Venue",
+    startIso:"2026-09-26T16:00:00-05:00", endIso:null, timezone:"America/Chicago", allDay:false,
+    reminders:null, recurrence:null,
+  });
+  const google = new URL(links.google).searchParams;
+  assert.equal(google.get("dates"), "20260926T160000");
+  assert.equal(google.get("ctz"), "America/Chicago");
+  assert.equal(new URL(links.outlook).searchParams.get("startdt"), "2026-09-26T21:00:00.000Z");
+  assert.equal(new URL(links.outlook).searchParams.has("enddt"), false);
+  for (const href of [links.appleInline, links.appleDownload]) {
+    const params = new URL(href, "https://envitefy.com").searchParams;
+    assert.equal(params.get("start"), "2026-09-26T16:00:00-05:00");
+    assert.equal(params.has("end"), false);
+  }
+});
+
+test("start-only Google links preserve instants without a zone and during repeated DST clocks", () => {
+  for (const timezone of [undefined, "Invalid/Zone", "America/Chicago"]) {
+    const links = buildCalendarLinks({title:"Event", description:"", location:"", startIso:"2026-11-01T01:30:00-06:00",
+      endIso:null, timezone, allDay:false, reminders:null, recurrence:null});
+    const params = new URL(links.google).searchParams;
+    assert.equal(params.get("dates"), "20261101T073000");
+    assert.equal(params.get("ctz"), "UTC");
+  }
+});
+
+test("an all-day event without an end exports only its supplied date", () => {
+  const links = buildCalendarLinks({title:"Event", description:"", location:"", startIso:"2026-09-26", endIso:null,
+    allDay:true, reminders:null, recurrence:null});
+  assert.equal(new URL(links.google).searchParams.get("dates"), "20260926");
+  assert.equal(new URL(links.outlook).searchParams.has("enddt"), false);
+  assert.equal(new URL(links.appleDownload,"https://envitefy.com").searchParams.has("end"), false);
+});
+
 test("calendar links retain offsets regardless of the server's local timezone", () => {
   const links = buildCalendarLinks({
     title: "Event",
