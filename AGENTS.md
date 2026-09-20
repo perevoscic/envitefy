@@ -319,6 +319,7 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
 
 ## Testing And Validation
 
+- The Create event fact integrity workflow runs `npm run typecheck`, `npm run test:create-remediation`, and `npm run test:create-browser`. Run all three before pushing changes to shared Create/Live Card behavior. `test:create-facts` is only a subset: it misses the Studio source guards and rendered guest checks. When intentional behavior changes invalidate a source guard, update the guard to protect the new contract and keep the corresponding behavior tests in the CI runner.
 - There is no useful top-level `npm test` flow right now.
 - The targeted test command is usually `node --test path/to/file.test.mjs`.
 - There are also `.test.ts` files, but many of the active regression guards are `.test.mjs` source inspections.

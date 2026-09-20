@@ -47,8 +47,13 @@ test("studio builders preserve Game Day RSVP opt-in while retaining compact form
     builderSource,
     /rsvpContact: categorySupportsRsvp \? clean\(details\.rsvpContact\) \|\| null : null,/,
   );
-  assert.match(surfaceSource, /const categorySupportsRsvp = supportsStudioCategoryRsvp/);
+  // Guided cards can explicitly enable or disable RSVP; legacy cards keep category defaults.
+  assert.match(
+    surfaceSource,
+    /const categorySupportsRsvp\s*=\s*details\?\.actionVisibility\?\.rsvp\s*\?\?\s*supportsStudioCategoryRsvp\(readString\(details\?\.category\)\)/,
+  );
   assert.match(surfaceSource, /resolveLiveCardOverlayActions/);
+  assert.match(surfaceSource, /rsvpEnabled:\s*details\?\.actionVisibility\?\.rsvp/);
   assert.match(surfaceSource, /visible: overlayActionKeys.includes\("rsvp"\)/);
   assert.match(surfaceSource, /visible: overlayActionKeys.includes\("calendar"\)/);
   assert.match(

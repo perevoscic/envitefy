@@ -17,6 +17,7 @@ const files = [
   "src/lib/studio/*.test.cjs",
   "src/app/studio/studio-workspace-*.test.mjs",
   "src/app/studio/studio-workspace-*.test.ts",
+  "src/lib/live-card-*.test.mjs",
   "src/lib/live-card-*.test.ts",
   "src/lib/guest-rsvp.test.ts",
   "src/lib/guest-event-details.test.ts",
