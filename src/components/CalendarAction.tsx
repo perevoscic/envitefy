@@ -75,8 +75,7 @@ export function useCalendarAction({ links, onShowChooser, scanTheme }: CalendarA
   };
   const fallbackOptions = nativeAttempt && links ? (
     <div className="mt-4 text-center text-sm">
-      <p role="status">If Outlook doesn’t open with your event, use one of these options.</p>
-      <div className="mt-2 flex flex-wrap justify-center gap-2">
+      <div className="flex flex-wrap justify-center gap-2">
         <a href={links.outlook} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-xl border border-current/25 px-3 py-2 font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current">
           Open Outlook in browser
         </a>
