@@ -8,10 +8,9 @@ import {
   CALENDAR_PROVIDER_NAMES,
   type CalendarProvider,
   calendarActionLabel,
-  calendarProviderHref,
   type EventCalendarLinks,
 } from "@/lib/calendar-preference";
-import { openAppleCalendarIcs } from "@/utils/calendar-open";
+import { openCalendarProvider } from "@/utils/calendar-open";
 import { ensureReadableTextColor, mixHexColors } from "@/lib/scanned-invite-palette";
 
 type ScanCalendarTheme = {
@@ -34,31 +33,37 @@ export function useCalendarAction({ links, onChoose, onShowChooser, scanTheme }:
   const preference = useCalendarPreference();
   const [isOpen, setOpen] = useState(false);
   const [remember, setRemember] = useState(false);
+  const [nativeAttempt, setNativeAttempt] = useState(false);
   const trigger = useRef<HTMLElement | null>(null);
   const previousOpen = useRef<{ provider: CalendarProvider; time: number } | null>(null);
   const label = calendarActionLabel(preference.provider);
 
-  const openProvider = (provider: CalendarProvider) => {
+  const openProvider = (provider: CalendarProvider): boolean => {
     const now = Date.now();
     if (previousOpen.current?.provider === provider && now - previousOpen.current.time < 1200)
-      return;
+      return nativeAttempt;
     previousOpen.current = { provider, time: now };
+    setNativeAttempt(false);
     if (onChoose) {
       onChoose(provider);
-      return;
+      return false;
     }
-    if (!links) return;
-    const href = calendarProviderHref(links, provider);
-    if (provider === "apple") openAppleCalendarIcs(href);
-    else window.open(href, "_blank", "noopener,noreferrer");
+    if (!links) return false;
+    const attempted = openCalendarProvider(links, provider);
+    setNativeAttempt(attempted);
+    return attempted;
   };
   const open = () => {
     if (!links && !onChoose) return;
+    trigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     if (preference.provider) {
-      openProvider(preference.provider);
+      if (openProvider(preference.provider)) {
+        if (onShowChooser) onShowChooser();
+        else setOpen(true);
+      }
       return;
     }
-    trigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setNativeAttempt(false);
     setRemember(false);
     if (onShowChooser) {
       onShowChooser();
@@ -67,11 +72,25 @@ export function useCalendarAction({ links, onChoose, onShowChooser, scanTheme }:
     setOpen(true);
   };
   const select = (provider: CalendarProvider) => {
-    setOpen(false);
     // Keep this synchronous so the browser permits the calendar window / Apple handoff.
-    openProvider(provider);
+    const keepChooserOpen = openProvider(provider);
+    setOpen(!onShowChooser && keepChooserOpen);
     if (remember && preference.canRemember(provider)) void preference.remember(provider);
+    return keepChooserOpen;
   };
+  const fallbackOptions = nativeAttempt && links ? (
+    <div className="mt-4 text-center text-sm">
+      <p role="status">If Outlook doesn’t open with your event, use one of these options.</p>
+      <div className="mt-2 flex flex-wrap justify-center gap-2">
+        <a href={links.outlook} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-xl border border-current/25 px-3 py-2 font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current">
+          Open Outlook in browser
+        </a>
+        <a href={links.appleInline.replace(/([?&])disposition=inline\b/, "$1disposition=attachment")} className="inline-flex min-h-11 items-center rounded-xl border border-current/25 px-3 py-2 font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current">
+          Download event
+        </a>
+      </div>
+    </div>
+  ) : null;
   const rememberOption = (["google", "apple", "microsoft"] as const).some(preference.canRemember) ? (
     <label className="mt-4 flex min-h-11 items-center gap-3 text-left text-sm">
       <input
@@ -168,6 +187,7 @@ export function useCalendarAction({ links, onChoose, onShowChooser, scanTheme }:
             })}
           </div>
           {rememberOption}
+          {fallbackOptions}
           {scanTheme ? (
             <Dialog.Close className="mt-4 min-h-11 rounded-full px-4 text-[10px] font-bold uppercase tracking-widest transition-opacity hover:opacity-70 focus-visible:outline-2 focus-visible:outline-current">
               Maybe later
@@ -177,7 +197,7 @@ export function useCalendarAction({ links, onChoose, onShowChooser, scanTheme }:
       </Dialog.Portal>
     </Dialog.Root>
   );
-  return { label, open, select, rememberOption, isOpen, hasDefault: Boolean(preference.provider), dialog };
+  return { label, open, select, rememberOption, fallbackOptions, isOpen, hasDefault: Boolean(preference.provider), dialog };
 }
 
 export default function CalendarAction({

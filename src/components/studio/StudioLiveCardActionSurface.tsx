@@ -1224,9 +1224,10 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                               ref={provider === "apple" ? calendarOptionRef : undefined}
                               type="button"
                               onClick={() => {
-                                calendar.select(provider);
-                                calendarTriggerRef.current?.focus();
-                                props.onActiveTabChange("none");
+                                if (!calendar.select(provider)) {
+                                  calendarTriggerRef.current?.focus();
+                                  props.onActiveTabChange("none");
+                                }
                               }}
                               className="inline-flex size-11 items-center justify-center rounded-full border border-neutral-400/60 bg-white/60 text-neutral-800 shadow-sm transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900"
                               aria-label={`Open in ${label}`}
@@ -1237,6 +1238,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                           ))}
                         </div>
                         {calendar.rememberOption}
+                        {calendar.fallbackOptions}
                       </>
                     ) : null}
                   </div>

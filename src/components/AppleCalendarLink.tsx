@@ -12,7 +12,7 @@ type Props = Omit<
 };
 
 /**
- * Apple Calendar: webcal:// handoff via calendar-open (see calendar-open.ts).
+ * Apple Calendar: single-event ICS import via calendar-open.
  */
 export default function AppleCalendarLink({ href, children, ...rest }: Props) {
   return (
