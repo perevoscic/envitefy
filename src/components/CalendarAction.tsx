@@ -18,7 +18,9 @@ type CalendarActionOptions = {
   onChoose?: (provider: CalendarProvider) => void;
 };
 
-export function useCalendarAction({ links, onChoose }: CalendarActionOptions) {
+export function useCalendarAction({ links, onChoose, onShowChooser }: CalendarActionOptions & {
+  onShowChooser?: () => void;
+}) {
   const preference = useCalendarPreference();
   const [isOpen, setOpen] = useState(false);
   const [remember, setRemember] = useState(false);
@@ -48,6 +50,10 @@ export function useCalendarAction({ links, onChoose }: CalendarActionOptions) {
     }
     trigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setRemember(false);
+    if (onShowChooser) {
+      onShowChooser();
+      return;
+    }
     setOpen(true);
   };
   const select = (provider: CalendarProvider) => {
@@ -56,6 +62,19 @@ export function useCalendarAction({ links, onChoose }: CalendarActionOptions) {
     openProvider(provider);
     if (remember && preference.canRemember(provider)) void preference.remember(provider);
   };
+  const rememberOption = (["google", "apple", "microsoft"] as const).some(preference.canRemember) ? (
+    <label className="mt-4 flex min-h-11 items-center gap-3 text-sm">
+      <input
+        type="checkbox"
+        checked={remember}
+        onChange={(event) => setRemember(event.target.checked)}
+        className="size-4 shrink-0 accent-current"
+      />
+      {preference.signedIn
+        ? "Remember a connected provider as my default calendar"
+        : "Remember my default calendar"}
+    </label>
+  ) : null;
   const dialog = (
     <Dialog.Root open={isOpen} onOpenChange={setOpen}>
       <Dialog.Portal>
@@ -90,24 +109,12 @@ export function useCalendarAction({ links, onChoose }: CalendarActionOptions) {
               </button>
             ))}
           </div>
-          {(["google", "apple", "microsoft"] as const).some(preference.canRemember) ? (
-            <label className="mt-4 flex min-h-11 items-center gap-3 text-sm">
-              <input
-                type="checkbox"
-                checked={remember}
-                onChange={(event) => setRemember(event.target.checked)}
-                className="size-4 accent-violet-600"
-              />
-              {preference.signedIn
-                ? "Remember a connected provider as my default calendar"
-                : "Remember my default calendar"}
-            </label>
-          ) : null}
+          {rememberOption}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
   );
-  return { label, open, isOpen, hasDefault: Boolean(preference.provider), dialog };
+  return { label, open, select, rememberOption, isOpen, hasDefault: Boolean(preference.provider), dialog };
 }
 
 export default function CalendarAction({

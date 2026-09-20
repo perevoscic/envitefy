@@ -4,15 +4,12 @@ import * as Dialog from "@radix-ui/react-dialog";
 import {
   AlertCircle,
   ArrowLeft,
-  CalendarDays,
   CheckCircle2,
-  Clock3,
   Eye,
   LayoutDashboard,
   Link2,
   Loader2,
   type LucideIcon,
-  MapPin,
   MessageSquare,
   Palette,
   Pencil,
@@ -861,9 +858,6 @@ export default function EventOwnerTools({
           <OwnerWorkspaceHeader
             eventId={eventId}
             title={currentEventTitle}
-            dateLine={effectivePreview.dateLine}
-            timeLine={effectivePreview.timeLine}
-            locationLine={effectivePreview.locationLine}
             editHref={primaryEditHref}
             detailsEditHref={resolvedArtworkEditHref ? resolvedEditHref : null}
             onViewCurrent={() => openProductViewer("current")}
@@ -1152,39 +1146,9 @@ function EventProductPreview({
   );
 }
 
-function OwnerDetailChip({
-  icon: Icon,
-  iconClassName,
-  label,
-  value,
-}: {
-  icon: LucideIcon;
-  iconClassName: string;
-  label: string;
-  value: string;
-}) {
-  return (
-    <span
-      className="owner-workspace-glass-chip group inline-flex min-h-8 max-w-full items-center gap-1.5 rounded-full bg-white px-3 text-[13px] font-semibold text-slate-600 shadow-[0_8px_18px_rgba(15,23,42,0.08)] transition"
-      title={`${label}: ${value}`}
-    >
-      <Icon
-        size={14}
-        strokeWidth={2.2}
-        className={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${iconClassName}`}
-        aria-hidden
-      />
-      <span className="truncate">{value}</span>
-    </span>
-  );
-}
-
 function OwnerWorkspaceHeader({
   eventId,
   title,
-  dateLine,
-  timeLine,
-  locationLine,
   editHref,
   detailsEditHref,
   onViewCurrent,
@@ -1192,9 +1156,6 @@ function OwnerWorkspaceHeader({
 }: {
   eventId: string;
   title: string;
-  dateLine: string;
-  timeLine: string;
-  locationLine: string;
   editHref: string;
   detailsEditHref: string | null;
   onViewCurrent: () => void;
@@ -1253,30 +1214,6 @@ function OwnerWorkspaceHeader({
           <h2 className="line-clamp-2 text-[1.65rem] font-semibold leading-tight text-slate-950 sm:text-3xl">
             {title || "Untitled event"}
           </h2>
-          <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
-            <OwnerDetailChip
-              icon={CalendarDays}
-              iconClassName="text-[#6366f1]"
-              label="Date"
-              value={dateLine || "Date pending"}
-            />
-            {timeLine ? (
-              <OwnerDetailChip
-                icon={Clock3}
-                iconClassName="text-[#10b981]"
-                label="Time"
-                value={timeLine}
-              />
-            ) : null}
-            {locationLine ? (
-              <OwnerDetailChip
-                icon={MapPin}
-                iconClassName="text-[#f59e0b]"
-                label="Location"
-                value={locationLine}
-              />
-            ) : null}
-          </div>
         </div>
       </div>
     </header>

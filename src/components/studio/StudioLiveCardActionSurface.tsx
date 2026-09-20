@@ -24,6 +24,7 @@ import type { FormEvent, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supportsStudioCategoryRsvp } from "@/app/studio/studio-workspace-field-config";
 import { useCalendarAction } from "@/components/CalendarAction";
+import { CalendarIconApple, CalendarIconGoogle, CalendarIconOutlook } from "@/components/CalendarIcons";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
 import { buildLiveCardCalendarLinks } from "@/lib/live-card-calendar";
 import { formatGuestSchedule, isPropertyOpenHouse, publicGuestInstructions } from "@/lib/guest-event-details";
@@ -384,6 +385,8 @@ function LiveCardPreviewPanel({
 
 export default function StudioLiveCardActionSurface(props: StudioLiveCardActionSurfaceProps) {
   const surfaceRef = useRef<HTMLDivElement>(null);
+  const calendarTriggerRef = useRef<HTMLButtonElement>(null);
+  const calendarOptionRef = useRef<HTMLButtonElement>(null);
   const reducedMotion = useReducedMotion();
   const actionsOutsideArtwork = props.placement === "below" || props.placement === "above";
   const invitationData = props.invitationData || null;
@@ -397,7 +400,14 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     [props.title, invitationData, calendarTimeZone],
   );
 
-  const calendar = useCalendarAction({ links: calendarLinks });
+  const calendar = useCalendarAction({
+    links: calendarLinks,
+    onShowChooser: () =>
+      props.onActiveTabChange(props.activeTab === "calendar" ? "none" : "calendar"),
+  });
+  useEffect(() => {
+    if (props.activeTab === "calendar") calendarOptionRef.current?.focus();
+  }, [props.activeTab]);
   const posterFirstHeroCard = isPosterFirstHeroCard(invitationData);
   const categorySupportsRsvp = details?.actionVisibility?.rsvp ?? supportsStudioCategoryRsvp(readString(details?.category));
   const openHouseAgentCard = isOpenHouseLiveCard(details);
@@ -505,14 +515,19 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     ownerDocument.addEventListener("pointerdown", handlePointerDown);
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        if (!surfaceRef.current?.contains(event.target as Node)) return;
         event.preventDefault();
+        event.stopPropagation();
+        if (props.activeTab === "calendar") calendarTriggerRef.current?.focus();
         props.onActiveTabChange("none");
       }
     };
-    ownerDocument.addEventListener("keydown", handleKeyDown);
+    // Dismiss this card panel before an enclosing preview dialog handles Escape.
+    const ownerWindow = ownerDocument.defaultView;
+    ownerWindow?.addEventListener("keydown", handleKeyDown, true);
     return () => {
       ownerDocument.removeEventListener("pointerdown", handlePointerDown);
-      ownerDocument.removeEventListener("keydown", handleKeyDown);
+      ownerWindow?.removeEventListener("keydown", handleKeyDown, true);
     };
   }, [props.activeTab, props.onActiveTabChange]);
 
@@ -656,7 +671,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
         label: calendar.label,
         icon: CalendarDays,
         visible: overlayActionKeys.includes("calendar"),
-        onClick: () => { props.onActiveTabChange("none"); calendar.open(); },
+        onClick: calendar.open,
       },
       {
         key: "registry" as const,
@@ -761,7 +776,6 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       ? "pointer-events-none flex flex-col rounded-xl bg-white px-2 pt-3 pb-1"
       : `pointer-events-none absolute inset-0 flex flex-col ${props.previewMode ? "px-0 pb-1 pt-6" : "px-0 pb-1 pt-6 sm:px-4 sm:pt-7 md:p-8 md:pb-2"}`}>
 
-      {calendar.dialog}
       {props.onShare && !actionsOutsideArtwork ? (
         <button
           data-live-card-share
@@ -797,7 +811,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
               data-live-card-panel-align={panelAlignment}
               role="region"
               aria-label={`${props.activeTab} details`}
-              className={`pointer-events-auto z-50 border border-neutral-200 bg-white/90 shadow-2xl backdrop-blur-md ${props.previewMode || actionsOutsideArtwork
+              className={`pointer-events-auto z-50 border border-neutral-200 shadow-2xl backdrop-blur-md ${props.activeTab === "calendar" ? "bg-white/80" : "bg-white/90"} ${props.previewMode || actionsOutsideArtwork
                 ? `relative min-h-0 max-h-full w-full max-w-[24rem] ${dockedPanelAlignClass} mx-3 overflow-y-auto overscroll-contain rounded-2xl p-4 [&_button]:min-h-11 [&_button]:min-w-11 [&_a]:min-h-11 [&_a]:min-w-11 [&_input]:min-h-11 [&_input]:text-base [&_label]:text-xs [&_label]:text-neutral-600`
                 : `${overlayPanelPositionClass} h-auto max-h-[calc(100%-9rem)] w-[calc(100%-1rem)] max-w-[22rem] overflow-y-auto rounded-3xl p-6 sm:w-[calc(100%-2rem)]`}`}
             >
@@ -838,7 +852,10 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                 </div>
                 <button
                   type="button"
-                  onClick={() => props.onActiveTabChange("none")}
+                  onClick={() => {
+                    if (props.activeTab === "calendar") calendarTriggerRef.current?.focus();
+                    props.onActiveTabChange("none");
+                  }}
                   aria-label="Close card details"
                   className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900"
                 >
@@ -1174,6 +1191,43 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                   ) : null
                 ) : null}
 
+                {props.activeTab === "calendar" ? (
+                  <div className="text-neutral-900">
+                    <p className="text-sm font-medium">Save the Date</p>
+                    <p className="mt-1 text-xs text-neutral-700">
+                      {overviewWhen || "Date TBD"}
+                    </p>
+                    {calendarLinks ? (
+                      <>
+                        <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                          {([
+                            { provider: "apple", label: "Apple Calendar", Icon: CalendarIconApple },
+                            { provider: "google", label: "Google Calendar", Icon: CalendarIconGoogle },
+                            { provider: "microsoft", label: "Outlook Calendar", Icon: CalendarIconOutlook },
+                          ] as const).map(({ provider, label, Icon }) => (
+                            <button
+                              key={provider}
+                              ref={provider === "apple" ? calendarOptionRef : undefined}
+                              type="button"
+                              onClick={() => {
+                                calendar.select(provider);
+                                calendarTriggerRef.current?.focus();
+                                props.onActiveTabChange("none");
+                              }}
+                              className="inline-flex size-11 items-center justify-center rounded-full border border-neutral-400/60 bg-white/60 text-neutral-800 shadow-sm transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900"
+                              aria-label={`Open in ${label}`}
+                              title={label}
+                            >
+                              <Icon className="h-5 w-5" />
+                            </button>
+                          ))}
+                        </div>
+                        {calendar.rememberOption}
+                      </>
+                    ) : null}
+                  </div>
+                ) : null}
+
                 {props.activeTab === "registry" ? (
                   <>
                     <p className="text-sm font-medium text-neutral-900">{registryPanelTitle}</p>
@@ -1241,14 +1295,14 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                     className="pointer-events-auto min-w-0 w-full"
                   >
                     <button
+                      ref={button.key === "calendar" ? calendarTriggerRef : undefined}
                       type="button"
                       aria-label={button.label}
                       onClick={() => {
                         if (!props.isDesignMode) button.onClick();
                       }}
-                      aria-pressed={button.key === "calendar" ? undefined : isPressed}
-                      aria-haspopup={button.key === "calendar" && !calendar.hasDefault ? "dialog" : undefined}
-                      aria-expanded={button.key === "calendar" && !calendar.hasDefault ? calendar.isOpen : undefined}
+                      aria-pressed={button.key === "calendar" && calendar.hasDefault ? undefined : isPressed}
+                      aria-expanded={button.key === "calendar" && !calendar.hasDefault ? isPressed : undefined}
                       disabled={button.key === "share" && shareState === "pending"}
                       data-live-card-trigger
                       className={`group flex min-h-11 min-w-11 flex-col items-center justify-start ${
