@@ -5,6 +5,7 @@ import type { PanInfo } from "framer-motion";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   CalendarDays,
+  Check,
   CheckCircle2,
   ClipboardList,
   ExternalLink,
@@ -1005,7 +1006,6 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                             <>
                               <div className="grid grid-cols-3 gap-2">
                                 {LIVE_CARD_RSVP_CHOICES.map((choice) => {
-                                  const accent = accentClassForRsvpChoice(choice.key);
                                   const isSelected = directRsvpChoice === choice.key;
                                   return (
                                     <button
@@ -1016,11 +1016,11 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                                         setDirectRsvpStatus("idle");
                                         setDirectRsvpError("");
                                       }}
-                                      className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${
-                                        isSelected ? "ring-2 ring-neutral-900 ring-offset-2" : ""
-                                      } ${accent}`}
+                                      className={styles.rsvpChoice}
+                                      data-rsvp-choice={choice.key}
                                       aria-pressed={isSelected}
                                     >
+                                      {isSelected ? <Check className="h-4 w-4 shrink-0" strokeWidth={3} aria-hidden="true" /> : null}
                                       {choice.label}
                                     </button>
                                   );
