@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any */
 // @ts-nocheck
+import type { EventCalendarLinks } from "@/lib/calendar-preference";
 import React from "react";
 import type { EventGuestPlanning } from "@/lib/event-guest-planning";
 import type { HeroImageSettings } from "@/lib/hero-image-settings";
@@ -437,7 +438,5 @@ export type GymMeetTemplateRendererProps = {
   onPageTextChange?: GymnasticsPageTextChange;
   mobileEditHref?: string;
   onShare: () => void;
-  onGoogleCalendar: () => void;
-  onAppleCalendar: () => void;
-  onOutlookCalendar: () => void;
+  calendarLinks?: EventCalendarLinks | null;
 };

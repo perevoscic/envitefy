@@ -109,14 +109,16 @@ test("a saved native default still exposes fallback controls in the embedded car
   assert.equal(api.render().isOpen, false, "the embedded card owns the chooser");
 });
 
-test("web and callback provider flows close normally and do not show native recovery", () => {
+test("web provider flows close normally and do not show native recovery", () => {
   const web = harness({ native: false });
   assert.equal(web.render().select("microsoft"), false);
   assert.equal(web.render().fallbackOptions, null);
   assert.equal(web.render().isOpen, false);
-  const selected = [];
-  const callback = harness({ onChoose: (provider) => selected.push(provider) });
-  assert.equal(callback.render().select("microsoft"), false);
-  assert.deepEqual(selected, ["microsoft"]);
-  assert.equal(callback.launches.length, 0);
+});
+
+test("legacy callbacks cannot bypass the standard native handoff", () => {
+  const callback = harness({ onChoose: () => assert.fail("must not bypass shared launcher") });
+  assert.equal(callback.render().select("microsoft"), true);
+  assert.deepEqual(callback.launches, ["microsoft"]);
+  assert.ok(callback.render().fallbackOptions);
 });

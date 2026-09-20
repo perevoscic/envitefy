@@ -14,6 +14,7 @@ import {
 } from "@/lib/signup-intent";
 
 const PUBLIC_UNAUTH_PATHS = new Set([
+  "/calendar/add",
   "/",
   "/studio",
   "/envitefy-create",

@@ -4,7 +4,7 @@ import TemplateImageTone from "@/components/events/TemplateImageTone";
 
 import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
 import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
-import { buildCalendarDescription } from "@/lib/calendar-description";
+import { buildCalendarLinks } from "@/utils/calendar-links";
 
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import { parseCalendarDateTimeToIso } from "@/lib/calendar-date-time";
@@ -55,7 +55,6 @@ import GymMeetTemplateRenderer from "@/components/gym-meet-templates/GymMeetTemp
 import { normalizeGymMeetEventData } from "@/components/gym-meet-templates/normalizeGymMeetEventData";
 import Link from "next/link";
 import { resolveEditHref } from "@/utils/event-edit-route";
-import { openAppleCalendarIcs } from "@/utils/calendar-open";
 
 type ThemeSpec = {
   id: string;
@@ -653,6 +652,7 @@ export default function SimpleTemplateView({
   const eventTimeZone =
     (typeof currentData?.timezone === "string" && currentData.timezone) ||
     (typeof currentData?.timeZone === "string" && currentData.timeZone) ||
+    (typeof currentData?.tz === "string" && currentData.tz) ||
     null;
 
   const formatDateWithTimeZone = (value: string, options?: Intl.DateTimeFormatOptions) => {
@@ -871,61 +871,28 @@ export default function SimpleTemplateView({
     };
   }, [fontHref]);
 
-  // Calendar handlers
-  const toGoogleDate = (d: Date) =>
-    d
-      .toISOString()
-      .replace(/[-:]/g, "")
-      .replace(/\.\d{3}Z$/, "Z");
-
+  // Shared calendar links for the meet action strip.
   const guestStart = currentData?.startISO || currentData?.startAt || currentData?.start ||
     (date ? `${date}T${time || "00:00"}` : undefined);
   const guestEnd = currentData?.endISO || currentData?.endAt || currentData?.end ||
     getEventEndLocal(date, time, currentData?.endTime || "", currentData?.endDate || "");
   const guestPlanning = normalizeEventGuestPlanning(currentData?.guestPlanning);
-  const buildEventDetails = () => {
-    if (!guestStart || Number.isNaN(Date.parse(guestStart))) return null;
-    const start = new Date(guestStart);
-    const end = guestEnd && Date.parse(guestEnd) > start.getTime() ? new Date(guestEnd) : new Date(start);
-    return {
-      title: eventTitle, start, end, location: fullLocation,
-      description: buildCalendarDescription(
-        { ...currentData, title: eventTitle, start: start.toISOString(), location: fullLocation, description },
-        { envitefyUrl: shareUrl || undefined },
-      ),
-    };
-  };
-
-  const buildIcsUrl = (details: NonNullable<ReturnType<typeof buildEventDetails>>) => {
-    const params = new URLSearchParams();
-    params.set("title", details.title);
-    if (details.start) params.set("start", details.start.toISOString());
-    if (details.end) params.set("end", details.end.toISOString());
-    if (details.location) params.set("location", details.location);
-    if (details.description) params.set("description", details.description);
-    params.set("disposition", "inline");
-    return `/api/ics?${params.toString()}`;
-  };
-
-  const openWithFallback = (primaryUrl: string, onFallback: () => void) => {
-    if (typeof window === "undefined") return;
-    const timer = setTimeout(() => {
-      onFallback();
-    }, 700);
-    const clear = () => {
-      clearTimeout(timer);
-      document.removeEventListener("visibilitychange", clear);
-    };
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") clear();
-    });
-    try {
-      window.location.href = primaryUrl;
-    } catch {
-      clearTimeout(timer);
-      onFallback();
-    }
-  };
+  const calendarAllDay = currentData?.allDay === true;
+  const calendarStart = parseCalendarDateTimeToIso(guestStart, calendarAllDay ? "UTC" : eventTimeZone);
+  const calendarEnd = parseCalendarDateTimeToIso(guestEnd, calendarAllDay ? "UTC" : eventTimeZone);
+  const calendarLinks = calendarStart ? buildCalendarLinks({
+    title: eventTitle,
+    description,
+    location: fullLocation,
+    startIso: calendarStart,
+    endIso: calendarEnd && Date.parse(calendarEnd) > Date.parse(calendarStart) ? calendarEnd : null,
+    timezone: eventTimeZone || "UTC",
+    allDay: calendarAllDay,
+    reminders: null,
+    recurrence: currentData?.recurrence || null,
+    details: currentData,
+    eventUrl: shareUrl || undefined,
+  }) : null;
 
   const handleShare = async () => {
     const publicShareUrl = resolvePublicEventShareUrl({
@@ -952,51 +919,6 @@ export default function SimpleTemplateView({
     } catch {
       window.prompt("Copy your event link:", publicShareUrl);
     }
-  };
-
-  const handleGoogleCalendar = () => {
-    const details = buildEventDetails();
-    if (!details) { alert("The host has not set the event date yet."); return; }
-    const start = toGoogleDate(details.start);
-    const end = toGoogleDate(details.end);
-    const query = `action=TEMPLATE&text=${encodeURIComponent(
-      details.title,
-    )}&dates=${start}/${end}&location=${encodeURIComponent(
-      details.location,
-    )}&details=${encodeURIComponent(details.description || "")}`;
-    const webUrl = `https://calendar.google.com/calendar/render?${query}`;
-    const appUrl = `comgooglecalendar://?${query}`;
-    openWithFallback(appUrl, () => {
-      window.open(webUrl, "_blank", "noopener,noreferrer");
-    });
-  };
-
-  const handleOutlookCalendar = () => {
-    const details = buildEventDetails();
-    if (!details) { alert("The host has not set the event date yet."); return; }
-    const webUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
-      details.title,
-    )}&body=${encodeURIComponent(details.description || "")}&location=${encodeURIComponent(
-      details.location,
-    )}&startdt=${encodeURIComponent(
-      details.start.toISOString(),
-    )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
-    const appUrl = `ms-outlook://events/new?subject=${encodeURIComponent(
-      details.title,
-    )}&body=${encodeURIComponent(details.description || "")}&location=${encodeURIComponent(
-      details.location,
-    )}&startdt=${encodeURIComponent(
-      details.start.toISOString(),
-    )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
-    openWithFallback(appUrl, () => {
-      window.open(webUrl, "_blank", "noopener,noreferrer");
-    });
-  };
-
-  const handleAppleCalendar = () => {
-    const details = buildEventDetails();
-    if (!details) { alert("The host has not set the event date yet."); return; }
-    openAppleCalendarIcs(buildIcsUrl(details));
   };
 
   const rosterAthletes = useMemo<NormalizedRosterAthlete[]>(
@@ -2742,9 +2664,7 @@ export default function SimpleTemplateView({
           onHeroImagePositionChange={onHeroImagePositionChange}
           mobileEditHref={mobileEditHref}
           onShare={handleShare}
-          onGoogleCalendar={handleGoogleCalendar}
-          onAppleCalendar={handleAppleCalendar}
-          onOutlookCalendar={handleOutlookCalendar}
+          calendarLinks={calendarLinks}
         />
 
         {volunteerSignupModal.open && (

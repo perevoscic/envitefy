@@ -23,10 +23,9 @@ type ScanCalendarTheme = {
 
 type CalendarActionOptions = {
   links?: EventCalendarLinks | null;
-  onChoose?: (provider: CalendarProvider) => void;
 };
 
-export function useCalendarAction({ links, onChoose, onShowChooser, scanTheme }: CalendarActionOptions & {
+export function useCalendarAction({ links, onShowChooser, scanTheme }: CalendarActionOptions & {
   onShowChooser?: () => void;
   scanTheme?: ScanCalendarTheme;
 }) {
@@ -44,17 +43,13 @@ export function useCalendarAction({ links, onChoose, onShowChooser, scanTheme }:
       return nativeAttempt;
     previousOpen.current = { provider, time: now };
     setNativeAttempt(false);
-    if (onChoose) {
-      onChoose(provider);
-      return false;
-    }
     if (!links) return false;
     const attempted = openCalendarProvider(links, provider);
     setNativeAttempt(attempted);
     return attempted;
   };
   const open = () => {
-    if (!links && !onChoose) return;
+    if (!links) return;
     trigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     if (preference.provider) {
       if (openProvider(preference.provider)) {
@@ -202,7 +197,6 @@ export function useCalendarAction({ links, onChoose, onShowChooser, scanTheme }:
 
 export default function CalendarAction({
   links,
-  onChoose,
   className,
   labelClassName,
   children,
@@ -211,7 +205,7 @@ export default function CalendarAction({
   labelClassName?: string;
   children?: (label: string) => ReactNode;
 }) {
-  const calendar = useCalendarAction({ links, onChoose });
+  const calendar = useCalendarAction({ links });
   return (
     <>
       <button

@@ -89,7 +89,7 @@ import {
   normalizeWeddingFlyerColors,
 } from "@/lib/wedding-scan";
 import type { SignupForm } from "@/types/signup";
-import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
+import { buildCalendarLinks } from "@/utils/calendar-links";
 import { findFirstEmail, findFirstUrl, normalizeUrlValue } from "@/utils/contact";
 import { resolveEventCelebrationKind } from "@/utils/event-celebration";
 import { resolveEditHref, resolveOwnerEditHref } from "@/utils/event-edit-route";
@@ -2187,13 +2187,7 @@ export default async function EventPage({
   const rawEndIso =
     (data?.endISO as string | undefined) || (typeof data?.end === "string" ? data.end : null);
   const calendarAllDay = Boolean(data?.allDay) || hideMissingOcrStartTime;
-  const calendarEndIso = isConciergeVisualProduct ? normalizeIso(rawEndIso) : calendarStartIso
-    ? ensureEndIso(
-        calendarStartIso,
-        hideMissingOcrStartTime ? null : normalizeIso(rawEndIso) || (data?.createdVia === "birthday-renderer" && !calendarAllDay ? calendarStartIso : null),
-        calendarAllDay,
-      )
-    : null;
+  const calendarEndIso = hideMissingOcrStartTime ? null : normalizeIso(rawEndIso);
   const calendarLinks =
     calendarStartIso
       ? buildCalendarLinks({

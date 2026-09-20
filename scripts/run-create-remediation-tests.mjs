@@ -22,7 +22,7 @@ const files = [
   "src/lib/guest-rsvp.test.ts",
   "src/lib/guest-event-details.test.ts",
   "src/lib/scan-event-page.test.mjs",
-  "src/utils/calendar-links.test.ts",
+  ...scripts["test:calendar"].replace(/^node --test /, "").split(" "),
   "src/utils/rsvp-mailto.test.ts",
   "src/components/MapEmbed.test.cjs",
   "src/lib/meet-discovery/contract-regression.test.mjs",

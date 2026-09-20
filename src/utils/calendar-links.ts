@@ -22,26 +22,6 @@ export type CalendarLinkSet = {
   outlook: string;
 };
 
-export function ensureEndIso(
-  startIso: string,
-  endIso: string | null,
-  allDay: boolean
-): string {
-  if (endIso) return endIso;
-  try {
-    const start = new Date(startIso);
-    if (Number.isNaN(start.getTime())) return startIso;
-    if (allDay) {
-      start.setUTCDate(start.getUTCDate() + 1);
-    } else {
-      start.setUTCMinutes(start.getUTCMinutes() + 90);
-    }
-    return start.toISOString();
-  } catch {
-    return endIso || startIso;
-  }
-}
-
 export function buildCalendarLinks(args: CalendarLinkArgs): CalendarLinkSet {
   const { title, location, startIso, endIso, timezone, allDay } = args;
   const description = buildCalendarDescription(

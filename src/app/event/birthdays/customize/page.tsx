@@ -35,7 +35,6 @@ import {
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { ANNIVERSARY_DESIGN_CATALOG, BIRTHDAY_DESIGN_BY_ID, BIRTHDAY_DESIGN_CATALOG } from "@/data/birthday-design-catalog";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
-import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { buildEventPath } from "@/utils/event-url";
 import { persistImageMediaValue as persistExistingImage } from "@/utils/media-upload-client";
 import { getRegistrySectionCopyForCategory } from "@/utils/registry-links";
@@ -521,43 +520,6 @@ export default function BirthdayTemplateCustomizePage() {
     return { title, start, end, location, description };
   };
 
-  const toGoogleDate = (d: Date) =>
-    d
-      .toISOString()
-      .replace(/[-:]/g, "")
-      .replace(/\.\d{3}Z$/, "Z");
-
-  const buildIcsUrl = (details: ReturnType<typeof buildCalendarDetails>) => {
-    const params = new URLSearchParams();
-    params.set("title", details.title);
-    params.set("start", details.start.toISOString());
-    params.set("end", details.end.toISOString());
-    if (details.location) params.set("location", details.location);
-    if (details.description) params.set("description", details.description);
-    params.set("disposition", "inline");
-    return `/api/ics?${params.toString()}`;
-  };
-
-  const openWithAppFallback = (appUrl: string, webUrl: string) => {
-    if (typeof window === "undefined") return;
-    const timer = setTimeout(() => {
-      window.open(webUrl, "_blank", "noopener,noreferrer");
-    }, 700);
-    const clear = () => {
-      clearTimeout(timer);
-      document.removeEventListener("visibilitychange", clear);
-    };
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") clear();
-    });
-    try {
-      window.location.href = appUrl;
-    } catch {
-      clearTimeout(timer);
-      window.open(webUrl, "_blank", "noopener,noreferrer");
-    }
-  };
-
   const _handleShare = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     const details = buildCalendarDetails();
@@ -575,46 +537,6 @@ export default function BirthdayTemplateCustomizePage() {
     } else if (shareUrl) {
       window.open(shareUrl, "_blank", "noopener,noreferrer");
     }
-  };
-
-  const _handleGoogleCalendar = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    const details = buildCalendarDetails();
-    const start = toGoogleDate(details.start);
-    const end = toGoogleDate(details.end);
-    const query = `action=TEMPLATE&text=${encodeURIComponent(
-      details.title,
-    )}&dates=${start}/${end}&location=${encodeURIComponent(
-      details.location,
-    )}&details=${encodeURIComponent(details.description || "")}`;
-    const webUrl = `https://calendar.google.com/calendar/render?${query}`;
-    const appUrl = `comgooglecalendar://?${query}`;
-    openWithAppFallback(appUrl, webUrl);
-  };
-
-  const _handleOutlookCalendar = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    const details = buildCalendarDetails();
-    const webUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
-      details.title,
-    )}&body=${encodeURIComponent(details.description || "")}&location=${encodeURIComponent(
-      details.location,
-    )}&startdt=${encodeURIComponent(
-      details.start.toISOString(),
-    )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
-    const appUrl = `ms-outlook://events/new?subject=${encodeURIComponent(
-      details.title,
-    )}&body=${encodeURIComponent(details.description || "")}&location=${encodeURIComponent(
-      details.location,
-    )}&startdt=${encodeURIComponent(
-      details.start.toISOString(),
-    )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
-    openWithAppFallback(appUrl, webUrl);
-  };
-
-  const _handleAppleCalendar = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    openAppleCalendarIcs(buildIcsUrl(buildCalendarDetails()));
   };
 
   const updateData = (field, value) => {
@@ -697,8 +619,6 @@ export default function BirthdayTemplateCustomizePage() {
     },
     [bumpAssetUploadCounter],
   );
-
-  
 
   const handleGalleryUpload = useCallback(
     async (e) => {
@@ -1443,8 +1363,6 @@ export default function BirthdayTemplateCustomizePage() {
       </div>
     </EditorLayout>
   );
-
-  
 
   const renderDesignEditor = () => {
     return (

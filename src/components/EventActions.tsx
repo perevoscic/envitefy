@@ -5,7 +5,7 @@ import CalendarAction from "@/components/CalendarAction";
 import { combineVenueAndLocation } from "@/lib/mappers";
 import { findFirstEmail } from "@/utils/contact";
 import { extractFirstPhoneNumber } from "@/utils/phone";
-import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
+import { buildCalendarLinks } from "@/utils/calendar-links";
 import { resolveNativeShareData } from "@/utils/native-share";
 import { trackEventInteraction } from "@/utils/event-tracking-client";
 
@@ -147,16 +147,11 @@ export default function EventActions({
       buildStartFromDateTime(event.date, event.time);
     if (!start) return null;
     const end = normalizeDateLike(event.end) || normalizeDateLike(event.endISO);
-    const computedEnd = ensureEndIso(
-      start,
-      end,
-      Boolean(event.allDay)
-    );
 
     return {
       ...event,
       start,
-      end: computedEnd,
+      end,
       location: combinedLocation,
     } as EventFields;
   }, [combinedLocation, event]);
@@ -168,7 +163,7 @@ export default function EventActions({
   const shareTitle = displayEventTitle || "Event";
 
   const calendarLinks = useMemo(() => {
-    if (!safeEvent?.start || !safeEvent?.end) return null;
+    if (!safeEvent?.start) return null;
     const reminders = Array.isArray(safeEvent.reminders)
       ? safeEvent.reminders
           .map((item) => (typeof item?.minutes === "number" ? item.minutes : null))
@@ -181,7 +176,7 @@ export default function EventActions({
       description: safeEvent.description || "",
       location: safeEvent.location || "",
       startIso: safeEvent.start,
-      endIso: safeEvent.end,
+      endIso: safeEvent.end || null,
       timezone: safeEvent.timezone || "",
       allDay: Boolean(safeEvent.allDay),
       reminders,

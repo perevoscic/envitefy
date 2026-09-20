@@ -73,9 +73,7 @@ export default function MeetPageContent({
   onPageTextChange,
   mobileEditHref,
   onShare,
-  onGoogleCalendar,
-  onAppleCalendar,
-  onOutlookCalendar,
+  calendarLinks,
   variant,
   presentation,
 }: GymMeetTemplateRendererProps & {
@@ -459,9 +457,7 @@ export default function MeetPageContent({
                 mobileEditHref={mobileEditHref}
                 buttonClass={variant.secondaryButtonClass}
                 onShare={onShare}
-                onGoogleCalendar={onGoogleCalendar}
-                onAppleCalendar={onAppleCalendar}
-                onOutlookCalendar={onOutlookCalendar}
+                calendarLinks={calendarLinks}
               />
             </div>
           ) : null}

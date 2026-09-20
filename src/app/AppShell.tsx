@@ -93,7 +93,8 @@ export default function AppShell({
   );
   const isChatPath = pathname.replace(/\/+$/, "") === "/chat";
   const isEventPreview = searchParams?.get("preview") === "owner";
-  const showAppChrome = isAuthenticated && !onMarketing && !isStudioCardShare && !isCreateLanding && !isEventPreview && !pathname.startsWith("/mobile/");
+  const isCalendarHandoff = pathname.replace(/\/+$/, "") === "/calendar/add";
+  const showAppChrome = isAuthenticated && !onMarketing && !isStudioCardShare && !isCreateLanding && !isEventPreview && !isCalendarHandoff && !pathname.startsWith("/mobile/");
   const isRedirectingFromMarketing = pathname === "/landing" && isAuthenticated;
   const isLightweightLanding = pathname === "/event" && !isAuthenticated;
 
@@ -170,7 +171,7 @@ export default function AppShell({
           ) : (
             <>
               <div className="min-h-0 flex-1 min-w-0">{children}</div>
-              {isChatPath || isEventPreview ? null : <ConditionalFooter />}
+              {isChatPath || isEventPreview || isCalendarHandoff ? null : <ConditionalFooter />}
             </>
           )}
         </MainContentWrapper>

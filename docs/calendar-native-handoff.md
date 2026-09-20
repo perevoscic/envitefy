@@ -2,6 +2,10 @@
 
 `src/utils/calendar-open.ts` owns browser navigation for the shared calendar chooser and Apple event links.
 
+This is the standard for all manual event actions: Snap/Upload invitations and schedules, Live Cards, event pages, category editors, gymnastics meets and football games. Build data with `buildCalendarLinks`, then use `CalendarAction` or `useCalendarAction`. Custom provider callbacks and template-local native schemes are prohibited; `npm run test:calendar` checks this and runs in Create remediation CI.
+
+New RSVP email calendar links use `buildCalendarHandoffPath` and the public `/calendar/add` page. The page accepts event fields, never a redirect URL, and launches only after the recipient taps a provider. This keeps email scanners harmless and preserves the user gesture required by mobile browsers. Previously sent emails retain their original links. Account connection, automatic sync, explicit ICS downloads and account calendar subscriptions keep their separate flows.
+
 - Google keeps its HTTPS event link. On phones it opens from the current tap so the OS can hand it to an associated app.
 - Timed Outlook events try `ms-outlook://events/new`. Android wraps this in an intent for `com.microsoft.office.outlook`, with the complete Outlook web URL as Chrome's fallback. iOS/iPadOS use the custom scheme directly.
 - Keep the chooser's **Open Outlook in browser** and **Download event** links available after an Outlook attempt, including when a saved provider bypasses the initial chooser. No timeout claims that an app is missing or opens a second event after the user returns.

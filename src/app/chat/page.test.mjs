@@ -689,7 +689,7 @@ test("/chat uses the shared viewport hook to fit the keyboard and restores scrol
   assert.match(viewport, /const keyboardInset = Math\.max\(0, layoutHeight - visualHeight - visualTop\)/);
   assert.match(viewport, /root\.style\.overflow = previousRootOverflow/);
   assert.match(viewport, /body\.style\.overflow = previousBodyOverflow/);
-  assert.match(appShell, /isChatPath \|\| isEventPreview \? null : <ConditionalFooter/);
+  assert.match(appShell, /isChatPath \|\| isEventPreview \|\| isCalendarHandoff \? null : <ConditionalFooter/);
 });
 
 test("/chat uses the interactive guest card and keeps artwork, publish, and share separate", () => {

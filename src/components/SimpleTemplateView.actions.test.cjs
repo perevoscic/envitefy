@@ -116,14 +116,30 @@ function browser(t, navigator) {
   return calls;
 }
 
-test("the full saved event renders with live Share and provider callbacks above the hero", () => {
+test("the full saved event renders Share and the shared calendar above the hero", () => {
   for (const viewerKind of ["owner", "guest", "readonly"]) {
     const { html, actions } = render({ viewerKind, isOwner: viewerKind === "owner" });
     assert.ok(html.includes("Fright Invite"));
     assert.ok(html.indexOf('aria-label="Share event"') < html.indexOf("<h1"));
-    for (const action of ["onShare", "onGoogleCalendar", "onAppleCalendar", "onOutlookCalendar"])
-      assert.equal(typeof actions[action], "function", action);
+    assert.equal(typeof actions.onShare, "function");
+    assert.ok(html.indexOf('aria-label="Add to calendar"') < html.indexOf("<h1"));
+    assert.match(actions.calendarLinks.google, /^https:\/\/calendar.google.com\//);
+    assert.equal(new URL(actions.calendarLinks.outlook).searchParams.get("enddt"), null);
   }
+});
+
+test("meet calendar keeps the host timezone and supplied end", () => {
+  const { actions } = render({ eventData: { ...props.eventData, timezone: "America/Chicago", endTime: "16:00" } });
+  const query = new URL(actions.calendarLinks.outlook).searchParams;
+  assert.equal(query.get("startdt"), "2026-10-23T19:00:00.000Z");
+  assert.equal(query.get("enddt"), "2026-10-23T21:00:00.000Z");
+});
+
+test("undated meet hides calendar without hiding Share", () => {
+  const { actions, html } = render({ eventData: { ...props.eventData, date: "", time: "" } });
+  assert.equal(actions.calendarLinks, null);
+  assert.ok(html.includes('aria-label="Share event"'));
+  assert.ok(!html.includes('aria-label="Add to calendar"'));
 });
 
 test("Share sends the saved public event to the native chooser", async (t) => {

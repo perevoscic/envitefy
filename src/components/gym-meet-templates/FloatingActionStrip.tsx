@@ -2,15 +2,15 @@
 // @ts-nocheck
 "use client";
 
+import type { EventCalendarLinks } from "@/lib/calendar-preference";
+
 import { ExternalLink, Eye, Pencil, Share2 } from "lucide-react";
 import CalendarAction from "@/components/CalendarAction";
 
 export default function FloatingActionStrip({
   buttonClass,
   onShare,
-  onGoogleCalendar,
-  onAppleCalendar,
-  onOutlookCalendar,
+  calendarLinks,
   onMobileEdit,
   onPreview,
   mobileEditHref,
@@ -18,9 +18,7 @@ export default function FloatingActionStrip({
 }: {
   buttonClass: string;
   onShare: () => void;
-  onGoogleCalendar: () => void;
-  onAppleCalendar: () => void;
-  onOutlookCalendar: () => void;
+  calendarLinks?: EventCalendarLinks | null;
   onMobileEdit?: () => void;
   onPreview?: () => void;
   mobileEditHref?: string;
@@ -40,15 +38,11 @@ export default function FloatingActionStrip({
         <Share2 size={16} aria-hidden="true" />
         <span className="hidden sm:inline">Share</span>
       </button>
-      <CalendarAction
+      {calendarLinks ? <CalendarAction
         className={resolvedButtonClass}
         labelClassName="hidden sm:inline"
-        onChoose={(provider) => {
-          if (provider === "google") onGoogleCalendar();
-          else if (provider === "apple") onAppleCalendar();
-          else onOutlookCalendar();
-        }}
-      />
+        links={calendarLinks}
+      /> : null}
       {onMobileEdit ? (
         <span className="md:hidden">
           <button

@@ -13,7 +13,9 @@ import {
   isTimingRequested,
   type ServerTimingTracker,
 } from "@/lib/server-timing";
-import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
+import { buildCalendarHandoffPath } from "@/utils/calendar-handoff";
+import { parseCalendarDateTimeToIso } from "@/lib/calendar-date-time";
+import { CALENDAR_PROVIDER_NAMES, type CalendarProvider } from "@/lib/calendar-preference";
 import {
   areGenderRevealGuessesLocked,
   buildGenderRevealRsvpAnswers,
@@ -316,27 +318,28 @@ async function buildRsvpCalendarLinks(params: {
   locationLabel: string | null;
 }): Promise<Array<{ label: string; url: string }> | null> {
   const startRaw = getEventStartRaw(params.data);
-  if (!parseDate(startRaw)) return null;
-  const startIso = startRaw as string;
   const allDay = isEventAllDay(params.data);
-  const endIso = ensureEndIso(startIso, getEventEndRaw(params.data), allDay);
-  const links = buildCalendarLinks({
+  const timezone = getEventTimezone(params.data) || "UTC";
+  const startIso = parseCalendarDateTimeToIso(startRaw, allDay ? "UTC" : timezone);
+  if (!startIso) return null;
+  const parsedEnd = parseCalendarDateTimeToIso(getEventEndRaw(params.data), allDay ? "UTC" : timezone);
+  const endIso = parsedEnd && Date.parse(parsedEnd) > Date.parse(startIso) ? parsedEnd : null;
+  const event = {
     title: params.title,
     description: getEventDescription(params.data) || "",
     location: params.locationLabel || "",
     startIso,
     endIso,
-    timezone: getEventTimezone(params.data) || "",
+    timezone,
     allDay,
     reminders: getEventReminderMinutes(params.data),
     recurrence: firstString(params.data?.recurrence) || null,
-  });
-  const appleUrl = await absoluteUrl(links.appleInline);
-  return [
-    { label: "Apple Calendar", url: appleUrl },
-    { label: "Google Calendar", url: links.google },
-    { label: "Outlook Calendar", url: links.outlook },
-  ];
+  };
+  const providers: CalendarProvider[] = ["apple", "google", "microsoft"];
+  return Promise.all(providers.map(async provider => ({
+    label: CALENDAR_PROVIDER_NAMES[provider],
+    url: await absoluteUrl(buildCalendarHandoffPath(event, provider)),
+  })));
 }
 
 function maskEmailForLog(email: string): string {

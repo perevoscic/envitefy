@@ -86,7 +86,8 @@ function props(design, heroImage) {
       details: design.sampleNote, rsvpEnabled: true,
     }, navItems: [], rosterAthletes: [], headerLocation: design.sampleLocation }),
     rsvpProps, isOwner: false, isReadOnly: true,
-    onShare: noAction, onGoogleCalendar: noAction, onAppleCalendar: noAction, onOutlookCalendar: noAction,
+    onShare: noAction,
+    calendarLinks: { google: "https://calendar.google.com/example", outlook: "https://outlook.live.com/example", appleInline: "/api/ics?start=2026-10-23" },
   };
 }
 test('60 complete guest pages render unique artwork, titles, meet details, RSVP and calendar actions', () => {

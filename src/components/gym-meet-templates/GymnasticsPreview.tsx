@@ -39,7 +39,6 @@ export default function GymnasticsPreview({ design }: { design: GymMeetPageTempl
   }] };
   return <GymMeetTemplateRenderer model={model}
     rsvpProps={previewRsvp} isOwner={false} isReadOnly hideOwnerActions suppressActionStrip
-    onShare={ignoreAction} onGoogleCalendar={ignoreAction}
-    onAppleCalendar={ignoreAction} onOutlookCalendar={ignoreAction}
+    onShare={ignoreAction}
   />;
 }
