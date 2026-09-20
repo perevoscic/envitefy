@@ -1309,7 +1309,7 @@ export function buildInvitationImagePrompt(
     ...buildVisualExclusionPromptRules(visualExclusions),
     ...(openHouse
       ? [
-          "- OPEN HOUSE BUTTON-ZONE HARD RULE: the bottom 30% of the 2:3 raster is reserved for Envitefy app buttons and must be image-only background.",
+          "- OPEN HOUSE BUTTON-ZONE HARD RULE: the bottom 30% of the tall 8:17 raster is reserved for Envitefy app buttons and must be image-only background.",
           "- In that bottom 30%, generate only low-detail property photo texture, landscaping, flooring, wall, water, driveway, or abstract background continuation. No readable content of any kind may appear there.",
           "- Absolutely no words, letters, numbers, logos, brokerage marks, seals, signs, monograms, price/stats, address, dates, times, beds/baths, square footage, agent/realtor names, contact details, icons, badges, or decorative information may appear in the bottom 30%.",
           "- All Open House visible copy must live in the upper and middle area only and must end above the lower 32% boundary of the card.",
@@ -1323,8 +1323,8 @@ export function buildInvitationImagePrompt(
           "- Treat the selected image finish preset as a high-priority finishing direction for mood, polish, lighting, palette handling, and contrast while still obeying the selected event type, approved event details, and the user's private visual direction.",
         ]
       : []),
-    "- High-quality vertical invitation card composition (2:3 mobile card, matching Envitefy's live-card preview frame).",
-    "- Do not compose for a 9:16 phone screenshot or a tall device mockup; the finished raster should naturally fill a shorter 2:3 card without top or bottom letterboxing.",
+    "- High-quality vertical invitation card composition (8:17 mobile master, 1024 × 2176 pixels, filling Envitefy's tall live-card preview frame).",
+    "- Continue real artwork through the top and bottom without letterboxing, blurred padding, mirrored bands or a device mockup. Keep the outermost 12% at top and bottom and 5% at each side decorative for small adaptive crops; keep all essential text and faces inside that central safe area.",
     "- Create one single seamless full-bleed invitation image with one unified continuous scene from top to bottom.",
     "- This is a finished invitation poster image, not a screenshot and not an app UI mockup.",
     "- Bake the invitation text directly into the image itself so it feels like part of the printed or designed artwork, not a separate overlay.",

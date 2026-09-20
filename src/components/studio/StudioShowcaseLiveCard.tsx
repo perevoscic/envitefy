@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 import LiveCardArtworkFrame from "@/components/studio/LiveCardArtworkFrame";
+import { useArtworkAspectRatio } from "@/hooks/use-artwork-aspect-ratio";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface, {
   type LiveCardActiveTab,
@@ -57,6 +58,7 @@ export default function StudioShowcaseLiveCard({
   const resolvedActiveTab = activeTab ?? internalActiveTab;
   const handleActiveTabChange = onActiveTabChange ?? setInternalActiveTab;
   const usesPosterArtFrame = preview.invitationData.heroTextMode === "image";
+  const artworkRatio = useArtworkAspectRatio(preview.imageUrl, usesPosterArtFrame ? 2 / 3 : 9 / 16);
   const canOptimizeImage =
     preview.imageUrl.startsWith("/") && !preview.imageUrl.startsWith("/api/");
 
@@ -177,10 +179,11 @@ export default function StudioShowcaseLiveCard({
       {placeActionsAbove ? outsideActions : null}
       <div
         className={fitToContainer ? styles.artworkSlot : "rounded-[inherit]"}
-        style={{ "--live-card-aspect-ratio": usesPosterArtFrame ? 2 / 3 : 9 / 16 } as CSSProperties}
+        style={{ "--live-card-aspect-ratio": artworkRatio } as CSSProperties}
       >
         <LiveCardArtworkFrame
           imageUrl={preview.imageUrl}
+          aspectRatio={artworkRatio}
           className={cx(
             usesPosterArtFrame
               ? "aspect-[2/3] rounded-[1.5rem]"

@@ -15,6 +15,7 @@ async function picture(width, height) {
   return `data:image/png;base64,${(await sharp({ create: { width, height, channels: 3, background: "#123456" } }).png().toBuffer()).toString("base64")}`;
 }
 const portrait = await picture(1024, 1536);
+const tall = await picture(1024, 2176);
 const landscape = await picture(1536, 1024);
 const wide = await picture(1280, 720);
 const invalid = "data:image/png;base64,YmFk";
@@ -31,13 +32,29 @@ function setup() {
 }
 test("metadata-only success cannot accept truncated or undecodable image bytes", async () => {
   const expected = await prepareStudioImageGeometry("live_card");
-  assert.equal((await validateStudioImageGeometry(portrait, expected)).ok, true);
+  assert.equal((await validateStudioImageGeometry(tall, expected)).ok, true);
+  assert.equal((await validateStudioImageGeometry(portrait, expected)).issue, "image_geometry_mismatch");
   assert.equal((await validateStudioImageGeometry(invalid, expected)).issue, "invalid_image");
   const bytes = Buffer.from(portrait.split(",")[1], "base64");
   const truncated = `data:image/png;base64,${bytes.subarray(0, Math.floor(bytes.length / 2)).toString("base64")}`;
   assert.equal((await validateStudioImageGeometry(truncated, expected)).issue, "invalid_image");
   assert.equal((await validateStudioImageGeometry(landscape, expected)).issue, "image_geometry_mismatch");
   assert.equal((await validateStudioImageGeometry(await picture(64, 96), expected)).issue, "image_geometry_mismatch");
+});
+test("new Live Cards generate at the tall mobile ratio and edits retain it", async () => {
+  const expected = { width: 1024, height: 2176, size: "1024x2176" };
+  assert.deepEqual(await prepareStudioImageGeometry("live_card"), expected);
+  assert.deepEqual(await prepareStudioImageGeometry("live_card", tall), expected);
+  assert.deepEqual(await prepareStudioImageGeometry("live_card", portrait), { width: 1024, height: 1536, size: "1024x1536" });
+  setup();
+  mock.method(deps, "generateInvitationImageWithOpenAi", async (_prompt, _refs, product, options) => {
+    assert.equal(product, "live_card");
+    assert.equal(options.size, "1024x2176");
+    return { ok: true, warnings: [], imageDataUrl: tall };
+  });
+  const result = await generateStudioInvitation({ event, product: "live_card", mode: "image" });
+  assert.equal(result.ok, true);
+  assert.equal(result.imageDataUrl, tall);
 });
 test("source shape wins over a new-card default and unsupported ratios use auto without cropping", async () => {
   assert.deepEqual(await prepareStudioImageGeometry("live_card", landscape), { width: 1536, height: 1024, size: "1536x1024" });

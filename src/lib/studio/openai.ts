@@ -1,4 +1,5 @@
 import type { StudioProduct } from "./product-contract.ts";
+import { LIVE_CARD_ARTWORK } from "../live-card-artwork-layout.ts";
 import { creationModelBudget, creationTimeoutMs, recordCreationModelRun } from "../creation/openai-workloads.ts";
 import OpenAI from "openai";
 import { toFile } from "openai/uploads";
@@ -79,6 +80,17 @@ function resolveImageSize(): "1024x1024" | "1536x1024" | "1024x1536" | "auto" {
   const raw = safeString(process.env.STUDIO_OPENAI_IMAGE_SIZE).toLowerCase();
   if (raw === "1024x1024" || raw === "1536x1024" || raw === "auto") return raw;
   return "1024x1536";
+}
+
+function generationImageSize(product?: StudioProduct): NonNullable<ImageGenerationOptions["size"]> {
+  return product === "live_card" ? LIVE_CARD_ARTWORK.size : product === "event_page" ? "1536x1024" : resolveImageSize();
+}
+
+// GPT Image 2 supports custom multiples-of-16 dimensions. SDK 4's enum predates
+// that API contract; this narrow adapter preserves the documented size on the wire.
+// https://developers.openai.com/api/reference/cli/resources/images/methods/generate
+function sdkImageSize(size: NonNullable<ImageGenerationOptions["size"]>): Exclude<NonNullable<ImageGenerationOptions["size"]>, "1024x2176"> {
+  return size as Exclude<NonNullable<ImageGenerationOptions["size"]>, "1024x2176">;
 }
 
 function resolveImageQuality(): "low" | "medium" | "high" | "auto" {
@@ -227,7 +239,7 @@ async function postOpenAiImageGeneration(
         ok: true, warnings,
         imageDataUrl: await streamOpenAiImage(client, {
           model, image: uploadables, prompt,
-          size: options.size ?? (product === "event_page" ? "1536x1024" : resolveImageSize()),
+          size: options.size ?? generationImageSize(product),
           quality: resolveImageQuality(), background: resolveImageBackground(model), n: 1,
         }, options),
       };
@@ -235,7 +247,7 @@ async function postOpenAiImageGeneration(
         model,
         image: uploadables,
         prompt,
-        size: options.size ?? (product === "event_page" ? "1536x1024" : resolveImageSize()),
+        size: sdkImageSize(options.size ?? generationImageSize(product)),
         quality: resolveImageQuality(),
         background: resolveImageBackground(model),
         n: 1,
@@ -278,14 +290,14 @@ async function postOpenAiImageGeneration(
     if (options.onPartialImage) return {
       ok: true, warnings,
       imageDataUrl: await streamOpenAiImage(client, {
-        model, prompt, size: options.size ?? (product === "event_page" ? "1536x1024" : resolveImageSize()),
+        model, prompt, size: options.size ?? generationImageSize(product),
         quality: resolveImageQuality(), background: resolveImageBackground(model), n: 1,
       }, options),
     };
     const response = await client.images.generate({
       model,
       prompt,
-      size: options.size ?? (product === "event_page" ? "1536x1024" : resolveImageSize()),
+      size: sdkImageSize(options.size ?? generationImageSize(product)),
       quality: resolveImageQuality(),
       background: resolveImageBackground(model),
       output_format: "png",
@@ -377,7 +389,7 @@ async function postOpenAiImageEdit(
       model,
       image: uploadables,
       prompt,
-      size: options.size ?? resolveImageSize(),
+      size: sdkImageSize(options.size ?? resolveImageSize()),
       quality: resolveImageQuality(),
       background: resolveImageBackground(model),
       n: 1,

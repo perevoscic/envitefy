@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { LIVE_CARD_ARTWORK } from "../live-card-artwork-layout.ts";
 import { resolveStudioSourceImage } from "./source-image.ts";
 import type { StudioProduct } from "./product-contract.ts";
 import type { ImageGenerationOptions } from "./openai-image-stream.ts";
@@ -18,7 +19,10 @@ async function decodedDimensions(bytes: Buffer): Promise<{ width: number; height
 
 /** Read accepted source geometry once, before any paid operation. */
 export async function prepareStudioImageGeometry(product: StudioProduct, sourceImageDataUrl?: string): Promise<StudioImageGeometry> {
-  if (!sourceImageDataUrl) return product === "event_page" ? { width: 1536, height: 1024, size: "1536x1024" } : { width: 1024, height: 1536, size: "1024x1536" };
+  if (!sourceImageDataUrl) {
+    if (product === "live_card") return { width: LIVE_CARD_ARTWORK.width, height: LIVE_CARD_ARTWORK.height, size: LIVE_CARD_ARTWORK.size };
+    return product === "event_page" ? { width: 1536, height: 1024, size: "1536x1024" } : { width: 1024, height: 1536, size: "1024x1536" };
+  }
   const source = await imageGeometryDeps.resolveStudioSourceImage(sourceImageDataUrl);
   if (!source) throw new Error("The previous image could not be opened. Reattach that image before editing.");
   let dimensions: { width: number; height: number };
@@ -26,7 +30,7 @@ export async function prepareStudioImageGeometry(product: StudioProduct, sourceI
   catch { throw new Error("The previous image is damaged or is not a supported static image. Reattach the original before editing."); }
   const ratio = dimensions.width / dimensions.height;
   const near = (expected: number) => Math.abs(ratio / expected - 1) <= 0.02;
-  const size: StudioImageGeometry["size"] = near(1) ? "1024x1024" : near(1.5) ? "1536x1024" : near(2 / 3) ? "1024x1536" : "auto";
+  const size: StudioImageGeometry["size"] = near(LIVE_CARD_ARTWORK.aspectRatio) ? LIVE_CARD_ARTWORK.size : near(1) ? "1024x1024" : near(1.5) ? "1536x1024" : near(2 / 3) ? "1024x1536" : "auto";
   return { ...dimensions, size };
 }
 

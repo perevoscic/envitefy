@@ -123,7 +123,7 @@ export async function generateStudioInvitation(
   const product = resolveStudioProduct(request.product, surface);
   const imageOptions = {
     signal: options.signal,
-    size: (product === "event_page" ? "1536x1024" : "1024x1536") as StudioImageGeometry["size"],
+    size: (product === "live_card" ? "1024x2176" : product === "event_page" ? "1536x1024" : "1024x1536") as StudioImageGeometry["size"],
     onPartialImage: options.onProgress ? (url: string) => tracker.preview(url, true) : undefined,
   };
   let artworkContract = compileArtworkContract(request.event, product);

@@ -22,8 +22,19 @@ const livia = {
 test("Live Card artwork contract is the celebration title, not the event recap", () => {
   assert.equal(liveCardCelebrationTitle(livia), "Livia is turning 10");
   assert.deepEqual(approvedArtworkText(livia, "live_card"), ["Livia is turning 10"]);
-  assert.match(productContract("live_card").description, /paint only the approved celebration title/);
+  assert.match(productContract("live_card").description, /paint only the approved celebration title/i);
   assert.match(productContract("live_card").description, /guest-action buttons/);
+});
+
+test("Live Card masters have real top and bottom artwork and crop-safe decoration", () => {
+  const contract = productContract("live_card");
+  assert.equal(contract.width, 1024);
+  assert.equal(contract.height, 2176);
+  assert.match(contract.description, /real, continuous artwork all the way to the top and bottom/);
+  assert.match(contract.description, /12% at both top and bottom and 5% at both sides decorative/);
+  assert.match(contract.description, /title, faces and essential subjects entirely inside/);
+  assert.equal(productContract("digital_flyer").height, 1800);
+  assert.equal(productContract("event_page").height, 1024);
 });
 
 test("Live Card prompts keep venue, time, movie, and dinner in button dialogs", () => {

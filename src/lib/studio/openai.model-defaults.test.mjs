@@ -133,3 +133,28 @@ test("edited Event Page heroes forward explicit landscape dimensions to the actu
   const result = await editInvitationImageWithOpenAi("Darken the hero background.", "/api/blob/existing.webp", undefined, { size: "1536x1024" });
   assert.equal(result.ok, true);
 });
+
+test("tall Live Card dimensions reach generation, reference generation and edit requests", async () => {
+  const sizes = [];
+  const response = async (request) => {
+    sizes.push(request.size);
+    return { data: [{ b64_json: "VEVTVA==" }] };
+  };
+  mock.method(openAiStudioDeps, "getOpenAiClient", () => ({ images: {generate: response, edit: response} }));
+  mock.method(openAiStudioDeps, "resolveStudioSourceImage", async () => ({ mimeType: "image/png", data: "U09VUkNF" }));
+  mock.method(openAiStudioDeps, "toUploadableImage", async () => "source-image");
+  assert.equal((await generateInvitationImageWithOpenAi("Tall birthday scene", undefined, "live_card")).ok, true);
+  assert.equal((await generateInvitationImageWithOpenAi("Tall birthday scene", [{mimeType:"image/png", data:"U09VUkNF"}], "live_card")).ok, true);
+  assert.equal((await editInvitationImageWithOpenAi("Keep the tall scene", "/api/blob/existing.webp", undefined, {size:"1024x2176"})).ok, true);
+  assert.deepEqual(sizes, ["1024x2176", "1024x2176", "1024x2176"]);
+});
+
+test("streamed Live Card generation forwards the same tall dimensions", async () => {
+  mock.method(openAiStudioDeps, "getOpenAiClient", () => ({
+    post: async (_url, options) => {
+      assert.equal(options.body.size, "1024x2176");
+      return (async function* () { yield {type:"image_generation.completed", b64_json:"VEVTVA=="}; })();
+    },
+  }));
+  assert.equal((await generateInvitationImageWithOpenAi("Tall birthday scene", undefined, "live_card", {onPartialImage: () => {}})).ok, true);
+});

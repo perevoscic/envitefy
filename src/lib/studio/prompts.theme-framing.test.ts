@@ -494,7 +494,7 @@ test("studio open house image prompts describe premium property collage and keep
   assert.match(prompt, /with 3-5 house photos, create a premium real-estate collage/);
   assert.match(
     prompt,
-    /OPEN HOUSE BUTTON-ZONE HARD RULE: the bottom 30% of the 2:3 raster is reserved for Envitefy app buttons and must be image-only background\./,
+    /OPEN HOUSE BUTTON-ZONE HARD RULE: the bottom 30% of the tall 8:17 raster is reserved for Envitefy app buttons and must be image-only background\./,
   );
   assert.match(
     prompt,
@@ -582,11 +582,11 @@ test("studio invitation image prompt keeps the bottom action zone safe without f
   assert.match(prompt, /Age or Milestone: 9/);
   assert.match(
     prompt,
-    /High-quality vertical invitation card composition \(2:3 mobile card, matching Envitefy's live-card preview frame\)\./,
+    /High-quality vertical invitation card composition \(8:17 mobile master, 1024 × 2176 pixels, filling Envitefy's tall live-card preview frame\)\./,
   );
   assert.match(
     prompt,
-    /Do not compose for a 9:16 phone screenshot or a tall device mockup; the finished raster should naturally fill a shorter 2:3 card without top or bottom letterboxing\./,
+    /Continue real artwork through the top and bottom without letterboxing, blurred padding, mirrored bands or a device mockup\./,
   );
   assert.match(
     prompt,

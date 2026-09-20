@@ -1,6 +1,7 @@
 import { isRecord, matchesSchema, strictObject, stringList } from "../creation/source-evidence.ts";
 import type { StudioEventDetails, StudioGenerateSurface } from "./types.ts";
 import { compileArtworkContract } from "./artwork-copy.ts";
+import { LIVE_CARD_ARTWORK } from "../live-card-artwork-layout.ts";
 
 export type StudioProduct = "live_card" | "digital_flyer" | "printable_flyer" | "event_page";
 export const EVENT_PAGE_SECTIONS = ["details", "schedule", "location", "rsvp", "registry"] as const;
@@ -84,13 +85,13 @@ export function productContract(product: StudioProduct) {
     };
   return {
     product,
-    width: 1024,
-    height: 1536,
+    width: LIVE_CARD_ARTWORK.width,
+    height: LIVE_CARD_ARTWORK.height,
     dpi: 144,
     safeMargin: 72,
     imageText: "headline" as const,
     description:
-      "Live card: paint only the approved celebration title (for example \"Livia is turning 10\") plus any explicitly required artwork lines. Use correct English word spacing; never glue words together. When, where, movie, dinner, RSVP and calendar facts belong in the guest-action buttons (RSVP, Overview, Location, Calendar, Registry), not in the raster. Do not paint those button labels. Interactive actions overlay the bottom edge of the artwork; continue the scene behind them, keeping essential lettering and faces above the controls. Do not add a blank band or black footer.",
+      "Live card: a tall 8:17 mobile master, 1024 × 2176 pixels. Paint real, continuous artwork all the way to the top and bottom: no blurred padding, mirrored bands, inset short card, blank band or black footer. Keep the outermost 12% at both top and bottom and 5% at both sides decorative; these edges may be cropped on other phone proportions. Keep the title, faces and essential subjects entirely inside that protected central area. Paint only the approved celebration title (for example \"Livia is turning 10\") plus any explicitly required artwork lines. Use correct English word spacing; never glue words together. When, where, movie, dinner, RSVP and calendar facts belong in the guest-action buttons (RSVP, Overview, Location, Calendar, Registry), not in the raster. Do not paint those button labels. Interactive actions overlay the bottom edge of the artwork; continue a low-detail scene behind them and the upper corner controls, keeping essential lettering and faces above the controls. Never draw a phone, screenshot, UI or controls.",
   };
 }
 

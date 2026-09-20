@@ -14,10 +14,11 @@
   height: var(--artwork-preview-height);
 }
 
-/* A phone card fills the screen vertically; the original image stays contained
-   over its own soft color extension instead of being cropped or stretched. */
+/* Phone cards fill 90% height. Tall masters may crop decorative edges;
+   legacy artwork keeps its complete composition over its own color extension. */
 @media (max-width: 767px) and (orientation: portrait) {
   .viewportFrame:has([data-live-card-artwork]) {
+    --artwork-preview-width: calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
     --artwork-preview-height: var(--artwork-preview-max-art-height);
   }
 }
@@ -41,9 +42,9 @@
   outline: none;
 }
 
-/* Text-bearing artwork must expose all four edges, independent of viewport ratio. */
+/* Only tall masters with enough decorative margin opt into limited cropping. */
 .viewportFrame [data-live-card-artwork] > div > img {
-  object-fit: contain;
+  object-fit: var(--live-card-image-fit, contain);
 }
 
 .share,

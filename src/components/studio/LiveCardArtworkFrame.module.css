@@ -57,6 +57,10 @@
   border-radius: inherit;
 }
 
+.content > img {
+  object-fit: var(--live-card-image-fit, contain);
+}
+
 .content::before {
   position: absolute;
   inset: -32px;
