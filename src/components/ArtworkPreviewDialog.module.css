@@ -14,6 +14,14 @@
   height: var(--artwork-preview-height);
 }
 
+/* A phone card fills the screen vertically; the original image stays contained
+   over its own soft color extension instead of being cropped or stretched. */
+@media (max-width: 767px) and (orientation: portrait) {
+  .viewportFrame:has([data-live-card-artwork]) {
+    --artwork-preview-height: var(--artwork-preview-max-art-height);
+  }
+}
+
 /* Continue the dark viewing surface through phone notches and home indicators. */
 :global(html):has(.viewportFrame) {
   background-color: #0a0a0a !important;

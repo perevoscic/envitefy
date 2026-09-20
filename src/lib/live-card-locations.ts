@@ -342,3 +342,15 @@ export function buildLiveCardLocationActions(
 export function buildLiveCardDirectionsHref(mapQuery: string) {
   return buildPreferredDirectionsHref(mapQuery);
 }
+
+/** The place name is already the heading; expose the remaining saved address. */
+export function getLiveCardLocationAddress(action: LiveCardLocationAction): string {
+  const venue = action.label.replace(ACTIVITY_PREFIX_PATTERN, "").trim();
+  const query = action.mapQuery.trim();
+  if (normalizeComparableText(venue) === normalizeComparableText(query)) return "";
+  if (query.toLowerCase().startsWith(venue.toLowerCase())) {
+    return query.slice(venue.length).replace(/^[\s,;]+/, "");
+  }
+  // A different venue spelling is not an address. Keep it in the directions link.
+  return findInlineStreetAddress(query)?.address || (INLINE_STREET_ADDRESS_PATTERN.test(query) ? query : "");
+}

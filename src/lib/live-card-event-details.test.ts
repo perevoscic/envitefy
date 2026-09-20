@@ -1,7 +1,28 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildLiveCardDetailsWelcomeMessage } from "./live-card-event-details.ts";
+import { buildLiveCardDetailsWelcomeMessage, buildLiveCardOverviewNotes } from "./live-card-event-details.ts";
+
+test("overview removes repeated birthday introductions while preserving the actual plan", () => {
+  assert.deepEqual(buildLiveCardOverviewNotes({
+    title: "Livia is turning 10",
+    welcome: "Join us to celebrate Livia's 10th birthday.",
+    descriptions: [
+      "Join us to celebrate Livia turning 10. Movie at AMC Grand Blvd, followed by dinner at Pazzo SRB.",
+      "Join us to celebrate Livia's 10th birthday.",
+    ],
+    instructions: ["Please bring socks.", "Please bring socks!", "No gifts, please."],
+  }), ["Movie at AMC Grand Blvd, followed by dinner at Pazzo SRB.", "Please bring socks.", "No gifts, please."]);
+});
+
+test("overview preserves meaningful custom wording and additional timing", () => {
+  assert.deepEqual(buildLiveCardOverviewNotes({
+    title: "Summer BBQ",
+    welcome: "We'd love for you to join us for Summer BBQ.",
+    descriptions: ["We'd love for you to join us for Summer BBQ. Dinner is at 6:30 PM. Bring a side dish.", "Dinner is at 6:30 PM."],
+    instructions: ["Pickup is at 8 PM.", "Tell the host about allergies."],
+  }), ["Dinner is at 6:30 PM. Bring a side dish.", "Pickup is at 8 PM.", "Tell the host about allergies."]);
+});
 
 test("birthday welcome includes ordinal age without repeating venue and time", () => {
   const msg = buildLiveCardDetailsWelcomeMessage(

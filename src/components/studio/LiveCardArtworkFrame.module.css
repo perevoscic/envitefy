@@ -56,3 +56,14 @@
   overflow: hidden;
   border-radius: inherit;
 }
+
+.content::before {
+  position: absolute;
+  inset: -32px;
+  background-image: var(--live-card-artwork);
+  background-position: center;
+  background-size: cover;
+  filter: blur(28px);
+  content: "";
+  pointer-events: none;
+}

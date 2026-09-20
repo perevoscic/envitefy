@@ -88,7 +88,9 @@ test("artwork fits the viewport with guest actions and Share/Close overlaid on t
         return { width: innerWidth, height: innerHeight, frame: bounds(frame), image: { width: imageBox.width, height: imageBox.height, fit: getComputedStyle(image).objectFit }, rail: bounds(rail), close: bounds(close), share: bounds(share), overflow: document.documentElement.scrollWidth > innerWidth };
       });
       measurements.push(result);
-      assert.ok(Math.abs(result.frame.width / result.frame.height - 2 / 3) < 0.002, JSON.stringify(result));
+      const expectedHeight = width <= 767 && height > width ? height * 0.9 : Math.min(height * 0.9, (width - 32) * 1.5);
+      assert.ok(Math.abs(result.frame.height - expectedHeight) < 1, JSON.stringify(result));
+      assert.ok(Math.abs(result.frame.width - Math.min(width - 32, height * 0.9 * 2 / 3)) < 1, "frame fits the phone width without stretching its image");
       assert.equal(result.image.fit, "contain");
       assert.ok(result.frame.width > 0 && result.frame.height > 0);
       assert.ok(result.frame.x >= 0 && result.frame.y >= 0 && result.frame.right <= width + 1 && result.frame.bottom <= height + 1, JSON.stringify(result));
@@ -122,7 +124,7 @@ test("artwork fits the viewport with guest actions and Share/Close overlaid on t
             overflow: document.documentElement.scrollWidth > innerWidth || document.documentElement.scrollHeight > innerHeight,
           };
         });
-        const expectedHeight = Math.min(height * 0.9, (width - 32) * 1.5);
+        const expectedHeight = width <= 767 && height > width ? height * 0.9 : Math.min(height * 0.9, (width - 32) * 1.5);
         assert.ok(Math.abs(result.frame.height - expectedHeight) < 1, JSON.stringify(result));
         assert.ok(Math.abs(result.frame.y - (height - expectedHeight) / 2) < 1, "public artwork stays vertically centered");
         assert.equal(result.fit, "contain");
@@ -139,6 +141,38 @@ test("artwork fits the viewport with guest actions and Share/Close overlaid on t
         }
       }
     }
+    const planPreview = {
+      ...preview,
+      title: "Taylor is turning 10",
+      invitationData: {
+        heroTextMode: "image",
+        title: "Taylor is turning 10",
+        description: "Join us to celebrate Taylor turning 10.",
+        eventDetails: {
+          ...preview.invitationData.eventDetails,
+          category: "Birthday", name: "Taylor", age: "10",
+          venueName: "AMC Grand Blvd",
+          location: "465 Grand Boulevard, Miramar Beach, FL",
+          additionalLocations: [{ label: "Dinner", venue: "Pazzo SRB", location: "Santa Rosa Beach, FL" }],
+          detailsDescription: "Join us to celebrate Taylor turning 10.",
+          guestInstructions: Array.from({ length: 20 }, (_, i) => `Guest note ${i + 1}: Please check the arrival instructions.`),
+        },
+      },
+    };
+    const planHtml = renderToStaticMarkup(React.createElement(ArtworkDialog, { open: true, title: "Artwork preview", onClose() {} }, React.createElement(Card, { preview: planPreview, activeTab: "details", actionsPlacement: "overlay" })));
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.setContent(`<style>${stylesheet.css}\n${css.join("\n")}</style>${planHtml}`);
+    const overview = page.locator("[data-live-card-overview]");
+    const planText = await overview.innerText();
+    assert.equal((planText.match(/Taylor is turning 10/g) || []).length, 1);
+    assert.doesNotMatch(planText, /Join us to celebrate/);
+    assert.ok(planText.indexOf("Movie at AMC Grand Blvd") < planText.indexOf("Dinner at Pazzo SRB"));
+    const closeBefore = await page.getByRole("button", { name: "Close card details", exact: true }).boundingBox();
+    const scrolled = await overview.evaluate((element) => { const body = element.parentElement; body.scrollTop = body.scrollHeight; return body.scrollTop; });
+    const closeAfter = await page.getByRole("button", { name: "Close card details", exact: true }).boundingBox();
+    assert.ok(scrolled > 0, "long details scroll inside their content area");
+    assert.deepEqual(closeAfter, closeBefore, "the detail heading and Close control remain fixed while content scrolls");
+    assert.ok(closeAfter.y >= 0 && closeAfter.y + closeAfter.height <= 667);
     // Restore the dialog fixture for the archived-image checks below.
     await page.setContent(`<style>${stylesheet.css}\n${css.join("\n")}</style>${html}`);
     await page.setViewportSize({ width: 390, height: 844 });

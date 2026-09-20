@@ -5,6 +5,7 @@ import {
   buildLiveCardDirectionsHref,
   buildLiveCardLocationActions,
   getLiveCardPrimaryLocationLabel,
+  getLiveCardLocationAddress,
 } from "./live-card-locations.ts";
 
 test("buildLiveCardLocationActions extracts a primary venue and a lunch destination", () => {
@@ -103,4 +104,15 @@ test("buildLiveCardDirectionsHref builds a preferred directions URL", () => {
     buildLiveCardDirectionsHref("Pazzo Santa Rosa Beach"),
     "https://www.google.com/maps/search/?api=1&query=Pazzo%20Santa%20Rosa%20Beach",
   );
+});
+
+test("location panels show saved street addresses without repeating the place heading", () => {
+  const actions = buildLiveCardLocationActions({
+    venueName: "AMC Grand Blvd",
+    location: "465 Grand Boulevard, Miramar Beach, FL 32550",
+    additionalLocations: [{ label: "Dinner", venue: "Pazzo SRB", location: "111 North Highway 393, Unit 301, Santa Rosa Beach, FL 32459" }],
+  });
+  assert.equal(getLiveCardLocationAddress(actions[0]), "465 Grand Boulevard, Miramar Beach, FL 32550");
+  assert.equal(getLiveCardLocationAddress(actions[1]), "111 North Highway 393, Unit 301, Santa Rosa Beach, FL 32459");
+  assert.equal(getLiveCardLocationAddress(buildLiveCardLocationActions({ venueName: "AMC Grand Blvd" })[0]), "");
 });

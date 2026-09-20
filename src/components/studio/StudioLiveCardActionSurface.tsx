@@ -31,10 +31,11 @@ import { buildLiveCardCalendarLinks } from "@/lib/live-card-calendar";
 import { formatGuestSchedule, isPropertyOpenHouse, publicGuestInstructions } from "@/lib/guest-event-details";
 import { buildGuestRsvpSubmission, guestRsvpCategory, guestRsvpGuessRules } from "@/lib/guest-rsvp";
 import { parseGenderRevealConfig } from "@/lib/gender-reveal";
-import { buildLiveCardDetailsWelcomeMessage } from "@/lib/live-card-event-details";
+import { buildLiveCardDetailsWelcomeMessage, buildLiveCardOverviewNotes } from "@/lib/live-card-event-details";
 import {
   buildLiveCardDirectionsHref,
   buildLiveCardLocationActions,
+  getLiveCardLocationAddress,
 } from "@/lib/live-card-locations";
 import { getLiveCardPanelAlignment, getLiveCardRailLayout } from "@/lib/live-card-rail-layout";
 import {
@@ -157,10 +158,6 @@ const EMPTY_POSITIONS: Record<LiveCardButtonKey, LiveCardButtonPosition> = {
 
 function readString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
-}
-
-function normalizeComparableText(value: string) {
-  return value.replace(/\s+/g, " ").trim().toLowerCase();
 }
 
 function formatDate(dateStr: string) {
@@ -355,26 +352,6 @@ function AgentDetailRow(props: { label: string; value: string }) {
   );
 }
 
-function OverviewDetailRow(props: { label: string; value: string; emphasized?: boolean }) {
-  if (!props.value) return null;
-  return (
-    <div className="border-b border-neutral-100 py-3 last:border-b-0 last:pb-0 first:pt-0">
-      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-        {props.label}
-      </p>
-      <p
-        className={
-          props.emphasized
-            ? "text-base font-semibold leading-snug text-neutral-950"
-            : "text-sm leading-relaxed text-neutral-900"
-        }
-      >
-        {props.value}
-      </p>
-    </div>
-  );
-}
-
 function LiveCardPreviewPanel({
   children,
   enabled,
@@ -517,7 +494,6 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     () => buildLiveCardLocationActions(locationDetails),
     [locationDetails],
   );
-  const primaryLocationAction = locationActions[0] || null;
   const effectiveShareUrl =
     readString(props.shareUrl) ||
     (props.fallbackShareUrlToWindowLocation && typeof window !== "undefined"
@@ -530,19 +506,13 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   );
   const overviewTitle =
     readString(invitationData?.title) || readString(details?.eventTitle) || readString(props.title);
-  const overviewWhere = primaryLocationAction?.mapQuery || "";
   const overviewWhen = formatGuestSchedule({ eventDate: readString(details?.eventDate), startTime: readString(details?.startTime), endTime: readString(details?.endTime) });
-  const hasOverviewSummary = Boolean(
-    overviewTitle || detailsWelcome || overviewWhere || overviewWhen,
-  );
-  const shouldRenderDetailsDescription = Boolean(
-    detailsDescription,
-  );
-  const shouldRenderSecondaryDescription =
-    shouldShowLiveCardDescriptionSection(readString(details?.message)) &&
-    !!secondaryDescription &&
-    normalizeComparableText(secondaryDescription) !== normalizeComparableText(detailsDescription) &&
-    (props.showExtendedDetails || (!hasOverviewSummary && !detailsDescription));
+  const overviewNotes = buildLiveCardOverviewNotes({
+    title: overviewTitle,
+    welcome: detailsWelcome,
+    descriptions: [detailsDescription, shouldShowLiveCardDescriptionSection(secondaryDescription) ? secondaryDescription : ""],
+    instructions: publicGuestInstructions(details),
+  });
 
   useEffect(() => {
     if (props.activeTab === "none" || props.activeTab === "share") return;
@@ -863,11 +833,11 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
               data-live-card-panel-align={panelAlignment}
               role="region"
               aria-label={`${props.activeTab} details`}
-              className={`pointer-events-auto z-50 border border-neutral-200 shadow-2xl backdrop-blur-md ${props.activeTab === "calendar" ? "bg-white/80" : "bg-white/90"} ${useViewportPanel ? styles.detachedPanel : props.previewMode || actionsOutsideArtwork
+              className={`${styles.panel} pointer-events-auto z-50 border border-neutral-200 shadow-2xl backdrop-blur-md ${props.activeTab === "calendar" ? "bg-white/80" : "bg-white/90"} ${useViewportPanel ? styles.detachedPanel : props.previewMode || actionsOutsideArtwork
                 ? `relative min-h-0 max-h-full w-full max-w-[24rem] ${dockedPanelAlignClass} mx-3 overflow-y-auto overscroll-contain rounded-2xl p-4 [&_button]:min-h-11 [&_button]:min-w-11 [&_a]:min-h-11 [&_a]:min-w-11 [&_input]:min-h-11 [&_input]:text-base [&_label]:text-xs [&_label]:text-neutral-600`
                 : `${overlayPanelPositionClass} h-auto max-h-[calc(100%-9rem)] w-[calc(100%-1rem)] max-w-[22rem] overflow-y-auto rounded-3xl p-6 sm:w-[calc(100%-2rem)]`}`}
             >
-              <div className="mb-4 flex items-start justify-between">
+              <div className={`${styles.panelHeader} mb-3 flex items-start justify-between`}>
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg bg-neutral-100 p-2 text-neutral-900">
                     {props.activeTab === "location" ? <MapPin className="h-5 w-5" /> : null}
@@ -915,7 +885,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                 </button>
               </div>
 
-              <div className="space-y-3">
+              <div className={`${styles.panelBody} space-y-3`}>
                 {props.activeTab === "rsvp" ? (
                   openHouseAgentCard ? (
                     <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
@@ -1174,34 +1144,22 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                 ) : null}
 
                 {props.activeTab === "details" ? (
-                  <div className="h-auto space-y-4">
-                    {hasOverviewSummary ? (
-                      <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-sm">
-                        <OverviewDetailRow label="Title" value={overviewTitle} emphasized />
-                        <OverviewDetailRow label="Join" value={detailsWelcome || ""} />
-                        <OverviewDetailRow label="Where" value={overviewWhere} />
-                        <OverviewDetailRow label="When" value={overviewWhen} />
-                      </div>
+                  <div data-live-card-overview className="space-y-4 text-neutral-900">
+                    <div>
+                      <h5 className="text-lg font-semibold leading-snug">{overviewTitle}</h5>
+                      {overviewWhen ? <p className="mt-2 text-sm leading-relaxed text-neutral-700">{overviewWhen}</p> : null}
+                    </div>
+                    {locationActions.length ? (
+                      <ol className="space-y-3 border-t border-neutral-200 pt-4" aria-label="Event plan">
+                        {locationActions.map((location, index) => (
+                          <li key={location.id} className="flex items-start gap-3">
+                            <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-xs font-semibold text-white">{index + 1}</span>
+                            <p className="pt-0.5 text-base font-medium leading-snug">{location.label}</p>
+                          </li>
+                        ))}
+                      </ol>
                     ) : null}
-                    {shouldRenderDetailsDescription ? (
-                      <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-sm">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                          {props.showExtendedDetails ? "Description" : "Event details"}
-                        </p>
-                        <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-neutral-900">
-                          {detailsDescription}
-                        </p>
-                      </div>
-                    ) : null}
-                    {shouldRenderSecondaryDescription ? (
-                      <div className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                          Description
-                        </p>
-                        <p className="mt-1 text-sm text-neutral-900">{secondaryDescription}</p>
-                      </div>
-                    ) : null}
-                    {publicGuestInstructions(details).filter((line) => !detailsDescription.includes(line)).map((line) => <p key={line} className="whitespace-pre-line text-sm leading-relaxed text-neutral-900">{line}</p>)}
+                    {overviewNotes.map((note) => <p key={note} className="whitespace-pre-line text-sm leading-relaxed">{note}</p>)}
                     {props.showExtendedDetails ? renderExtraDetailFields(details) : null}
                   </div>
                 ) : null}
@@ -1217,6 +1175,9 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                           <p className="text-sm font-semibold text-neutral-900">
                             {locationAction.label}
                           </p>
+                          {getLiveCardLocationAddress(locationAction) ? (
+                            <p className="mt-1 text-sm leading-relaxed text-neutral-600">{getLiveCardLocationAddress(locationAction)}</p>
+                          ) : null}
                           <div className="mt-3 flex justify-start">
                             <button
                               type="button"

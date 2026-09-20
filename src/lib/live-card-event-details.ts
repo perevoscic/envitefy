@@ -79,3 +79,41 @@ export function buildLiveCardDetailsWelcomeMessage(
   }
   return null;
 }
+
+function copyKey(value: string): string {
+  return value.toLowerCase()
+    .replace(/[’']/g, "")
+    .replace(/\b(\d+)(?:st|nd|rd|th)\b/g, "$1")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+/** Remove repeated invitation introductions, retaining actual plans and instructions. */
+export function buildLiveCardOverviewNotes(input: {
+  title: string;
+  welcome?: string | null;
+  descriptions: string[];
+  instructions: string[];
+}): string[] {
+  const introductionKey = (value: string) => copyKey(value)
+    .replace(/^(?:join us (?:to celebrate|for)|wed love for you to join us for)\s+/, "")
+    .replace(/\b(?:is|turning|birthday)\b/g, "")
+    .replace(/\s+/g, " ").trim();
+  const introductions = new Set([input.title, input.welcome || ""]
+    .filter(Boolean).map(introductionKey));
+  const seen = new Set<string>();
+  const notes: string[] = [];
+  for (const text of [...input.descriptions, ...input.instructions]) {
+    for (const paragraph of text.split(/\n+/)) {
+      const sentences = paragraph.trim().split(/(?<=[.!?])\s+(?=[A-Z])/);
+      const kept = sentences.filter((sentence) => {
+        const key = copyKey(sentence);
+        if (!key || introductions.has(introductionKey(sentence)) || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      if (kept.length) notes.push(kept.join(" "));
+    }
+  }
+  return notes;
+}

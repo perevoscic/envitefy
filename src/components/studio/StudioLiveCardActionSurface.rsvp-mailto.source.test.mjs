@@ -10,7 +10,7 @@ function readSource(relPath) {
 test("studio live-card RSVP email actions use current-context mailto launch", () => {
   const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
   const rsvpPanelMatch = surfaceSource.match(
-    /<div className="space-y-3">\s*\{props\.activeTab === "rsvp" \? \([\s\S]*?\{props\.activeTab === "logo" && openHouseAgentCard \? \(/,
+    /\{props\.activeTab === "rsvp" \? \(\s*openHouseAgentCard \? \([\s\S]*?\{props\.activeTab === "logo" && openHouseAgentCard \? \(/,
   );
   assert.ok(rsvpPanelMatch, "RSVP panel source should be discoverable");
   const rsvpPanelSource = rsvpPanelMatch[0];
@@ -34,7 +34,7 @@ test("studio live-card RSVP email actions use current-context mailto launch", ()
 test("studio open house uses realtor contact tile instead of RSVP choices", () => {
   const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
   const rsvpPanelMatch = surfaceSource.match(
-    /<div className="space-y-3">\s*\{props\.activeTab === "rsvp" \? \([\s\S]*?\{props\.activeTab === "logo" && openHouseAgentCard \? \(/,
+    /\{props\.activeTab === "rsvp" \? \(\s*openHouseAgentCard \? \([\s\S]*?\{props\.activeTab === "logo" && openHouseAgentCard \? \(/,
   );
   assert.ok(rsvpPanelMatch, "RSVP panel source should be discoverable");
   const rsvpPanelSource = rsvpPanelMatch[0];

@@ -36,6 +36,36 @@
   font-size: 16px;
 }
 
+.panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panelHeader {
+  flex-shrink: 0;
+}
+
+.panelBody {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+@container (max-width: 440px) {
+  .panel {
+    padding: 16px;
+    max-height: calc(100% - 7rem);
+  }
+
+  .panel input,
+  .panel select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}
+
 /* Respond to the card's width, including landscape previews on a wide screen. */
 @container (max-width: 360px) {
   .surface[data-live-card-actions-placement="overlay"] {
@@ -65,7 +95,7 @@
   }
 
   .surface[data-live-card-actions-placement="overlay"] [data-live-card-trigger] > span {
-    font-size: 8px;
+    font-size: 10px;
     letter-spacing: 0.06em;
   }
 
