@@ -41,6 +41,7 @@ Module._extensions[".css"] = (mod, file) => {
 const Website = require("../src/components/concierge/ConciergeEventWebsite.tsx").default;
 const Card = require("../src/components/studio/StudioShowcaseLiveCard.tsx").default;
 const ArtworkDialog = require("../src/components/ArtworkPreviewDialog.tsx").default;
+const SharedCard = require("../src/components/studio/SharedStudioCardPage.tsx").default;
 const campaign = path.join(process.cwd(), ".qa/create-campaign/2026-09-18");
 function artworkFiles(dir) {
   if (!fs.existsSync(dir)) return [];
@@ -60,7 +61,7 @@ test("artwork fits the viewport with guest actions and Share/Close overlaid on t
   if (process.env.REQUIRE_CREATE_CAMPAIGN_ARCHIVES === "1") assert.ok(artifacts.length >= 200, "full campaign verification requires all archived images");
   const before = hashes(artifacts);
   const globalSource = fs.readFileSync("src/app/globals.css", "utf8").replace('@import "tailwindcss";', '@import "tailwindcss" source(none);\n@source "../components/ArtworkPreviewDialog.tsx";\n@source "../components/concierge/ConciergeEventWebsite.tsx";\n@source "../components/studio/StudioShowcaseLiveCard.tsx";\n@source "../components/studio/StudioLiveCardActionSurface.tsx";');
-  const stylesheet = await postcss([tailwind()]).process(globalSource, { from: path.resolve("src/app/globals.css") });
+  const stylesheet = await postcss([tailwind()]).process(`${globalSource}\n@source "../components/studio/SharedStudioCardPage.tsx";`, { from: path.resolve("src/app/globals.css") });
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
   let blockedRequests = 0;
@@ -101,6 +102,45 @@ test("artwork fits the viewport with guest actions and Share/Close overlaid on t
       assert.equal(result.overflow, false);
       if (width === 390 || width === 844) await page.screenshot({ path: path.join(outDir, `guest-preview-${width}.png`), fullPage: true });
     }
+    for (const withRegistry of [false, true]) {
+      const invitationData = {
+        ...preview.invitationData,
+        eventDetails: { ...preview.invitationData.eventDetails, registryLink: withRegistry ? "https://example.test/registry" : undefined },
+      };
+      const sharedHtml = renderToStaticMarkup(React.createElement(SharedCard, { title: preview.title, imageUrl, invitationData }));
+      for (const [width, height] of [[375, 812], [1440, 900], [812, 375], [320, 480]]) {
+        await page.setViewportSize({ width, height });
+        await page.setContent(`<style>${stylesheet.css}\n${css.join("\n")}</style>${sharedHtml}`);
+        const result = await page.evaluate(() => {
+          const frame = document.querySelector("[data-live-card-artwork]");
+          const bounds = (element) => { const { x, y, width, height, right, bottom } = element.getBoundingClientRect(); return { x, y, width, height, right, bottom }; };
+          return {
+            frame: bounds(frame),
+            background: getComputedStyle(document.querySelector("main").parentElement).backgroundColor,
+            controls: [...document.querySelectorAll("[data-live-card-trigger]")].map(bounds),
+            fit: getComputedStyle(frame.querySelector("img")).objectFit,
+            overflow: document.documentElement.scrollWidth > innerWidth || document.documentElement.scrollHeight > innerHeight,
+          };
+        });
+        const expectedHeight = Math.min(height * 0.9, (width - 32) * 1.5);
+        assert.ok(Math.abs(result.frame.height - expectedHeight) < 1, JSON.stringify(result));
+        assert.ok(Math.abs(result.frame.y - (height - expectedHeight) / 2) < 1, "public artwork stays vertically centered");
+        assert.equal(result.fit, "contain");
+        assert.match(result.background, /^(rgb\(10, 10, 10\)|oklch\(0\.145 0 (none|0)\))$/);
+        assert.equal(result.overflow, false, "public card fits without page scrolling");
+        assert.equal(result.controls.length, withRegistry ? 5 : 4);
+        for (let index = 0; index < result.controls.length; index++) {
+          const control = result.controls[index];
+          assert.ok(control.width >= 44 && control.height >= 44, "guest controls keep usable touch targets");
+          assert.ok(control.x >= result.frame.x && control.right <= result.frame.right + 1 && control.y >= result.frame.y && control.bottom <= result.frame.bottom + 1, JSON.stringify(result));
+          for (const other of result.controls.slice(index + 1)) {
+            assert.ok(control.right <= other.x + 1 || other.right <= control.x + 1 || control.bottom <= other.y + 1 || other.bottom <= control.y + 1, "guest controls never overlap");
+          }
+        }
+      }
+    }
+    // Restore the dialog fixture for the archived-image checks below.
+    await page.setContent(`<style>${stylesheet.css}\n${css.join("\n")}</style>${html}`);
     await page.setViewportSize({ width: 390, height: 844 });
     for (const file of artifacts) {
       const source = `data:image/webp;base64,${fs.readFileSync(file).toString("base64")}`;

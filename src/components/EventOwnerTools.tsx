@@ -23,6 +23,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { type EventContextTab, useSidebar } from "@/app/sidebar-context";
+import ArtworkPreviewDialog from "@/components/ArtworkPreviewDialog";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventResponseDashboard from "@/components/EventResponseDashboard";
 import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileTopbarSuppressor";
@@ -1440,6 +1441,31 @@ function OwnerProductViewer({
   onClose: () => void;
   onReturnFocus: () => void;
 }) {
+  if (preview.surface === "studio-card" && preview.imageUrl) {
+    return (
+      <ArtworkPreviewDialog
+        open={open}
+        title={heading}
+        imageUrl={preview.imageUrl}
+        aspectRatio={preview.invitationData?.heroTextMode === "overlay" ? 9 / 16 : 2 / 3}
+        onClose={onClose}
+        onReturnFocus={onReturnFocus}
+      >
+        <SharedStudioCardFrame
+          eventId={eventId}
+          title={eventTitle}
+          imageUrl={preview.imageUrl}
+          invitationData={preview.invitationData}
+          positions={preview.positions}
+          shareUrl={publicUrl}
+          actionsPlacement="overlay"
+          frameClassName="!w-full !rounded-[1.5rem]"
+          style={{ width: "100%" }}
+        />
+      </ArtworkPreviewDialog>
+    );
+  }
+
   return (
     <Dialog.Root open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
       <Dialog.Portal>

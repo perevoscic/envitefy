@@ -123,7 +123,6 @@ export default function ScannedWeddingInviteView({
   showPublicShareAction = false,
   actions,
 }: Props) {
-  const calendar = useCalendarAction({ links: calendarLinks });
   const [showImageLightbox, setShowImageLightbox] = useState(false);
   const originalHero = useScanOriginalHero();
   const [shareMessage, setShareMessage] = useState<"idle" | "copied" | "shared">("idle");
@@ -131,6 +130,7 @@ export default function ScannedWeddingInviteView({
     () => normalizeWeddingFlyerColors(flyerColors || DEFAULT_WEDDING_SCAN_FLYER_COLORS),
     [flyerColors],
   );
+  const calendar = useCalendarAction({ links: calendarLinks, scanTheme: colors });
   const resolvedSkinId: WeddingScanSkinId =
     skinId === "scanned-wedding-gilded-romance" || skinId === "scanned-wedding-noir-modern"
       ? skinId

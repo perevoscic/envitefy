@@ -30,6 +30,7 @@ const files = [
   "src/lib/meet-discovery.source.test.mjs",
   "src/app/event/[[]id[]]/page.routing.test.mjs",
   "src/app/event/[[]id[]]/page.test.mjs",
+  "src/app/card/[[]id[]]/page.test.mjs",
   "src/app/studio/StudioMarketingPage.navigation.test.mjs",
   "src/app/studio/StudioMarketingPage.showcase.source.test.mjs",
   "src/app/studio/StudioWorkspace.category-upload.source.test.mjs",

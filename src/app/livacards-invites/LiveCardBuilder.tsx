@@ -1195,6 +1195,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       <ArtworkPreviewDialog
         open={previewOpen}
         title="Preview your Live Card"
+        imageUrl={preview?.imageUrl}
         onClose={() => setPreviewOpen(false)}
         onShare={
           publicPath

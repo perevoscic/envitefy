@@ -21,3 +21,19 @@
 .fittedArtwork img {
   object-fit: contain;
 }
+
+.sharedPage {
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+
+.attribution {
+  position: absolute;
+  inset-inline: 1rem;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 2px);
+  text-align: center;
+  font-size: 9px;
+  line-height: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}

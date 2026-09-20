@@ -69,7 +69,7 @@ test("scanned invite skin computes readable colors for variable dark and light s
   );
   assert.match(source, /facts=\{leftColumnOcrFacts\}/);
   assert.match(source, /facts=\{rightColumnOcrFacts\}/);
-  assert.match(source, /useCalendarAction\(\{ links: calendarLinks \}\)/);
+  assert.match(source, /useCalendarAction\(\{ links: calendarLinks, scanTheme: colors \}\)/);
   assert.match(source, /label=\{calendar.label\}/);
   assert.match(source, /\{calendar.dialog\}/);
 
@@ -115,7 +115,7 @@ test("birthday skin computes readable colors for variable dark and light skins",
   assert.match(source, /self-start rounded-\[2\.6rem\]/);
   assert.match(source, /facts=\{leftColumnOcrFacts\}/);
   assert.match(source, /facts=\{rightColumnOcrFacts\}/);
-  assert.match(source, /useCalendarAction\(\{ links: calendarLinks \}\)/);
+  assert.match(source, /scanTheme: \{ \.\.\.colors, title: "Ready to Party\?" \}/);
   assert.match(source, /label=\{calendar.label\}/);
   assert.match(source, /\{calendar.dialog\}/);
 

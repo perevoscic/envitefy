@@ -1094,6 +1094,12 @@ body.embedded-editor {
   overflow: hidden;
 }
 
+/* Artwork dialogs fit the viewport; the page's second scroll root must not
+   leave a scrollbar or clip the card while Radix locks body scrolling. */
+html:has([data-artwork-preview][data-state="open"]) {
+  overflow: hidden;
+}
+
 body {
   color-scheme: only light;
   background-color: var(--background);

@@ -341,7 +341,6 @@ export default function ScannedInviteSkin({
   const generatedHero = artwork?.heroImageUrl || (artwork?.status === "ready" ? artwork.imageUrl : null);
   const useGeneratedHero = scanMedia?.policy?.heroMode === "generated" || (scanMedia?.policy?.medical && !scanMedia.canManage);
   const imageUrl = useGeneratedHero ? generatedHero || null : originalImageUrl;
-  const calendar = useCalendarAction({ links: calendarLinks });
   const [showImageLightbox, setShowImageLightbox] = useState(false);
   const [showRsvpIdentityModal, setShowRsvpIdentityModal] = useState(false);
 
@@ -349,6 +348,7 @@ export default function ScannedInviteSkin({
     () => normalizeScannedInvitePalette(palette as any, DEFAULT_PALETTE as any),
     [palette],
   );
+  const calendar = useCalendarAction({ links: calendarLinks, scanTheme: colors });
 
   const chipTextColor = ensureReadableTextColor(colors.accent, "#ffffff", { minContrast: 3 });
   const primaryTileTextColor = ensureReadableTextColor(colors.primary, "#ffffff", {

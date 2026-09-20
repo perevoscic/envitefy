@@ -3,6 +3,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { Share2, X } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
+import { useArtworkAspectRatio } from "@/hooks/use-artwork-aspect-ratio";
 import styles from "./ArtworkPreviewDialog.module.css";
 
 const chromeButtonClassName =
@@ -13,6 +14,7 @@ export default function ArtworkPreviewDialog({
   open,
   title,
   aspectRatio = 2 / 3,
+  imageUrl,
   onClose,
   onShare,
   onReturnFocus,
@@ -21,11 +23,13 @@ export default function ArtworkPreviewDialog({
   open: boolean;
   title: string;
   aspectRatio?: number;
+  imageUrl?: string | null;
   onClose: () => void;
   onShare?: () => void;
   onReturnFocus?: () => void;
   children: ReactNode;
 }) {
+  const artworkRatio = useArtworkAspectRatio(imageUrl, aspectRatio);
   return (
     <Dialog.Root
       open={open}
@@ -34,12 +38,12 @@ export default function ArtworkPreviewDialog({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[7000] bg-slate-950/55 backdrop-blur-sm" />
+        <Dialog.Overlay className="fixed inset-0 z-[7000] bg-neutral-950" />
         <Dialog.Content
           data-artwork-preview
           aria-describedby={undefined}
-          className={styles.content}
-          style={{ "--artwork-preview-ratio": aspectRatio } as CSSProperties}
+          className={`${styles.viewportFrame} ${styles.content}`}
+          style={{ "--artwork-preview-ratio": artworkRatio } as CSSProperties}
           onCloseAutoFocus={
             onReturnFocus
               ? (event) => {

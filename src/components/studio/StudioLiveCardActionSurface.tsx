@@ -1,5 +1,6 @@
 "use client";
 
+import * as Dialog from "@radix-ui/react-dialog";
 import type { PanInfo } from "framer-motion";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
@@ -45,6 +46,7 @@ import {
 } from "@/lib/live-card-rsvp";
 import { resolveLiveCardOverlayActions } from "@/lib/live-card-overlay-actions";
 import { isRsvpMailtoHref, openRsvpMailtoHref } from "@/utils/rsvp-mailto";
+import styles from "./StudioLiveCardActionSurface.module.css";
 
 export type LiveCardActiveTab =
   | "none"
@@ -375,20 +377,63 @@ function OverviewDetailRow(props: { label: string; value: string; emphasized?: b
 
 function LiveCardPreviewPanel({
   children,
+  enabled,
+  title,
+  container,
+  onClose,
+  onReturnFocus,
 }: {
   children: ReactNode;
   enabled?: boolean;
+  title: string;
+  container?: HTMLElement | null;
   onClose?: () => void;
+  onReturnFocus: () => void;
 }) {
-  return children;
+  if (!enabled) return children;
+  return (
+    <Dialog.Root open onOpenChange={(open) => { if (!open) onClose?.(); }}>
+      <Dialog.Portal container={container}>
+        <Dialog.Overlay className="fixed inset-0 z-[7100] bg-black/65" />
+        <Dialog.Content
+          className={styles.viewportPanel}
+          aria-describedby={undefined}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            onReturnFocus();
+          }}
+        >
+          <Dialog.Title className="sr-only">{title}</Dialog.Title>
+          {children}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
 }
 
 export default function StudioLiveCardActionSurface(props: StudioLiveCardActionSurfaceProps) {
   const surfaceRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const activeTriggerRef = useRef<HTMLButtonElement>(null);
   const calendarTriggerRef = useRef<HTMLButtonElement>(null);
   const calendarOptionRef = useRef<HTMLButtonElement>(null);
   const reducedMotion = useReducedMotion();
   const actionsOutsideArtwork = props.placement === "below" || props.placement === "above";
+  const [crampedArtwork, setCrampedArtwork] = useState(false);
+  const useViewportPanel = crampedArtwork && !actionsOutsideArtwork;
+  useEffect(() => {
+    const surface = surfaceRef.current;
+    if (!surface || actionsOutsideArtwork) return;
+    const updateSize = () => {
+      const { width, height } = surface.getBoundingClientRect();
+      setCrampedArtwork(width < 320 || height < 450);
+    };
+    updateSize();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(surface);
+    return () => observer.disconnect();
+  }, [actionsOutsideArtwork]);
   const invitationData = props.invitationData || null;
   const details = invitationData?.eventDetails || null;
   const [calendarTimeZone, setCalendarTimeZone] = useState<string | null>(null);
@@ -515,7 +560,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     ownerDocument.addEventListener("pointerdown", handlePointerDown);
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        if (!surfaceRef.current?.contains(event.target as Node)) return;
+        if (!surfaceRef.current?.contains(event.target as Node) && !panelRef.current?.contains(event.target as Node)) return;
         event.preventDefault();
         event.stopPropagation();
         if (props.activeTab === "calendar") calendarTriggerRef.current?.focus();
@@ -749,7 +794,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       ? "border-white/85 bg-white shadow-[0_14px_28px_rgba(0,0,0,0.42),0_0_18px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.78),inset_0_-4px_10px_rgba(15,23,42,0.12)]"
       : "border-white/30 bg-black/30 shadow-[0_10px_24px_rgba(0,0,0,0.34),0_0_12px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.14)] hover:border-white/45 hover:bg-white/22";
   const shareActionPositionClassName = props.sharePosition === "left"
-    ? "left-3 top-5 sm:left-5 sm:top-6 md:left-8 md:top-8"
+    ? "left-3 top-3"
     : useCompactActionButtons
     ? "right-3 top-[-2.35rem] sm:right-5 sm:top-[-2.2rem] md:right-8 md:top-[-2rem]"
     : "right-3 top-5 sm:right-5 sm:top-6 md:right-8 md:top-8";
@@ -772,9 +817,9 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   }`;
 
   return (
-    <div ref={surfaceRef} data-live-card-actions-placement={props.placement || "overlay"} className={actionsOutsideArtwork
+    <div ref={surfaceRef} data-live-card-actions-placement={props.placement || "overlay"} className={`${styles.surface} ${actionsOutsideArtwork
       ? "pointer-events-none flex flex-col rounded-xl bg-white px-2 pt-3 pb-1"
-      : `pointer-events-none absolute inset-0 flex flex-col ${props.previewMode ? "px-0 pb-1 pt-6" : "px-0 pb-1 pt-6 sm:px-4 sm:pt-7 md:p-8 md:pb-2"}`}>
+      : `pointer-events-none absolute inset-0 flex flex-col ${props.previewMode ? "px-0 pb-1 pt-6" : "px-0 pb-1 pt-6 sm:px-4 sm:pt-7 md:p-8 md:pb-2"}`}`}>
 
       {props.onShare && !actionsOutsideArtwork ? (
         <button
@@ -802,8 +847,15 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       <div className="flex h-full min-h-0 flex-col justify-end">
         <AnimatePresence initial={false}>
           {props.activeTab !== "none" && props.activeTab !== "share" ? (
-            <LiveCardPreviewPanel enabled={Boolean(props.previewMode) || actionsOutsideArtwork} onClose={() => props.onActiveTabChange("none")}>
+            <LiveCardPreviewPanel
+              enabled={useViewportPanel}
+              title={`${props.activeTab === "details" ? "Overview" : props.activeTab} details`}
+              container={surfaceRef.current?.ownerDocument.body}
+              onClose={() => props.onActiveTabChange("none")}
+              onReturnFocus={() => activeTriggerRef.current?.focus()}
+            >
             <motion.div
+              ref={panelRef}
               initial={reducedMotion ? false : { opacity: 0, y: 10, scale: 0.94 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.96 }}
@@ -811,7 +863,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
               data-live-card-panel-align={panelAlignment}
               role="region"
               aria-label={`${props.activeTab} details`}
-              className={`pointer-events-auto z-50 border border-neutral-200 shadow-2xl backdrop-blur-md ${props.activeTab === "calendar" ? "bg-white/80" : "bg-white/90"} ${props.previewMode || actionsOutsideArtwork
+              className={`pointer-events-auto z-50 border border-neutral-200 shadow-2xl backdrop-blur-md ${props.activeTab === "calendar" ? "bg-white/80" : "bg-white/90"} ${useViewportPanel ? styles.detachedPanel : props.previewMode || actionsOutsideArtwork
                 ? `relative min-h-0 max-h-full w-full max-w-[24rem] ${dockedPanelAlignClass} mx-3 overflow-y-auto overscroll-contain rounded-2xl p-4 [&_button]:min-h-11 [&_button]:min-w-11 [&_a]:min-h-11 [&_a]:min-w-11 [&_input]:min-h-11 [&_input]:text-base [&_label]:text-xs [&_label]:text-neutral-600`
                 : `${overlayPanelPositionClass} h-auto max-h-[calc(100%-9rem)] w-[calc(100%-1rem)] max-w-[22rem] overflow-y-auto rounded-3xl p-6 sm:w-[calc(100%-2rem)]`}`}
             >
@@ -1274,6 +1326,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
           <div
             className={actionRailWrapperClassName}
             data-live-card-rail-layout={showcaseRailLayout}
+            data-live-card-action-count={buttonConfigs.length}
           >
             <div className={actionRailClassName}>
               {buttonConfigs.map((button) => {
@@ -1298,7 +1351,8 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                       ref={button.key === "calendar" ? calendarTriggerRef : undefined}
                       type="button"
                       aria-label={button.label}
-                      onClick={() => {
+                      onClick={(event) => {
+                        activeTriggerRef.current = event.currentTarget;
                         if (!props.isDesignMode) button.onClick();
                       }}
                       aria-pressed={button.key === "calendar" && calendar.hasDefault ? undefined : isPressed}

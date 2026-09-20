@@ -203,7 +203,6 @@ export default function OpenHouseSkin({
   previewMode = false,
   actions,
 }: Props) {
-  const calendar = useCalendarAction({ links: calendarLinks });
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const originalHero = useScanOriginalHero();
   const usefulDetailCopy = usefulScanNotes(detailCopy, [title, dateLabel, timeLabel, venueName, location]);
@@ -212,6 +211,10 @@ export default function OpenHouseSkin({
     () => normalizeScannedInvitePalette(palette as any, DEFAULT_PALETTE as any),
     [palette],
   );
+  const calendar = useCalendarAction({
+    links: calendarLinks,
+    scanTheme: { ...colors, apple: colors.accent },
+  });
   const pageIsDark = getLuminance(colors.background) < 0.36;
   const pageText = ensureReadableTextColor(colors.background, colors.text, { minContrast: 4.5 });
   const priceText = ensureReadableTextColor(colors.background, colors.primary, {

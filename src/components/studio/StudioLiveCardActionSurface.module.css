@@ -1,0 +1,89 @@
+.viewportPanel {
+  --panel-available-height: calc(100dvh - 2rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  position: fixed;
+  top: calc((100dvh + env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 2);
+  left: calc((100vw + env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) / 2);
+  z-index: 7101;
+  width: min(24rem, calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+  max-height: var(--panel-available-height);
+  transform: translate(-50%, -50%);
+  outline: none;
+}
+
+.detachedPanel {
+  position: relative;
+  width: 100%;
+  max-height: var(--panel-available-height);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 1.5rem;
+  padding: 1.25rem;
+}
+
+.detachedPanel button,
+.detachedPanel input,
+.detachedPanel select,
+.detachedPanel a {
+  min-height: 44px;
+}
+
+.detachedPanel button {
+  min-width: 44px;
+}
+
+.detachedPanel input,
+.detachedPanel select {
+  font-size: 16px;
+}
+
+/* Respond to the card's width, including landscape previews on a wide screen. */
+@container (max-width: 360px) {
+  .surface[data-live-card-actions-placement="overlay"] {
+    padding-inline: 8px;
+    padding-bottom: 4px;
+  }
+
+  .surface[data-live-card-actions-placement="overlay"] [data-live-card-rail-layout] > div {
+    grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
+    grid-auto-flow: row;
+    gap: 8px;
+    padding-inline: 0;
+  }
+
+  .surface[data-live-card-actions-placement="overlay"] [data-live-card-trigger] {
+    gap: 4px;
+    padding-inline: 0;
+  }
+
+  .surface[data-live-card-actions-placement="overlay"] [data-live-card-trigger] > div {
+    padding: 10px;
+  }
+
+  .surface[data-live-card-actions-placement="overlay"] [data-live-card-trigger] svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .surface[data-live-card-actions-placement="overlay"] [data-live-card-trigger] > span {
+    font-size: 8px;
+    letter-spacing: 0.06em;
+  }
+
+  .surface [data-live-card-share] {
+    top: 12px;
+    width: 44px;
+    height: 44px;
+    padding: 10px;
+  }
+
+  .surface [data-live-card-share] svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+@container (max-width: 260px) {
+  .surface[data-live-card-actions-placement="overlay"] [data-live-card-action-count="5"] > div {
+    grid-template-columns: repeat(3, minmax(44px, 1fr));
+  }
+}

@@ -10,6 +10,7 @@ function readSource(relPath) {
 test("shared card route prefers the public-safe cover image url", () => {
   const pageSource = readSource("src/app/card/[id]/page.tsx");
   const dbSource = readSource("src/lib/db.ts");
+  const shareImageSource = readSource("src/lib/share-image.ts");
 
   assert.match(
     pageSource,
@@ -22,8 +23,9 @@ test("shared card route prefers the public-safe cover image url", () => {
   );
   assert.match(
     pageSource,
-    /const imageUrl = await normalizeSharedCardImageUrl\(\s*readString\(data\.coverImageUrl\)\s*\|\|\s*readString\(studioCard\?\.imageUrl\)[\s\S]*resolveConciergeLiveCardImagePath\(data\)/,
+    /const eventShareImage = resolveEventShareImage\(data\);\s*const imageUrl = await normalizeSharedCardImageUrl\(\s*eventShareImage\?\.url \|\| resolveConciergeLiveCardImagePath\(data\)/,
   );
+  assert.match(shareImageSource, /data\.coverImageUrl,\s*studioCard\?\.imageUrl,/);
   assert.match(
     dbSource,
     /function buildEventHistoryPublicDataProjectionSql\(dataSql: string, idSql: string\): string \{/,
@@ -103,7 +105,7 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
   assert.match(conditionalFooter, /segments\.length === 2 && segments\[0\] === "card"/);
   assert.match(
     conditionalFooter,
-    /if \(\(isEventShare && hasNoSession\) \|\| isStudioCardShare \|\| isLandingShowcase\) \{/,
+    /if \(\(isEventShare && hasNoSession\) \|\| isStudioCardShare \|\| isSignupShare \|\| isLandingShowcase\) \{/,
   );
   assert.match(sharedPageSource, /Created by Envitefy Create/);
   assert.match(sharedPageSource, /href="\/envitefy-create"/);
@@ -140,12 +142,12 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
   assert.doesNotMatch(pageSource, /EventPreviewViewport|fullscreen/);
   assert.match(sharedPageSource, /returnHref\?: string \| null;/);
   assert.match(sharedPageSource, /aria-label="Close preview"/);
-  assert.match(sharedPageSource, /absolute right-3 top-5 inline-flex/);
+  assert.match(sharedPageSource, /absolute right-3 top-3 inline-flex/);
   assert.match(sharedPageSource, /z-30 size-11/);
   assert.doesNotMatch(sharedPageSource, /closeButtonPlacement|<X size=\{18\} aria-hidden="true" \/> Close/);
   assert.match(sharedPageSource, /placement="overlay"/);
   assert.doesNotMatch(sharedPageSource, /max-md:h-\[100dvh\]/);
-  assert.match(sharedPageSource, /max-md:!w-full !rounded/);
+  assert.match(sharedPageSource, /frameClassName="!w-full !rounded/);
   assert.match(sharedPageSource, /onClose=\{props\.embeddedPreview \? undefined : handleClose\}/);
   assert.doesNotMatch(sharedPageSource, /Back to dashboard/);
   assert.match(sharedPageSource, /export function SharedStudioCardFrame/);
@@ -161,7 +163,8 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
     /placeActionsOverlay \|\| \(!usesPosterArtFrame && !placeActionsAbove\)/,
   );
   assert.match(sharedPageSource, /placement=\{placeActionsAbove \? "above" : "below"\}/);
-  assert.match(sharedPageSource, /usesPosterArtFrame \? "bg-slate-50" : "bg-neutral-950"/);
+  assert.match(sharedPageSource, /flex h-\[100dvh\] w-full flex-col bg-neutral-950/);
+  assert.doesNotMatch(sharedPageSource, /bg-slate-50|bg-white\/80|min-h-\[40rem\]|max-w-\[30rem\]/);
   assert.match(sharedPageSource, /<main className="relative z-0 flex min-h-0 flex-1 flex-col">/);
   assert.match(
     sharedPageSource,
@@ -171,11 +174,11 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
   assert.match(sharedPageSource, /usesPosterArtFrame \? "aspect-\[2\/3\] rounded/);
   assert.match(
     sharedPageSource,
-    /style=\{\{ width: props\.style\?\.width \? undefined : cardFrameWidth \}\}/,
+    /style=\{\{ width: props\.fitToViewport \|\| props\.style\?\.width \? undefined : cardFrameWidth \}\}/,
   );
   assert.match(
     sharedPageSource,
-    /usesPosterArtFrame \? "object-contain" : "object-cover"/,
+    /className="absolute inset-0 h-full w-full object-contain object-center"/,
   );
   assert.match(sharedPageSource, /LiveCardHeroTextOverlay/);
   assert.match(
@@ -214,11 +217,7 @@ test("poster guest controls overlay artwork while creator attribution stays outs
     surfaceSource,
     /export function isPosterFirstHeroCard\(invitationData\?: LiveCardInvitationData \| null\)/,
   );
-  assert.match(
-    sharedPageSource,
-    /const posterFirstHeroCard = isPosterFirstHeroCard\(invitationData\);/,
-  );
-  assert.match(sharedPageSource, /\{posterFirstHeroCard \? \(/);
+  assert.match(sharedPageSource, /<footer className=\{styles.attribution\}>/);
   assert.match(
     surfaceSource,
     /border-white\/28 bg-white\/18 shadow-\[0_12px_28px_rgba\(0,0,0,0\.34\)/,
@@ -230,6 +229,14 @@ test("poster guest controls overlay artwork while creator attribution stays outs
   assert.match(sharedPageSource, /Created by Envitefy Create/);
   assert.match(sharedPageSource, /usesPosterArtFrame && !placeActionsOverlay/);
   assert.match(sharedPageSource, /sharePosition="left"/);
+  assert.match(
+    sharedPageSource,
+    /<SharedStudioCardFrame[\s\S]*?actionsPlacement="overlay"\s*fitToViewport/,
+  );
+  assert.match(
+    sharedPageSource,
+    /\{!useOutsideActions \? closeAction : null\}\s*<\/LiveCardArtworkFrame>/,
+  );
   assert.match(surfaceSource, /data-live-card-actions-placement/);
   assert.match(surfaceSource, /actionsOutsideArtwork \? "hidden" : posterFirstHeroCard/);
   assert.doesNotMatch(

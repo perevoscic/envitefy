@@ -4,15 +4,16 @@ import { X } from "lucide-react";
 import Link from "next/link";
 import { type CSSProperties, type ReactNode, useCallback, useState } from "react";
 import ArtworkDownloadButton from "@/components/ArtworkDownloadButton";
+import viewportStyles from "@/components/ArtworkPreviewDialog.module.css";
 import EventCelebrationOverlay from "@/components/EventCelebrationOverlay";
 import LiveCardArtworkFrame from "@/components/studio/LiveCardArtworkFrame";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface, {
-  isPosterFirstHeroCard,
   type LiveCardActiveTab,
   type LiveCardButtonPositions,
   type LiveCardInvitationData,
 } from "@/components/studio/StudioLiveCardActionSurface";
+import { useArtworkAspectRatio } from "@/hooks/use-artwork-aspect-ratio";
 import type { EventCelebrationKind } from "@/utils/event-celebration";
 import { trackEventInteraction } from "@/utils/event-tracking-client";
 import { resolveNativeShareData } from "@/utils/native-share";
@@ -39,6 +40,7 @@ type SharedStudioCardFrameProps = SharedStudioCardProps & {
   style?: CSSProperties;
   actionsPlacement?: "auto" | "above" | "overlay";
   fitToContainer?: boolean;
+  fitToViewport?: boolean;
 };
 
 export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
@@ -46,6 +48,7 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
   const [shareState, setShareState] = useState<"idle" | "pending" | "success">("idle");
   const invitationData = props.invitationData || null;
   const usesPosterArtFrame = invitationData?.heroTextMode === "image";
+  const artworkRatio = useArtworkAspectRatio(props.imageUrl, usesPosterArtFrame ? 2 / 3 : 9 / 16);
   const placeActionsAbove = props.actionsPlacement === "above";
   const placeActionsOverlay = props.actionsPlacement === "overlay";
   const useOutsideActions = !placeActionsOverlay && (usesPosterArtFrame || placeActionsAbove);
@@ -108,9 +111,26 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
     </div>
   ) : null;
 
+  const closeAction = props.onClose ? (
+    <button
+      type="button"
+      onClick={props.onClose}
+      aria-label="Close preview"
+      title="Close preview"
+      className={`${
+        useOutsideActions
+          ? "relative ml-auto mt-2 flex"
+          : "absolute right-3 top-3 inline-flex"
+      } z-30 size-11 cursor-pointer items-center justify-center rounded-full border border-white/40 bg-white/90 text-slate-950 shadow-lg backdrop-blur-md transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-700 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950`}
+    >
+      <X className="h-5 w-5" aria-hidden="true" />
+    </button>
+  ) : null;
+
   const artwork = (
     <LiveCardArtworkFrame
       imageUrl={props.imageUrl}
+      aspectRatio={artworkRatio}
       className={`${usesPosterArtFrame ? "aspect-[2/3] rounded-[1.5rem]" : "aspect-[9/16] rounded-[inherit]"} ${
         fitToContainer ? styles.fittedArtwork : ""
       } ${props.artworkClassName || ""}`}
@@ -118,7 +138,7 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
       <img
         src={props.imageUrl}
         alt={props.title}
-        className={`absolute inset-0 h-full w-full ${usesPosterArtFrame ? "object-contain" : "object-cover"} object-center`}
+        className="absolute inset-0 h-full w-full object-contain object-center"
         referrerPolicy="no-referrer"
       />
       <LiveCardHeroTextOverlay invitationData={invitationData} />
@@ -138,11 +158,15 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
         />
       ) : null}
       {props.topRightAction}
+      {!useOutsideActions ? closeAction : null}
     </LiveCardArtworkFrame>
   );
 
   return (
-    <div className={props.className || ""} style={props.style}>
+    <div
+      className={`${props.fitToViewport ? viewportStyles.viewportFrame : ""} ${props.className || ""}`}
+      style={{ "--artwork-preview-ratio": artworkRatio, ...props.style } as CSSProperties}
+    >
       <div
         className={`relative mx-auto ${
           usesPosterArtFrame || placeActionsAbove
@@ -151,14 +175,14 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
         } ${placeActionsAbove || fitToContainer ? "flex flex-col gap-3 !bg-transparent" : ""} ${
           fitToContainer ? "h-full min-h-0" : ""
         } ${props.frameClassName || ""}`}
-        style={{ width: props.style?.width ? undefined : cardFrameWidth }}
+        style={{ width: props.fitToViewport || props.style?.width ? undefined : cardFrameWidth }}
       >
         {placeActionsAbove ? outsideActions : null}
         {fitToContainer ? (
           <div
             className={styles.artworkSlot}
             style={
-              { "--live-card-aspect-ratio": usesPosterArtFrame ? 2 / 3 : 9 / 16 } as CSSProperties
+              { "--live-card-aspect-ratio": artworkRatio } as CSSProperties
             }
           >
             {artwork}
@@ -170,30 +194,13 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
         {usesPosterArtFrame && !placeActionsOverlay ? (
           <ArtworkDownloadButton imageUrl={props.imageUrl} title={props.title} className="mt-2" />
         ) : null}
-        {props.onClose ? (
-          <button
-            type="button"
-            onClick={props.onClose}
-            aria-label="Close preview"
-            title="Close preview"
-            className={`${
-              usesPosterArtFrame || placeActionsAbove
-                ? "relative ml-auto mt-2 flex"
-                : "absolute right-3 top-5 inline-flex"
-            } z-30 size-11 cursor-pointer items-center justify-center rounded-full border border-white/40 bg-white/90 text-slate-950 shadow-lg backdrop-blur-md transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-700 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950`}
-          >
-            <X className="h-5 w-5" aria-hidden="true" />
-          </button>
-        ) : null}
+        {useOutsideActions ? closeAction : null}
       </div>
     </div>
   );
 }
 
 export default function SharedStudioCardPage(props: SharedStudioCardProps) {
-  const invitationData = props.invitationData || null;
-  const usesPosterArtFrame = invitationData?.heroTextMode === "image";
-  const posterFirstHeroCard = isPosterFirstHeroCard(invitationData);
   const handleClose = useCallback(() => {
     if (props.returnHref) {
       window.location.assign(props.returnHref);
@@ -210,57 +217,27 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
 
   return (
     <div
-      className={`relative isolate flex min-h-[100dvh] w-full flex-col max-md:pt-[env(safe-area-inset-top)] ${usesPosterArtFrame ? "bg-slate-50" : "bg-neutral-950"}`}
+      className={`${styles.sharedPage} relative isolate flex h-[100dvh] w-full flex-col bg-neutral-950`}
     >
       {props.celebrationKind ? <EventCelebrationOverlay kind={props.celebrationKind} /> : null}
 
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden>
-        <img
-          src={props.imageUrl}
-          alt=""
-          aria-hidden="true"
-          className="h-full w-full scale-110 object-cover opacity-35 blur-3xl"
-          referrerPolicy="no-referrer"
-        />
-        <div
-          className={
-            usesPosterArtFrame
-              ? "absolute inset-0 bg-white/80"
-              : "absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.16),_rgba(10,10,10,0.24)_30%,_rgba(10,10,10,0.82)_100%)]"
-          }
-        />
-      </div>
-
       <main className="relative z-0 flex min-h-0 flex-1 flex-col">
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-0 pt-2 md:py-6">
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
           <SharedStudioCardFrame
             {...props}
             onClose={props.embeddedPreview ? undefined : handleClose}
-            className="w-full max-w-[30rem]"
-            frameClassName="max-md:!w-full !rounded-[1.5rem]"
+            actionsPlacement="overlay"
+            fitToViewport
+            frameClassName="!w-full !rounded-[1.5rem]"
           />
         </div>
       </main>
 
-      {posterFirstHeroCard ? (
-        <div className="shrink-0 px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 text-center md:py-3">
-          <Link
-            href="/envitefy-create"
-            className={`inline-flex rounded-full border px-4 py-2 text-[10px] font-medium uppercase tracking-[0.24em] backdrop-blur-md transition ${usesPosterArtFrame ? "border-slate-200 bg-white/70 text-slate-600 hover:bg-white" : "border-white/14 bg-white/8 text-white/70 hover:border-white/22 hover:bg-white/12 hover:text-white/88"}`}
-          >
-            Created by Envitefy Create
-          </Link>
-        </div>
-      ) : (
-        <footer className="shrink-0 border-t border-white/10 bg-neutral-950 px-4 py-3 text-center">
-          <Link
-            href="/envitefy-create"
-            className="text-[10px] font-medium uppercase tracking-[0.24em] text-white/55 transition hover:text-white/80"
-          >
-            Created by Envitefy Create
-          </Link>
-        </footer>
-      )}
+      <footer className={styles.attribution}>
+        <Link href="/envitefy-create" className="text-white/70 transition hover:text-white">
+          Created by Envitefy Create
+        </Link>
+      </footer>
     </div>
   );
 }

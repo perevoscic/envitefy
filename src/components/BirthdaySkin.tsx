@@ -232,7 +232,6 @@ export default function BirthdaySkin({
   previewMode = false,
   actions,
 }: Props) {
-  const calendar = useCalendarAction({ links: calendarLinks });
   const [showImageLightbox, setShowImageLightbox] = useState(false);
   const originalHero = useScanOriginalHero();
   const [showRsvpIdentityModal, setShowRsvpIdentityModal] = useState(false);
@@ -241,6 +240,10 @@ export default function BirthdaySkin({
     () => normalizeScannedInvitePalette(palette as any, DEFAULT_PALETTE as any),
     [palette],
   );
+  const calendar = useCalendarAction({
+    links: calendarLinks,
+    scanTheme: { ...colors, title: "Ready to Party?" },
+  });
 
   const displayName = extractHonoreeName(title, honoreeName);
   const displayDate = String(dateLabel || "").trim() || "Date TBD";

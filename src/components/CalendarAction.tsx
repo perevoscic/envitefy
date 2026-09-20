@@ -1,7 +1,7 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { CalendarPlus, X } from "lucide-react";
+import { Calendar, CalendarPlus, X } from "lucide-react";
 import { type ReactNode, useRef, useState } from "react";
 import { useCalendarPreference } from "@/hooks/useCalendarPreference";
 import {
@@ -12,14 +12,24 @@ import {
   type EventCalendarLinks,
 } from "@/lib/calendar-preference";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
+import { ensureReadableTextColor, mixHexColors } from "@/lib/scanned-invite-palette";
+
+type ScanCalendarTheme = {
+  primary: string;
+  secondary: string;
+  text: string;
+  apple?: string;
+  title?: string;
+};
 
 type CalendarActionOptions = {
   links?: EventCalendarLinks | null;
   onChoose?: (provider: CalendarProvider) => void;
 };
 
-export function useCalendarAction({ links, onChoose, onShowChooser }: CalendarActionOptions & {
+export function useCalendarAction({ links, onChoose, onShowChooser, scanTheme }: CalendarActionOptions & {
   onShowChooser?: () => void;
+  scanTheme?: ScanCalendarTheme;
 }) {
   const preference = useCalendarPreference();
   const [isOpen, setOpen] = useState(false);
@@ -63,7 +73,7 @@ export function useCalendarAction({ links, onChoose, onShowChooser }: CalendarAc
     if (remember && preference.canRemember(provider)) void preference.remember(provider);
   };
   const rememberOption = (["google", "apple", "microsoft"] as const).some(preference.canRemember) ? (
-    <label className="mt-4 flex min-h-11 items-center gap-3 text-sm">
+    <label className="mt-4 flex min-h-11 items-center gap-3 text-left text-sm">
       <input
         type="checkbox"
         checked={remember}
@@ -75,41 +85,94 @@ export function useCalendarAction({ links, onChoose, onShowChooser }: CalendarAc
         : "Remember my default calendar"}
     </label>
   ) : null;
+  const scanTextColor = scanTheme
+    ? ensureReadableTextColor("#ffffff", scanTheme.text, { minContrast: 4.5 })
+    : undefined;
+  const scanIconBackground = scanTheme
+    ? mixHexColors(scanTheme.primary, "#ffffff", 0.82) || "#ffffff"
+    : "#ffffff";
+  const providers: CalendarProvider[] = scanTheme
+    ? ["google", "microsoft", "apple"]
+    : ["google", "apple", "microsoft"];
   const dialog = (
     <Dialog.Root open={isOpen} onOpenChange={setOpen}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[13000] bg-black/50" />
+        <Dialog.Overlay className={`fixed inset-0 z-[13000] ${scanTheme ? "bg-black/75 backdrop-blur-md" : "bg-black/50"}`} />
         <Dialog.Content
-          className="fixed left-1/2 top-1/2 z-[13001] max-h-[85dvh] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#ddd4f8] bg-white p-5 text-[#2f2550] shadow-2xl"
+          className={`fixed left-1/2 top-1/2 z-[13001] max-h-[85dvh] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 overflow-y-auto bg-white shadow-2xl ${scanTheme ? "rounded-[3.5rem] p-7 text-center sm:p-10" : "rounded-2xl border border-[#ddd4f8] p-5 text-[#2f2550]"}`}
+          style={scanTheme ? { color: scanTextColor } : undefined}
           onCloseAutoFocus={(event) => {
             event.preventDefault();
             trigger.current?.focus();
           }}
         >
-          <Dialog.Title className="pr-11 text-lg font-semibold">Add to calendar</Dialog.Title>
-          <Dialog.Description className="mt-1 text-sm text-[#6f5ba3]">
+          {scanTheme ? (
+            <div
+              className="mx-auto mb-6 flex size-20 items-center justify-center rounded-3xl"
+              style={{
+                backgroundColor: scanIconBackground,
+                color: ensureReadableTextColor(
+                  scanIconBackground,
+                  scanTheme.primary,
+                  { minContrast: 3 },
+                ),
+              }}
+            >
+              <Calendar className="size-10" aria-hidden="true" />
+            </div>
+          ) : null}
+          <Dialog.Title className={scanTheme ? "serif text-2xl font-bold" : "pr-11 text-lg font-semibold"}>
+            {scanTheme ? scanTheme.title || "Add it to your calendar" : "Add to calendar"}
+          </Dialog.Title>
+          <Dialog.Description className={scanTheme ? "sr-only" : "mt-1 text-sm text-[#6f5ba3]"}>
             Choose where to add this event.
           </Dialog.Description>
           <Dialog.Close
-            className="absolute right-2 top-2 inline-flex size-11 items-center justify-center rounded-full hover:bg-[#f7f2ff]"
+            className={`absolute inline-flex size-11 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-current ${scanTheme ? "right-4 top-4 hover:bg-black/5" : "right-2 top-2 hover:bg-[#f7f2ff]"}`}
             aria-label="Close calendar options"
           >
             <X className="size-4" aria-hidden="true" />
           </Dialog.Close>
-          <div className="mt-5 space-y-2">
-            {(["google", "apple", "microsoft"] as const).map((provider) => (
+          <div className={scanTheme ? "mt-6 space-y-4" : "mt-5 space-y-2"}>
+            {providers.map((provider) => {
+              const tone = scanTheme
+                ? provider === "microsoft" ? scanTheme.secondary
+                  : provider === "apple" ? scanTheme.apple || scanTheme.primary
+                    : scanTheme.primary
+                : null;
+              return (
               <button
                 key={provider}
                 type="button"
                 onClick={() => select(provider)}
-                className="flex min-h-11 w-full items-center gap-3 rounded-xl border border-[#ddd4f8] px-4 py-3 text-left text-sm font-medium hover:bg-[#f7f2ff] focus-visible:outline-2 focus-visible:outline-violet-600"
+                aria-label={CALENDAR_PROVIDER_NAMES[provider]}
+                className={scanTheme
+                  ? "block min-h-11 w-full rounded-[1.8rem] px-4 py-5 text-xs font-bold uppercase tracking-widest transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current"
+                  : "flex min-h-11 w-full items-center gap-3 rounded-xl border border-[#ddd4f8] px-4 py-3 text-left text-sm font-medium hover:bg-[#f7f2ff] focus-visible:outline-2 focus-visible:outline-violet-600"}
+                style={tone ? {
+                  backgroundColor: tone,
+                  color: ensureReadableTextColor(tone, "#ffffff", { minContrast: 4.5 }),
+                  outlineColor: scanTextColor,
+                } : undefined}
               >
-                <CalendarPlus className="size-4 shrink-0" aria-hidden="true" />
-                {CALENDAR_PROVIDER_NAMES[provider]}
+                {scanTheme ? (
+                  provider === "microsoft" ? "Outlook" : provider === "apple" ? "Apple" : "Google"
+                ) : (
+                  <>
+                    <CalendarPlus className="size-4 shrink-0" aria-hidden="true" />
+                    {CALENDAR_PROVIDER_NAMES[provider]}
+                  </>
+                )}
               </button>
-            ))}
+              );
+            })}
           </div>
           {rememberOption}
+          {scanTheme ? (
+            <Dialog.Close className="mt-4 min-h-11 rounded-full px-4 text-[10px] font-bold uppercase tracking-widest transition-opacity hover:opacity-70 focus-visible:outline-2 focus-visible:outline-current">
+              Maybe later
+            </Dialog.Close>
+          ) : null}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

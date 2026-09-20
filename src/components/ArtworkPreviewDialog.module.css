@@ -1,27 +1,40 @@
-.content {
+.viewportFrame {
   --artwork-preview-available-height: calc(
     100dvh -
     env(safe-area-inset-top, 0px) -
     env(safe-area-inset-bottom, 0px)
   );
-  --artwork-preview-max-art-height: max(8rem, calc(var(--artwork-preview-available-height) * 0.9));
+  --artwork-preview-max-art-height: calc(var(--artwork-preview-available-height) * 0.9);
   --artwork-preview-width: min(
     calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)),
     calc(var(--artwork-preview-max-art-height) * var(--artwork-preview-ratio))
   );
   --artwork-preview-height: calc(var(--artwork-preview-width) / var(--artwork-preview-ratio));
+  width: var(--artwork-preview-width);
+  height: var(--artwork-preview-height);
+}
+
+/* Continue the dark viewing surface through phone notches and home indicators. */
+:global(html):has(.viewportFrame) {
+  background-color: #0a0a0a !important;
+}
+
+:global(body):has(.viewportFrame)::before,
+:global(body):has(.viewportFrame)::after {
+  background: #0a0a0a !important;
+}
+
+.content {
   position: fixed;
-  top: 50%;
+  top: calc((100dvh + env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 2);
   left: calc((100vw + env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) / 2);
   z-index: 7001;
-  width: var(--artwork-preview-width);
-  height: auto;
   transform: translate(-50%, -50%);
   outline: none;
 }
 
 /* Text-bearing artwork must expose all four edges, independent of viewport ratio. */
-.content [data-live-card-artwork] > div > img {
+.viewportFrame [data-live-card-artwork] > div > img {
   object-fit: contain;
 }
 

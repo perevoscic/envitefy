@@ -4,15 +4,18 @@ import styles from "./LiveCardArtworkFrame.module.css";
 type LiveCardArtworkFrameProps = {
   imageUrl: string;
   className?: string;
+  aspectRatio?: number;
   children: ReactNode;
 };
 
 export default function LiveCardArtworkFrame({
   imageUrl,
   className = "",
+  aspectRatio,
   children,
 }: LiveCardArtworkFrameProps) {
   const style = {
+    aspectRatio,
     "--live-card-artwork": `url(${JSON.stringify(imageUrl)})`,
     height: "var(--artwork-preview-height, auto)",
     width: "var(--artwork-preview-width, 100%)",

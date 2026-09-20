@@ -502,6 +502,7 @@ export default function ChatProductPreview({
         <ArtworkPreviewDialog
           open={isPreviewOpen}
           title={`${summary.headline} preview`}
+          imageUrl={previewImageUrl}
           aspectRatio={isLiveCard && liveCardPreview.invitationData.heroTextMode !== "image" ? 9 / 16 : 2 / 3}
           onClose={() => setIsPreviewOpen(false)}
           onShare={() => void handleShare()}
