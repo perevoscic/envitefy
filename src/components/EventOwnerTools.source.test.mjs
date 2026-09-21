@@ -7,6 +7,15 @@ const repoRoot = process.cwd();
 
 const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
+test("dashboard, Design and dialog card previews opt into preview-only RSVP controls", () => {
+  const source = readSource("src/components/EventOwnerTools.tsx");
+  const previews = [...source.matchAll(/<SharedStudioCardFrame\b[\s\S]*?\/>/g)];
+  assert.equal(previews.length, 2);
+  for (const [preview] of previews) assert.match(preview, /\bembeddedPreview\b/);
+  const route = readSource("src/app/card/[id]/page.tsx");
+  assert.match(route, /previewMode=\{isOwner && explicitOwnerPreview\}/);
+});
+
 test("owner workspace keeps public actions in the header and not duplicated under live product", () => {
   const source = readSource("src/components/EventOwnerTools.tsx");
   const globals = readSource("src/app/globals.css");

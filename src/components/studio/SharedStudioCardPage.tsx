@@ -30,6 +30,7 @@ type SharedStudioCardProps = {
   shareUrl?: string | null;
   returnHref?: string | null;
   embeddedPreview?: boolean;
+  previewMode?: boolean;
   celebrationKind?: EventCelebrationKind | null;
 };
 
@@ -49,6 +50,7 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
   const [activeTab, setActiveTab] = useState<LiveCardActiveTab>("none");
   const [shareState, setShareState] = useState<"idle" | "pending" | "success">("idle");
   const invitationData = props.invitationData || null;
+  const previewMode = Boolean(props.previewMode || props.embeddedPreview);
   const usesPosterArtFrame = invitationData?.heroTextMode === "image";
   const artworkRatio = useArtworkAspectRatio(props.imageUrl, usesPosterArtFrame ? 2 / 3 : 9 / 16);
   const placeActionsAbove = props.actionsPlacement === "above";
@@ -107,7 +109,7 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
         fallbackShareUrlToWindowLocation
         onShare={props.topRightAction ? undefined : () => void handleShare()}
         shareState={shareState}
-        previewMode={props.embeddedPreview}
+        previewMode={previewMode}
         showExtendedDetails={usesPosterArtFrame}
       />
     </div>
@@ -157,6 +159,7 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
           sharePosition="left"
           onShare={props.topRightAction ? undefined : () => void handleShare()}
           shareState={shareState}
+          previewMode={previewMode}
         />
       ) : null}
       {props.topRightAction}

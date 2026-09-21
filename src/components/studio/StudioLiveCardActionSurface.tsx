@@ -4,7 +4,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import type { PanInfo } from "framer-motion";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
-  CalendarDays,
+  CalendarPlus,
   Check,
   CheckCircle2,
   ClipboardList,
@@ -685,8 +685,8 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       },
       {
         key: "calendar" as const,
-        label: calendar.label,
-        icon: CalendarDays,
+        label: "To Calendar",
+        icon: CalendarPlus,
         visible: overlayActionKeys.includes("calendar"),
         onClick: calendar.open,
       },
@@ -705,7 +705,6 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     shareState,
     props.activeTab,
     props.onActiveTabChange,
-    calendar.label,
     calendar.open,
     openHouseAgentCard,
     overlayActionKeys,
@@ -843,7 +842,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg bg-neutral-100 p-2 text-neutral-900">
                     {props.activeTab === "location" ? <MapPin className="h-5 w-5" /> : null}
-                    {props.activeTab === "calendar" ? <CalendarDays className="h-5 w-5" /> : null}
+                    {props.activeTab === "calendar" ? <CalendarPlus className="h-5 w-5" /> : null}
                     {props.activeTab === "registry" ? <Gift className="h-5 w-5" /> : null}
                     {props.activeTab === "logo" ? <ImageIcon className="h-5 w-5" /> : null}
                     {props.activeTab === "rsvp" ? (
@@ -863,7 +862,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                   </div>
                   <h4 className="text-xs font-bold uppercase tracking-widest text-neutral-900">
                     {props.activeTab === "location" ? "Where" : null}
-                    {props.activeTab === "calendar" ? "Add to Calendar" : null}
+                    {props.activeTab === "calendar" ? "To Calendar" : null}
                     {props.activeTab === "registry" ? "Gift Registry" : null}
                     {props.activeTab === "logo" ? "Logo" : null}
                     {props.activeTab === "rsvp" ? (openHouseAgentCard ? "Realtor" : "RSVP") : null}

@@ -1100,6 +1100,7 @@ function EventProductPreview({
             invitationData={preview.invitationData as any}
             positions={preview.positions as any}
             shareUrl={publicUrl}
+            embeddedPreview
             actionsPlacement="overlay"
             className="flex w-full items-center justify-center"
             frameClassName="!h-auto !w-full !max-w-full !rounded-[28px] !border-0 !bg-transparent shadow-none"
@@ -1458,6 +1459,7 @@ function OwnerProductViewer({
           invitationData={preview.invitationData}
           positions={preview.positions}
           shareUrl={publicUrl}
+          embeddedPreview
           actionsPlacement="overlay"
           frameClassName="!w-full !rounded-[1.5rem]"
           style={{ width: "100%" }}
