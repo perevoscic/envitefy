@@ -1378,12 +1378,12 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                         />
                       </div>
                       <span
-                        className={`${button.key === "calendar" ? "!whitespace-normal !overflow-visible" : ""} max-w-full text-center font-bold leading-tight ${actionsOutsideArtwork ? "text-slate-700" : "text-white drop-shadow-md"} ${
+                        className={`${button.key === "calendar" ? "!whitespace-normal !overflow-visible" : ""} max-w-full text-center font-bold uppercase leading-tight ${actionsOutsideArtwork ? "text-slate-700" : "text-white drop-shadow-md"} ${
                           props.previewMode || actionsOutsideArtwork
                             ? "text-xs tracking-normal"
                             : useCompactActionButtons
-                              ? "truncate text-[6px] uppercase tracking-[0.14em] sm:text-[7px] md:text-[8px]"
-                              : "truncate text-[8px] uppercase tracking-[0.14em] sm:text-[9px] md:text-[10px]"
+                              ? "truncate text-[6px] tracking-[0.14em] sm:text-[7px] md:text-[8px]"
+                              : "truncate text-[8px] tracking-[0.14em] sm:text-[9px] md:text-[10px]"
                         } ${shouldHideClosedRailLabels ? "hidden" : "inline"}`}
                       >
                         {button.label}
