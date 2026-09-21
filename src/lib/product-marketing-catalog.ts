@@ -331,6 +331,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Supported events can collect yes, maybe, and no responses from the public event page.",
             "Guests can respond without installing an app.",
             "RSVP deadlines, contact details, and guest messages can stay connected to the event.",
+            "Hosts receive an email when a guest saves a new or changed Yes, Maybe or No RSVP, with guest details and a link to their RSVP dashboard. Declined guests receive no confirmation email.",
           ],
           sellWhen: ["The host needs attendance, a headcount, guest replies, or an RSVP deadline."],
         },
@@ -375,6 +376,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Supported event dashboards expose headcounts and RSVP progress with the event.",
             "Owners can edit the RSVP host name, phone and email directly in the RSVP workspace, with explicit Save and Cancel controls.",
             "Specialized pages can keep guest messages, meal information, allergy notes, or other answers with each response.",
+            "From Messages, event owners can write, preview and explicitly email announcements to guests whose current RSVP is Yes or Maybe, with saved drafts, recipient history and failure retries. Event or artwork edits never trigger these emails. Declined guests receive neither these updates nor RSVP confirmation emails.",
           ],
           sellWhen: [
             "The campaign is for hosts, planners, parents, or organizers who need visibility after sending the invitation.",

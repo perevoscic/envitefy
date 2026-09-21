@@ -3,6 +3,7 @@ import { normalizeEnvitefySender, SIGNUP_FORMS_SENDER } from "@/lib/email-sender
 import { createEmailTemplate, escapeHtml } from "@/lib/email-template";
 import { sendTransactionalEmail } from "@/lib/mail-transport";
 import { buildPublicAssetUrl, resolvePublicAssetOrigin } from "@/lib/public-asset-url";
+import { validGuestEmail } from "@/lib/event-message-types";
 import { formatSignupDateRange } from "@/lib/signup-display";
 import type { SignupForm, SignupResponse } from "@/types/signup";
 
@@ -197,10 +198,12 @@ export async function sendRsvpConfirmationEmail(params: {
   eventImageAlt?: string | null;
   calendarLinks?: Array<{ label: string; url: string }> | null;
 }): Promise<void> {
+  // Declined guests receive neither RSVP confirmations nor host announcements.
+  if (params.response === "no") return;
   const { from } = resolveNoReplySender();
   const to = params.toEmail;
   const statusLabel =
-    params.response === "yes" ? "Going" : params.response === "no" ? "Not attending" : "Maybe";
+    params.response === "yes" ? "Going" : "Maybe";
   const subject = `RSVP ${statusLabel.toLowerCase()}: ${params.eventTitle}`;
   const preheader = `Your RSVP for ${params.eventTitle} is saved.`;
   const greeting = params.guestName ? `Hi ${escapeHtml(params.guestName)}` : "Hello";
@@ -286,6 +289,83 @@ export async function sendRsvpConfirmationEmail(params: {
     .join("\n");
 
   await sendTransactionalEmail({ from, to, subject, text, html });
+}
+
+export async function sendHostRsvpNotificationEmail(params: {
+  toEmail: string;
+  hostName?: string | null;
+  guestName: string;
+  guestEmail: string;
+  guestPhone?: string | null;
+  response: "yes" | "no" | "maybe";
+  eventTitle: string;
+  dashboardUrl: string;
+  dateLabel?: string | null;
+  locationLabel?: string | null;
+  message?: string | null;
+  adultCount?: number | null;
+  kidCount?: number | null;
+  allergyNotes?: string | null;
+}): Promise<void> {
+  const { from } = resolveNoReplySender();
+  const label = { yes: "Yes — Going", no: "No — Declined", maybe: "Maybe" }[params.response];
+  const summary = `${params.guestName} responded ${label} to ${params.eventTitle}.`;
+  const details = [
+    ["Guest", params.guestName],
+    ["Response", label],
+    ["Email", params.guestEmail],
+    ["Phone", params.guestPhone],
+    ["When", params.dateLabel],
+    ["Where", params.locationLabel],
+    ["Adults", params.adultCount != null ? String(params.adultCount) : null],
+    ["Children", params.kidCount != null ? String(params.kidCount) : null],
+    ["Allergy notes", params.allergyNotes],
+    ["Guest note", params.message],
+  ].filter((row): row is [string, string] => typeof row[1] === "string" && Boolean(row[1]));
+  const html = createEmailTemplate({
+    preheader: summary,
+    title: "Guest RSVP",
+    body: `<p style="font-size:16px;line-height:1.6;">${params.hostName ? `Hi ${escapeHtml(params.hostName)},` : "Hello,"}</p>
+      <p style="font-size:16px;line-height:1.6;">${escapeHtml(summary)}</p>
+      <div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:16px;">${details.map(([name, value]) => `<p style="margin:0 0 8px;font-size:14px;line-height:1.6;"><strong>${escapeHtml(name)}:</strong> ${escapeHtml(value).replace(/\r?\n/g, "<br/>")}</p>`).join("")}</div>`,
+    buttonText: "View RSVPs",
+    buttonUrl: params.dashboardUrl,
+    footerText: validGuestEmail(params.guestEmail) ? "Reply to this email to reach the guest." : undefined,
+  });
+  await sendTransactionalEmail({
+    from,
+    to: params.toEmail,
+    subject: `Guest RSVP: ${params.guestName} · ${params.eventTitle}`.replace(/[\r\n]+/g, " "),
+    ...(validGuestEmail(params.guestEmail) ? { replyTo: params.guestEmail } : {}),
+    html,
+    text: `${summary}\n\n${details.map(([name, value]) => `${name}: ${value}`).join("\n")}\n\nView RSVPs: ${params.dashboardUrl}${signupTextSignature}`,
+  });
+}
+
+export async function sendEventUpdateEmail(params: {
+  toEmail: string;
+  subject: string;
+  body: string;
+  eventTitle: string;
+  eventUrl: string;
+  replyTo: string | null;
+}): Promise<void> {
+  const { from } = resolveNoReplySender();
+  const html = createEmailTemplate({
+    preheader: `An update about ${params.eventTitle}`,
+    title: params.subject,
+    body: `<p style="font-size:14px;color:#737373;">${escapeHtml(params.eventTitle)}</p>
+      <div style="font-size:16px;line-height:1.6;overflow-wrap:anywhere;">${escapeHtml(params.body).replace(/\r?\n/g, "<br/>")}</div>`,
+    buttonText: "View event",
+    buttonUrl: params.eventUrl,
+    footerText: params.replyTo ? "Reply to this email to reach the host." : "Open the event for host contact details.",
+  });
+  await sendTransactionalEmail({
+    from, to: params.toEmail, subject: params.subject,
+    ...(params.replyTo ? { replyTo: params.replyTo } : {}),
+    html,
+    text: `${params.eventTitle}\n\n${params.body}\n\nView event: ${params.eventUrl}${params.replyTo ? `\nReply to: ${params.replyTo}` : ""}${signupTextSignature}`,
+  });
 }
 
 export async function sendSignupConfirmationEmail(params: {

@@ -1,12 +1,14 @@
 import { guardDraftRequest } from "@/lib/event-draft-access-server";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { absoluteUrl } from "@/lib/absolute-url";
 import { authOptions } from "@/lib/auth";
 import { getUserIdByEmail, query } from "@/lib/db";
-import { sendRsvpConfirmationEmail } from "@/lib/email";
+import { sendHostRsvpNotificationEmail, sendRsvpConfirmationEmail } from "@/lib/email";
+import { validGuestEmail } from "@/lib/event-message-types";
+import { readOwnerRsvpSettings } from "@/lib/owner-rsvp-settings";
 import { buildPublicAssetUrl } from "@/lib/public-asset-url";
 import {
   createServerTimingTracker,
@@ -521,8 +523,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return jsonWithTiming(timing, { error: "Name and email required for RSVP" }, { status: 400 });
     }
 
+    let rsvpChanged = false;
     if (userId) {
-      await timing.time("upsert_user", () =>
+      const saved = await timing.time("upsert_user", () =>
         query(
           `
         INSERT INTO rsvp_responses (
@@ -536,6 +539,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         message = EXCLUDED.message, answers_json = EXCLUDED.answers_json,
         adult_count = EXCLUDED.adult_count, kid_count = EXCLUDED.kid_count,
         allergy_notes = EXCLUDED.allergy_notes, updated_at = now()
+        WHERE (rsvp_responses.response, rsvp_responses.email, rsvp_responses.name,
+          rsvp_responses.first_name, rsvp_responses.last_name, rsvp_responses.phone,
+          rsvp_responses.message, rsvp_responses.answers_json, rsvp_responses.adult_count,
+          rsvp_responses.kid_count, rsvp_responses.allergy_notes)
+        IS DISTINCT FROM (EXCLUDED.response, EXCLUDED.email, EXCLUDED.name,
+          EXCLUDED.first_name, EXCLUDED.last_name, EXCLUDED.phone,
+          EXCLUDED.message, EXCLUDED.answers_json, EXCLUDED.adult_count,
+          EXCLUDED.kid_count, EXCLUDED.allergy_notes)
+        RETURNING id
       `,
           [
             eventId,
@@ -554,8 +566,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           ],
         ),
       );
+      rsvpChanged = saved.rows.length > 0;
     } else {
-      await timing.time("upsert_email", () =>
+      const saved = await timing.time("upsert_email", () =>
         query(
           `
         INSERT INTO rsvp_responses (
@@ -569,6 +582,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         message = EXCLUDED.message, answers_json = EXCLUDED.answers_json,
         adult_count = EXCLUDED.adult_count, kid_count = EXCLUDED.kid_count,
         allergy_notes = EXCLUDED.allergy_notes, updated_at = now()
+        WHERE (rsvp_responses.response, rsvp_responses.name, rsvp_responses.first_name,
+          rsvp_responses.last_name, rsvp_responses.phone, rsvp_responses.message,
+          rsvp_responses.answers_json, rsvp_responses.adult_count,
+          rsvp_responses.kid_count, rsvp_responses.allergy_notes)
+        IS DISTINCT FROM (EXCLUDED.response, EXCLUDED.name, EXCLUDED.first_name,
+          EXCLUDED.last_name, EXCLUDED.phone, EXCLUDED.message,
+          EXCLUDED.answers_json, EXCLUDED.adult_count,
+          EXCLUDED.kid_count, EXCLUDED.allergy_notes)
+        RETURNING id
       `,
           [
             eventId,
@@ -586,6 +608,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           ],
         ),
       );
+      rsvpChanged = saved.rows.length > 0;
     }
 
     for (const affectedId of [eventRow.user_id, userId]) {
@@ -608,7 +631,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }),
     );
 
-    void (async () => {
+    if (responseValue !== "no") after(async () => {
       try {
         await sendRsvpConfirmationEmail({
           toEmail: rsvpEmail,
@@ -629,7 +652,37 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           error: errorMessage(err, "Failed to send RSVP confirmation email"),
         });
       }
-    })();
+    });
+
+    // Host alerts are separate from guest confirmations and manual announcements.
+    // An identical resubmission does not notify the host again.
+    if (rsvpChanged && !(userId && userId === eventRow.user_id)) after(async () => {
+      try {
+        const host = readOwnerRsvpSettings(eventRow.data);
+        let hostEmail = validGuestEmail(host.email) ? host.email : "";
+        if (!hostEmail && eventRow.user_id) {
+          const owner = await query<{ email: string | null }>(
+            `SELECT email FROM users WHERE id = $1 LIMIT 1`, [eventRow.user_id],
+          );
+          const ownerEmail = owner.rows[0]?.email?.trim() || "";
+          if (validGuestEmail(ownerEmail)) hostEmail = ownerEmail;
+        }
+        if (!hostEmail || hostEmail.toLowerCase() === rsvpEmail.trim().toLowerCase()) return;
+        await sendHostRsvpNotificationEmail({
+          toEmail: hostEmail,
+          hostName: host.hostName,
+          guestName: rsvpName,
+          guestEmail: rsvpEmail,
+          guestPhone: phone,
+          response: responseValue,
+          eventTitle,
+          dashboardUrl: buildPublicAssetUrl(`/event/${encodeURIComponent(publicSlug || eventId)}?tab=rsvps`),
+          dateLabel, locationLabel, message, adultCount, kidCount, allergyNotes,
+        });
+      } catch {
+        console.error("[rsvp] host notification email failed", { eventId });
+      }
+    });
 
     return jsonWithTiming(timing, { ok: true });
   } catch (err: unknown) {

@@ -256,7 +256,7 @@ async function connectPoolClient(pool: Pool): Promise<PoolClient> {
   }
 }
 
-async function withClient<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
+export async function withClient<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
   const pool = await getPool();
   if (pgAuthBackoffUntil > Date.now()) {
     const err: any = new Error(

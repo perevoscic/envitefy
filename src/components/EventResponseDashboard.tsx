@@ -4,7 +4,6 @@ import {
   CheckCircle2,
   Clock3,
   Mail,
-  MessageSquare,
   Pencil,
   Phone,
   Users,
@@ -12,6 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import EventMessagesPanel from "@/components/EventMessagesPanel";
 import OwnerRsvpEditor from "@/components/OwnerRsvpEditor";
 
 type RsvpStats = {
@@ -92,10 +92,6 @@ function displayName(row: RsvpResponse): string {
 
 function responseKey(row: RsvpResponse, index: number): string {
   return `${row.email || row.phone || displayName(row)}-${row.updatedAt || row.createdAt || index}`;
-}
-
-function responseContact(row: RsvpResponse): string {
-  return firstString(row.email, row.phone);
 }
 
 function responseMessage(row: RsvpResponse): string {
@@ -217,7 +213,6 @@ export default function EventResponseDashboard({
         ? 100
         : 0;
   const recentResponses = responses.slice(0, 3);
-  const messageResponses = responses.filter((row) => responseMessage(row));
   const hasRsvpSurface = Boolean(rsvpEnabled || responseTarget > 0 || hasResponses);
   const isWedding = variant === "weddings";
   const responseSummary = loading
@@ -340,11 +335,7 @@ export default function EventResponseDashboard({
         ) : null}
 
         {activeTab === "messages" ? (
-          <RsvpMessagesPanel
-            responses={messageResponses}
-            allResponseCount={responses.length}
-            loading={loading}
-          />
+          <EventMessagesPanel key={eventId} eventId={eventId} eventTitle={eventTitle} />
         ) : null}
       </div>
     </section>
@@ -523,95 +514,6 @@ function RsvpResponsesPanel({
             </tbody>
           </table>
         </div>
-      </section>
-    </section>
-  );
-}
-
-function RsvpMessagesPanel({
-  responses,
-  allResponseCount,
-  loading,
-}: {
-  responses: RsvpResponse[];
-  allResponseCount: number;
-  loading: boolean;
-}) {
-  return (
-    <section className="space-y-4" aria-label="RSVP messages">
-      <div className="owner-workspace-glass-panel relative overflow-hidden rounded-[24px] border border-black/5 bg-white/82 p-4 shadow-sm sm:p-5">
-        <div className="flex items-start gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white">
-            <MessageSquare size={21} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[0.66rem] font-black uppercase tracking-[0.18em] text-[#786bd6]">
-              Messages
-            </p>
-            <h3 className="mt-2 text-2xl font-semibold tracking-normal text-slate-950 sm:text-3xl">
-              {loading ? "Loading guest notes" : `${responses.length} messages`}
-            </h3>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              RSVP notes from guests appear here so follow-ups stay separate from the response
-              count.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <section className="owner-workspace-glass-panel relative overflow-hidden rounded-[28px] border border-black/5 bg-white/86 p-4 shadow-sm sm:p-5">
-        {loading ? (
-          <div className="space-y-3">
-            {[0, 1, 2].map((item) => (
-              <div key={item} className="h-24 animate-pulse rounded-2xl bg-slate-100" />
-            ))}
-          </div>
-        ) : responses.length ? (
-          <div className="space-y-3">
-            {responses.map((row, index) => {
-              const status = statusMeta(row.response);
-              const StatusIcon = status.icon;
-              const contact = responseContact(row);
-              return (
-                <article
-                  key={responseKey(row, index)}
-                  className="owner-workspace-glass-panel relative overflow-hidden rounded-[22px] border border-slate-100 bg-white p-4 shadow-sm"
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="text-base font-semibold text-slate-950">{displayName(row)}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-400">
-                        {contact ? <span>{contact}</span> : null}
-                        <span>{displayUpdatedAt(row.updatedAt || row.createdAt)}</span>
-                      </div>
-                    </div>
-                    <span
-                      className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.68rem] font-black ${status.className}`}
-                    >
-                      <StatusIcon size={13} aria-hidden="true" />
-                      {status.label}
-                    </span>
-                  </div>
-                  <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
-                    {responseMessage(row)}
-                  </p>
-                </article>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="mx-auto flex max-w-md flex-col items-center py-10 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
-              <MessageSquare size={22} />
-            </div>
-            <p className="mt-3 text-base font-semibold text-slate-950">No messages yet</p>
-            <p className="mt-1 text-sm leading-6 text-slate-500">
-              {allResponseCount
-                ? "Guests have responded, but none have left a message yet."
-                : "Guest messages will appear here when someone adds a note to their RSVP."}
-            </p>
-          </div>
-        )}
       </section>
     </section>
   );

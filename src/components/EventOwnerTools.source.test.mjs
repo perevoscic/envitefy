@@ -165,7 +165,7 @@ test("owner workspace exposes Dashboard RSVPs Messages and Design tabs", () => {
   );
   assert.match(responseSource, /activeTab === "dashboard"/);
   assert.match(responseSource, /function RsvpResponsesPanel/);
-  assert.match(responseSource, /function RsvpMessagesPanel/);
+  assert.match(responseSource, /<EventMessagesPanel/);
   assert.match(sidebarSource, /label: "RSVPs"/);
   assert.match(sidebarSource, /label: "Messages"/);
   assert.match(sidebarSource, /label: "Design"/);

@@ -20,6 +20,8 @@ const files = [
   "src/lib/live-card-*.test.mjs",
   "src/lib/live-card-*.test.ts",
   "src/lib/guest-rsvp.test.ts",
+  "src/lib/event-messages.test.cjs",
+  "src/lib/rsvp-host-notification.test.cjs",
   "src/lib/guest-event-details.test.ts",
   "src/lib/scan-event-page.test.mjs",
   ...scripts["test:calendar"].replace(/^node --test /, "").split(" "),
