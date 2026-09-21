@@ -718,7 +718,7 @@ export function buildLiveCardPrompt(
     "}",
     "Constraints:",
     "- Make the title catchy and concise.",
-    "- Make the description feel like a polished live card summary.",
+    "- Make description an informative guest Overview in natural sentences: the supplied meeting place and time, activity or movie title, and each later stop in order. Check every supplied public event detail before returning; do not omit a movie title, restaurant, meal or stop time just to be concise or replace the plan with a generic celebration introduction. Preserve guest instructions. Use Event Details as the source of facts; a Design Idea-only movie theme never establishes a screening. Missing facts stay empty.",
     "- Use a palette with three valid hex colors.",
     "- Keep themeStyle short, vivid, and layout-friendly.",
     "- `funFacts` should contain 0-4 short, useful guest-facing notes grounded in supplied facts; use an empty array when none are supplied.",

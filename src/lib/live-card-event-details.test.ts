@@ -1,7 +1,61 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildLiveCardDetailsWelcomeMessage, buildLiveCardOverviewNotes } from "./live-card-event-details.ts";
+import { buildLiveCardDetailsWelcomeMessage, buildLiveCardOverviewNotes, buildLiveCardOverviewPlan } from "./live-card-event-details.ts";
+import { buildLiveCardLocationActions } from "./live-card-locations.ts";
+
+const movieLocations = buildLiveCardLocationActions({
+  venueName: "AMC Grand Boulevard",
+  additionalLocations: [{ label: "Dinner", venue: "Pazzo SRB", location: "Santa Rosa Beach, FL" }],
+});
+
+test("overview explains the meeting time, named movie, and dinner afterward", () => {
+  assert.deepEqual(buildLiveCardOverviewPlan({
+    locations: movieLocations,
+    startTime: "16:00",
+    descriptions: ["We are going to watch Forgotten Island at AMC Grand Boulevard, then dinner at Pazzo SRB."],
+  }), [
+    "We're meeting at AMC Grand Boulevard at 4:00 PM to watch Forgotten Island.",
+    "After the movie, we'll head to Pazzo SRB for dinner.",
+  ]);
+});
+
+test("overview leaves missing movie titles and times unspecified", () => {
+  assert.deepEqual(buildLiveCardOverviewPlan({ locations: movieLocations, descriptions: [] }), [
+    "We're meeting at AMC Grand Boulevard to watch a movie.",
+    "After the movie, we'll head to Pazzo SRB for dinner.",
+  ]);
+});
+
+test("overview uses labeled movie details and retains pickup and preparation notes", () => {
+  const descriptions = ["We can't wait to see you! Movie: Forgotten Island. Pickup is at 8 PM."];
+  const plan = buildLiveCardOverviewPlan({ locations: movieLocations, descriptions });
+  assert.match(plan[0], /to watch Forgotten Island\./);
+  assert.deepEqual(buildLiveCardOverviewNotes({
+    title: "Livia is turning 10", descriptions, plan, instructions: ["Bring a jacket."],
+  }), ["We can't wait to see you! Pickup is at 8 PM.", "Bring a jacket."]);
+});
+
+test("overview does not interpret a greeting as a movie title", () => {
+  const plan = buildLiveCardOverviewPlan({ locations: movieLocations, descriptions: ["Can't wait to see you at AMC!"] });
+  assert.match(plan[0], /to watch a movie\./);
+});
+
+test("overview preserves non-movie activities and custom location labels", () => {
+  const locations = buildLiveCardLocationActions({
+    venueName: "Ceremony at Garden Hall",
+    additionalLocations: [
+      { label: "Reception", venue: "River House", location: "22 River Road" },
+      { label: "Shuttle pickup at the north entrance", location: "22 River Road, north entrance" },
+    ],
+  });
+  assert.deepEqual(buildLiveCardOverviewPlan({ locations, startTime: "14:30", descriptions: [] }), [
+    "We're meeting at Garden Hall at 2:30 PM for the ceremony.",
+    "Then, we'll head to River House for the reception.",
+    "Shuttle pickup at the north entrance.",
+  ]);
+  assert.deepEqual(buildLiveCardOverviewPlan({ locations: [], descriptions: ["Join us online."] }), []);
+});
 
 test("overview removes repeated birthday introductions while preserving the actual plan", () => {
   assert.deepEqual(buildLiveCardOverviewNotes({

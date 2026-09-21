@@ -1,5 +1,8 @@
 /** Guest-facing copy for live card "Event Details" tab. */
 
+import { formatGuestClock } from "./guest-event-details.ts";
+import type { LiveCardLocationAction } from "./live-card-locations.ts";
+
 export type LiveCardDetailsLike = {
   category?: string;
   name?: string;
@@ -88,12 +91,59 @@ function copyKey(value: string): string {
     .trim();
 }
 
+const PLAN_ACTIVITY = /^(movie|film|dinner|lunch|brunch|breakfast|dessert|cake|pizza|drinks?|snacks?|meal|reception|after[- ]?party|ceremony|party) at (.+)$/i;
+
+/** Read only explicit movie wording in public copy, never a theme or artwork prompt. */
+function overviewMovieTitle(descriptions: string[]): string {
+  const labeled = descriptions.join("\n").match(/\bmovie\s*:\s*["“]?([^\n.!?;"”]+?)(?=["”]|[\n.!?;]|$)/i);
+  if (labeled) return labeled[1].trim();
+  for (const description of descriptions) {
+    const match = description.match(
+      /\b(?:watch(?:ing)?|see(?:ing)?)\s+(?:(?:the\s+)?(?:movie|film)\s+)?["“]?([^\n.!?;]+?)(?=["”]|,?\s+(?:at|then|followed by|before|after|on)\b|[\n.!?;]|$)/i,
+    );
+    const title = match?.[1]?.replace(/[,\s]+$/g, "").trim() || "";
+    if (title && !/^(?:(?:a|the)\s+)?(?:movie|film)$|^(?:you|everyone|each other|what|how|if|whether)\b/i.test(title)) return title;
+  }
+  return "";
+}
+
+/** Expand saved stops into a readable plan without adding times or activities. */
+export function buildLiveCardOverviewPlan(input: {
+  locations: LiveCardLocationAction[];
+  startTime?: string;
+  descriptions: string[];
+}): string[] {
+  const movieTitle = overviewMovieTitle(input.descriptions);
+  const startTime = formatGuestClock(input.startTime);
+  return input.locations.map((location, index) => {
+    const match = location.label.match(PLAN_ACTIVITY);
+    const activity = match?.[1]?.toLowerCase() || "";
+    const venue = match?.[2] || location.label;
+    const movie = /^(movie|film)$/.test(activity);
+    const purpose = movie
+      ? `to watch ${movieTitle || "a movie"}`
+      : activity ? `for ${/^(ceremony|reception|party|after[- ]?party|meal)$/.test(activity) ? "the " : ""}${activity}` : "";
+    if (location.source === "primary") {
+      const meeting = [`We're meeting at ${venue}`, startTime ? `at ${startTime}` : "", purpose]
+        .filter(Boolean).join(" ");
+      return `${meeting}.`;
+    }
+    const previousActivity = input.locations[index - 1]?.label.match(PLAN_ACTIVITY)?.[1] || "";
+    const transition = /^(movie|film)$/i.test(previousActivity) ? "After the movie" : "Then";
+    // An additional location can have a custom label instead of an activity/venue pair.
+    // Preserve that wording without turning a label such as "Pickup" into a place name.
+    if (!match) return `${location.label}${/[.!?]$/.test(location.label) ? "" : "."}`;
+    return `${transition}, we'll head to ${venue}${purpose ? ` ${purpose}` : ""}.`;
+  });
+}
+
 /** Remove repeated invitation introductions, retaining actual plans and instructions. */
 export function buildLiveCardOverviewNotes(input: {
   title: string;
   welcome?: string | null;
   descriptions: string[];
   instructions: string[];
+  plan?: string[];
 }): string[] {
   const introductionKey = (value: string) => copyKey(value)
     .replace(/^(?:join us (?:to celebrate|for)|wed love for you to join us for)\s+/, "")
@@ -101,7 +151,11 @@ export function buildLiveCardOverviewNotes(input: {
     .replace(/\s+/g, " ").trim();
   const introductions = new Set([input.title, input.welcome || ""]
     .filter(Boolean).map(introductionKey));
-  const seen = new Set<string>();
+  const seen = new Set((input.plan || []).map(copyKey));
+  const movieTitle = overviewMovieTitle([...input.descriptions, ...input.instructions]);
+  if (movieTitle && input.plan?.some((line) => line.includes(`to watch ${movieTitle}.`))) {
+    seen.add(copyKey(`Movie: ${movieTitle}.`));
+  }
   const notes: string[] = [];
   for (const text of [...input.descriptions, ...input.instructions]) {
     for (const paragraph of text.split(/\n+/)) {

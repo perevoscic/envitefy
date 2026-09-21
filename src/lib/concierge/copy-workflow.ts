@@ -3,7 +3,10 @@ import { sanitizeGuestCopy } from "./public-copy.ts";
 
 export function requestsInvitationCopy(message: string): boolean {
   return /\b(?:write|draft|rewrite|revise|translate|shorten|suggest|show|give|prepare)\b[\s\S]{0,140}\b(?:invitation|invite|save.the.date|wording|opening line|guest copy)\b/i.test(message)
-    || /\b(?:invitation|invite|wording|guest copy)\b[\s\S]{0,80}\b(?:English|Spanish|bilingual|translate|shorter|warmer)\b/i.test(message);
+    || /\b(?:invitation|invite|wording|guest copy)\b[\s\S]{0,80}\b(?:English|Spanish|bilingual|translate|shorter|warmer)\b/i.test(message)
+    || /\b(?:write|rewrite|revise|expand|improve)\b[\s\S]{0,80}\boverview\b/i.test(message)
+    || /\b(?:make|keep)\b[\s\S]{0,40}\boverview\b[\s\S]{0,60}\b(?:clearer|informative|detailed|specific)\b/i.test(message)
+    || /\boverview\b[\s\S]{0,60}\b(?:needs? to be|should be)\b[\s\S]{0,30}\b(?:clearer|informative|detailed|specific)\b/i.test(message);
 }
 
 export function copyRequirementsChanged(previous: ConciergeEventDraft, next: ConciergeEventDraft): boolean {

@@ -162,7 +162,8 @@ test("artwork fits the viewport with guest actions and Share/Close overlaid on t
           venueName: "AMC Grand Blvd",
           location: "465 Grand Boulevard, Miramar Beach, FL",
           additionalLocations: [{ label: "Dinner", venue: "Pazzo SRB", location: "Santa Rosa Beach, FL" }],
-          detailsDescription: "Join us to celebrate Taylor turning 10.",
+          startTime: "16:00", endTime: "",
+          detailsDescription: "Join us to celebrate Taylor turning 10. Movie: Forgotten Island.",
           guestInstructions: Array.from({ length: 20 }, (_, i) => `Guest note ${i + 1}: Please check the arrival instructions.`),
         },
       },
@@ -174,7 +175,13 @@ test("artwork fits the viewport with guest actions and Share/Close overlaid on t
     const planText = await overview.innerText();
     assert.equal((planText.match(/Taylor is turning 10/g) || []).length, 1);
     assert.doesNotMatch(planText, /Join us to celebrate/);
-    assert.ok(planText.indexOf("Movie at AMC Grand Blvd") < planText.indexOf("Dinner at Pazzo SRB"));
+    const meeting = "We're meeting at AMC Grand Blvd at 4:00 PM to watch Forgotten Island.";
+    const dinner = "After the movie, we'll head to Pazzo SRB for dinner.";
+    assert.ok(planText.includes(meeting), planText);
+    assert.ok(planText.includes(dinner), planText);
+    assert.ok(planText.indexOf(meeting) < planText.indexOf(dinner));
+    assert.equal((planText.match(/Forgotten Island/g) || []).length, 1);
+    await page.screenshot({ path: path.join(outDir, "guest-overview-plan.png"), fullPage: true });
     const closeBefore = await page.getByRole("button", { name: "Close card details", exact: true }).boundingBox();
     const scrolled = await overview.evaluate((element) => { const body = element.parentElement; body.scrollTop = body.scrollHeight; return body.scrollTop; });
     const closeAfter = await page.getByRole("button", { name: "Close card details", exact: true }).boundingBox();

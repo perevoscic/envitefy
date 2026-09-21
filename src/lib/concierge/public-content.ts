@@ -48,6 +48,7 @@ export function updatePublicContent(previous: ConciergePublicContent | null | un
     else if (/\b(?:non[- ]contact|no\s+(?:diving|contact|tackling|sparring|drop[- ]offs?)|battery[- ]powered|open\s+flames?|supervis(?:ed|ion)|safety|must\s+(?:stay|remain)|adult\s+(?:required|present)|parent\s+(?:required|present))\b/i.test(sourceText)) kind = "safety";
     else if (/\b(?:bring|wear|equipment|materials?\s+(?:are\s+)?provided|supplies\s+(?:are\s+)?provided|goggles|shin\s+guards|water\s+bottle|towel|cleats|kneepads)\b/i.test(sourceText)) kind = "equipment";
     else if (/\b(?:ages?\s+\d|adults?|teens?|beginners?|all\s+(?:ages|levels)|eligible|eligibility)\b/i.test(sourceText)) kind = "eligibility";
+    else if (/\bwatch(?:ing)?\s+(?!out\b|your\b|for\b)|\b(?:see|seeing)\s+(?:the\s+)?(?:movie|film)\b|\bmovie\s*:/i.test(sourceText)) kind = "activity";
     else if (/\b(?:stations?|drills?|activities|warm[- ]?up|doors\s+(?:open|at)|arriv(?:e|al)|home\s+team|away\s+team|are\s+(?:away|home)|lane\s+assignments?|permission\s+(?:form|slip)|check[- ]in|ceremony|reception|vow\s+renewal|dinner|afternoon\s+tea|dress\s+code|packed\s+lunch|bus\s+(?:leaves|returns)|visit\s+is|throwing|fielding|ballet|contemporary|watching\s+a\s+game|community\s+gathering|neighborhood\s+tea|sit\s+in|main\s+office)\b/i.test(sourceText)) kind = "activity";
     else if (/\b(?:wording\s+should|invite\s+people|find\s+out\s+together|drop\s+in|portrait\s+session|school\s+open\s+house|meet\s+teachers|see\s+classrooms|housewarming\s+with\s+snacks|conversation\s+with\s+tea|players\s+are\s+welcome|practice\s+for|will\s+scrimmage|show\s+starts|no\s+experience\s+needed|indoor\s+volleyball)\b/i.test(sourceText)) kind = "instruction";
     else if (/\b(?:guests?|participants?|parents?|players?|students?)\s+(?:must|should|need|can|will)\b/i.test(sourceText)) kind = "instruction";
@@ -57,8 +58,8 @@ export function updatePublicContent(previous: ConciergePublicContent | null | un
     if (publicEditRequest && !exact) {
       publicClause = publicClause.replace(/^(?:(?:can|could|would|will)\s+you\s+(?:please\s+)?|please\s+)?(?:add|include|state|mention|write)\s+(?:that\s+)?/i, "").replace(/\?$/, ".");
     }
-    if (!exact && /\b(?:create|generate|design|make|I\s+need|we\s+need)\s+(?:an?\s+)?(?:event|flyer|live|invitation|downloadable|workshop)\b/i.test(publicClause)) {
-      const guestClause = publicClause.match(/\b(?:(?:guests?|participants?|players?|students?|families|parents?)\s+(?:must|should|need|are\s+required)|(?:please\s+)?(?:bring|wear))\b/i);
+    if (!exact && /\b(?:create|generate|design|make|I\s+need|we\s+need)\s+(?:an?\s+)?(?:[a-z-]+\s+){0,3}(?:event|flyer|live|invitation|downloadable|workshop)\b/i.test(publicClause)) {
+      const guestClause = publicClause.match(/\b(?:(?:guests?|participants?|players?|students?|families|parents?)\s+(?:must|should|need|are\s+required)|(?:please\s+)?(?:bring|wear)|we(?:['’]re|\s+are|\s+will)?\s+(?:going\s+to\s+)?(?:watch(?:ing)?|see(?:ing)?))\b/i);
       if (!guestClause) continue;
       publicClause = publicClause.slice(guestClause.index);
     }

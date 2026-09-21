@@ -32,7 +32,7 @@ import { buildLiveCardCalendarLinks } from "@/lib/live-card-calendar";
 import { formatGuestSchedule, isPropertyOpenHouse, publicGuestInstructions } from "@/lib/guest-event-details";
 import { buildGuestRsvpSubmission, guestRsvpCategory, guestRsvpGuessRules } from "@/lib/guest-rsvp";
 import { parseGenderRevealConfig } from "@/lib/gender-reveal";
-import { buildLiveCardDetailsWelcomeMessage, buildLiveCardOverviewNotes } from "@/lib/live-card-event-details";
+import { buildLiveCardDetailsWelcomeMessage, buildLiveCardOverviewNotes, buildLiveCardOverviewPlan } from "@/lib/live-card-event-details";
 import {
   buildLiveCardDirectionsHref,
   buildLiveCardLocationActions,
@@ -509,11 +509,19 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   const overviewTitle =
     readString(invitationData?.title) || readString(details?.eventTitle) || readString(props.title);
   const overviewWhen = formatGuestSchedule({ eventDate: readString(details?.eventDate), startTime: readString(details?.startTime), endTime: readString(details?.endTime) });
+  const overviewDescriptions = [detailsDescription, shouldShowLiveCardDescriptionSection(secondaryDescription) ? secondaryDescription : ""];
+  const overviewInstructions = publicGuestInstructions(details);
+  const overviewPlan = buildLiveCardOverviewPlan({
+    locations: locationActions,
+    startTime: readString(details?.startTime),
+    descriptions: [...overviewDescriptions, ...overviewInstructions],
+  });
   const overviewNotes = buildLiveCardOverviewNotes({
     title: overviewTitle,
     welcome: detailsWelcome,
-    descriptions: [detailsDescription, shouldShowLiveCardDescriptionSection(secondaryDescription) ? secondaryDescription : ""],
-    instructions: publicGuestInstructions(details),
+    descriptions: overviewDescriptions,
+    instructions: overviewInstructions,
+    plan: overviewPlan,
   });
 
   useEffect(() => {
@@ -1154,7 +1162,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                         {locationActions.map((location, index) => (
                           <li key={location.id} className="flex items-start gap-3">
                             <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-xs font-semibold text-white">{index + 1}</span>
-                            <p className="pt-0.5 text-base font-medium leading-snug">{location.label}</p>
+                            <p className="pt-0.5 text-sm leading-relaxed">{overviewPlan[index]}</p>
                           </li>
                         ))}
                       </ol>
