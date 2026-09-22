@@ -135,6 +135,7 @@ test("studio preview preserves full poster artwork with guest controls overlaid 
     /usesPosterArtFrame \? "object-contain object-center" : "object-cover object-center"/,
   );
   assert.match(showcaseSource, /placement="overlay"/);
+  assert.match(showcaseSource, /actionsPlacement = "overlay"/);
   assert.match(phonePaneSource, /aspect-\[2\/3\]/);
   assert.match(phonePaneSource, /isLiveCardPreview \? "object-cover" : "object-contain"/);
   assert.match(surfaceSource, /grid w-full min-w-0 grid-flow-col auto-cols-fr/);

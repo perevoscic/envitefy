@@ -1,15 +1,18 @@
 "use client";
 
+import { X } from "lucide-react";
 import Image from "next/image";
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 import LiveCardArtworkFrame from "@/components/studio/LiveCardArtworkFrame";
-import { useArtworkAspectRatio } from "@/hooks/use-artwork-aspect-ratio";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface, {
+  isPosterFirstHeroCard,
   type LiveCardActiveTab,
 } from "@/components/studio/StudioLiveCardActionSurface";
+import { useArtworkAspectRatio } from "@/hooks/use-artwork-aspect-ratio";
 import type { StudioShowcasePreview } from "@/lib/studio/showcase-previews";
 import { resolveNativeShareData } from "@/utils/native-share";
+import chromeStyles from "./LiveCardChromeButton.module.css";
 import styles from "./StudioShowcaseLiveCard.module.css";
 
 function cx(...parts: Array<string | false | null | undefined>) {
@@ -31,6 +34,7 @@ type StudioShowcaseLiveCardProps = {
   showcaseOverlay?: ReactNode;
   actionsPlacement?: "auto" | "above" | "overlay";
   fitToContainer?: boolean;
+  onClose?: () => void;
 };
 
 export default function StudioShowcaseLiveCard({
@@ -46,8 +50,9 @@ export default function StudioShowcaseLiveCard({
   activeTab,
   onActiveTabChange,
   showcaseOverlay,
-  actionsPlacement = "auto",
+  actionsPlacement = "overlay",
   fitToContainer = false,
+  onClose,
 }: StudioShowcaseLiveCardProps) {
   const [internalActiveTab, setInternalActiveTab] = useState<LiveCardActiveTab>(
     preview.initialActiveTab || "none",
@@ -233,14 +238,31 @@ export default function StudioShowcaseLiveCard({
                 activeTab={resolvedActiveTab}
                 onActiveTabChange={handleActiveTabChange}
                 onShare={preview.sharePath ? handleShare : undefined}
+                sharePosition="left"
                 shareUrl={shareUrl}
                 fallbackShareUrlToWindowLocation={false}
                 shareState={shareState}
                 showcaseMode={showcaseMode}
-          buttonChromeSize={buttonChromeSize}
-          previewMode={previewMode}
-        />
+                buttonChromeSize={buttonChromeSize}
+                previewMode={previewMode}
+              />
             </div>
+          ) : null}
+          {onClose ? (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close live card"
+              title="Close live card"
+              className={cx(
+                "absolute right-3 top-3 z-30 inline-flex size-11 cursor-pointer items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
+                isPosterFirstHeroCard(preview.invitationData)
+                  ? chromeStyles.glass
+                  : chromeStyles.darkGlass,
+              )}
+            >
+              <X className="h-5 w-5" aria-hidden="true" />
+            </button>
           ) : null}
         </LiveCardArtworkFrame>
       </div>

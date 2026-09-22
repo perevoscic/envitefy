@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { type MouseEvent, useEffect, useRef, useState } from "react";
 import { type LiveCardActiveTab } from "@/components/studio/StudioLiveCardActionSurface";
 import StudioShowcaseLiveCard from "@/components/studio/StudioShowcaseLiveCard";
@@ -574,24 +574,15 @@ export default function LandingLiveCardShowcase({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[7000] flex items-center justify-center bg-black/90 p-4 backdrop-blur-xl md:p-12"
+            className="fixed inset-0 z-[7000] flex items-center justify-center bg-black/90 p-4 backdrop-blur-xl"
             onClick={() => closeShowcaseFullscreen()}
           >
-            <button
-              type="button"
-              aria-label="Close live card"
-              onClick={() => closeShowcaseFullscreen()}
-              className="absolute right-4 top-4 z-[7010] rounded-full border border-white/20 bg-white/15 p-3 text-white transition-colors hover:bg-white/25 md:right-8 md:top-8"
-            >
-              <X className="h-6 w-6" />
-            </button>
-
             <motion.div
               initial={{ scale: 0.94, y: 24 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.94, y: 24 }}
               transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-              className="relative w-full max-w-md"
+              className="relative h-full min-h-0 w-full max-w-md"
               onPointerDownCapture={handleFullscreenPointerDown}
               onPointerMoveCapture={handleFullscreenPointerMove}
               onPointerUpCapture={clearFullscreenSwipeState}
@@ -602,7 +593,9 @@ export default function LandingLiveCardShowcase({
                 preview={showcaseCards[fullscreenShowcaseIndex].preview}
                 activeTab={fullscreenActiveTab}
                 onActiveTabChange={setFullscreenActiveTab}
-                className="rounded-[3rem] shadow-2xl shadow-black/40"
+                onClose={closeShowcaseFullscreen}
+                fitToContainer
+                className="rounded-[1.5rem]"
                 imageLoading="eager"
               />
             </motion.div>
