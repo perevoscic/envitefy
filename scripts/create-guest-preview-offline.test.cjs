@@ -42,6 +42,7 @@ const Website = require("../src/components/concierge/ConciergeEventWebsite.tsx")
 const Card = require("../src/components/studio/StudioShowcaseLiveCard.tsx").default;
 const ArtworkDialog = require("../src/components/ArtworkPreviewDialog.tsx").default;
 const SharedCard = require("../src/components/studio/SharedStudioCardPage.tsx").default;
+const { SharedStudioCardFrame } = require("../src/components/studio/SharedStudioCardPage.tsx");
 const campaign = path.join(process.cwd(), ".qa/create-campaign/2026-09-18");
 function artworkFiles(dir) {
   if (!fs.existsSync(dir)) return [];
@@ -61,7 +62,7 @@ test("artwork fits the viewport with guest actions and Share/Close overlaid on t
   if (process.env.REQUIRE_CREATE_CAMPAIGN_ARCHIVES === "1") assert.ok(artifacts.length >= 200, "full campaign verification requires all archived images");
   const before = hashes(artifacts);
   const globalSource = fs.readFileSync("src/app/globals.css", "utf8").replace('@import "tailwindcss";', '@import "tailwindcss" source(none);\n@source "../components/ArtworkPreviewDialog.tsx";\n@source "../components/concierge/ConciergeEventWebsite.tsx";\n@source "../components/studio/StudioShowcaseLiveCard.tsx";\n@source "../components/studio/StudioLiveCardActionSurface.tsx";');
-  const stylesheet = await postcss([tailwind()]).process(`${globalSource}\n@source "../components/studio/SharedStudioCardPage.tsx";`, { from: path.resolve("src/app/globals.css") });
+  const stylesheet = await postcss([tailwind()]).process(`${globalSource}\n@source "../components/studio/SharedStudioCardPage.tsx";\n@source "../components/ArtworkDownloadButton.tsx";\n@source "../components/studio/SharedCardTextLayer.tsx";`, { from: path.resolve("src/app/globals.css") });
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
   let blockedRequests = 0;
@@ -146,6 +147,41 @@ test("artwork fits the viewport with guest actions and Share/Close overlaid on t
           for (const other of result.controls.slice(index + 1)) {
             assert.ok(control.right <= other.x + 1 || other.right <= control.x + 1 || control.bottom <= other.y + 1 || other.bottom <= control.y + 1, "guest controls never overlap");
           }
+        }
+      }
+    }
+    for (const product of ["live_card", "digital_flyer"]) {
+      for (const actionsPlacement of ["auto", "above", "overlay"]) {
+        const invitationData = {
+          ...preview.invitationData,
+          title: preview.title,
+          sharedDesign: { version: 1, backgroundUrl: imageUrl, font: "classic", ink: "#522335", accent: "#876035", surface: "#fff4ec" },
+          eventDetails: { ...preview.invitationData.eventDetails, product, registryLink: "https://example.test/registry" },
+        };
+        const sharedHtml = renderToStaticMarkup(React.createElement(SharedStudioCardFrame, {
+          title: preview.title, imageUrl, invitationData, actionsPlacement, fitToViewport: true,
+          shareUrl: "https://example.test/card", onClose() {},
+        }));
+        for (const [width, height] of [[390, 844], [1440, 900], [844, 390]]) {
+          await page.setViewportSize({ width, height });
+          await page.setContent(`<style>${stylesheet.css}\n${css.join("\n")}</style>${sharedHtml}`);
+          const frame = page.locator("[data-shared-card-artwork]");
+          const frameBounds = await frame.boundingBox();
+          assert.ok(frameBounds && frameBounds.width > 0 && frameBounds.height > 0);
+          assert.equal(await frame.locator("img").getAttribute("src"), imageUrl);
+          assert.equal(await frame.locator("[data-shared-card-text]").count(), 1);
+          const controls = page.locator("[data-live-card-trigger]");
+          assert.equal(await controls.count(), product === "live_card" ? 5 : 0);
+          assert.equal(await frame.locator("[data-live-card-trigger]").count(), await controls.count(), "shared controls always render inside artwork, including legacy above placement");
+          for (const control of await controls.all()) {
+            const bounds = await control.boundingBox();
+            assert.ok(bounds && bounds.x >= frameBounds.x && bounds.y >= frameBounds.y && bounds.x + bounds.width <= frameBounds.x + frameBounds.width + 1 && bounds.y + bounds.height <= frameBounds.y + frameBounds.height + 1, "shared guest controls stay within the artwork");
+          }
+          const download = page.getByRole("button", { name: "Download invitation", exact: true });
+          assert.equal(await download.count(), 1, "both formats offer the composed invitation download");
+          const downloadBounds = await download.boundingBox();
+          assert.ok(downloadBounds && downloadBounds.y >= frameBounds.y + frameBounds.height - 1 && downloadBounds.y + downloadBounds.height <= height, "invitation download stays below artwork and within the viewport");
+          if (product === "digital_flyer") assert.equal(await frame.getByRole("button", { name: "Share invitation", exact: true }).count(), 1);
         }
       }
     }
