@@ -319,7 +319,7 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
 
   assert.match(landingExperience, /<HeroTopNav/);
   assert.match(landingExperience, /primaryCtaLabel="Let's create"/);
-  assert.match(landingExperience, /authenticatedPrimaryHref="\/chat"/);
+  assert.match(landingExperience, /authenticatedPrimaryHref="\/"/);
   assert.match(heroTopNav, /transparent-dark/);
   assert.match(heroTopNav, /isTransparentDark/);
   assert.match(heroTopNav, /hasScrolledPastHero/);
@@ -349,7 +349,7 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   assert.match(landingExperience, /onModeChange=\{setAuthMode\}/);
   assert.match(
     landingExperience,
-    /successRedirectUrl=\{authMode === "signup" \? "\/chat" : "\/"\}/,
+    /<AuthModal[\s\S]*successRedirectUrl="\/"/,
   );
   assert.match(landingExperience, /successRedirectUrl="\/"/);
   assert.doesNotMatch(landingExperience, /allowSignupSwitch=\{false\}/);
@@ -531,7 +531,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   );
   assert.match(
     signedOutPageChrome,
-    /const primaryCreateHref = signupIntent === "football" \? "\/football\/templates" : templateCategory\s*\? `\/\$\{templateCategory\.slug\}\/templates`\s*: createAction\?\.href \|\| "\/chat"/,
+    /const primaryCreateHref = signupIntent === "football" \? "\/football\/templates" : templateCategory\s*\? `\/\$\{templateCategory\.slug\}\/templates`\s*: createAction\?\.href \|\| "\/"/,
   );
   assert.match(
     signedOutPageChrome,
@@ -539,7 +539,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   );
   assert.match(
     signedOutPageChrome,
-    /const signupSuccessRedirectUrl = createAction\?\.href \|\| "\/chat"/,
+    /const signupSuccessRedirectUrl = createAction\?\.href \|\| "\/"/,
   );
   assert.match(signedOutPageChrome, /marketingPageNavLinks\(pathname \|\| ""\)/);
   assert.match(signedOutPageChrome, /navLinks=\{pageNavLinks\}/);
@@ -637,7 +637,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(landingExperience, /onMenuClick=\{\(\) => setMobileMenuOpen\(true\)\}/);
   assert.match(landingExperience, /<MenuBottomSheet/);
   assert.match(landingExperience, /<MenuBottomSheet[\s\S]*successRedirectUrl="\/"/);
-  assert.match(landingExperience, /<MenuBottomSheet[\s\S]*signupSuccessRedirectUrl="\/chat"/);
+  assert.match(landingExperience, /<MenuBottomSheet[\s\S]*signupSuccessRedirectUrl="\/"/);
   assert.doesNotMatch(landingExperience, /onStartCreatingSelect/);
   assert.doesNotMatch(landingExperience, /onSignInSelect/);
   assert.match(

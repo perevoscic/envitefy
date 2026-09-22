@@ -341,6 +341,7 @@ for (const intent of ["football", "signup_forms"]) test(`Google signup preserves
   let saved;
   let notice = null;
   let existing = false;
+  const avatarEmails = [];
   const cookies = {
     envitefy_signup_source: intent,
     envitefy_signup_intent: intent,
@@ -367,10 +368,17 @@ for (const intent of ["football", "signup_forms"]) test(`Google signup preserves
         notice = params;
       },
     },
+    "@/lib/google-profile-avatar": {
+      readGoogleProfileImageUrl: () => "https://lh3.googleusercontent.com/a/test",
+      applyGoogleProfileAvatarIfEmpty: async (params) => {
+        avatarEmails.push(params.email);
+      },
+    },
   });
   const args = {
     account: { provider: "google" },
-    user: { email: "test@example.test", name: "Test Coach" },
+    user: { email: "test@example.test", name: "Test Coach", image: "https://lh3.googleusercontent.com/a/test" },
+    profile: { picture: "https://lh3.googleusercontent.com/a/test" },
   };
   const callback = auth.getAuthOptions().callbacks.signIn;
   assert.equal(await callback(args), true);
@@ -379,12 +387,14 @@ for (const intent of ["football", "signup_forms"]) test(`Google signup preserves
   assert.equal(notice.method, "google");
   assert.equal(notice.email, "test@example.test");
   assert.equal(notice.signupPath, signupPath);
+  assert.deepEqual(avatarEmails, ["test@example.test"]);
   existing = true;
   saved = null;
   notice = null;
   assert.equal(await callback(args), true);
   assert.equal(saved, null);
   assert.equal(notice, null);
+  assert.deepEqual(avatarEmails, ["test@example.test", "test@example.test"]);
 });
 
 test("Next matcher excludes public prefetches without bypassing protected routes", () => {

@@ -869,7 +869,8 @@ export default function SettingsPage() {
                 <h3 className="text-sm font-bold text-[#2f2440]">Profile image</h3>
                 <p className="mt-1 text-xs leading-5 text-[#7d7387]">
                   Upload a JPG, PNG, or WebP image. We crop it to a square and optimize it for you.
-                  Maximum file size: 5 MB.
+                  Maximum file size: 5 MB. Your Envitefy photo stays if you already have one, or if
+                  you replace the Google photo. Google is used only when you have not chosen a photo.
                 </p>
                 <input
                   ref={avatarInputRef}

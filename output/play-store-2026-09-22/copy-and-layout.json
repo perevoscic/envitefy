@@ -1,0 +1,74 @@
+[
+  {
+    "name": "01-02-create-and-share",
+    "theme": "lilac",
+    "screen": "card",
+    "tilt": -7,
+    "left": {
+      "kicker": "LIVE CARDS & INVITES",
+      "title": "Dream it.<br><em>Invite them.</em>",
+      "copy": "Create beautiful invitations<br>for your kind of celebration.",
+      "note": "A style for every occasion."
+    },
+    "right": {
+      "kicker": "ONE SHAREABLE LINK",
+      "title": "One link.<br><em>Everyone in.</em>",
+      "copy": "RSVPs, directions, calendars<br>and registries, all together.",
+      "note": "All the details. One place."
+    }
+  },
+  {
+    "name": "03-04-snap-and-calendar",
+    "theme": "blue",
+    "screen": "scan",
+    "tilt": 7,
+    "left": {
+      "kicker": "SNAP / UPLOAD",
+      "title": "Snap it.<br><em>It’s a plan.</em>",
+      "copy": "Turn invitations, flyers and PDFs<br>into events you can keep.",
+      "note": "Less typing. More living."
+    },
+    "right": {
+      "kicker": "ADD TO YOUR CALENDAR",
+      "title": "Save the date.<br><em>Skip the typing.</em>",
+      "copy": "Bring your plans to the<br>calendar you already use.",
+      "note": "Keep your next moment close."
+    }
+  },
+  {
+    "name": "05-06-sign-up-together",
+    "theme": "peach",
+    "screen": "signup",
+    "tilt": -6,
+    "left": {
+      "kicker": "SIGN-UP FORMS",
+      "title": "Less chasing.<br><em>More helping.</em>",
+      "copy": "Organize volunteers, potlucks<br>and time slots with one form.",
+      "note": "Make a little room for everyone."
+    },
+    "right": {
+      "kicker": "EASY FOR EVERY GUEST",
+      "title": "Pick a slot.<br><em>You’re in.</em>",
+      "copy": "Guests choose how to help<br>right from your shared link.",
+      "note": "No guest account needed."
+    }
+  },
+  {
+    "name": "07-08-every-event-together",
+    "theme": "mint",
+    "screen": "dashboard",
+    "tilt": 6,
+    "left": {
+      "kicker": "YOUR EVENT DASHBOARD",
+      "title": "All your plans.<br><em>One happy place.</em>",
+      "copy": "Keep events you host and<br>invitations you receive together.",
+      "note": "From everyday plans to big days."
+    },
+    "right": {
+      "kicker": "LIFE, A LITTLE MORE TOGETHER",
+      "title": "Less organizing.<br><em>More enjoying.</em>",
+      "copy": "Find your next event,<br>then get back to being there.",
+      "note": "Create. Share. Enjoy."
+    }
+  }
+]

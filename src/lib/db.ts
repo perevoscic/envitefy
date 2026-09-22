@@ -1079,6 +1079,7 @@ async function ensureUsersHasAvatarUrlColumn(): Promise<void> {
   await ensureOnce("users_avatar_url_column", async () => {
     await query(`
       alter table users add column if not exists avatar_url text;
+      alter table users add column if not exists avatar_user_set boolean not null default false;
     `);
   });
 }
@@ -1562,12 +1563,44 @@ export async function updateUserAvatarByEmail(params: {
   }
   const res = await query<AppUserRow>(
     `update users
-     set avatar_url = $2
+     set avatar_url = $2,
+         avatar_user_set = true
      where email = $1
      returning ${USER_SELECT_COLUMNS}`,
     [lower, params.avatarUrl],
   );
   return res.rows[0];
+}
+
+export async function findUserAwaitingGoogleAvatar(email: string): Promise<{ id: string } | null> {
+  await ensureUsersHasAvatarUrlColumn();
+  const res = await query<{ id: string }>(
+    `select id
+     from users
+     where email = $1
+       and avatar_url is null
+       and coalesce(avatar_user_set, false) = false
+     limit 1`,
+    [email.trim().toLowerCase()],
+  );
+  return res.rows[0] || null;
+}
+
+export async function saveGoogleProfileAvatarIfUnset(params: {
+  email: string;
+  avatarUrl: string;
+}): Promise<boolean> {
+  await ensureUsersHasAvatarUrlColumn();
+  const res = await query<{ id: string }>(
+    `update users
+     set avatar_url = $2
+     where email = $1
+       and avatar_url is null
+       and coalesce(avatar_user_set, false) = false
+     returning id`,
+    [params.email.trim().toLowerCase(), params.avatarUrl],
+  );
+  return Boolean(res.rows[0]);
 }
 
 export async function updatePreferredProviderByEmail(params: {

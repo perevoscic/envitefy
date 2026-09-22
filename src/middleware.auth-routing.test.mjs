@@ -18,7 +18,7 @@ test("login form supports redirect targets passed by the caller", () => {
   assert.match(loginForm, /window\.location\.replace\(successRedirectUrl\)/);
   assert.match(loginForm, /signIn\("google", \{ callbackUrl: successRedirectUrl \}\)/);
   assert.match(authModal, /<LoginForm[\s\S]*successRedirectUrl=\{successRedirectUrl\}/s);
-  assert.match(conciergePage, /successRedirectUrl="\/chat"/);
+  assert.match(conciergePage, /successRedirectUrl="\/"/);
 });
 
 test("middleware leaves category landings and galleries public for signed-in visitors", () => {

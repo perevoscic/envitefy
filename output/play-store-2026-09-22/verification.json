@@ -1,0 +1,81 @@
+{
+  "capturedFrom": "Production components with fictional sample event data, local rendering only.",
+  "exports": [
+    {
+      "file": "upload/01-dream-it-invite-them.png",
+      "width": 1080,
+      "height": 1920,
+      "format": "png",
+      "channels": 3,
+      "hasAlpha": false,
+      "bytes": 1548761
+    },
+    {
+      "file": "upload/02-one-link-everyone-in.png",
+      "width": 1080,
+      "height": 1920,
+      "format": "png",
+      "channels": 3,
+      "hasAlpha": false,
+      "bytes": 1021403
+    },
+    {
+      "file": "upload/03-snap-it-its-a-plan.png",
+      "width": 1080,
+      "height": 1920,
+      "format": "png",
+      "channels": 3,
+      "hasAlpha": false,
+      "bytes": 946222
+    },
+    {
+      "file": "upload/04-save-the-date.png",
+      "width": 1080,
+      "height": 1920,
+      "format": "png",
+      "channels": 3,
+      "hasAlpha": false,
+      "bytes": 606814
+    },
+    {
+      "file": "upload/05-less-chasing-more-helping.png",
+      "width": 1080,
+      "height": 1920,
+      "format": "png",
+      "channels": 3,
+      "hasAlpha": false,
+      "bytes": 809532
+    },
+    {
+      "file": "upload/06-pick-a-slot.png",
+      "width": 1080,
+      "height": 1920,
+      "format": "png",
+      "channels": 3,
+      "hasAlpha": false,
+      "bytes": 434629
+    },
+    {
+      "file": "upload/07-all-your-plans.png",
+      "width": 1080,
+      "height": 1920,
+      "format": "png",
+      "channels": 3,
+      "hasAlpha": false,
+      "bytes": 747927
+    },
+    {
+      "file": "upload/08-more-enjoying.png",
+      "width": 1080,
+      "height": 1920,
+      "format": "png",
+      "channels": 3,
+      "hasAlpha": false,
+      "bytes": 621745
+    }
+  ],
+  "pairedPhoneSeams": "Each pair comes from a single 2160 x 1920 canvas, sliced at x=1080.",
+  "requirementsSource": "https://support.google.com/googleplay/android-developer/answer/9866151?hl=en",
+  "generatedRasterArtwork": false,
+  "webpProofs": "Encoded by FFmpeg libwebp quality 85 compression 6; PNGs retained only as Google Play upload deliverables."
+}

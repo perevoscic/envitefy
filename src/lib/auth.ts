@@ -15,6 +15,7 @@ import {
   type PrimarySignupSource,
   type ProductScope,
 } from "@/lib/product-scopes";
+import { applyGoogleProfileAvatarIfEmpty, readGoogleProfileImageUrl } from "@/lib/google-profile-avatar";
 import { notifyNewAccountSignup } from "@/lib/new-account-notification";
 import { normalizeSignupIntent, normalizeSignupPath, type SignupIntent, type SignupSource } from "@/lib/signup-intent";
 import {
@@ -246,7 +247,14 @@ export function getAuthOptions(): NextAuthOptions {
             }
 
             const existingUser = await getUserByEmail(user.email);
+            const googleProfileImageUrl = readGoogleProfileImageUrl(profile, {
+              image: typeof user.image === "string" ? user.image : null,
+            });
             if (existingUser) {
+              await applyGoogleProfileAvatarIfEmpty({
+                email: user.email,
+                imageUrl: googleProfileImageUrl,
+              });
               return true;
             }
 
@@ -279,6 +287,10 @@ export function getAuthOptions(): NextAuthOptions {
               signupIntent: signupIntent || signupSource,
               signupPath,
               legalAcceptance,
+            });
+            await applyGoogleProfileAvatarIfEmpty({
+              email: user.email,
+              imageUrl: googleProfileImageUrl,
             });
             await notifyNewAccountSignup({
               email: user.email,

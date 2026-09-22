@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- Ensure column exists if table pre-existed without it
 ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_provider varchar(32);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url text;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_user_set boolean NOT NULL DEFAULT false;
 -- Studio workspace library (JSON); also ensured at runtime via db.ensureOnce
 ALTER TABLE users ADD COLUMN IF NOT EXISTS studio_library jsonb;
 -- Remove legacy scans_remaining column if present

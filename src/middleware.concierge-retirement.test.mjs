@@ -28,7 +28,7 @@ new Function("require", "module", "exports", outputText)(
 );
 const { middleware } = module.exports;
 
-test("every retired V2 page redirects to chat for signed-in and signed-out visitors", async () => {
+test("every retired V2 page redirects to the main page for signed-in and signed-out visitors", async () => {
   for (const cookie of ["", "next-auth.session-token=test-session"]) {
     for (const path of [
       "/concierge-v2", "/concierge-v2/", "/concierge-v2?session=old-session",
@@ -37,13 +37,40 @@ test("every retired V2 page redirects to chat for signed-in and signed-out visit
     ]) {
       const response = await middleware(new NextRequest(`https://envitefy.test${path}`, { headers: { cookie } }));
       assert.equal(response.status, 308, path);
-      assert.equal(response.headers.get("location"), "https://envitefy.test/chat", path);
+      assert.equal(response.headers.get("location"), "https://envitefy.test/", path);
     }
   }
 });
 
-test("current chat, published cards, and current Concierge APIs do not enter the retirement redirect", async () => {
-  for (const path of ["/chat", "/card/birthday", "/api/creation/intake", "/api/concierge/message", "/api/concierge/events/event-id/message", "/concierge-v20"]) {
+test("new chat visits redirect to the main page without forwarding stale query parameters", async () => {
+  for (const cookie of ["", "next-auth.session-token=test-session"]) {
+    for (const path of ["/chat", "/chat/", "/chat?auth=signup", "/chat?thread=", "/chat?thread=%20", "/chat?scanStatus=success&redirect=/chat"]) {
+      const response = await middleware(new NextRequest(`https://envitefy.test${path}`, {
+        headers: { cookie },
+      }));
+      assert.equal(response.status, 302, path);
+      assert.equal(response.headers.get("location"), "https://envitefy.test/", path);
+    }
+  }
+});
+
+test("the main page stays on the dashboard when signed in and shows the landing when signed out", async () => {
+  for (const cookie of ["", "next-auth.session-token=test-session"]) {
+    const response = await middleware(new NextRequest("https://envitefy.test/", { headers: { cookie } }));
+    assert.equal(response.headers.get("location"), null);
+    assert.equal(response.headers.get("x-middleware-next"), cookie ? "1" : null);
+    assert.equal(response.headers.get("x-middleware-rewrite"), cookie ? null : "https://envitefy.test/landing");
+  }
+});
+
+test("saved chat links still require authentication", async () => {
+  const response = await middleware(new NextRequest("https://envitefy.test/chat?thread=saved-thread"));
+  assert.equal(response.status, 302);
+  assert.equal(new URL(response.headers.get("location")).pathname, "/");
+});
+
+test("saved chats, published cards, and current Concierge APIs do not enter the retirement redirect", async () => {
+  for (const path of ["/chat?thread=saved-thread", "/chat/?thread=saved-thread&scanStatus=success", "/card/birthday", "/api/creation/intake", "/api/concierge/message", "/api/concierge/events/event-id/message", "/concierge-v20"]) {
     const response = await middleware(new NextRequest(`https://envitefy.test${path}`, {
       headers: { cookie: "next-auth.session-token=test-session" },
     }));
