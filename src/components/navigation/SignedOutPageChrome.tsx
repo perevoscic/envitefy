@@ -46,9 +46,9 @@ export default function SignedOutPageChrome({
   const templateCategory = templateCategoryForPath(pathname || "");
   const primaryCreateHref = signupIntent === "football" ? "/football/templates" : templateCategory
     ? `/${templateCategory.slug}/templates`
-    : createAction?.href || "/chat";
+    : createAction?.href || "/";
   const loginSuccessRedirectUrl = createAction?.href || "/";
-  const signupSuccessRedirectUrl = createAction?.href || "/chat";
+  const signupSuccessRedirectUrl = createAction?.href || "/";
   const successRedirectUrl =
     authMode === "signup" ? signupSuccessRedirectUrl : loginSuccessRedirectUrl;
   const templateLink = pageNavLinks.find((link) => link.label === "Templates");

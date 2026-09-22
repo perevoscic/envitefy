@@ -278,10 +278,15 @@ export async function middleware(req: NextRequest) {
     return redirectWithMarker(url, 308);
   }
 
+  // New visits start at the dashboard; keep explicit saved conversation links working.
+  if (normalizedPathname === "/chat" && !req.nextUrl.searchParams.get("thread")?.trim()) {
+    return redirectWithMarker(new URL("/", req.nextUrl.origin));
+  }
+
   // All V2 screens are retired; discard old session IDs and invitation tokens.
   // Keep this page-only prefix: /api/concierge/.../message serves the current creator.
   if (normalizedPathname === "/concierge-v2" || normalizedPathname.startsWith("/concierge-v2/")) {
-    const url = new URL("/chat", req.nextUrl.origin);
+    const url = new URL("/", req.nextUrl.origin);
     return redirectWithMarker(url, 308);
   }
 

@@ -814,7 +814,7 @@ export default function LandingExperience() {
             navLinks={[...landingHeroNavLinks]}
             mobileNavLinks={[...signedOutMobileMenuLinks]}
             primaryCtaLabel="Let's create"
-            authenticatedPrimaryHref="/chat"
+            authenticatedPrimaryHref="/"
             brandHref="/"
             variant="transparent-dark"
             loginSuccessRedirectUrl="/"
@@ -859,7 +859,7 @@ export default function LandingExperience() {
         open={mobileMenuOpen}
         onOpenChange={setMobileMenuOpen}
         successRedirectUrl="/"
-        signupSuccessRedirectUrl="/chat"
+        signupSuccessRedirectUrl="/"
       />
       <ConciergeSheet
         open={assistantOpen}
@@ -872,7 +872,7 @@ export default function LandingExperience() {
         mode={authMode}
         onClose={() => setAuthModalOpen(false)}
         onModeChange={setAuthMode}
-        successRedirectUrl={authMode === "signup" ? "/chat" : "/"}
+        successRedirectUrl="/"
       />
     </>
   );

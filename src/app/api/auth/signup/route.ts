@@ -5,6 +5,7 @@ import {
   readCookieValue,
   verifyLegalAcceptanceToken,
 } from "@/lib/legal-acceptance";
+import { notifyNewAccountSignup } from "@/lib/new-account-notification";
 import { normalizeSignupIntent, normalizeSignupPath, type SignupIntent, type SignupSource } from "@/lib/signup-intent";
 
 function getSignupSourceFromCookieHeader(
@@ -149,6 +150,7 @@ export async function POST(req: Request) {
 
     const effectiveSignupIntent = cookieSignupIntent ?? requestedSignupIntent ?? cookieSignupSource ?? requestedSignupSource ?? "snap";
     const effectiveSignupSource = effectiveSignupIntent;
+    const signupPath = normalizeSignupPath(readCookieValue(req.headers.get("cookie"), "envitefy_signup_path"));
 
     await createUserWithEmailPassword({
       email,
@@ -157,8 +159,16 @@ export async function POST(req: Request) {
       lastName,
       signupSource: effectiveSignupSource,
       signupIntent: effectiveSignupIntent,
-      signupPath: normalizeSignupPath(readCookieValue(req.headers.get("cookie"), "envitefy_signup_path")),
+      signupPath,
       legalAcceptance,
+    });
+    await notifyNewAccountSignup({
+      email,
+      firstName,
+      lastName,
+      method: "email",
+      signupSource: effectiveSignupSource,
+      signupPath,
     });
     const response = NextResponse.json({ ok: true });
     response.cookies.set("envitefy_signup_source", "", {

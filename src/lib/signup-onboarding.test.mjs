@@ -255,12 +255,18 @@ test("signup-source primes category cookies for Google and generic forms and rej
 for (const intent of ["football", "signup_forms"]) test(`email signup forwards ${intent} and original path into account creation`, async () => {
   const signupPath = intent === "signup_forms" ? "/signup-forms" : "/football";
   let saved;
+  let notice;
   const { POST } = load("src/app/api/auth/signup/route.ts", {
     "next/server": responseMock(),
     "@/lib/legal-acceptance": legalMock,
     "@/lib/db": {
       createUserWithEmailPassword: async (params) => {
         saved = params;
+      },
+    },
+    "@/lib/new-account-notification": {
+      notifyNewAccountSignup: async (params) => {
+        notice = params;
       },
     },
   });
@@ -283,6 +289,10 @@ for (const intent of ["football", "signup_forms"]) test(`email signup forwards $
   assert.equal(saved.signupSource, intent);
   assert.equal(saved.signupIntent, intent);
   assert.equal(saved.signupPath, signupPath);
+  assert.equal(notice.email, "test@example.test");
+  assert.equal(notice.method, "email");
+  assert.equal(notice.signupSource, intent);
+  assert.equal(notice.signupPath, signupPath);
   assert.equal(res.cookies.get("envitefy_signup_path").value, "");
 });
 
@@ -329,6 +339,7 @@ test("middleware records visits, but ignores prefetches and signed-in browsing",
 for (const intent of ["football", "signup_forms"]) test(`Google signup preserves ${intent} defaults, while existing accounts remain unchanged`, async () => {
   const signupPath = intent === "signup_forms" ? "/signup-forms" : "/football";
   let saved;
+  let notice = null;
   let existing = false;
   const cookies = {
     envitefy_signup_source: intent,
@@ -351,6 +362,11 @@ for (const intent of ["football", "signup_forms"]) test(`Google signup preserves
         saved = params;
       },
     },
+    "@/lib/new-account-notification": {
+      notifyNewAccountSignup: async (params) => {
+        notice = params;
+      },
+    },
   });
   const args = {
     account: { provider: "google" },
@@ -360,10 +376,15 @@ for (const intent of ["football", "signup_forms"]) test(`Google signup preserves
   assert.equal(await callback(args), true);
   assert.equal(saved.signupIntent, intent);
   assert.equal(saved.signupPath, signupPath);
+  assert.equal(notice.method, "google");
+  assert.equal(notice.email, "test@example.test");
+  assert.equal(notice.signupPath, signupPath);
   existing = true;
   saved = null;
+  notice = null;
   assert.equal(await callback(args), true);
   assert.equal(saved, null);
+  assert.equal(notice, null);
 });
 
 test("Next matcher excludes public prefetches without bypassing protected routes", () => {

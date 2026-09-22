@@ -109,7 +109,7 @@ function StartButton({ authenticated, onStart }: { authenticated: boolean; onSta
     </>
   );
   return authenticated ? (
-    <Link href="/chat" className={primaryButton}>
+    <Link href="/" className={primaryButton}>
       {content}
     </Link>
   ) : (
@@ -135,8 +135,8 @@ export default function CreateLandingPage() {
         navLinks={navigation}
         mobileNavLinks={[{ label: "Home", href: "/" }, ...navigation]}
         primaryCtaLabel="Create with Envitefy"
-        authenticatedPrimaryHref="/chat"
-        loginSuccessRedirectUrl="/chat"
+        authenticatedPrimaryHref="/"
+        loginSuccessRedirectUrl="/"
         onGuestLoginAction={() => openAuth("login")}
         onGuestPrimaryAction={() => openAuth("signup")}
       />
@@ -364,7 +364,7 @@ export default function CreateLandingPage() {
         mode={authMode}
         onClose={() => setAuthOpen(false)}
         onModeChange={setAuthMode}
-        successRedirectUrl="/chat"
+        successRedirectUrl="/"
       />
     </div>
   );

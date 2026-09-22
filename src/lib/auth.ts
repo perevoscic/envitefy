@@ -15,6 +15,7 @@ import {
   type PrimarySignupSource,
   type ProductScope,
 } from "@/lib/product-scopes";
+import { notifyNewAccountSignup } from "@/lib/new-account-notification";
 import { normalizeSignupIntent, normalizeSignupPath, type SignupIntent, type SignupSource } from "@/lib/signup-intent";
 import {
   LEGAL_ACCEPTANCE_COOKIE_NAME,
@@ -267,6 +268,7 @@ export function getAuthOptions(): NextAuthOptions {
 
             const firstName = (profile as any)?.given_name || user.name?.split(" ")[0] || null;
             const lastName = (profile as any)?.family_name || user.name?.split(" ").slice(1).join(" ") || null;
+            const signupPath = normalizeSignupPath((await cookies()).get("envitefy_signup_path")?.value);
 
             await createOrUpdateOAuthUser({
               email: user.email,
@@ -275,8 +277,16 @@ export function getAuthOptions(): NextAuthOptions {
               provider: "google",
               signupSource: signupIntent || signupSource,
               signupIntent: signupIntent || signupSource,
-              signupPath: normalizeSignupPath((await cookies()).get("envitefy_signup_path")?.value),
+              signupPath,
               legalAcceptance,
+            });
+            await notifyNewAccountSignup({
+              email: user.email,
+              firstName,
+              lastName,
+              method: "google",
+              signupSource: signupIntent || signupSource,
+              signupPath,
             });
 
             return true;
