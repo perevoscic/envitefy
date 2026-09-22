@@ -88,17 +88,17 @@ test("left sidebar omits Studio and Snap Event from the always-open navigation",
   assert.doesNotMatch(source, /Snap Event/);
 });
 
-test("left sidebar exposes signed-in Envitefy Create entry", () => {
+test("left sidebar uses Live Card / Invite while preserving existing chat access", () => {
   const source = readSource("src/app/left-sidebar.tsx");
   const controllerSource = readSource("src/app/left-sidebar.controller.ts");
   const modelSource = readSource("src/app/left-sidebar.model.ts");
 
-  assert.match(source, /label: "Envitefy Create",[\s\S]*?onClick: onAiThreads/s);
-  assert.match(source, /public\/brand\/concierge-chat\.webp/);
+  assert.doesNotMatch(source, /label: "Envitefy Create"/);
+  assert.doesNotMatch(source, /onAiThreads|ConciergeLogoIcon/);
   assert.doesNotMatch(source, /Create with AI/);
   assert.match(
     source,
-    /const isChatActive = \(pathname === "\/chat" \|\| sidebarPage === "aiThreads"\) && !isSnapUploadActive;/,
+    /label: "Snap \/ Upload"[\s\S]*?<SidebarLink link=\{\{ label: "Live Card \/ Invite",[\s\S]*?onClick: onLiveCard, active: pathname === "\/livacards-invites"/,
   );
   assert.match(source, /function AiThreadsPanel/);
   assert.match(

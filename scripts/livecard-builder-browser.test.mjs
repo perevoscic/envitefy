@@ -6,16 +6,37 @@ import http from "node:http";
 import { execSync } from "node:child_process";
 import { chromium } from "playwright";
 
-test("Live Card builder: concurrent editing, explicit saves, failure recovery, guest toggles, resume, mobile and landscape", {
+test("Live Card / Invite: AI intake, location, explicit saves, dashboard handoff, format switching and responsive preview", {
   timeout: 120000,
 }, async () => {
   execSync("bun scripts/build-livecard-builder-fixture.mjs", { timeout: 60000, stdio: "pipe" });
   const out = path.resolve(".qa/livecard-builder");
+  const uploads = new Map();
   const server = http.createServer(async (req, res) => {
     const pathname = new URL(req.url, "http://localhost").pathname;
+    if (pathname.startsWith("/event/")) {
+      res.setHeader("Content-Type", "text/html");
+      res.end("<!doctype html><html lang='en'><title>Owner dashboard</title><h1>Owner dashboard</h1></html>");
+      return;
+    }
     if (pathname === "/artwork.webp") {
+      if (process.env.LIVECARD_QA_BACKGROUND) {
+        res.setHeader("Content-Type", "image/webp");
+        res.end(await fs.readFile(process.env.LIVECARD_QA_BACKGROUND));
+        return;
+      }
+      res.setHeader("Content-Type", "image/svg+xml");
+      res.end('<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1500"><rect width="1000" height="1500" fill="#fff4ec"/><path d="M0 0H130V1500H0ZM870 0H1000V1500H870Z" fill="#e9b5c8"/><circle cx="80" cy="90" r="40" fill="#c99750"/><circle cx="920" cy="1410" r="40" fill="#c99750"/></svg>');
+      return;
+    }
+    if (uploads.has(pathname)) {
       res.setHeader("Content-Type", "image/webp");
-      res.end(await fs.readFile("public/studio/birthday.webp"));
+      res.end(uploads.get(pathname));
+      return;
+    }
+    if (/^\/fonts\/birthday\/[a-z]+\.ttf$/.test(pathname)) {
+      res.setHeader("Content-Type", "font/ttf");
+      res.end(await fs.readFile(path.join("public", pathname)));
       return;
     }
     if (["/entry.js", "/entry.css", "/global.css"].includes(pathname)) {
@@ -36,9 +57,18 @@ test("Live Card builder: concurrent editing, explicit saves, failure recovery, g
   page.on("pageerror", (error) => runtimeErrors.push(error.message));
   const saves = [];
   const generations = [];
+  await page.addInitScript(() => {
+    window.__cardDraws = [];
+    const original = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (text, ...rest) {
+      window.__cardDraws.push(text);
+      return original.call(this, text, ...rest);
+    };
+  });
   let stored;
   let failSave = false;
   let failGeneration = false;
+  let failProofread = false;
   let releaseGeneration;
   let generationStarted;
   const started = new Promise((resolve) => {
@@ -51,7 +81,23 @@ test("Live Card builder: concurrent editing, explicit saves, failure recovery, g
     const request = route.request();
     if (!request.url().startsWith(origin)) return route.abort();
     const url = new URL(request.url());
-    if (url.pathname === "/api/studio/generate") {
+    if (url.pathname === "/api/livecard-builder/assist") {
+      const { form, message, mode } = request.postDataJSON();
+      if (mode === "overview") return route.fulfill(failProofread ? { status: 503, json: { error: "Proofreading unavailable" } } : { json: { form: { ...form, overview: form.overview.replace("freinds", "friends") }, questions: [] } });
+      assert.match(message, /AMC Grand Boulevard in Miramar Beach/);
+      return route.fulfill({ json: { form: {
+        ...form, title: "Livia's Movie Night", eventType: "Birthday", design: "Pink movie night with popcorn and stars",
+        date: "2026-09-26", startTime: "16:00", timezone: "America/Los_Angeles",
+        locations: [{ ...form.locations[0], venue: "AMC Grand Boulevard", address: "", city: "Miramar Beach", query: "AMC Grand Boulevard in Miramar Beach", resolution: "unresolved" }],
+      }, questions: [] } });
+    }
+    if (url.pathname === "/api/livecard-builder/location") {
+      const body = request.postDataJSON();
+      assert.equal(body.query, "AMC Grand Boulevard in Miramar Beach", "location is read from the original description");
+      const place = { placeId: "amc", venue: "AMC Boulevard 10", address: "465 Grand Boulevard, Miramar Beach, FL", city: "Miramar Beach", latitude: 30.3, longitude: -86.3 };
+      return route.fulfill({ json: body.placeId ? { location: { ...place, id: body.id, label: "", time: "", note: "", timezone: "America/Chicago", resolution: "verified" } } : { candidates: [place], location: null, message: "Choose the matching venue below." } });
+    }
+    if (url.pathname === "/api/livecard-builder/design") {
       generations.push(request.postDataJSON());
       generationStarted();
       await gate;
@@ -70,22 +116,15 @@ test("Live Card builder: concurrent editing, explicit saves, failure recovery, g
             },
           },
         });
-      return route.fulfill({
-        contentType: "application/x-ndjson",
-        body: `${JSON.stringify({
-          type: "complete",
-          result: {
-            ok: true,
-            mode: "both",
-            product: "live_card",
-            imageUrl: `${origin}/artwork.webp`,
-            artworkTextMode: "headline",
-            warnings: [],
-            liveCard: null,
-            invitation: null,
-          },
-        })}\n`,
-      });
+      return route.fulfill({ json: { design: { version: 1, backgroundUrl: `${origin}/artwork.webp`, font: "classic", ink: "#542235", accent: "#875226", surface: "#fff4ec" } } });
+    }
+    if (url.pathname === "/api/upload") {
+      const multipart = await new Response(request.postDataBuffer(), { headers: { "content-type": request.headers()["content-type"] } }).formData();
+      const file = multipart.get("file");
+      assert.ok(file && file.type === "image/webp", "composites are WebP");
+      const assetPath = `/composed-${uploads.size}.webp`;
+      uploads.set(assetPath, Buffer.from(await file.arrayBuffer()));
+      return route.fulfill({ json: { ok: true, stored: { display: { url: `${origin}${assetPath}` } }, eventMedia: { thumbnail: `${origin}${assetPath}` } } });
     }
     if (url.pathname.startsWith("/api/history")) {
       if (request.method() === "GET")
@@ -109,11 +148,13 @@ test("Live Card builder: concurrent editing, explicit saves, failure recovery, g
   };
   try {
     await page.goto(`${origin}/livacards-invites`);
-    await page.getByLabel("Event title or name").fill("Livia's Movie Night");
-    await page.getByLabel("Event type", { exact: true }).selectOption("Birthday");
-    await page
-      .getByLabel("How would you like your card to look?")
-      .fill("Pink movie night with popcorn and stars");
+    assert.equal(await page.getByRole("button", { name: "Live Card", exact: true }).getAttribute("aria-pressed"), "true");
+    await page.getByLabel("Tell us about your event").fill("Livia's birthday at AMC Grand Boulevard in Miramar Beach on September 26, 2026 at 4 PM. Pink movie theme.");
+    await page.getByRole("button", { name: "Help me create", exact: true }).click();
+    await page.getByRole("region", { name: "Suggested event details" }).waitFor();
+    assert.equal(saves.length, 0, "AI suggestions remain in memory");
+    await page.getByRole("button", { name: "Use suggestions", exact: true }).click();
+    assert.equal(await page.getByLabel("Event title or name").inputValue(), "Livia's Movie Night");
     await page.screenshot({ path: path.join(out, "desktop-design.png"), fullPage: true });
     assert.equal(saves.length, 0, "typing never saves a draft");
     await page.getByRole("button", { name: "Create design & continue" }).click();
@@ -123,23 +164,25 @@ test("Live Card builder: concurrent editing, explicit saves, failure recovery, g
     await page.getByRole("tab", { name: "Overview", exact: true }).focus();
     await page.keyboard.press("ArrowRight");
     assert.equal(
-      await page.getByRole("tab", { name: "When", exact: true }).getAttribute("aria-selected"),
+      await page.getByRole("tab", { name: "When & Where", exact: true }).getAttribute("aria-selected"),
       "true",
     );
     await page.getByLabel("Event date", { exact: true }).fill("2026-10-04");
     await page.getByLabel("Start time", { exact: true }).fill("18:00");
-    await page.getByLabel("Timezone").selectOption("America/Chicago");
-    await openSection("Where");
-    await page.getByLabel("Venue name (optional)", { exact: true }).fill("Cinema");
-    await page.getByLabel("Address or meeting link", { exact: true }).fill("123 Main St, Chicago");
+    await page.getByRole("button", { name: /AMC Boulevard 10.*465 Grand Boulevard/ }).click();
+    assert.equal(await page.getByLabel("Local time zone", { exact: true }).count(), 0, "verified locations need no timezone selector");
+    await page.getByText("465 Grand Boulevard, Miramar Beach, FL", { exact: true }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "Change location", exact: true }).count(), 1);
     await page.getByRole("button", { name: "Add another location" }).click();
     await page.getByLabel("What happens here?").fill("Dinner");
+    await page.getByRole("button", { name: "Enter address manually", exact: true }).click();
     await page.getByLabel("Address or meeting link", { exact: true }).fill("456 Lake St, Chicago");
     assert.equal(
       await page.getByLabel("Address or meeting link", { exact: true }).count(),
       1,
       "only the active location expands",
     );
+    await page.getByRole("button", { name: "Confirm location & local time", exact: true }).click();
     await openSection("RSVP");
     await page.getByRole("switch", { name: /Collect RSVPs/ }).click();
     await page.getByLabel("Host name", { exact: true }).fill("Mia");
@@ -160,9 +203,9 @@ test("Live Card builder: concurrent editing, explicit saves, failure recovery, g
       await page.getByLabel("About your event").inputValue(),
       "A movie and dinner with friends.",
     );
-    await openSection("Where");
+    await openSection("When & Where");
     assert.equal(
-      await page.getByLabel("Address or meeting link", { exact: true }).inputValue(),
+      await page.getByText("456 Lake St, Chicago", { exact: true }).last().textContent(),
       "456 Lake St, Chicago",
     );
     assert.equal(
@@ -193,21 +236,30 @@ test("Live Card builder: concurrent editing, explicit saves, failure recovery, g
       await page.getByLabel("Registry or gift-list link").inputValue(),
       "https://example.com/gifts",
     );
-    await page.getByRole("button", { name: "Preview & share", exact: false }).click();
+    await openSection("Overview");
+    await page.getByLabel("About your event").fill("A movie and dinner with freinds.");
+    const savedBeforeProofreading = saves.length;
+    await page.getByRole("button", { name: "3 Review", exact: true }).click();
+    await page.getByRole("region", { name: "Review Overview wording", exact: true }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "Publish & go to dashboard", exact: true }).isDisabled(), true);
+    assert.equal(saves.length, savedBeforeProofreading, "proofreading never saves or publishes");
+    await page.getByRole("button", { name: "Use reviewed wording", exact: true }).click();
+    assert.equal(await page.getByLabel("Live card share link").count(), 0);
+    await page.screenshot({ path: path.join(out, "desktop-review.png"), fullPage: true });
     failSave = true;
-    await page.getByRole("button", { name: "Publish & share", exact: true }).click();
+    await page.getByRole("button", { name: "Publish & go to dashboard", exact: true }).click();
     await page.getByText("Test save failed. Please retry.").waitFor();
     assert.equal(stored.data.status, "draft");
     failSave = false;
-    await page.getByRole("button", { name: "Publish & share", exact: true }).click();
-    await page.getByLabel("Live card share link").waitFor();
+    await page.getByRole("button", { name: "Publish & go to dashboard", exact: true }).click();
+    await page.getByRole("heading", { name: "Owner dashboard", exact: true }).waitFor();
+    assert.equal(new URL(page.url()).searchParams.get("tab"), "dashboard");
     assert.equal(stored.data.description, "A movie and dinner with friends.");
     assert.equal(stored.data.startISO, "2026-10-04T23:00:00.000Z");
     assert.equal(stored.data.additionalLocations[0].label, "Dinner");
     assert.equal(stored.data.studioCard.invitationData.eventDetails.actionVisibility.rsvp, true);
     assert.equal(generations.length, 1, "editing guest details and publishing reuse the artwork");
-    await page.screenshot({ path: path.join(out, "desktop-review.png"), fullPage: true });
-    await page.reload();
+    await page.goto(`${origin}/livacards-invites?edit=${stored.id}`);
     await page.getByLabel("About your event").waitFor();
     assert.equal(
       await page.getByLabel("About your event").inputValue(),
@@ -220,24 +272,53 @@ test("Live Card builder: concurrent editing, explicit saves, failure recovery, g
     );
     await page.getByLabel("About your event").fill("Updated welcome");
     await page.getByRole("button", { name: "Save changes", exact: true }).click();
-    await page.getByText("Your live card is updated.", { exact: true }).waitFor();
+    await page.getByText("Your invitation is updated.", { exact: true }).waitFor();
     assert.equal(stored.data.description, "Updated welcome");
     assert.equal(generations.length, 1);
-    await page.getByRole("button", { name: "Your design" }).click();
+    await page.getByRole("button", { name: "1 Describe", exact: true }).click();
     await page.getByLabel("Event title or name").fill("Updated title");
-    await page.getByRole("button", { name: "Preview & share", exact: false }).click();
+    await page.getByRole("button", { name: "3 Review", exact: true }).click();
     assert.equal(
-      await page.getByRole("button", { name: "Save changes", exact: true }).last().isDisabled(),
-      true,
-      "a stale artwork title cannot be published",
+      await page.getByRole("button", { name: "Save & go to dashboard", exact: true }).isDisabled(),
+      false,
+      "editable headlines do not invalidate the background",
     );
-    await page.getByRole("button", { name: "Your design" }).click();
+    assert.equal(generations.length, 1);
+    await page.getByRole("button", { name: "1 Describe", exact: true }).click();
+    await page.getByLabel("How would you like your card to look?").fill("Pink curtains with gold stars");
     failGeneration = true;
-    await page.getByRole("button", { name: "Update design & continue" }).click();
+    await page.getByRole("button", { name: "Create updated design & continue" }).click();
     await page.getByRole("button", { name: "Retry design", exact: true }).waitFor();
     assert.equal(await page.getByLabel("About your event").inputValue(), "Updated welcome");
     failGeneration = false;
     await page.getByRole("button", { name: "Retry design", exact: true }).click();
+    await page.getByText("Your design is ready.", { exact: true }).waitFor();
+    // Both formats share one background. Text changes and format switching never generate artwork.
+    const generationCount = generations.length;
+    await page.getByRole("button", { name: "Invite", exact: true }).click();
+    assert.equal(await page.getByLabel("About your event").inputValue(), "Updated welcome");
+    await page.getByText("Your design is ready.", { exact: true }).waitFor();
+    assert.equal(generations.length, generationCount);
+    await openSection("When & Where");
+    await page.getByLabel("Start time", { exact: true }).fill("19:30");
+    await openSection("Overview");
+    assert.equal(generations.length, generationCount);
+    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    for (const name of ["RSVP", "Overview", "Location", "Calendar", "Registry"]) {
+      assert.equal(await dialog.getByRole("button", { name, exact: true }).count(), 0, `classic invite has no ${name} action`);
+    }
+    await page.screenshot({ path: path.join(out, "classic-invite-preview.png") });
+    await page.getByRole("button", { name: "Close preview", exact: true }).click();
+    const downloadEvent = page.waitForEvent("download");
+    await page.evaluate(() => { window.__cardDraws = []; });
+    await page.getByRole("button", { name: "Download invitation", exact: true }).click();
+    const download = await downloadEvent;
+    await download.saveAs(path.join(out, "invitation-download.webp"));
+    const printedText = await page.evaluate(() => window.__cardDraws.join("\n"));
+    assert.match(printedText, /7:30 PM/, "download uses the corrected event time");
+    assert.doesNotMatch(printedText, /6:00 PM|4:00 PM/, "download never reuses stale time text");
+    assert.equal(generations.length, generationCount, "downloading only composes existing artwork and current text");
+    await page.getByRole("button", { name: "Live Card", exact: true }).click();
     await page.getByText("Your design is ready.", { exact: true }).waitFor();
     for (const viewport of [
       { width: 390, height: 844 },
@@ -246,12 +327,12 @@ test("Live Card builder: concurrent editing, explicit saves, failure recovery, g
     ]) {
       await page.setViewportSize(viewport);
       await page.emulateMedia({ reducedMotion: "reduce" });
-      for (const name of ["Overview", "When", "Where", "RSVP", "Registry"]) {
+      for (const name of ["Overview", "When & Where", "RSVP", "Registry"]) {
         await openSection(name);
         assert.equal(await page.getByRole("tabpanel").count(), 1);
         const panel = await page.getByRole("tabpanel").boundingBox();
         assert.ok(
-          panel.height < 780,
+          panel.height < 1050,
           `${name} remains a compact section at ${viewport.width}px: ${panel.height}`,
         );
         assert.equal(
@@ -275,6 +356,7 @@ test("Live Card builder: concurrent editing, explicit saves, failure recovery, g
       await page.getByRole("button", { name: "Preview", exact: true }).click();
       const bounds = await dialog.locator("[data-live-card-artwork]").boundingBox();
       assert.ok(bounds && bounds.width > 100 && bounds.height > 100);
+      assert.ok(Math.abs(bounds.width / bounds.height - 2 / 3) < 0.01, "shared artwork and text maintain their proportions");
       assert.ok(
         bounds.x >= 0 &&
           bounds.y >= 0 &&
@@ -282,12 +364,30 @@ test("Live Card builder: concurrent editing, explicit saves, failure recovery, g
           bounds.y + bounds.height <= viewport.height + 1,
         JSON.stringify(bounds),
       );
+      for (const button of await dialog.locator("[data-live-card-trigger]").all()) {
+        const buttonBounds = await button.boundingBox();
+        assert.ok(buttonBounds.y > bounds.y + bounds.height * 0.5, "buttons stay in the bottom of the card");
+        assert.ok(buttonBounds.height >= 44, "buttons have comfortable tap targets");
+        assert.ok(buttonBounds.y + buttonBounds.height <= bounds.y + bounds.height + 1, "buttons remain inside the artwork");
+      }
       await page.screenshot({ path: path.join(out, `preview-${viewport.width}.png`) });
       await page.getByRole("button", { name: "Close preview", exact: true }).click();
     }
     await page.locator("#leave").click();
     await page.getByRole("button", { name: "Keep editing", exact: true }).click();
     assert.equal(await page.getByLabel("About your event").inputValue(), "Updated welcome");
+    failProofread = true;
+    await page.getByLabel("About your event").fill("A movie and dinner with freinds.");
+    await page.getByRole("button", { name: "Check grammar & spelling", exact: true }).click();
+    await page.getByRole("region", { name: "Review Overview wording", exact: true }).waitFor();
+    assert.equal(await page.getByLabel("About your event").inputValue(), "A movie and dinner with freinds.");
+    await page.getByRole("button", { name: "Keep editing", exact: true }).click();
+    failProofread = false;
+    await page.getByRole("button", { name: "Check grammar & spelling", exact: true }).click();
+    await page.getByRole("button", { name: "Use reviewed wording", exact: true }).waitFor();
+    await page.getByLabel("About your event").fill("My latest Overview.");
+    await page.getByRole("button", { name: "Use reviewed wording", exact: true }).click();
+    assert.equal(await page.getByLabel("About your event").inputValue(), "My latest Overview.", "a late suggestion never replaces a newer manual edit");
     assert.deepEqual(runtimeErrors, []);
     await fs.writeFile(
       path.join(out, "results.json"),
@@ -297,6 +397,13 @@ test("Live Card builder: concurrent editing, explicit saves, failure recovery, g
           saveRequests: saves.length,
           runtimeErrors,
           verified: [
+            "Overview proofreading before review and publication",
+            "description and venue extraction",
+            "review before applying AI suggestions",
+            "location address and local timezone carried forward",
+            "classic invite has no guest action controls",
+            "format switching retains facts and artwork",
+            "publish navigates to owner dashboard",
             "concurrent edits",
             "compact tabs and keyboard navigation",
             "save during generation",

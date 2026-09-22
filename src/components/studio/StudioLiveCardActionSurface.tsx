@@ -22,7 +22,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import type { FormEvent, ReactNode } from "react";
+import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supportsStudioCategoryRsvp } from "@/app/studio/studio-workspace-field-config";
 import { useCalendarAction } from "@/components/CalendarAction";
@@ -71,6 +71,7 @@ export type LiveCardButtonPosition = {
 export type LiveCardButtonPositions = Partial<Record<LiveCardButtonKey, LiveCardButtonPosition>>;
 
 export type LiveCardEventDetails = {
+  product?: string;
   category?: string;
   eventKind?: string;
   occasion?: string;
@@ -107,6 +108,8 @@ export type LiveCardEventDetails = {
 };
 
 export type LiveCardInvitationData = {
+  sharedDesign?: import("@/lib/shared-card-design").SharedCardDesign;
+  headlineIntro?: string;
   title?: string;
   subtitle?: string;
   description?: string;
@@ -414,6 +417,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     return () => observer.disconnect();
   }, [actionsOutsideArtwork]);
   const invitationData = props.invitationData || null;
+  const sharedDesign = invitationData?.sharedDesign;
   const details = invitationData?.eventDetails || null;
   const [calendarTimeZone, setCalendarTimeZone] = useState<string | null>(null);
   useEffect(() => {
@@ -746,7 +750,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   const actionRailWrapperClassName =
     showcaseRailLayout === "cluster" ? "flex w-full justify-center px-2" : "w-full";
   const actionRailClassName =
-    actionsOutsideArtwork && buttonConfigs.length > 5
+    sharedDesign ? styles.sharedRail : actionsOutsideArtwork && buttonConfigs.length > 5
       ? "grid w-full grid-cols-3 gap-2"
       : showcaseRailLayout === "cluster"
       ? "grid w-fit max-w-full grid-flow-col auto-cols-max items-stretch justify-center gap-1.5 sm:gap-2"
@@ -817,7 +821,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
           <ShareActionIcon className={shareActionIconClassName} />
         </button>
       ) : null}
-      {openHouseAgentCard && posterFirstHeroCard && !actionsOutsideArtwork ? (
+      {openHouseAgentCard && posterFirstHeroCard && !actionsOutsideArtwork && !sharedDesign ? (
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[32%] bg-gradient-to-t from-black/62 via-black/30 to-transparent"
@@ -1296,18 +1300,19 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
         >
           <div
             className={actionRailWrapperClassName}
+            style={sharedDesign ? { "--shared-card-ink": sharedDesign.ink, "--shared-card-surface": sharedDesign.surface, "--shared-card-accent": sharedDesign.accent } as CSSProperties : undefined}
             data-live-card-rail-layout={showcaseRailLayout}
             data-live-card-action-count={buttonConfigs.length}
           >
             <div className={actionRailClassName}>
               {buttonConfigs.map((button) => {
                 const Icon = button.icon;
-                const position = actionsOutsideArtwork ? EMPTY_POSITIONS[button.key] : props.positions?.[button.key] || EMPTY_POSITIONS[button.key];
+                const position = actionsOutsideArtwork || sharedDesign ? EMPTY_POSITIONS[button.key] : props.positions?.[button.key] || EMPTY_POSITIONS[button.key];
                 const isPressed = props.activeTab === button.key;
                 return (
                   <motion.div
                     key={button.key}
-                    drag={!actionsOutsideArtwork && Boolean(props.onDragEnd) && props.isDesignMode}
+                    drag={!sharedDesign && !actionsOutsideArtwork && Boolean(props.onDragEnd) && props.isDesignMode}
                     dragMomentum={false}
                     onDragEnd={(_, info: PanInfo) =>
                       props.onDragEnd?.(button.key, {

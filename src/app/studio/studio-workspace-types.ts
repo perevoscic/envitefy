@@ -163,6 +163,8 @@ export type ButtonPosition = {
 };
 
 export type InvitationData = {
+  sharedDesign?: import("@/lib/shared-card-design").SharedCardDesign;
+  headlineIntro?: string;
   diagnostics?: import("@/lib/studio/types").StudioGenerationDiagnostics;
   artworkContract?: import("@/lib/studio/artwork-copy").ApprovedArtworkContract;
   artworkTextMode?: import("@/lib/concierge/artwork-change").ArtworkTextMode;

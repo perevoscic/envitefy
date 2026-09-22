@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { Share2, X } from "lucide-react";
 import Link from "next/link";
 import { type CSSProperties, type ReactNode, useCallback, useState } from "react";
 import ArtworkDownloadButton from "@/components/ArtworkDownloadButton";
@@ -8,6 +8,7 @@ import viewportStyles from "@/components/ArtworkPreviewDialog.module.css";
 import EventCelebrationOverlay from "@/components/EventCelebrationOverlay";
 import LiveCardArtworkFrame from "@/components/studio/LiveCardArtworkFrame";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
+import SharedCardTextLayer from "@/components/studio/SharedCardTextLayer";
 import StudioLiveCardActionSurface, {
   isPosterFirstHeroCard,
   type LiveCardActiveTab,
@@ -50,12 +51,15 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
   const [activeTab, setActiveTab] = useState<LiveCardActiveTab>("none");
   const [shareState, setShareState] = useState<"idle" | "pending" | "success">("idle");
   const invitationData = props.invitationData || null;
+  const sharedDesign = invitationData?.sharedDesign;
+  const isClassicInvite = invitationData?.eventDetails?.product === "digital_flyer";
   const previewMode = Boolean(props.previewMode || props.embeddedPreview);
   const usesPosterArtFrame = invitationData?.heroTextMode === "image";
-  const artworkRatio = useArtworkAspectRatio(props.imageUrl, usesPosterArtFrame ? 2 / 3 : 9 / 16);
-  const placeActionsAbove = props.actionsPlacement === "above";
-  const placeActionsOverlay = props.actionsPlacement === "overlay";
-  const useOutsideActions = !placeActionsOverlay && (usesPosterArtFrame || placeActionsAbove);
+  const measuredRatio = useArtworkAspectRatio(props.imageUrl, usesPosterArtFrame ? 2 / 3 : 9 / 16);
+  const artworkRatio = sharedDesign ? 2 / 3 : measuredRatio;
+  const placeActionsAbove = !sharedDesign && props.actionsPlacement === "above";
+  const placeActionsOverlay = Boolean(sharedDesign) || props.actionsPlacement === "overlay";
+  const useOutsideActions = !isClassicInvite && !placeActionsOverlay && (usesPosterArtFrame || placeActionsAbove);
   const fitToContainer = Boolean(props.fitToContainer);
   const cardFrameWidth = usesPosterArtFrame
     ? "min(calc(100vw - 2rem), calc((100dvh - 13rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) * 2 / 3))"
@@ -133,20 +137,21 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
 
   const artwork = (
     <LiveCardArtworkFrame
-      imageUrl={props.imageUrl}
+      sharedDesign={Boolean(sharedDesign)}
+      imageUrl={sharedDesign?.backgroundUrl || props.imageUrl}
       aspectRatio={artworkRatio}
       className={`${usesPosterArtFrame ? "aspect-[2/3] rounded-[1.5rem]" : "aspect-[9/16] rounded-[inherit]"} ${
         fitToContainer ? styles.fittedArtwork : ""
       } ${props.artworkClassName || ""}`}
     >
       <img
-        src={props.imageUrl}
-        alt={props.title}
+        src={sharedDesign?.backgroundUrl || props.imageUrl}
+        alt={sharedDesign ? "" : props.title}
         className="absolute inset-0 h-full w-full object-contain object-center"
         referrerPolicy="no-referrer"
       />
-      <LiveCardHeroTextOverlay invitationData={invitationData} />
-      {placeActionsOverlay || (!usesPosterArtFrame && !placeActionsAbove) ? (
+      {sharedDesign && invitationData ? <SharedCardTextLayer source={invitationData} /> : <LiveCardHeroTextOverlay invitationData={invitationData} />}
+      {!isClassicInvite && (placeActionsOverlay || (!usesPosterArtFrame && !placeActionsAbove)) ? (
         <StudioLiveCardActionSurface
           placement="overlay"
           title={props.title}
@@ -163,6 +168,7 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
         />
       ) : null}
       {props.topRightAction}
+      {isClassicInvite && props.shareUrl && <button type="button" aria-label="Share invitation" onClick={() => void handleShare()} className={`absolute left-3 top-3 z-30 inline-flex size-11 items-center justify-center rounded-full ${chromeStyles.glass}`}><Share2 size={18} aria-hidden="true" /></button>}
       {!useOutsideActions ? closeAction : null}
     </LiveCardArtworkFrame>
   );
@@ -170,7 +176,14 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
   return (
     <div
       className={`${props.fitToViewport ? viewportStyles.viewportFrame : ""} ${props.className || ""}`}
-      style={{ "--artwork-preview-ratio": artworkRatio, ...props.style } as CSSProperties}
+      style={{
+        "--artwork-preview-ratio": artworkRatio,
+        ...((isClassicInvite || sharedDesign) && props.fitToViewport ? {
+          "--artwork-preview-max-art-height": "calc(var(--artwork-preview-available-height) * 0.9 - 3.5rem)",
+          height: "calc(var(--artwork-preview-height) + 3.5rem)",
+        } : {}),
+        ...props.style,
+      } as CSSProperties}
     >
       <div
         className={`relative mx-auto ${
@@ -196,8 +209,8 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
           artwork
         )}
         {!placeActionsAbove ? outsideActions : null}
-        {usesPosterArtFrame && !placeActionsOverlay ? (
-          <ArtworkDownloadButton imageUrl={props.imageUrl} title={props.title} className="mt-2" />
+        {usesPosterArtFrame && (!placeActionsOverlay || isClassicInvite || sharedDesign) ? (
+          <ArtworkDownloadButton imageUrl={props.imageUrl} title={props.title} invitationData={sharedDesign && invitationData ? { ...invitationData, eventDetails: { ...invitationData.eventDetails, rsvpUrl: props.shareUrl || invitationData.eventDetails?.rsvpUrl } } : invitationData} className="mt-2" />
         ) : null}
         {useOutsideActions ? closeAction : null}
       </div>

@@ -158,7 +158,7 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
   assert.match(sharedPageSource, /const placeActionsOverlay = props\.actionsPlacement === "overlay"/);
   assert.match(
     sharedPageSource,
-    /const useOutsideActions = !placeActionsOverlay && \(usesPosterArtFrame \|\| placeActionsAbove\)/,
+    /const useOutsideActions = !isClassicInvite && !placeActionsOverlay && \(usesPosterArtFrame \|\| placeActionsAbove\)/,
   );
   assert.match(
     sharedPageSource,
@@ -229,7 +229,7 @@ test("poster guest controls overlay artwork while creator attribution stays outs
     /max-md:min-h-\[min\(14svh,4rem\)\] min-h-\[min\(8svh,2\.4rem\)\] md:min-h-\[min\(6svh,2rem\)\]/,
   );
   assert.match(sharedPageSource, /Created by Envitefy Create/);
-  assert.match(sharedPageSource, /usesPosterArtFrame && !placeActionsOverlay/);
+  assert.match(sharedPageSource, /usesPosterArtFrame && \(!placeActionsOverlay \|\| isClassicInvite\)/);
   assert.match(sharedPageSource, /sharePosition="left"/);
   assert.match(
     sharedPageSource,

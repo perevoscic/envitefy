@@ -15,6 +15,7 @@ import {
   readLiveCardForm,
   type LiveCardForm,
 } from "@/lib/livecard-builder";
+import { readSharedCardDesign } from "@/lib/shared-card-design";
 
 export function restoreLiveCardForm(value: unknown, data: Record<string, unknown>) {
   const form = readLiveCardForm(value);
@@ -43,7 +44,7 @@ export function liveCardDetails(form: LiveCardForm): EventDetails {
   const primary = form.locations[0];
   return {
     ...createInitialDetails(),
-    product: "live_card",
+    product: form.format,
     category: categories[form.eventType] || "Custom Invite",
     eventKind: form.eventType.toLowerCase().replaceAll(" ", "_"),
     eventTitle: form.title.trim(),
@@ -78,7 +79,9 @@ export function liveCardDetails(form: LiveCardForm): EventDetails {
     registryLink: form.registryEnabled ? liveCardRegistryUrl(form.registryUrl) || "" : "",
     giftNote: form.registryEnabled ? form.giftNote : "",
     specialInstructions:
-      "Live Card artwork must show only the exact event title. Keep all dates, times, locations, overview, RSVP and registry information in interactive guest buttons. Do not paint buttons, labels, placeholder text, or any other wording on the artwork.",
+      form.format === "live_card"
+        ? "Live Card artwork must show only the exact event title. Keep all dates, times, locations, overview, RSVP and registry information in interactive guest buttons. Do not paint buttons, labels, placeholder text, or any other wording on the artwork."
+        : "Create a complete classic invitation with the approved title, invitation wording, date, local start and end time, venue and full address. Include supplied RSVP contacts, reply deadline and registry only when enabled. Keep all lettering readable and comfortably inset. Do not draw buttons, phone frames or interfaces. Do not invent event facts.",
   };
 }
 
@@ -92,6 +95,8 @@ export function liveCardInvitation(
   return {
     ...data,
     title: form.title.trim(),
+    headlineIntro: form.headlineIntro,
+    sharedDesign: readSharedCardDesign(previous?.sharedDesign),
     subtitle: "",
     description: [form.overview, form.instructions].filter(Boolean).join("\n\n"),
     socialCaption: form.overview,
@@ -115,7 +120,7 @@ export function liveCardHistoryPayload(
   const base = buildStudioPublishPayload(
     {
       id: "livecard-builder",
-      type: "page",
+      type: form.format === "digital_flyer" ? "image" : "page",
       status: "ready",
       theme: form.design,
       details: invitationData.eventDetails,
@@ -130,6 +135,9 @@ export function liveCardHistoryPayload(
     title: form.title.trim() || "Untitled Live Card",
     data: {
       ...base.data,
+      primaryOutput: form.format,
+      productType: form.format,
+      publicRenderer: form.format,
       title: form.title.trim() || "Untitled Live Card",
       description: invitationData.description,
       createdVia: LIVE_CARD_BUILDER_SOURCE,
@@ -146,8 +154,8 @@ export function liveCardHistoryPayload(
       address: form.locations[0]?.address || "",
       venue: form.locations[0]?.venue || "",
       additionalLocations: invitationData.eventDetails.additionalLocations,
-      rsvpEnabled: form.rsvpEnabled,
-      rsvpMode: form.rsvpEnabled ? "envitefy" : "none",
+      rsvpEnabled: form.format === "live_card" && form.rsvpEnabled,
+      rsvpMode: form.rsvpEnabled ? (form.format === "live_card" ? "envitefy" : "external") : "none",
       rsvp: form.rsvpEnabled ? base.data.rsvp || "RSVP online" : "",
       rsvpName: form.rsvpEnabled ? form.hostName : "",
       rsvpEmail: form.rsvpEnabled ? form.hostEmail : "",
@@ -157,7 +165,7 @@ export function liveCardHistoryPayload(
       rsvpDeadline: form.rsvpEnabled ? form.rsvpDeadline : "",
       registries: base.data.registries || [],
       registryLink: invitationData.eventDetails.registryLink,
-      liveCardBuilder: { version: 1, form, designKey: artwork?.designKey || "" },
+      liveCardBuilder: { version: invitationData.sharedDesign ? 3 : 2, form, designKey: artwork?.designKey || "" },
     },
   };
 }

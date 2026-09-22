@@ -80,6 +80,16 @@ test("owner card previews keep RSVP choices local, while the public card still s
     await page.getByText("Thank you for RSVP-ing.", { exact: true }).waitFor();
     assert.equal(writes.length, 1);
     assert.equal(writes[0].response, "yes");
+    for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
+      await page.setViewportSize(viewport);
+      await page.goto(`${base}/?product=invite&published=1`);
+      for (const name of ["RSVP", "Overview", "Location", "Calendar", "Registry"]) assert.equal(await page.getByRole("button", { name, exact: true }).count(), 0);
+      await page.getByRole("button", { name: "Share invitation", exact: true }).waitFor();
+      const download = page.getByRole("button", { name: "Download artwork", exact: true });
+      await download.waitFor();
+      const bounds = await download.boundingBox();
+      assert.ok(bounds && bounds.y + bounds.height <= viewport.height, "classic invite download stays within the viewport");
+    }
     assert.deepEqual(errors, []);
     assert.deepEqual(unexpected, []);
   } catch (error) {

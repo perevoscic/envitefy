@@ -59,7 +59,6 @@ import {
   useState,
 } from "react";
 import { useEventCache } from "@/app/event-cache-context";
-import conciergeMenuIcon from "../../public/brand/concierge-chat.webp";
 import sidebarBrandIcon from "../../public/brand/e-only.png";
 import sidebarBrandWordmark from "../../public/brand/envitefy-wordmark.png";
 import { adminNavItems, type AdminNavItemId } from "@/components/admin/nav";
@@ -182,22 +181,6 @@ function SidebarFootballMenuIcon({
         .join(" ")}
       style={SIDEBAR_FB_MASK_STYLE(size)}
       aria-hidden
-    />
-  );
-}
-
-function ConciergeLogoIcon({ size = 17, isActive = true }: { size?: number; isActive?: boolean }) {
-  return (
-    <Image
-      src={conciergeMenuIcon}
-      alt=""
-      width={size}
-      height={size}
-      aria-hidden="true"
-      className={`block shrink-0 object-contain transition-opacity ${
-        isActive ? "opacity-100" : "opacity-55 group-hover:opacity-80"
-      }`}
-      draggable={false}
     />
   );
 }
@@ -466,7 +449,6 @@ function RootNavigationPanel({
   onHome,
   onSnapUpload,
   onLiveCard,
-  onAiThreads,
   onCreate,
   onMyEvents,
   onSchedules,
@@ -490,7 +472,6 @@ function RootNavigationPanel({
   onHome: () => void;
   onSnapUpload: () => void;
   onLiveCard: () => void;
-  onAiThreads: () => void;
   onCreate: () => void;
   onMyEvents: () => void;
   onSchedules: () => void;
@@ -499,7 +480,6 @@ function RootNavigationPanel({
   onAdmin: () => void;
 }) {
   const isHomeActive = pathname === "/" && sidebarPage === "root";
-  const isChatActive = (pathname === "/chat" || sidebarPage === "aiThreads") && !isSnapUploadActive;
   const isViewingEventFromListInRoot =
     sidebarPage === "root" &&
     !isCreateEntryActive &&
@@ -525,8 +505,7 @@ function RootNavigationPanel({
       <div className="space-y-1.5">
         <SidebarLink link={{ label: "Home", href: "/", icon: <Home />, onClick: onHome, active: isHomeActive }} />
         <SidebarLink link={{ label: "Snap / Upload", icon: <Upload />, onClick: onSnapUpload, active: isSnapUploadActive }} />
-        {isAdmin && <SidebarLink link={{ label: "Live Card / Invite", icon: <Mail />, onClick: onLiveCard, active: pathname === "/livacards-invites" }} />}
-        <SidebarLink link={{ label: "Envitefy Create", icon: <ConciergeLogoIcon size={20} isActive={isChatActive} />, onClick: onAiThreads, active: isChatActive }} />
+        <SidebarLink link={{ label: "Live Card / Invite", icon: <Mail aria-hidden="true" />, onClick: onLiveCard, active: pathname === "/livacards-invites" }} />
         {hasCreateEventAccess ? (
           <SidebarLink link={{ label: createEntryLabel, icon: <Plus />, onClick: onCreate, active: isCreateEntryActive }} />
         ) : null}
@@ -1599,7 +1578,6 @@ export default function LeftSidebar() {
                       onHome={viewModel.goHomeFromSidebar}
                       onSnapUpload={viewModel.handleRootSnapNavigate}
                       onLiveCard={viewModel.handleRootLiveCardNavigate}
-                      onAiThreads={viewModel.openAiThreadsPage}
                       onCreate={viewModel.openCreateEventPage}
                       onMyEvents={viewModel.openMyEventsPage}
                       onSchedules={viewModel.openSchedulesPage}

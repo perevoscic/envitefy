@@ -433,6 +433,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const savedData = isRecord(existing.data) ? existing.data : {};
+    const savedCard = isRecord(savedData.studioCard) ? savedData.studioCard : {};
+    const savedInvitation = isRecord(savedCard.invitationData) ? savedCard.invitationData : {};
+    if (savedInvitation.sharedDesign) {
+      return NextResponse.json({ error: "Open Edit card & invitation to update this shared design.", editHref: `/livacards-invites?edit=${encodeURIComponent(id)}` }, { status: 409 });
+    }
+
     const body = await req.json().catch(() => null);
     const fields = isRecord(body) && isRecord(body.fields) ? body.fields : {};
     if (Object.hasOwn(fields, "registryLink")) {

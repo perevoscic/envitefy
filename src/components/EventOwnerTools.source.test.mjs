@@ -142,9 +142,9 @@ test("owner workspace exposes Dashboard RSVPs Messages and Design tabs", () => {
   assert.doesNotMatch(source, /Event settings/);
   assert.match(
     source,
-    /const activeOwnerTab: EventContextTab =\s*rsvpEnabled \|\| initialTab === "design" \? initialTab : "design";/,
+    /const activeOwnerTab: EventContextTab =\s*rsvpEnabled \|\| initialTab === "design" \|\| \(isGuidedCard && initialTab === "dashboard"\) \? initialTab : "design";/,
   );
-  assert.match(source, /OWNER_WORKSPACE_TABS\.filter\(\(tab\) => tab\.key === "design"\)/);
+  assert.match(source, /OWNER_WORKSPACE_TABS\.filter\(\(tab\) => tab\.key === "design" \|\| \(isGuidedCard && tab\.key === "dashboard"\)\)/);
   assert.match(source, /<OwnerWorkspaceTabs/);
   assert.match(source, /activeTab=\{activeOwnerTab\}/);
   assert.match(source, /tabs=\{ownerWorkspaceTabs\}/);

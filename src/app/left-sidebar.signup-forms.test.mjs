@@ -24,7 +24,7 @@ test("Sign-up Forms appears for published forms, forms-focused accounts and admi
     let createOpened = false;
     const links = [];
     const bindings = {
-      Home: icon, Upload: icon, ConciergeLogoIcon: icon, Plus: icon,
+      Home: icon, Upload: icon, Mail: icon, Plus: icon,
       SidebarMyEventsMenuIcon: icon, Trophy: icon, ClipboardList: icon,
       FileEdit: icon, ShieldCheck: icon,
       SidebarLink: ({ link }) => {
@@ -41,6 +41,8 @@ test("Sign-up Forms appears for published forms, forms-focused accounts and admi
       onCreate: () => { createOpened = true; },
     }));
     const formsLink = links.find((link) => link.label === "Sign-up Forms");
+    assert.equal(links.some((link) => link.label === "Live Card / Invite"), true, scenario.name);
+    assert.equal(links.some((link) => link.label === "Envitefy Create"), false, scenario.name);
     assert.equal(Boolean(formsLink), scenario.visible, scenario.name);
     if (formsLink) {
       assert.equal(formsLink.active, true);

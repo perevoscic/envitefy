@@ -1,6 +1,5 @@
 import { normalizeScanSchedule, scanScheduleHistoryFields } from "@/lib/scan-schedule";
 import { cookies } from "next/headers";
-import { adminErrorResponse, requireAdminSession } from "@/lib/admin/require-admin";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
@@ -186,10 +185,6 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const claimRequested = body?.claim === true;
-  if ([body.data, existing.data].some((data) => data?.createdVia === "livecard-builder" || data?.liveCardBuilder)) {
-    try { await requireAdminSession(); }
-    catch (error) { return adminErrorResponse(error); }
-  }
   const requestedSlug = body.publicSlug === undefined ? null : validateCustomEventPublicSlug(body.publicSlug);
   if (requestedSlug?.error) return NextResponse.json({ error: requestedSlug.error }, { status: 400 });
   let claimedRow = existing;

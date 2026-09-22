@@ -11,9 +11,12 @@ createRoot(root).render(
     embeddedPreview={params.get("mode") === "embedded"}
     previewMode={params.get("mode") === "owner"}
     actionsPlacement={params.get("placement") === "above" ? "above" : "overlay"}
+    fitToViewport={params.get("product") === "invite"}
+    shareUrl={params.get("product") === "invite" ? "http://owner-preview.test/" : undefined}
     invitationData={{
       heroTextMode: "image",
       eventDetails: {
+        product: params.get("product") === "invite" ? "digital_flyer" : "live_card",
         category: "Birthday",
         rsvpName: "Host",
         rsvpContact: params.get("contact") === "email" ? "host@example.test" : "+15555550123",

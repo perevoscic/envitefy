@@ -1427,7 +1427,8 @@ export default async function EventPage({
   }
 
   const resolvedOwnerToolsTab: typeof ownerToolsTab =
-    ownerToolsTab && !ownerRsvpDashboardEnabled && ownerToolsTab !== "design"
+    ownerToolsTab && !ownerRsvpDashboardEnabled && ownerToolsTab !== "design" &&
+      !(data.createdVia === "livecard-builder" && ownerToolsTab === "dashboard")
       ? "design"
       : ownerToolsTab;
 

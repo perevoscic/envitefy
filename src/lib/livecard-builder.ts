@@ -24,9 +24,20 @@ export type LiveCardLocation = {
   address: string;
   time: string;
   note: string;
+  query?: string;
+  city?: string;
+  placeId?: string;
+  timezone?: string;
+  latitude?: number;
+  longitude?: number;
+  resolution?: "unresolved" | "verified" | "manual" | "online";
 };
 export type LiveCardForm = {
+  format: "live_card" | "digital_flyer";
+  brief: string;
+  sourceEvidence: Array<{ field: string; quote: string }>;
   title: string;
+  headlineIntro: string;
   eventType: LiveCardEventType | "";
   design: string;
   referenceUrl: string;
@@ -49,12 +60,16 @@ export type LiveCardForm = {
 };
 
 export function emptyLiveCardLocation(id = "primary"): LiveCardLocation {
-  return { id, label: "", venue: "", address: "", time: "", note: "" };
+  return { id, label: "", venue: "", address: "", time: "", note: "", resolution: "unresolved" };
 }
 
 export function createLiveCardForm(timezone = "UTC"): LiveCardForm {
   return {
+    format: "live_card",
+    brief: "",
+    sourceEvidence: [],
     title: "",
+    headlineIntro: "You're invited",
     eventType: "",
     design: "",
     referenceUrl: "",
@@ -77,8 +92,51 @@ export function createLiveCardForm(timezone = "UTC"): LiveCardForm {
   };
 }
 
+export function sharedCardDesignKey(form: LiveCardForm): string {
+  return JSON.stringify(["shared-v1", form.eventType, form.design.trim(), form.referenceUrl]);
+}
+
 export function liveCardDesignKey(form: LiveCardForm): string {
-  return JSON.stringify([form.title.trim(), form.eventType, form.design.trim(), form.referenceUrl]);
+  const base = [form.title.trim(), form.eventType, form.design.trim(), form.referenceUrl];
+  // Keep the original key for existing Live Cards; their artwork stays current on reopen.
+  return form.format === "live_card"
+    ? JSON.stringify(base)
+    : JSON.stringify([
+        ...base,
+        form.format,
+        form.overview,
+        form.instructions,
+        form.date,
+        form.startTime,
+        form.endDate,
+        form.endTime,
+        form.timezone,
+        form.locations,
+        form.rsvpEnabled,
+        ...(form.rsvpEnabled
+          ? [form.hostName, form.hostEmail, form.hostPhone, form.rsvpDeadline]
+          : []),
+        form.registryEnabled,
+        ...(form.registryEnabled ? [form.registryUrl, form.giftNote] : []),
+      ]);
+}
+
+/** Apply a reviewed AI proposal only where the host has not edited since the request. */
+export function mergeLiveCardProposal(
+  current: LiveCardForm,
+  before: LiveCardForm,
+  proposed: LiveCardForm,
+): LiveCardForm {
+  const next = { ...current };
+  for (const key of Object.keys(before) as Array<keyof LiveCardForm>) {
+    if (key === "format" || key === "referenceUrl" || key === "brief") continue;
+    if (JSON.stringify(current[key]) === JSON.stringify(before[key]))
+      Object.assign(next, { [key]: proposed[key] });
+  }
+  // A location edit made during assistance also owns its time zone.
+  if (JSON.stringify(current.locations) !== JSON.stringify(before.locations))
+    next.timezone = current.timezone;
+  return next;
 }
 
 export function liveCardDateTime(date: string, time: string, timezone: string): string | null {
@@ -133,12 +191,18 @@ export function validateLiveCard(form: LiveCardForm, phase: "design" | "publish"
     errors.locations = "Add an address or online meeting link for your event.";
   if (form.locations.slice(1).some((location) => !location.address.trim()))
     errors.locations = "Add an address for each location, or remove the unused location.";
+  if (form.locations.some((location) => location.resolution === "unresolved"))
+    errors.locations = "Confirm each venue or enter its address before publishing.";
+  if (form.locations[0]?.resolution && !form.locations[0]?.timezone)
+    errors.timezone = "Confirm the local time zone for your event location.";
   if (form.rsvpEnabled) {
     if (!form.hostName.trim()) errors.hostName = "Add the host name guests should see.";
     if (form.hostEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.hostEmail))
       errors.hostEmail = "Enter a valid email address.";
     if (form.rsvpDeadline && form.date && form.rsvpDeadline > form.date)
       errors.rsvpDeadline = "The RSVP deadline must be on or before the event date.";
+    if (form.format === "digital_flyer" && !form.hostEmail.trim() && !form.hostPhone.trim())
+      errors.hostEmail = "Add an email or phone number to print for replies.";
   }
   if (form.registryEnabled && !liveCardRegistryUrl(form.registryUrl))
     errors.registryUrl = "Add a valid registry or gift-list website link.";
@@ -157,20 +221,55 @@ export function readLiveCardForm(value: unknown): LiveCardForm | null {
   if (!source) return null;
   const form = createLiveCardForm();
   for (const key of Object.keys(form) as Array<keyof LiveCardForm>) {
-    if (key === "locations" || key === "eventType") continue;
+    if (key === "locations" || key === "eventType" || key === "format" || key === "sourceEvidence")
+      continue;
     if (key === "rsvpEnabled" || key === "registryEnabled") form[key] = source[key] === true;
     else if (typeof source[key] === "string")
       form[key] = source[key].slice(0, key === "referenceUrl" ? 4096 : 12000);
   }
   form.eventType = LIVE_CARD_EVENT_TYPES.find((type) => type === source.eventType) || "";
+  form.format = source.format === "digital_flyer" ? "digital_flyer" : "live_card";
+  if (Array.isArray(source.sourceEvidence))
+    form.sourceEvidence = source.sourceEvidence.slice(0, 60).flatMap((item) => {
+      const evidence = record(item);
+      return evidence && typeof evidence.field === "string" && typeof evidence.quote === "string"
+        ? [{ field: evidence.field.slice(0, 80), quote: evidence.quote.slice(0, 1000) }]
+        : [];
+    });
   if (Array.isArray(source.locations)) {
     form.locations = source.locations.slice(0, 10).flatMap((value, index) => {
       const location = record(value);
       if (!location) return [];
       const result = emptyLiveCardLocation(`location-${index}`);
-      for (const key of Object.keys(result) as Array<keyof LiveCardLocation>) {
+      for (const key of [
+        "id",
+        "label",
+        "venue",
+        "address",
+        "time",
+        "note",
+        "query",
+        "city",
+        "placeId",
+        "timezone",
+      ] as const) {
         if (typeof location[key] === "string") result[key] = location[key].slice(0, 2000);
       }
+      for (const key of ["latitude", "longitude"] as const) {
+        if (typeof location[key] === "number" && Number.isFinite(location[key]))
+          result[key] = location[key];
+      }
+      result.resolution =
+        location.resolution === "verified" ||
+        location.resolution === "manual" ||
+        location.resolution === "online"
+          ? location.resolution
+          : location.resolution === "unresolved"
+            ? "unresolved"
+            : result.address
+              ? "manual"
+              : "unresolved";
+      if (location.resolution === undefined && result.address) result.timezone ||= form.timezone;
       return [result];
     });
   }

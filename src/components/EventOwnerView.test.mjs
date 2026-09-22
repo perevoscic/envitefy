@@ -101,6 +101,20 @@ const render = (data, initialTab = "design") =>
     }),
   );
 
+test("guided cards without RSVP open Dashboard with URL editing and keep Design available", () => {
+  for (const product of ["live_card", "digital_flyer"]) {
+    const html = render({
+      createdVia: "livecard-builder", primaryOutput: product, publicRenderer: product, rsvpEnabled: false,
+      studioCard: { imageUrl: "/artwork.webp", invitationData: { title: "Fright Invite", heroTextMode: "image", eventDetails: { product } } },
+    }, "dashboard");
+    assert.match(html, /Your event at a glance/);
+    assert.match(html, /tab=dashboard/);
+    assert.match(html, /tab=design/);
+    assert.match(html, /Public link/);
+    assert.doesNotMatch(html, /Guest responses|tab=rsvps|tab=messages/);
+  }
+});
+
 test("event pages open directly with owner actions and responsive device controls", () => {
   for (const data of [
     { category: "sport_gymnastics", createdVia: "meet-discovery" },

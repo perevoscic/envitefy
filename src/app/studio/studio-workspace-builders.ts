@@ -1275,6 +1275,8 @@ export function refreshLiveCardInvitationData(
     callToAction,
     socialCaption: publicSocialCaption,
     creativePlan: previous?.creativePlan,
+    sharedDesign: previous?.sharedDesign,
+    headlineIntro: previous?.headlineIntro,
     artworkTextMode: previous?.artworkTextMode,
     artworkNotice: previous?.artworkNotice,
     diagnostics: previous?.diagnostics,

@@ -1,4 +1,5 @@
 import { normalizeCreativePlan, resolveStudioProduct } from "@/lib/studio/product-contract";
+import { readSharedCardDesign } from "@/lib/shared-card-design";
 import type { ApprovedArtworkContract } from "@/lib/studio/artwork-copy";
 import { readCardRegistryLink } from "@/lib/studio/card-registry";
 import { GENERATION_STAGE_LABELS, type GenerationStage, type GenerationTimings } from "@/lib/studio/generation-progress";
@@ -461,6 +462,8 @@ export function sanitizeInvitationData(
 
   return {
     title: readString(value.title) || getDisplayTitle(fallbackDetails),
+    sharedDesign: readSharedCardDesign(value.sharedDesign),
+    headlineIntro: typeof value.headlineIntro === "string" ? value.headlineIntro : undefined,
     creativePlan: normalizeCreativePlan(value.creativePlan),
     diagnostics: sanitizeGenerationDiagnostics(value.diagnostics),
     artworkContract: sanitizeArtworkContract(value.artworkContract),

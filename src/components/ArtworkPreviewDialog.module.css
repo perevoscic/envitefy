@@ -24,6 +24,14 @@
 }
 
 /* Continue the dark viewing surface through phone notches and home indicators. */
+.viewportFrame:has([data-shared-card-artwork]) {
+  --artwork-preview-width: min(
+    calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)),
+    calc(var(--artwork-preview-max-art-height) * 2 / 3)
+  );
+  --artwork-preview-height: calc(var(--artwork-preview-width) * 3 / 2);
+}
+
 :global(html):has(.viewportFrame) {
   background-color: #0a0a0a !important;
 }

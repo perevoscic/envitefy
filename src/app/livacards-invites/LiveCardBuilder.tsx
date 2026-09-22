@@ -5,12 +5,10 @@ import {
   ArrowRight,
   CalendarDays,
   Check,
-  Copy,
   Eye,
   Gift,
   ImagePlus,
   Loader2,
-  MapPin,
   Plus,
   Save,
   Sparkles,
@@ -19,8 +17,9 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { requestStudioGeneration } from "@/app/studio/studio-workspace-api";
-import { buildInvitationData } from "@/app/studio/studio-workspace-builders";
+import { readSharedCardDesign } from "@/lib/shared-card-design";
+import { composeSharedCard } from "@/lib/shared-card-canvas";
+import ArtworkDownloadButton from "@/components/ArtworkDownloadButton";
 import { sanitizeInvitationData } from "@/app/studio/studio-workspace-sanitize";
 import { useUnsavedProgress } from "@/components/UnsavedProgressProvider";
 import ArtworkPreviewDialog from "@/components/ArtworkPreviewDialog";
@@ -32,13 +31,18 @@ import {
   createLiveCardForm,
   emptyLiveCardLocation,
   liveCardDesignKey,
+  sharedCardDesignKey,
   liveCardDateTime,
   validateLiveCard,
+  readLiveCardForm,
+  mergeLiveCardProposal,
   type LiveCardErrors,
   type LiveCardForm,
 } from "@/lib/livecard-builder";
 import { GENERATION_STAGE_LABELS, type GenerationStage } from "@/lib/studio/generation-progress";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
+import { buildEventPath } from "@/utils/event-url";
+import LocationField from "./LocationField";
 import {
   liveCardDetails,
   liveCardHistoryPayload,
@@ -134,12 +138,26 @@ function Toggle({
 
 type Snapshot = { form: LiveCardForm; artwork: LiveCardArtwork | null };
 const serialize = (snapshot: Snapshot) => JSON.stringify(snapshot);
-const DETAIL_TABS = ["Overview", "When", "Where", "RSVP", "Registry"] as const;
+const DETAIL_TABS = ["Overview", "When & Where", "RSVP", "Registry"] as const;
 type DetailTab = (typeof DETAIL_TABS)[number];
 
 export default function LiveCardBuilder({ initialEventId }: { initialEventId: string | null }) {
   const [form, setForm] = useState(createLiveCardForm);
   const [artwork, setArtwork] = useState<LiveCardArtwork | null>(null);
+  const artworkByFormat = useRef<Partial<Record<LiveCardForm["format"], LiveCardArtwork | null>>>(
+    {},
+  );
+  const [described, setDescribed] = useState(Boolean(initialEventId));
+  const [assisting, setAssisting] = useState(false);
+  const [revision, setRevision] = useState("");
+  const [proposal, setProposal] = useState<{
+    kind?: "overview";
+    before: LiveCardForm;
+    form: LiveCardForm;
+    questions: string[];
+  } | null>(null);
+  const assistanceController = useRef<AbortController | null>(null);
+  const reviewedOverview = useRef("");
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [detailTab, setDetailTab] = useState<DetailTab>("Overview");
   const [activeLocationId, setActiveLocationId] = useState<string | null>(null);
@@ -152,12 +170,10 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
   const [partialImage, setPartialImage] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
   const [published, setPublished] = useState(false);
-  const [publicPath, setPublicPath] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [errors, setErrors] = useState<LiveCardErrors>({});
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [timezones, setTimezones] = useState<string[]>([]);
   const savedId = useRef(initialEventId);
   const draftId = useRef("");
   const generationController = useRef<AbortController | null>(null);
@@ -168,7 +184,9 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
   const snapshotRef = useRef<Snapshot>(snapshot);
   snapshotRef.current = snapshot;
   const dirty = ready && serialize(snapshot) !== baseline;
-  const designChanged = Boolean(artwork && artwork.designKey !== liveCardDesignKey(form));
+  const designKey = (value: LiveCardForm, image: LiveCardArtwork | null) =>
+    image?.invitationData?.sharedDesign ? sharedCardDesignKey(value) : liveCardDesignKey(value);
+  const designChanged = Boolean(artwork && artwork.designKey !== designKey(form, artwork));
 
   useEffect(() => {
     const controller = new AbortController();
@@ -177,21 +195,6 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     setLoadError("");
     draftId.current ||= crypto.randomUUID();
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-    const supportedZones =
-      typeof Intl.supportedValuesOf === "function"
-        ? Intl.supportedValuesOf("timeZone")
-        : [
-            "America/New_York",
-            "America/Chicago",
-            "America/Denver",
-            "America/Los_Angeles",
-            "Europe/London",
-            "Europe/Paris",
-            "Asia/Kolkata",
-            "Asia/Tokyo",
-            "Australia/Sydney",
-          ];
-    setTimezones([...new Set([timezone, "UTC", ...supportedZones])].sort());
     async function load() {
       let nextForm = createLiveCardForm(timezone);
       let nextArtwork: LiveCardArtwork | null = null;
@@ -219,18 +222,18 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
             designKey: typeof builder.designKey === "string" ? builder.designKey : "",
             invitationData: sanitizeInvitationData(card.invitationData, liveCardDetails(nextForm)),
           };
+        if (nextArtwork?.invitationData?.sharedDesign)
+          nextArtwork.imageUrl = nextArtwork.invitationData.sharedDesign.backgroundUrl;
         if (!active) return;
         const isPublished = data.status === "published";
         setPublished(isPublished);
-        if (isPublished)
-          setPublicPath(
-            `/card/${encodeURIComponent(typeof row.public_slug === "string" && row.public_slug ? row.public_slug : initialEventId)}`,
-          );
         setStep(nextForm.title ? 2 : 1);
       }
       if (!active) return;
       setForm(nextForm);
+      reviewedOverview.current = initialEventId ? nextForm.overview : "";
       setArtwork(nextArtwork);
+      artworkByFormat.current[nextForm.format] = nextArtwork;
       setBaseline(serialize({ form: nextForm, artwork: nextArtwork }));
       setReady(true);
     }
@@ -247,6 +250,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     () => () => {
       generationVersion.current += 1;
       generationController.current?.abort();
+      assistanceController.current?.abort();
     },
     [],
   );
@@ -255,6 +259,155 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     setForm((current) => ({ ...current, [key]: value }));
     setErrors((current) => ({ ...current, [key]: undefined }));
     setMessage("");
+  }
+
+  function switchFormat(format: LiveCardForm["format"]) {
+    if (format === form.format) return;
+    if (artwork?.invitationData?.sharedDesign || generation) {
+      change("format", format);
+      return;
+    }
+    artworkByFormat.current[form.format] = artwork;
+    generationVersion.current += 1;
+    generationController.current?.abort();
+    setGeneration(null);
+    setPartialImage(null);
+    setGenerationError("");
+    setArtwork(artworkByFormat.current[format] || null);
+    change("format", format);
+  }
+
+  async function assist(message = form.brief) {
+    if (!message.trim() && !form.referenceUrl) {
+      setError("Tell us about your event or add a reference image.");
+      return;
+    }
+    assistanceController.current?.abort();
+    const controller = new AbortController();
+    assistanceController.current = controller;
+    setAssisting(true);
+    setError("");
+    setProposal(null);
+    try {
+      const before = await persistReference(snapshotRef.current.form);
+      const response = await fetch("/api/livecard-builder/assist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({ form: before, message }),
+      });
+      const result = asRecord(await response.json());
+      const next = readLiveCardForm(result.form);
+      if (!response.ok || !next)
+        throw new Error(
+          typeof result.error === "string"
+            ? result.error
+            : "Your suggestions could not be prepared. Try again or continue manually.",
+        );
+      setProposal({
+        before,
+        form: next,
+        questions: Array.isArray(result.questions)
+          ? result.questions.filter((item): item is string => typeof item === "string")
+          : [],
+      });
+      requestAnimationFrame(() => document.getElementById("builder-proposal")?.focus());
+    } catch (failure) {
+      if (!controller.signal.aborted)
+        setError(
+          failure instanceof Error
+            ? failure.message
+            : "AI assistance is unavailable. Your details are safe.",
+        );
+    } finally {
+      if (!controller.signal.aborted) setAssisting(false);
+    }
+  }
+
+  function acceptProposal() {
+    if (!proposal) return;
+    const next = mergeLiveCardProposal(snapshotRef.current.form, proposal.before, proposal.form);
+    setForm(next);
+    if (proposal.kind === "overview" && next.overview === proposal.form.overview)
+      reviewedOverview.current = next.overview;
+    setDescribed(true);
+    setRevision("");
+    setProposal(null);
+    setMessage(
+      proposal.kind === "overview"
+        ? next.overview === proposal.form.overview
+          ? "Overview reviewed. Your event details are unchanged."
+          : "Your newer wording was kept. Check it again before publishing."
+        : "Suggestions applied. Review your details before publishing.",
+    );
+  }
+
+  function keepProposalOriginal() {
+    if (
+      proposal?.kind === "overview" &&
+      snapshotRef.current.form.overview === proposal.before.overview
+    )
+      reviewedOverview.current = proposal.before.overview;
+    setProposal(null);
+  }
+
+  async function reviewOverview(): Promise<boolean> {
+    const before = snapshotRef.current.form;
+    if (!before.overview.trim() || reviewedOverview.current === before.overview) return true;
+    if (assisting || proposal) return false;
+    const controller = new AbortController();
+    assistanceController.current?.abort();
+    assistanceController.current = controller;
+    setAssisting(true);
+    setError("");
+    setMessage("Checking Overview wording…");
+    try {
+      const response = await fetch("/api/livecard-builder/assist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({ mode: "overview", form: before }),
+      });
+      const result = asRecord(await response.json());
+      const next = readLiveCardForm(result.form);
+      if (!response.ok || !next) throw new Error("Wording check unavailable");
+      if (snapshotRef.current.form.overview !== before.overview) {
+        setMessage(
+          "You changed the Overview while it was being checked. Check the latest wording when you’re ready.",
+        );
+        return false;
+      }
+      if (next.overview === before.overview) {
+        reviewedOverview.current = before.overview;
+        setMessage("Overview checked. No wording changes suggested.");
+        return true;
+      }
+      setProposal({
+        kind: "overview",
+        before,
+        form: { ...before, overview: next.overview },
+        questions: [],
+      });
+      setMessage("");
+      requestAnimationFrame(() => document.getElementById("builder-proposal")?.focus());
+      return false;
+    } catch {
+      if (!controller.signal.aborted) {
+        setMessage("");
+        setProposal({
+          kind: "overview",
+          before,
+          form: before,
+          questions: [
+            "We couldn’t check the wording. Review your original Overview below, or keep editing and try again.",
+          ],
+        });
+        requestAnimationFrame(() => document.getElementById("builder-proposal")?.focus());
+      }
+      return false;
+    } finally {
+      if (!controller.signal.aborted) setAssisting(false);
+    }
   }
 
   async function persistReference(currentForm: LiveCardForm): Promise<LiveCardForm> {
@@ -277,14 +430,28 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     return { ...currentForm, referenceUrl };
   }
 
+  async function persistBackground(value: string): Promise<string> {
+    let pending = uploadCache.current.get(value);
+    if (!pending) {
+      pending = persistImageMediaValue({ value, fileName: "card-background.webp" }).then((url) => {
+        if (!url) throw new Error("The background could not be saved. Please retry.");
+        return url;
+      });
+      uploadCache.current.set(value, pending);
+      void pending.catch(() => uploadCache.current.delete(value));
+    }
+    return pending;
+  }
+
   async function generate() {
     const current = snapshotRef.current.form;
     const validation = validateLiveCard(current, "design");
     setErrors(validation);
     if (Object.keys(validation).length) {
-      setStep(1);
+      setStep(validation.title || validation.eventType || validation.design ? 1 : 2);
+      setDescribed(true);
       focusFirstError(validation);
-      setError("Complete the highlighted design fields.");
+      setError("Complete the highlighted fields before creating your design.");
       return;
     }
     generationController.current?.abort();
@@ -299,38 +466,22 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     try {
       const prepared = await persistReference(current);
       if (version !== generationVersion.current) return;
-      const details = liveCardDetails(prepared);
-      const response = await requestStudioGeneration(
-        details,
-        "both",
-        "page",
-        undefined,
-        undefined,
-        undefined,
-        {
-          signal: controller.signal,
-          onProgress: (progress) => {
-            if (version !== generationVersion.current) return;
-            if (progress.type === "stage") setGeneration(progress.stage);
-            else setPartialImage(progress.imageDataUrl);
-          },
-        },
-      );
-      const imageUrl = await persistImageMediaValue({
-        value: response.imageUrl || response.imageDataUrl || "",
-        fileName: "livecard-artwork.png",
+      setGeneration("generating");
+      const response = await fetch("/api/livecard-builder/design", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({ form: prepared }),
       });
-      if (!imageUrl) throw new Error("The design could not be saved. Please retry.");
+      const body = asRecord(await response.json());
+      const sharedDesign = readSharedCardDesign(body.design);
+      if (!response.ok || !sharedDesign) throw new Error(typeof body.error === "string" ? body.error : "The design could not be created. Please retry.");
       if (version !== generationVersion.current || controller.signal.aborted) return;
       // Apply artwork only. The host may have changed any event field while we waited.
       setArtwork({
-        imageUrl,
-        designKey: liveCardDesignKey(prepared),
-        invitationData: {
-          ...buildInvitationData(details, response),
-          artworkTextMode: response.artworkTextMode,
-          artworkContract: response.artworkContract,
-        },
+        imageUrl: sharedDesign.backgroundUrl,
+        designKey: sharedCardDesignKey(prepared),
+        invitationData: { sharedDesign },
       });
     } catch (failure) {
       if (version === generationVersion.current && !controller.signal.aborted)
@@ -347,20 +498,23 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     }
   }
 
-  async function save(publish = published): Promise<void> {
+  async function save(publish = published, toDashboard = false): Promise<void> {
     if (working) throw new Error("A save is already in progress.");
+    if (publish && !(await reviewOverview()))
+      throw new Error("Review your Overview wording before publishing.");
     const captured = snapshotRef.current;
     if (publish) {
       const validation = validateLiveCard(captured.form, "publish");
       setErrors(validation);
       if (Object.keys(validation).length) {
         setStep(validation.title || validation.eventType || validation.design ? 1 : 2);
+        setDescribed(true);
         focusFirstError(validation);
         throw new Error("Complete the highlighted fields before publishing.");
       }
       if (generation)
         throw new Error("Your artwork is still generating. You can save a draft while you wait.");
-      if (!captured.artwork || captured.artwork.designKey !== liveCardDesignKey(captured.form))
+      if (!captured.artwork || captured.artwork.designKey !== designKey(captured.form, captured.artwork))
         throw new Error("Generate the current design before publishing.");
     }
     setWorking(true);
@@ -368,9 +522,21 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     setMessage("");
     try {
       const prepared = await persistReference(captured.form);
+      let savedArtwork = captured.artwork;
+      if (savedArtwork?.invitationData?.sharedDesign) {
+        const backgroundUrl = await persistBackground(savedArtwork.invitationData.sharedDesign.backgroundUrl);
+        const invitationData = liveCardInvitation(prepared, {
+          ...savedArtwork.invitationData,
+          sharedDesign: { ...savedArtwork.invitationData.sharedDesign, backgroundUrl },
+        });
+        const composed = await composeSharedCard(invitationData, publish ? prepared.format : "live_card");
+        const imageUrl = await persistImageMediaValue({ value: composed, fileName: "invitation.webp" });
+        if (!imageUrl) throw new Error("The invitation could not be saved. Please retry.");
+        savedArtwork = { ...savedArtwork, imageUrl, invitationData };
+      }
       const payload = liveCardHistoryPayload(
         prepared,
-        captured.artwork,
+        savedArtwork,
         publish ? "published" : "draft",
       );
       const id = savedId.current;
@@ -405,36 +571,41 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
         "",
         `${LIVE_CARD_BUILDER_PATH}?edit=${encodeURIComponent(savedId.current)}`,
       );
-      if (publish)
-        setPublicPath(
-          `/card/${encodeURIComponent(typeof row.public_slug === "string" && row.public_slug ? row.public_slug : savedId.current)}`,
-        );
       window.dispatchEvent(new CustomEvent("history:updated", { detail: { id: savedId.current } }));
       setMessage(
         publish
           ? published
-            ? "Your live card is updated."
-            : "Your live card is published. It's ready to share."
+            ? "Your invitation is updated."
+            : "Your invitation is published. It's ready to share."
           : "Draft saved. Find it in Drafts anytime.",
       );
-      if (publish) setStep(3);
+      if (publish && toDashboard) {
+        const destination = buildEventPath(
+          savedId.current,
+          prepared.title,
+          { tab: "dashboard", published: "1" },
+          typeof row.public_slug === "string" ? row.public_slug : undefined,
+        );
+        navigation.allowNavigation(() => window.location.assign(destination));
+      }
     } finally {
       setWorking(false);
     }
   }
 
-  useUnsavedProgress({
+  const navigation = useUnsavedProgress({
     dirty,
     busy: working,
     save: () => save(),
     discard: () => {
       generationVersion.current += 1;
       generationController.current?.abort();
+      assistanceController.current?.abort();
     },
   });
 
-  function saveWithFeedback(publish: boolean) {
-    void save(publish).catch((failure: Error) => setError(failure.message));
+  function saveWithFeedback(publish: boolean, toDashboard = false) {
+    void save(publish, toDashboard).catch((failure: Error) => setError(failure.message));
   }
 
   async function selectReference(file?: File) {
@@ -465,23 +636,34 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
 
   function goToStep(next: 1 | 2 | 3) {
     setStep(next);
+    if (next === 3) void reviewOverview();
     requestAnimationFrame(() => headingRef.current?.focus());
   }
 
   function focusFirstError(validation: LiveCardErrors) {
     const key = Object.keys(validation)[0];
-    if (["date", "startTime", "endDate", "endTime", "timezone"].includes(key)) setDetailTab("When");
+    if (["date", "startTime", "endDate", "endTime", "timezone"].includes(key))
+      setDetailTab("When & Where");
     else if (["hostName", "hostEmail", "hostPhone", "rsvpDeadline"].includes(key))
       setDetailTab("RSVP");
     else if (key === "registryUrl") setDetailTab("Registry");
-    const location = snapshotRef.current.form.locations.find((item) => !item.address.trim());
-    if (key === "locations") {
-      setDetailTab("Where");
+    const location =
+      snapshotRef.current.form.locations.find(
+        (item) => !item.address.trim() || item.resolution === "unresolved" || !item.timezone,
+      ) || snapshotRef.current.form.locations[0];
+    if (key === "locations" || key === "timezone") {
+      setDetailTab("When & Where");
       setActiveLocationId(location?.id || null);
     }
     const id =
-      key === "locations" && location ? `location-${location.id}-address` : `livecard-${key}`;
-    requestAnimationFrame(() => document.getElementById(id)?.focus());
+      (key === "locations" || key === "timezone") && location
+        ? `location-${location.id}-address`
+        : `livecard-${key}`;
+    requestAnimationFrame(() => {
+      const input = document.getElementById(id);
+      if (input) input.focus();
+      else headingRef.current?.focus();
+    });
   }
 
   function selectDetailTab(next: DetailTab, focus = false) {
@@ -500,7 +682,10 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
   }
 
   function textField(
-    key: Exclude<keyof LiveCardForm, "eventType" | "locations" | "rsvpEnabled" | "registryEnabled">,
+    key: Exclude<
+      keyof LiveCardForm,
+      "eventType" | "locations" | "rsvpEnabled" | "registryEnabled" | "sourceEvidence" | "format"
+    >,
     label: string,
     options: {
       type?: string;
@@ -577,7 +762,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
           <span>
             {generation
               ? "Keep adding the details. Your design will appear here."
-              : "Start with a title and an idea. We'll bring your card to life."}
+              : "Describe your event. We'll bring your idea to life."}
           </span>
         </>
       )}
@@ -613,21 +798,45 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>LIVE CARDS & INVITES</p>
-          <h1>Create your Live Card</h1>
-          <p>A beautiful invite. All the details, one tap away.</p>
+          <h1>
+            {form.format === "live_card" ? "Create your Live Card" : "Create your invitation"}
+          </h1>
+          <p>
+            {form.format === "live_card"
+              ? "A beautiful card. All the details, one tap away."
+              : "A complete invitation, ready to download and share."}
+          </p>
         </div>
         <button
           type="button"
           className={styles.secondary}
-          disabled={working || !dirty}
+          disabled={working || assisting || Boolean(proposal) || !dirty}
           onClick={() => saveWithFeedback(published)}
         >
           <Save size={17} />
           {working ? "Saving…" : published ? "Save changes" : "Save draft"}
         </button>
       </header>
+      <div className={styles.formatToggle} role="group" aria-label="Invitation format">
+        <button
+          type="button"
+          aria-pressed={form.format === "live_card"}
+          disabled={working}
+          onClick={() => switchFormat("live_card")}
+        >
+          Live Card
+        </button>
+        <button
+          type="button"
+          aria-pressed={form.format === "digital_flyer"}
+          disabled={working}
+          onClick={() => switchFormat("digital_flyer")}
+        >
+          Invite
+        </button>
+      </div>
       <nav aria-label="Card creation steps" className={styles.steps}>
-        {(["Your design", "Event details", "Preview & share"] as const).map((label, index) => (
+        {(["Describe", "Details & design", "Review"] as const).map((label, index) => (
           <button
             key={label}
             type="button"
@@ -650,62 +859,223 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
           {message}
         </p>
       )}
+      {proposal && (
+        <section
+          id="builder-proposal"
+          tabIndex={-1}
+          className={styles.proposal}
+          aria-label={
+            proposal.kind === "overview" ? "Review Overview wording" : "Suggested event details"
+          }
+        >
+          <h2>
+            {proposal.kind === "overview" ? "A quick wording check" : "Here’s what we have in mind"}
+          </h2>
+          <dl>
+            {proposal.kind === "overview" && (
+              <div>
+                <dt>Your original Overview</dt>
+                <dd>{proposal.before.overview}</dd>
+              </div>
+            )}
+            {Object.entries({
+              title: "Title",
+              eventType: "Occasion",
+              design: "Design direction",
+              overview: "Invitation wording",
+              date: "Date",
+              startTime: "Start time",
+              endDate: "End date",
+              endTime: "End time",
+              hostName: "Host",
+              hostEmail: "Reply email",
+              hostPhone: "Reply phone",
+              rsvpDeadline: "Reply by",
+              registryUrl: "Registry",
+              giftNote: "Gift note",
+              instructions: "Guest information",
+              rsvpEnabled: "RSVP",
+              registryEnabled: "Registry enabled",
+            }).map(([key, label]) => {
+              const field = key as keyof LiveCardForm;
+              const value = proposal.form[field];
+              if (JSON.stringify(value) === JSON.stringify(proposal.before[field])) return null;
+              return (
+                <div key={key}>
+                  <dt>{label}</dt>
+                  <dd>
+                    {typeof value === "boolean"
+                      ? value
+                        ? "Included"
+                        : "Off"
+                      : String(value || "Cleared")}
+                  </dd>
+                </div>
+              );
+            })}
+            {JSON.stringify(proposal.form.locations) !==
+              JSON.stringify(proposal.before.locations) && (
+              <div>
+                <dt>Location</dt>
+                <dd>
+                  {proposal.form.locations
+                    .map((location) =>
+                      [location.venue, location.address, location.city].filter(Boolean).join(" · "),
+                    )
+                    .join("; ")}
+                </dd>
+              </div>
+            )}
+          </dl>
+          {proposal.questions.map((question) => (
+            <p key={question} className={styles.note}>
+              {question}
+            </p>
+          ))}
+          <div className={styles.searchRow}>
+            <button
+              type="button"
+              className={styles.primary}
+              onClick={
+                proposal.kind === "overview" && proposal.questions.length
+                  ? () => {
+                      setProposal(null);
+                      setStep(2);
+                      setDetailTab("Overview");
+                    }
+                  : acceptProposal
+              }
+            >
+              {proposal.kind === "overview"
+                ? proposal.questions.length
+                  ? "Keep editing"
+                  : "Use reviewed wording"
+                : "Use suggestions"}
+            </button>
+            <button type="button" className={styles.secondary} onClick={keepProposalOriginal}>
+              {proposal.kind === "overview" ? "Keep my original wording" : "Keep my details"}
+            </button>
+          </div>
+        </section>
+      )}
+      {described && (
+        <details className={styles.assistance}>
+          <summary>
+            <Sparkles size={17} /> Describe a change
+          </summary>
+          <label htmlFor="builder-revision">What would you like to change?</label>
+          <textarea
+            id="builder-revision"
+            rows={2}
+            value={revision}
+            onChange={(event) => setRevision(event.target.value)}
+            placeholder="Use the AMC in Destin instead, or make the wording warmer…"
+          />
+          <button
+            type="button"
+            className={styles.secondary}
+            disabled={assisting || !revision.trim()}
+            onClick={() => void assist(revision)}
+          >
+            {assisting ? "Preparing suggestions…" : "Suggest changes"}
+          </button>
+        </details>
+      )}
       <div className={styles.workspace}>
         <div className={styles.editor} data-step={step}>
           <form
             noValidate
             onSubmit={(event) => {
               event.preventDefault();
-              if (step === 1) void generate();
+              if (step === 1 && !described) void assist();
+              else if (step === 1 && artwork && !designChanged) goToStep(2);
+              else if (step === 1) void generate();
               else if (step === 2) advanceDetails();
-              else saveWithFeedback(true);
+              else saveWithFeedback(true, true);
             }}
           >
             <fieldset disabled={working}>
               <h2 ref={headingRef} tabIndex={-1}>
                 {step === 1
-                  ? "Let's start with the look."
+                  ? described
+                    ? "Your idea, taking shape."
+                    : "What are we celebrating?"
                   : step === 2
                     ? "Make it your event"
                     : "Ready for your guests?"}
               </h2>
               <p className={styles.intro}>
                 {step === 1
-                  ? "Only the title goes on the artwork. The details live in your card's buttons."
+                  ? described
+                    ? form.format === "live_card"
+                      ? "Your headline stays on the card. Details open from the buttons at the bottom."
+                      : "Your invitation uses the same design, with editable event details."
+                    : "Tell us the occasion, the place, the date and the look you have in mind. We’ll help with the rest."
                   : step === 2
                     ? "One section at a time. Edit any detail later."
-                    : "Try the buttons and review your details before sharing."}
+                    : form.format === "live_card"
+                      ? "Try your guest buttons and review the details before publishing."
+                      : "Check every printed detail before publishing your invitation."}
               </p>
               {step === 1 && (
                 <div className={styles.formStack}>
-                  {textField("title", "Event title or name", {
-                    placeholder: "Livia's 10th Birthday",
-                    required: true,
-                  })}
-                  <Field id="livecard-eventType" label="Event type" error={errors.eventType}>
-                    <select
-                      id="livecard-eventType"
-                      value={form.eventType}
-                      onChange={(event) =>
-                        change("eventType", event.target.value as LiveCardForm["eventType"])
-                      }
-                      aria-invalid={Boolean(errors.eventType)}
-                      aria-describedby={errors.eventType ? "livecard-eventType-error" : undefined}
-                      required
+                  {!described &&
+                    textField("brief", "Tell us about your event", {
+                      multiline: true,
+                      placeholder:
+                        "Livia’s 10th birthday at AMC Grand Boulevard in Miramar Beach on September 26, 2026 at 4 PM. A pink movie-night theme with popcorn and stars…",
+                      hint: "Include the venue or address here. We’ll find its address and use the event’s local time.",
+                    })}
+                  {!described && (
+                    <button
+                      type="button"
+                      className={styles.textButton}
+                      onClick={() => {
+                        setDescribed(true);
+                        setError("");
+                      }}
                     >
-                      <option value="">Choose an event type</option>
-                      {LIVE_CARD_EVENT_TYPES.map((type) => (
-                        <option key={type}>{type}</option>
-                      ))}
-                    </select>
-                  </Field>
-                  {textField("design", "How would you like your card to look?", {
-                    placeholder:
-                      "A pink movie-night theme with popcorn, stars, and a playful title…",
-                    multiline: true,
-                    required: true,
-                    hint: "Tell us the colors, mood, or theme you have in mind.",
-                  })}
+                      Enter details myself
+                    </button>
+                  )}
+                  {described && (
+                    <>
+                      {textField("title", "Event title or name", {
+                        placeholder: "Livia's 10th Birthday",
+                        required: true,
+                      })}
+                      {textField("headlineIntro", "Headline introduction", {
+                        placeholder: "You're invited",
+                        hint: "Shown above the title on both versions. Leave blank to omit it.",
+                      })}
+                      <Field id="livecard-eventType" label="Event type" error={errors.eventType}>
+                        <select
+                          id="livecard-eventType"
+                          value={form.eventType}
+                          onChange={(event) =>
+                            change("eventType", event.target.value as LiveCardForm["eventType"])
+                          }
+                          aria-invalid={Boolean(errors.eventType)}
+                          aria-describedby={
+                            errors.eventType ? "livecard-eventType-error" : undefined
+                          }
+                          required
+                        >
+                          <option value="">Choose an event type</option>
+                          {LIVE_CARD_EVENT_TYPES.map((type) => (
+                            <option key={type}>{type}</option>
+                          ))}
+                        </select>
+                      </Field>
+                      {textField("design", "How would you like your card to look?", {
+                        placeholder:
+                          "A pink movie-night theme with popcorn, stars, and a playful title…",
+                        multiline: true,
+                        required: true,
+                        hint: "Tell us the colors, mood, or theme you have in mind.",
+                      })}
+                    </>
+                  )}
                   <div className={styles.reference}>
                     <ImagePlus size={21} />
                     <div>
@@ -798,19 +1168,34 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                           multiline: true,
                           placeholder:
                             "A warm welcome, what you're celebrating, and what guests can look forward to…",
-                          hint: "Appears in Overview on your card.",
+                          hint:
+                            form.format === "live_card"
+                              ? "Appears in Overview on your card."
+                              : "Invitation wording printed with your event details.",
                         })}
+                        <button
+                          type="button"
+                          className={styles.textButton}
+                          disabled={assisting || Boolean(proposal) || !form.overview.trim()}
+                          onClick={() => void reviewOverview()}
+                        >
+                          <Sparkles size={16} />
+                          Check grammar & spelling
+                        </button>
                         {textField("instructions", "Anything else guests should know? (optional)", {
                           multiline: true,
                           placeholder: "Dress code, parking, what to bring…",
-                          hint: "Included in Overview.",
+                          hint:
+                            form.format === "live_card"
+                              ? "Included in Overview."
+                              : "Included in the invitation wording.",
                         })}
                       </div>
                     )}
-                    {detailTab === "When" && (
+                    {detailTab === "When & Where" && (
                       <section className={styles.formSection}>
                         <h3>
-                          <CalendarDays size={19} /> When
+                          <CalendarDays size={19} /> When &amp; Where
                         </h3>
                         <div className={styles.dateGrid}>
                           {textField("date", "Event date", { type: "date", required: true })}
@@ -818,33 +1203,22 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                           {textField("endTime", "End time (optional)", { type: "time" })}
                           {textField("endDate", "End date (if different)", { type: "date" })}
                         </div>
-                        <Field id="livecard-timezone" label="Timezone" error={errors.timezone}>
-                          <select
-                            id="livecard-timezone"
-                            value={form.timezone}
-                            onChange={(event) => change("timezone", event.target.value)}
-                            aria-invalid={Boolean(errors.timezone)}
-                            aria-describedby={
-                              errors.timezone ? "livecard-timezone-error" : undefined
-                            }
-                          >
-                            {timezones.map((zone) => (
-                              <option key={zone} value={zone}>
-                                {zone.replaceAll("_", " ")}
-                              </option>
-                            ))}
-                          </select>
-                        </Field>
-                        <p className={styles.included}>
-                          <Check size={15} /> Add to calendar is included automatically.
+                        <p className={styles.hint}>
+                          {form.locations[0]?.timezone
+                            ? form.locations[0]?.city
+                              ? `Times are local to ${form.locations[0].city}.`
+                              : "Times are local to your event location."
+                            : "Choose your location below to set its local time automatically."}
                         </p>
-                      </section>
-                    )}
-                    {detailTab === "Where" && (
-                      <section className={styles.formSection}>
-                        <h3>
-                          <MapPin size={19} /> Where
-                        </h3>
+                        {errors.timezone && (
+                          <p
+                            id="livecard-timezone-error"
+                            role="alert"
+                            className={styles.fieldError}
+                          >
+                            {errors.timezone}
+                          </p>
+                        )}
                         {form.locations.map((location, index) => (
                           <div key={location.id} className={styles.location}>
                             <div className={styles.locationHeader}>
@@ -863,7 +1237,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                                     : location.label || `Location ${index + 1}`}
                                 </strong>
                                 <span>
-                                  {location.venue || location.address || "Add location details"}
+                                  {location.venue || location.address || "Find your venue"}
                                 </span>
                               </button>
                               {index > 0 && (
@@ -886,47 +1260,25 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                             {location.id === (activeLocationId || form.locations[0]?.id) && (
                               <div
                                 id={`location-fields-${location.id}`}
-                                className={styles.fieldGrid}
+                                className={styles.formStack}
                               >
-                                {(index === 0
-                                  ? (["venue", "address"] as const)
-                                  : (["label", "time", "venue", "address", "note"] as const)
-                                ).map((key) => {
-                                  const id = `location-${location.id}-${key}`;
-                                  return (
+                                {index > 0 &&
+                                  (["label", "time", "note"] as const).map((key) => (
                                     <Field
                                       key={key}
-                                      id={id}
+                                      id={`location-${location.id}-${key}`}
                                       label={
                                         {
                                           label: "What happens here?",
-                                          time: "Time (optional)",
-                                          venue: "Venue name (optional)",
-                                          address: "Address or meeting link",
+                                          time: "Local time (optional)",
                                           note: "Extra directions (optional)",
                                         }[key]
                                       }
                                     >
                                       <input
-                                        id={id}
+                                        id={`location-${location.id}-${key}`}
                                         type={key === "time" ? "time" : "text"}
                                         value={location[key]}
-                                        maxLength={500}
-                                        placeholder={
-                                          key === "label"
-                                            ? "Dinner after the movie"
-                                            : key === "address"
-                                              ? "Street address or online link"
-                                              : undefined
-                                        }
-                                        aria-invalid={
-                                          key === "address" && Boolean(errors.locations)
-                                        }
-                                        aria-describedby={
-                                          key === "address" && errors.locations
-                                            ? "livecard-locations-error"
-                                            : undefined
-                                        }
                                         onChange={(event) =>
                                           change(
                                             "locations",
@@ -939,14 +1291,34 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                                         }
                                       />
                                     </Field>
-                                  );
-                                })}
+                                  ))}
+                                <LocationField
+                                  location={location}
+                                  date={form.date}
+                                  timezone={form.timezone}
+                                  onChange={(next) =>
+                                    setForm((current) => ({
+                                      ...current,
+                                      locations: current.locations.map((item) =>
+                                        item.id === next.id ? next : item,
+                                      ),
+                                      timezone:
+                                        current.locations[0]?.id === next.id && next.timezone
+                                          ? next.timezone
+                                          : current.timezone,
+                                    }))
+                                  }
+                                />
                               </div>
                             )}
                           </div>
                         ))}
                         {errors.locations && (
-                          <p id="livecard-locations-error" className={styles.fieldError}>
+                          <p
+                            id="livecard-locations-error"
+                            role="alert"
+                            className={styles.fieldError}
+                          >
                             {errors.locations}
                           </p>
                         )}
@@ -967,8 +1339,14 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                     {detailTab === "RSVP" && (
                       <Toggle
                         id="livecard-rsvp"
-                        title="Collect RSVPs"
-                        description="Let guests reply directly on your card."
+                        title={
+                          form.format === "live_card" ? "Collect RSVPs" : "Include RSVP details"
+                        }
+                        description={
+                          form.format === "live_card"
+                            ? "Let guests reply directly on your card."
+                            : "Print the host’s contact information for replies."
+                        }
                         icon={<Users size={20} />}
                         enabled={form.rsvpEnabled}
                         onChange={() => change("rsvpEnabled", !form.rsvpEnabled)}
@@ -980,8 +1358,9 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                         </div>
                         {textField("rsvpDeadline", "Reply by (optional)", { type: "date" })}
                         <p className={styles.hint}>
-                          Guests can respond Yes, No, or Maybe. Host contact details are visible to
-                          guests when provided.
+                          {form.format === "live_card"
+                            ? "Guests can respond Yes, No, or Maybe. Host contacts are visible when provided."
+                            : "Guests reply using the email or phone number printed on the invitation."}
                         </p>
                       </Toggle>
                     )}
@@ -1017,7 +1396,11 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                       <dt>When</dt>
                       <dd>
                         {form.date ? dateSummary : "Add a date and time"}
-                        <small>{form.timezone.replaceAll("_", " ")}</small>
+                        <small>
+                          {form.locations[0]?.city
+                            ? `Local time in ${form.locations[0].city}`
+                            : "Event local time"}
+                        </small>
                       </dd>
                     </div>
                     <div>
@@ -1034,17 +1417,19 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                       </dd>
                     </div>
                     <div>
-                      <dt>Guest buttons</dt>
+                      <dt>{form.format === "live_card" ? "Guest buttons" : "Format"}</dt>
                       <dd>
-                        {[
-                          "Overview",
-                          "Location",
-                          "Calendar",
-                          form.rsvpEnabled && "RSVP",
-                          form.registryEnabled && "Registry",
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
+                        {form.format === "digital_flyer"
+                          ? "Classic invitation · ready to download"
+                          : [
+                              "Overview",
+                              "Location",
+                              "Calendar",
+                              form.rsvpEnabled && "RSVP",
+                              form.registryEnabled && "Registry",
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
                       </dd>
                     </div>
                   </dl>
@@ -1053,49 +1438,11 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                   </button>
                   {designChanged && (
                     <p className={styles.note}>
-                      Your design has changed. Go back to Your design to generate the updated
-                      artwork.
+                      Your invitation has changed. Create the updated artwork before publishing.
                     </p>
                   )}
                   {!artwork && !generation && (
                     <p className={styles.note}>Create your design before publishing.</p>
-                  )}
-                  {publicPath && (
-                    <div className={styles.shareBox}>
-                      <strong>Your live card link</strong>
-                      <div>
-                        <input
-                          aria-label="Live card share link"
-                          readOnly
-                          value={
-                            typeof window !== "undefined"
-                              ? `${window.location.origin}${publicPath}`
-                              : publicPath
-                          }
-                        />
-                        <button
-                          type="button"
-                          className={styles.iconButton}
-                          aria-label="Copy live card link"
-                          onClick={() => {
-                            void navigator.clipboard
-                              .writeText(`${window.location.origin}${publicPath}`)
-                              .then(
-                                () => setMessage("Link copied."),
-                                () => setError("Copy the link from the field to share your card."),
-                              );
-                          }}
-                        >
-                          <Copy size={18} />
-                        </button>
-                      </div>
-                      <a href={publicPath} target="_blank" rel="noopener noreferrer">
-                        Open live card <ArrowRight size={15} />
-                      </a>
-                      {dirty && (
-                        <p className={styles.hint}>Save your changes to update what guests see.</p>
-                      )}
-                    </div>
                   )}
                 </div>
               )}
@@ -1118,6 +1465,8 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                   type="submit"
                   disabled={
                     working ||
+                    assisting ||
+                    Boolean(proposal) ||
                     (step === 1 && Boolean(generation)) ||
                     (step === 3 && (Boolean(generation) || !artwork || designChanged))
                   }
@@ -1125,11 +1474,16 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                   {step === 1 ? (
                     <>
                       <Sparkles size={18} />
-                      {generation
-                        ? "Creating your design…"
-                        : artwork
-                          ? "Update design & continue"
-                          : "Create design & continue"}
+                      {assisting
+                        ? "Understanding your event…"
+                        : !described
+                          ? "Help me create"
+                          : generation
+                              ? "Creating your design…"
+                              : artwork && !designChanged
+                                ? "Continue to event details"
+                                : artwork ? "Create updated design & continue"
+                                : "Create design & continue"}
                     </>
                   ) : step === 2 ? (
                     <>
@@ -1140,7 +1494,11 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                     </>
                   ) : (
                     <>
-                      {working ? "Saving…" : published ? "Save changes" : "Publish & share"}
+                      {working
+                        ? "Saving…"
+                        : published
+                          ? "Save & go to dashboard"
+                          : "Publish & go to dashboard"}
                       <ArrowRight size={17} />
                     </>
                   )}
@@ -1154,14 +1512,25 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
             </fieldset>
           </form>
         </div>
-        <aside className={styles.previewPane} aria-label="Live card preview">
+        <aside className={styles.previewPane} aria-label="Artwork preview">
           <div className={styles.previewHeader}>
-            <span>YOUR LIVE CARD</span>
+            <span>{form.format === "live_card" ? "YOUR LIVE CARD" : "YOUR INVITATION"}</span>
             <button type="button" disabled={!artwork} onClick={() => setPreviewOpen(true)}>
               <Eye size={17} /> Preview
             </button>
           </div>
           <div className={styles.inlineArtwork}>{previewContent}</div>
+          {step > 1 && (!artwork || designChanged) && !generation && (
+            <button
+              type="button"
+              className={styles.primary}
+              disabled={working || assisting || Boolean(proposal)}
+              onClick={() => void generate()}
+            >
+              <Sparkles size={17} />
+              {form.format === "digital_flyer" ? "Create invitation" : "Create design"}
+            </button>
+          )}
           <div role="status" className={styles.status}>
             {generation ? (
               <>
@@ -1190,23 +1559,22 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
               Edit design <Sparkles size={16} />
             </button>
           )}
+          {preview?.invitationData.sharedDesign && !designChanged && (
+            <ArtworkDownloadButton imageUrl={preview.imageUrl} title={form.title} invitationData={preview.invitationData} beforeDownload={reviewOverview} className="mt-3" />
+          )}
+          {artwork && !artwork.invitationData?.sharedDesign && !generation && (
+            <div className={styles.assistance}>
+              <p>This card has lettering built into its image. Create a new design to make its text editable and share the artwork with an invite.</p>
+              <button type="button" className={styles.secondary} onClick={() => void generate()}>Create editable design</button>
+            </div>
+          )}
         </aside>
       </div>
       <ArtworkPreviewDialog
         open={previewOpen}
-        title="Preview your Live Card"
+        title={form.format === "live_card" ? "Preview your Live Card" : "Preview your invitation"}
         imageUrl={preview?.imageUrl}
         onClose={() => setPreviewOpen(false)}
-        onShare={
-          publicPath
-            ? () => {
-                void navigator.clipboard.writeText(`${window.location.origin}${publicPath}`).then(
-                  () => setMessage("Link copied."),
-                  () => setError("Copy your live card link from Preview & share."),
-                );
-              }
-            : undefined
-        }
       >
         {preview && (
           <StudioShowcaseLiveCard

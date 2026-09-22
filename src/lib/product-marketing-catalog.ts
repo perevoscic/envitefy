@@ -78,12 +78,35 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           ],
         },
         {
+          id: "guided-live-card-invite",
+          name: "Live Card / Invite",
+          availability: "core",
+          customerPromise:
+            "Describe your event and create a Live Card or a classic invitation, available to every signed-in host.",
+          proofPoints: [
+            "The main card creation entry in the desktop and mobile sidebar opens /livacards-invites directly, below Snap / Upload.",
+            "Live Card is the default; a top toggle switches to a downloadable Invite with event details printed in the artwork.",
+            "AI reads the initial description and optional reference, proposes event details and design direction, and preserves manual edits while suggestions are prepared.",
+            "Overview wording is checked for grammar and spelling before final review, publishing and Invite artwork generation. Hosts review corrections and can retain their original wording.",
+            "Venue names, cities and addresses carry forward from the description. Clear venue matches fill the address and local time zone; ambiguous matches offer choices and manual entry remains available.",
+            "Compact Overview, When & Where, RSVP and Registry tabs show one section at a time. Live Card artwork contains only the title; Invite artwork includes the approved event details.",
+            "Overview and Calendar are included, with explicit controls for optional RSVP collection and registry links.",
+            "Progress stays in memory until Save draft or Publish. Saved guided cards reopen in the same builder with their artwork and event details.",
+            "Publishing opens the owner dashboard, where hosts can finish their public URL and share the invitation. A confirmed location is required before publishing.",
+          ],
+          sellWhen: [
+            "A signed-in host wants to create an invitation or Live Card from an event idea.",
+            "The host prefers guided fields and a design preview while preparing guest details.",
+          ],
+        },
+        {
           id: "envitefy-concierge",
           name: "Envitefy Create",
           availability: "core",
           customerPromise:
             "Turn a plain-language event idea into an editable invitation and guest-ready live page without starting from a blank form.",
           proofPoints: [
+            "Chat creation remains accessible through existing /chat links and saved conversations. The sidebar's main card creation entry is now the guided Live Card / Invite builder.",
             "Starts from the host's words or uploaded context and helps collect missing event details.",
             "The public /envitefy-create page explains message and upload creation, preview and publishing steps, and example prompts; Live Card attribution links lead here, with signup and login continuing into /chat.",
             "A centered chat composer lets people describe their event directly. Create infers the category and uses its guidance, asking for clarification when needed. Product choices appear before the conversation starts, with Generate now below the latest reply when details are ready. Selecting Live Card or Event Page enables the + upload button: attach your own flyer, add instructions, then Send.",

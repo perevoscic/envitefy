@@ -745,6 +745,14 @@ export default function EventOwnerTools({
     [designPreviewOverride, preview],
   );
   const rsvpEnabled = hasActionableRsvp(eventData, numberOfGuests);
+  const isGuidedCard = eventData?.createdVia === "livecard-builder";
+  const [justPublished, setJustPublished] = useState(false);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("published") !== "1") return;
+    setJustPublished(true);
+    const timer = window.setTimeout(() => setJustPublished(false), 5000);
+    return () => window.clearTimeout(timer);
+  }, []);
   const publicUrl = useMemo(() => {
     if (publicUrlOverride) return publicUrlOverride;
     if (shouldOpenPreviewInStudioCard(effectivePreview)) {
@@ -771,13 +779,13 @@ export default function EventOwnerTools({
     [eventData, publicUrl],
   );
   const activeOwnerTab: EventContextTab =
-    rsvpEnabled || initialTab === "design" ? initialTab : "design";
+    rsvpEnabled || initialTab === "design" || (isGuidedCard && initialTab === "dashboard") ? initialTab : "design";
   const ownerWorkspaceTabs = useMemo(
     () =>
       rsvpEnabled
         ? OWNER_WORKSPACE_TABS
-        : OWNER_WORKSPACE_TABS.filter((tab) => tab.key === "design"),
-    [rsvpEnabled],
+        : OWNER_WORKSPACE_TABS.filter((tab) => tab.key === "design" || (isGuidedCard && tab.key === "dashboard")),
+    [rsvpEnabled, isGuidedCard],
   );
   const ownerReturnHref = buildOwnerTabHref(ownerHref, eventId, activeOwnerTab);
   const embeddedPreviewHref = buildOwnerEmbeddedPreviewHref(publicUrl, ownerReturnHref);
@@ -856,6 +864,7 @@ export default function EventOwnerTools({
     <main className="min-h-[100dvh] w-full px-3 pb-5 pt-[calc(var(--app-mobile-topbar-offset,4rem)+1.35rem)] text-slate-950 sm:px-6 lg:px-8 lg:py-5">
       <div className="mx-auto grid w-full max-w-[1380px] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,410px)] xl:grid-cols-[minmax(0,1fr)_430px]">
         <section className="min-w-0 space-y-3 sm:space-y-4">
+          {justPublished && <p role="status" className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900">Published. Your invitation is ready to share.</p>}
           <OwnerWorkspaceHeader
             eventId={eventId}
             title={currentEventTitle}
@@ -872,7 +881,7 @@ export default function EventOwnerTools({
               tabs={ownerWorkspaceTabs}
             />
           ) : null}
-          {activeOwnerTab === "design" ? (
+          {activeOwnerTab === "design" || (isGuidedCard && activeOwnerTab === "dashboard") ? (
             <OwnerPublicLinkPanel
               eventId={eventId}
               activeTab={activeOwnerTab}
@@ -1390,7 +1399,25 @@ function OwnerTabContent({
     persisted?: boolean;
   }) => void;
 }) {
+  if (!rsvpEnabled && activeTab === "dashboard" && eventData?.createdVia === "livecard-builder") {
+    return <section className="owner-workspace-glass space-y-4 rounded-[22px] border border-white/75 bg-white/90 p-5">
+      <h2 className="text-lg font-semibold text-slate-950">Your event at a glance</h2>
+      <p className="text-sm text-slate-600">Customize your link above, preview your invitation, or continue editing your event.</p>
+      <dl className="grid gap-4 text-sm sm:grid-cols-2">
+        <div><dt className="font-semibold text-slate-500">When</dt><dd className="mt-1 text-slate-950">{[preview.dateLine, preview.timeLine].filter(Boolean).join(" · ") || "Add your event date"}</dd></div>
+        <div><dt className="font-semibold text-slate-500">Where</dt><dd className="mt-1 text-slate-950">{preview.locationLine || "Add your location"}</dd></div>
+      </dl>
+      <Link href={editHref} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-violet-700 px-4 py-2 font-semibold text-white"><Pencil size={16} /> Edit event details</Link>
+    </section>;
+  }
   if (!rsvpEnabled || activeTab === "design") {
+    if (preview.invitationData?.sharedDesign) {
+      return <section className="owner-workspace-glass space-y-4 rounded-[22px] border border-white/75 bg-white/90 p-5">
+        <h2 className="text-lg font-semibold text-slate-950">Your shared design</h2>
+        <p className="text-sm text-slate-600">Your Live Card and invitation share one artwork. Edit the headline or event details, preview either version, and download the latest invitation.</p>
+        <Link href={editHref} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-violet-700 px-4 py-2 font-semibold text-white"><Pencil size={16} /> Edit card & invitation</Link>
+      </section>;
+    }
     return (
       <OwnerDesignPanel
         eventId={eventId}

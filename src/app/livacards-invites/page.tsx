@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { AdminRouteError, requireAdminSession } from "@/lib/admin/require-admin";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import LiveCardBuilder from "./LiveCardBuilder";
 
 export const metadata: Metadata = {
   title: "Live Cards & Invites | Envitefy",
   description:
-    "Create a Live Card while you add event details, locations, RSVP and registry options.",
+    "Describe your event to create a Live Card or Invite, with venue lookup, local event times and a dashboard for sharing.",
   robots: { index: false, follow: false },
 };
 
@@ -15,12 +16,8 @@ export default async function LiveCardsInvitesPage({
 }: {
   searchParams: Promise<{ edit?: string }>;
 }) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) redirect("/");
   const { edit } = await searchParams;
-  try {
-    await requireAdminSession();
-  } catch (error) {
-    if (error instanceof AdminRouteError) redirect("/");
-    throw error;
-  }
   return <LiveCardBuilder key={edit || "new"} initialEventId={edit || null} />;
 }

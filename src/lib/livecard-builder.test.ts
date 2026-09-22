@@ -5,6 +5,7 @@ import {
   liveCardDateTime,
   liveCardDesignKey,
   liveCardRegistryUrl,
+  mergeLiveCardProposal,
   readLiveCardForm,
   validateLiveCard,
 } from "./livecard-builder.ts";
@@ -20,6 +21,62 @@ test("artwork can start before any scheduling or optional guest details exist", 
   assert.ok(validateLiveCard(form, "publish").date);
   assert.equal(form.rsvpEnabled, false);
   assert.equal(form.registryEnabled, false);
+});
+
+test("reviewed proposals preserve concurrent edits, selected format and location timezone together", () => {
+  const before = createLiveCardForm("America/Chicago");
+  const proposed = {
+    ...before,
+    title: "Suggested title",
+    date: "2026-09-26",
+    timezone: "America/New_York",
+  };
+  const current = {
+    ...before,
+    title: "My title",
+    format: "digital_flyer" as const,
+    locations: [{ ...before.locations[0], address: "My address" }],
+  };
+  const merged = mergeLiveCardProposal(current, before, proposed);
+  assert.equal(merged.title, "My title");
+  assert.equal(merged.date, "2026-09-26");
+  assert.equal(merged.format, "digital_flyer");
+  assert.equal(merged.timezone, "America/Chicago");
+  assert.deepEqual(merged.locations, current.locations);
+});
+
+test("classic invitation artwork becomes stale when a printed detail changes", () => {
+  const form = { ...createLiveCardForm(), format: "digital_flyer" as const, title: "Party" };
+  for (const change of [
+    { date: "2026-09-26" },
+    { startTime: "16:00" },
+    { overview: "Join us" },
+    { rsvpEnabled: true },
+    { registryEnabled: true },
+  ]) {
+    assert.notEqual(liveCardDesignKey(form), liveCardDesignKey({ ...form, ...change }));
+  }
+  assert.equal(
+    liveCardDesignKey(form),
+    liveCardDesignKey({ ...form, brief: "More input", hostEmail: "hidden@example.com" }),
+  );
+});
+
+test("publishing needs a confirmed location and timezone, while version-one addresses remain usable", () => {
+  const form = createLiveCardForm();
+  assert.ok(validateLiveCard(form, "publish").locations);
+  form.locations[0].address = "123 Main St";
+  assert.ok(validateLiveCard(form, "publish").locations);
+  form.locations[0].resolution = "verified";
+  assert.ok(validateLiveCard(form, "publish").timezone);
+  const restored = readLiveCardForm({
+    title: "Old card",
+    timezone: "America/Chicago",
+    locations: [{ id: "primary", address: "123 Main St" }],
+  });
+  assert.equal(restored?.format, "live_card");
+  assert.equal(restored?.locations[0].resolution, "manual");
+  assert.equal(restored?.locations[0].timezone, "America/Chicago");
 });
 
 test("only artwork inputs invalidate the generated design", () => {

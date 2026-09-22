@@ -5,6 +5,7 @@ import Image from "next/image";
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 import LiveCardArtworkFrame from "@/components/studio/LiveCardArtworkFrame";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
+import SharedCardTextLayer from "@/components/studio/SharedCardTextLayer";
 import StudioLiveCardActionSurface, {
   isPosterFirstHeroCard,
   type LiveCardActiveTab,
@@ -63,9 +64,12 @@ export default function StudioShowcaseLiveCard({
   const resolvedActiveTab = activeTab ?? internalActiveTab;
   const handleActiveTabChange = onActiveTabChange ?? setInternalActiveTab;
   const usesPosterArtFrame = preview.invitationData.heroTextMode === "image";
-  const artworkRatio = useArtworkAspectRatio(preview.imageUrl, usesPosterArtFrame ? 2 / 3 : 9 / 16);
+  const sharedDesign = preview.invitationData.sharedDesign;
+  const imageUrl = sharedDesign?.backgroundUrl || preview.imageUrl;
+  const measuredRatio = useArtworkAspectRatio(imageUrl, usesPosterArtFrame ? 2 / 3 : 9 / 16);
+  const artworkRatio = sharedDesign ? 2 / 3 : measuredRatio;
   const canOptimizeImage =
-    preview.imageUrl.startsWith("/") && !preview.imageUrl.startsWith("/api/");
+    imageUrl.startsWith("/") && !imageUrl.startsWith("/api/");
 
   useEffect(() => {
     if (activeTab === undefined) {
@@ -150,9 +154,10 @@ export default function StudioShowcaseLiveCard({
     }
   };
 
+  const isClassicInvite = preview.invitationData.eventDetails?.product === "digital_flyer";
   const placeActionsAbove = actionsPlacement === "above";
   const placeActionsOverlay = actionsPlacement === "overlay";
-  const useOutsideActions = !placeActionsOverlay && (usesPosterArtFrame || placeActionsAbove);
+  const useOutsideActions = !isClassicInvite && !placeActionsOverlay && (usesPosterArtFrame || placeActionsAbove);
   const outsideActions = useOutsideActions ? (
     <div className={cx("shrink-0", !interactive && "pointer-events-none")}>
       <StudioLiveCardActionSurface
@@ -187,7 +192,8 @@ export default function StudioShowcaseLiveCard({
         style={{ "--live-card-aspect-ratio": artworkRatio } as CSSProperties}
       >
         <LiveCardArtworkFrame
-          imageUrl={preview.imageUrl}
+          sharedDesign={Boolean(sharedDesign)}
+          imageUrl={imageUrl}
           aspectRatio={artworkRatio}
           className={cx(
             usesPosterArtFrame
@@ -198,8 +204,8 @@ export default function StudioShowcaseLiveCard({
         >
           {canOptimizeImage ? (
             <Image
-              src={preview.imageUrl}
-              alt={preview.title}
+              src={imageUrl}
+              alt={sharedDesign ? "" : preview.title}
               fill
               loading={imageLoading}
               fetchPriority={imageFetchPriority}
@@ -210,8 +216,8 @@ export default function StudioShowcaseLiveCard({
             />
           ) : (
             <img
-              src={preview.imageUrl}
-              alt={preview.title}
+              src={imageUrl}
+              alt={sharedDesign ? "" : preview.title}
               loading={imageLoading}
               fetchPriority={imageFetchPriority}
               decoding="async"
@@ -219,8 +225,8 @@ export default function StudioShowcaseLiveCard({
             />
           )}
           {!usesPosterArtFrame ? <div className="absolute inset-0 bg-black/20" /> : null}
-          <LiveCardHeroTextOverlay invitationData={preview.invitationData} />
-          {placeActionsOverlay || (!usesPosterArtFrame && !placeActionsAbove) ? (
+          {sharedDesign ? <SharedCardTextLayer source={preview.invitationData} /> : <LiveCardHeroTextOverlay invitationData={preview.invitationData} />}
+          {!isClassicInvite && (placeActionsOverlay || (!usesPosterArtFrame && !placeActionsAbove)) ? (
             <div
               className={cx(
                 "absolute inset-0",
