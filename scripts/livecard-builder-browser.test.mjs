@@ -6,7 +6,7 @@ import http from "node:http";
 import { execSync } from "node:child_process";
 import { chromium } from "playwright";
 
-test("Live Card / Invite: AI intake, location, explicit saves, dashboard handoff, format switching and responsive preview", {
+test("Live Card / Invite: direct entry, location, explicit saves, dashboard handoff, paired outputs and responsive preview", {
   timeout: 120000,
 }, async () => {
   execSync("bun scripts/build-livecard-builder-fixture.mjs", { timeout: 60000, stdio: "pipe" });
@@ -50,18 +50,21 @@ test("Live Card / Invite: AI intake, location, explicit saves, dashboard handoff
     );
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  server.unref();
   const origin = `http://127.0.0.1:${server.address().port}`;
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1080 } });
   const runtimeErrors = [];
   page.on("pageerror", (error) => runtimeErrors.push(error.message));
   const saves = [];
   const generations = [];
+  const locationRequests = [];
   await page.addInitScript(() => {
     window.__cardDraws = [];
     const original = CanvasRenderingContext2D.prototype.fillText;
     CanvasRenderingContext2D.prototype.fillText = function (text, ...rest) {
       window.__cardDraws.push(text);
+      (window.__cardFonts ||= []).push(this.font);
       return original.call(this, text, ...rest);
     };
   });
@@ -69,6 +72,10 @@ test("Live Card / Invite: AI intake, location, explicit saves, dashboard handoff
   let failSave = false;
   let failGeneration = false;
   let failProofread = false;
+  let releaseProofread;
+  let proofreadStarted;
+  let holdProofread = false;
+  const wordingRequests = [];
   let releaseGeneration;
   let generationStarted;
   const started = new Promise((resolve) => {
@@ -82,20 +89,40 @@ test("Live Card / Invite: AI intake, location, explicit saves, dashboard handoff
     if (!request.url().startsWith(origin)) return route.abort();
     const url = new URL(request.url());
     if (url.pathname === "/api/livecard-builder/assist") {
-      const { form, message, mode } = request.postDataJSON();
-      if (mode === "overview") return route.fulfill(failProofread ? { status: 503, json: { error: "Proofreading unavailable" } } : { json: { form: { ...form, overview: form.overview.replace("freinds", "friends") }, questions: [] } });
-      assert.match(message, /AMC Grand Boulevard in Miramar Beach/);
-      return route.fulfill({ json: { form: {
-        ...form, title: "Livia's Movie Night", eventType: "Birthday", design: "Pink movie night with popcorn and stars",
-        date: "2026-09-26", startTime: "16:00", timezone: "America/Los_Angeles",
-        locations: [{ ...form.locations[0], venue: "AMC Grand Boulevard", address: "", city: "Miramar Beach", query: "AMC Grand Boulevard in Miramar Beach", resolution: "unresolved" }],
-      }, questions: [] } });
+      const { form, mode } = request.postDataJSON();
+      assert.equal(mode, "wording", "only automatic proofreading calls the assistance API");
+      if (mode === "wording") {
+        wordingRequests.push(form);
+        if (holdProofread) {
+          holdProofread = false;
+          await new Promise((resolve) => { releaseProofread = resolve; proofreadStarted(); });
+        }
+        return route.fulfill(failProofread ? { status: 503, json: { error: "Proofreading unavailable" } } : {
+          json: { form: {
+            ...form,
+            title: form.title.replace(/\bamc\b/g, "AMC"),
+            overview: form.overview.replace("freinds", "friends").replace(/\bamc\b/g, "AMC"),
+          }, questions: [] },
+        });
+      }
+
     }
     if (url.pathname === "/api/livecard-builder/location") {
       const body = request.postDataJSON();
-      assert.equal(body.query, "AMC Grand Boulevard in Miramar Beach", "location is read from the original description");
-      const place = { placeId: "amc", venue: "AMC Boulevard 10", address: "465 Grand Boulevard, Miramar Beach, FL", city: "Miramar Beach", latitude: 30.3, longitude: -86.3 };
-      return route.fulfill({ json: body.placeId ? { location: { ...place, id: body.id, label: "", time: "", note: "", timezone: "America/Chicago", resolution: "verified" } } : { candidates: [place], location: null, message: "Choose the matching venue below." } });
+      locationRequests.push(body);
+      if (body.query === "Unavailable venue")
+        return route.fulfill({ status: 503, json: { error: "Location lookup is unavailable. Enter your address and confirm the local time zone." } });
+      if (body.query === "Unlisted venue")
+        return route.fulfill({ json: { candidates: [], location: null, message: "We couldn’t find that venue. Add its city or address, or enter the address manually." } });
+      const place = { placeId: "amc", venue: "AMC Grand Boulevard 10", address: "465 Grand Boulevard, Miramar Beach, FL", city: "Miramar Beach", latitude: 30.3, longitude: -86.3 };
+      if (body.query === "AMC" && !body.placeId)
+        return route.fulfill({ json: { candidates: [place, { ...place, placeId: "other-amc", venue: "AMC Destin", address: "Other street, Destin, FL" }], location: null, message: "Which venue is yours? Choose below, or add a city to narrow the search." } });
+      if (body.query === "456 Lake St, Chicago") return route.fulfill({ json: { location: {
+        ...place, id: body.id, venue: "Dinner", address: body.query, city: "Chicago", timezone: "America/Chicago", resolution: "verified",
+      } } });
+      assert.ok(body.query === "AMC Grand Boulevard" || (body.query === "AMC" && body.placeId === "amc"));
+      return route.fulfill({ json: { location: { ...place, id: body.id, label: "", time: "", note: "", timezone: "America/Chicago", resolution: "verified" } } });
+
     }
     if (url.pathname === "/api/livecard-builder/design") {
       generations.push(request.postDataJSON());
@@ -116,7 +143,7 @@ test("Live Card / Invite: AI intake, location, explicit saves, dashboard handoff
             },
           },
         });
-      return route.fulfill({ json: { design: { version: 1, backgroundUrl: `${origin}/artwork.webp`, font: "classic", ink: "#542235", accent: "#875226", surface: "#fff4ec" } } });
+      return route.fulfill({ json: { design: { version: 1, backgroundUrl: `${origin}/artwork.webp`, font: "classic", typography: "cinematic", ink: "#542235", accent: "#875226", surface: "#fff4ec" } } });
     }
     if (url.pathname === "/api/upload") {
       const multipart = await new Response(request.postDataBuffer(), { headers: { "content-type": request.headers()["content-type"] } }).formData();
@@ -142,26 +169,120 @@ test("Live Card / Invite: AI intake, location, explicit saves, dashboard handoff
     if (url.pathname.startsWith("/api/")) throw new Error(`Unexpected API call: ${request.url()}`);
     return route.continue();
   });
+  const selectView = async (name, scope = page) => {
+    const toggle = scope.getByRole("group", { name: "Preview view", exact: true });
+    await toggle.getByRole("button", { name, exact: true }).click();
+    assert.equal(await toggle.getByRole("button", { name, exact: true }).getAttribute("aria-pressed"), "true");
+  };
+  const checkActionChrome = async (scope) => {
+    const buttons = scope.locator("[data-live-card-trigger]");
+    for (const button of await buttons.all()) {
+      const circle = button.locator(":scope > div");
+      const label = button.locator(":scope > span");
+      assert.equal(await circle.isVisible(), true, "the familiar action icon is visible");
+      assert.equal(await circle.locator("svg").isVisible(), true);
+      const iconBox = await circle.boundingBox();
+      const labelBox = await label.boundingBox();
+      assert.ok(Math.abs(iconBox.width - iconBox.height) < 1, "icon surface stays circular");
+      assert.ok(labelBox.y >= iconBox.y + iconBox.height, "label stays below its icon");
+    }
+  };
   const openSection = async (name) => {
     await page.getByRole("tab", { name: new RegExp(`^${name}`) }).click();
     assert.equal(await page.getByRole("tabpanel").count(), 1, "only one section is mounted");
   };
   try {
     await page.goto(`${origin}/livacards-invites`);
-    assert.equal(await page.getByRole("button", { name: "Live Card", exact: true }).getAttribute("aria-pressed"), "true");
-    await page.getByLabel("Tell us about your event").fill("Livia's birthday at AMC Grand Boulevard in Miramar Beach on September 26, 2026 at 4 PM. Pink movie theme.");
-    await page.getByRole("button", { name: "Help me create", exact: true }).click();
-    await page.getByRole("region", { name: "Suggested event details" }).waitFor();
-    assert.equal(saves.length, 0, "AI suggestions remain in memory");
-    await page.getByRole("button", { name: "Use suggestions", exact: true }).click();
-    assert.equal(await page.getByLabel("Event title or name").inputValue(), "Livia's Movie Night");
-    await page.screenshot({ path: path.join(out, "desktop-design.png"), fullPage: true });
-    assert.equal(saves.length, 0, "typing never saves a draft");
-    await page.getByRole("button", { name: "Create design & continue" }).click();
-    await started;
-    await page.getByLabel("About your event").fill("A movie and dinner with friends.");
+    assert.equal(await page.getByRole("group", { name: "Invitation format" }).count(), 0);
+    await page.getByRole("heading", { name: "Create your Live Card & Invite", exact: true }).waitFor();
+    assert.equal(await page.getByRole("region", { name: "Both included", exact: true }).count(), 0);
+    assert.equal(await page.getByRole("navigation", { name: "Card creation steps" }).getByRole("button").count(), 3);
+    assert.equal(await page.getByRole("button", { name: "1 Design", exact: true }).isDisabled(), false);
+    assert.equal(await page.getByRole("button", { name: "3 Review", exact: true }).isDisabled(), true);
     assert.equal(await page.getByLabel("Event date", { exact: true }).count(), 0);
-    await page.getByRole("tab", { name: "Overview", exact: true }).focus();
+    assert.equal(await page.getByLabel("Add a reference image", { exact: false }).count(), 1, "reference artwork belongs in the first step");
+    assert.equal(await page.getByRole("button", { name: "1 Design", exact: true }).getAttribute("aria-current"), "step");
+    assert.equal(await page.getByLabel("Event title or name").count(), 0, "design starts before title and logistics");
+    assert.equal(await page.getByLabel("Event description", { exact: true }).count(), 0);
+    assert.equal(await page.getByText("Describe a change", { exact: true }).count(), 0);
+    assert.equal(await page.getByText("Fill from a description", { exact: false }).count(), 0);
+    assert.equal(await page.getByRole("button", { name: "Preview", exact: true }).count(), 0);
+    await page.screenshot({ path: path.join(out, "desktop-start.png"), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: path.join(out, "mobile-start.png"), fullPage: true });
+    assert.equal(await page.getByRole("button", { name: "Generate & continue", exact: true }).isDisabled(), true);
+    await page.getByLabel("Describe your design").fill("   ");
+    assert.equal(await page.getByRole("button", { name: "Generate & continue", exact: true }).isDisabled(), true, "whitespace is not a design description");
+    assert.equal(await page.getByRole("button", { name: "1 Design", exact: true }).getAttribute("aria-current"), "step");
+    assert.equal(generations.length, 0);
+    assert.equal(saves.length, 0);
+    await page.reload();
+    await page.setViewportSize({ width: 1440, height: 1080 });
+    await page.getByLabel("Describe your design").fill("Pink movie night with popcorn and stars");
+    assert.equal(await page.getByRole("button", { name: "Generate & continue", exact: true }).isDisabled(), true, "design needs the occasion before generation");
+    await page.locator("form").evaluate((form) => form.requestSubmit());
+    await page.getByText("Choose an event type.", { exact: true }).waitFor();
+    assert.equal(generations.length, 0, "the submit handler also requires an event type");
+    await page.getByLabel("Event type", { exact: true }).selectOption("Birthday");
+    assert.equal(await page.getByRole("button", { name: "Generate & continue", exact: true }).isEnabled(), true);
+    assert.equal(saves.length, 0, "typing stays in memory");
+    assert.equal(generations.length, 0, "generation needs an explicit action");
+    await page.screenshot({ path: path.join(out, "desktop-design.png"), fullPage: true });
+    await page.getByRole("button", { name: "Generate & continue", exact: true }).click();
+    await started;
+    await page.getByLabel("Event title or name").waitFor();
+    assert.equal(await page.getByRole("button", { name: "2 Event details", exact: true }).getAttribute("aria-current"), "step", "generation opens Event details immediately");
+    assert.equal(generations[0].form.title, "");
+    assert.equal(generations[0].form.eventType, "Birthday", "the occasion is sent with the design request");
+    assert.equal(generations[0].form.date, "");
+    const generationPanel = page.getByRole("region", { name: "Design generation", exact: true });
+    const generationProgress = generationPanel.getByRole("progressbar", { name: "Creating your design", exact: true });
+    await generationProgress.waitFor();
+    assert.equal(await generationProgress.getAttribute("aria-valuenow"), null, "generation is indeterminate, never a made-up percentage");
+    assert.equal(await generationProgress.getAttribute("aria-valuetext"), "Drawing your artwork");
+    assert.equal(await generationPanel.getByRole("status").textContent(), "Drawing your artwork");
+    assert.ok(await generationPanel.evaluate((element) => element.getAnimations({ subtree: true }).some((animation) => animation.playState === "running")), "the generation preview animates");
+    await generationPanel.screenshot({ path: path.join(out, "generation-progress.png") });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    assert.equal(await generationPanel.evaluate((element) => element.getAnimations({ subtree: true }).length), 0, "reduced motion stops decorative animations and shimmer");
+    for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
+      await page.setViewportSize(viewport);
+      assert.ok(await generationPanel.evaluate((element) => element.scrollHeight <= element.clientHeight + 1 && element.scrollWidth <= element.clientWidth + 1), "progress fits portrait and landscape without clipping");
+      await generationPanel.screenshot({ path: path.join(out, `generation-progress-${viewport.width}.png`) });
+    }
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.setViewportSize({ width: 1440, height: 1080 });
+    assert.equal(await page.getByRole("button", { name: "Creating your design…", exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole("button", { name: "3 Review", exact: true }).isDisabled(), true);
+    // Returning to Design while the request runs must not start a duplicate job.
+    await page.getByRole("button", { name: "1 Design", exact: true }).click();
+    await page.getByRole("button", { name: "Continue to event details", exact: true }).click();
+    assert.equal(generations.length, 1);
+    for (const label of ["Message to guests (optional)", "Anything else guests should know? (optional)"]) {
+      assert.equal(await page.getByRole("button", { name: label, exact: true }).getAttribute("aria-expanded"), "false");
+      assert.equal(await page.getByLabel(label, { exact: true }).isVisible(), false);
+    }
+    await page.getByLabel("Event title or name").fill("Livia's Movie Night");
+    assert.equal(await page.getByLabel("Event type", { exact: true }).count(), 0, "event type is only edited in Design");
+    await page.screenshot({ path: path.join(out, "desktop-details.png"), fullPage: true });
+    await page.getByRole("button", { name: "Message to guests (optional)", exact: true }).click();
+    await page.getByLabel("Message to guests (optional)").fill("A movie and dinner with friends.");
+    await page.getByRole("button", { name: "Message to guests (optional)", exact: true }).click();
+    assert.equal(await page.getByLabel("Message to guests (optional)").isVisible(), false);
+    assert.equal(await page.getByLabel("Message to guests (optional)").inputValue(), "A movie and dinner with friends.", "collapsing preserves the guest message");
+    assert.equal(await page.getByRole("button", { name: "Anything else guests should know? (optional)", exact: true }).getAttribute("aria-expanded"), "false", "the fields expand independently");
+    await page.getByRole("button", { name: "Message to guests (optional)", exact: true }).click();
+    const extraDetails = page.getByRole("button", { name: "Anything else guests should know? (optional)", exact: true });
+    await extraDetails.focus();
+    await page.keyboard.press("Enter");
+    await page.getByLabel("Anything else guests should know? (optional)", { exact: true }).fill("Bring a jacket.");
+    await extraDetails.focus();
+    await page.keyboard.press("Space");
+    assert.equal(await page.getByLabel("Anything else guests should know? (optional)", { exact: true }).isVisible(), false);
+    assert.equal(await page.getByLabel("Anything else guests should know? (optional)", { exact: true }).inputValue(), "Bring a jacket.");
+
+    assert.equal(await page.getByLabel("Event date", { exact: true }).count(), 0);
+    await page.getByRole("tab", { name: "Basics", exact: true }).focus();
     await page.keyboard.press("ArrowRight");
     assert.equal(
       await page.getByRole("tab", { name: "When & Where", exact: true }).getAttribute("aria-selected"),
@@ -169,20 +290,16 @@ test("Live Card / Invite: AI intake, location, explicit saves, dashboard handoff
     );
     await page.getByLabel("Event date", { exact: true }).fill("2026-10-04");
     await page.getByLabel("Start time", { exact: true }).fill("18:00");
-    await page.getByRole("button", { name: /AMC Boulevard 10.*465 Grand Boulevard/ }).click();
-    assert.equal(await page.getByLabel("Local time zone", { exact: true }).count(), 0, "verified locations need no timezone selector");
-    await page.getByText("465 Grand Boulevard, Miramar Beach, FL", { exact: true }).waitFor();
-    assert.equal(await page.getByRole("button", { name: "Change location", exact: true }).count(), 1);
+    assert.equal(await page.getByRole("button", { name: "Find", exact: true }).count(), 0);
+    assert.equal(await page.getByRole("button", { name: "Enter address manually", exact: true }).count(), 0, "only venue name is requested initially");
+    await page.getByLabel("Venue name", { exact: true }).fill("AMC Grand");
+    await page.getByLabel("Venue name", { exact: true }).fill("AMC Grand Boulevard");
+    await page.waitForTimeout(900);
+    assert.equal(locationRequests.length, 0, "typing a venue never starts lookup or shows provider failures");
     await page.getByRole("button", { name: "Add another location" }).click();
     await page.getByLabel("What happens here?").fill("Dinner");
-    await page.getByRole("button", { name: "Enter address manually", exact: true }).click();
-    await page.getByLabel("Address or meeting link", { exact: true }).fill("456 Lake St, Chicago");
-    assert.equal(
-      await page.getByLabel("Address or meeting link", { exact: true }).count(),
-      1,
-      "only the active location expands",
-    );
-    await page.getByRole("button", { name: "Confirm location & local time", exact: true }).click();
+    await page.getByLabel("Venue name", { exact: true }).fill("456 Lake St, Chicago");
+    assert.equal(await page.getByLabel("Local time zone", { exact: true }).count(), 0);
     await openSection("RSVP");
     await page.getByRole("switch", { name: /Collect RSVPs/ }).click();
     await page.getByLabel("Host name", { exact: true }).fill("Mia");
@@ -198,35 +315,136 @@ test("Live Card / Invite: AI intake, location, explicit saves, dashboard handoff
     assert.equal(stored.data.status, "draft");
     releaseGeneration();
     await page.getByText("Your design is ready.", { exact: true }).waitFor();
-    await openSection("Overview");
+    assert.equal(await page.getByRole("progressbar", { name: "Creating your design", exact: true }).count(), 0, "the progress animation is removed when artwork arrives");
+    await openSection("Basics");
+    assert.equal(await page.getByLabel("Event title or name").inputValue(), "Livia's Movie Night");
+    assert.equal(await page.getByRole("button", { name: "Review both versions", exact: true }).isEnabled(), true, "entering event details during generation does not invalidate artwork");
     assert.equal(
-      await page.getByLabel("About your event").inputValue(),
+      await page.getByLabel("Message to guests (optional)").inputValue(),
       "A movie and dinner with friends.",
     );
     await openSection("When & Where");
-    assert.equal(
-      await page.getByText("456 Lake St, Chicago", { exact: true }).last().textContent(),
-      "456 Lake St, Chicago",
-    );
+    assert.equal(await page.getByLabel("Venue name", { exact: true }).inputValue(), "456 Lake St, Chicago");
+    assert.equal(locationRequests.length, 0, "draft saving and background artwork do not trigger venue lookup");
     assert.equal(
       await page.getByRole("button", { name: "Save draft", exact: true }).isEnabled(),
       true,
       "artwork arriving after a draft save is still unsaved progress",
     );
-    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    const dateBeforeReview = await page.getByLabel("Event date", { exact: true }).inputValue();
+    await page.getByLabel("Event date", { exact: true }).fill("");
+    await openSection("Basics");
+    const reviewButton = page.getByRole("button", { name: "Review both versions", exact: true });
+    const reviewTab = page.getByRole("button", { name: "3 Review", exact: true });
+    assert.equal(await reviewButton.isDisabled(), true);
+    assert.equal(await reviewTab.isDisabled(), true, "step navigation cannot bypass required details");
+    const requiredDetails = page.getByRole("region", { name: "Required details", exact: true });
+    await requiredDetails.getByRole("button", { name: "Event date", exact: true }).click();
+    await page.waitForFunction(() => document.activeElement?.id === "livecard-date");
+    assert.equal(await page.getByRole("tab", { name: "When & Where", exact: true }).getAttribute("aria-selected"), "true");
+    await page.getByLabel("Event date", { exact: true }).fill(dateBeforeReview);
+    assert.equal(await reviewButton.isEnabled(), true);
+    const timeBeforeReview = await page.getByLabel("Start time", { exact: true }).inputValue();
+    await page.getByLabel("Start time", { exact: true }).fill("");
+    assert.equal(await reviewButton.isDisabled(), true);
+    await page.getByLabel("Start time", { exact: true }).fill(timeBeforeReview);
+    await openSection("Basics");
+    await page.getByLabel("Event title or name").fill("   ");
+    assert.equal(await reviewButton.isDisabled(), true);
+    const wordingBeforeInvalidSubmit = wordingRequests.length;
+    await page.locator("form").evaluate((form) => form.requestSubmit());
+    assert.equal(await page.getByRole("button", { name: "2 Event details", exact: true }).getAttribute("aria-current"), "step");
+    assert.equal(wordingRequests.length, wordingBeforeInvalidSubmit, "invalid submit cannot start review preparation");
+    await page.getByLabel("Event title or name").fill("Livia's Movie Night");
+    await page.getByRole("button", { name: "1 Design", exact: true }).click();
+    assert.equal(await page.getByLabel("Event type", { exact: true }).inputValue(), "Birthday");
+    await page.getByLabel("Event type", { exact: true }).selectOption("");
+    assert.equal(await page.getByRole("button", { name: "Continue to event details", exact: true }).isDisabled(), true);
+    await page.getByRole("button", { name: "2 Event details", exact: true }).click();
+    assert.equal(await reviewButton.isDisabled(), true);
+    await requiredDetails.getByRole("button", { name: "Event type", exact: true }).click();
+    await page.waitForFunction(() => document.activeElement?.id === "livecard-eventType");
+    assert.equal(await page.getByRole("button", { name: "1 Design", exact: true }).getAttribute("aria-current"), "step", "missing event type links back to Design");
+    await page.getByLabel("Event type", { exact: true }).selectOption("Birthday");
+    await page.getByRole("button", { name: "Continue to event details", exact: true }).click();
+    await openSection("RSVP");
+    await page.getByLabel("Host name", { exact: true }).fill("");
+    assert.equal(await reviewButton.isDisabled(), true, "enabled RSVP needs its required host name");
+    await page.getByRole("switch", { name: /Collect RSVPs/ }).click();
+    assert.equal(await reviewButton.isEnabled(), true, "disabled RSVP requires no host details");
+    await page.getByRole("switch", { name: /Collect RSVPs/ }).click();
+    await page.getByLabel("Host name", { exact: true }).fill("Mia");
+    await openSection("Registry");
+    await page.getByLabel("Registry or gift-list link").fill("");
+    assert.equal(await reviewButton.isDisabled(), true, "enabled registry needs a valid link");
+    await page.getByRole("switch", { name: /registry or gift list/ }).click();
+    assert.equal(await reviewButton.isEnabled(), true, "disabled registry requires no link");
+    await page.getByRole("switch", { name: /registry or gift list/ }).click();
+    await page.getByLabel("Registry or gift-list link").fill("https://example.com/gifts");
+    assert.equal(await reviewButton.isEnabled(), true);
+    assert.equal(generations.length, 1, "fixing logistics never regenerates design");
+    await openSection("When & Where");
+    await page.getByLabel("Venue name", { exact: true }).fill("Unavailable venue");
+    await reviewButton.click();
+    await page.getByRole("alert").filter({ hasText: "We couldn’t finish preparing your invitation" }).waitFor();
+    assert.equal(await page.getByText("Location lookup is unavailable. Enter your address and confirm the local time zone.", { exact: true }).count(), 0);
+    assert.equal(await page.getByLabel("Local time zone", { exact: true }).count(), 0);
+    await page.getByLabel("Venue name", { exact: true }).fill("Unlisted venue");
+    await reviewButton.click();
+    await page.getByText("We couldn’t identify this venue. Add its city or full address.", { exact: true }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "2 Event details", exact: true }).getAttribute("aria-current"), "step");
+    await page.getByLabel("Venue name", { exact: true }).fill("AMC");
+    await reviewButton.click();
+    await page.getByRole("list", { name: "Matching venues" }).waitFor();
+    await page.getByRole("button", { name: /AMC Grand Boulevard 10.*465 Grand Boulevard/ }).click();
+    await page.getByRole("button", { name: "Preview Live Card", exact: true }).waitFor();
+    assert.ok(locationRequests.some((request) => request.placeId === "amc"), "choosing a branch resumes final preparation");
+    assert.equal(saves.length, 1, "venue resolution and clarification never save automatically");
+    await page.getByRole("button", { name: "2 Event details", exact: true }).click();
+    await openSection("When & Where");
+    await page.getByRole("button", { name: "Change location", exact: true }).click();
+    await page.getByLabel("Change venue", { exact: true }).fill("456 Lake St, Chicago");
+    await page.getByRole("button", { name: "3 Review", exact: true }).click();
+    await page.getByRole("button", { name: "Preview Live Card", exact: true }).click();
+    await page.waitForFunction(() => window.__cardFonts?.some((font) => font.includes("EnvitefyCardBebas")));
+    assert.ok(await page.evaluate(() => window.__cardFonts.some((font) => font.includes("EnvitefyCardBebas"))), "canvas uses the generated cinematic title font");
+    assert.ok(await page.evaluate(() => window.__cardFonts.some((font) => font.includes("EnvitefyCardClassic"))), "opening line uses a complementary invitation font");
     const dialog = page.getByRole("dialog");
     await dialog.getByRole("button", { name: "RSVP", exact: true }).waitFor();
+    await checkActionChrome(dialog);
     await dialog.getByRole("button", { name: "Overview", exact: true }).click();
     await dialog.getByText("A movie and dinner with friends.", { exact: true }).waitFor();
+    const savesBeforeViewSwitch = saves.length;
+    const wordingBeforeViewSwitch = wordingRequests.length;
+    await selectView("Invite", dialog);
+    assert.equal(await dialog.getByRole("button", { name: "RSVP", exact: true }).count(), 0);
+    assert.equal(await dialog.locator("[data-live-card-trigger]").count(), 0);
+    await selectView("Live Card", dialog);
+    await dialog.getByRole("button", { name: "RSVP", exact: true }).waitFor();
+    assert.equal(saves.length, savesBeforeViewSwitch);
+    assert.equal(wordingRequests.length, wordingBeforeViewSwitch, "switching preview views makes no AI requests");
+    assert.equal(generations.length, 1, "switching preview views reuses the same artwork");
     await page.getByRole("button", { name: "Close preview", exact: true }).click();
+    await page.getByRole("button", { name: "2 Event details", exact: true }).click();
+    await selectView("Invite");
+    assert.equal(await page.getByRole("complementary", { name: "Artwork preview" }).locator("[data-live-card-trigger]").count(), 0);
+    await selectView("Live Card");
     await openSection("RSVP");
     await page.getByRole("switch", { name: /Collect RSVPs/ }).click();
+    const inlinePreview = page.getByRole("complementary", { name: "Artwork preview" });
+    await checkActionChrome(inlinePreview);
+    const fourActionRows = await inlinePreview.locator("[data-live-card-trigger]").evaluateAll((buttons) => buttons.map((button) => Math.round(button.getBoundingClientRect().y)));
+    assert.equal(fourActionRows.length, 4);
+    assert.equal(new Set(fourActionRows).size, 1, "four actions share one row on a full-width card");
+    await inlinePreview.screenshot({ path: path.join(out, "restored-circular-actions.png") });
     await openSection("Registry");
     await page.getByRole("switch", { name: /registry or gift list/ }).click();
-    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await page.getByRole("button", { name: "3 Review", exact: true }).click();
+    await page.getByRole("button", { name: "Preview Live Card", exact: true }).click();
     assert.equal(await dialog.getByRole("button", { name: "RSVP", exact: true }).count(), 0);
     assert.equal(await dialog.getByRole("button", { name: "Registry", exact: true }).count(), 0);
     await page.getByRole("button", { name: "Close preview", exact: true }).click();
+    await page.getByRole("button", { name: "2 Event details", exact: true }).click();
     await openSection("RSVP");
     await page.getByRole("switch", { name: /Collect RSVPs/ }).click();
     assert.equal(await page.getByLabel("Host name", { exact: true }).inputValue(), "Mia");
@@ -236,15 +454,21 @@ test("Live Card / Invite: AI intake, location, explicit saves, dashboard handoff
       await page.getByLabel("Registry or gift-list link").inputValue(),
       "https://example.com/gifts",
     );
-    await openSection("Overview");
-    await page.getByLabel("About your event").fill("A movie and dinner with freinds.");
+    await openSection("Basics");
+    await page.getByLabel("Message to guests (optional)").fill("A movie and dinner with freinds.");
     const savedBeforeProofreading = saves.length;
     await page.getByRole("button", { name: "3 Review", exact: true }).click();
-    await page.getByRole("region", { name: "Review Overview wording", exact: true }).waitFor();
-    assert.equal(await page.getByRole("button", { name: "Publish & go to dashboard", exact: true }).isDisabled(), true);
-    assert.equal(saves.length, savedBeforeProofreading, "proofreading never saves or publishes");
-    await page.getByRole("button", { name: "Use reviewed wording", exact: true }).click();
+    await page.getByRole("region", { name: "Review your versions", exact: true }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "Check grammar & spelling", exact: true }).count(), 0);
+    assert.equal(await page.getByRole("button", { name: "Use reviewed wording", exact: true }).count(), 0);
+    assert.equal(await page.getByRole("region", { name: "Review Overview wording", exact: true }).count(), 0);
+    assert.equal(saves.length, savedBeforeProofreading, "automatic proofreading never saves or publishes");
     assert.equal(await page.getByLabel("Live card share link").count(), 0);
+    await page.waitForFunction(() => document.activeElement?.textContent === "Your Live Card & Invite");
+    await selectView("Invite");
+    await page.getByRole("button", { name: "Download invitation", exact: true }).focus();
+    await page.keyboard.press("Tab");
+    assert.match(await page.evaluate(() => document.activeElement?.textContent), /Edit event details/, "keyboard follows the visible review order");
     await page.screenshot({ path: path.join(out, "desktop-review.png"), fullPage: true });
     failSave = true;
     await page.getByRole("button", { name: "Publish & go to dashboard", exact: true }).click();
@@ -254,15 +478,16 @@ test("Live Card / Invite: AI intake, location, explicit saves, dashboard handoff
     await page.getByRole("button", { name: "Publish & go to dashboard", exact: true }).click();
     await page.getByRole("heading", { name: "Owner dashboard", exact: true }).waitFor();
     assert.equal(new URL(page.url()).searchParams.get("tab"), "dashboard");
-    assert.equal(stored.data.description, "A movie and dinner with friends.");
+    assert.equal(stored.data.description, "A movie and dinner with friends.\n\nBring a jacket.", "collapsed instructions are still included when publishing");
     assert.equal(stored.data.startISO, "2026-10-04T23:00:00.000Z");
     assert.equal(stored.data.additionalLocations[0].label, "Dinner");
     assert.equal(stored.data.studioCard.invitationData.eventDetails.actionVisibility.rsvp, true);
     assert.equal(generations.length, 1, "editing guest details and publishing reuse the artwork");
     await page.goto(`${origin}/livacards-invites?edit=${stored.id}`);
-    await page.getByLabel("About your event").waitFor();
+    await page.getByRole("button", { name: "Message to guests (optional)", exact: true }).click();
+    await page.getByLabel("Message to guests (optional)").waitFor();
     assert.equal(
-      await page.getByLabel("About your event").inputValue(),
+      await page.getByLabel("Message to guests (optional)").inputValue(),
       "A movie and dinner with friends.",
     );
     assert.equal(
@@ -270,40 +495,50 @@ test("Live Card / Invite: AI intake, location, explicit saves, dashboard handoff
       true,
       "restoring a saved card starts clean",
     );
-    await page.getByLabel("About your event").fill("Updated welcome");
+    await page.getByLabel("Message to guests (optional)").fill("Updated welcome");
     await page.getByRole("button", { name: "Save changes", exact: true }).click();
     await page.getByText("Your invitation is updated.", { exact: true }).waitFor();
-    assert.equal(stored.data.description, "Updated welcome");
+    assert.equal(stored.data.description, "Updated welcome\n\nBring a jacket.");
     assert.equal(generations.length, 1);
-    await page.getByRole("button", { name: "1 Describe", exact: true }).click();
+    await page.getByRole("button", { name: "2 Event details", exact: true }).click();
+    await openSection("Basics");
     await page.getByLabel("Event title or name").fill("Updated title");
     await page.getByRole("button", { name: "3 Review", exact: true }).click();
+    await page.getByRole("region", { name: "Review your versions", exact: true }).waitFor();
     assert.equal(
       await page.getByRole("button", { name: "Save & go to dashboard", exact: true }).isDisabled(),
       false,
       "editable headlines do not invalidate the background",
     );
     assert.equal(generations.length, 1);
-    await page.getByRole("button", { name: "1 Describe", exact: true }).click();
-    await page.getByLabel("How would you like your card to look?").fill("Pink curtains with gold stars");
+    await page.getByRole("button", { name: "1 Design", exact: true }).click();
+    await page.getByLabel("Describe your design").fill("Pink curtains with gold stars");
     failGeneration = true;
-    await page.getByRole("button", { name: "Create updated design & continue" }).click();
+    await page.getByRole("button", { name: "Generate updated design" }).click();
     await page.getByRole("button", { name: "Retry design", exact: true }).waitFor();
-    assert.equal(await page.getByLabel("About your event").inputValue(), "Updated welcome");
+    await page.getByRole("button", { name: "2 Event details", exact: true }).click();
+    assert.equal(await page.getByLabel("Message to guests (optional)").inputValue(), "Updated welcome");
     failGeneration = false;
     await page.getByRole("button", { name: "Retry design", exact: true }).click();
     await page.getByText("Your design is ready.", { exact: true }).waitFor();
-    // Both formats share one background. Text changes and format switching never generate artwork.
+    await page.getByRole("button", { name: "2 Event details", exact: true }).click();
+    // Both outputs share one background. Previewing either version never changes the event format or generates artwork.
     const generationCount = generations.length;
-    await page.getByRole("button", { name: "Invite", exact: true }).click();
-    assert.equal(await page.getByLabel("About your event").inputValue(), "Updated welcome");
+    assert.equal(await page.getByLabel("Message to guests (optional)").inputValue(), "Updated welcome");
     await page.getByText("Your design is ready.", { exact: true }).waitFor();
     assert.equal(generations.length, generationCount);
     await openSection("When & Where");
     await page.getByLabel("Start time", { exact: true }).fill("19:30");
-    await openSection("Overview");
+    await openSection("Basics");
     assert.equal(generations.length, generationCount);
-    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    const savesBeforePreviews = saves.length;
+    await page.getByRole("button", { name: "3 Review", exact: true }).click();
+    await selectView("Live Card");
+    await page.getByRole("region", { name: "Live Card output", exact: true }).waitFor();
+    assert.equal(await page.getByRole("region", { name: "Invite output", exact: true }).count(), 0, "only the selected version is rendered");
+    await selectView("Invite");
+    await page.getByRole("region", { name: "Invite output", exact: true }).waitFor();
+    await page.getByRole("button", { name: "Preview Invite", exact: true }).click();
     for (const name of ["RSVP", "Overview", "Location", "Calendar", "Registry"]) {
       assert.equal(await dialog.getByRole("button", { name, exact: true }).count(), 0, `classic invite has no ${name} action`);
     }
@@ -318,8 +553,18 @@ test("Live Card / Invite: AI intake, location, explicit saves, dashboard handoff
     assert.match(printedText, /7:30 PM/, "download uses the corrected event time");
     assert.doesNotMatch(printedText, /6:00 PM|4:00 PM/, "download never reuses stale time text");
     assert.equal(generations.length, generationCount, "downloading only composes existing artwork and current text");
-    await page.getByRole("button", { name: "Live Card", exact: true }).click();
-    await page.getByText("Your design is ready.", { exact: true }).waitFor();
+    assert.equal(saves.length, savesBeforePreviews, "previews and downloading do not save the event");
+    await selectView("Live Card");
+    await page.getByRole("button", { name: "Preview Live Card", exact: true }).click();
+    await dialog.getByRole("button", { name: "RSVP", exact: true }).waitFor();
+    await page.getByRole("button", { name: "Close preview", exact: true }).click();
+    await page.getByRole("button", { name: "Save changes", exact: true }).click();
+    await page.getByText("Your invitation is updated.", { exact: true }).waitFor();
+    assert.equal(stored.data.primaryOutput, "live_card", "Invite preview keeps the Live Card as the published event");
+    await selectView("Invite");
+    await page.getByRole("button", { name: "Preview Invite", exact: true }).click();
+    await page.getByRole("button", { name: "Close preview", exact: true }).click();
+    assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).isDisabled(), true, "preview choice is not unsaved progress");
     for (const viewport of [
       { width: 390, height: 844 },
       { width: 844, height: 390 },
@@ -327,7 +572,18 @@ test("Live Card / Invite: AI intake, location, explicit saves, dashboard handoff
     ]) {
       await page.setViewportSize(viewport);
       await page.emulateMedia({ reducedMotion: "reduce" });
-      for (const name of ["Overview", "When & Where", "RSVP", "Registry"]) {
+      await page.getByRole("button", { name: "3 Review", exact: true }).click();
+      for (const name of ["Live Card output", "Invite output"]) {
+        await selectView(name.replace(" output", ""));
+        const output = page.getByRole("region", { name, exact: true });
+        await output.scrollIntoViewIfNeeded();
+        const art = await output.locator("[data-live-card-artwork]").boundingBox();
+        assert.ok(art && art.width > 100 && art.height > 100, `${name} is visible at ${viewport.width}px`);
+      }
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      await page.screenshot({ path: path.join(out, `review-${viewport.width}.png`), fullPage: true });
+      await page.getByRole("button", { name: "2 Event details", exact: true }).click();
+      for (const name of ["Basics", "When & Where", "RSVP", "Registry"]) {
         await openSection(name);
         assert.equal(await page.getByRole("tabpanel").count(), 1);
         const panel = await page.getByRole("tabpanel").boundingBox();
@@ -344,7 +600,7 @@ test("Live Card / Invite: AI intake, location, explicit saves, dashboard handoff
           fullPage: true,
         });
       }
-      await openSection("Overview");
+      await openSection("Basics");
       assert.equal(
         await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
         false,
@@ -353,7 +609,9 @@ test("Live Card / Invite: AI intake, location, explicit saves, dashboard handoff
         path: path.join(out, `details-${viewport.width}.png`),
         fullPage: true,
       });
-      await page.getByRole("button", { name: "Preview", exact: true }).click();
+      await selectView("Live Card");
+      await page.getByRole("button", { name: "3 Review", exact: true }).click();
+    await page.getByRole("button", { name: "Preview Live Card", exact: true }).click();
       const bounds = await dialog.locator("[data-live-card-artwork]").boundingBox();
       assert.ok(bounds && bounds.width > 100 && bounds.height > 100);
       assert.ok(Math.abs(bounds.width / bounds.height - 2 / 3) < 0.01, "shared artwork and text maintain their proportions");
@@ -364,30 +622,75 @@ test("Live Card / Invite: AI intake, location, explicit saves, dashboard handoff
           bounds.y + bounds.height <= viewport.height + 1,
         JSON.stringify(bounds),
       );
+      await checkActionChrome(dialog);
       for (const button of await dialog.locator("[data-live-card-trigger]").all()) {
         const buttonBounds = await button.boundingBox();
         assert.ok(buttonBounds.y > bounds.y + bounds.height * 0.5, "buttons stay in the bottom of the card");
         assert.ok(buttonBounds.height >= 44, "buttons have comfortable tap targets");
         assert.ok(buttonBounds.y + buttonBounds.height <= bounds.y + bounds.height + 1, "buttons remain inside the artwork");
       }
+      const viewToggle = dialog.getByRole("group", { name: "Preview view", exact: true });
+      const toggleBounds = await viewToggle.boundingBox();
+      assert.ok(toggleBounds && toggleBounds.y >= 0 && toggleBounds.x >= 0 && toggleBounds.x + toggleBounds.width <= viewport.width, "preview toggle fits on screen");
+      assert.ok(toggleBounds.y + toggleBounds.height <= bounds.y, "toggle does not cover the artwork");
+      for (const button of await viewToggle.getByRole("button").all()) {
+        assert.ok((await button.boundingBox()).height >= 44);
+      }
       await page.screenshot({ path: path.join(out, `preview-${viewport.width}.png`) });
+      await selectView("Invite", dialog);
+      assert.equal(await dialog.locator("[data-live-card-trigger]").count(), 0);
+      await page.screenshot({ path: path.join(out, `invite-preview-${viewport.width}.png`) });
       await page.getByRole("button", { name: "Close preview", exact: true }).click();
+      await page.getByRole("button", { name: "2 Event details", exact: true }).click();
     }
+    await page.getByLabel("Message to guests (optional)").fill("Updated welcome for our guests");
     await page.locator("#leave").click();
     await page.getByRole("button", { name: "Keep editing", exact: true }).click();
-    assert.equal(await page.getByLabel("About your event").inputValue(), "Updated welcome");
+    assert.equal(await page.getByLabel("Message to guests (optional)").inputValue(), "Updated welcome for our guests");
+    const savesBeforeAutomaticCleanup = saves.length;
+    const generationsBeforeAutomaticCleanup = generations.length;
     failProofread = true;
-    await page.getByLabel("About your event").fill("A movie and dinner with freinds.");
-    await page.getByRole("button", { name: "Check grammar & spelling", exact: true }).click();
-    await page.getByRole("region", { name: "Review Overview wording", exact: true }).waitFor();
-    assert.equal(await page.getByLabel("About your event").inputValue(), "A movie and dinner with freinds.");
-    await page.getByRole("button", { name: "Keep editing", exact: true }).click();
+    await page.getByLabel("Message to guests (optional)").fill("A movie and dinner with freinds.");
+    await page.getByRole("button", { name: "3 Review", exact: true }).click();
+    await page.getByText("We couldn’t finish preparing your invitation. Your details are safe. Please try again.", { exact: true }).waitFor();
+    assert.equal(await page.getByLabel("Message to guests (optional)").inputValue(), "A movie and dinner with freinds.");
     failProofread = false;
-    await page.getByRole("button", { name: "Check grammar & spelling", exact: true }).click();
-    await page.getByRole("button", { name: "Use reviewed wording", exact: true }).waitFor();
-    await page.getByLabel("About your event").fill("My latest Overview.");
-    await page.getByRole("button", { name: "Use reviewed wording", exact: true }).click();
-    assert.equal(await page.getByLabel("About your event").inputValue(), "My latest Overview.", "a late suggestion never replaces a newer manual edit");
+    holdProofread = true;
+    const proofreading = new Promise((resolve) => { proofreadStarted = resolve; });
+    await page.getByRole("button", { name: "3 Review", exact: true }).click();
+    await proofreading;
+    await page.getByLabel("Message to guests (optional)").fill("My latest Overview at amc with freinds.");
+    releaseProofread();
+    await page.getByRole("region", { name: "Review your versions", exact: true }).waitFor();
+    await page.getByRole("button", { name: "2 Event details", exact: true }).click();
+    assert.equal(await page.getByLabel("Message to guests (optional)").inputValue(), "My latest Overview at AMC with friends.", "newer manual wording is retained and automatically corrected");
+    assert.equal(wordingRequests.at(-1).overview, "My latest Overview at amc with freinds.", "newer edits are checked again");
+    await page.getByRole("button", { name: "3 Review", exact: true }).click();
+    await page.getByRole("region", { name: "Review your versions", exact: true }).waitFor();
+    const checksBeforeDownload = wordingRequests.length;
+    const correctedDownload = page.waitForEvent("download");
+    await page.evaluate(() => { window.__cardDraws = []; });
+    await page.getByRole("button", { name: "Download invitation", exact: true }).click();
+    await correctedDownload;
+    const correctedPrint = await page.evaluate(() => window.__cardDraws.join("\n"));
+    assert.match(correctedPrint, /My latest Overview at AMC with friends/);
+    assert.doesNotMatch(correctedPrint, /\bamc\b|freinds/);
+    assert.equal(wordingRequests.length, checksBeforeDownload, "unchanged wording reuses the completed check for the other output");
+    assert.equal(saves.length, savesBeforeAutomaticCleanup, "cleanup and downloads remain in memory");
+    assert.equal(generations.length, generationsBeforeAutomaticCleanup, "cleanup never regenerates artwork");
+    page.once("dialog", (dialog) => dialog.accept());
+    await page.goto(`${origin}/livacards-invites`);
+    await page.getByLabel("Event type", { exact: true }).selectOption("Birthday");
+    await page.getByRole("button", { name: "2 Event details", exact: true }).click();
+    await page.getByLabel("Event title or name").fill("Livia’s 10th Birthday");
+    await openSection("When & Where");
+    assert.equal(await page.getByLabel("Event date", { exact: true }).inputValue(), "", "new event dates remain blank until entered");
+    assert.equal(await page.getByLabel("Start time", { exact: true }).inputValue(), "");
+    await page.screenshot({ path: path.join(out, "mobile-when-where.png"), fullPage: true });
+    await page.getByRole("button", { name: "1 Design", exact: true }).click();
+    await page.getByLabel("Describe your design").waitFor();
+    assert.equal(generations.length, generationsBeforeAutomaticCleanup, "details and design steps do not generate automatically");
+    assert.equal(saves.length, savesBeforeAutomaticCleanup, "new event details remain unsaved");
     assert.deepEqual(runtimeErrors, []);
     await fs.writeFile(
       path.join(out, "results.json"),
@@ -397,12 +700,17 @@ test("Live Card / Invite: AI intake, location, explicit saves, dashboard handoff
           saveRequests: saves.length,
           runtimeErrors,
           verified: [
-            "Overview proofreading before review and publication",
-            "description and venue extraction",
-            "review before applying AI suggestions",
-            "location address and local timezone carried forward",
+            "automatic spelling and AMC capitalization before review, download and publication",
+            "proofreading failures retain text and concurrent edits are rechecked",
+            "Design first with immediate event entry while artwork generates",
+            "description helpers and preview header removed while artwork, toggle and review previews remain",
+            "optional guest message and instructions collapse independently, preserve text and support keyboard controls",
+            "review readiness links directly to missing event fields",
+            "venue-name lookup runs only during final card preparation",
+            "background preparation resolves every location and preserves concurrent edits",
             "classic invite has no guest action controls",
-            "format switching retains facts and artwork",
+            "preview toggle in editor, review and fullscreen preserves facts, artwork, saved format and clean state",
+            "preview toggle has 44px targets and stays above artwork on phones and landscape",
             "publish navigates to owner dashboard",
             "concurrent edits",
             "compact tabs and keyboard navigation",

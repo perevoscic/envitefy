@@ -1,6 +1,7 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
+import CreateWithEnvitefyCallout from "@/components/events/CreateWithEnvitefyCallout";
+import EventCustomThemeLauncher from "@/components/events/EventCustomThemeLauncher";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -133,29 +134,10 @@ export default function PublicTemplateGallery({
             </Link>
           )}
         </div>
-        {category === "signup-forms" && !featured && (
-          <div className="mb-8 flex flex-col gap-5 rounded-2xl border border-[#d7c6dc] bg-white/90 p-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-4">
-              <Sparkles className="mt-1 shrink-0 text-[#72527e]" size={24} aria-hidden />
-              <div>
-                <h2 className="font-serif text-2xl">Have something unique in mind?</h2>
-                <p className="mt-2 max-w-xl text-sm leading-6 text-[#746775]">
-                  Share your idea, event details, and inspiration. Preview a custom signup before
-                  making it yours.
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setCustomThemeOpen(true)}
-              aria-label="Create a custom sign-up theme with Envitefy"
-              className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-full bg-[#684675] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#52375d] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#684675]"
-            >
-              Create with Envitefy →
-            </button>
-          </div>
-        )}
-        {category === "signup-forms" && !featured && customThemeOpen && (
+        {!featured && (category === "signup-forms" ? (
+          <div className="mb-8"><CreateWithEnvitefyCallout signup onClick={() => setCustomThemeOpen(true)} /></div>
+        ) : <EventCustomThemeLauncher category={category} contained />)}
+        {category === "signup-forms" && !featured && customThemeOpen && status === "authenticated" && (
           <SignupCustomThemeDialog
             form={customThemeForm}
             isNew

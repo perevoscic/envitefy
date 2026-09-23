@@ -1,11 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createLiveCardForm, liveCardDesignKey, sharedCardDesignKey } from "./livecard-builder.ts";
+import {
+  createLiveCardForm,
+  isSharedCardDesignCurrent,
+  liveCardDesignKey,
+  sharedCardDesignKey,
+} from "./livecard-builder.ts";
 import {
   layoutSharedCard,
   readSharedCardDesign,
-  sharedCardContent,
   type SharedCardDesign,
+  sharedCardContent,
 } from "./shared-card-design.ts";
 
 const design: SharedCardDesign = {
@@ -18,7 +23,7 @@ const design: SharedCardDesign = {
 };
 const measure = (text: string, size: number) => text.length * size * 0.51;
 
-test("shared background survives format, title, contact, location and time changes; visual changes invalidate it", () => {
+test("shared background survives event type, format, title, contact, location and time changes; visual changes invalidate it", () => {
   const form = {
     ...createLiveCardForm(),
     title: "Livia's Birthday",
@@ -29,6 +34,7 @@ test("shared background survives format, title, contact, location and time chang
   const changed = {
     ...form,
     title: "Livia's 11th Birthday",
+    eventType: "General event" as const,
     headlineIntro: "Join us",
     format: "digital_flyer" as const,
     startTime: "19:30",
@@ -44,6 +50,22 @@ test("shared background survives format, title, contact, location and time chang
     liveCardDesignKey(form),
     "legacy baked images keep their factual invalidation",
   );
+});
+
+test("saved shared backgrounds stay current across event type edits but retain visual invalidation", () => {
+  const form = {
+    ...createLiveCardForm(),
+    design: "Pink curtains",
+    referenceUrl: "/reference.webp",
+  };
+  const legacyKey = JSON.stringify(["shared-v1", "Birthday", form.design, form.referenceUrl]);
+  assert.equal(isSharedCardDesignCurrent(form, legacyKey), true);
+  assert.equal(isSharedCardDesignCurrent(form, sharedCardDesignKey(form)), true);
+  assert.equal(isSharedCardDesignCurrent({ ...form, design: "Blue stars" }, legacyKey), false);
+  assert.equal(isSharedCardDesignCurrent({ ...form, referenceUrl: "/new.webp" }, legacyKey), false);
+  for (const key of ["", "not-json", "null", "{}", liveCardDesignKey(form)]) {
+    assert.equal(isSharedCardDesignCurrent(form, key), false);
+  }
 });
 
 test("headline is identical in both outputs and event-local details only enter the invitation", () => {
@@ -140,5 +162,42 @@ test("metadata parsing rejects unsafe backgrounds and normalizes typography and 
       eventDetails: { rsvpEnabled: false, rsvpContact: "hidden@example.com", registryLink: "" },
     }).paragraphs.length,
     0,
+  );
+});
+
+test("themed pairings use distinct display and supporting type without changing approved wording", () => {
+  const content = {
+    intro: "You're invited",
+    title: "Liviu’s Birthday",
+    paragraphs: ["Saturday at 4:00 PM", "465 Grand Boulevard"],
+  };
+  for (const typography of [
+    "adventure",
+    "romantic",
+    "cinematic",
+    "storybook",
+    "botanical",
+    "editorial",
+    "retro",
+    "celestial",
+  ] as const) {
+    const themed = { ...design, typography };
+    assert.equal(readSharedCardDesign(themed)?.typography, typography);
+    const live = layoutSharedCard(themed, content, "live_card", measure);
+    const invite = layoutSharedCard(themed, content, "digital_flyer", measure);
+    assert.notEqual(live.lines[0].font, live.lines[1].font);
+    assert.deepEqual(invite.lines.slice(0, live.lines.length), live.lines);
+    assert.equal(
+      live.lines
+        .slice(1)
+        .map((line) => line.text)
+        .join(" "),
+      content.title,
+    );
+    assert.equal(invite.overflow, false);
+  }
+  assert.equal(
+    readSharedCardDesign({ ...design, typography: "untrusted-font" })?.typography,
+    undefined,
   );
 });

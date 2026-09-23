@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     input && typeof input === "object" && "form" in input ? readLiveCardForm(input.form) : null;
   if (!form || Object.keys(validateLiveCard(form, "design")).length)
     return NextResponse.json(
-      { error: "Add a title, event type and design direction." },
+      { error: "Choose an event type and describe how you would like your invitation to look." },
       { status: 400 },
     );
   try {

@@ -21,9 +21,20 @@ test("December anchor + January event uses following year", () => {
   assert.equal(out.getDate(), 10);
 });
 
-test("Same calendar day but start time already passed rolls to next year", () => {
+test("Same calendar day with a passed time stays in the current year", () => {
   const anchor = new Date(2026, 3, 19, 18, 0, 0, 0);
   const parsed = new Date(2026, 3, 19, 13, 0, 0, 0);
   const out = resolveInferredInviteDatetime(anchor, parsed);
-  assert.equal(out.getFullYear(), 2027);
+  assert.equal(out.getFullYear(), 2026);
+});
+
+test("Earlier day in the current month stays in the current year", () => {
+  const out = resolveInferredInviteDatetime(new Date(2026, 8, 22), new Date(2027, 8, 1, 16));
+  assert.equal(out.getFullYear(), 2026);
+  assert.equal(out.getMonth(), 8);
+  assert.equal(out.getDate(), 1);
+});
+
+test("A missing-year leap date never silently becomes March 1", () => {
+  assert.equal(resolveInferredInviteDatetime(new Date(2026, 8, 22), new Date(2028, 1, 29)), null);
 });

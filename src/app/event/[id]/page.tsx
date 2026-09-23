@@ -16,6 +16,8 @@ import BasketballSkin from "@/components/BasketballSkin";
 import BirthdaySkin from "@/components/BirthdaySkin";
 import { BIRTHDAY_THEMES } from "@/components/birthdays/birthdayThemes";
 import ConciergeEventWebsite from "@/components/concierge/ConciergeEventWebsite";
+import CustomEventPageContent from "@/components/events/custom/CustomEventPageContent";
+import { normalizeCustomEventPage } from "@/lib/event-custom-design";
 import { composeGuestLocation, formatGuestScheduleFromInstants, publicGuestInstructions } from "@/lib/guest-event-details";
 import { parseGenderRevealConfig } from "@/lib/gender-reveal";
 import EventActions from "@/components/EventActions";
@@ -1077,7 +1079,7 @@ export default async function EventPage({
     return <DeletedEventNotice missingEventKey={identity ? undefined : awaitedParams.id} />;
   }
   const isOwner = Boolean(userId && row.user_id && userId === row.user_id);
-  if (isOwner && isEventDraft(row.data) && row.data?.templateEditor) redirect(resolveEditHref(row.id, row.data, row.title));
+  if (isOwner && isEventDraft(row.data) && (row.data?.templateEditor || row.data?.customEventPage)) redirect(resolveEditHref(row.id, row.data, row.title));
   let recipientAccepted = false;
   let isReadOnly = false;
   if (!isOwner) {
@@ -2438,6 +2440,13 @@ export default async function EventPage({
 
   const shouldRenderFootballPage =
     Boolean(isFootballDiscoveryTemplate) || Boolean(isFootballSeasonTemplate);
+
+  const customPage = normalizeCustomEventPage(clientSafeEventDataWithRegistryLinks.customEventPage);
+  if (customPage) {
+    return renderWithEventPageBackground(
+      <CustomEventPageContent page={customPage} eventId={row.id} shareUrl={shareUrl} isOwner={showEventOwnerActions && !ownerPreviewMode} />,
+    );
+  }
 
   if (isConciergeEventPageProduct) {
     return renderWithEventPageBackground(

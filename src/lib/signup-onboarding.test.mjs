@@ -187,6 +187,32 @@ test("sign-up galleries and editors keep Create Event active without classifying
   }
 });
 
+test("General Events opens the template gallery and stays active in the editor", () => {
+  const { getCreateEventSections, isCreateEventRoute, findActiveCreateEventItem } = load("src/config/navigation-config.tsx");
+  const items = getCreateEventSections(["general"], ["snap"]).flatMap((section) => section.items);
+  assert.equal(items.find((item) => item.label === "General Events")?.href, "/event/general");
+  for (const path of ["/event/general", "/event/general/customize", "/event/general/customize?templateId=civic_blue"]) {
+    assert.equal(isCreateEventRoute(path), true, path);
+    assert.equal(findActiveCreateEventItem(path, items)?.label, "General Events", path);
+  }
+  assert.equal(isCreateEventRoute("/event/a-published-gathering"), false);
+});
+
+test("General Events sits directly below Sign-up Form without bypassing category preferences", () => {
+  const { getCreateEventSections } = load("src/config/navigation-config.tsx");
+  for (const options of [{}, { defaultCreateIntent: "signup_forms" }, { defaultCreateIntent: "weddings" }, { isAdmin: true }]) {
+    const sections = getCreateEventSections(["general", "birthdays", "weddings"], ["snap"], undefined, options);
+    const hrefs = sections.flatMap((section) => section.items.map((item) => item.href));
+    const signupIndex = hrefs.indexOf("/signup-forms/templates");
+    assert.equal(hrefs[signupIndex + 1], "/event/general");
+    assert.equal(hrefs.filter((href) => href === "/event/general").length, 1);
+    if (options.defaultCreateIntent === "signup_forms") assert.equal(signupIndex, 0);
+    if (options.defaultCreateIntent === "weddings") assert.equal(hrefs[0], "/event/weddings");
+  }
+  const restricted = getCreateEventSections(["birthdays"], ["snap"]).flatMap((section) => section.items);
+  assert.ok(!restricted.some((item) => item.href === "/event/general"));
+});
+
 test("preference loading and failed refreshes do not reveal unrelated creation categories", async () => {
   const state = [];
   let stateIndex = 0;

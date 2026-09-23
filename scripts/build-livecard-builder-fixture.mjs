@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import postcss from "postcss";
 import tailwind from "@tailwindcss/postcss";
+import { transform as transformCss } from "lightningcss";
 const out = path.resolve(".qa/livecard-builder");
 await fs.mkdir(out, { recursive: true });
 const entry = path.join(out, "entry.tsx");
@@ -14,6 +15,7 @@ import LiveCardBuilder from "../../src/app/livacards-invites/LiveCardBuilder";
 import UnsavedProgressProvider from "../../src/components/UnsavedProgressProvider";
 createRoot(document.getElementById("root")!).render(<UnsavedProgressProvider><a href="/leave" id="leave">Leave editor</a><LiveCardBuilder initialEventId={new URLSearchParams(location.search).get("edit")} /></UnsavedProgressProvider>);`,
 );
+const moduleStyles = new Map();
 const build = await Bun.build({
   entrypoints: [entry],
   outdir: out,
@@ -24,6 +26,23 @@ const build = await Bun.build({
     {
       name: "isolated-browser-shell",
       setup(builder) {
+        // Bun's CSS-module output renames keyframes without rewriting animation
+        // references. Compile modules together with their exports so browser QA
+        // exercises working animations, as the application build does.
+        builder.onLoad({ filter: /\.module\.css$/ }, async ({ path: filename }) => {
+          const css = transformCss({
+            filename,
+            code: await fs.readFile(filename),
+            cssModules: true,
+          });
+          moduleStyles.set(filename, css.code.toString());
+          return {
+            loader: "js",
+            contents: `export default ${JSON.stringify(
+              Object.fromEntries(Object.entries(css.exports).map(([name, value]) => [name, value.name])),
+            )};`,
+          };
+        });
         builder.onResolve({ filter: /^next\/image$/ }, () => ({
           path: "image",
           namespace: "fixture",
@@ -50,6 +69,13 @@ const build = await Bun.build({
   ],
 });
 assert.ok(build.success, build.logs.map(String).join("\n"));
+await fs.writeFile(
+  path.join(out, "entry.css"),
+  [
+    ...(await Promise.all(build.outputs.filter((file) => file.path.endsWith(".css")).map((file) => file.text()))),
+    ...moduleStyles.values(),
+  ].join("\n"),
+);
 const globals = (await fs.readFile("src/app/globals.css", "utf8")).replace(
   '@import "tailwindcss";',
   '@import "tailwindcss" source(none);\n@source "./livacards-invites/LiveCardBuilder.tsx";\n@source "../components/UnsavedProgressProvider.tsx";\n@source "../components/ArtworkPreviewDialog.tsx";\n@source "../components/studio/StudioShowcaseLiveCard.tsx";\n@source "../components/studio/StudioLiveCardActionSurface.tsx";',

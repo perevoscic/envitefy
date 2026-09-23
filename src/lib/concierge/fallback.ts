@@ -1,3 +1,5 @@
+import { parseEventDates } from "../event-date-parser.ts";
+import { inferEventYear } from "../event-date-year.mjs";
 import { attachCreationReadiness, getCreationReadiness } from "./readiness.ts";
 import * as chrono from "chrono-node";
 import { localClockToIso } from "../creation/calendar-validation.ts";
@@ -2004,15 +2006,10 @@ function ordinalDay(day: number) {
 
 function dateFromMonthDay(month: number, day: number) {
   const reference = new Date();
-  let year = reference.getFullYear();
-  let start = new Date(year, month - 1, day, 12, 0, 0, 0);
+  const year = inferEventYear(month, reference);
+  const start = new Date(year, month - 1, day, 12, 0, 0, 0);
   if (start.getMonth() !== month - 1 || start.getDate() !== day) return null;
 
-  const today = new Date(reference.getFullYear(), reference.getMonth(), reference.getDate());
-  if (start < today) {
-    year += 1;
-    start = new Date(year, month - 1, day, 12, 0, 0, 0);
-  }
 
   return {
     dateText: `${MONTH_NAMES[month - 1]} ${ordinalDay(day)}`,
@@ -2279,7 +2276,7 @@ export function parseChrono(text: string, previous?: ConciergeEventDraft | null)
   const eventScheduleText = normalizeEventScheduleText(scheduleSource, { allowBareAge: previous?.eventType === "birthday" || /\bbirthday\b/i.test(scheduleSource) });
   const scheduleText = !/\b(?:starts?|begins?|happening|event is|party is)\s+now\b/i.test(eventScheduleText) && !/^\s*(?:right\s+)?now[.!?]?\s*$/i.test(eventScheduleText)
     ? eventScheduleText.replace(/\bnow\b/gi, "") : eventScheduleText;
-  const parsed = chrono.parse(scheduleText, new Date(), { forwardDate: true });
+  const parsed = parseEventDates(scheduleText, new Date(), explicitTimezone || previous?.timezone || DEFAULT_TIMEZONE);
   const endOnlySchedule = parseEndOnlySchedule(scheduleText, parsed, previous);
   if (endOnlySchedule) return endOnlySchedule;
   const candidates = parsed.filter((result) => !result.tags().has("result/relativeDate") && parsedTimeRole(scheduleText, result) !== "superseded");
@@ -2312,7 +2309,7 @@ export function parseChrono(text: string, previous?: ConciergeEventDraft | null)
   const auxiliary = (result: chrono.ParsedResult) => /\b(?:arriv(?:e|al)|warm[- ]?up|doors?\s+(?:open|opens)|check[- ]in)\s*(?:starts?\s*)?(?:at|is|from|:)?\s*$/i.test(scheduleText.slice(0, result.index));
   const primary = timed.find((result) => !auxiliary(result) && /\b(?:kickoff|tip[- ]off|(?:event|practice|competition|meet|game|show|ceremony|party)?\s*(?:starts?|begins?))\s*(?:at|is|from|:)?\s*$/i.test(scheduleText.slice(0, result.index)))
     || timed.find((result) => !auxiliary(result)) || (timed.length === 1 ? timed[0] : null);
-  const previousDate = previousClock || (previous?.dateText ? chrono.parse(previous.dateText, new Date(), { forwardDate: true }).find(parsedHasCalendarDate)?.start : null);
+  const previousDate = previousClock || (previous?.dateText ? parseEventDates(previous.dateText, new Date(), timezone).find(parsedHasCalendarDate)?.start : null);
   const datePart = (part: "year" | "month" | "day") => calendar?.start.get(part) ?? (previousDate && "get" in previousDate ? previousDate.get(part) : previousDate?.[part]) ?? null;
   const year = datePart("year"), month = datePart("month"), day = datePart("day");
   const hourValue = primary?.start.get("hour") ?? previousClock?.hour ?? null;

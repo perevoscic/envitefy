@@ -100,6 +100,7 @@ export function resolveArtworkEditHref(eventId: string, eventData: unknown): str
  * for other event types, goes directly to customize.
  */
 export const buildEditLink = (eventId: string, eventData: any, eventTitle: string): string => {
+  if (eventData?.createdVia === "custom-event-page" || eventData?.customEventPage?.version === 1) return `/event/design/customize?edit=${encodeURIComponent(eventId)}`;
   if (eventData?.createdVia === "livecard-builder") return `/livacards-invites?edit=${encodeURIComponent(eventId)}`;
   if (eventData?.scanSchedule?.items?.length) return `/event/schedule/customize?edit=${encodeURIComponent(eventId)}`;
   try {
@@ -174,6 +175,7 @@ export function resolveOwnerEditHref(
 }
 
 export const resolveEditHref = (eventId: string, eventData: any, eventTitle: string): string => {
+  if (eventData?.createdVia === "custom-event-page" || eventData?.customEventPage?.version === 1) return `/event/design/customize?edit=${encodeURIComponent(eventId)}`;
   if (eventData?.createdVia === "livecard-builder") return `/livacards-invites?edit=${encodeURIComponent(eventId)}`;
   if (eventData?.scanSchedule?.items?.length) return `/event/schedule/customize?edit=${encodeURIComponent(eventId)}`;
   const manualHref = manualEventEditHref(eventId, eventData);

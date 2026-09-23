@@ -10,15 +10,20 @@ import {
   validateLiveCard,
 } from "./livecard-builder.ts";
 
-test("artwork can start before any scheduling or optional guest details exist", () => {
+test("artwork needs event type and design direction but not title or logistics", () => {
   const form = {
     ...createLiveCardForm("America/Chicago"),
-    title: "Livia's Birthday",
     eventType: "Birthday" as const,
     design: "Pink movie night",
   };
   assert.deepEqual(validateLiveCard(form, "design"), {});
   assert.ok(validateLiveCard(form, "publish").date);
+  assert.ok(validateLiveCard(form, "publish").title);
+  assert.ok(validateLiveCard({ ...form, eventType: "" }, "design").eventType);
+  assert.deepEqual(Object.keys(validateLiveCard(createLiveCardForm(), "design")), [
+    "eventType",
+    "design",
+  ]);
   assert.equal(form.rsvpEnabled, false);
   assert.equal(form.registryEnabled, false);
 });
@@ -170,4 +175,26 @@ test("registry links allow only websites", () => {
     "",
   ])
     assert.equal(liveCardRegistryUrl(url), null);
+});
+
+test("final preparation accepts venue names while publication still requires resolved locations", () => {
+  const form = {
+    ...createLiveCardForm("America/New_York"),
+    title: "Party",
+    eventType: "Birthday" as const,
+    design: "Dinosaurs",
+    date: "2026-03-08",
+    startTime: "02:30",
+  };
+  form.locations[0].query = "AMC Grand Boulevard";
+  assert.deepEqual(
+    validateLiveCard(form, "prepare"),
+    {},
+    "browser-zone DST must not block finding the venue timezone",
+  );
+  assert.ok(validateLiveCard(form, "publish").locations);
+  assert.ok(
+    validateLiveCard({ ...form, locations: [{ ...form.locations[0], query: " " }] }, "prepare")
+      .locations,
+  );
 });

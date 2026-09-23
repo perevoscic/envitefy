@@ -79,10 +79,14 @@ export function templateEditorHref(category: TemplateCategory, templateId: strin
 }
 export function isEnabledTemplateEditorPath(path: string) {
   return (
+    path === "/event/general" ||
+    path === "/event/general/customize" ||
+    path === "/event/design/customize" ||
     TEMPLATE_CATEGORIES.some(
       (category) =>
         path === category.editor || path === category.editor.replace(/\/customize$/, ""),
-    ) || /^\/event\/weddings\/customize\/[^/]+$/.test(path)
+    ) ||
+    /^\/event\/weddings\/customize\/[^/]+$/.test(path)
   );
 }
 export function templateSignupIntent(category: TemplateCategory): SignupIntent {

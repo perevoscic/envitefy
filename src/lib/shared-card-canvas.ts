@@ -1,19 +1,20 @@
 "use client";
 
 import {
-  CARD_FONTS,
   CARD_HEIGHT,
   CARD_WIDTH,
-  layoutSharedCard,
-  sharedCardContent,
   type CardTextSource,
+  cardFontRoles,
+  layoutSharedCard,
   type SharedCardDesign,
+  sharedCardContent,
 } from "./shared-card-design";
 
 const loadedFonts = new Map<string, Promise<void>>();
 export async function loadCardFonts(design: SharedCardDesign): Promise<void> {
+  const roles = cardFontRoles(design);
   await Promise.all(
-    [CARD_FONTS[design.font], CARD_FONTS.body].map((font) => {
+    [roles.title, roles.intro, roles.body].map((font) => {
       if (!loadedFonts.has(font.family)) {
         const load = new FontFace(font.family, `url("${font.url}")`, { weight: "100 900" })
           .load()

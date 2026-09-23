@@ -1,4 +1,5 @@
 "use client";
+import EventCustomThemeLauncher from "@/components/events/EventCustomThemeLauncher";
 
 import { HeartHandshake } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -46,6 +47,8 @@ export default function AnniversariesPage() {
           </p>
         </div>
       </section>
+
+      <EventCustomThemeLauncher category="anniversaries" />
 
       <section aria-label="Anniversary designs" className="mx-auto max-w-[1500px] px-5 py-10 sm:px-8 lg:px-12 lg:py-14">
         <TemplateMasonryGrid>

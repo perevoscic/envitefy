@@ -1,10 +1,11 @@
 import { emptyLiveCardLocation, type LiveCardLocation } from "./livecard-builder";
 import {
+  type BuilderLocationResult,
+  type BuilderPlace,
   chooseBuilderPlace,
   isOnlineEventLocation,
-  type BuilderPlace,
-  type BuilderLocationResult,
 } from "./livecard-location";
+import { researchBuilderVenue } from "./livecard-venue-research";
 
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -29,8 +30,7 @@ async function googleJson(url: string, init?: RequestInit): Promise<Record<strin
     cache: "no-store",
     signal: AbortSignal.timeout(8000),
   });
-  if (!response.ok)
-    throw new Error("Location lookup is unavailable. You can enter the address manually.");
+  if (!response.ok) throw new Error("Venue preparation unavailable");
   return record(await response.json());
 }
 
@@ -39,8 +39,7 @@ export async function resolveBuilderPlace(
   date: string,
   id = "primary",
 ): Promise<LiveCardLocation> {
-  if (!key())
-    throw new Error("Location lookup is unavailable. You can enter the address manually.");
+  if (!key()) throw new Error("Venue preparation unavailable");
   const raw = await googleJson(
     `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`,
     {
@@ -100,7 +99,7 @@ function parsePlace(raw: Record<string, unknown>): BuilderPlace | null {
   };
 }
 
-export async function searchBuilderLocation(input: {
+type LocationInput = {
   query: string;
   venue?: string;
   city?: string;
@@ -108,7 +107,9 @@ export async function searchBuilderLocation(input: {
   date: string;
   id?: string;
   timezone: string;
-}): Promise<BuilderLocationResult> {
+};
+
+export async function searchBuilderLocation(input: LocationInput): Promise<BuilderLocationResult> {
   if (isOnlineEventLocation(input.query))
     return {
       candidates: [],
@@ -121,13 +122,23 @@ export async function searchBuilderLocation(input: {
         resolution: "online",
       },
     };
-  if (!key())
-    return {
-      candidates: [],
-      location: null,
-      message:
-        "Location lookup is unavailable. Enter your address and confirm the local time zone.",
-    };
+  if (key()) {
+    try {
+      const result = await searchGoogleLocation(input);
+      if (result.location?.timezone || result.candidates.length > 1) return result;
+    } catch {
+      /* Try source-backed venue research below. */
+    }
+  }
+  const location = await researchBuilderVenue(input.query, input.id);
+  return {
+    location,
+    candidates: [],
+    message: location ? "" : "We couldn’t identify this venue. Add its city or full address.",
+  };
+}
+
+async function searchGoogleLocation(input: LocationInput): Promise<BuilderLocationResult> {
   const raw = await googleJson("https://places.googleapis.com/v1/places:searchText", {
     method: "POST",
     headers: {
@@ -145,7 +156,7 @@ export async function searchBuilderLocation(input: {
     : [];
   const match = chooseBuilderPlace(
     candidates,
-    input.venue || "",
+    input.venue || (!input.city && !input.address ? input.query : ""),
     input.city || "",
     input.address || "",
   );
@@ -158,7 +169,7 @@ export async function searchBuilderLocation(input: {
         ? ""
         : "The address is ready. Please confirm its local time zone."
       : candidates.length
-        ? "Choose the matching venue below."
-        : "No reliable match yet. Add the city to your search or enter the address manually.",
+        ? "Which venue is yours? Choose below, or add a city to narrow the search."
+        : "We couldn’t find that venue. Add its city or address, or enter the address manually.",
   };
 }

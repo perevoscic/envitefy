@@ -21,6 +21,8 @@ const STATIC_STRING_PATHS: Array<Array<string | number>> = [
   ["hero"],
   ["heroImage"],
   ["customHeroImage"],
+  ["customEventPage", "artwork"],
+  ["customEventPageDraft", "artwork"],
   ["headlineBg"],
   ["images", "hero"],
   ["images", "headlineBg"],

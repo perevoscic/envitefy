@@ -1,3 +1,4 @@
+import { inferEventYear } from "../event-date-year.mjs";
 import * as chrono from "chrono-node";
 import type { ConciergeEventDraft, RequestedOutput } from "./types.ts";
 
@@ -366,19 +367,14 @@ export function parseFuzzyMonthAndDay(message: string): ParsedFuzzyMonthAndDay |
   const day = Number.parseInt(match[2] || "", 10);
   if (month < 1 || !Number.isFinite(day) || day < 1 || day > 31) return null;
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  let year = now.getFullYear();
-  let start = new Date(year, month - 1, day, 12, 0, 0, 0);
+  const year = inferEventYear(month, now);
+  const start = new Date(year, month - 1, day, 12, 0, 0, 0);
   if (start.getMonth() !== month - 1 || start.getDate() !== day) return null;
-  if (start < today) {
-    year += 1;
-    start = new Date(year, month - 1, day, 12, 0, 0, 0);
-  }
   const original = message.match(/\b([a-z]{3,10})\s*(\d{1,2}(?:st|nd|rd|th|tth)+)\b/i);
   return {
     sourceText: original?.[0] || match[0],
     dateText: `${MONTH_NAMES[month - 1]} ${ordinalDay(day)}`,
-    needsConfirmation: start.getFullYear() !== now.getFullYear(),
+    needsConfirmation: false,
   };
 }
 

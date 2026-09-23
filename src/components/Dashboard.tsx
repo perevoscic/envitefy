@@ -3,7 +3,7 @@ import { scanScheduleFromOcr, scanScheduleHistoryFields, type ScanSchedule } fro
 import ScheduleReviewDialog from "@/components/ScheduleReviewDialog";
 
 
-import * as chrono from "chrono-node";
+import { parseEventDates } from "@/lib/event-date-parser";
 import { Eye, Mail, Pencil, Share2, UserPlus } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -846,7 +846,7 @@ export default function Dashboard({
     if (!value) return null;
     const timezoneAwareIso = parseCalendarDateTimeToIso(value, timezone);
     if (timezoneAwareIso) return timezoneAwareIso;
-    const parsed = chrono.parseDate(value, new Date(), { forwardDate: true });
+    const parsed = parseEventDates(value, new Date(), timezone)[0]?.start.date();
     return parsed ? new Date(parsed.getTime()).toISOString() : null;
   }, []);
 

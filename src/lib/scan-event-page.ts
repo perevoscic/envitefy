@@ -1,4 +1,4 @@
-import * as chrono from "chrono-node";
+import { parseEventDates } from "./event-date-parser.ts";
 import { scanScheduleFromOcr } from "./scan-schedule.ts";
 import { buildScanPersonalization, normalizeScanPersonalization, personalizedScanCategory, personalizedScanTitle, withoutMedicalIdentityLines } from "./ocr/personalization.ts";
 import type { ConciergeEventType, DetectedSourceIntent } from "./concierge/types.ts";
@@ -528,7 +528,7 @@ function parseScanDateTimeText(
   candidateTexts.push(text);
 
   for (const candidateText of candidateTexts) {
-    const parsed = chrono.parse(candidateText, new Date(), { forwardDate: true })[0];
+    const parsed = parseEventDates(candidateText, new Date(), timezone)[0];
     if (!parsed?.start) continue;
     const startComponent = parsed.start as ChronoComponentWithKnownValues;
     const endComponent = parsed.end as ChronoComponentWithKnownValues | undefined;

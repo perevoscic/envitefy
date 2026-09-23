@@ -4,6 +4,8 @@ import TemplateImageTone from "@/components/events/TemplateImageTone";
 
 import HeroImageEditor from "@/components/events/HeroImageEditor";
 import EventCanvas from "@/components/EventCanvas";
+import { getGeneralEventDesign } from "@/lib/general-event-designs";
+import "@/components/birthdays/redesign/birthday-fonts.css";
 
 import { useManualEventProgress } from "@/hooks/useManualEventProgress";
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
@@ -52,6 +54,7 @@ type ThemeSpec = {
   text: string;
   accent: string;
   preview: string;
+  fontFamily?: string;
 };
 
 type AdvancedSectionRenderContext = {
@@ -224,8 +227,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   const { allowNavigation } = useProgressNavigation();
     const editEventId = search?.get("edit") ?? undefined;
     const defaultDate = search?.get("d") ?? undefined;
+    const initialDesign = getGeneralEventDesign(search?.get("templateId"));
     const initialDate = useMemo(() => {
       if (!defaultDate) {
+        if (initialDesign && !editEventId) return "";
         const d = new Date();
         d.setDate(d.getDate() + 7);
         return d.toISOString().split("T")[0];
@@ -238,7 +243,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       } catch {
         return new Date().toISOString().split("T")[0];
       }
-    }, [defaultDate]);
+    }, [defaultDate, initialDesign, editEventId]);
 
     const [savedEventData, setSavedEventData] = useState<Record<string, any>>({});
     const [loadingExisting, setLoadingExisting] = useState(Boolean(editEventId));
@@ -247,18 +252,18 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       guestPlanning: {} as EventGuestPlanning,
       endTime: "",
       endDate: "",
-      title: config.prefill?.title || `${config.displayName}`,
+      title: initialDesign ? "" : config.prefill?.title || `${config.displayName}`,
       date: config.prefill?.date || initialDate,
-      time: config.prefill?.time || "14:00",
-      city: config.prefill?.city || "Chicago",
-      state: config.prefill?.state || "IL",
+      time: initialDesign ? "" : config.prefill?.time || "14:00",
+      city: initialDesign ? "" : config.prefill?.city || "Chicago",
+      state: initialDesign ? "" : config.prefill?.state || "IL",
       venue: config.prefill?.venue || "",
-      details: config.prefill?.details || "Tell guests what to expect.",
+      details: initialDesign ? "" : config.prefill?.details || "Tell guests what to expect.",
       heroImageFilterEnabled: true,
-      hero: config.prefill?.hero || "",
+      hero: initialDesign?.artwork || config.prefill?.hero || "",
       rsvpEnabled: config.prefill?.rsvpEnabled ?? true,
       rsvpDeadline:
-        config.prefill?.rsvpDeadline ||
+        initialDesign ? "" : config.prefill?.rsvpDeadline ||
         (() => {
           const d = new Date();
           d.setDate(d.getDate() + 10);
@@ -270,7 +275,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       extra: Object.fromEntries(
         config.detailFields.map((f) => [
           f.key,
-          config.prefill?.extra?.[f.key] ?? (f.placeholder || ""),
+          initialDesign ? "" : config.prefill?.extra?.[f.key] ?? (f.placeholder || ""),
         ])
       ),
     }));
@@ -283,7 +288,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       return Object.fromEntries(entries);
     });
     const [themeId, setThemeId] = useState(
-      config.themes[0]?.id ?? "default-theme"
+      initialDesign?.id ?? config.themes[0]?.id ?? "default-theme"
     );
     const [activeView, setActiveView] = useState<string>("main");
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
@@ -1016,15 +1021,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         className={`flex flex-col md:flex-row md:items-center gap-2 md:gap-4 text-base font-medium opacity-90 ${textClass}`}
         style={bodyShadow}
       >
-        <span>
+        {data.date ? <span>
           {parseEventGuestDate(data.date).toLocaleDateString("en-US", {
             month: "long",
             day: "numeric",
             year: "numeric",
           })}
-        </span>
-        <span className="hidden md:inline-block w-1 h-1 rounded-full bg-current opacity-50"></span>
-        <span>{data.time}</span>
+        </span> : null}
+        {data.date && data.time ? <span className="hidden md:inline-block w-1 h-1 rounded-full bg-current opacity-50"></span> : null}
+        {data.time ? <span>{data.time}</span> : null}
         {locationParts && (
           <>
             <span className="hidden md:inline-block w-1 h-1 rounded-full bg-current opacity-50"></span>
@@ -1083,7 +1088,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     <h1
                       className={`text-3xl md:text-5xl font-serif mb-2 leading-tight ${textClass}`}
                       style={{
-                        fontFamily: "var(--font-playfair)",
+                        fontFamily: currentTheme.fontFamily || "var(--font-playfair)",
                         ...(headingShadow || {}),
                         ...(titleColor || {}),
                       }}

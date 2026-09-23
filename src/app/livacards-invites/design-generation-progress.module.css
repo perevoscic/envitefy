@@ -1,0 +1,188 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(18px, 3dvh, 30px);
+  height: 100%;
+  max-width: 370px;
+  margin-inline: auto;
+  padding: 26px 24px;
+  overflow: hidden;
+  border: 1px solid #e7dfec;
+  border-radius: 22px;
+  background: radial-gradient(ellipse at 50% 34%, #ece4f5, transparent 68%), #faf7fc;
+  text-align: center;
+}
+.cardStack {
+  position: relative;
+  flex-shrink: 0;
+  height: clamp(108px, 21dvh, 184px);
+  aspect-ratio: 2 / 3;
+  margin-block: 8px 6px;
+  animation: cardFloat 5s ease-in-out infinite;
+}
+.backCard,
+.frontCard {
+  position: absolute;
+  inset: 0;
+  border: 1px solid #ffffffc9;
+  border-radius: 11px;
+}
+.backCard {
+  background: #dcd0ec;
+  transform: translate(-12px, 1px) rotate(-9deg);
+  box-shadow: 0 12px 30px #5335740c;
+}
+.frontCard {
+  overflow: hidden;
+  background: #fffdfa;
+  transform: rotate(4deg);
+  box-shadow:
+    0 16px 32px #53357418,
+    0 2px 6px #53357408;
+}
+.frontCard::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 20%, #ffffffb3 48%, transparent 75%);
+  transform: translateX(-125%);
+  animation: cardShimmer 4.5s ease-in-out infinite;
+}
+.cardArt {
+  position: absolute;
+  inset: 7%;
+  overflow: hidden;
+  border-radius: 6px;
+  background: linear-gradient(145deg, #e9dcf0, #f4e5e2 70%, #f7eee1);
+}
+.cardSun {
+  position: absolute;
+  top: 13%;
+  right: 13%;
+  width: 28%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #faf2db;
+}
+.cardCurve {
+  position: absolute;
+  left: -34%;
+  bottom: -19%;
+  width: 135%;
+  height: 75%;
+  border: 1px solid #b2a0ce55;
+  border-radius: 50%;
+  background: #bea8d52b;
+  transform: rotate(-30deg);
+}
+.cardLines {
+  position: absolute;
+  inset: 48% 19% auto;
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+}
+.cardLines span {
+  width: 100%;
+  height: 5px;
+  border-radius: 4px;
+  background: #71588e66;
+}
+.cardLines span:nth-child(2) {
+  width: 72%;
+}
+.cardLines span:last-child {
+  width: 43%;
+  height: 3px;
+  margin-top: 6px;
+  background: #71588e3b;
+}
+.copy h3 {
+  color: #30243f;
+  font-family: var(--font-playfair), Georgia, serif;
+  font-size: clamp(21px, 2vw, 26px);
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+.copy p {
+  margin-top: 10px;
+  color: #796c87;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.progress {
+  width: min(100%, 210px);
+}
+.track {
+  height: 3px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #e5ddec;
+}
+.sweep {
+  display: block;
+  width: 38%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #b8a1d3, #7956af, #b8a1d3);
+  animation: progressSweep 2.6s ease-in-out infinite;
+}
+.stage {
+  margin-top: 12px;
+  color: #766680;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0.025em;
+}
+.compact {
+  margin: 20px auto 0;
+  text-align: center;
+}
+.compact .progress {
+  margin-inline: auto;
+}
+@keyframes cardFloat {
+  0%,
+  100% {
+    transform: translateY(3px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+@keyframes cardShimmer {
+  0%,
+  20% {
+    transform: translateX(-125%);
+  }
+  70%,
+  100% {
+    transform: translateX(125%);
+  }
+}
+@keyframes progressSweep {
+  0% {
+    transform: translateX(-105%);
+  }
+  100% {
+    transform: translateX(370%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cardStack,
+  .frontCard::after,
+  .sweep {
+    animation: none;
+  }
+  .frontCard::after {
+    display: none;
+  }
+  .sweep {
+    width: 100%;
+    opacity: 0.45;
+  }
+}

@@ -3340,7 +3340,7 @@ export async function getEventHistoryOwnerById(
 }
 
 function buildEventHistoryPublicDataProjectionSql(dataSql: string, idSql: string): string {
-  const base = `((coalesce(${dataSql}, '{}'::jsonb) - 'ocrText' - 'calendarSync') #- '{templateEditor,snapshot}' #- '{attachment,dataUrl}' #- '{profileImage,dataUrl}')`;
+  const base = `((coalesce(${dataSql}, '{}'::jsonb) - 'ocrText' - 'calendarSync' - 'customEventPageDraft') #- '{templateEditor,snapshot}' #- '{attachment,dataUrl}' #- '{profileImage,dataUrl}')`;
   // Header sanitization requires a URL. Keep uploaded URLs, and serve inline
   // artwork through the existing access-checked media route instead of dropping it.
   const signupHeaderUrl = `${dataSql}#>>'{signupForm,header,backgroundImage,dataUrl}'`;

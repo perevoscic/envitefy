@@ -175,14 +175,15 @@ export function getCreateEventSections(
   const links = options.isAdmin
     ? getTemplateLinks()
     : getTemplateLinks(visibleTemplateKeys, productScopes, sportPreferences);
+  const generalEvent = links.find((link) => link.key === "general");
   const sections: CreateEventSection[] = CREATE_EVENT_SECTION_ORDER.map((section) => ({
     title: CREATE_EVENT_SECTION_TITLES[section],
     items: links
-      .filter((link) => link.section === section)
+      .filter((link) => link.section === section && link.key !== "general")
       .map(({ label, href, icon }) => ({ label, href, icon })),
   })).filter((section) => section.items.length > 0);
   sections.push({
-    title: "Sign-ups",
+    title: generalEvent ? "Sign-ups & events" : "Sign-ups",
     items: [{
       label: "Sign-up Form",
       href: "/signup-forms/templates",
@@ -193,7 +194,12 @@ export function getCreateEventSections(
         </svg>
       ),
       description: "Coordinate volunteers, food, supplies, and shifts",
-    }],
+    }, ...(generalEvent ? [{
+      label: generalEvent.label,
+      href: generalEvent.href,
+      icon: generalEvent.icon,
+      description: "Create an event page from a template",
+    }] : [])],
   });
   // Put the saved preference first without adding a disabled event category.
   const preferredHref = getCreateActionForSignupIntent(options.defaultCreateIntent)?.href;
@@ -210,6 +216,7 @@ export function isCreateEventRoute(path: string | null | undefined): boolean {
   if (!path) return false;
   const pathname = normalizeNavigationPath(path);
   if (pathname === "/event/new" || pathname.startsWith("/event/new/")) return true;
+  if (pathname === "/event/design/customize") return true;
   if (matchesCreateEventHrefPath(pathname, "/signup-forms/templates")) return true;
   return ALL_TEMPLATE_ROUTE_LINKS.some((link) =>
     matchesCreateEventHrefPath(pathname, link.href),

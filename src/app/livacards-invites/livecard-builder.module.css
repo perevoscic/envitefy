@@ -8,30 +8,6 @@
   padding: 40px clamp(18px, 3.4vw, 56px) 72px;
   color: var(--ink);
 }
-.formatToggle {
-  display: inline-flex;
-  padding: 5px;
-  gap: 5px;
-  margin-bottom: 24px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: #f0ebf5;
-}
-.formatToggle button {
-  min-height: 44px;
-  min-width: 120px;
-  padding: 10px 24px;
-  border-radius: 11px;
-  color: var(--muted);
-  font-weight: 650;
-  cursor: pointer;
-}
-.formatToggle button[aria-pressed="true"] {
-  background: white;
-  color: var(--accent);
-  box-shadow: 0 2px 8px #30204212;
-}
-.proposal,
 .assistance {
   margin-bottom: 24px;
   padding: 24px;
@@ -39,43 +15,12 @@
   background: #fffcf9;
   border-radius: 20px;
 }
-.proposal h2 {
-  font-size: 20px;
-  font-weight: 650;
-  margin-bottom: 18px;
-}
-.proposal dl {
-  display: grid;
-  gap: 14px;
-  margin-bottom: 22px;
-}
-.proposal dt {
-  font-size: 12px;
-  color: var(--muted);
-  font-weight: 650;
-  margin-bottom: 4px;
-}
-.proposal dd {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-size: 15px;
-}
-.assistance summary {
-  cursor: pointer;
-  min-height: 44px;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  font-weight: 650;
-}
-.assistance label,
 .locationLookup > label {
   display: block;
   font-size: 14px;
   font-weight: 600;
   margin: 8px 0;
 }
-.assistance textarea,
 .locationLookup input,
 .locationLookup select {
   width: 100%;
@@ -88,8 +33,21 @@
   color: var(--ink);
   font-size: 16px;
 }
-.assistance textarea {
-  margin: 8px 0 12px;
+.venueSearch {
+  position: relative;
+}
+.venueSearch input {
+  padding-right: 42px;
+}
+.venueSearch > svg {
+  position: absolute;
+  right: 14px;
+  top: calc(50% - 9px);
+  color: var(--accent);
+  pointer-events: none;
+}
+.venueSearch + .hint {
+  margin-top: 8px;
 }
 .searchRow {
   display: flex;
@@ -151,18 +109,8 @@
   margin: 12px 0;
 }
 @media (max-width: 450px) {
-  .proposal,
   .assistance {
     padding: 16px;
-  }
-  .proposal .searchRow {
-    flex-wrap: wrap;
-  }
-  .formatToggle {
-    display: flex;
-  }
-  .formatToggle button {
-    flex: 1;
   }
 }
 .header {
@@ -226,6 +174,12 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+.page .primary:disabled {
+  color: #77717f;
+  background: #e5e2e8;
+  box-shadow: none;
+  opacity: 1;
+}
 .page :is(button, a, input, select, textarea):focus-visible {
   outline: 3px solid #a28ad9;
   outline-offset: 3px;
@@ -270,6 +224,87 @@
   grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
   gap: clamp(25px, 4vw, 58px);
   align-items: start;
+}
+.workspace[data-step="3"] {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+}
+.workspace[data-step="3"] .previewPane {
+  position: static;
+  grid-row: 1;
+  display: block;
+  border: 0;
+  padding: 0;
+}
+.outputHeading h2 {
+  font-family: var(--font-playfair), Georgia, serif;
+  font-size: 26px;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+.outputHeading p,
+.outputCard > p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+  margin-top: 8px;
+}
+.outputLabel h3 {
+  font-weight: 700;
+  font-size: 16px;
+}
+.outputHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.outputGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+}
+.outputCard {
+  min-width: 0;
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+  padding: 22px;
+  background: #fffcf9;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+}
+.outputLabel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.outputLabel > svg {
+  color: var(--accent);
+}
+.outputLabel > span {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 11px;
+}
+.outputArtwork {
+  height: clamp(330px, 48vw, 570px);
+  margin-block: 22px;
+}
+.outputActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.outputActions > * {
+  flex: 1 1 160px;
+}
+.workspace[data-step="3"] .review dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
 }
 .editor {
   background: #fffcf9;
@@ -385,6 +420,47 @@
 .field label {
   font-size: 13px;
   font-weight: 650;
+}
+.hiddenLabel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.collapsibleField {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #ffffff70;
+}
+.collapsibleField > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  min-height: 52px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.5;
+  text-align: left;
+  cursor: pointer;
+}
+.collapsibleField > button svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.collapsibleField > button[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+.collapsibleFieldBody {
+  padding: 0 16px 16px;
 }
 .field :is(input, textarea, select),
 .shareBox input {
@@ -629,33 +705,65 @@
 .formActions .primary {
   margin-left: auto;
 }
+.requiredDetails {
+  margin-top: 24px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.requiredDetails > div {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 16px;
+  margin-top: 4px;
+}
+.requiredDetails button {
+  min-height: 44px;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .previewPane {
   position: sticky;
   top: 28px;
   min-width: 0;
 }
-.previewHeader {
+.previewToggle {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  gap: 4px;
+  padding: 4px;
   margin-bottom: 16px;
-  gap: 10px;
+  border: 1px solid #dcd4e5;
+  border-radius: 14px;
+  background: #f0ebf5;
+  color: #70677f;
 }
-.previewHeader > span {
-  color: #766782;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-}
-.previewHeader button {
-  display: flex;
-  gap: 7px;
+.previewToggle button {
+  display: inline-flex;
+  flex: 1;
   align-items: center;
+  justify-content: center;
+  gap: 8px;
   min-height: 44px;
-  color: #674bac;
+  padding: 8px 12px;
+  border-radius: 10px;
   font-size: 13px;
-  font-weight: 650;
+  font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
+}
+.previewToggle button[aria-pressed="true"] {
+  color: #6543b2;
+  background: white;
+  box-shadow: 0 2px 6px #30204212;
+}
+.previewToggle button:focus-visible {
+  outline: 3px solid #a28ad9;
+  outline-offset: 2px;
+}
+.outputReview > .previewToggle {
+  max-width: 320px;
+  margin-inline: auto;
 }
 .inlineArtwork {
   height: min(66dvh, 600px);
@@ -837,27 +945,21 @@
   }
   .previewPane {
     position: static;
-    grid-row: 1;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px 16px;
-    border-bottom: 1px solid var(--line);
-    padding-bottom: 18px;
+    grid-row: auto;
+    display: block;
+    border: 0;
   }
-  .previewHeader {
-    margin: 0;
-    flex: none;
+  .outputGrid {
+    gap: 16px;
   }
-  .previewHeader > span {
-    display: none;
+  .outputCard {
+    padding: 16px;
   }
   .inlineArtwork {
-    display: none;
+    height: clamp(340px, 115vw, 580px);
+    width: 100%;
   }
   .previewPane .status {
-    margin: 0;
-    flex: 1 1 110px;
     font-size: 11px;
   }
   .generationError {
@@ -875,6 +977,27 @@
     width: 22px;
     height: 22px;
     flex-shrink: 0;
+  }
+}
+@media (max-width: 600px) {
+  .outputGrid,
+  .workspace[data-step="3"] .review dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workspace[data-step="3"] .review dl {
+    gap: 0;
+  }
+  .outputHeading {
+    align-items: flex-start;
+  }
+  .outputHeading h2 {
+    font-size: 23px;
+  }
+  .outputHeading .textButton {
+    flex-shrink: 0;
+  }
+  .outputArtwork {
+    height: clamp(330px, 125vw, 570px);
   }
 }
 @media (max-width: 450px) {
@@ -935,6 +1058,9 @@
   }
   .steps button {
     font-size: 11px;
+    flex: 1;
+    min-width: 0;
+    text-align: left;
   }
   .formActions {
     flex-wrap: wrap;
@@ -957,5 +1083,41 @@
   }
   .switch > span {
     transition: none;
+  }
+}
+
+.stepCaption {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.readiness {
+  border: 1px solid #e5d6b9;
+  background: #fff9ed;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.review .readiness h3 {
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+}
+.readiness .textButton {
+  display: flex;
+}
+@media (max-width: 450px) {
+  .steps {
+    gap: 8px;
+  }
+  .steps button {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 7px;
   }
 }

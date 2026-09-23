@@ -3,6 +3,7 @@ export type SharedCardDesign = {
   version: 1;
   backgroundUrl: string;
   font: "classic" | "modern" | "playful";
+  typography?: CardTypography;
   ink: string;
   accent: string;
   surface: string;
@@ -14,8 +15,125 @@ export const CARD_FONTS = {
   classic: { family: "EnvitefyCardClassic", url: "/fonts/birthday/playfairdisplay.ttf" },
   modern: { family: "EnvitefyCardModern", url: "/fonts/birthday/spacegrotesk.ttf" },
   playful: { family: "EnvitefyCardPlayful", url: "/fonts/birthday/quicksand.ttf" },
+  fredoka: { family: "EnvitefyCardFredoka", url: "/fonts/birthday/fredoka.ttf" },
+  bangers: { family: "EnvitefyCardBangers", url: "/fonts/birthday/bangers.ttf" },
+  bree: { family: "EnvitefyCardBree", url: "/fonts/birthday/breeserif.ttf" },
+  greatvibes: { family: "EnvitefyCardGreatVibes", url: "/fonts/birthday/greatvibes.ttf" },
+  cormorant: { family: "EnvitefyCardCormorant", url: "/fonts/birthday/cormorantgaramond.ttf" },
+  satisfy: { family: "EnvitefyCardSatisfy", url: "/fonts/birthday/satisfy.ttf" },
+  lobster: { family: "EnvitefyCardLobster", url: "/fonts/birthday/lobster.ttf" },
+  bebas: { family: "EnvitefyCardBebas", url: "/fonts/birthday/bebasneue.ttf" },
+  orbitron: { family: "EnvitefyCardOrbitron", url: "/fonts/birthday/orbitron.ttf" },
   body: { family: "EnvitefyCardBody", url: "/fonts/birthday/montserrat.ttf" },
 } as const;
+
+/** Curated invitation pairings: expressive titles, complementary opening lines, readable details. */
+export const CARD_TYPOGRAPHY = {
+  storybook: {
+    title: "fredoka",
+    intro: "bree",
+    body: "body",
+    titleWeight: 600,
+    introWeight: 400,
+    titleSize: 108,
+    introSize: 36,
+  },
+  adventure: {
+    title: "bangers",
+    intro: "bree",
+    body: "body",
+    titleWeight: 400,
+    introWeight: 400,
+    titleSize: 112,
+    introSize: 36,
+  },
+  romantic: {
+    title: "greatvibes",
+    intro: "cormorant",
+    body: "body",
+    titleWeight: 400,
+    introWeight: 500,
+    titleSize: 116,
+    introSize: 38,
+  },
+  botanical: {
+    title: "classic",
+    intro: "satisfy",
+    body: "body",
+    titleWeight: 600,
+    introWeight: 400,
+    titleSize: 96,
+    introSize: 42,
+  },
+  editorial: {
+    title: "cormorant",
+    intro: "body",
+    body: "body",
+    titleWeight: 600,
+    introWeight: 500,
+    titleSize: 110,
+    introSize: 28,
+  },
+  retro: {
+    title: "lobster",
+    intro: "bree",
+    body: "body",
+    titleWeight: 400,
+    introWeight: 400,
+    titleSize: 104,
+    introSize: 36,
+  },
+  cinematic: {
+    title: "bebas",
+    intro: "classic",
+    body: "body",
+    titleWeight: 400,
+    introWeight: 500,
+    titleSize: 116,
+    introSize: 36,
+  },
+  celestial: {
+    title: "orbitron",
+    intro: "modern",
+    body: "body",
+    titleWeight: 600,
+    introWeight: 500,
+    titleSize: 92,
+    introSize: 30,
+  },
+} as const;
+export type CardTypography = keyof typeof CARD_TYPOGRAPHY;
+
+/** Upgrade editable cards made before themed typography; baked-text legacy cards are untouched. */
+export function suggestCardTypography(
+  brief: string,
+  eventType: string,
+  font: SharedCardDesign["font"],
+): CardTypography {
+  if (/dino|jurassic|lego|building.block|superhero|comic|adventure/i.test(brief))
+    return "adventure";
+  if (/movie|cinema|marquee|hollywood|theat(er|re)/i.test(brief)) return "cinematic";
+  if (/space|galax|astronaut|futur|cosmic/i.test(brief)) return "celestial";
+  if (/retro|vintage|disco|diner/i.test(brief)) return "retro";
+  if (/flower|floral|garden|botanical/i.test(brief)) return "botanical";
+  if (/minimal|editorial|modern|elegant/i.test(brief)) return "editorial";
+  if (/wedding|anniversary|bridal/i.test(eventType) || /romantic|calligraphy/i.test(brief))
+    return "romantic";
+  return font === "playful" || /birthday|baby|gender/i.test(eventType) ? "storybook" : "editorial";
+}
+
+export function cardFontRoles(design: SharedCardDesign) {
+  const recipe = design.typography ? CARD_TYPOGRAPHY[design.typography] : undefined;
+  return {
+    title: CARD_FONTS[recipe?.title || design.font],
+    intro: CARD_FONTS[recipe?.intro || "body"],
+    body: CARD_FONTS[recipe?.body || "body"],
+    titleWeight: recipe?.titleWeight || 600,
+    introWeight: recipe?.introWeight || 600,
+    titleSize: recipe?.titleSize || 90,
+    introSize: recipe?.introSize || 27,
+  };
+}
 
 export function readSharedCardDesign(value: unknown): SharedCardDesign | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) return;
@@ -32,6 +150,9 @@ export function readSharedCardDesign(value: unknown): SharedCardDesign | undefin
     version: 1,
     backgroundUrl: raw.backgroundUrl,
     font: raw.font === "modern" || raw.font === "playful" ? raw.font : "classic",
+    ...(typeof raw.typography === "string" && Object.hasOwn(CARD_TYPOGRAPHY, raw.typography)
+      ? { typography: raw.typography as CardTypography }
+      : {}),
     ink: color("ink", "#342332"),
     accent: color("accent", "#895c42"),
     surface: color("surface", "#fff6ee"),
@@ -212,30 +333,46 @@ export function layoutSharedCard(
   mode: "live_card" | "digital_flyer",
   measure: CardTextMeasure,
 ): CardTextLayout {
-  const headingFont = CARD_FONTS[design.font].family;
-  const bodyFont = CARD_FONTS.body.family;
+  const roles = cardFontRoles(design);
+  const headingFont = roles.title.family;
+  const bodyFont = roles.body.family;
+  const introHeight = roles.introSize * 1.35;
   const lines: CardTextLine[] = [];
-  const intro = wrap(content.intro, 27, bodyFont, 600, measure);
+  const intro = wrap(
+    content.intro,
+    roles.introSize,
+    roles.intro.family,
+    roles.introWeight,
+    measure,
+  );
   intro.forEach((text, index) => {
     lines.push({
       text,
       x: 500,
-      y: 230 + index * 36,
-      size: 27,
-      font: bodyFont,
-      weight: 600,
+      y: 230 + index * introHeight,
+      size: roles.introSize,
+      font: roles.intro.family,
+      weight: roles.introWeight,
       color: design.accent,
     });
   });
-  let size = 90;
-  let title = wrap(content.title, size, headingFont, 600, measure);
+  let size: number = roles.titleSize;
+  let title = wrap(content.title, size, headingFont, roles.titleWeight, measure);
   while (title.length * size * 1.12 > 290 && size > 44) {
     size -= 2;
-    title = wrap(content.title, size, headingFont, 600, measure);
+    title = wrap(content.title, size, headingFont, roles.titleWeight, measure);
   }
-  let y = Math.max(310, 260 + intro.length * 36);
+  let y = Math.max(310, 260 + intro.length * introHeight);
   title.forEach((text) => {
-    lines.push({ text, x: 500, y, size, font: headingFont, weight: 600, color: design.ink });
+    lines.push({
+      text,
+      x: 500,
+      y,
+      size,
+      font: headingFont,
+      weight: roles.titleWeight,
+      color: design.ink,
+    });
     y += size * 1.12;
   });
   if (mode === "live_card") return { lines, overflow: y > 1050 };

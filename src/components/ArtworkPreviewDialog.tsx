@@ -7,8 +7,7 @@ import { useArtworkAspectRatio } from "@/hooks/use-artwork-aspect-ratio";
 import chromeStyles from "./studio/LiveCardChromeButton.module.css";
 import styles from "./ArtworkPreviewDialog.module.css";
 
-const chromeButtonClassName =
-  `${chromeStyles.glass} inline-flex size-11 cursor-pointer items-center justify-center rounded-full border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white`;
+const chromeButtonClassName = `${chromeStyles.glass} inline-flex size-11 cursor-pointer items-center justify-center rounded-full border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white`;
 
 /** Center artwork in the available screen, with Share and Close in opposite top corners. */
 export default function ArtworkPreviewDialog({
@@ -19,6 +18,7 @@ export default function ArtworkPreviewDialog({
   onClose,
   onShare,
   onReturnFocus,
+  toolbar,
   children,
 }: {
   open: boolean;
@@ -28,6 +28,7 @@ export default function ArtworkPreviewDialog({
   onClose: () => void;
   onShare?: () => void;
   onReturnFocus?: () => void;
+  toolbar?: ReactNode;
   children: ReactNode;
 }) {
   const artworkRatio = useArtworkAspectRatio(imageUrl, aspectRatio);
@@ -42,6 +43,7 @@ export default function ArtworkPreviewDialog({
         <Dialog.Overlay className="fixed inset-0 z-[7000] bg-neutral-950" />
         <Dialog.Content
           data-artwork-preview
+          data-has-toolbar={toolbar ? "true" : undefined}
           aria-describedby={undefined}
           className={`${styles.viewportFrame} ${styles.content}`}
           style={{ "--artwork-preview-ratio": artworkRatio } as CSSProperties}
@@ -55,6 +57,7 @@ export default function ArtworkPreviewDialog({
           }
         >
           <Dialog.Title className="sr-only">{title}</Dialog.Title>
+          {toolbar ? <div className={styles.toolbar}>{toolbar}</div> : null}
           {onShare ? (
             <div className={styles.share}>
               <button

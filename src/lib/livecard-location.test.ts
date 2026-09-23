@@ -1,6 +1,6 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
-import { chooseBuilderPlace, isOnlineEventLocation, type BuilderPlace } from "./livecard-location";
+import { test } from "node:test";
+import { type BuilderPlace, chooseBuilderPlace, isOnlineEventLocation } from "./livecard-location";
 import { resolveBuilderPlace, searchBuilderLocation } from "./livecard-location-server";
 
 const place: BuilderPlace = {
@@ -18,11 +18,27 @@ test("venue selection needs a unique geographical match and honors supplied addr
     null,
   );
   assert.equal(chooseBuilderPlace([place], "AMC", ""), null);
+  assert.equal(chooseBuilderPlace([place], "AMC Grand", ""), null);
   assert.equal(chooseBuilderPlace([place], "AMC", "Chicago"), null);
   assert.equal(chooseBuilderPlace([place], "AMC", "Miramar Beach", "123 Main St"), null);
   assert.equal(chooseBuilderPlace([place], "", "", "465 Grand Blvd, Miramar Beach"), place);
   const regional = { ...place, region: "Florida" };
   assert.equal(chooseBuilderPlace([regional], "AMC", "Miramar Beach, Florida"), regional);
+});
+
+test("specific venue names resolve without requiring a city; ambiguous branches remain choices", () => {
+  assert.equal(chooseBuilderPlace([place], "AMC Grand Boulevard", ""), place);
+  assert.equal(chooseBuilderPlace([place], place.venue, ""), place);
+  assert.equal(chooseBuilderPlace([place], "AMC", ""), null);
+  assert.equal(chooseBuilderPlace([place], "Unlisted venue", ""), null);
+  const otherBranch = {
+    ...place,
+    placeId: "amc-2",
+    address: "10 Main St, Destin, FL",
+    city: "Destin",
+  };
+  assert.equal(chooseBuilderPlace([place, otherBranch], place.venue, ""), null);
+  assert.equal(chooseBuilderPlace([place, otherBranch], place.venue, "Miramar Beach"), place);
 });
 
 test("place resolution uses provider coordinates and IANA timezone; timezone failure retains the address", async () => {
@@ -67,6 +83,13 @@ test("place resolution uses provider coordinates and IANA timezone; timezone fai
       calls[2].searchParams.get("timestamp"),
       String(Date.parse("2026-09-26T12:00:00Z") / 1000),
     );
+    const venueOnly = await searchBuilderLocation({
+      query: "AMC Grand Boulevard",
+      date: "2026-09-26",
+      timezone: "America/Los_Angeles",
+    });
+    assert.equal(venueOnly.location?.address, place.address);
+    assert.equal(venueOnly.location?.timezone, "America/Chicago");
     timezoneFails = true;
     const fallback = await resolveBuilderPlace(place.placeId, "bad-date");
     assert.equal(fallback.address, place.address);
@@ -88,4 +111,126 @@ test("online meetings retain their link and organizer-selected local timezone", 
   assert.equal(result.location?.resolution, "online");
   assert.equal(result.location?.timezone, "Europe/London");
   assert.equal(isOnlineEventLocation("javascript:alert(1)"), false);
+});
+
+test("deferred results preserve newer queries, unrelated edits, and removed locations", async () => {
+  const { mergeResolvedLocation } = await import("./livecard-location");
+  const { createLiveCardForm } = await import("./livecard-builder");
+  const before = createLiveCardForm("America/Los_Angeles");
+  before.locations[0].query = "AMC Grand Boulevard";
+  const resolved = {
+    ...before.locations[0],
+    ...place,
+    timezone: "America/Chicago",
+    resolution: "verified" as const,
+  };
+  const edited = {
+    ...before,
+    title: "Keep this title",
+    locations: [{ ...before.locations[0], note: "Bring a jacket" }],
+  };
+  const merged = mergeResolvedLocation(edited, before.locations[0], resolved);
+  assert.equal(merged.title, "Keep this title");
+  assert.equal(merged.locations[0].note, "Bring a jacket");
+  assert.equal(merged.timezone, "America/Chicago");
+  const changed = { ...edited, locations: [{ ...edited.locations[0], query: "Different venue" }] };
+  assert.equal(mergeResolvedLocation(changed, before.locations[0], resolved), changed);
+  const removed = { ...edited, locations: [] };
+  assert.equal(mergeResolvedLocation(removed, before.locations[0], resolved), removed);
+});
+
+test("researched addresses and timezones require cited pages that actually support both facts", async () => {
+  const { validateResearchedVenue } = await import("./livecard-venue-research");
+  const facts = {
+    identityConfirmed: true,
+    venue: "AMC Grand Boulevard",
+    address: "465 Grand Boulevard, Miramar Beach, FL",
+    city: "Miramar Beach",
+    timezone: "America/Chicago",
+    sourceUrl: "https://venue.example/location",
+    timezoneSourceUrl: "https://time.example/city",
+  };
+  const citations = new Set([facts.sourceUrl, facts.timezoneSourceUrl]);
+  const pages = async (url: string) =>
+    url === facts.sourceUrl
+      ? `${facts.venue} ${facts.address}`
+      : "Miramar Beach uses America/Chicago";
+  assert.equal(
+    (await validateResearchedVenue(facts, citations, pages, "stop"))?.timezone,
+    "America/Chicago",
+  );
+  assert.equal(
+    await validateResearchedVenue({ ...facts, identityConfirmed: false }, citations, pages, "stop"),
+    null,
+  );
+  assert.equal(await validateResearchedVenue(facts, new Set(), pages, "stop"), null);
+  assert.equal(
+    await validateResearchedVenue(
+      { ...facts, address: "999 Other Street, Miramar Beach" },
+      citations,
+      pages,
+      "stop",
+    ),
+    null,
+  );
+  assert.equal(
+    await validateResearchedVenue(facts, citations, async () => `${facts.address} EST`, "stop"),
+    null,
+  );
+  assert.equal(
+    await validateResearchedVenue(
+      { ...facts, timezone: "Invented/Zone" },
+      citations,
+      pages,
+      "stop",
+    ),
+    null,
+  );
+});
+
+test("geocoder corroboration requires the exact supplied street number, street and city", async () => {
+  const { geocodeResearchedAddress } = await import("./livecard-venue-research");
+  const originalFetch = globalThis.fetch;
+  const token = process.env.MAPBOX_ACCESS_TOKEN;
+  process.env.MAPBOX_ACCESS_TOKEN = "test-token";
+  let numberMatches = true;
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const url = new URL(String(input));
+    assert.equal(
+      url.searchParams.get("permanent"),
+      "true",
+      "stored address results use permanent geocoding",
+    );
+    return Response.json({
+      features: [
+        {
+          properties: {
+            feature_type: "address",
+            full_address: place.address,
+            match_code: {
+              address_number: numberMatches ? "matched" : "plausible",
+              street: "matched",
+              place: "matched",
+              confidence: "low",
+            },
+          },
+        },
+      ],
+    });
+  }) as typeof fetch;
+  try {
+    assert.equal(
+      await geocodeResearchedAddress("465 Grand Boulevard", "Miramar Beach"),
+      place.address,
+    );
+    numberMatches = false;
+    assert.equal(await geocodeResearchedAddress("465 Grand Boulevard", "Miramar Beach"), null);
+    numberMatches = true;
+    assert.equal(await geocodeResearchedAddress("465 Grand Boulevard", "Chicago"), null);
+    assert.equal(await geocodeResearchedAddress("999 Other Street", "Miramar Beach"), null);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (token === undefined) delete process.env.MAPBOX_ACCESS_TOKEN;
+    else process.env.MAPBOX_ACCESS_TOKEN = token;
+  }
 });

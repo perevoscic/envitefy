@@ -1,8 +1,8 @@
-import { createInitialDetails } from "@/app/studio/studio-workspace-sanitize";
 import {
   buildStudioPublishPayload,
   refreshLiveCardInvitationData,
 } from "@/app/studio/studio-workspace-builders";
+import { createInitialDetails } from "@/app/studio/studio-workspace-sanitize";
 import type {
   EventDetails,
   InvitationData,
@@ -10,12 +10,12 @@ import type {
 } from "@/app/studio/studio-workspace-types";
 import {
   LIVE_CARD_BUILDER_SOURCE,
+  type LiveCardForm,
   liveCardDateTime,
   liveCardRegistryUrl,
   readLiveCardForm,
-  type LiveCardForm,
 } from "@/lib/livecard-builder";
-import { readSharedCardDesign } from "@/lib/shared-card-design";
+import { readSharedCardDesign, suggestCardTypography } from "@/lib/shared-card-design";
 
 export function restoreLiveCardForm(value: unknown, data: Record<string, unknown>) {
   const form = readLiveCardForm(value);
@@ -59,11 +59,11 @@ export function liveCardDetails(form: LiveCardForm): EventDetails {
     timezone: form.timezone,
     detailsDescription: form.overview,
     guestInstructions: form.instructions.trim() ? [form.instructions.trim()] : [],
-    venueName: primary?.venue || "",
+    venueName: primary?.venue || primary?.query || "",
     location: primary?.address || "",
     additionalLocations: form.locations.slice(1).map((location) => ({
       label: location.label,
-      venue: location.venue,
+      venue: location.venue || location.query || "",
       address: location.address,
       location: location.address,
       timeText: location.time,
@@ -91,12 +91,20 @@ export function liveCardInvitation(
 ): InvitationData {
   const details = liveCardDetails(form);
   const data = refreshLiveCardInvitationData(details, previous);
+  const sharedDesign = readSharedCardDesign(previous?.sharedDesign);
   // Form fields are authoritative, including deliberately cleared copy. Never restore stale AI text.
   return {
     ...data,
     title: form.title.trim(),
     headlineIntro: form.headlineIntro,
-    sharedDesign: readSharedCardDesign(previous?.sharedDesign),
+    sharedDesign: sharedDesign
+      ? {
+          ...sharedDesign,
+          typography:
+            sharedDesign.typography ||
+            suggestCardTypography(form.design, form.eventType, sharedDesign.font),
+        }
+      : undefined,
     subtitle: "",
     description: [form.overview, form.instructions].filter(Boolean).join("\n\n"),
     socialCaption: form.overview,
@@ -165,7 +173,11 @@ export function liveCardHistoryPayload(
       rsvpDeadline: form.rsvpEnabled ? form.rsvpDeadline : "",
       registries: base.data.registries || [],
       registryLink: invitationData.eventDetails.registryLink,
-      liveCardBuilder: { version: invitationData.sharedDesign ? 3 : 2, form, designKey: artwork?.designKey || "" },
+      liveCardBuilder: {
+        version: invitationData.sharedDesign ? 3 : 2,
+        form,
+        designKey: artwork?.designKey || "",
+      },
     },
   };
 }

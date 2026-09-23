@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { builderApiAccess } from "@/lib/livecard-api-access";
 import { readLiveCardForm } from "@/lib/livecard-builder";
-import { assistLiveCard, proofreadLiveCardOverview } from "@/lib/livecard-assistance";
+import {
+  assistLiveCard,
+  proofreadLiveCardOverview,
+  proofreadLiveCardWording,
+} from "@/lib/livecard-assistance";
 
 export const runtime = "nodejs";
 export const maxDuration = 90;
@@ -14,12 +18,19 @@ export async function POST(request: Request) {
   const body = raw as Record<string, unknown>;
   const form = readLiveCardForm(body.form);
   const message = typeof body.message === "string" ? body.message.trim() : "";
-  if (body.mode === "overview" && form) {
+  if ((body.mode === "wording" || body.mode === "overview") && form) {
     try {
-      return NextResponse.json(await proofreadLiveCardOverview(form));
+      return NextResponse.json(
+        await (body.mode === "overview"
+          ? proofreadLiveCardOverview(form)
+          : proofreadLiveCardWording(form)),
+      );
     } catch {
       return NextResponse.json(
-        { error: "We couldn't check the wording. Your original Overview is unchanged." },
+        {
+          error:
+            "We couldn't finish preparing your invitation. Your details are safe. Please try again.",
+        },
         { status: 503 },
       );
     }
@@ -39,6 +50,7 @@ export async function POST(request: Request) {
       await assistLiveCard(
         form,
         message || "Read the event information in this reference and suggest a matching design.",
+        body.mode === "idea" ? "idea" : "revision",
       ),
     );
   } catch {

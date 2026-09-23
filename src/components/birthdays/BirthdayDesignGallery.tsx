@@ -1,4 +1,5 @@
 "use client";
+import EventCustomThemeLauncher from "@/components/events/EventCustomThemeLauncher";
 
 import { Heart, Search, Sparkles, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -167,6 +168,8 @@ export default function BirthdayDesignGallery() {
   return (
     <main className={`${categoryGalleryPageClassName("birthdays")} min-h-screen text-[#35251d]`}>
       <BirthdayGalleryHero />
+
+      <EventCustomThemeLauncher category="birthdays" />
 
       <section className="z-20 border-b border-[#efd8c2] bg-[var(--category-gallery-background)] px-5 py-5 backdrop-blur-xl sm:px-8 lg:px-12 xl:sticky xl:top-0">
         <div className="mx-auto max-w-[1500px] space-y-5">

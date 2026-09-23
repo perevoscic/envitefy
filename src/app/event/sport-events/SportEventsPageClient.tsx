@@ -1,4 +1,5 @@
 "use client";
+import EventCustomThemeLauncher from "@/components/events/EventCustomThemeLauncher";
 
 import { Sparkles, Trophy } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -60,6 +61,8 @@ export default function SportEventsPageClient() {
                   can change the theme, colors, and sections inside the visual builder.
                 </p>
               </div>
+
+              <EventCustomThemeLauncher category="sport-events" contained />
 
               <div className="mt-5 sm:mt-6">
                 <div className="mb-4">

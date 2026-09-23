@@ -64,6 +64,7 @@ export const ENABLED_TEMPLATE_KEYS: TemplateKey[] = [
   "sport_events",
   "gymnastics",
   "football_season",
+  "general",
 ];
 
 const ENABLED_TEMPLATE_KEY_SET = new Set<TemplateKey>(ENABLED_TEMPLATE_KEYS);
@@ -163,7 +164,7 @@ const ALL_TEMPLATE_DEFINITIONS: TemplateDef[] = [
   {
     key: "general",
     label: "General Events",
-    href: "/event/general/customize",
+    href: "/event/general",
     icon: "📅",
     section: "appointments_general",
   },

@@ -27,6 +27,8 @@ export type LiveCardLocation = {
   query?: string;
   city?: string;
   placeId?: string;
+  sourceUrl?: string;
+  timezoneSourceUrl?: string;
   timezone?: string;
   latitude?: number;
   longitude?: number;
@@ -93,7 +95,26 @@ export function createLiveCardForm(timezone = "UTC"): LiveCardForm {
 }
 
 export function sharedCardDesignKey(form: LiveCardForm): string {
-  return JSON.stringify(["shared-v1", form.eventType, form.design.trim(), form.referenceUrl]);
+  return JSON.stringify(["shared-v2", form.design.trim(), form.referenceUrl]);
+}
+
+export function isSharedCardDesignCurrent(form: LiveCardForm, key: string): boolean {
+  if (key === sharedCardDesignKey(form)) return true;
+  // Previously saved backgrounds included event type in their key. Only the
+  // visual direction and reference determine whether that artwork needs updating.
+  try {
+    const saved: unknown = JSON.parse(key);
+    return (
+      Array.isArray(saved) &&
+      saved.length === 4 &&
+      saved[0] === "shared-v1" &&
+      typeof saved[1] === "string" &&
+      saved[2] === form.design.trim() &&
+      saved[3] === form.referenceUrl
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function liveCardDesignKey(form: LiveCardForm): string {
@@ -163,38 +184,56 @@ export function liveCardRegistryUrl(value: string): string | null {
 }
 
 export type LiveCardErrors = Partial<Record<keyof LiveCardForm, string>>;
-export function validateLiveCard(form: LiveCardForm, phase: "design" | "publish"): LiveCardErrors {
+export function validateLiveCard(
+  form: LiveCardForm,
+  phase: "design" | "prepare" | "publish",
+): LiveCardErrors {
   const errors: LiveCardErrors = {};
+  if (phase === "design") {
+    if (!form.eventType) errors.eventType = "Choose an event type.";
+    if (!form.design.trim()) errors.design = "Describe how you would like the card to look.";
+    return errors;
+  }
   if (!form.title.trim()) errors.title = "Add the title or name you want on the card.";
   if (!form.eventType) errors.eventType = "Choose an event type.";
   if (!form.design.trim()) errors.design = "Describe how you would like the card to look.";
-  if (phase === "design") return errors;
   if (!form.date) errors.date = "Choose your event date.";
   if (!form.startTime) errors.startTime = "Add a start time.";
+  const validationZone = phase === "prepare" ? "UTC" : form.timezone;
   try {
-    new Intl.DateTimeFormat("en", { timeZone: form.timezone }).format();
+    new Intl.DateTimeFormat("en", { timeZone: validationZone }).format();
   } catch {
     errors.timezone = "Choose a valid timezone.";
   }
-  const start = liveCardDateTime(form.date, form.startTime, form.timezone);
+  const start = liveCardDateTime(form.date, form.startTime, validationZone);
   if (form.date && form.startTime && !start && !errors.timezone)
     errors.startTime =
       "Check this date and time. It may fall during a daylight-saving clock change.";
   if (form.endDate && !form.endTime) errors.endTime = "Add an end time, or clear the end date.";
   if (form.endTime) {
-    const end = liveCardDateTime(form.endDate || form.date, form.endTime, form.timezone);
+    const end = liveCardDateTime(form.endDate || form.date, form.endTime, validationZone);
     if (!end || (start && end <= start))
       errors.endTime =
         "The end must be after the start. For an overnight event, choose the next date.";
   }
-  if (!form.locations[0]?.address.trim())
-    errors.locations = "Add an address or online meeting link for your event.";
-  if (form.locations.slice(1).some((location) => !location.address.trim()))
-    errors.locations = "Add an address for each location, or remove the unused location.";
-  if (form.locations.some((location) => location.resolution === "unresolved"))
-    errors.locations = "Confirm each venue or enter its address before publishing.";
-  if (form.locations[0]?.resolution && !form.locations[0]?.timezone)
-    errors.timezone = "Confirm the local time zone for your event location.";
+  if (phase === "prepare") {
+    if (
+      !form.locations.length ||
+      form.locations.some(
+        (location) => !(location.query || location.venue || location.address).trim(),
+      )
+    )
+      errors.locations = "Add a venue name for each location, or remove the unused location.";
+  } else {
+    if (!form.locations[0]?.address.trim())
+      errors.locations = "Add an address or online meeting link for your event.";
+    if (form.locations.slice(1).some((location) => !location.address.trim()))
+      errors.locations = "Add an address for each location, or remove the unused location.";
+    if (form.locations.some((location) => location.resolution === "unresolved"))
+      errors.locations = "Confirm each venue or enter its address before publishing.";
+    if (form.locations[0]?.resolution && !form.locations[0]?.timezone)
+      errors.timezone = "Confirm the local time zone for your event location.";
+  }
   if (form.rsvpEnabled) {
     if (!form.hostName.trim()) errors.hostName = "Add the host name guests should see.";
     if (form.hostEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.hostEmail))
@@ -251,6 +290,8 @@ export function readLiveCardForm(value: unknown): LiveCardForm | null {
         "query",
         "city",
         "placeId",
+        "sourceUrl",
+        "timezoneSourceUrl",
         "timezone",
       ] as const) {
         if (typeof location[key] === "string") result[key] = location[key].slice(0, 2000);

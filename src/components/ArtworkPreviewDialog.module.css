@@ -18,7 +18,12 @@
    legacy artwork keeps its complete composition over its own color extension. */
 @media (max-width: 767px) and (orientation: portrait) {
   .viewportFrame:has([data-live-card-artwork]) {
-    --artwork-preview-width: calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+    --artwork-preview-width: calc(
+      100vw -
+      2rem -
+      env(safe-area-inset-left, 0px) -
+      env(safe-area-inset-right, 0px)
+    );
     --artwork-preview-height: var(--artwork-preview-max-art-height);
   }
 }
@@ -48,6 +53,25 @@
   z-index: 7001;
   transform: translate(-50%, -50%);
   outline: none;
+}
+
+/* Keep optional view controls above the artwork, including on short screens. */
+.viewportFrame[data-has-toolbar="true"] {
+  --artwork-preview-max-art-height: calc((var(--artwork-preview-available-height) - 76px) * 0.9);
+  top: calc((100dvh + env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) + 60px) / 2);
+}
+
+.toolbar {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  width: 256px;
+  max-width: calc(100vw - 32px);
+  transform: translateX(-50%);
+}
+
+.toolbar > * {
+  margin-bottom: 0;
 }
 
 /* Only tall masters with enough decorative margin opt into limited cropping. */

@@ -1,7 +1,7 @@
+import { parseEventDates } from "@/lib/event-date-parser";
 import { extractSportsSchedule, hasSportsScheduleText } from "./sports-schedule.ts";
 import { scanScheduleFromOcr } from "../scan-schedule.ts";
 import { randomUUID } from "node:crypto";
-import * as chrono from "chrono-node";
 import { getServerSession } from "next-auth";
 import { after } from "next/server";
 import sharp from "sharp";
@@ -671,7 +671,7 @@ export async function handleOcrRequest(request: Request) {
     const title = pickTitle(lines, raw);
     const rawHasExplicitTime = hasExplicitTimeText(raw);
 
-    const parsed = chrono.parse(withoutMedicalIdentityLines(raw), new Date(), { forwardDate: true });
+    const parsed = parseEventDates(withoutMedicalIdentityLines(raw));
     const timeLike = /\b(\d{1,2}(:\d{2})?\s?(am|pm))\b/i;
     const rangeLike =
       /\b(\d{1,2}(:\d{2})?\s?(am|pm))\b\s*[-–—]\s*\b(\d{1,2}(:\d{2})?\s?(am|pm))\b/i;
@@ -1376,20 +1376,25 @@ export async function handleOcrRequest(request: Request) {
         containsExplicitYear = Boolean(llmImage.yearVisible);
       else containsExplicitYear = rawHasYearDigits;
     }
-    if (!containsExplicitYear && finalStart instanceof Date) {
+    if (!containsExplicitYear && !/\b(?:next|last|this)\s+year\b/i.test(raw) && finalStart instanceof Date) {
       const now = new Date();
       const oldStart = finalStart;
       const adjustedStart = resolveInferredInviteDatetime(now, oldStart);
-      const yearDelta = adjustedStart.getFullYear() - oldStart.getFullYear();
-      if (yearDelta !== 0 || adjustedStart.getTime() !== oldStart.getTime()) {
-        const duration = finalEnd instanceof Date ? finalEnd.getTime() - oldStart.getTime() : null;
-        finalStart = adjustedStart;
-        if (duration !== null && duration > 0) {
-          finalEnd = new Date(adjustedStart.getTime() + duration);
-        } else if (finalEnd instanceof Date) {
-          const endAdjusted = new Date(finalEnd);
-          endAdjusted.setFullYear(endAdjusted.getFullYear() + yearDelta);
-          finalEnd = endAdjusted;
+      if (!adjustedStart) {
+        finalStart = null;
+        finalEnd = null;
+      } else {
+        const yearDelta = adjustedStart.getFullYear() - oldStart.getFullYear();
+        if (yearDelta !== 0 || adjustedStart.getTime() !== oldStart.getTime()) {
+          const duration = finalEnd instanceof Date ? finalEnd.getTime() - oldStart.getTime() : null;
+          finalStart = adjustedStart;
+          if (duration !== null && duration > 0) {
+            finalEnd = new Date(adjustedStart.getTime() + duration);
+          } else if (finalEnd instanceof Date) {
+            const endAdjusted = new Date(finalEnd);
+            endAdjusted.setFullYear(endAdjusted.getFullYear() + yearDelta);
+            finalEnd = endAdjusted;
+          }
         }
       }
     }

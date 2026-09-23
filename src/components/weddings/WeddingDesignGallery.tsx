@@ -1,4 +1,5 @@
 "use client";
+import EventCustomThemeLauncher from "@/components/events/EventCustomThemeLauncher";
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -126,6 +127,8 @@ export default function WeddingDesignGallery() {
           </div>
         </div>
       </section>
+
+      <EventCustomThemeLauncher category="weddings" />
 
       <section className="z-20 border-b border-[#ded5ca] bg-[var(--category-gallery-background)] px-5 py-5 backdrop-blur-xl sm:px-8 lg:px-12 xl:sticky xl:top-0">
         <div className="mx-auto flex max-w-[1500px] flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">

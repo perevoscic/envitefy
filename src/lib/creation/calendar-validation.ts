@@ -1,4 +1,4 @@
-import * as chrono from "chrono-node";
+import { parseEventDates } from "../event-date-parser.ts";
 
 type ClockParts = { year: number; month: number; day: number; hour: number; minute: number };
 function clockParts(date: Date, timezone: string): ClockParts {
@@ -69,8 +69,8 @@ export function resolveScheduleCorrection(input: {
       input.timeText ||
       (previous ? `${previous.hour}:${String(previous.minute).padStart(2, "0")}` : "");
     if (!dateText || !timeText) return null;
-    const parsed = chrono.parse(`${dateText} ${timeText}`, new Date(), { forwardDate: true })[0];
-    if (!parsed || !parsed.start.isCertain("hour")) return null;
+    const parsed = parseEventDates(`${dateText} ${timeText}`, new Date(), input.timezone)[0];
+    if (!parsed?.start.isCertain("hour")) return null;
     const parts = parsed.start;
     const startISO = localClockToIso(
       {

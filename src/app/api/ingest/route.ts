@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import * as chrono from "chrono-node";
+import { parseEventDates } from "@/lib/event-date-parser";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { corsJson, corsPreflight } from "@/lib/cors";
@@ -283,7 +283,7 @@ async function handleLegacyIngest(request: Request) {
   const title =
     lines.find((l) => l.length > 5 && !/rsvp|free entry|admission/i.test(l)) || "Event from flyer";
 
-  const parsed = chrono.parse(raw, new Date(), { forwardDate: true });
+  const parsed = parseEventDates(raw, new Date(), "America/Chicago");
   let start: Date | null = null;
   let end: Date | null = null;
   if (parsed.length) {

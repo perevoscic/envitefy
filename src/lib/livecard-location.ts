@@ -1,4 +1,4 @@
-import type { LiveCardLocation } from "./livecard-builder.ts";
+import type { LiveCardForm, LiveCardLocation } from "./livecard-builder.ts";
 
 export type BuilderPlace = {
   placeId: string;
@@ -49,7 +49,7 @@ export function readBuilderPlace(value: unknown): BuilderPlace | null {
   };
 }
 
-/** A unique name AND city match is safe to prefill. Never select the first branch blindly. */
+/** Match a specific venue name, or use supplied geography to distinguish branches. */
 export function chooseBuilderPlace(
   candidates: BuilderPlace[],
   venue: string,
@@ -75,10 +75,54 @@ export function chooseBuilderPlace(
       return contains(candidate.address, address) && (!venue || contains(candidate.venue, venue));
     return Boolean(
       venue.trim() &&
-        city.trim() &&
         contains(candidate.venue, venue) &&
-        contains(`${candidate.city} ${candidate.region || ""} ${candidate.address}`, city),
+        (city.trim()
+          ? contains(`${candidate.city} ${candidate.region || ""} ${candidate.address}`, city)
+          : normalize(candidate.venue) === normalize(venue) ||
+            (normalize(venue).split(" ").length >= 2 &&
+              normalize(candidate.venue).replace(/ \d+$/, "") === normalize(venue))),
     );
   });
   return matches.length === 1 ? matches[0] : null;
+}
+
+export type LocationPreparationIssue = {
+  query: string;
+  message: string;
+  candidates: BuilderPlace[];
+};
+export const locationLookupKey = (location: LiveCardLocation) =>
+  JSON.stringify([
+    location.query,
+    location.venue,
+    location.address,
+    location.city,
+    location.placeId,
+    location.timezone,
+    location.resolution,
+  ]);
+
+/** Results own only the location that was searched. Keep concurrent edits and removed stops. */
+export function mergeResolvedLocation(
+  current: LiveCardForm,
+  before: LiveCardLocation,
+  resolved: LiveCardLocation,
+): LiveCardForm {
+  const active = current.locations.find((location) => location.id === before.id);
+  if (!active || locationLookupKey(active) !== locationLookupKey(before)) return current;
+  const next = {
+    ...active,
+    ...resolved,
+    id: active.id,
+    query: active.query,
+    label: active.label,
+    time: active.time,
+    note: active.note,
+  };
+  return {
+    ...current,
+    locations: current.locations.map((location) => (location.id === next.id ? next : location)),
+    timezone:
+      current.locations[0]?.id === next.id && next.timezone ? next.timezone : current.timezone,
+  };
 }

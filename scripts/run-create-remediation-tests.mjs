@@ -24,6 +24,8 @@ const files = [
   "src/lib/rsvp-host-notification.test.cjs",
   "src/lib/guest-event-details.test.ts",
   "src/lib/scan-event-page.test.mjs",
+  "src/lib/event-custom-design.test.mjs",
+  "src/app/event/general/page.test.mjs",
   ...scripts["test:calendar"].replace(/^node --test /, "").split(" "),
   "src/utils/rsvp-mailto.test.ts",
   "src/components/MapEmbed.test.cjs",

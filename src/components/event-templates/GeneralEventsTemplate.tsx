@@ -1,6 +1,7 @@
 // @ts-nocheck
 "use client";
 
+import { GENERAL_EVENT_DESIGNS } from "@/lib/general-event-designs";
 
 const config = {
   slug: "general-event",
@@ -201,6 +202,7 @@ const config = {
       accent: "text-lime-100",
       preview: "bg-gradient-to-r from-lime-800 via-green-700 to-emerald-600",
     },
+    ...GENERAL_EVENT_DESIGNS.map((design) => ({ id: design.id, name: design.name, ...design.theme })),
   ],
 };
 

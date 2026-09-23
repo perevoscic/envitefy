@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import * as chrono from "chrono-node";
+import { parseEventDates } from "../event-date-parser.ts";
 import { normalizeEventScheduleText, resolveFuzzyMonth } from "./conversation-edits.ts";
 import { normalizeConciergeDraft } from "./extract.ts";
 import { buildAssistantMessage, fallbackExtractConciergeDraft, repairMisparsedBirthdayDraft } from "./fallback.ts";
@@ -27,9 +28,8 @@ test("month typo repair preserves time corrections and only repairs day numbers"
 
 function expectSeptember25(draft) {
   const now = new Date();
-  const candidate = new Date(now.getFullYear(), 8, 25, 12);
-  const year = candidate < new Date(now.getFullYear(), now.getMonth(), now.getDate()) ? now.getFullYear() + 1 : now.getFullYear();
-  const start = draft.startISO ? new Date(draft.startISO) : chrono.parseDate(draft.dateText, now, { forwardDate: true });
+  const year = now.getFullYear() + (8 < now.getMonth() ? 1 : 0);
+  const start = draft.startISO ? new Date(draft.startISO) : parseEventDates(draft.dateText, now)[0]?.start.date();
   if (!draft.timeText) {
     assert.equal(draft.startISO, null, "An unknown clock must not fabricate a noon instant");
     assert.equal(draft.endISO, null);

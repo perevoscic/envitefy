@@ -7,7 +7,7 @@ import LiveCardBuilder from "./LiveCardBuilder";
 export const metadata: Metadata = {
   title: "Live Cards & Invites | Envitefy",
   description:
-    "Describe your event to create a Live Card or Invite, with venue lookup, local event times and a dashboard for sharing.",
+    "Create a matching Live Card and Invite through Idea, Event details, Design and Review, with local event times and a dashboard for sharing.",
   robots: { index: false, follow: false },
 };
 

@@ -3,6 +3,7 @@
 import { Search } from "lucide-react";
 import { type MouseEvent, type ReactNode, useState } from "react";
 import TemplateAutoLoader from "./TemplateAutoLoader";
+import EventCustomThemeLauncher from "./EventCustomThemeLauncher";
 import { categoryGalleryPageClassName } from "./category-gallery-page";
 import { TemplateMasonryCard, TemplateMasonryGrid } from "./TemplateMasonryGallery";
 
@@ -43,6 +44,7 @@ export default function EventDesignGallery<Design extends EventGalleryDesign>({
   return (
     <main className={`${categoryGalleryPageClassName(category)} min-h-screen text-[#342d38]`}>
       {header}
+      <EventCustomThemeLauncher category={category} />
       <section aria-label="Filter designs" className="border-b border-[#e8dfe5] px-5 py-5 sm:px-8 lg:px-12">
         <div className="mx-auto flex max-w-[1500px] flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
