@@ -2,76 +2,84 @@
   "capturedFrom": "Production components with fictional sample event data, local rendering only.",
   "exports": [
     {
-      "file": "upload/01-dream-it-invite-them.png",
+      "file": "separate/dream-it-invite-them.png",
       "width": 1080,
       "height": 1920,
       "format": "png",
       "channels": 3,
       "hasAlpha": false,
-      "bytes": 1548761
+      "bytes": 1547807,
+      "visibleSequenceNumber": false
     },
     {
-      "file": "upload/02-one-link-everyone-in.png",
+      "file": "separate/one-link-everyone-in.png",
       "width": 1080,
       "height": 1920,
       "format": "png",
       "channels": 3,
       "hasAlpha": false,
-      "bytes": 1021403
+      "bytes": 1020337,
+      "visibleSequenceNumber": false
     },
     {
-      "file": "upload/03-snap-it-its-a-plan.png",
+      "file": "separate/snap-it-its-a-plan.png",
       "width": 1080,
       "height": 1920,
       "format": "png",
       "channels": 3,
       "hasAlpha": false,
-      "bytes": 946222
+      "bytes": 945175,
+      "visibleSequenceNumber": false
     },
     {
-      "file": "upload/04-save-the-date.png",
+      "file": "separate/save-the-date.png",
       "width": 1080,
       "height": 1920,
       "format": "png",
       "channels": 3,
       "hasAlpha": false,
-      "bytes": 606814
+      "bytes": 605547,
+      "visibleSequenceNumber": false
     },
     {
-      "file": "upload/05-less-chasing-more-helping.png",
+      "file": "separate/less-chasing-more-helping.png",
       "width": 1080,
       "height": 1920,
       "format": "png",
       "channels": 3,
       "hasAlpha": false,
-      "bytes": 809532
+      "bytes": 808187,
+      "visibleSequenceNumber": false
     },
     {
-      "file": "upload/06-pick-a-slot.png",
+      "file": "separate/pick-a-slot.png",
       "width": 1080,
       "height": 1920,
       "format": "png",
       "channels": 3,
       "hasAlpha": false,
-      "bytes": 434629
+      "bytes": 433272,
+      "visibleSequenceNumber": false
     },
     {
-      "file": "upload/07-all-your-plans.png",
+      "file": "separate/all-your-plans.png",
       "width": 1080,
       "height": 1920,
       "format": "png",
       "channels": 3,
       "hasAlpha": false,
-      "bytes": 747927
+      "bytes": 746886,
+      "visibleSequenceNumber": false
     },
     {
-      "file": "upload/08-more-enjoying.png",
+      "file": "separate/more-enjoying.png",
       "width": 1080,
       "height": 1920,
       "format": "png",
       "channels": 3,
       "hasAlpha": false,
-      "bytes": 621745
+      "bytes": 620649,
+      "visibleSequenceNumber": false
     }
   ],
   "pairedPhoneSeams": "Each pair comes from a single 2160 x 1920 canvas, sliced at x=1080.",

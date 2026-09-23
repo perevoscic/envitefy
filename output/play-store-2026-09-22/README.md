@@ -1,6 +1,6 @@
 # Envitefy Play Store screenshots
 
-Eight portrait screenshots, 1080 × 1920 pixels, RGB PNG with no alpha. The `upload` folder and ZIP contain the store deliverables. Upload in filename order, 01 through 08.
+Eight separate portrait screenshots, 1080 × 1920 pixels, RGB PNG with no alpha. The updated `separate` folder and `envitefy-play-store-separate.zip` contain the current store deliverables, with no numbering on the artwork or in their filenames. The earlier `upload` folder and numbered ZIP are superseded.
 
 Each neighboring pair is cut from one 2160 × 1920 composition so the phone, background and linework continue exactly across the boundary:
 
@@ -13,7 +13,7 @@ Each neighboring pair is cut from one 2160 × 1920 composition so the phone, bac
 7. All your plans. One happy place. — Event dashboard.
 8. Less organizing. More enjoying. — Find the next event.
 
-Open `index.html` for the review gallery and individual downloads. `all-eight-preview.webp` shows all four pairs. `carousel-preview.webp` shows their horizontal order. `design.html?pair=1` through `?pair=4` display the full-size compositions.
+Open `index.html` for eight individual image previews and downloads. `all-eight-preview.webp` shows eight portraits with space between them. `carousel-preview.webp` shows the same separate portraits in their intended horizontal order. `design.html?pair=1` through `?pair=4` retain the full-size source compositions for editing the split-phone design.
 
 ## Sources and reproduction
 
