@@ -107,6 +107,7 @@ type LocationInput = {
   date: string;
   id?: string;
   timezone: string;
+  placeId?: string;
 };
 
 export async function searchBuilderLocation(input: LocationInput): Promise<BuilderLocationResult> {
@@ -122,18 +123,34 @@ export async function searchBuilderLocation(input: LocationInput): Promise<Build
         resolution: "online",
       },
     };
+  let googleResult: BuilderLocationResult | null = null;
   if (key()) {
     try {
-      const result = await searchGoogleLocation(input);
-      if (result.location?.timezone || result.candidates.length > 1) return result;
+      googleResult = input.placeId
+        ? {
+            location: await resolveBuilderPlace(input.placeId, input.date, input.id),
+            candidates: [],
+            message: "",
+          }
+        : await searchGoogleLocation(input);
+      if (
+        googleResult.location?.timezone ||
+        (!googleResult.location && googleResult.candidates.length)
+      )
+        return googleResult;
     } catch {
       /* Try source-backed venue research below. */
     }
   }
-  const location = await researchBuilderVenue(input.query, input.id);
+  // Use the verified/selected branch's full address if only its timezone is missing.
+  const context = googleResult?.location || input;
+  const query = [context.venue, context.address, context.city, input.query]
+    .filter(Boolean)
+    .join(", ");
+  const location = await researchBuilderVenue(query, input.id);
   return {
     location,
-    candidates: [],
+    candidates: googleResult?.candidates || [],
     message: location ? "" : "We couldn’t identify this venue. Add its city or full address.",
   };
 }
@@ -160,7 +177,15 @@ async function searchGoogleLocation(input: LocationInput): Promise<BuilderLocati
     input.city || "",
     input.address || "",
   );
-  const location = match ? await resolveBuilderPlace(match.placeId, input.date, input.id) : null;
+  // Keep candidates available if the details/timezone request fails after a successful search.
+  const location = match
+    ? await resolveBuilderPlace(match.placeId, input.date, input.id).catch(() => ({
+        ...emptyLiveCardLocation(input.id),
+        ...match,
+        resolution: "verified" as const,
+        timezone: "",
+      }))
+    : null;
   return {
     candidates,
     location,

@@ -52,6 +52,7 @@ import { notifyFeatureVisibilityChanged } from "@/hooks/useFeatureVisibility";
 import { PROFILE_AVATAR_ACCEPT, validateProfileAvatarMeta } from "@/lib/profile-avatar";
 import { MobileActionBar } from "@/components/ui/MobileActionBar";
 import AppleCalendarConnection, { type AppleCalendarStatus } from "@/components/AppleCalendarConnection";
+import ProfileAccountDeletion from "@/components/account/ProfileAccountDeletion";
 
 type CalendarProvider = "google" | "microsoft" | "apple";
 type ConnectedCalendarProvider = Exclude<CalendarProvider, "apple">;
@@ -958,6 +959,7 @@ export default function SettingsPage() {
                 </button>
               </div>
             </form>
+            <ProfileAccountDeletion accountEmail={userEmail} />
           </section>
 
           <section

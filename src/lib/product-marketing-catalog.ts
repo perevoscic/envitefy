@@ -53,6 +53,22 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
 
   featureGroups: [
     {
+      id: "account-control",
+      name: "Account and data control",
+      features: [{
+        id: "account-deletion-request",
+        name: "Account deletion requests",
+        availability: "core",
+        customerPromise: "Request deletion of your Envitefy account and associated data from Profile or a public page.",
+        proofPoints: [
+          "Settings → Profile includes an explicit account deletion request form with confirmation.",
+          "The public /delete-account page accepts requests without signing in or installing the app, and describes the data scope and retention practices.",
+          "Requests are sent to Envitefy support; ownership must be verified before manual processing. Submitting a request does not immediately delete an account.",
+        ],
+        sellWhen: ["The customer asks how to close an account or request deletion of personal data."],
+      }],
+    },
+    {
       id: "create",
       name: "Create from what the customer already has",
       features: [
@@ -79,18 +95,18 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
         },
         {
           id: "guided-live-card-invite",
-          name: "Live Card / Invite",
+          name: "Live Card",
           availability: "core",
           customerPromise:
-            "Enter your event details once and create both an interactive Live Card and a matching downloadable Invite, available to every signed-in host.",
+            "Create an interactive Live Card, then download an invitation with your event details added to the finished design. Available to every signed-in host.",
           proofPoints: [
             "The main card creation entry in the desktop and mobile sidebar opens /livacards-invites directly, below Snap / Upload.",
-            "Three focused steps cover Design, Event details and Review, with no upfront format choice or separate Idea step. Start by choosing the event type and describing colors, theme, mood and artwork, plus an optional reference image. The occasion guides the generated design. Generate & continue opens Event details immediately while artwork generates. Hosts enter their title, wording and logistics during generation; those edits update both versions without regenerating the shared background. The form stays on the left with an artwork preview on the right, stacking below on phones. Both versions are included, with a Live Card / Invite view toggle in the editor, Review and expanded previews. Switching views preserves edits and artwork. Review stays disabled until the artwork and required event details are ready. Compact links identify missing information and focus its editable field; optional features only add requirements when enabled.",
-            "Hosts enter event information directly, without separate description or revision helpers. The inline preview contains the artwork and format toggle without a separate preview header; expanded previews are available in Review. Event edits preserve the shared artwork and stay in memory until an explicit save.",
+            "Three focused steps cover Design, Event details and Review, with no upfront format choice or separate Idea step. Start by choosing the event type and describing colors, theme, mood and artwork, plus an optional reference image. The occasion guides the generated design. Generate & continue opens Event details immediately while artwork generates. Hosts enter their title, wording and logistics during generation; those edits update the Live Card without regenerating the background. The form stays on the left with an artwork preview on the right, stacking below on phones. The editor, Review and expanded previews show only the Live Card. Once the card is ready, Download invitation composes the latest event details on the same background. Review stays disabled until the artwork and required event details are ready. Compact links identify missing information and focus its editable field; optional features only add requirements when enabled.",
+            "Hosts enter event information directly, without separate description or revision helpers. The inline preview contains the Live Card artwork without a separate preview header; expanded previews are available in Review. Event edits preserve the shared artwork and stay in memory until an explicit save.",
             "Envitefy automatically corrects invitation grammar, spelling and capitalization before final previews, downloads and publishing, including brand names such as AMC. Corrections preserve event details and newer manual edits without a separate proofreading step.",
             "Hosts enter only a venue name. Addresses and local time zones are resolved in the background during final card preparation. A clear match fills the details; ambiguous matches offer choices. City or address clarification appears only when the venue cannot be identified. Invitation typography pairs expressive titles with complementary opening lines and readable details, selected to match the design theme.",
             "When a supplied event date omits the year, current or upcoming months use this year and earlier months use next year. Explicit years take priority across event creation and invitation scans.",
-            "Compact Basics, When & Where, RSVP and Registry tabs collect event details once for both versions. Message to guests clearly identifies the wording guests will read. The optional guest message and additional instructions start collapsed and expand independently; collapsing preserves their text in both versions. One shared background and editable headline carry through to the Live Card and Invite; approved wording, local times, locations and enabled contacts appear on the Invite. Detail edits update both without generating a new background.",
+            "Compact Basics, When & Where, RSVP and Registry tabs collect Live Card event details. Message to guests clearly identifies the wording guests will read. The optional guest message and additional instructions start collapsed and expand independently; collapsing preserves their text. The Live Card has an editable headline and guest actions; downloading adds approved wording, local times, locations and enabled contacts without generating a new background.",
             "Overview and Calendar are included, with explicit controls for optional RSVP collection and registry links.",
             "Progress stays in memory until Save draft or Publish. Saved guided cards reopen in the same builder with their artwork and event details.",
             "Publishing opens the owner dashboard, where hosts can finish their public URL and share the invitation. A confirmed location is required before publishing.",
@@ -107,7 +123,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           customerPromise:
             "Turn a plain-language event idea into an editable invitation and guest-ready live page without starting from a blank form.",
           proofPoints: [
-            "Chat creation remains accessible through existing /chat links and saved conversations. The sidebar's main card creation entry is now the guided Live Card / Invite builder.",
+            "Chat creation remains accessible through existing /chat links and saved conversations. The sidebar's main card creation entry is now the guided Live Card builder.",
             "Starts from the host's words or uploaded context and helps collect missing event details.",
             "The public /envitefy-create page explains message and upload creation, preview and publishing steps, and example prompts; Live Card attribution links lead here, with signup and login continuing into /chat.",
             "A centered chat composer lets people describe their event directly. Create infers the category and uses its guidance, asking for clarification when needed. Product choices appear before the conversation starts, with Generate now below the latest reply when details are ready. Selecting Live Card or Event Page enables the + upload button: attach your own flyer, add instructions, then Send.",

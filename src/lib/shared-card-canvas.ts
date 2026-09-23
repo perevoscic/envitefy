@@ -5,8 +5,10 @@ import {
   CARD_WIDTH,
   type CardTextSource,
   cardFontRoles,
+  hasGeneratedCardHeadline,
   layoutSharedCard,
   type SharedCardDesign,
+  sharedCardArtworkUrl,
   sharedCardContent,
 } from "./shared-card-design";
 
@@ -53,11 +55,18 @@ export async function drawCardText(
       context.font = `${weight} ${size}px "${font}"`;
       return context.measureText(text).width;
     },
+    hasGeneratedCardHeadline(source),
   );
   context.textAlign = "center";
   context.textBaseline = "top";
   // Quiet, translucent paper keeps lettering readable while retaining the artwork.
   context.save();
+  // Never wash over or redraw the generated title/opening line.
+  if (hasGeneratedCardHeadline(source)) {
+    context.beginPath();
+    context.rect(0, 760, CARD_WIDTH, CARD_HEIGHT - 760);
+    context.clip();
+  }
   context.translate(500, mode === "live_card" ? 420 : 730);
   context.scale(0.85, mode === "live_card" ? 0.9 : 1.5);
   const wash = context.createRadialGradient(0, 0, 60, 0, 0, 600);
@@ -65,12 +74,41 @@ export async function drawCardText(
   wash.addColorStop(0.65, `${design.surface}b3`);
   wash.addColorStop(1, `${design.surface}00`);
   context.fillStyle = wash;
-  context.fillRect(-1000, -1500, 2000, 3000);
+  if (mode === "digital_flyer" || !hasGeneratedCardHeadline(source))
+    context.fillRect(-1000, -1500, 2000, 3000);
   context.restore();
   for (const line of layout.lines) {
     context.font = `${line.weight} ${line.size}px "${line.font}"`;
     context.fillStyle = line.color;
     context.fillText(line.text, line.x, line.y);
+  }
+  if (mode === "digital_flyer" && layout.qrCodes?.length) {
+    const { default: QRCode } = await import("qrcode");
+    for (const link of layout.qrCodes) {
+      const code = QRCode.create(link.url, { errorCorrectionLevel: "M" });
+      const quiet = 4;
+      const moduleSize = Math.max(1, Math.floor(link.size * 2 / (code.modules.size + quiet * 2))) / 2;
+      const size = moduleSize * (code.modules.size + quiet * 2);
+      const left = Math.round(link.x - size / 2);
+      context.fillStyle = "#ffffff";
+      context.fillRect(left, link.y, size, size);
+      context.fillStyle = "#000000";
+      for (let row = 0; row < code.modules.size; row++)
+        for (let col = 0; col < code.modules.size; col++) {
+          if (code.modules.get(row, col))
+            context.fillRect(
+              left + (col + quiet) * moduleSize,
+              link.y + (row + quiet) * moduleSize,
+              moduleSize,
+              moduleSize,
+            );
+        }
+      context.fillStyle = design.ink;
+      context.font = `600 24px "${cardFontRoles(design).body.family}"`;
+      context.fillText(link.label, link.x, link.y + size + 10);
+      context.font = `400 18px "${cardFontRoles(design).body.family}"`;
+      context.fillText(link.display, link.x, link.y + size + 42, 260);
+    }
   }
   return layout;
 }
@@ -85,11 +123,11 @@ export async function composeSharedCard(
   const layout = await drawCardText(text, source, mode);
   if (layout.overflow)
     throw new Error(
-      "There is too much wording to fit this invitation. Shorten the title or Overview before downloading or publishing.",
+      "The event details do not fit this invitation. Shorten the location labels or download after simplifying the details.",
     );
   const artwork = new Image();
   artwork.crossOrigin = "anonymous";
-  artwork.src = design.backgroundUrl;
+  artwork.src = sharedCardArtworkUrl(source);
   await artwork.decode().catch(() => {
     throw new Error("The artwork could not be loaded. Please retry.");
   });

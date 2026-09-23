@@ -24,7 +24,7 @@ export default function SharedCardTextLayer({ source }: { source: CardTextSource
         ref.current.width = temporary.width;
         ref.current.height = temporary.height;
         ref.current.getContext("2d")?.drawImage(temporary, 0, 0);
-        setError(layout.overflow ? "Shorten the title or Overview to fit the invitation." : "");
+        setError(layout.overflow ? "The event details do not fit this invitation." : "");
       })
       .catch(() => {
         if (active) setError("The lettering could not load. Please refresh before downloading.");

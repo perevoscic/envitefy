@@ -41,11 +41,30 @@ test("specific venue names resolve without requiring a city; ambiguous branches 
   assert.equal(chooseBuilderPlace([place, otherBranch], place.venue, "Miramar Beach"), place);
 });
 
+test("venue queries match provider names plus street context without guessing a branch", () => {
+  const mapsPlace = {
+    ...place,
+    venue: "AMC Boulevard 10",
+    address: "465 Grand Blvd, Miramar Beach, FL 32550, USA",
+  };
+  assert.equal(chooseBuilderPlace([mapsPlace], "AMC Grand Boulevard", ""), mapsPlace);
+  assert.equal(chooseBuilderPlace([mapsPlace], "AMC Boulevard Miramar Beach", ""), mapsPlace);
+  assert.equal(chooseBuilderPlace([mapsPlace], "465 Grand Boulevard Miramar Beach", ""), mapsPlace);
+  assert.equal(chooseBuilderPlace([mapsPlace], "AMC", ""), null);
+  assert.equal(chooseBuilderPlace([mapsPlace], "AMC Grand", ""), null);
+  assert.equal(chooseBuilderPlace([mapsPlace], "AMC Grand Boulevard Chicago", ""), null);
+  assert.equal(
+    chooseBuilderPlace([mapsPlace, { ...mapsPlace, placeId: "other" }], "AMC Grand Boulevard", ""),
+    null,
+  );
+});
+
 test("place resolution uses provider coordinates and IANA timezone; timezone failure retains the address", async () => {
   const originalFetch = globalThis.fetch;
   const originalKey = process.env.GOOGLE_MAPS_API_KEY;
   process.env.GOOGLE_MAPS_API_KEY = "test-key";
   let timezoneFails = false;
+  let providerName = place.venue;
   const calls: URL[] = [];
   const raw = {
     id: place.placeId,
@@ -65,7 +84,10 @@ test("place resolution uses provider coordinates and IANA timezone; timezone fai
           ? { status: "REQUEST_DENIED" }
           : { status: "OK", timeZoneId: "America/Chicago" },
       );
-    return Response.json(url.pathname.endsWith("places:searchText") ? { places: [raw] } : raw);
+    const returned = { ...raw, displayName: { text: providerName } };
+    return Response.json(
+      url.pathname.endsWith("places:searchText") ? { places: [returned] } : returned,
+    );
   }) as typeof fetch;
   try {
     const found = await searchBuilderLocation({
@@ -90,6 +112,25 @@ test("place resolution uses provider coordinates and IANA timezone; timezone fai
     });
     assert.equal(venueOnly.location?.address, place.address);
     assert.equal(venueOnly.location?.timezone, "America/Chicago");
+    providerName = "AMC Boulevard 10";
+    const contextual = await searchBuilderLocation({
+      query: "AMC Grand Boulevard",
+      date: "2026-09-26",
+      timezone: "America/Los_Angeles",
+    });
+    assert.equal(contextual.location?.venue, providerName);
+    assert.equal(contextual.location?.timezone, "America/Chicago");
+    const candidate = await searchBuilderLocation({
+      query: "AMC",
+      date: "2026-09-26",
+      timezone: "America/Los_Angeles",
+    });
+    assert.equal(candidate.location, null);
+    assert.equal(
+      candidate.candidates.length,
+      1,
+      "even a single unconfirmed candidate remains available for selection without requiring research",
+    );
     timezoneFails = true;
     const fallback = await resolveBuilderPlace(place.placeId, "bad-date");
     assert.equal(fallback.address, place.address);
@@ -111,6 +152,49 @@ test("online meetings retain their link and organizer-selected local timezone", 
   assert.equal(result.location?.resolution, "online");
   assert.equal(result.location?.timezone, "Europe/London");
   assert.equal(isOnlineEventLocation("javascript:alert(1)"), false);
+});
+
+test("selected branches use source-backed fallback when Maps details fail", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.GOOGLE_MAPS_API_KEY;
+  const originalOpenai = process.env.OPENAI_API_KEY;
+  process.env.GOOGLE_MAPS_API_KEY = "test-key";
+  process.env.OPENAI_API_KEY = "test-key";
+  let researched = "";
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    const url = new URL(String(input));
+    if (url.hostname === "places.googleapis.com") return Response.json({}, { status: 503 });
+    assert.equal(url.hostname, "api.openai.com");
+    researched = JSON.parse(String(init?.body)).input;
+    return Response.json({
+      status: "completed",
+      output: [
+        { content: [{ type: "output_text", text: JSON.stringify({ identityConfirmed: false }) }] },
+      ],
+    });
+  }) as typeof fetch;
+  try {
+    const result = await searchBuilderLocation({
+      query: "AMC",
+      placeId: place.placeId,
+      venue: place.venue,
+      address: place.address,
+      city: place.city,
+      date: "2026-09-26",
+      timezone: "America/Los_Angeles",
+    });
+    assert.ok(
+      researched.includes(place.address),
+      "fallback preserves the selected branch address rather than repeating an ambiguous chain search",
+    );
+    assert.equal(result.location, null, "unsupported research never becomes a verified venue");
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.GOOGLE_MAPS_API_KEY;
+    else process.env.GOOGLE_MAPS_API_KEY = originalKey;
+    if (originalOpenai === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = originalOpenai;
+  }
 });
 
 test("deferred results preserve newer queries, unrelated edits, and removed locations", async () => {

@@ -14,6 +14,7 @@ import { useArtworkAspectRatio } from "@/hooks/use-artwork-aspect-ratio";
 import type { StudioShowcasePreview } from "@/lib/studio/showcase-previews";
 import { resolveNativeShareData } from "@/utils/native-share";
 import chromeStyles from "./LiveCardChromeButton.module.css";
+import { sharedCardArtworkUrl } from "@/lib/shared-card-design";
 import styles from "./StudioShowcaseLiveCard.module.css";
 
 function cx(...parts: Array<string | false | null | undefined>) {
@@ -65,7 +66,7 @@ export default function StudioShowcaseLiveCard({
   const handleActiveTabChange = onActiveTabChange ?? setInternalActiveTab;
   const usesPosterArtFrame = preview.invitationData.heroTextMode === "image";
   const sharedDesign = preview.invitationData.sharedDesign;
-  const imageUrl = sharedDesign?.backgroundUrl || preview.imageUrl;
+  const imageUrl = sharedCardArtworkUrl(preview.invitationData) || preview.imageUrl;
   const measuredRatio = useArtworkAspectRatio(imageUrl, usesPosterArtFrame ? 2 / 3 : 9 / 16);
   const artworkRatio = sharedDesign ? 2 / 3 : measuredRatio;
   const canOptimizeImage =

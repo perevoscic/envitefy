@@ -73,14 +73,27 @@ export function chooseBuilderPlace(
   const matches = candidates.filter((candidate) => {
     if (address.trim())
       return contains(candidate.address, address) && (!venue || contains(candidate.venue, venue));
-    return Boolean(
-      venue.trim() &&
-        contains(candidate.venue, venue) &&
-        (city.trim()
-          ? contains(`${candidate.city} ${candidate.region || ""} ${candidate.address}`, city)
-          : normalize(candidate.venue) === normalize(venue) ||
-            (normalize(venue).split(" ").length >= 2 &&
-              normalize(candidate.venue).replace(/ \d+$/, "") === normalize(venue))),
+    // A host may include the shopping center, street or city in the venue field.
+    // Require every token, a specific query and one unique result; never accept a chain name alone.
+    const queryTokens = normalize(venue).split(" ").filter(Boolean);
+    const contextualMatch =
+      !city.trim() &&
+      queryTokens.length >= 3 &&
+      contains(`${candidate.venue} ${candidate.address}`, venue) &&
+      (contains(candidate.address, venue) ||
+        (queryTokens.some((token) => normalize(candidate.venue).split(" ").includes(token)) &&
+          queryTokens.some((token) => !normalize(candidate.venue).split(" ").includes(token))));
+    return (
+      contextualMatch ||
+      Boolean(
+        venue.trim() &&
+          contains(candidate.venue, venue) &&
+          (city.trim()
+            ? contains(`${candidate.city} ${candidate.region || ""} ${candidate.address}`, city)
+            : normalize(candidate.venue) === normalize(venue) ||
+              (normalize(venue).split(" ").length >= 2 &&
+                normalize(candidate.venue).replace(/ \d+$/, "") === normalize(venue))),
+      )
     );
   });
   return matches.length === 1 ? matches[0] : null;

@@ -20,6 +20,8 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 
 ## Creation Product Name
 
+- Live Card only (September 23, 2026): the guided builder and its sidebar/dashboard entry are **Live Card**. Remove Invite format/view switches from the editor, Review and expanded previews. Keep Design → Event details → Review, one shared background and Live Card guest actions. Once the card is ready, offer Download invitation in Review; compose the current approved event text onto the existing background only at download, without generation or saving. Preserve saved legacy cards and route compatibility. This supersedes the earlier paired Live Card / Invite builder UI. Background venue preparation must use provider-backed name plus address context (for example, AMC Grand Boulevard matches Maps' AMC Boulevard 10 at Grand Blvd), retain candidate choices and successful stops when another lookup fails, and use source-backed fallback for selected branches too. Do not guess an ambiguous branch or infer timezone from the host.
+
 - Missing event year preference (September 22, 2026): apply one month-based rule across natural-language event intake, scanned invites and AI-filled forms. A current or later month uses the current local year; an earlier month uses next year, even when the day/time in the current month has passed. An explicitly supplied year takes priority. Use `event-date-parser.ts` / `event-date-year.mjs`; preserve saved explicit dates and actual relative-date intent.
 
 - General Event creation entry (September 22, 2026): place General Events directly below Sign-up Form in + Create Event. It opens an Event Page template gallery at `/event/general`, following the other categories' themed header, serif typography, artwork thumbnails, filters and masonry gallery setup. Selecting a template opens its page editor directly, with no chat UI. Keep General Events in the enabled category list, respect account category preferences, and retain explicit saves and unsaved-progress protection. Saved manual drafts at `/event/general?edit=...` still open their original editor. Plain `/chat` visits continue to go to the dashboard.
@@ -117,6 +119,8 @@ The lowercase `envitefy` wordmark is a locked brand asset. Do not change any of 
 - `src/app/landing/page.test.mjs` and `src/middleware.auth-routing.test.mjs` intentionally guard this contract. Treat failures as brand regressions, not tests to weaken casually.
 
 ## Generated Image Delivery And Cleanup
+
+- Generated output storage (September 23, 2026): keep exports, screenshots, archives, HTML previews and verification reports in the local, Git-ignored `/output/` folder. Keep reusable scripts and editable design/configuration sources in `scripts/`, and design notes and prompt/provenance records in `docs/`. Scripts must continue writing generated files to `/output/` after relocation. Application assets in `public/` remain tracked. See `docs/local-outputs.md`.
 
 Standing user rule (September 7, 2026): after generating new raster artwork for Envitefy, convert it to **WebP with FFmpeg**, then **delete the PNG/JPG/JPEG originals** once the replacements are verified. Complete this workflow in the same task, before reporting the images finished.
 

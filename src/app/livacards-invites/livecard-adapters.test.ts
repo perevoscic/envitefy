@@ -16,7 +16,7 @@ test("layered saved cards retain their background and typography while using the
   assert.equal(payload.data.studioCard.imageUrl, "/composed.webp");
   const saved = payload.data.studioCard.invitationData;
   const restored = sanitizeInvitationData(saved, saved.eventDetails);
-  assert.deepEqual(restored?.sharedDesign, sharedDesign);
+  assert.deepEqual(restored?.sharedDesign, { ...sharedDesign, typography: "cinematic" });
   assert.equal(restored?.headlineIntro, "You're invited");
   assert.equal(restored?.eventDetails.startTime, "19:30");
   assert.equal(liveCardInvitation({ ...form, title: "Updated title" }, restored).title, "Updated title");

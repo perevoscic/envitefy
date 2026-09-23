@@ -505,7 +505,7 @@ function RootNavigationPanel({
       <div className="space-y-1.5">
         <SidebarLink link={{ label: "Home", href: "/", icon: <Home />, onClick: onHome, active: isHomeActive }} />
         <SidebarLink link={{ label: "Snap / Upload", icon: <Upload />, onClick: onSnapUpload, active: isSnapUploadActive }} />
-        <SidebarLink link={{ label: "Live Card / Invite", icon: <Mail aria-hidden="true" />, onClick: onLiveCard, active: pathname === "/livacards-invites" }} />
+        <SidebarLink link={{ label: "Live Card", icon: <Mail aria-hidden="true" />, onClick: onLiveCard, active: pathname === "/livacards-invites" }} />
         {hasCreateEventAccess ? (
           <SidebarLink link={{ label: createEntryLabel, icon: <Plus />, onClick: onCreate, active: isCreateEntryActive }} />
         ) : null}

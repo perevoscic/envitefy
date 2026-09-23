@@ -205,8 +205,7 @@ button.rsvpChoice {
     grid-template-columns: repeat(3, minmax(44px, 1fr));
   }
 }
-/* Shared designs retain the familiar circular icon with its label underneath.
-   Only the palette adapts to the invitation; optional actions keep their usual order. */
+/* Keep the original frosted white circles and white labels on every Live Card. */
 .surface[data-live-card-actions-placement="overlay"] [data-live-card-rail-layout] > .sharedRail {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -254,7 +253,7 @@ button.rsvpChoice {
   padding: 0;
   border: 0;
   border-radius: 8px;
-  color: var(--shared-card-ink);
+  color: white;
   background: transparent;
   box-shadow: none;
 }
@@ -267,12 +266,12 @@ button.rsvpChoice {
   width: clamp(44px, 10cqw, 56px);
   height: clamp(44px, 10cqw, 56px);
   padding: 10px;
-  border: 1px solid color-mix(in srgb, var(--shared-card-accent) 35%, var(--shared-card-surface));
+  border: 1px solid rgb(255 255 255 / 45%);
   border-radius: 50%;
-  color: var(--shared-card-ink);
-  background: color-mix(in srgb, var(--shared-card-surface) 90%, transparent);
+  color: white;
+  background: rgb(255 255 255 / 24%);
   box-shadow:
-    0 5px 14px rgb(0 0 0 / 16%),
+      0 5px 14px rgb(0 0 0 / 24%),
     inset 0 1px 0 rgb(255 255 255 / 45%);
   backdrop-filter: blur(12px);
 }
@@ -285,36 +284,37 @@ button.rsvpChoice {
 
 .surface .sharedRail [data-live-card-trigger] > span {
   display: inline;
-  color: var(--shared-card-ink);
+  color: white;
   font-size: clamp(10px, 2.4cqw, 12px);
   line-height: 1.3;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   text-shadow:
-    0 1px 3px var(--shared-card-surface),
-    0 0 8px var(--shared-card-surface);
+    0 1px 3px rgb(0 0 0 / 75%),
+    0 0 8px rgb(0 0 0 / 40%);
   filter: none;
   white-space: normal;
   overflow: visible;
 }
 
 .sharedRail [data-live-card-trigger]:focus-visible {
-  outline: 2px solid var(--shared-card-ink);
+  outline: 2px solid white;
   outline-offset: 3px;
 }
 
 .sharedRail [data-live-card-trigger][aria-pressed="true"] > div {
-  border-color: var(--shared-card-ink);
-  background: var(--shared-card-surface);
+  border-color: white;
+  background: rgb(255 255 255 / 92%);
+  color: #171717;
   box-shadow:
-    0 0 0 2px var(--shared-card-accent),
+    0 0 0 2px rgb(255 255 255 / 60%),
     inset 0 2px 5px rgb(0 0 0 / 12%);
 }
 
 @media (hover: hover) {
   .sharedRail [data-live-card-trigger]:hover > div {
-    background: var(--shared-card-surface);
-    border-color: var(--shared-card-accent);
+    background: rgb(255 255 255 / 36%);
+    border-color: white;
   }
 }
 

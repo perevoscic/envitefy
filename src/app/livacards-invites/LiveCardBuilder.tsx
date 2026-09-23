@@ -49,7 +49,7 @@ import {
 } from "@/lib/livecard-location";
 import { liveCardWordingKey, mergeLiveCardProofread } from "@/lib/livecard-wording";
 import { composeSharedCard } from "@/lib/shared-card-canvas";
-import { readSharedCardDesign } from "@/lib/shared-card-design";
+import { hasGeneratedCardHeadline, readSharedCardDesign } from "@/lib/shared-card-design";
 import type { GenerationStage } from "@/lib/studio/generation-progress";
 import { buildEventPath } from "@/utils/event-url";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
@@ -172,44 +172,6 @@ const FIELD_LABELS: Partial<Record<keyof LiveCardForm, string>> = {
 };
 type BuilderStep = 1 | 2 | 3;
 type DetailTab = (typeof DETAIL_TABS)[number];
-const OUTPUTS = [
-  {
-    format: "live_card",
-    name: "Live Card",
-    description: "Share a link to event details, directions and optional RSVPs.",
-    icon: Smartphone,
-  },
-  {
-    format: "digital_flyer",
-    name: "Invite",
-    description: "Download an image with your event details, ready to send or print.",
-    icon: Mail,
-  },
-] as const;
-
-function PreviewFormatToggle({
-  format,
-  onChange,
-}: {
-  format: LiveCardForm["format"];
-  onChange: (format: LiveCardForm["format"]) => void;
-}) {
-  return (
-    <div className={styles.previewToggle} role="group" aria-label="Preview view">
-      {OUTPUTS.map(({ format: value, name, icon: Icon }) => (
-        <button
-          key={value}
-          type="button"
-          aria-pressed={format === value}
-          onClick={() => onChange(value)}
-        >
-          <Icon size={16} aria-hidden="true" /> {name}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export default function LiveCardBuilder({ initialEventId }: { initialEventId: string | null }) {
   const [form, setForm] = useState(createLiveCardForm);
   const [artwork, setArtwork] = useState<LiveCardArtwork | null>(null);
@@ -217,6 +179,8 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
   const wordingController = useRef<AbortController | null>(null);
   const pendingWording = useRef<Promise<boolean> | null>(null);
   const [preparingWording, setPreparingWording] = useState(false);
+  const [preparingHeadline, setPreparingHeadline] = useState(false);
+  const [publicUrl, setPublicUrl] = useState("");
   const [step, setStep] = useState<BuilderStep>(1);
   const [detailTab, setDetailTab] = useState<DetailTab>("Basics");
   const [expandedTextFields, setExpandedTextFields] = useState({
@@ -240,7 +204,6 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
   const [error, setError] = useState("");
   const [errors, setErrors] = useState<LiveCardErrors>({});
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewFormat, setPreviewFormat] = useState<LiveCardForm["format"]>("live_card");
   const savedId = useRef(initialEventId);
   const draftId = useRef("");
   const generationController = useRef<AbortController | null>(null);
@@ -306,6 +269,10 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
           nextArtwork.imageUrl = nextArtwork.invitationData.sharedDesign.backgroundUrl;
         if (!active) return;
         const isPublished = data.status === "published";
+        if (isPublished)
+          setPublicUrl(
+            `https://envitefy.com${buildEventPath(initialEventId, nextForm.title, undefined, typeof row.public_slug === "string" ? row.public_slug : undefined)}`,
+          );
         setPublished(isPublished);
         setStep(nextArtwork ? 2 : 1);
       }
@@ -352,31 +319,41 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       );
       if (!pending.length) return true;
       const results = await Promise.all(
-        pending.map(async (location) => {
-          const query = location.query || location.venue || location.address;
-          const response = await fetch("/api/livecard-builder/location", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            signal,
-            body: JSON.stringify({
-              ...location,
-              query,
-              date: before.date,
-              timezone: before.timezone,
-            }),
-          });
-          const result = asRecord(await response.json());
-          if (!response.ok) throw new Error("Location preparation unavailable");
-          const resolved = result.location
-            ? readLiveCardForm({ locations: [result.location] })?.locations[0]
-            : undefined;
-          const candidates = Array.isArray(result.candidates)
-            ? result.candidates
-                .map(readBuilderPlace)
-                .filter((place): place is BuilderPlace => Boolean(place))
-            : [];
-          return { before: location, query, resolved, candidates };
-        }),
+        pending
+          .map(async (location) => {
+            const query = location.query || location.venue || location.address;
+            const response = await fetch("/api/livecard-builder/location", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              signal,
+              body: JSON.stringify({
+                ...location,
+                query,
+                date: before.date,
+                timezone: before.timezone,
+              }),
+            });
+            const result = asRecord(await response.json());
+            if (!response.ok) throw new Error("Location preparation unavailable");
+            const resolved = result.location
+              ? readLiveCardForm({ locations: [result.location] })?.locations[0]
+              : undefined;
+            const candidates = Array.isArray(result.candidates)
+              ? result.candidates
+                  .map(readBuilderPlace)
+                  .filter((place): place is BuilderPlace => Boolean(place))
+              : [];
+            return { before: location, query, resolved, candidates, unavailable: false };
+          })
+          .map((request, index) =>
+            request.catch(() => ({
+              before: pending[index],
+              query: pending[index].query || pending[index].venue || pending[index].address,
+              resolved: undefined,
+              candidates: [],
+              unavailable: true,
+            })),
+          ),
       );
       if (signal.aborted) return false;
       let next = snapshotRef.current.form;
@@ -390,9 +367,11 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
           issues[active.id] = {
             query: result.query,
             candidates: result.candidates,
-            message: result.candidates.length
-              ? "Which venue is yours?"
-              : "We couldn’t identify this venue. Add its city or full address.",
+            message: result.unavailable
+              ? "We couldn’t check this location right now. Select Review to retry."
+              : result.candidates.length
+                ? "Which venue is yours?"
+                : "We couldn’t identify this venue. Add its city or full address.",
           };
         }
       }
@@ -409,6 +388,72 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     return false;
   }
 
+  async function prepareHeadline(signal: AbortSignal): Promise<boolean> {
+    const before = snapshotRef.current;
+    const design = before.artwork?.invitationData?.sharedDesign;
+    if (
+      !design ||
+      hasGeneratedCardHeadline({
+        title: before.form.title,
+        headlineIntro: before.form.headlineIntro,
+        sharedDesign: design,
+      })
+    )
+      return true;
+    setPreparingHeadline(true);
+    try {
+      const response = await fetch("/api/livecard-builder/headline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal,
+        body: JSON.stringify({ form: before.form, design }),
+      });
+      const result = asRecord(await response.json());
+      const updated = readSharedCardDesign({ ...design, headline: result.headline });
+      if (!response.ok || !updated?.headline)
+        throw new Error(
+          typeof result.error === "string"
+            ? result.error
+            : "The title artwork could not be prepared. Select Review to retry.",
+        );
+      if (signal.aborted) return false;
+      const current = snapshotRef.current;
+      if (
+        !current.artwork ||
+        current.artwork.invitationData?.sharedDesign?.backgroundUrl !== design.backgroundUrl ||
+        !isArtworkCurrent(current.form, current.artwork) ||
+        !hasGeneratedCardHeadline({
+          title: current.form.title,
+          headlineIntro: current.form.headlineIntro,
+          sharedDesign: updated,
+        })
+      ) {
+        setError(
+          "Your title or design changed while the lettering was being drawn. Select Review to prepare the latest version.",
+        );
+        return false;
+      }
+      const nextArtwork = {
+        ...current.artwork,
+        invitationData: { ...current.artwork.invitationData, sharedDesign: updated },
+      };
+      snapshotRef.current = { ...current, artwork: nextArtwork };
+      setArtwork(nextArtwork);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      return true;
+    } catch (failure) {
+      if (!signal.aborted)
+        setError(
+          failure instanceof Error
+            ? failure.message
+            : "The title artwork could not be prepared. Select Review to retry.",
+        );
+      return false;
+    } finally {
+      setPreparingHeadline(false);
+    }
+  }
+
   function prepareWording(): Promise<boolean> {
     if (pendingWording.current) return pendingWording.current;
     const controller = new AbortController();
@@ -421,8 +466,16 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
         // If the host types while a request runs, keep their edits and check the latest wording.
         while (!controller.signal.aborted) {
           const before = snapshotRef.current.form;
-          if (checkedWording.current === liveCardWordingKey(before))
-            return await prepareLocations(controller.signal);
+          if (checkedWording.current === liveCardWordingKey(before)) {
+            if (
+              !(await prepareLocations(controller.signal)) ||
+              !(await prepareHeadline(controller.signal))
+            )
+              return false;
+            if (checkedWording.current === liveCardWordingKey(snapshotRef.current.form))
+              return true;
+            continue;
+          }
           const response = await fetch("/api/livecard-builder/assist", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -444,7 +497,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       } catch {
         if (!controller.signal.aborted)
           setError(
-            "We couldn’t finish preparing your invitation. Your details are safe. Please try again.",
+            "We couldn’t finish preparing your Live Card. Your details are safe. Please try again.",
           );
         return false;
       } finally {
@@ -560,7 +613,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     if (working) throw new Error("A save is already in progress.");
     if (publish && !(await prepareWording()))
       throw new Error(
-        "We couldn’t finish preparing your invitation. Your details are safe. Please try again.",
+        "We couldn’t finish preparing your Live Card. Your details are safe. Please try again.",
       );
     const captured = snapshotRef.current;
     if (publish) {
@@ -585,9 +638,17 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
         const backgroundUrl = await persistBackground(
           savedArtwork.invitationData.sharedDesign.backgroundUrl,
         );
+        const headline = savedArtwork.invitationData.sharedDesign.headline;
+        const savedHeadline = headline
+          ? { ...headline, imageUrl: await persistBackground(headline.imageUrl) }
+          : undefined;
         const invitationData = liveCardInvitation(prepared, {
           ...savedArtwork.invitationData,
-          sharedDesign: { ...savedArtwork.invitationData.sharedDesign, backgroundUrl },
+          sharedDesign: {
+            ...savedArtwork.invitationData.sharedDesign,
+            backgroundUrl,
+            headline: savedHeadline,
+          },
         });
         const composed = await composeSharedCard(
           invitationData,
@@ -597,7 +658,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
           value: composed,
           fileName: "invitation.webp",
         });
-        if (!imageUrl) throw new Error("The invitation could not be saved. Please retry.");
+        if (!imageUrl) throw new Error("The card could not be saved. Please retry.");
         savedArtwork = { ...savedArtwork, imageUrl, invitationData };
       }
       const payload = liveCardHistoryPayload(
@@ -632,6 +693,10 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       savedId.current = String(row.id);
       setBaseline(serialize({ form: prepared, artwork: captured.artwork }));
       setPublished(publish);
+      if (publish)
+        setPublicUrl(
+          `https://envitefy.com${buildEventPath(String(row.id), prepared.title, undefined, typeof row.public_slug === "string" ? row.public_slug : undefined)}`,
+        );
       window.history.replaceState(
         window.history.state,
         "",
@@ -641,8 +706,8 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       setMessage(
         publish
           ? published
-            ? "Your invitation is updated."
-            : "Your invitation is published. It's ready to share."
+            ? "Your Live Card is updated."
+            : "Your Live Card is published. It's ready to share."
           : "Draft saved. Find it in Drafts anytime.",
       );
       if (publish && toDashboard) {
@@ -833,8 +898,18 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
   }
 
   const hasSharedDesign = Boolean(artwork?.invitationData?.sharedDesign);
-  const activePreviewFormat = hasSharedDesign ? previewFormat : form.format;
-  const outputs = OUTPUTS.filter((output) => output.format === activePreviewFormat);
+  const activePreviewFormat = hasSharedDesign ? "live_card" : form.format;
+  const outputs = [
+    {
+      format: activePreviewFormat,
+      name: activePreviewFormat === "live_card" ? "Live Card" : "Saved invitation",
+      description:
+        activePreviewFormat === "live_card"
+          ? "Share a link to event details, directions and optional RSVPs."
+          : "Preview your existing artwork before publishing.",
+      icon: activePreviewFormat === "live_card" ? Smartphone : Mail,
+    },
+  ];
   const previewFor = (format: LiveCardForm["format"]) =>
     artwork
       ? {
@@ -845,12 +920,8 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
         }
       : null;
   const preview = previewFor(activePreviewFormat);
-  const previewToggle = hasSharedDesign ? (
-    <PreviewFormatToggle format={activePreviewFormat} onChange={setPreviewFormat} />
-  ) : undefined;
-  async function openPreview(format: LiveCardForm["format"]) {
+  async function openPreview() {
     if (!(await prepareWording())) return;
-    setPreviewFormat(format);
     setPreviewOpen(true);
   }
   const startISO = liveCardDateTime(form.date, form.startTime, form.timezone);
@@ -892,15 +963,15 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
   const previewPane = (
     <aside className={styles.previewPane} aria-label="Artwork preview">
       {step === 3 && preview ? (
-        <section className={styles.outputReview} aria-label="Review your versions">
+        <section className={styles.outputReview} aria-label="Review your Live Card">
           <div className={styles.outputHeading}>
             <div>
               <h2 ref={reviewHeadingRef} tabIndex={-1}>
-                {hasSharedDesign ? "Your Live Card & Invite" : "Your saved design"}
+                {activePreviewFormat === "live_card" ? "Your Live Card" : "Your saved design"}
               </h2>
               <p>
                 {hasSharedDesign
-                  ? "Both are included. Switch views to review each version."
+                  ? "Your card is ready. Download an invitation with the event details added whenever you need it."
                   : "Preview your existing artwork before publishing."}
               </p>
             </div>
@@ -908,7 +979,6 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
               Edit design <Sparkles size={16} />
             </button>
           </div>
-          {previewToggle}
           <div className={styles.outputGrid}>
             {outputs.map(({ format, name, description, icon: Icon }) => {
               const outputPreview = previewFor(format);
@@ -934,18 +1004,20 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                     <button
                       type="button"
                       className={styles.secondary}
-                      onClick={() => openPreview(format)}
+                      onClick={() => openPreview()}
                     >
                       <Eye size={17} /> Preview {name}
                     </button>
-                    {format === "digital_flyer" && !designChanged && !generation && (
-                      <ArtworkDownloadButton
-                        imageUrl={outputPreview.imageUrl}
-                        title={form.title}
-                        invitationData={outputPreview.invitationData}
-                        beforeDownload={prepareWording}
-                      />
-                    )}
+                    {(hasSharedDesign || format === "digital_flyer") &&
+                      canReview &&
+                      Object.keys(publishErrors).length === 0 && (
+                        <ArtworkDownloadButton
+                          imageUrl={outputPreview.imageUrl}
+                          title={form.title}
+                          invitationData={{ ...outputPreview.invitationData, publicUrl }}
+                          beforeDownload={prepareWording}
+                        />
+                      )}
                   </div>
                   {format === "live_card" && (
                     <p className={styles.hint}>
@@ -958,18 +1030,24 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
           </div>
         </section>
       ) : (
-        <>
-          {previewToggle}
-          <div className={styles.inlineArtwork}>{previewContent}</div>
-        </>
+        <div className={styles.inlineArtwork}>{previewContent}</div>
       )}
       {artwork && generation && <DesignGenerationProgress stage={generation} compact />}
       {artwork && !generation && (
         <div role="status" className={styles.status}>
           <Check size={17} />
-          Your design is ready{designChanged ? " for an update." : "."}
+          {preparingHeadline
+            ? "Drawing your title and opening line…"
+            : `Your design is ready${designChanged ? " for an update." : "."}`}
         </div>
       )}
+      {artwork?.invitationData?.sharedDesign &&
+        !hasGeneratedCardHeadline(liveCardInvitation(form, artwork.invitationData)) &&
+        !preparingHeadline && (
+          <p className={styles.hint}>
+            Your title and opening line will be drawn into the artwork when you select Review.
+          </p>
+        )}
       {generationError && (
         <div role="alert" className={styles.generationError}>
           <p>{generationError}</p>
@@ -987,7 +1065,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
         <div className={styles.assistance}>
           <p>
             This card has lettering built into its image. Create a new design to make its text
-            editable and share the artwork with an invite.
+            editable and download an invitation after your card is ready.
           </p>
           <button type="button" className={styles.secondary} onClick={() => void generate()}>
             Create editable design
@@ -1025,9 +1103,9 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     <main className={styles.page}>
       <header className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>LIVE CARDS & INVITES</p>
-          <h1>Create your Live Card &amp; Invite</h1>
-          <p>One event, one design. Two beautiful ways to invite your guests.</p>
+          <p className={styles.eyebrow}>LIVE CARD</p>
+          <h1>Create your Live Card</h1>
+          <p>Create a design, add your event details, and share it with your guests.</p>
         </div>
         <button
           type="button"
@@ -1055,7 +1133,8 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       </nav>
       {preparingWording && (
         <p role="status" className={styles.status}>
-          <Loader2 size={18} className={styles.spin} /> Preparing your invitation…
+          <Loader2 size={18} className={styles.spin} />{" "}
+          {preparingHeadline ? "Drawing your title and opening line…" : "Preparing your Live Card…"}
         </p>
       )}
       {error && (
@@ -1093,17 +1172,17 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
               )}
               <h2 ref={headingRef} tabIndex={-1}>
                 {step === 1
-                  ? "What should your invitation look like?"
+                  ? "What should your Live Card look like?"
                   : step === 2
                     ? "Tell us about your event"
                     : "Ready to share?"}
               </h2>
               <p className={styles.intro}>
                 {step === 1
-                  ? "Describe the look for your Live Card and Invite. We’ll create the artwork while you fill in the event details."
+                  ? "Describe the look for your Live Card. We’ll create the artwork while you fill in the event details."
                   : step === 2
-                    ? "Add the information your guests need. Your wording and details appear in both versions."
-                    : "Review both versions, then publish your event to get its sharing link."}
+                    ? "Add the information your guests need on your Live Card."
+                    : "Review your Live Card, then publish your event to get its sharing link."}
               </p>
               {step === 1 && (
                 <div className={styles.formStack}>
@@ -1231,7 +1310,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                       <div className={styles.formStack}>
                         {textField("headlineIntro", "Opening line (optional)", {
                           placeholder: "You're invited",
-                          hint: "Shown above the title on both versions. Leave blank to omit it.",
+                          hint: "Drawn above the title when you review your card. Leave blank to omit it.",
                         })}
                         {textField("title", "Event title or name", {
                           placeholder: "Livia's 10th Birthday",
@@ -1241,12 +1320,12 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                           multiline: true,
                           placeholder:
                             "Join us to celebrate Livia’s 10th birthday! We can’t wait to see you.",
-                          hint: "This is the wording your guests will read on the Live Card and Invite.",
+                          hint: "Guests read this in Overview. It is not printed on the artwork or download.",
                         })}
                         {textField("instructions", "Anything else guests should know? (optional)", {
                           multiline: true,
                           placeholder: "Dress code, parking, what to bring…",
-                          hint: "Included in both versions.",
+                          hint: "Guests read this in Overview. It is not printed on the artwork or download.",
                         })}
                       </div>
                     )}
@@ -1361,7 +1440,12 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                                       ...current,
                                       locations: current.locations.map((item) =>
                                         item.id === location.id
-                                          ? { ...item, placeId: place.placeId }
+                                          ? {
+                                              ...item,
+                                              ...place,
+                                              timezone: undefined,
+                                              resolution: "unresolved" as const,
+                                            }
                                           : item,
                                       ),
                                     };
@@ -1432,7 +1516,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                         {textField("rsvpDeadline", "Reply by (optional)", { type: "date" })}
                         <p className={styles.hint}>
                           Guests can respond on the Live Card. Add an email or phone number so
-                          guests receiving the Invite can reply to you directly.
+                          guests receiving a downloaded invitation can reply to you directly.
                         </p>
                       </Toggle>
                     )}
@@ -1601,7 +1685,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                       ? generation
                         ? "Creating your design…"
                         : artwork && !designChanged
-                          ? "Review both versions"
+                          ? "Review Live Card"
                           : "Go to design"
                       : working
                         ? "Saving…"
@@ -1627,7 +1711,6 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
         }
         imageUrl={preview?.imageUrl}
         onClose={() => setPreviewOpen(false)}
-        toolbar={previewToggle}
       >
         {preview && (
           <StudioShowcaseLiveCard

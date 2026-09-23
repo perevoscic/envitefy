@@ -11,6 +11,9 @@ import {
   readSharedCardDesign,
   type SharedCardDesign,
   sharedCardContent,
+  hasGeneratedCardHeadline,
+  sharedCardArtworkUrl,
+  invitationLinks,
 } from "./shared-card-design.ts";
 
 const design: SharedCardDesign = {
@@ -163,6 +166,38 @@ test("metadata parsing rejects unsafe backgrounds and normalizes typography and 
     }).paragraphs.length,
     0,
   );
+});
+
+test("generated title artwork is reused verbatim and only wording changes require new lettering", () => {
+  const headline = { imageUrl: "/lettered.webp", title: "Livia is turning 10", intro: "You're invited" };
+  const source = { title: headline.title, headlineIntro: headline.intro, sharedDesign: { ...design, headline } };
+  assert.deepEqual(readSharedCardDesign(source.sharedDesign)?.headline, headline);
+  assert.equal(hasGeneratedCardHeadline(source), true);
+  assert.equal(sharedCardArtworkUrl(source), "/lettered.webp");
+  assert.equal(sharedCardArtworkUrl({ ...source, title: "Livia is turning 11" }), "/background.webp");
+  assert.equal(hasGeneratedCardHeadline({ ...source, headlineIntro: "" }), false);
+  assert.equal(hasGeneratedCardHeadline({ ...source, eventDetails: { startTime: "19:00", location: "New venue" } }), true);
+  assert.deepEqual(layoutSharedCard(source.sharedDesign, sharedCardContent(source), "live_card", measure, true).lines, []);
+  assert.equal(readSharedCardDesign({ ...design, headline: { ...headline, imageUrl: "javascript:alert(1)" } })?.headline, undefined);
+});
+
+test("downloads contain logistics, contacts and QR links, never Overview-only messages", () => {
+  const content = sharedCardContent({ title: "Livia is turning 10", publicUrl: "https://envitefy.com/event/livia", eventDetails: {
+    detailsDescription: "Overview message only", guestInstructions: ["Bring a jacket"],
+    eventDate: "2026-09-26", startTime: "16:00", venueName: "AMC", location: "465 Grand Blvd",
+    rsvpEnabled: true, rsvpName: "Mia", rsvpContact: "mia@example.com · 555-123-4567", rsvpUrl: "https://rsvp.example.com/reply?id=123",
+    registryLink: "https://gifts.example.com/livia",
+  } });
+  assert.doesNotMatch(content.paragraphs.join("\n"), /Overview message|Bring a jacket/);
+  assert.match(content.paragraphs.join("\n"), /mia@example.com · 555-123-4567/);
+  assert.equal(content.links?.length, 3);
+  assert.equal(content.links?.[1].url, "https://rsvp.example.com/reply?id=123");
+  assert.equal(content.links?.[1].display, "rsvp.example.com/reply");
+  const layout = layoutSharedCard(design, content, "digital_flyer", measure, true);
+  assert.equal(layout.overflow, false);
+  assert.equal(layout.qrCodes?.length, 3);
+  assert.ok(layout.lines.every((line) => line.y >= 790), "facts never cover generated lettering");
+  assert.equal(invitationLinks({ publicUrl: "javascript:alert(1)", eventDetails: { rsvpEnabled: false, rsvpUrl: "https://rsvp.example.com", registryLink: "http://localhost/foo" } }).length, 0);
 });
 
 test("themed pairings use distinct display and supporting type without changing approved wording", () => {

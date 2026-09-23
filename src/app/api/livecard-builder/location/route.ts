@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { builderApiAccess } from "@/lib/livecard-api-access";
-import { resolveBuilderPlace, searchBuilderLocation } from "@/lib/livecard-location-server";
+import { searchBuilderLocation } from "@/lib/livecard-location-server";
 
 export const runtime = "nodejs";
 export const maxDuration = 90;
@@ -14,26 +14,7 @@ export async function POST(request: Request) {
   const value = (key: string) =>
     typeof body[key] === "string" ? body[key].slice(0, 500).trim() : "";
   try {
-    if (value("placeId")) {
-      const location = await resolveBuilderPlace(
-        value("placeId"),
-        value("date"),
-        value("id") || "primary",
-      );
-      if (location.timezone) return NextResponse.json({ location });
-      return NextResponse.json(
-        await searchBuilderLocation({
-          query: [location.venue, location.address].filter(Boolean).join(", "),
-          venue: location.venue,
-          address: location.address,
-          city: location.city,
-          date: value("date"),
-          id: value("id") || "primary",
-          timezone: value("timezone") || "UTC",
-        }),
-      );
-    }
-    if (!value("query"))
+    if (!value("query") && !value("placeId"))
       return NextResponse.json(
         { error: "Enter the venue name to find your location." },
         { status: 400 },
@@ -44,6 +25,7 @@ export async function POST(request: Request) {
         venue: value("venue"),
         city: value("city"),
         address: value("address"),
+        placeId: value("placeId"),
         date: value("date"),
         id: value("id") || "primary",
         timezone: value("timezone") || "UTC",

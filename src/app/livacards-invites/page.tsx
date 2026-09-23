@@ -5,9 +5,9 @@ import { authOptions } from "@/lib/auth";
 import LiveCardBuilder from "./LiveCardBuilder";
 
 export const metadata: Metadata = {
-  title: "Live Cards & Invites | Envitefy",
+  title: "Live Cards | Envitefy",
   description:
-    "Create a matching Live Card and Invite through Idea, Event details, Design and Review, with local event times and a dashboard for sharing.",
+    "Create a Live Card through Design, Event details and Review, then share it or download an invitation with your event details.",
   robots: { index: false, follow: false },
 };
 

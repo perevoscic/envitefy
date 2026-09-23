@@ -88,7 +88,7 @@ test("left sidebar omits Studio and Snap Event from the always-open navigation",
   assert.doesNotMatch(source, /Snap Event/);
 });
 
-test("left sidebar uses Live Card / Invite while preserving existing chat access", () => {
+test("left sidebar uses Live Card while preserving existing chat access", () => {
   const source = readSource("src/app/left-sidebar.tsx");
   const controllerSource = readSource("src/app/left-sidebar.controller.ts");
   const modelSource = readSource("src/app/left-sidebar.model.ts");
@@ -98,7 +98,7 @@ test("left sidebar uses Live Card / Invite while preserving existing chat access
   assert.doesNotMatch(source, /Create with AI/);
   assert.match(
     source,
-    /label: "Snap \/ Upload"[\s\S]*?<SidebarLink link=\{\{ label: "Live Card \/ Invite",[\s\S]*?onClick: onLiveCard, active: pathname === "\/livacards-invites"/,
+    /label: "Snap \/ Upload"[\s\S]*?<SidebarLink link=\{\{ label: "Live Card",[\s\S]*?onClick: onLiveCard, active: pathname === "\/livacards-invites"/,
   );
   assert.match(source, /function AiThreadsPanel/);
   assert.match(

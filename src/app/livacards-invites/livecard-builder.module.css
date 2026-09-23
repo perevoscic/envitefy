@@ -728,43 +728,6 @@
   top: 28px;
   min-width: 0;
 }
-.previewToggle {
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-  margin-bottom: 16px;
-  border: 1px solid #dcd4e5;
-  border-radius: 14px;
-  background: #f0ebf5;
-  color: #70677f;
-}
-.previewToggle button {
-  display: inline-flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.previewToggle button[aria-pressed="true"] {
-  color: #6543b2;
-  background: white;
-  box-shadow: 0 2px 6px #30204212;
-}
-.previewToggle button:focus-visible {
-  outline: 3px solid #a28ad9;
-  outline-offset: 2px;
-}
-.outputReview > .previewToggle {
-  max-width: 320px;
-  margin-inline: auto;
-}
 .inlineArtwork {
   height: min(66dvh, 600px);
   min-height: 310px;

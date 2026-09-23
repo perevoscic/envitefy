@@ -20,6 +20,7 @@ const LeftSidebar = dynamic(() => import("./left-sidebar"), {
 
 /** Must stay aligned with middleware signed-in redirects for marketing URLs. */
 const MARKETING_PATHS = new Set([
+  "/delete-account",
   "/landing",
   "/gymnastics",
   "/sports",

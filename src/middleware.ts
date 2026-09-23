@@ -29,6 +29,7 @@ const PUBLIC_UNAUTH_PATHS = new Set([
   "/faq",
   "/contact",
   "/privacy",
+  "/delete-account",
   "/terms",
   "/verify-request",
   "/mobile/sign-in",

@@ -174,6 +174,12 @@ export default function PrivacyPage() {
             ))}
           </div>
 
+          <div className="mt-10 rounded-lg border border-[#d9ded3] bg-white p-5 text-sm leading-6 text-[#52605c]">
+            <p className="font-semibold text-[#203137]">Account deletion</p>
+            <p className="mt-2">Request deletion of your Envitefy account and associated data from Settings → Profile, or use our public request page without signing in.</p>
+            <Link href="/delete-account" className="mt-2 inline-flex min-h-11 items-center font-semibold text-[#203137] underline underline-offset-4">Request account deletion</Link>
+          </div>
+
           <div className="mt-10 rounded-lg border border-[#b7d8ce] bg-[#edf9f5] p-5 text-sm leading-6 text-[#52605c]">
             <p className="font-semibold text-[#203137]">Google API data commitment</p>
             <p className="mt-2">

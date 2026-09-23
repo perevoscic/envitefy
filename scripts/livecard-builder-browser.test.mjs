@@ -5,12 +5,14 @@ import path from "node:path";
 import http from "node:http";
 import { execSync } from "node:child_process";
 import { chromium } from "playwright";
+import sharp from "sharp";
+import jsQR from "jsqr";
 
-test("Live Card / Invite: direct entry, location, explicit saves, dashboard handoff, paired outputs and responsive preview", {
+test("Live Card: location retries, explicit saves, invitation download and responsive preview", {
   timeout: 120000,
 }, async () => {
   execSync("bun scripts/build-livecard-builder-fixture.mjs", { timeout: 60000, stdio: "pipe" });
-  const out = path.resolve(".qa/livecard-builder");
+  const out = path.resolve("output/livecard-builder");
   const uploads = new Map();
   const server = http.createServer(async (req, res) => {
     const pathname = new URL(req.url, "http://localhost").pathname;
@@ -27,6 +29,13 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
       }
       res.setHeader("Content-Type", "image/svg+xml");
       res.end('<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1500"><rect width="1000" height="1500" fill="#fff4ec"/><path d="M0 0H130V1500H0ZM870 0H1000V1500H870Z" fill="#e9b5c8"/><circle cx="80" cy="90" r="40" fill="#c99750"/><circle cx="920" cy="1410" r="40" fill="#c99750"/></svg>');
+      return;
+    }
+    if (pathname === "/headline.webp") {
+      const params = new URL(req.url, "http://localhost").searchParams;
+      const escape = (value) => value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[char]));
+      res.setHeader("Content-Type", "image/svg+xml");
+      res.end(`<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1500"><rect width="1000" height="1500" fill="#f0d9f9"/><text x="500" y="360" text-anchor="middle" fill="#652d83" font-size="40">${escape(params.get("intro") || "")}</text><text x="500" y="530" text-anchor="middle" fill="#652d83" font-size="70" font-style="italic">${escape(params.get("title") || "")}</text></svg>`);
       return;
     }
     if (uploads.has(pathname)) {
@@ -58,6 +67,7 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
   page.on("pageerror", (error) => runtimeErrors.push(error.message));
   const saves = [];
   const generations = [];
+  const headlines = [];
   const locationRequests = [];
   await page.addInitScript(() => {
     window.__cardDraws = [];
@@ -145,6 +155,11 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
         });
       return route.fulfill({ json: { design: { version: 1, backgroundUrl: `${origin}/artwork.webp`, font: "classic", typography: "cinematic", ink: "#542235", accent: "#875226", surface: "#fff4ec" } } });
     }
+    if (url.pathname === "/api/livecard-builder/headline") {
+      const { form, design } = request.postDataJSON();
+      headlines.push({ form, design });
+      return route.fulfill({ json: { headline: { imageUrl: `${origin}/headline.webp?${new URLSearchParams({ title: form.title.trim(), intro: form.headlineIntro.trim() })}`, title: form.title.trim(), intro: form.headlineIntro.trim() } } });
+    }
     if (url.pathname === "/api/upload") {
       const multipart = await new Response(request.postDataBuffer(), { headers: { "content-type": request.headers()["content-type"] } }).formData();
       const file = multipart.get("file");
@@ -169,11 +184,6 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
     if (url.pathname.startsWith("/api/")) throw new Error(`Unexpected API call: ${request.url()}`);
     return route.continue();
   });
-  const selectView = async (name, scope = page) => {
-    const toggle = scope.getByRole("group", { name: "Preview view", exact: true });
-    await toggle.getByRole("button", { name, exact: true }).click();
-    assert.equal(await toggle.getByRole("button", { name, exact: true }).getAttribute("aria-pressed"), "true");
-  };
   const checkActionChrome = async (scope) => {
     const buttons = scope.locator("[data-live-card-trigger]");
     for (const button of await buttons.all()) {
@@ -185,6 +195,9 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
       const labelBox = await label.boundingBox();
       assert.ok(Math.abs(iconBox.width - iconBox.height) < 1, "icon surface stays circular");
       assert.ok(labelBox.y >= iconBox.y + iconBox.height, "label stays below its icon");
+      const chrome = await button.evaluate((node) => ({ icon: getComputedStyle(node.querySelector("svg")).color, label: getComputedStyle(node.querySelector(":scope > span")).color }));
+      assert.equal(chrome.icon, "rgb(255, 255, 255)", "icons retain the original white treatment");
+      assert.equal(chrome.label, "rgb(255, 255, 255)", "labels are white, never artwork palette colors");
     }
   };
   const openSection = async (name) => {
@@ -194,7 +207,8 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
   try {
     await page.goto(`${origin}/livacards-invites`);
     assert.equal(await page.getByRole("group", { name: "Invitation format" }).count(), 0);
-    await page.getByRole("heading", { name: "Create your Live Card & Invite", exact: true }).waitFor();
+    assert.equal(await page.getByText(/LIVE CARDS & INVITES|both versions|Two beautiful ways/).count(), 0);
+    await page.getByRole("heading", { name: "Create your Live Card", exact: true }).waitFor();
     assert.equal(await page.getByRole("region", { name: "Both included", exact: true }).count(), 0);
     assert.equal(await page.getByRole("navigation", { name: "Card creation steps" }).getByRole("button").count(), 3);
     assert.equal(await page.getByRole("button", { name: "1 Design", exact: true }).isDisabled(), false);
@@ -318,7 +332,7 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
     assert.equal(await page.getByRole("progressbar", { name: "Creating your design", exact: true }).count(), 0, "the progress animation is removed when artwork arrives");
     await openSection("Basics");
     assert.equal(await page.getByLabel("Event title or name").inputValue(), "Livia's Movie Night");
-    assert.equal(await page.getByRole("button", { name: "Review both versions", exact: true }).isEnabled(), true, "entering event details during generation does not invalidate artwork");
+    assert.equal(await page.getByRole("button", { name: "Review Live Card", exact: true }).isEnabled(), true, "entering event details during generation does not invalidate artwork");
     assert.equal(
       await page.getByLabel("Message to guests (optional)").inputValue(),
       "A movie and dinner with friends.",
@@ -334,7 +348,7 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
     const dateBeforeReview = await page.getByLabel("Event date", { exact: true }).inputValue();
     await page.getByLabel("Event date", { exact: true }).fill("");
     await openSection("Basics");
-    const reviewButton = page.getByRole("button", { name: "Review both versions", exact: true });
+    const reviewButton = page.getByRole("button", { name: "Review Live Card", exact: true });
     const reviewTab = page.getByRole("button", { name: "3 Review", exact: true });
     assert.equal(await reviewButton.isDisabled(), true);
     assert.equal(await reviewTab.isDisabled(), true, "step navigation cannot bypass required details");
@@ -386,12 +400,14 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
     await openSection("When & Where");
     await page.getByLabel("Venue name", { exact: true }).fill("Unavailable venue");
     await reviewButton.click();
-    await page.getByRole("alert").filter({ hasText: "We couldn’t finish preparing your invitation" }).waitFor();
+    await page.getByText("We couldn’t check this location right now. Select Review to retry.", { exact: true }).waitFor();
+    assert.equal(locationRequests.filter((request) => request.query === "AMC Grand Boulevard").length, 1);
     assert.equal(await page.getByText("Location lookup is unavailable. Enter your address and confirm the local time zone.", { exact: true }).count(), 0);
     assert.equal(await page.getByLabel("Local time zone", { exact: true }).count(), 0);
     await page.getByLabel("Venue name", { exact: true }).fill("Unlisted venue");
     await reviewButton.click();
     await page.getByText("We couldn’t identify this venue. Add its city or full address.", { exact: true }).waitFor();
+    assert.equal(locationRequests.filter((request) => request.query === "AMC Grand Boulevard").length, 1, "a failed second stop does not discard or recheck the verified primary location");
     assert.equal(await page.getByRole("button", { name: "2 Event details", exact: true }).getAttribute("aria-current"), "step");
     await page.getByLabel("Venue name", { exact: true }).fill("AMC");
     await reviewButton.click();
@@ -406,29 +422,19 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
     await page.getByLabel("Change venue", { exact: true }).fill("456 Lake St, Chicago");
     await page.getByRole("button", { name: "3 Review", exact: true }).click();
     await page.getByRole("button", { name: "Preview Live Card", exact: true }).click();
-    await page.waitForFunction(() => window.__cardFonts?.some((font) => font.includes("EnvitefyCardBebas")));
-    assert.ok(await page.evaluate(() => window.__cardFonts.some((font) => font.includes("EnvitefyCardBebas"))), "canvas uses the generated cinematic title font");
-    assert.ok(await page.evaluate(() => window.__cardFonts.some((font) => font.includes("EnvitefyCardClassic"))), "opening line uses a complementary invitation font");
+    assert.equal(headlines.length, 1, "Review draws title lettering once; later date and venue edits reuse it");
+    assert.equal(headlines[0].form.title, "Livia's Movie Night");
+    await page.getByRole("dialog").locator('img[src*="/headline.webp"]').waitFor();
     const dialog = page.getByRole("dialog");
     await dialog.getByRole("button", { name: "RSVP", exact: true }).waitFor();
     await checkActionChrome(dialog);
     await dialog.getByRole("button", { name: "Overview", exact: true }).click();
     await dialog.getByText("A movie and dinner with friends.", { exact: true }).waitFor();
-    const savesBeforeViewSwitch = saves.length;
-    const wordingBeforeViewSwitch = wordingRequests.length;
-    await selectView("Invite", dialog);
-    assert.equal(await dialog.getByRole("button", { name: "RSVP", exact: true }).count(), 0);
-    assert.equal(await dialog.locator("[data-live-card-trigger]").count(), 0);
-    await selectView("Live Card", dialog);
-    await dialog.getByRole("button", { name: "RSVP", exact: true }).waitFor();
-    assert.equal(saves.length, savesBeforeViewSwitch);
-    assert.equal(wordingRequests.length, wordingBeforeViewSwitch, "switching preview views makes no AI requests");
-    assert.equal(generations.length, 1, "switching preview views reuses the same artwork");
+    assert.equal(await dialog.getByRole("group", { name: "Preview view", exact: true }).count(), 0, "expanded previews are Live Card only");
+    assert.equal(generations.length, 1, "preview reuses the same artwork");
     await page.getByRole("button", { name: "Close preview", exact: true }).click();
     await page.getByRole("button", { name: "2 Event details", exact: true }).click();
-    await selectView("Invite");
-    assert.equal(await page.getByRole("complementary", { name: "Artwork preview" }).locator("[data-live-card-trigger]").count(), 0);
-    await selectView("Live Card");
+    assert.equal(await page.getByRole("group", { name: "Preview view", exact: true }).count(), 0, "editor has no Invite switch");
     await openSection("RSVP");
     await page.getByRole("switch", { name: /Collect RSVPs/ }).click();
     const inlinePreview = page.getByRole("complementary", { name: "Artwork preview" });
@@ -458,14 +464,13 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
     await page.getByLabel("Message to guests (optional)").fill("A movie and dinner with freinds.");
     const savedBeforeProofreading = saves.length;
     await page.getByRole("button", { name: "3 Review", exact: true }).click();
-    await page.getByRole("region", { name: "Review your versions", exact: true }).waitFor();
+    await page.getByRole("region", { name: "Review your Live Card", exact: true }).waitFor();
     assert.equal(await page.getByRole("button", { name: "Check grammar & spelling", exact: true }).count(), 0);
     assert.equal(await page.getByRole("button", { name: "Use reviewed wording", exact: true }).count(), 0);
     assert.equal(await page.getByRole("region", { name: "Review Overview wording", exact: true }).count(), 0);
     assert.equal(saves.length, savedBeforeProofreading, "automatic proofreading never saves or publishes");
     assert.equal(await page.getByLabel("Live card share link").count(), 0);
-    await page.waitForFunction(() => document.activeElement?.textContent === "Your Live Card & Invite");
-    await selectView("Invite");
+    await page.waitForFunction(() => document.activeElement?.textContent === "Your Live Card");
     await page.getByRole("button", { name: "Download invitation", exact: true }).focus();
     await page.keyboard.press("Tab");
     assert.match(await page.evaluate(() => document.activeElement?.textContent), /Edit event details/, "keyboard follows the visible review order");
@@ -497,14 +502,14 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
     );
     await page.getByLabel("Message to guests (optional)").fill("Updated welcome");
     await page.getByRole("button", { name: "Save changes", exact: true }).click();
-    await page.getByText("Your invitation is updated.", { exact: true }).waitFor();
+    await page.getByText("Your Live Card is updated.", { exact: true }).waitFor();
     assert.equal(stored.data.description, "Updated welcome\n\nBring a jacket.");
     assert.equal(generations.length, 1);
     await page.getByRole("button", { name: "2 Event details", exact: true }).click();
     await openSection("Basics");
     await page.getByLabel("Event title or name").fill("Updated title");
     await page.getByRole("button", { name: "3 Review", exact: true }).click();
-    await page.getByRole("region", { name: "Review your versions", exact: true }).waitFor();
+    await page.getByRole("region", { name: "Review your Live Card", exact: true }).waitFor();
     assert.equal(
       await page.getByRole("button", { name: "Save & go to dashboard", exact: true }).isDisabled(),
       false,
@@ -522,7 +527,7 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
     await page.getByRole("button", { name: "Retry design", exact: true }).click();
     await page.getByText("Your design is ready.", { exact: true }).waitFor();
     await page.getByRole("button", { name: "2 Event details", exact: true }).click();
-    // Both outputs share one background. Previewing either version never changes the event format or generates artwork.
+    // Live Card creation reuses the background; only download composes the invitation text.
     const generationCount = generations.length;
     assert.equal(await page.getByLabel("Message to guests (optional)").inputValue(), "Updated welcome");
     await page.getByText("Your design is ready.", { exact: true }).waitFor();
@@ -533,17 +538,11 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
     assert.equal(generations.length, generationCount);
     const savesBeforePreviews = saves.length;
     await page.getByRole("button", { name: "3 Review", exact: true }).click();
-    await selectView("Live Card");
     await page.getByRole("region", { name: "Live Card output", exact: true }).waitFor();
-    assert.equal(await page.getByRole("region", { name: "Invite output", exact: true }).count(), 0, "only the selected version is rendered");
-    await selectView("Invite");
-    await page.getByRole("region", { name: "Invite output", exact: true }).waitFor();
-    await page.getByRole("button", { name: "Preview Invite", exact: true }).click();
-    for (const name of ["RSVP", "Overview", "Location", "Calendar", "Registry"]) {
-      assert.equal(await dialog.getByRole("button", { name, exact: true }).count(), 0, `classic invite has no ${name} action`);
-    }
-    await page.screenshot({ path: path.join(out, "classic-invite-preview.png") });
-    await page.getByRole("button", { name: "Close preview", exact: true }).click();
+    const headlineCount = headlines.length;
+    assert.equal(await page.getByRole("region", { name: "Invite output", exact: true }).count(), 0, "the builder renders only the Live Card");
+    assert.equal(await page.getByRole("button", { name: "Preview Invite", exact: true }).count(), 0);
+    assert.doesNotMatch(await page.evaluate(() => window.__cardDraws.join("\n")), /7:30 PM/, "Live Card previews do not compose invitation logistics");
     const downloadEvent = page.waitForEvent("download");
     await page.evaluate(() => { window.__cardDraws = []; });
     await page.getByRole("button", { name: "Download invitation", exact: true }).click();
@@ -552,17 +551,26 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
     const printedText = await page.evaluate(() => window.__cardDraws.join("\n"));
     assert.match(printedText, /7:30 PM/, "download uses the corrected event time");
     assert.doesNotMatch(printedText, /6:00 PM|4:00 PM/, "download never reuses stale time text");
+    assert.doesNotMatch(printedText, /Updated title|You're invited|Updated welcome|Bring a jacket/, "generated title is reused as artwork and Overview-only wording is not printed");
+    assert.equal(headlines.length, headlineCount, "logistics and downloads never regenerate title artwork");
+    const decoded = await sharp(path.join(out, "invitation-download.webp")).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    const decodedUrls = [];
+    for (const box of [{ left: 550, top: 2350, width: 400, height: 400 }, { left: 1100, top: 2350, width: 400, height: 400 }]) {
+      const pixels = await sharp(decoded.data, { raw: { width: decoded.info.width, height: decoded.info.height, channels: 4 } }).extract(box).raw().toBuffer();
+      const code = jsQR(new Uint8ClampedArray(pixels), box.width, box.height);
+      if (code) decodedUrls.push(code.data);
+    }
+    assert.ok(decodedUrls.includes("https://example.com/gifts"), "the exported Registry QR code decodes to its actual URL");
+    assert.ok(decodedUrls.includes("https://envitefy.com/event/movie-night"), "the exported Live Card QR code opens the published public URL");
     assert.equal(generations.length, generationCount, "downloading only composes existing artwork and current text");
     assert.equal(saves.length, savesBeforePreviews, "previews and downloading do not save the event");
-    await selectView("Live Card");
     await page.getByRole("button", { name: "Preview Live Card", exact: true }).click();
     await dialog.getByRole("button", { name: "RSVP", exact: true }).waitFor();
     await page.getByRole("button", { name: "Close preview", exact: true }).click();
     await page.getByRole("button", { name: "Save changes", exact: true }).click();
-    await page.getByText("Your invitation is updated.", { exact: true }).waitFor();
-    assert.equal(stored.data.primaryOutput, "live_card", "Invite preview keeps the Live Card as the published event");
-    await selectView("Invite");
-    await page.getByRole("button", { name: "Preview Invite", exact: true }).click();
+    await page.getByText("Your Live Card is updated.", { exact: true }).waitFor();
+    assert.equal(stored.data.primaryOutput, "live_card", "invitation downloads keep the Live Card as the published event");
+    await page.getByRole("button", { name: "Preview Live Card", exact: true }).click();
     await page.getByRole("button", { name: "Close preview", exact: true }).click();
     assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).isDisabled(), true, "preview choice is not unsaved progress");
     for (const viewport of [
@@ -573,8 +581,7 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
       await page.setViewportSize(viewport);
       await page.emulateMedia({ reducedMotion: "reduce" });
       await page.getByRole("button", { name: "3 Review", exact: true }).click();
-      for (const name of ["Live Card output", "Invite output"]) {
-        await selectView(name.replace(" output", ""));
+      for (const name of ["Live Card output"]) {
         const output = page.getByRole("region", { name, exact: true });
         await output.scrollIntoViewIfNeeded();
         const art = await output.locator("[data-live-card-artwork]").boundingBox();
@@ -609,7 +616,6 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
         path: path.join(out, `details-${viewport.width}.png`),
         fullPage: true,
       });
-      await selectView("Live Card");
       await page.getByRole("button", { name: "3 Review", exact: true }).click();
     await page.getByRole("button", { name: "Preview Live Card", exact: true }).click();
       const bounds = await dialog.locator("[data-live-card-artwork]").boundingBox();
@@ -629,17 +635,8 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
         assert.ok(buttonBounds.height >= 44, "buttons have comfortable tap targets");
         assert.ok(buttonBounds.y + buttonBounds.height <= bounds.y + bounds.height + 1, "buttons remain inside the artwork");
       }
-      const viewToggle = dialog.getByRole("group", { name: "Preview view", exact: true });
-      const toggleBounds = await viewToggle.boundingBox();
-      assert.ok(toggleBounds && toggleBounds.y >= 0 && toggleBounds.x >= 0 && toggleBounds.x + toggleBounds.width <= viewport.width, "preview toggle fits on screen");
-      assert.ok(toggleBounds.y + toggleBounds.height <= bounds.y, "toggle does not cover the artwork");
-      for (const button of await viewToggle.getByRole("button").all()) {
-        assert.ok((await button.boundingBox()).height >= 44);
-      }
+      assert.equal(await dialog.getByRole("group", { name: "Preview view", exact: true }).count(), 0);
       await page.screenshot({ path: path.join(out, `preview-${viewport.width}.png`) });
-      await selectView("Invite", dialog);
-      assert.equal(await dialog.locator("[data-live-card-trigger]").count(), 0);
-      await page.screenshot({ path: path.join(out, `invite-preview-${viewport.width}.png`) });
       await page.getByRole("button", { name: "Close preview", exact: true }).click();
       await page.getByRole("button", { name: "2 Event details", exact: true }).click();
     }
@@ -652,7 +649,7 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
     failProofread = true;
     await page.getByLabel("Message to guests (optional)").fill("A movie and dinner with freinds.");
     await page.getByRole("button", { name: "3 Review", exact: true }).click();
-    await page.getByText("We couldn’t finish preparing your invitation. Your details are safe. Please try again.", { exact: true }).waitFor();
+    await page.getByText("We couldn’t finish preparing your Live Card. Your details are safe. Please try again.", { exact: true }).waitFor();
     assert.equal(await page.getByLabel("Message to guests (optional)").inputValue(), "A movie and dinner with freinds.");
     failProofread = false;
     holdProofread = true;
@@ -661,19 +658,19 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
     await proofreading;
     await page.getByLabel("Message to guests (optional)").fill("My latest Overview at amc with freinds.");
     releaseProofread();
-    await page.getByRole("region", { name: "Review your versions", exact: true }).waitFor();
+    await page.getByRole("region", { name: "Review your Live Card", exact: true }).waitFor();
     await page.getByRole("button", { name: "2 Event details", exact: true }).click();
     assert.equal(await page.getByLabel("Message to guests (optional)").inputValue(), "My latest Overview at AMC with friends.", "newer manual wording is retained and automatically corrected");
     assert.equal(wordingRequests.at(-1).overview, "My latest Overview at amc with freinds.", "newer edits are checked again");
     await page.getByRole("button", { name: "3 Review", exact: true }).click();
-    await page.getByRole("region", { name: "Review your versions", exact: true }).waitFor();
+    await page.getByRole("region", { name: "Review your Live Card", exact: true }).waitFor();
     const checksBeforeDownload = wordingRequests.length;
     const correctedDownload = page.waitForEvent("download");
     await page.evaluate(() => { window.__cardDraws = []; });
     await page.getByRole("button", { name: "Download invitation", exact: true }).click();
     await correctedDownload;
     const correctedPrint = await page.evaluate(() => window.__cardDraws.join("\n"));
-    assert.match(correctedPrint, /My latest Overview at AMC with friends/);
+    assert.doesNotMatch(correctedPrint, /My latest Overview|Bring a jacket/, "guest wording stays in Overview, including after proofreading");
     assert.doesNotMatch(correctedPrint, /\bamc\b|freinds/);
     assert.equal(wordingRequests.length, checksBeforeDownload, "unchanged wording reuses the completed check for the other output");
     assert.equal(saves.length, savesBeforeAutomaticCleanup, "cleanup and downloads remain in memory");
@@ -708,9 +705,9 @@ test("Live Card / Invite: direct entry, location, explicit saves, dashboard hand
             "review readiness links directly to missing event fields",
             "venue-name lookup runs only during final card preparation",
             "background preparation resolves every location and preserves concurrent edits",
-            "classic invite has no guest action controls",
-            "preview toggle in editor, review and fullscreen preserves facts, artwork, saved format and clean state",
-            "preview toggle has 44px targets and stays above artwork on phones and landscape",
+            "invitation text is composed only for download",
+            "Live Card only in editor, review and fullscreen",
+            "Live Card artwork fits on phones and landscape",
             "publish navigates to owner dashboard",
             "concurrent edits",
             "compact tabs and keyboard navigation",

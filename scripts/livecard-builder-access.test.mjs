@@ -174,6 +174,20 @@ test("guided saves still require authentication and updates still require owners
   }
 });
 
+test("selected venue IDs use the shared fallback resolver, including earlier ID-only requests", async () => {
+  const context = setup();
+  const lookups = [];
+  context.imports["@/lib/livecard-api-access"] = { builderApiAccess: async () => null };
+  context.imports["@/lib/livecard-location-server"] = {
+    searchBuilderLocation: async (input) => { lookups.push(input); return { location: null, candidates: [], message: "" }; },
+  };
+  const { POST } = load("src/app/api/livecard-builder/location/route.ts", context.imports);
+  const response = await POST({ json: async () => ({ placeId: "selected-branch", date: "2026-09-26" }) });
+  assert.equal(response.status, 200);
+  assert.equal(lookups.length, 1);
+  assert.equal(lookups[0].placeId, "selected-branch");
+});
+
 test("ordinary event saves retain validation and guided navigation no longer requires admin", async () => {
   const context = setup();
   const { POST } = load("src/app/api/history/route.ts", context.imports);
@@ -183,7 +197,7 @@ test("ordinary event saves retain validation and guided navigation no longer req
   assert.equal(result.status, 400);
   assert.equal(context.checks(), 0);
   const sidebar = fs.readFileSync("src/app/left-sidebar.tsx", "utf8");
-  assert.match(sidebar, /<SidebarLink link=\{\{ label: "Live Card \/ Invite"/);
-  assert.doesNotMatch(sidebar, /\{isAdmin && <SidebarLink link=\{\{ label: "Live Card \/ Invite"/);
+  assert.match(sidebar, /<SidebarLink link=\{\{ label: "Live Card"/);
+  assert.doesNotMatch(sidebar, /\{isAdmin && <SidebarLink link=\{\{ label: "Live Card"/);
   assert.doesNotMatch(sidebar, /label: "Envitefy Create"/);
 });

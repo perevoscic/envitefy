@@ -1300,7 +1300,6 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
         >
           <div
             className={actionRailWrapperClassName}
-            style={sharedDesign ? { "--shared-card-ink": sharedDesign.ink, "--shared-card-surface": sharedDesign.surface, "--shared-card-accent": sharedDesign.accent } as CSSProperties : undefined}
             data-live-card-rail-layout={showcaseRailLayout}
             data-live-card-action-count={buttonConfigs.length}
           >

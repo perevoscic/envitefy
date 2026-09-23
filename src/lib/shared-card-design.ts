@@ -7,6 +7,7 @@ export type SharedCardDesign = {
   ink: string;
   accent: string;
   surface: string;
+  headline?: { imageUrl: string; title: string; intro: string };
 };
 
 export const CARD_WIDTH = 1000;
@@ -146,6 +147,10 @@ export function readSharedCardDesign(value: unknown): SharedCardDesign | undefin
     return;
   const color = (key: string, fallback: string) =>
     typeof raw[key] === "string" && /^#[\da-f]{6}$/i.test(raw[key]) ? raw[key] : fallback;
+  const headline =
+    raw.headline && typeof raw.headline === "object"
+      ? (raw.headline as Record<string, unknown>)
+      : {};
   return {
     version: 1,
     backgroundUrl: raw.backgroundUrl,
@@ -156,6 +161,12 @@ export function readSharedCardDesign(value: unknown): SharedCardDesign | undefin
     ink: color("ink", "#342332"),
     accent: color("accent", "#895c42"),
     surface: color("surface", "#fff6ee"),
+    ...(typeof headline.imageUrl === "string" &&
+    /^(?:https?:\/\/|data:image\/(?:webp|png|jpeg);base64,|\/(?!\/))/.test(headline.imageUrl) &&
+    typeof headline.title === "string" &&
+    typeof headline.intro === "string"
+      ? { headline: { imageUrl: headline.imageUrl, title: headline.title, intro: headline.intro } }
+      : {}),
   };
 }
 
@@ -163,6 +174,7 @@ export type CardTextSource = {
   title?: string;
   headlineIntro?: string;
   sharedDesign?: SharedCardDesign;
+  publicUrl?: string;
   eventDetails?: {
     product?: string;
     eventDate?: string;
@@ -184,7 +196,59 @@ export type CardTextSource = {
     additionalLocations?: unknown;
   } | null;
 };
-export type CardTextContent = { intro: string; title: string; paragraphs: string[] };
+export type CardLink = { label: string; url: string; display: string };
+export type CardTextContent = {
+  intro: string;
+  title: string;
+  paragraphs: string[];
+  links?: CardLink[];
+};
+
+export function hasGeneratedCardHeadline(source: CardTextSource): boolean {
+  const headline = source.sharedDesign?.headline;
+  return Boolean(
+    headline &&
+      headline.title === (source.title || "").trim() &&
+      headline.intro === (source.headlineIntro ?? "You're invited").trim(),
+  );
+}
+
+export function sharedCardArtworkUrl(source: CardTextSource): string {
+  return (
+    (hasGeneratedCardHeadline(source)
+      ? source.sharedDesign?.headline?.imageUrl
+      : source.sharedDesign?.backgroundUrl) || ""
+  );
+}
+
+export function invitationLinks(source: CardTextSource): CardLink[] {
+  const event = source.eventDetails;
+  const candidates = [
+    { label: "View Live Card", url: source.publicUrl },
+    { label: "RSVP", url: event?.rsvpEnabled ? event.rsvpUrl : "" },
+    { label: "Registry", url: event?.registryLink },
+  ];
+  const seen = new Set<string>();
+  return candidates.flatMap(({ label, url }) => {
+    try {
+      const parsed = new URL(url || "");
+      if (
+        !/^https?:$/.test(parsed.protocol) ||
+        !parsed.hostname.includes(".") ||
+        parsed.username ||
+        parsed.password ||
+        seen.has(parsed.href)
+      )
+        return [];
+      seen.add(parsed.href);
+      const path = parsed.pathname === "/" ? "" : parsed.pathname;
+      const readable = `${parsed.host}${path}`;
+      return [{ label, url: parsed.href, display: readable.length <= 44 ? readable : parsed.host }];
+    } catch {
+      return [];
+    }
+  });
+}
 
 function localDate(date: string | undefined): string {
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return date || "";
@@ -242,8 +306,8 @@ export function sharedCardContent(source: CardTextSource): CardTextContent {
   return {
     intro: source.headlineIntro ?? "You're invited",
     title: source.title || "",
+    links: invitationLinks(source),
     paragraphs: [
-      event.detailsDescription || "",
       [
         localDate(event.eventDate),
         [
@@ -259,18 +323,14 @@ export function sharedCardContent(source: CardTextSource): CardTextContent {
         .join("\n"),
       [event.venueName, event.location].filter(Boolean).join("\n"),
       ...more,
-      ...(event.guestInstructions || []),
       event.rsvpEnabled
         ? [
             event.rsvpName ? `RSVP to ${event.rsvpName}` : "RSVP",
-            event.rsvpContact || event.rsvpUrl,
+            event.rsvpContact,
             event.rsvpDeadline ? `Reply by ${localDate(event.rsvpDeadline)}` : "",
           ]
             .filter(Boolean)
             .join("\n")
-        : "",
-      event.registryLink
-        ? ["Registry", event.registryLink, event.giftNote].filter(Boolean).join("\n")
         : "",
     ]
       .map((text) => text.trim())
@@ -287,7 +347,11 @@ export type CardTextLine = {
   color: string;
   weight: number;
 };
-export type CardTextLayout = { lines: CardTextLine[]; overflow: boolean };
+export type CardTextLayout = {
+  lines: CardTextLine[];
+  overflow: boolean;
+  qrCodes?: Array<CardLink & { x: number; y: number; size: number }>;
+};
 export type CardTextMeasure = (text: string, size: number, font: string, weight: number) => number;
 
 function wrap(
@@ -296,24 +360,25 @@ function wrap(
   font: string,
   weight: number,
   measure: CardTextMeasure,
+  width = 740,
 ): string[] {
   return text.split(/\r?\n/).flatMap((paragraph) => {
     const lines: string[] = [];
     let line = "";
     for (const word of paragraph.trim().split(/\s+/)) {
       const next = line ? `${line} ${word}` : word;
-      if (line && measure(next, size, font, weight) > 740) {
+      if (line && measure(next, size, font, weight) > width) {
         lines.push(line);
         line = "";
       }
       // Break long URLs/words without dropping any characters.
-      if (measure(word, size, font, weight) > 740) {
+      if (measure(word, size, font, weight) > width) {
         if (line) {
           lines.push(line);
           line = "";
         }
         for (const letter of word) {
-          if (line && measure(line + letter, size, font, weight) > 740) {
+          if (line && measure(line + letter, size, font, weight) > width) {
             lines.push(line);
             line = "";
           }
@@ -332,6 +397,7 @@ export function layoutSharedCard(
   content: CardTextContent,
   mode: "live_card" | "digital_flyer",
   measure: CardTextMeasure,
+  headlineBaked = false,
 ): CardTextLayout {
   const roles = cardFontRoles(design);
   const headingFont = roles.title.family;
@@ -339,7 +405,7 @@ export function layoutSharedCard(
   const introHeight = roles.introSize * 1.35;
   const lines: CardTextLine[] = [];
   const intro = wrap(
-    content.intro,
+    headlineBaked ? "" : content.intro,
     roles.introSize,
     roles.intro.family,
     roles.introWeight,
@@ -357,7 +423,13 @@ export function layoutSharedCard(
     });
   });
   let size: number = roles.titleSize;
-  let title = wrap(content.title, size, headingFont, roles.titleWeight, measure);
+  let title = wrap(
+    headlineBaked ? "" : content.title,
+    size,
+    headingFont,
+    roles.titleWeight,
+    measure,
+  );
   while (title.length * size * 1.12 > 290 && size > 44) {
     size -= 2;
     title = wrap(content.title, size, headingFont, roles.titleWeight, measure);
@@ -376,6 +448,51 @@ export function layoutSharedCard(
     y += size * 1.12;
   });
   if (mode === "live_card") return { lines, overflow: y > 1050 };
+  const links = content.links || [];
+  const qrCodes = links.map((link, index) => ({
+    ...link,
+    x: 500 + (index - (links.length - 1) / 2) * 280,
+    y: 1190,
+    size: 168,
+  }));
+  const bottom = links.length ? 1130 : 1360;
+  if (headlineBaked) {
+    // Keep generated lettering untouched. Essentials fit beneath it in two readable columns.
+    const startY = 790;
+    let bodySize = 30;
+    const arrange = (fontSize: number) => {
+      const columns: string[][][] = [[], []];
+      const heights = [0, 0];
+      for (const text of content.paragraphs) {
+        const column = heights[0] <= heights[1] ? 0 : 1;
+        const paragraph = wrap(text, fontSize, bodyFont, 500, measure, 360);
+        columns[column].push(paragraph);
+        heights[column] += paragraph.length * fontSize * 1.35 + 22;
+      }
+      return { columns, height: Math.max(...heights) };
+    };
+    let arranged = arrange(bodySize);
+    while (startY + arranged.height > bottom && bodySize > 24) arranged = arrange(--bodySize);
+    arranged.columns.forEach((paragraphs, column) => {
+      let lineY = startY;
+      for (const paragraph of paragraphs) {
+        for (const text of paragraph) {
+          lines.push({
+            text,
+            x: column === 0 ? 290 : 710,
+            y: lineY,
+            size: bodySize,
+            font: bodyFont,
+            weight: 500,
+            color: design.ink,
+          });
+          lineY += bodySize * 1.35;
+        }
+        lineY += 22;
+      }
+    });
+    return { lines, qrCodes, overflow: startY + arranged.height > bottom };
+  }
   const startY = y + 34;
   let bodySize = 34;
   const paragraphsAt = (fontSize: number) =>
@@ -383,7 +500,7 @@ export function layoutSharedCard(
   let paragraphs = paragraphsAt(bodySize);
   const height = () =>
     paragraphs.reduce((sum, paragraph) => sum + paragraph.length * bodySize * 1.38 + 26, 0);
-  while (startY + height() > 1310 && bodySize > 28) {
+  while (startY + height() > bottom && bodySize > 24) {
     bodySize -= 1;
     paragraphs = paragraphsAt(bodySize);
   }
@@ -403,5 +520,5 @@ export function layoutSharedCard(
     }
     y += 26;
   }
-  return { lines, overflow: y > 1310 };
+  return { lines, qrCodes, overflow: y > bottom };
 }

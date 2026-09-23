@@ -4,7 +4,7 @@ import path from "node:path";
 import postcss from "postcss";
 import tailwind from "@tailwindcss/postcss";
 import { transform as transformCss } from "lightningcss";
-const out = path.resolve(".qa/livecard-builder");
+const out = path.resolve("output/livecard-builder");
 await fs.mkdir(out, { recursive: true });
 const entry = path.join(out, "entry.tsx");
 await fs.writeFile(

@@ -9,6 +9,7 @@ import EventCelebrationOverlay from "@/components/EventCelebrationOverlay";
 import LiveCardArtworkFrame from "@/components/studio/LiveCardArtworkFrame";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import SharedCardTextLayer from "@/components/studio/SharedCardTextLayer";
+import { sharedCardArtworkUrl } from "@/lib/shared-card-design";
 import StudioLiveCardActionSurface, {
   isPosterFirstHeroCard,
   type LiveCardActiveTab,
@@ -138,14 +139,14 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
   const artwork = (
     <LiveCardArtworkFrame
       sharedDesign={Boolean(sharedDesign)}
-      imageUrl={sharedDesign?.backgroundUrl || props.imageUrl}
+      imageUrl={invitationData && sharedCardArtworkUrl(invitationData) || props.imageUrl}
       aspectRatio={artworkRatio}
       className={`${usesPosterArtFrame ? "aspect-[2/3] rounded-[1.5rem]" : "aspect-[9/16] rounded-[inherit]"} ${
         fitToContainer ? styles.fittedArtwork : ""
       } ${props.artworkClassName || ""}`}
     >
       <img
-        src={sharedDesign?.backgroundUrl || props.imageUrl}
+        src={invitationData && sharedCardArtworkUrl(invitationData) || props.imageUrl}
         alt={sharedDesign ? "" : props.title}
         className="absolute inset-0 h-full w-full object-contain object-center"
         referrerPolicy="no-referrer"
@@ -210,7 +211,7 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
         )}
         {!placeActionsAbove ? outsideActions : null}
         {usesPosterArtFrame && (!placeActionsOverlay || isClassicInvite || sharedDesign) ? (
-          <ArtworkDownloadButton imageUrl={props.imageUrl} title={props.title} invitationData={sharedDesign && invitationData ? { ...invitationData, eventDetails: { ...invitationData.eventDetails, rsvpUrl: props.shareUrl || invitationData.eventDetails?.rsvpUrl } } : invitationData} className="mt-2" />
+          <ArtworkDownloadButton imageUrl={props.imageUrl} title={props.title} invitationData={sharedDesign && invitationData ? { ...invitationData, publicUrl: props.shareUrl || undefined } : invitationData} className="mt-2" />
         ) : null}
         {useOutsideActions ? closeAction : null}
       </div>
