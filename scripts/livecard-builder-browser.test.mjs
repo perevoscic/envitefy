@@ -68,6 +68,10 @@ test("Live Card: location retries, explicit saves, invitation download and respo
   const saves = [];
   const generations = [];
   const headlines = [];
+  let holdHeadline = false;
+  let releaseHeadline;
+  let headlineStarted;
+  let failHeadline = false;
   const locationRequests = [];
   await page.addInitScript(() => {
     window.__cardDraws = [];
@@ -86,6 +90,19 @@ test("Live Card: location retries, explicit saves, invitation download and respo
   let proofreadStarted;
   let holdProofread = false;
   const wordingRequests = [];
+  const checkRightHandPreview = async () => {
+    const form = await page.locator("form").boundingBox();
+    const preview = await page.getByRole("complementary", { name: "Artwork preview" }).boundingBox();
+    assert.ok(form && preview && preview.x >= form.x + form.width, "mobile preview stays to the right of the editor");
+    assert.ok(preview.x + preview.width <= page.viewportSize().width, "right preview fits inside the phone viewport");
+    const artwork = page.getByRole("complementary", { name: "Artwork preview" }).locator("[data-live-card-artwork]");
+    const art = await artwork.count() ? await artwork.boundingBox() : null;
+    if (art) for (const button of await page.getByRole("complementary", { name: "Artwork preview" }).locator("[data-live-card-trigger]").all()) {
+      const box = await button.boundingBox();
+      assert.ok(box.y > art.y + art.height * 0.5, "thumbnail controls do not cover the title");
+      assert.ok(box.x >= art.x - 1 && box.x + box.width <= art.x + art.width + 1, "thumbnail controls stay inside the card");
+    }
+  };
   let releaseGeneration;
   let generationStarted;
   const started = new Promise((resolve) => {
@@ -158,6 +175,11 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     if (url.pathname === "/api/livecard-builder/headline") {
       const { form, design } = request.postDataJSON();
       headlines.push({ form, design });
+      if (holdHeadline) {
+        holdHeadline = false;
+        await new Promise((resolve) => { releaseHeadline = resolve; headlineStarted(); });
+      }
+      if (failHeadline) return route.fulfill({ status: 503, json: { error: "The title artwork could not be verified. Your card is unchanged. Select Review to try again." } });
       return route.fulfill({ json: { headline: { imageUrl: `${origin}/headline.webp?${new URLSearchParams({ title: form.title.trim(), intro: form.headlineIntro.trim() })}`, title: form.title.trim(), intro: form.headlineIntro.trim() } } });
     }
     if (url.pathname === "/api/upload") {
@@ -261,6 +283,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.equal(await generationPanel.evaluate((element) => element.getAnimations({ subtree: true }).length), 0, "reduced motion stops decorative animations and shimmer");
     for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
       await page.setViewportSize(viewport);
+      await checkRightHandPreview();
       assert.ok(await generationPanel.evaluate((element) => element.scrollHeight <= element.clientHeight + 1 && element.scrollWidth <= element.clientWidth + 1), "progress fits portrait and landscape without clipping");
       await generationPanel.screenshot({ path: path.join(out, `generation-progress-${viewport.width}.png`) });
     }
@@ -507,9 +530,28 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.equal(generations.length, 1);
     await page.getByRole("button", { name: "2 Event details", exact: true }).click();
     await openSection("Basics");
+    const beforeTitleEdits = headlines.length;
+    const beforeTitleSaves = saves.length;
+    await page.getByLabel("Event title or name").fill("Superseded title");
+    holdHeadline = true;
+    const drawingHeadline = new Promise((resolve) => { headlineStarted = resolve; });
+    await page.getByRole("button", { name: "3 Review", exact: true }).click();
+    await drawingHeadline;
+    await page.getByRole("complementary", { name: "Artwork preview" }).getByText("Drawing your title and opening line…", { exact: true }).waitFor();
     await page.getByLabel("Event title or name").fill("Updated title");
+    releaseHeadline();
+    await page.getByText("Your title or design changed while the lettering was being drawn. Select Review to prepare the latest version.", { exact: true }).waitFor();
+    assert.equal(headlines.length, beforeTitleEdits + 1, "a stale title result does not start another paid request automatically");
+    assert.equal(await page.getByLabel("Event title or name").inputValue(), "Updated title");
+    assert.equal(saves.length, beforeTitleSaves, "lettering preparation never saves progress");
+    failHeadline = true;
+    await page.getByRole("button", { name: "3 Review", exact: true }).click();
+    await page.getByText("The title artwork could not be verified. Your card is unchanged. Select Review to try again.", { exact: true }).waitFor();
+    assert.equal(await page.getByLabel("Event title or name").inputValue(), "Updated title");
+    failHeadline = false;
     await page.getByRole("button", { name: "3 Review", exact: true }).click();
     await page.getByRole("region", { name: "Review your Live Card", exact: true }).waitFor();
+    assert.equal(headlines.at(-1).form.title, "Updated title");
     assert.equal(
       await page.getByRole("button", { name: "Save & go to dashboard", exact: true }).isDisabled(),
       false,
@@ -592,6 +634,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
       await page.getByRole("button", { name: "2 Event details", exact: true }).click();
       for (const name of ["Basics", "When & Where", "RSVP", "Registry"]) {
         await openSection(name);
+        await checkRightHandPreview();
         assert.equal(await page.getByRole("tabpanel").count(), 1);
         const panel = await page.getByRole("tabpanel").boundingBox();
         assert.ok(

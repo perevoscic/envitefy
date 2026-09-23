@@ -469,7 +469,8 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
           if (checkedWording.current === liveCardWordingKey(before)) {
             if (
               !(await prepareLocations(controller.signal)) ||
-              !(await prepareHeadline(controller.signal))
+              !(await prepareHeadline(controller.signal)) ||
+              !(await prepareLocations(controller.signal))
             )
               return false;
             if (checkedWording.current === liveCardWordingKey(snapshotRef.current.form))

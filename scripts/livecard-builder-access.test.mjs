@@ -174,6 +174,29 @@ test("guided saves still require authentication and updates still require owners
   }
 });
 
+test("title lettering requires sign-in, validates input and never persists generated artwork", async () => {
+  const context = setup();
+  let denied = { status: 401 };
+  let generated = 0;
+  context.imports["@/lib/livecard-api-access"] = { builderApiAccess: async (scope) => { assert.equal(scope, "design"); return denied; } };
+  context.imports["@/lib/livecard-builder"] = { readLiveCardForm: (value) => value, validateLiveCard: () => ({}) };
+  context.imports["@/lib/shared-card-design"] = { readSharedCardDesign: (value) => value };
+  context.imports["@/lib/shared-card-headline"] = { generateCardHeadline: async () => { generated++; return { title: "Livia is turning 10", intro: "", imageUrl: "data:image/webp;base64,test" }; } };
+  const { POST } = load("src/app/api/livecard-builder/headline/route.ts", context.imports);
+  const request = (body, site = "same-origin") => ({ json: async () => body, headers: { get: () => site } });
+  const valid = { form: { title: "Livia is turning 10" }, design: { backgroundUrl: "/background.webp" } };
+  assert.equal((await POST(request(valid))).status, 401);
+  denied = null;
+  assert.equal((await POST(request(valid, "cross-site"))).status, 403);
+  assert.equal((await POST(request({ ...valid, form: { title: " " } }))).status, 400);
+  assert.equal(generated, 0);
+  const response = await POST(request(valid));
+  assert.equal(response.status, 200);
+  assert.equal(response.body.headline.title, valid.form.title);
+  assert.equal(generated, 1);
+  assert.equal(context.writes(), 0);
+});
+
 test("selected venue IDs use the shared fallback resolver, including earlier ID-only requests", async () => {
   const context = setup();
   const lookups = [];

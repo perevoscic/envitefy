@@ -294,7 +294,7 @@ export function sharedCardContent(source: CardTextSource): CardTextContent {
           [
             location.label,
             location.timeText,
-            location.venue,
+            location.venue === location.label ? "" : location.venue,
             location.address || location.location,
             location.description,
           ]

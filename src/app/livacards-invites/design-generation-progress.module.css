@@ -145,6 +145,28 @@
 .compact .progress {
   margin-inline: auto;
 }
+@container (max-width: 200px) {
+  .panel {
+    gap: 8px;
+    padding: 10px 8px;
+    border-radius: 14px;
+  }
+  .cardStack {
+    height: clamp(40px, 30cqw, 60px);
+    margin: 0;
+  }
+  .copy h3 {
+    font-size: 13px;
+  }
+  .copy p {
+    display: none;
+  }
+  .stage {
+    margin-top: 8px;
+    font-size: 10px;
+    letter-spacing: 0;
+  }
+}
 @keyframes cardFloat {
   0%,
   100% {

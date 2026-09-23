@@ -2,27 +2,110 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import sharp from "sharp";
 import { createLiveCardForm } from "./livecard-builder";
-import { cardHeadlinePrompt, generateCardHeadline, headlineGenerationDeps } from "./shared-card-headline";
+import {
+  cardHeadlinePrompt,
+  generateCardHeadline,
+  headlineGenerationDeps,
+} from "./shared-card-headline";
+
+const design = {
+  version: 1 as const,
+  backgroundUrl: "/background.webp",
+  font: "classic" as const,
+  ink: "#522335",
+  accent: "#876035",
+  surface: "#fff4ec",
+};
 
 test("headline generation receives only approved title, opening line and visual direction", () => {
-  const form = { ...createLiveCardForm(), title: "Livia is turning 10", headlineIntro: "Join us", design: "Lavender balloons and calligraphy", overview: "Only guests should read this", instructions: "Bring a jacket", hostEmail: "mia@example.com", date: "2026-09-26" };
-  const prompt = cardHeadlinePrompt(form);
+  const form = {
+    ...createLiveCardForm(),
+    title: "Livia is turning 10",
+    headlineIntro: "Join us",
+    design: "Lavender balloons and calligraphy",
+    overview: "Only guests should read this",
+    instructions: "Bring a jacket",
+    hostEmail: "mia@example.com",
+    date: "2026-09-26",
+  };
+  const prompt = cardHeadlinePrompt(form, design);
   assert.match(prompt, /Livia is turning 10/);
   assert.match(prompt, /Join us/);
   assert.doesNotMatch(prompt, /Only guests should|Bring a jacket|mia@example.com|2026-09-26/);
-  assert.match(cardHeadlinePrompt({ ...form, headlineIntro: "" }), /Omit this line completely when empty/);
+  assert.match(
+    cardHeadlinePrompt({ ...form, headlineIntro: "" }, design),
+    /Omit this line completely when empty/,
+  );
+});
+
+test("lettering receives this event's category and palette without a fixed birthday treatment", () => {
+  const form = { ...createLiveCardForm(), title: "Our celebration", headlineIntro: "Join us" };
+  const wedding = cardHeadlinePrompt(
+    { ...form, eventType: "Wedding", design: "Ivory and gold botanical wedding" },
+    design,
+  );
+  const birthday = cardHeadlinePrompt(
+    {
+      ...form,
+      eventType: "Birthday",
+      design: "Navy and orange space birthday, bold futuristic lettering",
+    },
+    { ...design, ink: "#ffffff", accent: "#ff8800", surface: "#001144" },
+  );
+  assert.match(wedding, /Event category.*"Wedding"/);
+  assert.match(wedding, /#876035/);
+  assert.match(birthday, /Event category.*"Birthday"/);
+  assert.match(birthday, /bold futuristic lettering/);
+  assert.match(birthday, /#ff8800/);
+  assert.doesNotMatch(birthday, /#876035|lilac balloon|sweeping playful script/);
+  assert.match(birthday, /Do not impose a fixed font style, script treatment or color/);
 });
 
 test("generated lettering requires verification, preserves exact text, and returns only WebP in memory", async () => {
   const original = { ...headlineGenerationDeps };
-  const image = await sharp({ create: { width: 100, height: 150, channels: 3, background: "#dddddd" } }).png().toBuffer();
+  const image = await sharp({
+    create: { width: 100, height: 150, channels: 3, background: "#dddddd" },
+  })
+    .png()
+    .toBuffer();
   let status: "passed" | "failed" | "unavailable" = "passed";
   let calls = 0;
-  const form = { ...createLiveCardForm(), title: "Livia is turning 10", headlineIntro: "You're invited", design: "Lavender balloons" };
-  const design = { version: 1 as const, backgroundUrl: "/background.webp", font: "classic" as const, ink: "#522335", accent: "#876035", surface: "#fff4ec" };
-  headlineGenerationDeps.references = async (urls) => { assert.deepEqual(urls, [design.backgroundUrl]); return [{ mimeType: "image/png", data: image.toString("base64") }]; };
-  headlineGenerationDeps.generate = async () => { calls++; return { ok: true, imageDataUrl: `data:image/png;base64,${image.toString("base64")}`, warnings: [] }; };
-  headlineGenerationDeps.verify = async (_image, event, product) => { assert.equal(product, "live_card"); assert.equal(event.title, form.title); assert.deepEqual(event.requiredArtworkLines, [form.headlineIntro]); return { status, issues: [] }; };
+  const form = {
+    ...createLiveCardForm(),
+    title: "Livia is turning 10",
+    headlineIntro: "You're invited",
+    design: "Lavender balloons",
+  };
+  const design = {
+    version: 1 as const,
+    backgroundUrl: "/background.webp",
+    font: "classic" as const,
+    ink: "#522335",
+    accent: "#876035",
+    surface: "#fff4ec",
+  };
+  headlineGenerationDeps.references = async (urls) => {
+    assert.deepEqual(urls, [design.backgroundUrl]);
+    return [{ mimeType: "image/png", data: image.toString("base64") }];
+  };
+  headlineGenerationDeps.generate = async (prompt) => {
+    assert.match(prompt, /Artwork palette/);
+    assert.ok(prompt.includes(design.accent));
+    calls++;
+    return {
+      ok: true,
+      imageDataUrl: `data:image/png;base64,${image.toString("base64")}`,
+      warnings: [],
+    };
+  };
+  headlineGenerationDeps.verify = async (_image, event, product) => {
+    assert.equal(product, "live_card");
+    assert.equal(event.title, form.title);
+    assert.equal(event.category, form.eventType);
+    assert.ok(event.userIdea?.includes(design.accent));
+    assert.deepEqual(event.requiredArtworkLines, [form.headlineIntro]);
+    return { status, issues: [] };
+  };
   headlineGenerationDeps.encode = async (buffer) => sharp(buffer).webp().toBuffer();
   try {
     const result = await generateCardHeadline(form, design);
@@ -33,6 +116,12 @@ test("generated lettering requires verification, preserves exact text, and retur
       status = value;
       await assert.rejects(generateCardHeadline(form, design), /could not be verified/);
     }
-    assert.equal(calls, 3, "one model request per explicit attempt, without automatic paid retries");
-  } finally { Object.assign(headlineGenerationDeps, original); }
+    assert.equal(
+      calls,
+      3,
+      "one model request per explicit attempt, without automatic paid retries",
+    );
+  } finally {
+    Object.assign(headlineGenerationDeps, original);
+  }
 });

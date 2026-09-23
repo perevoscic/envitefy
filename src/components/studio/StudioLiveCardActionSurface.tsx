@@ -22,7 +22,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import type { CSSProperties, FormEvent, ReactNode } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supportsStudioCategoryRsvp } from "@/app/studio/studio-workspace-field-config";
 import { useCalendarAction } from "@/components/CalendarAction";

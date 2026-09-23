@@ -11,10 +11,10 @@ import StudioLiveCardActionSurface, {
   type LiveCardActiveTab,
 } from "@/components/studio/StudioLiveCardActionSurface";
 import { useArtworkAspectRatio } from "@/hooks/use-artwork-aspect-ratio";
+import { sharedCardArtworkUrl } from "@/lib/shared-card-design";
 import type { StudioShowcasePreview } from "@/lib/studio/showcase-previews";
 import { resolveNativeShareData } from "@/utils/native-share";
 import chromeStyles from "./LiveCardChromeButton.module.css";
-import { sharedCardArtworkUrl } from "@/lib/shared-card-design";
 import styles from "./StudioShowcaseLiveCard.module.css";
 
 function cx(...parts: Array<string | false | null | undefined>) {
@@ -69,8 +69,7 @@ export default function StudioShowcaseLiveCard({
   const imageUrl = sharedCardArtworkUrl(preview.invitationData) || preview.imageUrl;
   const measuredRatio = useArtworkAspectRatio(imageUrl, usesPosterArtFrame ? 2 / 3 : 9 / 16);
   const artworkRatio = sharedDesign ? 2 / 3 : measuredRatio;
-  const canOptimizeImage =
-    imageUrl.startsWith("/") && !imageUrl.startsWith("/api/");
+  const canOptimizeImage = imageUrl.startsWith("/") && !imageUrl.startsWith("/api/");
 
   useEffect(() => {
     if (activeTab === undefined) {
@@ -158,7 +157,8 @@ export default function StudioShowcaseLiveCard({
   const isClassicInvite = preview.invitationData.eventDetails?.product === "digital_flyer";
   const placeActionsAbove = actionsPlacement === "above";
   const placeActionsOverlay = actionsPlacement === "overlay";
-  const useOutsideActions = !isClassicInvite && !placeActionsOverlay && (usesPosterArtFrame || placeActionsAbove);
+  const useOutsideActions =
+    !isClassicInvite && !placeActionsOverlay && (usesPosterArtFrame || placeActionsAbove);
   const outsideActions = useOutsideActions ? (
     <div className={cx("shrink-0", !interactive && "pointer-events-none")}>
       <StudioLiveCardActionSurface
@@ -226,8 +226,13 @@ export default function StudioShowcaseLiveCard({
             />
           )}
           {!usesPosterArtFrame ? <div className="absolute inset-0 bg-black/20" /> : null}
-          {sharedDesign ? <SharedCardTextLayer source={preview.invitationData} /> : <LiveCardHeroTextOverlay invitationData={preview.invitationData} />}
-          {!isClassicInvite && (placeActionsOverlay || (!usesPosterArtFrame && !placeActionsAbove)) ? (
+          {sharedDesign ? (
+            <SharedCardTextLayer source={preview.invitationData} />
+          ) : (
+            <LiveCardHeroTextOverlay invitationData={preview.invitationData} />
+          )}
+          {!isClassicInvite &&
+          (placeActionsOverlay || (!usesPosterArtFrame && !placeActionsAbove)) ? (
             <div
               className={cx(
                 "absolute inset-0",

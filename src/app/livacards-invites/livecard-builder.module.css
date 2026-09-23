@@ -731,6 +731,7 @@
 .inlineArtwork {
   height: min(66dvh, 600px);
   min-height: 310px;
+  container-type: inline-size;
 }
 .previewEmpty {
   height: 100%;
@@ -892,9 +893,9 @@
   .page {
     padding-top: 18px;
   }
-  .workspace {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
+  .workspace:not([data-step="3"]) {
+    grid-template-columns: minmax(0, 1fr) clamp(108px, 32vw, 272px);
+    gap: 12px;
   }
   .header {
     display: grid;
@@ -907,7 +908,8 @@
     font-size: 25px;
   }
   .previewPane {
-    position: static;
+    position: sticky;
+    top: 12px;
     grid-row: auto;
     display: block;
     border: 0;
@@ -919,8 +921,10 @@
     padding: 16px;
   }
   .inlineArtwork {
-    height: clamp(340px, 115vw, 580px);
+    height: auto;
+    min-height: 0;
     width: 100%;
+    aspect-ratio: 2 / 3;
   }
   .previewPane .status {
     font-size: 11px;
@@ -943,6 +947,54 @@
   }
 }
 @media (max-width: 600px) {
+  /* Scale the thumbnail controls with the artwork; full Review controls keep their tap sizes. */
+  .inlineArtwork [data-live-card-rail-layout] {
+    width: 200%;
+    max-width: none;
+    transform: scale(0.5);
+    transform-origin: bottom left;
+  }
+  .inlineArtwork [data-live-card-artwork] {
+    border-radius: 14px;
+  }
+  .workspace:not([data-step="3"]) .editor {
+    padding: 18px 10px;
+  }
+  .workspace:not([data-step="3"]) .dateGrid,
+  .workspace:not([data-step="3"]) .fieldGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workspace:not([data-step="3"]) .formActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .workspace:not([data-step="3"]) .formActions button {
+    white-space: normal;
+    padding-inline: 8px;
+  }
+  .workspace:not([data-step="3"]) .reference {
+    flex-wrap: wrap;
+    padding: 10px;
+  }
+  .workspace:not([data-step="3"]) .collapsibleField > button {
+    gap: 8px;
+    padding: 12px 10px;
+  }
+  .workspace:not([data-step="3"]) .previewEmpty {
+    padding: 12px;
+    gap: 10px;
+    border-radius: 14px;
+  }
+  .workspace:not([data-step="3"]) .previewEmpty p {
+    font-size: 17px;
+  }
+  .workspace:not([data-step="3"]) .previewEmpty > span:last-child {
+    display: none;
+  }
+  .workspace:not([data-step="3"]) .emptyIcon {
+    width: 44px;
+    height: 44px;
+  }
   .outputGrid,
   .workspace[data-step="3"] .review dl {
     grid-template-columns: minmax(0, 1fr);
@@ -965,7 +1017,7 @@
 }
 @media (max-width: 450px) {
   .page {
-    padding-inline: 14px;
+    padding-inline: 10px;
   }
   .header h1 {
     font-size: 21px;

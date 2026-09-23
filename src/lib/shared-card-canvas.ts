@@ -87,7 +87,8 @@ export async function drawCardText(
     for (const link of layout.qrCodes) {
       const code = QRCode.create(link.url, { errorCorrectionLevel: "M" });
       const quiet = 4;
-      const moduleSize = Math.max(1, Math.floor(link.size * 2 / (code.modules.size + quiet * 2))) / 2;
+      const moduleSize =
+        Math.max(1, Math.floor((link.size * 2) / (code.modules.size + quiet * 2))) / 2;
       const size = moduleSize * (code.modules.size + quiet * 2);
       const left = Math.round(link.x - size / 2);
       context.fillStyle = "#ffffff";

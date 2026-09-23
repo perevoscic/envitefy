@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { drawCardText } from "@/lib/shared-card-canvas";
-import { sharedCardContent, type CardTextSource } from "@/lib/shared-card-design";
+import { type CardTextSource, sharedCardContent } from "@/lib/shared-card-design";
 
 export default function SharedCardTextLayer({ source }: { source: CardTextSource }) {
   const ref = useRef<HTMLCanvasElement>(null);
