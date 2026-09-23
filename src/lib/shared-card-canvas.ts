@@ -59,7 +59,8 @@ export async function drawCardText(
   );
   context.textAlign = "center";
   context.textBaseline = "top";
-  // Quiet, translucent paper keeps lettering readable while retaining the artwork.
+  // Temporary Live Card lettering needs contrast only around the title.
+  // The lower scene stays visible; download logistics get a separate wash below.
   context.save();
   // Never wash over or redraw the generated title/opening line.
   if (hasGeneratedCardHeadline(source)) {
@@ -67,8 +68,11 @@ export async function drawCardText(
     context.rect(0, 760, CARD_WIDTH, CARD_HEIGHT - 760);
     context.clip();
   }
-  context.translate(500, mode === "live_card" ? 420 : 730);
-  context.scale(0.85, mode === "live_card" ? 0.9 : 1.5);
+  const titleTop = Math.min(...layout.lines.map((line) => line.y));
+  const titleBottom = Math.max(...layout.lines.map((line) => line.y + line.size * 1.35));
+  const liveTitle = mode === "live_card" && layout.lines.length > 0;
+  context.translate(500, liveTitle ? (titleTop + titleBottom) / 2 : 730);
+  context.scale(0.85, liveTitle ? (titleBottom - titleTop + 120) / 1200 : 1.5);
   const wash = context.createRadialGradient(0, 0, 60, 0, 0, 600);
   wash.addColorStop(0, `${design.surface}e6`);
   wash.addColorStop(0.65, `${design.surface}b3`);

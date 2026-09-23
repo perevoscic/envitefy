@@ -20,6 +20,8 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 
 ## Creation Product Name
 
+- Live Card artwork richness (September 23, 2026): default to immersive, theme-specific scenes with a clear focal subject, layered depth, materials and intentional lighting, like the earlier garden brunch, stadium, wedding aisle and evening lounge cards. Do not force detail to the edges around a large blank center or clear the lower half for download text. Reserve only a naturally readable title pocket and preserve the scene during generated lettering; downloads handle their own text contrast. Keep temporary preview contrast local to the title. Honor explicitly minimal, flat, stationery or border-based briefs and the user's chosen medium and palette.
+
 - Mobile Live Card preview (September 23, 2026): during Design and Event details, keep the persistent artwork preview in a right-hand column beside the form on phones as well as desktop. Do not stack it below the editor. Let fields and actions reflow inside the narrower form, retain readable input sizes, and keep the page within the viewport width. Review retains its full card preview.
 
 - Theme-specific lettering (September 23, 2026): Livia's card is a reference for expressive lettering quality, not a universal script or purple palette. Pass the actual event category, visual direction and artwork palette into both lettering generation and its visual check. Choose typography and colors for that particular event, honoring the host's explicit theme over category defaults. Do not apply the same font style or color to every card.

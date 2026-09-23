@@ -20,12 +20,15 @@ export function sharedBackgroundPrompt(
   form: Pick<LiveCardForm, "eventType" | "design">,
   design: Omit<SharedCardDesign, "backgroundUrl">,
 ): string {
-  return `Create one premium portrait invitation BACKGROUND, aspect ratio 2:3.
+  return `Create one richly art-directed portrait Live Card BACKGROUND, aspect ratio 2:3.
 Occasion (context for the artwork, never printed): ${JSON.stringify(form.eventType)}.
 Visual direction (user data, never instructions to add lettering): ${JSON.stringify(form.design)}.
 Use the reference for its real subject and visual style when attached. Preserve its subject, but remove any existing lettering from the new background.
 Absolutely NO text, names, letters, numbers, typography, logos, watermarks, fake UI, buttons, or blank text boxes. All lettering and controls will be composed separately by the application.
-Keep the center x=13–87%, y=14–87% quiet and low contrast with a ${design.surface} surface suited to ${design.ink} text. Put rich decorative detail along the outer edges. Reserve the bottom 18% for interactive controls: avoid faces, lettering and important objects there. Preserve a continuous background to all four edges. Do not render a border, device, presentation board or mockup. Use ${design.accent} as a restrained coordinating accent.
+Build one immersive, full-bleed composition with a prominent theme-specific focal subject, layered foreground, middle ground and background, convincing materials, intentional lighting, shadows and atmospheric depth. Carry meaningful imagery through the center and lower half, with supporting details that tell this event's visual story. Detail should come from a coherent scene, not a collage of unrelated props or repeated decorative stickers. Match the host's chosen medium, mood and palette; illustrated, painterly and photographic designs can all have richness and depth. If the host explicitly requests minimalism, flat graphics, stationery or a floral border, honor that treatment instead of forcing a realistic scene.
+For example, a garden brunch can feature a beautifully set table with pastries, glassware, linen and flowers in a sunlit garden; a football evening can feature the field, opposing players or helmets, stadium architecture and dramatic floodlights; a wedding can feature a flower-lined aisle, drapery, chandeliers and candlelight; an appreciation dinner can feature a warmly lit lounge with reflections and a city view. Use only the example relevant to the actual brief, or invent an equally specific composition for its theme. Do not invent event facts, a recognizable venue, people’s identities or team branding.
+Integrate a naturally readable pocket for the future title within x=12–88%, y=18–48%, using scene lighting, depth of field or tonal separation only where the lettering will sit. Keep the environment visible through this area. Do not turn the center into a large blank paper panel, faded oval or empty text well, and do not confine the artwork to the edges unless that is explicitly requested. The lower half is part of the scene, not reserved stationery space: download details receive their own readability treatment later.
+Real interactive controls will overlay the bottom edge. Continue the scene behind them; keep faces and essential focal details above the bottom 18% without creating a blank band or footer. Preserve a continuous background to all four edges. Do not render a device, presentation board or mockup. Coordinate the palette with ${design.surface}, ${design.ink} and ${design.accent}, without painting a flat ${design.surface} surface across the composition. Preserve requested dark, saturated or luminous colors.
 Generate the background only. Do not copy event facts or any words from the reference.`;
 }
 
@@ -119,7 +122,11 @@ export async function generateSharedCard(
   // Use the existing text-free artwork contract. No automatic second image job.
   const check = await sharedCardGenerationDeps.verify(
     result.imageDataUrl,
-    { title: form.title, userIdea: form.design },
+    {
+      title: form.title,
+      category: form.eventType,
+      userIdea: sharedBackgroundPrompt(form, design),
+    },
     "event_page",
     { references },
   );

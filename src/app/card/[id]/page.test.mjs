@@ -158,7 +158,7 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
   assert.match(sharedPageSource, /const placeActionsOverlay = Boolean\(sharedDesign\) \|\| props\.actionsPlacement === "overlay"/);
   assert.match(
     sharedPageSource,
-    /const useOutsideActions = !isClassicInvite && !placeActionsOverlay && \(usesPosterArtFrame \|\| placeActionsAbove\)/,
+    /const useOutsideActions =\s*!isClassicInvite && !placeActionsOverlay && \(usesPosterArtFrame \|\| placeActionsAbove\)/,
   );
   assert.match(
     sharedPageSource,

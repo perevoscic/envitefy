@@ -970,16 +970,17 @@ function DraftsPanel({
             }}
             aria-label={`Resume ${draft.title}`}
             aria-busy={openingId === draft.id}
-            className={`${SIDEBAR_SUBMENU_ROW_CLASS} ${SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS}`}
+            title={draft.title}
+            className={`${SIDEBAR_SUBMENU_ROW_CLASS} relative min-w-0 items-start px-2 py-2.5 ${SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS}`}
           >
-            <span className={`${SIDEBAR_SUBMENU_ICON_CLASS} text-[#beb9e8] group-hover:text-[#aba4e3]`}>
+            <span className={`${SIDEBAR_SUBMENU_ICON_CLASS} mt-0.5 ${SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS}`}>
               <FileEdit size={18} aria-hidden="true" />
             </span>
             <span className="min-w-0 flex-1">
-              <span className={`${SIDEBAR_SUBMENU_LABEL_CLASS} ${SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS}`}>
+              <span className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-snug md:text-[1.02rem] ${SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS}`}>
                 {draft.title}
               </span>
-              <span className="mt-0.5 block text-xs text-[#9d95db]">
+              <span className="mt-0.5 block truncate text-xs text-[color:var(--nav-sidebar-detail-muted,#c1bcf0)] group-hover:text-[color:var(--nav-sidebar-detail-muted,#b0aae4)]">
                 {openingId === draft.id ? "Opening…" : "Continue editing"}
               </span>
             </span>
