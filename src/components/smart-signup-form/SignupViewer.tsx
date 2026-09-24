@@ -24,7 +24,6 @@ import {
 } from "@/utils/signup";
 import SignupEmailNotice from "./SignupEmailNotice";
 import SignupRecovery from "./SignupRecovery";
-import SignupSharing from "./SignupSharing";
 import themeStyles from "./signup-theme.module.css";
 
 type ViewerKind = "owner" | "guest" | "readonly";
@@ -649,9 +648,6 @@ const SignupViewer: React.FC<Props> = ({
       <EventGuestPlanningNotes value={form.guestPlanning} />
       {!myResponse && viewerKind !== "owner" && !requiresInvitation && eventId !== "preview" && (
         <SignupRecovery eventId={eventId} />
-      )}
-      {viewerKind === "owner" && !hideOwnerTools && eventId !== "preview" && (
-        <SignupSharing eventId={eventId} requiresInvitation={requiresInvitation} />
       )}
 
       {feedback && !isTestPreview && (

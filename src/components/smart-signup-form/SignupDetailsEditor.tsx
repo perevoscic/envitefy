@@ -7,6 +7,8 @@ import {
   normalizeCalendarTimeZone,
 } from "@/lib/calendar-date-time";
 import type { SignupForm } from "@/types/signup";
+import { changeSignupStart } from "@/lib/signup-editor";
+import { validateSignupPublish } from "@/lib/signup-validation";
 import styles from "./signup-editor.module.css";
 
 export type SignupDetailsSection = "schedule" | "location" | "planning";
@@ -25,6 +27,7 @@ export default function SignupDetailsEditor({
     value: string,
   ) => onChange({ ...form, [key]: value || null });
   const allDay = Boolean(form.allDay || (form.start && /^\d{4}-\d{2}-\d{2}$/.test(form.start)));
+  const endIssue = validateSignupPublish(form).find((issue) => issue.field === "signup-end");
   const dateValue = (value?: string | null) =>
     allDay
       ? formatCalendarDateInTimeZone(value, form.timezone) || ""
@@ -111,7 +114,7 @@ export default function SignupDetailsEditor({
                 id="signup-start"
                 type={allDay ? "date" : "datetime-local"}
                 value={dateValue(form.start)}
-                onChange={(event) => field("start", event.target.value)}
+                onChange={(event) => onChange(changeSignupStart(form, event.target.value))}
               />
               <span className={styles.help}>Leave blank if the date is still being planned.</span>
             </div>
@@ -124,7 +127,15 @@ export default function SignupDetailsEditor({
                 type={allDay ? "date" : "datetime-local"}
                 value={dateValue(form.end)}
                 onChange={(event) => field("end", event.target.value)}
+                aria-invalid={Boolean(endIssue)}
+                aria-describedby={endIssue ? "signup-end-error" : undefined}
               />
+              {endIssue && <p id="signup-end-error" role="alert" className={styles.error}>{endIssue.message}</p>}
+              {form.end && (
+                <button type="button" className="min-h-11 text-sm underline" onClick={() => field("end", "")}>
+                  Remove end time
+                </button>
+              )}
             </div>
           </div>
           <div className={styles.field}>

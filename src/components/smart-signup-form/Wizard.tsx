@@ -25,6 +25,7 @@ import type { SignupDetailsSection } from "./SignupDetailsEditor";
 import SignupImageActions from "./SignupImageActions";
 import SignupPageRenderer from "./SignupPageRenderer";
 import SignupSettingsEditor from "./SignupSettingsEditor";
+import SignupSharing from "./SignupSharing";
 import composer from "./signup-composer.module.css";
 import styles from "./signup-editor.module.css";
 
@@ -57,7 +58,7 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
       requestAnimationFrame(() => {
         const element = document.getElementById(id);
         element?.scrollIntoView({ behavior: "auto", block: "center" });
-        (element?.querySelector<HTMLElement>("button") || element)?.focus();
+        (element?.querySelector<HTMLElement>("input, textarea, button") || element)?.focus({ preventScroll: true });
       }),
     );
   const add = (id: SignupBlockId) => {
@@ -115,12 +116,25 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
                 : "Your design is ready. Add your details and the sections you need."}
             </p>
           </div>
+          {editor?.duplicateSignup && (
+            <button type="button" className={styles.secondary} disabled={submitting} onClick={() => editor.duplicateSignup?.(form)}>
+              Duplicate event
+            </button>
+          )}
         </div>
+        {!form.enabled && (
+          <div className={styles.notice}>
+            <p>Signups are paused for this event.</p>
+            <button type="button" className={styles.secondary} onClick={() => onChange({ ...form, enabled: true })}>
+              Reopen signups
+            </button>
+          </div>
+        )}
         {review ? (
           <div className={composer.review}>
             {issues.length > 0 && (
               <div className={styles.error} role={showErrors ? "alert" : undefined}>
-                <strong>Before you publish</strong>
+                <strong>Update these details</strong>
                 <ul>
                   {issues.map((issue) => (
                     <li key={issue.message}>
@@ -176,6 +190,9 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
                   onAdd={openLibrary}
                 />
               </SignupPageRenderer>
+              <div className={composer.sharing}>
+                <SignupSharing eventId={editor?.eventId} published={Boolean(editor?.published)} requiresInvitation={requiresInvitation} />
+              </div>
             </div>
             <aside
               className={composer.sidebar}
@@ -279,19 +296,24 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
             {submitError}
           </p>
         )}
-        <div className={`${styles.footer} ${composer.footer}`}>
+        <div className={`${styles.footer} ${composer.footer}`} data-review={review}>
           {review ? (
             <button
               type="button"
               className={styles.secondary}
               onClick={() => setActiveStep("build")}
             >
-              ← Back to editing
+              Back to editing
             </button>
           ) : (
-            <span className={styles.help}>Changes stay private until you publish.</span>
+            <span className={`${styles.help} ${composer.footerHelp}`}>Changes stay private until you publish.</span>
           )}
           <div className={composer.footerActions}>
+            {editor?.leave && (
+              <button type="button" className={`${styles.secondary} ${composer.cancel}`} disabled={submitting} onClick={editor.leave}>
+                Cancel
+              </button>
+            )}
             {!editor && (
               <span className={styles.help}>Use Save draft above to keep your progress.</span>
             )}

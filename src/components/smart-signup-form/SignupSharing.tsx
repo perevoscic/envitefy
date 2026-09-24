@@ -11,9 +11,13 @@ const actionClass =
 export default function SignupSharing({
   eventId,
   requiresInvitation = false,
+  publicPath,
+  published = true,
 }: {
-  eventId: string;
+  eventId?: string;
   requiresInvitation?: boolean;
+  publicPath?: string;
+  published?: boolean;
 }) {
   const linkId = useId();
   const [link, setLink] = useState("");
@@ -26,6 +30,7 @@ export default function SignupSharing({
   const [sending, setSending] = useState(false);
   const [open, setOpen] = useState(false);
   const load = async () => {
+    if (!eventId || !published) return;
     setLoading(true);
     try {
       const response = await fetch(`/api/events/share?eventId=${encodeURIComponent(eventId)}`, {
@@ -46,8 +51,8 @@ export default function SignupSharing({
     }
   };
   useEffect(() => {
-    setLink(window.location.origin + window.location.pathname);
-  }, []);
+    setLink(published && eventId ? window.location.origin + (publicPath || `/smart-signup-form/${encodeURIComponent(eventId)}`) : "");
+  }, [eventId, publicPath, published]);
   useEffect(() => {
     if (open) void load();
   }, [open, eventId]);
@@ -57,6 +62,9 @@ export default function SignupSharing({
       className="rounded-xl border border-[var(--signup-border)] bg-[var(--signup-surface)] p-4 space-y-3"
     >
       <h3 className="font-semibold">Share your signup</h3>
+      {!published || !eventId ? (
+        <p className="text-sm">Publish your signup to get a shareable link.</p>
+      ) : <>
       <p className="text-sm">{signupAccessInstructions(requiresInvitation)}</p>
       <div className="space-y-1">
         <label htmlFor={linkId} className="block text-sm">
@@ -96,7 +104,7 @@ export default function SignupSharing({
         </div>
       </div>
       <div className="flex flex-wrap gap-3">
-        <a href="#signup-host-dashboard" className={`${actionClass} inline-flex items-center`}>
+        <a href={`${publicPath || `/smart-signup-form/${encodeURIComponent(eventId)}`}#signup-host-dashboard`} className={`${actionClass} inline-flex items-center`}>
           View host dashboard
         </a>
         {requiresInvitation && (
@@ -198,6 +206,7 @@ export default function SignupSharing({
           {error}
         </p>
       )}
+      </>}
     </section>
   );
 }

@@ -454,7 +454,9 @@
   background: var(--editor-paper);
   padding: 1rem;
   border-radius: 0.8rem;
+  flex-wrap: nowrap;
 }
+.sharing { margin-top: 1.5rem; }
 .footerActions {
   display: flex;
   gap: 0.5rem;
@@ -504,9 +506,25 @@
     display: none !important;
   }
   .footer {
-    flex-wrap: wrap;
     gap: 0.5rem;
-    padding: 0.75rem;
+    padding: 0.5rem 0.5rem max(0.5rem, env(safe-area-inset-bottom));
+  }
+  .footer button {
+    padding-inline: 0.6rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+  }
+  .footer .footerHelp,
+  .footer .cancel {
+    display: none;
+  }
+  .footer[data-review="true"] > button,
+  .footer[data-review="true"] .footerActions {
+    flex: 1;
+    min-width: 0;
+  }
+  .footerActions > button:last-child {
+    width: 100%;
   }
   .footerActions {
     margin-left: auto;

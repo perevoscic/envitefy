@@ -16,6 +16,7 @@ import {
   useState,
 } from "react";
 import AuthModal from "@/components/auth/AuthModal";
+import SignupEditorToolbar from "@/components/smart-signup-form/SignupEditorToolbar";
 import { useUnsavedProgress } from "@/components/UnsavedProgressProvider";
 import { buildOwnerEventEditHref, ownerEventEditorReturnHref } from "@/lib/event-preview-viewport";
 import { getFamilyTemplateDesign } from "@/lib/family-template-designs";
@@ -23,7 +24,8 @@ import { hasAnalyticsConsent } from "@/lib/privacy-preferences";
 import { BRIDAL_PRESETS, getPublicTemplate } from "@/lib/public-template-catalog";
 import { allowsPublicSignup } from "@/lib/signup-access";
 import { createEmptySignupTemplateForm, getSignupTemplateTheme } from "@/lib/signup-starters";
-import { takeSignupTheme } from "@/lib/signup-theme-handoff";
+import { stageSignupTheme, takeSignupTheme } from "@/lib/signup-theme-handoff";
+import { copySignupForm } from "@/lib/signup-editor";
 import { createSignupAppearance } from "@/lib/signup-themes";
 import { getSportEventPreset, getSportStyleThemeIds } from "@/lib/sport-event-presets";
 import {
@@ -63,6 +65,9 @@ export type TemplateEditorRuntime = {
   published?: boolean;
   hasUnpublishedChanges?: boolean;
   signupRequiresInvitation?: boolean;
+  eventId?: string;
+  leave?: () => void;
+  duplicateSignup?: (form: SignupForm) => void;
   record: (key: string, value: DraftValue) => void;
   requestSave: () => Promise<void>;
   persist: (payload: TemplateHistoryPayload, status: "draft" | "published") => Promise<void>;
@@ -280,6 +285,8 @@ export default function TemplateEditorProvider({
           };
       }
       if (cancelled) return;
+      if (!editId) setPublished(false);
+      savedEventId.current = editId || null;
       if (requestedDraft && !saved)
         setError(
           "This browser draft has expired or is unavailable. You can start again with this template.",
@@ -380,6 +387,7 @@ export default function TemplateEditorProvider({
       interacted.current = Boolean(themePreview);
       setDirty(Boolean(themePreview));
       setInitial(current.snapshot);
+      setGeneration((value) => value + 1);
       trackTemplateEvent("template_editor_view", category, templateId);
     }
     initialize().catch((failure: Error) => {
@@ -575,6 +583,11 @@ export default function TemplateEditorProvider({
     saveDraft().catch((failure: Error) => setError(failure.message));
   }, [initial, editorReady, authenticated, category, templateId, saveDraft]);
 
+  const leave = useCallback(() => {
+    if (window.history.length > 1) router.back();
+    else router.push(draft.current?.eventId ? `/smart-signup-form/${draft.current.eventId}` : "/");
+  }, [router]);
+
   const runtime = useMemo<TemplateEditorRuntime>(
     () => ({
       category,
@@ -584,6 +597,16 @@ export default function TemplateEditorProvider({
       published,
       hasUnpublishedChanges: !published || dirty,
       signupRequiresInvitation: draft.current?.signupRequiresInvitation,
+      eventId: draft.current?.eventId,
+      leave,
+      duplicateSignup(form) {
+        progress.requestLeave(() => {
+          const copy = copySignupForm(form);
+          if (draft.current?.signupRequiresInvitation) copy.visibility = "restricted";
+          const token = stageSignupTheme(copy);
+          router.push(`${templateEditorHref(category, templateId)}?themePreview=${token}`);
+        });
+      },
       record,
       requestSave,
       persist,
@@ -599,7 +622,7 @@ export default function TemplateEditorProvider({
         return url;
       },
     }),
-    [category, templateId, initial, authenticated, published, dirty, record, requestSave, persist],
+    [category, templateId, initial, authenticated, published, dirty, record, requestSave, persist, leave, progress, router],
   );
 
   const returnUrl = `${templateEditorHref(category, templateId)}?${editId && !draft.current ? `edit=${encodeURIComponent(editId)}` : `draft=${draft.current?.id || ""}`}`;
@@ -607,15 +630,15 @@ export default function TemplateEditorProvider({
     <Context.Provider value={runtime}>
       <div className={styles.shell}>
         <div className="relative z-40 shrink-0 border-b border-[#ded5ca] bg-[#fffcf7]/95 px-4 py-3 backdrop-blur sm:px-8">
-          <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-3">
+          {category === "signup-forms" ? (
+            <SignupEditorToolbar onBack={leave} onReset={() => setResetOpen(true)} onSave={() => void requestSave()} busy={busy} ready={editorReady} loaded={Boolean(initial)} />
+          ) : <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-3">
             <Link href={`/${category}/templates`} className="text-sm font-semibold text-[#59405c]">
               ← {info.name} templates
             </Link>
             <p className="text-xs text-[#746775]">
               {authenticated
-                ? category === "signup-forms" && published
-                  ? "Publish signup updates the live page. Save as private draft makes the page private until you publish again."
-                  : "Save a private draft, then publish when ready."
+                ? "Save a private draft, then publish when ready."
                 : "Customize freely. An account is required to save and share."}
             </p>
             <div className="flex items-center gap-3">
@@ -636,13 +659,11 @@ export default function TemplateEditorProvider({
                 {busy
                   ? "Saving…"
                   : authenticated
-                    ? category === "signup-forms" && published
-                      ? "Save as private draft"
-                      : "Save draft"
+                    ? "Save draft"
                     : "Save and continue"}
               </button>
             </div>
-          </div>
+          </div>}
           {!authenticated && (
             <p className="mx-auto mt-2 max-w-[1500px] text-xs text-[#746775]">
               {storageReady

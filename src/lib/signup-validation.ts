@@ -47,11 +47,18 @@ export function validateSignupPublish(form: SignupForm): SignupIssue[] {
       step: "details",
       message: "Choose a valid event date and time in your timezone.",
     });
-  if (form.end && (!end || !start || end <= start))
+  const allDay = Boolean(form.allDay || (form.start && /^\d{4}-\d{2}-\d{2}$/.test(form.start)));
+  if (form.end && (!end || !start || (allDay ? end < start : end <= start)))
     issues.push({
       field: "signup-end",
       step: "details",
-      message: "The end must be after the start.",
+      message: !start
+        ? "Choose Starts first, or remove the end date."
+        : !end
+          ? "Choose a valid end date and time, or remove it."
+          : allDay
+            ? "Ends is before Starts. Choose the same or a later date, or remove the end date."
+            : "Ends is before or at Starts. Choose a later end date and time, or remove the end time.",
     });
   if (!form.sections.some((section) => section.slots.some((slot) => slot.label.trim())))
     issues.push({

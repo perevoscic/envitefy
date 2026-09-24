@@ -15,7 +15,11 @@ function loadTs(relative) {
   const { outputText } = ts.transpileModule(fs.readFileSync(filename, "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   });
-  const localRequire = (id) => id.startsWith("@/") ? loadTs(`src/${id.slice(2)}.ts`) : require(id);
+  const localRequire = (id) => id.startsWith("@/")
+    ? loadTs(`src/${id.slice(2)}.ts`)
+    : id.startsWith(".")
+      ? loadTs(path.resolve(path.dirname(filename), `${id}.ts`))
+      : require(id);
   new Function("require", "module", "exports", outputText)(localRequire, module, module.exports);
   return module.exports;
 }

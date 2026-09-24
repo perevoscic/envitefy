@@ -127,20 +127,21 @@ test("public guests can find their signup without exposing recovery inside owner
     viewerKind: "guest",
   };
   const guest = renderToStaticMarkup(React.createElement(Viewer, props));
-  assert.match(guest, /Already signed up\? Find my signup/);
-  assert.match(guest, /Email or phone number/);
-  assert.match(guest, /Email my link/);
+  assert.match(guest, /Edit or cancel your signup/);
+  assert.match(guest, /Email address/);
+  assert.match(guest, /Email me a link/);
+  assert.match(guest, /Use phone number instead/);
   assert.doesNotMatch(
     renderToStaticMarkup(React.createElement(Viewer, { ...props, viewerKind: "owner" })),
-    /Already signed up/,
+    /Edit or cancel your signup/,
   );
   assert.doesNotMatch(
     renderToStaticMarkup(React.createElement(Viewer, { ...props, eventId: "preview" })),
-    /Already signed up/,
+    /Edit or cancel your signup/,
   );
   assert.doesNotMatch(
     renderToStaticMarkup(React.createElement(Viewer, { ...props, requiresInvitation: true })),
-    /Already signed up/,
+    /Edit or cancel your signup/,
   );
 });
 
@@ -154,6 +155,7 @@ test("device preview hides signup editing tools while preserving the sign-up boa
   };
   const regular = renderToStaticMarkup(React.createElement(Viewer, props));
   assert.doesNotMatch(regular, /Edit event|Duplicate form/);
+  assert.doesNotMatch(regular, /Share your signup/);
   assert.match(regular, /Host dashboard/);
   const preview = renderToStaticMarkup(
     React.createElement(Viewer, { ...props, hideOwnerTools: true }),
