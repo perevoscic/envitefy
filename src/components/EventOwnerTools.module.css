@@ -1,5 +1,5 @@
 @media (max-width: 1023px) {
-  :global([data-owner-card-swipe="true"]) {
+  .swipeSurface[data-owner-card-swipe="true"] {
     touch-action: pan-y pinch-zoom;
   }
 }

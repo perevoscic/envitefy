@@ -880,7 +880,7 @@ export default function EventOwnerTools({
     <main
       {...previewSwipe}
       data-owner-card-swipe={hasCardPreview ? "true" : undefined}
-      className="min-h-[100dvh] w-full px-3 pb-5 pt-[calc(var(--app-mobile-topbar-offset,4rem)+1.35rem)] text-slate-950 sm:px-6 lg:px-8 lg:py-5"
+      className={`${ownerStyles.swipeSurface} min-h-[100dvh] w-full px-3 pb-5 pt-[calc(var(--app-mobile-topbar-offset,4rem)+1.35rem)] text-slate-950 sm:px-6 lg:px-8 lg:py-5`}
     >
       <div
         className={`${effectivePreview.surface === "studio-card" ? ownerStyles.cardWorkspace : ""} mx-auto grid w-full max-w-[1380px] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,410px)] xl:grid-cols-[minmax(0,1fr)_430px]`}
