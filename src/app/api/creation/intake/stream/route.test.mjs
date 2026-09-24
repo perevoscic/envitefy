@@ -6,7 +6,7 @@ import { streamConciergePersona } from "../../../../../lib/concierge/persona.ts"
 import { fallbackExtractConciergeDraft } from "../../../../../lib/concierge/fallback.ts";
 
 test("the actual intake stream gives the persona the previous state and returns the guarded reply", async () => {
-  const draft = fallbackExtractConciergeDraft({ message: "Create an Event Page for Rivera Workshop on September 23, 2026 at 2 PM at Maple Center, Austin, TX." });
+  const draft = fallbackExtractConciergeDraft({ message: "Create an Event Page for Rivera Workshop on September 23, 2099 at 2 PM at Maple Center, Austin, TX." });
   let finalized;
   let receipt;
   const deps = {
