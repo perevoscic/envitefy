@@ -1,6 +1,5 @@
 "use client";
 
-import * as Dialog from "@radix-ui/react-dialog";
 import type { PanInfo } from "framer-motion";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
@@ -22,7 +21,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supportsStudioCategoryRsvp } from "@/app/studio/studio-workspace-field-config";
 import { useCalendarAction } from "@/components/CalendarAction";
@@ -357,42 +356,6 @@ function AgentDetailRow(props: { label: string; value: string }) {
   );
 }
 
-function LiveCardPreviewPanel({
-  children,
-  enabled,
-  title,
-  container,
-  onClose,
-  onReturnFocus,
-}: {
-  children: ReactNode;
-  enabled?: boolean;
-  title: string;
-  container?: HTMLElement | null;
-  onClose?: () => void;
-  onReturnFocus: () => void;
-}) {
-  if (!enabled) return children;
-  return (
-    <Dialog.Root open onOpenChange={(open) => { if (!open) onClose?.(); }}>
-      <Dialog.Portal container={container}>
-        <Dialog.Overlay className="fixed inset-0 z-[7100] bg-black/65" />
-        <Dialog.Content
-          className={styles.viewportPanel}
-          aria-describedby={undefined}
-          onCloseAutoFocus={(event) => {
-            event.preventDefault();
-            onReturnFocus();
-          }}
-        >
-          <Dialog.Title className="sr-only">{title}</Dialog.Title>
-          {children}
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-  );
-}
-
 export default function StudioLiveCardActionSurface(props: StudioLiveCardActionSurfaceProps) {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -401,21 +364,6 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   const calendarOptionRef = useRef<HTMLButtonElement>(null);
   const reducedMotion = useReducedMotion();
   const actionsOutsideArtwork = props.placement === "below" || props.placement === "above";
-  const [crampedArtwork, setCrampedArtwork] = useState(false);
-  const useViewportPanel = crampedArtwork && !actionsOutsideArtwork;
-  useEffect(() => {
-    const surface = surfaceRef.current;
-    if (!surface || actionsOutsideArtwork) return;
-    const updateSize = () => {
-      const { width, height } = surface.getBoundingClientRect();
-      setCrampedArtwork(width < 320 || height < 450);
-    };
-    updateSize();
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(updateSize);
-    observer.observe(surface);
-    return () => observer.disconnect();
-  }, [actionsOutsideArtwork]);
   const invitationData = props.invitationData || null;
   const sharedDesign = invitationData?.sharedDesign;
   const details = invitationData?.eventDetails || null;
@@ -463,6 +411,13 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     "idle" | "submitting" | "success" | "error"
   >("idle");
   const [directRsvpError, setDirectRsvpError] = useState("");
+  const directRsvpEmailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(directRsvpEmail.trim());
+  const directRsvpIsComplete = Boolean(
+    directRsvpChoice &&
+      directRsvpName.trim() &&
+      directRsvpEmailIsValid &&
+      (!guessRules.required || directRsvpGenderGuess === "pink" || directRsvpGenderGuess === "blue"),
+  );
   const directRsvpVenueLabel =
     readString(details?.venueName) || readString(details?.location) || "";
   const agentName = readString(details?.realtorName) || readString(details?.rsvpName);
@@ -547,7 +502,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
         if (!surfaceRef.current?.contains(event.target as Node) && !panelRef.current?.contains(event.target as Node)) return;
         event.preventDefault();
         event.stopPropagation();
-        if (props.activeTab === "calendar") calendarTriggerRef.current?.focus();
+        activeTriggerRef.current?.focus();
         props.onActiveTabChange("none");
       }
     };
@@ -592,8 +547,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
 
   const submitDirectRsvp = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // Preview controls are interactive, but must never submit a real guest response.
-    if (props.previewMode || !directRsvpEventId || !directRsvpChoice) return;
+    if (!directRsvpChoice || directRsvpStatus === "submitting") return;
 
     const name = directRsvpName.trim();
     if (!name) {
@@ -602,11 +556,20 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       return;
     }
     const email = directRsvpEmail.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!directRsvpEmailIsValid) {
       setDirectRsvpStatus("error");
       setDirectRsvpError("Enter a valid email to send your RSVP.");
       return;
     }
+
+    if (!directRsvpIsComplete || !event.currentTarget.checkValidity()) return;
+    // Preview the confirmation locally without submitting a real guest response.
+    if (props.previewMode) {
+      setDirectRsvpError("");
+      setDirectRsvpStatus("success");
+      return;
+    }
+    if (!directRsvpEventId) return;
 
     setDirectRsvpStatus("submitting");
     setDirectRsvpError("");
@@ -738,12 +701,6 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   });
   const dockedPanelAlignClass =
     panelAlignment === "end" ? "self-end" : panelAlignment === "start" ? "self-start" : "self-center";
-  const overlayPanelPositionClass =
-    panelAlignment === "end"
-      ? "absolute bottom-32 right-2 left-auto sm:right-4"
-      : panelAlignment === "start"
-        ? "absolute bottom-32 left-2 right-auto sm:left-4"
-        : "absolute bottom-32 left-1/2 -translate-x-1/2";
   const defaultActionRailClassName = `grid w-full min-w-0 grid-flow-col auto-cols-fr items-stretch ${
     props.previewMode ? "gap-2 px-1" : props.showcaseMode ? "gap-2 px-2" : useCompactActionButtons ? "gap-1.5 px-2.5" : "gap-3 px-1"
   }`;
@@ -828,29 +785,22 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
         />
       ) : null}
       <div className="flex h-full min-h-0 flex-col justify-end">
+        <div className={styles.panelSlot}>
         <AnimatePresence initial={false}>
           {props.activeTab !== "none" && props.activeTab !== "share" ? (
-            <LiveCardPreviewPanel
-              enabled={useViewportPanel}
-              title={`${props.activeTab === "details" ? "Overview" : props.activeTab} details`}
-              container={surfaceRef.current?.ownerDocument.body}
-              onClose={() => props.onActiveTabChange("none")}
-              onReturnFocus={() => activeTriggerRef.current?.focus()}
-            >
             <motion.div
               ref={panelRef}
               initial={reducedMotion ? false : { opacity: 0, y: 10, scale: 0.94 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.96 }}
               data-live-card-panel
+              data-live-card-panel-kind={props.activeTab}
               data-live-card-panel-align={panelAlignment}
               role="region"
               aria-label={`${props.activeTab} details`}
-              className={`${styles.panel} pointer-events-auto z-50 border border-neutral-200 shadow-2xl backdrop-blur-md ${props.activeTab === "calendar" ? "bg-white/80" : "bg-white/90"} ${useViewportPanel ? styles.detachedPanel : props.previewMode || actionsOutsideArtwork
-                ? `relative min-h-0 max-h-full w-full max-w-[24rem] ${dockedPanelAlignClass} mx-3 overflow-y-auto overscroll-contain rounded-2xl p-4 [&_button]:min-h-11 [&_button]:min-w-11 [&_a]:min-h-11 [&_a]:min-w-11 [&_input]:min-h-11 [&_input]:text-base [&_label]:text-xs [&_label]:text-neutral-600`
-                : `${overlayPanelPositionClass} h-auto max-h-[calc(100%-9rem)] w-[calc(100%-1rem)] max-w-[22rem] overflow-y-auto rounded-3xl p-6 sm:w-[calc(100%-2rem)]`}`}
+              className={`${styles.panel} ${dockedPanelAlignClass} pointer-events-auto z-50 border border-neutral-200 shadow-2xl backdrop-blur-md ${props.activeTab === "calendar" ? "bg-white/80" : "bg-white/90"}`}
             >
-              <div className={`${styles.panelHeader} mb-3 flex items-start justify-between`}>
+              <div className={`${styles.panelHeader} flex items-center justify-between`}>
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg bg-neutral-100 p-2 text-neutral-900">
                     {props.activeTab === "location" ? <MapPin className="h-5 w-5" /> : null}
@@ -888,7 +838,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                 <button
                   type="button"
                   onClick={() => {
-                    if (props.activeTab === "calendar") calendarTriggerRef.current?.focus();
+                    activeTriggerRef.current?.focus();
                     props.onActiveTabChange("none");
                   }}
                   aria-label="Close card details"
@@ -996,11 +946,6 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                       </div>
                       {hasDirectEnvitefyRsvp ? (
                         <div className="mt-auto space-y-3 border-t border-neutral-100 pt-4">
-                          {props.previewMode ? (
-                            <p className="rounded-xl bg-violet-50 px-3 py-2 text-sm leading-5 text-violet-900">
-                              Try the RSVP form. Responses are not sent from this preview.
-                            </p>
-                          ) : null}
                           {directRsvpStatus === "success" ? (
                             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-5 text-center">
                               <CheckCircle2 className="mx-auto h-9 w-9 text-emerald-700" />
@@ -1015,7 +960,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                             </div>
                           ) : (
                             <>
-                              <div className="grid grid-cols-3 gap-2">
+                              <div data-live-card-rsvp-choices className="grid grid-cols-3 gap-2">
                                 {LIVE_CARD_RSVP_CHOICES.map((choice) => {
                                   const isSelected = directRsvpChoice === choice.key;
                                   return (
@@ -1068,10 +1013,10 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                                   ) : null}
                                   <button
                                     type="submit"
-                                    disabled={props.previewMode || directRsvpStatus === "submitting"}
-                                    className="inline-flex w-full items-center justify-center rounded-xl bg-neutral-900 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:bg-neutral-800 disabled:cursor-wait disabled:opacity-70"
+                                    disabled={!directRsvpIsComplete || directRsvpStatus === "submitting"}
+                                    className="inline-flex w-full items-center justify-center rounded-xl bg-neutral-900 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white transition enabled:hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-400"
                                   >
-                                    {props.previewMode ? "Preview only" : directRsvpStatus === "submitting" ? "Sending..." : "Send RSVP"}
+                                    {directRsvpStatus === "submitting" ? "Sending..." : "Send response"}
                                   </button>
                                 </form>
                               ) : (
@@ -1083,7 +1028,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                           )}
                         </div>
                       ) : rsvpContact ? (
-                        <div className="mt-auto grid grid-cols-3 gap-2 border-t border-neutral-100 pt-4">
+                        <div data-live-card-rsvp-choices className="mt-auto grid grid-cols-3 gap-2 border-t border-neutral-100 pt-4">
                           {LIVE_CARD_RSVP_CHOICES.map((choice) => {
                             const href = buildLiveCardRsvpOutboundHref({
                               rsvpContact,
@@ -1278,21 +1223,12 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                 ) : null}
               </div>
             </motion.div>
-            </LiveCardPreviewPanel>
           ) : null}
         </AnimatePresence>
+        </div>
 
         <div
-          className={`pointer-events-none shrink-0 ${
-            actionsOutsideArtwork ? "hidden" : posterFirstHeroCard
-              ? "max-md:min-h-[min(14svh,4rem)] min-h-[min(8svh,2.4rem)] md:min-h-[min(6svh,2rem)]"
-              : "max-md:min-h-[min(18svh,5.5rem)] min-h-[min(10svh,3rem)] md:min-h-[min(8svh,2.5rem)]"
-          }`}
-          aria-hidden
-        />
-
-        <div
-          className={`pointer-events-none z-20 w-full min-w-0 ${
+          className={`pointer-events-none z-20 w-full min-w-0 shrink-0 ${
             posterFirstHeroCard
               ? "pb-[max(0.45rem,calc(env(safe-area-inset-bottom)+0.2rem))] max-md:pb-[max(0.3rem,calc(env(safe-area-inset-bottom)+0.12rem))]"
               : "pb-[max(0.35rem,calc(env(safe-area-inset-bottom)+0.15rem))]"

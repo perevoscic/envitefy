@@ -59,7 +59,7 @@ test("venue queries match provider names plus street context without guessing a 
   );
 });
 
-test("place resolution uses provider coordinates and IANA timezone; timezone failure retains the address", async () => {
+test("place resolution uses provider coordinates and IANA timezone; a timezone API failure uses geographic boundaries", async () => {
   const originalFetch = globalThis.fetch;
   const originalKey = process.env.GOOGLE_MAPS_API_KEY;
   process.env.GOOGLE_MAPS_API_KEY = "test-key";
@@ -134,7 +134,7 @@ test("place resolution uses provider coordinates and IANA timezone; timezone fai
     timezoneFails = true;
     const fallback = await resolveBuilderPlace(place.placeId, "bad-date");
     assert.equal(fallback.address, place.address);
-    assert.equal(fallback.timezone, "");
+    assert.equal(fallback.timezone, "America/Chicago");
     assert.notEqual(calls.at(-1)?.searchParams.get("timestamp"), "NaN");
   } finally {
     globalThis.fetch = originalFetch;

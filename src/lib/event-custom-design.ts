@@ -1,5 +1,6 @@
 import { parseCalendarDateTimeToIso } from "./calendar-date-time";
 import { colorContrast } from "./color-contrast";
+import { GALLERY_FONT_PAIRS, LIBRARY_FONT_PAIRS, type GalleryFontPairId } from "./font-library";
 
 export const CUSTOM_EVENT_CATEGORIES = {
   general: "General Events",
@@ -26,12 +27,24 @@ export function customEventCategory(value: unknown): CustomEventCategory | null 
     : null;
 }
 export const EVENT_DESIGN_LAYOUTS = ["split", "banner", "poster", "editorial"] as const;
-export const EVENT_DESIGN_FONTS = {
+type EventDesignFontId = "editorial" | "modern" | "classic" | "friendly" | GalleryFontPairId;
+export const EVENT_DESIGN_FONTS: Record<EventDesignFontId, string> = {
   editorial: '"Playfair Display", Georgia, serif',
   modern: '"Space Grotesk", Arial, sans-serif',
   classic: 'Georgia, "Times New Roman", serif',
   friendly: '"Nunito", Arial, sans-serif',
+  ...Object.fromEntries([...GALLERY_FONT_PAIRS, ...LIBRARY_FONT_PAIRS].map((pair) => [pair.id, pair.heading])) as Record<GalleryFontPairId, string>,
 } as const;
+export const EVENT_DESIGN_FONT_PAIRS = [
+  ...(["editorial", "modern", "classic", "friendly"] as const).map((id) => ({
+    id,
+    name: id.charAt(0).toUpperCase() + id.slice(1),
+    heading: EVENT_DESIGN_FONTS[id],
+    body: "system-ui, sans-serif",
+  })),
+  ...GALLERY_FONT_PAIRS,
+  ...LIBRARY_FONT_PAIRS,
+];
 export const EVENT_DESIGN_PROMPT_LIMIT = 12000;
 export const EVENT_DESIGN_REFERENCE_LIMIT = 2 * 1024 * 1024;
 export type EventCustomDesign = {

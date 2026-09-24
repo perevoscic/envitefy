@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { GALLERY_FONT_PAIRS, LIBRARY_FONT_PAIRS } from "./font-library";
 import { normalizeSignupCustomTheme } from "@/lib/signup-custom-theme";
 import { getSignupDesign, SIGNUP_DESIGN_PALETTES, type SignupDesign } from "@/lib/signup-designs";
 import type {
@@ -127,6 +128,8 @@ export const SIGNUP_FONT_PAIRS: {
   name: string;
   heading: string;
   body: string;
+  kind?: "font";
+  category?: string;
 }[] = [
   {
     id: "editorial",
@@ -164,6 +167,8 @@ export const SIGNUP_FONT_PAIRS: {
     heading: '"Josefin Sans", system-ui, sans-serif',
     body: "system-ui, sans-serif",
   },
+  ...GALLERY_FONT_PAIRS,
+  ...LIBRARY_FONT_PAIRS,
 ];
 export const getSignupTheme = (id?: string | null) =>
   SIGNUP_THEMES.find((theme) => theme.id === id);

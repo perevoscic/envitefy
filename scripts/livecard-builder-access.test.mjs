@@ -103,7 +103,7 @@ test("AI, artwork and location endpoints require sign-in and throttle authentica
 test("all signed-in accounts can open and resume the guided builder", async () => {
   for (const options of [{ signedIn: false }, { admin: false }, { admin: true }]) {
     const context = setup(options);
-    const page = load("src/app/livacards-invites/page.tsx", context.imports).default;
+    const page = load("src/app/live-cards/page.tsx", context.imports).default;
     if (options.signedIn !== false) {
       const result = await page({ searchParams: Promise.resolve({ edit: "saved" }) });
       assert.equal(result.props.initialEventId, "saved");

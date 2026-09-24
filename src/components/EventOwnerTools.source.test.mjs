@@ -14,6 +14,7 @@ test("dashboard, Design and dialog card previews opt into preview-only RSVP cont
   for (const [preview] of previews) assert.match(preview, /\bembeddedPreview\b/);
   const route = readSource("src/app/card/[id]/page.tsx");
   assert.match(route, /previewMode=\{isOwner && explicitOwnerPreview\}/);
+  assert.match(route, /canDownload=\{isOwner\}/);
 });
 
 test("owner workspace keeps public actions in the header and not duplicated under live product", () => {
@@ -101,7 +102,8 @@ test("owner workspace keeps public actions in the header and not duplicated unde
   assert.match(previewBlock[0], /"flex h-full w-full items-center justify-center"/);
   assert.match(previewBlock[0], /"flex w-full items-center justify-center"/);
   assert.match(previewBlock[0], /!h-auto !w-full !max-w-full !rounded-\[28px\] !border-0 !bg-transparent/);
-  assert.match(previewBlock[0], /style=\{\{ width: "100%" \}\}/);
+  assert.match(previewBlock[0], /fitToWorkspace/);
+  assert.match(previewBlock[0], /canDownload/);
   assert.doesNotMatch(previewBlock[0], /\bp-3\b/);
   const liveCardCss = readSource("src/components/studio/StudioShowcaseLiveCard.module.css");
   assert.match(
@@ -303,7 +305,7 @@ test("owner Design tab previews card edits before saving them", () => {
   assert.match(source, /onViewChanges=\{\(\) => openProductViewer\("changes"\)\}/);
   assert.match(source, /setSavedProductOverride\(\{ title: next\.title, preview: next\.preview \}\)/);
   assert.match(source, /\{status === "saving" \? "Saving" : "Save"\}/);
-  assert.match(source, /grid grid-cols-2 gap-3 sm:flex sm:items-center sm:justify-end/);
+  assert.ok(source.includes("grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)] gap-2 sm:flex sm:items-center sm:justify-end sm:gap-3"));
   assert.match(source, /min-h-12 min-w-0 items-center justify-center/);
   assert.doesNotMatch(designBlock[0], /min-h-\[520px\][\s\S]*lg:hidden/);
   assert.doesNotMatch(designBlock[0], /shareUrl=\{publicUrl\}/);

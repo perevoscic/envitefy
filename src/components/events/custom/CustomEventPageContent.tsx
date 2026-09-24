@@ -9,6 +9,7 @@ import {
   type CustomEventPage,
   customEventPageData,
   EVENT_DESIGN_FONTS,
+  EVENT_DESIGN_FONT_PAIRS,
   safeEventLink,
 } from "@/lib/event-custom-design";
 import "@/components/birthdays/redesign/birthday-fonts.css";
@@ -51,6 +52,7 @@ export default function CustomEventPageContent({
     "--event-ink": design.colors.ink,
     "--event-accent": design.colors.accent,
     "--event-font": EVENT_DESIGN_FONTS[design.font],
+    "--event-body-font": EVENT_DESIGN_FONT_PAIRS.find((pair) => pair.id === design.font)?.body,
   } as CSSProperties;
   return (
     <article

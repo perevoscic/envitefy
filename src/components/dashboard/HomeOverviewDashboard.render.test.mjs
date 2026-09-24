@@ -39,6 +39,7 @@ function loadComponent(filename, selectedFilter = "all") {
     if (name === "./DashboardOverviewSections") return loadComponent("./DashboardOverviewSections.tsx");
     if (name === "./DashboardReviewDialog") return loadComponent("./DashboardReviewDialog.tsx");
     if (name === "@/components/ui/flip-clock") return { FlipClock: () => null };
+    if (name === "@/components/icons/LiveCardIcon") return loadComponent("../icons/LiveCardIcon.tsx");
     if (name.startsWith("@/components/")) return { default: () => null };
     return require(name);
   }, componentModule, componentModule.exports);

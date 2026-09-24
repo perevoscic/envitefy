@@ -24,14 +24,14 @@ export default function MobileNavHeader({ visible, onOpenNavigation, onHome, ope
           onClick={(event) => { event.preventDefault(); event.stopPropagation(); onOpenNavigation(); }} aria-label="Open navigation">
           {menuIcon}
         </button>
-        <div className="ml-auto flex min-w-0 items-center gap-2">
+        <div className="ml-auto flex min-w-0 max-w-full items-center gap-2">
           {eventEditAction ? "href" in eventEditAction ? (
             <Link href={eventEditAction.href} aria-label="Edit event" title="Edit event" className={buttonClass}><Pencil size={18} aria-hidden="true" /></Link>
           ) : (
             <button type="button" onClick={eventEditAction.onClick} aria-label="Edit event" title="Edit event" className={buttonClass}><Pencil size={18} aria-hidden="true" /></button>
           ) : null}
-          <Link href="/" onClick={onHome} className="flex h-11 shrink-0 items-center justify-end" aria-label="Envitefy home">
-            <Image src={wordmark} alt="" className="h-auto w-[150px] object-contain" priority />
+          <Link href="/" onClick={onHome} className="flex h-11 min-w-0 items-center justify-end" aria-label="Envitefy home">
+            <Image src={wordmark} alt="" className="h-auto w-[150px] max-w-full object-contain" priority />
           </Link>
         </div>
       </div>

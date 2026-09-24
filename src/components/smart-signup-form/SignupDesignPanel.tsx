@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles } from "lucide-react";
+import { FontPairingSelect } from "@/components/design-panel/FontPairingSelect";
 import { restoreSignupTheme } from "@/lib/signup-custom-theme";
 import { getSignupDesign, SIGNUP_DESIGN_PALETTES } from "@/lib/signup-designs";
 import {
@@ -87,19 +88,11 @@ export default function SignupDesignPanel({
         </fieldset>
         <fieldset className={styles.field}>
           <legend>Typography</legend>
-          <div className={styles.segmented}>
-            {SIGNUP_FONT_PAIRS.map((pair) => (
-              <button
-                type="button"
-                key={pair.id}
-                aria-pressed={appearance.fontPair === pair.id}
-                onClick={() => change({ fontPair: pair.id })}
-                style={{ fontFamily: pair.heading }}
-              >
-                {pair.name}
-              </button>
-            ))}
-          </div>
+          <FontPairingSelect
+            options={SIGNUP_FONT_PAIRS}
+            value={appearance.fontPair}
+            onChange={(fontPair) => change({ fontPair })}
+          />
         </fieldset>
         <div className={styles.field}>
           <label htmlFor="signup-header-layout">Header layout</label>

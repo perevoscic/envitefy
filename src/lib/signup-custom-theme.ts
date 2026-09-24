@@ -1,4 +1,5 @@
 import { colorContrast as signupColorContrast } from "./color-contrast";
+import { GALLERY_FONT_PAIRS, LIBRARY_FONT_PAIRS } from "./font-library";
 
 export { colorContrast as signupColorContrast } from "./color-contrast";
 
@@ -15,6 +16,8 @@ export const SIGNUP_CUSTOM_THEME_FONTS = [
   "classic",
   "literary",
   "display",
+  ...GALLERY_FONT_PAIRS.map((pair) => pair.id),
+  ...LIBRARY_FONT_PAIRS.map((pair) => pair.id),
 ] as const;
 export const SIGNUP_CUSTOM_THEME_BOARDS = [
   "ledger",

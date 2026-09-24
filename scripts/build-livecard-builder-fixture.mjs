@@ -11,7 +11,7 @@ await fs.writeFile(
   entry,
   `import React from "react";
 import { createRoot } from "react-dom/client";
-import LiveCardBuilder from "../../src/app/livacards-invites/LiveCardBuilder";
+import LiveCardBuilder from "../../src/app/live-cards/LiveCardBuilder";
 import UnsavedProgressProvider from "../../src/components/UnsavedProgressProvider";
 createRoot(document.getElementById("root")!).render(<UnsavedProgressProvider><a href="/leave" id="leave">Leave editor</a><LiveCardBuilder initialEventId={new URLSearchParams(location.search).get("edit")} /></UnsavedProgressProvider>);`,
 );
@@ -78,7 +78,7 @@ await fs.writeFile(
 );
 const globals = (await fs.readFile("src/app/globals.css", "utf8")).replace(
   '@import "tailwindcss";',
-  '@import "tailwindcss" source(none);\n@source "./livacards-invites/LiveCardBuilder.tsx";\n@source "../components/UnsavedProgressProvider.tsx";\n@source "../components/ArtworkPreviewDialog.tsx";\n@source "../components/studio/StudioShowcaseLiveCard.tsx";\n@source "../components/studio/StudioLiveCardActionSurface.tsx";',
+  '@import "tailwindcss" source(none);\n@source "./live-cards/LiveCardBuilder.tsx";\n@source "../components/UnsavedProgressProvider.tsx";\n@source "../components/ArtworkPreviewDialog.tsx";\n@source "../components/studio/StudioShowcaseLiveCard.tsx";\n@source "../components/studio/StudioLiveCardActionSurface.tsx";',
 );
 const css = await postcss([tailwind()]).process(globals, {
   from: path.resolve("src/app/globals.css"),

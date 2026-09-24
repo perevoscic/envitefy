@@ -123,6 +123,25 @@ test("design refinements and Undo preserve newer event details, slots, settings 
   assert.equal(undone.responses, next.responses);
 });
 
+test("new font pairs survive form saves, custom themes and guest projection", () => {
+  const { GALLERY_FONT_PAIRS, LIBRARY_FONT_PAIRS } = load("src/lib/font-library.ts");
+  const { projectSignupForm } = load("src/lib/signup-projection.ts");
+  for (const pair of [...GALLERY_FONT_PAIRS, ...LIBRARY_FONT_PAIRS]) {
+    const form = custom.applySignupCustomTheme(utils.createDefaultSignupForm(), { ...theme, fontPair: pair.id });
+    const restored = utils.sanitizeSignupForm(JSON.parse(JSON.stringify(form)));
+    const guest = projectSignupForm(restored);
+    assert.equal(guest.appearance.fontPair, pair.id);
+    assert.equal(guest.appearance.customTheme.fontPair, pair.id);
+    const style = themes.resolveSignupThemeStyle(guest);
+    assert.equal(style["--signup-heading-font"], pair.heading);
+    assert.equal(style["--signup-body-font"], pair.body);
+    // Manual choices on standard gallery templates follow the same save path.
+    const standard = themes.applySignupTheme(utils.createDefaultSignupForm(), "school-days");
+    standard.appearance.fontPair = pair.id;
+    assert.equal(utils.sanitizeSignupForm(JSON.parse(JSON.stringify(standard))).appearance.fontPair, pair.id);
+  }
+});
+
 test("untrusted recipes cannot introduce CSS, markup or unknown layout variants", () => {
   for (const bad of [
     { version: 2 },

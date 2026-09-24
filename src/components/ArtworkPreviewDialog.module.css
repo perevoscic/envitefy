@@ -1,10 +1,14 @@
 .viewportFrame {
+  container-type: inline-size;
+  --artwork-preview-footer-space: 0px;
   --artwork-preview-available-height: calc(
     100dvh -
     env(safe-area-inset-top, 0px) -
     env(safe-area-inset-bottom, 0px)
   );
-  --artwork-preview-max-art-height: calc(var(--artwork-preview-available-height) * 0.9);
+  --artwork-preview-max-art-height: calc(
+    (var(--artwork-preview-available-height) - var(--artwork-preview-footer-space)) * 0.9
+  );
   --artwork-preview-width: min(
     calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)),
     calc(var(--artwork-preview-max-art-height) * var(--artwork-preview-ratio))
@@ -14,21 +18,7 @@
   height: var(--artwork-preview-height);
 }
 
-/* Phone cards fill 90% height. Tall masters may crop decorative edges;
-   legacy artwork keeps its complete composition over its own color extension. */
-@media (max-width: 767px) and (orientation: portrait) {
-  .viewportFrame:has([data-live-card-artwork]) {
-    --artwork-preview-width: calc(
-      100vw -
-      2rem -
-      env(safe-area-inset-left, 0px) -
-      env(safe-area-inset-right, 0px)
-    );
-    --artwork-preview-height: var(--artwork-preview-max-art-height);
-  }
-}
-
-/* Continue the dark viewing surface through phone notches and home indicators. */
+/* Shared designs use their composed 2:3 canvas; other artwork keeps its own ratio. */
 .viewportFrame:has([data-shared-card-artwork]) {
   --artwork-preview-width: min(
     calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)),
@@ -37,6 +27,7 @@
   --artwork-preview-height: calc(var(--artwork-preview-width) * 3 / 2);
 }
 
+/* Continue the dark viewing surface through phone notches and home indicators. */
 :global(html):has(.viewportFrame) {
   background-color: #0a0a0a !important;
 }
@@ -48,7 +39,7 @@
 
 .content {
   position: fixed;
-  top: calc((100dvh + env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 2);
+  top: calc((100dvh + env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - var(--artwork-preview-footer-space)) / 2);
   left: calc((100vw + env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) / 2);
   z-index: 7001;
   transform: translate(-50%, -50%);
@@ -57,8 +48,22 @@
 
 /* Keep optional view controls above the artwork, including on short screens. */
 .viewportFrame[data-has-toolbar="true"] {
-  --artwork-preview-max-art-height: calc((var(--artwork-preview-available-height) - 76px) * 0.9);
-  top: calc((100dvh + env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) + 60px) / 2);
+  --artwork-preview-max-art-height: calc((var(--artwork-preview-available-height) - 76px - var(--artwork-preview-footer-space)) * 0.9);
+  top: calc((100dvh + env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) + 60px - var(--artwork-preview-footer-space)) / 2);
+}
+
+.viewportFrame[data-has-footer="true"] {
+  --artwork-preview-footer-space: 76px;
+}
+
+.footer {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 50%;
+  width: 100%;
+  min-width: min(320px, calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+  max-width: calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+  transform: translateX(-50%);
 }
 
 .toolbar {
@@ -86,10 +91,20 @@
   z-index: 100;
 }
 
+@container (max-width: 180px) {
+  .close {
+    flex-direction: column-reverse;
+    gap: 4px;
+  }
+}
+
 .share {
   left: 12px;
 }
 
 .close {
   right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }

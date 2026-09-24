@@ -27,7 +27,11 @@ function comparable(value: string): string {
 }
 
 /** Deduplicate the venue prefix while retaining rooms and the full street address. */
-export function composeGuestLocation(venue?: string | null, address?: string | null): string {
+export function composeGuestLocation(
+  venue?: string | null,
+  address?: string | null,
+  separator = ", ",
+): string {
   const first = venue?.trim() || "";
   const second = address?.trim() || "";
   if (!first) return second;
@@ -36,7 +40,7 @@ export function composeGuestLocation(venue?: string | null, address?: string | n
   const secondKey = comparable(second);
   if (secondKey === firstKey || secondKey.startsWith(`${firstKey} `)) return second;
   if (firstKey.startsWith(`${secondKey} `)) return first;
-  return `${first}, ${second}`;
+  return `${first}${separator}${second}`;
 }
 
 export function isPhysicalGuestLocation(location: string): boolean {

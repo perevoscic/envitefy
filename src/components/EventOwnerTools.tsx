@@ -21,13 +21,16 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { type EventContextTab, useSidebar } from "@/app/sidebar-context";
 import ArtworkPreviewDialog from "@/components/ArtworkPreviewDialog";
+import ArtworkDownloadButton from "@/components/ArtworkDownloadButton";
+import ownerStyles from "./EventOwnerTools.module.css";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventResponseDashboard from "@/components/EventResponseDashboard";
 import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileTopbarSuppressor";
 import { SharedStudioCardFrame } from "@/components/studio/SharedStudioCardPage";
+import { useArtworkAspectRatio } from "@/hooks/use-artwork-aspect-ratio";
 import { requestCardEdit } from "@/lib/card-edit-client";
 import { hasActionableRsvp } from "@/lib/dashboard-data";
 import {
@@ -744,6 +747,8 @@ export default function EventOwnerTools({
     () => (designPreviewOverride ? { ...preview, ...designPreviewOverride } : preview),
     [designPreviewOverride, preview],
   );
+  const measuredArtworkRatio = useArtworkAspectRatio(effectivePreview.imageUrl, 2 / 3);
+  const artworkRatio = effectivePreview.invitationData?.sharedDesign ? 2 / 3 : measuredArtworkRatio;
   const rsvpEnabled = hasActionableRsvp(eventData, numberOfGuests);
   const isGuidedCard = eventData?.createdVia === "livecard-builder";
   const [justPublished, setJustPublished] = useState(false);
@@ -862,7 +867,10 @@ export default function EventOwnerTools({
 
   return (
     <main className="min-h-[100dvh] w-full px-3 pb-5 pt-[calc(var(--app-mobile-topbar-offset,4rem)+1.35rem)] text-slate-950 sm:px-6 lg:px-8 lg:py-5">
-      <div className="mx-auto grid w-full max-w-[1380px] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,410px)] xl:grid-cols-[minmax(0,1fr)_430px]">
+      <div
+        className={`${effectivePreview.surface === "studio-card" ? ownerStyles.cardWorkspace : ""} mx-auto grid w-full max-w-[1380px] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,410px)] xl:grid-cols-[minmax(0,1fr)_430px]`}
+        style={{ "--owner-artwork-ratio": artworkRatio } as CSSProperties}
+      >
         <section className="min-w-0 space-y-3 sm:space-y-4">
           {justPublished && <p role="status" className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900">Published. Your invitation is ready to share.</p>}
           <OwnerWorkspaceHeader
@@ -1083,7 +1091,7 @@ function EventProductPreview({
 
   return (
     <section
-      className={`owner-workspace-glass relative w-full rounded-[28px] ${
+      className={`${isStudioCard ? "" : "owner-workspace-glass"} relative w-full rounded-[28px] ${
         autoHeight || isStudioCard
           ? "overflow-visible !border-0 !bg-transparent !shadow-none !backdrop-blur-none before:!hidden"
           : "overflow-hidden border border-white/70 bg-slate-950 shadow-[0_24px_70px_rgba(79,70,128,0.16)] backdrop-blur-xl"
@@ -1110,10 +1118,11 @@ function EventProductPreview({
             positions={preview.positions as any}
             shareUrl={publicUrl}
             embeddedPreview
+            canDownload
+            fitToWorkspace
             actionsPlacement="overlay"
             className="flex w-full items-center justify-center"
             frameClassName="!h-auto !w-full !max-w-full !rounded-[28px] !border-0 !bg-transparent shadow-none"
-            style={{ width: "100%" }}
           />
         ) : publicUrl ? (
           <div
@@ -1478,6 +1487,14 @@ function OwnerProductViewer({
         aspectRatio={preview.invitationData?.heroTextMode === "overlay" ? 9 / 16 : 2 / 3}
         onClose={onClose}
         onReturnFocus={onReturnFocus}
+        downloadAction={
+          <ArtworkDownloadButton
+            variant="icon"
+            imageUrl={preview.imageUrl}
+            title={eventTitle}
+            invitationData={preview.invitationData ? { ...preview.invitationData, publicUrl } : null}
+          />
+        }
       >
         <SharedStudioCardFrame
           eventId={eventId}
@@ -1879,20 +1896,20 @@ function OwnerDesignPanel({
             </label>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:flex sm:items-center sm:justify-end">
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)] gap-2 sm:flex sm:items-center sm:justify-end sm:gap-3">
             {status === "ready" ? (
               <button
                 type="button"
                 onClick={onViewChanges}
                 aria-haspopup="dialog"
-                className="col-span-2 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-bold text-violet-700 transition hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+                className="col-span-full inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-bold text-violet-700 transition hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
               >
                 <Eye size={18} aria-hidden="true" />
                 View changes
               </button>
             ) : null}
             {status === "saved" ? (
-              <p className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700">
+              <p className="col-span-full inline-flex items-center gap-2 text-sm font-semibold text-emerald-700">
                 <CheckCircle2 size={16} aria-hidden="true" />
                 Changes saved
               </p>
@@ -1901,7 +1918,7 @@ function OwnerDesignPanel({
               type="button"
               onClick={handleCancelChanges}
               disabled={!canCancelDesignChanges}
-              className="inline-flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white/80 px-4 text-sm font-bold text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition hover:bg-white disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-white/50 disabled:text-slate-300 sm:px-5"
+              className="inline-flex min-h-12 min-w-0 items-center justify-center gap-1 rounded-2xl border border-slate-300 bg-white/80 px-2 text-xs font-bold text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition hover:bg-white disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-white/50 disabled:text-slate-300 sm:gap-2 sm:px-5 sm:text-sm"
             >
               <X size={16} aria-hidden="true" />
               Cancel
@@ -1909,7 +1926,7 @@ function OwnerDesignPanel({
             <button
               type="submit"
               disabled={!currentImageUrl || isBusy || !hasDesignChanges}
-              className="inline-flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 text-sm font-bold text-white shadow-[0_14px_30px_rgba(15,23,42,0.16)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 sm:px-5"
+              className="inline-flex min-h-12 min-w-0 items-center justify-center gap-1 rounded-2xl bg-slate-950 px-2 text-xs font-bold text-white shadow-[0_14px_30px_rgba(15,23,42,0.16)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 sm:gap-2 sm:px-5 sm:text-sm"
             >
               {status === "previewing" ? (
                 <Loader2 size={16} className="animate-spin" aria-hidden="true" />
@@ -1922,7 +1939,7 @@ function OwnerDesignPanel({
               type="button"
               onClick={handleSaveChanges}
               disabled={!candidate || isBusy}
-              className="inline-flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-violet-700 px-4 text-sm font-bold text-white shadow-[0_14px_30px_rgba(109,40,217,0.18)] transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:bg-slate-300 sm:px-5"
+              className="inline-flex min-h-12 min-w-0 items-center justify-center gap-1 rounded-2xl bg-violet-700 px-2 text-xs font-bold text-white shadow-[0_14px_30px_rgba(109,40,217,0.18)] transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:bg-slate-300 sm:gap-2 sm:px-5 sm:text-sm"
             >
               {status === "saving" ? (
                 <Loader2 size={16} className="animate-spin" aria-hidden="true" />

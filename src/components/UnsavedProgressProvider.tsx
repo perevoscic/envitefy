@@ -360,12 +360,12 @@ export default function UnsavedProgressProvider({ children }: { children: ReactN
                   {error}
                 </p>
               )}
-              <div className="mt-6 flex flex-col gap-3">
+              <div className="mt-6 grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   disabled={saving}
                   onClick={() => void resolve("save")}
-                  className="rounded-full bg-[#7151d8] px-5 py-3 text-sm font-semibold text-white hover:bg-[#6342c7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7151d8] disabled:opacity-50"
+                  className="min-h-11 min-w-0 rounded-full bg-[#7151d8] px-2 py-3 text-sm font-semibold text-white hover:bg-[#6342c7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7151d8] disabled:opacity-50 sm:px-5"
                 >
                   {saving ? "Please wait…" : "Save and leave"}
                 </button>
@@ -373,7 +373,7 @@ export default function UnsavedProgressProvider({ children }: { children: ReactN
                   type="button"
                   disabled={saving}
                   onClick={() => void resolve("discard")}
-                  className="rounded-full border border-[#ded5ea] px-5 py-3 text-sm font-semibold hover:bg-[#f8f5fd] disabled:opacity-50"
+                  className="min-h-11 min-w-0 rounded-full border border-[#ded5ea] px-2 py-3 text-sm font-semibold hover:bg-[#f8f5fd] disabled:opacity-50 sm:px-5"
                 >
                   Discard and leave
                 </button>
@@ -382,7 +382,7 @@ export default function UnsavedProgressProvider({ children }: { children: ReactN
                   type="button"
                   disabled={saving}
                   onClick={cancel}
-                  className="rounded-full px-5 py-2 text-sm font-medium text-[#7151d8] hover:bg-[#f8f5fd] disabled:opacity-50"
+                  className="col-span-2 rounded-full px-5 py-2 text-sm font-medium text-[#7151d8] hover:bg-[#f8f5fd] disabled:opacity-50"
                 >
                   Keep editing
                 </button>

@@ -946,7 +946,7 @@ export function useLeftSidebarController({
     clearEventContext();
     setSidebarPage("root");
     collapseSidebarOnTouch();
-    router.push("/livacards-invites");
+    router.push("/live-cards");
   }, [clearEventContext, collapseSidebarOnTouch, router, setSidebarPage]);
 
   const visibleTemplateKeys = featureVisibility.hasLoadedPreferences

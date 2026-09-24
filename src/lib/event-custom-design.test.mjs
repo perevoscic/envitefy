@@ -146,6 +146,28 @@ test("design boundaries reject executable content, unsupported media, impossible
   assert.ok(colorContrast(fixed.colors.accent, "#ffffff") >= 4.5);
 });
 
+test("font pairings survive event serialization and reach both guest text roles", () => {
+  const { GALLERY_FONT_PAIRS, LIBRARY_FONT_PAIRS } = load("src/lib/font-library.ts");
+  const Empty = () => null;
+  const renderLoad = loader({
+    "next/link": ({ children, ...props }) => React.createElement("a", props, children),
+    "@/components/GuestRsvpModal": Empty,
+    "@/components/event-templates/EventGuestActions": Empty,
+    "@/components/branding/EnvitefyEventBranding": Empty,
+  });
+  const Content = renderLoad("src/components/events/custom/CustomEventPageContent.tsx").default;
+  for (const pair of [...GALLERY_FONT_PAIRS, ...LIBRARY_FONT_PAIRS]) {
+    const input = example();
+    input.design.font = pair.id;
+    const restored = custom.normalizeCustomEventPage(JSON.parse(JSON.stringify(input)));
+    assert.equal(restored.design.font, pair.id);
+    const markup = renderToStaticMarkup(React.createElement(Content, { page: restored }));
+    assert.ok(markup.includes("--event-body-font:"), pair.id);
+    assert.ok(markup.includes(pair.heading.split(",")[0].replace(/["']/g, "")), pair.id);
+    assert.ok(markup.includes(pair.body.split(",")[0].replace(/["']/g, "")), pair.id);
+  }
+});
+
 test("shared gallery callout is available in every supported category without a chat link", () => {
   const Empty = () => null;
   let status = "authenticated";

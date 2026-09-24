@@ -98,7 +98,7 @@ test("left sidebar uses Live Card while preserving existing chat access", () => 
   assert.doesNotMatch(source, /Create with AI/);
   assert.match(
     source,
-    /label: "Snap \/ Upload"[\s\S]*?<SidebarLink link=\{\{ label: "Live Card",[\s\S]*?onClick: onLiveCard, active: pathname === "\/livacards-invites"/,
+    /label: "Snap \/ Upload"[\s\S]*?<SidebarLink link=\{\{ label: "Live Card",[\s\S]*?onClick: onLiveCard, active: pathname === "\/live-cards"/,
   );
   assert.match(source, /function AiThreadsPanel/);
   assert.match(

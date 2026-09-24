@@ -1,4 +1,6 @@
 "use client";
+
+import { FontPairingSelect } from "@/components/design-panel/FontPairingSelect";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -10,7 +12,7 @@ import {
   customEventCategory,
   customEventGalleryHref,
   customEventWording,
-  EVENT_DESIGN_FONTS,
+  EVENT_DESIGN_FONT_PAIRS,
   EVENT_DESIGN_LAYOUTS,
   normalizeCustomEventPage,
   takeCustomEventPage,
@@ -465,25 +467,14 @@ export default function EventCustomEditor() {
                   ))}
                 </select>
               </label>
-              <label className={styles.field}>
-                Typography
-                <select
+              <fieldset className={styles.field}>
+                <legend>Typography</legend>
+                <FontPairingSelect
+                  options={EVENT_DESIGN_FONT_PAIRS}
                   value={page.design.font}
-                  onChange={(e) =>
-                    setPage({
-                      ...page,
-                      design: {
-                        ...page.design,
-                        font: e.target.value as CustomEventPage["design"]["font"],
-                      },
-                    })
-                  }
-                >
-                  {Object.keys(EVENT_DESIGN_FONTS).map((font) => (
-                    <option key={font}>{font}</option>
-                  ))}
-                </select>
-              </label>
+                  onChange={(font) => setPage({ ...page, design: { ...page.design, font } })}
+                />
+              </fieldset>
               <div className={styles.columns}>
                 {(["page", "surface", "ink", "accent"] as const).map((key) => (
                   <label key={key} className={styles.field}>

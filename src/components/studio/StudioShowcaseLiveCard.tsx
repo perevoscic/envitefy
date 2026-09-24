@@ -37,6 +37,7 @@ type StudioShowcaseLiveCardProps = {
   actionsPlacement?: "auto" | "above" | "overlay";
   fitToContainer?: boolean;
   onClose?: () => void;
+  artworkToolbar?: ReactNode;
 };
 
 export default function StudioShowcaseLiveCard({
@@ -55,6 +56,7 @@ export default function StudioShowcaseLiveCard({
   actionsPlacement = "overlay",
   fitToContainer = false,
   onClose,
+  artworkToolbar,
 }: StudioShowcaseLiveCardProps) {
   const [internalActiveTab, setInternalActiveTab] = useState<LiveCardActiveTab>(
     preview.initialActiveTab || "none",
@@ -260,6 +262,7 @@ export default function StudioShowcaseLiveCard({
               />
             </div>
           ) : null}
+          {artworkToolbar}
           {onClose ? (
             <button
               type="button"

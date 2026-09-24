@@ -176,7 +176,7 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
   assert.match(sharedPageSource, /usesPosterArtFrame \? "aspect-\[2\/3\] rounded/);
   assert.match(
     sharedPageSource,
-    /style=\{\{ width: props\.fitToViewport \|\| props\.style\?\.width \? undefined : cardFrameWidth \}\}/,
+    /style=\{\{ width: props\.fitToViewport \|\| props\.fitToWorkspace \|\| props\.style\?\.width \? undefined : cardFrameWidth \}\}/,
   );
   assert.match(
     sharedPageSource,
@@ -226,10 +226,10 @@ test("poster guest controls overlay artwork while creator attribution stays outs
   );
   assert.match(
     surfaceSource,
-    /max-md:min-h-\[min\(14svh,4rem\)\] min-h-\[min\(8svh,2\.4rem\)\] md:min-h-\[min\(6svh,2rem\)\]/,
+    /styles\.panelSlot/,
   );
   assert.match(sharedPageSource, /Created by Envitefy Create/);
-  assert.match(sharedPageSource, /usesPosterArtFrame && \(!placeActionsOverlay \|\| isClassicInvite \|\| sharedDesign\)/);
+  assert.match(sharedPageSource, /props\.canDownload \? \(/);
   assert.match(sharedPageSource, /sharePosition="left"/);
   assert.match(
     sharedPageSource,
@@ -237,10 +237,10 @@ test("poster guest controls overlay artwork while creator attribution stays outs
   );
   assert.match(
     sharedPageSource,
-    /\{!useOutsideActions \? closeAction : null\}\s*<\/LiveCardArtworkFrame>/,
+    /\{!useOutsideActions \? closeAction : null\}[\s\S]*<\/LiveCardArtworkFrame>/,
   );
   assert.match(surfaceSource, /data-live-card-actions-placement/);
-  assert.match(surfaceSource, /actionsOutsideArtwork \? "hidden" : posterFirstHeroCard/);
+  assert.match(surfaceSource, /pointer-events-none z-20 w-full min-w-0 shrink-0/);
   assert.doesNotMatch(
     sharedPageSource,
     /absolute right-4 top-\[max\(0\.75rem,env\(safe-area-inset-top\)\)\] z-30/,

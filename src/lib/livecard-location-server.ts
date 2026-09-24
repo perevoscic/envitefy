@@ -6,6 +6,8 @@ import {
   isOnlineEventLocation,
 } from "./livecard-location";
 import { researchBuilderVenue } from "./livecard-venue-research";
+import { isStreetAddressQuery, searchBuilderAddress } from "./livecard-address-server";
+import { locationTimezone } from "./livecard-location-timezone";
 
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -61,7 +63,9 @@ export async function resolveBuilderPlace(
   url.searchParams.set("timestamp", String(Math.floor(timestamp / 1000)));
   url.searchParams.set("key", key());
   const zone = await googleJson(url.href).catch(() => ({}) as Record<string, unknown>);
-  const timezone = zone.status === "OK" ? text(zone.timeZoneId) : "";
+  const timezone =
+    (zone.status === "OK" ? text(zone.timeZoneId) : "") ||
+    locationTimezone(place.latitude, place.longitude);
   if (timezone) new Intl.DateTimeFormat("en", { timeZone: timezone }).format();
   return { ...emptyLiveCardLocation(id), ...place, resolution: "verified", timezone };
 }
@@ -123,6 +127,23 @@ export async function searchBuilderLocation(input: LocationInput): Promise<Build
         resolution: "online",
       },
     };
+  const selectedAddress = Boolean(input.placeId?.startsWith("mapbox:"));
+  const streetAddress = selectedAddress || (!input.placeId && isStreetAddressQuery(input.query));
+  let addressResult: BuilderLocationResult | null = null;
+  let addressUnavailable = false;
+  if (streetAddress) {
+    try {
+      addressResult = await searchBuilderAddress(input);
+      if (addressResult?.location || addressResult?.candidates.length) return addressResult;
+    } catch {
+      addressUnavailable = true;
+    }
+    // A selected Mapbox identity must never be sent to Google as a Google place ID.
+    if (selectedAddress) {
+      if (addressResult) return addressResult;
+      throw new Error("The address lookup is temporarily unavailable. Please try again.");
+    }
+  }
   let googleResult: BuilderLocationResult | null = null;
   if (key()) {
     try {
@@ -141,6 +162,19 @@ export async function searchBuilderLocation(input: LocationInput): Promise<Build
     } catch {
       /* Try source-backed venue research below. */
     }
+  }
+  if (streetAddress) {
+    if (addressResult) return addressResult;
+    if (addressUnavailable || !key())
+      throw new Error("The address lookup is temporarily unavailable. Please try again.");
+    return (
+      googleResult || {
+        location: null,
+        candidates: [],
+        message:
+          "We couldn’t match this street address. Add the city or ZIP code to narrow the search.",
+      }
+    );
   }
   // Use the verified/selected branch's full address if only its timezone is missing.
   const context = googleResult?.location || input;

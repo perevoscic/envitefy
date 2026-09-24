@@ -140,6 +140,39 @@ test("publishing checks real event dates and optional sections only when enabled
   );
 });
 
+test("enabled RSVP requires a valid host phone while email remains optional", () => {
+  const form = {
+    ...createLiveCardForm("America/Chicago"),
+    title: "Movie night",
+    eventType: "General event" as const,
+    design: "Stars",
+    date: "2026-10-04",
+    startTime: "18:00",
+    locations: [
+      { id: "main", label: "", venue: "Cinema", address: "123 Main St", time: "", note: "" },
+    ],
+    rsvpEnabled: true,
+    hostName: "Mia",
+  };
+  for (const phase of ["prepare", "publish"] as const) {
+    for (const format of ["live_card", "digital_flyer"] as const) {
+      const enabled = { ...form, format };
+      for (const hostPhone of ["", "   ", "123", "call me", "1234567890123456"]) {
+        assert.ok(validateLiveCard({ ...enabled, hostPhone }, phase).hostPhone);
+        assert.ok(
+          validateLiveCard({ ...enabled, hostPhone, hostEmail: "mia@example.com" }, phase)
+            .hostPhone,
+          "email cannot replace the required phone number",
+        );
+      }
+      for (const hostPhone of ["8505550199", "+1 (850) 555-0199", "+44 20 7946 0958"]) {
+        assert.deepEqual(validateLiveCard({ ...enabled, hostPhone }, phase), {});
+      }
+      assert.deepEqual(validateLiveCard({ ...enabled, rsvpEnabled: false }, phase), {});
+    }
+  }
+});
+
 test("calendar times use the event timezone and reject ambiguous daylight-saving times", () => {
   assert.equal(
     liveCardDateTime("2026-10-04", "18:00", "America/Chicago"),

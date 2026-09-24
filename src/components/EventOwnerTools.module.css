@@ -1,0 +1,5 @@
+@media (min-width: 1024px) {
+  .cardWorkspace {
+    grid-template-columns: minmax(0, 1fr) min(50%, calc(90dvh * var(--owner-artwork-ratio)));
+  }
+}

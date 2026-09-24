@@ -1,4 +1,5 @@
 import type { EventGuestPlanning } from "@/lib/event-guest-planning";
+import type { GalleryFontPairId } from "@/lib/font-library";
 
 /** Accepted means the mail provider accepted the message, not that it reached the inbox. */
 export type SignupConfirmationEmailStatus = "accepted" | "failed" | "not_requested";
@@ -162,7 +163,8 @@ export type SignupFontPair =
   | "friendly"
   | "classic"
   | "literary"
-  | "display";
+  | "display"
+  | GalleryFontPairId;
 export type SignupAppearance = {
   version: 1;
   themeId: SignupThemeId;

@@ -12,7 +12,6 @@ import {
   type LucideIcon,
   MapPin,
   Navigation,
-  WandSparkles,
   ListChecks,
   Users,
   PenLine,
@@ -27,6 +26,7 @@ import DashboardGames from "./DashboardGames";
 import { upcomingDashboardGames, type DashboardGame } from "@/lib/dashboard-games";
 import EventActions from "@/components/EventActions";
 import EventDeleteModal from "@/components/EventDeleteModal";
+import { LiveCardIcon } from "@/components/icons/LiveCardIcon";
 import { FlipClock } from "@/components/ui/flip-clock";
 import { isScannedInviteCreatedVia } from "@/lib/dashboard-data";
 import {
@@ -1008,10 +1008,10 @@ export default function HomeOverviewDashboard({
                 </div>
                 <div className="mt-8 flex flex-wrap gap-4">
                   <Link
-                    href="/livacards-invites"
+                    href="/live-cards"
                     className="inline-flex min-h-[56px] min-w-[150px] flex-1 items-center justify-center gap-2 rounded-[20px] bg-slate-900 px-6 py-4 text-sm font-bold text-white shadow-xl transition-all hover:bg-indigo-600 sm:min-w-[170px] sm:px-8"
                   >
-                    <WandSparkles size={16} />
+                    <LiveCardIcon size={16} />
                     <span>Live Card</span>
                   </Link>
                   <Link

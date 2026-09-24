@@ -63,7 +63,7 @@ test("artwork fits the viewport with guest actions and Share/Close overlaid on t
   const before = hashes(artifacts);
   const globalSource = fs.readFileSync("src/app/globals.css", "utf8").replace('@import "tailwindcss";', '@import "tailwindcss" source(none);\n@source "../components/ArtworkPreviewDialog.tsx";\n@source "../components/concierge/ConciergeEventWebsite.tsx";\n@source "../components/studio/StudioShowcaseLiveCard.tsx";\n@source "../components/studio/StudioLiveCardActionSurface.tsx";');
   const stylesheet = await postcss([tailwind()]).process(`${globalSource}\n@source "../components/studio/SharedStudioCardPage.tsx";\n@source "../components/ArtworkDownloadButton.tsx";\n@source "../components/studio/SharedCardTextLayer.tsx";`, { from: path.resolve("src/app/globals.css") });
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
   const page = await browser.newPage();
   let blockedRequests = 0;
   await page.route("**/*", (route) => { blockedRequests++; return route.abort(); });
@@ -89,13 +89,13 @@ test("artwork fits the viewport with guest actions and Share/Close overlaid on t
         return { width: innerWidth, height: innerHeight, frame: bounds(frame), image: { width: imageBox.width, height: imageBox.height, fit: getComputedStyle(image).objectFit }, rail: bounds(rail), close: bounds(close), share: bounds(share), overflow: document.documentElement.scrollWidth > innerWidth };
       });
       measurements.push(result);
-      const expectedHeight = width <= 767 && height > width ? height * 0.9 : Math.min(height * 0.9, (width - 32) * 1.5);
+      const expectedHeight = Math.min(height * 0.9, (width - 32) * 1.5);
       assert.ok(Math.abs(result.frame.height - expectedHeight) < 1, JSON.stringify(result));
-      assert.ok(Math.abs(result.frame.width - Math.min(width - 32, height * 0.9 * 2 / 3)) < 1, "frame fits the phone width without stretching its image");
+      assert.ok(Math.abs(result.frame.width - Math.min(width - 32, height * 0.9 * 2 / 3)) < 1, "frame targets 90% height with proportional width, fitting narrow screens");
       assert.equal(result.image.fit, "contain");
       assert.ok(result.frame.width > 0 && result.frame.height > 0);
       assert.ok(result.frame.x >= 0 && result.frame.y >= 0 && result.frame.right <= width + 1 && result.frame.bottom <= height + 1, JSON.stringify(result));
-      assert.ok(result.rail.y >= result.frame.y + result.frame.height / 2 && result.rail.y < result.frame.bottom && result.rail.bottom <= result.frame.bottom + 1, "guest rail stays inside the bottom of the artwork");
+      assert.ok(result.rail.y >= result.frame.y + result.frame.height / 2 && result.rail.y < result.frame.bottom && result.rail.bottom <= result.frame.bottom + 1, `guest rail stays inside the bottom of the artwork: ${JSON.stringify(result)}`);
       for (const control of [result.share, result.close]) {
         assert.ok(control.width >= 44 && control.height >= 44, "Share and Close have 44px targets");
         assert.ok(control.x >= result.frame.x && control.right <= result.frame.right + 1 && control.y >= result.frame.y && control.bottom <= result.frame.bottom, "Share and Close stay inside the card");
@@ -131,7 +131,7 @@ test("artwork fits the viewport with guest actions and Share/Close overlaid on t
             overflow: document.documentElement.scrollWidth > innerWidth || document.documentElement.scrollHeight > innerHeight,
           };
         });
-        const expectedHeight = width <= 767 && height > width ? height * 0.9 : Math.min(height * 0.9, (width - 32) * 1.5);
+        const expectedHeight = Math.min(height * 0.9, (width - 32) * 1.5);
         assert.ok(Math.abs(result.frame.height - expectedHeight) < 1, JSON.stringify(result));
         assert.ok(Math.abs(result.frame.y - (height - expectedHeight) / 2) < 1, "public artwork stays vertically centered");
         assert.equal(result.fit, "contain");
@@ -178,9 +178,7 @@ test("artwork fits the viewport with guest actions and Share/Close overlaid on t
             assert.ok(bounds && bounds.x >= frameBounds.x && bounds.y >= frameBounds.y && bounds.x + bounds.width <= frameBounds.x + frameBounds.width + 1 && bounds.y + bounds.height <= frameBounds.y + frameBounds.height + 1, "shared guest controls stay within the artwork");
           }
           const download = page.getByRole("button", { name: "Download invitation", exact: true });
-          assert.equal(await download.count(), 1, "both formats offer the composed invitation download");
-          const downloadBounds = await download.boundingBox();
-          assert.ok(downloadBounds && downloadBounds.y >= frameBounds.y + frameBounds.height - 1 && downloadBounds.y + downloadBounds.height <= height, "invitation download stays below artwork and within the viewport");
+          assert.equal(await download.count(), 0, "guest cards never expose the owner download control");
           if (product === "digital_flyer") assert.equal(await frame.getByRole("button", { name: "Share invitation", exact: true }).count(), 1);
         }
       }

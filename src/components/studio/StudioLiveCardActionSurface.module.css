@@ -1,57 +1,53 @@
-.viewportPanel {
-  --panel-available-height: calc(
-    100dvh -
-    2rem -
-    env(safe-area-inset-top, 0px) -
-    env(safe-area-inset-bottom, 0px)
-  );
-  position: fixed;
-  top: calc((100dvh + env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 2);
-  left: calc((100vw + env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) / 2);
-  z-index: 7101;
-  width: min(
-    24rem,
-    calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))
-  );
-  max-height: var(--panel-available-height);
-  transform: translate(-50%, -50%);
-  outline: none;
+.surface[data-live-card-actions-placement="overlay"] {
+  container-type: size;
 }
 
-.detachedPanel {
-  position: relative;
-  width: 100%;
-  max-height: var(--panel-available-height);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  border-radius: 1.5rem;
-  padding: 1.25rem;
-}
-
-.detachedPanel button,
-.detachedPanel input,
-.detachedPanel select,
-.detachedPanel a {
-  min-height: 44px;
-}
-
-.detachedPanel button {
-  min-width: 44px;
-}
-
-.detachedPanel input,
-.detachedPanel select {
-  font-size: 16px;
+/* The rail keeps its natural height; popups use only the space above it. */
+.panelSlot {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 0 clamp(10px, 3cqw, 20px) clamp(8px, 2cqw, 12px);
 }
 
 .panel {
+  /* Scale existing content spacing and type with the artwork, not the viewport. */
+  --spacing: clamp(2.5px, 0.8cqw, 4px);
+  --text-xs: clamp(11px, 2.8cqw, 12px);
+  --text-sm: clamp(13px, 3.3cqw, 14px);
+  --text-lg: clamp(16px, 4cqw, 18px);
   display: flex;
+  flex: 0 1 auto;
   flex-direction: column;
+  width: 100%;
+  max-width: min(22rem, 88cqw);
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
   overflow: hidden;
+  overflow-wrap: anywhere;
+  border-radius: clamp(12px, 4cqw, 20px);
+  padding: clamp(10px, 3cqw, 20px);
+}
+
+.panel[data-live-card-panel-kind="calendar"],
+.panel[data-live-card-panel-kind="registry"],
+.panel[data-live-card-panel-kind="logo"] {
+  max-width: min(19rem, 80cqw);
 }
 
 .panelHeader {
   flex-shrink: 0;
+  gap: 4px;
+  margin-bottom: clamp(4px, 1.5cqw, 10px);
+}
+
+.panelHeader > div,
+.panelBody :where(div, p, li, label, button, a) {
+  min-width: 0;
 }
 
 .panelBody {
@@ -59,15 +55,72 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
+  /* Leave room for pressed-choice shadows and keyboard focus rings. */
+  padding: 4px;
+  margin: -4px;
+}
+
+.panel button,
+.panel a,
+.panel input:not([type="checkbox"]),
+.panel select {
+  min-height: 44px;
+}
+
+.panel button,
+.panel a {
+  min-width: 44px;
+  max-width: 100%;
+}
+
+.panel input:not([type="checkbox"]),
+.panel select {
+  font-size: 16px;
+}
+
+.panel label {
+  color: #525252;
+  font-size: var(--text-xs);
+}
+
+/* Very short artwork needs its full interior for the scrollable popup. */
+@container (max-height: 380px) {
+  .panelSlot {
+    position: absolute;
+    inset: clamp(6px, 3cqw, 12px);
+    z-index: 50;
+    justify-content: center;
+    padding: 0;
+  }
+}
+
+@container (max-width: 260px) {
+  .panel {
+    max-width: 100%;
+  }
+
+  .panel[data-live-card-panel-kind] {
+    max-width: 100%;
+  }
+
+  .panelHeader > div > div {
+    display: none;
+  }
+}
+
+@container (max-width: 220px) {
+  .panel [data-live-card-rsvp-choices] {
+    grid-template-columns: 1fr;
+  }
 }
 
 button.rsvpChoice {
   display: flex;
-  min-height: 48px;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 12px 8px;
+  padding: clamp(8px, 2.5cqw, 12px) 6px;
   border: 1px solid var(--rsvp-choice-border);
   border-radius: 12px;
   background: var(--rsvp-choice-surface);
@@ -75,10 +128,10 @@ button.rsvpChoice {
   box-shadow:
     0 3px 0 var(--rsvp-choice-border),
     0 5px 9px rgb(15 23 42 / 7%);
-  font-size: 12px;
+  font-size: clamp(11px, 2.8cqw, 12px);
   font-weight: 700;
   line-height: 16px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
   transition:
@@ -138,19 +191,6 @@ button.rsvpChoice {
 @media (prefers-reduced-motion: reduce) {
   .rsvpChoice {
     transition: none;
-  }
-}
-
-@container (max-width: 440px) {
-  .panel {
-    padding: 16px;
-    max-height: calc(100% - 7rem);
-  }
-
-  .panel input,
-  .panel select {
-    min-height: 44px;
-    font-size: 16px;
   }
 }
 
@@ -335,6 +375,27 @@ button.rsvpChoice {
 
 /* Short landscape previews keep full tap targets while scaling their visible chrome. */
 @container (max-width: 260px) {
+  .surface[data-live-card-actions-placement="overlay"] [data-live-card-trigger] {
+    gap: 3px;
+    padding-block: 0;
+  }
+
+  .surface[data-live-card-actions-placement="overlay"] [data-live-card-trigger] > div {
+    width: 36px;
+    height: 36px;
+    padding: 7px;
+  }
+
+  .surface[data-live-card-actions-placement="overlay"] [data-live-card-trigger] svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .surface[data-live-card-actions-placement="overlay"] [data-live-card-trigger] > span {
+    font-size: 9px;
+    letter-spacing: 0;
+  }
+
   .surface[data-live-card-actions-placement="overlay"] [data-live-card-rail-layout] > .sharedRail {
     gap: 4px;
     padding: 4px 0 2px;
@@ -358,5 +419,18 @@ button.rsvpChoice {
   .surface .sharedRail [data-live-card-trigger] > span {
     font-size: 9px;
     letter-spacing: 0;
+  }
+}
+
+@container (max-width: 180px) {
+  .surface[data-live-card-actions-placement="overlay"] [data-live-card-trigger] > div {
+    width: 32px;
+    height: 32px;
+    padding: 6px;
+  }
+
+  .surface[data-live-card-actions-placement="overlay"] [data-live-card-trigger] svg {
+    width: 18px;
+    height: 18px;
   }
 }

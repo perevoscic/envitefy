@@ -1,3 +1,5 @@
+import { composeGuestLocation } from "./guest-event-details.ts";
+
 /** A background and typography recipe shared by the Live Card and its invitation. */
 export type SharedCardDesign = {
   version: 1;
@@ -241,9 +243,7 @@ export function invitationLinks(source: CardTextSource): CardLink[] {
       )
         return [];
       seen.add(parsed.href);
-      const path = parsed.pathname === "/" ? "" : parsed.pathname;
-      const readable = `${parsed.host}${path}`;
-      return [{ label, url: parsed.href, display: readable.length <= 44 ? readable : parsed.host }];
+      return [{ label, url: parsed.href, display: parsed.hostname }];
     } catch {
       return [];
     }
@@ -290,12 +290,16 @@ export function sharedCardContent(source: CardTextSource): CardTextContent {
     ? event.additionalLocations.flatMap((item) => {
         if (!item || typeof item !== "object") return [];
         const location = item as Record<string, unknown>;
+        const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+        const place = composeGuestLocation(
+          text(location.venue),
+          text(location.address) || text(location.location),
+          "\n",
+        );
         return [
           [
-            location.label,
+            composeGuestLocation(text(location.label), place, "\n"),
             location.timeText,
-            location.venue === location.label ? "" : location.venue,
-            location.address || location.location,
             location.description,
           ]
             .filter((value): value is string => typeof value === "string" && Boolean(value.trim()))
@@ -321,7 +325,7 @@ export function sharedCardContent(source: CardTextSource): CardTextContent {
       ]
         .filter(Boolean)
         .join("\n"),
-      [event.venueName, event.location].filter(Boolean).join("\n"),
+      composeGuestLocation(event.venueName, event.location, "\n"),
       ...more,
       event.rsvpEnabled
         ? [

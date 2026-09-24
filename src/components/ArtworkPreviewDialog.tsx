@@ -9,7 +9,7 @@ import styles from "./ArtworkPreviewDialog.module.css";
 
 const chromeButtonClassName = `${chromeStyles.glass} inline-flex size-11 cursor-pointer items-center justify-center rounded-full border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white`;
 
-/** Center artwork in the available screen, with Share and Close in opposite top corners. */
+/** Center artwork, with optional owner download beside Close. */
 export default function ArtworkPreviewDialog({
   open,
   title,
@@ -19,6 +19,8 @@ export default function ArtworkPreviewDialog({
   onShare,
   onReturnFocus,
   toolbar,
+  footer,
+  downloadAction,
   children,
 }: {
   open: boolean;
@@ -29,6 +31,8 @@ export default function ArtworkPreviewDialog({
   onShare?: () => void;
   onReturnFocus?: () => void;
   toolbar?: ReactNode;
+  footer?: ReactNode;
+  downloadAction?: ReactNode;
   children: ReactNode;
 }) {
   const artworkRatio = useArtworkAspectRatio(imageUrl, aspectRatio);
@@ -44,6 +48,7 @@ export default function ArtworkPreviewDialog({
         <Dialog.Content
           data-artwork-preview
           data-has-toolbar={toolbar ? "true" : undefined}
+          data-has-footer={footer ? "true" : undefined}
           aria-describedby={undefined}
           className={`${styles.viewportFrame} ${styles.content}`}
           style={{ "--artwork-preview-ratio": artworkRatio } as CSSProperties}
@@ -71,6 +76,7 @@ export default function ArtworkPreviewDialog({
             </div>
           ) : null}
           <div className={styles.close}>
+            {downloadAction}
             <Dialog.Close asChild>
               <button type="button" aria-label="Close preview" className={chromeButtonClassName}>
                 <X size={21} aria-hidden="true" />
@@ -78,6 +84,7 @@ export default function ArtworkPreviewDialog({
             </Dialog.Close>
           </div>
           {children}
+          {footer ? <div className={styles.footer}>{footer}</div> : null}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

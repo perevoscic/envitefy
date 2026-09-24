@@ -34,6 +34,8 @@ type SharedStudioCardProps = {
   embeddedPreview?: boolean;
   previewMode?: boolean;
   celebrationKind?: EventCelebrationKind | null;
+  /** Granted by an authenticated owner surface, never inferred from preview mode. */
+  canDownload?: boolean;
 };
 
 type SharedStudioCardFrameProps = SharedStudioCardProps & {
@@ -46,6 +48,7 @@ type SharedStudioCardFrameProps = SharedStudioCardProps & {
   actionsPlacement?: "auto" | "above" | "overlay";
   fitToContainer?: boolean;
   fitToViewport?: boolean;
+  fitToWorkspace?: boolean;
 };
 
 export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
@@ -183,22 +186,24 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
         </button>
       )}
       {!useOutsideActions ? closeAction : null}
+      {props.canDownload ? (
+        <ArtworkDownloadButton
+          imageUrl={props.imageUrl}
+          title={props.title}
+          invitationData={invitationData ? { ...invitationData, publicUrl: props.shareUrl || undefined } : null}
+          variant="icon"
+          className={`${styles.downloadAction} ${props.onClose && !useOutsideActions ? styles.downloadBesideClose : ""}`}
+        />
+      ) : null}
     </LiveCardArtworkFrame>
   );
 
   return (
     <div
-      className={`${props.fitToViewport ? viewportStyles.viewportFrame : ""} ${props.className || ""}`}
+      className={`${props.fitToViewport ? viewportStyles.viewportFrame : ""} ${props.fitToWorkspace ? styles.workspaceFrame : ""} ${props.className || ""}`}
       style={
         {
           "--artwork-preview-ratio": artworkRatio,
-          ...((isClassicInvite || sharedDesign) && props.fitToViewport
-            ? {
-                "--artwork-preview-max-art-height":
-                  "calc(var(--artwork-preview-available-height) * 0.9 - 3.5rem)",
-                height: "calc(var(--artwork-preview-height) + 3.5rem)",
-              }
-            : {}),
           ...props.style,
         } as CSSProperties
       }
@@ -211,7 +216,7 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
         } ${placeActionsAbove || fitToContainer ? "flex flex-col gap-3 !bg-transparent" : ""} ${
           fitToContainer ? "h-full min-h-0" : ""
         } ${props.frameClassName || ""}`}
-        style={{ width: props.fitToViewport || props.style?.width ? undefined : cardFrameWidth }}
+        style={{ width: props.fitToViewport || props.fitToWorkspace || props.style?.width ? undefined : cardFrameWidth }}
       >
         {placeActionsAbove ? outsideActions : null}
         {fitToContainer ? (
@@ -225,18 +230,6 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
           artwork
         )}
         {!placeActionsAbove ? outsideActions : null}
-        {usesPosterArtFrame && (!placeActionsOverlay || isClassicInvite || sharedDesign) ? (
-          <ArtworkDownloadButton
-            imageUrl={props.imageUrl}
-            title={props.title}
-            invitationData={
-              sharedDesign && invitationData
-                ? { ...invitationData, publicUrl: props.shareUrl || undefined }
-                : invitationData
-            }
-            className="mt-2"
-          />
-        ) : null}
         {useOutsideActions ? closeAction : null}
       </div>
     </div>

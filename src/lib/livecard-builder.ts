@@ -1,6 +1,6 @@
 import { localClockToIso } from "./creation/calendar-validation.ts";
 
-export const LIVE_CARD_BUILDER_PATH = "/livacards-invites";
+export const LIVE_CARD_BUILDER_PATH = "/live-cards";
 export const LIVE_CARD_BUILDER_SOURCE = "livecard-builder";
 export const LIVE_CARD_EVENT_TYPES = [
   "Birthday",
@@ -16,6 +16,55 @@ export const LIVE_CARD_EVENT_TYPES = [
   "General event",
 ] as const;
 export type LiveCardEventType = (typeof LIVE_CARD_EVENT_TYPES)[number];
+
+// Examples are placeholders only; they never become saved event wording.
+export const LIVE_CARD_EVENT_PLACEHOLDERS = {
+  Birthday: {
+    title: "Birthday Celebration",
+    overview: "Join us for a birthday celebration! We can't wait to celebrate with you.",
+  },
+  Wedding: {
+    title: "Our Wedding Celebration",
+    overview: "Join us as we say I do and celebrate the beginning of our next chapter together.",
+  },
+  Anniversary: {
+    title: "Our Anniversary Celebration",
+    overview: "Celebrate another wonderful year together with the people who mean the most to us.",
+  },
+  "Baby shower": {
+    title: "A Little One Is on the Way",
+    overview:
+      "Join us to shower our growing family with love as we get ready to welcome our little one.",
+  },
+  "Gender reveal": {
+    title: "Our Gender Reveal",
+    overview: "Join us as we find out together! We can't wait to share the surprise with you.",
+  },
+  "Bridal shower": {
+    title: "A Shower for the Bride-to-Be",
+    overview: "Join us to shower the bride-to-be with love, laughter and happy wishes.",
+  },
+  Graduation: {
+    title: "Graduation Celebration",
+    overview: "Join us to celebrate this achievement and the exciting adventures ahead.",
+  },
+  Housewarming: {
+    title: "Home Sweet Home",
+    overview: "Help us make our new place feel like home! We'd love to celebrate with you.",
+  },
+  "Game day": {
+    title: "Game Day Watch Party",
+    overview: "Join us to cheer on our team and enjoy game day together.",
+  },
+  "Open house": {
+    title: "You're Invited to Our Open House",
+    overview: "Stop by, take a look around and spend some time with us. We'd love to welcome you.",
+  },
+  "General event": {
+    title: "Give your event a title",
+    overview: "Tell your guests what you're celebrating and what they can look forward to.",
+  },
+} satisfies Record<LiveCardEventType, { title: string; overview: string }>;
 
 export type LiveCardLocation = {
   id: string;
@@ -236,12 +285,16 @@ export function validateLiveCard(
   }
   if (form.rsvpEnabled) {
     if (!form.hostName.trim()) errors.hostName = "Add the host name guests should see.";
+    if (!form.hostPhone.trim()) errors.hostPhone = "Add the host phone number for replies.";
+    else if (
+      !/^[+\d\s().-]+$/.test(form.hostPhone) ||
+      !/^\d{7,15}$/.test(form.hostPhone.replace(/\D/g, ""))
+    )
+      errors.hostPhone = "Enter a valid phone number, including the area code.";
     if (form.hostEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.hostEmail))
       errors.hostEmail = "Enter a valid email address.";
     if (form.rsvpDeadline && form.date && form.rsvpDeadline > form.date)
       errors.rsvpDeadline = "The RSVP deadline must be on or before the event date.";
-    if (form.format === "digital_flyer" && !form.hostEmail.trim() && !form.hostPhone.trim())
-      errors.hostEmail = "Add an email or phone number to print for replies.";
   }
   if (form.registryEnabled && !liveCardRegistryUrl(form.registryUrl))
     errors.registryUrl = "Add a valid registry or gift-list website link.";

@@ -7,6 +7,8 @@ if (!root) throw new Error("Missing fixture root");
 createRoot(root).render(
   <SharedStudioCardFrame
     title="Birthday preview"
+    canDownload={params.get("mode") === "owner"}
+    onClose={params.get("product") === "invite" ? () => {} : undefined}
     imageUrl="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='900'%3E%3Crect width='600' height='900' fill='%23ede9fe'/%3E%3C/svg%3E"
     embeddedPreview={params.get("mode") === "embedded"}
     previewMode={params.get("mode") === "owner"}

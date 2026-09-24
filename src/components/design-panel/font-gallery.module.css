@@ -1,0 +1,121 @@
+.gallery {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  color: #273044;
+}
+.collections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.collections button,
+.more {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid #cbd2dd;
+  border-radius: 10px;
+  background: #fff;
+  color: #273044;
+  font:
+    600 12px / 1.5 system-ui,
+    sans-serif;
+  cursor: pointer;
+}
+.collections button[aria-pressed="true"] {
+  background: #f7f4ff;
+  border-color: #7860be;
+  box-shadow: inset 0 0 0 1px #7860be;
+}
+.collections button:focus-visible,
+.more:focus-visible {
+  outline: 3px solid #7860be;
+  outline-offset: 2px;
+}
+.help {
+  margin: 0;
+  font:
+    12px / 1.5 system-ui,
+    sans-serif;
+  color: #596477;
+}
+.searchLabel {
+  font:
+    600 12px / 1.5 system-ui,
+    sans-serif;
+}
+.search {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #cbd2dd;
+  border-radius: 10px;
+  background: #fff;
+  color: #273044;
+  font:
+    14px / 1.4 system-ui,
+    sans-serif;
+}
+.options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  max-height: 360px;
+  gap: 8px;
+  overflow: auto;
+  padding: 3px;
+  overscroll-behavior: contain;
+}
+.option {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #d9dee7;
+  border-radius: 12px;
+  text-align: left;
+  color: #273044;
+  background: #fff;
+  cursor: pointer;
+}
+.option:hover {
+  border-color: #8d82b8;
+  background: #faf8ff;
+}
+.option[aria-pressed="true"] {
+  border-color: #7860be;
+  box-shadow: inset 0 0 0 1px #7860be;
+  background: #f7f4ff;
+}
+.option:focus-visible,
+.search:focus-visible {
+  outline: 3px solid #7860be;
+  outline-offset: 2px;
+}
+.name {
+  font:
+    600 11px / 1.4 system-ui,
+    sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #5d5477;
+}
+.title {
+  font-size: 27px;
+  line-height: 1.35;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+.body {
+  font-size: 14px;
+  line-height: 1.6;
+  font-weight: 400;
+}
+.families {
+  font:
+    11px / 1.5 system-ui,
+    sans-serif;
+  color: #596477;
+  overflow-wrap: anywhere;
+}

@@ -14,11 +14,18 @@ const nextConfig = (phase: string): NextConfig => ({
   distDir: phase === PHASE_DEVELOPMENT_SERVER ? resolveDevDistDir() : ".next",
   devIndicators: false,
   async redirects() {
-    return Object.entries(retiredBabyDesigns).map(([retired, replacement]) => ({
-      source: `/templates/baby-showers/${retired}.webp`,
-      destination: `/templates/baby-showers/${replacement}.webp`,
-      permanent: true,
-    }));
+    return [
+      {
+        source: "/livacards-invites",
+        destination: "/live-cards",
+        permanent: true,
+      },
+      ...Object.entries(retiredBabyDesigns).map(([retired, replacement]) => ({
+        source: `/templates/baby-showers/${retired}.webp`,
+        destination: `/templates/baby-showers/${replacement}.webp`,
+        permanent: true,
+      })),
+    ];
   },
   typescript: {
     ignoreBuildErrors: false,
@@ -29,6 +36,7 @@ const nextConfig = (phase: string): NextConfig => ({
   ...(phase === PHASE_DEVELOPMENT_SERVER ? {} : { output: "standalone" }),
   outputFileTracingRoot: process.cwd(),
   outputFileTracingIncludes: {
+    "/api/livecard-builder/location": ["./node_modules/geo-tz/data/timezones-1970.geojson.*"],
     "/api/upload": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/uploads/*": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/studio/generate": ["./node_modules/ffmpeg-static/ffmpeg*"],
@@ -55,6 +63,7 @@ const nextConfig = (phase: string): NextConfig => ({
 
   // Keep heavy server deps out of the serverless bundle (stays under Vercel 300MB limit)
   serverExternalPackages: [
+    "geo-tz",
     "@google-cloud/vision",
     "@google-cloud/aiplatform",
     "@google-cloud/vertexai",

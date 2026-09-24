@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "We couldn't finish preparing your invitation. Your details are safe. Please try again.",
+            "We couldn’t check the wording. Your original text is unchanged. Please try again.",
         },
         { status: 503 },
       );

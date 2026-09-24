@@ -83,7 +83,7 @@ export function MainContentWrapper({
 
   return (
     <div
-      className={`relative isolate min-h-[100dvh] text-foreground flex flex-col ${shellBgClass} ${className}`}
+      className={`relative isolate w-full min-w-0 min-h-[100dvh] text-foreground flex flex-col ${shellBgClass} ${className}`}
       style={{
         minHeight: "100dvh",
         backgroundColor: isEventSharePage
@@ -104,7 +104,7 @@ export function MainContentWrapper({
         <GradientBackgroundLayer />
       ) : null}
       {showProjectGradientBackground ? (
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col">{children}</div>
+        <div className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
       ) : (
         children
       )}

@@ -228,7 +228,7 @@ test("downloads contain logistics, contacts and QR links, never Overview-only me
   assert.match(content.paragraphs.join("\n"), /mia@example.com · 555-123-4567/);
   assert.equal(content.links?.length, 3);
   assert.equal(content.links?.[1].url, "https://rsvp.example.com/reply?id=123");
-  assert.equal(content.links?.[1].display, "rsvp.example.com/reply");
+  assert.equal(content.links?.[1].display, "rsvp.example.com");
   const layout = layoutSharedCard(design, content, "digital_flyer", measure, true);
   assert.equal(layout.overflow, false);
   assert.equal(layout.qrCodes?.length, 3);
@@ -247,6 +247,65 @@ test("downloads contain logistics, contacts and QR links, never Overview-only me
     }).length,
     0,
   );
+});
+
+test("download locations print repeated venue/address text once and keep distinct venue details", () => {
+  const address = "62 Las Roblas Grande Drive, Santa Rosa Beach, Florida 32459, United States";
+  for (const venueName of ["62 Las Roblas Grande Drive", " 62 LAS ROBLAS GRANDE DRIVE. ", address]) {
+    const content = sharedCardContent({ eventDetails: { venueName, location: address } });
+    assert.deepEqual(content.paragraphs, [address]);
+    const layout = layoutSharedCard(design, content, "digital_flyer", measure, true);
+    assert.equal(layout.lines.map((line) => line.text).join(" "), address);
+    assert.equal(layout.overflow, false);
+  }
+  assert.deepEqual(
+    sharedCardContent({ eventDetails: { venueName: "Veronica's home", location: address } }).paragraphs,
+    [`Veronica's home\n${address}`],
+  );
+  assert.deepEqual(
+    sharedCardContent({ eventDetails: { venueName: "Grand Hall", location: "Grand Hall, Room 2, 123 Main St" } }).paragraphs,
+    ["Grand Hall, Room 2, 123 Main St"],
+  );
+});
+
+test("additional stops deduplicate names and addresses while retaining each stop's time and notes", () => {
+  const address = "62 Las Roblas Grande Drive, Santa Rosa Beach, Florida 32459";
+  const content = sharedCardContent({
+    eventDetails: {
+      additionalLocations: [
+        { label: "62 Las Roblas Grande Drive", venue: "62 Las Roblas Grande Drive", address, timeText: "6:30 PM" },
+        { label: "Dinner", venue: "Grand Hall", location: "Grand Hall, Room 2, 123 Main St", timeText: "8:00 PM", description: "Use the side entrance" },
+        { label: "After-party", venue: "Grand Hall", address: "123 Main St", timeText: "10:00 PM" },
+      ],
+    },
+  });
+  assert.deepEqual(content.paragraphs, [
+    `${address}\n6:30 PM`,
+    "Dinner\nGrand Hall, Room 2, 123 Main St\n8:00 PM\nUse the side entrance",
+    "After-party\nGrand Hall\n123 Main St\n10:00 PM",
+  ]);
+});
+
+test("every printed website label is domain-only while QR destinations retain paths, queries and fragments", () => {
+  const urls = [
+    "https://envitefy.com/event/home?guest=123#rsvp",
+    "https://www.amazon.com/wedding/share/our-day?ref=invite",
+    "https://registry.example.org:8443/a#list",
+    "https://gifts.example.co.uk/list/123",
+  ];
+  for (const url of urls) {
+    const expected = new URL(url);
+    for (const source of [
+      { publicUrl: url },
+      { eventDetails: { rsvpEnabled: true, rsvpUrl: url } },
+      { eventDetails: { registryLink: url } },
+    ]) {
+      const content = sharedCardContent(source);
+      assert.equal(content.links?.[0].display, expected.hostname);
+      const layout = layoutSharedCard(design, content, "digital_flyer", measure, true);
+      assert.equal(layout.qrCodes?.[0].url, expected.href);
+    }
+  }
 });
 
 test("themed pairings use distinct display and supporting type without changing approved wording", () => {

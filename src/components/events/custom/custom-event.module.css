@@ -1,4 +1,5 @@
 .page {
+  font-family: var(--event-body-font, system-ui, sans-serif);
   background: var(--event-page);
   color: var(--event-ink);
   min-width: 0;
@@ -234,6 +235,7 @@
 }
 .field {
   display: grid;
+  min-width: 0;
   gap: 8px;
   font-size: 13px;
   font-weight: 600;

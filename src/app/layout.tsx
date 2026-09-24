@@ -12,7 +12,7 @@ import { themeColorPalette } from "@/lib/theme-color";
 import { Suspense } from "react";
 import type { CSSProperties } from "react";
 
-// Minimal font footprint: rely on system stacks set in globals.css (.font-vars).
+// Shared font stacks; locally bundled typefaces are downloaded only when used.
 const fontVarsClass = "font-vars";
 const siteUrl = (
   process.env.NEXT_PUBLIC_BASE_URL ||

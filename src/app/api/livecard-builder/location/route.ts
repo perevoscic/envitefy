@@ -34,7 +34,8 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json(
       {
-        error: "We couldn’t finish preparing your location. Please try again.",
+        error:
+          "The location lookup is temporarily unavailable. Your address is still here. Please try again.",
       },
       { status: 503 },
     );

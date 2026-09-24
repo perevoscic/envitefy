@@ -121,6 +121,7 @@ export async function drawCardText(
 export async function composeSharedCard(
   source: CardTextSource,
   mode: "live_card" | "digital_flyer",
+  mimeType: "image/webp" | "image/jpeg" = "image/webp",
 ): Promise<string> {
   const design = source.sharedDesign;
   if (!design) throw new Error("The invitation design is missing.");
@@ -157,5 +158,5 @@ export async function composeSharedCard(
     height,
   );
   context.drawImage(text, 0, 0);
-  return canvas.toDataURL("image/webp", 0.92);
+  return canvas.toDataURL(mimeType, mimeType === "image/jpeg" ? 0.95 : 0.92);
 }

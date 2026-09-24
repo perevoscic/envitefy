@@ -63,6 +63,7 @@ import sidebarBrandIcon from "../../public/brand/e-only.png";
 import sidebarBrandWordmark from "../../public/brand/envitefy-wordmark.png";
 import { adminNavItems, type AdminNavItemId } from "@/components/admin/nav";
 import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
+import { LiveCardIcon } from "@/components/icons/LiveCardIcon";
 import EventSidebar from "@/components/navigation/EventSidebar";
 import MobileNavHeader from "@/components/navigation/MobileNavHeader";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
@@ -505,7 +506,7 @@ function RootNavigationPanel({
       <div className="space-y-1.5">
         <SidebarLink link={{ label: "Home", href: "/", icon: <Home />, onClick: onHome, active: isHomeActive }} />
         <SidebarLink link={{ label: "Snap / Upload", icon: <Upload />, onClick: onSnapUpload, active: isSnapUploadActive }} />
-        <SidebarLink link={{ label: "Live Card", icon: <Mail aria-hidden="true" />, onClick: onLiveCard, active: pathname === "/livacards-invites" }} />
+        <SidebarLink link={{ label: "Live Card", icon: <LiveCardIcon />, onClick: onLiveCard, active: pathname === "/live-cards" }} />
         {hasCreateEventAccess ? (
           <SidebarLink link={{ label: createEntryLabel, icon: <Plus />, onClick: onCreate, active: isCreateEntryActive }} />
         ) : null}

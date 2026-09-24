@@ -455,6 +455,7 @@ export default async function SharedCardPage(props: {
       returnHref={returnHref}
       embeddedPreview={ownerPreviewEmbedded}
       previewMode={isOwner && explicitOwnerPreview}
+      canDownload={isOwner}
       celebrationKind={celebrationKind}
     />
   );

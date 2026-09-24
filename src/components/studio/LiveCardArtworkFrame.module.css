@@ -53,7 +53,8 @@
 .content {
   position: absolute;
   inset: 0;
-  overflow: hidden;
+  /* Focused popup fields scroll their body, never the artwork's blurred layer. */
+  overflow: clip;
   border-radius: inherit;
 }
 

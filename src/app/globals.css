@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "../components/birthdays/redesign/birthday-fonts.css";
+@import "./gallery-fonts.css";
 
 /* Keep each template's existing photo effects while applying its automatic hue. */
 .template-hero-image {

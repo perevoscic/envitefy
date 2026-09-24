@@ -45,6 +45,8 @@ const files = [
   "src/components/studio/StudioLiveCardActionSurface.rsvp-mailto.source.test.mjs",
   "src/hooks/useVisualViewportInsets.test.mjs",
   "scripts/lib/create-offline-network.test.mjs",
+  "scripts/livecard-location-backend.test.cjs",
+  "scripts/livecard-headline-backend.test.cjs",
 ];
 const result = spawnSync(process.execPath, [
   "--import", "./scripts/lib/create-offline-network.mjs", "--test", "--test-concurrency=4", ...new Set(files),

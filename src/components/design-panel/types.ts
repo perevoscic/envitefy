@@ -49,6 +49,7 @@ export type TitleFontOption = {
   id: string;
   label: string;
   stack: string;
+  category?: string;
 };
 
 export type HistoryStack<T> = {
