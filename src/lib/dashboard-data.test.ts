@@ -9,6 +9,19 @@ import {
   toDashboardEvent,
 } from "./dashboard-data.ts";
 
+test("dashboard preserves public product routes, saved slugs, and owner workspace links", () => {
+  for (const [data, publicHref, ownerHref] of [
+    [{ primaryOutput: "live_card" }, "/card/stable-address", "/event/stable-address"],
+    [{ createdVia: "template", signupForm: {}, templateEditor: { category: "signup-forms" } }, "/smart-signup-form/stable-address", "/smart-signup-form/stable-address"],
+    [{ createdVia: "template", templateEditor: { category: "future-category" } }, "/event/stable-address", "/event/stable-address"],
+    [{ createdVia: "ocr" }, "/event/stable-address", "/event/stable-address"],
+  ] as const) {
+    const event = toDashboardEvent({ id: "saved", title: "Menu invite signup", public_slug: "stable-address", data: { ...data, startAt: "2030-10-10T18:00:00Z" } });
+    assert.equal(event?.publicHref, publicHref);
+    assert.equal(event?.ownerHref, ownerHref);
+  }
+});
+
 test("dashboard presents legacy clinical scans under Medical Appointments with the patient title", () => {
   const event = toDashboardEvent({ id: "medical-scan", title: "Emerald ENT Estab Pt Appointment", data: {
     createdVia: "ocr", category: "Appointments", startISO: "2030-11-02T08:10:00",

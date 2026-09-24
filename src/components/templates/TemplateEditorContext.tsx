@@ -61,6 +61,7 @@ export type TemplateEditorRuntime = {
   initial: EditorSnapshot;
   authenticated: boolean;
   published?: boolean;
+  hasUnpublishedChanges?: boolean;
   signupRequiresInvitation?: boolean;
   record: (key: string, value: DraftValue) => void;
   requestSave: () => Promise<void>;
@@ -500,7 +501,9 @@ export default function TemplateEditorProvider({
           await deleteTemplateDraft(current.id).catch(() => {});
           progress.allowNavigation(() =>
             router.push(
-              category === "signup-forms" ? `/smart-signup-form/${eventId}` : `/event/${eventId}`,
+              category === "signup-forms"
+                ? `/smart-signup-form/${eventId}?published=1`
+                : `/event/${eventId}`,
             ),
           );
         }
@@ -579,6 +582,7 @@ export default function TemplateEditorProvider({
       initial: initial || {},
       authenticated,
       published,
+      hasUnpublishedChanges: !published || dirty,
       signupRequiresInvitation: draft.current?.signupRequiresInvitation,
       record,
       requestSave,
@@ -595,7 +599,7 @@ export default function TemplateEditorProvider({
         return url;
       },
     }),
-    [category, templateId, initial, authenticated, published, record, requestSave, persist],
+    [category, templateId, initial, authenticated, published, dirty, record, requestSave, persist],
   );
 
   const returnUrl = `${templateEditorHref(category, templateId)}?${editId && !draft.current ? `edit=${encodeURIComponent(editId)}` : `draft=${draft.current?.id || ""}`}`;

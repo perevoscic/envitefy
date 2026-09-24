@@ -23,7 +23,7 @@
     "test:create-campaign": "node --test scripts/create-experience-campaign.test.mjs scripts/lib/create-campaign-*.test.mjs",
     "test:create-remediation": "node scripts/run-create-remediation-tests.mjs",
     "test:calendar": "node --test src/utils/calendar-*.test.* src/components/CalendarAction.test.mjs src/components/EventActions.calendar.test.mjs src/components/SimpleTemplateView.actions.test.cjs src/lib/calendar-preference.test.mjs",
-    "test:create-browser": "node --import ./scripts/lib/create-offline-network.mjs --test --test-concurrency=1 scripts/create-guest-preview-offline.test.cjs scripts/create-guest-rsvp-offline.test.cjs scripts/event-messages-browser.test.cjs scripts/owner-card-preview-browser.test.cjs",
+    "test:create-browser": "node --import ./scripts/lib/create-offline-network.mjs --test --test-concurrency=1 scripts/create-guest-preview-offline.test.cjs scripts/create-guest-rsvp-offline.test.cjs scripts/event-messages-browser.test.cjs scripts/owner-card-preview-browser.test.cjs scripts/template-single-section-browser.test.cjs",
     "qa:create:plan": "node scripts/create-experience-campaign.mjs --plan",
     "qa:create:offline": "node scripts/create-experience-campaign.mjs --offline",
     "qa:create:run": "node scripts/create-experience-campaign.mjs --run",

@@ -6,7 +6,7 @@ import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { getEventHistoryById, getMicrosoftRefreshToken, getUserByEmail, query } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { toGoogleEvent, toMicrosoftEvent, type NormalizedEvent } from "@/lib/mappers";
-import { buildEventPath } from "@/utils/event-url";
+import { buildEventProductPath } from "@/utils/event-product-route";
 
 type CalendarProvider = "google" | "microsoft";
 type JsonRecord = Record<string, unknown>;
@@ -406,7 +406,7 @@ export async function syncSavedEventToCalendar({
     });
   }
 
-  const eventPath = buildEventPath(row.id, row.title, undefined, row.public_slug || undefined);
+  const eventPath = buildEventProductPath({ eventId: row.id, title: row.title, data: row.data, publicSlug: row.public_slug });
   const eventUrl = new URL(eventPath, origin).toString();
   const hasFlyer = isRecord(data.attachment) || typeof data.thumbnail === "string";
   const mediaIdentifier = encodeURIComponent(row.public_slug || row.id);

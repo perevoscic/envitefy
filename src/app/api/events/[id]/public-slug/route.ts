@@ -1,3 +1,4 @@
+import { buildEventProductPath } from "@/utils/event-product-route";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
@@ -60,6 +61,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       ok: true,
       publicSlug,
       segment: buildEventSlugSegment(updated.id, updated.title, publicSlug),
+      publicPath: buildEventProductPath({ eventId: updated.id, title: updated.title, data: updated.data, publicSlug }),
       eventPath: buildEventPath(updated.id, updated.title, undefined, publicSlug),
       cardPath: buildStudioCardPath(updated.id, updated.title, undefined, publicSlug),
       signupFormPath: `/smart-signup-form/${buildEventSlugSegment(

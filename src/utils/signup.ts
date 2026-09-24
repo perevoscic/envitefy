@@ -1,4 +1,5 @@
 import { normalizeEventGuestPlanning } from "@/lib/event-guest-planning";
+import { normalizeEventGuestActions } from "@/lib/event-guest-actions";
 import { allowsPublicSignup } from "@/lib/signup-access";
 import { normalizeSignupAppearance } from "@/lib/signup-themes";
 import {
@@ -341,6 +342,7 @@ export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
       ? { boardDescription: form.boardDescription.trim().slice(0, 2000) }
       : {}),
     appearance: normalizeSignupAppearance(form.appearance),
+    guestActions: normalizeEventGuestActions(form.guestActions),
     starterId: typeof form.starterId === "string" ? form.starterId.slice(0, 80) : null,
     locationMode:
       form.locationMode === "online" || form.locationMode === "tba"

@@ -7,6 +7,22 @@ const repoRoot = process.cwd();
 
 const loadModelModule = () => import("./left-sidebar.model.ts");
 
+test("sidebar uses saved product metadata for every category and keeps owner links separate", async () => {
+  const { buildGroupedEventLists } = await loadModelModule();
+  const history = [
+    { id: "card", title: "Dinner", public_slug: "dinner", data: { createdVia: "livecard-builder" } },
+    { id: "page", title: "Create a signup menu invite", public_slug: "school-day", data: { createdVia: "template", templateEditor: { category: "future-category" }, signupForm: {} } },
+    { id: "form", title: "Pumpkin Day", public_slug: "pumpkin-day", data: { createdVia: "template", templateEditor: { category: "signup-forms" }, signupForm: {} } },
+  ];
+  const grouped = buildGroupedEventLists({ history, getEventStartIso: () => null, buildEventPath: (id, _title, _params, slug) => `/event/${slug || id}`, isSportsPreviewFirstEvent: () => false, isInvitedEventLikeRecord: () => false, canShowOwnerRsvpDashboard: () => false });
+  const events = grouped.myEvents.upcoming.flatMap(section => section.items);
+  const card = events.find(item => item.row.id === "card");
+  assert.equal(card.publicHref, "/card/dinner");
+  assert.equal(card.ownerHref, "/event/dinner");
+  assert.equal(events.find(item => item.row.id === "page").publicHref, "/event/school-day");
+  assert.deepEqual(grouped.signupForms.upcoming.flatMap(section => section.items).map(item => item.publicHref), ["/smart-signup-form/pumpkin-day"]);
+});
+
 test("Sign-up Forms lists owned published forms and keeps drafts and invitations separate", async () => {
   const { buildGroupedEventLists, countGroupedEventItems, eventListItemMatchesPath } = await loadModelModule();
   const history = [

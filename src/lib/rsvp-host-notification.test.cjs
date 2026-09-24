@@ -3,7 +3,7 @@ const test = require("node:test");
 const loadTs = require("../../scripts/lib/event-messages-test-loader.cjs");
 const { NextResponse } = require("next/server");
 
-function setup({ hostEmail = "host@example.test", ownerEmail = "owner@example.test", changed = true, signedIn = false, self = false, guestFailure = false, saveFailure = false } = {}) {
+function setup({ eventData = {}, hostEmail = "host@example.test", ownerEmail = "owner@example.test", changed = true, signedIn = false, self = false, guestFailure = false, saveFailure = false } = {}) {
   const jobs = [];
   const host = [];
   const guest = [];
@@ -25,7 +25,7 @@ function setup({ hostEmail = "host@example.test", ownerEmail = "owner@example.te
         statements.push(sql);
         if (sql.includes("to_regclass")) return { rows: [{ exists: "rsvp_responses" }] };
         if (sql.startsWith("alter table")) return { rows: [] };
-        if (sql.startsWith("SELECT user_id")) return { rows: [{ user_id: "owner-id", title: "Livia is turning 10", public_slug: "livia", data: { category: "Birthday", rsvpEmail: hostEmail, rsvpName: "Host" } }] };
+        if (sql.startsWith("SELECT user_id")) return { rows: [{ user_id: "owner-id", title: "Livia is turning 10", public_slug: "livia", data: { category: "Birthday", rsvpEmail: hostEmail, rsvpName: "Host", ...eventData } }] };
         if (sql.includes("INSERT INTO rsvp_responses")) {
           if (saveFailure) throw new Error("Synthetic database failure");
           return { rows: changed ? [{ id: "response-id" }] : [] };
@@ -48,6 +48,15 @@ function setup({ hostEmail = "host@example.test", ownerEmail = "owner@example.te
     return result;
   } };
 }
+
+test("guest confirmation uses the public renderer while host mail keeps the workspace URL", async () => {
+  for (const [primaryOutput, prefix] of [["live_card", "card"], ["event_page", "event"], ["signup_form", "smart-signup-form"]]) {
+    const fixture = setup({ eventData: { primaryOutput } });
+    assert.equal((await fixture.submit("yes")).status, 200);
+    assert.equal(fixture.guest[0].eventUrl, `https://envitefy.com/${prefix}/livia`);
+    assert.match(fixture.host[0].dashboardUrl, /\/event\/livia\?tab=rsvps$/);
+  }
+});
 
 test("host receives Yes, Maybe and No; declined guest receives no email", async () => {
   for (const response of ["yes", "maybe", "no"]) {

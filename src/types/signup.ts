@@ -1,3 +1,4 @@
+import type { EventGuestActionVisibility } from "@/lib/event-guest-actions";
 import type { EventGuestPlanning } from "@/lib/event-guest-planning";
 import type { GalleryFontPairId } from "@/lib/font-library";
 
@@ -100,6 +101,7 @@ export type SignupForm = {
   revision?: number;
   availability?: SignupSlotAvailability[];
   guestPlanning?: EventGuestPlanning;
+  guestActions?: EventGuestActionVisibility;
   version: 1;
   enabled: boolean;
   title: string;

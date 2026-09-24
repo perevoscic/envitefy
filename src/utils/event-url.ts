@@ -2,7 +2,7 @@ import {
   buildLegacyEventSlugSegment,
   buildPublicEventSlugSegment,
   normalizePublicSlug,
-} from "./event-public-slug";
+} from "./event-public-slug.ts";
 
 const slugifyTitle = (value: string | null | undefined): string => {
   return normalizePublicSlug(value);

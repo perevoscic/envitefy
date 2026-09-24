@@ -36,6 +36,8 @@ import {
 
 type DashboardEventItem = {
   id: string;
+  publicHref?: string;
+  ownerHref?: string;
   title: string;
   startAt: string;
   endAt: string | null;
@@ -494,7 +496,7 @@ function InvitationEventCard({
                 aria-label={`Actions for ${item.title}`}
               >
                 <EventActions
-                  shareUrl={`/event/${encodeURIComponent(item.id)}`}
+                  shareUrl={item.publicHref || `/event/${encodeURIComponent(item.id)}`}
                   event={{
                     title: item.title,
                     start: item.startAt,
@@ -704,6 +706,11 @@ function buildInvitationStats(
   ].filter(Boolean) as InvitationCardStat[];
 }
 
+function dashboardEventHref(item: DashboardEventItem): string {
+  return (item.ownership === "invited" ? item.publicHref : item.ownerHref)
+    || `/event/${encodeURIComponent(item.id)}`;
+}
+
 function buildInvitationActions(
   item: DashboardEventItem,
   onForceTravel?: () => void,
@@ -712,7 +719,7 @@ function buildInvitationActions(
   secondaryAction: InvitationAction | null;
 } {
   const isInvitedWithoutResponse = item.ownership === "invited" && !item.userRsvpResponse && item.shareStatus !== "pending";
-  const eventHref = `/event/${item.id}`;
+  const eventHref = dashboardEventHref(item);
 
   if (!item.hasRsvp) {
     if (item.mapsUrl) {
@@ -842,7 +849,7 @@ export default function HomeOverviewDashboard({
     () => {
       if (!nextEvent) return null;
       const actions = buildInvitationActions(nextEvent, onForceTravel);
-      if (actions.primaryAction.external) return { primaryAction: { href: `/event/${encodeURIComponent(nextEvent.id)}`, label: "View details" }, secondaryAction: null };
+      if (actions.primaryAction.external) return { primaryAction: { href: dashboardEventHref(nextEvent), label: "View details" }, secondaryAction: null };
       return { ...actions, secondaryAction: actions.secondaryAction?.external ? null : actions.secondaryAction };
     },
     [nextEvent, onForceTravel],

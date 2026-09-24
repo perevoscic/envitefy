@@ -28,6 +28,29 @@ test("recognized templates retain dedicated dispatch before the unknown-renderer
   }
 });
 
+test("legacy event links open standalone signup forms instead of the unsupported-renderer 404", () => {
+  const statements = page.body.statements;
+  const branch = statements.find(node => ts.isIfStatement(node) && node.expression.getText(ast) === 'primaryProductOutput === "signup_form"');
+  assert.ok(branch, "standalone signup forms need a public route before the 404 fallback");
+  const route = page.getText(ast);
+  assert.ok(route.indexOf(branch.getText(ast)) > route.indexOf("if (showOwnerWorkspace && resolvedOwnerToolsTab)"), "keep the owner's management workspace available");
+  assert.ok(route.indexOf(branch.getText(ast)) < route.indexOf("const rawThumbnailValue"), "redirect before unrelated public render preparation");
+  const dispatch = new Function("primaryProductOutput", "publicEventHref", "ownerPreviewMode", "ownerPreviewEmbedded", "ownerPreviewReturnHref", "redirect", ts.transpile(branch.getText(ast)));
+  const href = "/smart-signup-form/pumpkin-day-at-upper-school-lunchroom";
+  const destinations = [];
+  for (const preview of [false, true]) {
+    dispatch("signup_form", href, preview, preview, "", next => destinations.push(next));
+  }
+  assert.deepEqual(destinations, [href, `${href}?preview=owner&embed=dashboard-preview`]);
+  destinations.length = 0;
+  dispatch("signup_form", href, true, false, "/event/pumpkin-day-at-upper-school-lunchroom?tab=event", next => destinations.push(next));
+  const preview = new URL(destinations[0], "https://envitefy.test");
+  assert.equal(preview.searchParams.get("returnTo"), "/event/pumpkin-day-at-upper-school-lunchroom?tab=event");
+  destinations.length = 0;
+  dispatch("event_page", href, false, false, "", next => destinations.push(next));
+  assert.deepEqual(destinations, [], "embedded signup forms must keep their original event renderer");
+});
+
 test("reachable sharing checks retain owner, anonymous, accepted, pending and missing-share-table behavior", async () => {
   const statements = page.body.statements;
   const start = statements.findIndex(node => ts.isVariableStatement(node) && node.declarationList.declarations[0].name.getText(ast) === "recipientAccepted");

@@ -1,11 +1,16 @@
 "use client";
 import { useTemplateEditor } from "@/components/templates/TemplateEditorContext";
 
-import { CalendarPlus, Check, Link, Navigation, Share2 } from "lucide-react";
-import { useState } from "react";
+import { CalendarPlus, Check, Link, Navigation, Share2, X } from "lucide-react";
+import { type ReactNode, useRef, useState } from "react";
 import CalendarAction from "@/components/CalendarAction";
 import { buildGoogleMapsDirectionsHref } from "@/lib/directions";
 import { resolvePublicEventShareUrl } from "@/lib/event-guest-planning";
+import {
+  EVENT_GUEST_ACTIONS,
+  type EventGuestActionId,
+  type EventGuestActionVisibility,
+} from "@/lib/event-guest-actions";
 import { buildCalendarLinks } from "@/utils/calendar-links";
 import styles from "./guest-actions.module.css";
 
@@ -29,6 +34,8 @@ export default function EventGuestActions({
   timezone,
   allDay: suppliedAllDay,
   compactMobile = false,
+  visibility = {},
+  onVisibilityChange,
 }: {
   title?: string;
   start?: string | null;
@@ -43,7 +50,10 @@ export default function EventGuestActions({
   timezone?: string;
   allDay?: boolean;
   compactMobile?: boolean;
+  visibility?: EventGuestActionVisibility;
+  onVisibilityChange?: (value: EventGuestActionVisibility) => void;
 }) {
+  const actionsRef = useRef<HTMLElement>(null);
   const [message, setMessage] = useState("");
   const [copied, setCopied] = useState(false);
   const templateEditor = useTemplateEditor();
@@ -110,9 +120,43 @@ export default function EventGuestActions({
   };
 
   const buttonClass = styles.button;
+  const hiddenActions = EVENT_GUEST_ACTIONS.filter(({ id }) => visibility[id] === false);
+  const action = (id: EventGuestActionId, content: ReactNode) => {
+    if (visibility[id] === false) return null;
+    if (!onVisibilityChange) return content;
+    const label = EVENT_GUEST_ACTIONS.find((item) => item.id === id)!.label;
+    return (
+      <div className={styles.editableAction}>
+        {content}
+        <button
+          type="button"
+          className={styles.removeAction}
+          data-remove-action={id}
+          aria-label={`Remove ${label}`}
+          title={`Remove ${label}`}
+          onClick={() => {
+            onVisibilityChange({ ...visibility, [id]: false });
+            setMessage(`${label} removed. You can restore it below.`);
+            if (id === "share") setManualShareUrl("");
+            requestAnimationFrame(() =>
+              actionsRef.current
+                ?.querySelector<HTMLButtonElement>(`[data-restore-action="${id}"]`)
+                ?.focus({ preventScroll: true }),
+            );
+          }}
+        >
+          <span>
+            <X size={14} aria-hidden="true" />
+          </span>
+        </button>
+      </div>
+    );
+  };
+  if (hiddenActions.length === EVENT_GUEST_ACTIONS.length && !onVisibilityChange) return null;
 
   return (
     <section
+      ref={actionsRef}
       aria-label="Plan your visit"
       className={`${styles.actions} ${compactMobile ? styles.compactMobile : ""}`}
       style={inverse ? { color: "#ffffff" } : undefined}
@@ -134,57 +178,98 @@ export default function EventGuestActions({
         </p>
       ) : null}
       <div className={`${styles.actionRow} flex flex-wrap items-start justify-center gap-3`}>
-        {links ? (
-          <CalendarAction links={links} className={buttonClass}>
-            {compactMobile
-              ? (label) => (
-                  <>
-                    <CalendarPlus className="h-4 w-4 shrink-0" aria-hidden="true" />
-                    <span className={styles.fullLabel}>{label}</span>
-                    <span className={styles.shortLabel} aria-hidden="true">
-                      Calendar
-                    </span>
-                  </>
-                )
-              : undefined}
-          </CalendarAction>
-        ) : null}
-        {destination ? (
-          <a
-            href={buildGoogleMapsDirectionsHref(destination)}
-            target="_blank"
-            rel="noopener noreferrer"
+        {action(
+          "calendar",
+          links ? (
+            <CalendarAction links={links} className={buttonClass}>
+              {compactMobile
+                ? (label) => (
+                    <>
+                      <CalendarPlus className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      <span className={styles.fullLabel}>{label}</span>
+                      <span className={styles.shortLabel} aria-hidden="true">
+                        Calendar
+                      </span>
+                    </>
+                  )
+                : undefined}
+            </CalendarAction>
+          ) : onVisibilityChange ? (
+            <button type="button" className={buttonClass} disabled>
+              <CalendarPlus size={16} aria-hidden="true" />
+              Add to calendar
+            </button>
+          ) : null,
+        )}
+        {action(
+          "directions",
+          destination ? (
+            <a
+              href={buildGoogleMapsDirectionsHref(destination)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonClass}
+              aria-label="Get directions"
+            >
+              <Navigation className="h-4 w-4" aria-hidden="true" />
+              <span className={styles.fullLabel}>Get directions</span>
+              {compactMobile && (
+                <span className={styles.shortLabel} aria-hidden="true">
+                  Directions
+                </span>
+              )}
+            </a>
+          ) : onVisibilityChange ? (
+            <button type="button" className={buttonClass} disabled>
+              <Navigation size={16} aria-hidden="true" />
+              Get directions
+            </button>
+          ) : null,
+        )}
+        {action(
+          "share",
+          <button
+            type="button"
+            onClick={() => void handleShare()}
             className={buttonClass}
-            aria-label="Get directions"
+            aria-label={copied ? "Link copied" : "Share event"}
           >
-            <Navigation className="h-4 w-4" aria-hidden="true" />
-            <span className={styles.fullLabel}>Get directions</span>
+            {copied ? (
+              <Check className="h-4 w-4" aria-hidden="true" />
+            ) : (
+              <Share2 className="h-4 w-4" aria-hidden="true" />
+            )}{" "}
+            <span className={styles.fullLabel}>{copied ? "Link copied" : "Share event"}</span>
             {compactMobile && (
               <span className={styles.shortLabel} aria-hidden="true">
-                Directions
+                {copied ? "Copied" : "Share"}
               </span>
             )}
-          </a>
-        ) : null}
-        <button
-          type="button"
-          onClick={() => void handleShare()}
-          className={buttonClass}
-          aria-label={copied ? "Link copied" : "Share event"}
-        >
-          {copied ? (
-            <Check className="h-4 w-4" aria-hidden="true" />
-          ) : (
-            <Share2 className="h-4 w-4" aria-hidden="true" />
-          )}{" "}
-          <span className={styles.fullLabel}>{copied ? "Link copied" : "Share event"}</span>
-          {compactMobile && (
-            <span className={styles.shortLabel} aria-hidden="true">
-              {copied ? "Copied" : "Share"}
-            </span>
-          )}
-        </button>
+          </button>,
+        )}
       </div>
+      {onVisibilityChange && hiddenActions.length > 0 && (
+        <div className={styles.restoreActions} role="group" aria-label="Removed actions">
+          {hiddenActions.map(({ id, restoreLabel }) => (
+            <button
+              key={id}
+              type="button"
+              data-restore-action={id}
+              onClick={() => {
+                onVisibilityChange({ ...visibility, [id]: true });
+                setMessage(`${restoreLabel} restored.`);
+                requestAnimationFrame(() =>
+                  actionsRef.current
+                    ?.querySelector<HTMLButtonElement>(`[data-remove-action="${id}"]`)
+                    ?.focus({ preventScroll: true }),
+                );
+              }}
+            >
+              + Restore {restoreLabel}
+            </button>
+          ))}
+        </div>
+      )}
       {message ? (
         <p role="status" className="mx-auto mt-3 max-w-lg text-sm">
           {message}

@@ -63,16 +63,49 @@ const baseMocks = {
     RotateCcw: (props) => React.createElement("svg", props),
     Sparkles: (props) => React.createElement("svg", props),
     Undo2: (props) => React.createElement("svg", props),
+    CalendarPlus: (props) => React.createElement("svg", props),
+    Navigation: (props) => React.createElement("svg", props),
+    Share2: (props) => React.createElement("svg", props),
+    Link: (props) => React.createElement("svg", props),
   },
   "next/navigation": { useRouter: () => ({}) },
   "next-auth/react": { useSession: () => ({ status: "authenticated", update: async () => {} }) },
   "@/components/auth/AuthModal": { __esModule: true, default: () => null },
   "@/components/EventDeleteModal": { __esModule: true, default: () => null },
   "@/components/templates/TemplateEditorContext": { useTemplateEditor: () => null },
+  "@/components/CalendarAction": { __esModule: true, default: ({ className }) => React.createElement("button", { className, type: "button", "aria-label": "Add to calendar" }, "Add to calendar") },
   "@/utils/media-upload-client": { validateClientUploadFile: () => null },
   "@/utils/thumbnail": { readFileAsDataUrl: async () => "" },
 };
 const { createSignupThemeForm } = load("src/lib/signup-starters.ts", baseMocks);
+
+test("signup templates remove guest actions independently and keep editor controls out of previews", () => {
+  const Page = load("src/components/smart-signup-form/SignupPageRenderer.tsx", baseMocks).default;
+  const { sanitizeSignupForm } = load("src/utils/signup.ts", baseMocks);
+  const { buildTemplateDraftPayload } = load("src/lib/template-draft-payload.ts", baseMocks);
+  const form = { ...createSignupThemeForm("harvest-table"), start: "2030-10-30", venue: "Upper School Lunchroom", location: "Gateway Academy", locationMode: "in-person" };
+  const editing = { onChange() {}, details: null, onDetails() {} };
+  const render = (value, edit = false) => renderToStaticMarkup(React.createElement(Page, { form: value, interactivePreview: true, editing: edit ? editing : undefined }));
+  const editor = render(form, true);
+  for (const label of ["Add to calendar", "Get directions", "Share event"]) assert.match(editor, new RegExp(`aria-label="Remove ${label}"`));
+  assert.doesNotMatch(editor, /<button\b[^>]*>(?:(?!<\/button>)[\s\S])*<button\b/);
+  const hidden = sanitizeSignupForm({ ...form, guestActions: { directions: false } });
+  assert.equal(hidden.location, form.location);
+  assert.equal(hidden.venue, form.venue);
+  const guest = render(hidden);
+  assert.doesNotMatch(guest, /aria-label="Get directions"|aria-label="Remove |Restore Directions/);
+  assert.match(guest, /Upper School Lunchroom/);
+  assert.match(guest, /aria-label="Add to calendar"/);
+  assert.match(guest, /aria-label="Share event"/);
+  assert.match(render(hidden, true), /Restore Directions/);
+  const payload = buildTemplateDraftPayload({ form: hidden }, "signup-forms", "America/Chicago");
+  assert.deepEqual(payload.data.signupForm.guestActions, { directions: false });
+  assert.deepEqual(sanitizeSignupForm(JSON.parse(JSON.stringify(payload.data.signupForm))).guestActions, { directions: false });
+  const none = { ...form, guestActions: { calendar: false, directions: false, share: false } };
+  assert.doesNotMatch(render(none), /Plan your visit|Restore /);
+  assert.match(render(none, true), /Restore Calendar/);
+  assert.match(render({ ...hidden, guestActions: { directions: true } }), /aria-label="Get directions"/);
+});
 
 test("guest preview and sharing describe actual public or invitation access", () => {
   const Page = load("src/components/smart-signup-form/SignupPageRenderer.tsx", baseMocks).default;

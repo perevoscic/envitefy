@@ -10,6 +10,7 @@ import EventGuestActions from "@/components/event-templates/EventGuestActions";
 import SignupFormFooter from "@/components/smart-signup-form/SignupFormFooter";
 import SignupOwnerActions from "@/components/smart-signup-form/SignupOwnerActions";
 import SignupPageRenderer from "@/components/smart-signup-form/SignupPageRenderer";
+import SignupPublishConfirmation from "@/components/smart-signup-form/SignupPublishConfirmation";
 import { AcceptSignupInvitation } from "@/components/smart-signup-form/SignupSharing";
 import SignupViewer from "@/components/smart-signup-form/SignupViewer";
 import { absoluteUrl } from "@/lib/absolute-url";
@@ -354,6 +355,7 @@ export default async function SignupPage({
   const returnHref = eventPreviewReturnHref(query.returnTo, canonicalPath);
   if (awaitedParams.id !== canonicalSegment) {
     const previewSearch = new URLSearchParams();
+    if (row.user_id === userId && query.published === "1") previewSearch.set("published", "1");
     if (ownerPreviewMode) {
       previewSearch.set("preview", "owner");
       previewSearch.set("returnTo", returnHref);
@@ -464,6 +466,9 @@ export default async function SignupPage({
   }
   return (
     <main>
+      {isOwner && !ownerPreviewMode && query.published === "1" && data.status === "published" && (
+        <SignupPublishConfirmation />
+      )}
       {smartSignupStructuredData ? (
         <Script id="ld-smart-signup-form" type="application/ld+json">
           {JSON.stringify(smartSignupStructuredData).replace(/</g, "\\u003c")}
@@ -484,6 +489,7 @@ export default async function SignupPage({
           }
           actions={
             <EventGuestActions
+              visibility={visibleForm.guestActions}
               compactMobile
               shareUrl={`/smart-signup-form/${canonicalSegment}`}
               eventId={row.id}

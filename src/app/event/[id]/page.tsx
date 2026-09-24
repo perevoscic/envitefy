@@ -453,9 +453,7 @@ export async function generateMetadata(props: {
 
   // Generate canonical URL
   const canonicalPath = row
-    ? isCardFirstEventProduct(getPrimaryEventProductOutput(data, title))
-      ? buildStudioCardPath(row.id, title, undefined, publicSlug)
-      : buildEventPath(row.id, title, undefined, publicSlug)
+    ? buildEventProductPath({ eventId: row.id, title, data, publicSlug })
     : `/event/${encodeURIComponent(awaitedParams.id)}`;
   const url = await absoluteUrl(canonicalPath);
 
@@ -1451,6 +1449,18 @@ export default async function EventPage({
       />,
       { suppressCelebration: true },
     );
+  }
+
+  // Standalone signup forms use their own public renderer. Keep legacy event links
+  // working, including the embedded preview in the owner's event workspace.
+  if (primaryProductOutput === "signup_form") {
+    const signupSearch = new URLSearchParams();
+    if (ownerPreviewMode) {
+      signupSearch.set("preview", "owner");
+      if (ownerPreviewEmbedded) signupSearch.set("embed", "dashboard-preview");
+      if (ownerPreviewReturnHref) signupSearch.set("returnTo", ownerPreviewReturnHref);
+    }
+    redirect(`${publicEventHref}${signupSearch.size ? `?${signupSearch}` : ""}`);
   }
 
   // Sanitize persisted media URLs: loopback absolute URLs (e.g. `http://localhost:3000/...`)

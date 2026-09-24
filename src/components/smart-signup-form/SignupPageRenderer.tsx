@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import EventGuestActions from "@/components/event-templates/EventGuestActions";
+import { EVENT_GUEST_ACTIONS } from "@/lib/event-guest-actions";
 import { resolveSignupDesign, resolveSignupThemeStyle, signupContrast } from "@/lib/signup-themes";
 import type { SignupForm } from "@/types/signup";
 import SignupFormFooter from "./SignupFormFooter";
@@ -38,6 +40,7 @@ export default function SignupPageRenderer({
   const hasHeaderArtwork =
     form.appearance?.headerLayout !== "none" &&
     Boolean(form.header?.backgroundImage || form.header?.images?.length);
+  const showActions = editing || EVENT_GUEST_ACTIONS.some(({ id }) => form.guestActions?.[id] !== false);
   return (
     <div
       className={`${styles.page} ${className}`}
@@ -56,7 +59,20 @@ export default function SignupPageRenderer({
         )}
         <SignupTemplateHeader
           form={form}
-          actions={actions}
+          actions={showActions && (actions || ((editing || interactivePreview) && (
+            <EventGuestActions
+              title={form.title}
+              start={form.start}
+              end={form.end}
+              location={form.locationMode === "in-person" || !form.locationMode ? [form.venue, form.location].filter(Boolean).join(", ") : ""}
+              description={form.description || ""}
+              timezone={form.timezone || undefined}
+              allDay={form.allDay ?? undefined}
+              preview
+              visibility={form.guestActions}
+              onVisibilityChange={editing ? (guestActions) => editing.onChange({ ...form, guestActions }) : undefined}
+            />
+          )))}
           imageActions={imageActions}
           imageLoading={imageLoading}
           editing={editing}

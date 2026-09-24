@@ -10,6 +10,7 @@ import { sendHostRsvpNotificationEmail, sendRsvpConfirmationEmail } from "@/lib/
 import { validGuestEmail } from "@/lib/event-message-types";
 import { readOwnerRsvpSettings } from "@/lib/owner-rsvp-settings";
 import { buildPublicAssetUrl } from "@/lib/public-asset-url";
+import { buildEventProductPath } from "@/utils/event-product-route";
 import {
   createServerTimingTracker,
   isTimingRequested,
@@ -617,7 +618,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const publicSlug = firstString(eventRow.public_slug, eventRow.data?.publicSlug);
     const eventUrl = await timing.time("event_url", () =>
-      absoluteUrl(`/event/${encodeURIComponent(publicSlug || eventId)}`),
+      absoluteUrl(buildEventProductPath({ eventId, title: eventRow.title, data: eventRow.data, publicSlug })),
     );
     const eventTitle = buildEventTitle(eventRow);
     const dateLabel = buildDateLabel(eventRow.data);

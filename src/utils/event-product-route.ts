@@ -1,7 +1,7 @@
 import type { RequestedOutput } from "@/lib/concierge/types";
-import { buildEventPath, buildEventSlugSegment, buildStudioCardPath } from "./event-url";
+import { buildEventPath, buildEventSlugSegment, buildStudioCardPath } from "./event-url.ts";
 
-type EventProductOutput = RequestedOutput;
+export type EventProductOutput = RequestedOutput;
 
 const PRODUCT_OUTPUTS = new Set<EventProductOutput>([
   "event_page",
@@ -136,6 +136,14 @@ export function getPrimaryEventProductOutput(
   const category = String(record.category || "")
     .trim()
     .toLowerCase();
+  const templateEditor = asRecord(record.templateEditor);
+  if (
+    asRecord(record.signupForm) &&
+    (templateEditor?.category === "signup-forms" ||
+      /^(?:smart[\s_-]*)?sign[\s_-]*up(?:[\s_-]*forms?)?$/.test(category))
+  ) {
+    return "signup_form";
+  }
   const isDiscoveryEventPage =
     /(?:^|[-_])discovery(?:$|[-_])/.test(createdVia) ||
     discoveryWorkflow === "gymnastics" ||
@@ -143,6 +151,28 @@ export function getPrimaryEventProductOutput(
     category === "sport_gymnastics" ||
     category === "sport_gymnastics_schedule";
   if (isDiscoveryEventPage) return "event_page";
+
+  if (createdVia === "livecard-builder" || asRecord(record.studioCard) || asRecord(record.liveCard)) {
+    return "live_card";
+  }
+  // Creation metadata outranks words such as "invite", "menu", or "signup"
+  // in an event's title. New template categories inherit the event-page route.
+  const sourceContext = asRecord(record.sourceContext);
+  if (
+    templateEditor ||
+    asRecord(record.customEventPage) ||
+    asRecord(record.manualEditor) ||
+    /^(?:template|simple-template|manual|custom-event-page)$/.test(createdVia) ||
+    /(?:ocr|scan|snap|upload)/.test(createdVia) ||
+    record.ocrSkin ||
+    record.scanSchedule ||
+    ["upload", "snap", "ocr_text"].includes(String(sourceContext?.type || "").toLowerCase())
+  ) {
+    return "event_page";
+  }
+
+  // Older standalone signup forms did not always save category metadata.
+  if (!category && asRecord(record.signupForm)) return "signup_form";
 
   const inferredText = [
     record.title,
@@ -184,16 +214,18 @@ export function buildEventProductPath(args: {
   output?: RequestedOutput | null;
   publicSlug?: string | null;
 }): string {
+  const publicSlug = args.publicSlug || asRecord(args.data)?.publicSlug;
+  const slug = typeof publicSlug === "string" ? publicSlug : null;
   const output =
     normalizeOutput(args.output) || getPrimaryEventProductOutput(args.data, args.title);
 
   if (output === "signup_form") {
-    return `/smart-signup-form/${buildEventSlugSegment(args.eventId, args.title, args.publicSlug)}`;
+    return `/smart-signup-form/${buildEventSlugSegment(args.eventId, args.title, slug)}`;
   }
 
   if (output && CARD_FIRST_OUTPUTS.has(output)) {
-    return buildStudioCardPath(args.eventId, args.title, undefined, args.publicSlug);
+    return buildStudioCardPath(args.eventId, args.title, undefined, slug);
   }
 
-  return buildEventPath(args.eventId, args.title, undefined, args.publicSlug);
+  return buildEventPath(args.eventId, args.title, undefined, slug);
 }

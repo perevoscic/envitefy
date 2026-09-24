@@ -33,6 +33,63 @@
 .button:hover {
   filter: brightness(0.94);
 }
+
+.editableAction {
+  position: relative;
+  display: inline-flex;
+  margin: 0.5rem 0.35rem 0;
+}
+.removeAction {
+  position: absolute;
+  top: -22px;
+  right: -18px;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.removeAction span {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: var(--guest-action-surface, var(--signup-surface, Canvas));
+  color: var(--guest-action-ink, var(--signup-text, CanvasText));
+  box-shadow: 0 2px 5px #0002;
+}
+.removeAction:hover span {
+  transform: scale(1.08);
+}
+.removeAction:focus-visible,
+.restoreActions button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+.restoreActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.restoreActions button {
+  min-height: 44px;
+  padding: 0.5rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8125rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
 .shortLabel {
   display: none;
 }

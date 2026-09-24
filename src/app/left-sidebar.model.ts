@@ -1,3 +1,9 @@
+import {
+  buildEventProductPath,
+  getPrimaryEventProductOutput,
+  isCardFirstEventProduct,
+  type EventProductOutput,
+} from "../utils/event-product-route.ts";
 import { buildScanPersonalization, resolveSavedScanPresentation } from "../lib/ocr/personalization.ts";
 import type { CreationThreadSummary } from "../lib/concierge/types.ts";
 import { isEventDraft } from "../lib/event-draft-access.ts";
@@ -679,57 +685,6 @@ function createGroupedBuckets() {
   };
 }
 
-type SidebarProductOutput =
-  | "event_page"
-  | "live_card"
-  | "digital_flyer"
-  | "signup_form"
-  | "invitation"
-  | "rsvp_page"
-  | "printable_flyer"
-  | "instagram_story"
-  | "thank_you_card"
-  | "menu"
-  | "welcome_sign"
-  | "whatsapp"
-  | "text_message"
-  | "reminder";
-
-const SIDEBAR_PRODUCT_OUTPUTS = new Set<SidebarProductOutput>([
-  "event_page",
-  "live_card",
-  "digital_flyer",
-  "signup_form",
-  "invitation",
-  "rsvp_page",
-  "printable_flyer",
-  "instagram_story",
-  "thank_you_card",
-  "menu",
-  "welcome_sign",
-  "whatsapp",
-  "text_message",
-  "reminder",
-]);
-
-const SIDEBAR_CARD_FIRST_OUTPUTS = new Set<SidebarProductOutput>([
-  "live_card",
-  "digital_flyer",
-  "printable_flyer",
-  "invitation",
-  "instagram_story",
-  "thank_you_card",
-  "menu",
-  "welcome_sign",
-]);
-
-const SIDEBAR_SECONDARY_OUTPUTS = new Set<SidebarProductOutput>([
-  "rsvp_page",
-  "whatsapp",
-  "text_message",
-  "reminder",
-]);
-
 function asSidebarRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -780,122 +735,6 @@ function isSidebarScannedOrUploadedEvent(data: unknown): boolean {
   ].some(hasSidebarUploadedEventMediaPath);
 }
 
-function normalizeSidebarProductOutput(value: unknown): SidebarProductOutput | null {
-  if (typeof value !== "string") return null;
-  const normalized = value
-    .trim()
-    .toLowerCase()
-    .replace(/\//g, "_")
-    .replace(/[\s-]+/g, "_");
-  if (normalized === "flyer") return "digital_flyer";
-  if (
-    normalized === "flyer_invite" ||
-    normalized === "flyer_invitation" ||
-    normalized === "invitation" ||
-    normalized === "invite"
-  ) {
-    return "digital_flyer";
-  }
-  if (normalized === "printable") return "printable_flyer";
-  if (normalized === "story") return "instagram_story";
-  if (normalized === "signup" || normalized === "smart_signup") return "signup_form";
-  return SIDEBAR_PRODUCT_OUTPUTS.has(normalized as SidebarProductOutput)
-    ? (normalized as SidebarProductOutput)
-    : null;
-}
-
-function inferSidebarProductOutputFromText(value: unknown): SidebarProductOutput | null {
-  if (typeof value !== "string") return null;
-  const text = value.trim().toLowerCase();
-  if (!text) return null;
-  if (/\blive[\s_-]*card\b/.test(text)) return "live_card";
-  if (/\bsmart[\s_-]*sign[\s_-]*up\b|\bsign[\s_-]*up\b|\bsignup\b/.test(text)) {
-    return "signup_form";
-  }
-  if (/\bevent[\s_-]*page\b/.test(text)) return "event_page";
-  if (/\brsvp[\s_-]*page\b/.test(text)) return "rsvp_page";
-  if (/\bprintable[\s_-]*flyer\b/.test(text)) return "printable_flyer";
-  if (
-    /\bdigital[\s_-]*flyer\b|\bflyer[\s_-]*invite\b|\bflyer[\s_-]*invitation\b|\bflyer\s*\/\s*invitation\b|\bflyer\b/.test(
-      text,
-    )
-  ) {
-    return "digital_flyer";
-  }
-  if (/\binstagram[\s_-]*story\b/.test(text)) return "instagram_story";
-  if (/\bthank[\s_-]*you[\s_-]*card\b/.test(text)) return "thank_you_card";
-  if (/\bwelcome[\s_-]*sign\b/.test(text)) return "welcome_sign";
-  if (/\bmenu\b/.test(text)) return "menu";
-  if (/\binvitation\b|\binvite\b/.test(text)) return "digital_flyer";
-  return null;
-}
-
-function looksLikeSidebarProductCreationText(value: unknown): boolean {
-  if (typeof value !== "string") return false;
-  return /^\s*create\s+(?:a|an|the)?\s*(?:live[\s_-]*card|digital[\s_-]*flyer|flyer|invitation|invite|event[\s_-]*page|rsvp[\s_-]*page|smart[\s_-]*sign[\s_-]*up|sign[\s_-]*up|signup)\b/i.test(
-    value,
-  );
-}
-
-function firstSidebarProductOutputFromArray(value: unknown): SidebarProductOutput | null {
-  if (!Array.isArray(value)) return null;
-  const normalized = value
-    .map(normalizeSidebarProductOutput)
-    .filter(Boolean) as SidebarProductOutput[];
-  return (
-    normalized.find((output) => !SIDEBAR_SECONDARY_OUTPUTS.has(output)) || normalized[0] || null
-  );
-}
-
-function getSidebarPrimaryProductOutput(
-  data: unknown,
-  fallbackText?: string | null,
-): SidebarProductOutput | null {
-  const record = asSidebarRecord(data);
-  if (!record) return null;
-  const publicEvent = asSidebarRecord(record.publicEvent);
-  const conciergeDraft = asSidebarRecord(record.conciergeDraft);
-  const inferredText = [
-    record.title,
-    record.eventPurpose,
-    record.prompt,
-    record.userPrompt,
-    conciergeDraft?.title,
-    conciergeDraft?.eventPurpose,
-    fallbackText,
-  ]
-    .filter((value): value is string => typeof value === "string")
-    .join(" ");
-
-  return (
-    normalizeSidebarProductOutput(record.primaryOutput) ||
-    normalizeSidebarProductOutput(record.productType) ||
-    normalizeSidebarProductOutput(record.publicRenderer) ||
-    normalizeSidebarProductOutput(publicEvent?.primaryOutput) ||
-    normalizeSidebarProductOutput(publicEvent?.renderer) ||
-    normalizeSidebarProductOutput(conciergeDraft?.primaryOutput) ||
-    normalizeSidebarProductOutput(conciergeDraft?.productType) ||
-    firstSidebarProductOutputFromArray(record.requestedOutputs) ||
-    firstSidebarProductOutputFromArray(record.outputs) ||
-    firstSidebarProductOutputFromArray(conciergeDraft?.requestedOutputs) ||
-    firstSidebarProductOutputFromArray(conciergeDraft?.outputs) ||
-    inferSidebarProductOutputFromText(inferredText)
-  );
-}
-
-function isSidebarProductPreviewFirstEvent(data: unknown, fallbackText?: string | null): boolean {
-  const record = asSidebarRecord(data);
-  if (!record) return false;
-  const createdVia = String(record.createdVia || "")
-    .trim()
-    .toLowerCase();
-  const output = getSidebarPrimaryProductOutput(record, fallbackText);
-  return (
-    Boolean(output) &&
-    (/concierge|chat/.test(createdVia) || looksLikeSidebarProductCreationText(fallbackText))
-  );
-}
-
 function readSidebarPublicSlug(row: HistoryRow, data: Record<string, any> | null): string {
   const slug =
     typeof row.public_slug === "string" && row.public_slug.trim()
@@ -910,41 +749,9 @@ function readSidebarPublicSlug(row: HistoryRow, data: Record<string, any> | null
     .replace(/^-+|-+$/g, "");
 }
 
-function buildSidebarEventSlugSegment(id: string, title: string, publicSlug?: string): string {
-  if (publicSlug) return publicSlug;
-  const safeId = String(id || "").trim();
-  const slug =
-    String(title || "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "") || "event";
-  return safeId ? `${slug}-${safeId}` : slug;
-}
-
-function buildSidebarProductPath(
-  row: HistoryRow,
-  data: Record<string, any> | null,
-  buildEventPath: (
-    eventId: string,
-    title: string,
-    params?: any,
-    publicSlug?: string | null,
-  ) => string,
-): string {
-  const publicSlug = readSidebarPublicSlug(row, data);
-  const output = getSidebarPrimaryProductOutput(data, row.title);
-  if (output === "signup_form") {
-    return `/smart-signup-form/${buildSidebarEventSlugSegment(row.id, row.title, publicSlug)}`;
-  }
-  if (output && SIDEBAR_CARD_FIRST_OUTPUTS.has(output)) {
-    return `/card/${buildSidebarEventSlugSegment(row.id, row.title, publicSlug)}`;
-  }
-  return buildEventPath(row.id, row.title, undefined, publicSlug || null);
-}
-
-function resolveSidebarProductKind(output: SidebarProductOutput | null) {
+function resolveSidebarProductKind(output: EventProductOutput | null) {
   if (output === "signup_form") return "signup";
-  if (output && SIDEBAR_CARD_FIRST_OUTPUTS.has(output)) return "card";
+  if (isCardFirstEventProduct(output)) return "card";
   if (output) return "event";
   return "unknown";
 }
@@ -1033,7 +840,8 @@ export function buildGroupedEventLists(args: {
     if (!row || typeof row !== "object") continue;
     const data = ((row as HistoryRow).data || {}) as Record<string, any>;
     const isInvited = isInvitedHistoryEvent(data, args.isInvitedEventLikeRecord);
-    const isOwnedSignup = Boolean(data?.signupForm) && !isInvited;
+    const primaryOutput = getPrimaryEventProductOutput(data, row.title);
+    const isOwnedSignup = primaryOutput === "signup_form" && !isInvited;
 
     const isDraft = isEventDraft(data);
     if (isDraft) continue;
@@ -1059,12 +867,8 @@ export function buildGroupedEventLists(args: {
     const dateLabel = formatEventDate(dateRaw);
     const publicSlug = readSidebarPublicSlug(row, data);
     const defaultHref = args.buildEventPath(row.id, row.title, undefined, publicSlug || null);
-    const shouldOpenProductFirst = isSidebarProductPreviewFirstEvent(data, row.title);
-    const primaryOutput = getSidebarPrimaryProductOutput(data, row.title);
-    const publicHref = isOwnedSignup
-      ? `/smart-signup-form/${buildSidebarEventSlugSegment(row.id, row.title, publicSlug)}`
-      : shouldOpenProductFirst
-      ? buildSidebarProductPath(row, data, args.buildEventPath)
+    const publicHref = primaryOutput === "signup_form" || isCardFirstEventProduct(primaryOutput)
+      ? buildEventProductPath({ eventId: row.id, title: row.title, data, publicSlug })
       : defaultHref;
     const ownerHref = isOwnedSignup ? publicHref : defaultHref;
     const hasOwnerRsvp = !isInvited && args.canShowOwnerRsvpDashboard(data);

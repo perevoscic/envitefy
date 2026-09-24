@@ -1,4 +1,6 @@
 import { query } from "@/lib/db";
+import { eventProductRoutingProjectionSql } from "@/lib/event-product-routing-sql";
+import { getPrimaryEventProductOutput } from "@/utils/event-product-route";
 import { ensureScanAttemptsSchema, type ScanAttemptStatus } from "@/lib/scan-attempts";
 import { ADMIN_SCAN_SQL, daysAgo, toIsoString, toNumber } from "./data-utils";
 
@@ -57,6 +59,7 @@ export async function getAdminUserDebugLinks(
     category: string | null;
     public_slug: string | null;
     primary_output: string | null;
+    routing_data: Record<string, unknown> | null;
     created_via: string | null;
     source_type: string | null;
     created_at: Date | string | null;
@@ -78,6 +81,7 @@ export async function getAdminUserDebugLinks(
           nullif(data->'publicEvent'->>'primaryOutput', ''),
           nullif(data->'publicEvent'->>'renderer', '')
         ) as primary_output,
+        ${eventProductRoutingProjectionSql("data")} as routing_data,
         nullif(data->>'createdVia', '') as created_via,
         nullif(data->'sourceContext'->>'type', '') as source_type,
         created_at
@@ -95,7 +99,7 @@ export async function getAdminUserDebugLinks(
     title: row.title || null,
     category: row.category || null,
     publicSlug: row.public_slug || null,
-    primaryOutput: row.primary_output || null,
+    primaryOutput: getPrimaryEventProductOutput(row.routing_data || { primaryOutput: row.primary_output, category: row.category, createdVia: row.created_via }, row.title),
     createdVia: row.created_via || null,
     sourceType: row.source_type || null,
     createdAt: toIsoString(row.created_at),

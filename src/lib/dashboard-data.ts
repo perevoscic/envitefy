@@ -1,3 +1,5 @@
+import { buildEventProductPath } from "../utils/event-product-route.ts";
+import { buildEventPath } from "../utils/event-url.ts";
 import { normalizeThumbnailFocus, type ThumbnailFocus } from "./thumbnail-focus.ts";
 import { resolveCoverImageUrlFromEventData } from "./upload-config.ts";
 import { resolveSavedScanPresentation } from "./ocr/personalization.ts";
@@ -16,6 +18,8 @@ type InvitedEventLikeRecord =
 
 export type DashboardEvent = {
   id: string;
+  publicHref?: string;
+  ownerHref?: string;
   title: string;
   startAt: string;
   endAt: string | null;
@@ -40,6 +44,7 @@ export type DashboardEvent = {
 
 type HistoryRow = {
   id: string;
+  public_slug?: string | null;
   title: string;
   data: any;
   created_at?: string | null;
@@ -390,8 +395,14 @@ export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
   const numberOfGuests = Math.max(0, Number(data?.numberOfGuests || 0));
   const hasRsvp = hasActionableRsvp(data, numberOfGuests);
 
+  const publicSlug = row.public_slug || data.publicSlug;
+  const publicHref = buildEventProductPath({ eventId: row.id, title: row.title, data, publicSlug });
   return {
     id: row.id,
+    publicHref,
+    ownerHref: publicHref.startsWith("/smart-signup-form/")
+      ? publicHref
+      : buildEventPath(row.id, row.title, undefined, publicSlug),
     title: resolveSavedScanPresentation(
       data,
       firstString(row.title, data?.title, data?.fieldsGuess?.title, data?.event?.title) || "Event",

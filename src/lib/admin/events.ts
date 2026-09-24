@@ -1,4 +1,6 @@
 import { query } from "@/lib/db";
+import { eventProductRoutingProjectionSql } from "@/lib/event-product-routing-sql";
+import { getPrimaryEventProductOutput } from "@/utils/event-product-route";
 import {
   ADMIN_SCAN_SQL,
   daysAgo,
@@ -26,6 +28,7 @@ export type AdminEventListItem = {
   title: string;
   category: string;
   publicSlug: string | null;
+  primaryOutput: string | null;
   ownerEmail: string | null;
   createdVia: string | null;
   createdAt: string | null;
@@ -88,6 +91,7 @@ type EventRow = {
   title: string | null;
   category: string | null;
   public_slug: string | null;
+  routing_data: Record<string, unknown> | null;
   owner_email: string | null;
   created_via: string | null;
   created_at: Date | string | null;
@@ -256,6 +260,7 @@ export async function getAdminEventsData(
             eh.title,
             coalesce(nullif(eh.data->>'category', ''), 'Uncategorized') as category,
             eh.public_slug,
+            ${eventProductRoutingProjectionSql("eh.data")} as routing_data,
             users.email as owner_email,
             nullif(eh.data->>'createdVia', '') as created_via,
             eh.created_at,
@@ -343,6 +348,7 @@ export async function getAdminEventsData(
       title: row.title || "Untitled event",
       category: humanizeCategory(row.category),
       publicSlug: row.public_slug || null,
+      primaryOutput: getPrimaryEventProductOutput(row.routing_data || { category: row.category, createdVia: row.created_via }, row.title),
       ownerEmail: row.owner_email || null,
       createdVia: row.created_via || null,
       createdAt: toIsoString(row.created_at),

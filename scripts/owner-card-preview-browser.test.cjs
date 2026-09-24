@@ -94,11 +94,36 @@ test("mobile owners discover and swipe card previews without losing progress; pr
       }
       await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
     };
+    const traceTransition = async (action, name) => {
+      const sampling = page.evaluate(() => new Promise((resolve) => {
+        const frames = [];
+        const start = performance.now();
+        const sample = () => {
+          const card = document.querySelector("[data-artwork-preview]");
+          const workspace = document.querySelector("[data-owner-card-swipe]");
+          const bounds = card?.getBoundingClientRect();
+          frames.push({
+            state: card?.getAttribute("data-state") || "absent",
+            scrollX, scrollY, scrollWidth: document.documentElement.scrollWidth, viewportWidth: innerWidth,
+            rootOverflow: getComputedStyle(document.documentElement).overflowY,
+            paddingTop: workspace ? getComputedStyle(workspace).paddingTop : null,
+            cardX: bounds?.x, cardY: bounds?.y, cardWidth: bounds?.width, cardHeight: bounds?.height,
+          });
+          if (performance.now() - start < 650) requestAnimationFrame(sample);
+          else resolve(frames);
+        };
+        requestAnimationFrame(sample);
+      }));
+      await action();
+      const frames = await sampling;
+      fs.writeFileSync(path.join(output, `${name}-frames.json`), JSON.stringify(frames, null, 2));
+      return frames;
+    };
     await page.getByLabel("Guest search").fill("Keep this edit");
     await page.getByLabel("Guest search").blur();
-    await page.evaluate(() => window.scrollTo(0, 240));
+    await page.evaluate(() => window.scrollTo({ top: 240, behavior: "instant" }));
     const scrollBefore = await page.evaluate(() => window.scrollY);
-    await swipe(280, 560, -160, 4);
+    const openingFrames = await traceTransition(() => swipe(280, 560, -160, 4), "opening");
     await preview.waitFor();
     await page.waitForTimeout(320);
     assert.notEqual(await preview.evaluate((element) => getComputedStyle(element).animationName), "none", "preview slides in on mobile");
@@ -109,7 +134,15 @@ test("mobile owners discover and swipe card previews without losing progress; pr
     assert.equal(await preview.isVisible(), true, "guest popup gestures do not close preview");
     await page.keyboard.press("Escape");
     await page.locator("[data-live-card-panel]").waitFor({ state: "hidden" });
-    await swipe(90, 390, 160, 0);
+    const closingFrames = await traceTransition(() => swipe(90, 390, 160, 0), "closing");
+    assert.ok(closingFrames.every((frame) => frame.scrollWidth <= frame.viewportWidth), "exit animation must not widen the page while the card is sliding away");
+    assert.equal(new Set([...openingFrames, ...closingFrames].map((frame) => frame.paddingTop)).size, 1, "workspace spacing must stay fixed throughout preview transitions");
+    for (const frames of [openingFrames, closingFrames]) {
+      const visible = frames.filter((frame) => frame.state !== "absent");
+      assert.ok(visible.every((frame) => frame.rootOverflow === "hidden"), "scroll lock lasts through the entire slide");
+      assert.equal(new Set(visible.map((frame) => `${frame.cardY.toFixed(2)}:${frame.cardWidth.toFixed(2)}:${frame.cardHeight.toFixed(2)}`)).size, 1, "the sliding card must not resize or jump vertically");
+      assert.ok(frames.every((frame) => frame.scrollY === scrollBefore && frame.scrollX === 0), "the dashboard must not move behind the animation");
+    }
     await preview.waitFor({ state: "hidden" });
     assert.equal(await page.evaluate(() => window.scrollY), scrollBefore, "swiping back preserves workspace scroll");
     assert.equal(await page.getByLabel("Guest search").inputValue(), "Keep this edit");
@@ -167,6 +200,16 @@ test("mobile owners discover and swipe card previews without losing progress; pr
     await page.goto(`${base}/?mode=workspace&eventPage=1`);
     assert.equal(await teaser.count(), 0, "event pages do not offer a Live Card teaser");
     await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.goto(`${base}/?mode=workspace&tab=dashboard`);
+    await teaser.waitFor();
+    const tabBounds = () => page.getByRole("tablist").first().getByRole("tab").evaluateAll((tabs) => tabs.map((tab) => {
+      const rect = tab.getBoundingClientRect();
+      return [rect.x, rect.y, rect.width, rect.height];
+    }));
+    const settledTabs = await tabBounds();
+    // Cover two of the old automatic hint ticks, while the dashboard is idle.
+    await page.waitForTimeout(4300);
+    assert.deepEqual(await tabBounds(), settledTabs, "dashboard tabs stay still until the host chooses a tab");
     await page.setViewportSize({ width: 1280, height: 1000 });
 
     for (const query of ["mode=embedded", "mode=embedded&contact=email", "mode=embedded&published=1", "mode=owner&published=1", "mode=embedded&placement=above"]) {

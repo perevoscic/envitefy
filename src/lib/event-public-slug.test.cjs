@@ -23,6 +23,17 @@ function loadSource(file, mocks = {}) {
 const slugs = loadSource("src/utils/event-public-slug.ts");
 const { suggestFootballPublicSlug } = loadSource("src/lib/football-custom-url.ts");
 
+test("public addresses cannot collide with any static event route, including future categories", () => {
+  const root = path.resolve("src/app/event");
+  for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+    if (!entry.isDirectory() || !/^[a-z0-9-]+$/.test(entry.name)) continue;
+    const hasPage = fs.readdirSync(path.join(root, entry.name), { recursive: true }).some(file => /(?:^|\/)page\.[jt]sx?$/.test(file));
+    if (!hasPage) continue;
+    assert.equal(slugs.isReservedEventPublicSlug(entry.name), true, `${entry.name} needs a reserved public slug`);
+    assert.notEqual(slugs.makeEventPublicSlugRoutable(entry.name), entry.name);
+  }
+});
+
 test("custom URLs normalize readable names and reject unusable or reserved addresses", () => {
   assert.deepEqual(slugs.validateCustomEventPublicSlug("Seahawks at Vikings 2026"), { slug: "seahawks-at-vikings-2026", error: null });
   for (const input of ["", "!!!", "football", "football-season", "schedule", "manual", "new", "event", "a".repeat(97), "https://example.com/game", "game?x=1", "../game", `game-${randomUUID()}`, 23]) {

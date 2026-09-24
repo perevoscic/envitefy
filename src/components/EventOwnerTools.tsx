@@ -111,8 +111,6 @@ const OWNER_WORKSPACE_TABS: OwnerWorkspaceTabConfig[] = [
   { key: "design", label: "Design", icon: Palette, labelWidth: 54, tabWidth: 98 },
 ];
 
-const OWNER_TAB_HINT_INTERVAL_MS = 2000;
-const OWNER_TAB_HINT_CYCLES = 3;
 const OWNER_TAB_COMPACT_WIDTH = 44;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -979,7 +977,9 @@ export default function EventOwnerTools({
           window.scrollTo({ left: productViewerScroll.current.x, top: productViewerScroll.current.y, behavior: "instant" });
         }}
       />
-      {productViewerMode !== null ? <OwnerPreviewMobileTopbarSuppressor /> : null}
+      {/* Artwork is already a fixed portal above navigation. Collapsing the
+          workspace chrome underneath its slide would move the dashboard. */}
+      {productViewerMode !== null && !hasCardPreview ? <OwnerPreviewMobileTopbarSuppressor /> : null}
     </main>
   );
 }
@@ -995,33 +995,6 @@ function OwnerWorkspaceTabs({
   eventId: string;
   tabs: OwnerWorkspaceTabConfig[];
 }) {
-  const [hintTab, setHintTab] = useState<EventContextTab | null>(null);
-
-  useEffect(() => {
-    if (activeTab !== "dashboard" || tabs.length < 2) {
-      setHintTab(null);
-      return;
-    }
-
-    let step = tabs.findIndex((tab) => tab.key === activeTab) + 1;
-    const maxSteps = tabs.length * OWNER_TAB_HINT_CYCLES;
-    setHintTab(tabs[step % tabs.length]?.key ?? null);
-
-    const timer = window.setInterval(() => {
-      step += 1;
-
-      if (step >= maxSteps) {
-        window.clearInterval(timer);
-        setHintTab(null);
-        return;
-      }
-
-      setHintTab(tabs[step % tabs.length]?.key ?? null);
-    }, OWNER_TAB_HINT_INTERVAL_MS);
-
-    return () => window.clearInterval(timer);
-  }, [activeTab, tabs]);
-
   return (
     <nav
       className="owner-workspace-glass relative w-full overflow-hidden rounded-[22px] border border-white/75 bg-white/92 p-1.5 shadow-[0_16px_42px_rgba(79,70,128,0.10)] backdrop-blur-xl"
@@ -1035,29 +1008,26 @@ function OwnerWorkspaceTabs({
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
-          const isHinted = hintTab === tab.key && !isActive;
-          const isRevealed = isActive || isHinted;
           return (
             <Link
               key={tab.key}
               href={buildOwnerTabHref(ownerHref, eventId, tab.key)}
               role="tab"
+              aria-label={tab.label}
               aria-selected={isActive}
               className={`inline-flex min-h-11 shrink-0 items-center justify-center overflow-hidden rounded-[16px] px-3 text-[0.72rem] font-black uppercase tracking-[0.12em] transition-[width,background-color,color,box-shadow] duration-300 ease-out ${
                 isActive
                   ? "bg-slate-950 text-white shadow-[0_12px_24px_rgba(15,23,42,0.18)]"
-                  : isHinted
-                    ? "bg-slate-100 text-slate-700 shadow-[0_10px_22px_rgba(79,70,128,0.10)]"
-                    : "text-slate-400 hover:bg-slate-50 hover:text-slate-700"
+                  : "text-slate-400 hover:bg-slate-50 hover:text-slate-700"
               }`}
-              style={{ width: `${isRevealed ? tab.tabWidth : OWNER_TAB_COMPACT_WIDTH}px` }}
+              style={{ width: `${isActive ? tab.tabWidth : OWNER_TAB_COMPACT_WIDTH}px` }}
             >
               <Icon size={16} strokeWidth={2} aria-hidden="true" />
               <span
                 className={`overflow-hidden whitespace-nowrap transition-[width,opacity,margin-left] duration-300 ease-out ${
-                  isRevealed ? "ml-2 opacity-100" : "ml-0 opacity-0"
+                  isActive ? "ml-2 opacity-100" : "ml-0 opacity-0"
                 }`}
-                style={{ width: `${isRevealed ? tab.labelWidth : 0}px` }}
+                style={{ width: `${isActive ? tab.labelWidth : 0}px` }}
               >
                 {tab.label}
               </span>
@@ -1337,11 +1307,11 @@ function OwnerPublicLinkPanel({
         );
       }
 
-      const nextPath = currentPath.startsWith("/card/")
+      const nextPath = data.publicPath || (currentPath.startsWith("/card/")
         ? data.cardPath || data.eventPath
         : currentPath.startsWith("/smart-signup-form/")
           ? data.signupFormPath || data.eventPath
-          : data.eventPath;
+          : data.eventPath);
       onUpdated(nextPath || `/event/${normalizedSlug}`);
       window.dispatchEvent(new CustomEvent("history:updated", { detail: { id: eventId } }));
       setStatus("saved");

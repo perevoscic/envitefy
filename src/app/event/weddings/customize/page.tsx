@@ -44,6 +44,7 @@ import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 import { normalizeUrlValue } from "@/utils/contact";
 import { persistImageMediaValue as persistExistingImage } from "@/utils/media-upload-client";
+import { normalizeEventGuestActions } from "@/lib/event-guest-actions";
 import WeddingRenderer from "@/components/weddings/WeddingRenderer";
 import etherealClassic from "../../../../../templates/weddings/ethereal-classic/config.json" with { type: "json" };
 import modernEditorial from "../../../../../templates/weddings/modern-editorial/config.json" with { type: "json" };
@@ -1074,6 +1075,7 @@ const INITIAL_DATA = {
   time: "16:30",
   endTime: "",
   endDate: "",
+  guestActions: normalizeEventGuestActions(null),
   guestPlanning: {} as EventGuestPlanning,
   city: "New York",
   state: "NY",
@@ -1638,6 +1640,7 @@ const App = () => {
           time: payload.time ?? prev.time,
           endTime: payload.endTime ?? eventLocalDateParts(payload.endISO).time,
           endDate: payload.endDate ?? eventLocalDateParts(payload.endISO).date,
+          guestActions: normalizeEventGuestActions(payload.guestActions),
           guestPlanning: normalizeEventGuestPlanning(payload.guestPlanning),
           city: payload.city ?? prev.city,
           state: payload.state ?? prev.state,
@@ -1734,6 +1737,7 @@ const App = () => {
       time: data.time || "",
       endTime: data.endTime || "",
       endDate: data.endDate || "",
+      guestActions: data.guestActions,
       guestPlanning: data.guestPlanning,
       location,
       story: data.story || "",
@@ -2049,6 +2053,7 @@ const App = () => {
           time: data.time,
           endTime: data.endTime,
           endDate: data.endDate,
+          guestActions: data.guestActions,
           guestPlanning: data.guestPlanning,
           city: data.city,
           state: data.state,
@@ -3153,6 +3158,7 @@ const App = () => {
           >
             <HeroImageEditor filterEnabled={data.heroImageFilterEnabled !== false} onFilterChange={(heroImageFilterEnabled) => setData((prev) => ({ ...prev, heroImageFilterEnabled }))} value={data.images.hero} onChange={(hero) => setData((prev) => ({ ...prev, images: { ...prev.images, hero } }))} className="absolute left-4 top-4 z-30" />
             <WeddingRenderer
+              onGuestActionsChange={(guestActions) => setData((prev) => ({ ...prev, guestActions }))}
               template={selectedTemplate}
               event={previewEvent}
             />

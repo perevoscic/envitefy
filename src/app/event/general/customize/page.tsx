@@ -10,6 +10,7 @@ import "@/components/birthdays/redesign/birthday-fonts.css";
 import { useManualEventProgress } from "@/hooks/useManualEventProgress";
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 
+import { normalizeEventGuestActions } from "@/lib/event-guest-actions";
 import EventGuestActions from "@/components/event-templates/EventGuestActions";
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
 import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
@@ -249,6 +250,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [loadingExisting, setLoadingExisting] = useState(Boolean(editEventId));
     const [loadError, setLoadError] = useState("");
     const [data, setData] = useState(() => ({
+      guestActions: normalizeEventGuestActions(null),
       guestPlanning: {} as EventGuestPlanning,
       endTime: "",
       endDate: "",
@@ -354,6 +356,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           time: existing.time ?? start.time,
           endTime: existing.endTime ?? end.time,
           endDate: existing.endDate ?? end.date,
+          guestActions: normalizeEventGuestActions(existing.guestActions),
           guestPlanning: normalizeEventGuestPlanning(existing.guestPlanning),
           city: existing.city ?? "",
           state: existing.state ?? "",
@@ -529,6 +532,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             end: endISO,
             endTime: data.endTime,
             endDate: data.endDate,
+            guestActions: data.guestActions,
             guestPlanning: data.guestPlanning,
             location: editEventId && data.venue === (savedEventData.venue ?? savedEventData.location ?? "") && data.city === (savedEventData.city ?? "") && data.state === (savedEventData.state ?? "") ? savedEventData.location || locationParts : locationParts || undefined,
             venue: data.venue || undefined,
@@ -611,6 +615,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.time,
       data.title,
       data.details,
+      data.guestActions,
       data.guestPlanning,
       data.endTime,
       data.endDate,
@@ -1108,6 +1113,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   </h2>
 
                   <EventGuestActions
+                    visibility={data.guestActions}
+                    onVisibilityChange={(guestActions) => setData((prev) => ({ ...prev, guestActions }))}
                     title={data.title}
                     start={data.date ? `${data.date}T${data.time || "14:00"}` : undefined}
                     end={getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)}

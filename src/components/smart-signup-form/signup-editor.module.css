@@ -31,6 +31,7 @@
 .footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-top: 1px solid var(--editor-line); padding: 1.3rem 0; margin-top: 2rem; }
 .primary, .secondary { min-height: 46px; padding: .7rem 1.3rem; border-radius: .65rem; font-size: .875rem; font-weight: 600; display: inline-flex; gap: .5rem; align-items: center; justify-content: center; }
 .primary { background: var(--editor-accent); color: var(--signup-on-accent, white); border: 1px solid var(--editor-accent); }
+.editor .primary:disabled { background: #e5e7eb; color: #6b7280; border-color: #d1d5db; opacity: 1; }
 .secondary { background: var(--editor-paper); border: 1px solid var(--editor-line); }
 .starterGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; }
 .starter { text-align: left; padding: 1rem; border: 1px solid var(--editor-line); border-radius: .85rem; background: var(--editor-paper); }

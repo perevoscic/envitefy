@@ -1,4 +1,5 @@
 import { parseCalendarDateTimeToIso } from "./calendar-date-time";
+import { normalizeEventGuestActions, type EventGuestActionVisibility } from "./event-guest-actions";
 import { colorContrast } from "./color-contrast";
 import { GALLERY_FONT_PAIRS, LIBRARY_FONT_PAIRS, type GalleryFontPairId } from "./font-library";
 
@@ -70,6 +71,7 @@ export const EVENT_DETAIL_FIELDS = [
   "rsvpPhone",
 ] as const;
 export type CustomEventDetails = Record<(typeof EVENT_DETAIL_FIELDS)[number], string> & {
+  guestActions?: EventGuestActionVisibility;
   rsvpEnabled: boolean;
   sections: Array<{ title: string; body: string }>;
   registryLinks: Array<{ label: string; url: string }>;
@@ -218,6 +220,7 @@ export function normalizeCustomEventDetails(value: unknown): CustomEventDetails 
   }
   if (raw.rsvpEnabled != null && typeof raw.rsvpEnabled !== "boolean") return null;
   details.rsvpEnabled = raw.rsvpEnabled === true;
+  if (raw.guestActions != null) details.guestActions = normalizeEventGuestActions(raw.guestActions);
   for (const key of ["sections", "registryLinks"] as const) {
     if (raw[key] != null && !Array.isArray(raw[key])) return null;
     const rows = (raw[key] || []) as unknown[];

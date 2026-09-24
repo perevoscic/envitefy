@@ -44,6 +44,7 @@ export function buildTemplateDraftPayload(
         : data),
       title,
       category: info.historyCategory,
+      primaryOutput: category === "signup-forms" ? "signup_form" : "event_page",
       startAt: start,
       startISO: start,
       start,

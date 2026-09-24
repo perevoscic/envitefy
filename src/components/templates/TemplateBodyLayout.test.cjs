@@ -8,6 +8,16 @@ const React = require("react");
 const { renderToStaticMarkup } = require("react-dom/server");
 const { createJiti } = require("jiti");
 
+const resolveFilename = Module._resolveFilename;
+Module._resolveFilename = function (request, parent, ...rest) {
+  return resolveFilename.call(
+    this,
+    request.startsWith("@/") ? path.join(process.cwd(), "src", request.slice(2)) : request,
+    parent,
+    ...rest,
+  );
+};
+
 for (const ext of [".ts", ".tsx"])
   Module._extensions[ext] = (mod, file) =>
     mod._compile(

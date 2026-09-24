@@ -19,11 +19,12 @@ function formatDate(value: string | null) {
   return date.toLocaleDateString("en-US");
 }
 
-function adminPublicEventHref(event: Pick<AdminEventListItem, "id" | "title" | "publicSlug">) {
+function adminPublicEventHref(event: Pick<AdminEventListItem, "id" | "title" | "publicSlug" | "primaryOutput">) {
   return buildEventProductPath({
     eventId: event.id,
     title: event.title,
     publicSlug: event.publicSlug,
+    data: { primaryOutput: event.primaryOutput },
   });
 }
 
@@ -32,7 +33,7 @@ function AdminPublicEventLink({
   children,
   className,
 }: {
-  event: Pick<AdminEventListItem, "id" | "title" | "publicSlug">;
+  event: Pick<AdminEventListItem, "id" | "title" | "publicSlug" | "primaryOutput">;
   children: ReactNode;
   className?: string;
 }) {

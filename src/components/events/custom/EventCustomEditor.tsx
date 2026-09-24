@@ -294,7 +294,7 @@ export default function EventCustomEditor() {
       )}
       {previewOnly ? (
         <div className="mx-auto max-w-6xl">
-          <CustomEventPageContent page={page} />
+          <CustomEventPageContent page={page} showGuestActions />
         </div>
       ) : (
         <div className={styles.workspace}>
@@ -501,7 +501,7 @@ export default function EventCustomEditor() {
             </div>
           </fieldset>
           <div className={styles.preview}>
-            <CustomEventPageContent page={page} />
+            <CustomEventPageContent page={page} showGuestActions onGuestActionsChange={busy ? undefined : (guestActions) => setPage((current) => current ? ({ ...current, details: { ...current.details, guestActions } }) : current)} />
           </div>
         </div>
       )}

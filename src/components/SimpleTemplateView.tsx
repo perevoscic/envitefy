@@ -3899,7 +3899,7 @@ export default function SimpleTemplateView({
           )}
 
           {!isLocked ? <>
-            <EventGuestActions title={eventTitle} start={guestStart} end={guestEnd} description={description} location={fullLocation} shareUrl={shareUrl} eventId={eventId} preview={!shareUrl || eventId === "preview"} />
+            <EventGuestActions visibility={currentData?.guestActions} title={eventTitle} start={guestStart} end={guestEnd} description={description} location={fullLocation} shareUrl={shareUrl} eventId={eventId} preview={!shareUrl || eventId === "preview"} />
             <EventGuestPlanningNotes value={guestPlanning} />
           </> : null}
           <div className="relative mb-8 md:mb-10">
@@ -4855,7 +4855,7 @@ export default function SimpleTemplateView({
               </div>
 
               {!isLocked ? <>
-                <EventGuestActions title={eventTitle} start={guestStart} end={guestEnd} description={description} location={fullLocation} shareUrl={shareUrl} eventId={eventId} preview={!shareUrl || eventId === "preview"} inverse={isDarkBackground} timezone={currentData?.timezone} />
+                <EventGuestActions visibility={currentData?.guestActions} title={eventTitle} start={guestStart} end={guestEnd} description={description} location={fullLocation} shareUrl={shareUrl} eventId={eventId} preview={!shareUrl || eventId === "preview"} inverse={isDarkBackground} timezone={currentData?.timezone} />
                 <EventGuestPlanningNotes value={guestPlanning} inverse={isDarkBackground} />
               </> : null}
 

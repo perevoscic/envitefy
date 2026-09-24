@@ -119,6 +119,33 @@ test("every category preserves the design and canonical event-local times throug
   assert.equal(blank.location, "");
 });
 
+test("custom templates retain removable guest actions through save and guest rendering", () => {
+  const Empty = () => null;
+  const renderLoad = loader({
+    "next/link": ({ children, ...props }) => React.createElement("a", props, children),
+    "@/components/GuestRsvpModal": Empty,
+    "@/components/branding/EnvitefyEventBranding": Empty,
+    "@/components/CalendarAction": ({ children, ...props }) => React.createElement("button", { "aria-label": "Add to calendar" }, "Add to calendar"),
+    "@/components/templates/TemplateEditorContext": { useTemplateEditor: () => null },
+  });
+  const Content = renderLoad("src/components/events/custom/CustomEventPageContent.tsx").default;
+  for (const category of Object.keys(custom.CUSTOM_EVENT_CATEGORIES)) {
+    const input = example(category);
+    input.details.guestActions = { calendar: true, directions: false, share: false, ignored: false };
+    const data = custom.customEventPageData(input);
+    const saved = custom.normalizeCustomEventPage(JSON.parse(JSON.stringify(data.customEventPage)));
+    assert.deepEqual(saved.details.guestActions, { calendar: true, directions: false, share: false });
+    assert.equal(saved.details.venue, "Our garden");
+    const html = renderToStaticMarkup(React.createElement(Content, { page: saved, eventId: "test-event" }));
+    assert.match(html, /Add to calendar/);
+    assert.doesNotMatch(html, /Get directions|Share event|Remove Add|Restore Directions/);
+    const editor = renderToStaticMarkup(React.createElement(Content, { page: saved, showGuestActions: true, onGuestActionsChange() {} }));
+    assert.match(editor, /Remove Add to calendar/);
+    assert.match(editor, /Restore Directions/);
+    assert.match(editor, /Restore Share/);
+  }
+});
+
 test("design boundaries reject executable content, unsupported media, impossible dates, and invalid zones", () => {
   for (const patch of [
     { artwork: "javascript:alert(1)" },

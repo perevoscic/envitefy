@@ -46,6 +46,7 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
   const [detailsEditor, setDetailsEditor] = useState<SignupDetailsSection | null>(null);
   const [submitError, setSubmitError] = useState("");
   const [showErrors, setShowErrors] = useState(false);
+  const publishDisabled = submitting || editor?.hasUnpublishedChanges === false;
   const issues = validateSignupPublish(form);
   const warnings = signupPublishWarnings(form);
   const requiresInvitation =
@@ -86,6 +87,7 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
   };
   const publish = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (publishDisabled) return;
     if (issues.length) {
       setShowErrors(true);
       return;
@@ -297,7 +299,8 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
               <button
                 type="button"
                 className={styles.primary}
-                disabled={submitting}
+                disabled={publishDisabled}
+                title={editor?.hasUnpublishedChanges === false ? "Your latest changes are published" : undefined}
                 onClick={publish}
               >
                 {submitting

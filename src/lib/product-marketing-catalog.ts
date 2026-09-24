@@ -490,6 +490,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "All 150 signup designs include original photographic artwork, covering seasonal events, community groups, sports, celebrations, classes, and hobbies.",
             "All 150 signup templates have artwork-focused thumbnails with readable names and coordinated design colors and typography. A new form starts with the selected design and an empty structure, without fictional dates, hosts, questions, or signup slots.",
             "Build form and Preview & publish replace the four-step signup wizard. Optional Design and Settings panels keep the theme and contact rules within reach. Preview lets organizers select slots, answer questions, and try a test submission without sending data or reserving places. Progress is saved only by explicit choice; publishing remains separate.",
+            "Publish stays disabled when a sign-up form has no changes since publication and becomes available after an edit. Successful publishing shows the organizer a brief confirmation on the live form.",
             "Invited guests sign in to claim slots; the public preview shows availability without other participants’ contact information.",
           ],
           sellWhen: [

@@ -59,7 +59,7 @@ import {
   sharedCardArtworkUrl,
 } from "@/lib/shared-card-design";
 import type { GenerationStage } from "@/lib/studio/generation-progress";
-import { buildEventPath } from "@/utils/event-url";
+import { buildEventPath, buildStudioCardPath } from "@/utils/event-url";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
 import { resolveNativeShareData } from "@/utils/native-share";
 import DesignGenerationProgress from "./DesignGenerationProgress";
@@ -291,7 +291,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
         const isPublished = data.status === "published";
         if (isPublished)
           setPublicUrl(
-            `https://envitefy.com${buildEventPath(initialEventId, nextForm.title, undefined, typeof row.public_slug === "string" ? row.public_slug : undefined)}`,
+            `https://envitefy.com${buildStudioCardPath(initialEventId, nextForm.title, undefined, typeof row.public_slug === "string" ? row.public_slug : undefined)}`,
           );
         setPublished(isPublished);
         setStep(nextArtwork ? 2 : 1);
@@ -753,7 +753,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       setPublished(publish);
       if (publish)
         setPublicUrl(
-          `https://envitefy.com${buildEventPath(String(row.id), prepared.title, undefined, typeof row.public_slug === "string" ? row.public_slug : undefined)}`,
+          `https://envitefy.com${buildStudioCardPath(String(row.id), prepared.title, undefined, typeof row.public_slug === "string" ? row.public_slug : undefined)}`,
         );
       window.history.replaceState(
         window.history.state,

@@ -123,18 +123,9 @@ test("owner workspace exposes Dashboard RSVPs Messages and Design tabs", () => {
   assert.match(source, /label: "RSVPs"/);
   assert.match(source, /label: "Messages"/);
   assert.match(source, /label: "Design"/);
-  assert.match(source, /const OWNER_TAB_HINT_INTERVAL_MS = 2000;/);
-  assert.match(source, /const OWNER_TAB_HINT_CYCLES = 3;/);
   assert.match(source, /const OWNER_TAB_COMPACT_WIDTH = 44;/);
-  assert.match(
-    source,
-    /const \[hintTab, setHintTab\] = useState<EventContextTab \| null>\(null\);/,
-  );
-  assert.match(source, /if \(activeTab !== "dashboard" \|\| tabs\.length < 2\)/);
-  assert.match(source, /let step = tabs\.findIndex\(\(tab\) => tab\.key === activeTab\) \+ 1;/);
-  assert.match(source, /window\.setInterval/);
-  assert.match(source, /const isHinted = hintTab === tab\.key && !isActive;/);
-  assert.match(source, /const isRevealed = isActive \|\| isHinted;/);
+  assert.doesNotMatch(source, /OWNER_TAB_HINT|hintTab|isHinted|isRevealed/);
+  assert.match(source, /aria-label=\{tab.label\}/);
   assert.match(source, /aria-selected=\{isActive\}/);
   assert.match(source, /flex w-full items-center justify-between gap-1 sm:hidden/);
   assert.match(source, /hidden w-full grid-cols-4 gap-1 sm:grid/);
@@ -293,7 +284,7 @@ test("owner Design tab previews card edits before saving them", () => {
   assert.match(source, /setBaselineForm\(nextForm\)/);
   assert.match(source, /persisted: true/);
   assert.match(source, /import OwnerPreviewMobileTopbarSuppressor/);
-  assert.match(source, /productViewerMode !== null \? <OwnerPreviewMobileTopbarSuppressor \/> : null/);
+  assert.match(source, /productViewerMode !== null && !hasCardPreview \? <OwnerPreviewMobileTopbarSuppressor \/> : null/);
   assert.match(source, /fixed inset-0 z-\[7001\]/);
   assert.match(source, /"Back to editing" : "Back to dashboard"/);
   assert.match(source, /<ArrowLeft size=\{20\}/);

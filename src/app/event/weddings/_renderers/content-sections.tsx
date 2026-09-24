@@ -1,3 +1,4 @@
+import type { EventGuestActionVisibility } from "@/lib/event-guest-actions";
 
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import type { EventGuestPlanning } from "@/lib/event-guest-planning";
@@ -39,6 +40,7 @@ export type EventData = {
   startISO?: string | null;
   endISO?: string | null;
   guestPlanning?: EventGuestPlanning;
+  guestActions?: EventGuestActionVisibility;
   location?: string;
   tagline?: string;
   footer?: string;

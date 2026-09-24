@@ -3,6 +3,7 @@ import Link from "next/link";
 import { type CSSProperties, useState } from "react";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import EventGuestActions from "@/components/event-templates/EventGuestActions";
+import type { EventGuestActionVisibility } from "@/lib/event-guest-actions";
 import GuestRsvpModal from "@/components/GuestRsvpModal";
 import {
   CUSTOM_EVENT_CATEGORIES,
@@ -20,11 +21,15 @@ export default function CustomEventPageContent({
   eventId,
   shareUrl,
   isOwner = false,
+  showGuestActions = Boolean(eventId),
+  onGuestActionsChange,
 }: {
   page: CustomEventPage;
   eventId?: string;
   shareUrl?: string;
   isOwner?: boolean;
+  showGuestActions?: boolean;
+  onGuestActionsChange?: (value: EventGuestActionVisibility) => void;
 }) {
   const [rsvpOpen, setRsvpOpen] = useState(false);
   const { design, details: d } = page;
@@ -125,8 +130,11 @@ export default function CustomEventPageContent({
             </div>
           </section>
         )}
-        {eventId && (
+        {showGuestActions && (
           <EventGuestActions
+            visibility={d.guestActions}
+            onVisibilityChange={onGuestActionsChange}
+            preview={!eventId}
             eventId={eventId}
             title={d.title}
             description={d.description}

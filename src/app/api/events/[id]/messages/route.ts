@@ -18,7 +18,7 @@ import {
 } from "@/lib/event-messages";
 import { readOwnerRsvpSettings } from "@/lib/owner-rsvp-settings";
 import { resolvePublicAssetOrigin } from "@/lib/public-asset-url";
-import { buildEventPath } from "@/utils/event-url";
+import { buildEventProductPath } from "@/utils/event-product-route";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,7 +47,7 @@ async function ownerContext(context: Context) {
     throw new MessageRequestError("Publish the event before emailing guests.", 409);
   const host = readOwnerRsvpSettings(event.data);
   const replyTo = validGuestEmail(host.email) ? host.email : null;
-  const eventUrl = `${resolvePublicAssetOrigin()}${buildEventPath(id, event.title, undefined, event.public_slug)}`;
+  const eventUrl = `${resolvePublicAssetOrigin()}${buildEventProductPath({ eventId: id, title: event.title, data: event.data, publicSlug: event.public_slug })}`;
   await ensureEventMessages();
   return { eventId: id, eventTitle: event.title || "Your event", eventUrl, replyTo };
 }

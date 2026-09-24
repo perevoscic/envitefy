@@ -10,7 +10,7 @@ createRoot(root).render(
     eventId="qa-card"
     eventTitle="Home Sweet Home"
     eventHref="/card/home-sweet-home"
-    initialTab="rsvps"
+    initialTab={params.get("tab") === "dashboard" ? "dashboard" : "rsvps"}
     numberOfGuests={8}
     eventData={{
       createdVia: "livecard-builder",

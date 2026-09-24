@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import type { EventGuestActionVisibility } from "@/lib/event-guest-actions";
 import AtelierWeddingLayout from "@/app/event/weddings/_renderers/atelier-wedding-layouts";
 import BauhausWedding from "@/app/event/weddings/_renderers/bauhaus-wedding";
 import CaliforniaCoastalWedding from "@/app/event/weddings/_renderers/california-coastal-wedding";
@@ -60,6 +61,7 @@ interface Props {
   eventId?: string;
   preview?: boolean;
   hideGuestTools?: boolean;
+  onGuestActionsChange?: (value: EventGuestActionVisibility) => void;
 }
 
 function buildPreviewRegistryCards(
@@ -110,6 +112,7 @@ export default function WeddingRenderer({
   eventId,
   preview = true,
   hideGuestTools = false,
+  onGuestActionsChange,
 }: Props) {
   const { layout, theme } = template;
   const eventWithAffiliateRegistries = withAmazonAffiliateRegistryLinks(event);
@@ -206,6 +209,8 @@ export default function WeddingRenderer({
           </p>
         )}
         <EventGuestActions
+          visibility={event.guestActions}
+          onVisibilityChange={onGuestActionsChange}
           title={event.headlineTitle}
           start={
             event.startISO ||

@@ -7,6 +7,7 @@ import EventDeleteModal from "@/components/EventDeleteModal";
 import Link from "next/link";
 import { buildEditLink } from "@/utils/event-edit-route";
 import { normalizeUrlValue } from "@/utils/contact";
+import { normalizeEventGuestActions } from "@/lib/event-guest-actions";
 import WeddingRenderer from "@/components/weddings/WeddingRenderer";
 import type { EventData } from "@/app/event/weddings/_renderers/content-sections";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
@@ -899,6 +900,7 @@ export default function WeddingTemplateView({
       endDate: weddingData.endDate || eventLocalDateParts(weddingData.endISO).date,
       startISO: weddingData.startISO || null,
       endISO: weddingData.endISO || null,
+      guestActions: normalizeEventGuestActions(weddingData.guestActions),
       guestPlanning: normalizeEventGuestPlanning(weddingData.guestPlanning),
       location,
       story:

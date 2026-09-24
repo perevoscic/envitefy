@@ -76,6 +76,7 @@ export async function saveTemplateDraftToAccount({
       ...canonical.data,
       ...data,
       category: data.category || getTemplateCategory(category)!.historyCategory,
+      primaryOutput: category === "signup-forms" ? "signup_form" : "event_page",
       ownership: "owned",
       status,
       draftStatus: status,

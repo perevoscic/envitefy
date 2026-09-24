@@ -59,7 +59,7 @@ export default function SignupTemplatesPage() {
       if (!res.ok) throw new Error("Failed to create sign-up");
       const row = (await res.json().catch(() => ({}))) as { id?: string };
       const id = row?.id;
-      if (id) allowNavigation(() => router.push(`/smart-signup-form/${id}?created=1`));
+      if (id) allowNavigation(() => router.push(`/smart-signup-form/${id}?published=1`));
     } catch (err) {
       throw err instanceof Error ? err : new Error("Failed to create signup");
     } finally {

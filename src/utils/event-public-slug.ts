@@ -1,13 +1,19 @@
+import { TEMPLATE_CATEGORIES } from "../lib/template-categories.ts";
+
 const DEFAULT_PUBLIC_SLUG = "event";
 export const MAX_PUBLIC_SLUG_LENGTH = 96;
 
 const RESERVED_EVENT_PUBLIC_SLUGS = new Set([
+  ...TEMPLATE_CATEGORIES.flatMap(({ editor }) =>
+    editor.startsWith("/event/") ? [editor.split("/")[2]] : [],
+  ),
   "appointments",
   "baby-showers",
   "birthdays",
   "anniversaries",
   "cheerleading",
   "dance-ballet",
+  "design",
   "document-layout-check",
   "football",
   "football-season",

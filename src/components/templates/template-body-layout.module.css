@@ -421,3 +421,23 @@
     margin: 0;
   }
 }
+
+/* One visible section fills the body in every design, including narrow previews.
+   Keep this after the layout and mobile rules so decorative offsets cannot
+   reserve space for a section that isn't there. */
+.body[data-template-body-layout] .sections:has(> .panel:only-child) {
+  grid-template-columns: minmax(0, 1fr);
+  margin-inline: 0;
+  padding-inline: 0;
+}
+.body[data-template-body-layout] .sections > .panel:only-child {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 0;
+}
+.body[data-template-body-layout="path"] .sections:has(> .panel:only-child) {
+  border-left: 0;
+}
+.body[data-template-body-layout="path"] .panel:only-child::before {
+  content: none;
+}

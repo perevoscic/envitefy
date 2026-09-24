@@ -14,7 +14,7 @@ import {
 } from "@/lib/db";
 import { sendShareEventEmail } from "@/lib/email";
 import { invalidateUserHistory } from "@/lib/history-cache";
-import { buildEventPath } from "@/utils/event-url";
+import { buildEventProductPath } from "@/utils/event-product-route";
 
 export const runtime = "nodejs";
 
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
           ? existing.title
           : "Event";
       const eventUrl = await absoluteUrl(
-        buildEventPath(eventId, slugTitle, undefined, existing.public_slug),
+        buildEventProductPath({ eventId, title: slugTitle, data: existing.data, publicSlug: existing.public_slug }),
       );
       await sendShareEventEmail({
         toEmail: recipientEmail,
