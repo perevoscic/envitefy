@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type CSSProperties, type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { type EventContextTab, useSidebar } from "@/app/sidebar-context";
 import ArtworkPreviewDialog from "@/components/ArtworkPreviewDialog";
 import ArtworkDownloadButton from "@/components/ArtworkDownloadButton";
@@ -29,8 +29,10 @@ import ownerStyles from "./EventOwnerTools.module.css";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventResponseDashboard from "@/components/EventResponseDashboard";
 import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileTopbarSuppressor";
+import OwnerCardPreviewTeaser from "@/components/OwnerCardPreviewTeaser";
 import { SharedStudioCardFrame } from "@/components/studio/SharedStudioCardPage";
 import { useArtworkAspectRatio } from "@/hooks/use-artwork-aspect-ratio";
+import { useMobilePreviewSwipe } from "@/hooks/useMobilePreviewSwipe";
 import { requestCardEdit } from "@/lib/card-edit-client";
 import { hasActionableRsvp } from "@/lib/dashboard-data";
 import {
@@ -741,6 +743,8 @@ export default function EventOwnerTools({
     preview: Partial<ProductPreviewModel> | null;
   } | null>(null);
   const productViewerTrigger = useRef<HTMLElement | null>(null);
+  const productViewerScroll = useRef({ x: 0, y: 0 });
+  const cardTeaserTrigger = useRef<HTMLButtonElement | null>(null);
   const [publicUrlOverride, setPublicUrlOverride] = useState<string | null>(null);
   const preview = useMemo(() => buildProductPreviewModel(eventData), [eventData]);
   const effectivePreview = useMemo(
@@ -798,11 +802,18 @@ export default function EventOwnerTools({
     ? { ...preview, ...savedProductOverride.preview }
     : preview;
   const productName = preview.surface === "studio-card" ? "card" : "event";
-  const openProductViewer = (mode: "current" | "changes") => {
+  const openProductViewer = (mode: "current" | "changes", trigger?: HTMLElement | null) => {
     productViewerTrigger.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      trigger || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    productViewerScroll.current = { x: window.scrollX, y: window.scrollY };
     setProductViewerMode(mode);
   };
+  const hasCardPreview = shouldOpenPreviewInStudioCard(currentProduct);
+  const previewSwipe = useMobilePreviewSwipe({
+    enabled: hasCardPreview && productViewerMode === null,
+    direction: "left",
+    onSwipe: () => openProductViewer("current", cardTeaserTrigger.current),
+  });
 
   useEffect(() => {
     setCurrentEventTitle(eventTitle);
@@ -866,7 +877,11 @@ export default function EventOwnerTools({
   }
 
   return (
-    <main className="min-h-[100dvh] w-full px-3 pb-5 pt-[calc(var(--app-mobile-topbar-offset,4rem)+1.35rem)] text-slate-950 sm:px-6 lg:px-8 lg:py-5">
+    <main
+      {...previewSwipe}
+      data-owner-card-swipe={hasCardPreview ? "true" : undefined}
+      className="min-h-[100dvh] w-full px-3 pb-5 pt-[calc(var(--app-mobile-topbar-offset,4rem)+1.35rem)] text-slate-950 sm:px-6 lg:px-8 lg:py-5"
+    >
       <div
         className={`${effectivePreview.surface === "studio-card" ? ownerStyles.cardWorkspace : ""} mx-auto grid w-full max-w-[1380px] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,410px)] xl:grid-cols-[minmax(0,1fr)_430px]`}
         style={{ "--owner-artwork-ratio": artworkRatio } as CSSProperties}
@@ -880,6 +895,14 @@ export default function EventOwnerTools({
             detailsEditHref={resolvedArtworkEditHref ? resolvedEditHref : null}
             onViewCurrent={() => openProductViewer("current")}
             onShare={sharePublicLink}
+            mobileCardPreview={hasCardPreview && currentProduct.imageUrl ? (
+              <OwnerCardPreviewTeaser
+                imageUrl={currentProduct.imageUrl}
+                previewOpen={productViewerMode !== null}
+                triggerRef={cardTeaserTrigger}
+                onOpen={() => openProductViewer("current", cardTeaserTrigger.current)}
+              />
+            ) : null}
           />
           {ownerWorkspaceTabs.length > 1 ? (
             <OwnerWorkspaceTabs
@@ -951,7 +974,10 @@ export default function EventOwnerTools({
         publicUrl={publicUrl}
         embeddedPreviewUrl={embeddedPreviewHref}
         onClose={() => setProductViewerMode(null)}
-        onReturnFocus={() => productViewerTrigger.current?.focus()}
+        onReturnFocus={() => {
+          productViewerTrigger.current?.focus({ preventScroll: true });
+          window.scrollTo({ left: productViewerScroll.current.x, top: productViewerScroll.current.y, behavior: "instant" });
+        }}
       />
       {productViewerMode !== null ? <OwnerPreviewMobileTopbarSuppressor /> : null}
     </main>
@@ -1173,6 +1199,7 @@ function OwnerWorkspaceHeader({
   detailsEditHref,
   onViewCurrent,
   onShare,
+  mobileCardPreview,
 }: {
   eventId: string;
   title: string;
@@ -1180,6 +1207,7 @@ function OwnerWorkspaceHeader({
   detailsEditHref: string | null;
   onViewCurrent: () => void;
   onShare: () => void;
+  mobileCardPreview?: ReactNode;
 }) {
   const deleteButtonClassName =
     "inline-flex h-10 w-10 items-center justify-center gap-0 rounded-full px-0 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200 sm:w-auto sm:gap-1.5 sm:px-3";
@@ -1234,6 +1262,7 @@ function OwnerWorkspaceHeader({
           <h2 className="line-clamp-2 text-[1.65rem] font-semibold leading-tight text-slate-950 sm:text-3xl">
             {title || "Untitled event"}
           </h2>
+          {mobileCardPreview}
         </div>
       </div>
     </header>
@@ -1482,6 +1511,7 @@ function OwnerProductViewer({
     return (
       <ArtworkPreviewDialog
         open={open}
+        mobileSwipeNavigation
         title={heading}
         imageUrl={preview.imageUrl}
         aspectRatio={preview.invitationData?.heroTextMode === "overlay" ? 9 / 16 : 2 / 3}

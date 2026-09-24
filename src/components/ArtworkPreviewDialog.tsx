@@ -4,6 +4,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Share2, X } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { useArtworkAspectRatio } from "@/hooks/use-artwork-aspect-ratio";
+import { useMobilePreviewSwipe } from "@/hooks/useMobilePreviewSwipe";
 import chromeStyles from "./studio/LiveCardChromeButton.module.css";
 import styles from "./ArtworkPreviewDialog.module.css";
 
@@ -21,6 +22,7 @@ export default function ArtworkPreviewDialog({
   toolbar,
   footer,
   downloadAction,
+  mobileSwipeNavigation = false,
   children,
 }: {
   open: boolean;
@@ -33,9 +35,15 @@ export default function ArtworkPreviewDialog({
   toolbar?: ReactNode;
   footer?: ReactNode;
   downloadAction?: ReactNode;
+  mobileSwipeNavigation?: boolean;
   children: ReactNode;
 }) {
   const artworkRatio = useArtworkAspectRatio(imageUrl, aspectRatio);
+  const swipe = useMobilePreviewSwipe({
+    enabled: open && mobileSwipeNavigation,
+    direction: "right",
+    onSwipe: onClose,
+  });
   return (
     <Dialog.Root
       open={open}
@@ -44,9 +52,14 @@ export default function ArtworkPreviewDialog({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[7000] bg-neutral-950" />
+        <Dialog.Overlay
+          data-mobile-swipe={mobileSwipeNavigation ? "true" : undefined}
+          className={`${styles.overlay} fixed inset-0 z-[7000] bg-neutral-950`}
+        />
         <Dialog.Content
+          {...swipe}
           data-artwork-preview
+          data-mobile-swipe={mobileSwipeNavigation ? "true" : undefined}
           data-has-toolbar={toolbar ? "true" : undefined}
           data-has-footer={footer ? "true" : undefined}
           aria-describedby={undefined}

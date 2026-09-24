@@ -6,14 +6,20 @@ const { chromium } = require("playwright");
 const compiled = require("next/dist/compiled/webpack/webpack");
 compiled.init();
 
-test("owner card previews keep RSVP choices local, while the public card still saves responses", { timeout: 120000 }, async () => {
+test("mobile owners discover and swipe card previews without losing progress; preview RSVPs stay local", { timeout: 120000 }, async () => {
   const output = path.resolve("output/owner-card-preview");
   await new Promise((resolve, reject) => {
     const compiler = compiled.webpack({
       mode: "development", target: "web", devtool: false,
       entry: path.resolve("scripts/fixtures/owner-card-preview/entry.tsx"),
       output: { path: output, filename: "fixture.js" },
-      resolve: { extensions: [".tsx", ".ts", ".js"], alias: { "@": path.resolve("src") } },
+      resolve: { extensions: [".tsx", ".ts", ".js"], alias: {
+        "@/app/sidebar-context": path.resolve("scripts/fixtures/owner-card-preview/sidebar.ts"),
+        "@/components/EventResponseDashboard": path.resolve("scripts/fixtures/owner-card-preview/responses.tsx"),
+        "@/components/EventDeleteModal": path.resolve("scripts/fixtures/owner-card-preview/delete.tsx"),
+        "next/navigation": path.resolve("scripts/fixtures/owner-card-preview/navigation.ts"),
+        "@": path.resolve("src"),
+      } },
       plugins: [new compiled.webpack.DefinePlugin({ "process.env": JSON.stringify({ NODE_ENV: "development" }) }), { apply(compiler) {
         compiler.hooks.compilation.tap("FixtureCss", (compilation) => {
           compiled.webpack.NormalModule.getCompilationHooks(compilation).loader.tap("FixtureCss", (context) => {
@@ -31,11 +37,11 @@ test("owner card previews keep RSVP choices local, while the public card still s
     });
     compiler.run((error, stats) => compiler.close(() => error || stats?.hasErrors() ? reject(error || new Error(stats.toString({ all: false, errors: true }))) : resolve()));
   });
-  const source = fs.readFileSync("src/app/globals.css", "utf8").replace('@import "tailwindcss";', '@import "tailwindcss" source(none);\n@source "../components/studio/SharedStudioCardPage.tsx";\n@source "../components/studio/StudioLiveCardActionSurface.tsx";\n@source "../components/ArtworkDownloadButton.tsx";\n@source "../components/ArtworkPreviewDialog.tsx";');
+  const source = fs.readFileSync("src/app/globals.css", "utf8").replace('@import "tailwindcss";', '@import "tailwindcss" source(none);\n@source "../components/studio/SharedStudioCardPage.tsx";\n@source "../components/studio/StudioLiveCardActionSurface.tsx";\n@source "../components/ArtworkDownloadButton.tsx";\n@source "../components/ArtworkPreviewDialog.tsx";\n@source "../components/EventOwnerTools.tsx";');
   const css = (await require("postcss")([require("@tailwindcss/postcss")()]).process(source, { from: path.resolve("src/app/globals.css") })).css;
   const script = fs.readFileSync(path.join(output, "fixture.js"));
   const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
-  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 }, hasTouch: true });
   page.setDefaultTimeout(10000);
   const writes = [];
   const errors = [];
@@ -47,6 +53,8 @@ test("owner card previews keep RSVP choices local, while the public card still s
     const url = new URL(req.url());
     if (url.origin !== base) { unexpected.push(req.url()); return route.abort(); }
     if (url.pathname === "/fixture.js") return route.fulfill({ contentType: "text/javascript", body: script });
+    if (url.pathname === "/card.webp") return route.fulfill({ contentType: "image/webp", body: fs.readFileSync("public/studio/housewarming.webp") });
+    if (url.pathname === "/card/home-sweet-home") return route.fulfill({ contentType: "text/html", body: "<p>Event page preview</p>" });
     if (url.pathname === "/api/events/qa-card/rsvp") {
       writes.push(req.postDataJSON());
       return route.fulfill({ contentType: "application/json", body: '{"ok":true}' });
@@ -55,6 +63,105 @@ test("owner card previews keep RSVP choices local, while the public card still s
     return route.fulfill({ contentType: "text/html", body: `<html><head><meta charset="utf-8"><style>${css}</style></head><body><main id="root"></main><script src="/fixture.js"></script></body></html>` });
   });
   try {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${base}/?mode=workspace`);
+    const teaser = page.getByRole("button", { name: "View Live Card", exact: true });
+    const preview = page.locator("[data-artwork-preview]");
+    const peek = page.locator('[class*="OwnerCardPreviewTeaser_peek"]');
+    await teaser.waitFor();
+    await peek.waitFor();
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, "hint does not add horizontal scrolling");
+    await peek.waitFor({ state: "hidden" });
+    await page.screenshot({ path: path.join(output, "mobile-owner-workspace.png") });
+    await page.reload();
+    await teaser.waitFor();
+    // Wait past the hint delay: repeat visits must stay still.
+    await page.waitForTimeout(1200);
+    assert.equal(await peek.count(), 0, "hint is shown only once");
+    const touch = await page.context().newCDPSession(page);
+    const swipe = async (x, y, dx, dy) => {
+      await touch.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] });
+      for (let step = 1; step <= 6; step++) {
+        await touch.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x + dx * step / 6, y: y + dy * step / 6 }] });
+        await page.evaluate(() => new Promise(requestAnimationFrame));
+      }
+      await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    };
+    await page.getByLabel("Guest search").fill("Keep this edit");
+    await page.getByLabel("Guest search").blur();
+    await page.evaluate(() => window.scrollTo(0, 240));
+    const scrollBefore = await page.evaluate(() => window.scrollY);
+    await swipe(280, 560, -160, 4);
+    await preview.waitFor();
+    await page.waitForTimeout(320);
+    assert.notEqual(await preview.evaluate((element) => getComputedStyle(element).animationName), "none", "preview slides in on mobile");
+    await page.screenshot({ path: path.join(output, "mobile-card-preview.png") });
+    await page.getByRole("button", { name: "RSVP", exact: true }).click();
+    await page.locator("[data-live-card-panel]").waitFor();
+    await swipe(90, 390, 160, 0);
+    assert.equal(await preview.isVisible(), true, "guest popup gestures do not close preview");
+    await page.keyboard.press("Escape");
+    await page.locator("[data-live-card-panel]").waitFor({ state: "hidden" });
+    await swipe(90, 390, 160, 0);
+    await preview.waitFor({ state: "hidden" });
+    assert.equal(await page.evaluate(() => window.scrollY), scrollBefore, "swiping back preserves workspace scroll");
+    assert.equal(await page.getByLabel("Guest search").inputValue(), "Keep this edit");
+    assert.equal(await page.getByRole("tab", { name: "RSVPs", exact: true }).first().getAttribute("aria-selected"), "true");
+    await swipe(270, 550, -15, -180);
+    assert.equal(await preview.count(), 0, "vertical scrolling does not open preview");
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const inputBounds = await page.getByLabel("Guest search").boundingBox();
+    await swipe(inputBounds.x + inputBounds.width - 30, inputBounds.y + inputBounds.height / 2, -80, 0);
+    assert.equal(await preview.count(), 0, "form interaction does not open preview");
+    const teaserBounds = await teaser.boundingBox();
+    await swipe(teaserBounds.x + teaserBounds.width - 35, teaserBounds.y + teaserBounds.height / 2, -130, 0);
+    await preview.waitFor();
+    await page.getByRole("button", { name: "Close preview", exact: true }).click();
+    await preview.waitFor({ state: "hidden" });
+    await teaser.click();
+    await preview.waitFor();
+    await page.getByRole("button", { name: "Close preview", exact: true }).click();
+    await preview.waitFor({ state: "hidden" });
+    assert.equal(await teaser.evaluate((element) => element === document.activeElement), true, "close restores keyboard focus");
+    await teaser.focus();
+    await page.keyboard.press("Enter");
+    await preview.waitFor();
+    await page.keyboard.press("Escape");
+    await preview.waitFor({ state: "hidden" });
+
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    const bottomScroll = await page.evaluate(() => window.scrollY);
+    await swipe(280, 550, -150, 0);
+    await preview.waitFor();
+    await page.getByRole("button", { name: "Close preview", exact: true }).click();
+    await preview.waitFor({ state: "hidden" });
+    assert.equal(await page.evaluate(() => window.scrollY), bottomScroll, "closing at the bottom restores scroll after navigation chrome returns");
+
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await teaser.waitFor();
+    await page.waitForTimeout(1200);
+    assert.equal(await peek.count(), 0, "reduced motion suppresses hint");
+    await teaser.click();
+    assert.equal(await preview.evaluate((element) => getComputedStyle(element).animationName), "none", "reduced motion suppresses slide");
+    await page.getByRole("button", { name: "Close preview", exact: true }).click();
+    await preview.waitFor({ state: "hidden" });
+    await page.setViewportSize({ width: 844, height: 390 });
+    await teaser.click();
+    const landscape = await preview.boundingBox();
+    assert.ok(landscape && landscape.x >= 0 && landscape.y >= 0 && landscape.x + landscape.width <= 844 && landscape.y + landscape.height <= 390, "landscape artwork fits the viewport");
+    await page.getByRole("button", { name: "Close preview", exact: true }).click();
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    assert.equal(await teaser.isVisible(), false, "desktop retains the side-by-side layout");
+    await swipe(700, 550, -180, 0);
+    assert.equal(await preview.count(), 0, "desktop does not use mobile swipes");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${base}/?mode=workspace&eventPage=1`);
+    assert.equal(await teaser.count(), 0, "event pages do not offer a Live Card teaser");
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.setViewportSize({ width: 1280, height: 1000 });
+
     for (const query of ["mode=embedded", "mode=embedded&contact=email", "mode=embedded&published=1", "mode=owner&published=1", "mode=embedded&placement=above"]) {
       await page.goto(`${base}/?${query}`);
       await page.getByRole("button", { name: "RSVP", exact: true }).click();

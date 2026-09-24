@@ -1,10 +1,32 @@
 import { createRoot } from "react-dom/client";
 import { SharedStudioCardFrame } from "../../../src/components/studio/SharedStudioCardPage";
+import EventOwnerTools from "../../../src/components/EventOwnerTools";
 
 const params = new URLSearchParams(window.location.search);
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing fixture root");
 createRoot(root).render(
+  params.get("mode") === "workspace" ? <EventOwnerTools
+    eventId="qa-card"
+    eventTitle="Home Sweet Home"
+    eventHref="/card/home-sweet-home"
+    initialTab="rsvps"
+    numberOfGuests={8}
+    eventData={{
+      createdVia: "livecard-builder",
+      rsvpEnabled: true,
+      rsvp: { enabled: true },
+      publicEvent: { ownerDefaultSurface: params.has("eventPage") ? "event" : "card" },
+      studioCard: {
+        imageUrl: "/card.webp",
+        invitationData: {
+          title: "Home Sweet Home",
+          heroTextMode: "image",
+          eventDetails: { product: "live_card", rsvpEnabled: true, rsvpName: "Host", rsvpContact: "+15555550123" },
+        },
+      },
+    }}
+  /> :
   <SharedStudioCardFrame
     title="Birthday preview"
     canDownload={params.get("mode") === "owner"}
