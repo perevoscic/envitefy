@@ -59,6 +59,13 @@ test("mobile owners discover and swipe card previews without losing progress; pr
       writes.push(req.postDataJSON());
       return route.fulfill({ contentType: "application/json", body: '{"ok":true}' });
     }
+    if (url.pathname.startsWith("/fonts/")) {
+      const file = path.resolve("public", url.pathname.slice(1));
+      const root = path.resolve("public/fonts");
+      if (file.startsWith(`${root}${path.sep}`) && fs.existsSync(file)) {
+        return route.fulfill({ contentType: "font/woff2", body: fs.readFileSync(file) });
+      }
+    }
     if (url.pathname !== "/") { unexpected.push(req.url()); return route.abort(); }
     return route.fulfill({ contentType: "text/html", body: `<html><head><meta charset="utf-8"><style>${css}</style></head><body><main id="root"></main><script src="/fixture.js"></script></body></html>` });
   });
