@@ -2,13 +2,27 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { Share2, X } from "lucide-react";
-import type { CSSProperties, ReactNode } from "react";
+import { type CSSProperties, type ReactNode, useLayoutEffect, useRef, useState } from "react";
 import { useArtworkAspectRatio } from "@/hooks/use-artwork-aspect-ratio";
 import { useMobilePreviewSwipe } from "@/hooks/useMobilePreviewSwipe";
 import chromeStyles from "./studio/LiveCardChromeButton.module.css";
 import styles from "./ArtworkPreviewDialog.module.css";
 
 const chromeButtonClassName = `${chromeStyles.glass} inline-flex size-11 cursor-pointer items-center justify-center rounded-full border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white`;
+
+function PreviewFooter({ children, onHeight }: { children: ReactNode; onHeight: (height: number) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const measure = () => onHeight(Math.max(76, Math.ceil(element.getBoundingClientRect().height) + 24));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [onHeight]);
+  return <div ref={ref} className={styles.footer}>{children}</div>;
+}
 
 /** Center artwork, with optional owner download beside Close. */
 export default function ArtworkPreviewDialog({
@@ -39,6 +53,7 @@ export default function ArtworkPreviewDialog({
   children: ReactNode;
 }) {
   const artworkRatio = useArtworkAspectRatio(imageUrl, aspectRatio);
+  const [footerSpace, setFooterSpace] = useState(76);
   const swipe = useMobilePreviewSwipe({
     enabled: open && mobileSwipeNavigation,
     direction: "right",
@@ -64,7 +79,10 @@ export default function ArtworkPreviewDialog({
           data-has-footer={footer ? "true" : undefined}
           aria-describedby={undefined}
           className={`${styles.viewportFrame} ${styles.content}`}
-          style={{ "--artwork-preview-ratio": artworkRatio } as CSSProperties}
+          style={{
+            "--artwork-preview-ratio": artworkRatio,
+            ...(footer ? { "--artwork-preview-footer-space": `${footerSpace}px` } : {}),
+          } as CSSProperties}
           onCloseAutoFocus={
             onReturnFocus
               ? (event) => {
@@ -97,7 +115,7 @@ export default function ArtworkPreviewDialog({
             </Dialog.Close>
           </div>
           {children}
-          {footer ? <div className={styles.footer}>{footer}</div> : null}
+          {footer ? <PreviewFooter onHeight={setFooterSpace}>{footer}</PreviewFooter> : null}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

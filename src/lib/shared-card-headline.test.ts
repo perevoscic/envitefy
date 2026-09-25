@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import sharp from "sharp";
+import { liveCardGenerationErrorResponse } from "./livecard-generation-failure";
 import { createLiveCardForm } from "./livecard-builder";
 import {
   cardHeadlinePrompt,
@@ -175,7 +176,13 @@ test("generated lettering requires verification, preserves exact text, and retur
     assert.equal(inMemoryResult.title, form.title, "the full lettering pipeline accepts unsaved artwork");
     for (const value of ["failed", "unavailable"] as const) {
       status = value;
-      await assert.rejects(generateCardHeadline(form, design), value === "failed" ? /tried correcting it once/ : /check is temporarily unavailable/);
+      await assert.rejects(generateCardHeadline(form, design), (error: unknown) => {
+        const response = liveCardGenerationErrorResponse(error, "lettering");
+        assert.match(response.error, value === "failed" ? /tried correcting it once/ : /check is temporarily unavailable/);
+        assert.equal(response.code, value === "failed" ? "quality_rejected" : "verification_unavailable");
+        assert.equal(response.retryable, true);
+        return true;
+      });
     }
     assert.equal(
       calls,

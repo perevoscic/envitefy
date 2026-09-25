@@ -1146,13 +1146,10 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                                 )
                               }
                               className="inline-flex min-h-11 w-auto cursor-pointer items-center justify-center gap-2 rounded-xl bg-neutral-900 px-4 py-2 text-xs font-bold text-white"
-                              aria-label={`Directions to ${locationAction.shortName}`}
+                              aria-label={`Get directions to ${locationAction.label}`}
                             >
                               <Navigation className="h-4 w-4" aria-hidden="true" />
-                              <span className="hidden sm:inline">
-                                Directions to {locationAction.shortName}
-                              </span>
-                              <span className="sm:hidden">{locationAction.shortName}</span>
+                              <span>Get directions</span>
                             </button>
                           </div>
                         </div>

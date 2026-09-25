@@ -50,6 +50,8 @@ const files = [
   "scripts/lib/create-offline-network.test.mjs",
   "scripts/livecard-location-backend.test.cjs",
   "scripts/livecard-headline-backend.test.cjs",
+  "scripts/livecard-generation-backend.test.cjs",
+  "src/lib/livecard-workflow.test.ts",
 ];
 const result = spawnSync(process.execPath, [
   "--import", "./scripts/lib/create-offline-network.mjs", "--test", "--test-concurrency=4", ...new Set(files),

@@ -104,8 +104,9 @@ test("studio preview preserves full poster artwork with guest controls overlaid 
   assert.match(surfaceSource, /Visit \{registryActionLabel\}/);
   assert.match(surfaceSource, /locationActions\.length > 0/);
   assert.match(surfaceSource, /locationActions\.map/);
-  assert.match(surfaceSource, /Directions to \{locationAction\.shortName\}/);
-  assert.match(surfaceSource, /<span className="sm:hidden">\{locationAction\.shortName\}<\/span>/);
+  assert.match(surfaceSource, /aria-label=\{`Get directions to \$\{locationAction\.label\}`\}/);
+  assert.match(surfaceSource, /<span>Get directions<\/span>/);
+  assert.doesNotMatch(surfaceSource, /Directions to \{locationAction\.shortName\}/);
   assert.match(surfaceSource, /backdrop-blur-md/);
   assert.doesNotMatch(surfaceSource, /bg-black\/35 backdrop-blur-sm/);
   assert.doesNotMatch(surfaceSource, /Get Directions/);

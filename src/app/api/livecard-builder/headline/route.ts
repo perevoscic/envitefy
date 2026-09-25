@@ -3,6 +3,7 @@ import { builderApiAccess } from "@/lib/livecard-api-access";
 import { readLiveCardForm, validateLiveCard } from "@/lib/livecard-builder";
 import { readSharedCardDesign } from "@/lib/shared-card-design";
 import { generateCardHeadline } from "@/lib/shared-card-headline";
+import { liveCardGenerationErrorResponse } from "@/lib/livecard-generation-failure";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -32,9 +33,7 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "The title artwork could not be prepared.",
-      },
+      liveCardGenerationErrorResponse(error, "lettering"),
       { status: 503 },
     );
   }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { builderApiAccess } from "@/lib/livecard-api-access";
 import { readLiveCardForm, validateLiveCard } from "@/lib/livecard-builder";
 import { generateSharedCard } from "@/lib/shared-card-generation";
+import { liveCardGenerationErrorResponse } from "@/lib/livecard-generation-failure";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -25,12 +26,7 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Your design could not be created. Please retry.",
-      },
+      liveCardGenerationErrorResponse(error, "design"),
       { status: 503 },
     );
   }

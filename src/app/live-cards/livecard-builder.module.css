@@ -873,6 +873,51 @@
 .mobilePreviewControls {
   display: none;
 }
+.letteringNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  width: min(100%, var(--builder-artwork-width, 370px));
+  margin: 0 auto 12px;
+  padding: 10px 12px;
+  border: 1px solid #e7dff3;
+  border-radius: 12px;
+  background: #f7f3fc;
+  color: #534368;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.letteringNotice > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #7452b4;
+}
+.letteringNotice strong {
+  display: block;
+  color: #49365f;
+}
+.letteringNotice p {
+  margin: 2px 0 0;
+}
+@media (min-width: 600px) and (max-height: 500px) {
+  .previewSaveActions .letteringNotice {
+    display: block;
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #eee9f5;
+    font-size: 12px;
+    text-align: center;
+  }
+  .previewSaveActions .letteringNotice :is(svg, strong) {
+    display: none;
+  }
+  .previewSaveActions .letteringNotice p {
+    margin: 0;
+  }
+}
 .cardChromeButton {
   position: absolute;
   top: 12px;
@@ -994,6 +1039,27 @@
   border-radius: 12px;
   font-size: 14px;
   margin-bottom: 18px;
+}
+.saveActions + .success,
+.cardSaveActions + .success {
+  margin-top: 10px;
+  font-size: 13px;
+}
+.preparation {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #e7e0ee;
+  border-radius: 12px;
+  background: #f8f5fc;
+  color: #42334f;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.preparation p {
+  margin-top: 4px;
+}
+.preparation button {
+  margin-top: 12px;
 }
 .review h3 {
   font-family: var(--font-playfair), Georgia, serif;

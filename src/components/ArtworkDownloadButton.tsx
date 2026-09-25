@@ -24,6 +24,7 @@ export default function ArtworkDownloadButton({
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [started, setStarted] = useState(false);
   const latestData = useRef(invitationData);
   latestData.current = invitationData;
   const label = invitationData?.sharedDesign ? "Download invitation" : "Download artwork";
@@ -41,6 +42,7 @@ export default function ArtworkDownloadButton({
         onClick={async () => {
           setPending(true);
           setError("");
+          setStarted(false);
           try {
             if (beforeDownload && !(await beforeDownload())) return;
             const current = latestData.current;
@@ -48,6 +50,7 @@ export default function ArtworkDownloadButton({
               current?.sharedDesign ? await composeSharedCard(current, "digital_flyer", "image/jpeg") : imageUrl,
               current?.title || title,
             );
+            setStarted(true);
           } catch (cause) {
             setError(
               cause instanceof Error ? cause.message : "The artwork could not be downloaded.",
@@ -62,8 +65,15 @@ export default function ArtworkDownloadButton({
         ) : (
           <Download className={variant === "icon" ? "size-5" : "size-4"} aria-hidden="true" />
         )}
-        <span className={variant === "icon" ? "sr-only" : undefined}>{pending ? "Downloading…" : label}</span>
+        <span className={variant === "icon" ? "sr-only" : undefined}>{pending ? "Preparing download…" : label}</span>
       </button>
+      {(pending || started) && (
+        <p role="status" aria-live="polite" className={variant === "icon"
+          ? "absolute right-0 top-full mt-2 w-48 rounded-xl bg-white p-3 text-sm text-slate-800 shadow-lg"
+          : "mt-2 text-sm text-slate-700"}>
+          {pending ? "Preparing download…" : "Download started"}
+        </p>
+      )}
       {error ? (
         <p role="alert" className={variant === "icon" ? "absolute right-0 top-full mt-2 w-48 max-w-[calc(100vw-3rem)] rounded-xl bg-white p-3 text-sm text-rose-700 shadow-lg" : "mt-2 text-sm text-rose-700"}>
           {error}

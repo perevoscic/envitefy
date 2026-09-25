@@ -216,6 +216,25 @@ export function liveCardDateTime(date: string, time: string, timezone: string): 
   return localClockToIso({ year, month, day, hour, minute }, timezone);
 }
 
+/** Review uses event-local instants, never the browser's timezone or an invented end. */
+export function liveCardScheduleSummary(
+  form: Pick<LiveCardForm, "date" | "startTime" | "endDate" | "endTime" | "timezone">,
+): string {
+  const start = liveCardDateTime(form.date, form.startTime, form.timezone);
+  if (!start) return form.date || "Add a date and time";
+  const dateTime = new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium", timeStyle: "short", timeZone: form.timezone,
+  });
+  const startText = dateTime.format(new Date(start));
+  const endDate = form.endDate || form.date;
+  const end = form.endTime ? liveCardDateTime(endDate, form.endTime, form.timezone) : null;
+  if (!end) return startText;
+  const endText = endDate === form.date
+    ? new Intl.DateTimeFormat("en-US", { timeStyle: "short", timeZone: form.timezone }).format(new Date(end))
+    : dateTime.format(new Date(end));
+  return `${startText}–${endText}`;
+}
+
 export function liveCardRegistryUrl(value: string): string | null {
   const text = value.trim();
   if (!text || (/^[a-z][a-z\d+.-]*:/i.test(text) && !/^https?:\/\//i.test(text))) return null;
