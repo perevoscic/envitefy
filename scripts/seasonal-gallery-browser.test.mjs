@@ -98,6 +98,22 @@ test("seasonal galleries mix upcoming occasions, retain filters and links, and f
     await page.waitForFunction(() => [...document.querySelectorAll("[data-template-masonry-card]")].slice(0, 12).some((n) => n.getAttribute("data-template-masonry-card").includes("halloween")));
     await page.clock.fastForward(31000);
     await page.waitForFunction(() => ![...document.querySelectorAll("[data-template-masonry-card]")].slice(0, 12).some((n) => n.getAttribute("data-template-masonry-card").includes("halloween")));
+    for (const category of ["signup-forms", "general"]) {
+      await goto(category);
+      await page.getByRole("combobox", { name: "Holiday or occasion", exact: true }).selectOption("diwali");
+      await page.waitForFunction(() => document.querySelectorAll("[data-template-masonry-card]").length === 10);
+      assert.ok((await ids()).every((id) => id.startsWith("holidays--diwali--")));
+      await cards().locator("img").evaluateAll((images) => images.forEach((img) => { img.loading = "eager"; }));
+      await page.waitForFunction(() => [...document.querySelectorAll('[data-template-masonry-card] img')].every((img) => img.complete && img.naturalWidth === 1536));
+      await cards().locator("img").evaluateAll((images) => Promise.all(images.map((img) => img.decode())));
+      for (const width of [1280, 320]) {
+        await page.setViewportSize({ width, height: 900 });
+        await cards().first().scrollIntoViewIfNeeded();
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+        await page.screenshot({ path: path.join(out, `${category}-diwali-${width}.png`) });
+      }
+    }
     await goto("signup-forms", "&featured=1");
     assert.equal(await page.getByRole("combobox", { name: "Template order" }).count(), 0);
     assert.equal(await cards().count(), 6);

@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PLAN = ROOT / "docs/holiday-template-artwork.json"
 RESULTS = ROOT / "output/seasonal-templates/results"
 API_SOURCES = ROOT / "output/imagegen/holiday-batch"
+API_CORRECTIONS = ROOT / "output/imagegen/holiday-corrections"
 SOURCES = Path.home() / ".codex/generated_images/01a0d710-2458-7f01-b400-591358ad081c"
 
 
@@ -68,7 +69,8 @@ def main():
         source = Path(asset["source"]).resolve()
         output = (ROOT / asset["output"]).resolve()
         if source.suffix != ".png" or not (source.parent == SOURCES.resolve() or
-                (source.parent == API_SOURCES.resolve() and source.name == asset["id"] + ".png")):
+                (source.parent in {API_SOURCES.resolve(), API_CORRECTIONS.resolve()}
+                 and source.name == asset["id"] + ".png")):
             raise ValueError(f"Unexpected generated original: {source}")
         if not output.is_relative_to(ROOT / "public/templates/signup") or output.suffix != ".webp":
             raise ValueError(f"Unexpected output: {output}")
