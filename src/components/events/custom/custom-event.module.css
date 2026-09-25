@@ -171,7 +171,7 @@
 }
 .primary:focus-visible,
 .secondary:focus-visible {
-  outline: 2px solid #72527e;
+  outline: 2px solid var(--create-accent, #72527e);
   outline-offset: 4px;
 }
 .overlay {
@@ -185,7 +185,7 @@
   position: fixed;
   inset: 5vh max(20px, calc((100vw - 1060px) / 2));
   z-index: 141;
-  background: #fbf9fd;
+  background: var(--create-background, #fbf9fd);
   border-radius: 24px;
   display: flex;
   flex-direction: column;
@@ -198,18 +198,31 @@
   align-items: flex-start;
   gap: 20px;
   justify-content: space-between;
-  border-bottom: 1px solid #e6deeb;
+  border-bottom: 1px solid var(--create-border, #e6deeb);
 }
 .dialogHeader h2 {
   margin: 0;
   font-family: Georgia, serif;
-  font-size: 28px;
+  font-size: clamp(24px, 3vw, 28px);
+  line-height: 1.2;
 }
 .dialogHeader p {
   margin: 8px 0 0;
-  color: #746775;
+  color: var(--create-muted, #746775);
   font-size: 14px;
   line-height: 1.6;
+}
+.dialogHeader .dialogEyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: var(--create-accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+.dialogHeader > div {
+  min-width: 0;
 }
 .close {
   flex-shrink: 0;
@@ -262,7 +275,7 @@
 .field input:focus,
 .field textarea:focus,
 .field select:focus {
-  outline: 2px solid #9675ab;
+  outline: 2px solid var(--create-accent, #9675ab);
   outline-offset: 2px;
 }
 .reference {
@@ -279,12 +292,26 @@
 }
 .dialogFooter {
   padding: 20px 28px;
-  border-top: 1px solid #e6deeb;
+  border-top: 1px solid var(--create-border, #e6deeb);
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
   flex-wrap: wrap;
+}
+.dialogFooter .primary {
+  background: var(--create-accent);
+}
+.dialogFooter .primary:enabled:hover {
+  background: var(--create-hover);
+}
+.dialogFooter .secondary {
+  border-color: var(--create-border);
+  color: var(--create-accent);
+}
+.dialog .close:focus-visible {
+  outline: 2px solid var(--create-accent);
+  outline-offset: 3px;
 }
 .error {
   color: #a7293b;

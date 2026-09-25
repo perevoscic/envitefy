@@ -16,9 +16,9 @@
   width: min(640px, calc(100vw - 48px));
   max-height: calc(100dvh - 48px);
   overflow: hidden;
-  border: 1px solid #e8dfe8;
+  border: 1px solid var(--create-border, #e8dfe8);
   border-radius: 24px;
-  background: #fffcfa;
+  background: var(--create-background, #fffcfa);
   color: #342d38;
   box-shadow: 0 28px 100px rgb(28 19 34 / 24%);
   font-family: var(--font-body, Arial, sans-serif);
@@ -42,7 +42,7 @@
   align-items: center;
   gap: 8px;
   margin: 0 0 12px;
-  color: #765682;
+  color: var(--create-accent, #765682);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.07em;
@@ -72,7 +72,7 @@
   place-items: center;
   border-radius: 50%;
   color: #67566b;
-  background: #f3edf2;
+  background: var(--create-soft, #f3edf2);
   border: 0;
   cursor: pointer;
 }
@@ -139,7 +139,7 @@
   opacity: 0;
 }
 .upload:focus-within {
-  outline: 2px solid #684675;
+  outline: 2px solid var(--create-accent, #684675);
   outline-offset: 3px;
 }
 .optional {
@@ -167,7 +167,7 @@
 }
 .referencePreview button {
   min-height: 44px;
-  color: #684675;
+  color: var(--create-accent, #684675);
   text-decoration: underline;
 }
 .imageChoices {
@@ -202,12 +202,12 @@
   border-color: #aa8ab5;
 }
 .imageChoices label:has(input:checked) {
-  background: #f5eef8;
-  border-color: #684675;
-  box-shadow: inset 0 0 0 1px #684675;
+  background: var(--create-soft, #f5eef8);
+  border-color: var(--create-accent, #684675);
+  box-shadow: inset 0 0 0 1px var(--create-accent, #684675);
 }
 .imageChoices label:has(input:focus-visible) {
-  outline: 2px solid #684675;
+  outline: 2px solid var(--create-accent, #684675);
   outline-offset: 3px;
 }
 .imageChoices input {
@@ -238,7 +238,7 @@
 .check input {
   width: 18px;
   height: 18px;
-  accent-color: #684675;
+  accent-color: var(--create-accent, #684675);
 }
 .footer {
   flex-shrink: 0;
@@ -248,8 +248,8 @@
   justify-content: space-between;
   gap: 16px;
   padding: 20px 28px;
-  border-top: 1px solid #e8dfe8;
-  background: #fffcfa;
+  border-top: 1px solid var(--create-border, #e8dfe8);
+  background: var(--create-background, #fffcfa);
 }
 .footerNote {
   flex: 1;
@@ -276,12 +276,12 @@
   cursor: pointer;
 }
 .primary {
-  border: 1px solid #684675;
-  background: #684675;
+  border: 1px solid var(--create-accent, #684675);
+  background: var(--create-accent, #684675);
   color: white;
 }
 .primary:hover {
-  background: #52375d;
+  background: var(--create-hover, #52375d);
 }
 .secondary {
   border: 1px solid #d9cddd;
@@ -290,19 +290,19 @@
 }
 .secondary:hover,
 .quiet:hover {
-  background: #f3edf2;
+  background: var(--create-soft, #f3edf2);
 }
 .quiet {
   border: 1px solid transparent;
   background: transparent;
-  color: #684675;
+  color: var(--create-accent, #684675);
 }
 .primary:disabled {
   opacity: 0.55;
   cursor: wait;
 }
 .dialog :is(button, textarea, input):focus-visible {
-  outline: 2px solid #684675;
+  outline: 2px solid var(--create-accent, #684675);
   outline-offset: 3px;
 }
 .previewActions {
@@ -316,7 +316,7 @@
   background: #f3eeed;
 }
 .previewDialog .header {
-  border-bottom: 1px solid #e8dfe8;
+  border-bottom: 1px solid var(--create-border, #e8dfe8);
   padding-top: 18px;
   padding-bottom: 18px;
 }
@@ -509,7 +509,7 @@
   width: 82px;
   padding: 8px;
   border-radius: 12px;
-  color: #684675;
+  color: var(--create-accent, #684675);
   font:
     32px / 1.1 Georgia,
     serif;
@@ -534,7 +534,7 @@
   border: 1px solid #e3d4e9;
   border-radius: 50%;
   background: #f4ebf7;
-  color: #765682;
+  color: var(--create-accent, #765682);
   animation: designAssemble 700ms ease-out 1s both;
 }
 .loadingTrack {
@@ -582,13 +582,13 @@
   border: 1px solid #d6c6dc;
   border-radius: 12px;
   background: #fffafa;
-  color: #684675;
+  color: var(--create-accent, #684675);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
 }
 .redesign:focus-visible {
-  outline: 2px solid #684675;
+  outline: 2px solid var(--create-accent, #684675);
   outline-offset: 3px;
 }
 @keyframes paperAssemble {

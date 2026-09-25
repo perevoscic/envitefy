@@ -1,8 +1,11 @@
+import { HOLIDAY_COLLECTIONS, type HolidayCollectionId } from "@/lib/holiday-collections";
+import { HOLIDAY_SIGNUP_DESIGNS, SIGNUP_DESIGN_PALETTES } from "@/lib/signup-designs";
 import type { TemplateArtwork } from "@/components/events/TemplateArtworkThumbnail";
 
 export type GeneralEventDesign = TemplateArtwork & {
   description: string;
   style: string;
+  occasion?: HolidayCollectionId;
   theme: { bg: string; text: string; accent: string; preview: string; fontFamily: string };
 };
 
@@ -10,7 +13,7 @@ const serif = '"Playfair Display", Georgia, serif';
 const sans = '"Space Grotesk", Arial, sans-serif';
 const photo = "/templates/signup/photographic";
 
-export const GENERAL_EVENT_DESIGNS: GeneralEventDesign[] = [
+const ORIGINAL_GENERAL_EVENT_DESIGNS: GeneralEventDesign[] = [
   {
     id: "coffee-conversation", name: "Coffee & Conversation", label: "Gather together",
     description: "A warm café setting for meetups, catch-ups, and small gatherings.", style: "Warm & relaxed",
@@ -95,6 +98,27 @@ export const GENERAL_EVENT_DESIGNS: GeneralEventDesign[] = [
     background: "#ede9e4", ink: "#343a3c", accent: "#5a6967", font: sans,
     theme: { bg: "bg-[#ede9e4]", text: "text-[#343a3c]", accent: "text-[#5a6967]", preview: "bg-[#ede9e4]", fontFamily: sans },
   },
+];
+
+
+const holidayCompositions = ["panorama", "arch", "editorial", "journal", "poster", "framed", "postcard", "oval", "organic", "editorial"] as const;
+const holidayFonts = [serif, serif, '"Libre Baskerville", Georgia, serif', sans, '"Bebas Neue", Arial, sans-serif', serif, sans, serif, sans, sans];
+export const GENERAL_EVENT_DESIGNS: GeneralEventDesign[] = [
+  ...ORIGINAL_GENERAL_EVENT_DESIGNS,
+  ...HOLIDAY_COLLECTIONS.flatMap((collection) => collection.designs.map((design, index): GeneralEventDesign => {
+    const id = `holidays--${collection.id}--${design.slug}`;
+    const recipe = HOLIDAY_SIGNUP_DESIGNS.find((item) => item.id === id)!;
+    const palette = SIGNUP_DESIGN_PALETTES[recipe.palette];
+    const font = holidayFonts[index];
+    return {
+      id, name: `${collection.name} · ${design.name}`, label: collection.name, occasion: collection.id,
+      description: `${collection.name}: ${design.scene}. ${collection.aliases}`,
+      style: ["Scenic", "Botanical", "Editorial", "Journal", "Bold", "Classic", "Scrapbook", "Supper club", "Modern", "Letterpress"][index],
+      artwork: recipe.artwork, composition: holidayCompositions[index],
+      background: palette.page, ink: palette.ink, accent: palette.accent, font,
+      theme: { bg: `holiday-bg-${recipe.palette}`, text: `holiday-ink-${recipe.palette}`, accent: `holiday-accent-${recipe.palette}`, preview: `holiday-bg-${recipe.palette}`, fontFamily: font },
+    };
+  })),
 ];
 
 export function getGeneralEventDesign(id: string | null | undefined): GeneralEventDesign | undefined {

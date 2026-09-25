@@ -1,4 +1,5 @@
 import { SIGNUP_TEMPLATES } from "@/assets/signup-templates";
+import { HOLIDAY_COLLECTIONS } from "@/lib/holiday-collections";
 import type { SignupFontPair } from "@/types/signup";
 
 export const SIGNUP_COMPOSITIONS = {
@@ -195,6 +196,43 @@ type Recipe = readonly [
 // Every entry is deliberately assigned a composition and palette. Stable names
 // keep a saved design independent of catalog order, pagination, and search.
 const RECIPES: Record<string, readonly Recipe[]> = {
+  "winter-and-holidays": [
+    ["classroom-christmas-party", "scrapbook", "evergreen", "star"],
+    ["school-winter-celebration", "scrapbook", "marine", "star"],
+    ["community-christmas-dinner", "menu", "evergreen", "diamond"],
+    ["holiday-cookie-exchange", "menu", "rose", "diamond"],
+    ["christmas-toy-drive", "scrapbook", "cherry", "star"],
+    ["holiday-gift-wrapping", "studio", "plum", "star"],
+    ["hanukkah-community-potluck", "invitation", "cobalt", "star"],
+    ["school-valentine-party", "scrapbook", "rose", "star"],
+  ],
+  "school-and-education": [
+    ["parent-teacher-conferences", "ledger", "cobalt", "star", true],
+    ["classroom-reading-volunteers", "gazette", "ochre", "star", true],
+    ["school-book-fair", "journal", "cocoa", "star"],
+    ["school-field-day", "gazette", "teal", "star", true],
+    ["teacher-appreciation-breakfast", "menu", "rose", "star"],
+    ["classroom-supply-drive", "scrapbook", "cobalt", "sprig"],
+    ["field-trip-chaperones", "journal", "marine", "star"],
+    ["school-science-fair", "studio", "teal", "star"],
+    ["school-art-show", "scrapbook", "lavender", "star"],
+    ["school-carnival", "ticket", "cherry", "star", true],
+    ["school-talent-show", "marquee", "midnight", "star", true],
+    ["school-musical-backstage-crew", "studio", "aubergine", "star"],
+    ["school-band-concert", "invitation", "midnight", "star"],
+    ["school-robotics-tournament", "menu", "cobalt", "star"],
+    ["school-stem-night", "scrapbook", "ochre", "sprig"],
+    ["family-math-night", "poster", "marine", "star", true],
+    ["school-multicultural-night", "menu", "terracotta", "star"],
+    ["school-picture-day", "studio", "slate", "star", true],
+    ["school-library-helpers", "gazette", "moss", "star"],
+    ["school-garden-volunteers", "botanical", "evergreen", "star"],
+    ["school-lunchroom-volunteers", "ledger", "apricot", "star"],
+    ["school-pta-meeting", "menu", "evergreen", "sprig"],
+    ["school-family-bingo-night", "gazette", "plum", "star", true],
+    ["school-graduation-reception", "gazette", "midnight", "star", true],
+    ["school-uniform-swap", "ledger", "sage", "star"],
+  ],
   editorial: [
     ["clean-clear", "studio", "slate", "orbit"],
     ["harvest-table", "menu", "terracotta", "sprig"],
@@ -204,6 +242,7 @@ const RECIPES: Record<string, readonly Recipe[]> = {
     ["celebrate-together", "invitation", "rose", "diamond"],
   ],
   "fall-and-seasonal": [
+    ["school-trunk-or-treat", "ticket", "terracotta", "star"],
     ["apple-picking", "journal", "cider", "sprig"],
     ["fall-scene", "panorama", "ochre", "sun"],
     ["fall-fun-2", "poster", "terracotta", "star"],
@@ -223,6 +262,17 @@ const RECIPES: Record<string, readonly Recipe[]> = {
     ["fall-pumpkins", "scrapbook", "apricot", "stitch", true],
   ],
   "church-and-community": [
+    ["community-park-cleanup", "journal", "moss", "star"],
+    ["community-garden-workday", "botanical", "terracotta", "star"],
+    ["neighborhood-meal-train", "menu", "cider", "star"],
+    ["winter-coat-drive", "gazette", "marine", "star"],
+    ["community-blood-drive-helpers", "ledger", "cherry", "star"],
+    ["animal-shelter-volunteers", "scrapbook", "ochre", "diamond"],
+    ["library-summer-reading", "gazette", "apricot", "star"],
+    ["community-repair-cafe", "gazette", "slate", "star", true],
+    ["school-backpack-packing", "menu", "cobalt", "sprig"],
+    ["community-senior-luncheon", "menu", "rose", "sprig"],
+    ["community-egg-hunt", "botanical", "lavender", "star"],
     ["service-project", "journal", "evergreen", "diamond"],
     ["community-picnic", "menu", "sage", "sun"],
     ["bible-study", "gazette", "cocoa", "sprig"],
@@ -338,6 +388,11 @@ const RECIPES: Record<string, readonly Recipe[]> = {
     ["wellness-workshop", "botanical", "teal", "sprig", true],
   ],
   "clubs-and-groups": [
+    ["scout-campout-helpers", "journal", "olive", "sprig"],
+    ["youth-sports-concessions", "menu", "cherry", "sprig"],
+    ["youth-club-snack-rotation", "menu", "apricot", "star"],
+    ["youth-service-day", "menu", "teal", "star"],
+    ["booster-club-pancake-breakfast", "menu", "cider", "sprig"],
     ["book-club", "gazette", "cocoa", "diamond", true],
     ["running-club", "poster", "olive", "orbit"],
     ["bike-club", "ticket", "teal", "orbit"],
@@ -393,7 +448,24 @@ const artworkById = new Map(
       item,
     ]),
 );
-export const SIGNUP_DESIGNS: readonly SignupDesign[] = Object.entries(RECIPES).flatMap(
+const holidayCompositions = ["panorama", "botanical", "gazette", "journal", "poster", "invitation", "scrapbook", "menu", "studio", "ticket"] as const satisfies readonly SignupComposition[];
+export const HOLIDAY_SIGNUP_DESIGNS: readonly SignupDesign[] = HOLIDAY_COLLECTIONS.flatMap((collection) =>
+  collection.designs.map((design, index) => {
+    const composition = holidayCompositions[index];
+    return {
+      id: `holidays--${collection.id}--${design.slug}`,
+      name: `${collection.name} · ${design.name}`,
+      artwork: `/templates/signup/holidays/${collection.id}/${design.slug}.webp`,
+      composition,
+      palette: collection.palettes[index % collection.palettes.length],
+      motif: (["sprig", "stitch", "diamond"] as const)[index % 3],
+      reverse: index === 4 || index === 9,
+      fontPair: SIGNUP_COMPOSITIONS[composition].font,
+      board: SIGNUP_COMPOSITIONS[composition].board,
+    };
+  }),
+);
+export const SIGNUP_DESIGNS: readonly SignupDesign[] = [...Object.entries(RECIPES).flatMap(
   ([group, recipes]) =>
     recipes.map(([slug, composition, palette, motif, reverse = false]) => {
       const id = `${group}--${slug}`;
@@ -418,6 +490,6 @@ export const SIGNUP_DESIGNS: readonly SignupDesign[] = Object.entries(RECIPES).f
         board: SIGNUP_COMPOSITIONS[composition].board,
       };
     }),
-);
+), ...HOLIDAY_SIGNUP_DESIGNS];
 const designsById = new Map(SIGNUP_DESIGNS.map((design) => [design.id, design]));
 export const getSignupDesign = (id?: string | null) => (id ? designsById.get(id) : undefined);

@@ -1,4 +1,6 @@
 "use client";
+import SeasonalGalleryControls from "@/components/events/SeasonalGalleryControls";
+import { useSeasonalTemplates } from "@/hooks/useSeasonalTemplates";
 import EventCustomThemeLauncher from "@/components/events/EventCustomThemeLauncher";
 
 import Link from "next/link";
@@ -61,6 +63,7 @@ function FilterSelect({
 
 export default function WeddingDesignGallery() {
   const searchParams = useSearchParams();
+  const seasonal = useSeasonalTemplates(weddingDesignCatalog);
   const [style, setStyle] = useState("All styles");
   const [color, setColor] = useState("All colors");
   const [season, setSeason] = useState("All seasons");
@@ -73,7 +76,7 @@ export default function WeddingDesignGallery() {
 
   const visibleDesigns = useMemo(
     () =>
-      weddingDesignCatalog
+      seasonal.apply(weddingDesignCatalog
         .filter(
           (design) =>
             (collection === "All designs" || design.family === "atelier") &&
@@ -81,8 +84,8 @@ export default function WeddingDesignGallery() {
             (color === "All colors" || design.color === color) &&
             (season === "All seasons" || design.season === season),
         )
-        .sort((a, b) => Number(b.family === "atelier") - Number(a.family === "atelier")),
-    [collection, color, season, style],
+        .sort((a, b) => Number(b.family === "atelier") - Number(a.family === "atelier"))),
+    [collection, color, season, style, seasonal.apply],
   );
 
   const buildCustomizeHref = (templateId: string) => {
@@ -141,7 +144,8 @@ export default function WeddingDesignGallery() {
               Select a design to customize your wedding invitation.
             </p>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+            <SeasonalGalleryControls {...seasonal} onChange={() => setVisibleCount(12)} />
             <FilterSelect
               label="Collection"
               value={collection}

@@ -4,14 +4,15 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 
-test("every legacy signup design has a verified new WebP and a matching manifest reference", () => {
-  const plan = JSON.parse(readFileSync("docs/signup-artwork-catalog.json", "utf8"));
+test("every signup design has a verified WebP and a matching manifest reference", () => {
+  const assets = ["docs/signup-artwork-catalog.json", "docs/signup-community-expansion.json", "docs/holiday-template-artwork.json"]
+    .flatMap((file) => JSON.parse(readFileSync(file, "utf8")).assets);
   const manifest = JSON.parse(readFileSync("public/templates/signup/manifest.json", "utf8"));
   const entries = Object.values(manifest).flat();
   const paths = new Set(entries.map((entry) => entry.path));
-  assert.equal(plan.assets.length, paths.size);
-  assert.equal(new Set(plan.assets.map((asset) => asset.output)).size, paths.size);
-  for (const asset of plan.assets) {
+  assert.equal(assets.length, paths.size);
+  assert.equal(new Set(assets.map((asset) => asset.output)).size, paths.size);
+  for (const asset of assets) {
     assert.equal(asset.status, "generated", asset.id);
     assert.equal(asset.visuallyReviewed, true, asset.id);
     assert.equal(asset.verifiedDecode, true, asset.id);
@@ -25,8 +26,8 @@ test("every legacy signup design has a verified new WebP and a matching manifest
     const matching = entries.filter((entry) => entry.path === asset.legacyPath);
     assert.ok(matching.length, asset.id);
     for (const entry of matching) {
-      assert.equal(entry.artworkPath, `/${asset.output.replace(/^public\//, "")}`);
-      assert.ok(existsSync(path.join("public", entry.artworkPath)), asset.id);
+      assert.equal(entry.artworkPath || entry.path, `/${asset.output.replace(/^public\//, "")}`);
+      assert.ok(existsSync(path.join("public", entry.artworkPath || entry.path)), asset.id);
       assert.ok(
         existsSync(path.join("public", entry.path)),
         "Previously saved artwork remains available",

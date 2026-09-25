@@ -1,5 +1,8 @@
 "use client";
 
+import SeasonalGalleryControls from "./SeasonalGalleryControls";
+import { useSeasonalTemplates } from "@/hooks/useSeasonalTemplates";
+import type { HolidayCollectionId } from "@/lib/holiday-collections";
 import { Search } from "lucide-react";
 import { type MouseEvent, type ReactNode, useState } from "react";
 import TemplateAutoLoader from "./TemplateAutoLoader";
@@ -12,6 +15,8 @@ export type EventGalleryDesign = {
   name: string;
   description: string;
   style: string;
+  occasion?: HolidayCollectionId;
+  season?: string;
 };
 
 export default function EventDesignGallery<Design extends EventGalleryDesign>({
@@ -31,15 +36,16 @@ export default function EventDesignGallery<Design extends EventGalleryDesign>({
   renderPreview: (design: Design) => ReactNode;
   onSelect?: (event: MouseEvent<HTMLAnchorElement>, design: Design) => void;
 }) {
+  const seasonal = useSeasonalTemplates(designs);
   const [query, setQuery] = useState("");
   const [style, setStyle] = useState("All styles");
   const [visibleCount, setVisibleCount] = useState(12);
   const styles = ["All styles", ...Array.from(new Set(designs.map((design) => design.style))).sort()];
   const normalizedQuery = query.trim().toLowerCase();
-  const filtered = designs.filter((design) =>
+  const filtered = seasonal.apply(designs.filter((design) =>
     (style === "All styles" || design.style === style) &&
     `${design.name} ${design.description} ${design.style}`.toLowerCase().includes(normalizedQuery),
-  );
+  ));
 
   return (
     <main className={`${categoryGalleryPageClassName(category)} min-h-screen text-[#342d38]`}>
@@ -51,12 +57,13 @@ export default function EventDesignGallery<Design extends EventGalleryDesign>({
             <p aria-live="polite" className="text-sm font-semibold">{filtered.length} {filtered.length === 1 ? "design" : "designs"}</p>
             <p className="mt-1 text-xs text-[#746775]">Choose a template, add your details, and make it yours.</p>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap">
             <label className="relative block">
               <span className="sr-only">Search designs</span>
               <Search className="absolute left-4 top-3.5 h-4 w-4 text-[#8b748b]" aria-hidden="true" />
               <input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setVisibleCount(12); }} placeholder="Search designs" className="h-11 w-full rounded-full border border-[#dcd0dc] bg-white pl-10 pr-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[#926e93] sm:w-64" />
             </label>
+            <SeasonalGalleryControls {...seasonal} onChange={() => setVisibleCount(12)} />
             <label>
               <span className="sr-only">Style</span>
               <select value={style} onChange={(event) => { setStyle(event.target.value); setVisibleCount(12); }} className="h-11 w-full rounded-full border border-[#dcd0dc] bg-white px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[#926e93] sm:max-w-72">
@@ -79,7 +86,7 @@ export default function EventDesignGallery<Design extends EventGalleryDesign>({
           <div className="rounded-3xl border border-dashed border-[#dcd0dc] bg-white p-12 text-center">
             <h2 className="text-xl font-semibold">No designs match</h2>
             <p className="mt-2 text-sm text-[#746775]">Try another style or search.</p>
-            <button type="button" onClick={() => { setQuery(""); setStyle("All styles"); setVisibleCount(12); }} className="mt-5 rounded-full bg-[#59405c] px-5 py-3 text-sm font-semibold text-white">Clear filters</button>
+            <button type="button" onClick={() => { setQuery(""); setStyle("All styles"); seasonal.setOccasion(""); setVisibleCount(12); }} className="mt-5 rounded-full bg-[#59405c] px-5 py-3 text-sm font-semibold text-white">Clear filters</button>
           </div>
         )}
         <TemplateAutoLoader visibleCount={visibleCount} totalCount={filtered.length} setVisibleCount={setVisibleCount} />

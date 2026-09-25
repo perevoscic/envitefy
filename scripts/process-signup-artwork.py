@@ -92,7 +92,8 @@ def publish():
     (ROOT / "src/assets/signup-templates.ts").write_text(
         '// Artwork paths are installed by scripts/process-signup-artwork.py.\n'
         '// The canonical path preserves template IDs and previously saved artwork.\n'
-        'export type SignupTemplateItem = { name: string; tier: "free" | "premium"; path: string; artworkPath?: string };\n'
+        'import type { HolidayCollectionId } from "@/lib/holiday-collections";\n'
+        'export type SignupTemplateItem = { name: string; tier: "free" | "premium"; path: string; artworkPath?: string; description?: string; keywords?: string; audience?: string; occasion?: HolidayCollectionId };\n'
         'export type SignupTemplateManifest = Record<string, SignupTemplateItem[]>;\n'
         'export const SIGNUP_TEMPLATES: SignupTemplateManifest = ' + serialized + ';\n')
     print(json.dumps({"templatesWithNewArtwork": len(ready)}))

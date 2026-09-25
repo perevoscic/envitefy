@@ -269,6 +269,10 @@ test("refining without artwork invokes only the structured design model", async 
   );
   assert.deepEqual(result, { theme });
   assert.equal(requested.response_format.json_schema.strict, true);
+  const profiles = load("src/lib/category-custom-design-profiles.ts");
+  assert.ok(requested.messages[0].content.includes(profiles.categoryCustomDesignGuidance("signup-forms")));
+  assert.ok(!JSON.stringify(requested).includes(profiles.getCategoryCustomDesignProfile("signup-forms").placeholder));
+  assert.deepEqual(JSON.parse(requested.messages[1].content).currentTheme, theme);
 });
 
 test("generated originals are converted and decoded as WebP before the in-memory response", async () => {
@@ -277,10 +281,11 @@ test("generated originals are converted and decoded as WebP before the in-memory
   })
     .png()
     .toBuffer();
-  generation.signupThemeGenerationDeps.render = async () => ({
-    ok: true,
-    imageDataUrl: `data:image/png;base64,${png.toString("base64")}`,
-  });
+  generation.signupThemeGenerationDeps.render = async (prompt) => {
+    assert.ok(prompt.includes(load("src/lib/category-custom-design-profiles.ts").categoryCustomDesignGuidance("signup-forms")));
+    assert.ok(prompt.includes(JSON.stringify(theme.colors)), "approved palette takes priority");
+    return { ok: true, imageDataUrl: `data:image/png;base64,${png.toString("base64")}` };
+  };
   const result = await generation.generateSignupTheme(
     { prompt: "Woodland theme", currentTheme: null, generateArtwork: true },
     new AbortController().signal,

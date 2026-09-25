@@ -1,5 +1,7 @@
 "use client";
 
+import SeasonalGalleryControls from "@/components/events/SeasonalGalleryControls";
+import { useSeasonalTemplates } from "@/hooks/useSeasonalTemplates";
 import CreateWithEnvitefyCallout from "@/components/events/CreateWithEnvitefyCallout";
 import EventCustomThemeLauncher from "@/components/events/EventCustomThemeLauncher";
 import Link from "next/link";
@@ -47,6 +49,7 @@ export default function PublicTemplateGallery({
   const { status } = useSession();
   const info = getTemplateCategory(category)!;
   const templates = getPublicTemplates(category);
+  const seasonal = useSeasonalTemplates(templates);
   const [query, setQuery] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string>>({});
   const [resume, setResume] = useState<TemplateDraft | null>(null);
@@ -73,14 +76,14 @@ export default function PublicTemplateGallery({
         filter.values.length > 1 ||
         (category === "signup-forms" && filter.key === "audience" && filter.values.length > 0),
     );
-  const filtered = templates.filter(
+  const filtered = seasonal.apply(templates.filter(
     (template) =>
       filters.every(
         (filter) =>
           !selectedFilters[filter.key] ||
           String(template[filter.key]) === selectedFilters[filter.key],
       ) && matchesPublicTemplateSearch(template, query),
-  );
+  ));
   const shown = featured ? templates.slice(0, 6) : filtered.slice(0, visible);
   useEffect(() => {
     trackTemplateEvent("template_gallery_view", category);
@@ -135,7 +138,7 @@ export default function PublicTemplateGallery({
           )}
         </div>
         {!featured && (category === "signup-forms" ? (
-          <div className="mb-8"><CreateWithEnvitefyCallout signup onClick={() => setCustomThemeOpen(true)} /></div>
+          <div className="mb-8"><CreateWithEnvitefyCallout category="signup-forms" onClick={() => setCustomThemeOpen(true)} /></div>
         ) : <EventCustomThemeLauncher category={category} contained />)}
         {category === "signup-forms" && !featured && customThemeOpen && status === "authenticated" && (
           <SignupCustomThemeDialog
@@ -172,7 +175,7 @@ export default function PublicTemplateGallery({
         )}
         {!featured && (
           <div className="mb-8 flex flex-wrap items-center gap-3">
-            <label>
+            <label className="max-w-full">
               <span className="sr-only">Search templates</span>
               <input
                 type="search"
@@ -182,9 +185,10 @@ export default function PublicTemplateGallery({
                   setQuery(event.target.value);
                   setVisible(12);
                 }}
-                className="h-12 rounded-full border border-[#dcd0dc] bg-white px-5"
+                className="h-12 w-full max-w-full rounded-full border border-[#dcd0dc] bg-white px-5"
               />
             </label>
+            <SeasonalGalleryControls {...seasonal} onChange={() => setVisible(12)} />
             {filters.map((filter) => (
               <label key={filter.key} className="max-w-full">
                 <span className="sr-only">{filter.label}</span>

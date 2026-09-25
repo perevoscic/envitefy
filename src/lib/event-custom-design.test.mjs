@@ -42,6 +42,7 @@ function loader(mocks = {}) {
 
 const load = loader();
 const custom = load("src/lib/event-custom-design.ts");
+const profiles = load("src/lib/category-custom-design-profiles.ts");
 const design = {
   version: 1,
   name: "Garden gathering",
@@ -210,7 +211,7 @@ test("shared gallery callout is available in every supported category without a 
       ...Object.keys(custom.CUSTOM_EVENT_CATEGORIES).map((category) =>
         React.createElement(Launcher, { category }),
       ),
-      React.createElement(Callout, { signup: true, onClick: () => {} }),
+      React.createElement(Callout, { category: "signup-forms", onClick: () => {} }),
     ];
     for (const entry of entries) {
       const markup = renderToStaticMarkup(entry);
@@ -218,7 +219,35 @@ test("shared gallery callout is available in every supported category without a 
       assert.doesNotMatch(markup, /\/chat/);
       assert.equal(/<button[^>]*disabled=""/.test(markup), status !== "authenticated");
       assert.equal(markup.includes("Sign in to generate"), status === "unauthenticated");
+      const profile = profiles.getCategoryCustomDesignProfile(entry.props.category);
+      assert.ok(markup.includes(profile.headline));
+      assert.ok(markup.includes(profile.tokens.accent));
+      assert.doesNotMatch(markup, /Have something unique in mind/);
     }
+  }
+});
+
+test("every creation category has distinct copy, icons and accessible gallery colors", () => {
+  const { colorContrast } = load("src/lib/color-contrast.ts");
+  const categories = [...Object.keys(custom.CUSTOM_EVENT_CATEGORIES), "signup-forms"];
+  const entries = categories.map(profiles.getCategoryCustomDesignProfile);
+  for (const key of ["headline", "description", "placeholder", "icon", "guidance"]) {
+    assert.equal(new Set(entries.map((profile) => profile[key])).size, categories.length, key);
+  }
+  for (const category of categories) {
+    const { tokens, placeholder, headline } = profiles.getCategoryCustomDesignProfile(category);
+    for (const background of [tokens.background, tokens.soft, "#ffffff"]) {
+      for (const foreground of [tokens.ink, tokens.muted, tokens.accent]) {
+        assert.ok(colorContrast(foreground, background) >= 4.5, `${category}: ${foreground} on ${background}`);
+      }
+    }
+    assert.ok(colorContrast(tokens.hover, "#ffffff") >= 4.5, category);
+    const guidance = profiles.categoryCustomDesignGuidance(category);
+    assert.ok(guidance.includes(`CATEGORY DESIGN DEFAULTS (${category})`));
+    assert.ok(!guidance.includes(placeholder));
+    assert.ok(!guidance.includes(headline));
+    assert.match(guidance, /reference image take priority/);
+    assert.match(guidance, /preserve the current design/);
   }
 });
 
@@ -333,6 +362,7 @@ test("generation validates category, reference mode, and bounded requests before
 
 test("OpenAI design generation preserves category and supplied facts during visual refinement", async () => {
   let requested,
+    artworkRequest,
     renderCount = 0;
   const webp = await sharp({ create: { width: 12, height: 8, channels: 3, background: "green" } })
     .webp()
@@ -364,7 +394,8 @@ test("OpenAI design generation preserves category and supplied facts during visu
       },
     },
   });
-  generation.eventThemeGenerationDeps.render = async () => {
+  generation.eventThemeGenerationDeps.render = async (prompt) => {
+    artworkRequest = prompt;
     renderCount++;
     return { ok: true, imageDataUrl: `data:image/webp;base64,${webp.toString("base64")}` };
   };
@@ -382,6 +413,14 @@ test("OpenAI design generation preserves category and supplied facts during visu
     assert.equal(page.category, category);
     assert.deepEqual(page.details, example().details);
     assert.match(page.artwork, /^data:image\/webp/);
+    const guidance = profiles.categoryCustomDesignGuidance(category);
+    assert.ok(requested.messages[0].content.includes(guidance), category);
+    assert.ok(artworkRequest.includes(guidance), category);
+    assert.ok(artworkRequest.includes(JSON.stringify(design.colors)), "approved colors reach artwork");
+    assert.ok(!JSON.stringify(requested).includes(profiles.getCategoryCustomDesignProfile(category).placeholder));
+    const brief = JSON.parse(requested.messages[1].content);
+    assert.equal(brief.request, "Change to a watercolor design");
+    assert.deepEqual(brief.currentDesign, design, "category defaults do not overwrite the current design");
   }
   assert.equal(renderCount, Object.keys(custom.CUSTOM_EVENT_CATEGORIES).length);
   assert.equal(requested.response_format.json_schema.strict, true);

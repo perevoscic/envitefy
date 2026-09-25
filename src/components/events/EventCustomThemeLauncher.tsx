@@ -25,7 +25,7 @@ export default function EventCustomThemeLauncher({
   if (!key) return null;
   return (
     <div className={contained ? "my-8" : "mx-auto max-w-[1500px] px-5 py-8 sm:px-8 lg:px-12"}>
-      <CreateWithEnvitefyCallout onClick={() => setOpen(true)} />
+      <CreateWithEnvitefyCallout category={key} onClick={() => setOpen(true)} />
       {open && status === "authenticated" && (
         <EventCustomThemeDialog
           category={key}

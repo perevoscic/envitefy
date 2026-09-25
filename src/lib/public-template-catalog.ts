@@ -56,6 +56,7 @@ export type PublicTemplate = {
   milestone?: string | number | null;
   sport?: string;
   keywords?: string;
+  occasion?: string;
 };
 const styleNames = { stadium: "Stadium", club: "Club", tournament: "Tournament" };
 const schoolSignupKeywords =
@@ -149,14 +150,20 @@ export function getPublicTemplates(category: TemplateCategory): PublicTemplate[]
                 .replace(/\.webp$/, "")
                 .replaceAll("/", "--"),
               name: design.name,
-              description: `Make ${design.name.toLowerCase()} your own with signup sections, questions, and slots.`,
+              description:
+                design.description ||
+                `Make ${design.name.toLowerCase()} your own with signup sections, questions, and slots.`,
               style: group,
-              ...(/school|classroom|teacher|field.day|pta|pto|recess|conference/i.test(design.name)
-                ? {
-                    audience: "School & Education",
-                    keywords: schoolSignupKeywords,
-                  }
-                : {}),
+              ...(design.audience
+                ? { audience: design.audience }
+                : /school|classroom|teacher|field.day|pta|pto|recess|conference/i.test(design.name)
+                  ? {
+                      audience: "School & Education",
+                      keywords: schoolSignupKeywords,
+                    }
+                  : {}),
+              ...(design.keywords ? { keywords: design.keywords } : {}),
+              ...(design.occasion ? { occasion: design.occasion } : {}),
               heroImage: design.artworkPath || design.path,
             })),
           )

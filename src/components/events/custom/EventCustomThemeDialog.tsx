@@ -4,6 +4,11 @@ import { ArrowLeft, Sparkles, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
+import { getCategoryCustomDesignProfile } from "@/lib/category-custom-design-profiles";
+import {
+  CategoryCustomDesignIcon,
+  categoryCustomDesignStyle,
+} from "../CategoryCustomDesignIdentity";
 import {
   CUSTOM_EVENT_CATEGORIES,
   type CustomEventCategory,
@@ -29,6 +34,7 @@ export default function EventCustomThemeDialog({
   onUseDesign: (page: CustomEventPage) => void;
 }) {
   const { status, update } = useSession();
+  const profile = getCategoryCustomDesignProfile(category);
   const [prompt, setPrompt] = useState("");
   const [reference, setReference] = useState<{ dataUrl: string; name: string } | null>(null);
   const [referenceMode, setReferenceMode] = useState<"use" | "inspire">("use");
@@ -170,16 +176,33 @@ export default function EventCustomThemeDialog({
       >
         <Dialog.Portal>
           <Dialog.Overlay className={styles.overlay} />
-          <Dialog.Content className={styles.dialog}>
+          <Dialog.Content
+            className={styles.dialog}
+            style={categoryCustomDesignStyle(category)}
+            onOpenAutoFocus={(event) => {
+              event.preventDefault();
+              (preview ? previewHeading.current : promptInput.current)?.focus();
+            }}
+          >
             <header className={styles.dialogHeader}>
               <div>
+                <p className={styles.dialogEyebrow}>
+                  <CategoryCustomDesignIcon category={category} size={18} />
+                  {CUSTOM_EVENT_CATEGORIES[category]} · Envitefy Create
+                </p>
                 <Dialog.Title ref={previewHeading} tabIndex={-1}>
-                  {preview ? "Your custom event page" : "Create with Envitefy"}
+                  {preview
+                    ? "Your custom event page"
+                    : candidate
+                      ? "What would you like to change?"
+                      : profile.headline}
                 </Dialog.Title>
                 <Dialog.Description>
                   {preview
                     ? "Preview your design, then make the details yours in the editor."
-                    : `${CUSTOM_EVENT_CATEGORIES[category]} · Describe your idea and add an optional image.`}
+                    : candidate
+                      ? "Describe the look you want to change. Your event details stay the same."
+                      : profile.description}
                 </Dialog.Description>
               </div>
               <button
@@ -212,9 +235,7 @@ export default function EventCustomThemeDialog({
                       onChange={(e) => setPrompt(e.target.value)}
                       disabled={busy}
                       placeholder={
-                        candidate
-                          ? "Try a darker palette with gold accents…"
-                          : "Tell us the occasion, colors and mood, plus any event details you already know…"
+                        candidate ? "Try a darker palette with gold accents…" : profile.placeholder
                       }
                     />
                   </label>

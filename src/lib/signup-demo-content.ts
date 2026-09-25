@@ -1,4 +1,6 @@
+import { getHolidaySignupDemoContent } from "@/lib/signup-holiday-demo-content";
 import type { SignupFormSlot, SignupThemeId } from "@/types/signup";
+import { SIGNUP_OCCASION_CONTENT } from "@/lib/signup-occasion-content";
 
 type DemoSlot = Omit<SignupFormSlot, "id">;
 type DemoProfile = {
@@ -395,21 +397,38 @@ function profileFor(id: string, name: string): ProfileId {
 
 export function getSignupDemoContent(template: { id: string; name: string }) {
   const editorial = EDITORIAL_DEMOS[template.id.replace(/^editorial--/, "")];
+  const occasion = SIGNUP_OCCASION_CONTENT[template.id] || getHolidaySignupDemoContent(template.id);
   const profile: DemoProfile =
-    PROFILES[editorial?.profile || profileFor(template.id, template.name)];
+    PROFILES[occasion?.profile || editorial?.profile || profileFor(template.id, template.name)];
   const isAutumn =
     template.id.startsWith("fall-and-seasonal--") || /harvest|potluck/.test(template.id);
-  const date = /holiday|thanksgiving|friendsgiving/.test(template.id)
-    ? "2028-11-18"
-    : isAutumn
-      ? "2028-10-14"
-      : "2028-09-16";
+  const date =
+    occasion?.date ||
+    (/holiday|thanksgiving|friendsgiving/.test(template.id)
+      ? "2028-11-18"
+      : isAutumn
+        ? "2028-10-14"
+        : "2028-09-16");
   return {
     ...profile,
+    ...(occasion
+      ? {
+          themeId: occasion.school ? ("school-days" as const) : profile.themeId,
+          group: occasion.school ? "Oakwood School Community" : "Oakwood Neighbors & Friends",
+          host: "The organizing team",
+          venue: occasion.school ? "Oakwood School · Main hall" : "Oakwood Community Center",
+          welcome: occasion.welcome,
+          section: occasion.section,
+          instructions: occasion.instructions,
+          slots: occasion.slots,
+          question: occasion.question,
+          multiple: occasion.multiple,
+        }
+      : {}),
     title: editorial?.title || `${template.name} · Oakwood`,
     location: "125 Maple Lane, Oakwood, IL",
-    start: `${date}T${profile.startTime}`,
-    end: `${date}T${profile.endTime}`,
+    start: `${date}T${occasion?.startTime || profile.startTime}`,
+    end: `${date}T${occasion?.endTime || profile.endTime}`,
     timezone: "America/Chicago",
     arrivalInstructions:
       "Arrive 10 minutes early and look for the welcome table. Your host will help you get settled.",

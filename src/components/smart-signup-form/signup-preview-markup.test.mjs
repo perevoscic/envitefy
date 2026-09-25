@@ -186,7 +186,7 @@ test("signup owner actions render above the hero, separate from the response boa
   assert.doesNotMatch(guest, /Manage signup form|Edit event|Duplicate form/);
 });
 
-test("all 150 templates retain a distinct curated design through saving and rendering", () => {
+test("all 640 templates retain a distinct curated design through saving and rendering", () => {
   const { getPublicTemplates } = load("src/lib/public-template-catalog.ts", baseMocks);
   const { SIGNUP_DESIGNS, SIGNUP_DESIGN_PALETTES } = load("src/lib/signup-designs.ts", baseMocks);
   const { createSignupTemplateForm } = load("src/lib/signup-starters.ts", baseMocks);
@@ -197,6 +197,7 @@ test("all 150 templates retain a distinct curated design through saving and rend
     baseMocks,
   ).default;
   const templates = getPublicTemplates("signup-forms");
+  assert.equal(templates.length, 640);
   assert.equal(SIGNUP_DESIGNS.length, templates.length);
   assert.equal(new Set(SIGNUP_DESIGNS.map((design) => design.composition)).size, 12);
   const signatures = new Set();
@@ -210,6 +211,7 @@ test("all 150 templates retain a distinct curated design through saving and rend
         ? design.motif
         : null,
       design.reverse,
+      ...(template.id.startsWith("holidays--") ? [design.artwork] : []),
     ]);
     assert.ok(!signatures.has(signature), `Duplicate art direction: ${template.id}`);
     signatures.add(signature);
@@ -525,7 +527,7 @@ test("starters switch immediately for every untouched template and protect edite
   }
 });
 
-test("new signup templates keep all 150 designs without introducing fictional event data", () => {
+test("new signup templates keep all 640 designs without introducing fictional event data", () => {
   const { createEmptySignupTemplateForm } = load("src/lib/signup-starters.ts", baseMocks);
   const { getPublicTemplates } = load("src/lib/public-template-catalog.ts", baseMocks);
   for (const template of getPublicTemplates("signup-forms")) {

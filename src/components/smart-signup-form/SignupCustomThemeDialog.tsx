@@ -5,6 +5,11 @@ import { ArrowLeft, ImagePlus, Sparkles, Undo2, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
+import { getCategoryCustomDesignProfile } from "@/lib/category-custom-design-profiles";
+import {
+  CategoryCustomDesignIcon,
+  categoryCustomDesignStyle,
+} from "@/components/events/CategoryCustomDesignIdentity";
 import {
   applySignupCustomTheme,
   captureSignupTheme,
@@ -33,6 +38,7 @@ export default function SignupCustomThemeDialog({
   initialMessage?: string;
 }) {
   const { status, update } = useSession();
+  const profile = getCategoryCustomDesignProfile("signup-forms");
   const id = useId();
   const [prompt, setPrompt] = useState("");
   const [reference, setReference] = useState<{ dataUrl: string; name: string } | null>(null);
@@ -273,6 +279,7 @@ export default function SignupCustomThemeDialog({
           <Dialog.Overlay className={custom.overlay} />
           <Dialog.Content
             className={`${custom.dialog} ${stage === "preview" && !busy ? custom.previewDialog : ""}`}
+            style={categoryCustomDesignStyle("signup-forms")}
             onPointerDownOutside={(event) => event.preventDefault()}
             onOpenAutoFocus={(event) => {
               event.preventDefault();
@@ -286,7 +293,8 @@ export default function SignupCustomThemeDialog({
             <header className={custom.header}>
               <div>
                 <p className={custom.eyebrow}>
-                  <Sparkles size={15} aria-hidden /> Envitefy Create
+                  <CategoryCustomDesignIcon category="signup-forms" size={18} /> Sign-up Forms ·
+                  Envitefy Create
                 </p>
                 <Dialog.Title ref={previewHeading} tabIndex={-1} className={custom.title}>
                   {busy
@@ -295,7 +303,9 @@ export default function SignupCustomThemeDialog({
                       ? "Your custom theme"
                       : candidate
                         ? "What would you like to change?"
-                        : "What should your sign-up look like?"}
+                        : isNew
+                          ? profile.headline
+                          : "What should your sign-up look like?"}
                 </Dialog.Title>
                 <Dialog.Description className={custom.description}>
                   {busy
@@ -303,7 +313,7 @@ export default function SignupCustomThemeDialog({
                     : stage === "preview"
                       ? preview.appearance?.customTheme?.name
                       : isNew
-                        ? "Share your idea, event details, or an example you love."
+                        ? profile.description
                         : "Describe the look you have in mind. We’ll take it from there."}
                 </Dialog.Description>
               </div>
@@ -404,7 +414,9 @@ export default function SignupCustomThemeDialog({
                     placeholder={
                       candidate
                         ? "Make it more elegant, with softer colors…"
-                        : "Tell us what you’re organizing, paste an existing sign-up, or describe the style you want…"
+                        : isNew
+                          ? profile.placeholder
+                          : "Describe the colors, artwork or style you want for your existing signup…"
                     }
                     onChange={(event) => setPrompt(event.target.value)}
                   />

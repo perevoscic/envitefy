@@ -1,4 +1,6 @@
 "use client";
+import SeasonalGalleryControls from "@/components/events/SeasonalGalleryControls";
+import { useSeasonalTemplates } from "@/hooks/useSeasonalTemplates";
 import EventCustomThemeLauncher from "@/components/events/EventCustomThemeLauncher";
 
 import { Heart, Search, Sparkles, X } from "lucide-react";
@@ -51,6 +53,7 @@ function FilterSelect({
 
 export default function BirthdayDesignGallery() {
   const searchParams = useSearchParams();
+  const seasonal = useSeasonalTemplates(BIRTHDAY_DESIGN_CATALOG);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [favoritesReady, setFavoritesReady] = useState(false);
@@ -111,7 +114,7 @@ export default function BirthdayDesignGallery() {
 
   const visibleDesigns = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    return BIRTHDAY_DESIGN_CATALOG.filter((design) => {
+    return seasonal.apply(BIRTHDAY_DESIGN_CATALOG.filter((design) => {
       if (favoritesOnly && !favoriteIds.has(design.id)) return false;
       if (collection === "Original 24" && design.source !== "Original") return false;
       if (collection === "New kids" && !(design.source === "New" && design.collection === "Kids")) {
@@ -132,8 +135,8 @@ export default function BirthdayDesignGallery() {
         return false;
       }
       return true;
-    });
-  }, [collection, favoriteIds, favoritesOnly, milestone, query, recipient, style]);
+    }));
+  }, [collection, favoriteIds, favoritesOnly, milestone, query, recipient, style, seasonal.apply]);
 
   const activeFilterCount = [
     collection !== "All collections",
@@ -170,6 +173,7 @@ export default function BirthdayDesignGallery() {
       <BirthdayGalleryHero />
 
       <EventCustomThemeLauncher category="birthdays" />
+      <div className="flex flex-wrap gap-3 px-5 pb-4 sm:px-8 lg:px-12"><SeasonalGalleryControls {...seasonal} onChange={() => setVisibleCount(BIRTHDAY_GALLERY_BATCH_SIZE)} /></div>
 
       <section className="z-20 border-b border-[#efd8c2] bg-[var(--category-gallery-background)] px-5 py-5 backdrop-blur-xl sm:px-8 lg:px-12 xl:sticky xl:top-0">
         <div className="mx-auto max-w-[1500px] space-y-5">
