@@ -55,14 +55,14 @@ Do not print guest messages, instructions, dates, times, venues, addresses, RSVP
 
 function headlineCheckError(check: ArtworkCheck): Error {
   if (check.status === "unavailable")
-    return new Error("The title artwork check is temporarily unavailable. Your card is unchanged. Please try Publish again.");
+    return new Error("The title artwork check is temporarily unavailable. Your card is unchanged. Please try again.");
   const wordingIssues = ["incorrect_title", "missing_copy", "unexpected_text", "unreadable_text"];
   const reason = check.issues.some((issue) => wordingIssues.includes(issue))
     ? "The generated lettering still has missing, extra or unreadable words."
     : check.issues.some((issue) => ["essential_clipping", "unsafe_placement"].includes(issue))
       ? "The generated lettering is clipped or overlaps the guest controls."
       : "The generated title artwork still doesn’t match your design.";
-  return new Error(`${reason} We tried correcting it once. Your card is unchanged. Please try Publish again.`);
+  return new Error(`${reason} We tried correcting it once. Your card is unchanged. Please try again.`);
 }
 
 export async function generateCardHeadline(

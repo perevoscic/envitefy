@@ -20,6 +20,8 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 
 ## Creation Product Name
 
+- Published Live Card edits (September 24, 2026): show Cancel and Save changes beneath the artwork in the editor, Review and full-screen preview. Save changes updates the existing published event directly; only unpublished cards offer Save draft and Publish. Cancel returns to the owner dashboard through unsaved-progress protection. Resolve saved artwork's relative media-proxy URLs against the trusted app origin when preparing changed title lettering; keep unsaved image data in memory.
+
 - Mobile owner card discovery (September 23, 2026): show an artwork thumbnail and View Live Card beneath the owner workspace title, with Tap or swipe left to view. A tap or deliberate left swipe opens the full-screen card from the right; a right swipe or Close returns to the same tab, scroll position and edits. Show a subtle card-edge peek only on the first visit, respecting reduced motion. Preserve vertical scrolling, browser edge gestures, form controls and guest popups. Desktop retains its inline card preview.
 
 - Mobile owner dashboard stability (September 24, 2026): keep tab widths still until the host selects a tab; do not cycle expanding tab hints. Artwork previews overlay the mounted workspace without collapsing its navigation spacing. Keep page scrolling locked until the closing animation has finished, preserving the dashboard's position behind the slide.

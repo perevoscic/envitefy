@@ -36,13 +36,17 @@ export default function PublishProgress({
   stage,
   imageUrl,
   onCancel,
+  updating = false,
 }: {
   open: boolean;
   stage: PublishStage;
   imageUrl?: string;
   onCancel?: () => void;
+  updating?: boolean;
 }) {
-  const current = PUBLISH_STAGES[stage];
+  const current = updating && stage === "publishing"
+    ? { title: "Saving your changes", description: "Updating your live event and card for your guests." }
+    : PUBLISH_STAGES[stage];
   return (
     <Dialog.Root open={open}>
       <Dialog.Portal>
@@ -73,7 +77,7 @@ export default function PublishProgress({
               </p>
               <Dialog.Title className={styles.title}>A little magic. All yours.</Dialog.Title>
               <Dialog.Description className={styles.description}>
-                We’re getting your Live Card ready to share.
+                {updating ? "We’re updating your Live Card." : "We’re getting your Live Card ready to share."}
               </Dialog.Description>
               <div className={styles.status} role="status" aria-live="polite" aria-atomic="true">
                 <strong>{current.title}</strong>

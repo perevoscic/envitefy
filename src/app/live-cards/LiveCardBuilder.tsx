@@ -197,6 +197,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
   const [preparingWording, setPreparingWording] = useState(false);
   const [preparingHeadline, setPreparingHeadline] = useState(false);
   const [publicUrl, setPublicUrl] = useState("");
+  const [ownerUrl, setOwnerUrl] = useState("/");
   const [step, setStep] = useState<BuilderStep>(1);
   const [detailTab, setDetailTab] = useState<DetailTab>("Basics");
   const [expandedTextFields, setExpandedTextFields] = useState({
@@ -289,6 +290,12 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
           nextArtwork.imageUrl = nextArtwork.invitationData.sharedDesign.backgroundUrl;
         if (!active) return;
         const isPublished = data.status === "published";
+        setOwnerUrl(buildEventPath(
+          initialEventId,
+          nextForm.title,
+          { tab: "dashboard" },
+          typeof row.public_slug === "string" ? row.public_slug : undefined,
+        ));
         if (isPublished)
           setPublicUrl(
             `https://envitefy.com${buildStudioCardPath(initialEventId, nextForm.title, undefined, typeof row.public_slug === "string" ? row.public_slug : undefined)}`,
@@ -749,6 +756,12 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
           throw new Error("Your latest changes could not be saved. Please retry.");
       }
       savedId.current = String(row.id);
+      setOwnerUrl(buildEventPath(
+        savedId.current,
+        prepared.title,
+        { tab: "dashboard" },
+        typeof row.public_slug === "string" ? row.public_slug : undefined,
+      ));
       setBaseline(serialize({ form: prepared, artwork: captured.artwork }));
       setPublished(publish);
       if (publish)
@@ -798,6 +811,11 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
   function saveWithFeedback(publish: boolean, toDashboard = false) {
     setPreviewOpen(false);
     void save(publish, toDashboard).catch((failure: Error) => setError(failure.message));
+  }
+
+  function cancelEditing() {
+    setPreviewOpen(false);
+    navigation.requestLeave(() => window.location.assign(ownerUrl));
   }
 
   async function selectReference(file?: File) {
@@ -1084,26 +1102,34 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
   );
 
   const saveActions = (
-    <div className={styles.saveActions} role="group" aria-label="Save and publish">
+    <div
+      className={styles.saveActions}
+      role="group"
+      aria-label={published ? "Cancel and save changes" : "Save and publish"}
+    >
       <button
         type="button"
         className={styles.secondary}
-        disabled={working || preparingWording || !dirty}
-        onClick={() => saveWithFeedback(published)}
+        disabled={working || preparingWording || (!published && !dirty)}
+        onClick={published ? cancelEditing : () => saveWithFeedback(false)}
       >
-        <Save size={17} />
-        {working ? "Saving…" : published ? "Save changes" : "Save draft"}
+        {published ? <X size={17} /> : <Save size={17} />}
+        {published ? "Cancel" : working ? "Saving…" : "Save draft"}
       </button>
       <button
         type="button"
         className={styles.primary}
-        disabled={working || preparingWording || !canReview}
+        disabled={working || preparingWording || !canReview || (published && !dirty)}
         aria-describedby={
           step === 2 && detailIssues.length ? "livecard-required-details" : undefined
         }
-        onClick={() => saveWithFeedback(true, true)}
+        onClick={() => saveWithFeedback(true, !published)}
       >
-        Publish <ArrowRight size={17} />
+        {published ? (
+          <><Save size={17} />{working || preparingWording ? "Saving…" : "Save changes"}</>
+        ) : (
+          <>Publish <ArrowRight size={17} /></>
+        )}
       </button>
     </div>
   );
@@ -1184,7 +1210,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                         />
                       )}
                   </div>
-                  {format === "live_card" && (
+                  {format === "live_card" && !published && (
                     <p className={styles.hint}>
                       Your sharing link will be available on the dashboard after publishing.
                     </p>
@@ -1267,7 +1293,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>LIVE CARD</p>
-          <h1>Create your Live Card</h1>
+          <h1>{published ? "Edit your Live Card" : "Create your Live Card"}</h1>
         </div>
       </header>
       <nav aria-label="Card creation steps" className={styles.steps}>
@@ -1332,7 +1358,9 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                   ? "Describe the look for your Live Card. We’ll create the artwork while you fill in the event details."
                   : step === 2
                     ? "Add the information your guests need on your Live Card."
-                    : "Review your Live Card, then publish your event to get its sharing link."}
+                    : published
+                      ? "Review your Live Card, then save your changes to update your event."
+                      : "Review your Live Card, then publish your event to get its sharing link."}
               </p>
               {step === 1 && (
                 <div className={styles.formStack}>
@@ -1848,13 +1876,16 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       </div>
       <PublishProgress
         open={publishProgress}
+        updating={published}
         stage={publishStage}
         imageUrl={preview?.imageUrl}
         onCancel={
           working
             ? undefined
             : () => {
-                preparationFailure.current = "Publishing canceled. Your edits are still here.";
+                preparationFailure.current = published
+                  ? "Saving canceled. Your edits are still here."
+                  : "Publishing canceled. Your edits are still here.";
                 wordingController.current?.abort();
               }
         }

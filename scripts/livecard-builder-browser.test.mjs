@@ -677,6 +677,9 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     await page.goto(`${origin}/live-cards?edit=${stored.id}`);
     await shareButton.waitFor();
     assert.equal(await shareButton.isEnabled(), true, "published saved cards can be shared");
+    assert.equal(await page.getByRole("button", { name: "Publish", exact: true }).count(), 0, "published cards use one save action");
+    assert.equal(await page.getByRole("button", { name: "Cancel", exact: true }).isEnabled(), true);
+
     await shareButton.click();
     await page.waitForFunction(() => window.__sharedCards.length === 1);
     const shared = await page.evaluate(() => window.__sharedCards[0]);
@@ -698,6 +701,9 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     await page.getByRole("button", { name: "Save changes", exact: true }).click();
     await page.getByText("Your Live Card is updated.", { exact: true }).waitFor();
     assert.equal(stored.data.description, "Updated welcome\n\nBring a jacket.");
+    assert.equal(stored.data.status, "published", "Save changes updates the live event without creating a draft");
+    assert.equal(await page.getByRole("button", { name: "Publish", exact: true }).count(), 0);
+
     assert.equal(generations.length, 1);
     await page.getByRole("button", { name: "2 Event details", exact: true }).click();
     await openSection("Basics");
@@ -717,7 +723,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.equal(saves.length, beforeTitleSaves, "lettering preparation never saves progress");
     holdHeadline = true;
     const preparingPublish = new Promise((resolve) => { headlineStarted = resolve; });
-    await page.getByRole("button", { name: "Publish", exact: true }).click();
+    await page.getByRole("button", { name: "Save changes", exact: true }).click();
     await preparingPublish;
     const progress = page.locator('[data-publish-progress="lettering"]');
     await progress.waitFor();
@@ -737,13 +743,13 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.equal(await progress.evaluate((dialog) => [...dialog.querySelectorAll("*")].every((el) => getComputedStyle(el).animationName === "none")), true, "reduced motion disables progress animations");
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.getByRole("button", { name: "Cancel and keep editing", exact: true }).click();
-    await page.getByText("Publishing canceled. Your edits are still here.", { exact: true }).waitFor();
+    await page.getByText("Saving canceled. Your edits are still here.", { exact: true }).waitFor();
     releaseHeadline();
     assert.equal(saves.length, beforeTitleSaves, "canceling preparation never saves or publishes");
     assert.equal(await page.getByLabel("Event title or name").inputValue(), "Updated title");
     await page.setViewportSize({ width: 1440, height: 1080 });
     failHeadline = true;
-    await page.getByRole("button", { name: "Publish", exact: true }).click();
+    await page.getByRole("button", { name: "Save changes", exact: true }).click();
     await page.getByText("The title artwork could not be verified. Your card is unchanged. Select Review to try again.", { exact: true }).waitFor();
     assert.equal(await page.locator("[data-publish-progress]").count(), 0, "lettering failures close progress");
     assert.equal(saves.length, beforeTitleSaves, "lettering failure cannot publish");
@@ -753,7 +759,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     await page.getByRole("region", { name: "Review your Live Card", exact: true }).waitFor();
     assert.equal(headlines.at(-1).form.title, "Updated title");
     assert.equal(
-      await page.getByRole("button", { name: "Publish", exact: true }).isDisabled(),
+      await page.getByRole("button", { name: "Save changes", exact: true }).isDisabled(),
       false,
       "editable headlines do not invalidate the background",
     );
@@ -812,7 +818,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
       if (code) decodedUrls.push(code.data);
     }
     assert.ok(decodedUrls.includes("https://example.com/gifts"), "the exported Registry QR code decodes to its actual URL");
-    assert.ok(decodedUrls.includes("https://envitefy.com/event/movie-night"), "the exported Live Card QR code opens the published public URL");
+    assert.ok(decodedUrls.includes(shared.url), "the exported Live Card QR code opens the same published URL as Share");
     assert.equal(generations.length, generationCount, "downloading only composes existing artwork and current text");
     assert.equal(saves.length, savesBeforePreviews, "previews and downloading do not save the event");
     await page.getByRole("button", { name: "Preview Live Card", exact: true }).click();
@@ -837,7 +843,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
         await output.scrollIntoViewIfNeeded();
         const art = await output.locator("[data-live-card-artwork]").boundingBox();
         assert.ok(art && art.width > 100 && art.height > 100, `${name} is visible at ${viewport.width}px`);
-        const reviewActions = await output.getByRole("group", { name: "Save and publish", exact: true }).boundingBox();
+        const reviewActions = await output.getByRole("group", { name: "Cancel and save changes", exact: true }).boundingBox();
         assert.ok(reviewActions.y >= art.y + art.height, "Review keeps Save and Publish under the card");
       }
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
@@ -862,7 +868,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
         });
       }
       await openSection("Basics");
-      assert.equal(await page.getByRole("group", { name: "Save and publish", exact: true }).count(), 0, "mobile Event details keeps save/publish actions with the preview card");
+      assert.equal(await page.getByRole("group", { name: "Cancel and save changes", exact: true }).count(), 0, "mobile Event details keeps save/publish actions with the preview card");
       assert.equal(
         await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
         false,
@@ -888,11 +894,11 @@ test("Live Card: location retries, explicit saves, invitation download and respo
         JSON.stringify(bounds),
       );
       await checkActionChrome(dialog);
-      const previewActions = await dialog.getByRole("group", { name: "Save and publish", exact: true }).boundingBox();
+      const previewActions = await dialog.getByRole("group", { name: "Cancel and save changes", exact: true }).boundingBox();
       assert.ok(previewActions.y >= bounds.y + bounds.height, "preview Save and Publish sit below the artwork");
       assert.ok(previewActions.x >= 0 && previewActions.x + previewActions.width <= viewport.width + 1);
       assert.ok(previewActions.y + previewActions.height <= viewport.height, "preview actions remain on screen, including landscape");
-      for (const button of await dialog.getByRole("group", { name: "Save and publish", exact: true }).getByRole("button").all()) {
+      for (const button of await dialog.getByRole("group", { name: "Cancel and save changes", exact: true }).getByRole("button").all()) {
         assert.ok(await button.evaluate((node) => node.scrollWidth <= node.clientWidth), "preview action labels fit without clipping");
         assert.ok((await button.locator("svg").boundingBox()).width >= 16, "preview action icons retain their size");
       }
@@ -960,7 +966,21 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.equal(wordingRequests.length, checksBeforeDownload, "unchanged wording reuses the completed check for the other output");
     assert.equal(saves.length, savesBeforeAutomaticCleanup, "cleanup and downloads remain in memory");
     assert.equal(generations.length, generationsBeforeAutomaticCleanup, "cleanup never regenerates artwork");
-    page.once("dialog", (dialog) => dialog.accept());
+    const savedBeforeCancel = JSON.stringify(stored);
+    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    await page.getByRole("button", { name: "Keep editing", exact: true }).click();
+    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    await page.getByRole("button", { name: "Discard and leave", exact: true }).click();
+    await page.getByRole("heading", { name: "Owner dashboard", exact: true }).waitFor();
+    assert.equal(new URL(page.url()).searchParams.get("tab"), "dashboard");
+    assert.equal(JSON.stringify(stored), savedBeforeCancel, "Cancel discards only unsaved edits and retains the saved event");
+    assert.equal(saves.length, savesBeforeAutomaticCleanup);
+    await page.setViewportSize({ width: 1440, height: 1080 });
+    await page.goto(`${origin}/live-cards?edit=${stored.id}`);
+    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    await page.getByRole("heading", { name: "Owner dashboard", exact: true }).waitFor();
+    assert.equal(saves.length, savesBeforeAutomaticCleanup, "clean cancellation does not save");
+    await page.setViewportSize({ width: 320, height: 740 });
     await page.goto(`${origin}/live-cards`);
     await page.getByLabel("Event type", { exact: true }).selectOption("Birthday");
     await page.getByRole("button", { name: "2 Event details", exact: true }).click();

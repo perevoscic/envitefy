@@ -18,6 +18,36 @@ const design = {
   surface: "#fff4ec",
 };
 
+test("editing a saved title loads the relative background through the real reference resolver", async (t) => {
+  const original = { ...headlineGenerationDeps };
+  const previousOrigin = process.env.NEXT_PUBLIC_APP_URL;
+  process.env.NEXT_PUBLIC_APP_URL = "https://envitefy.com";
+  t.after(() => {
+    Object.assign(headlineGenerationDeps, original);
+    if (previousOrigin === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+    else process.env.NEXT_PUBLIC_APP_URL = previousOrigin;
+  });
+  const webp = await sharp({
+    create: { width: 100, height: 150, channels: 3, background: "#ddddee" },
+  }).webp().toBuffer();
+  const backgroundUrl = "/api/blob/event-media/saved-card/header/display.webp";
+  t.mock.method(globalThis, "fetch", async (url: string) => {
+    assert.equal(url, `https://envitefy.com${backgroundUrl}`);
+    return new Response(new Uint8Array(webp), { headers: { "content-type": "image/webp" } });
+  });
+  headlineGenerationDeps.generate = async (_prompt, references) => {
+    assert.deepEqual(references, [{ mimeType: "image/webp", data: webp.toString("base64") }]);
+    return { ok: true, imageDataUrl: `data:image/webp;base64,${webp.toString("base64")}`, warnings: [] };
+  };
+  headlineGenerationDeps.verify = async () => ({ status: "passed", issues: [] });
+  headlineGenerationDeps.encode = async (buffer) => buffer;
+  const result = await generateCardHeadline({
+    ...createLiveCardForm(), title: "Lizzy's Graduation! 2026", design: "Garden celebration",
+  }, { ...design, backgroundUrl });
+  assert.equal(result.title, "Lizzy's Graduation! 2026");
+  assert.match(result.imageUrl, /^data:image\/webp;base64,/);
+});
+
 test("unsaved WebP backgrounds reach lettering directly without a fetch or upload", async () => {
   const webp = await sharp({
     create: { width: 100, height: 150, channels: 3, background: "#ddddee" },
