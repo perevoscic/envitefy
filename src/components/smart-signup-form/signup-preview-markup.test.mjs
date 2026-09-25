@@ -186,7 +186,7 @@ test("signup owner actions render above the hero, separate from the response boa
   assert.doesNotMatch(guest, /Manage signup form|Edit event|Duplicate form/);
 });
 
-test("all 640 templates retain a distinct curated design through saving and rendering", () => {
+test("all available templates retain a distinct curated design through saving and rendering", () => {
   const { getPublicTemplates } = load("src/lib/public-template-catalog.ts", baseMocks);
   const { SIGNUP_DESIGNS, SIGNUP_DESIGN_PALETTES } = load("src/lib/signup-designs.ts", baseMocks);
   const { createSignupTemplateForm } = load("src/lib/signup-starters.ts", baseMocks);
@@ -197,7 +197,8 @@ test("all 640 templates retain a distinct curated design through saving and rend
     baseMocks,
   ).default;
   const templates = getPublicTemplates("signup-forms");
-  assert.equal(templates.length, 640);
+  const { AVAILABLE_HOLIDAY_TEMPLATE_IDS } = load("src/assets/holiday-template-availability.ts", baseMocks);
+  assert.equal(templates.length, 200 + AVAILABLE_HOLIDAY_TEMPLATE_IDS.length);
   assert.equal(SIGNUP_DESIGNS.length, templates.length);
   assert.equal(new Set(SIGNUP_DESIGNS.map((design) => design.composition)).size, 12);
   const signatures = new Set();
@@ -286,11 +287,13 @@ test("designed headers retain empty-image and legacy-layout choices", () => {
 
 test("every signup catalog item renders an inert artwork thumbnail without form controls", () => {
   const { getPublicTemplates } = load("src/lib/public-template-catalog.ts", baseMocks);
+  const { getSignupDesign } = load("src/lib/signup-designs.ts", baseMocks);
   const Preview = load(
     "src/components/smart-signup-form/SignupTemplatePreview.tsx",
     baseMocks,
   ).default;
   for (const template of getPublicTemplates("signup-forms")) {
+    const design = getSignupDesign(template.id);
     const html = renderToStaticMarkup(React.createElement(Preview, { template }));
     assert.match(html, /data-template-thumbnail-preview="true"/);
     assert.match(html, /aria-hidden="true" inert=""/);
@@ -299,9 +302,10 @@ test("every signup catalog item renders an inert artwork thumbnail without form 
     assert.match(html, /data-composition=/);
     assert.ok(html.includes(template.heroImage), template.id);
     assert.ok(
-      html.includes(template.name.replaceAll("&", "&amp;").replaceAll("'", "&#x27;")),
+      html.includes((design?.coverTitle || template.name).replaceAll("&", "&amp;").replaceAll("'", "&#x27;")),
       template.id,
     );
+    if (design?.coverLabel) assert.ok(html.includes(design.coverLabel.replaceAll("&", "&amp;").replaceAll("'", "&#x27;")), template.id);
     assert.doesNotMatch(html, /data-signup-slot=|<button\b|<input\b|<form\b|Hosted by/);
   }
 });
@@ -527,7 +531,7 @@ test("starters switch immediately for every untouched template and protect edite
   }
 });
 
-test("new signup templates keep all 640 designs without introducing fictional event data", () => {
+test("new signup templates keep every available design without introducing fictional event data", () => {
   const { createEmptySignupTemplateForm } = load("src/lib/signup-starters.ts", baseMocks);
   const { getPublicTemplates } = load("src/lib/public-template-catalog.ts", baseMocks);
   for (const template of getPublicTemplates("signup-forms")) {

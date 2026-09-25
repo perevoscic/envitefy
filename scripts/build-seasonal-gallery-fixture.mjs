@@ -110,7 +110,7 @@ assert.ok(result.success, result.logs.map(String).join("\n"));
 await fs.writeFile(path.join(out, "entry.css"), [...styles.values()].join("\n"));
 const globals = (await fs.readFile("src/app/globals.css", "utf8")).replace(
   '@import "tailwindcss";',
-  '@import "tailwindcss" source(none);\n@source "../components/events/CreateWithEnvitefyCallout.tsx";\n@source "../components/events/EventCustomThemeLauncher.tsx";\n@source "../components/templates/PublicTemplateGallery.tsx";\n@source "../components/events/SeasonalGalleryControls.tsx";\n@source "../components/events/EventDesignGallery.tsx";\n@source "../components/events/TemplateMasonryGallery.tsx";\n@source "../components/birthdays/BirthdayDesignGallery.tsx";\n@source "../components/weddings/WeddingDesignGallery.tsx";\n@source "./event/general/page.tsx";',
+  '@import "tailwindcss" source(none);\n@source "../components/events/CreateWithEnvitefyCallout.tsx";\n@source "../components/events/EventCustomThemeLauncher.tsx";\n@source "../components/templates/PublicTemplateGallery.tsx";\n@source "../components/events/SeasonalGalleryControls.tsx";\n@source "../components/events/EventDesignGallery.tsx";\n@source "../components/events/TemplateMasonryGallery.tsx";\n@source "../components/events/TemplateThumbnail.tsx";\n@source "../components/birthdays/BirthdayDesignGallery.tsx";\n@source "../components/weddings/WeddingDesignGallery.tsx";\n@source "./event/general/page.tsx";',
 );
 const css = await postcss([tailwind()]).process(globals, {
   from: path.resolve("src/app/globals.css"),

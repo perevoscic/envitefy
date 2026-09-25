@@ -13,7 +13,7 @@ function load(file) {
   const module = { exports: {} };
   cache.set(file, module);
   const source = ts.transpileModule(readFileSync(file, "utf8"), {
-    fileName: file, compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
+    fileName: file.endsWith(".mjs") ? `${file}.ts` : file, compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   const require = (name) => {
     if (!name.startsWith(".") && !name.startsWith("@/")) return nativeRequire(name);
@@ -92,5 +92,41 @@ test("original order, unavailable/invalid local dates, subsets and evergreen des
   assert.deepEqual(order(mixed, "2026-09-25").map((d) => d.id), ["fall", "neutral-a", "neutral-b", "summer"]);
   assert.equal(templateOccasion({ id: "school-and-education--teacher-appreciation-breakfast" }), undefined, "do not mislabel a different occasion");
   assert.equal(templateOccasion({ id: "some-birthday", occasion: "Birthday" }), undefined);
+  assert.equal(templateOccasion({ id: "church-and-community--library-summer-reading" }), undefined, "reading is seasonal, not a summer camp");
   assert.equal(localGalleryDay(new Date(2026, 8, 25, 23, 59)), "2026-09-25");
+});
+
+test("available designs enter both galleries with distinct artwork; pending designs stay inaccessible", () => {
+  const { getPublicTemplates, getPublicTemplate } = load("src/lib/public-template-catalog.ts");
+  const { SIGNUP_DESIGNS } = load("src/lib/signup-designs.ts");
+  const { GENERAL_EVENT_DESIGNS } = load("src/lib/general-event-designs.ts");
+  const { createEmptySignupTemplateForm } = load("src/lib/signup-starters.ts");
+  const { AVAILABLE_HOLIDAY_TEMPLATE_IDS: available } = load("src/assets/holiday-template-availability.ts");
+  const artwork = JSON.parse(readFileSync("docs/holiday-template-artwork.json", "utf8")).assets;
+  assert.deepEqual(new Set(available), new Set(artwork.filter((a) => a.status === "generated" && a.verifiedDecode && a.visuallyReviewed).map((a) => a.id)));
+  const signups = getPublicTemplates("signup-forms");
+  assert.equal(signups.length, 200 + available.length);
+  assert.equal(GENERAL_EVENT_DESIGNS.length, 12 + available.length);
+  for (const collection of collections) {
+    const count = available.filter((id) => id.startsWith(`holidays--${collection.id}--`)).length;
+    const forms = signups.filter((t) => t.occasion === collection.id);
+    const pages = GENERAL_EVENT_DESIGNS.filter((t) => t.occasion === collection.id);
+    assert.equal(forms.length, count, collection.id);
+    assert.equal(pages.length, count, collection.id);
+    assert.equal(new Set(forms.map((t) => t.heroImage)).size, count, "each design has its own artwork");
+    const recipes = forms.map((form) => SIGNUP_DESIGNS.find((design) => design.id === form.id));
+    assert.equal(new Set(recipes.map((design) => design.composition)).size, count, "layouts vary within each collection");
+    for (const form of forms) assert.deepEqual(getPublicTemplate("signup-forms", form.id), form, "direct editor lookup stays stable");
+  }
+  for (const template of templates.filter((t) => !available.includes(t.id))) {
+    assert.equal(getPublicTemplate("signup-forms", template.id), undefined, "unfinished signup designs have no direct entry");
+    assert.ok(!GENERAL_EVENT_DESIGNS.some((design) => design.id === template.id));
+    assert.ok(!SIGNUP_DESIGNS.some((design) => design.id === template.id));
+  }
+  const empty = createEmptySignupTemplateForm();
+  assert.equal(empty.boardTitle, "");
+  assert.equal(empty.start, null);
+  assert.equal(empty.end, null);
+  assert.equal(empty.sections.length, 0);
+  assert.equal(empty.responses.length, 0);
 });

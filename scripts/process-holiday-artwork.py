@@ -106,7 +106,9 @@ def main():
                 count += 1
     save(plan)
     if mode == "verify":
-        assert count == len(plan["assets"]), f"Only {count} assets complete"
+        expected = (sum(a["status"] == "generated" for a in plan["assets"])
+                    if "--available-only" in sys.argv else len(plan["assets"]))
+        assert count == expected and count > 0, f"Only {count} of {expected} assets complete"
     print(json.dumps({"action": mode, "processed": count,
                       "installed": sum(a["status"] == "generated" for a in plan["assets"])}))
 

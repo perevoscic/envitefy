@@ -1,5 +1,6 @@
 import { SIGNUP_TEMPLATES } from "@/assets/signup-templates";
 import { HOLIDAY_COLLECTIONS } from "@/lib/holiday-collections";
+import { isHolidayTemplateAvailable } from "@/lib/holiday-template-availability";
 import type { SignupFontPair } from "@/types/signup";
 
 export const SIGNUP_COMPOSITIONS = {
@@ -433,6 +434,8 @@ export type SignupDesign = {
   motif: SignupMotif;
   reverse: boolean;
   name: string;
+  coverTitle?: string;
+  coverLabel?: string;
   artwork: string;
   fontPair: SignupFontPair;
   board: (typeof SIGNUP_COMPOSITIONS)[SignupComposition]["board"];
@@ -455,6 +458,8 @@ export const HOLIDAY_SIGNUP_DESIGNS: readonly SignupDesign[] = HOLIDAY_COLLECTIO
     return {
       id: `holidays--${collection.id}--${design.slug}`,
       name: `${collection.name} · ${design.name}`,
+      coverTitle: design.name,
+      coverLabel: collection.name,
       artwork: `/templates/signup/holidays/${collection.id}/${design.slug}.webp`,
       composition,
       palette: collection.palettes[index % collection.palettes.length],
@@ -463,7 +468,7 @@ export const HOLIDAY_SIGNUP_DESIGNS: readonly SignupDesign[] = HOLIDAY_COLLECTIO
       fontPair: SIGNUP_COMPOSITIONS[composition].font,
       board: SIGNUP_COMPOSITIONS[composition].board,
     };
-  }),
+  }).filter((design) => isHolidayTemplateAvailable(design.id)),
 );
 export const SIGNUP_DESIGNS: readonly SignupDesign[] = [...Object.entries(RECIPES).flatMap(
   ([group, recipes]) =>

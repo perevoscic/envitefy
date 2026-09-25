@@ -9,8 +9,8 @@ await fs.mkdir(out, { recursive: true });
 const requested = new Set(process.argv.slice(2));
 for (const collection of [...new Set(plan.assets.map((asset) => asset.collection))]) {
   if (requested.size && !requested.has(collection)) continue;
-  const assets = plan.assets.filter((asset) => asset.collection === collection);
-  if (assets.some((asset) => asset.status !== "generated")) continue;
+  const assets = plan.assets.filter((asset) => asset.collection === collection && asset.status === "generated");
+  if (!assets.length) continue;
   const tiles = [];
   for (const [index, asset] of assets.entries()) {
     const left = index % 5 * 320, top = Math.floor(index / 5) * 240;

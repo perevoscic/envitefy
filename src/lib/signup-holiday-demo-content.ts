@@ -15,7 +15,7 @@ export function getHolidaySignupDemoContent(id: string): SignupOccasionContent |
   const [, collectionId, slug] = id.split("--");
   if (!id.startsWith("holidays--")) return undefined;
   const collection = HOLIDAY_COLLECTIONS.find((item) => item.id === collectionId);
-  if (!collection || !collection.designs.some((design) => design.slug === slug)) return undefined;
+  if (!collection?.designs.some((design) => design.slug === slug)) return undefined;
   const labels = roles[collection.id] || (collection.purpose === "potluck"
     ? ["Main dishes", "Seasonal sides", "Drinks & serving supplies", "Setup & cleanup"]
     : collection.purpose === "meeting"

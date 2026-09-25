@@ -31,13 +31,14 @@ function load(file, mocks = {}, cache = new Map()) {
   return module.exports;
 }
 const { GENERAL_EVENT_DESIGNS, getGeneralEventDesign } = load("src/lib/general-event-designs.ts");
+const { AVAILABLE_HOLIDAY_TEMPLATE_IDS } = load("src/assets/holiday-template-availability.ts");
 const { config } = load("src/components/event-templates/GeneralEventsTemplate.tsx");
 const Container = ({ children }) => React.createElement("div", null, children);
 const Empty = () => null;
 
 test("every General Event template has real artwork and the matching editor palette", () => {
-  assert.equal(GENERAL_EVENT_DESIGNS.length, 452);
-  assert.equal(new Set(GENERAL_EVENT_DESIGNS.map((design) => design.id)).size, 452);
+  assert.equal(GENERAL_EVENT_DESIGNS.length, 12 + AVAILABLE_HOLIDAY_TEMPLATE_IDS.length);
+  assert.equal(new Set(GENERAL_EVENT_DESIGNS.map((design) => design.id)).size, GENERAL_EVENT_DESIGNS.length);
   for (const design of GENERAL_EVENT_DESIGNS) {
     assert.ok(existsSync(path.join("public", design.artwork)), design.artwork);
     assert.deepEqual(getGeneralEventDesign(design.id), design);

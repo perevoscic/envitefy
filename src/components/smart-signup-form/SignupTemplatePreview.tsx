@@ -39,8 +39,8 @@ export default function SignupTemplatePreview({
         </div>
         <div className={styles.caption}>
           <div className={styles.copy}>
-            <p className={styles.eyebrow}>Signup form</p>
-            <p className={styles.title}>{template.name}</p>
+            <p className={styles.eyebrow}>{design?.coverLabel || "Signup form"}</p>
+            <p className={styles.title}>{design?.coverTitle || template.name}</p>
           </div>
           <div className={styles.ornament}>
             <SignupDesignOrnament motif={design?.motif || "orbit"} />

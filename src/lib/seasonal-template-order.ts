@@ -103,7 +103,6 @@ const legacyOccasions: Record<string, HolidayCollectionId> = {
   "fall-and-seasonal--thanksgiving-feast": "thanksgiving",
   "fall-and-seasonal--friendsgiving": "friendsgiving",
   "church-and-community--community-egg-hunt": "easter",
-  "church-and-community--library-summer-reading": "summer-camp",
   "church-and-community--school-backpack-packing": "back-to-school",
   "school-and-education--school-graduation-reception": "graduation",
   "winter-and-holidays--classroom-christmas-party": "christmas",
@@ -164,6 +163,7 @@ export function templateSeasonKey(template: SeasonalTemplate): string | undefine
   const season = template.season?.trim().toLowerCase().replace("autumn", "fall");
   if (season && season in seasonRules) return `season:${season}`;
   if (["winter-snow-lodge", "sparkle-splash"].includes(template.id)) return "season:winter";
+  if (template.id === "church-and-community--library-summer-reading") return "season:summer";
   if (template.id === "beach-surf-shack") return "season:summer";
   if (template.id.startsWith("winter-and-holidays--") || template.id === "holiday-gathering") return "season:winter";
   return undefined;
@@ -183,7 +183,8 @@ export function orderSeasonalTemplates<T extends SeasonalTemplate>(templates: re
     bucket.push(template);
     timely.set(key, bucket);
   }
-  const buckets = [...timely].sort(([a], [b]) => (scores.get(b) || 0) - (scores.get(a) || 0)).map(([, values]) => values);
+  const buckets = [...timely].sort(([a], [b]) => (scores.get(b) || 0) - (scores.get(a) || 0))
+    .map(([, values]) => values.sort((a, b) => Number(b.id.startsWith("holidays--")) - Number(a.id.startsWith("holidays--"))));
   const result: T[] = [];
   const maxLength = Math.max(0, ...buckets.map((values) => values.length));
   for (let index = 0; index < maxLength; index++) {

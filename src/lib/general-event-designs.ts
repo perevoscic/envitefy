@@ -1,5 +1,6 @@
 import { HOLIDAY_COLLECTIONS, type HolidayCollectionId } from "@/lib/holiday-collections";
 import { HOLIDAY_SIGNUP_DESIGNS, SIGNUP_DESIGN_PALETTES } from "@/lib/signup-designs";
+import { isHolidayTemplateAvailable } from "@/lib/holiday-template-availability";
 import type { TemplateArtwork } from "@/components/events/TemplateArtworkThumbnail";
 
 export type GeneralEventDesign = TemplateArtwork & {
@@ -105,19 +106,21 @@ const holidayCompositions = ["panorama", "arch", "editorial", "journal", "poster
 const holidayFonts = [serif, serif, '"Libre Baskerville", Georgia, serif', sans, '"Bebas Neue", Arial, sans-serif', serif, sans, serif, sans, sans];
 export const GENERAL_EVENT_DESIGNS: GeneralEventDesign[] = [
   ...ORIGINAL_GENERAL_EVENT_DESIGNS,
-  ...HOLIDAY_COLLECTIONS.flatMap((collection) => collection.designs.map((design, index): GeneralEventDesign => {
+  ...HOLIDAY_COLLECTIONS.flatMap((collection) => collection.designs.flatMap((design, index): GeneralEventDesign[] => {
     const id = `holidays--${collection.id}--${design.slug}`;
+    if (!isHolidayTemplateAvailable(id)) return [];
     const recipe = HOLIDAY_SIGNUP_DESIGNS.find((item) => item.id === id)!;
     const palette = SIGNUP_DESIGN_PALETTES[recipe.palette];
     const font = holidayFonts[index];
-    return {
+    return [{
       id, name: `${collection.name} · ${design.name}`, label: collection.name, occasion: collection.id,
+      coverTitle: design.name,
       description: `${collection.name}: ${design.scene}. ${collection.aliases}`,
       style: ["Scenic", "Botanical", "Editorial", "Journal", "Bold", "Classic", "Scrapbook", "Supper club", "Modern", "Letterpress"][index],
       artwork: recipe.artwork, composition: holidayCompositions[index],
       background: palette.page, ink: palette.ink, accent: palette.accent, font,
       theme: { bg: `holiday-bg-${recipe.palette}`, text: `holiday-ink-${recipe.palette}`, accent: `holiday-accent-${recipe.palette}`, preview: `holiday-bg-${recipe.palette}`, fontFamily: font },
-    };
+    }];
   })),
 ];
 

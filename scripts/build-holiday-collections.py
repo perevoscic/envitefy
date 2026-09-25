@@ -601,7 +601,7 @@ def main():
                 assert previous[id]["prompt"] == prompt, f"Review prompt changes before replacing {id}"
                 asset.update(previous[id])
             assets.append(asset)
-    plan_path.write_text(json.dumps(dict(provider="OpenAI built-in image_gen", direction="Natural documentary photography",
+    plan_path.write_text(json.dumps(dict(provider="OpenAI", initialGeneration="built-in image_gen", approvedFallback="OpenAI API, gpt-image-2, medium quality", direction="Natural documentary photography",
                                         collections=len(COLLECTIONS), designsPerCollection=10, assets=assets), indent=2, ensure_ascii=False) + "\n")
     print(f"Prepared {len(COLLECTIONS)} collections and {len(assets)} distinct artwork prompts")
 

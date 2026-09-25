@@ -6,6 +6,7 @@ import "@/components/birthdays/redesign/birthday-fonts.css";
 export type TemplateArtwork = {
   id: string;
   name: string;
+  coverTitle?: string;
   artwork: string;
   label: string;
   background: string;
@@ -52,7 +53,7 @@ export default function TemplateArtworkThumbnail({
         </div>
         <div className={styles.caption}>
           <p className={styles.eyebrow}>{design.label}</p>
-          <p className={styles.title}>{design.name}</p>
+          <p className={styles.title}>{design.coverTitle || design.name}</p>
         </div>
       </div>
     </TemplateThumbnailPreview>

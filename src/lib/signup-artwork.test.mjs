@@ -5,11 +5,16 @@ import path from "node:path";
 import test from "node:test";
 
 test("every signup design has a verified WebP and a matching manifest reference", () => {
-  const assets = ["docs/signup-artwork-catalog.json", "docs/signup-community-expansion.json", "docs/holiday-template-artwork.json"]
+  const legacy = ["docs/signup-artwork-catalog.json", "docs/signup-community-expansion.json"]
     .flatMap((file) => JSON.parse(readFileSync(file, "utf8")).assets);
+  const holiday = JSON.parse(readFileSync("docs/holiday-template-artwork.json", "utf8")).assets;
+  const assets = [...legacy, ...holiday.filter((asset) => asset.status === "generated")];
   const manifest = JSON.parse(readFileSync("public/templates/signup/manifest.json", "utf8"));
   const entries = Object.values(manifest).flat();
   const paths = new Set(entries.map((entry) => entry.path));
+  for (const pending of holiday.filter((asset) => asset.status !== "generated")) {
+    assert.equal(paths.has(pending.legacyPath), false, "unfinished artwork must not be offered in the catalog");
+  }
   assert.equal(assets.length, paths.size);
   assert.equal(new Set(assets.map((asset) => asset.output)).size, paths.size);
   for (const asset of assets) {
