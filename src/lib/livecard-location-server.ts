@@ -205,7 +205,9 @@ async function searchGoogleLocation(input: LocationInput): Promise<BuilderLocati
         .map((place) => parsePlace(record(place)))
         .filter((place): place is BuilderPlace => Boolean(place))
     : [];
-  const match = chooseBuilderPlace(
+  // A single provider result is applied directly; the host can edit it afterward.
+  // Name-token differences (including intake typos) must not create a one-item chooser.
+  const match = candidates.length === 1 ? candidates[0] : chooseBuilderPlace(
     candidates,
     input.venue || (!input.city && !input.address ? input.query : ""),
     input.city || "",

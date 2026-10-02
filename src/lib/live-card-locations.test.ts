@@ -2,11 +2,21 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  buildLiveCardOnlineLocations,
   buildLiveCardDirectionsHref,
   buildLiveCardLocationActions,
   getLiveCardPrimaryLocationLabel,
   getLiveCardLocationAddress,
 } from "./live-card-locations.ts";
+
+test("online locations preserve joining tokens and never become physical directions", () => {
+  const details = { venueName: "Online Event", location: "https://example.com/join?token=abc#room", additionalLocations: [{ venue: "Afterparty", address: "https://example.com/after" }, { venue: "Duplicate", address: "https://example.com/join?token=abc#room" }] };
+  assert.deepEqual(buildLiveCardOnlineLocations(details), [{ label: "Online Event", url: details.location }, { label: "Afterparty", url: "https://example.com/after" }]);
+  assert.deepEqual(buildLiveCardLocationActions(details), []);
+  for (const location of ["javascript:alert(1)", "data:text/html,test", "https://user:password@example.com", "123 Main Street"]) {
+    assert.deepEqual(buildLiveCardOnlineLocations({ location }), []);
+  }
+});
 
 test("buildLiveCardLocationActions extracts a primary venue and a lunch destination", () => {
   const actions = buildLiveCardLocationActions({

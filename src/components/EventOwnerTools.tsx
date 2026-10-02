@@ -757,8 +757,6 @@ export default function EventOwnerTools({
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("published") !== "1") return;
     setJustPublished(true);
-    const timer = window.setTimeout(() => setJustPublished(false), 5000);
-    return () => window.clearTimeout(timer);
   }, []);
   const publicUrl = useMemo(() => {
     if (publicUrlOverride) return publicUrlOverride;
@@ -885,7 +883,21 @@ export default function EventOwnerTools({
         style={{ "--owner-artwork-ratio": artworkRatio } as CSSProperties}
       >
         <section className="min-w-0 space-y-3 sm:space-y-4">
-          {justPublished && <p role="status" className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900">Published. Your invitation is ready to share.</p>}
+          {justPublished && (
+            <div className="rounded-xl bg-emerald-50 px-4 py-3 text-emerald-900">
+              <p role="status" className="text-sm font-semibold">Published. Your invitation is ready to share.</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <button type="button" onClick={() => void copyPublicLink()} className="min-h-11 rounded-lg bg-white px-3 text-sm font-semibold">Copy guest link</button>
+                <button type="button" onClick={() => void sharePublicLink()} className="min-h-11 rounded-lg bg-white px-3 text-sm font-semibold">Share invitation</button>
+                <button type="button" onClick={() => {
+                  setJustPublished(false);
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete("published");
+                  window.history.replaceState(window.history.state, "", url);
+                }} className="min-h-11 rounded-lg px-3 text-sm">Dismiss</button>
+              </div>
+            </div>
+          )}
           <OwnerWorkspaceHeader
             eventId={eventId}
             title={currentEventTitle}

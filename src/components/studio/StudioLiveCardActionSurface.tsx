@@ -35,6 +35,7 @@ import { buildLiveCardDetailsWelcomeMessage, buildLiveCardOverviewNotes, buildLi
 import {
   buildLiveCardDirectionsHref,
   buildLiveCardLocationActions,
+  buildLiveCardOnlineLocations,
   getLiveCardLocationAddress,
 } from "@/lib/live-card-locations";
 import { getLiveCardPanelAlignment, getLiveCardRailLayout } from "@/lib/live-card-rail-layout";
@@ -440,6 +441,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   const registryHref = normalizeLiveCardExternalHref(details?.registryLink);
   const registryActionLabel = getRegistryActionLabel(details);
   const registryPanelTitle = getRegistryPanelTitle(details);
+  const registryNote = readString(details?.giftNote) || readString(details?.registryNote);
   const locationDetails = useMemo(() => {
     if (!details) return details;
     const withDisplayLocation = {
@@ -455,6 +457,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     () => buildLiveCardLocationActions(locationDetails),
     [locationDetails],
   );
+  const onlineLocations = useMemo(() => buildLiveCardOnlineLocations(locationDetails), [locationDetails]);
   const effectiveShareUrl =
     readString(props.shareUrl) ||
     (props.fallbackShareUrlToWindowLocation && typeof window !== "undefined"
@@ -599,7 +602,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       resolveLiveCardOverlayActions({
         category: readString(details?.category),
         openHouse: openHouseAgentCard,
-        hasLocation: locationActions.length > 0,
+        hasLocation: locationActions.length > 0 || onlineLocations.length > 0,
         hasRegistry: Boolean(registryHref),
         rsvpEnabled: details?.actionVisibility?.rsvp,
         hasOpenHouseAgent: hasOpenHouseAgentInfo,
@@ -611,6 +614,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       hasOpenHouseAgentInfo,
       hasOpenHouseLogoInfo,
       locationActions.length,
+      onlineLocations.length,
       openHouseAgentCard,
       registryHref,
     ],
@@ -785,7 +789,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
         />
       ) : null}
       <div className="flex h-full min-h-0 flex-col justify-end">
-        <div className={styles.panelSlot}>
+        <div className={styles.panelSlot} data-live-card-panel-slot-kind={props.activeTab}>
         <AnimatePresence initial={false}>
           {props.activeTab !== "none" && props.activeTab !== "share" ? (
             <motion.div
@@ -1116,14 +1120,23 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                         ))}
                       </ol>
                     ) : null}
+                    {onlineLocations.map((location) => (
+                      <a key={location.url} href={location.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-xl bg-neutral-900 px-4 py-2 text-sm font-semibold text-white">Join {location.label}</a>
+                    ))}
                     {overviewNotes.map((note) => <p key={note} className="whitespace-pre-line text-sm leading-relaxed">{note}</p>)}
                     {props.showExtendedDetails ? renderExtraDetailFields(details) : null}
                   </div>
                 ) : null}
 
                 {props.activeTab === "location" ? (
-                  locationActions.length > 0 ? (
+                  locationActions.length > 0 || onlineLocations.length > 0 ? (
                     <div className="space-y-3">
+                      {onlineLocations.map((location) => (
+                        <div key={location.url} className="rounded-xl border border-neutral-200 bg-white/85 p-3 text-left shadow-sm">
+                          <p className="text-sm font-semibold text-neutral-900">{location.label}</p>
+                          <a href={location.url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex min-h-11 items-center rounded-xl bg-neutral-900 px-4 py-2 text-sm font-semibold text-white">Join {location.label}</a>
+                        </div>
+                      ))}
                       {locationActions.map((locationAction) => (
                         <div
                           key={locationAction.id}
@@ -1201,6 +1214,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                   <>
                     <p className="text-sm font-medium text-neutral-900">{registryPanelTitle}</p>
                     <p className="text-xs text-neutral-500">{getRegistryText(details)}</p>
+                    {registryNote ? <p className="whitespace-pre-line text-sm text-neutral-700">{registryNote}</p> : null}
                     {readString(props.registryHelperText) ? (
                       <p className="text-xs text-neutral-500">
                         {readString(props.registryHelperText)}

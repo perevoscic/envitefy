@@ -90,8 +90,10 @@ test("headline generation receives only approved title, opening line and visual 
   assert.doesNotMatch(prompt, /Only guests should|Bring a jacket|mia@example.com|2026-09-26/);
   assert.match(
     cardHeadlinePrompt({ ...form, headlineIntro: "" }, design),
-    /Omit this line completely when empty/,
+    /No opening line was supplied. Omit it completely/,
   );
+  assert.match(prompt, /This supplied line is REQUIRED/);
+  assert.ok(prompt.includes('REQUIRED PRINTED TEXT BLOCKS: ["Join us","Livia is turning 10"]'));
 });
 
 test("lettering receives this event's category and palette without a fixed birthday treatment", () => {
@@ -178,7 +180,7 @@ test("generated lettering requires verification, preserves exact text, and retur
       status = value;
       await assert.rejects(generateCardHeadline(form, design), (error: unknown) => {
         const response = liveCardGenerationErrorResponse(error, "lettering");
-        assert.match(response.error, value === "failed" ? /artwork and event details are preserved/ : /check is temporarily unavailable/);
+        assert.match(response.error, value === "failed" ? /lettering check found/ : /check could not complete/);
         assert.equal(response.code, value === "failed" ? "quality_rejected" : "verification_unavailable");
         assert.equal(response.retryable, true);
         return true;
@@ -186,7 +188,7 @@ test("generated lettering requires verification, preserves exact text, and retur
     }
     assert.equal(
       calls,
-      5,
+      6,
       "only a failed visual check gets one bounded correction; unavailable checks never regenerate",
     );
   } finally {
@@ -234,8 +236,8 @@ test("failed lettering is repaired once against the original background and veri
       headlineGenerationDeps.verify = async () => ++checked === 1
         ? { status: "failed", issues: ["missing_copy"], repairInstructions: ["Restore the missing second Home"] }
         : { status, issues: status === "failed" ? ["missing_copy"] : [] };
-      await assert.rejects(generateCardHeadline(form, design), status === "failed" ? /artwork and event details are preserved/ : /check is temporarily unavailable/);
-      assert.equal(generated, 2, "never attempt a third image");
+      await assert.rejects(generateCardHeadline(form, design), status === "failed" ? /lettering check found/ : /check could not complete/);
+      assert.equal(generated, status === "failed" ? 3 : 2);
       assert.equal(encoded, 0, "a rejected or unverified repair is never exported");
     }
     generated = encoded = 0;

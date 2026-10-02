@@ -33,3 +33,24 @@ test("failed verification streams a specific failure without a fabricated correc
   const response = await api.POST(request());
   assert.deepEqual((await response.text()).trim().split("\n").map(JSON.parse), [{ error: "Lettering unavailable", code: "verification_unavailable" }]);
 });
+
+test("cancelling the response aborts the pending image work and cannot start a repair", async () => {
+  let started;
+  const ready = new Promise((resolve) => { started = resolve; });
+  let signal;
+  let aborted;
+  const stopped = new Promise((resolve) => { aborted = resolve; });
+  const api = route(async (_form, _design, generationSignal, onRepair) => {
+    signal = generationSignal;
+    started();
+    await new Promise((resolve) => generationSignal.addEventListener("abort", resolve, { once: true }));
+    aborted();
+    generationSignal.throwIfAborted();
+    onRepair?.();
+  });
+  const response = await api.POST(request());
+  await ready;
+  await response.body.cancel();
+  await stopped;
+  assert.equal(signal.aborted, true);
+});

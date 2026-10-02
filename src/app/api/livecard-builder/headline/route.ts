@@ -28,14 +28,16 @@ export async function POST(request: Request) {
     );
   if (request.headers.get("accept")?.includes("application/x-ndjson")) {
     const encoder = new TextEncoder();
+    const generationController = new AbortController();
+    const signal = AbortSignal.any([request.signal, generationController.signal]);
     let cancelled = false;
     const stream = new ReadableStream({
       async start(controller) {
         const send = (value: unknown) => {
-          if (!cancelled && !request.signal.aborted) controller.enqueue(encoder.encode(`${JSON.stringify(value)}\n`));
+          if (!cancelled && !signal.aborted) controller.enqueue(encoder.encode(`${JSON.stringify(value)}\n`));
         };
         try {
-          const headline = await generateCardHeadline(form, design, request.signal, () => send({ stage: "lettering_repair" }));
+          const headline = await generateCardHeadline(form, design, signal, () => send({ stage: "lettering_repair" }));
           send({ headline });
         } catch (error) {
           send(liveCardGenerationErrorResponse(error, "lettering"));
@@ -43,7 +45,10 @@ export async function POST(request: Request) {
           if (!cancelled) controller.close();
         }
       },
-      cancel() { cancelled = true; },
+      cancel() {
+        cancelled = true;
+        generationController.abort();
+      },
     });
     return new Response(stream, { headers: { "Content-Type": "application/x-ndjson", "Cache-Control": "no-store" } });
   }

@@ -19,6 +19,28 @@ export type LiveCardLocationAction = {
   shortName: string;
 };
 
+/** Online destinations are guest links, never map queries. Preserve the full URL. */
+export function buildLiveCardOnlineLocations(details: LiveCardLocationInput | null | undefined): Array<{ label: string; url: string }> {
+  if (!details) return [];
+  const candidates = [
+    { venue: details.venueName, location: details.location },
+    ...(Array.isArray(details.additionalLocations) ? details.additionalLocations : []),
+  ];
+  const seen = new Set<string>();
+  return candidates.flatMap((candidate) => {
+    if (!candidate || typeof candidate !== "object") return [];
+    const value = candidate as Record<string, unknown>;
+    const raw = readString(value.location) || readString(value.address) || readString(value.venue);
+    try {
+      const url = new URL(raw);
+      if (!["https:", "http:"].includes(url.protocol) || url.username || url.password || seen.has(url.href)) return [];
+      seen.add(url.href);
+      const venue = readString(value.venue) || readString(value.venueName) || readString(value.label);
+      return [{ label: venue && !/^https?:\/\//i.test(venue) ? venue : "Online Event", url: url.href }];
+    } catch { return []; }
+  });
+}
+
 const INLINE_STREET_ADDRESS_PATTERN =
   /\b\d{1,6}(?:-\d{1,6})?\s+(?=[A-Za-z][A-Za-z.'-]*\s)(?:[A-Za-z0-9.'-]+\s+){0,8}(?:Street|St\.?|Road|Rd\.?|Avenue|Ave\.?|Boulevard|Blvd\.?|Drive|Dr\.?|Lane|Ln\.?|Court|Ct\.?|Circle|Cir\.?|Highway|Hwy\.?|Parkway|Pkwy\.?|Place|Pl\.?|Terrace|Ter\.?|Trail|Trl\.?|Way)\b(?:[^\n]*)?/i;
 
@@ -145,6 +167,7 @@ function buildPrimaryLocationAction(details: LiveCardLocationInput): LiveCardLoc
   const venueName = readString(details.venueName);
   const locationLine = readString(details.locationLine);
   const rawLocation = readString(details.location);
+  if (/^https?:\/\//i.test(rawLocation) || /^https?:\/\//i.test(venueName)) return null;
   if (!venueName && !locationLine && !rawLocation) return null;
   const rawLocationKey = normalizeComparableText(rawLocation);
   const locationLineKey = normalizeComparableText(locationLine);
@@ -277,6 +300,7 @@ function extractStructuredLocationActions(value: unknown): LiveCardLocationActio
     const venue =
       readString(record.venue) || readString(record.venueName) || readString(record.placeName);
     const location = readString(record.location) || readString(record.address) || raw;
+    if (/^https?:\/\//i.test(location) || /^https?:\/\//i.test(venue)) continue;
     const place = withLocalityShortForm(venue || location, `${venue} ${location}`);
     const display =
       label && place && isActivityLabel(label)

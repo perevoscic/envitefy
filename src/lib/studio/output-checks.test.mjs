@@ -48,6 +48,8 @@ test("lettering checks require concrete obstruction evidence and preserve approv
     assert.match(request.messages[0].content, /name the exact affected word or face/);
     assert.match(request.messages[0].content, /Never report hypothetical overlap/);
     assert.match(request.messages[0].content, /do not reject unchanged background composition/);
+    assert.doesNotMatch(request.messages[0].content, /For NEW invitations|For a flyer EDIT|band-members request/);
+    assert.ok(request.messages[0].content.length < 2200, "lettering uses its focused checker rather than the full studio review");
   }, { letteringOnly: true, references: [{ mimeType: "image/png", data: "c291cmNl" }] });
   assert.equal(result.status, "passed");
 });

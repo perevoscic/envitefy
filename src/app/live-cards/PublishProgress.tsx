@@ -5,7 +5,7 @@ import { Sparkles } from "lucide-react";
 import { LiveCardIcon } from "@/components/icons/LiveCardIcon";
 import styles from "./publish-progress.module.css";
 
-export type PublishStage = "locations" | "wording" | "lettering" | "lettering_repair" | "saving" | "publishing";
+export type PublishStage = "locations" | "wording" | "lettering" | "lettering_repair" | "saving" | "publishing" | "opening";
 
 export const PUBLISH_STAGES: Record<PublishStage, { title: string; description: string }> = {
   locations: {
@@ -26,8 +26,12 @@ export const PUBLISH_STAGES: Record<PublishStage, { title: string; description: 
     description: "Saving your finished artwork and preparing the card for your guests.",
   },
   lettering_repair: {
-    title: "Refining your title lettering",
-    description: "Giving your lettering another pass while preserving your artwork and event details.",
+    title: "Finishing your title",
+    description: "Refining the lettering to match your artwork.",
+  },
+  opening: {
+    title: "Published. Opening your dashboard",
+    description: "Your Live Card is saved and ready to share. Opening its sharing and guest-response tools.",
   },
   publishing: {
     title: "Publishing your Live Card",

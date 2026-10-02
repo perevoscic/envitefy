@@ -1,0 +1,18 @@
+
+> envitefy@0.1.0 test:create-browser
+> node --import ./scripts/lib/create-offline-network.mjs --test --test-concurrency=1 scripts/create-guest-preview-offline.test.cjs scripts/create-guest-rsvp-offline.test.cjs scripts/event-messages-browser.test.cjs scripts/owner-card-preview-browser.test.cjs scripts/template-single-section-browser.test.cjs
+
+✔ artwork fits the viewport with guest actions and Share/Close overlaid on the card (23364.6796ms)
+✔ hydrated Gender Reveal RSVP sends required answers, preserves rejected input, retries, and preview never writes (3671.1909ms)
+✔ Messages requires preview and explicit Send, retains drafts, recovers interrupted sends, and fits mobile (4318.0957ms)
+✔ mobile owners discover and swipe card previews without losing progress; preview RSVPs stay local (27821.9379ms)
+✔ all template bodies and signup designs fill a single section without a reserved column (2491.609ms)
+ℹ Verified 1158 template renderings across 12 layouts at phone, tablet and desktop widths.
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 66493.6957

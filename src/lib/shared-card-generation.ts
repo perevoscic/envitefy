@@ -9,6 +9,7 @@ import { CARD_TYPOGRAPHY, readSharedCardDesign, type SharedCardDesign } from "./
 import { generateInvitationImageWithOpenAi } from "./studio/openai";
 import { verifyStudioArtwork } from "./studio/output-checks";
 import { resolveStudioReferenceImages } from "./studio/reference-image-url";
+import { resolveHeadlineBackground } from "./shared-card-headline";
 
 export const sharedCardGenerationDeps = {
   createClient: () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 45000, maxRetries: 0 }),
@@ -37,12 +38,15 @@ Generate the background only. Do not copy event facts or any words from the refe
 export async function generateSharedCard(
   form: LiveCardForm,
   signal?: AbortSignal,
+  onStage?: (stage: "preparing" | "generating" | "checking" | "encoding") => void,
 ): Promise<SharedCardDesign> {
+  signal = AbortSignal.any([AbortSignal.timeout(240000), ...(signal ? [signal] : [])]);
   const startedAt = Date.now();
   let outcome: LiveCardGenerationCode | "success" | "cancelled" = "success";
   let issues: string[] = [];
   try {
     signal?.throwIfAborted();
+    onStage?.("preparing");
     const model = resolveConciergeOpenAiPlannerModel();
     const client = sharedCardGenerationDeps.createClient();
     const response = await client.chat.completions.create(
@@ -111,13 +115,14 @@ export async function generateSharedCard(
       if ((Math.max(surface, foreground) + 0.05) / (Math.min(surface, foreground) + 0.05) < 4.5)
         design[key] = surface > 0.179 ? "#000000" : "#ffffff";
     }
-    const references = await sharedCardGenerationDeps.references(
-      form.referenceUrl ? [form.referenceUrl] : [],
-    );
+    const references = form.referenceUrl.startsWith("data:")
+      ? await resolveHeadlineBackground(form.referenceUrl, signal)
+      : await sharedCardGenerationDeps.references(form.referenceUrl ? [form.referenceUrl] : [], signal);
     if (form.referenceUrl && !references.length)
       throw new Error(
         "The reference image could not be opened. Re-upload it before creating the design.",
       );
+    onStage?.("generating");
     const result = await sharedCardGenerationDeps.generateImage(
       sharedBackgroundPrompt(form, design),
       references,
@@ -127,6 +132,7 @@ export async function generateSharedCard(
     if (!result.ok) throw new LiveCardGenerationFailure(result.error.message, "design", "generation_failed");
     signal?.throwIfAborted();
     // Use the existing text-free artwork contract. No automatic second image job.
+    onStage?.("checking");
     const check = await sharedCardGenerationDeps.verify(
       result.imageDataUrl,
       {
@@ -135,7 +141,7 @@ export async function generateSharedCard(
         userIdea: sharedBackgroundPrompt(form, design),
       },
       "event_page",
-      { references },
+      { references, signal },
     );
     signal?.throwIfAborted();
     issues = check.issues;
@@ -151,6 +157,7 @@ export async function generateSharedCard(
     }
     // Preserve the existing background-check policy; record checker outages separately.
     if (check.status === "unavailable") outcome = "verification_unavailable";
+    onStage?.("encoding");
     const original = Buffer.from(
       result.imageDataUrl.slice(result.imageDataUrl.indexOf(",") + 1),
       "base64",

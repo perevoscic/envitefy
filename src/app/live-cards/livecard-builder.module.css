@@ -1071,11 +1071,8 @@
   margin: 0 8px 8px 0;
 }
 .preparation {
-  margin-top: 16px;
-  padding: 16px;
-  border: 1px solid #e7e0ee;
-  border-radius: 12px;
-  background: #f8f5fc;
+  margin-bottom: 12px;
+  padding: 0;
   color: #42334f;
   font-size: 13px;
   line-height: 1.5;
@@ -1084,7 +1081,15 @@
   margin-top: 4px;
 }
 .preparation button {
-  margin-top: 12px;
+  margin-top: 4px;
+}
+.preparation [role="status"] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+:global([data-artwork-preview]) .preparation {
+  color: #fff;
 }
 .review h3 {
   font-family: var(--font-playfair), Georgia, serif;

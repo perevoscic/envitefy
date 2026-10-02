@@ -37,7 +37,10 @@ test("saved media paths resolve against the app and load through its media proxy
   assert.deepEqual(await resolveStudioReferenceImages([path]), [
     { mimeType: "image/webp", data: bytes.toString("base64") },
   ]);
-  assert.deepEqual(requests, [{ url: `https://envitefy.com${path}`, options: { redirect: "manual" } }]);
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].url, `https://envitefy.com${path}`);
+  assert.equal(requests[0].options.redirect, "manual");
+  assert.ok(requests[0].options.signal instanceof AbortSignal, "asset reads have a bounded deadline");
   for (const invalid of [
     "//evil.example/image.webp", "/\\evil.example/image.webp",
     "https://envitefy.com.evil.example/image.webp", "https://envitefy.com:8080/image.webp",

@@ -137,16 +137,20 @@ test("place resolution uses provider coordinates and IANA timezone; a timezone A
     });
     assert.equal(beach.location?.venue, providerName);
     assert.equal(beach.location?.timezone, "America/Chicago");
+    providerName = "AMC Boulevard 10";
     const candidate = await searchBuilderLocation({
-      query: "AMC",
+      query: "AMC grand bouleveard",
       date: "2026-09-26",
       timezone: "America/Los_Angeles",
     });
-    assert.equal(candidate.location, null);
+    assert.equal(candidate.location?.venue, providerName);
+    assert.equal(candidate.location?.address, place.address);
+    assert.equal(candidate.location?.timezone, "America/Chicago");
+    assert.equal(candidate.message, "");
     assert.equal(
       candidate.candidates.length,
       1,
-      "even a single unconfirmed candidate remains available for selection without requiring research",
+      "the single provider result is applied automatically",
     );
     timezoneFails = true;
     const fallback = await resolveBuilderPlace(place.placeId, "bad-date");

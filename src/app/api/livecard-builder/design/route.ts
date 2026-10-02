@@ -19,6 +19,29 @@ export async function POST(request: Request) {
       { error: "Choose an event type and describe how you would like your invitation to look." },
       { status: 400 },
     );
+  if (request.headers.get("accept")?.includes("application/x-ndjson")) {
+    const encoder = new TextEncoder();
+    const controller = new AbortController();
+    const signal = AbortSignal.any([request.signal, controller.signal]);
+    let cancelled = false;
+    const stream = new ReadableStream({
+      async start(output) {
+        const send = (value: unknown) => {
+          if (!cancelled && !signal.aborted) output.enqueue(encoder.encode(`${JSON.stringify(value)}\n`));
+        };
+        try {
+          const design = await generateSharedCard(form, signal, (stage) => send({ type: "stage", stage: stage === "encoding" ? "exporting" : stage }));
+          send({ type: "complete", result: { design } });
+        } catch (error) {
+          send({ type: "complete", result: liveCardGenerationErrorResponse(error, "design") });
+        } finally {
+          if (!cancelled) output.close();
+        }
+      },
+      cancel() { cancelled = true; controller.abort(); },
+    });
+    return new Response(stream, { headers: { "Content-Type": "application/x-ndjson", "Cache-Control": "no-store" } });
+  }
   try {
     return NextResponse.json(
       { design: await generateSharedCard(form, request.signal) },

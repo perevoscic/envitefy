@@ -59,7 +59,7 @@ import {
   readSharedCardDesign,
   sharedCardArtworkUrl,
 } from "@/lib/shared-card-design";
-import type { GenerationStage } from "@/lib/studio/generation-progress";
+import { readGenerationStream, type GenerationStage } from "@/lib/studio/generation-progress";
 import { buildEventPath, buildStudioCardPath } from "@/utils/event-url";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
 import { resolveNativeShareData } from "@/utils/native-share";
@@ -458,6 +458,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       }
       snapshotRef.current = { ...snapshotRef.current, form: next };
       setForm(next);
+      setErrors((current) => ({ ...current, locations: undefined, timezone: undefined }));
       setLocationIssues(issues);
       if (Object.keys(issues).length) {
         setActiveLocationId(Object.keys(issues)[0]);
@@ -574,14 +575,16 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       setPreparationIssue(null);
       setError("");
       try {
-        if (finalizeArtwork && !(await prepareLocations(controller.signal))) return false;
+        // Venue lookups do not depend on proofreading. Both merge only fields
+        // that still match their captured input, preserving concurrent edits.
+        const locations = finalizeArtwork ? prepareLocations(controller.signal) : Promise.resolve(true);
         // If the host types while a request runs, keep their edits and check the latest wording.
         while (isCurrentPreparation(controller.signal)) {
           const before = snapshotRef.current.form;
           if (checkedWording.current === liveCardWordingKey(before)) {
             if (
               finalizeArtwork &&
-              (!(await prepareLocations(controller.signal)) ||
+              (!(await locations) || !(await prepareLocations(controller.signal)) ||
                 !(await prepareHeadline(controller.signal)) ||
                 !(await prepareLocations(controller.signal)))
             )
@@ -623,6 +626,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
           );
         return false;
       } finally {
+        controller.abort();
         if (wordingController.current === controller) {
           pendingWording.current = null;
           setPreparingWording(false);
@@ -693,16 +697,21 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     setPartialImage(null);
     void goToStep(2);
     try {
-      const prepared = await persistReference(current);
+      // Reference assets remain in memory until Save draft or Publish.
+      const prepared = current;
       if (version !== generationVersion.current) return;
       setGeneration("generating");
       const response = await fetch("/api/livecard-builder/design", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
+        headers: { "Content-Type": "application/json", Accept: "application/x-ndjson" },
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(240000)]),
         body: JSON.stringify({ form: prepared }),
       });
-      const body = asRecord(await response.json());
+      const body = asRecord(response.headers.get("content-type")?.includes("application/x-ndjson") && response.body
+        ? await readGenerationStream(response.body, (event) => {
+            if (version === generationVersion.current && !controller.signal.aborted && event.type === "stage") setGeneration(event.stage);
+          })
+        : await response.json());
       const sharedDesign = readSharedCardDesign(body.design);
       if (!response.ok || !sharedDesign)
         throw readLiveCardGenerationFailure(body, "design", "The design could not be created. Please retry.");
@@ -717,7 +726,9 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       if (version === generationVersion.current && !controller.signal.aborted) {
         setGenerationRetryable(!(failure instanceof LiveCardGenerationFailure) || failure.retryable);
         setGenerationError(
-          failure instanceof Error
+          failure instanceof Error && failure.name === "TimeoutError"
+            ? "Creating the design exceeded four minutes. Your details are still here. Retry design to try again."
+            : failure instanceof Error
             ? failure.message
             : "We couldn't finish the design. Your details are still here.",
         );
@@ -733,6 +744,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
   async function save(publish = published, toDashboard = false): Promise<void> {
     if (saving.current) throw new Error("A save is already in progress.");
     saving.current = true;
+    let navigating = false;
     setMessage("");
     if (publish) {
       setPublishStage("wording");
@@ -760,15 +772,18 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       setError("");
       setMessage("");
       setPublishStage("saving");
-      const prepared = await persistReference(captured.form);
+      const sharedDesign = captured.artwork?.invitationData?.sharedDesign;
+      // Independent uploads start only after the host explicitly saves.
+      const [prepared, backgroundUrl, headlineUrl] = await Promise.all([
+        persistReference(captured.form),
+        sharedDesign ? persistBackground(sharedDesign.backgroundUrl) : Promise.resolve(null),
+        sharedDesign?.headline ? persistBackground(sharedDesign.headline.imageUrl) : Promise.resolve(null),
+      ]);
       let savedArtwork = captured.artwork;
-      if (savedArtwork?.invitationData?.sharedDesign) {
-        const backgroundUrl = await persistBackground(
-          savedArtwork.invitationData.sharedDesign.backgroundUrl,
-        );
+      if (savedArtwork?.invitationData?.sharedDesign && backgroundUrl) {
         const headline = savedArtwork.invitationData.sharedDesign.headline;
-        const savedHeadline = headline
-          ? { ...headline, imageUrl: await persistBackground(headline.imageUrl) }
+        const savedHeadline = headline && headlineUrl
+          ? { ...headline, imageUrl: headlineUrl }
           : undefined;
         const invitationData = liveCardInvitation(prepared, {
           ...savedArtwork.invitationData,
@@ -778,14 +793,11 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
             headline: savedHeadline,
           },
         });
-        const composed = await composeSharedCard(
-          invitationData,
-          publish ? prepared.format : "live_card",
-        );
-        const imageUrl = await persistImageMediaValue({
-          value: composed,
-          fileName: "invitation.webp",
-        });
+        // Finished Live Card lettering already is the complete card raster.
+        // Reuse it rather than downloading, recomposing and uploading it again.
+        const imageUrl = savedHeadline && hasGeneratedCardHeadline(invitationData)
+          ? savedHeadline.imageUrl
+          : await persistBackground(await composeSharedCard(invitationData, "live_card"));
         if (!imageUrl) throw new Error("The card could not be saved. Please retry.");
         savedArtwork = { ...savedArtwork, imageUrl, invitationData };
       }
@@ -852,12 +864,14 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
           { tab: "dashboard", published: "1" },
           typeof row.public_slug === "string" ? row.public_slug : undefined,
         );
+        setPublishStage("opening");
         navigation.allowNavigation(() => window.location.assign(destination));
+        navigating = true;
       }
     } finally {
       saving.current = false;
       setWorking(false);
-      setPublishProgress(false);
+      if (!navigating) setPublishProgress(false);
     }
   }
 
@@ -1211,20 +1225,13 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
   const preparationFeedback = !publishProgress && (preparingWording ? (
     <section className={styles.preparation} aria-label="Preparing your Live Card">
       <div role="status" aria-live="polite" aria-atomic="true">
-        <strong>{PUBLISH_STAGES[publishStage].title}</strong>
-        <p>{PUBLISH_STAGES[publishStage].description}</p>
+        <Loader2 size={18} className={styles.spin} aria-hidden="true" /> {PUBLISH_STAGES[publishStage].title}
       </div>
-      <div role="progressbar" aria-label={PUBLISH_STAGES[publishStage].title} aria-valuetext="In progress" className={styles.status}>
-        <Loader2 size={18} className={styles.spin} aria-hidden="true" /> In progress
-      </div>
-      <button type="button" className={styles.secondary} onClick={cancelPreparation}>Cancel and keep editing</button>
+      <button type="button" className={styles.textButton} onClick={cancelPreparation}>Cancel</button>
     </section>
   ) : preparationIssue ? (
     <div className={preparationIssue.stage === "lettering" ? styles.letteringRetry : styles.generationError}>
       <div role="alert">
-        {preparationIssue.stage === "lettering" && <strong>{preparationIssue.code === "verification_unavailable"
-          ? "We couldn’t check your lettering yet"
-          : preparationIssue.code === "quality_rejected" ? "Your title needs another pass" : "We couldn’t finish your lettering"}</strong>}
         <p>{preparationIssue.message}</p>
       </div>
       {preparationIssue.retryable && preparationIssue.stage !== "locations" && (
@@ -1250,6 +1257,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       style={{ "--builder-artwork-ratio": previewRatio } as CSSProperties}
     >
       {!previewOpen && letteringNotice}
+      {!previewOpen && preparationFeedback}
       {step !== 3 && (
         <div className={styles.mobilePreviewControls}>
           {preview && (
@@ -1337,7 +1345,6 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
         </>
       )}
       {artwork && generation && <DesignGenerationProgress stage={generation} compact />}
-      {!previewOpen && preparationFeedback}
       {artwork && !generation && !preparingWording && !preparationIssue && (
         <div role="status" className={styles.status}>
           <Check size={17} />
@@ -1977,6 +1984,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       />
       <ArtworkPreviewDialog
         open={previewOpen}
+        toolbar={previewOpen && preparationFeedback ? preparationFeedback : undefined}
         title={
           activePreviewFormat === "live_card" ? "Preview your Live Card" : "Preview your invitation"
         }
@@ -1991,7 +1999,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
           />
         ) : undefined}
         footer={
-          preview ? <div className={styles.previewSaveActions}>{letteringNotice}{saveActions}{saveFeedback}{previewOpen && preparationFeedback}</div> : undefined
+          preview ? <div className={styles.previewSaveActions}>{letteringNotice}{saveActions}{saveFeedback}</div> : undefined
         }
         onClose={() => setPreviewOpen(false)}
         onReturnFocus={() => previewTriggerRef.current?.focus()}

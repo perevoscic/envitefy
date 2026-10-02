@@ -48,19 +48,21 @@ function safeString(value: unknown): string {
 /** Fetch an allowed reference image as inline data (base64, no data: prefix). */
 export async function fetchStudioReferenceImage(
   raw: string,
+  signal?: AbortSignal,
 ): Promise<{ mimeType: string; data: string } | null> {
   let url = resolveStudioReferenceImageUrl(raw);
   if (!url) return null;
   try {
+    const fetchSignal = AbortSignal.any([AbortSignal.timeout(15000), ...(signal ? [signal] : [])]);
     // Keep the media proxy's access checks; never read private storage directly
     // and validate every redirect, including older thumbnail proxy URLs.
-    let response = await fetch(url, { redirect: "manual" });
+    let response = await fetch(url, { redirect: "manual", signal: fetchSignal });
     for (let redirects = 0; [301, 302, 303, 307, 308].includes(response.status); redirects++) {
       const location = response.headers.get("location");
       if (!location || redirects >= 3) return null;
       url = resolveStudioReferenceImageUrl(new URL(location, url).href);
       if (!url) return null;
-      response = await fetch(url, { redirect: "manual" });
+      response = await fetch(url, { redirect: "manual", signal: fetchSignal });
     }
     if (!response.ok) return null;
     const mimeTypeHeader = safeString(response.headers.get("content-type"));
@@ -83,9 +85,10 @@ const STUDIO_REFERENCE_IMAGES_MAX = 6;
 /** Resolve allowed reference URLs to inline image payloads. */
 export async function resolveStudioReferenceImages(
   urls: string[] | undefined,
+  signal?: AbortSignal,
 ): Promise<Array<{ mimeType: string; data: string }>> {
   if (!urls?.length) return [];
   const slice = urls.slice(0, STUDIO_REFERENCE_IMAGES_MAX);
-  const settled = await Promise.all(slice.map((u) => fetchStudioReferenceImage(u)));
+  const settled = await Promise.all(slice.map((u) => fetchStudioReferenceImage(u, signal)));
   return settled.filter((x): x is NonNullable<typeof x> => x != null);
 }
