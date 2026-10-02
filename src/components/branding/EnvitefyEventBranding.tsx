@@ -83,7 +83,7 @@ export default function EnvitefyEventBranding({
       </a>
       <p className="text-[10px] font-medium tracking-[0.16em]">CREATE | SHARE | ENJOY</p>
       <p className="mt-1 flex flex-wrap items-center justify-center gap-x-1 text-xs">
-        <strong className="font-bold">Created with Envitefy {categoryLabel}</strong>{" "}
+        <strong className="font-bold">Created with Envitefy</strong>{" "}
         <a
           href="https://envitefy.com/"
           target="_blank"

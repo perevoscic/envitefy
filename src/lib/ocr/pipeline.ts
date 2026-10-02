@@ -400,7 +400,14 @@ export async function handleOcrRequest(request: Request) {
 
     const formData = await request.formData();
     scanAttemptId = String(formData.get("scanAttemptId") || "").trim() || null;
-    const file = formData.get("file");
+    const files = formData.getAll("file");
+    if (files.length > 5) return corsJson(request, { error: "Choose up to five files." }, { status: 400 });
+    for (const item of files) {
+      if (!(item instanceof File)) return corsJson(request, { error: "Invalid file" }, { status: 400 });
+      const checked = validateUploadFileMeta({ fileName: item.name, mimeType: item.type, sizeBytes: item.size, usage: "attachment" });
+      if (!checked.ok) return corsJson(request, { error: checked.error }, { status: checked.status });
+    }
+    const file = files[0];
     if (!(file instanceof File)) {
       return corsJson(request, { error: "No file" }, { status: 400 });
     }
@@ -433,12 +440,32 @@ export async function handleOcrRequest(request: Request) {
       visionMime = "image/png";
     }
 
+    // Read all selected pages together while retaining the first source for artwork.
+    if (files.length > 1) {
+      const pages = await Promise.all(files.map(async (item) => {
+        const source = item as File;
+        let bytes: Buffer = Buffer.from(await source.arrayBuffer());
+        if (/pdf/i.test(source.type)) {
+          const page = await rasterizePdfPageToPng(bytes, 0);
+          if (!page) throw new Error(`Could not convert ${source.name} to an image for OCR`);
+          bytes = page;
+        }
+        return sharp(bytes).rotate().resize({ width: 1600, withoutEnlargement: true }).png().toBuffer();
+      }));
+      const sizes = await Promise.all(pages.map(page => sharp(page).metadata()));
+      const width = Math.max(...sizes.map(size => size.width || 1));
+      const height = sizes.reduce((total, size) => total + (size.height || 1), 0);
+      let top = 0;
+      const layers = pages.map((input, index) => { const layer = { input, left: 0, top }; top += sizes[index].height || 1; return layer; });
+      ocrBuffer = await sharp({ create: { width, height, channels: 3, background: "white" } }).composite(layers).png().toBuffer();
+      visionMime = "image/png";
+    }
     let colorBuffer: Buffer = ocrBuffer;
     let colorMime = visionMime;
     try {
       colorBuffer = await sharp(ocrBuffer)
         .rotate()
-        .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
+        .resize({ width: 1600, height: files.length > 1 ? 8000 : 1600, fit: "inside", withoutEnlargement: true })
         .jpeg({ quality: 88 })
         .toBuffer();
       colorMime = "image/jpeg";
@@ -448,7 +475,7 @@ export async function handleOcrRequest(request: Request) {
     try {
       ocrBuffer = await sharp(ocrBuffer)
         .rotate()
-        .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true })
+        .resize({ width: 2000, height: files.length > 1 ? 10000 : 2000, fit: "inside", withoutEnlargement: true })
         .grayscale()
         .normalize()
         .jpeg({ quality: 90 })

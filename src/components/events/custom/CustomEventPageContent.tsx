@@ -79,7 +79,6 @@ export default function CustomEventPageContent({
           <img src={page.artwork} alt={design.description} />
         </div>
         <div className={styles.intro}>
-          <p className={styles.eyebrow}>{CUSTOM_EVENT_CATEGORIES[page.category]}</p>
           <h1>{d.title || "Your event title"}</h1>
           {d.host && <p className={styles.host}>Hosted by {d.host}</p>}
           {(date || time) && (

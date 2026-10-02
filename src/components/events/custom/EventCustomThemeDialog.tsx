@@ -90,8 +90,8 @@ export default function EventCustomThemeDialog({
     const version = ++informationVersion.current;
     setError("");
     if (!files.length) return;
-    if (files.length > 3 || files.some((file) => !["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > EVENT_DESIGN_REFERENCE_LIMIT)) {
-      setError("Choose up to three PNG, JPG or WebP files, up to 2 MB each.");
+    if (files.length > 5 || files.some((file) => !["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > EVENT_DESIGN_REFERENCE_LIMIT)) {
+      setError("Choose up to five PNG, JPG or WebP files, up to 2 MB each.");
       return;
     }
     setReadingInformation(true);
@@ -291,7 +291,7 @@ export default function EventCustomThemeDialog({
                   <label className={styles.field}>
                     Event information files (optional)
                     <input type="file" multiple accept="image/png,image/jpeg,image/webp" disabled={busy || readingInformation} onChange={(event) => { void chooseInformation(Array.from(event.target.files || [])); event.target.value = ""; }} />
-                    <span className={styles.notice}>Upload photos of a flyer, schedule or printed document. Up to three JPG, PNG or WebP files, 2 MB each. We’ll read the details into your editable event page.</span>
+                    <span className={styles.notice}>Upload photos of a flyer, schedule or printed document. Up to five JPG, PNG or WebP files, 2 MB each. We’ll read the details into your editable event page.</span>
                   </label>
                   {readingInformation && <p role="status">Reading files…</p>}
                   {information.length > 0 && <div className={styles.notice}>

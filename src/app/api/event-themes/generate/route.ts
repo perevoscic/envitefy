@@ -11,9 +11,9 @@ import {
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
-// Allow base64 overhead for three information photos plus one design reference.
-// Allow base64 overhead for three information photos plus one design reference.
-const MAX_BODY_BYTES = 12_000_000;
+// Allow base64 overhead for five information photos plus one design reference.
+// Allow base64 overhead for five information photos plus one design reference.
+const MAX_BODY_BYTES = 18_000_000;
 // Match the app's bounded, per-instance request throttling. Never store editor drafts here.
 const requests = new Map<string, { count: number; resetAt: number; active: boolean }>();
 const json = (body: object, status = 200, headers: Record<string, string> = {}) =>
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       size += value.byteLength;
       if (size > MAX_BODY_BYTES) {
         await reader.cancel();
-        return json({ error: "Choose up to three information files and one reference image, each smaller than 2 MB." }, 413);
+        return json({ error: "Choose up to five information files and one reference image, each smaller than 2 MB." }, 413);
       }
       chunks.push(value);
     }

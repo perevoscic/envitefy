@@ -230,7 +230,7 @@ export default function EventPreviewViewport({
         <div
           role="group"
           aria-label="Preview device"
-          className={`flex gap-2 rounded-full border border-current/15 p-1 ${floatingToolbar ? "pointer-events-auto shadow-sm backdrop-blur-xl" : ""} ${preserveNavigation ? "col-start-2 row-start-1 justify-self-center" : actions ? "col-span-2 row-start-2 justify-self-center sm:col-span-1 sm:col-start-2 sm:row-start-1" : ""}`}
+          className={`hidden md:flex gap-2 rounded-full border border-current/15 p-1 ${floatingToolbar ? "pointer-events-auto shadow-sm backdrop-blur-xl" : ""} ${preserveNavigation ? "col-start-2 row-start-1 justify-self-center" : actions ? "col-span-2 row-start-2 justify-self-center sm:col-span-1 sm:col-start-2 sm:row-start-1" : ""}`}
           style={floatingSurfaceStyle}
         >
           {deviceOrder.map((id) => {
@@ -258,7 +258,7 @@ export default function EventPreviewViewport({
         ) : null}
         {onClose || returnHref || onExpand ? (
           <div
-            className={`pointer-events-auto flex justify-end ${nativeMobile ? "justify-self-end rounded-full shadow-sm backdrop-blur-xl" : ""} ${actions ? "col-start-2 row-start-1 sm:col-start-3" : ""}`}
+            className={`pointer-events-auto flex justify-end ${nativeMobile ? "justify-self-end rounded-full shadow-sm backdrop-blur-xl" : ""} ${actions ? "col-start-2 row-start-1 md:col-start-3" : "col-start-3 row-start-1"}`}
             style={nativeMobile ? floatingSurfaceStyle : undefined}
           >
             {onClose ? (

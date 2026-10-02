@@ -256,7 +256,7 @@ declare global {
     __openSnapCamera?: () => void;
     __openSnapUpload?: () => void;
     __processSnapUploadFile?: (
-      file: File,
+      file: File | File[],
       previewUrl?: string | null,
       scanAttemptId?: string | null,
     ) => void;
@@ -306,6 +306,13 @@ export default function Dashboard({
   const selectedEventNumberOfGuests = getRsvpDashboardGuestCount(initialEventContext);
   const isSignedIn = Boolean(session?.user);
   const originIdentity = session?.user?.email?.trim().toLowerCase() || "";
+  const [selectedScanFiles, setSelectedScanFiles] = useState<File[]>([]);
+  const scanFilesDialogRef = useRef<HTMLDialogElement>(null);
+  const reviewingScanFiles = selectedScanFiles.length > 0;
+  useEffect(() => {
+    const dialog = scanFilesDialogRef.current;
+    if (reviewingScanFiles && dialog && !dialog.open) dialog.showModal();
+  }, [reviewingScanFiles]);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [, setLoading] = useState(false);
@@ -891,7 +898,7 @@ export default function Dashboard({
   );
 
   const ingest = useCallback(
-    async (incoming: File, scanAttemptId: string) => {
+    async (incoming: File, scanAttemptId: string, additionalFiles: File[] = []) => {
       setLoading(true);
       setError(null);
       cancelledByUserRef.current = false;
@@ -926,6 +933,7 @@ export default function Dashboard({
 
         const form = new FormData();
         form.append("file", fileToUpload);
+        for (const extra of additionalFiles) form.append("file", await prepareOcrUploadFile(extra));
         form.append("scanAttemptId", scanAttemptId);
 
         // Add timeout handling for mobile/network issues
@@ -1324,7 +1332,7 @@ export default function Dashboard({
 
   const onFile = useCallback(
     (
-      selected: File | null,
+      selected: File | File[] | null,
       previewOverride?: string | null,
       pendingScanAttemptId?: string | null,
     ) => {
@@ -1332,21 +1340,15 @@ export default function Dashboard({
         // User cancelled file selection - silently return
         return;
       }
-      const scanAttemptId = pendingScanAttemptId || createClientAttemptId("scan");
-      activeScanAttemptIdRef.current = scanAttemptId;
-      const validationError = validateClientUploadFile(selected, "attachment");
-      if (validationError) {
-        setError(validationError);
-        logUploadIssue(new Error(validationError), "client-validation", {
-          fileName: selected.name,
-          fileSize: selected.size,
-          fileType: selected.type,
-          scanAttemptId,
-        });
-        return;
-      }
-      startScanUi(selected, previewOverride);
-      void ingest(selected, scanAttemptId);
+      const files = Array.isArray(selected) ? selected : [selected];
+      setError(null);
+      setSelectedScanFiles(previous => {
+        if (previous.length + files.length > 5) { setError("Choose up to five files. Remove a file before adding more."); return previous; }
+        const invalid = files.map(file => validateClientUploadFile(file, "attachment")).find(Boolean);
+        if (invalid) { setError(invalid); return previous; }
+        return [...previous, ...files];
+      });
+      return;
     },
     [ingest, logUploadIssue, startScanUi],
   );
@@ -1427,7 +1429,7 @@ export default function Dashboard({
           if (cancelled) return;
           if (pendingUpload) {
             onFile(
-              pendingUpload.file,
+              pendingUpload.files || pendingUpload.file,
               pendingUpload.previewUrl ?? null,
               pendingUpload.scanAttemptId,
             );
@@ -1975,7 +1977,7 @@ export default function Dashboard({
       onDrop={(event) => {
         if (!event.dataTransfer.files.length) return;
         event.preventDefault();
-        if (!pendingSchedule && scanStatus === "idle") onFile(event.dataTransfer.files[0]);
+        if (!pendingSchedule && scanStatus === "idle") onFile(Array.from(event.dataTransfer.files));
       }}
     >
       <input
@@ -1983,16 +1985,34 @@ export default function Dashboard({
         type="file"
         accept={getUploadAcceptAttribute("header")}
         capture="environment"
-        onChange={(event) => onFile(event.target.files?.[0] ?? null)}
+        multiple
+        onChange={(event) => { onFile(Array.from(event.target.files || [])); event.target.value = ""; }}
         className="hidden"
       />
       <input
         ref={fileInputRef}
         type="file"
         accept={getUploadAcceptAttribute("attachment")}
-        onChange={(event) => onFile(event.target.files?.[0] ?? null)}
+        multiple
+        onChange={(event) => { onFile(Array.from(event.target.files || [])); event.target.value = ""; }}
         className="hidden"
       />
+      {selectedScanFiles.length > 0 && (
+        <dialog ref={scanFilesDialogRef} className="fixed inset-0 z-[7002] m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-lg rounded-2xl bg-white p-0 backdrop:bg-black/50" aria-label="Review scan files" onCancel={() => setSelectedScanFiles([])}>
+          <div className="w-full max-w-lg rounded-2xl bg-white p-5 text-slate-900">
+            <h2 className="text-lg font-semibold">Scan files ({selectedScanFiles.length}/5)</h2>
+            <p className="mt-2 text-sm">Add up to five photos or files for this event.</p>
+            {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
+            <ul className="my-4 max-h-64 overflow-auto">{selectedScanFiles.map((file, index) => <li key={`${file.name}-${file.lastModified}-${index}`} className="flex items-center justify-between gap-2"><span className="truncate">{file.name}</span><button type="button" className="min-h-11 px-3" aria-label={`Remove ${file.name}`} onClick={() => setSelectedScanFiles(files => files.filter((_, i) => i !== index))}>Remove</button></li>)}</ul>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className="min-h-11 rounded-lg border px-3" disabled={selectedScanFiles.length >= 5} onClick={() => cameraInputRef.current?.click()}>Take another photo</button>
+              <button type="button" className="min-h-11 rounded-lg border px-3" disabled={selectedScanFiles.length >= 5} onClick={() => fileInputRef.current?.click()}>Add files</button>
+              <button type="button" className="min-h-11 rounded-lg border px-3" onClick={() => setSelectedScanFiles([])}>Cancel</button>
+              <button type="button" className="min-h-11 rounded-lg bg-violet-700 px-4 text-white" onClick={() => { const files = selectedScanFiles; setSelectedScanFiles([]); setError(null); const attempt = createClientAttemptId("scan"); activeScanAttemptIdRef.current = attempt; startScanUi(files[0]); void ingest(files[0], attempt, files.slice(1)); }}>Read files</button>
+            </div>
+          </div>
+        </dialog>
+      )}
       {!snapProcessingMode && showHeaderRow && (
         <div
           className={`w-full max-w-6xl mt-0 flex flex-col gap-4 ${

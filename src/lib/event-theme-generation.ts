@@ -89,8 +89,8 @@ export function parseEventThemeRequest(value: unknown): EventThemeRequest {
     currentDetails,
     referenceImage: raw.referenceImage as string | undefined,
     informationImages: raw.informationImages == null ? undefined : (() => {
-      if (!Array.isArray(raw.informationImages) || raw.informationImages.length > 3)
-        throw new EventThemeRequestError("Choose up to three event information images.");
+      if (!Array.isArray(raw.informationImages) || raw.informationImages.length > 5)
+        throw new EventThemeRequestError("Choose up to five event information images.");
       return raw.informationImages.map((image) => {
         if (typeof image !== "string" || image.length > Math.ceil(EVENT_DESIGN_REFERENCE_LIMIT * 4 / 3) + 100 || !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(image))
           throw new EventThemeRequestError("Choose PNG, JPG or WebP information files smaller than 2 MB each.");

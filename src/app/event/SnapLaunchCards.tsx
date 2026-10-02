@@ -37,14 +37,16 @@ export default function SnapLaunchCards({
     return window as Window & {
       __openSnapCamera?: () => void;
       __openSnapUpload?: () => void;
-      __processSnapUploadFile?: (file: File) => void;
+      __processSnapUploadFile?: (file: File | File[]) => void;
     };
   }, [processInPage]);
 
   const routeSelectedFile = useCallback(
-    async (file: File | null) => {
-      if (!file) return;
-      const validationError = validateClientUploadFile(file, "attachment");
+    async (selected: File[]) => {
+      if (!selected.length) return;
+      if (selected.length > 5) { setError("Choose up to five files."); return; }
+      const file = selected[0];
+      const validationError = selected.map(file => validateClientUploadFile(file, "attachment")).find(Boolean);
       if (validationError) {
         setError(validationError);
         return;
@@ -53,7 +55,7 @@ export default function SnapLaunchCards({
       setError(null);
       const processorWindow = getSnapProcessorWindow();
       if (processorWindow?.__processSnapUploadFile) {
-        processorWindow.__processSnapUploadFile(file);
+        processorWindow.__processSnapUploadFile(selected);
         return;
       }
       if (processInPage) {
@@ -63,7 +65,7 @@ export default function SnapLaunchCards({
 
       const scanAttemptId = createClientAttemptId("scan");
       try {
-        await savePendingSnapUpload({ file, scanAttemptId });
+        await savePendingSnapUpload({ file, files: selected, scanAttemptId });
       } catch (err) {
         reportClientLog({
           area: "snap-upload",
@@ -127,7 +129,7 @@ export default function SnapLaunchCards({
     (event: DragEvent<HTMLButtonElement>) => {
       event.preventDefault();
       setIsDragging(false);
-      void routeSelectedFile(event.dataTransfer.files?.[0] ?? null);
+      void routeSelectedFile(Array.from(event.dataTransfer.files || []));
     },
     [routeSelectedFile],
   );
@@ -227,21 +229,23 @@ export default function SnapLaunchCards({
       <input
         ref={cameraInputRef}
         type="file"
+        multiple
         accept={getUploadAcceptAttribute("header")}
         capture="environment"
         className="hidden"
         onChange={(event) => {
-          void routeSelectedFile(event.target.files?.[0] ?? null);
+          void routeSelectedFile(Array.from(event.target.files || []));
           event.target.value = "";
         }}
       />
       <input
         ref={uploadInputRef}
         type="file"
+        multiple
         accept={getUploadAcceptAttribute("attachment")}
         className="hidden"
         onChange={(event) => {
-          void routeSelectedFile(event.target.files?.[0] ?? null);
+          void routeSelectedFile(Array.from(event.target.files || []));
           event.target.value = "";
         }}
       />

@@ -2,6 +2,7 @@
 
 export type PendingSnapUpload = {
   file: File;
+  files?: File[];
   previewUrl?: string | null;
   scanAttemptId?: string | null;
 };
@@ -77,6 +78,7 @@ async function readPersistedPendingSnapUpload(): Promise<PendingSnapUpload | nul
         ) {
           resolve({
             file: result.file,
+            files: Array.isArray(result.files) ? result.files.filter((file: unknown) => file instanceof File) : undefined,
             previewUrl: typeof result.previewUrl === "string" ? result.previewUrl : null,
             scanAttemptId:
               typeof result.scanAttemptId === "string" && result.scanAttemptId.trim()

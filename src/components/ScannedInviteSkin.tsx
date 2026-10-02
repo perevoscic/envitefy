@@ -172,11 +172,6 @@ function buildRsvpHref({
   return href || null;
 }
 
-function formatCategoryLabel(value: string | null | undefined) {
-  const trimmed = String(value || "").trim();
-  return trimmed ? trimmed.replace(/\s+/g, " ") : "Celebration";
-}
-
 function usesGiftListCopy(value: string | null | undefined) {
   const normalized = String(value || "").toLowerCase();
   return /\bhouse\s*warming\b|\bhousewarming\b|\bbirthday\b/.test(normalized);
@@ -350,7 +345,6 @@ export default function ScannedInviteSkin({
   );
   const calendar = useCalendarAction({ links: calendarLinks, scanTheme: colors });
 
-  const chipTextColor = ensureReadableTextColor(colors.accent, "#ffffff", { minContrast: 3 });
   const primaryTileTextColor = ensureReadableTextColor(colors.primary, "#ffffff", {
     minContrast: 3,
   });
@@ -386,7 +380,6 @@ export default function ScannedInviteSkin({
 
   const detailIconSwatchColor = "var(--theme-primary)";
   const displayTitle = String(title || "").trim() || "Celebration";
-  const displayCategoryLabel = formatCategoryLabel(categoryLabel);
   const displayDate = String(dateLabel || "").trim() || "Date TBD";
   const displayTime = String(timeLabel || "").trim();
   const displayVenueName = String(venueName || "").trim();
@@ -768,18 +761,6 @@ export default function ScannedInviteSkin({
           <div className="space-y-10 lg:col-span-8">
             <header className="space-y-4 pt-2 md:pt-8">
               <div className="flex min-w-0 items-center justify-between gap-3">
-                <motion.div
-                  initial={{ scale: 0, rotate: -20 }}
-                  animate={{ scale: 1, rotate: -5 }}
-                  className="inline-flex min-w-0 items-center gap-2 rounded-full px-6 py-2 text-[10px] font-black uppercase tracking-[0.3em] shadow-lg"
-                  style={{
-                    backgroundColor: "var(--theme-accent)",
-                    boxShadow: `0 10px 20px -5px ${colors.accent}`,
-                    color: chipTextColor,
-                  }}
-                >
-                  {displayCategoryLabel}
-                </motion.div>
                 {actions ? (
                   <div className="relative z-20 flex shrink-0 items-center justify-end">
                     {actions}

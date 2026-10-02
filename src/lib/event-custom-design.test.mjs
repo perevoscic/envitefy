@@ -351,7 +351,7 @@ test("generation validates category, reference mode, and bounded requests before
     { referenceImageMode: "invalid" },
     { informationImages: "invalid" },
     { informationImages: ["https://example.com/document.jpg"] },
-    { informationImages: Array(4).fill("data:image/jpeg;base64,YQ==") },
+    { informationImages: Array(6).fill("data:image/jpeg;base64,YQ==") },
     { currentDesign: design },
     { currentDetails: {} },
   ]) {
@@ -362,6 +362,12 @@ test("generation validates category, reference mode, and bounded requests before
   }
   assert.equal(generation.parseEventThemeRequest(valid).category, "general");
   assert.deepEqual(generation.parseEventThemeRequest({ ...valid, informationImages: ["data:image/jpeg;base64,YQ=="] }).informationImages, ["data:image/jpeg;base64,YQ=="]);
+});
+
+test("information uploads accept five images and reject a sixth", () => {
+  const images = Array(5).fill("data:image/jpeg;base64,YQ==");
+  assert.equal(generation.parseEventThemeRequest({ category: "general", prompt: "Read event details", informationImages: images }).informationImages.length, 5);
+  assert.throws(() => generation.parseEventThemeRequest({ category: "general", prompt: "Read event details", informationImages: [...images, images[0]] }), generation.EventThemeRequestError);
 });
 
 test("information upload extracts event fields without generating artwork", async () => {
@@ -685,7 +691,7 @@ test("the generation endpoint requires auth, bounds media, throttles work, and n
     400,
   );
   assert.equal(
-    (await route.POST(request({ category: "general", prompt: "x".repeat(12_000_001) }))).status,
+    (await route.POST(request({ category: "general", prompt: "x".repeat(18_000_001) }))).status,
     413,
   );
   assert.equal(calls, 0);

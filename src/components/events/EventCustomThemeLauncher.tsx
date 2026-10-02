@@ -41,8 +41,8 @@ export default function EventCustomThemeLauncher({
     pendingFiles.current = files;
     if (status !== "authenticated") { setAuthOpen(true); return; }
     setError("");
-    if (files.length > 3 || files.some((file) => !["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > EVENT_DESIGN_REFERENCE_LIMIT)) {
-      setError("Choose up to three JPG, PNG or WebP images, up to 2 MB each.");
+    if (files.length > 5 || files.some((file) => !["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > EVENT_DESIGN_REFERENCE_LIMIT)) {
+      setError("Choose up to five JPG, PNG or WebP images, up to 2 MB each.");
       return;
     }
     const controller = new AbortController();
