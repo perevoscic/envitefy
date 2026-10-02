@@ -11,11 +11,13 @@ export default function LocationField({
   issue,
   onChange,
   onChoose,
+  onSearch,
 }: {
   location: LiveCardLocation;
   issue?: LocationPreparationIssue;
   onChange: (location: LiveCardLocation) => void;
   onChoose: (place: BuilderPlace) => void;
+  onSearch: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const resolved = location.resolution !== "unresolved" && Boolean(location.address);
@@ -47,6 +49,7 @@ export default function LocationField({
             maxLength={500}
             placeholder="e.g. AMC Grand Boulevard"
             aria-describedby={currentIssue ? `location-${location.id}-hint` : undefined}
+            aria-invalid={Boolean(currentIssue)}
             onChange={(event) =>
               onChange({
                 ...location,
@@ -68,9 +71,14 @@ export default function LocationField({
             }}
           />
           {currentIssue && (
-            <p id={`location-${location.id}-hint`} role="status" className={styles.hint}>
+            <p id={`location-${location.id}-hint`} role="alert" className={styles.fieldError}>
               {currentIssue.message}
             </p>
+          )}
+          {issue && (
+            <button type="button" className={styles.textButton} disabled={!query.trim()} onClick={onSearch}>
+              Search location again
+            </button>
           )}
           {Boolean(currentIssue?.candidates.length) && (
             <ul className={styles.placeResults} aria-label="Matching venues">

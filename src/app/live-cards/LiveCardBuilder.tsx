@@ -1674,6 +1674,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                                 <LocationField
                                   location={location}
                                   issue={locationIssues[location.id]}
+                                  onSearch={() => void goToStep(3)}
                                   onChoose={(place) => {
                                     const current = snapshotRef.current.form;
                                     const next = {

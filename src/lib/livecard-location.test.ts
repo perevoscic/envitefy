@@ -11,6 +11,15 @@ const place: BuilderPlace = {
   latitude: 30.376,
   longitude: -86.313,
 };
+test("specific beach access names tolerate repeated words and provider descriptors", () => {
+  const beach = { ...place, venue: "Blue Mountain Regional Beach Access" };
+  const query = "Blue beach mountain beach access";
+  assert.equal(chooseBuilderPlace([beach], query, ""), beach);
+  assert.equal(chooseBuilderPlace([beach], query, "Chicago"), null);
+  assert.equal(chooseBuilderPlace([beach], "Beach access", ""), null);
+  assert.equal(chooseBuilderPlace([beach], "Red Mountain Beach Access", ""), null);
+  assert.equal(chooseBuilderPlace([beach, { ...beach, placeId: "other" }], query, ""), null);
+});
 test("venue selection needs a unique geographical match and honors supplied address conflicts", () => {
   assert.equal(chooseBuilderPlace([place], "AMC Grand Boulevard", "Miramar Beach"), place);
   assert.equal(
@@ -120,6 +129,14 @@ test("place resolution uses provider coordinates and IANA timezone; a timezone A
     });
     assert.equal(contextual.location?.venue, providerName);
     assert.equal(contextual.location?.timezone, "America/Chicago");
+    providerName = "Blue Mountain Regional Beach Access";
+    const beach = await searchBuilderLocation({
+      query: "Blue beach mountain beach access",
+      date: "2026-09-26",
+      timezone: "America/Los_Angeles",
+    });
+    assert.equal(beach.location?.venue, providerName);
+    assert.equal(beach.location?.timezone, "America/Chicago");
     const candidate = await searchBuilderLocation({
       query: "AMC",
       date: "2026-09-26",

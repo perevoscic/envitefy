@@ -619,8 +619,11 @@
   -webkit-text-fill-color: #767676;
   opacity: 1;
 }
-.field [aria-invalid="true"] {
+.field [aria-invalid="true"],
+.locationLookup input[aria-invalid="true"] {
   border-color: #bd455b;
+  background: #fff5f4;
+  box-shadow: 0 0 0 2px #eadff6;
 }
 .hint {
   color: var(--muted);
@@ -1023,6 +1026,12 @@
   color: #684d83;
   margin-bottom: 0;
 }
+.error,
+.generationError {
+  border: 1px solid #bd455b;
+  border-left: 4px solid var(--accent);
+  background: linear-gradient(110deg, #fff0ed, #f3edf9);
+}
 .generationError {
   margin-top: 15px;
 }
@@ -1312,8 +1321,10 @@
   margin-bottom: 12px;
 }
 .readiness {
-  border: 1px solid #e5d6b9;
-  background: #fff9ed;
+  border: 1px solid #bd455b;
+  border-left: 4px solid var(--accent);
+  background: linear-gradient(110deg, #fff0ed, #f3edf9);
+  color: #8b3941;
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 24px;

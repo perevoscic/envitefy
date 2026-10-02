@@ -76,6 +76,16 @@ export function chooseBuilderPlace(
     // A host may include the shopping center, street or city in the venue field.
     // Require every token, a specific query and one unique result; never accept a chain name alone.
     const queryTokens = normalize(venue).split(" ").filter(Boolean);
+    const nameTokens = normalize(candidate.venue).split(" ").filter(Boolean);
+    const uniqueQuery = [...new Set(queryTokens)];
+    // Providers may add a public-access descriptor; tolerate repeated words in intake,
+    // but require the complete specific name and never drop branch/geography tokens.
+    const descriptors = new Set(["regional", "public", "municipal"]);
+    const specificNameMatch =
+      uniqueQuery.length >= 3 &&
+      uniqueQuery.every((token) => nameTokens.includes(token)) &&
+      nameTokens.every((token) => uniqueQuery.includes(token) || descriptors.has(token)) &&
+      (!city.trim() || contains(`${candidate.city} ${candidate.region || ""} ${candidate.address}`, city));
     const contextualMatch =
       !city.trim() &&
       queryTokens.length >= 3 &&
@@ -84,7 +94,7 @@ export function chooseBuilderPlace(
         (queryTokens.some((token) => normalize(candidate.venue).split(" ").includes(token)) &&
           queryTokens.some((token) => !normalize(candidate.venue).split(" ").includes(token))));
     return (
-      contextualMatch ||
+      specificNameMatch || contextualMatch ||
       Boolean(
         venue.trim() &&
           contains(candidate.venue, venue) &&
