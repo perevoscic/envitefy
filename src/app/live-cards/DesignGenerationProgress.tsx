@@ -4,11 +4,17 @@ import styles from "./design-generation-progress.module.css";
 export default function DesignGenerationProgress({
   stage,
   compact = false,
+  title = "Creating your design",
+  description = "Keep adding your event details.",
+  statusText,
 }: {
   stage: GenerationStage;
   compact?: boolean;
+  title?: string;
+  description?: string;
+  statusText?: string;
 }) {
-  const stageLabel = GENERATION_STAGE_LABELS[stage];
+  const stageLabel = statusText || GENERATION_STAGE_LABELS[stage];
   return (
     <section className={compact ? styles.compact : styles.panel} aria-label="Design generation">
       {!compact && (
@@ -28,8 +34,8 @@ export default function DesignGenerationProgress({
             </div>
           </div>
           <div className={styles.copy}>
-            <h3>Creating your design</h3>
-            <p>Keep adding your event details.</p>
+            <h3>{title}</h3>
+            <p>{description}</p>
           </div>
         </>
       )}
@@ -37,7 +43,7 @@ export default function DesignGenerationProgress({
         <div
           className={styles.track}
           role="progressbar"
-          aria-label="Creating your design"
+          aria-label={title}
           aria-valuetext={stageLabel}
         >
           <span className={styles.sweep} />

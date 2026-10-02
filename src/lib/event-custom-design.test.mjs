@@ -364,6 +364,18 @@ test("generation validates category, reference mode, and bounded requests before
   assert.deepEqual(generation.parseEventThemeRequest({ ...valid, informationImages: ["data:image/jpeg;base64,YQ=="] }).informationImages, ["data:image/jpeg;base64,YQ=="]);
 });
 
+test("information upload extracts event fields without generating artwork", async () => {
+  const source = await sharp({ create: { width: 12, height: 8, channels: 3, background: "white" } }).png().toBuffer();
+  const details = { ...example().details, endTime: "16:30", sections: [{ title: "Schedule", body: "Approximately 4:30 PM — Return departure" }] };
+  generation.eventThemeGenerationDeps.client = () => ({ chat: { completions: { create: async () => ({ choices: [{ finish_reason: "stop", message: { content: JSON.stringify({ design, details, artworkPrompt: "Unused" }) } }] }) } } });
+  generation.eventThemeGenerationDeps.render = async () => { throw new Error("Information upload must not generate artwork"); };
+  const input = generation.parseEventThemeRequest({ mode: "information", category: "general", prompt: "Read the event information", informationImages: [`data:image/png;base64,${source.toString("base64")}`] });
+  const page = await generation.generateEventTheme(input, new AbortController().signal);
+  assert.deepEqual(page.details, details);
+  assert.ok(custom.normalizeCustomEventPage(page));
+  await assert.rejects(generation.generateEventTheme({ ...input, informationImages: [] }, new AbortController().signal), /Choose an event information image/);
+});
+
 test("OpenAI design generation preserves category and supplied facts during visual refinement", async () => {
   let requested,
     artworkRequest,

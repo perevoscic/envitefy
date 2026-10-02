@@ -182,8 +182,14 @@ export function getCreateEventSections(
       .filter((link) => link.section === section && link.key !== "general")
       .map(({ label, href, icon }) => ({ label, href, icon })),
   })).filter((section) => section.items.length > 0);
+  if (generalEvent) {
+    const firstSection = sections[0];
+    const item = { label: generalEvent.label, href: generalEvent.href, icon: generalEvent.icon };
+    if (firstSection) firstSection.items.unshift(item);
+    else sections.push({ title: "General", items: [item] });
+  }
   sections.push({
-    title: generalEvent ? "Sign-ups & events" : "Sign-ups",
+    title: "Sign-ups",
     items: [{
       label: "Sign-up Form",
       href: "/signup-forms/templates",
@@ -194,19 +200,18 @@ export function getCreateEventSections(
         </svg>
       ),
       description: "Coordinate volunteers, food, supplies, and shifts",
-    }, ...(generalEvent ? [{
-      label: generalEvent.label,
-      href: generalEvent.href,
-      icon: generalEvent.icon,
-      description: "Create an event page from a template",
-    }] : [])],
+    }],
   });
   // Put the saved preference first without adding a disabled event category.
   const preferredHref = getCreateActionForSignupIntent(options.defaultCreateIntent)?.href;
   for (const section of sections) {
-    section.items.sort((a, b) => Number(b.href === preferredHref) - Number(a.href === preferredHref));
+    section.items.sort((a, b) =>
+      Number(b.href === generalEvent?.href) - Number(a.href === generalEvent?.href) ||
+      Number(b.href === preferredHref) - Number(a.href === preferredHref));
   }
   return sections.sort((a, b) =>
+    Number(b.items.some((item) => item.href === generalEvent?.href)) -
+    Number(a.items.some((item) => item.href === generalEvent?.href)) ||
     Number(b.items.some((item) => item.href === preferredHref)) -
     Number(a.items.some((item) => item.href === preferredHref)),
   );

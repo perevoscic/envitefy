@@ -31,7 +31,7 @@ OVERVIEW: If there is no explicit welcome paragraph, write a concise factual des
 SCHEDULE: Preserve every entry in order: gathering, outbound departure, destination arrival, activities, lunch and return departure. Use the explicitly labeled event/activities start for time, retaining earlier travel times in Schedule. Populate endTime from an explicit end, dismissal or departure back to the origin that ends the visit. Before returning, check the final schedule entries for this end time; never omit a supplied approximate end time just because it is qualified by approximately, around or ~. Do not use outbound departure or lunch as the end. Approximate times populate HH:mm while their qualifier remains in Schedule. Never invent return arrival or an end date. Example: Activities Begin 9:30 AM, lunch 11:50 AM, ~12:30 PM Depart for Gateway means time 09:30 and endTime 12:30, with "Approximately 12:30 PM — Depart for Gateway" retained in Schedule.
 INSTRUCTIONS: Preserve parking and arrival directions, every activity, group rotation/duration rules, student/parent access rules, dress code, optional items, food/water and disposable-container requirements, sunscreen/bug-spray restrictions, sign-in/forms, sibling restrictions and chaperone conduct. Use clearly named sections. Retain quantities, durations, exceptions, negations and qualifiers. Do not guess unreadable text or map details. Appearance refinements preserve currentDetails exactly.`;
 export type EventThemeRequest = {
-  mode?: "design" | "wording";
+  mode?: "design" | "wording" | "information";
   category: CustomEventCategory;
   prompt: string;
   currentDesign: EventCustomDesign | null;
@@ -47,7 +47,7 @@ export function parseEventThemeRequest(value: unknown): EventThemeRequest {
   const raw = value as Record<string, unknown>,
     category = customEventCategory(raw.category);
   if (!category) throw new EventThemeRequestError("Choose an event category.");
-  if (raw.mode != null && raw.mode !== "design" && raw.mode !== "wording")
+  if (raw.mode != null && raw.mode !== "design" && raw.mode !== "wording" && raw.mode !== "information")
     throw new EventThemeRequestError("Choose a supported design action.");
   if (
     typeof raw.prompt !== "string" ||
@@ -81,7 +81,7 @@ export function parseEventThemeRequest(value: unknown): EventThemeRequest {
   )
     throw new EventThemeRequestError("Choose a PNG, JPG or WebP image smaller than 2 MB.");
   return {
-    mode: raw.mode === "wording" ? "wording" : "design",
+    mode: raw.mode === "wording" ? "wording" : raw.mode === "information" ? "information" : "design",
     category,
     prompt: raw.prompt.trim(),
     currentDesign,
@@ -192,6 +192,8 @@ export async function generateEventTheme(
       throw new EventThemeRequestError("An event information file could not be read. Try another JPG, PNG or WebP.");
     }
   }));
+  if (input.mode === "information" && !informationImages.length)
+    throw new EventThemeRequestError("Choose an event information image first.");
   let reference: StudioResolvedSourceImage | undefined;
   if (input.referenceImage) {
     try {
@@ -280,6 +282,13 @@ ARTWORK: artworkPrompt under 2000 characters, describing the specific subject an
     details.date = normalizeExtractedEventDate(details.date, input.prompt, details.timezone || undefined);
     details.endDate = normalizeExtractedEventDate(details.endDate, input.prompt, details.timezone || undefined);
   }
+  if (input.mode === "information") return {
+    version: 1,
+    category: input.category,
+    design: { version: 1, name: "Event information", description: "A simple event page", layout: "editorial", font: "editorial", colors: { page: "#f5f1fa", surface: "#ffffff", ink: "#342d38", accent: "#60508e" } },
+    details,
+    artwork: "/templates/signup/photographic/general/monthly-meetup.webp",
+  };
   let original: Buffer;
   if (reference && input.referenceImageMode === "use")
     original = Buffer.from(reference.data, "base64");

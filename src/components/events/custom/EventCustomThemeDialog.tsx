@@ -19,6 +19,7 @@ import {
 } from "@/lib/event-custom-design";
 import CustomEventPageContent from "./CustomEventPageContent";
 import styles from "./custom-event.module.css";
+import DesignGenerationProgress from "@/app/live-cards/DesignGenerationProgress";
 
 export default function EventCustomThemeDialog({
   category,
@@ -250,7 +251,18 @@ export default function EventCustomThemeDialog({
                 </p>
               )}
               {initialMessage && !candidate && <p className={styles.notice}>{initialMessage}</p>}
-              {preview && candidate ? (
+              {busy ? (
+                <div className={styles.creating} aria-busy="true">
+                  {candidate && <CustomEventPageContent page={candidate} />}
+                  <DesignGenerationProgress
+                    stage="generating"
+                    compact={Boolean(candidate)}
+                    title={candidate ? "Updating your event page" : "Creating your event page"}
+                    description="Your design will appear here when it’s ready."
+                    statusText="Creating your page design and artwork…"
+                  />
+                </div>
+              ) : preview && candidate ? (
                 <CustomEventPageContent page={candidate} />
               ) : (
                 <div className={styles.brief}>
@@ -329,11 +341,6 @@ export default function EventCustomThemeDialog({
                         </button>
                       </div>
                     </div>
-                  )}
-                  {busy && (
-                    <p role="status" className={styles.notice}>
-                      Creating your page design and artwork. This can take a few minutes…
-                    </p>
                   )}
                 </div>
               )}

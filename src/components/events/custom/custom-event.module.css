@@ -415,6 +415,13 @@
   padding-block: 18px;
   border-top: 1px solid #e6deeb;
 }
+.creating {
+  min-height: min(440px, 55dvh);
+  display: grid;
+  align-content: center;
+  gap: 20px;
+  padding-block: 16px;
+}
 .pagePreviewDialog {
   position: fixed;
   inset: 0;

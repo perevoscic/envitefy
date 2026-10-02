@@ -17,7 +17,7 @@ const selectClass = "h-12 w-full max-w-full rounded-full border border-[#dcd0dc]
 export default function SeasonalGalleryControls({ available, order, setOrder, occasion, setOccasion, options, onChange }: Props) {
   if (!available) return null;
   return <>
-    {options.length > 0 && <label className="block min-w-0 max-w-full">
+    {options.length > 0 && <label className="col-span-2 block min-w-0 max-w-full">
       <span className="sr-only">Holiday or occasion</span>
       <select aria-label="Holiday or occasion" value={occasion} onChange={(event) => {
         const selected = options.find(({ id }) => id === event.target.value);

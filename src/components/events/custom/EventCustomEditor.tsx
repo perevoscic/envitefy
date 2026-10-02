@@ -23,7 +23,7 @@ import CustomEventPageContent from "./CustomEventPageContent";
 import styles from "./custom-event.module.css";
 import EventCustomThemeDialog from "./EventCustomThemeDialog";
 
-export default function EventCustomEditor() {
+export default function EventCustomEditor({ initialPage }: { initialPage?: CustomEventPage } = {}) {
   const search = useSearchParams(),
     router = useRouter();
   const editId = search?.get("edit") || undefined;
@@ -79,6 +79,11 @@ export default function EventCustomEditor() {
     let cancelled = false;
     async function load() {
       setError("");
+      if (initialPage) {
+        setPage(withCustomEventTimezone(initialPage));
+        setBaseline("");
+        return;
+      }
       if (editId) {
         setPage(null);
         const response = await fetch(`/api/history/${encodeURIComponent(editId)}`, {
@@ -125,7 +130,7 @@ export default function EventCustomEditor() {
       cancelled = true;
     };
     // Only a route change or explicit retry initializes the editor.
-  }, [category, editId, token, router, retry]);
+  }, [category, editId, token, router, retry, initialPage]);
   const prepareWording = async (current: CustomEventPage): Promise<CustomEventPage> => {
     const key = JSON.stringify(customEventWording(current.details));
     if (preparedWording.current === key) return current;

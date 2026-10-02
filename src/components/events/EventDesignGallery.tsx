@@ -57,16 +57,16 @@ export default function EventDesignGallery<Design extends EventGalleryDesign>({
             <p aria-live="polite" className="text-sm font-semibold">{filtered.length} {filtered.length === 1 ? "design" : "designs"}</p>
             <p className="mt-1 text-xs text-[#746775]">Choose a template, add your details, and make it yours.</p>
           </div>
-          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <label className="relative block">
+          <div className="grid min-w-0 grid-cols-2 gap-3 sm:flex sm:flex-row sm:flex-wrap">
+            <label className="relative col-span-2 block">
               <span className="sr-only">Search designs</span>
               <Search className="absolute left-4 top-3.5 h-4 w-4 text-[#8b748b]" aria-hidden="true" />
               <input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setVisibleCount(12); }} placeholder="Search designs" className="h-11 w-full rounded-full border border-[#dcd0dc] bg-white pl-10 pr-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[#926e93] sm:w-64" />
             </label>
             <SeasonalGalleryControls {...seasonal} onChange={() => setVisibleCount(12)} />
-            <label>
+            <label className="min-w-0">
               <span className="sr-only">Style</span>
-              <select value={style} onChange={(event) => { setStyle(event.target.value); setVisibleCount(12); }} className="h-11 w-full rounded-full border border-[#dcd0dc] bg-white px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[#926e93] sm:max-w-72">
+              <select value={style} onChange={(event) => { setStyle(event.target.value); setVisibleCount(12); }} className="h-12 w-full rounded-full border border-[#dcd0dc] bg-white px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[#926e93] sm:max-w-72">
                 {styles.map((option) => <option key={option}>{option}</option>)}
               </select>
             </label>
