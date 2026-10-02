@@ -140,5 +140,5 @@ export async function saveCustomEventPage({
     });
   }
   window.dispatchEvent(new CustomEvent("history:updated", { detail: { id: result.id } }));
-  return { id: result.id, page: savedPage, data };
+  return { id: result.id, page: savedPage, data: { ...data, ...(result.public_slug ? { publicSlug: result.public_slug } : {}) } };
 }

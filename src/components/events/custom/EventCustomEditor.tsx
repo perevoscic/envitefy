@@ -21,6 +21,7 @@ import {
 } from "@/lib/event-custom-design";
 import { customEventFieldErrors, saveCustomEventPage, withCustomEventTimezone } from "@/lib/event-custom-save";
 import { buildEventPath } from "@/utils/event-url";
+import { validateCustomEventPublicSlug, MAX_PUBLIC_SLUG_LENGTH } from "@/utils/event-public-slug";
 import CustomEventPageContent from "./CustomEventPageContent";
 import styles from "./custom-event.module.css";
 import EventCustomThemeDialog from "./EventCustomThemeDialog";
@@ -60,6 +61,10 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
   const [message, setMessage] = useState("");
   const [redesign, setRedesign] = useState(false);
   const [published, setPublished] = useState(false);
+  const [publicSlug, setPublicSlug] = useState("");
+  const [savedPublicSlug, setSavedPublicSlug] = useState("");
+  const [linkError, setLinkError] = useState("");
+  const [linkMessage, setLinkMessage] = useState("");
   const [previewOnly, setPreviewOnly] = useState(false);
   const previewDialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -107,6 +112,8 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
         if (cancelled) return;
         existing.current = row.data;
         savedId.current = editId;
+        setPublicSlug(row.public_slug || row.data?.publicSlug || "");
+        setSavedPublicSlug(row.public_slug || row.data?.publicSlug || "");
         const initialized = withCustomEventTimezone(saved);
         setPage(initialized);
         setBaseline(JSON.stringify(initialized));
@@ -209,11 +216,14 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
       });
       savedId.current = result.id;
       existing.current = result.data;
+      const nextPublicSlug = typeof result.data.publicSlug === "string" ? result.data.publicSlug : savedPublicSlug;
+      setPublicSlug(nextPublicSlug);
+      setSavedPublicSlug(nextPublicSlug);
       setPage(result.page);
       setBaseline(JSON.stringify(result.page));
       if (status === "published")
         navigation.allowNavigation(() =>
-          router.push(buildEventPath(result.id, result.page.details.title)),
+          router.push(buildEventPath(result.id, result.page.details.title, undefined, nextPublicSlug)),
         );
       else {
         navigation.allowNavigation(() =>
@@ -240,6 +250,38 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
       await persist("draft");
     },
   });
+  const savePublicLink = async () => {
+    if (!savedId.current || busy || saving.current) return;
+    const validation = validateCustomEventPublicSlug(publicSlug);
+    setLinkError("");
+    setLinkMessage("");
+    if (validation.error || !validation.slug) {
+      setLinkError(validation.error || "Enter an event link.");
+      return;
+    }
+    saving.current = true;
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/events/${encodeURIComponent(savedId.current)}/public-slug`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicSlug: validation.slug }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "The event link could not be updated.");
+      existing.current = { ...existing.current, publicSlug: result.publicSlug };
+      setPublicSlug(result.publicSlug);
+      setSavedPublicSlug(result.publicSlug);
+      setLinkMessage("Link updated. Previous links still work.");
+      window.dispatchEvent(new CustomEvent("history:updated", { detail: { id: savedId.current } }));
+    } catch (failure) {
+      setLinkError(failure instanceof Error ? failure.message : "The event link could not be updated.");
+    } finally {
+      saving.current = false;
+      setBusy(false);
+    }
+  };
   const updateDetail = <K extends keyof CustomEventDetails>(key: K, value: CustomEventDetails[K]) =>
     setPage((previous) =>
       previous ? { ...previous, details: { ...previous.details, [key]: value } } : previous,
@@ -373,6 +415,25 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
           <fieldset disabled={busy} className={styles.controls} hidden={!editing} style={editing ? undefined : { display: "none" }}>
             <h2>Event details</h2>
             {field("title", "Event title")}
+            <div className={styles.group}>
+              <h2>Public link</h2>
+              {savedId.current ? <>
+                <label htmlFor="event-public-link">
+                  Event URL
+                  <span className="break-all text-sm">https://envitefy.com/event/</span>
+                  <input id="event-public-link" value={publicSlug} maxLength={MAX_PUBLIC_SLUG_LENGTH}
+                    autoCapitalize="none" autoCorrect="off" spellCheck={false}
+                    aria-invalid={Boolean(linkError)} aria-describedby="event-public-link-status"
+                    onChange={(event) => { setPublicSlug(event.target.value); setLinkError(""); setLinkMessage(""); }} />
+                </label>
+                <button type="button" className={styles.secondary}
+                  disabled={busy || !publicSlug.trim() || publicSlug === savedPublicSlug}
+                  onClick={() => void savePublicLink()}>Save link</button>
+                <p id="event-public-link-status" role={linkError ? "alert" : "status"} className={linkError ? styles.error : undefined}>
+                  {linkError || linkMessage || "Save link updates the URL immediately. Previous links keep working. Event details and design are saved separately."}
+                </p>
+              </> : <p>Save a draft to create your public link, then edit it here.</p>}
+            </div>
             {field("description", "Welcome & overview")}
             {field("host", "Hosted by")}
             <div className={styles.columns}>
