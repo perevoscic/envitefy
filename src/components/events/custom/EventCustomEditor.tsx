@@ -575,7 +575,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
               </button>
             </div>
           </fieldset>
-          <div className={styles.preview}>
+          <div className={styles.preview} style={editing ? undefined : { display: "block" }}>
             <CustomEventPageContent page={page} showGuestActions onGuestActionsChange={busy ? undefined : (guestActions) => setPage((current) => current ? ({ ...current, details: { ...current.details, guestActions } }) : current)} />
           </div>
         </div>
