@@ -83,7 +83,7 @@ export default function CustomEventPageContent({
           <h1>{d.title || "Your event title"}</h1>
           {d.host && <p className={styles.host}>Hosted by {d.host}</p>}
           {(date || time) && (
-            <p className={styles.when}>{[date, time].filter(Boolean).join(" · ")}</p>
+            <p className={styles.when}>{[date, time && d.endTime ? `${time} – ${new Date(`2000-01-01T${d.endTime}:00Z`).toLocaleTimeString("en-US", { timeZone: "UTC", hour: "numeric", minute: "2-digit" })}${d.endDate && d.endDate !== d.date ? ` (${d.endDate})` : ""}` : time].filter(Boolean).join(" · ")}</p>
           )}
           {(d.venue || d.location) && (
             <p>{[d.venue, d.location !== d.venue ? d.location : ""].filter(Boolean).join(" · ")}</p>
@@ -132,6 +132,7 @@ export default function CustomEventPageContent({
         )}
         {showGuestActions && (
           <EventGuestActions
+            compactMobile
             visibility={d.guestActions}
             onVisibilityChange={onGuestActionsChange}
             preview={!eventId}

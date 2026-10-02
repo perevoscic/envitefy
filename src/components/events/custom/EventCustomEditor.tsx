@@ -17,7 +17,7 @@ import {
   normalizeCustomEventPage,
   takeCustomEventPage,
 } from "@/lib/event-custom-design";
-import { saveCustomEventPage } from "@/lib/event-custom-save";
+import { customEventFieldErrors, saveCustomEventPage, withCustomEventTimezone } from "@/lib/event-custom-save";
 import { buildEventPath } from "@/utils/event-url";
 import CustomEventPageContent from "./CustomEventPageContent";
 import styles from "./custom-event.module.css";
@@ -33,10 +33,40 @@ export default function EventCustomEditor() {
   const [baseline, setBaseline] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [validationMode, setValidationMode] = useState<"draft" | "published" | null>(null);
+  const fieldErrors = page && validationMode ? customEventFieldErrors(page, validationMode === "published") : {};
+  const focusField = (key: string) => {
+    setPreviewOnly(false);
+    requestAnimationFrame(() => {
+      const field = document.getElementById(`event-field-${key}`);
+      field?.scrollIntoView({ block: "center", behavior: "instant" });
+      field?.focus({ preventScroll: true });
+    });
+  };
+  const fieldProps = (key: string) => ({
+    id: `event-field-${key}`,
+    "aria-invalid": Boolean(fieldErrors[key]),
+    "aria-describedby": fieldErrors[key] ? `event-error-${key}` : undefined,
+  });
+  const fieldError = (key: string) => fieldErrors[key] ? (
+    <span id={`event-error-${key}`} className={styles.error}>{fieldErrors[key]}</span>
+  ) : null;
   const [message, setMessage] = useState("");
   const [redesign, setRedesign] = useState(false);
   const [published, setPublished] = useState(false);
   const [previewOnly, setPreviewOnly] = useState(false);
+  const previewDialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = previewDialog.current;
+    if (!previewOnly || !dialog) return;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    dialog.showModal();
+    return () => {
+      dialog.close();
+      document.body.style.overflow = overflow;
+    };
+  }, [previewOnly]);
   const [retry, setRetry] = useState(0);
   const existing = useRef<Record<string, unknown>>({});
   const savedId = useRef<string | undefined>(editId);
@@ -66,8 +96,9 @@ export default function EventCustomEditor() {
         if (cancelled) return;
         existing.current = row.data;
         savedId.current = editId;
-        setPage(saved);
-        setBaseline(JSON.stringify(saved));
+        const initialized = withCustomEventTimezone(saved);
+        setPage(initialized);
+        setBaseline(JSON.stringify(initialized));
         setPublished(row.data.status === "published");
       } else {
         await Promise.resolve();
@@ -83,7 +114,7 @@ export default function EventCustomEditor() {
         }
         handoff.current = { token: token!, page: selected };
         preparedWording.current = JSON.stringify(customEventWording(selected.details));
-        setPage(selected);
+        setPage(withCustomEventTimezone(selected));
         setBaseline("");
       }
     }
@@ -125,6 +156,12 @@ export default function EventCustomEditor() {
       return;
     }
     if (!page || saving.current) return;
+    setValidationMode("draft");
+    if (Object.keys(customEventFieldErrors(page, false)).length) {
+      setError("");
+      setPreviewOnly(false);
+      return;
+    }
     saving.current = true;
     setBusy(true);
     setError("");
@@ -140,6 +177,12 @@ export default function EventCustomEditor() {
   };
   const persist = async (status: "draft" | "published") => {
     if (!page || saving.current) throw new Error("Wait for your event page to finish saving.");
+    setValidationMode(status);
+    if (Object.keys(customEventFieldErrors(page, status === "published")).length) {
+      setError("");
+      setPreviewOnly(false);
+      throw new Error("Correct the highlighted fields.");
+    }
     saving.current = true;
     setBusy(true);
     setError("");
@@ -218,7 +261,6 @@ export default function EventCustomEditor() {
       | "time"
       | "endDate"
       | "endTime"
-      | "timezone"
       | "rsvpEmail"
       | "rsvpPhone"
     >,
@@ -229,6 +271,7 @@ export default function EventCustomEditor() {
       {label}
       {key === "description" ? (
         <textarea
+          {...fieldProps(key)}
           rows={5}
           value={d[key]}
           maxLength={6000}
@@ -236,12 +279,14 @@ export default function EventCustomEditor() {
         />
       ) : (
         <input
+          {...fieldProps(key)}
           type={type}
           value={d[key]}
           maxLength={key === "location" ? 1000 : 300}
           onChange={(e) => updateDetail(key, e.target.value)}
         />
       )}
+      {fieldError(key)}
     </label>
   );
   return (
@@ -258,7 +303,7 @@ export default function EventCustomEditor() {
             disabled={busy}
             onClick={() => void showPreview()}
           >
-            {previewOnly ? "Edit details" : "Preview"}
+            Preview <span aria-hidden="true">→</span>
           </button>
           <button
             className={styles.secondary}
@@ -287,16 +332,29 @@ export default function EventCustomEditor() {
           {error}
         </p>
       )}
+      {Object.keys(fieldErrors).length > 0 && (
+        <div role="alert" className={styles.error}>
+          <p>Correct these fields to continue:</p>
+          {Object.entries(fieldErrors).map(([key, message]) => (
+            <button key={key} type="button" className={styles.errorLink} onClick={() => focusField(key)}>{message}</button>
+          ))}
+        </div>
+      )}
       {message && (
         <p role="status" className={styles.notice}>
           {message}
         </p>
       )}
-      {previewOnly ? (
-        <div className="mx-auto max-w-6xl">
+      {previewOnly && (
+        <dialog ref={previewDialog} className={styles.pagePreviewDialog} aria-label="Event Page preview" onCancel={() => setPreviewOnly(false)}>
+          <header className={styles.pagePreviewHeader}>
+            <span>Event Page preview</span>
+            <button type="button" className={styles.secondary} onClick={() => setPreviewOnly(false)}>Close</button>
+          </header>
           <CustomEventPageContent page={page} showGuestActions />
-        </div>
-      ) : (
+        </dialog>
+      )}
+      {(
         <div className={styles.workspace}>
           <fieldset disabled={busy} className={styles.controls}>
             <h2>Event details</h2>
@@ -305,11 +363,10 @@ export default function EventCustomEditor() {
             {field("host", "Hosted by")}
             <div className={styles.columns}>
               {field("date", "Date", "date")}
-              {field("time", "Time", "time")}
-              {field("endDate", "End date (optional)", "date")}
+              {field("time", "Begins", "time")}
               {field("endTime", "End time (optional)", "time")}
+              {field("endDate", "End date (optional)", "date")}
             </div>
-            {field("timezone", "Event time zone (for example, America/Chicago)")}
             {field("venue", "Venue")}
             {field("location", "Address or location")}
             <div className={styles.group}>
@@ -336,6 +393,7 @@ export default function EventCustomEditor() {
                   <label className={styles.field}>
                     Label
                     <input
+                      {...fieldProps(`registry-${index}-label`)}
                       value={link.label}
                       maxLength={180}
                       onChange={(e) =>
@@ -347,10 +405,12 @@ export default function EventCustomEditor() {
                         )
                       }
                     />
+                    {fieldError(`registry-${index}-label`)}
                   </label>
                   <label className={styles.field}>
                     Link
                     <input
+                      {...fieldProps(`registry-${index}-url`)}
                       type="url"
                       value={link.url}
                       onChange={(e) =>
@@ -362,6 +422,7 @@ export default function EventCustomEditor() {
                         )
                       }
                     />
+                    {fieldError(`registry-${index}-url`)}
                   </label>
                   <button
                     type="button"
@@ -395,6 +456,7 @@ export default function EventCustomEditor() {
                   <label className={styles.field}>
                     Section heading
                     <input
+                      {...fieldProps(`section-${index}-title`)}
                       value={section.title}
                       maxLength={180}
                       onChange={(e) =>
@@ -406,10 +468,12 @@ export default function EventCustomEditor() {
                         )
                       }
                     />
+                    {fieldError(`section-${index}-title`)}
                   </label>
                   <label className={styles.field}>
                     Section content
                     <textarea
+                      {...fieldProps(`section-${index}-body`)}
                       value={section.body}
                       maxLength={6000}
                       rows={4}
@@ -422,6 +486,7 @@ export default function EventCustomEditor() {
                         )
                       }
                     />
+                    {fieldError(`section-${index}-body`)}
                   </label>
                   <button
                     type="button"

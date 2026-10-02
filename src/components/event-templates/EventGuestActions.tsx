@@ -188,7 +188,7 @@ export default function EventGuestActions({
                       <CalendarPlus className="h-4 w-4 shrink-0" aria-hidden="true" />
                       <span className={styles.fullLabel}>{label}</span>
                       <span className={styles.shortLabel} aria-hidden="true">
-                        Calendar
+                        to calendar
                       </span>
                     </>
                   )
@@ -197,7 +197,8 @@ export default function EventGuestActions({
           ) : onVisibilityChange ? (
             <button type="button" className={buttonClass} disabled>
               <CalendarPlus size={16} aria-hidden="true" />
-              Add to calendar
+              <span className={styles.fullLabel}>Add to calendar</span>
+              {compactMobile && <span className={styles.shortLabel}>to calendar</span>}
             </button>
           ) : null,
         )}
@@ -222,7 +223,8 @@ export default function EventGuestActions({
           ) : onVisibilityChange ? (
             <button type="button" className={buttonClass} disabled>
               <Navigation size={16} aria-hidden="true" />
-              Get directions
+              <span className={styles.fullLabel}>Get directions</span>
+              {compactMobile && <span className={styles.shortLabel}>Directions</span>}
             </button>
           ) : null,
         )}

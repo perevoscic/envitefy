@@ -547,7 +547,7 @@ test("save failures keep the editor state and incomplete publication never uploa
       status: "published",
       clientDraftId: "id",
     }),
-    /title, date, and location/,
+    /Add an event title\. Add an event date\. Add a venue or location\./,
   );
   assert.equal(uploads, 0);
   t.mock.method(globalThis, "fetch", async () => ({
@@ -561,6 +561,27 @@ test("save failures keep the editor state and incomplete publication never uploa
     /Please retry/,
   );
   assert.deepEqual(page, before);
+});
+
+test("custom field validation identifies dates, times, links and missing publication fields", () => {
+  const { customEventFieldErrors } = loader({
+    "@/utils/media-upload-client": {},
+  })("src/lib/event-custom-save.ts");
+  const page = example();
+  assert.deepEqual(customEventFieldErrors(page, true), {});
+  page.details.date = "2026-02-30";
+  page.details.time = "25:00";
+  page.details.registryLinks = [{ label: "Gifts", url: "javascript:alert(1)" }];
+  const errors = customEventFieldErrors(page, true);
+  assert.equal(errors.date, "Enter a valid date.");
+  assert.equal(errors.time, "Enter a valid time.");
+  assert.ok(errors["registry-0-url"]);
+  const missing = { ...example(), details: custom.emptyCustomEventDetails() };
+  assert.deepEqual(customEventFieldErrors(missing, false), {});
+  assert.deepEqual(Object.keys(customEventFieldErrors(missing, true)), ["title", "date", "venue"]);
+  const reversed = example();
+  reversed.details.endTime = "13:00";
+  assert.equal(customEventFieldErrors(reversed, true).endTime, "End time must be after the start.");
 });
 
 test("the generation endpoint requires auth, bounds media, throttles work, and never writes a draft", async (t) => {

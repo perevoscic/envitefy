@@ -97,6 +97,14 @@
   container: guest-actions / inline-size;
 }
 @container guest-actions (max-width: 480px) {
+  .editableAction {
+    flex: 1 1 0;
+    min-width: 0;
+    margin: 0.5rem 0 0;
+  }
+  .editableAction .button {
+    width: 100%;
+  }
   .actionRow {
     flex-wrap: nowrap;
     gap: 0.5rem;

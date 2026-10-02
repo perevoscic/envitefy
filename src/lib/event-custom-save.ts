@@ -3,7 +3,60 @@ import {
   type CustomEventPage,
   customEventPageData,
   normalizeCustomEventPage,
+  EVENT_DETAIL_FIELDS,
+  safeEventLink,
 } from "./event-custom-design";
+import { parseCalendarDateTimeToIso } from "./calendar-date-time";
+
+export function customEventFieldErrors(page: CustomEventPage, publishing: boolean): Record<string, string> {
+  const d = page.details;
+  const errors: Record<string, string> = {};
+  for (const key of EVENT_DETAIL_FIELDS) {
+    const limit = key === "description" ? 6000 : key === "location" ? 1000 : 300;
+    if (d[key].trim().length > limit) errors[key] = `Keep this field under ${limit + 1} characters.`;
+  }
+  if (publishing) {
+    if (!d.title.trim()) errors.title = "Add an event title.";
+    if (!d.date) errors.date = "Add an event date.";
+    if (!d.location.trim() && !d.venue.trim()) errors.venue = "Add a venue or location.";
+  }
+  for (const key of ["date", "endDate"] as const) {
+    if (d[key] && (!/^\d{4}-\d{2}-\d{2}$/.test(d[key]) || !parseCalendarDateTimeToIso(d[key], "UTC")))
+      errors[key] = "Enter a valid date.";
+  }
+  for (const key of ["time", "endTime"] as const) {
+    if (d[key] && !/^([01]\d|2[0-3]):[0-5]\d$/.test(d[key])) errors[key] = "Enter a valid time.";
+  }
+  d.registryLinks.forEach((link, i) => {
+    if (link.url && !safeEventLink(link.url)) errors[`registry-${i}-url`] = "Enter a valid website link (https://example.com).";
+    if (link.label.length > 180) errors[`registry-${i}-label`] = "Keep the registry label under 181 characters.";
+  });
+  d.sections.forEach((section, i) => {
+    if (section.title.length > 180) errors[`section-${i}-title`] = "Keep the section heading under 181 characters.";
+    if (section.body.length > 6000) errors[`section-${i}-body`] = "Keep the section content under 6001 characters.";
+  });
+  d.sections.forEach((section, i) => {
+    if (section.title.length > 180) errors[`section-${i}-title`] = "Keep the section heading under 181 characters.";
+    if (section.body.length > 6000) errors[`section-${i}-body`] = "Keep the section content under 6001 characters.";
+  });
+  if (!errors.date && !errors.endDate && !errors.time && !errors.endTime) {
+    const canonical = customEventPageData(withCustomEventTimezone(page));
+    if (canonical.end && canonical.start && Date.parse(canonical.end) <= Date.parse(canonical.start))
+      errors.endTime = "End time must be after the start.";
+  }
+  return errors;
+}
+
+export function withCustomEventTimezone(page: CustomEventPage): CustomEventPage {
+  if (page.details.timezone) return page;
+  return {
+    ...page,
+    details: {
+      ...page.details,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+    },
+  };
+}
 
 export async function saveCustomEventPage({
   page,
@@ -18,7 +71,9 @@ export async function saveCustomEventPage({
   status: "draft" | "published";
   existing?: Record<string, unknown>;
 }): Promise<{ id: string; page: CustomEventPage; data: Record<string, unknown> }> {
-  const valid = normalizeCustomEventPage(page);
+  const errors = customEventFieldErrors(page, status === "published");
+  if (Object.keys(errors).length) throw new Error(Object.values(errors).join(" "));
+  const valid = normalizeCustomEventPage(withCustomEventTimezone(page));
   if (!valid) throw new Error("Check your event details and design, then try again.");
   if (status === "published") {
     if (
@@ -27,8 +82,6 @@ export async function saveCustomEventPage({
       !(valid.details.location || valid.details.venue)
     )
       throw new Error("Add an event title, date, and location before publishing.");
-    if (valid.details.time && !valid.details.timezone)
-      throw new Error("Choose the event's time zone before publishing.");
   }
   const canonical = customEventPageData(valid);
   if (canonical.end && canonical.start && Date.parse(canonical.end) <= Date.parse(canonical.start))
