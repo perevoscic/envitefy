@@ -3,7 +3,7 @@ import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
-import { type CustomEventPage, EVENT_DESIGN_REFERENCE_LIMIT, normalizeCustomEventPage, customEventCategory, stageCustomEventPage } from "@/lib/event-custom-design";
+import { type CustomEventInformation, EVENT_DESIGN_REFERENCE_LIMIT, normalizeCustomEventInformation, normalizeCustomEventPage, customEventCategory, stageCustomEventPage } from "@/lib/event-custom-design";
 import CreateWithEnvitefyCallout from "./CreateWithEnvitefyCallout";
 import DesignGenerationProgress from "@/app/live-cards/DesignGenerationProgress";
 
@@ -30,7 +30,7 @@ export default function EventCustomThemeLauncher({
   const [open, setOpen] = useState(search?.get("customTheme") === "1");
   const picker = useRef<HTMLInputElement>(null);
   const request = useRef<AbortController | null>(null);
-  const imported = useRef<CustomEventPage | null>(null);
+  const imported = useRef<CustomEventInformation | null>(null);
   const [importing, setImporting] = useState(false);
   const [stage, setStage] = useState("");
   const [error, setError] = useState("");
@@ -81,7 +81,7 @@ export default function EventCustomThemeLauncher({
       if (controller.signal.aborted) return;
       const { response, result } = await generate({ mode: "information", category: key, prompt: "Read the uploaded event information and populate every supplied event field and section.", informationImages: images });
       if (!response.ok) throw new Error(result.error || "The event information could not be read. Please retry.");
-      const page = normalizeCustomEventPage(result);
+      const page = normalizeCustomEventInformation(result);
       if (!page || page.category !== key) throw new Error("The event information could not be read. Please retry.");
       if (controller.signal.aborted) return;
       imported.current = page;

@@ -10,13 +10,15 @@ type Props = {
   className?: string;
   label?: string;
   onChange: (value: string) => void;
+  prepareImage?: (value: string) => Promise<string>;
+  onBusyChange?: (busy: boolean) => void;
   settings?: HeroImageSettings;
   onSettingsChange?: (settings: HeroImageSettings) => void;
   filterEnabled?: boolean;
   onFilterChange?: (enabled: boolean) => void;
 };
 
-export function useHeroImagePicker(onChange: Props["onChange"]) {
+export function useHeroImagePicker(onChange: Props["onChange"], options: Pick<Props, "prepareImage" | "onBusyChange"> = {}) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -42,6 +44,7 @@ export function useHeroImagePicker(onChange: Props["onChange"]) {
           event.target.value = "";
           if (!file) return;
           setBusy(true);
+          options.onBusyChange?.(true);
           setError("");
           try {
             if (!/^image\/(jpeg|png|webp|avif)$/.test(file.type) || file.size > 20 * 1024 * 1024) {
@@ -63,11 +66,13 @@ export function useHeroImagePicker(onChange: Props["onChange"]) {
                 reject(new Error("This image could not be decoded. Choose another file."));
               img.src = dataUrl;
             });
-            onChange(dataUrl);
+            const prepared = options.prepareImage ? await options.prepareImage(dataUrl) : dataUrl;
+            onChange(prepared);
           } catch (reason) {
             setError(reason instanceof Error ? reason.message : "Unable to open this image.");
           } finally {
             setBusy(false);
+            options.onBusyChange?.(false);
           }
         }}
       />
@@ -79,6 +84,8 @@ export function useHeroImagePicker(onChange: Props["onChange"]) {
 export default function HeroImageEditor({
   value,
   onChange,
+  prepareImage,
+  onBusyChange,
   className = "",
   label = "Change",
   settings,
@@ -86,7 +93,7 @@ export default function HeroImageEditor({
   filterEnabled = true,
   onFilterChange,
 }: Props) {
-  const picker = useHeroImagePicker(onChange);
+  const picker = useHeroImagePicker(onChange, { prepareImage, onBusyChange });
   return (
     <div className={className} data-hero-image-control>
       <div className="flex flex-wrap items-center gap-2">

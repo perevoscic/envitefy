@@ -372,7 +372,9 @@ test("information upload extracts event fields without generating artwork", asyn
   const input = generation.parseEventThemeRequest({ mode: "information", category: "general", prompt: "Read the event information", informationImages: [`data:image/png;base64,${source.toString("base64")}`] });
   const page = await generation.generateEventTheme(input, new AbortController().signal);
   assert.deepEqual(page.details, details);
-  assert.ok(custom.normalizeCustomEventPage(page));
+  assert.ok(custom.normalizeCustomEventInformation(page));
+  assert.equal(page.artwork, undefined);
+  assert.equal(custom.normalizeCustomEventPage(page), null, "Extraction cannot open as a finished page with unrelated stock artwork");
   await assert.rejects(generation.generateEventTheme({ ...input, informationImages: [] }, new AbortController().signal), /Choose an event information image/);
 });
 
@@ -394,6 +396,9 @@ test("every event category turns uploaded information into a themed page without
     }) } }] };
   } } } });
   generation.eventThemeGenerationDeps.render = async (_prompt, references) => {
+    assert.ok(_prompt.includes(JSON.stringify(details.title)), "Renderer receives the extracted event subject");
+    assert.ok(_prompt.includes("No peanuts"), "Renderer receives the extracted sections");
+    assert.ok(_prompt.includes("source event subject takes priority"), "All categories prioritize event facts over model artwork drift");
     assert.equal(planning, true, "Reading event information must not generate artwork");
     assert.equal(references, undefined, "Information sheets must not become the artwork");
     renderCount++;

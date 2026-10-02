@@ -13,6 +13,7 @@ await fs.writeFile(
   `
 import React from "react";
 import {createRoot} from "react-dom/client";
+import EventCustomEditor from "../../src/components/events/custom/EventCustomEditor";
 import EventCustomThemeLauncher from "../../src/components/events/EventCustomThemeLauncher";
 import PublicTemplateGallery from "../../src/components/templates/PublicTemplateGallery";
 import {CUSTOM_EVENT_CATEGORIES, takeCustomEventPage} from "../../src/lib/event-custom-design";
@@ -22,7 +23,7 @@ window.fixture = {categories: [...Object.keys(CUSTOM_EVENT_CATEGORIES), "signup-
 const params = new URLSearchParams(location.search);
 const category = params.get("category") || "weddings";
 createRoot(document.getElementById("root")!).render(<main>
-  {category === "signup-forms"
+  {params.get("editor") === "1" ? <EventCustomEditor initialPage={window.testEditorPage} /> : category === "signup-forms"
     ? <PublicTemplateGallery category="signup-forms" featured={params.get("featured") === "1"} customThemeRequested={params.get("customTheme") === "1"} />
     : <EventCustomThemeLauncher category={category} />}
 </main>);
@@ -30,10 +31,17 @@ createRoot(document.getElementById("root")!).render(<main>
 );
 const styles = new Map();
 const mocks = {
+  "@/components/UnsavedProgressProvider": `
+    export function useUnsavedProgress(progress) { window.editorProgress = progress; return {allowNavigation(fn) {fn();}}; }
+  `,
+  "@/utils/media-upload-client": `
+    export async function persistImageMediaValue({value}) { (window.imageUploads ||= []).push(value); return "https://example.com/replacement.webp"; }
+  `,
   "next/navigation": `
     export function usePathname() { return location.pathname; }
     export function useSearchParams() { return new URLSearchParams(location.search); }
-    export function useRouter() { return {push(url) { (window.navigations ||= []).push(url); }, replace() {}, refresh() {}}; }
+    const router = {push(url) { (window.navigations ||= []).push(url); }, replace() {}, refresh() {}};
+    export function useRouter() { return router; }
   `,
   "next-auth/react": `
     import {useSyncExternalStore} from "react";
@@ -101,7 +109,7 @@ assert.ok(result.success, result.logs.map(String).join("\n"));
 await fs.writeFile(path.join(out, "entry.css"), [...styles.values()].join("\n"));
 const globals = (await fs.readFile("src/app/globals.css", "utf8")).replace(
   '@import "tailwindcss";',
-  '@import "tailwindcss" source(none);\n@source "../components/events/CreateWithEnvitefyCallout.tsx";\n@source "../components/events/EventCustomThemeLauncher.tsx";\n@source "../components/templates/PublicTemplateGallery.tsx";',
+  '@import "tailwindcss" source(none);\n@source "../components/events/CreateWithEnvitefyCallout.tsx";\n@source "../components/events/EventCustomThemeLauncher.tsx";\n@source "../components/events/HeroImageEditor.tsx";\n@source "../components/templates/PublicTemplateGallery.tsx";',
 );
 const css = await postcss([tailwind()]).process(globals, {
   from: path.resolve("src/app/globals.css"),

@@ -7,7 +7,7 @@ const code = ts.transpileModule(readFileSync(`${__dirname}/HeroImageEditor.tsx`,
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
 }).outputText;
 
-function pickerHarness({ readError = false, decodeError = false } = {}) {
+function pickerHarness({ readError = false, decodeError = false, options = {} } = {}) {
   const states = [];
   const changes = [];
   let chooserCount = 0;
@@ -47,7 +47,7 @@ function pickerHarness({ readError = false, decodeError = false } = {}) {
     { Image },
   );
   // biome-ignore lint/correctness/useHookAtTopLevel: The test injects state/ref doubles and does not invoke React's dispatcher.
-  const picker = module.exports.useHeroImagePicker((image) => changes.push(image));
+  const picker = module.exports.useHeroImagePicker((image) => changes.push(image), options);
   return {
     picker,
     changes,
@@ -121,4 +121,32 @@ test("unreadable or corrupt image files keep the previous image", async () => {
     assert.match(h.states[1], /Unable to read|could not be decoded/);
     assert.equal(h.states[0], false);
   }
+});
+
+
+test("custom hero preparation commits only the prepared image and reports busy state", async () => {
+  const busy = [];
+  const h = pickerHarness({ options: {
+    prepareImage: async (source) => {
+      assert.match(source, /^data:image\/jpeg/);
+      assert.deepEqual(h.changes, []);
+      return "data:image/webp;base64,cHJlcGFyZWQ=";
+    },
+    onBusyChange: (value) => busy.push(value),
+  } });
+  await h.choose({ name: "photo.jpg", type: "image/jpeg", size: 1024 });
+  assert.deepEqual(h.changes, ["data:image/webp;base64,cHJlcGFyZWQ="]);
+  assert.deepEqual(busy, [true, false]);
+});
+
+test("failed hero conversion preserves the previous image and releases busy state", async () => {
+  const busy = [];
+  const h = pickerHarness({ options: {
+    prepareImage: async () => { throw new Error("WebP preparation failed"); },
+    onBusyChange: (value) => busy.push(value),
+  } });
+  await h.choose({ name: "photo.jpg", type: "image/jpeg", size: 1024 });
+  assert.deepEqual(h.changes, []);
+  assert.equal(h.states[1], "WebP preparation failed");
+  assert.deepEqual(busy, [true, false]);
 });

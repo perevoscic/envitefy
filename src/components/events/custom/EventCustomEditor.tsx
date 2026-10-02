@@ -1,5 +1,7 @@
 "use client";
 
+import HeroImageEditor from "@/components/events/HeroImageEditor";
+import { prepareCustomEventHeroImage } from "@/lib/custom-event-hero-image";
 import { FontPairingSelect } from "@/components/design-panel/FontPairingSelect";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -32,7 +34,9 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
   const [editing, setEditing] = useState(search?.get("ready") !== "1");
   const [page, setPage] = useState<CustomEventPage | null>(null);
   const [baseline, setBaseline] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [operationBusy, setBusy] = useState(false);
+  const [imageBusy, setImageBusy] = useState(false);
+  const busy = operationBusy || imageBusy;
   const [error, setError] = useState("");
   const [validationMode, setValidationMode] = useState<"draft" | "published" | null>(null);
   const fieldErrors = page && validationMode ? customEventFieldErrors(page, validationMode === "published") : {};
@@ -162,7 +166,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
       setPreviewOnly(false);
       return;
     }
-    if (!page || saving.current) return;
+    if (!page || saving.current || imageBusy) return;
     setValidationMode("draft");
     if (Object.keys(customEventFieldErrors(page, false)).length) {
       setError("");
@@ -183,7 +187,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
     }
   };
   const persist = async (status: "draft" | "published") => {
-    if (!page || saving.current) throw new Error("Wait for your event page to finish saving.");
+    if (!page || saving.current || imageBusy) throw new Error("Wait for your event page to finish saving.");
     setValidationMode(status);
     if (Object.keys(customEventFieldErrors(page, status === "published")).length) {
       setError("");
@@ -333,7 +337,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
               void persist("published").catch(() => {});
             }}
           >
-            {busy ? "Saving…" : published ? "Publish changes" : "Publish"}
+            {imageBusy ? "Preparing image…" : operationBusy ? "Saving…" : published ? "Publish changes" : "Publish"}
           </button>
         </div>
       </header>
@@ -523,6 +527,17 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
             </div>
             <div className={styles.group}>
               <h2>Design</h2>
+              <HeroImageEditor
+                label="Replace hero image"
+                prepareImage={prepareCustomEventHeroImage}
+                onBusyChange={setImageBusy}
+                onChange={(artwork) => setPage((current) => current ? {
+                  ...current,
+                  artwork,
+                  design: { ...current.design, description: "Hero image selected by the host." },
+                } : current)}
+              />
+              <p>Your selected image is saved when you choose Save draft or Publish.</p>
               <label className={styles.field}>
                 Layout
                 <select

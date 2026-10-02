@@ -83,6 +83,16 @@ export type CustomEventPage = {
   artwork: string;
   details: CustomEventDetails;
 };
+// Information extraction cannot be staged or published as a finished page.
+export type CustomEventInformation = Omit<CustomEventPage, "artwork"> & { kind: "information" };
+export function normalizeCustomEventInformation(value: unknown): CustomEventInformation | null {
+  const raw = record(value);
+  const category = customEventCategory(raw?.category);
+  const design = normalizeEventCustomDesign(raw?.design);
+  const details = normalizeCustomEventDetails(raw?.details);
+  if (raw?.version !== 1 || raw.kind !== "information" || !category || !design || !details) return null;
+  return { version: 1, kind: "information", category, design, details };
+}
 export const emptyCustomEventDetails = (): CustomEventDetails => ({
   ...(Object.fromEntries(EVENT_DETAIL_FIELDS.map((field) => [field, ""])) as Record<
     (typeof EVENT_DETAIL_FIELDS)[number],
