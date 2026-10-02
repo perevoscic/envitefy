@@ -650,9 +650,10 @@ test("the generation endpoint requires auth, bounds media, throttles work, and n
   });
   let userId = null,
     calls = 0;
+  let session = null;
   const route = loader({
     "next/server": { NextResponse: { json: (body, options) => ({ body, ...options }) } },
-    "next-auth": { getServerSession: async () => ({}) },
+    "next-auth": { getServerSession: async () => session },
     "@/lib/auth": { authOptions: {}, resolveSessionUserId: async () => userId },
     "@/lib/event-theme-generation": {
       ...generation,
@@ -669,6 +670,9 @@ test("the generation endpoint requires auth, bounds media, throttles work, and n
       body: JSON.stringify(body),
     });
   assert.equal((await route.POST(request())).status, 401);
+  session = { user: { email: "host@example.com" } };
+  assert.equal((await route.POST(request())).status, 503);
+  assert.equal(calls, 0);
   userId = "test-host";
   assert.equal((await route.POST(request({}, { "sec-fetch-site": "cross-site" }))).status, 403);
   assert.equal(
