@@ -40,11 +40,6 @@ export default function AnniversariesPage() {
               Celebrate your years together.
             </span>
           </h1>
-          <p className="mt-6 max-w-2xl text-base leading-7 text-[#695660]">
-            From your first year to a diamond anniversary or a renewal of your vows,
-            find a design for your story. Add your names, milestone, photos, and
-            celebration details, then invite the people who have shared the journey.
-          </p>
         </div>
       </section>
 

@@ -43,11 +43,6 @@ export default function NewGeneralEventPage() {
                 Make room for good company.
               </span>
             </h1>
-            <p className="mt-6 max-w-2xl text-base leading-7 text-[#6f6080]">
-              From casual meetups to dinners, workshops, and community gatherings,
-              find a design for your occasion. Add your details and invite everyone
-              to come together.
-            </p>
           </div>
         </section>
       )}

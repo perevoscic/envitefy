@@ -120,11 +120,6 @@ export default function WeddingDesignGallery() {
               >
                 Find your wedding website design
               </h1>
-              <p className="mt-6 max-w-2xl text-base font-light leading-relaxed text-[#706358] sm:text-lg">
-                A beautiful beginning for your celebration. Explore 20 new designs with original
-                artwork, thoughtful details, and a style all your own. Bring your story, schedule,
-                and guest details together in one wedding website.
-              </p>
             </div>
             <WeddingTemplateRunway designs={weddingRunwayDesigns} getHref={buildCustomizeHref} />
           </div>

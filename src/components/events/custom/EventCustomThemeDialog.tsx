@@ -36,6 +36,9 @@ export default function EventCustomThemeDialog({
   const { status, update } = useSession();
   const profile = getCategoryCustomDesignProfile(category);
   const [prompt, setPrompt] = useState("");
+  const [information, setInformation] = useState<{ dataUrl: string; name: string }[]>([]);
+  const [readingInformation, setReadingInformation] = useState(false);
+  const informationVersion = useRef(0);
   const [reference, setReference] = useState<{ dataUrl: string; name: string } | null>(null);
   const [referenceMode, setReferenceMode] = useState<"use" | "inspire">("use");
   const [candidate, setCandidate] = useState(initialPage || null);
@@ -59,6 +62,7 @@ export default function EventCustomThemeDialog({
     () => () => {
       request.current?.abort();
       reader.current?.abort();
+      informationVersion.current += 1;
     },
     [],
   );
@@ -70,14 +74,38 @@ export default function EventCustomThemeDialog({
     };
   }, []);
   useEffect(() => {
-    if (!prompt && !reference && !candidate) return;
+    if (!prompt && !reference && !candidate && !information.length) return;
     const warn = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = "";
     };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [prompt, reference, candidate]);
+  }, [prompt, reference, candidate, information]);
+  const chooseInformation = async (files: File[]) => {
+    // A newer selection or dialog unmount invalidates pending reads. Files stay in memory.
+    const version = ++informationVersion.current;
+    setError("");
+    if (!files.length) return;
+    if (files.length > 3 || files.some((file) => !["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > EVENT_DESIGN_REFERENCE_LIMIT)) {
+      setError("Choose up to three PNG, JPG or WebP files, up to 2 MB each.");
+      return;
+    }
+    setReadingInformation(true);
+    try {
+      const next = await Promise.all(files.map((file) => new Promise<{ dataUrl: string; name: string }>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => typeof reader.result === "string" ? resolve({ dataUrl: reader.result, name: file.name }) : reject(new Error("That file could not be read."));
+        reader.onerror = () => reject(new Error("That file could not be read. Try another."));
+        reader.readAsDataURL(file);
+      })));
+      if (informationVersion.current === version) setInformation(next);
+    } catch (failure) {
+      if (informationVersion.current === version) setError(failure instanceof Error ? failure.message : "The files could not be read.");
+    } finally {
+      if (informationVersion.current === version) setReadingInformation(false);
+    }
+  };
   const chooseImage = (file?: File) => {
     reader.current?.abort();
     setReading(false);
@@ -108,9 +136,9 @@ export default function EventCustomThemeDialog({
     next.readAsDataURL(file);
   };
   const generate = async () => {
-    if (request.current || reading) return;
+    if (request.current || reading || readingInformation) return;
     setError("");
-    if (prompt.trim().length < 5) {
+    if (prompt.trim().length < 5 && !information.length) {
       setError("Describe the design you have in mind.");
       return;
     }
@@ -129,7 +157,8 @@ export default function EventCustomThemeDialog({
         signal: controller.signal,
         body: JSON.stringify({
           category,
-          prompt,
+          prompt: prompt.trim() || "Create an event page from the attached event information.",
+          informationImages: information.map((file) => file.dataUrl),
           referenceImage: reference?.dataUrl,
           referenceImageMode: referenceMode,
           currentDesign: candidate?.design,
@@ -246,6 +275,16 @@ export default function EventCustomThemeDialog({
                     </p>
                   )}
                   <label className={styles.field}>
+                    Event information files (optional)
+                    <input type="file" multiple accept="image/png,image/jpeg,image/webp" disabled={busy || readingInformation} onChange={(event) => { void chooseInformation(Array.from(event.target.files || [])); event.target.value = ""; }} />
+                    <span className={styles.notice}>Upload photos of a flyer, schedule or printed document. Up to three JPG, PNG or WebP files, 2 MB each. We’ll read the details into your editable event page.</span>
+                  </label>
+                  {readingInformation && <p role="status">Reading files…</p>}
+                  {information.length > 0 && <div className={styles.notice}>
+                    <p>{information.map((file) => file.name).join(", ")}</p>
+                    <button type="button" className={styles.secondary} disabled={busy || readingInformation} onClick={() => setInformation([])}>Remove information files</button>
+                  </div>}
+                  <label className={styles.field}>
                     Reference image (optional)
                     <input
                       type="file"
@@ -344,7 +383,7 @@ export default function EventCustomThemeDialog({
                   <button
                     className={styles.primary}
                     type="button"
-                    disabled={busy || reading || status === "loading"}
+                    disabled={busy || reading || readingInformation || status === "loading"}
                     onClick={() => void generate()}
                   >
                     <Sparkles size={16} />

@@ -13,10 +13,6 @@ export default function GenderRevealGalleryHeader({ count }: { count: number }) 
         <h1 className="mt-5 text-4xl font-normal tracking-tight [font-family:var(--font-playfair),Georgia,serif] sm:text-5xl lg:text-6xl">
           Gender reveals
         </h1>
-        <p className="mt-4 max-w-2xl text-base leading-7 text-[#78647e]">
-          Make the moment yours. Choose a reveal design, add your party details, and invite everyone
-          to share the surprise.
-        </p>
       </div>
     </header>
   );

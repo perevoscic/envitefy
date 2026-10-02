@@ -17,9 +17,11 @@ const AuthModal = dynamic(() => import("@/components/auth/AuthModal"), { ssr: fa
 export default function CreateWithEnvitefyCallout({
   onClick,
   category,
+  onImport,
 }: {
   onClick: () => void;
   category: CustomDesignCategory;
+  onImport?: () => void;
 }) {
   const { status, update } = useSession();
   const [authOpen, setAuthOpen] = useState(false);
@@ -56,6 +58,7 @@ export default function CreateWithEnvitefyCallout({
             →
           </span>
         </button>
+        {onImport && <button type="button" onClick={onImport} disabled={!canCreate} className="mt-2 inline-flex min-h-11 items-center justify-center rounded-full border border-[#d7c6dc] px-5 py-2 text-sm font-semibold text-[#684675] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#684675]">Upload event information</button>}
         {status === "unauthenticated" && (
           <button
             type="button"

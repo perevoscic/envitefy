@@ -13,10 +13,6 @@ export default function BabyShowerGalleryHeader({ count }: { count: number }) {
         <h1 className="mt-5 text-4xl font-normal tracking-tight [font-family:var(--font-playfair),Georgia,serif] sm:text-5xl lg:text-6xl">
           Baby showers
         </h1>
-        <p className="mt-4 max-w-2xl text-base leading-7 text-[#68705e]">
-          A little one, a lot of love. Find your baby shower design, then add your celebration
-          details, registry, and RSVP.
-        </p>
       </div>
     </header>
   );

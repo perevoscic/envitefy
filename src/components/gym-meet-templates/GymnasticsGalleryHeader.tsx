@@ -13,10 +13,6 @@ export default function GymnasticsGalleryHeader({ count }: { count: number }) {
         <h1 className="mt-5 text-4xl font-normal tracking-tight [font-family:var(--font-playfair),Georgia,serif] sm:text-5xl lg:text-6xl">
           Gymnastics
         </h1>
-        <p className="mt-4 max-w-2xl text-base leading-7 text-[#716179]">
-          First, find your meet’s style. Then upload a packet, paste a meet link, or add your
-          details by hand. We’ll bring it all together in your chosen design.
-        </p>
       </div>
     </header>
   );

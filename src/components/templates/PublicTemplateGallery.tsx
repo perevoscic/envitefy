@@ -121,12 +121,12 @@ export default function PublicTemplateGallery({
             <Heading className="mt-3 font-serif text-4xl sm:text-5xl">
               {featured ? "Make it yours" : `${info.name} templates`}
             </Heading>
-            <p className="mt-4 text-sm text-[#746775]">
+            {featured && <p className="mt-4 text-sm text-[#746775]">
               {status === "authenticated"
                 ? "Save a private draft, then publish when ready."
                 : "Customize freely. An account is required to save and share."}
               {category === "signup-forms" && " Choose a design, then make it yours in the editor."}
-            </p>
+            </p>}
           </div>
           {featured && (
             <Link

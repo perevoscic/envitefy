@@ -349,6 +349,9 @@ test("generation validates category, reference mode, and bounded requests before
     { prompt: "x".repeat(12001) },
     { referenceImage: "http://localhost/private" },
     { referenceImageMode: "invalid" },
+    { informationImages: "invalid" },
+    { informationImages: ["https://example.com/document.jpg"] },
+    { informationImages: Array(4).fill("data:image/jpeg;base64,YQ==") },
     { currentDesign: design },
     { currentDetails: {} },
   ]) {
@@ -358,6 +361,7 @@ test("generation validates category, reference mode, and bounded requests before
     );
   }
   assert.equal(generation.parseEventThemeRequest(valid).category, "general");
+  assert.deepEqual(generation.parseEventThemeRequest({ ...valid, informationImages: ["data:image/jpeg;base64,YQ=="] }).informationImages, ["data:image/jpeg;base64,YQ=="]);
 });
 
 test("OpenAI design generation preserves category and supplied facts during visual refinement", async () => {
@@ -394,8 +398,9 @@ test("OpenAI design generation preserves category and supplied facts during visu
       },
     },
   });
-  generation.eventThemeGenerationDeps.render = async (prompt) => {
+  generation.eventThemeGenerationDeps.render = async (prompt, references) => {
     artworkRequest = prompt;
+    assert.equal(references, undefined, "Information documents must not become artwork references");
     renderCount++;
     return { ok: true, imageDataUrl: `data:image/webp;base64,${webp.toString("base64")}` };
   };
@@ -404,6 +409,7 @@ test("OpenAI design generation preserves category and supplied facts during visu
       {
         category,
         prompt: "Change to a watercolor design",
+        informationImages: [`data:image/webp;base64,${webp.toString("base64")}`],
         currentDesign: design,
         currentDetails: example().details,
         referenceImageMode: "inspire",
@@ -418,9 +424,11 @@ test("OpenAI design generation preserves category and supplied facts during visu
     assert.ok(artworkRequest.includes(guidance), category);
     assert.ok(artworkRequest.includes(JSON.stringify(design.colors)), "approved colors reach artwork");
     assert.ok(!JSON.stringify(requested).includes(profiles.getCategoryCustomDesignProfile(category).placeholder));
-    const brief = JSON.parse(requested.messages[1].content);
+    const brief = JSON.parse(requested.messages[1].content[0].text);
     assert.equal(brief.request, "Change to a watercolor design");
     assert.deepEqual(brief.currentDesign, design, "category defaults do not overwrite the current design");
+    assert.ok(requested.messages[1].content.some((part) => part.type === "image_url"));
+    assert.ok(requested.messages[1].content.some((part) => part.type === "text" && part.text.includes("Event information document")));
   }
   assert.equal(renderCount, Object.keys(custom.CUSTOM_EVENT_CATEGORIES).length);
   assert.equal(requested.response_format.json_schema.strict, true);
@@ -590,7 +598,7 @@ test("the generation endpoint requires auth, bounds media, throttles work, and n
     400,
   );
   assert.equal(
-    (await route.POST(request({ category: "general", prompt: "x".repeat(3_000_001) }))).status,
+    (await route.POST(request({ category: "general", prompt: "x".repeat(12_000_001) }))).status,
     413,
   );
   assert.equal(calls, 0);

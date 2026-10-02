@@ -33,6 +33,8 @@ export type EventThemeRequest = {
   currentDesign: EventCustomDesign | null;
   currentDetails?: CustomEventDetails;
   referenceImage?: string;
+  // Fact sources for the planner only; these must never become artwork references.
+  informationImages?: string[];
   referenceImageMode: "use" | "inspire";
 };
 export function parseEventThemeRequest(value: unknown): EventThemeRequest {
@@ -81,6 +83,15 @@ export function parseEventThemeRequest(value: unknown): EventThemeRequest {
     currentDesign,
     currentDetails,
     referenceImage: raw.referenceImage as string | undefined,
+    informationImages: raw.informationImages == null ? undefined : (() => {
+      if (!Array.isArray(raw.informationImages) || raw.informationImages.length > 3)
+        throw new EventThemeRequestError("Choose up to three event information images.");
+      return raw.informationImages.map((image) => {
+        if (typeof image !== "string" || image.length > Math.ceil(EVENT_DESIGN_REFERENCE_LIMIT * 4 / 3) + 100 || !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(image))
+          throw new EventThemeRequestError("Choose PNG, JPG or WebP information files smaller than 2 MB each.");
+        return image;
+      });
+    })(),
     referenceImageMode: raw.referenceImageMode === "inspire" ? "inspire" : "use",
   };
 }
@@ -164,6 +175,19 @@ export async function generateEventTheme(
   signal: AbortSignal,
 ): Promise<CustomEventPage> {
   const categoryGuidance = categoryCustomDesignGuidance(input.category);
+  // Decode and normalize document photos before sending them to the information reader.
+  const informationImages = await Promise.all((input.informationImages || []).map(async (url) => {
+    try {
+      const bytes = Buffer.from(url.split(",")[1], "base64");
+      if (bytes.length > EVENT_DESIGN_REFERENCE_LIMIT) throw new Error("Too large");
+      const source = sharp(bytes, { failOn: "warning", limitInputPixels: 16_000_000 });
+      const metadata = await source.metadata();
+      if (!metadata.width || !metadata.height || (metadata.pages || 1) !== 1 || !["png", "jpeg", "webp"].includes(metadata.format || "")) throw new Error("Invalid image");
+      return `data:image/png;base64,${(await source.rotate().png().toBuffer()).toString("base64")}`;
+    } catch {
+      throw new EventThemeRequestError("An event information file could not be read. Try another JPG, PNG or WebP.");
+    }
+  }));
   let reference: StudioResolvedSourceImage | undefined;
   if (input.referenceImage) {
     try {
@@ -211,16 +235,20 @@ ARTWORK: artworkPrompt under 2000 characters, describing the specific subject an
         },
         {
           role: "user",
-          content: reference
+          content: reference || informationImages.length
             ? [
                 { type: "text", text: brief },
-                {
-                  type: "image_url",
+                ...(informationImages.flatMap((url) => [
+                  { type: "text" as const, text: "Event information document: extract all legible event facts, schedules and instructions into editable fields and sections. Do not use this document as artwork. Do not guess unreadable text." },
+                  { type: "image_url" as const, image_url: { url, detail: "high" as const } },
+                ])),
+                ...(reference ? [{
+                  type: "image_url" as const,
                   image_url: {
                     url: `data:${reference.mimeType};base64,${reference.data}`,
-                    detail: "high",
+                    detail: "high" as const,
                   },
-                },
+                }] : []),
               ]
             : brief,
         },

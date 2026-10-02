@@ -26,11 +26,6 @@ export default function BirthdayGalleryHero() {
             Find a design that feels like the
             <span className="mt-1 block italic text-[#9b5268]">celebration</span>
           </h1>
-          <p className="mt-6 max-w-[610px] text-sm font-light leading-6 text-[#695660] sm:text-base sm:leading-7 lg:text-lg lg:leading-8">
-            Explore playful kids parties, creative workshops, and grown-up celebrations.
-            Choose a design inspired by what they love, then make it their own with
-            photos, party details, and a personal invitation.
-          </p>
         </div>
 
 
