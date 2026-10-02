@@ -32,10 +32,19 @@ createRoot(document.getElementById("root")!).render(<main>
 const styles = new Map();
 const mocks = {
   "@/components/UnsavedProgressProvider": `
+    export default function Provider({children}) {return children;}
+    export function useEventProgress(progress) {return useUnsavedProgress(progress);}
+    export function useProgressNavigation() {return {allowNavigation(fn) {fn();}};}
     export function useUnsavedProgress(progress) { window.editorProgress = progress; return {allowNavigation(fn) {fn();}}; }
   `,
   "@/utils/media-upload-client": `
-    export async function persistImageMediaValue({value}) { (window.imageUploads ||= []).push(value); return "https://example.com/replacement.webp"; }
+    export function validateClientUploadFile() {return null;}
+    export function createObjectUrlPreview() {return null;}
+    export function revokeObjectUrl() {}
+    export function getUploadAcceptAttribute() {return "image/*";}
+    export function mergeUploadedEventMedia(value) {return value;}
+    export async function uploadMediaFile() {throw new Error("Unexpected fixture upload");}
+    export async function persistImageMediaValue({value}) { if (!value.startsWith("data:")) return value; (window.imageUploads ||= []).push(value); return "/api/blob/event-media/replacement.webp"; }
   `,
   "next/navigation": `
     export function usePathname() { return location.pathname; }
@@ -83,6 +92,7 @@ const result = await Bun.build({
     {
       name: "category-fixture",
       setup(builder) {
+        builder.onResolve({ filter: /^\.\.\/src\/utils\/media-upload-client$/, namespace: "fixture" }, () => ({path: path.resolve("src/utils/media-upload-client.ts"), namespace: "file"}));
         builder.onLoad({ filter: /\.module\.css$/ }, async ({ path: filename }) => {
           const css = transform({ filename, code: await fs.readFile(filename), cssModules: true });
           styles.set(filename, css.code.toString());
@@ -90,6 +100,10 @@ const result = await Bun.build({
             loader: "js",
             contents: `export default ${JSON.stringify(Object.fromEntries(Object.entries(css.exports).map(([key, value]) => [key, value.name])))};`,
           };
+        });
+        builder.onLoad({ filter: /\.css$/ }, async ({ path: filename }) => {
+          styles.set(filename, await fs.readFile(filename, "utf8"));
+          return { loader: "js", contents: "export default {};" };
         });
         for (const name of Object.keys(mocks)) {
           builder.onResolve(
@@ -100,6 +114,7 @@ const result = await Bun.build({
         builder.onLoad({ filter: /.*/, namespace: "fixture" }, ({ path: name }) => ({
           loader: "tsx",
           contents: mocks[name],
+          resolveDir: path.resolve("scripts"),
         }));
       },
     },

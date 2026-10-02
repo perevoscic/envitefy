@@ -3,6 +3,9 @@ import {
   type CustomEventPage,
   customEventPageData,
   normalizeCustomEventPage,
+  normalizeEventCustomDesign,
+  normalizeCustomEventDetails,
+  customEventCategory,
   EVENT_DETAIL_FIELDS,
   safeEventLink,
 } from "./event-custom-design";
@@ -74,7 +77,17 @@ export async function saveCustomEventPage({
   const errors = customEventFieldErrors(page, status === "published");
   if (Object.keys(errors).length) throw new Error(Object.values(errors).join(" "));
   const valid = normalizeCustomEventPage(withCustomEventTimezone(page));
-  if (!valid) throw new Error("Check your event details and design, then try again.");
+  if (!valid) {
+    if (page.version !== 1 || !customEventCategory(page.category))
+      throw new Error("This event page format could not be read. Return to Templates and reopen the page.");
+    if (!normalizeEventCustomDesign(page.design))
+      throw new Error("The page design could not be read. Open Edit details & design and choose Redesign with Envitefy.");
+    if (!normalizeCustomEventDetails(page.details))
+      throw new Error("The event details could not be read. Open Edit details & design and check the date, time, time zone, sections and registry links.");
+    if (page.artwork.length > 12_000_000)
+      throw new Error("The hero image is too large to save. Use Replace hero image to choose a smaller image.");
+    throw new Error("The hero image is not in a supported save format. Open Edit details & design and use Replace hero image or Redesign with Envitefy.");
+  }
   if (status === "published") {
     if (
       !valid.details.title ||

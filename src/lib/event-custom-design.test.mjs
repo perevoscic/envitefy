@@ -699,3 +699,35 @@ test("the generation endpoint requires auth, bounds media, throttles work, and n
   const source = readFileSync("src/app/api/event-themes/generate/route.ts", "utf8");
   assert.doesNotMatch(source, /insertEventHistory|writeTemplateDraft|\/api\/history/);
 });
+
+
+test("stored same-origin hero paths remain valid when saving or publishing again", async (t) => {
+  const proxy = "/api/blob/event-media/test-event/display.webp";
+  const page = {...example(), artwork: proxy};
+  assert.ok(custom.normalizeCustomEventPage(page));
+  for (const artwork of ["/api/blob/../../outside.webp", "/api/blob/", "//external.test/hero.webp"])
+    assert.equal(custom.normalizeCustomEventPage({...page, artwork}), null);
+  const writes = [];
+  t.mock.method(globalThis, "fetch", async (_url, init) => {
+    writes.push(JSON.parse(init.body));
+    return {ok: true, json: async () => ({id: "saved-event"})};
+  });
+  const previousWindow = globalThis.window;
+  globalThis.window = {dispatchEvent() {}};
+  t.after(() => {if (previousWindow === undefined) delete globalThis.window; else globalThis.window = previousWindow;});
+  const {saveCustomEventPage} = loader({"@/utils/media-upload-client": {persistImageMediaValue: async ({value}) => value}})("src/lib/event-custom-save.ts");
+  for (const status of ["draft", "published"]) {
+    const result = await saveCustomEventPage({page, status, eventId: "saved-event", clientDraftId: "local-id"});
+    assert.equal(result.page.artwork, proxy);
+    assert.deepEqual(result.page.details, page.details);
+  }
+  assert.equal(writes.length, 2);
+});
+
+test("save failures identify design and artwork validation without uploading", async () => {
+  const {saveCustomEventPage} = loader({"@/utils/media-upload-client": {persistImageMediaValue: async () => {throw new Error("Must not upload");}}})("src/lib/event-custom-save.ts");
+  for (const [patch, message] of [
+    [{design: {...design, font: "unsupported"}}, /page design could not be read/],
+    [{artwork: "data:image/jpeg;base64,YQ=="}, /hero image is not in a supported save format/],
+  ]) await assert.rejects(saveCustomEventPage({page: {...example(), ...patch}, status: "draft", clientDraftId: "local-id"}), message);
+});

@@ -257,6 +257,15 @@ export function normalizeCustomEventDetails(value: unknown): CustomEventDetails 
   }
   return details;
 }
+function isStoredEventArtworkPath(value: string): boolean {
+  if (!value.startsWith("/api/blob/")) return false;
+  try {
+    const url = new URL(value, "https://envitefy.com");
+    return url.origin === "https://envitefy.com" && url.pathname.startsWith("/api/blob/") && url.pathname.length > "/api/blob/".length;
+  } catch {
+    return false;
+  }
+}
 export function normalizeCustomEventPage(value: unknown): CustomEventPage | null {
   const raw = record(value);
   const category = customEventCategory(raw?.category);
@@ -272,6 +281,7 @@ export function normalizeCustomEventPage(value: unknown): CustomEventPage | null
     !(
       /^data:image\/webp;base64,[A-Za-z0-9+/=]+$/.test(raw.artwork) ||
       /^\/templates\/[\w/.-]+\.webp$/.test(raw.artwork) ||
+      isStoredEventArtworkPath(raw.artwork) ||
       safeEventLink(raw.artwork)
     )
   )

@@ -7,7 +7,7 @@ import { chromium } from "playwright";
 import sharp from "sharp";
 
 test("custom Event Page hero replacement stays local until explicit save on desktop and mobile", { timeout: 120000 }, async () => {
-  execFileSync(process.env.BUN_EXECUTABLE || "bun", ["scripts/build-category-custom-design-fixture.mjs"], { stdio: "pipe" });
+  execFileSync(process.env.BUN_EXECUTABLE || (process.platform === "win32" ? path.join(process.env.APPDATA, "npm/node_modules/bun/bin/bun.exe") : "bun"), ["scripts/build-category-custom-design-fixture.mjs"], { stdio: "pipe" });
   const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH });
   try {
     const initialImage = await sharp({ create: { width: 120, height: 80, channels: 3, background: "green" } }).webp().toBuffer();
@@ -26,7 +26,7 @@ test("custom Event Page hero replacement stays local until explicit save on desk
       await page.route("**/*", async (route) => {
         const request = route.request(), url = new URL(request.url());
         if (url.origin !== "http://localhost:43130") return route.abort();
-        if (request.method() === "POST") {
+        if (["POST", "PATCH"].includes(request.method())) {
           const body = request.postDataJSON();
           if (url.pathname === "/api/event-themes/generate") {
             assert.equal(body.mode, "wording");
@@ -38,6 +38,7 @@ test("custom Event Page hero replacement stays local until explicit save on desk
         if (["/entry.js", "/entry.css", "/global.css"].includes(url.pathname)) {
           return route.fulfill({ contentType: url.pathname.endsWith(".js") ? "text/javascript" : "text/css", body: await fs.readFile(path.resolve("output/category-custom-design", url.pathname.slice(1))) });
         }
+        if (url.pathname.startsWith("/api/blob/")) return route.fulfill({contentType: "image/webp", body: await sharp(replacement).webp().toBuffer()});
         if (url.pathname.startsWith("/fonts/")) return route.fulfill({ status: 404 });
         return route.fulfill({ contentType: "text/html", body: '<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hero replacement check</title><link rel="stylesheet" href="/global.css"><link rel="stylesheet" href="/entry.css"></head><body style="margin:0"><div id="root"></div><script type="module" src="/entry.js"></script></body></html>' });
       });
@@ -68,10 +69,14 @@ test("custom Event Page hero replacement stays local until explicit save on desk
       await page.getByRole("button", { name: "Save draft", exact: true }).click();
       await page.getByRole("status").filter({ hasText: "Draft saved." }).waitFor();
       assert.equal(writes.length, 1);
-      assert.equal(writes[0].data.customEventPage.artwork, "https://example.com/replacement.webp");
+      assert.equal(writes[0].data.customEventPage.artwork, "/api/blob/event-media/replacement.webp");
       assert.deepEqual(writes[0].data.customEventPage.details, initial.details);
       assert.deepEqual(await page.evaluate(() => window.imageUploads), [selected]);
       assert.equal(await page.evaluate(() => window.editorProgress.dirty), false);
+      await page.getByRole("button", {name: "Save draft", exact: true}).click();
+      await page.waitForFunction(() => !window.editorProgress.busy);
+      assert.equal(writes.length, 2, "A previously saved relative hero URL can be saved again");
+      assert.deepEqual(await page.evaluate(() => window.imageUploads), [selected]);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
       await page.screenshot({ path: `output/category-custom-design/hero-replacement-${width}.png`, fullPage: true });
       assert.deepEqual(errors, []);
