@@ -10,6 +10,8 @@ import DesignGenerationProgress from "@/app/live-cards/DesignGenerationProgress"
 const EventCustomThemeDialog = dynamic(() => import("./custom/EventCustomThemeDialog"), {
   ssr: false,
 });
+const AuthModal = dynamic(() => import("@/components/auth/AuthModal"), { ssr: false });
+class UploadSignInRequired extends Error {}
 
 export default function EventCustomThemeLauncher({
   category,
@@ -20,7 +22,11 @@ export default function EventCustomThemeLauncher({
 }) {
   const router = useRouter();
   const search = useSearchParams();
-  const { status } = useSession();
+  const { status, update } = useSession();
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const pendingFiles = useRef<File[]>([]);
+  const resumeUpload = useRef(false);
   const [open, setOpen] = useState(search?.get("customTheme") === "1");
   const picker = useRef<HTMLInputElement>(null);
   const request = useRef<AbortController | null>(null);
@@ -32,6 +38,8 @@ export default function EventCustomThemeLauncher({
   const key = customEventCategory(category);
   const importInformation = async (files: File[]) => {
     if (!key || (!files.length && !imported.current) || request.current) return;
+    pendingFiles.current = files;
+    if (status !== "authenticated") { setAuthOpen(true); return; }
     setError("");
     if (files.length > 3 || files.some((file) => !["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > EVENT_DESIGN_REFERENCE_LIMIT)) {
       setError("Choose up to three JPG, PNG or WebP images, up to 2 MB each.");
@@ -49,6 +57,7 @@ export default function EventCustomThemeLauncher({
           body: JSON.stringify(body),
         });
         const result = await response.json();
+        if (response.status === 401) throw new UploadSignInRequired();
         if (response.status !== 429 || result.code !== "THEME_IN_PROGRESS") return { response, result };
         if (Date.now() >= deadline) throw new Error("The previous creation is taking longer than expected. Your uploaded details are kept here. Please retry shortly.");
         await new Promise<void>((resolve, reject) => {
@@ -96,11 +105,22 @@ export default function EventCustomThemeLauncher({
         router.push(`/event/design/customize?category=${key}&themePreview=${encodeURIComponent(token)}&ready=1`);
       }
     } catch (failure) {
-      if (!controller.signal.aborted) setError(failure instanceof Error ? failure.message : "Please retry the upload.");
+      if (!controller.signal.aborted) {
+        if (failure instanceof UploadSignInRequired) {
+          pendingFiles.current = imported.current ? [] : files;
+          setAuthOpen(true);
+        } else setError(failure instanceof Error ? failure.message : "Please retry the upload.");
+      }
     } finally {
       if (request.current === controller) { request.current = null; setImporting(false); }
     }
   };
+  useEffect(() => {
+    if (status === "authenticated" && resumeUpload.current && !authOpen) {
+      resumeUpload.current = false;
+      void importInformation(pendingFiles.current);
+    }
+  }, [status, authOpen]);
   if (!key) return null;
   return (
     <div className={contained ? "my-4 sm:my-8" : "mx-auto max-w-[1500px] px-5 py-4 sm:px-8 sm:py-8 lg:px-12"}>
@@ -108,6 +128,7 @@ export default function EventCustomThemeLauncher({
       <input ref={picker} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" aria-label="Upload event information images" onChange={(event) => { const files = Array.from(event.target.files || []); event.target.value = ""; void importInformation(files); }} />
       {importing && <div className="mt-4" aria-busy="true"><DesignGenerationProgress stage="generating" title="Creating your event page" description="Your event details, theme and artwork are coming together." statusText={stage} /><button type="button" className="mt-3 min-h-11 rounded-full border px-4 text-sm" onClick={() => request.current?.abort()}>Cancel</button></div>}
       {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
+      {authOpen && <AuthModal open mode={authMode} onModeChange={setAuthMode} onClose={() => setAuthOpen(false)} allowGoogleAuth={false} description="Sign in to continue. Your uploaded event information is kept here." onAuthenticated={async () => { await update(); resumeUpload.current = true; setAuthOpen(false); }} />}
       {imported.current && !importing && <button type="button" className="mt-2 min-h-11 rounded-full border px-4 text-sm" onClick={() => void importInformation([])}>{error ? "Retry creating event page" : "Continue creating event page"}</button>}
       {open && status === "authenticated" && (
         <EventCustomThemeDialog

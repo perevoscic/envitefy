@@ -22,12 +22,15 @@ const json = (body: object, status = 200, headers: Record<string, string> = {}) 
 export async function POST(request: Request) {
   if (request.headers.get("sec-fetch-site") === "cross-site")
     return json({ error: "Open Envitefy to create your theme." }, 403);
-  const userId = await resolveSessionUserId(await getServerSession(authOptions));
-  if (!userId)
+  const session = await getServerSession(authOptions);
+  if (!session?.user)
     return json(
       { error: "Sign in to generate a custom theme. Your idea stays in the editor." },
       401,
     );
+  const userId = await resolveSessionUserId(session);
+  if (!userId)
+    return json({ error: "We couldn't verify your account right now. Your upload is kept here. Please try again shortly." }, 503);
   if (!request.headers.get("content-type")?.startsWith("application/json"))
     return json({ error: "Send a theme description." }, 415);
   if (!process.env.OPENAI_API_KEY)
