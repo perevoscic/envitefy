@@ -178,7 +178,7 @@ test("generated lettering requires verification, preserves exact text, and retur
       status = value;
       await assert.rejects(generateCardHeadline(form, design), (error: unknown) => {
         const response = liveCardGenerationErrorResponse(error, "lettering");
-        assert.match(response.error, value === "failed" ? /tried correcting it once/ : /check is temporarily unavailable/);
+        assert.match(response.error, value === "failed" ? /artwork and event details are preserved/ : /check is temporarily unavailable/);
         assert.equal(response.code, value === "failed" ? "quality_rejected" : "verification_unavailable");
         assert.equal(response.retryable, true);
         return true;
@@ -202,6 +202,7 @@ test("failed lettering is repaired once against the original background and veri
   let generated = 0;
   let checked = 0;
   let encoded = 0;
+  let repairs = 0;
   headlineGenerationDeps.references = async () => [reference];
   headlineGenerationDeps.generate = async (prompt, references) => {
     generated++;
@@ -213,23 +214,27 @@ test("failed lettering is repaired once against the original background and veri
     }
     return { ok: true, imageDataUrl: `data:image/png;base64,${image.toString("base64")}`, warnings: [] };
   };
-  headlineGenerationDeps.verify = async () => ++checked === 1
+  headlineGenerationDeps.verify = async (_image, _event, _product, context) => {
+    assert.equal(context?.letteringOnly, true);
+    return ++checked === 1
     ? { status: "failed", issues: ["missing_copy"], repairInstructions: ["Restore the missing second Home"] }
     : { status: "passed", issues: [] };
+  };
   headlineGenerationDeps.encode = async (buffer) => { encoded++; return sharp(buffer).webp().toBuffer(); };
   try {
-    const result = await generateCardHeadline(form, design);
+    const result = await generateCardHeadline(form, design, undefined, () => { repairs++; });
     assert.equal(result.title, form.title);
     assert.match(result.imageUrl, /^data:image\/webp;base64,/);
     assert.equal(generated, 2);
     assert.equal(checked, 2);
     assert.equal(encoded, 1);
+    assert.equal(repairs, 1, "report correction only when the bounded repair starts");
     for (const status of ["failed", "unavailable"] as const) {
       generated = checked = encoded = 0;
       headlineGenerationDeps.verify = async () => ++checked === 1
         ? { status: "failed", issues: ["missing_copy"], repairInstructions: ["Restore the missing second Home"] }
         : { status, issues: status === "failed" ? ["missing_copy"] : [] };
-      await assert.rejects(generateCardHeadline(form, design), status === "failed" ? /missing, extra or unreadable words/ : /check is temporarily unavailable/);
+      await assert.rejects(generateCardHeadline(form, design), status === "failed" ? /artwork and event details are preserved/ : /check is temporarily unavailable/);
       assert.equal(generated, 2, "never attempt a third image");
       assert.equal(encoded, 0, "a rejected or unverified repair is never exported");
     }

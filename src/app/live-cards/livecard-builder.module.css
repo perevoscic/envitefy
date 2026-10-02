@@ -1054,6 +1054,22 @@
   margin-top: 10px;
   font-size: 13px;
 }
+.letteringRetry {
+  padding: 18px;
+  margin-top: 16px;
+  border: 1px solid #ded4e9;
+  border-radius: 16px;
+  background: #faf7ff;
+  color: #302441;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.letteringRetry p {
+  margin: 6px 0 14px;
+}
+.letteringRetry button {
+  margin: 0 8px 8px 0;
+}
 .preparation {
   margin-top: 16px;
   padding: 16px;

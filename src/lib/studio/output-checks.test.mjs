@@ -6,7 +6,7 @@ const event = { title: "Livia is turning 10", category: "Birthday", links: [] };
 const context = { imageEdit: { sourceImageDataUrl: "data:image/png;base64,c291cmNl", editInstruction: "NO band memebrer, maket erhe text to bu cursvie in Livia is trunin 10" } };
 test.afterEach(() => mock.restoreAll());
 
-async function check(requestedChangesApplied, inspect = () => {}) {
+async function check(requestedChangesApplied, inspect = () => {}, verificationContext = context) {
   const savedKey = process.env.OPENAI_API_KEY;
   process.env.OPENAI_API_KEY = "test-key";
   mock.method(artworkCheckDeps, "resolveStudioSourceImage", async () => ({ mimeType: "image/png", data: "c291cmNl" }));
@@ -14,7 +14,7 @@ async function check(requestedChangesApplied, inspect = () => {}) {
     inspect(request);
     return { choices: [{ finish_reason: "stop", message: { content: JSON.stringify({ visibleText: ["Livia is turning 10"], issues: [], repairInstructions: [], requestedChangesApplied }) } }] };
   } } } }));
-  try { return await verifyStudioArtwork("data:image/png;base64,cmVzdWx0", event, "live_card", context); }
+  try { return await verifyStudioArtwork("data:image/png;base64,cmVzdWx0", event, "live_card", verificationContext); }
   finally {
     if (savedKey === undefined) delete process.env.OPENAI_API_KEY;
     else process.env.OPENAI_API_KEY = savedKey;
@@ -36,4 +36,18 @@ test("readable artwork still fails when the requested subject removal or cursive
 
 test("an edit with every requested visual change applied can pass", async () => {
   assert.deepEqual(await check(true), { status: "passed", issues: [], repairInstructions: [] });
+});
+
+test("lettering checks require concrete obstruction evidence and preserve approved background objects", async () => {
+  const result = await check(true, (request) => {
+    const input = JSON.parse(request.messages[1].content[0].text);
+    assert.equal(input.contract.width, 1024);
+    assert.equal(input.contract.height, 1536);
+    assert.equal(input.contract.safeMargin, undefined);
+    assert.match(input.contract.description, /composition targets, not clipping boundaries/);
+    assert.match(request.messages[0].content, /name the exact affected word or face/);
+    assert.match(request.messages[0].content, /Never report hypothetical overlap/);
+    assert.match(request.messages[0].content, /do not reject unchanged background composition/);
+  }, { letteringOnly: true, references: [{ mimeType: "image/png", data: "c291cmNl" }] });
+  assert.equal(result.status, "passed");
 });

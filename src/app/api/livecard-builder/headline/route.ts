@@ -26,6 +26,27 @@ export async function POST(request: Request) {
       { error: "Add a title and create your design first." },
       { status: 400 },
     );
+  if (request.headers.get("accept")?.includes("application/x-ndjson")) {
+    const encoder = new TextEncoder();
+    let cancelled = false;
+    const stream = new ReadableStream({
+      async start(controller) {
+        const send = (value: unknown) => {
+          if (!cancelled && !request.signal.aborted) controller.enqueue(encoder.encode(`${JSON.stringify(value)}\n`));
+        };
+        try {
+          const headline = await generateCardHeadline(form, design, request.signal, () => send({ stage: "lettering_repair" }));
+          send({ headline });
+        } catch (error) {
+          send(liveCardGenerationErrorResponse(error, "lettering"));
+        } finally {
+          if (!cancelled) controller.close();
+        }
+      },
+      cancel() { cancelled = true; },
+    });
+    return new Response(stream, { headers: { "Content-Type": "application/x-ndjson", "Cache-Control": "no-store" } });
+  }
   try {
     return NextResponse.json(
       { headline: await generateCardHeadline(form, design, request.signal) },

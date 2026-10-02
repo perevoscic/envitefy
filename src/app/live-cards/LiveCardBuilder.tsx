@@ -185,7 +185,7 @@ const FIELD_LABELS: Partial<Record<keyof LiveCardForm, string>> = {
 };
 type BuilderStep = 1 | 2 | 3;
 type DetailTab = (typeof DETAIL_TABS)[number];
-type PreparationIssue = { stage: "locations" | "wording" | "lettering"; message: string; retryable: boolean };
+type PreparationIssue = { stage: "locations" | "wording" | "lettering"; message: string; retryable: boolean; code?: string };
 export default function LiveCardBuilder({ initialEventId }: { initialEventId: string | null }) {
   const [form, setForm] = useState(createLiveCardForm);
   const [artwork, setArtwork] = useState<LiveCardArtwork | null>(null);
@@ -373,9 +373,9 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     setError(message);
   }
 
-  function failPreparation(message: string, retryable = true): false {
+  function failPreparation(message: string, retryable = true, code?: string): false {
     preparationFailure.current = message;
-    setPreparationIssue({ stage: preparationStage.current, message, retryable });
+    setPreparationIssue({ stage: preparationStage.current, message, retryable, code });
     setError(message);
     return false;
   }
@@ -490,11 +490,35 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     try {
       const response = await fetch("/api/livecard-builder/headline", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Accept: "application/x-ndjson" },
         signal,
         body: JSON.stringify({ form: before.form, design }),
       });
-      const result = asRecord(await response.json());
+      let result: Record<string, unknown> = {};
+      if (response.headers.get("content-type")?.includes("application/x-ndjson") && response.body) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffered = "";
+        try {
+          while (true) {
+            const chunk = await reader.read();
+            buffered += decoder.decode(chunk.value, { stream: !chunk.done });
+            const lines = buffered.split("\n");
+            buffered = lines.pop() || "";
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              const message = asRecord(JSON.parse(line));
+              if (message.stage === "lettering_repair" && isCurrentPreparation(signal)) setPublishStage("lettering_repair");
+              if (message.headline || message.error) result = message;
+            }
+            if (chunk.done) break;
+          }
+        } finally {
+          reader.releaseLock();
+        }
+      } else {
+        result = asRecord(await response.json());
+      }
       const updated = readSharedCardDesign({ ...design, headline: result.headline });
       if (!response.ok || !updated?.headline)
         throw readLiveCardGenerationFailure(result, "lettering", "The title artwork could not be prepared. Select Review to retry.");
@@ -530,6 +554,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
             ? failure.message
             : "The title artwork could not be prepared. Select Review to retry.",
           !(failure instanceof LiveCardGenerationFailure) || failure.retryable,
+          failure instanceof LiveCardGenerationFailure ? failure.code : undefined,
         );
       return false;
     } finally {
@@ -1195,12 +1220,22 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       <button type="button" className={styles.secondary} onClick={cancelPreparation}>Cancel and keep editing</button>
     </section>
   ) : preparationIssue ? (
-    <div className={styles.generationError}>
-      <p role="alert">{preparationIssue.message}</p>
+    <div className={preparationIssue.stage === "lettering" ? styles.letteringRetry : styles.generationError}>
+      <div role="alert">
+        {preparationIssue.stage === "lettering" && <strong>{preparationIssue.code === "verification_unavailable"
+          ? "We couldn’t check your lettering yet"
+          : preparationIssue.code === "quality_rejected" ? "Your title needs another pass" : "We couldn’t finish your lettering"}</strong>}
+        <p>{preparationIssue.message}</p>
+      </div>
       {preparationIssue.retryable && preparationIssue.stage !== "locations" && (
         <button type="button" className={styles.secondary} disabled={working || generation !== null}
           onClick={() => preparationSurface.current === "preview" ? void openPreview() : void goToStep(3)}>
-          {preparationIssue.stage === "lettering" ? "Retry lettering" : "Retry wording"}
+          {preparationIssue.stage === "lettering" ? "Try lettering again" : "Retry wording"}
+        </button>
+      )}
+      {preparationIssue.stage === "lettering" && (
+        <button type="button" className={styles.secondary} onClick={() => { setPreparationIssue(null); setError(""); }}>
+          Keep editing
         </button>
       )}
     </div>
