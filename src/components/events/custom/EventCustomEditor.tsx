@@ -29,6 +29,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
   const editId = search?.get("edit") || undefined;
   const category = customEventCategory(search?.get("category")) || "general";
   const token = search?.get("themePreview");
+  const [editing, setEditing] = useState(search?.get("ready") !== "1");
   const [page, setPage] = useState<CustomEventPage | null>(null);
   const [baseline, setBaseline] = useState("");
   const [busy, setBusy] = useState(false);
@@ -36,6 +37,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
   const [validationMode, setValidationMode] = useState<"draft" | "published" | null>(null);
   const fieldErrors = page && validationMode ? customEventFieldErrors(page, validationMode === "published") : {};
   const focusField = (key: string) => {
+    setEditing(true);
     setPreviewOnly(false);
     requestAnimationFrame(() => {
       const field = document.getElementById(`event-field-${key}`);
@@ -302,6 +304,9 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
           <h1>Your event page</h1>
         </div>
         <div>
+          <button type="button" className={styles.secondary} disabled={busy} aria-pressed={editing} onClick={() => setEditing((value) => !value)}>
+            {editing ? "View event page" : "Edit details & design"}
+          </button>
           <button
             className={styles.secondary}
             type="button"
@@ -360,8 +365,8 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
         </dialog>
       )}
       {(
-        <div className={styles.workspace}>
-          <fieldset disabled={busy} className={styles.controls}>
+        <div className={styles.workspace} style={editing ? undefined : { gridTemplateColumns: "minmax(0, 1fr)" }}>
+          <fieldset disabled={busy} className={styles.controls} hidden={!editing} style={editing ? undefined : { display: "none" }}>
             <h2>Event details</h2>
             {field("title", "Event title")}
             {field("description", "Welcome & overview")}

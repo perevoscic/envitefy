@@ -52,11 +52,7 @@ export default function EventDesignGallery<Design extends EventGalleryDesign>({
       {header}
       <EventCustomThemeLauncher category={category} />
       <section aria-label="Filter designs" className="border-b border-[#e8dfe5] px-5 py-5 sm:px-8 lg:px-12">
-        <div className="mx-auto flex max-w-[1500px] flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p aria-live="polite" className="text-sm font-semibold">{filtered.length} {filtered.length === 1 ? "design" : "designs"}</p>
-            <p className="mt-1 text-xs text-[#746775]">Choose a template, add your details, and make it yours.</p>
-          </div>
+        <div className="mx-auto max-w-[1500px]">
           <div className="grid min-w-0 grid-cols-2 gap-3 sm:flex sm:flex-row sm:flex-wrap">
             <label className="relative col-span-2 block">
               <span className="sr-only">Search designs</span>

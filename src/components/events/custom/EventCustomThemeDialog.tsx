@@ -25,18 +25,20 @@ export default function EventCustomThemeDialog({
   category,
   initialPage,
   initialMessage,
+  initialPrompt = "",
   onClose,
   onUseDesign,
 }: {
   category: CustomEventCategory;
   initialPage?: CustomEventPage;
   initialMessage?: string;
+  initialPrompt?: string;
   onClose: () => void;
   onUseDesign: (page: CustomEventPage) => void;
 }) {
   const { status, update } = useSession();
   const profile = getCategoryCustomDesignProfile(category);
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt] = useState(initialPrompt);
   const [information, setInformation] = useState<{ dataUrl: string; name: string }[]>([]);
   const [readingInformation, setReadingInformation] = useState(false);
   const informationVersion = useRef(0);

@@ -18,15 +18,17 @@ export default function CreateWithEnvitefyCallout({
   onClick,
   category,
   onImport,
+  busy = false,
 }: {
   onClick: () => void;
   category: CustomDesignCategory;
   onImport?: () => void;
+  busy?: boolean;
 }) {
   const { status, update } = useSession();
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const canCreate = status === "authenticated";
+  const canCreate = status === "authenticated" && !busy;
   const profile = getCategoryCustomDesignProfile(category);
   return (
     <div

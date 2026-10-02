@@ -210,9 +210,6 @@ export default function PublicTemplateGallery({
                 </select>
               </label>
             ))}
-            <p aria-live="polite" className="text-sm text-[#746775]">
-              {filtered.length} {filtered.length === 1 ? "template" : "templates"}
-            </p>
           </div>
         )}
         <TemplateMasonryGrid>

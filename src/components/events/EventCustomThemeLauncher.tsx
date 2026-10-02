@@ -9,7 +9,6 @@ import CreateWithEnvitefyCallout from "./CreateWithEnvitefyCallout";
 const EventCustomThemeDialog = dynamic(() => import("./custom/EventCustomThemeDialog"), {
   ssr: false,
 });
-const EventCustomEditor = dynamic(() => import("./custom/EventCustomEditor"), { ssr: false });
 
 export default function EventCustomThemeLauncher({
   category,
@@ -24,13 +23,14 @@ export default function EventCustomThemeLauncher({
   const [open, setOpen] = useState(search?.get("customTheme") === "1");
   const picker = useRef<HTMLInputElement>(null);
   const request = useRef<AbortController | null>(null);
-  const [imported, setImported] = useState<CustomEventPage | null>(null);
+  const imported = useRef<CustomEventPage | null>(null);
   const [importing, setImporting] = useState(false);
+  const [stage, setStage] = useState("");
   const [error, setError] = useState("");
   useEffect(() => () => request.current?.abort(), []);
   const key = customEventCategory(category);
   const importInformation = async (files: File[]) => {
-    if (!key || !files.length || request.current) return;
+    if (!key || (!files.length && !imported.current) || request.current) return;
     setError("");
     if (files.length > 3 || files.some((file) => !["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > EVENT_DESIGN_REFERENCE_LIMIT)) {
       setError("Choose up to three JPG, PNG or WebP images, up to 2 MB each.");
@@ -40,6 +40,9 @@ export default function EventCustomThemeLauncher({
     request.current = controller;
     setImporting(true);
     try {
+      if (files.length) {
+      imported.current = null;
+      setStage("Reading your event information…");
       const images = await Promise.all(files.map((file) => new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("That image could not be read."));
@@ -56,7 +59,32 @@ export default function EventCustomThemeLauncher({
       if (!response.ok) throw new Error(result.error || "The event information could not be read. Please retry.");
       const page = normalizeCustomEventPage(result);
       if (!page || page.category !== key) throw new Error("The event information could not be read. Please retry.");
-      if (!controller.signal.aborted) setImported(page);
+      if (controller.signal.aborted) return;
+      imported.current = page;
+      }
+      const extracted = imported.current;
+      if (!extracted || controller.signal.aborted) return;
+      setStage("Creating your event page and theme…");
+      const response = await fetch("/api/event-themes/generate", {
+        method: "POST", credentials: "include", signal: controller.signal,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "design", category: key,
+          prompt: "Create a complete, polished event page with a distinctive theme and artwork based on the supplied event title, description, activities and sections. Choose the layout, typography and palette automatically to suit this event. Preserve every supplied fact and section; do not invent missing event information.",
+          currentDesign: extracted.design, currentDetails: extracted.details,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Your event theme could not be created. Retry to continue with your uploaded details.");
+      const generated = normalizeCustomEventPage(result);
+      if (!generated || generated.category !== key) throw new Error("Your event theme could not be read. Retry to continue with your uploaded details.");
+      if (!controller.signal.aborted) {
+        const selectedDate = search?.get("d");
+        const details = selectedDate && !extracted.details.date && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)
+          ? { ...extracted.details, date: selectedDate } : extracted.details;
+        const token = stageCustomEventPage({ ...generated, details });
+        router.push(`/event/design/customize?category=${key}&themePreview=${encodeURIComponent(token)}&ready=1`);
+      }
     } catch (failure) {
       if (!controller.signal.aborted) setError(failure instanceof Error ? failure.message : "Please retry the upload.");
     } finally {
@@ -66,11 +94,11 @@ export default function EventCustomThemeLauncher({
   if (!key) return null;
   return (
     <div className={contained ? "my-4 sm:my-8" : "mx-auto max-w-[1500px] px-5 py-4 sm:px-8 sm:py-8 lg:px-12"}>
-      {!imported && <CreateWithEnvitefyCallout category={key} onClick={() => setOpen(true)} onImport={() => { if (!importing) picker.current?.click(); }} />}
+      <CreateWithEnvitefyCallout category={key} onClick={() => { if (!importing) setOpen(true); }} onImport={() => { if (!importing) picker.current?.click(); }} busy={importing} />
       <input ref={picker} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" aria-label="Upload event information images" onChange={(event) => { const files = Array.from(event.target.files || []); event.target.value = ""; void importInformation(files); }} />
-      {importing && <p role="status" className="mt-3 text-sm">Reading your event information…</p>}
+      {importing && <div className="mt-3" aria-busy="true"><p role="status" className="text-sm">{stage}</p><button type="button" className="mt-2 min-h-11 rounded-full border px-4 text-sm" onClick={() => request.current?.abort()}>Cancel</button></div>}
       {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
-      {imported && <EventCustomEditor initialPage={imported} />}
+      {imported.current && !importing && <button type="button" className="mt-2 min-h-11 rounded-full border px-4 text-sm" onClick={() => void importInformation([])}>{error ? "Retry creating event page" : "Continue creating event page"}</button>}
       {open && status === "authenticated" && (
         <EventCustomThemeDialog
           category={key}

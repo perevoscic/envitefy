@@ -376,6 +376,51 @@ test("information upload extracts event fields without generating artwork", asyn
   await assert.rejects(generation.generateEventTheme({ ...input, informationImages: [] }, new AbortController().signal), /Choose an event information image/);
 });
 
+test("every event category turns uploaded information into a themed page without losing facts or sections", async () => {
+  const image = await sharp({ create: { width: 12, height: 8, channels: 3, background: "green" } }).webp().toBuffer();
+  const details = { ...example().details, sections: [
+    { title: "Arrival", body: "Arrive at 1:45 PM. Use the north entrance." },
+    { title: "Food restrictions", body: "No peanuts. Bring one water bottle per guest." },
+  ] };
+  let planning = false;
+  let renderCount = 0;
+  let requested;
+  generation.eventThemeGenerationDeps.client = () => ({ chat: { completions: { create: async (request) => {
+    requested = request;
+    return { choices: [{ finish_reason: "stop", message: { content: JSON.stringify({
+      design,
+      details: planning ? { ...details, title: "Unwanted replacement", sections: [] } : details,
+      artworkPrompt: "Garden gathering with layered botanical artwork",
+    }) } }] };
+  } } } });
+  generation.eventThemeGenerationDeps.render = async (_prompt, references) => {
+    assert.equal(planning, true, "Reading event information must not generate artwork");
+    assert.equal(references, undefined, "Information sheets must not become the artwork");
+    renderCount++;
+    return { ok: true, imageDataUrl: `data:image/webp;base64,${image.toString("base64")}` };
+  };
+  for (const category of Object.keys(custom.CUSTOM_EVENT_CATEGORIES)) {
+    planning = false;
+    const extracted = await generation.generateEventTheme(generation.parseEventThemeRequest({
+      mode: "information", category, prompt: "Read every event detail and instruction",
+      informationImages: [`data:image/webp;base64,${image.toString("base64")}`],
+    }), new AbortController().signal);
+    planning = true;
+    const generated = await generation.generateEventTheme(generation.parseEventThemeRequest({
+      mode: "design", category, prompt: "Create the complete event page and matching theme automatically",
+      currentDesign: extracted.design, currentDetails: extracted.details,
+    }), new AbortController().signal);
+    assert.equal(generated.category, category);
+    assert.deepEqual(generated.details, details, `${category}: generated design must preserve all uploaded facts`);
+    assert.match(generated.artwork, /^data:image\/webp;base64,/);
+    assert.ok(custom.normalizeCustomEventPage(generated), category);
+    assert.ok(requested.messages[0].content.includes(profiles.categoryCustomDesignGuidance(category)), category);
+    const token = custom.stageCustomEventPage(generated);
+    assert.deepEqual(custom.takeCustomEventPage(token, category).details, details, `${category}: editor handoff`);
+  }
+  assert.equal(renderCount, Object.keys(custom.CUSTOM_EVENT_CATEGORIES).length);
+});
+
 test("OpenAI design generation preserves category and supplied facts during visual refinement", async () => {
   let requested,
     artworkRequest,
