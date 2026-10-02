@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import { type CustomEventPage, EVENT_DESIGN_REFERENCE_LIMIT, normalizeCustomEventPage, customEventCategory, stageCustomEventPage } from "@/lib/event-custom-design";
 import CreateWithEnvitefyCallout from "./CreateWithEnvitefyCallout";
+import DesignGenerationProgress from "@/app/live-cards/DesignGenerationProgress";
 
 const EventCustomThemeDialog = dynamic(() => import("./custom/EventCustomThemeDialog"), {
   ssr: false,
@@ -39,6 +40,25 @@ export default function EventCustomThemeLauncher({
     const controller = new AbortController();
     request.current = controller;
     setImporting(true);
+    const generate = async (body: object) => {
+      const deadline = Date.now() + 270_000;
+      while (true) {
+        const response = await fetch("/api/event-themes/generate", {
+          method: "POST", credentials: "include", signal: controller.signal,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const result = await response.json();
+        if (response.status !== 429 || result.code !== "THEME_IN_PROGRESS") return { response, result };
+        if (Date.now() >= deadline) throw new Error("The previous creation is taking longer than expected. Your uploaded details are kept here. Please retry shortly.");
+        await new Promise<void>((resolve, reject) => {
+          const abort = () => { clearTimeout(timer); reject(controller.signal.reason); };
+          const timer = setTimeout(() => { controller.signal.removeEventListener("abort", abort); resolve(); }, 2000);
+          controller.signal.addEventListener("abort", abort, { once: true });
+          if (controller.signal.aborted) abort();
+        });
+      }
+    };
     try {
       if (files.length) {
       imported.current = null;
@@ -50,12 +70,7 @@ export default function EventCustomThemeLauncher({
         reader.readAsDataURL(file);
       })));
       if (controller.signal.aborted) return;
-      const response = await fetch("/api/event-themes/generate", {
-        method: "POST", credentials: "include", signal: controller.signal,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "information", category: key, prompt: "Read the uploaded event information and populate every supplied event field and section.", informationImages: images }),
-      });
-      const result = await response.json();
+      const { response, result } = await generate({ mode: "information", category: key, prompt: "Read the uploaded event information and populate every supplied event field and section.", informationImages: images });
       if (!response.ok) throw new Error(result.error || "The event information could not be read. Please retry.");
       const page = normalizeCustomEventPage(result);
       if (!page || page.category !== key) throw new Error("The event information could not be read. Please retry.");
@@ -65,16 +80,11 @@ export default function EventCustomThemeLauncher({
       const extracted = imported.current;
       if (!extracted || controller.signal.aborted) return;
       setStage("Creating your event page and theme…");
-      const response = await fetch("/api/event-themes/generate", {
-        method: "POST", credentials: "include", signal: controller.signal,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const { response, result } = await generate({
           mode: "design", category: key,
           prompt: "Create a complete, polished event page with a distinctive theme and artwork based on the supplied event title, description, activities and sections. Choose the layout, typography and palette automatically to suit this event. Preserve every supplied fact and section; do not invent missing event information.",
           currentDesign: extracted.design, currentDetails: extracted.details,
-        }),
       });
-      const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Your event theme could not be created. Retry to continue with your uploaded details.");
       const generated = normalizeCustomEventPage(result);
       if (!generated || generated.category !== key) throw new Error("Your event theme could not be read. Retry to continue with your uploaded details.");
@@ -94,9 +104,9 @@ export default function EventCustomThemeLauncher({
   if (!key) return null;
   return (
     <div className={contained ? "my-4 sm:my-8" : "mx-auto max-w-[1500px] px-5 py-4 sm:px-8 sm:py-8 lg:px-12"}>
-      <CreateWithEnvitefyCallout category={key} onClick={() => { if (!importing) setOpen(true); }} onImport={() => { if (!importing) picker.current?.click(); }} busy={importing} />
+      {!importing && <CreateWithEnvitefyCallout category={key} onClick={() => setOpen(true)} onImport={() => picker.current?.click()} />}
       <input ref={picker} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" aria-label="Upload event information images" onChange={(event) => { const files = Array.from(event.target.files || []); event.target.value = ""; void importInformation(files); }} />
-      {importing && <div className="mt-3" aria-busy="true"><p role="status" className="text-sm">{stage}</p><button type="button" className="mt-2 min-h-11 rounded-full border px-4 text-sm" onClick={() => request.current?.abort()}>Cancel</button></div>}
+      {importing && <div className="mt-4" aria-busy="true"><DesignGenerationProgress stage="generating" title="Creating your event page" description="Your event details, theme and artwork are coming together." statusText={stage} /><button type="button" className="mt-3 min-h-11 rounded-full border px-4 text-sm" onClick={() => request.current?.abort()}>Cancel</button></div>}
       {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
       {imported.current && !importing && <button type="button" className="mt-2 min-h-11 rounded-full border px-4 text-sm" onClick={() => void importInformation([])}>{error ? "Retry creating event page" : "Continue creating event page"}</button>}
       {open && status === "authenticated" && (

@@ -70,6 +70,7 @@ export async function POST(request: Request) {
   if (previous?.active || (previous && previous.count >= 6))
     return json(
       {
+        code: previous.active ? "THEME_IN_PROGRESS" : "THEME_RATE_LIMIT",
         error: previous.active
           ? "Your theme is still being created. Please wait for it to finish."
           : "You've created several themes. Please try again in a few minutes.",
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
       429,
       {
         "Retry-After": String(
-          Math.max(1, Math.ceil(((previous?.resetAt || now + 60_000) - now) / 1000)),
+          previous.active ? 2 : Math.max(1, Math.ceil(((previous?.resetAt || now + 60_000) - now) / 1000)),
         ),
       },
     );
