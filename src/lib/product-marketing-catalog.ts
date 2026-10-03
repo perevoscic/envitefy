@@ -200,6 +200,22 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           ],
         },
         {
+          id: "event-page-weather",
+          name: "Weather on custom Event Pages",
+          availability: "event-dependent",
+          customerPromise:
+            "Give guests a useful event forecast in a section that matches the page's theme.",
+          proofPoints: [
+            "Hosts add Weather in the custom Event Page editor and choose Fahrenheit or Celsius. The section inherits the selected colors, fonts and section layout in editor previews and published pages.",
+            "With the weather provider configured and a supported location, forecasts use the event's local date and start hour. Available details include conditions, temperature, daily highs and lows, rain chance and wind; events without a start time show a daily forecast.",
+            "Dates outside the three-day forecast window show when forecasts become available. Missing details and temporary provider failures have clear messages, without substituting today's weather for the event forecast.",
+            "Weather settings stay in memory until an explicit save or publish. Private saved changes stay off the published page; protected events retain their access rules.",
+          ],
+          sellWhen: [
+            "A host is preparing a custom Event Page for an outdoor gathering, field trip or other weather-sensitive event and wants guests to see a near-term forecast.",
+          ],
+        },
+        {
           id: "saved-event-workspace",
           name: "Saved My events and Invited events",
           availability: "core",

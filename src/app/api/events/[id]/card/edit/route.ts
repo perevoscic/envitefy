@@ -20,7 +20,7 @@ import {
   updateEventHistoryTitle,
 } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
-import { processBufferUpload } from "@/lib/media-upload";
+import { processBufferUpload } from "@/lib/media-upload-image";
 import { prepareCardEditPreviewImage, streamCardEditPreview } from "@/lib/studio/card-edit-preview";
 import { buildCardRegistryDataPatch, normalizeCardRegistryLink } from "@/lib/studio/card-registry";
 import { generateStudioInvitation } from "@/lib/studio/generate";

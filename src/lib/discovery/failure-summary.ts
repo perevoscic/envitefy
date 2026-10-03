@@ -1,6 +1,6 @@
 import { safeString } from "./shared.ts";
 import type { EventDiscoveryRow } from "./types.ts";
-import { PDF_TEXT_ENGINE_LABEL, PDF_WORKER_DISABLED } from "../pdf-raster.ts";
+import { PDF_TEXT_ENGINE_LABEL, PDF_WORKER_DISABLED } from "../pdf-runtime-info.ts";
 
 export type DiscoveryFailureSummary = {
   stage: string;

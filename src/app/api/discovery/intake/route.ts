@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
-import { intakeDiscovery } from "@/lib/discovery";
+import { intakeDiscovery } from "@/lib/discovery/intake";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

@@ -1,5 +1,5 @@
 import { findUserAwaitingGoogleAvatar, saveGoogleProfileAvatarIfUnset } from "@/lib/db";
-import { uploadPrivateBinaryAsset } from "@/lib/media-upload";
+import { uploadPrivateBinaryAsset } from "@/lib/media-upload-image";
 import { renderProfileAvatarWebp } from "@/lib/profile-avatar-image";
 
 const GOOGLE_PROFILE_IMAGE_HOST = /(^|\.)googleusercontent\.com$/i;

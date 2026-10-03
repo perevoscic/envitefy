@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { resolveEmailEmbedAssetUrl, uploadPublicBinaryAsset } from "../media-upload.ts";
+import { resolveEmailEmbedAssetUrl, uploadPublicBinaryAsset } from "../media-upload-image.ts";
 import { openAiChatCompatibilityParams } from "../openai-chat-params.ts";
 import {
   ADMIN_EMAIL_GENERATION_GUIDE,

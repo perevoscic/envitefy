@@ -9,6 +9,24 @@ const resolveDevDistDir = () => {
   return `.next-dev-${sanitizedPort}`;
 };
 
+// These handlers render or extract uploaded/stored PDFs. Page visits, avatars,
+// generated artwork and photo-only uploads do not need the PDF runtime.
+const pdfRuntimeFiles = [
+  "./node_modules/@napi-rs/canvas/**/*",
+  "./node_modules/@napi-rs/canvas-*/**/*",
+  "./node_modules/pdfjs-dist/**/*",
+];
+const pdfProcessingRoutes = [
+  "/api/upload",
+  "/api/ingest",
+  "/api/ocr",
+  "/api/scan/event-page",
+  "/api/football/prefill",
+  "/api/discovery/*/run",
+  "/api/parse/*/enrich",
+  "/api/events/*/original",
+];
+
 const nextConfig = (phase: string): NextConfig => ({
   // Keep dev artifacts out of `.next` so `next build` doesn't race with `next dev`.
   distDir: phase === PHASE_DEVELOPMENT_SERVER ? resolveDevDistDir() : ".next",
@@ -36,8 +54,9 @@ const nextConfig = (phase: string): NextConfig => ({
   ...(phase === PHASE_DEVELOPMENT_SERVER ? {} : { output: "standalone" }),
   outputFileTracingRoot: process.cwd(),
   outputFileTracingIncludes: {
+    ...Object.fromEntries(pdfProcessingRoutes.map((route) => [route, [...pdfRuntimeFiles]])),
     "/api/livecard-builder/location": ["./node_modules/geo-tz/data/timezones-1970.geojson.*"],
-    "/api/upload": ["./node_modules/ffmpeg-static/ffmpeg*"],
+    "/api/upload": [...pdfRuntimeFiles, "./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/uploads/*": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/studio/generate": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/events/*/card/edit": ["./node_modules/ffmpeg-static/ffmpeg*"],
@@ -45,19 +64,15 @@ const nextConfig = (phase: string): NextConfig => ({
     "/api/user/profile/avatar": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/templates/media": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/discovery/**": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/ingest": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/football/prefill": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/ocr": ["./node_modules/ffmpeg-static/ffmpeg*"],
+    "/api/ingest": [...pdfRuntimeFiles, "./node_modules/ffmpeg-static/ffmpeg*"],
+    "/api/football/prefill": [...pdfRuntimeFiles, "./node_modules/ffmpeg-static/ffmpeg*"],
+    "/api/ocr": [...pdfRuntimeFiles, "./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/history": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/scan/event-page": ["./node_modules/ffmpeg-static/ffmpeg*"],
+    "/api/scan/event-page": [...pdfRuntimeFiles, "./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/events/*/scan-artwork": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/events/*/original": ["./node_modules/ffmpeg-static/ffmpeg*"],
+    "/api/events/*/original": [...pdfRuntimeFiles, "./node_modules/ffmpeg-static/ffmpeg*"],
     "/*": [
       "./public/fonts/Josefin_Sans/static/JosefinSans-Regular.ttf",
-      "./node_modules/@napi-rs/canvas/**/*",
-      "./node_modules/@napi-rs/canvas-*/**/*",
-      "./node_modules/pdfjs-dist/**/*",
-      "./node_modules/pdf-parse/**/*",
     ],
   },
 

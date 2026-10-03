@@ -42,7 +42,7 @@ test("Google profile image addresses stay on Google's image host", () => {
     "src/lib/google-profile-avatar.ts",
     {
       "@/lib/db": {},
-      "@/lib/media-upload": {},
+      "@/lib/media-upload-image": {},
       "@/lib/profile-avatar-image": {},
     },
   );
@@ -67,7 +67,7 @@ test("an empty account receives a stored copy, and a chosen photo is left alone"
         return true;
       },
     },
-    "@/lib/media-upload": {
+    "@/lib/media-upload-image": {
       uploadPrivateBinaryAsset: async (params) => {
         uploads.push(params);
         return { url: "/api/blob/profile-media/user-1/avatar.webp" };

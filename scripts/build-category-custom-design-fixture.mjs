@@ -14,28 +14,32 @@ await fs.writeFile(
 import React from "react";
 import {createRoot} from "react-dom/client";
 import EventCustomEditor from "../../src/components/events/custom/EventCustomEditor";
+import CustomEventPageContent from "../../src/components/events/custom/CustomEventPageContent";
 import EventCustomThemeLauncher from "../../src/components/events/EventCustomThemeLauncher";
 import PublicTemplateGallery from "../../src/components/templates/PublicTemplateGallery";
 import {CUSTOM_EVENT_CATEGORIES, takeCustomEventPage} from "../../src/lib/event-custom-design";
 import {takeSignupTheme} from "../../src/lib/signup-theme-handoff";
 import {getCategoryCustomDesignProfile} from "../../src/lib/category-custom-design-profiles";
+import UnsavedProgressProvider from "@/components/UnsavedProgressProvider";
+import {AppRouterContext} from "next/dist/shared/lib/app-router-context.shared-runtime";
+import {fixtureRouter} from "next/navigation";
 window.fixture = {categories: [...Object.keys(CUSTOM_EVENT_CATEGORIES), "signup-forms"], profile: getCategoryCustomDesignProfile, takeCustomEventPage, takeSignupTheme};
 const params = new URLSearchParams(location.search);
 const category = params.get("category") || "weddings";
-createRoot(document.getElementById("root")!).render(<main>
-  {params.get("editor") === "1" ? <EventCustomEditor initialPage={window.testEditorPage} /> : category === "signup-forms"
+createRoot(document.getElementById("root")!).render(<AppRouterContext.Provider value={fixtureRouter}><UnsavedProgressProvider><main>
+  {params.get("guest") === "1" ? <CustomEventPageContent page={window.testEditorPage} eventId={params.get("eventId") || undefined} /> : params.get("editor") === "1" ? <EventCustomEditor initialPage={window.testEditorPage} /> : category === "signup-forms"
     ? <PublicTemplateGallery category="signup-forms" featured={params.get("featured") === "1"} customThemeRequested={params.get("customTheme") === "1"} />
     : <EventCustomThemeLauncher category={category} />}
-</main>);
+</main></UnsavedProgressProvider></AppRouterContext.Provider>);
 `,
 );
 const styles = new Map();
 const mocks = {
   "@/components/UnsavedProgressProvider": `
-    export default function Provider({children}) {return children;}
-    export function useEventProgress(progress) {return useUnsavedProgress(progress);}
-    export function useProgressNavigation() {return {allowNavigation(fn) {fn();}};}
-    export function useUnsavedProgress(progress) { window.editorProgress = progress; return {allowNavigation(fn) {fn();}}; }
+    import Provider, {useUnsavedProgress as useRealProgress} from "real-unsaved-progress";
+    export default Provider;
+    export {useEventProgress, useProgressNavigation} from "real-unsaved-progress";
+    export function useUnsavedProgress(progress) { window.editorProgress = progress; return useRealProgress(progress); }
   `,
   "@/utils/media-upload-client": `
     export function validateClientUploadFile() {return null;}
@@ -47,10 +51,16 @@ const mocks = {
     export async function persistImageMediaValue({value}) { if (!value.startsWith("data:")) return value; (window.imageUploads ||= []).push(value); return "/api/blob/event-media/replacement.webp"; }
   `,
   "next/navigation": `
+    import {useContext} from "react";
+    import {AppRouterContext} from "next/dist/shared/lib/app-router-context.shared-runtime";
     export function usePathname() { return location.pathname; }
     export function useSearchParams() { return new URLSearchParams(location.search); }
-    const router = {push(url) { (window.navigations ||= []).push(url); }, replace() {}, refresh() {}};
-    export function useRouter() { return router; }
+    export const fixtureRouter = {push(url) { (window.navigations ||= []).push(url); }, replace() {}, refresh() {}};
+    export function useRouter() { return useContext(AppRouterContext) || fixtureRouter; }
+  `,
+  "next/dist/shared/lib/app-router-context.shared-runtime": `
+    import {createContext} from "react";
+    export const AppRouterContext = createContext(null);
   `,
   "next-auth/react": `
     import {useSyncExternalStore} from "react";
@@ -92,6 +102,7 @@ const result = await Bun.build({
     {
       name: "category-fixture",
       setup(builder) {
+        builder.onResolve({ filter: /^real-unsaved-progress$/ }, () => ({path: path.resolve("src/components/UnsavedProgressProvider.tsx"), namespace: "file"}));
         builder.onResolve({ filter: /^\.\.\/src\/utils\/media-upload-client$/, namespace: "fixture" }, () => ({path: path.resolve("src/utils/media-upload-client.ts"), namespace: "file"}));
         builder.onLoad({ filter: /\.module\.css$/ }, async ({ path: filename }) => {
           const css = transform({ filename, code: await fs.readFile(filename), cssModules: true });
@@ -124,7 +135,7 @@ assert.ok(result.success, result.logs.map(String).join("\n"));
 await fs.writeFile(path.join(out, "entry.css"), [...styles.values()].join("\n"));
 const globals = (await fs.readFile("src/app/globals.css", "utf8")).replace(
   '@import "tailwindcss";',
-  '@import "tailwindcss" source(none);\n@source "../components/events/CreateWithEnvitefyCallout.tsx";\n@source "../components/events/EventCustomThemeLauncher.tsx";\n@source "../components/events/HeroImageEditor.tsx";\n@source "../components/templates/PublicTemplateGallery.tsx";',
+  '@import "tailwindcss" source(none);\n@source "../components/events/CreateWithEnvitefyCallout.tsx";\n@source "../components/events/EventCustomThemeLauncher.tsx";\n@source "../components/events/HeroImageEditor.tsx";\n@source "../components/templates/PublicTemplateGallery.tsx";\n@source "../components/UnsavedProgressProvider.tsx";',
 );
 const css = await postcss([tailwind()]).process(globals, {
   from: path.resolve("src/app/globals.css"),

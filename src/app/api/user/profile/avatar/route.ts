@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedRequestUser } from "@/lib/auth";
 import { getUserByEmail, updateUserAvatarByEmail } from "@/lib/db";
-import { uploadPrivateBinaryAsset } from "@/lib/media-upload";
+import { uploadPrivateBinaryAsset } from "@/lib/media-upload-image";
 import { renderProfileAvatarWebp } from "@/lib/profile-avatar-image";
 import { validateProfileAvatarMeta } from "@/lib/profile-avatar";
 

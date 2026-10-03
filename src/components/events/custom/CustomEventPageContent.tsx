@@ -15,6 +15,7 @@ import {
 } from "@/lib/event-custom-design";
 import "@/components/birthdays/redesign/birthday-fonts.css";
 import styles from "./custom-event.module.css";
+import EventWeatherSection from "./EventWeatherSection";
 
 export default function CustomEventPageContent({
   page,
@@ -105,6 +106,10 @@ export default function CustomEventPageContent({
             <h2>You're invited</h2>
             <p>{d.description}</p>
           </section>
+        )}
+        {d.weather?.enabled && (
+          <EventWeatherSection eventId={eventId} date={d.date} time={d.time}
+            location={d.location || d.venue} units={d.weather.units} />
         )}
         {d.sections.map((section, index) => (
           <section key={index} className={styles.section}>

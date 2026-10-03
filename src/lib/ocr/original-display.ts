@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { query } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
-import { uploadPublicBinaryAsset } from "@/lib/media-upload";
+import { uploadPublicBinaryAsset } from "@/lib/media-upload-image";
 import { type ScanDisplayCopy, scanImageOriginal } from "./original-display-state";
 import { encodeScanDisplayWebp } from "./original-display-webp";
 import {

@@ -58,7 +58,7 @@ test("processImageBufferWithVariants supports display-only optimization", async 
 });
 
 test("image uploads use separate WebP source paths only when full resolution needs them", () => {
-  const source = readFileSync(new URL("./media-upload.ts", import.meta.url), "utf8");
+  const source = readFileSync(new URL("./media-upload-image.ts", import.meta.url), "utf8");
 
   assert.match(
     source,
@@ -72,7 +72,7 @@ test("image uploads use separate WebP source paths only when full resolution nee
 });
 
 test("account media can prefer the private store without losing public-store compatibility", () => {
-  const source = readFileSync(new URL("./media-upload.ts", import.meta.url), "utf8");
+  const source = readFileSync(new URL("./media-upload-image.ts", import.meta.url), "utf8");
 
   assert.match(source, /export async function uploadPrivateBinaryAsset/);
   assert.match(source, /access: "private"/);

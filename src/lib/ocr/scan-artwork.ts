@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { query } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
-import { uploadPublicBinaryAsset } from "@/lib/media-upload";
+import { uploadPublicBinaryAsset } from "@/lib/media-upload-image";
 import { normalizeScanPersonalization } from "./personalization";
 import type { ScanArtworkState } from "./scan-artwork-state";
 import { resolveScanMediaPolicy } from "./scan-media";

@@ -14,7 +14,8 @@ test("server PDF discovery path uses pdfjs in server mode without pdf-parse", ()
   const packageSource = readSource("package.json");
   const nextConfigSource = readSource("next.config.ts");
 
-  assert.match(rasterSource, /PDF_TEXT_ENGINE_LABEL = "pdfjs-dist"/);
+  assert.match(readSource("src/lib/pdf-runtime-info.ts"), /PDF_TEXT_ENGINE_LABEL = "pdfjs-dist"/);
+  assert.match(rasterSource, /export \{ PDF_TEXT_ENGINE_LABEL, PDF_WORKER_DISABLED \} from "\.\/pdf-runtime-info\.ts"/);
   assert.match(rasterSource, /disableWorker:\s*PDF_WORKER_DISABLED/);
   assert.match(rasterSource, /logPdfWarning\("pdfjs import failed", error\)/);
   assert.match(meetSource, /extractPdfTextWithPdfJs/);

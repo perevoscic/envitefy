@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { processPublicUpload } from "@/lib/media-upload";
+import { processPublicUpload } from "@/lib/media-upload-image";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

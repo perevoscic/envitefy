@@ -75,7 +75,7 @@ function harness({
         };
       },
     },
-    "@/lib/media-upload": {
+    "@/lib/media-upload-image": {
       uploadPublicBinaryAsset: async (asset) => {
         h.uploads.push(asset);
         if (replaceDuringUpload) h.data.attachment.dataUrl = "replacement";

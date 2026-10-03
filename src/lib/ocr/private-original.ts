@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from "node:crypto";
 import { get } from "@vercel/blob";
-import { uploadPublicBinaryAsset } from "../media-upload";
+import { uploadPublicBinaryAsset } from "../media-upload-image";
 import {
   ENVITEFY_PUBLIC_ORIGIN,
   isLoopbackHost,

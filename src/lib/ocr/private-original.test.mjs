@@ -21,7 +21,7 @@ function harness({ fetchOriginal, getOriginal } = {}) {
           throw new Error("not requested");
         }),
     },
-    "../media-upload": {
+    "../media-upload-image": {
       uploadPublicBinaryAsset: async (asset) => {
         uploads.push(asset);
         return {

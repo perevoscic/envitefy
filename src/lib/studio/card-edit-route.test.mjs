@@ -56,7 +56,7 @@ function loadRoute({ userId = "owner", ownerId = "owner", generate, existingData
       updateEventHistoryTitle: async (id, title) => calls.writes.push({ id, title }),
       updateEventHistoryDataMerge: async (id, data) => { calls.writes.push({ id, data }); return { id, data }; },
     },
-    "@/lib/media-upload": { processBufferUpload: async (upload) => { calls.uploads.push(upload); return { stored: { display: { url: "https://assets.example.test/saved.webp" } } }; } },
+    "@/lib/media-upload-image": { processBufferUpload: async (upload) => { calls.uploads.push(upload); return { stored: { display: { url: "https://assets.example.test/saved.webp" } } }; } },
     "@/lib/studio/generate": { generateStudioInvitation: async (request) => { calls.generations.push(request); return generate(request); } },
     "@/lib/studio/card-edit-preview": { prepareCardEditPreviewImage, streamCardEditPreview },
     "@/lib/studio/card-registry": cardRegistry,

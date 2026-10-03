@@ -370,6 +370,22 @@ test("information uploads accept five images and reject a sixth", () => {
   assert.throws(() => generation.parseEventThemeRequest({ category: "general", prompt: "Read event details", informationImages: [...images, images[0]] }), generation.EventThemeRequestError);
 });
 
+test("optional Weather settings survive saves and proofreading while old pages stay unchanged", async (t) => {
+  const oldPage = example();
+  assert.equal(custom.normalizeCustomEventPage(oldPage).details.weather, undefined);
+  const page = { ...oldPage, details: { ...oldPage.details, weather: { enabled: true, units: "c" } } };
+  assert.deepEqual(custom.normalizeCustomEventPage(page).details.weather, page.details.weather);
+  assert.deepEqual(custom.applyCustomEventWording(page.details, custom.customEventWording(page.details)).weather, page.details.weather);
+  const previousWindow = globalThis.window;
+  globalThis.window = { dispatchEvent() {} };
+  t.after(() => { if (previousWindow === undefined) delete globalThis.window; else globalThis.window = previousWindow; });
+  const { saveCustomEventPage } = loader({ "@/utils/media-upload-client": { persistImageMediaValue: async ({ value }) => value } })("src/lib/event-custom-save.ts");
+  const result = await saveCustomEventPage({ page, eventId: "weather-page", clientDraftId: "weather-draft", status: "draft", existing: { ...custom.customEventPageData(oldPage), status: "published" }, historyFetch: async (_url, options) => Response.json({ id: "weather-page", data: JSON.parse(options.body).data }) });
+  assert.equal(result.data.customEventPage.details.weather, undefined, "The live page keeps its prior weather settings");
+  assert.deepEqual(result.data.customEventPageDraft.details.weather, page.details.weather);
+  for (const weather of [{ enabled: "yes", units: "f" }, { enabled: true, units: "kelvin" }]) assert.equal(custom.normalizeCustomEventPage({ ...page, details: { ...page.details, weather } }), null);
+});
+
 test("information upload extracts event fields without generating artwork", async () => {
   const source = await sharp({ create: { width: 12, height: 8, channels: 3, background: "white" } }).png().toBuffer();
   const details = { ...example().details, endTime: "16:30", sections: [{ title: "Schedule", body: "Approximately 4:30 PM — Return departure" }] };

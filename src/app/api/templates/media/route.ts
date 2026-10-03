@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { getEventHistoryById } from "@/lib/db";
 import { getEventPermissions } from "@/lib/event-collaboration";
-import { processPublicUpload } from "@/lib/media-upload";
+import { processPublicUpload } from "@/lib/media-upload-image";
 
 export const runtime = "nodejs";
 export async function POST(request: Request) {

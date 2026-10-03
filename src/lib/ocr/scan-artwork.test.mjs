@@ -42,7 +42,7 @@ function harness({ fail = false, conversionFails = false, data = {} } = {}) {
     "@/lib/db": { query },
     "@/lib/dashboard-cache": { invalidateUserDashboard: () => h.invalidated.push("dashboard") },
     "@/lib/history-cache": { invalidateUserHistory: () => h.invalidated.push("history") },
-    "@/lib/media-upload": {
+    "@/lib/media-upload-image": {
       uploadPublicBinaryAsset: async (params) => {
         h.uploads.push(params);
         return { url: "https://example.com/generated.webp" };

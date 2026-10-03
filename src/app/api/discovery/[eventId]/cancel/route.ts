@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { getEventDiscoveryByEventId, getEventHistoryById } from "@/lib/db";
-import { cancelDiscoveryPipeline } from "@/lib/discovery";
+import { cancelDiscoveryPipeline } from "@/lib/discovery/cancel";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

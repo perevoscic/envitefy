@@ -72,6 +72,7 @@ export const EVENT_DETAIL_FIELDS = [
 ] as const;
 export type CustomEventDetails = Record<(typeof EVENT_DETAIL_FIELDS)[number], string> & {
   guestActions?: EventGuestActionVisibility;
+  weather?: { enabled: boolean; units: "f" | "c" };
   rsvpEnabled: boolean;
   sections: Array<{ title: string; body: string }>;
   registryLinks: Array<{ label: string; url: string }>;
@@ -231,6 +232,11 @@ export function normalizeCustomEventDetails(value: unknown): CustomEventDetails 
   if (raw.rsvpEnabled != null && typeof raw.rsvpEnabled !== "boolean") return null;
   details.rsvpEnabled = raw.rsvpEnabled === true;
   if (raw.guestActions != null) details.guestActions = normalizeEventGuestActions(raw.guestActions);
+  if (raw.weather != null) {
+    const weather = record(raw.weather);
+    if (!weather || typeof weather.enabled !== "boolean" || !["f", "c"].includes(String(weather.units))) return null;
+    details.weather = { enabled: weather.enabled, units: weather.units as "f" | "c" };
+  }
   for (const key of ["sections", "registryLinks"] as const) {
     if (raw[key] != null && !Array.isArray(raw[key])) return null;
     const rows = (raw[key] || []) as unknown[];

@@ -352,8 +352,7 @@ export default function UnsavedProgressProvider({ children }: { children: ReactN
             >
               <Dialog.Title className="text-xl font-semibold">Save your progress?</Dialog.Title>
               <Dialog.Description className="mt-3 text-sm leading-6 text-[#746783]">
-                You have unsaved changes. Save a draft to pick up where you left off, or discard
-                this progress.
+                You have unsaved changes. Save them before leaving, or discard this progress.
               </Dialog.Description>
               {error && (
                 <p role="alert" className="mt-4 text-sm text-red-700">

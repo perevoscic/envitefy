@@ -195,7 +195,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
       setBusy(false);
     }
   };
-  const persist = async (status: "draft" | "published") => {
+  const persist = async (status: "draft" | "published", navigate = true) => {
     if (!page || saving.current || imageBusy) throw new Error("Wait for your event page to finish saving.");
     setValidationMode(status);
     if (Object.keys(customEventFieldErrors(page, status === "published")).length) {
@@ -224,19 +224,17 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
       setSavedPublicSlug(nextPublicSlug);
       setPage(result.page);
       setBaseline(JSON.stringify(result.page));
-      if (status === "published")
+      if (status === "published" && navigate)
         navigation.allowNavigation(() =>
           router.push(buildEventPath(result.id, result.page.details.title, undefined, nextPublicSlug)),
         );
-      else {
-        navigation.allowNavigation(() =>
-          router.replace(`/event/design/customize?edit=${encodeURIComponent(result.id)}`),
-        );
-        setMessage(
-          published
-            ? "Draft saved. Publish when you're ready to update the live page."
-            : "Draft saved.",
-        );
+      else if (status === "draft") {
+        if (navigate) {
+          navigation.allowNavigation(() =>
+            router.replace(`/event/design/customize?edit=${encodeURIComponent(result.id)}`),
+          );
+        }
+        setMessage("Draft saved.");
       }
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Your event page could not be saved.");
@@ -246,13 +244,22 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
       setBusy(false);
     }
   };
+  const dirty = Boolean(page && JSON.stringify(page) !== baseline);
   const navigation = useUnsavedProgress({
-    dirty: Boolean(page && JSON.stringify(page) !== baseline),
+    dirty,
     busy,
     save: async () => {
-      await persist("draft");
+      await persist(published ? "published" : "draft", false);
     },
   });
+  const cancelPublishedEdit = () => {
+    const eventId = savedId.current;
+    if (!eventId || busy) return;
+    const savedTitle = typeof existing.current.title === "string" ? existing.current.title : undefined;
+    navigation.requestLeave(() =>
+      router.push(buildEventPath(eventId, savedTitle, undefined, savedPublicSlug)),
+    );
+  };
   const savePublicLink = async () => {
     if (!savedId.current || busy || saving.current) return;
     const validation = validateCustomEventPublicSlug(publicSlug);
@@ -356,25 +363,38 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
           <button type="button" className={styles.secondary} disabled={busy} aria-pressed={editing} onClick={() => setEditing((value) => !value)}>
             {editing ? "View event page" : "Edit details & design"}
           </button>
-          <button
-            className={styles.secondary}
-            type="button"
-            disabled={busy}
-            onClick={() => void showPreview()}
-          >
-            Preview <span aria-hidden="true">→</span>
-          </button>
-          <button
-            className={styles.secondary}
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              void persist("draft").catch(() => {});
-            }}
-          >
-            Save draft
-          </button>
-          <button
+          {published ? (
+            <button
+              className={styles.secondary}
+              type="button"
+              disabled={busy}
+              onClick={cancelPublishedEdit}
+            >
+              Cancel
+            </button>
+          ) : (
+            <>
+              <button
+                className={styles.secondary}
+                type="button"
+                disabled={busy}
+                onClick={() => void showPreview()}
+              >
+                Preview <span aria-hidden="true">→</span>
+              </button>
+              <button
+                className={styles.secondary}
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  void persist("draft").catch(() => {});
+                }}
+              >
+                Save draft
+              </button>
+            </>
+          )}
+          {(!published || dirty) && <button
             className={styles.primary}
             type="button"
             disabled={busy}
@@ -382,8 +402,8 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
               void persist("published").catch(() => {});
             }}
           >
-            {imageBusy ? "Preparing image…" : operationBusy ? "Saving…" : published ? "Publish changes" : "Publish"}
-          </button>
+            {imageBusy ? "Preparing image…" : operationBusy ? "Saving…" : published ? "Save changes" : "Publish"}
+          </button>}
         </div>
       </header>
       {error && (
@@ -447,6 +467,24 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
             </div>
             {field("venue", "Venue")}
             {field("location", "Address or location")}
+            <div className={styles.group}>
+              <h2>Weather</h2>
+              <label className={styles.check}>
+                <input type="checkbox" checked={d.weather?.enabled === true}
+                  onChange={(event) => updateDetail("weather", { enabled: event.target.checked, units: d.weather?.units || "f" })} />
+                Show weather on the event page
+              </label>
+              <p>Uses your event date and location. Forecasts appear within three days of the event and match your page's colors and fonts.</p>
+              {d.weather?.enabled && (
+                <label className={styles.field}>
+                  Temperature units
+                  <select value={d.weather.units} onChange={(event) => updateDetail("weather", { enabled: true, units: event.target.value === "c" ? "c" : "f" })}>
+                    <option value="f">Fahrenheit (°F)</option>
+                    <option value="c">Celsius (°C)</option>
+                  </select>
+                </label>
+              )}
+            </div>
             <div className={styles.group}>
               <h2>RSVP</h2>
               <label className={styles.check}>
@@ -601,7 +639,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
                   design: { ...current.design, description: "Hero image selected by the host." },
                 } : current)}
               />
-              <p>Your selected image is saved when you choose Save draft or Publish.</p>
+              <p>{published ? "Your selected image is saved when you choose Save changes." : "Your selected image is saved when you choose Save draft or Publish."}</p>
               <label className={styles.field}>
                 Layout
                 <select

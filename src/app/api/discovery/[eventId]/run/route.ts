@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { getEventDiscoveryByEventId, getEventHistoryById } from "@/lib/db";
-import { dispatchDiscoveryPipeline, ensureDiscoveryForExistingEvent } from "@/lib/discovery";
+import { dispatchDiscoveryPipeline } from "@/lib/discovery/run";
+import { ensureDiscoveryForExistingEvent } from "@/lib/discovery/persist";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

@@ -1,4 +1,4 @@
-import { processBufferUpload } from "../media-upload";
+import { processBufferUpload } from "../media-upload-image";
 import { parseDataUrlBase64 } from "../../utils/data-url";
 import { generateStudioInvitation } from "./generate.ts";
 import type { GenerationOptions, GenerationStreamEvent, GenerationStage } from "./generation-progress.ts";

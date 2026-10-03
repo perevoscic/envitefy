@@ -9,8 +9,8 @@ export type PdfAnnotationLink = {
   source: "pdf_annotation";
 };
 
-export const PDF_TEXT_ENGINE_LABEL = "pdfjs-dist";
-export const PDF_WORKER_DISABLED = true;
+import { PDF_WORKER_DISABLED } from "./pdf-runtime-info.ts";
+export { PDF_TEXT_ENGINE_LABEL, PDF_WORKER_DISABLED } from "./pdf-runtime-info.ts";
 
 export type PdfTextExtractionPage = {
   num: number;

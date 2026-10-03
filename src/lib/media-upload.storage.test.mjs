@@ -7,9 +7,13 @@ import sharp from "sharp";
 import ts from "typescript";
 
 const require = createRequire(import.meta.url);
-function harness() {
+function harness({ pdfPreview } = {}) {
   const uploads = [];
-  const source = readFileSync(new URL("./media-upload.ts", import.meta.url), "utf8");
+  const pdfLoads = [];
+  const modules = new Map();
+  function loadSource(file) {
+  if (modules.has(file)) return modules.get(file);
+  const source = readFileSync(new URL(file, import.meta.url), "utf8");
   const { outputText } = ts.transpileModule(source, {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, esModuleInterop: true },
   });
@@ -22,11 +26,21 @@ function harness() {
         uploads.push({ pathname, bytes, options });
         return { pathname, url: `https://assets.example.test/${pathname}` };
       },
-    } : specifier === "./pdf-raster.ts" ? {
-      rasterizePdfPageToPng: () => { throw new Error("Unexpected PDF in image test"); },
-    } : require(specifier),
+    } : specifier === "./media-upload-image.ts" ? loadSource(specifier)
+      : specifier === "./pdf-optimize.ts" ? {
+        optimizePdfWithQpdf: async (buffer) => { pdfLoads.push("optimize"); return { buffer }; },
+      } : specifier === "./pdf-raster.ts" ? {
+        rasterizePdfPageToPng: async () => {
+          pdfLoads.push("render");
+          if (!pdfPreview) throw new Error("Unexpected PDF in image test");
+          return pdfPreview;
+        },
+      } : require(specifier),
   });
-  return { ...module.exports, uploads };
+  modules.set(file, module.exports);
+  return module.exports;
+  }
+  return { ...loadSource("./media-upload.ts"), imageUploads: loadSource("./media-upload-image.ts"), uploads, pdfLoads };
 }
 async function fixture(format, width = 160, height = 100) {
   return sharp({ create: { width, height, channels: 4, background: { r: 65, g: 120, b: 170, alpha: 0.4 } } })
@@ -39,6 +53,7 @@ test("PNG/JPEG attachments upload only two WebPs and return matching names, type
     const input = await fixture(format);
     const result = await h.processBufferUpload({ bytes: input, fileName: `invite.${format}`, mimeType: `image/${format}`, usage: "attachment", uploadToken: "upload-test" });
     assert.equal(h.uploads.length, 2);
+    assert.deepEqual(h.pdfLoads, []);
     for (const item of h.uploads) {
       assert.match(item.pathname, /\.webp$/);
       assert.equal(item.options.contentType, "image/webp");
@@ -55,6 +70,30 @@ test("PNG/JPEG attachments upload only two WebPs and return matching names, type
     assert.equal(result.stored.source.height, 100);
     if (format === "png") assert.equal((await sharp(h.uploads[0].bytes).metadata()).hasAlpha, true);
   }
+});
+
+test("validated PDF attachments render a preview and preserve the original PDF", async () => {
+  const h = harness({ pdfPreview: await fixture("png") });
+  const input = Buffer.from("%PDF-1.7 test original");
+  const result = await h.processBufferUpload({ bytes: input, fileName: "invite.pdf", mimeType: "application/pdf", usage: "attachment" });
+  assert.deepEqual(h.pdfLoads, ["optimize", "render"]);
+  assert.equal(result.kind, "pdf");
+  assert.equal(result.stored.display.mimeType, "image/webp");
+  assert.equal(result.stored.source.mimeType, "application/pdf");
+  assert.equal(h.uploads.length, 3);
+  const original = h.uploads.find(upload => upload.pathname.endsWith("source.pdf"));
+  assert.deepEqual(original.bytes, input);
+});
+
+test("photo-only entry points accept images and reject PDFs before rendering or uploading", async () => {
+  const h = harness();
+  const result = await h.imageUploads.processBufferUpload({ bytes: await fixture("webp"), fileName: "photo.webp", mimeType: "image/webp", usage: "header" });
+  assert.equal(result.kind, "image");
+  const count = h.uploads.length;
+  await assert.rejects(h.imageUploads.processBufferUpload({ bytes: Buffer.from("%PDF-1.7"), fileName: "invite.pdf", mimeType: "application/pdf", usage: "attachment" }), { status: 415 });
+  await assert.rejects(h.imageUploads.processPublicUpload({ file: new File(["%PDF-1.7"], "invite.pdf", { type: "application/pdf" }), usage: "header" }), { status: 415 });
+  assert.equal(h.uploads.length, count);
+  assert.deepEqual(h.pdfLoads, []);
 });
 
 test("large images retain full-resolution WebP for source/download without a PNG copy", async () => {

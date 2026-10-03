@@ -90,7 +90,7 @@ function harness() {
     "@/lib/db": {},
     "@/lib/dashboard-cache": {},
     "@/lib/history-cache": {},
-    "@/lib/media-upload": {},
+    "@/lib/media-upload-image": {},
     "./personalization": personal,
     "./scan-media": media,
     "./scan-artwork-ticket": ticket,
