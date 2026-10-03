@@ -2117,13 +2117,13 @@ const handleGalleryUpload = (e) => {
 
       <div className="flex-1 overflow-y-auto w-full max-w-sm min-h-0">
         <div className="grid grid-cols-1 gap-3 pb-4">
-          {templateEditor && <MenuCard title="Design" icon={<Type size={18} />} desc="Choose your design and theme." onClick={() => setActiveView("design")} />}
           <MenuCard
             title="Headline"
             icon={<Type size={18} />}
             desc="Names, date, location."
             onClick={() => setActiveView("headline")}
           />
+          {templateEditor && <MenuCard title="Design" icon={<Type size={18} />} desc="Choose your design and theme." onClick={() => setActiveView("design")} />}
 
           <MenuCard
             title="Schedule"

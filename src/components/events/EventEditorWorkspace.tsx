@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowLeft, Eye, Pencil, PanelsTopLeft, ListPlus } from "lucide-react";
+import { Eye, Pencil, PanelsTopLeft, ListPlus } from "lucide-react";
 import { EventEditorMenuCard, EventEditorSection } from "./EventEditorFields";
 import { EventPageCompositionProvider } from "./EventPageCompositionContext";
 import {
@@ -63,7 +62,6 @@ export default function EventEditorWorkspace({
   preview,
   controls,
   children,
-  templatesHref,
   drawer,
   embedded = false,
   notices,
@@ -74,7 +72,7 @@ export default function EventEditorWorkspace({
 }: {
   editor: EventPageEditorSession;
   preview: ReactNode;
-  controls: ReactNode;
+  controls: ReactNode | ((headerAction: ReactNode) => ReactNode);
   templatesHref?: string;
   drawer?: Drawer;
   embedded?: boolean;
@@ -108,7 +106,7 @@ export default function EventEditorWorkspace({
                     : /rsvp|attendance/i.test(id)
                       ? "rsvp"
                       : "details";
-    return sectionEditors?.[alias]?.() || controls;
+    return sectionEditors?.[alias]?.() || (typeof controls === "function" ? controls(null) : controls);
   };
   const [editing, setEditing] = useState(true);
   const [mobile, setMobile] = useState(false);
@@ -135,6 +133,22 @@ export default function EventEditorWorkspace({
     setEditing(false);
     drawer?.dismissMobileMenu();
   };
+  const inlineHeader = typeof controls === "function";
+  const viewActions = !embedded && (
+    <div className={styles.views} role="group" aria-label="Editor view">
+      {currentEditing ? (
+        <button type="button" onClick={showPage}>
+          <Eye size={17} aria-hidden="true" />
+          Preview
+        </button>
+      ) : (
+        <button type="button" onClick={showEditing}>
+          <Pencil size={17} aria-hidden="true" />
+          Edit
+        </button>
+      )}
+    </div>
+  );
   const workspace = (
     <section
       className={styles.workspace}
@@ -155,29 +169,9 @@ export default function EventEditorWorkspace({
       )}
       {notices}
       <div className={styles.body}>
-        <header className={styles.header}>
-          {templatesHref && (
-            <Link href={templatesHref} className={styles.back}>
-              <ArrowLeft size={17} aria-hidden="true" />
-              Back
-            </Link>
-          )}
-          {!embedded && (
-            <div className={styles.views} role="group" aria-label="Editor view">
-              {currentEditing ? (
-                <button type="button" onClick={showPage}>
-                  <Eye size={17} aria-hidden="true" />
-                  Preview
-                </button>
-              ) : (
-                <button type="button" onClick={showEditing}>
-                  <Pencil size={17} aria-hidden="true" />
-                  Edit
-                </button>
-              )}
-            </div>
-          )}
-        </header>
+        {(!inlineHeader || !currentEditing) && (
+          <header className={styles.header}>{viewActions}</header>
+        )}
         <div
           className={styles.preview}
           role="region"
@@ -194,7 +188,11 @@ export default function EventEditorWorkspace({
           aria-label="Event editing controls"
           {...drawer?.drawerTouchHandlers}
         >
-          <div className={styles.controls} inert={editor.busy ? true : undefined}>
+          <div
+            className={styles.controls}
+            data-inline-header={inlineHeader}
+            inert={editor.busy ? true : undefined}
+          >
             {editor.setComposition && sectionEditors && !tool && (
               <div className={styles.compositionMenu}>
                 <EventEditorMenuCard
@@ -228,7 +226,9 @@ export default function EventEditorWorkspace({
                 )}
               </EventEditorSection>
             )}
-            <div hidden={Boolean(tool)}>{controls}</div>
+            <div hidden={Boolean(tool)}>
+              {typeof controls === "function" ? controls(viewActions) : controls}
+            </div>
           </div>
         </aside>
         <footer className={styles.footer}>

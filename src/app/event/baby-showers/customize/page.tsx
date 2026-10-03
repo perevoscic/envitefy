@@ -708,13 +708,13 @@ const handleGalleryUpload = (e) => {
       </div>
 
       <div className="grid grid-cols-1 gap-3 w-full max-w-sm">
-        {templateEditor && <MenuCard title="Design" icon={<Type size={18} />} desc="Choose your design and theme." onClick={() => setActiveView("design")} />}
           <MenuCard
           title="Headline"
           icon={<Type size={18} />}
           desc={isBridal ? "Bride’s name, date, location." : "Baby’s name, date, location."}
           onClick={() => setActiveView("headline")}
         />
+        {templateEditor && <MenuCard title="Design" icon={<Type size={18} />} desc="Choose your design and theme." onClick={() => setActiveView("design")} />}
 
         <MenuCard
           title={isBridal ? "Celebration details" : "About Baby"}

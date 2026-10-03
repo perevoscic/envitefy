@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import BottomNav from "@/components/navigation/BottomNav";
+import ConciergeLauncher from "@/components/navigation/ConciergeLauncher";
 import type { SignedOutBottomNavItem } from "@/config/navigation";
 
 type ScrollAwareBottomNavProps = {
@@ -23,26 +24,34 @@ export default function ScrollAwareBottomNav({
   onHashSelect,
 }: ScrollAwareBottomNavProps) {
   const [showNav, setShowNav] = useState(false);
+  const [showDesktopConcierge, setShowDesktopConcierge] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
-    const hero = document.querySelector("#hero, #landing-hero, main > section:first-of-type:not(#templates)");
+    const hero = document.querySelector(
+      "#hero, #landing-hero, main > section:first-of-type:not(#templates)",
+    );
     const mobileQuery = window.matchMedia("(max-width: 767px)");
     const syncCurrentVisibility = () => {
       const rect = hero?.getBoundingClientRect();
       const heroVisible = rect ? rect.bottom > 0 && rect.top < window.innerHeight : false;
       setShowNav(mobileQuery.matches && !heroVisible);
+      setShowDesktopConcierge(!mobileQuery.matches && !heroVisible);
     };
 
-    const observer = typeof IntersectionObserver === "undefined" ? null : new IntersectionObserver(
-      ([entry]) => {
-        if (!entry) return;
-        setShowNav(mobileQuery.matches && !entry.isIntersecting);
-      },
-      {
-        threshold: [0],
-      },
-    );
+    const observer =
+      typeof IntersectionObserver === "undefined"
+        ? null
+        : new IntersectionObserver(
+            ([entry]) => {
+              if (!entry) return;
+              setShowNav(mobileQuery.matches && !entry.isIntersecting);
+              setShowDesktopConcierge(!mobileQuery.matches && !entry.isIntersecting);
+            },
+            {
+              threshold: [0],
+            },
+          );
 
     syncCurrentVisibility();
     if (hero) observer?.observe(hero);
@@ -63,23 +72,28 @@ export default function ScrollAwareBottomNav({
   }, [onVisibilityChange, showNav]);
 
   return (
-    <div
-      aria-hidden={!showNav}
-      inert={!showNav}
-      className={[
-        "fixed inset-x-0 bottom-0 z-50 md:hidden transition-all duration-300 ease-out motion-reduce:transition-none",
-        showNav
-          ? "translate-y-0 opacity-100 pointer-events-auto"
-          : "translate-y-full opacity-0 pointer-events-none",
-      ].join(" ")}
-    >
-      <BottomNav
-        initialActiveLabel={initialActiveLabel}
-        items={items}
-        onHashSelect={onHashSelect}
-        onConciergeSelect={onConciergeSelect}
-        onMenuSelect={onMenuSelect}
-      />
-    </div>
+    <>
+      <div
+        aria-hidden={!showNav}
+        inert={!showNav}
+        className={[
+          "fixed inset-x-0 bottom-0 z-50 md:hidden transition-all duration-300 ease-out motion-reduce:transition-none",
+          showNav
+            ? "translate-y-0 opacity-100 pointer-events-auto"
+            : "translate-y-full opacity-0 pointer-events-none",
+        ].join(" ")}
+      >
+        <BottomNav
+          initialActiveLabel={initialActiveLabel}
+          items={items}
+          onHashSelect={onHashSelect}
+          onConciergeSelect={onConciergeSelect}
+          onMenuSelect={onMenuSelect}
+        />
+      </div>
+      {onConciergeSelect && (
+        <ConciergeLauncher visible={showDesktopConcierge} onOpen={onConciergeSelect} />
+      )}
+    </>
   );
 }

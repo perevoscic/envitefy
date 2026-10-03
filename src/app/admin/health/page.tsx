@@ -13,9 +13,6 @@ export default async function AdminHealthPage() {
       "event_tracking_events",
       "rsvp_responses",
       "email_campaigns",
-      "creation_sessions",
-      "conversation_threads",
-      "conversation_messages",
     ].map(async (name) => ({ name, exists: await tableExists(name) })),
   );
 

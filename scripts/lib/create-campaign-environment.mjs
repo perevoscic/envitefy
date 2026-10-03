@@ -261,7 +261,6 @@ export async function prepareCampaignEnvironment({ runDir, repoRoot = process.cw
     await client.connect();
     try {
       const result = await client.query(`select
-        (select count(*)::int from creation_sessions where user_id=u.id) as "creationSessions",
         (select count(*)::int from event_history where user_id=u.id) as events
         from users u where u.email=$1`, [email]);
       return result.rows[0];

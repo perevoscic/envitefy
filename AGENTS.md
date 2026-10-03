@@ -4,7 +4,9 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 
 ## Reality Check
 
-- Creation chat retirement (October 3, 2026): remove the legacy signed-in event-creation chat, thread sidebar requests, conversation intake APIs, owner assistant and admin chat metrics. Old `/chat` links, including `?thread=...`, return to the dashboard. Keep the signed-out public help chat for questions about Envitefy, labelled Help. Creation uses Live Cards, Event Page editors and the separate Sign-up Form builder. Preserve saved events, artwork, stored historical data and shared helpers still used by current products. This supersedes earlier instructions to preserve saved conversation access and chat creation APIs.
+- Creation chat retirement (October 3, 2026): remove the legacy signed-in event-creation chat, thread sidebar requests, conversation intake APIs, owner assistant and admin chat metrics. Old `/chat` links, including `?thread=...`, return to the dashboard. Keep the signed-out public help chat for questions about Envitefy, named Envitefy Concierge with Concierge in navigation. Creation uses Live Cards, Event Page editors and the separate Sign-up Form builder. Preserve saved events, artwork, stored historical data and shared helpers still used by current products. This supersedes earlier instructions to preserve saved conversation access and chat creation APIs.
+
+- Desktop Concierge visibility (October 3, 2026): show the signed-out Concierge launcher in the bottom-right after the landing hero leaves the viewport, and hide it while any of the hero is visible. Slide it in from the right and back out to the right; respect reduced motion. Use the same hero observer as mobile navigation. Desktop opens the existing question chat in a compact corner panel; phones retain the bottom navigation and bottom sheet. Verify with `npm run test:concierge`.
 
 - Original event artwork preference (October 3, 2026): remove Filter on / Filter off controls and the automatic template-accent tint across every event category and signup form. Display original template and uploaded artwork colors in editors, previews and published pages, including older saved events with enabled filter flags. Keep existing image sources, fit, position and native text-legibility overlays. This supersedes all earlier automatic hero tint and filter-switch preferences.
 
@@ -94,6 +96,8 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 - Product naming (September 15, 2026): the former Envitefy Concierge is **Envitefy Create**. Use **Create with Envitefy** for creation buttons and **Create** in compact navigation; chat-specific controls may say New chat or Chat history. Public introductions use `/envitefy-create`, with `/envitefy-concierge` redirecting there. Keep `/chat`, existing API routes, saved data keys, event URLs and legacy asset filenames compatible. Earlier Concierge references in these notes refer to the same current creation feature.
 
 ## Explicit Draft Saves
+
+- Mobile shared guest actions (October 3, 2026): keep calendar, directions and sharing in one row with icons and the labels To Calendar, Directions and Share. Apply this to every shared Event Page action row, including template, generated, uploaded and signup pages. Respond to the available content width so narrow editor previews also fit. Preserve complete accessible action names, calendar provider behavior, and 44px touch heights.
 
 - Event Page save controls (October 3, 2026): overlay Cancel and save/publish actions at the bottom of the Add your details editor column, matching that column's width. Let the event preview use the full available height. Keep the last editing controls reachable by scrolling them above the overlay. Preview mode keeps compact floating actions.
 

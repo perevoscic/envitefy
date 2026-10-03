@@ -4,7 +4,7 @@ import { EventEditorInput as InputGroup, EventEditorMenuCard as MenuCard, EventE
 import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
 import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import { useEventHistoryClient } from "@/lib/event-history-client";
-import { EventSectionBuilderProvider, EventSectionPalette, EventSectionsReadOnly, } from "@/components/events/EventSectionBuilder";
+import { EventSectionBuilderProvider, EventSectionsReadOnly } from "@/components/events/EventSectionBuilder";
 import { normalizeEventSectionLayout } from "@/lib/event-section-layout";
 import HeroImageEditor from "@/components/events/HeroImageEditor";
 import CustomEventUrlField, { checkCustomEventUrl } from "@/components/events/CustomEventUrlField";

@@ -147,7 +147,8 @@
   .actionRow .button {
     gap: 0.1875rem;
     padding-inline: 0.125rem;
-    font-size: clamp(0.625rem, 5cqw, 0.75rem);
+    font-size: clamp(0.625rem, 4.5cqw, 0.75rem);
+    font-weight: 500;
   }
   .actionRow .button svg {
     width: 0.75rem;

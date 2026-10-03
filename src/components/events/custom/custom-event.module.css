@@ -526,9 +526,8 @@
 .preview .heroTitle {
   font-size: clamp(2rem, 3vw, 3.5rem);
 }
-.weatherUnits { display: flex; align-items: center; gap: 8px; padding: 0 6px; }
-.weatherUnits > span { flex: 1; font-size: 13px; color: #64546f; }
-.weatherUnits button { min-width: 44px; min-height: 44px; border: 1px solid #d9cfea; border-radius: 9px; background: #fff; color: #493d5c; cursor: pointer; font-size: 14px; }
+.weatherUnits { display: flex; align-items: center; flex-shrink: 0; gap: 4px; }
+.weatherUnits button { width: 32px; min-height: 40px; padding: 0; border: 1px solid #d9cfea; border-radius: 8px; background: #fff; color: #493d5c; cursor: pointer; font-size: 12px; }
 .weatherUnits button[aria-pressed="true"] { border-color: #625196; background: #ede7fa; }
 .weatherUnits button:focus-visible { outline: 2px solid #7052a1; outline-offset: 3px; }
 @container (max-width: 540px) {

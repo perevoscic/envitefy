@@ -28,6 +28,7 @@
 }
 .views {
   margin-left: auto;
+  flex-shrink: 0;
 }
 .views,
 .actions {
@@ -36,7 +37,6 @@
   align-items: center;
   gap: 8px;
 }
-.back,
 .views button,
 .actions button {
   display: inline-flex;
@@ -53,10 +53,6 @@
   font-weight: 600;
   cursor: pointer;
 }
-.back {
-  text-decoration: none;
-}
-.back:focus-visible,
 .views button:focus-visible,
 .actions button:focus-visible {
   outline: 2px solid #7052a1;
@@ -187,7 +183,6 @@
   .workspace[data-editing="true"][data-embedded="false"] .header {
     left: max(12px, env(safe-area-inset-left, 0px));
   }
-  .back,
   .views button {
     padding-inline: 8px;
   }
@@ -235,6 +230,9 @@
     flex: 1;
     padding-inline: 9px;
   }
+}
+.controls[data-inline-header="true"] {
+  padding-top: 0;
 }
 @media (prefers-reduced-motion: reduce) {
   .workspace * {
@@ -362,7 +360,14 @@
 .sectionMenu[hidden] {
   display: none;
 }
-.sectionMenu > h2 {
+.menuHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.menuHeader > h2 {
+  min-width: 0;
   margin: 0;
   font:
     23px var(--font-playfair),
@@ -378,28 +383,54 @@
 .toggleRow {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
   min-height: 60px;
-  padding: 10px 14px;
+  padding: 8px 10px;
   border: 1px solid #e1d8ee;
   border-radius: 12px;
   background: #fff;
   color: #493d5c;
-  cursor: pointer;
   text-align: left;
 }
-.toggleRow:focus-visible {
+.toggleSwitch input:focus-visible + .toggleTrack {
   outline: 2px solid #7052a1;
   outline-offset: 3px;
 }
 .toggleLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex: 1;
   min-width: 0;
-  font-size: 14px;
+  min-height: 44px;
+  font-size: 13px;
   font-weight: 600;
+  cursor: pointer;
+}
+.toggleLabel .menuIcon {
+  width: 36px;
+  min-height: 38px;
+}
+.toggleSwitch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  min-height: 44px;
+}
+.toggleSwitch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 .toggleTrack {
+  pointer-events: none;
   flex-shrink: 0;
   width: 44px;
   height: 26px;
@@ -416,14 +447,17 @@
   box-shadow: 0 1px 3px #302a3a30;
   transition: transform 160ms ease;
 }
-.toggleRow[aria-checked="true"] .toggleTrack {
+.toggleSwitch input:checked + .toggleTrack {
   background: var(--create-accent, #625196);
 }
-.toggleRow[aria-checked="true"] .toggleTrack > span {
+.toggleSwitch input:checked + .toggleTrack > span {
   transform: translateX(18px);
 }
-.toggleRow:disabled {
+.toggleSwitch input:disabled + .toggleTrack {
   opacity: 0.55;
+  cursor: default;
+}
+.toggleSwitch input:disabled {
   cursor: default;
 }
 @media (prefers-reduced-motion: reduce) {

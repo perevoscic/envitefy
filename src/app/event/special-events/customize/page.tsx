@@ -1029,6 +1029,7 @@ export default function SpecialEventsCustomizePage() {
           desc="Title, date, location."
           onClick={() => setActiveView("headline")}
         />
+        <MenuCard title="Design" desc="Page style, typography, and colors." icon={<Type size={18} />} onClick={() => setActiveView("design")} />
 
         <MenuCard
           title="Details"

@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Send, UserPlus, X } from "lucide-react";
 import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
+import styles from "./concierge-sheet.module.css";
 
 type ChatRole = "assistant" | "user";
 
@@ -72,7 +73,37 @@ export default function ConciergeSheet({
   const [messages, setMessages] = useState<ChatMessage[]>([welcomeMessage]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 768px)");
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const syncViewport = () => {
+      setIsDesktop(query.matches);
+      setReducedMotion(motionQuery.matches);
+    };
+    syncViewport();
+    query.addEventListener("change", syncViewport);
+    motionQuery.addEventListener("change", syncViewport);
+    return () => {
+      query.removeEventListener("change", syncViewport);
+      motionQuery.removeEventListener("change", syncViewport);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!open || !isDesktop) return;
+    const previousFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const frame = requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+    return () => {
+      cancelAnimationFrame(frame);
+      previousFocus?.focus({ preventScroll: true });
+    };
+  }, [open, isDesktop]);
 
   useEffect(() => {
     if (!open) return;
@@ -88,7 +119,7 @@ export default function ConciergeSheet({
   }, [onOpenChange, open]);
 
   useEffect(() => {
-    if (!open || typeof document === "undefined") return;
+    if (!open || isDesktop || typeof document === "undefined") return;
 
     const { body, documentElement } = document;
     const previousBodyOverflow = body.style.overflow;
@@ -107,15 +138,15 @@ export default function ConciergeSheet({
       documentElement.style.overflow = previousHtmlOverflow;
       documentElement.style.overscrollBehavior = previousHtmlOverscrollBehavior;
     };
-  }, [open]);
+  }, [open, isDesktop]);
 
   useEffect(() => {
     if (!open) return;
     scrollRef.current?.scrollTo({
       top: scrollRef.current.scrollHeight,
-      behavior: "smooth",
+      behavior: reducedMotion ? "instant" : "smooth",
     });
-  }, [messages, isSending, open]);
+  }, [messages, isSending, open, reducedMotion]);
 
   async function sendMessage(text: string) {
     const trimmed = text.trim();
@@ -147,7 +178,7 @@ export default function ConciergeSheet({
       });
       const data = parseGuestChatResponse(await res.json().catch(() => ({})));
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || "Envitefy Help is temporarily unavailable.");
+        throw new Error(data.error || "Envitefy Concierge is temporarily unavailable.");
       }
 
       setMessages((current) => [
@@ -170,7 +201,7 @@ export default function ConciergeSheet({
           text:
             error instanceof Error
               ? error.message
-              : "Envitefy Help is temporarily unavailable.",
+              : "Envitefy Concierge is temporarily unavailable.",
         },
       ]);
     } finally {
@@ -191,27 +222,38 @@ export default function ConciergeSheet({
   return (
     <AnimatePresence>
       {open ? (
-        <div className="fixed inset-0 z-[90] md:hidden" role="presentation">
+        <div
+          className="pointer-events-none fixed inset-0 z-[90] overflow-hidden"
+          role="presentation"
+        >
           <motion.button
             type="button"
-            aria-label="Dismiss Envitefy Help"
-            className="absolute inset-0 bg-[#120b1d]/48 backdrop-blur-[3px]"
+            aria-label="Dismiss Envitefy Concierge"
+            className="pointer-events-auto absolute inset-0 bg-[#120b1d]/48 backdrop-blur-[3px] md:hidden"
             onClick={() => onOpenChange(false)}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.22, ease: "easeOut" }}
+            transition={{ duration: reducedMotion ? 0 : 0.22, ease: "easeOut" }}
           />
 
           <motion.section
             role="dialog"
-            aria-modal="true"
-            aria-label="Envitefy Help"
-            className="absolute inset-x-0 bottom-0 mx-auto flex h-[82vh] max-h-[85vh] min-h-[70vh] w-full max-w-md flex-col overflow-hidden rounded-t-[1.75rem] border border-white/12 bg-[#fbf8ff] text-[#211821] shadow-[0_-28px_90px_rgba(20,11,34,0.38)]"
-            initial={{ y: "100%", opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: "100%", opacity: 0 }}
-            transition={{ duration: 0.32, ease: "easeOut" }}
+            aria-modal={!isDesktop}
+            aria-label="Envitefy Concierge"
+            className={`${styles.panel} pointer-events-auto absolute inset-x-0 bottom-0 mx-auto flex h-[82vh] max-h-[85vh] min-h-[70vh] w-full max-w-md flex-col overflow-hidden rounded-t-[1.75rem] border border-white/12 bg-[#fbf8ff] text-[#211821] shadow-[0_-28px_90px_rgba(20,11,34,0.38)]`}
+            initial={
+              reducedMotion
+                ? false
+                : { x: isDesktop ? "calc(100% + 2rem)" : 0, y: isDesktop ? 0 : "100%", opacity: 0 }
+            }
+            animate={{ x: 0, y: 0, opacity: 1 }}
+            exit={
+              reducedMotion
+                ? { opacity: 0 }
+                : { x: isDesktop ? "calc(100% + 2rem)" : 0, y: isDesktop ? 0 : "100%", opacity: 0 }
+            }
+            transition={{ duration: reducedMotion ? 0 : 0.32, ease: "easeOut" }}
           >
             <header className="shrink-0 border-b border-white/10 bg-[linear-gradient(135deg,#171019_0%,#241927_52%,#40233d_100%)] px-4 pb-4 pt-4 text-[#fff9ef] shadow-[0_1px_0_rgba(255,255,255,0.1)_inset]">
               <div className="flex items-center justify-between gap-3">
@@ -226,7 +268,7 @@ export default function ConciergeSheet({
                       className="truncate text-base font-semibold text-[#f9df94]"
                       style={{ color: "#f9df94" }}
                     >
-                      Envitefy Help
+                      Envitefy Concierge
                     </h2>
                     <p className="truncate text-xs font-semibold text-[#fff7df]">
                       Questions about Envitefy
@@ -237,7 +279,7 @@ export default function ConciergeSheet({
                   type="button"
                   onClick={() => onOpenChange(false)}
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#f4ead5]/78 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f]"
-                  aria-label="Close Envitefy Help"
+                  aria-label="Close Envitefy Concierge"
                   title="Close"
                 >
                   <X className="h-5 w-5" aria-hidden="true" />
@@ -316,6 +358,8 @@ export default function ConciergeSheet({
             >
               <div className="flex items-end gap-2 rounded-2xl border border-[#e1d3f2] bg-[#fbf8ff] p-2 focus-within:border-[#9b7beb]">
                 <textarea
+                  ref={inputRef}
+                  aria-label="Question for Envitefy Concierge"
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
                   onKeyDown={(event) => {
@@ -327,14 +371,14 @@ export default function ConciergeSheet({
                   rows={1}
                   maxLength={1000}
                   className="max-h-28 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-sm leading-5 text-[#211821] outline-none placeholder:text-[#8c8192]"
-                  placeholder="Describe your event..."
+                  placeholder="Ask about Envitefy..."
                   disabled={isSending}
                 />
                 <button
                   type="submit"
                   disabled={isSending || !input.trim()}
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#5f3cff_0%,#8b4dff_58%,#f04fb7_100%)] text-white shadow-[0_10px_22px_rgba(115,76,224,0.25)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
-                  aria-label="Send Envitefy Help message"
+                  aria-label="Send Envitefy Concierge message"
                   title="Send"
                 >
                   {isSending ? (

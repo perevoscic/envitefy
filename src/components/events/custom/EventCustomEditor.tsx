@@ -496,25 +496,14 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
       onChange={(value) => updateDetail(key, value)}
     />
   );
-  const menuToggles = (
-    <>
-      {d.sections.some((section) => section.map) && (
-        <EventEditorToggle
-          label="Show parking map"
-          icon={<MapPinned size={20} />}
-          checked={d.arrivalMapEnabled !== false}
-          onChange={(enabled) => updateDetail("arrivalMapEnabled", enabled ? undefined : false)}
-        />
-      )}
-      <EventEditorToggle
-        label="Show weather"
-        icon={<CloudSun size={20} />}
-        checked={d.weather?.enabled === true}
-        onChange={(enabled) => updateDetail("weather", { enabled, units: d.weather?.units || "f" })}
-      />
-      {d.weather?.enabled && (
-        <div className={styles.weatherUnits} role="group" aria-label="Temperature units">
-          <span>Temperature units</span>
+  const menuWeather = (
+    <EventEditorToggle
+      label="Show weather"
+      icon={<CloudSun size={20} />}
+      checked={d.weather?.enabled === true}
+      onChange={(enabled) => updateDetail("weather", { enabled, units: d.weather?.units || "f" })}
+      controls={d.weather?.enabled && (
+        <div className={styles.weatherUnits} role="group" aria-label="Weather units">
           {(["f", "c"] as const).map((units) => (
             <button
               type="button"
@@ -528,7 +517,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
           ))}
         </div>
       )}
-    </>
+    />
   );
   return (
     <EventSectionBuilderProvider layout={d.sectionLayout}
@@ -586,14 +575,23 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
           />
         </div>
       }
-      controls={
+      controls={(headerAction) => (
         <fieldset
           disabled={busy}
           className={styles.sharedControls}
           aria-label="Event editing controls"
         >
           <EventEditorSections
-            menuContent={menuToggles}
+            headerAction={headerAction}
+            menuContent={menuWeather}
+            menuFooter={d.sections.some((section) => section.map) && (
+              <EventEditorToggle
+                label="Show parking map"
+                icon={<MapPinned size={20} />}
+                checked={d.arrivalMapEnabled !== false}
+                onChange={(enabled) => updateDetail("arrivalMapEnabled", enabled ? undefined : false)}
+              />
+            )}
             activeSection={activeSection}
             onSectionChange={setActiveSection}
             sections={[
@@ -614,6 +612,89 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
                     </div>
                     {field("venue", "Venue")}
                     {field("location", "Address or location")}
+                  </>
+                ),
+              },
+              {
+                id: "design",
+                title: "Design",
+                description: "Photos, layout, typography and colors.",
+                content: (
+                  <>
+                    <div className={styles.group}>
+                      <h2>Design</h2>
+                      <HeroImageEditor
+                        label="Replace hero image"
+                        prepareImage={prepareCustomEventHeroImage}
+                        onBusyChange={setImageBusy}
+                        onChange={(artwork) =>
+                          setPage((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  artwork,
+                                  design: {
+                                    ...current.design,
+                                    description: "Hero image selected by the host.",
+                                  },
+                                }
+                              : current,
+                          )
+                        }
+                      />
+                      <p>
+                        {published
+                          ? "Your selected image is saved when you choose Save changes."
+                          : "Your selected image is saved when you choose Save draft or Publish."}
+                      </p>
+                      <CustomEventLayoutPicker
+                        page={page}
+                        onChange={(layout) =>
+                          setPage((current) =>
+                            current
+                              ? { ...current, design: { ...current.design, layout } }
+                              : current,
+                          )
+                        }
+                      />
+                      <fieldset className={styles.field}>
+                        <legend>Typography</legend>
+                        <FontPairingSelect
+                          options={EVENT_DESIGN_FONT_PAIRS}
+                          value={page.design.font}
+                          onChange={(font) =>
+                            setPage({ ...page, design: { ...page.design, font } })
+                          }
+                        />
+                      </fieldset>
+                      <div className={styles.columns}>
+                        {(["page", "surface", "ink", "accent"] as const).map((key) => (
+                          <label key={key} className={styles.field}>
+                            {key}
+                            <input
+                              type="color"
+                              value={page.design.colors[key]}
+                              onChange={(e) =>
+                                setPage({
+                                  ...page,
+                                  design: {
+                                    ...page.design,
+                                    colors: { ...page.design.colors, [key]: e.target.value },
+                                  },
+                                })
+                              }
+                            />
+                          </label>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.secondary}
+                        onClick={() => setRedesign(true)}
+                      >
+                        Redesign with Envitefy
+                      </button>
+                    </div>
                   </>
                 ),
               },
@@ -744,89 +825,6 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
                 ),
               },
               {
-                id: "design",
-                title: "Design",
-                description: "Photos, layout, typography and colors.",
-                content: (
-                  <>
-                    <div className={styles.group}>
-                      <h2>Design</h2>
-                      <HeroImageEditor
-                        label="Replace hero image"
-                        prepareImage={prepareCustomEventHeroImage}
-                        onBusyChange={setImageBusy}
-                        onChange={(artwork) =>
-                          setPage((current) =>
-                            current
-                              ? {
-                                  ...current,
-                                  artwork,
-                                  design: {
-                                    ...current.design,
-                                    description: "Hero image selected by the host.",
-                                  },
-                                }
-                              : current,
-                          )
-                        }
-                      />
-                      <p>
-                        {published
-                          ? "Your selected image is saved when you choose Save changes."
-                          : "Your selected image is saved when you choose Save draft or Publish."}
-                      </p>
-                      <CustomEventLayoutPicker
-                        page={page}
-                        onChange={(layout) =>
-                          setPage((current) =>
-                            current
-                              ? { ...current, design: { ...current.design, layout } }
-                              : current,
-                          )
-                        }
-                      />
-                      <fieldset className={styles.field}>
-                        <legend>Typography</legend>
-                        <FontPairingSelect
-                          options={EVENT_DESIGN_FONT_PAIRS}
-                          value={page.design.font}
-                          onChange={(font) =>
-                            setPage({ ...page, design: { ...page.design, font } })
-                          }
-                        />
-                      </fieldset>
-                      <div className={styles.columns}>
-                        {(["page", "surface", "ink", "accent"] as const).map((key) => (
-                          <label key={key} className={styles.field}>
-                            {key}
-                            <input
-                              type="color"
-                              value={page.design.colors[key]}
-                              onChange={(e) =>
-                                setPage({
-                                  ...page,
-                                  design: {
-                                    ...page.design,
-                                    colors: { ...page.design.colors, [key]: e.target.value },
-                                  },
-                                })
-                              }
-                            />
-                          </label>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        className={styles.secondary}
-                        onClick={() => setRedesign(true)}
-                      >
-                        Redesign with Envitefy
-                      </button>
-                    </div>
-                  </>
-                ),
-              },
-              {
                 id: "link",
                 title: "Public link",
                 description: "Your event's public address.",
@@ -893,7 +891,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
             ]}
           />
         </fieldset>
-      }
+      )}
     >
       {previewOnly && (
         <dialog

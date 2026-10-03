@@ -56,7 +56,7 @@ function parseGuestChatResponse(value: unknown): GuestChatApiResponse {
 
 function transcriptFromMessages(messages: ChatMessage[]) {
   return messages
-    .map((message) => `${message.role === "user" ? "Visitor" : "Envitefy help"}: ${message.text}`)
+    .map((message) => `${message.role === "user" ? "Visitor" : "Envitefy Concierge"}: ${message.text}`)
     .join("\n\n")
     .slice(-6000);
 }
@@ -206,7 +206,7 @@ export default function GuestChatWidget() {
     <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-[80] flex flex-col items-end gap-3 sm:right-6">
       {open ? (
         <section
-          aria-label="Envitefy guest help chat"
+          aria-label="Envitefy Concierge chat"
           className="w-[calc(100vw-2rem)] overflow-hidden rounded-lg border border-[#d8c495]/80 bg-[#fffaf2] text-[#211821] shadow-[0_28px_80px_rgba(20,15,24,0.3),0_1px_0_rgba(255,255,255,0.8)_inset] sm:w-[24rem]"
         >
           <header className="flex items-center justify-between gap-3 border-b border-[#d7b46a]/28 bg-[linear-gradient(135deg,#171019_0%,#241927_58%,#3a2735_100%)] px-4 py-3 text-[#fff8e9] shadow-[0_1px_0_rgba(255,255,255,0.08)_inset]">
@@ -215,7 +215,7 @@ export default function GuestChatWidget() {
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
               </span>
               <div className="min-w-0">
-                <h2 className="truncate text-sm font-semibold !text-[#fff9ef]">Envitefy help</h2>
+                <h2 className="truncate text-sm font-semibold !text-[#fff9ef]">Envitefy Concierge</h2>
                 <p className="truncate text-xs text-[#d8c8aa]">Guest questions</p>
               </div>
             </div>
@@ -223,7 +223,7 @@ export default function GuestChatWidget() {
               type="button"
               onClick={() => setOpen(false)}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-[#f4ead5]/78 transition hover:bg-white/10 hover:text-white"
-              aria-label="Close guest help chat"
+              aria-label="Close Envitefy Concierge chat"
               title="Close"
             >
               <X className="h-4 w-4" aria-hidden="true" />
@@ -375,7 +375,7 @@ export default function GuestChatWidget() {
               type="submit"
               disabled={isSending || !input.trim()}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-[#d8b972]/42 bg-[linear-gradient(135deg,#201622_0%,#3a293d_100%)] text-[#fff9ef] shadow-[0_10px_22px_rgba(32,22,34,0.2)] transition hover:-translate-y-0.5 hover:bg-[#352a39] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
-              aria-label="Send guest chat message"
+              aria-label="Send Envitefy Concierge message"
               title="Send"
             >
               {isSending ? (
@@ -392,8 +392,8 @@ export default function GuestChatWidget() {
         type="button"
         onClick={() => setOpen((value) => !value)}
         className="flex h-14 w-14 items-center justify-center rounded-full border border-[#e4c678]/70 bg-[linear-gradient(135deg,#171019_0%,#302133_100%)] text-[#fff9ef] shadow-[0_18px_48px_rgba(20,15,24,0.34),0_1px_0_rgba(255,255,255,0.12)_inset] transition hover:-translate-y-0.5 hover:border-[#f1d28b] hover:bg-[#352a39] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f] focus-visible:ring-offset-2"
-        aria-label={open ? "Close Envitefy guest help" : "Open Envitefy guest help"}
-        title={open ? "Close help" : "Envitefy help"}
+        aria-label={open ? "Close Envitefy Concierge" : "Open Envitefy Concierge"}
+        title={open ? "Close Concierge" : "Envitefy Concierge"}
       >
         {open ? (
           <X className="h-6 w-6" aria-hidden="true" />

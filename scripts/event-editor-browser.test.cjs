@@ -185,7 +185,7 @@ test("one Event Page editor protects saves and navigation across creation modes 
     const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true, includeHidden: true });
     const panelTop = await controls.evaluate((element) => element.scrollTop);
     const windowTop = await page.evaluate(() => scrollY);
-    const header = await workspace.locator("header").first().boundingBox();
+    const header = await viewActions.boundingBox();
     const footer = await page.getByRole("group", { name: "Save event", exact: true }).boundingBox();
     await preview.evaluate((element) => { element.scrollTop = 0; });
     const bounds = await preview.boundingBox();
@@ -209,7 +209,7 @@ test("one Event Page editor protects saves and navigation across creation modes 
     await page.waitForFunction(() => document.querySelector('[aria-label="Event page preview panel"]').scrollTop > 0);
     assert.equal(await controls.evaluate((element) => element.scrollTop), panelTop, `${context}: event scrolling leaves controls in place`);
     assert.equal(await page.evaluate(() => scrollY), windowTop, `${context}: event scrolling leaves the workspace in place`);
-    assert.deepEqual(await workspace.locator("header").first().boundingBox(), header);
+    assert.deepEqual(await viewActions.boundingBox(), header);
     assert.deepEqual(await page.getByRole("group", { name: "Save event", exact: true }).boundingBox(), footer);
   };
   const checkGuestActionRow = async (region, context, expected = ["To Calendar", "Directions", "Share"]) => {

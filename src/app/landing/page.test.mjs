@@ -453,11 +453,10 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
     "public/fonts/Josefin_Slab/JosefinSlab-VariableFont_wght.ttf",
   );
   const heroTopNav = readSource("src/components/navigation/HeroTopNav.tsx");
-  const aiConciergeSection = readSource("src/app/landing/sections/AIConciergeSection.tsx");
 
   assert.match(signedOutNav, /from "@\/config\/navigation"/);
   assert.match(signedOutNavConfig, /export const signedOutBottomNav/);
-  for (const label of ["Templates", "Examples", "Help", "More ways", "Menu"]) {
+  for (const label of ["Templates", "Examples", "Concierge", "More ways", "Menu"]) {
     assert.match(signedOutNavConfig, new RegExp(`label: "${label}"`));
   }
   assert.match(signedOutNavConfig, /href: "#examples"/);
@@ -507,7 +506,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(bottomNav, /backdrop-blur-2xl/);
   assert.match(bottomNav, /rounded-\[1\.65rem\]/);
   assert.match(bottomNav, /env\(safe-area-inset-bottom\)/);
-  assert.match(bottomNav, /initialActiveLabel = "Help"/);
+  assert.match(bottomNav, /initialActiveLabel = "Concierge"/);
   assert.match(bottomNav, /const \[activeLabel, setActiveLabel\] = useState\(initialActiveLabel\)/);
   assert.match(bottomNav, /onHashSelect\?: \(href: string\) => void/);
   assert.match(bottomNav, /const handleHashSelect = \(href: string\) => \{/);
@@ -665,13 +664,12 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(landingExperience, /mobileNavLinks=\{\[...signedOutMobileMenuLinks\]\}/);
   assert.match(landingExperience, /showMobileMenuAuthActions=\{false\}/);
   assert.match(landingExperience, /brandHref="\/"/);
-  assert.match(landingExperience, /Ask Envitefy/);
+  assert.match(landingExperience, /Ask Concierge/);
   assert.match(landingExperience, /openHelpChat/);
-  assert.match(landingExperience, /<AIConciergeSection \/>/);
+  assert.doesNotMatch(landingExperience, /AIConciergeSection/);
   assert.match(landingExperience, /<CategoryDirectory \/>/);
   assert.match(landingExperience, /<HeroCategoryStrip \/>/);
-  assert.match(aiConciergeSection, /onPrimaryAction\?: \(\) => void/);
-  assert.match(conciergeSheet, /Envitefy Help/);
+  assert.match(conciergeSheet, /Envitefy Concierge/);
   assert.match(conciergeSheet, /Questions about Envitefy/);
   assert.match(conciergeSheet, /logo-colored\.png/);
   assert.match(conciergeSheet, /bg-\[#f6d477\]/);
@@ -692,7 +690,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(conciergeSheet, /h-\[82vh\] max-h-\[85vh\] min-h-\[70vh\]/);
   assert.match(conciergeSheet, /rounded-t-\[1\.75rem\]/);
   assert.match(conciergeSheet, /bg-\[#120b1d\]\/48 backdrop-blur-\[3px\]/);
-  assert.match(conciergeSheet, /initial=\{\{ y: "100%", opacity: 0 \}\}/);
+  assert.match(conciergeSheet, /x: isDesktop \? "calc\(100% \+ 2rem\)" : 0, y: isDesktop \? 0 : "100%"/);
   assert.match(conciergeSheet, /pb-\[calc\(0\.85rem\+env\(safe-area-inset-bottom\)\)\]/);
   assert.doesNotMatch(conciergeSheet, /Open Envitefy guest help/);
   assert.match(heroTopNav, /mobileNavLinks\?: HeroTopNavLink\[]/);

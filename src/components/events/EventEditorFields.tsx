@@ -104,11 +104,13 @@ export function EventEditorSection({
   title,
   onBack,
   showBack = true,
+  headerAction,
   children,
 }: {
   title: string;
   onBack?: () => void;
   showBack?: boolean;
+  headerAction?: ReactNode;
   children: ReactNode;
 }) {
   const sectionDialog = useSectionEditorClose();
@@ -122,6 +124,7 @@ export function EventEditorSection({
           </button>
         )}
         <h2>{title}</h2>
+        {headerAction}
       </div>
       {children}
     </div>
@@ -133,30 +136,40 @@ export function EventEditorToggle({
   checked,
   onChange,
   icon,
+  controls,
 }: {
   label: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
   icon?: ReactNode;
+  controls?: ReactNode;
 }) {
+  const toggleId = useId();
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      className={styles.toggleRow}
-      onClick={() => onChange(!checked)}
-    >
-      {icon && (
-        <span className={styles.menuIcon} aria-hidden="true">
-          {icon}
+    <div className={styles.toggleRow}>
+      <label className={styles.toggleLabel} htmlFor={toggleId}>
+        {icon && (
+          <span className={styles.menuIcon} aria-hidden="true">
+            {icon}
+          </span>
+        )}
+        <span>{label}</span>
+      </label>
+      {controls}
+      <span className={styles.toggleSwitch}>
+        <input
+          id={toggleId}
+          type="checkbox"
+          role="switch"
+          aria-checked={checked}
+          checked={checked}
+          onChange={(event) => onChange(event.target.checked)}
+        />
+        <span className={styles.toggleTrack} aria-hidden="true">
+          <span />
         </span>
-      )}
-      <span className={styles.toggleLabel}>{label}</span>
-      <span className={styles.toggleTrack} aria-hidden="true">
-        <span />
       </span>
-    </button>
+    </div>
   );
 }
 
@@ -166,6 +179,8 @@ export function EventEditorSections({
   activeSection,
   onSectionChange,
   menuContent,
+  menuFooter,
+  headerAction,
 }: {
   sections: {
     id: string;
@@ -177,6 +192,8 @@ export function EventEditorSections({
   activeSection?: string;
   onSectionChange?: (id: string) => void;
   menuContent?: ReactNode;
+  menuFooter?: ReactNode;
+  headerAction?: ReactNode;
 }) {
   const [localSection, setLocalSection] = useState("main");
   const active = activeSection ?? localSection;
@@ -184,7 +201,10 @@ export function EventEditorSections({
   return (
     <div className={styles.sectionNavigation}>
       <div hidden={active !== "main"} className={styles.sectionMenu}>
-        <h2>Add your details</h2>
+        <header className={styles.menuHeader}>
+          <h2>Add your details</h2>
+          {headerAction}
+        </header>
         <p>Edit your event details and design.</p>
         {menuContent}
         {sections.map((section) => (
@@ -196,10 +216,15 @@ export function EventEditorSections({
             onClick={() => select(section.id)}
           />
         ))}
+        {menuFooter}
       </div>
       {sections.map((section) => (
         <div key={section.id} hidden={active !== section.id}>
-          <EventEditorSection title={section.title} onBack={() => select("main")}>
+          <EventEditorSection
+            title={section.title}
+            onBack={() => select("main")}
+            headerAction={headerAction}
+          >
             {section.content}
           </EventEditorSection>
         </div>

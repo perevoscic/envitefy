@@ -1,0 +1,12 @@
+@media (min-width: 768px) {
+  .panel {
+    inset: auto 1.5rem 5rem auto;
+    margin: 0;
+    width: 24rem;
+    max-width: calc(100vw - 3rem);
+    height: min(620px, calc(100dvh - 8rem));
+    min-height: 0;
+    max-height: calc(100dvh - 8rem);
+    border-radius: 1.5rem;
+  }
+}
