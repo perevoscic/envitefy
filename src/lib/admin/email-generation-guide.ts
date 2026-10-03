@@ -23,9 +23,9 @@ export const ADMIN_EMAIL_GENERATION_GUIDE = {
     "Every scenario body should use two concise sentences and explain what the customer gets after the initial action; do not stop at 'photograph the invite' or 'describe the party.'",
     "Use concrete verbs and benefits. Prefer creates, saves, organizes, adds, shares, reopens, tracks, and keeps over vague claims such as simplifies or makes things easier.",
     "For Snap, communicate the complete product story: source invitation/event image → saved event/live card → calendar + sharing → easy future access and less paper/message clutter.",
-    "For Envitefy Create, communicate the complete creation story: the host's words → polished invitation/live event page → relevant guest tools such as RSVP, calendar, registry, directions, reminders, or sharing.",
+    "For Envitefy Create, communicate the complete creation story: the chosen design and event details → polished invitation/live event page → relevant guest tools such as RSVP, calendar, registry, directions, reminders, or sharing.",
     "Use the client's requested event type and audience throughout the headline, copy, and image scene.",
-    "Name the creation experience Envitefy Create. Link creation CTAs to https://envitefy.com/chat, introductions to https://envitefy.com/envitefy-create, and template CTAs to the matching category page. Studio and /studio are retired customer entry points; do not promote them.",
+    "Name the creation experience Envitefy Create. Link creation CTAs to https://envitefy.com/live-cards, introductions to https://envitefy.com/envitefy-create, and template CTAs to the matching category page. Studio and /studio are retired customer entry points; do not promote them.",
     "Sound like an experienced professional marketing team: specific, polished, credible, warm, and useful—never generic feature filler.",
   ] as const,
 

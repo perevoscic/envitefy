@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, type ReactNode, useState } from "react";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import EventGuestActions from "@/components/event-templates/EventGuestActions";
 import type { EventGuestActionVisibility } from "@/lib/event-guest-actions";
@@ -18,6 +18,7 @@ import "@/components/birthdays/redesign/birthday-fonts.css";
 import styles from "./custom-event.module.css";
 import EventWeatherSection from "./EventWeatherSection";
 import EventArrivalMap from "./EventArrivalMap";
+import { EventSectionCanvas } from "@/components/events/EventSectionBuilder";
 
 export default function CustomEventPageContent({
   page,
@@ -36,7 +37,7 @@ export default function CustomEventPageContent({
 }) {
   const [rsvpOpen, setRsvpOpen] = useState(false);
   const { design, details: d } = page;
-  const titleAboveDetails = design.layout === "split" || design.layout === "editorial";
+  const titleAboveDetails = ["split", "editorial", "minimal", "cards"].includes(design.layout);
   const title = <h1 className={styles.heroTitle}>{d.title || "Your event title"}</h1>;
   const registryLinks = d.registryLinks.filter((link) => safeEventLink(link.url));
   const data = customEventPageData(page);
@@ -109,15 +110,15 @@ export default function CustomEventPageContent({
           )}
         </div>
       </header>
-      <div className={styles.content}>
-        {customEventSectionOrder(d).map((key) => {
-          if (key === "overview") return d.description ? (
+      <EventSectionCanvas className={styles.content} layout={d.sectionLayout} sections={customEventSectionOrder(d).map((key) => {
+          let content: ReactNode;
+          if (key === "overview") content = d.description ? (
           <section key={key} className={styles.section} data-event-section={key}>
             <h2>You're invited</h2>
             <p>{d.description}</p>
           </section>
           ) : null;
-          if (key === "registry") return registryLinks.length > 0 ? (
+          else if (key === "registry") content = registryLinks.length > 0 ? (
           <section key={key} className={styles.section} data-event-section={key}>
             <h2>Registry</h2>
             <div className={styles.links}>
@@ -134,18 +135,19 @@ export default function CustomEventPageContent({
             </div>
           </section>
           ) : null;
-          const section = d.sections[Number(key.slice(8))];
-          return section ? (
-            <section key={key} className={styles.section} data-event-section={key}>
+          else { const section = d.sections[Number(key.slice(8))];
+          content = section ? (
+            <section key={key} className={styles.section} data-event-section={key} data-has-map={Boolean(section.map)}>
               <h2>{section.title}</h2>
               <p>{section.body}</p>
-              {section.map && <EventArrivalMap map={section.map} showProposed={!eventId || isOwner} />}
+              {section.map && d.arrivalMapEnabled !== false && <EventArrivalMap map={section.map} />}
             </section>
-          ) : null;
-        })}
+          ) : null; }
+          return { id: key, label: key === "overview" ? "Welcome & overview" : key === "registry" ? "Registry" : d.sections[Number(key.slice(8))]?.title || "Information", content };
+        }).filter((section) => section.content !== null)} />
+      <div className={styles.content}>
         {showGuestActions && (
           <EventGuestActions
-            compactMobile
             visibility={d.guestActions}
             onVisibilityChange={onGuestActionsChange}
             preview={!eventId}

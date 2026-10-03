@@ -188,6 +188,24 @@
   border-top: 1px solid currentColor;
   padding-inline: 0;
 }
+.page[data-layout="spotlight"] .hero { grid-template-columns: 1fr; gap: 0; max-width: 1200px; padding-bottom: 32px; }
+.page[data-layout="spotlight"] .artwork { border-radius: 20px; }
+.page[data-layout="spotlight"] .intro { position: relative; width: min(100%, 760px); margin: -48px auto 0; padding: clamp(24px, 4vw, 44px); border: 1px solid color-mix(in srgb, var(--event-ink) 15%, transparent); border-radius: 16px; background: var(--event-surface); box-shadow: 0 18px 36px #0000000d; }
+.page[data-layout="minimal"] .hero { grid-template-columns: 1fr; max-width: 880px; gap: 24px; }
+.page[data-layout="minimal"] .artwork { border-radius: 0; }
+.page[data-layout="minimal"] .content { max-width: 880px; }
+.page[data-layout="minimal"] .section { padding-inline: 0; border-radius: 0; background: transparent; border-bottom: 1px solid color-mix(in srgb, var(--event-ink) 20%, transparent); }
+.page[data-layout="cards"] .hero { grid-template-columns: 1.3fr 1fr; }
+.page[data-layout="cards"] .artwork { border-radius: 18px; }
+.page[data-layout="cards"] .content { max-width: 1200px; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+.page[data-layout="cards"] .content > :not(.section), .page[data-layout="cards"] [data-event-section="overview"], .page[data-layout="cards"] [data-has-map="true"] { grid-column: 1 / -1; }
+@media (max-width: 700px) {
+  .page[data-layout="cards"] .hero, .page[data-layout="cards"] .content { grid-template-columns: 1fr; }
+  .page[data-layout="spotlight"] .intro { margin-top: -24px; }
+}
+@container (max-width: 700px) {
+  .page[data-layout="cards"] .hero, .page[data-layout="cards"] .content { grid-template-columns: 1fr; }
+}
 .primary {
   display: inline-flex;
   align-items: center;
@@ -508,6 +526,11 @@
 .preview .heroTitle {
   font-size: clamp(2rem, 3vw, 3.5rem);
 }
+.weatherUnits { display: flex; align-items: center; gap: 8px; padding: 0 6px; }
+.weatherUnits > span { flex: 1; font-size: 13px; color: #64546f; }
+.weatherUnits button { min-width: 44px; min-height: 44px; border: 1px solid #d9cfea; border-radius: 9px; background: #fff; color: #493d5c; cursor: pointer; font-size: 14px; }
+.weatherUnits button[aria-pressed="true"] { border-color: #625196; background: #ede7fa; }
+.weatherUnits button:focus-visible { outline: 2px solid #7052a1; outline-offset: 3px; }
 @container (max-width: 540px) {
   .preview .hero, .preview .page[data-layout="editorial"] .hero { grid-template-columns: 1fr; }
   .preview .page[data-layout="editorial"] .artwork { order: 0; }
@@ -740,4 +763,10 @@
   border: 1px solid #e6deeb;
   border-radius: 18px;
   line-height: 1.6;
+}
+.sharedControls { min-width: 0; margin: 0; padding: 0; border: 0; }
+.sharedPreview { min-width: 0; position: relative; container-type: inline-size; }
+@container (max-width: 540px) {
+  .sharedPreview .hero, .sharedPreview .page[data-layout="editorial"] .hero { grid-template-columns: 1fr; }
+  .sharedPreview .page[data-layout="editorial"] .artwork { order: 0; }
 }

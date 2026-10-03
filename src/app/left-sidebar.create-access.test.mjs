@@ -23,7 +23,7 @@ test("left sidebar renders personalized create navigation for signed-in accounts
     /const hasCreateEventAccess = useMemo\(\s*\(\) =>\s*canRenderCreateEventNavigation &&\s*createMenuOptionCount > 0,\s*\[canRenderCreateEventNavigation, createMenuOptionCount\],?\s*\)/s,
   );
   assert.match(source, /featureVisibility\.hasLoadedPreferences\s*\? featureVisibility\.visibleTemplateKeys : EMPTY_TEMPLATE_KEYS/);
-  const openCreate = source.slice(source.indexOf("const openCreateEventPage ="), source.indexOf("const openAiThreadsPage ="));
+  const openCreate = source.slice(source.indexOf("const openCreateEventPage ="), source.indexOf("const openMyEventsPage ="));
   assert.match(openCreate, /setSidebarPage\("createEvent"\)/);
   assert.doesNotMatch(openCreate, /router\.push/);
 });
@@ -88,97 +88,19 @@ test("left sidebar omits Studio and Snap Event from the always-open navigation",
   assert.doesNotMatch(source, /Snap Event/);
 });
 
-test("left sidebar uses Live Card while preserving existing chat access", () => {
+test("left sidebar uses current builders without legacy chat requests or navigation", () => {
   const source = readSource("src/app/left-sidebar.tsx");
-  const controllerSource = readSource("src/app/left-sidebar.controller.ts");
-  const modelSource = readSource("src/app/left-sidebar.model.ts");
-
-  assert.doesNotMatch(source, /label: "Envitefy Create"/);
-  assert.doesNotMatch(source, /onAiThreads|ConciergeLogoIcon/);
-  assert.doesNotMatch(source, /Create with AI/);
-  assert.match(
-    source,
-    /label: "Snap \/ Upload"[\s\S]*?<SidebarLink link=\{\{ label: "Live Card",[\s\S]*?onClick: onLiveCard, active: pathname === "\/live-cards"/,
-  );
-  assert.match(source, /function AiThreadsPanel/);
-  assert.match(
-    source,
-    /style=\{panelStyle\(\s*aiThreadsPanelTransform,\s*viewModel\.sidebarPage === "aiThreads",?\s*\)\}/s,
-  );
-  assert.match(source, /fetch\("\/api\/creation\/threads\?limit=20"/);
-  assert.match(source, /method: "DELETE"/);
-  assert.match(source, /text-red-500/);
-  assert.match(source, /envitefy:creation-threads-changed/);
-  assert.match(source, /href="\/chat"[\s\S]*?onClick=\{onNewChat\}[\s\S]*?New chat/s);
-  assert.doesNotMatch(source, /href="\/chat"[\s\S]{0,160}onClick=\{onOpenThread\}/);
-  assert.match(source, /href=\{`\/chat\?thread=\$\{encodeURIComponent\(thread\.id\)\}`\}/);
-  const aiThreadsPanelSource =
-    source.match(/function AiThreadsPanel[\s\S]*?function FooterProfileMenu/)?.[0] ?? "";
-  assert.doesNotMatch(aiThreadsPanelSource, /<ConciergeLogoIcon/);
-  assert.match(
-    source,
-    /onClick=\{\(event\) => \{\s*if \(!isPlainPrimaryLinkClick\(event\)\) return;\s*event\.preventDefault\(\);\s*onOpenThread\(thread\.id\);\s*\}\}/s,
-  );
-  assert.match(source, /className="group flex items-center gap-2"/);
-  assert.match(
-    source,
-    /opacity-0[\s\S]*group-hover:opacity-100[\s\S]*group-focus-within:opacity-100/,
-  );
-  assert.match(source, /Drafts/);
-  assert.match(controllerSource, /resetSidebarToRoot: \(\) => void;/);
-  assert.match(controllerSource, /resetSidebarToRoot,/);
-  assert.match(controllerSource, /openAiThreadsPage: \(\) => void;/);
-  assert.match(controllerSource, /openAiThread: \(threadId: string\) => void;/);
-  assert.match(controllerSource, /startNewAiChat: \(\) => void;/);
-  assert.match(
-    controllerSource,
-    /const normalizedPathname = \(pathname \|\| ""\)\.replace\(\/\\\/\+\$\/, ""\) \|\| "\/";/,
-  );
-  assert.match(
-    controllerSource,
-    /const \[sidebarPage, setSidebarPage\] = useState<SidebarPage>\(\(\) =>\s*normalizedPathname === "\/chat"\s*\? "aiThreads"\s*:\s*isCreateEventRoute\(normalizedPathname\)\s*\? "createEvent"\s*:\s*"root",\s*\);/s,
-  );
-  assert.match(
-    controllerSource,
-    /const lastChatRouteSyncPathRef = useRef<string \| null>\(null\);/,
-  );
-  assert.match(
-    controllerSource,
-    /if \(normalizedPathname !== "\/chat"\) \{[\s\S]*?lastChatRouteSyncPathRef\.current = null;[\s\S]*?return;[\s\S]*?\}[\s\S]*?if \(lastChatRouteSyncPathRef\.current === normalizedPathname\) return;[\s\S]*?lastChatRouteSyncPathRef\.current = normalizedPathname;[\s\S]*?clearEventContext\(\);[\s\S]*?setSidebarPage\("aiThreads"\);/s,
-  );
-  assert.match(
-    controllerSource,
-    /const openAiThreadsPage = useCallback\(\(\) => \{[\s\S]*?setSidebarPage\("aiThreads"\)/,
-  );
-  assert.match(controllerSource, /const startNewAiChat = useCallback\(\(\) => \{/);
-  assert.match(
-    controllerSource,
-    /const startNewAiChat = useCallback\(\(\) => \{[\s\S]*?setSidebarPage\("aiThreads"\)/,
-  );
-  assert.match(
-    controllerSource,
-    /const openAiThread = useCallback\([\s\S]*?const nextHref = `\/chat\?thread=\$\{encodeURIComponent\(cleanThreadId\)\}`;[\s\S]*?router\.push\(nextHref\);/s,
-  );
-  assert.match(
-    controllerSource,
-    /const openAiThread = useCallback\([\s\S]*?clearEventContext\(\);\s*setSidebarPage\("aiThreads"\);\s*collapseSidebarOnTouch\(\);/s,
-  );
-  const openAiThreadSource =
-    controllerSource.match(/const openAiThread = useCallback\([\s\S]*?\n {2}\);/)?.[0] ?? "";
-  assert.doesNotMatch(openAiThreadSource, /setSidebarPage\("root"\)/);
-  assert.doesNotMatch(openAiThreadSource, /setPendingAiThreadHref\(nextHref\)/);
-  assert.doesNotMatch(openAiThreadSource, /router\.push\("\/chat"\)/);
-  assert.match(controllerSource, /window\.dispatchEvent\(new CustomEvent\("envitefy:chat:new"\)\)/);
-  assert.match(
-    controllerSource,
-    /const openAiThreadsPage = useCallback\(\(\) => \{[\s\S]*?router\.push\("\/chat"\);[\s\S]*?if \(!isDesktop\) \{[\s\S]*?envitefy:chat:new/s,
-  );
-  assert.match(modelSource, /\|\s*"aiThreads"/);
+  const controller = readSource("src/app/left-sidebar.controller.ts");
+  const model = readSource("src/app/left-sidebar.model.ts");
+  assert.match(source, /label: "Live Card"/);
+  assert.match(source, /label: "Snap \/ Upload"/);
+  assert.match(source, /buildSidebarDraftItems/);
+  assert.doesNotMatch(source + controller + model, /aiThreads|AiThreadsPanel|creation\/threads|creation-threads-changed|envitefy:chat:new|\/chat/);
 });
 
 test("left sidebar gives event titles the row width without inline action controls", () => {
   const source = readSource("src/app/left-sidebar.tsx");
-  const eventList = source.slice(source.indexOf("function EventListPanel("), source.indexOf("function AiThreadsPanel("));
+  const eventList = source.slice(source.indexOf("function EventListPanel("), source.indexOf("function DraftsPanel("));
 
   assert.match(eventList, /<button\s+type="button"\s+data-sidebar-press-surface/);
   assert.match(eventList, /SIDEBAR_SUBMENU_ROW_CLASS\} relative min-w-0 items-start px-2 py-2\.5/);

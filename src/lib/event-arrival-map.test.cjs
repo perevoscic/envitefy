@@ -45,6 +45,10 @@ test("arrival-map validation preserves source evidence and rejects unsafe or inc
     sections: [{ title: "Arrival", body: "Use the handout", map: fixture() }],
   };
   assert.deepEqual(custom.normalizeCustomEventDetails(details).sections[0].map, fixture());
+  const hidden = custom.normalizeCustomEventDetails({ ...details, arrivalMapEnabled: false });
+  assert.equal(hidden.arrivalMapEnabled, false);
+  assert.deepEqual(hidden.sections[0].map, fixture());
+  assert.equal(custom.normalizeCustomEventDetails({ ...details, arrivalMapEnabled: "false" }), null);
   assert.deepEqual(
     custom.applyCustomEventWording(details, custom.customEventWording(details)).sections[0].map,
     fixture(),
@@ -63,6 +67,30 @@ test("only host-confirmed pixels become geographic directions, with a correct Me
     maps.arrivalMarkerDirections(map, { ...map.markers[0], confirmed: true }),
     /destination=30\./,
   );
+});
+
+test("local map framing magnifies nearby pins without changing saved geography", () => {
+  const map = fixture();
+  map.markers[1].point = { x: 0.56, y: 0.59 };
+  const before = structuredClone(map);
+  const frame = maps.arrivalMapFraming(map);
+  assert.equal(frame.scale, 2);
+  assert.equal(frame.centerX, 0.555);
+  assert.equal(frame.centerY, 0.515);
+  assert.deepEqual(map, before, "Framing never changes source pixels, marker positions or confirmation");
+  for (const marker of map.markers) {
+    const x = 0.5 + frame.scale * (marker.point.x - frame.centerX);
+    const y = 0.5 + frame.scale * (marker.point.y - frame.centerY);
+    assert.ok(x >= 0.1 && x <= 0.9 && y >= 0.1 && y <= 0.9);
+  }
+  const spread = { ...map, markers: [
+    { ...map.markers[0], point: { x: 0.1, y: 0.1 } },
+    { ...map.markers[1], point: { x: 0.9, y: 0.9 } },
+  ] };
+  assert.deepEqual(maps.arrivalMapFraming(spread), { scale: 1, centerX: 0.5, centerY: 0.5 });
+  assert.deepEqual(maps.arrivalMapFraming({ ...map, markers: [] }), { scale: 1, centerX: 0.5, centerY: 0.5 });
+  const edge = maps.arrivalMapFraming({ ...map, markers: [{ ...map.markers[0], point: { x: 0.95, y: 0.9 } }] });
+  assert.deepEqual(edge, { scale: 2, centerX: 0.75, centerY: 0.75 });
 });
 
 test("document map matching uses real provider pixels, retains annotations, and never confirms AI pins", async (t) => {
@@ -131,6 +159,11 @@ test("document map matching uses real provider pixels, retains annotations, and 
     crop: { left: 0.1, top: 0.2, right: 0.9, bottom: 1 },
     markers: fixture().markers.map(({ label, kind, note }) => ({ label, kind, note })),
   };
+  const extracted = await server.extractArrivalMapSource(descriptor,
+    [`data:image/png;base64,${source.toString("base64")}`]);
+  assert.equal(request, undefined, "Source extraction requires no marker-alignment call");
+  assert.equal(extracted.mapImage, undefined);
+  assert.ok(extracted.markers.every((marker) => !marker.point && !marker.confirmed));
   const result = await server.prepareArrivalMap(
     descriptor,
     [`data:image/png;base64,${source.toString("base64")}`],
@@ -154,7 +187,9 @@ test("document map matching uses real provider pixels, retains annotations, and 
   assert.equal(comparisonMeta.height, result.view.height);
 
   // Refresh uses address/coordinates only, never resends source images to vision.
+  let storedSourceVisionCalls = 0;
   server.arrivalMapServerDeps.client = () => {
+    storedSourceVisionCalls++;
     throw new Error("Refresh must not use vision");
   };
   const refreshed = await server.refreshArrivalMapView(
@@ -164,6 +199,13 @@ test("document map matching uses real provider pixels, retains annotations, and 
   );
   assert.equal(refreshed.status, "ready");
   assert.ok(refreshed.markers.every((m) => !m.point && !m.confirmed));
+  const storedSnapshot = await server.prepareArrivalMapSnapshot(
+    { ...result, sourceImage: "/api/blob/event-arrival-source.webp" },
+    "23937 Panama City Beach Parkway",
+    new AbortController().signal,
+  );
+  assert.equal(storedSnapshot.status, "ready");
+  assert.equal(storedSourceVisionCalls, 0, "Stored original URLs are never fetched or sent to vision");
   server.arrivalMapServerDeps.fetch = async () => new Response("unavailable", { status: 503 });
   const failed = await server.refreshArrivalMapView(
     result,

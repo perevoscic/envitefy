@@ -1644,12 +1644,6 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                   </Field>
                   {textField("headlineIntro", "Opening line (optional)", { placeholder: "You’re invited" })}
                   {textField("title", "Event title", { required: true, placeholder: "Movie Under the Stars" })}
-                  <Field label="Generation quality" id="livecard-generationQuality">
-                    <select id="livecard-generationQuality" value={form.generationQuality || "high"} onChange={(event) => change("generationQuality", event.target.value === "medium" ? "medium" : "high")} disabled={Boolean(artwork || generation)}>
-                      <option value="high">Standard quality</option>
-                      <option value="medium">Fast generation — medium quality</option>
-                    </select>
-                  </Field>
                   {textField("design", "Describe your design", {
                     placeholder:
                       "A pink movie-night theme with popcorn, stars, and a playful title…",

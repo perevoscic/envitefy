@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { EventCacheProvider } from "@/app/event-cache-context";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import ConditionalFooter from "@/components/ConditionalFooter";
+import CoHostInvitationProvider from "@/components/CoHostInvitationProvider";
 import { MainContentWrapper } from "@/components/MainContentWrapper";
 import MobileOverflowReporter from "@/components/MobileOverflowReporter";
 import { MenuProvider } from "@/contexts/MenuContext";
@@ -92,7 +93,6 @@ export default function AppShell({
   const isCreateLanding = ["/envitefy-create", "/envitefy-concierge"].includes(
     pathname.replace(/\/+$/, ""),
   );
-  const isChatPath = pathname.replace(/\/+$/, "") === "/chat";
   const isEventPreview = searchParams?.get("preview") === "owner";
   const isCalendarHandoff = pathname.replace(/\/+$/, "") === "/calendar/add";
   const isCoHostInvitation = pathname.replace(/\/+$/, "") === "/cohost-invite";
@@ -148,36 +148,36 @@ export default function AppShell({
 
   return (
     <EventCacheProvider>
-      {process.env.NODE_ENV === "development" ? <MobileOverflowReporter /> : null}
-      {authTransitionMessage ? <AuthTransitionOverlay /> : null}
-      {showAppChrome ? (
-        <MenuProvider>
-          <LeftSidebar />
-          <MainContentWrapper
-            isAuthenticated={true}
-            enableProjectBackground={true}
-            className={isChatPath ? "h-[100dvh] overflow-hidden" : ""}
-          >
-            <div className="min-h-0 flex-1 min-w-0">{children}</div>
-          </MainContentWrapper>
-        </MenuProvider>
-      ) : (
-        <MainContentWrapper
-          isAuthenticated={false}
-          reserveSidebarSpace={false}
-          enableProjectBackground={false}
-          className={isChatPath ? "h-[100dvh] overflow-hidden" : ""}
-        >
-          {isRedirectingFromMarketing ? (
-            <AuthTransitionOverlay />
-          ) : (
-            <>
+      <CoHostInvitationProvider active={showAppChrome}>
+        {process.env.NODE_ENV === "development" ? <MobileOverflowReporter /> : null}
+        {authTransitionMessage ? <AuthTransitionOverlay /> : null}
+        {showAppChrome ? (
+          <MenuProvider>
+            <LeftSidebar />
+            <MainContentWrapper
+              isAuthenticated={true}
+              enableProjectBackground={true}
+            >
               <div className="min-h-0 flex-1 min-w-0">{children}</div>
-              {isChatPath || isEventPreview || isCalendarHandoff ? null : <ConditionalFooter />}
-            </>
-          )}
-        </MainContentWrapper>
-      )}
+            </MainContentWrapper>
+          </MenuProvider>
+        ) : (
+          <MainContentWrapper
+            isAuthenticated={false}
+            reserveSidebarSpace={false}
+            enableProjectBackground={false}
+          >
+            {isRedirectingFromMarketing ? (
+              <AuthTransitionOverlay />
+            ) : (
+              <>
+                <div className="min-h-0 flex-1 min-w-0">{children}</div>
+                {isEventPreview || isCalendarHandoff ? null : <ConditionalFooter />}
+              </>
+            )}
+          </MainContentWrapper>
+        )}
+      </CoHostInvitationProvider>
     </EventCacheProvider>
   );
 }

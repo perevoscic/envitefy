@@ -32,6 +32,21 @@ function fixture() {
     else if (q.startsWith("SELECT 1 FROM event_collaborators")) rows.push(...state.members.filter(m => m.event_id === args[0] && !m.revoked_at && (!args[1] || m.user_id === args[1])));
     else if (q.startsWith("SELECT EXISTS")) rows.push({ allowed: state.members.some(m => m.event_id === args[0] && m.user_id === args[1] && !m.revoked_at) });
     else if (q.startsWith("SELECT user_id FROM event_collaborators")) rows.push(...state.members.filter(m => m.event_id === args[0] && !m.revoked_at));
+    else if (q.startsWith("SELECT i.id::text AS id")) {
+      assert.match(q, /recipient.id=\$1 AND lower\(recipient.email\)=lower\(i.email\)/);
+      assert.match(q, /e.user_id=i.invited_by/);
+      assert.match(q, /i.accepted_at IS NULL AND i.revoked_at IS NULL AND i.expires_at>now\(\)/);
+      const recipient = state.users.find(u => u.id === args[0]);
+      for (const invite of state.invites) {
+        const target = state.events.find(e => e.id === invite.event_id && e.user_id === invite.invited_by);
+        if (!recipient || !target || invite.email.toLowerCase() !== recipient.email.toLowerCase() || invite.accepted_at || invite.revoked_at || Date.parse(invite.expires_at) <= Date.now() || state.members.some(m => m.event_id === invite.event_id && m.user_id === recipient.id && !m.revoked_at)) continue;
+        rows.push({ id: invite.id, eventId: invite.event_id, eventTitle: target.title, ownerName: "Host", expiresAt: invite.expires_at, eligibility: target.data, token_hash: invite.token_hash });
+      }
+    }
+    else if (q.startsWith("SELECT i.id,i.event_id")) {
+      assert.match(q, /u.id=\$2 AND lower\(u.email\)=lower\(i.email\) WHERE i.id=\$1/);
+      rows.push(...state.invites.filter(i => i.id === args[0] && state.users.find(u => u.id === args[1])?.email.toLowerCase() === i.email.toLowerCase()));
+    }
     else if (q.startsWith("SELECT i.*,e.title")) rows.push(...state.invites.filter(i => i.token_hash === args[0]).map(i => ({ ...i, eventTitle: event.title, ownerName: "Host" })));
     else if (q.startsWith("SELECT * FROM event_collaborator_invites")) rows.push(...state.invites.filter(i => i.id === args[0]).map(i => ({ ...i })));
     else if (q.startsWith("INSERT INTO event_collaborator_invites")) {
@@ -41,6 +56,13 @@ function fixture() {
       let member = state.members.find(m => m.event_id === args[0] && m.user_id === args[1]);
       if (!member) { member = { event_id: args[0], user_id: args[1], invited_by: args[2] }; state.members.push(member); }
       member.revoked_at = null;
+    } else if (q.startsWith("UPDATE event_collaborator_invites i SET revoked_at=now() FROM users u")) {
+      assert.match(q, /u.id=\$2 AND lower\(u.email\)=lower\(i.email\) AND i.accepted_at IS NULL AND i.revoked_at IS NULL/);
+      const recipient = state.users.find(u => u.id === args[1]);
+      for (const invite of state.invites) {
+        if (invite.id !== args[0] || !recipient || invite.email.toLowerCase() !== recipient.email.toLowerCase() || invite.accepted_at || invite.revoked_at) continue;
+        invite.revoked_at = new Date().toISOString(); rows.push({ id: invite.id });
+      }
     } else if (q.startsWith("UPDATE event_collaborator_invites SET accepted_at")) {
       Object.assign(state.invites.find(i => i.id === args[0]), { accepted_at: new Date().toISOString(), accepted_by: args[1] });
     } else if (q.startsWith("UPDATE event_collaborator_invites SET revoked_at")) {
@@ -53,13 +75,15 @@ function fixture() {
     else throw new Error(`Unmocked SQL: ${q}`);
     return { rows };
   }
+  const errors = compile("src/lib/event-collaboration-types.ts");
   const api = compile("src/lib/event-collaboration.ts", {
+    "./event-collaboration-types": errors,
     "@/lib/db": { query, getEventHistoryById: async id => state.events.find(e => e.id === id), prepareEventHistoryData: d => d,
       withClient: async callback => { const previous = queue; let release; queue = new Promise(resolve => { release = resolve; }); await previous; try { return await callback({ query }); } finally { release(); } } },
     "@/lib/history-cache": { invalidateUserHistory: id => state.invalidated.push(id) },
     "@/lib/dashboard-cache": { invalidateUserDashboard: id => state.invalidated.push(id) },
   });
-  return { api, state, event };
+  return { api, state, event, errors };
 }
 
 test("email invitations support a recipient without an account and store only a token hash", async () => {
@@ -85,6 +109,100 @@ test("acceptance rejects wrong accounts, expired, cancelled and previously used 
     if (mode === "used") await api.acceptCollaboratorInvitation(invite.token, "friend");
     await assert.rejects(api.acceptCollaboratorInvitation(invite.token, mode === "wrong" ? "owner" : "friend"), error => error.status === (mode === "wrong" ? 403 : 410));
   }
+});
+
+test("pending notifications follow the invited account, including signup after the invitation, without exposing tokens or event data", async () => {
+  const { api, state } = fixture();
+  const invite = await api.inviteEventCollaborator("event", "owner", "new@test.com");
+  assert.deepEqual(await api.listPendingCoHostInvitations("friend"), []);
+  state.users.push({ id: "new", email: "New@test.com" });
+  const pending = await api.listPendingCoHostInvitations("new");
+  assert.deepEqual(Object.keys(pending[0]).sort(), ["id", "eventId", "eventTitle", "ownerName", "expiresAt"].sort());
+  assert.equal(pending[0].id, invite.id);
+  assert.equal(pending[0].eventTitle, "Garden party");
+  assert.equal((await api.getEventPermissions(state.events[0], "new")).canEdit, false);
+  await api.acceptCoHostInvitationById(invite.id, "new");
+  assert.deepEqual(await api.listPendingCoHostInvitations("new"), []);
+  assert.equal((await api.getEventPermissions(state.events[0], "new")).canEdit, true);
+  assert.ok(state.invalidated.includes("new"));
+});
+
+test("pending notifications exclude expired, revoked, replaced, deleted, unsupported and already joined events", async () => {
+  for (const mode of ["expired", "revoked", "resend", "deleted", "unsupported", "joined", "different-owner"]) {
+    const { api, state } = fixture();
+    const invite = await api.inviteEventCollaborator("event", "owner", "friend@test.com");
+    if (mode === "expired") state.invites[0].expires_at = "2000-01-01";
+    if (mode === "revoked") await api.revokeEventCollaborator("event", "owner", invite.id);
+    if (mode === "resend") await api.inviteEventCollaborator("event", "owner", "friend@test.com");
+    if (mode === "deleted") state.events.splice(0, 1);
+    if (mode === "unsupported") state.events[0].data.attachment = {};
+    if (mode === "joined") state.members.push({ event_id: "event", user_id: "friend", revoked_at: null });
+    if (mode === "different-owner") state.events[0].user_id = "someone-else";
+    const pending = await api.listPendingCoHostInvitations("friend");
+    assert.equal(pending.length, mode === "resend" ? 1 : 0, mode);
+    assert.ok(!pending.some(i => i.id === invite.id), mode);
+  }
+});
+
+test("dashboard decline is bound to the invited account and closes only a pending invitation", async () => {
+  const { api, state } = fixture();
+  const invite = await api.inviteEventCollaborator("event", "owner", "friend@test.com");
+  await assert.rejects(api.declineCoHostInvitationById(invite.id, "owner"), e => e.status === 404);
+  assert.equal(state.invites[0].revoked_at, null);
+  await api.declineCoHostInvitationById(invite.id, "friend");
+  assert.deepEqual(await api.listPendingCoHostInvitations("friend"), []);
+  assert.equal(state.members.length, 0);
+  await assert.rejects(api.declineCoHostInvitationById(invite.id, "friend"), e => e.status === 404);
+  const accepted = await api.inviteEventCollaborator("event", "owner", "friend@test.com");
+  await api.acceptCoHostInvitationById(accepted.id, "friend");
+  await assert.rejects(api.declineCoHostInvitationById(accepted.id, "friend"), e => e.status === 404);
+  assert.equal((await api.getEventPermissions(state.events[0], "friend")).canEdit, true);
+});
+
+test("dashboard acceptance rechecks account binding, expiry, revocation and eligibility under the existing lock", async () => {
+  for (const mode of ["wrong", "expired", "revoked", "used", "unsupported"]) {
+    const { api, state } = fixture();
+    const invite = await api.inviteEventCollaborator("event", "owner", "friend@test.com");
+    if (mode === "expired") state.invites[0].expires_at = "2000-01-01";
+    if (mode === "revoked") await api.revokeEventCollaborator("event", "owner", invite.id);
+    if (mode === "used") await api.acceptCoHostInvitationById(invite.id, "friend");
+    if (mode === "unsupported") state.events[0].data.signupForm = {};
+    await assert.rejects(api.acceptCoHostInvitationById(invite.id, mode === "wrong" ? "owner" : "friend"), e => e.status === (mode === "wrong" ? 404 : 410), mode);
+    if (mode !== "used") assert.equal(state.members.length, 0, mode);
+  }
+  const { api } = fixture();
+  const invite = await api.inviteEventCollaborator("event", "owner", "friend@test.com");
+  const results = await Promise.allSettled([api.acceptCoHostInvitationById(invite.id, "friend"), api.acceptCoHostInvitationById(invite.id, "friend")]);
+  assert.equal(results.filter(r => r.status === "fulfilled").length, 1);
+  assert.equal(results.find(r => r.status === "rejected").reason.status, 410);
+});
+
+test("recipient API lists only signed-in invitations and requires explicit same-site acceptance by ID", async () => {
+  const { api, errors } = fixture();
+  const invite = await api.inviteEventCollaborator("event", "owner", "friend@test.com");
+  let user = null;
+  const route = compile("src/app/api/cohost-invitations/route.ts", {
+    "next/server": { NextResponse: { json: (body, init) => new Response(JSON.stringify(body), { ...init, headers: { "content-type": "application/json", ...init?.headers } }) } },
+    "next-auth": { getServerSession: async () => user ? { user: { email: user === "friend" ? "friend@test.com" : "host@test.com" } } : null },
+    "@/lib/auth": { authOptions: {}, resolveSessionUserId: async () => user },
+    "@/lib/event-collaboration": api,
+    "@/lib/event-collaboration-types": errors,
+  });
+  const send = (body, headers = {}) => route.POST(new Request("https://envitefy.com/api/cohost-invitations", { method: "POST", headers, body: JSON.stringify(body) }));
+  assert.equal((await route.GET()).status, 401);
+  assert.equal((await send({ invitationId: invite.id, action: "accept" })).status, 401);
+  user = "owner";
+  assert.deepEqual((await (await route.GET()).json()).invitations, []);
+  assert.equal((await send({ invitationId: invite.id, action: "accept" })).status, 404);
+  user = "friend";
+  const listed = await route.GET();
+  assert.equal(listed.headers.get("cache-control"), "private, no-store");
+  assert.equal((await listed.json()).invitations.length, 1);
+  assert.equal((await send({ invitationId: invite.id, action: "accept" }, { "sec-fetch-site": "cross-site" })).status, 403);
+  assert.equal((await send({ invitationId: invite.id, action: "inspect" })).status, 400);
+  assert.equal((await send({ invitationId: "bad", action: "accept" })).status, 400);
+  assert.equal((await send({ invitationId: invite.id, action: "accept" })).status, 200);
+  assert.deepEqual((await (await route.GET()).json()).invitations, []);
 });
 
 test("resending invalidates the old link and only the owner can grant or remove access", async () => {

@@ -12,20 +12,6 @@ function cleanString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function resolveConciergeEditHref(eventData: unknown): string | null {
-  const record = asRecord(eventData);
-  if (!record) return null;
-
-  const createdVia = cleanString(record.createdVia).toLowerCase();
-  const conciergeDraft = asRecord(record.conciergeDraft);
-  const threadId =
-    cleanString(conciergeDraft?.creationSessionId) || cleanString(record.creationSessionId);
-  const isConciergeCreatedEvent = /concierge|chat/.test(createdVia) || Boolean(conciergeDraft);
-
-  if (!isConciergeCreatedEvent || !threadId) return null;
-  return `/chat?thread=${encodeURIComponent(threadId)}`;
-}
-
 function normalizedOutputValues(...values: unknown[]): string[] {
   const outputs: string[] = [];
   for (const value of values) {
@@ -77,6 +63,14 @@ function hasEditableStudioArtwork(eventData: unknown): boolean {
   return hasStudioImage && isGeneratedArtworkEvent;
 }
 
+function resolveLegacyCreatedEditHref(eventId: string, eventData: unknown, eventTitle: string): string | null {
+  const record = asRecord(eventData);
+  if (!record || (!/concierge|chat/.test(cleanString(record.createdVia).toLowerCase()) && !record.conciergeDraft)) return null;
+  return hasEditableStudioArtwork(record)
+    ? buildEventPath(eventId, eventTitle, { tab: "design" })
+    : `/events/${encodeURIComponent(eventId)}/manage`;
+}
+
 function isScannedOrUploadedEvent(eventData: unknown): boolean {
   const record = asRecord(eventData);
   if (!record) return false;
@@ -92,7 +86,7 @@ function isScannedOrUploadedEvent(eventData: unknown): boolean {
 export function resolveArtworkEditHref(eventId: string, eventData: unknown): string | null {
   if (asRecord(eventData)?.createdVia === "livecard-builder") return `/live-cards?edit=${encodeURIComponent(eventId)}`;
   if (!hasEditableStudioArtwork(eventData)) return null;
-  return `/studio?editEvent=${encodeURIComponent(eventId)}`;
+  return `/event/${encodeURIComponent(eventId)}?tab=design`;
 }
 
 /**
@@ -103,6 +97,8 @@ export const buildEditLink = (eventId: string, eventData: any, eventTitle: strin
   if (eventData?.createdVia === "custom-event-page" || eventData?.customEventPage?.version === 1) return `/event/design/customize?edit=${encodeURIComponent(eventId)}`;
   if (eventData?.createdVia === "livecard-builder") return `/live-cards?edit=${encodeURIComponent(eventId)}`;
   if (eventData?.scanSchedule?.items?.length) return `/event/schedule/customize?edit=${encodeURIComponent(eventId)}`;
+  const legacyHref = resolveLegacyCreatedEditHref(eventId, eventData, eventTitle);
+  if (legacyHref) return legacyHref;
   try {
     const manualHref = manualEventEditHref(eventId, eventData);
     if (manualHref) return manualHref;
@@ -122,7 +118,6 @@ export const buildEditLink = (eventId: string, eventData: any, eventTitle: strin
         ? ((eventData as any).variationId as string)
         : null;
     const directWorkspaceHref =
-      resolveConciergeEditHref(eventData) ||
       (isScannedOrUploadedEvent(eventData)
         ? `/events/${encodeURIComponent(eventId)}/manage`
         : null);
@@ -155,29 +150,29 @@ export const buildEditLink = (eventId: string, eventData: any, eventTitle: strin
   }
 };
 
-/** Owner actions edit the saved event in its workspace, even when it was created in chat. */
+/** Owner actions edit the saved event in its current workspace. */
 export function resolveOwnerEditHref(
   eventId: string,
   eventData: unknown,
   eventTitle: string,
   ownerHref?: string,
 ): string {
-  const editHref = resolveEditHref(eventId, eventData, eventTitle);
-  if (!/^\/chat(?:[/?#]|$)/.test(editHref)) return editHref;
-  if (!hasEditableStudioArtwork(eventData)) return `/events/${encodeURIComponent(eventId)}/manage`;
-
-  const url = new URL(ownerHref || buildEventPath(eventId, eventTitle), "https://envitefy.local");
-  for (const key of ["edit", "editor", "preview", "embed", "returnTo", "view"]) {
-    url.searchParams.delete(key);
+  const record = asRecord(eventData);
+  if (record && (/concierge|chat/.test(cleanString(record.createdVia)) || record.conciergeDraft) && hasEditableStudioArtwork(record)) {
+    const url = new URL(ownerHref || buildEventPath(eventId, eventTitle), "https://envitefy.local");
+    for (const key of ["edit", "editor", "preview", "embed", "returnTo", "view"]) url.searchParams.delete(key);
+    url.searchParams.set("tab", "design");
+    return url.pathname + url.search + url.hash;
   }
-  url.searchParams.set("tab", "design");
-  return `${url.pathname}${url.search}${url.hash}`;
+  return resolveEditHref(eventId, eventData, eventTitle);
 }
 
 export const resolveEditHref = (eventId: string, eventData: any, eventTitle: string): string => {
   if (eventData?.createdVia === "custom-event-page" || eventData?.customEventPage?.version === 1) return `/event/design/customize?edit=${encodeURIComponent(eventId)}`;
   if (eventData?.createdVia === "livecard-builder") return `/live-cards?edit=${encodeURIComponent(eventId)}`;
   if (eventData?.scanSchedule?.items?.length) return `/event/schedule/customize?edit=${encodeURIComponent(eventId)}`;
+  const legacyHref = resolveLegacyCreatedEditHref(eventId, eventData, eventTitle);
+  if (legacyHref) return legacyHref;
   const manualHref = manualEventEditHref(eventId, eventData);
   if (manualHref) return manualHref;
   const editor = eventData?.templateEditor;
@@ -199,10 +194,6 @@ export const resolveEditHref = (eventId: string, eventData: any, eventTitle: str
       typeof (eventData as any)?.variationId === "string"
         ? ((eventData as any).variationId as string)
         : null;
-    const conciergeEditHref = resolveConciergeEditHref(eventData);
-
-    if (conciergeEditHref) return conciergeEditHref;
-
     if (isScannedOrUploadedEvent(eventData)) {
       return `/events/${encodeURIComponent(eventId)}/manage`;
     }

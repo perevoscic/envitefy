@@ -428,7 +428,7 @@ ${renderCardColumn(rightCard, 138, 28)}
 export function renderMagazineEmail(options: MagazineRenderOptions): string {
   const heroUrl = buildPublicAssetUrl(MAGAZINE_1_HERO_IMAGE_PATH, options.baseUrl);
   const wordmarkUrl = buildPublicAssetUrl(MAGAZINE_1_WORDMARK_IMAGE_PATH, options.baseUrl);
-  const conciergeUrl = buildPublicAssetUrl("/chat", options.baseUrl);
+  const conciergeUrl = buildPublicAssetUrl("/live-cards", options.baseUrl);
   return MAGAZINE_1_HTML
     .replace(/\{\{HERO_IMAGE_URL\}\}/g, heroUrl)
     .replace(/\{\{WORDMARK_IMAGE_URL\}\}/g, wordmarkUrl)

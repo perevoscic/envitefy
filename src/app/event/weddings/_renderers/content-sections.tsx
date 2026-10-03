@@ -1,3 +1,5 @@
+
+import EventPageSections from "@/components/events/EventPageSections";
 import type { EventGuestActionVisibility } from "@/lib/event-guest-actions";
 
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
@@ -125,8 +127,9 @@ export function ContentSections({
       style={{ color: baseText, backgroundColor: bg }}
     >
       {event.guestTools}
-      {event.story && (
-        <section>
+      <EventPageSections>
+{event.story && (
+        <section id="our-story">
           <h2
             className="text-2xl font-semibold mb-3"
             style={{ fontFamily: theme.fonts.headline, color: accent }}
@@ -143,7 +146,7 @@ export function ContentSections({
       )}
 
       {event.schedule && event.schedule.length > 0 && (
-        <section>
+        <section id="wedding-schedule">
           <h2
             className="text-2xl font-semibold mb-4"
             style={{ fontFamily: theme.fonts.headline, color: accent }}
@@ -170,7 +173,7 @@ export function ContentSections({
       )}
 
       {event.party && event.party.length > 0 && (
-        <section>
+        <section id="wedding-party">
           <h2
             className="text-2xl font-semibold mb-4"
             style={{ fontFamily: theme.fonts.headline, color: accent }}
@@ -193,7 +196,7 @@ export function ContentSections({
       )}
 
       {event.travel && (
-        <section>
+        <section id="travel">
           <h2
             className="text-2xl font-semibold mb-4"
             style={{ fontFamily: theme.fonts.headline, color: accent }}
@@ -210,7 +213,7 @@ export function ContentSections({
       )}
 
       {event.thingsToDo && (
-        <section>
+        <section id="things-to-do">
           <h2
             className="text-2xl font-semibold mb-4"
             style={{ fontFamily: theme.fonts.headline, color: accent }}
@@ -227,7 +230,7 @@ export function ContentSections({
       )}
 
       {event.photos && event.photos.length > 0 && (
-        <section>
+        <section id="photos">
           <h2
             className="text-2xl font-semibold mb-4"
             style={{ fontFamily: theme.fonts.headline, color: accent }}
@@ -248,7 +251,7 @@ export function ContentSections({
       )}
 
       {event.registry && event.registry.length > 0 && (
-        <section>
+        <section id="registry">
           <h2
             className="text-2xl font-semibold mb-4"
             style={{ fontFamily: theme.fonts.headline, color: accent }}
@@ -285,6 +288,7 @@ export function ContentSections({
           </a>
         </section>
       )}
+</EventPageSections>
     </main>
   );
 }

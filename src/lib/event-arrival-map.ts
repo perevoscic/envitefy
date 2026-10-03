@@ -120,3 +120,18 @@ export function arrivalMarkerDirections(
   const p = arrivalMarkerCoordinates(map.view, marker.point);
   return `https://www.google.com/maps/dir/?api=1&destination=${p.latitude.toFixed(6)},${p.longitude.toFixed(6)}`;
 }
+
+/** Frame saved pixels locally; geographic coordinates and confirmation stay unchanged. */
+export function arrivalMapFraming(map: EventArrivalMap) {
+  const points = map.markers.flatMap(({ point }) => (point ? [point] : []));
+  if (!points.length) return { scale: 1, centerX: 0.5, centerY: 0.5 };
+  const minX = Math.min(...points.map((point) => point.x));
+  const maxX = Math.max(...points.map((point) => point.x));
+  const minY = Math.min(...points.map((point) => point.y));
+  const maxY = Math.max(...points.map((point) => point.y));
+  // Leave context around every location, reducing magnification for spread-out pins.
+  const scale = Math.max(1, Math.min(2, 0.8 / (maxX - minX), 0.8 / (maxY - minY)));
+  const half = 0.5 / scale;
+  const center = (min: number, max: number) => Math.max(half, Math.min(1 - half, (min + max) / 2));
+  return { scale, centerX: center(minX, maxX), centerY: center(minY, maxY) };
+}

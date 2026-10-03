@@ -479,7 +479,7 @@ export const guidePages: GuidePage[] = [
       "Use the same link after the host updates event information",
       "Share the invite without losing the source of truth",
     ],
-    cta: { label: "Create with Envitefy", href: "/chat" },
+    cta: { label: "Create with Envitefy", href: "/live-cards" },
     secondaryCta: { label: "View showcase", href: "/showcase" },
     relatedLinks: [
       { label: "Live card showcase", href: "/showcase" },
@@ -586,7 +586,7 @@ export const guidePages: GuidePage[] = [
       "Find registries, signups, ticket pages, or forms from one place",
       "Return to a live page instead of a stale invitation image",
     ],
-    cta: { label: "Create with Envitefy", href: "/chat" },
+    cta: { label: "Create with Envitefy", href: "/live-cards" },
     secondaryCta: { label: "Browse examples", href: "/showcase" },
     relatedLinks: [
       { label: "Live card invitations", href: "/guides/live-card-invitations" },
@@ -1236,7 +1236,7 @@ export const guidePages: GuidePage[] = [
       "Open the invitation from any browser",
       "Return to current links after updates",
     ],
-    cta: { label: "Create with Envitefy", href: "/chat" },
+    cta: { label: "Create with Envitefy", href: "/live-cards" },
     secondaryCta: { label: "Upload with Snap", href: "/snap" },
     relatedLinks: [
       { label: "Wedding event pages", href: "/guides/wedding-event-page" },

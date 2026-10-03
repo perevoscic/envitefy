@@ -2,6 +2,7 @@ import { parseCalendarDateTimeToIso } from "./calendar-date-time";
 import { normalizeArrivalMap, type EventArrivalMap } from "./event-arrival-map";
 import { normalizeEventGuestActions, type EventGuestActionVisibility } from "./event-guest-actions";
 import { colorContrast } from "./color-contrast";
+import { normalizeEventSectionLayout, type EventSectionLayout } from "./event-section-layout";
 import { GALLERY_FONT_PAIRS, LIBRARY_FONT_PAIRS, type GalleryFontPairId } from "./font-library";
 
 export const CUSTOM_EVENT_CATEGORIES = {
@@ -28,7 +29,16 @@ export function customEventCategory(value: unknown): CustomEventCategory | null 
     ? (value as CustomEventCategory)
     : null;
 }
-export const EVENT_DESIGN_LAYOUTS = ["split", "banner", "poster", "editorial"] as const;
+export const EVENT_DESIGN_LAYOUTS = ["split", "banner", "poster", "editorial", "spotlight", "minimal", "cards"] as const;
+export const EVENT_DESIGN_LAYOUT_OPTIONS = [
+  { id: "split", label: "Split", description: "Image and details side by side." },
+  { id: "banner", label: "Banner", description: "Wide image with centered details." },
+  { id: "poster", label: "Poster", description: "Framed image and a centered page." },
+  { id: "editorial", label: "Editorial", description: "Title above an image and text spread." },
+  { id: "spotlight", label: "Spotlight", description: "Wide image with an overlapping details card." },
+  { id: "minimal", label: "Minimal", description: "A clean, narrow page with stacked details." },
+  { id: "cards", label: "Cards", description: "Guest information arranged in two columns." },
+] as const;
 type EventDesignFontId = "editorial" | "modern" | "classic" | "friendly" | GalleryFontPairId;
 export const EVENT_DESIGN_FONTS: Record<EventDesignFontId, string> = {
   editorial: '"Playfair Display", Georgia, serif',
@@ -74,7 +84,9 @@ export const EVENT_DETAIL_FIELDS = [
 export type CustomEventDetails = Record<(typeof EVENT_DETAIL_FIELDS)[number], string> & {
   guestActions?: EventGuestActionVisibility;
   weather?: { enabled: boolean; units: "f" | "c" };
+  arrivalMapEnabled?: boolean;
   sectionOrder?: string[];
+  sectionLayout?: EventSectionLayout;
   rsvpEnabled: boolean;
   sections: Array<{ title: string; body: string; map?: EventArrivalMap }>;
   registryLinks: Array<{ label: string; url: string }>;
@@ -251,6 +263,10 @@ export function normalizeCustomEventDetails(value: unknown): CustomEventDetails 
   }
   if (raw.rsvpEnabled != null && typeof raw.rsvpEnabled !== "boolean") return null;
   details.rsvpEnabled = raw.rsvpEnabled === true;
+  if (raw.arrivalMapEnabled != null && typeof raw.arrivalMapEnabled !== "boolean") return null;
+  if (raw.arrivalMapEnabled === false) details.arrivalMapEnabled = false;
+  const sectionLayout = normalizeEventSectionLayout(raw.sectionLayout);
+  if (sectionLayout) details.sectionLayout = sectionLayout;
   if (raw.guestActions != null) details.guestActions = normalizeEventGuestActions(raw.guestActions);
   if (raw.weather != null) {
     const weather = record(raw.weather);

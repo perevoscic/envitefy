@@ -235,7 +235,7 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
               onClick={onPrimaryAction}
               className="inline-flex h-12 w-full min-w-0 cursor-pointer items-center justify-center gap-2 rounded-md border border-[#f3d58b] bg-[#f3d58b] px-5 text-sm font-bold text-[#21170e] shadow-[0_18px_44px_rgba(0,0,0,0.28)] transition hover:-translate-y-0.5 hover:bg-[#ffe8b0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f3d58b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#21170e] motion-reduce:transform-none motion-reduce:transition-none sm:w-auto sm:px-6"
             >
-              <span className="whitespace-nowrap">Try Envitefy Create</span>
+              <span className="whitespace-nowrap">Ask Envitefy</span>
               <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
             </button>
             <Link
@@ -800,7 +800,7 @@ export default function LandingExperience() {
     setAuthMode(mode);
     setAuthModalOpen(true);
   };
-  const openConciergeDemo = () => setAssistantOpen(true);
+  const openHelpChat = () => setAssistantOpen(true);
   return (
     <>
       <main
@@ -825,7 +825,7 @@ export default function LandingExperience() {
         </div>
         <MobileBrandHeader onMenuClick={() => setMobileMenuOpen(true)} />
 
-        <PremiumLandingHero onPrimaryAction={openConciergeDemo} />
+        <PremiumLandingHero onPrimaryAction={openHelpChat} />
         <CategoryDirectory />
 
         <DeferredLandingContent>
@@ -851,7 +851,7 @@ export default function LandingExperience() {
         </DeferredLandingContent>
       </main>
       <ScrollAwareBottomNav
-        onConciergeSelect={openConciergeDemo}
+        onConciergeSelect={openHelpChat}
         onMenuSelect={() => setMobileMenuOpen(true)}
         onVisibilityChange={setBottomNavVisible}
       />

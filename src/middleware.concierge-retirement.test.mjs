@@ -42,9 +42,9 @@ test("every retired V2 page redirects to the main page for signed-in and signed-
   }
 });
 
-test("new chat visits redirect to the main page without forwarding stale query parameters", async () => {
+test("all retired chat links redirect to the main page without forwarding stale query parameters", async () => {
   for (const cookie of ["", "next-auth.session-token=test-session"]) {
-    for (const path of ["/chat", "/chat/", "/chat?auth=signup", "/chat?thread=", "/chat?thread=%20", "/chat?scanStatus=success&redirect=/chat"]) {
+    for (const path of ["/chat", "/chat/", "/chat?auth=signup", "/chat?thread=", "/chat?thread=%20", "/chat?thread=saved-thread", "/chat/?thread=saved-thread&scanStatus=success", "/chat?scanStatus=success&redirect=/chat"]) {
       const response = await middleware(new NextRequest(`https://envitefy.test${path}`, {
         headers: { cookie },
       }));
@@ -63,14 +63,8 @@ test("the main page stays on the dashboard when signed in and shows the landing 
   }
 });
 
-test("saved chat links still require authentication", async () => {
-  const response = await middleware(new NextRequest("https://envitefy.test/chat?thread=saved-thread"));
-  assert.equal(response.status, 302);
-  assert.equal(new URL(response.headers.get("location")).pathname, "/");
-});
-
-test("saved chats, published cards, and current Concierge APIs do not enter the retirement redirect", async () => {
-  for (const path of ["/chat?thread=saved-thread", "/chat/?thread=saved-thread&scanStatus=success", "/card/birthday", "/api/creation/intake", "/api/concierge/message", "/api/concierge/events/event-id/message", "/concierge-v20"]) {
+test("current cards and help APIs do not enter the retirement redirect", async () => {
+  for (const path of ["/card/birthday", "/api/guest-chat", "/api/livecard/assist", "/concierge-v20"]) {
     const response = await middleware(new NextRequest(`https://envitefy.test${path}`, {
       headers: { cookie: "next-auth.session-token=test-session" },
     }));
@@ -91,11 +85,11 @@ test("the Create introduction and its legacy redirect are public before and afte
   }
 });
 
-test("V2 runtime and creation APIs are removed while the current creator stays installed", () => {
-  for (const path of ["app/concierge-v2", "lib/concierge-v2", "config/concierge-v2-flags.ts", "app/api/concierge/sessions", "app/api/concierge/parse"]) {
+test("creation chat runtime and APIs are removed while help and builders stay installed", () => {
+  for (const path of ["app/concierge-v2", "lib/concierge-v2", "config/concierge-v2-flags.ts", "app/api/concierge/sessions", "app/api/concierge/parse", "app/chat/ConciergeChatClient.tsx", "app/api/creation/threads/route.ts", "app/api/creation/intake/route.ts", "app/api/concierge/message/route.ts", "app/api/concierge/events/[id]/message/route.ts"]) {
     assert.equal(existsSync(new URL(path, import.meta.url)), false, path);
   }
-  for (const path of ["app/chat/ConciergeChatClient.tsx", "app/api/creation/intake/route.ts", "app/api/concierge/message/route.ts", "app/api/concierge/events/[id]/message/route.ts"]) {
+  for (const path of ["app/chat/page.tsx", "app/api/guest-chat/route.ts", "components/navigation/ConciergeSheet.tsx", "app/live-cards/LiveCardBuilder.tsx", "components/events/EventEditorWorkspace.tsx"]) {
     assert.equal(existsSync(new URL(path, import.meta.url)), true, path);
   }
 });

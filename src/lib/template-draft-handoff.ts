@@ -1,5 +1,6 @@
 import { getTemplateCategory, type TemplateCategory } from "./template-categories";
 import { buildTemplateDraftPayload } from "./template-draft-payload";
+import type { EventEditorRecord } from "./event-editor";
 import {
   type DraftValue,
   type EditorSnapshot,
@@ -11,6 +12,8 @@ import {
 export type TemplateHistoryPayload = {
   title: string;
   data: Record<string, DraftValue | undefined>;
+  publicSlug?: string;
+  claim?: boolean;
 };
 
 /** Upload and save only after authentication; leave browser data intact on every failure. */
@@ -22,6 +25,7 @@ export async function saveTemplateDraftToAccount({
   status,
   authenticated,
   remoteMedia,
+  existing,
   request = fetch,
 }: {
   draft: TemplateDraft;
@@ -31,6 +35,7 @@ export async function saveTemplateDraftToAccount({
   status: "draft" | "published";
   authenticated: boolean;
   remoteMedia: Record<string, string>;
+  existing?: EventEditorRecord | null;
   request?: typeof fetch;
 }): Promise<string> {
   if (!authenticated) throw new Error("Sign in to save your event.");
@@ -70,11 +75,15 @@ export async function saveTemplateDraftToAccount({
   )
     signup.revision = draft.signupRevision;
   const body = {
-    title: payload.title,
+    ...payload,
     clientDraftId: draft.id,
     data: {
+      ...existing?.data,
       ...canonical.data,
       ...data,
+      ...(existing && "numberOfGuests" in existing.data
+        ? { numberOfGuests: existing.data.numberOfGuests }
+        : {}),
       category: data.category || getTemplateCategory(category)!.historyCategory,
       primaryOutput: category === "signup-forms" ? "signup_form" : "event_page",
       ownership: "owned",

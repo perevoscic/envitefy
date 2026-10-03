@@ -1,6 +1,6 @@
 import { EVENT_YEAR_INSTRUCTION, normalizeExtractedEventDate } from "./event-date-parser";
 import { categoryCustomDesignGuidance } from "./category-custom-design-profiles";
-import { prepareArrivalMap, refreshArrivalMapView, type ArrivalMapSource } from "./event-arrival-map-server";
+import { prepareArrivalMap, prepareArrivalMapSnapshot, type ArrivalMapSource } from "./event-arrival-map-server";
 import OpenAI from "openai";
 import sharp from "sharp";
 import { resolveConciergeOpenAiPlannerModel } from "@/lib/concierge/openai-config";
@@ -154,7 +154,7 @@ export const eventThemeGenerationDeps = {
 export async function refreshEventArrivalMap(input: EventThemeRequest, signal: AbortSignal) {
   const map = input.currentDetails?.sections[input.arrivalMapSection ?? -1]?.map;
   if (!map || !input.currentDetails) throw new EventThemeRequestError("Choose an existing handout map to refresh.");
-  const refreshed = await refreshArrivalMapView(map, input.currentDetails.location, signal);
+  const refreshed = await prepareArrivalMapSnapshot(map, input.currentDetails.location, signal);
   if (refreshed.status !== "ready") throw new EventThemeRequestError(refreshed.status === "location_unavailable" ?
     "Add a unique street address in Event location before refreshing this map." : "Mapbox could not refresh the map. Your existing map is kept; please retry.");
   return { map: refreshed };

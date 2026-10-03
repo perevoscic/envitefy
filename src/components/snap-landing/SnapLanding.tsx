@@ -663,7 +663,7 @@ export default function SnapLanding() {
         navLinks={marketingPageNavLinks("/snap")}
         variant="transparent-dark"
         primaryCtaLabel="Let's create"
-        authenticatedPrimaryHref="/chat"
+        authenticatedPrimaryHref="/snap"
         brandHref="/"
         loginSuccessRedirectUrl="/"
         onGuestLoginAction={() => openAuth("login")}

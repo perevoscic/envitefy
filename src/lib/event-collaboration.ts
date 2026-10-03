@@ -7,6 +7,7 @@ import {
   type EventAccessPerson,
   EventCollaborationError,
   eventPermissions,
+  type PendingCoHostInvitation,
   supportsEventCollaboration,
 } from "./event-collaboration-types";
 
@@ -396,8 +397,79 @@ export async function readCollaboratorInvitation(token: string): Promise<InviteR
   );
 }
 
+/** Recipient-only metadata; invitation tokens and private event details never leave this read. */
+export async function listPendingCoHostInvitations(
+  userId: string,
+): Promise<PendingCoHostInvitation[]> {
+  await ensureEventCollaboration();
+  const result = await query<PendingCoHostInvitation & { eligibility: Record<string, unknown> }>(
+    `SELECT i.id::text AS id,i.event_id::text AS "eventId",e.title AS "eventTitle",
+      trim(concat_ws(' ',owner.first_name,owner.last_name)) AS "ownerName",
+      i.expires_at::text AS "expiresAt",jsonb_build_object(
+        'signupForm',e.data->'signupForm','attachment',e.data->'attachment',
+        'invitedFromScan',e.data->'invitedFromScan','ownership',e.data->'ownership',
+        'createdVia',e.data->'createdVia') AS eligibility
+     FROM event_collaborator_invites i
+     JOIN users recipient ON recipient.id=$1 AND lower(recipient.email)=lower(i.email)
+     JOIN event_history e ON e.id=i.event_id AND e.user_id=i.invited_by
+     JOIN users owner ON owner.id=i.invited_by
+     WHERE i.accepted_at IS NULL AND i.revoked_at IS NULL AND i.expires_at>now()
+       AND NOT EXISTS (SELECT 1 FROM event_collaborators c
+         WHERE c.event_id=i.event_id AND c.user_id=recipient.id AND c.revoked_at IS NULL)
+     ORDER BY i.created_at DESC,i.id DESC`,
+    [userId],
+  );
+  return result.rows
+    .filter((row) => supportsEventCollaboration(row.eligibility))
+    .map((row) => ({
+      id: row.id,
+      eventId: row.eventId,
+      eventTitle: row.eventTitle || "Untitled event",
+      ownerName: row.ownerName || "The event owner",
+      expiresAt: row.expiresAt,
+    }));
+}
+
+/** Dashboard acceptance is bound to the authenticated recipient, never possession of an ID. */
+export async function acceptCoHostInvitationById(id: string, userId: string): Promise<string> {
+  await ensureEventCollaboration();
+  const invite = (
+    await query<Pick<InviteRecord, "id" | "event_id">>(
+      `SELECT i.id,i.event_id FROM event_collaborator_invites i
+     JOIN users u ON u.id=$2 AND lower(u.email)=lower(i.email) WHERE i.id=$1`,
+      [id, userId],
+    )
+  ).rows[0];
+  return acceptInvitationRecord(invite, userId);
+}
+
+/** Declining closes the recipient's own pending invitation; the owner can invite them again. */
+export async function declineCoHostInvitationById(id: string, userId: string): Promise<void> {
+  await ensureEventCollaboration();
+  const declined = await query(
+    `UPDATE event_collaborator_invites i SET revoked_at=now()
+     FROM users u WHERE i.id=$1 AND u.id=$2 AND lower(u.email)=lower(i.email)
+       AND i.accepted_at IS NULL AND i.revoked_at IS NULL
+     RETURNING i.id`,
+    [id, userId],
+  );
+  if (!declined.rows.length)
+    throw new EventCollaborationError(
+      "This invitation is no longer available.",
+      404,
+      "invalid_invitation",
+    );
+}
+
 export async function acceptCollaboratorInvitation(token: string, userId: string): Promise<string> {
   const invite = await readCollaboratorInvitation(token);
+  return acceptInvitationRecord(invite, userId);
+}
+
+async function acceptInvitationRecord(
+  invite: Pick<InviteRecord, "id" | "event_id"> | null | undefined,
+  userId: string,
+): Promise<string> {
   if (!invite)
     throw new EventCollaborationError(
       "This invitation is unavailable. Ask the owner for a new invitation.",
@@ -437,7 +509,7 @@ export async function acceptCollaboratorInvitation(token: string, userId: string
           410,
           "invitation_unavailable",
         );
-      if (email !== current.email)
+      if (email !== current.email.toLowerCase())
         throw new EventCollaborationError(
           `Sign in with ${current.email} to accept this invitation.`,
           403,

@@ -217,7 +217,7 @@ export default function GuidesPage() {
               </Link>
               <Link
                 className="inline-flex min-h-14 items-center justify-center gap-3 rounded-full border border-white/80 bg-white/58 px-7 py-4 text-sm font-semibold text-[#202124] shadow-[0_14px_40px_rgba(32,49,55,0.08)] backdrop-blur-md transition hover:bg-white/80"
-                href="/chat"
+                href="/live-cards"
               >
                 Design a live card
               </Link>

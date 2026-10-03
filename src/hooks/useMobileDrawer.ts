@@ -17,6 +17,7 @@ const isMobileViewport = () =>
 export function useMobileDrawer(
   initialOpen?: boolean,
   editPlacement: "topbar" | "event-actions" = "topbar",
+  dismissOnSwipe = false,
 ) {
   const search = useSearchParams();
   const router = useRouter();
@@ -132,10 +133,11 @@ export function useMobileDrawer(
       const deltaY = Math.abs(touch.clientY - start.y);
 
       if (deltaX > MIN_SWIPE_DISTANCE && deltaY < MAX_VERTICAL_DRIFT) {
-        closeDrawer();
+        if (dismissOnSwipe) dismissDrawer();
+        else closeDrawer();
       }
     },
-    [closeDrawer]
+    [closeDrawer, dismissDrawer, dismissOnSwipe]
   );
 
   useEffect(() => {
@@ -151,7 +153,7 @@ export function useMobileDrawer(
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handleResize = () => {
-      if (window.innerWidth >= 768) {
+      if (window.innerWidth >= 768 && initialOpen !== true) {
         setOpen(false);
       }
     };
@@ -159,7 +161,7 @@ export function useMobileDrawer(
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [initialOpen]);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof document === "undefined" || !open || !isMobileViewport()) return;

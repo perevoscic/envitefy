@@ -38,7 +38,6 @@ test("shared card route prefers the public-safe cover image url", () => {
 
 test("shared card route can render concierge live-card events", () => {
   const pageSource = readSource("src/app/card/[id]/page.tsx");
-  const historyPayloadSource = readSource("src/lib/concierge/history-payload.ts");
 
   assert.match(pageSource, /function resolveConciergeLiveCardImagePath/);
   assert.match(
@@ -59,9 +58,6 @@ test("shared card route can render concierge live-card events", () => {
     pageSource,
     /heroTextMode: heroTextMode \|\| \(hasLiveCardOutput\(data\) \? "image" : undefined\)/,
   );
-  assert.match(historyPayloadSource, /coverImageUrl: liveCardImageUrl/);
-  assert.match(historyPayloadSource, /studioCard: \{/);
-  assert.match(historyPayloadSource, /invitationData: liveCardInvitationData/);
 });
 
 test("shared card route carries direct RSVP metadata into live-card actions", () => {

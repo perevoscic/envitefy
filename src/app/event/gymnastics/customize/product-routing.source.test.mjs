@@ -16,14 +16,12 @@ test("gymnastics saves persist an event-page product route", () => {
 });
 
 // Execute the actual Cancel handler so a separate hardcoded destination cannot drift again.
-const sourcePath = "src/app/event/gymnastics/customize/page.tsx";
+const sourcePath = "src/components/events/useEventPageEditor.ts";
 const sourceFile = ts.createSourceFile(sourcePath, fs.readFileSync(sourcePath, "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 let cancelExpression;
 function findCancel(node) {
-  if (ts.isJsxElement(node) && node.openingElement.tagName.getText(sourceFile) === "button" &&
-    node.children.some((child) => ts.isJsxText(child) && child.text.trim() === "Cancel")) {
-    const attribute = node.openingElement.attributes.properties.find((item) => ts.isJsxAttribute(item) && item.name.getText(sourceFile) === "onClick");
-    cancelExpression = attribute.initializer.expression.getText(sourceFile);
+  if (ts.isVariableDeclaration(node) && node.name.getText(sourceFile) === "cancel") {
+    cancelExpression = node.initializer.getText(sourceFile);
   }
   ts.forEachChild(node, findCancel);
 }
@@ -41,7 +39,11 @@ function cancelHarness(query, embedded = false) {
     isNewDraft: false,
     didExplicitSave: false,
     isEmbed: embedded,
-    search: new URLSearchParams(query),
+    search: new URLSearchParams(query + (embedded ? "&embed=1" : "")),
+    cancelHref: undefined,
+    id: { current: savedEventId },
+    loaded: null,
+    progress: { requestLeave: navigate => embedded ? pending.push(navigate) : navigate() },
     ownerEventEditorReturnHref,
     buildEventPath(id, title, params) {
       assert.equal(id, savedEventId);
@@ -50,7 +52,6 @@ function cancelHarness(query, embedded = false) {
       return `/event/${id}?tab=event`;
     },
     router: { push: (href) => navigations.push(href) },
-    requestLeave: (navigate) => pending.push(navigate),
     window: { location: { origin: "https://envitefy.test" }, parent: { postMessage: (...args) => resets.push(args), location: { assign: (href) => navigations.push(href) } } },
     fetch() { throw new Error("Cancel must not delete or save this existing event"); },
   };

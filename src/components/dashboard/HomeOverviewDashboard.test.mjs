@@ -6,7 +6,7 @@ test("Home waits for the session cache reset before starting its dashboard reque
   const source = readFileSync(new URL("../Dashboard.tsx", import.meta.url), "utf8");
   assert.match(source, /isHydrated: eventCacheHydrated/);
   assert.match(source, /!eventCacheHydrated[\s\S]*?dashboardError[\s\S]*?return;\s*void refreshDashboard\(\)/);
-  assert.match(source, /onRetry=\{\(\) => void refreshDashboard\(\{ force: true \}\)\}/);
+  assert.match(source, /onRetry=\{\(\) => \{ void refreshDashboard\(\{ force: true \}\); void coHostInvitations.refresh\(\); \}\}/);
 });
 
 test("dashboard invitation actions keep mobile buttons on one row", () => {

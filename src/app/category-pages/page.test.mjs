@@ -155,7 +155,7 @@ test("category landing pages use root URLs and keep old use-case paths redirect-
   assert.match(birthdaysExperience, /SNAP/);
   assert.match(birthdaysExperience, /Envitefy Create/);
   assert.match(birthdaysExperience, /href="\/snap\?auth=signup"/);
-  assert.match(birthdaysExperience, /href="\/chat"/);
+  assert.match(birthdaysExperience, /href="\/event\/birthdays"/);
   assert.match(birthdaysExperience, /role="tablist"/);
   assert.match(birthdaysExperience, /Birthday prompt/);
   assert.match(birthdaysExperience, /Invitation created from the prompt/);
@@ -167,7 +167,7 @@ test("category landing pages use root URLs and keep old use-case paths redirect-
   assert.match(genderRevealView, /SNAP the invite/);
   assert.match(genderRevealView, /Envitefy Create/);
   assert.match(genderRevealView, /href="\/snap\?auth=signup"/);
-  assert.match(genderRevealView, /href="\/chat"/);
+  assert.match(genderRevealView, /href="\/event\/gender-reveal"/);
 });
 
 test("each category landing hero rotates four full-bleed images every 7 seconds", () => {

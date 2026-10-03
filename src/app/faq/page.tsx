@@ -41,7 +41,7 @@ const faqItems: FaqPageItem[] = [
     id: "envitefy-concierge",
     question: "What is Envitefy Create?",
     answer:
-      "Envitefy Create turns a plain-language event idea or uploaded context into an editable invitation and guest-ready live page. It can ask for missing details and shape the RSVP, calendar, directions, registry, updates, reminders, or sign-up experience when the event needs them.",
+      "Use the guided Live Card builder, an Event Page template editor, or the separate Sign-up Form builder. Add your details and guest actions, review the result, then explicitly save or publish. The signed-out help chat answers questions about these tools.",
   },
   {
     id: "my-events-invited-events",

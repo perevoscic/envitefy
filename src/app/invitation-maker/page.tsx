@@ -254,7 +254,7 @@ export default function InvitationMakerPage() {
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link
-                  href="/chat"
+                  href="/live-cards"
                   className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#f0d58f] px-7 text-sm font-bold text-[#211a25] shadow-[0_12px_32px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5 hover:bg-[#fff4cb] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f0d58f]"
                 >
                   Create your invitation
@@ -383,7 +383,7 @@ export default function InvitationMakerPage() {
                   </div>
 
                   <Link
-                    href="/chat"
+                    href="/live-cards"
                     className="mt-8 inline-flex items-center gap-2 font-bold text-[#f0d58f] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f0d58f]"
                   >
                     Create with Envitefy <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -667,7 +667,7 @@ export default function InvitationMakerPage() {
               </p>
               <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
                 <Link
-                  href="/chat"
+                  href="/live-cards"
                   className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#f0d58f] px-7 text-sm font-bold text-[#211a25] hover:bg-[#fff4cb] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f0d58f]"
                 >
                   Create an invitation <ArrowRight className="h-4 w-4" aria-hidden="true" />

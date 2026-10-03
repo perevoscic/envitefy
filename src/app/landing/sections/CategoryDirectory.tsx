@@ -3,10 +3,21 @@ import Image from "next/image";
 import Link from "next/link";
 import { landingHeroGalleries } from "@/lib/landing-hero-galleries";
 import { landingCategoryCards } from "../landing-data";
+import styles from "./CategoryDirectory.module.css";
 
-function cx(...parts: Array<string | false | null | undefined>) {
-  return parts.filter(Boolean).join(" ");
-}
+const tileImageSizes = {
+  weddings: "(min-width: 1536px) 712px, (min-width: 640px) 50vw, 100vw",
+  birthdays: "(min-width: 1536px) 712px, (min-width: 640px) 50vw, 100vw",
+  "baby-showers":
+    "(min-width: 1536px) 348px, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw",
+  "bridal-showers":
+    "(min-width: 1536px) 348px, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw",
+  "gender-reveal":
+    "(min-width: 1536px) 348px, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw",
+  "signup-forms": "(min-width: 1536px) 590px, (min-width: 1024px) 42vw, 100vw",
+  sports: "(min-width: 1536px) 469px, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw",
+  gymnastics: "(min-width: 1536px) 955px, (min-width: 1024px) 67vw, (min-width: 640px) 50vw, 100vw",
+};
 
 export function HeroCategoryStrip() {
   return (
@@ -56,56 +67,29 @@ export default function CategoryDirectory() {
           </p>
         </div>
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-12">
+        <div className={styles.mosaic}>
           {landingCategoryCards.map((card) => {
             const image = landingHeroGalleries[card.id][0];
             if (!image) return null;
 
             return (
-              <Link
-                key={card.id}
-                href={card.href}
-                data-category={card.id}
-                className={cx(
-                  "group relative isolate overflow-hidden rounded-lg border border-[#e4d8c4] bg-[#201a23] shadow-[0_24px_60px_rgba(32,26,35,0.12)] transition hover:-translate-y-0.5 hover:border-[#c9b48a] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#a16207]/50 focus-visible:ring-offset-4 motion-reduce:transform-none motion-reduce:transition-none",
-                  card.featured
-                    ? "min-h-[22rem] sm:col-span-2 lg:col-span-6 lg:min-h-[32rem]"
-                    : "min-h-[18rem] lg:col-span-4 lg:min-h-[22rem]",
-                )}
-              >
+              <Link key={card.id} href={card.href} data-category={card.id} className={styles.tile}>
                 <Image
                   src={image.src}
                   alt={image.alt}
                   fill
-                  sizes={
-                    card.featured
-                      ? "(min-width: 1024px) 50vw, 100vw"
-                      : "(min-width: 1024px) 33vw, 50vw"
-                  }
-                  className="object-cover transition duration-700 group-hover:scale-105 motion-reduce:transform-none motion-reduce:transition-none"
-							style={{
-								objectPosition:
-									"objectPosition" in image ? image.objectPosition : "center",
-							}}
+                  sizes={tileImageSizes[card.id]}
+                  className={styles.artwork}
+                  style={{
+                    objectPosition: "objectPosition" in image ? image.objectPosition : "center",
+                  }}
                 />
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(18,12,20,0.08)_0%,rgba(18,12,20,0.28)_42%,rgba(18,12,20,0.88)_100%)]" />
-                <div className="relative z-10 flex h-full flex-col justify-end p-5 sm:p-7">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#f0d58f]">
-                    Event page
-                  </p>
-                  <h3
-                    className={cx(
-                      "mt-2 font-light leading-tight text-white",
-                      card.featured ? "text-4xl sm:text-5xl" : "text-3xl",
-                    )}
-                    style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
-                  >
-                    {card.label}
-                  </h3>
-                  <p className="mt-3 max-w-md text-sm leading-6 text-white/84 sm:text-base sm:leading-7">
-                    {card.promise}
-                  </p>
-                  <span className="mt-5 inline-flex w-fit items-center gap-2 rounded-md bg-white px-4 py-2.5 text-xs font-semibold text-[#201a23] transition group-hover:bg-[#f0d58f]">
+                <div className={styles.scrim} aria-hidden="true" />
+                <div className={styles.content}>
+                  <p className={styles.eyebrow}>Event page</p>
+                  <h3 className={styles.title}>{card.label}</h3>
+                  <p className={styles.promise}>{card.promise}</p>
+                  <span className={styles.cta}>
                     {card.cta}
                     <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </span>

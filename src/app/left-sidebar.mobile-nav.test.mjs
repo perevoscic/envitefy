@@ -28,37 +28,11 @@ test("left sidebar mobile header opens navigation from click without early touch
   );
 });
 
-test("chat route compact nav button opens the sidebar directly", () => {
-  const sidebarSource = readSource("src/app/left-sidebar.tsx");
-  const wrapperSource = readSource("src/components/MainContentWrapper.tsx");
-  const chatSource = readSource("src/app/chat/ConciergeChatClient.tsx");
-
-  assert.match(sidebarSource, /const isChatPath = \(pathname \|\| ""\)\.replace\(\/\\\/\+\$\/, ""\) === "\/chat";/);
-  assert.match(
-    sidebarSource,
-    /const showFullMobileTopBar = viewModel\.showMobileTopBar && !isChatPath;/,
-  );
-  assert.match(
-    sidebarSource,
-    /const showChatTopBarReveal = viewModel\.showMobileTopBar && isChatPath;/,
-  );
-  assert.match(
-    sidebarSource,
-    /showChatTopBarReveal[\s\S]*?onClick=\{\(event\) => \{\s*event\.preventDefault\(\);\s*event\.stopPropagation\(\);\s*viewModel\.openSidebarFromTrigger\(\);\s*\}\}[\s\S]*?aria-label="Open navigation"[\s\S]*?<SidebarNavigationMenuIcon size=\{24\}/s,
-  );
-  assert.doesNotMatch(sidebarSource, /aria-label="Show navigation"/);
-  assert.doesNotMatch(sidebarSource, /aria-label="Hide navigation"/);
-  assert.doesNotMatch(sidebarSource, /ChevronUp/);
-  assert.doesNotMatch(sidebarSource, /isChatTopBarRevealed/);
-  assert.doesNotMatch(sidebarSource, /setIsChatTopBarRevealed/);
-  assert.doesNotMatch(sidebarSource, /chatTopBarRef/);
-
-  assert.match(wrapperSource, /const isChatRoute = normalizedPath === "\/chat";/);
-  assert.match(wrapperSource, /: isChatRoute\s*\?\s*"0px"/s);
-  assert.match(
-    chatSource,
-    /pb-2 pl-14 pr-3 pt-\[max\(0\.35rem,env\(safe-area-inset-top\)\)\]/,
-  );
+test("mobile navigation uses the shared header without retired chat viewport overrides", () => {
+  const sidebar = readSource("src/app/left-sidebar.tsx");
+  const wrapper = readSource("src/components/MainContentWrapper.tsx");
+  assert.match(sidebar, /visible=\{viewModel.showMobileTopBar\}/);
+  assert.doesNotMatch(sidebar + wrapper, /isChatPath|isChatRoute|showChatTopBarReveal|envitefy-chat-layout/);
 });
 
 test("left sidebar locks background scroll on mobile open and restores scroll position", () => {

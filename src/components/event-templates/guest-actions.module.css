@@ -1,4 +1,5 @@
 .actions {
+  container: guest-actions / inline-size;
   position: relative;
   z-index: 10;
   padding: 1.5rem 0;
@@ -7,6 +8,14 @@
   text-align: center;
   text-transform: none;
   letter-spacing: normal;
+}
+
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.75rem;
 }
 
 .button {
@@ -92,13 +101,11 @@
 }
 .shortLabel {
   display: none;
-}
-.compactMobile {
-  container: guest-actions / inline-size;
+  font: inherit;
 }
 @container guest-actions (max-width: 480px) {
   .editableAction {
-    flex: 1 1 0;
+    flex: 1 1 auto;
     min-width: 0;
     margin: 0.5rem 0 0;
   }
@@ -127,6 +134,33 @@
   }
   .shortLabel {
     display: inline;
+  }
+  .removeAction {
+    top: -30px;
+    right: 0;
+  }
+}
+@container guest-actions (max-width: 300px) {
+  .actionRow {
+    gap: 0.25rem;
+  }
+  .actionRow .button {
+    gap: 0.1875rem;
+    padding-inline: 0.125rem;
+    font-size: clamp(0.625rem, 5cqw, 0.75rem);
+  }
+  .actionRow .button svg {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+}
+@container guest-actions (max-width: 220px) {
+  .actionRow {
+    gap: 0.125rem;
+  }
+  .actionRow .button {
+    gap: 0.125rem;
+    padding-inline: 0;
   }
 }
 .button:focus-visible,

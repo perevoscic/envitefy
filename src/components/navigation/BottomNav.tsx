@@ -40,7 +40,7 @@ function scrollToHash(href: string) {
 }
 
 export default function BottomNav({
-  initialActiveLabel = "Create",
+  initialActiveLabel = "Help",
   items = signedOutBottomNav,
   onConciergeSelect,
   onHashSelect,

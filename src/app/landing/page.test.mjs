@@ -457,7 +457,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
 
   assert.match(signedOutNav, /from "@\/config\/navigation"/);
   assert.match(signedOutNavConfig, /export const signedOutBottomNav/);
-  for (const label of ["Templates", "Examples", "Create", "More ways", "Menu"]) {
+  for (const label of ["Templates", "Examples", "Help", "More ways", "Menu"]) {
     assert.match(signedOutNavConfig, new RegExp(`label: "${label}"`));
   }
   assert.match(signedOutNavConfig, /href: "#examples"/);
@@ -507,7 +507,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(bottomNav, /backdrop-blur-2xl/);
   assert.match(bottomNav, /rounded-\[1\.65rem\]/);
   assert.match(bottomNav, /env\(safe-area-inset-bottom\)/);
-  assert.match(bottomNav, /initialActiveLabel = "Create"/);
+  assert.match(bottomNav, /initialActiveLabel = "Help"/);
   assert.match(bottomNav, /const \[activeLabel, setActiveLabel\] = useState\(initialActiveLabel\)/);
   assert.match(bottomNav, /onHashSelect\?: \(href: string\) => void/);
   assert.match(bottomNav, /const handleHashSelect = \(href: string\) => \{/);
@@ -657,7 +657,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(landingExperience, /onVisibilityChange=\{setBottomNavVisible\}/);
   assert.match(landingExperience, /pb-\[calc\(96px\+env\(safe-area-inset-bottom\)\)\] md:pb-0/);
   assert.match(landingExperience, /const \[assistantOpen, setAssistantOpen\] = useState\(false\)/);
-  assert.match(landingExperience, /const openConciergeDemo = \(\) => setAssistantOpen\(true\)/);
+  assert.match(landingExperience, /const openHelpChat = \(\) => setAssistantOpen\(true\)/);
   assert.match(landingExperience, /<ConciergeSheet/);
   assert.match(landingExperience, /onSignupSelect=\{\(\) => openAuth\("signup"\)\}/);
   assert.doesNotMatch(landingExperience, /mobileLogoOnly=\{bottomNavVisible\}/);
@@ -665,25 +665,25 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(landingExperience, /mobileNavLinks=\{\[...signedOutMobileMenuLinks\]\}/);
   assert.match(landingExperience, /showMobileMenuAuthActions=\{false\}/);
   assert.match(landingExperience, /brandHref="\/"/);
-  assert.match(landingExperience, /Try Envitefy Create/);
-  assert.match(landingExperience, /openConciergeDemo/);
+  assert.match(landingExperience, /Ask Envitefy/);
+  assert.match(landingExperience, /openHelpChat/);
   assert.match(landingExperience, /<AIConciergeSection \/>/);
   assert.match(landingExperience, /<CategoryDirectory \/>/);
   assert.match(landingExperience, /<HeroCategoryStrip \/>/);
   assert.match(aiConciergeSection, /onPrimaryAction\?: \(\) => void/);
-  assert.match(conciergeSheet, /Envitefy Create/);
-  assert.match(conciergeSheet, /Event ideas, RSVP, gifts & setup/);
+  assert.match(conciergeSheet, /Envitefy Help/);
+  assert.match(conciergeSheet, /Questions about Envitefy/);
   assert.match(conciergeSheet, /logo-colored\.png/);
   assert.match(conciergeSheet, /bg-\[#f6d477\]/);
   assert.match(conciergeSheet, /style=\{\{ color: "#f9df94" \}\}/);
   assert.doesNotMatch(conciergeSheet, /<Sparkles/);
-  assert.match(conciergeSheet, /Tell me what you’re planning/);
+  assert.match(conciergeSheet, /Ask me about Envitefy/);
   for (const prompt of [
-    "Plan my event with AI",
-    "Upload an invite or flyer",
-    "See what guests will see",
+    "How do I create a Live Card?",
+    "Can I upload an invite or flyer?",
+    "What can guests do?",
     "How do RSVPs work?",
-    "Add gifts, registry, or notes",
+    "Can I add a registry?",
   ]) {
     assert.match(conciergeSheet, new RegExp(prompt.replace(/[?]/g, "\\?")));
   }

@@ -1,4 +1,7 @@
+"use client";
 import { Children, type CSSProperties, Fragment, isValidElement, type ReactNode } from "react";
+import EventPageSections, { eventPageSectionEntries } from "@/components/events/EventPageSections";
+import { useEventPageComposition } from "@/components/events/EventPageCompositionContext";
 import { celebrationMaterialStyle, getCelebrationDirection } from "./celebration-materials";
 import materialStyles from "./celebration-materials.module.css";
 import styles from "./template-body-layout.module.css";
@@ -107,6 +110,7 @@ export default function TemplateBodyLayout({
   fallbackClassName?: string;
   style?: CSSProperties;
 }) {
+  const composition = useEventPageComposition();
   const direction = design && getCelebrationDirection(design.category, design.id);
   const activePresentation = direction
     ? {
@@ -127,6 +131,13 @@ export default function TemplateBodyLayout({
   const visible = items.filter(
     (item) => item.content !== null && item.content !== undefined && item.content !== false,
   );
+  if (composition?.onChange || composition?.value)
+    return (
+      <EventPageSections
+        sections={sections || eventPageSectionEntries(children)}
+        className={className}
+      />
+    );
   if (!activePresentation) {
     const content = visible.map((item) => <Fragment key={item.id}>{item.content}</Fragment>);
     return fallbackClassName ? <div className={fallbackClassName}>{content}</div> : content;

@@ -1,35 +1,25 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowUp,
   CalendarDays,
   Copy,
   ExternalLink,
   FileText,
   Loader2,
   type LucideIcon,
-  MessageCircle,
   Plus,
   Sparkles,
   Trash2,
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
-  ConciergeEventMessageResponse,
   EventAsset,
   EventAssetType,
 } from "@/lib/concierge/types";
 
-type ManageTab = "live-card" | "details" | "assets" | "guests" | "assistant";
-
-type ChatMessage = {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-};
+type ManageTab = "live-card" | "details" | "assets" | "guests";
 
 type EventManageClientProps = {
   eventId: string;
@@ -62,7 +52,6 @@ const TABS: Array<{ key: ManageTab; label: string; icon: LucideIcon }> = [
   { key: "details", label: "Details", icon: CalendarDays },
   { key: "assets", label: "Assets", icon: FileText },
   { key: "guests", label: "Guests", icon: Users },
-  { key: "assistant", label: "Assistant", icon: MessageCircle },
 ];
 
 const QUICK_ASSETS: Array<{ type: EventAssetType; label: string; description: string }> = [
@@ -74,14 +63,6 @@ const QUICK_ASSETS: Array<{ type: EventAssetType; label: string; description: st
   { type: "reminder_message", label: "Reminder", description: "Follow-up copy" },
   { type: "thank_you_card", label: "Thank you", description: "Post-event note" },
 ];
-
-function newMessage(role: ChatMessage["role"], text: string): ChatMessage {
-  return {
-    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    role,
-    text,
-  };
-}
 
 function cleanString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -199,14 +180,10 @@ export default function EventManageClient({
   initialAssets,
   eventHref,
 }: EventManageClientProps) {
-  const [title, setTitle] = useState(initialTitle);
-  const [eventData, setEventData] = useState(initialData);
+  const title = initialTitle;
+  const eventData = initialData;
   const [assets, setAssets] = useState<EventAsset[]>(initialAssets);
   const [activeTab, setActiveTab] = useState<ManageTab>("live-card");
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    newMessage("assistant", "I can refine this live card and create matching event assets."),
-  ]);
-  const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isLoadingRsvp, setIsLoadingRsvp] = useState(false);
   const [rsvpSummary, setRsvpSummary] = useState<RsvpSummary>({
@@ -275,40 +252,26 @@ export default function EventManageClient({
     };
   }, [eventId]);
 
-  async function sendAssistantMessage(message: string) {
-    const text = message.trim();
-    if (!text) return;
-    setInput("");
+  async function createAsset(assetType: EventAssetType) {
     setError(null);
     setIsSending(true);
-    setMessages((prev) => [...prev, newMessage("user", text)]);
     try {
-      const response = await fetch(`/api/concierge/events/${eventId}/message`, {
+      const response = await fetch(`/api/events/${eventId}/assets`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ assetType }),
       });
-      const json = (await response
-        .json()
-        .catch(() => null)) as ConciergeEventMessageResponse | null;
-      if (!response.ok || !json?.ok) {
-        throw new Error(json && !json.ok ? json.error : "Assistant request failed.");
-      }
-      setTitle(json.event.title);
-      setEventData(json.event.data);
-      setAssets(json.assets);
-      setMessages((prev) => [...prev, newMessage("assistant", json.assistantMessage)]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Assistant request failed.");
+      const json = (await response.json()) as { asset?: EventAsset; error?: string };
+      const asset = json.asset;
+      if (!response.ok || !asset) throw new Error(json.error || "Unable to create asset.");
+      setAssets(current => [asset, ...current]);
+      setActiveTab("assets");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Unable to create asset.");
     } finally {
       setIsSending(false);
     }
-  }
-
-  async function createAsset(assetType: EventAssetType) {
-    await sendAssistantMessage(`Create a ${assetTypeLabel(assetType)} version.`);
-    setActiveTab("assets");
   }
 
   async function deleteAsset(assetId: string) {
@@ -320,84 +283,6 @@ export default function EventManageClient({
       setAssets((prev) => prev.filter((asset) => asset.id !== assetId));
     }
   }
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    void sendAssistantMessage(input);
-  }
-
-  const assistantPanel = (
-    <aside className="flex min-h-[34rem] flex-col overflow-hidden rounded-[1.4rem] border border-[#eadfff] bg-white shadow-sm">
-      <div className="border-b border-[#eadfff] px-5 py-4">
-        <div className="flex items-center gap-2 text-sm font-bold text-[#2d1b36]">
-          <MessageCircle className="size-4 text-[#7c4dff]" aria-hidden="true" />
-          Assistant
-        </div>
-      </div>
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-5">
-        <AnimatePresence initial={false}>
-          {messages.map((message) => (
-            <motion.div
-              key={message.id}
-              initial={{ opacity: 0, y: 8, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`max-w-[86%] rounded-2xl px-3.5 py-2.5 text-sm leading-6 ${
-                  message.role === "user"
-                    ? "rounded-tr-md bg-[#7c4dff] text-white"
-                    : "rounded-tl-md border border-[#eadfff] bg-[#fbf9ff] text-[#2d1b36]"
-                }`}
-              >
-                {message.text}
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        {isSending ? (
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#eadfff] bg-[#fbf9ff] px-3.5 py-2 text-sm text-[#6f6286]">
-            <Loader2 className="size-4 animate-spin text-[#7c4dff]" aria-hidden="true" />
-            Updating event
-          </div>
-        ) : null}
-      </div>
-      <div className="border-t border-[#eadfff] px-5 py-5">
-        <div className="mb-3 flex flex-wrap gap-2">
-          {["Refine the live card", "Add RSVP by April 10", "Create a WhatsApp version"].map(
-            (chip) => (
-              <button
-                key={chip}
-                type="button"
-                onClick={() => void sendAssistantMessage(chip)}
-                className="rounded-full bg-[#f4efff] px-3 py-1.5 text-xs font-semibold text-[#5f5289] transition hover:bg-[#eadfff]"
-              >
-                {chip}
-              </button>
-            ),
-          )}
-        </div>
-        <form onSubmit={handleSubmit} className="flex items-center gap-2">
-          <input
-            value={input}
-            onChange={(event) => setInput(event.currentTarget.value)}
-            placeholder="Ask for changes or assets"
-            className="h-11 min-w-0 flex-1 rounded-full border border-[#d8caff] px-4 text-sm text-[#161129] outline-none focus:border-[#7c4dff]"
-          />
-          <button
-            type="submit"
-            disabled={isSending || !input.trim()}
-            className="grid size-11 shrink-0 place-items-center rounded-full bg-[#2d1b36] text-white transition hover:bg-[#3b2946] disabled:cursor-not-allowed disabled:opacity-45"
-            aria-label="Send"
-            title="Send"
-          >
-            <ArrowUp className="size-5" aria-hidden="true" />
-          </button>
-        </form>
-        {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
-      </div>
-    </aside>
-  );
 
   return (
     <main className="min-h-screen bg-transparent text-[#161129]">
@@ -466,7 +351,8 @@ export default function EventManageClient({
           </div>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_24rem]">
+        {error ? <p role="alert" className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</p> : null}
+        <div className="grid gap-5">
           <section className="min-h-[26rem] min-w-0 rounded-[1.4rem] border border-[#eadfff] bg-white/86 p-3 shadow-sm backdrop-blur sm:min-h-[34rem] sm:p-5">
             {activeTab === "live-card" ? (
               <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
@@ -534,30 +420,6 @@ export default function EventManageClient({
                     })}
                   </div>
 
-                  <div className="rounded-[1.35rem] border border-[#eadfff] bg-white p-5 shadow-sm">
-                    <div className="mb-4 flex items-center gap-3">
-                      <span className="grid size-9 place-items-center rounded-full bg-emerald-50 text-emerald-600">
-                        <Sparkles className="size-4" aria-hidden="true" />
-                      </span>
-                      <h3 className="text-sm font-bold text-[#2d1b36]">AI Recommendations</h3>
-                    </div>
-                    <div className="space-y-2">
-                      {(missingDetails.length
-                        ? missingDetails.slice(0, 3).map((field) => `Add ${field}`)
-                        : ["Create a WhatsApp version", "Add RSVP details", "Refine the live card"]
-                      ).map((recommendation) => (
-                        <button
-                          key={recommendation}
-                          type="button"
-                          onClick={() => void sendAssistantMessage(recommendation)}
-                          className="w-full rounded-2xl bg-[#f7f3ff] px-4 py-3 text-left text-sm font-semibold text-[#2d1b36] transition hover:bg-[#eee6ff]"
-                        >
-                          {recommendation}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
                   <Link
                     href={eventHref}
                     className="inline-flex h-13 w-full items-center justify-center rounded-[1.35rem] bg-[#2d1b36] px-5 text-xs font-bold uppercase tracking-[0.16em] text-white shadow-xl shadow-[#2d1b36]/15 transition hover:bg-[#3b2946]"
@@ -596,18 +458,6 @@ export default function EventManageClient({
                 <div className="overflow-hidden rounded-[1.35rem] border border-[#eadfff] bg-white shadow-sm">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#eadfff] px-5 py-4">
                     <h2 className="text-sm font-bold text-[#2d1b36]">RSVP Dashboard</h2>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        void sendAssistantMessage(
-                          "Add RSVP details and create a matching RSVP page.",
-                        )
-                      }
-                      className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#f4efff] px-4 text-sm font-bold text-[#7c4dff] transition hover:bg-[#eadfff]"
-                    >
-                      <Plus className="size-4" aria-hidden="true" />
-                      Add RSVP
-                    </button>
                   </div>
                   <div className="space-y-3 p-4 md:hidden" aria-live="polite">
                     {rsvpSummary.responses.length ? (
@@ -769,7 +619,6 @@ export default function EventManageClient({
               </div>
             ) : null}
 
-            {activeTab === "assistant" ? assistantPanel : null}
 
             {activeTab === "details" ? (
               <div className="space-y-5">
@@ -782,14 +631,6 @@ export default function EventManageClient({
                       Event details for the live card
                     </h2>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => void sendAssistantMessage("Fill in missing event details.")}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#f4efff] px-4 text-sm font-bold text-[#7c4dff] transition hover:bg-[#eadfff]"
-                  >
-                    <Plus className="size-4" aria-hidden="true" />
-                    Add details
-                  </button>
                 </div>
 
                 <dl className="grid gap-3 text-sm md:grid-cols-2">
@@ -826,7 +667,6 @@ export default function EventManageClient({
             ) : null}
           </section>
 
-          <div className={activeTab === "assistant" ? "hidden" : ""}>{assistantPanel}</div>
         </div>
       </div>
     </main>

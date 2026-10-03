@@ -73,7 +73,7 @@ try {
       .locator("..");
     await section.waitFor();
     await section
-      .getByRole("img", { name: "Street map of the event area with numbered arrival markers" })
+      .getByRole("img", { name: "Street map of the event area with numbered arrival locations" })
       .waitFor();
     const bytes = await section.screenshot({ type: "png" });
     await fs.writeFile(

@@ -490,7 +490,6 @@ export default async function SignupPage({
           actions={
             <EventGuestActions
               visibility={visibleForm.guestActions}
-              compactMobile
               shareUrl={`/smart-signup-form/${canonicalSegment}`}
               eventId={row.id}
               title={signupForm.title || row.title || "Signup form"}

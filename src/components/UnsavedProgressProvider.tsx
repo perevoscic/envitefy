@@ -53,11 +53,13 @@ export function useEventProgress({
   snapshot,
   ready = true,
   enabled = true,
+  initialDirty = false,
   ...actions
 }: {
   snapshot: object;
   ready?: boolean;
   enabled?: boolean;
+  initialDirty?: boolean;
   save: Progress["save"];
   discard?: Progress["discard"];
   busy?: boolean;
@@ -83,26 +85,30 @@ export function useEventProgress({
   const wasReady = useRef(false);
   const latest = useRef(serialized);
   latest.current = serialized;
-  if (!ready || !wasReady.current || !interacted.current) baseline.current = serialized;
+  if (!ready) baseline.current = serialized;
+  else if (!wasReady.current) baseline.current = initialDirty ? "{}" : serialized;
+  else if (!interacted.current && !initialDirty) baseline.current = serialized;
   wasReady.current = ready;
   const [, refresh] = useState(0);
-  const markSaved = useCallback(() => {
-    baseline.current = latest.current;
+  const markSaved = useCallback((savedSnapshot?: object) => {
+    baseline.current = savedSnapshot ? JSON.stringify(savedSnapshot) : latest.current;
     refresh((value) => value + 1);
   }, []);
+  const dirty = enabled && ready && baseline.current !== serialized;
   const navigation = useUnsavedProgress({
     ...actions,
-    dirty: enabled && ready && baseline.current !== serialized,
+    dirty,
     save: async () => {
+      const savedSnapshot = JSON.parse(latest.current) as object;
       await actions.save();
-      markSaved();
+      markSaved(savedSnapshot);
     },
     discard: async () => {
       await actions.discard?.();
       markSaved();
     },
   });
-  return { ...navigation, markSaved };
+  return { ...navigation, markSaved, dirty };
 }
 
 export default function UnsavedProgressProvider({ children }: { children: ReactNode }) {

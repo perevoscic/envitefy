@@ -1,4 +1,6 @@
 "use client";
+import EventPageSections from "@/components/events/EventPageSections";
+
 import TemplateImageTone from "@/components/events/TemplateImageTone";
 import type { BirthdayPartyDetails } from "@/lib/birthday-party-details";
 import React, { useState, useEffect, useContext, createContext } from "react";
@@ -1852,8 +1854,9 @@ function BirthdayContentSections({
       </div>
 
       {/* Schedule / Timeline */}
-      {event.schedule && event.schedule.length > 0 && (
-        <section
+      <EventPageSections>
+{event.schedule && event.schedule.length > 0 && (
+        <section id="our-fun-timeline"
           className={`p-8 md:p-12 rounded-[3rem] ${sectionBg} backdrop-blur-sm border ${
             darkMode ? "border-white/10" : "border-white/50"
           }`}
@@ -1900,7 +1903,7 @@ function BirthdayContentSections({
 
       {/* Photo Gallery - More playful grid */}
       {event.gallery && event.gallery.length > 0 && (
-        <section>
+        <section id="birthday-memories">
           <div className="flex items-center gap-3 mb-8 justify-center">
             <Camera className="h-7 w-7" aria-hidden="true" />
             <h2
@@ -1931,7 +1934,7 @@ function BirthdayContentSections({
 
       {/* Organized Hosts Row */}
       {event.hosts && event.hosts.length > 0 && (
-        <section className="text-center">
+        <section id="hosted-with-care" className="text-center">
           <h2
             className="mb-6 inline-flex items-center gap-2 text-xl font-bold uppercase tracking-[0.2em] opacity-40"
             style={{ color: textColor }}
@@ -1964,7 +1967,7 @@ function BirthdayContentSections({
 
       {/* Registry list */}
       {registryList.length > 0 && (
-        <section className="text-center pt-8 border-t border-slate-200/20">
+        <section id="section" className="text-center pt-8 border-t border-slate-200/20">
           <h2 className="text-lg font-bold mb-6 opacity-40">{registryCopy.sectionLabel}</h2>
           <div className="flex flex-wrap justify-center gap-3">
             {registryList.map((r, idx) => (
@@ -1989,7 +1992,7 @@ function BirthdayContentSections({
 
       {event.rsvpEnabled &&
         (userRsvpResponse ? (
-          <section className="text-center pt-8">
+          <section id="section" className="text-center pt-8">
             <div
               className="inline-flex items-center gap-3 rounded-full px-8 py-4 shadow-lg"
               style={{
@@ -2032,6 +2035,7 @@ function BirthdayContentSections({
             )}
           </section>
         ))}
+</EventPageSections>
     </main>
   );
 }

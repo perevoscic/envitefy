@@ -2309,7 +2309,7 @@ function _createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       sizes="(max-width: 768px) 100vw, 1000px"
                     />
                   )}
-                  <HeroImageEditor filterEnabled={data.heroImageFilterEnabled !== false} onFilterChange={(heroImageFilterEnabled) => setData((prev) => ({ ...prev, heroImageFilterEnabled }))} value={data.hero} onChange={(hero) => setData((prev) => ({ ...prev, hero }))} className="absolute inset-x-4 bottom-4 z-10 flex justify-center" />
+                  <HeroImageEditor value={data.hero} onChange={(hero) => setData((prev) => ({ ...prev, hero }))} className="absolute inset-x-4 bottom-4 z-10 flex justify-center" />
                 </div>
 </TemplateImageTone>
 

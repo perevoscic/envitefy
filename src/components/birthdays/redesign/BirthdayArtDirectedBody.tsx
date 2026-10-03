@@ -1,4 +1,7 @@
+"use client";
 import type { ReactNode } from "react";
+import EventPageSections from "@/components/events/EventPageSections";
+import { useEventPageComposition } from "@/components/events/EventPageCompositionContext";
 import { getCelebrationDirection } from "@/components/templates/celebration-materials";
 import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
 import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
@@ -7,6 +10,8 @@ import { BIRTHDAY_BODY_DIRECTIONS } from "./body-directions";
 
 type Props = { id: string; blocks: Record<string, ReactNode> };
 export default function BirthdayArtDirectedBody({ id, blocks }: Props) {
+  const composition = useEventPageComposition();
+  if (composition?.onChange || composition?.value) return <EventPageSections sections={Object.entries(blocks).filter(([key]) => key !== "facts").map(([key, content]) => ({ id: key, content }))} />;
   const treatment = BIRTHDAY_BODY_DIRECTIONS[id];
   const presentation =
     getTemplateBodyPresentation("birthdays", id) ||

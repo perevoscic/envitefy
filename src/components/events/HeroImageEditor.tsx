@@ -14,8 +14,6 @@ type Props = {
   onBusyChange?: (busy: boolean) => void;
   settings?: HeroImageSettings;
   onSettingsChange?: (settings: HeroImageSettings) => void;
-  filterEnabled?: boolean;
-  onFilterChange?: (enabled: boolean) => void;
 };
 
 export function useHeroImagePicker(onChange: Props["onChange"], options: Pick<Props, "prepareImage" | "onBusyChange"> = {}) {
@@ -90,8 +88,6 @@ export default function HeroImageEditor({
   label = "Change",
   settings,
   onSettingsChange,
-  filterEnabled = true,
-  onFilterChange,
 }: Props) {
   const picker = useHeroImagePicker(onChange, { prepareImage, onBusyChange });
   return (
@@ -107,20 +103,6 @@ export default function HeroImageEditor({
           <ImagePlus size={18} aria-hidden="true" />
           {picker.busy ? "Preparing image…" : label}
         </button>
-        {onFilterChange ? (
-          <button
-            type="button"
-            role="switch"
-            aria-label="Template image filter"
-            aria-checked={filterEnabled}
-            title={filterEnabled ? "Turn template filter off" : "Turn template filter on"}
-            onClick={() => onFilterChange(!filterEnabled)}
-            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-violet-200 bg-white px-3 py-2 font-sans text-sm font-semibold text-violet-800 shadow-md hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700"
-          >
-            <span aria-hidden="true" className={`size-3 rounded-full border border-current ${filterEnabled ? "bg-current" : ""}`} />
-            {filterEnabled ? "Filter on" : "Filter off"}
-          </button>
-        ) : null}
         {settings && onSettingsChange ? (
           <HeroImageAdjustments settings={settings} onChange={onSettingsChange} />
         ) : null}

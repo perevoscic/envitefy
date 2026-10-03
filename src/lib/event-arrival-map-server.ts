@@ -25,13 +25,10 @@ export const arrivalMapServerDeps = {
 const record = (v: unknown): Record<string, unknown> =>
   v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
 
-/** Source maps and annotations remain evidence. Only the provider supplies geography;
- * visual matching proposes pixels, and a host explicitly confirms each navigable pin. */
-export async function prepareArrivalMap(
+/** Extract the supplied map as evidence, retaining its original annotations. */
+export async function extractArrivalMapSource(
   source: ArrivalMapSource,
   images: string[],
-  address: string,
-  signal: AbortSignal,
 ): Promise<EventArrivalMap | null> {
   const image = images[source.imageIndex];
   const c = source.crop;
@@ -63,15 +60,36 @@ export async function prepareArrivalMap(
     })
     .png()
     .toBuffer();
-  let map: EventArrivalMap = {
+  const map: EventArrivalMap = {
     version: 1,
     sourceImage: `data:image/webp;base64,${(await arrivalMapServerDeps.encode(crop)).toString("base64")}`,
     status: "location_unavailable",
     markers: source.markers.map((m) => ({ ...m, point: null, confirmed: false })),
   };
-  if (!normalizeArrivalMap(map)) return null;
-  map = await refreshArrivalMapView(map, address, signal);
+  return normalizeArrivalMap(map);
+}
+
+/** Prepare the displayed provider snapshot and locations, retaining the hidden source. */
+export async function prepareArrivalMap(
+  source: ArrivalMapSource,
+  images: string[],
+  address: string,
+  signal: AbortSignal,
+): Promise<EventArrivalMap | null> {
+  const map = await extractArrivalMapSource(source, images);
+  if (!map) return null;
+  return prepareArrivalMapSnapshot(map, address, signal);
+}
+
+/** Match in-memory uploads only; never fetch a stored source URL for vision. */
+export async function prepareArrivalMapSnapshot(
+  previous: EventArrivalMap,
+  address: string,
+  signal: AbortSignal,
+): Promise<EventArrivalMap> {
+  const map = await refreshArrivalMapView(previous, address, signal);
   if (map.status !== "ready" || !map.markers.length) return map;
+  if (!map.sourceImage.startsWith("data:image/webp;base64,")) return map;
   return alignArrivalMarkers(map, address, signal);
 }
 

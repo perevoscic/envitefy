@@ -1,4 +1,5 @@
 import { parseCalendarDateTimeToIso } from "./calendar-date-time";
+import { normalizeEventPageComposition } from "./event-page-composition";
 import { normalizeFootballPageText } from "./football-page-text";
 import { replaceDraftMedia, retainDraftMedia, type EditorSnapshot } from "./template-draft-storage";
 
@@ -138,6 +139,7 @@ export async function saveManualEventProgress({
                 ownership: "owned",
                 createdVia: "manual",
                 createdManually: true,
+                eventPageComposition: normalizeEventPageComposition(saved.pageComposition) ?? null,
                 ...(templateId === "football-season"
                   ? {
                       footballPageText: normalizeFootballPageText(data.footballPageText),

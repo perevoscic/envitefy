@@ -4,13 +4,6 @@
 @import "./gallery-fonts.css";
 @import "../styles/holiday-palettes.css";
 
-/* Keep each template's existing photo effects while applying its automatic hue. */
-.template-hero-image {
-  filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,)
-    var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,)
-    var(--tw-drop-shadow,) var(--template-image-filter,);
-}
-
 @font-face {
   font-family: "Josefin Sans";
   src: url("/fonts/Josefin_Sans/JosefinSans-VariableFont_wght.ttf") format("truetype");

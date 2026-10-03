@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { parseEventDates, normalizeExtractedEventDate } from "./event-date-parser.ts";
 import { inferEventYear } from "./event-date-year.mjs";
-import { parseChrono, fallbackExtractConciergeDraft } from "./concierge/fallback.ts";
 import { resolveScheduleCorrection } from "./creation/calendar-validation.ts";
 
 const now = new Date("2026-09-22T23:00:00Z");
@@ -61,7 +60,7 @@ test("AI date normalization corrects an inferred year and preserves the supplied
   );
 });
 
-test("chat intake and corrections use the same year rule for every category", (t) => {
+test("event date intake and corrections use the same year rule for every category", (t) => {
   t.mock.timers.enable({ apis: ["Date"], now });
   for (const category of [
     "Birthday",
@@ -76,14 +75,10 @@ test("chat intake and corrections use the same year rule for every category", (t
     "Open house",
     "General event",
   ]) {
-    const draft = fallbackExtractConciergeDraft({
-      message: `${category} on September 1 at 4 PM.`,
-      starterCategory: category,
-    });
-    assert.equal(new Date(draft.startISO).getUTCFullYear(), 2026, category);
+    assert.deepEqual(date(`${category} on September 1 at 4 PM.`), [2026, 9, 1], category);
   }
-  assert.match(parseChrono("August 24 at 4 PM").startISO, /^2027-08-24/);
-  assert.match(parseChrono("September 24, 2029 at 4 PM").startISO, /^2029-09-24/);
+  assert.deepEqual(date("August 24 at 4 PM"), [2027, 8, 24]);
+  assert.deepEqual(date("September 24, 2029 at 4 PM"), [2029, 9, 24]);
   assert.match(
     resolveScheduleCorrection({ dateText: "September 1", timeText: "4 PM", timezone: zone })
       .startISO,

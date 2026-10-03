@@ -28,11 +28,10 @@ const { renderToStaticMarkup: render } = require("react-dom/server");
 const Tone = require("./TemplateImageTone.tsx").default;
 const { resolveTemplateImageColor: color } = require("../../lib/template-image-tone.ts");
 const image = "/uploads/original-photo.webp";
-function check(html, accent, label) {
-  assert.ok(html.includes('flood-color="' + color(accent) + '"'), label + ": matching accent");
-  assert.ok(html.includes('flood-opacity="0.55"'), label + ": stronger automatic tint");
-  assert.ok(html.includes("--template-image-filter:"), label + ": scoped filter");
-  assert.ok(html.includes("template-hero-image"), label + ": actual artwork uses tint");
+function check(html, label) {
+  assert.ok(!html.includes("<filter"), label + ": no SVG color filter");
+  assert.ok(!html.includes("template-image-filter"), label + ": no added tint");
+  assert.ok(html.includes("template-hero-image"), label + ": artwork retained");
   assert.ok(html.includes(image), label + ": original image source preserved");
 }
 test("template accents resolve from CSS colors and named/arbitrary Tailwind palettes", () => {
@@ -42,34 +41,37 @@ test("template accents resolve from CSS colors and named/arbitrary Tailwind pale
   assert.equal(color("text-rose-500/80"), require("tailwindcss/colors").rose[500]);
   assert.equal(color(undefined), "#83709c");
 });
-test("neighboring templates have independent filters and preserve root styles", () => {
+test("legacy tint flags preserve original artwork, root styles and image controls", () => {
+  const Editor = require("./HeroImageEditor.tsx").default;
   const html = render(React.createElement(React.Fragment, null,
-    ...["#83709c", "#25634a"].map(accent => React.createElement(Tone, { color: accent, key: accent },
+    ...[undefined, true, false].map((enabled, index) => React.createElement(Tone, { color: "#83709c", enabled, key: index },
       React.createElement("section", { style: { backgroundColor: "white" } },
         React.createElement("img", { src: image, alt: "", className: "template-hero-image" }),
-        React.createElement("button", null, "Change image"))))));
-  const ids = [...html.matchAll(/<filter id="([^"]+)"/g)].map(m => m[1]);
-  assert.equal(new Set(ids).size, 2);
-  assert.equal((html.match(/background-color:white/g) || []).length, 2);
-  assert.equal((html.match(/<button>Change image<\/button>/g) || []).length, 2);
+        React.createElement(Editor, { value: image, onChange: () => {} }))))));
+  check(html, "legacy saved flags");
+  assert.equal((html.match(/background-color:white/g) || []).length, 3);
+  assert.equal((html.match(/aria-label="Change hero image"/g) || []).length, 3);
+  assert.equal((html.match(/aria-label="Use template image"/g) || []).length, 3);
+  assert.ok(!html.includes('role="switch"'));
+  assert.ok(!html.includes("Filter on") && !html.includes("Filter off"));
 });
-test("all birthday and anniversary designs tint the saved uploaded hero", () => {
+test("all birthday and anniversary designs preserve the saved uploaded hero colors", () => {
   const { CELEBRATION_DESIGN_CATALOG: designs } = require("../../data/birthday-design-catalog.ts");
   const Renderer = require("../birthdays/BirthdayRenderer.tsx").default;
   assert.equal(designs.length, 150);
   for (const design of designs) {
     const props = JSON.parse(JSON.stringify({ template: design, event: { birthdayName: "Alex", date: "2026-10-17T14:00:00", location: "Garden", gallery: [] }, heroImageUrl: image }));
-    check(render(React.createElement(Renderer, props)), design.secondaryColor, design.id);
+    check(render(React.createElement(Renderer, props)), design.id);
   }
 });
 
 
-test("turning the filter off survives event draft saves and every public renderer", () => {
+test("legacy disabled filter settings retain original artwork through saves and public rendering", () => {
   const { buildTemplateDraftPayload } = require("../../lib/template-draft-payload.ts");
   const checkOff = (Component, props, label) => {
     const restored = JSON.parse(JSON.stringify(props));
     const html = render(React.createElement(Component, restored));
-    assert.ok(html.includes("--template-image-filter:opacity(1)"), label);
+    assert.ok(!html.includes("template-image-filter"), label);
     assert.ok(html.includes(image), label + ": original image preserved");
     assert.ok(!html.includes("--template-image-filter:url("), label + ": no active tint");
   };
@@ -102,7 +104,7 @@ test("turning the filter off survives event draft saves and every public rendere
   for (const design of BRIDAL_PRESETS)
     checkOff(Bridal, { templateId: design.id, data: { images: { hero: image }, heroImageFilterEnabled: false } }, design.id);
 });
-test("signup filter-off survives sanitizing and a palette change", () => {
+test("signup original artwork survives sanitizing and a palette change", () => {
   const { getPublicTemplates } = require("../../lib/public-template-catalog.ts");
   const { createSignupTemplateForm } = require("../../lib/signup-starters.ts");
   const { applySignupTheme } = require("../../lib/signup-themes.ts");
@@ -115,11 +117,11 @@ test("signup filter-off survives sanitizing and a palette change", () => {
     form.header.images = [];
     const saved = sanitizeSignupForm(JSON.parse(JSON.stringify(form)));
     assert.equal(saved.appearance.imageFilterEnabled, false, template.id);
-    assert.ok(render(React.createElement(Header, { form: saved })).includes("--template-image-filter:opacity(1)"), template.id);
+    check(render(React.createElement(Header, { form: saved })), template.id);
     assert.equal(applySignupTheme(saved, "clean-clear").appearance.imageFilterEnabled, false, template.id);
   }
 });
-test("all wedding designs tint their uploaded hero after a saved payload round trip", () => {
+test("all wedding designs preserve uploaded hero colors after a saved payload round trip", () => {
   const designs = JSON.parse(fs.readFileSync("templates/weddings/index.json", "utf8"));
   const Renderer = require("../weddings/WeddingRenderer.tsx").default;
   const missing = [];
@@ -128,7 +130,7 @@ test("all wedding designs tint their uploaded hero after a saved payload round t
     template.theme.decorations = { ...template.theme.decorations, heroImage: image };
     const props = JSON.parse(JSON.stringify({ template, hideGuestTools: true, event: { headlineTitle: "Alex & Sam", couple: { partner1: "Alex", partner2: "Sam" }, customHeroImage: image, gallery: [{ url: image }], date: "2026-10-17", schedule: [], rsvpEnabled: false } }));
     const html = render(React.createElement(Renderer, props));
-    try { check(html, template.theme.colors.accent || template.theme.colors.secondary, design.id); }
+    try { check(html, design.id); }
     catch (error) { missing.push(error.message); }
   }
   assert.deepEqual(missing, []);
@@ -149,26 +151,25 @@ test("football designs preserve original artwork colors, including legacy filter
     }
   }
 });
-test("baby shower, bridal shower and gender reveal collections tint uploaded art", () => {
+test("baby shower, bridal shower and gender reveal collections preserve uploaded art colors", () => {
   const { BABY_SHOWER_DESIGNS } = require("../../lib/baby-shower-designs.ts");
   const Baby = require("../baby-showers/BabyShowerDesignHero.tsx").default;
   for (const design of BABY_SHOWER_DESIGNS)
-    check(render(React.createElement(Baby, { design, eventTitle: "Baby shower", heroImage: image, dateLabel: null, timeLabel: null, eventId: "", shareUrl: "", preview: true })), design.colors.accent, design.id);
+    check(render(React.createElement(Baby, { design, eventTitle: "Baby shower", heroImage: image, dateLabel: null, timeLabel: null, eventId: "", shareUrl: "", preview: true })), design.id);
   const { genderRevealDesigns } = require("../../lib/gender-reveal-designs.ts");
   const Reveal = require("../gender-reveal/GenderRevealScene.tsx").default;
   for (const design of genderRevealDesigns)
-    check(render(React.createElement(Reveal, { design, title: "Our surprise", image })), design.accent, design.id);
+    check(render(React.createElement(Reveal, { design, title: "Our surprise", image })), design.id);
   const { BRIDAL_PRESETS } = require("../../lib/public-template-catalog.ts");
   const Bridal = require("../templates/BridalShowerPreview.tsx").default;
   for (const design of BRIDAL_PRESETS)
-    check(render(React.createElement(Bridal, { templateId: design.id, data: { images: { hero: image } } })), design.accent, design.id);
+    check(render(React.createElement(Bridal, { templateId: design.id, data: { images: { hero: image } } })), design.id);
 });
-test("all signup designs and photo layouts keep their automatic palette after sanitizing", () => {
+test("all signup designs and photo layouts preserve original artwork after sanitizing", () => {
   const { SIGNUP_DESIGNS } = require("../../lib/signup-designs.ts");
   const { createSignupTemplateForm } = require("../../lib/signup-starters.ts");
   const { getPublicTemplates } = require("../../lib/public-template-catalog.ts");
   const templates = getPublicTemplates("signup-forms");
-  const { resolveSignupThemeStyle } = require("../../lib/signup-themes.ts");
   const { sanitizeSignupForm } = require("../../utils/signup.ts");
   const Header = require("../smart-signup-form/SignupTemplateHeader.tsx").default;
   for (const design of SIGNUP_DESIGNS) {
@@ -176,12 +177,12 @@ test("all signup designs and photo layouts keep their automatic palette after sa
     form.header.backgroundImage = { dataUrl: image, name: "Original", type: "image/webp" };
     form.header.images = [];
     const saved = sanitizeSignupForm(JSON.parse(JSON.stringify(form)));
-    check(render(React.createElement(Header, { form: saved })), resolveSignupThemeStyle(saved)["--signup-accent"], design.id);
+    check(render(React.createElement(Header, { form: saved })), design.id);
   }
   for (const layout of ["header-1", "header-2", "header-3", "header-4", "header-5", "header-6"]) {
     const form = createSignupTemplateForm(templates[0]);
     form.appearance.headerLayout = layout;
     form.header.images = [1,2,3].map(i => ({ dataUrl: image, name: "Photo " + i, type: "image/webp" }));
-    check(render(React.createElement(Header, { form })), resolveSignupThemeStyle(form)["--signup-accent"], layout);
+    check(render(React.createElement(Header, { form })), layout);
   }
 });

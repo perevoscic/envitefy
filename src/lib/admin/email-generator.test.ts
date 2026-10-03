@@ -344,7 +344,7 @@ test("only model-selected scenario rows and assets are injected", () => {
     bodyHtml:
       '<p>{{greeting}}</p><h1>Back to school</h1><p>Plan parties easily.</p><p><a href="https://envitefy.com/snap">Turn a flyer into a live event card</a></p>',
     buttonText: "Create an event",
-    buttonUrl: "https://envitefy.com/chat",
+    buttonUrl: "https://envitefy.com/live-cards",
     notes: "",
     scenarioRows: [
       {
@@ -403,7 +403,7 @@ test("only model-selected scenario rows and assets are injected", () => {
   assert.doesNotMatch(withImage.bodyHtml, /teachers\/display\.webp/);
   assert.doesNotMatch(withImage.bodyHtml, /share\/display\.webp/);
   assert.match(withImage.bodyHtml, /https:\/\/envitefy\.com\/snap/);
-  assert.match(withImage.bodyHtml, /https:\/\/envitefy\.com\/chat/);
+  assert.match(withImage.bodyHtml, /https:\/\/envitefy\.com\/live-cards/);
   assert.match(withImage.bodyHtml, /Snap a wedding invitation in seconds/);
   assert.match(withImage.bodyHtml, /Create a polished birthday invitation/);
   assert.match(withImage.bodyHtml, /Try Snap/);

@@ -156,7 +156,7 @@ export type StudioGenerationDiagnostics = {
 export type StudioGenerateResponse = {
   diagnostics?: StudioGenerationDiagnostics;
   artworkContract?: import("./artwork-copy.ts").ApprovedArtworkContract;
-  artworkTextMode?: import("../concierge/artwork-change.ts").ArtworkTextMode;
+  artworkTextMode?: import("./artwork-text-mode.ts").ArtworkTextMode;
   timings?: import("./generation-progress.ts").GenerationTimings;
   product?: StudioProduct;
   qualityCheck?: "passed" | "failed" | "unavailable" | "needs_review";

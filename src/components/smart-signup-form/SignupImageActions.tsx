@@ -48,8 +48,6 @@ export default function SignupImageActions({
           key={index}
           label={photoCount > 1 ? `Change photo ${index + 1}` : "Change image"}
           onChange={(image) => changeImage(image, index)}
-          filterEnabled={appearance.imageFilterEnabled !== false}
-          onFilterChange={index === 0 ? (imageFilterEnabled) => onChange({ ...form, appearance: { ...appearance, imageFilterEnabled } }) : undefined}
         />
       ))}
     </div>

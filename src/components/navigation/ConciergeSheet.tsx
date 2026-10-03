@@ -30,15 +30,15 @@ type ConciergeSheetProps = {
 const welcomeMessage: ChatMessage = {
   id: "welcome",
   role: "assistant",
-  text: "Tell me what you’re planning, and I’ll help turn it into a polished event page with RSVP, reminders, gifts, registry details, and guest tracking.",
+  text: "Ask me about Envitefy, Live Cards, Event Pages, Sign-up Forms, uploads, or guest actions. I can explain how they work and help you choose where to start.",
 };
 
 const conciergeQuickPrompts = [
-  "Plan my event with AI",
-  "Upload an invite or flyer",
-  "See what guests will see",
+  "How do I create a Live Card?",
+  "Can I upload an invite or flyer?",
+  "What can guests do?",
   "How do RSVPs work?",
-  "Add gifts, registry, or notes",
+  "Can I add a registry?",
 ];
 
 const conciergeLogoMaskStyle = {
@@ -147,7 +147,7 @@ export default function ConciergeSheet({
       });
       const data = parseGuestChatResponse(await res.json().catch(() => ({})));
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || "Envitefy Create is temporarily unavailable.");
+        throw new Error(data.error || "Envitefy Help is temporarily unavailable.");
       }
 
       setMessages((current) => [
@@ -170,7 +170,7 @@ export default function ConciergeSheet({
           text:
             error instanceof Error
               ? error.message
-              : "Envitefy Create is temporarily unavailable.",
+              : "Envitefy Help is temporarily unavailable.",
         },
       ]);
     } finally {
@@ -194,7 +194,7 @@ export default function ConciergeSheet({
         <div className="fixed inset-0 z-[90] md:hidden" role="presentation">
           <motion.button
             type="button"
-            aria-label="Dismiss Envitefy Create"
+            aria-label="Dismiss Envitefy Help"
             className="absolute inset-0 bg-[#120b1d]/48 backdrop-blur-[3px]"
             onClick={() => onOpenChange(false)}
             initial={{ opacity: 0 }}
@@ -206,7 +206,7 @@ export default function ConciergeSheet({
           <motion.section
             role="dialog"
             aria-modal="true"
-            aria-label="Envitefy Create"
+            aria-label="Envitefy Help"
             className="absolute inset-x-0 bottom-0 mx-auto flex h-[82vh] max-h-[85vh] min-h-[70vh] w-full max-w-md flex-col overflow-hidden rounded-t-[1.75rem] border border-white/12 bg-[#fbf8ff] text-[#211821] shadow-[0_-28px_90px_rgba(20,11,34,0.38)]"
             initial={{ y: "100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -226,10 +226,10 @@ export default function ConciergeSheet({
                       className="truncate text-base font-semibold text-[#f9df94]"
                       style={{ color: "#f9df94" }}
                     >
-                      Envitefy Create
+                      Envitefy Help
                     </h2>
                     <p className="truncate text-xs font-semibold text-[#fff7df]">
-                      Event ideas, RSVP, gifts & setup
+                      Questions about Envitefy
                     </p>
                   </div>
                 </div>
@@ -237,7 +237,7 @@ export default function ConciergeSheet({
                   type="button"
                   onClick={() => onOpenChange(false)}
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#f4ead5]/78 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f]"
-                  aria-label="Close Envitefy Create"
+                  aria-label="Close Envitefy Help"
                   title="Close"
                 >
                   <X className="h-5 w-5" aria-hidden="true" />
@@ -334,7 +334,7 @@ export default function ConciergeSheet({
                   type="submit"
                   disabled={isSending || !input.trim()}
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#5f3cff_0%,#8b4dff_58%,#f04fb7_100%)] text-white shadow-[0_10px_22px_rgba(115,76,224,0.25)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
-                  aria-label="Send Envitefy Create message"
+                  aria-label="Send Envitefy Help message"
                   title="Send"
                 >
                   {isSending ? (

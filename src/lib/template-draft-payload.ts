@@ -2,6 +2,7 @@ import { parseCalendarDateTimeToIso } from "./calendar-date-time";
 import { getTemplateCategory, type TemplateCategory } from "./template-categories";
 import type { TemplateHistoryPayload } from "./template-draft-handoff";
 import type { EditorSnapshot } from "./template-draft-storage";
+import { normalizeEventPageComposition } from "./event-page-composition";
 
 /** Incomplete drafts retain their fields without inventing missing event times. */
 export function buildTemplateDraftPayload(
@@ -43,6 +44,7 @@ export function buildTemplateDraftPayload(
           }
         : data),
       title,
+      ...(category !== "signup-forms" && snapshot.pageComposition ? { eventPageComposition: normalizeEventPageComposition(snapshot.pageComposition) } : {}),
       category: info.historyCategory,
       primaryOutput: category === "signup-forms" ? "signup_form" : "event_page",
       startAt: start,

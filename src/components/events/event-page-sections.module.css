@@ -1,0 +1,57 @@
+.sections {
+  min-width: 0;
+  width: 100%;
+  grid-column: 1 / -1;
+  container-type: inline-size;
+}
+.sections > div {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+.canvas > :not([data-section-row], [data-section-group]) {
+  grid-column: 1 / -1;
+}
+.sections[data-event-body-layout="split"] > .canvas > :is([data-section-row], [data-section-group]),
+.sections[data-event-body-layout="cards"]
+  > .canvas
+  > :is([data-section-row], [data-section-group]) {
+  grid-column: auto;
+}
+.sections[data-event-body-layout="split"] > div,
+.sections[data-event-body-layout="cards"] > div {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+.sections[data-event-body-layout="split"] > div > div,
+.sections[data-event-body-layout="cards"] > div > div {
+  min-width: 0;
+}
+.sections[data-event-body-layout="minimal"] {
+  max-width: 800px;
+  margin-inline: auto;
+}
+.sections[data-event-body-layout="poster"] {
+  max-width: 960px;
+  margin-inline: auto;
+  text-align: center;
+}
+.sections[data-event-body-layout="banner"] > div {
+  gap: 40px;
+}
+.sections[data-event-body-layout="editorial"] > div > :nth-child(even) {
+  margin-inline-start: clamp(0px, 6%, 72px);
+}
+.sections[data-event-body-layout="spotlight"] > div > :first-child {
+  padding: 20px;
+  border: 1px solid currentColor;
+  border-radius: 16px;
+}
+@container (max-width: 700px) {
+  .sections > div {
+    grid-template-columns: 1fr !important;
+  }
+  .sections[data-event-body-layout="editorial"] > div > :nth-child(even) {
+    margin-inline-start: 0;
+  }
+}

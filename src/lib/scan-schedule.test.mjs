@@ -11,9 +11,6 @@ import { buildScanEventPageHistoryPayload } from "./scan-event-page.ts";
 import { extractEventWebsiteSchedule } from "./event-website-schedule.ts";
 import { extractSportsSchedule, hasSportsScheduleText } from "./ocr/sports-schedule.ts";
 
-import { fallbackExtractConciergeDraft } from "./concierge/fallback.ts";
-import { buildConciergeHistoryPayload } from "./concierge/history-payload.ts";
-
 const practiceLines = [
   "Team Practice Schedule",
   "2026-2027 School Year",
@@ -245,30 +242,4 @@ test("reviewed timing replaces stale primary event timing, including weekly-only
   });
   assert.equal(scanScheduleHistoryFields(weekly).startISO, null);
   assert.equal(scanScheduleHistoryFields(weekly).endISO, null);
-});
-
-test("Concierge upload rows survive follow-up turns, persistence and public reading", () => {
-  const scanSchedule = scanScheduleFromOcr({
-    schedule: { games },
-    fieldsGuess: { title: "Panthers schedule", timezone: "America/Chicago" },
-  });
-  const draft = fallbackExtractConciergeDraft({
-    message: "Create an event page from this team game schedule.",
-    requestedOutputs: ["event_page"],
-    ocrContext: {
-      ocrText: "Panthers team game schedule",
-      fieldsGuess: { title: "Panthers schedule", location: "Home field" },
-      category: "Sport Events",
-      scanSchedule,
-    },
-  });
-  const next = fallbackExtractConciergeDraft({
-    message: "Make it blue",
-    draft: JSON.parse(JSON.stringify(draft)),
-  });
-  const payload = buildConciergeHistoryPayload(next);
-  assert.equal(next.scanSchedule.items.length, 2);
-  assert.equal(payload.data.scanSchedule.items.length, 2);
-  assert.equal(extractEventWebsiteSchedule(JSON.parse(JSON.stringify(payload.data))).length, 2);
-  assert.equal(payload.data.ownership, "owned");
 });

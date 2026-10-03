@@ -55,12 +55,20 @@ test("published custom Event Page edits save changes to the same live page and c
       const open = async (ready = false) => {
         await page.goto(`${origin}/editor?editor=1&edit=${eventId}${ready ? "&ready=1" : ""}`);
         await page.getByRole("button", { name: "Cancel", exact: true }).waitFor();
-        await page.waitForFunction(() => window.editorProgress && !window.editorProgress.dirty);
+        await page.getByRole("button", { name: /^Event details/ }).click();
+        await title.waitFor();
+        assert.equal(await title.inputValue(), initial.details.title);
+        if (ready) await page.getByRole("button", { name: "Preview", exact: true }).click();
       };
-      const toolbar = page.locator("main > header");
+      const toolbar = page.getByRole("group", { name: "Editor view", exact: true });
       const save = page.getByRole("button", { name: "Save changes", exact: true });
       const cancel = page.getByRole("button", { name: "Cancel", exact: true });
       const title = page.locator("#event-field-title");
+      const openSection = async (name) => {
+        const back = page.getByRole("button", { name: "Back to details", exact: true });
+        if (await back.isVisible()) await back.click();
+        await page.getByRole("button", { name }).click();
+      };
       const checkActions = async () => {
         for (const name of ["Preview →", "Save draft", "Publish", "Publish changes"]) {
           assert.equal(await toolbar.getByRole("button", { name, exact: true }).count(), 0, name);
@@ -97,30 +105,33 @@ test("published custom Event Page edits save changes to the same live page and c
       assert.equal(wording.length, 0);
 
       await open();
+      await openSection(/^Page sections/);
       const order = page.getByRole("list", { name: "Page section order" });
       await order.getByRole("button", { name: "Move What to bring up", exact: true }).click();
       await save.waitFor();
       await order.getByRole("button", { name: "Move What to bring down", exact: true }).click();
-      await page.waitForFunction(() => !window.editorProgress.dirty);
+      await save.waitFor({ state: "hidden" });
       assert.equal(await save.count(), 0, "Reverting section order keeps a legacy page clean");
       assert.equal(writes.length, 0, "Moving sections does not save automatically");
+      await openSection(/^Event details/);
       await title.fill("Updated field trip");
       await save.waitFor();
-      await page.getByRole("button", { name: "View event page", exact: true }).click();
+      await page.getByRole("button", { name: "Preview", exact: true }).click();
       assert.equal(await title.isVisible(), false);
       await save.waitFor();
       await checkActions();
-      await page.getByRole("button", { name: "Edit details & design", exact: true }).click();
+      await page.getByRole("button", { name: "Edit", exact: true }).click();
       await title.fill(initial.details.title);
-      await page.waitForFunction(() => !window.editorProgress.dirty);
+      await save.waitFor({ state: "hidden" });
       assert.equal(await save.count(), 0, "Reverting a change hides Save changes");
-      const layout = page.getByLabel("Layout");
-      await layout.selectOption("banner");
+      await openSection(/^Design/);
+      await page.getByRole("button", { name: "Choose Banner layout", exact: true }).click();
       await save.waitFor();
-      await layout.selectOption("split");
-      await page.waitForFunction(() => !window.editorProgress.dirty);
+      await page.getByRole("button", { name: "Choose Split layout", exact: true }).click();
+      await save.waitFor({ state: "hidden" });
       assert.equal(await save.count(), 0, "View changes alone do not dirty saved content");
 
+      await openSection(/^Event details/);
       await title.fill("Trip with unsaved edits");
       await cancel.click();
       const dialog = page.getByRole("dialog");
@@ -141,7 +152,7 @@ test("published custom Event Page edits save changes to the same live page and c
       await page.getByRole("alert").filter({ hasText: "The event could not be saved. Try again." }).waitFor();
       assert.equal(await title.inputValue(), "Saved field trip update");
       assert.deepEqual(await page.evaluate(() => window.navigations || []), []);
-      await page.waitForFunction(() => !window.editorProgress.busy);
+      await page.waitForFunction(() => [...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Save changes" && !button.disabled));
       assert.equal(await save.isEnabled(), true);
       rejectSave = false;
       await save.click();
@@ -161,7 +172,7 @@ test("published custom Event Page edits save changes to the same live page and c
       await title.fill("Visible saved changes action");
       await save.waitFor();
       await page.screenshot({ path: `output/category-custom-design/published-editor-${width}.png`, fullPage: true });
-      await page.getByRole("button", { name: "View event page", exact: true }).click();
+      await page.getByRole("button", { name: "Preview", exact: true }).click();
       await page.screenshot({ path: `output/category-custom-design/published-page-view-${width}.png`, fullPage: true });
       assert.deepEqual(errors, []);
       await page.close();

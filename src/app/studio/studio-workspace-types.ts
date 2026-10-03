@@ -167,7 +167,7 @@ export type InvitationData = {
   headlineIntro?: string;
   diagnostics?: import("@/lib/studio/types").StudioGenerationDiagnostics;
   artworkContract?: import("@/lib/studio/artwork-copy").ApprovedArtworkContract;
-  artworkTextMode?: import("@/lib/concierge/artwork-change").ArtworkTextMode;
+  artworkTextMode?: import("@/lib/studio/artwork-text-mode").ArtworkTextMode;
   artworkNotice?: string;
   creativePlan?: import("@/lib/studio/product-contract").StudioCreativePlan;
   title: string;

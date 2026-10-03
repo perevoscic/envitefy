@@ -490,7 +490,7 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
                 </div>
               </div>
               <Link
-                href="/chat"
+                href="/event/gender-reveal"
                 className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#f3b6cf] underline decoration-[#f3b6cf]/40 underline-offset-8"
               >
                 Create with Envitefy

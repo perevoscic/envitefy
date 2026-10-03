@@ -203,23 +203,17 @@ test("owner workspace live product uses card fallback data instead of a blank na
   assert.doesNotMatch(source, />\s*Event preview\s*</);
 });
 
-test("draft resume retains chat while owner workspaces use owner-specific edit routing", () => {
+test("saved legacy events edit their owner workspace without returning to chat", () => {
   const source = readSource("src/utils/event-edit-route.ts");
-
-  assert.match(source, /function resolveConciergeEditHref\(eventData: unknown\): string \| null/);
-  assert.match(source, /cleanString\(conciergeDraft\?\.creationSessionId\)/);
-  assert.match(source, /\/chat\?thread=\$\{encodeURIComponent\(threadId\)\}/);
-  assert.match(source, /const conciergeEditHref = resolveConciergeEditHref\(eventData\);/);
-  assert.match(source, /if \(conciergeEditHref\) return conciergeEditHref;/);
+  assert.doesNotMatch(source, /\/chat\?thread|resolveConciergeEditHref/);
+  assert.match(source, /url.searchParams.set\("tab", "design"\)/);
   const ownerSource = readSource("src/components/EventOwnerTools.tsx");
   assert.match(ownerSource, /resolveOwnerEditHref\(eventId, eventData, eventTitle, ownerHref\)/);
-  assert.doesNotMatch(ownerSource, /\bresolveEditHref\(/);
 });
 
 test("generated card artwork opens the dashboard Design tab without losing details edit", () => {
   const ownerTools = readSource("src/components/EventOwnerTools.tsx");
   const routeSource = readSource("src/utils/event-edit-route.ts");
-  const studioSource = readSource("src/app/studio/StudioWorkspace.tsx");
   const sanitizeSource = readSource("src/app/studio/studio-workspace-sanitize.ts");
 
   assert.match(routeSource, /export function resolveArtworkEditHref/);
@@ -228,7 +222,9 @@ test("generated card artwork opens the dashboard Design tab without losing detai
   assert.match(routeSource, /record\.requestedOutputs/);
   assert.match(routeSource, /publicEvent\?\.primaryOutput/);
   assert.match(routeSource, /Boolean\(cleanString\(record\.thumbnail\)\)/);
-  assert.match(routeSource, /\/studio\?editEvent=\$\{encodeURIComponent\(eventId\)\}/);
+  assert.match(routeSource, /\/live-cards\?edit=\$\{encodeURIComponent\(eventId\)\}/);
+  assert.match(routeSource, /\/event\/\$\{encodeURIComponent\(eventId\)\}\?tab=design/);
+  assert.doesNotMatch(routeSource, /\/studio\?editEvent|\/chat\?thread/);
   assert.match(ownerTools, /const resolvedArtworkEditHref = useMemo/);
   assert.match(ownerTools, /const designHref = buildOwnerTabHref\(ownerHref, eventId, "design"\);/);
   assert.match(
@@ -243,10 +239,6 @@ test("generated card artwork opens the dashboard Design tab without losing detai
   assert.match(ownerTools, /href=\{detailsEditHref\}/);
   assert.match(ownerTools, /className="flex shrink-0 flex-wrap items-center justify-end gap-2"/);
   assert.match(ownerTools, /!detailsEditHref \? \(/);
-  assert.match(studioSource, /searchParams\.get\("editEvent"\)/);
-  assert.match(studioSource, /createStudioMediaItemFromHistoryRow\(row\)/);
-  assert.match(sanitizeSource, /export function createStudioMediaItemFromHistoryRow/);
-  assert.match(sanitizeSource, /publishedEventId: eventId/);
   assert.match(ownerTools, /if \(!rsvpEnabled \|\| activeTab === "design"\)/);
   assert.match(ownerTools, /function OwnerDesignPanel/);
   assert.match(sanitizeSource, /rawEventDetails\?\.eventTitle,\s*rawInvitationData\?\.title,/s);

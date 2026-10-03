@@ -1,4 +1,11 @@
 "use client";
+import { EventSectionEditorClose as EditorClose } from "./EventSectionEditorContext";
+import {
+  EventPageCompositionProvider,
+  useEventPageComposition,
+  type EventPageCompositionRuntime,
+} from "./EventPageCompositionContext";
+import { EventEditorInput } from "./EventEditorFields";
 
 import {
   closestCenter,
@@ -66,9 +73,9 @@ type BuilderContext = {
   addAt: (index: number) => void;
   add: (section: EventSectionOption, index: number) => void;
   placeBeside: (section: EventSectionOption) => void;
+  createSection?: () => EventSectionOption | undefined;
 };
 const Builder = createContext<BuilderContext | null>(null);
-const EditorClose = createContext<(() => void) | null>(null);
 // Keyboard movement advances between whole sections, skipping the mouse drop gaps.
 const sectionKeyboardCoordinates: KeyboardCoordinateGetter = (event, args) => {
   const rectangles = new Map(
@@ -80,10 +87,78 @@ const sectionKeyboardCoordinates: KeyboardCoordinateGetter = (event, args) => {
   });
 };
 export const useEventSectionBuilder = () => useContext(Builder);
-export const useSectionEditorClose = () => useContext(EditorClose);
 
-export function EventSectionsReadOnly({ children }: { children: ReactNode }) {
-  return <Builder.Provider value={null}>{children}</Builder.Provider>;
+function InformationSectionEditor({ id, fallback }: { id: string; fallback: ReactNode }) {
+  const composition = useEventPageComposition();
+  const section = composition?.value?.sections.find((item) => item.id === id);
+  if (!section || !composition?.onChange) return <>{fallback}</>;
+  const update = (patch: Partial<typeof section>) =>
+    composition.onChange?.({
+      ...composition.value!,
+      sections: composition.value!.sections.map((item) =>
+        item.id === id ? { ...item, ...patch } : item,
+      ),
+    });
+  return (
+    <>
+      <EventEditorInput
+        label="Section heading"
+        value={section.title}
+        onChange={(title) => update({ title })}
+        maxLength={240}
+      />
+      <EventEditorInput
+        label="Section content"
+        type="textarea"
+        value={section.body}
+        onChange={(body) => update({ body })}
+        maxLength={12000}
+      />
+    </>
+  );
+}
+function AddInformationSection({ index }: { index: number }) {
+  const composition = useEventPageComposition();
+  const builder = useEventSectionBuilder();
+  if (!builder || (!composition?.onChange && !builder.createSection)) return null;
+  return (
+    <button
+      type="button"
+      disabled={(composition?.value?.sections.length || 0) >= 20}
+      onClick={() => {
+        if (builder.createSection) {
+          const section = builder.createSection();
+          if (section) builder.add(section, index);
+          return;
+        }
+        const section = { id: `info:${crypto.randomUUID()}`, title: "Information", body: "" };
+        composition?.onChange?.({
+          version: 1,
+          ...composition.value,
+          sections: [...(composition.value?.sections || []), section],
+        });
+        // The surrounding provider keeps native category composition and information sections in the same order.
+        builder.add({ id: section.id, label: section.title }, index);
+      }}
+    >
+      <Plus size={18} aria-hidden="true" />
+      <span>
+        Custom section<small>Add a heading and information</small>
+      </span>
+    </button>
+  );
+}
+export { useSectionEditorClose } from "./EventSectionEditorContext";
+
+export function EventSectionsReadOnly({
+  children,
+  readOnly = true,
+}: {
+  children: ReactNode;
+  readOnly?: boolean;
+}) {
+  const builder = useContext(Builder);
+  return <Builder.Provider value={readOnly ? null : builder}>{children}</Builder.Provider>;
 }
 
 export function EventSectionBuilderProvider({
@@ -91,15 +166,22 @@ export function EventSectionBuilderProvider({
   onChange,
   catalog,
   renderEditor,
+  createSection,
+  initialEntries,
+  composition,
   children,
 }: {
   layout?: EventSectionLayout;
   onChange: (layout: EventSectionLayout | undefined) => void;
   catalog: readonly EventSectionOption[];
   renderEditor: (id: string) => ReactNode;
+  createSection?: () => EventSectionOption | undefined;
+  initialEntries?: EventSectionOption[];
+  composition?: EventPageCompositionRuntime;
   children: ReactNode;
 }) {
-  const [entries, setEntries] = useState<EventSectionOption[]>([]);
+  const [registeredEntries, setEntries] = useState<EventSectionOption[]>([]);
+  const entries = initialEntries || registeredEntries;
   const [panel, setPanel] = useState<
     { kind: "add"; index: number } | { kind: "edit" | "beside"; section: EventSectionOption } | null
   >(null);
@@ -149,7 +231,17 @@ export function EventSectionBuilderProvider({
   );
   const change = useCallback(
     (action: EventSectionChange) => {
-      setUndo((previous) => [...previous.slice(-19), layout]);
+      const previousLayout =
+        action.type === "add"
+          ? {
+              version: 1 as const,
+              order: visible.map((entry) => entry.id),
+              added: [],
+              ...layout,
+              hidden: [...new Set([...(layout?.hidden || []), action.id])],
+            }
+          : layout;
+      setUndo((previous) => [...previous.slice(-19), previousLayout]);
       onChange(
         changeEventSectionLayout(
           layout,
@@ -185,8 +277,19 @@ export function EventSectionBuilderProvider({
     [visible, change, edit],
   );
   const value = useMemo(
-    () => ({ layout, catalog, entries, register, change, edit, addAt, add, placeBeside }),
-    [layout, catalog, entries, register, change, edit, addAt, add, placeBeside],
+    () => ({
+      layout,
+      catalog,
+      entries,
+      register,
+      change,
+      edit,
+      addAt,
+      add,
+      placeBeside,
+      createSection,
+    }),
+    [layout, catalog, entries, register, change, edit, addAt, add, placeBeside, createSection],
   );
   function onDragEnd(event: DragEndEvent) {
     setDragLabel("");
@@ -205,7 +308,7 @@ export function EventSectionBuilderProvider({
       if (section) add(section, index);
     } else if (oldIndex !== index) change({ type: "move", id, index });
   }
-  return (
+  const content = (
     <Builder.Provider value={value}>
       <DndContext
         sensors={sensors}
@@ -315,7 +418,11 @@ export function EventSectionBuilderProvider({
             </>
           ) : panel?.kind === "add" ? (
             <div className={styles.choices}>
-              {catalog.map((section) => (
+              <AddInformationSection index={panel.index} />
+              {[
+                ...catalog,
+                ...entries.filter((entry) => !catalog.some((item) => item.id === entry.id)),
+              ].map((section) => (
                 <button type="button" key={section.id} onClick={() => add(section, panel.index)}>
                   <Plus size={18} aria-hidden="true" />
                   <span>
@@ -331,7 +438,10 @@ export function EventSectionBuilderProvider({
             </div>
           ) : panel?.kind === "edit" ? (
             <EditorClose.Provider value={close}>
-              {renderEditor(panel.section.editorId || panel.section.id)}
+              <InformationSectionEditor
+                id={panel.section.id}
+                fallback={renderEditor(panel.section.editorId || panel.section.id)}
+              />
             </EditorClose.Provider>
           ) : null}
         </div>
@@ -345,6 +455,11 @@ export function EventSectionBuilderProvider({
         ) : null}
       </dialog>
     </Builder.Provider>
+  );
+  return composition ? (
+    <EventPageCompositionProvider {...composition}>{content}</EventPageCompositionProvider>
+  ) : (
+    content
   );
 }
 
@@ -385,17 +500,22 @@ function CatalogItem({ section, index }: { section: EventSectionOption; index: n
 export function EventSectionPalette() {
   const builder = useEventSectionBuilder();
   if (!builder) return null;
-  const available = builder.catalog.filter(
+  const available = [
+    ...builder.catalog,
+    ...builder.entries.filter(
+      (entry) =>
+        builder.layout?.hidden.includes(entry.id) &&
+        !builder.catalog.some((item) => item.id === entry.id),
+    ),
+  ].filter(
     (item) =>
       !builder.entries.some((entry) => entry.id === item.id) ||
       builder.layout?.hidden.includes(item.id),
   );
+  const current = orderEventSections(builder.entries, builder.layout);
   return (
     <section className={styles.palette} aria-label="Page sections">
-      <h3>Page sections</h3>
-      <p>
-        Add sections or use Place beside to share a row. Drag handles to reorder.
-      </p>
+      <p>Add sections or use Place beside to share a row. Drag handles to reorder.</p>
       <button
         type="button"
         className={styles.addButton}
@@ -405,6 +525,45 @@ export function EventSectionPalette() {
         Add section
       </button>
       <div className={styles.paletteItems}>
+        <ol className={styles.sectionList} aria-label="Page section order">
+          {current.map((section, index) => (
+            <li key={section.id}>
+              <span>{section.label}</span>
+              <span className={styles.actions}>
+                <button
+                  type="button"
+                  aria-label={`Edit ${section.label}`}
+                  onClick={() => builder.edit(section)}
+                >
+                  <Pencil size={17} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Move ${section.label} up`}
+                  disabled={index === 0}
+                  onClick={() => builder.change({ type: "move", id: section.id, index: index - 1 })}
+                >
+                  <ArrowUp size={18} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Move ${section.label} down`}
+                  disabled={index === current.length - 1}
+                  onClick={() => builder.change({ type: "move", id: section.id, index: index + 1 })}
+                >
+                  <ArrowDown size={18} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Remove ${section.label} section`}
+                  onClick={() => builder.change({ type: "remove", id: section.id })}
+                >
+                  <Trash2 size={18} aria-hidden="true" />
+                </button>
+              </span>
+            </li>
+          ))}
+        </ol>
         {available.map((section) => (
           <CatalogItem key={section.id} section={section} index={builder.entries.length} />
         ))}
@@ -558,6 +717,22 @@ export function EventSectionCanvas({
   rowProps?: (section: EventSectionEntry) => HTMLAttributes<HTMLDivElement>;
 }) {
   const builder = useEventSectionBuilder();
+  const composition = useEventPageComposition();
+  sections = [
+    ...sections,
+    ...(composition?.value?.sections || [])
+      .filter((section) => !sections.some((entry) => entry.id === section.id))
+      .map((section) => ({
+        id: section.id,
+        label: section.title || "Information",
+        content: (
+          <section data-event-section={section.id} className={styles.information}>
+            <h2>{section.title}</h2>
+            <p>{section.body}</p>
+          </section>
+        ),
+      })),
+  ];
   const register = builder?.register;
   useEffect(() => {
     register?.(sections.map(({ id, label, editorId }) => ({ id, label, editorId })));
@@ -577,7 +752,13 @@ export function EventSectionCanvas({
     : sections;
   const rows = groupEventSectionRows(candidates, currentLayout);
   const ordered = rows.flat();
-  if (!builder && !currentLayout?.widths && !currentLayout?.pairs?.length && !rowProps)
+  if (
+    !builder &&
+    !currentLayout?.widths &&
+    !currentLayout?.pairs?.length &&
+    !rowProps &&
+    !composition?.value?.layout
+  )
     return (
       <div className={className}>
         {ordered.map((section) => (
@@ -588,36 +769,43 @@ export function EventSectionCanvas({
   const content = rows.map((row) => {
     const index = ordered.findIndex((section) => section.id === row[0].id);
     const attributes = !builder ? rowProps?.(row[0]) : undefined;
-    return (
-      <Fragment key={row[0].id}>
-        {builder ? <InsertionPoint index={index} /> : null}
-        <div
-          {...attributes}
-          className={`${styles.row} ${attributes?.className || ""}`}
-          data-section-row={row.map((section) => section.id).join(" ")}
-        >
-          {row.map((section, offset) => (
-            <div
-              key={section.id}
-              className={`${styles.cell} ${cellClassName}`}
-              data-section-width={currentLayout?.widths?.[section.id] ?? 12}
-              style={
-                { "--section-span": currentLayout?.widths?.[section.id] ?? 12 } as CSSProperties
-              }
-            >
-              {builder ? (
-                <EditableSection section={section} index={index + offset} count={ordered.length} />
-              ) : (
-                section.content
-              )}
-            </div>
-          ))}
-        </div>
-      </Fragment>
+    const rowContent = (
+      <div
+        key={row[0].id}
+        {...attributes}
+        className={`${styles.row} ${attributes?.className || ""}`}
+        data-section-row={row.map((section) => section.id).join(" ")}
+      >
+        {row.map((section, offset) => (
+          <div
+            key={section.id}
+            className={`${styles.cell} ${cellClassName}`}
+            data-section-width={currentLayout?.widths?.[section.id] ?? 12}
+            style={{ "--section-span": currentLayout?.widths?.[section.id] ?? 12 } as CSSProperties}
+          >
+            {builder ? (
+              <EditableSection section={section} index={index + offset} count={ordered.length} />
+            ) : (
+              section.content
+            )}
+          </div>
+        ))}
+      </div>
+    );
+    return builder ? (
+      <div key={row[0].id} className={styles.rowGroup} data-section-group>
+        <InsertionPoint index={index} />
+        {rowContent}
+      </div>
+    ) : (
+      rowContent
     );
   });
   return (
-    <div className={`${className} ${styles.canvas}`}>
+    <div
+      className={`${className} ${styles.canvas}`}
+      data-event-body-layout={composition?.value?.layout}
+    >
       {builder ? (
         <SortableContext
           items={ordered.map((section) => `section:${section.id}`)}

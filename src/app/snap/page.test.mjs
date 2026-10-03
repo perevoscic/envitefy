@@ -89,7 +89,7 @@ test("/snap keeps public auth CTAs but renders direct upload cards for authentic
     mainWrapper,
     /normalizedPath === "\/snap" && !isAuthenticated/,
   );
-  assert.match(snapLanding, /authenticatedPrimaryHref="\/chat"/);
+  assert.match(snapLanding, /authenticatedPrimaryHref="\/snap"/);
   assert.match(snapLanding, /loginSuccessRedirectUrl="\/"/);
   assert.match(snapLanding, /primaryHref=\{isAuthenticated \? "\/snap" : undefined\}/);
   assert.match(snapLanding, /href=\{isAuthenticated \? "\/snap" : undefined\}/);

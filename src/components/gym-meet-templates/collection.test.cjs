@@ -62,7 +62,7 @@ test('explicit draft snapshots retain image adjustments through public rendering
     const html = renderToStaticMarkup(React.createElement(Renderer, p));
     assert.ok(html.includes('src="/uploads/original-invitation.webp"'), design.id);
     assert.ok(html.includes('object-fit:contain;height:auto;object-position:50% 50%'), design.id);
-    assert.ok(html.includes(`flood-color="${design.accent}" flood-opacity="0.55"`), design.id);
+    assert.ok(!html.includes('<filter') && !html.includes('template-image-filter'), `${design.id}: original artwork colors`);
     assert.ok(html.includes('template-hero-image'), design.id);
     const filterOff = JSON.parse(JSON.stringify(buildTemplateDraftPayload({ data: {
       ...restored.data, heroImageFilterEnabled: false,
@@ -71,11 +71,11 @@ test('explicit draft snapshots retain image adjustments through public rendering
     assert.deepEqual(p.model.heroImageSettings, appearance, design.id);
     assert.equal(p.model.heroImageFilterEnabled, false, design.id);
     const unfiltered = renderToStaticMarkup(React.createElement(Renderer, p));
-    assert.ok(unfiltered.includes('--template-image-filter:opacity(1)'), design.id);
+    assert.ok(!unfiltered.includes('template-image-filter'), design.id);
     assert.ok(unfiltered.includes('src="/uploads/original-invitation.webp"'), design.id);
     assert.ok(unfiltered.includes('object-fit:contain;height:auto;object-position:50% 50%'), design.id);
     const original = renderToStaticMarkup(React.createElement(Renderer, props(design)));
-    assert.ok(original.includes(`flood-color="${design.accent}"`), `${design.id}: tint is automatic`);
+    assert.ok(!original.includes('<filter') && !original.includes('template-image-filter'), `${design.id}: original template colors`);
   }
 });
 function props(design, heroImage) {

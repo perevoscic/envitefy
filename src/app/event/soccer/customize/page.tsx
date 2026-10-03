@@ -1,12 +1,16 @@
 // @ts-nocheck
 "use client";
+import EventPageSections from "@/components/events/EventPageSections";
+
+import { EventEditorInput as InputGroup, EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout } from "@/components/events/EventEditorFields";
+import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import { useEventHistoryClient } from "@/lib/event-history-client";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
 
 import HeroImageEditor from "@/components/events/HeroImageEditor";
 import EventCanvas from "@/components/EventCanvas";
 
-import { useManualEventProgress } from "@/hooks/useManualEventProgress";
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 
 import { normalizeEventGuestActions } from "@/lib/event-guest-actions";
@@ -25,21 +29,17 @@ import React, {
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  ChevronLeft,
   ChevronDown,
   ChevronUp,
   Edit2,
-  Menu,
   Palette,
   Type,
   CheckSquare,
-  ChevronRight,
   MapPin,
   Link as LinkIcon,
 } from "lucide-react";
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
-import { buildEventPath } from "@/utils/event-url";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
 
 type FieldSpec = {
@@ -210,64 +210,6 @@ const baseInputClass =
 const baseTextareaClass =
   "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]";
 
-const InputGroup = ({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  readOnly = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: string;
-  readOnly?: boolean;
-}) => {
-  const [localValue, setLocalValue] = useState(value);
-
-  // Sync local state when value prop changes (from external updates)
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
-
-  const handleBlur = () => {
-    if (localValue !== value) {
-      onChange(localValue);
-    }
-  };
-
-  return (
-    <div className="space-y-2">
-      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-        {label}
-      </label>
-      {type === "textarea" ? (
-        <textarea
-          className={baseTextareaClass}
-          value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
-          onBlur={handleBlur}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      ) : (
-        <input
-          type={type}
-          className={baseInputClass}
-          value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
-          onBlur={handleBlur}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      )}
-    </div>
-  );
-};
-
-InputGroup.displayName = "InputGroup";
 
 const ThemeSwatch = ({
   theme,
@@ -294,37 +236,6 @@ const ThemeSwatch = ({
   </button>
 );
 
-const MenuCard = ({
-  title,
-  desc,
-  icon,
-  onClick,
-}: {
-  title: string;
-  desc: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="w-full text-left group bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex items-start gap-4"
-  >
-    <div className="bg-slate-50 p-3 rounded-lg text-slate-600 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors">
-      {icon}
-    </div>
-    <div className="flex-1">
-      <div className="flex justify-between items-center mb-1">
-        <h3 className="font-semibold text-slate-800">{title}</h3>
-        <ChevronRight
-          size={16}
-          className="text-slate-300 group-hover:text-indigo-400 transform group-hover:translate-x-1 transition-all"
-        />
-      </div>
-      <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
-    </div>
-  </button>
-);
 
 function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
@@ -412,9 +323,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       mobileMenuOpen,
       openMobileMenu,
       closeMobileMenu,
-      previewTouchHandlers,
+      dismissMobileMenu, previewTouchHandlers,
       drawerTouchHandlers,
-    } = useMobileDrawer();
+    } = useMobileDrawer(true, "event-actions", true);
 
     // Ensure the soccer template has the same sporty headline fonts available
     useEffect(() => {
@@ -627,41 +538,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       return hasDarkToken || hasDarkHex || idHintsDark;
     }, [currentTheme]);
 
-    const EditorLayout = ({
-      title,
-      children,
-      onBack,
-      showBack = true,
-    }: {
-      title: string;
-      children: React.ReactNode;
-      onBack: () => void;
-      showBack?: boolean;
-    }) => (
-      <div className="animate-fade-in-right">
-        <div className="flex items-center mb-6 pb-4 border-b border-slate-100">
-          <div className="mr-3 w-8">
-            {showBack && (
-              <button
-                onClick={onBack}
-                className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
-              >
-                <ChevronLeft size={20} />
-              </button>
-            )}
-          </div>
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mr-auto">
-            Customize
-          </span>
-          <h2 className="text-lg font-serif font-bold text-slate-800 absolute left-1/2 transform -translate-x-1/2">
-            {title}
-          </h2>
-        </div>
-        {children}
-      </div>
-    );
 
-    const rawTextClass = currentTheme?.text || "";
+const rawTextClass = currentTheme?.text || "";
     const forceLightText =
       isDarkBackground && !rawTextClass.toLowerCase().includes("text-white");
     const textClass = forceLightText
@@ -769,270 +647,195 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }));
     }, []);
 
-  useManualEventProgress({
-    historyFetch: eventHistoryClient.fetch,
-    snapshot: { data, advancedState, themeId },
-    category: config.category, templateId: config.slug, eventId: editEventId,
-    ready: !loadingExisting, busy: submitting,
-  });
 
-    const handlePublish = useCallback(async () => {
-      if (submitting) return;
-      if (!data.address?.trim()) {
-        alert("Street address is required for this match page.");
-        return;
+    const buildEventPayload = useCallback(async () => {
+      if (data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)) {
+        throw new Error("End time must be after the start. For an overnight event, choose the next end date.");
       }
-      setSubmitting(true);
-      try {
-        if (data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)) {
-          throw new Error("End time must be after the start. For an overnight event, choose the next end date.");
-        }
-
-        let startISO: string | null = null;
-        let endISO: string | null = null;
-        if (data.date) {
-          const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
-          const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
-          const end = endLocal ? new Date(endLocal) : null;
-          startISO = start.toISOString();
-          endISO = end?.toISOString() || null;
-        }
-
-        const heroToSave =
-          (await persistImageMediaValue({
-            value: data.hero,
-            eventId: editEventId || undefined,
-            fileName: `${config.slug}-hero.png`,
-            fallbackValue: config.defaultHero,
-          })) || config.defaultHero;
-
-        const validThemeId =
-          themeId && config.themes.find((t) => t.id === themeId)
-            ? themeId
-            : config.themes[0]?.id || "default-theme";
-        const themeToSave =
-          config.themes.find((t) => t.id === validThemeId) || config.themes[0];
-        const validFontId =
-          data.fontId && SOCCER_FONTS.find((f) => f.id === data.fontId)
-            ? data.fontId
-            : SOCCER_FONTS[0]?.id || "anton";
-        const validFontSize =
-          data.fontSize && FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize)
-            ? data.fontSize
-            : "medium";
-        const currentSelectedFont =
-          SOCCER_FONTS.find((f) => f.id === validFontId) || SOCCER_FONTS[0];
-        const currentSelectedSize =
-          FONT_SIZE_OPTIONS.find((o) => o.id === validFontSize) ||
-          FONT_SIZE_OPTIONS[1];
-
-        const advancedSectionsToSave =
-          typeof structuredClone === "function"
-            ? structuredClone(advancedState || {})
-            : JSON.parse(JSON.stringify(advancedState || {}));
-
-        const snackSlots =
-          Array.isArray(advancedSectionsToSave?.snacks?.slots) &&
+      let startISO: string | null = null;
+      let endISO: string | null = null;
+      if (data.date) {
+        const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
+        const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
+        const end = endLocal ? new Date(endLocal) : null;
+        startISO = start.toISOString();
+        endISO = end?.toISOString() || null;
+      }
+      const heroToSave =
+        (await persistImageMediaValue({
+          value: data.hero,
+          eventId: editEventId || undefined,
+          fileName: `${config.slug}-hero.png`,
+          fallbackValue: config.defaultHero,
+        })) || config.defaultHero;
+      const validThemeId =
+        themeId && config.themes.find((t) => t.id === themeId)
+          ? themeId
+          : config.themes[0]?.id || "default-theme";
+      const themeToSave =
+        config.themes.find((t) => t.id === validThemeId) || config.themes[0];
+      const validFontId =
+        data.fontId && SOCCER_FONTS.find((f) => f.id === data.fontId)
+          ? data.fontId
+          : SOCCER_FONTS[0]?.id || "anton";
+      const validFontSize =
+        data.fontSize && FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize)
+          ? data.fontSize
+          : "medium";
+      const currentSelectedFont =
+        SOCCER_FONTS.find((f) => f.id === validFontId) || SOCCER_FONTS[0];
+      const currentSelectedSize =
+        FONT_SIZE_OPTIONS.find((o) => o.id === validFontSize) ||
+        FONT_SIZE_OPTIONS[1];
+      const advancedSectionsToSave =
+        typeof structuredClone === "function"
+          ? structuredClone(advancedState || {})
+          : JSON.parse(JSON.stringify(advancedState || {}));
+      const snackSlots =
+        Array.isArray(advancedSectionsToSave?.snacks?.slots) &&
           advancedSectionsToSave?.snacks?.slots.length
-            ? advancedSectionsToSave.snacks.slots
-            : [];
-        if (snackSlots.length) {
-          const volunteers =
-            typeof advancedSectionsToSave.volunteers === "object" &&
+          ? advancedSectionsToSave.snacks.slots
+          : [];
+      if (snackSlots.length) {
+        const volunteers =
+          typeof advancedSectionsToSave.volunteers === "object" &&
             advancedSectionsToSave.volunteers
-              ? advancedSectionsToSave.volunteers
-              : {};
-          const existingSlots =
-            Array.isArray(volunteers.volunteerSlots) &&
+            ? advancedSectionsToSave.volunteers
+            : {};
+        const existingSlots =
+          Array.isArray(volunteers.volunteerSlots) &&
             volunteers.volunteerSlots.length
-              ? volunteers.volunteerSlots
-              : Array.isArray(volunteers.slots) && volunteers.slots.length
+            ? volunteers.volunteerSlots
+            : Array.isArray(volunteers.slots) && volunteers.slots.length
               ? volunteers.slots
               : [];
-          const preservedSlots = existingSlots.filter(
-            (slot: any) => slot?.type !== "snack"
-          );
-          const snackVolunteerSlots = snackSlots.map(
-            (slot: any, idx: number) => {
-              const slotId =
-                slot.id ||
-                `snack-${idx}-${Math.random().toString(36).slice(2, 8)}`;
-              if (!slot.id) {
-                slot.id = slotId;
-              }
-              return {
-                id: slotId,
-                role: slot.role || "Snacks & Hydration",
-                name: slot.family || "",
-                filled: Boolean(slot.filled && slot.family),
-                notes: slot.notes || "",
-                contact: slot.contact || "",
-                type: "snack",
-              };
+        const preservedSlots = existingSlots.filter(
+          (slot: any) => slot?.type !== "snack"
+        );
+        const snackVolunteerSlots = snackSlots.map(
+          (slot: any, idx: number) => {
+            const slotId =
+              slot.id ||
+              `snack-${idx}-${Math.random().toString(36).slice(2, 8)}`;
+            if (!slot.id) {
+              slot.id = slotId;
             }
-          );
-          const mergedSlots = [...preservedSlots, ...snackVolunteerSlots];
-          advancedSectionsToSave.volunteers = {
-            ...volunteers,
-            volunteerSlots: mergedSlots,
-            slots: mergedSlots,
-          };
-        }
-
-        const payload: any = {
-          title: data.title || config.displayName,
-          data: {
-            category: config.category,
-            createdVia: "simple-template",
-            createdManually: true,
-            startISO,
-            endISO,
-            endAt: endISO,
-            end: endISO,
-            endTime: data.endTime,
-            endDate: data.endDate,
-            guestActions: data.guestActions,
-            guestPlanning: data.guestPlanning,
-            location: locationParts || undefined,
-            address: data.address || undefined,
-            city: data.city || undefined,
-            state: data.state || undefined,
-            venue: data.venue || undefined,
-            description: data.details || undefined,
-            rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
-            numberOfGuests: 0,
-            templateId: config.slug,
-            templateConfig: {
-              displayName: config.displayName,
-              categoryLabel: config.categoryLabel || config.displayName,
-              detailFields: config.detailFields,
-              rsvpCopy: config.rsvpCopy,
-            },
-            customFields: {
-              ...data.extra,
-              advancedSections: advancedSectionsToSave,
-            },
-            advancedSections: advancedSectionsToSave,
-            heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
-            heroImage: heroToSave,
-            themeId: validThemeId,
-            theme: themeToSave,
-            fontId: validFontId,
-            fontSize: validFontSize,
-            fontFamily: currentSelectedFont?.css,
-            fontSizeClass: currentSelectedSize?.className,
-            time: data.time,
-            date: data.date,
-            ...(data.passcodeRequired && data.passcode
-              ? {
-                  accessControl: {
-                    mode: "access-code",
-                    passcodePlain: data.passcode,
-                    requirePasscode: true,
-                  },
-                }
-              : data.passcodeRequired === false
-              ? {
-                  accessControl: {
-                    mode: "public",
-                    requirePasscode: false,
-                  },
-                }
-              : {}),
-          },
+            return {
+              id: slotId,
+              role: slot.role || "Snacks & Hydration",
+              name: slot.family || "",
+              filled: Boolean(slot.filled && slot.family),
+              notes: slot.notes || "",
+              contact: slot.contact || "",
+              type: "snack",
+            };
+          }
+        );
+        const mergedSlots = [...preservedSlots, ...snackVolunteerSlots];
+        advancedSectionsToSave.volunteers = {
+          ...volunteers,
+          volunteerSlots: mergedSlots,
+          slots: mergedSlots,
         };
-        payload.data.status = "published";
-        payload.data.draftStatus = "published";
-        payload.data.manualEditor = null;
-
-
-        if (editEventId) {
-          const res = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ title: payload.title, data: payload.data }),
-          });
-          if (!res.ok) {
-            const txt = await res.text().catch(() => "");
-            console.error("[Edit] Update failed:", res.status, txt);
-            throw new Error("Failed to update event");
-          }
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(
-              new CustomEvent("history:updated", {
-                detail: { id: editEventId },
-              })
-            );
-          }
-          allowNavigation(() => router.push(
-            buildEventPath(editEventId, payload.title, {
-              updated: true,
-              t: Date.now(),
-            })
-          ));
-        } else {
-          const res = await eventHistoryClient.fetch("/api/history", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify(payload),
-          });
-          const json = await res.json().catch(() => ({}));
-          const id = (json as any)?.id as string | undefined;
-          if (!id) throw new Error("Failed to create event");
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(
-              new CustomEvent("history:created", {
-                detail: {
-                  id,
-                  title: payload.title,
-                  created_at: (json as any)?.created_at || new Date().toISOString(),
-                  data: payload.data,
-                },
-              })
-            );
-          }
-          allowNavigation(() => router.push(buildEventPath(id, payload.title, { created: true })));
-        }
-      } catch (err: any) {
-        alert(String(err?.message || err || "Failed to create event"));
-      } finally {
-        setSubmitting(false);
       }
+      const payload: any = {
+        title: data.title || config.displayName,
+        data: {
+          category: config.category,
+          createdVia: "simple-template",
+          createdManually: true,
+          startISO,
+          endISO,
+          endAt: endISO,
+          end: endISO,
+          endTime: data.endTime,
+          endDate: data.endDate,
+          guestActions: data.guestActions,
+          guestPlanning: data.guestPlanning,
+          location: locationParts || undefined,
+          address: data.address || undefined,
+          city: data.city || undefined,
+          state: data.state || undefined,
+          venue: data.venue || undefined,
+          description: data.details || undefined,
+          rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
+          numberOfGuests: 0,
+          templateId: config.slug,
+          templateConfig: {
+            displayName: config.displayName,
+            categoryLabel: config.categoryLabel || config.displayName,
+            detailFields: config.detailFields,
+            rsvpCopy: config.rsvpCopy,
+          },
+          customFields: {
+            ...data.extra,
+            advancedSections: advancedSectionsToSave,
+          },
+          advancedSections: advancedSectionsToSave,
+          heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
+          heroImage: heroToSave,
+          themeId: validThemeId,
+          theme: themeToSave,
+          fontId: validFontId,
+          fontSize: validFontSize,
+          fontFamily: currentSelectedFont?.css,
+          fontSizeClass: currentSelectedSize?.className,
+          time: data.time,
+          date: data.date,
+          ...(data.passcodeRequired && data.passcode
+            ? {
+              accessControl: {
+                mode: "access-code",
+                passcodePlain: data.passcode,
+                requirePasscode: true,
+              },
+            }
+            : data.passcodeRequired === false
+              ? {
+                accessControl: {
+                  mode: "public",
+                  requirePasscode: false,
+                },
+              }
+              : {}),
+        },
+      };
+      return payload;
     }, [data.heroImageFilterEnabled,
       submitting,
-      data.address,
-      data.city,
-      data.state,
-      data.date,
-      data.time,
-      data.title,
-      data.details,
-      data.guestActions,
-      data.guestPlanning,
-      data.endTime,
-      data.endDate,
-      data.venue,
-      data.hero,
-      data.fontId,
-      data.fontSize,
-      data.rsvpEnabled,
-      data.rsvpDeadline,
-      data.extra,
-      data.passcodeRequired,
-      data.passcode,
+    data.address,
+    data.city,
+    data.state,
+    data.date,
+    data.time,
+    data.title,
+    data.details,
+    data.guestActions,
+    data.guestPlanning,
+    data.endTime,
+    data.endDate,
+    data.venue,
+    data.hero,
+    data.fontId,
+    data.fontSize,
+    data.rsvpEnabled,
+    data.rsvpDeadline,
+    data.extra,
+    data.passcodeRequired,
+    data.passcode,
       advancedState,
       locationParts,
-      config.category,
-      config.displayName,
-      config.slug,
-      config.defaultHero,
-      config.detailFields,
-      config.rsvpCopy,
+    config.category,
+    config.displayName,
+    config.slug,
+    config.defaultHero,
+    config.detailFields,
+    config.rsvpCopy,
       router,
       themeId,
     ]);
+
+    const editor = useEventPageEditor({ snapshot: { data, advancedState, themeId }, category: config.category, templateId: config.slug, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload });
 
     const rsvpCopy = {
       menuTitle: config.rsvpCopy?.menuTitle || "RSVP",
@@ -1494,9 +1297,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }
 
     return (
-      <div className="relative flex min-h-screen h-[100dvh] w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
-        <EventCanvas
-          {...previewTouchHandlers}
+      <EventEditorWorkspace sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/soccer"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
+ preview={<EventCanvas
           className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
           style={{
             WebkitOverflowScrolling: "touch",
@@ -1525,7 +1327,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       sizes="100vw"
                     />
                   )}
-                <HeroImageEditor filterEnabled={data.heroImageFilterEnabled !== false} onFilterChange={(heroImageFilterEnabled) => setData((prev) => ({ ...prev, heroImageFilterEnabled }))} value={data.hero} onChange={(hero) => setData((prev) => ({ ...prev, hero }))} className="absolute inset-x-4 bottom-4 z-10 flex justify-center" />
+                <HeroImageEditor value={data.hero} onChange={(hero) => setData((prev) => ({ ...prev, hero }))} className="absolute inset-x-4 bottom-4 z-10 flex justify-center" />
 </div>
 </TemplateImageTone>
 
@@ -1588,7 +1390,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   </div>
                 </div>
 
-                <section
+                <EventPageSections>
+<section
                   id="details"
                   className="py-10 border-t border-white/10 px-6 md:px-10"
                 >
@@ -1799,6 +1602,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
                   </section>
                 )}
+</EventPageSections>
 
                 <footer
                   className={`text-center py-8 border-t border-white/10 mt-1 ${textClass}`}
@@ -1808,35 +1612,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               </div>
             </div>
           </div>
-        </EventCanvas>
+        </EventCanvas>}
+ controls={<><ScrollHandoffContainer className="min-h-full">
 
-        {mobileMenuOpen && (
-          <div
-            className="nav-chrome-mobile-drawer-backdrop md:hidden fixed inset-0 z-10"
-            onClick={closeMobileMenu}
-            role="presentation"
-          ></div>
-        )}
-
-        <div
-          className={`nav-chrome-mobile-drawer w-full md:w-[400px] md:shrink-0 flex flex-col z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
-            mobileMenuOpen ? "translate-x-0" : "translate-x-full"
-          }`}
-          {...drawerTouchHandlers}
-        >
-          <ScrollHandoffContainer className="flex-1">
-            <div className="nav-chrome-mobile-drawer-header md:hidden sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-3">
-              <button
-                onClick={closeMobileMenu}
-                className="nav-chrome-mobile-drawer-back-button flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
-              >
-                <ChevronLeft size={14} />
-                Back to preview
-              </button>
-              <span className="text-sm font-semibold text-slate-700">
-                Customize
-              </span>
-            </div>
 
             <div className="p-6 pt-4 md:pt-6">
               {(activeView === "main" || activeView === "images") && renderMainMenu()}
@@ -1855,49 +1633,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               )}
             </div>
 
-          <div className="sticky bottom-0 border-t border-[rgba(112,97,168,0.14)] bg-[rgba(246,241,255,0.92)] p-4 backdrop-blur-xl">
-              <div className="flex gap-3">
-                {editEventId && (
-                  <button
-                    onClick={() => router.push(`/event/${editEventId}`)}
-                    className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
-                  >
-                    Cancel
-                  </button>
-                )}
-                <button
-                  onClick={handlePublish}
-                  disabled={submitting}
-                  className={`${
-                    editEventId ? "flex-1" : "w-full"
-                  } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
-                >
-                  {submitting
-                    ? editEventId
-                      ? "Saving..."
-                      : "Publishing..."
-                    : editEventId
-                    ? "Save"
-                    : "Publish"}
-                </button>
-              </div>
-            </div>
-          </ScrollHandoffContainer>
-        </div>
 
-        {!mobileMenuOpen && (
-          <div className="md:hidden fixed bottom-4 right-4 z-30">
-            <button
-              type="button"
-              onClick={openMobileMenu}
-              className="nav-chrome-mobile-drawer-trigger flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold"
-            >
-              <Menu size={18} />
-              Edit
-            </button>
-          </div>
-        )}
-      </div>
+          </ScrollHandoffContainer></>}
+></EventEditorWorkspace>
     );
   };
 }

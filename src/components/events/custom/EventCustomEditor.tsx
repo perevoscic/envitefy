@@ -1,14 +1,21 @@
 "use client";
 
 import HeroImageEditor from "@/components/events/HeroImageEditor";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { CloudSun, MapPinned } from "lucide-react";
 import { useEventHistoryClient } from "@/lib/event-history-client";
+import { isEventDraft } from "@/lib/event-draft-access";
 import { prepareCustomEventHeroImage } from "@/lib/custom-event-hero-image";
 import { FontPairingSelect } from "@/components/design-panel/FontPairingSelect";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useUnsavedProgress } from "@/components/UnsavedProgressProvider";
+import {
+  EventEditorInput,
+  EventEditorSections,
+  EventEditorToggle,
+} from "@/components/events/EventEditorFields";
+import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import { EventSectionBuilderProvider, EventSectionPalette, EventSectionsReadOnly } from "@/components/events/EventSectionBuilder";
+import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import {
   applyCustomEventWording,
   type CustomEventDetails,
@@ -16,19 +23,24 @@ import {
   customEventCategory,
   customEventGalleryHref,
   customEventSectionOrder,
-  removeCustomEventSection,
   customEventWording,
   EVENT_DESIGN_FONT_PAIRS,
-  EVENT_DESIGN_LAYOUTS,
   normalizeCustomEventPage,
   takeCustomEventPage,
 } from "@/lib/event-custom-design";
-import { customEventFieldErrors, saveCustomEventPage, withCustomEventTimezone } from "@/lib/event-custom-save";
+import {
+  customEventFieldErrors,
+  saveCustomEventPage,
+  withCustomEventTimezone,
+} from "@/lib/event-custom-save";
 import { buildEventPath } from "@/utils/event-url";
 import { validateCustomEventPublicSlug, MAX_PUBLIC_SLUG_LENGTH } from "@/utils/event-public-slug";
 import CustomEventPageContent from "./CustomEventPageContent";
-import EventArrivalMap from "./EventArrivalMap";
-import { type EventArrivalMap as EventArrivalMapData, normalizeArrivalMap } from "@/lib/event-arrival-map";
+import CustomEventLayoutPicker from "./CustomEventLayoutPicker";
+import {
+  normalizeArrivalMap,
+  type EventArrivalMap as EventArrivalMapData,
+} from "@/lib/event-arrival-map";
 import styles from "./custom-event.module.css";
 import EventCustomThemeDialog from "./EventCustomThemeDialog";
 import EventPageLoading from "./EventPageLoading";
@@ -46,6 +58,30 @@ const prepareArrivalMapImage = async (source: string) => {
   return image;
 };
 
+const editorSnapshot = (page: CustomEventPage | null) => {
+  if (!page) return { page };
+  const details = page.details;
+  // Legacy pages omit the default layout. Compare it with the explicit default
+  // produced when a host moves a section and then restores its original order.
+  return {
+    page: {
+      ...page,
+      details: {
+        ...details,
+        sectionLayout: details.sectionLayout ?? {
+          version: 1,
+          order: customEventSectionOrder(details).filter((id) =>
+            id === "overview" ? Boolean(details.description.trim()) :
+              id === "registry" ? details.registryLinks.length > 0 : true,
+          ),
+          hidden: [],
+          added: [],
+        },
+      },
+    },
+  };
+};
+
 export default function EventCustomEditor({ initialPage }: { initialPage?: CustomEventPage } = {}) {
   const eventHistoryClient = useEventHistoryClient();
   const search = useSearchParams(),
@@ -53,17 +89,28 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
   const editId = search?.get("edit") || undefined;
   const category = customEventCategory(search?.get("category")) || "general";
   const token = search?.get("themePreview");
-  const [editing, setEditing] = useState(search?.get("ready") !== "1");
+  const [activeSection, setActiveSection] = useState("main");
   const [page, setPage] = useState<CustomEventPage | null>(null);
+  const currentPage = useRef(page);
+  currentPage.current = page;
   const [baseline, setBaseline] = useState("");
   const [operationBusy, setBusy] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const busy = operationBusy || imageBusy;
   const [error, setError] = useState("");
   const [validationMode, setValidationMode] = useState<"draft" | "published" | null>(null);
-  const fieldErrors = page && validationMode ? customEventFieldErrors(page, validationMode === "published") : {};
+  const fieldErrors =
+    page && validationMode ? customEventFieldErrors(page, validationMode === "published") : {};
   const focusField = (key: string) => {
-    setEditing(true);
+    setActiveSection(
+      key.startsWith("registry-")
+        ? "registry"
+        : key.startsWith("section-")
+          ? "sections"
+          : key.startsWith("rsvp")
+            ? "rsvp"
+            : "details",
+    );
     setPreviewOnly(false);
     requestAnimationFrame(() => {
       const field = document.getElementById(`event-field-${key}`);
@@ -76,11 +123,12 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
     "aria-invalid": Boolean(fieldErrors[key]),
     "aria-describedby": fieldErrors[key] ? `event-error-${key}` : undefined,
   });
-  const fieldError = (key: string) => fieldErrors[key] ? (
-    <span id={`event-error-${key}`} className={styles.error}>{fieldErrors[key]}</span>
-  ) : null;
-  const [message, setMessage] = useState("");
-  const [orderMessage, setOrderMessage] = useState("");
+  const fieldError = (key: string) =>
+    fieldErrors[key] ? (
+      <span id={`event-error-${key}`} className={styles.error}>
+        {fieldErrors[key]}
+      </span>
+    ) : null;
   const [redesign, setRedesign] = useState(false);
   const [published, setPublished] = useState(false);
   const [publicSlug, setPublicSlug] = useState("");
@@ -119,9 +167,12 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
       }
       if (editId) {
         setPage(null);
-        const response = await eventHistoryClient.fetch(`/api/history/${encodeURIComponent(editId)}`, {
-          credentials: "include",
-        });
+        const response = await eventHistoryClient.fetch(
+          `/api/history/${encodeURIComponent(editId)}`,
+          {
+            credentials: "include",
+          },
+        );
         if (!response.ok)
           throw new Error(
             "This event page could not be opened. Sign in to its host account and retry.",
@@ -139,7 +190,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
         const initialized = withCustomEventTimezone(saved);
         setPage(initialized);
         setBaseline(JSON.stringify(initialized));
-        setPublished(row.data.status === "published");
+        setPublished(!isEventDraft(row.data));
       } else {
         await Promise.resolve();
         if (cancelled) return;
@@ -190,33 +241,10 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
     setPage(next);
     return next;
   };
-  const showPreview = async () => {
-    if (previewOnly) {
-      setPreviewOnly(false);
-      return;
-    }
-    if (!page || saving.current || imageBusy) return;
-    setValidationMode("draft");
-    if (Object.keys(customEventFieldErrors(page, false)).length) {
-      setError("");
-      setPreviewOnly(false);
-      return;
-    }
-    saving.current = true;
-    setBusy(true);
-    setError("");
-    try {
-      await prepareWording(page);
-      setPreviewOnly(true);
-    } catch (failure) {
-      setError(failure instanceof Error ? failure.message : "Please try again.");
-    } finally {
-      saving.current = false;
-      setBusy(false);
-    }
-  };
+
   const persist = async (status: "draft" | "published", navigate = true) => {
-    if (!page || saving.current || imageBusy) throw new Error("Wait for your event page to finish saving.");
+    if (!page || saving.current || imageBusy)
+      throw new Error("Wait for your event page to finish saving.");
     setValidationMode(status);
     if (Object.keys(customEventFieldErrors(page, status === "published")).length) {
       setError("");
@@ -226,7 +254,6 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
     saving.current = true;
     setBusy(true);
     setError("");
-    setMessage("");
     clientDraftId.current ||= crypto.randomUUID();
     try {
       const result = await saveCustomEventPage({
@@ -239,14 +266,17 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
       });
       savedId.current = result.id;
       existing.current = result.data;
-      const nextPublicSlug = typeof result.data.publicSlug === "string" ? result.data.publicSlug : savedPublicSlug;
+      const nextPublicSlug =
+        typeof result.data.publicSlug === "string" ? result.data.publicSlug : savedPublicSlug;
       setPublicSlug(nextPublicSlug);
       setSavedPublicSlug(nextPublicSlug);
       setPage(result.page);
       setBaseline(JSON.stringify(result.page));
       if (status === "published" && navigate)
         navigation.allowNavigation(() =>
-          router.push(buildEventPath(result.id, result.page.details.title, undefined, nextPublicSlug)),
+          router.push(
+            buildEventPath(result.id, result.page.details.title, undefined, nextPublicSlug),
+          ),
         );
       else if (status === "draft") {
         if (navigate) {
@@ -254,8 +284,9 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
             router.replace(`/event/design/customize?edit=${encodeURIComponent(result.id)}`),
           );
         }
-        setMessage("Draft saved.");
       }
+
+      return result;
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Your event page could not be saved.");
       throw failure;
@@ -264,22 +295,39 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
       setBusy(false);
     }
   };
-  const dirty = Boolean(page && JSON.stringify(page) !== baseline);
-  const navigation = useUnsavedProgress({
-    dirty,
+  const editor = useEventPageEditor({
+    snapshot: editorSnapshot(page),
+    category,
+    eventId: editId,
+    historyClient: eventHistoryClient,
+    ready: Boolean(page),
     busy,
-    save: async () => {
-      await persist(published ? "published" : "draft", false);
+    published,
+    initialDirty: !editId && !baseline,
+    cancelHref: savedId.current
+      ? buildEventPath(
+          savedId.current,
+          typeof existing.current.title === "string" ? existing.current.title : undefined,
+          undefined,
+          savedPublicSlug,
+        )
+      : undefined,
+    savePage: async (publish) => {
+      const result = await persist(publish ? "published" : "draft", false);
+      return {
+        id: result.id,
+        href: buildEventPath(
+          result.id,
+          result.page.details.title,
+          undefined,
+          typeof result.data.publicSlug === "string" ? result.data.publicSlug : savedPublicSlug,
+        ),
+        snapshot: editorSnapshot(result.page),
+      };
     },
   });
-  const cancelPublishedEdit = () => {
-    const eventId = savedId.current;
-    if (!eventId || busy) return;
-    const savedTitle = typeof existing.current.title === "string" ? existing.current.title : undefined;
-    navigation.requestLeave(() =>
-      router.push(buildEventPath(eventId, savedTitle, undefined, savedPublicSlug)),
-    );
-  };
+  const navigation = editor;
+
   const savePublicLink = async () => {
     if (!savedId.current || busy || saving.current) return;
     const validation = validateCustomEventPublicSlug(publicSlug);
@@ -292,12 +340,15 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
     saving.current = true;
     setBusy(true);
     try {
-      const response = await fetch(`/api/events/${encodeURIComponent(savedId.current)}/public-slug`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ publicSlug: validation.slug }),
-      });
+      const response = await fetch(
+        `/api/events/${encodeURIComponent(savedId.current)}/public-slug`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ publicSlug: validation.slug }),
+        },
+      );
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "The event link could not be updated.");
       existing.current = { ...existing.current, publicSlug: result.publicSlug };
@@ -306,7 +357,9 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
       setLinkMessage("Link updated. Previous links still work.");
       window.dispatchEvent(new CustomEvent("history:updated", { detail: { id: savedId.current } }));
     } catch (failure) {
-      setLinkError(failure instanceof Error ? failure.message : "The event link could not be updated.");
+      setLinkError(
+        failure instanceof Error ? failure.message : "The event link could not be updated.",
+      );
     } finally {
       saving.current = false;
       setBusy(false);
@@ -316,39 +369,81 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
     setPage((previous) =>
       previous ? { ...previous, details: { ...previous.details, [key]: value } } : previous,
     );
-  const updateArrivalMapSource = (sourceImage: string, sectionIndex?: number) =>
-    setPage((current) => {
-      if (!current || (sectionIndex === undefined && current.details.sections.some((section) => section.map))) return current;
-      const sections = [...current.details.sections];
-      const index = sectionIndex ?? arrivalMapSectionIndex(current.details);
-      if (index < 0 && sections.length >= 20) return current;
-      const section: CustomEventDetails["sections"][number] = index < 0 ? { title: "Parking & drop-off", body: "" } : sections[index];
-      if (!section) return current;
-      const map: EventArrivalMapData = {
-        version: 1, sourceImage, status: "location_unavailable",
-        markers: section.map ? section.map.markers.map((marker) => ({ ...marker, point: null, confirmed: false })) : [
-          { label: "Parking", kind: "parking", note: "", point: null, confirmed: false },
-          { label: "Student drop-off", kind: "dropoff", note: "", point: null, confirmed: false },
-        ],
-      };
-      if (index < 0) sections.push({ ...section, map });
-      else sections[index] = { ...section, map };
-      return { ...current, details: { ...current.details, sections } };
-    });
-  const refreshArrivalMap = async (index: number) => {
-    const section = page?.details.sections[index];
-    if (!page || !section?.map || saving.current) throw new Error("Wait for the event save to finish, then refresh the map.");
-    const snapshot = JSON.stringify(section.map), address = page.details.location;
-    const response = await fetch("/api/event-themes/generate", { method: "POST", credentials: "include",
-      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "arrival-map",
-        category: page.category, prompt: "Refresh this arrival map from the current event address.",
-        currentDesign: page.design, currentDetails: page.details, arrivalMapSection: index }) });
-    const result = await response.json(), map = normalizeArrivalMap(result.map);
-    if (!response.ok || !map) throw new Error(result.error || "The map could not be refreshed. Please retry.");
-    setPage((current) => {
-      if (!current || current.details.location !== address || JSON.stringify(current.details.sections[index]?.map) !== snapshot) return current;
-      return { ...current, details: { ...current.details, sections: current.details.sections.map((item, i) => i === index ? { ...item, map } : item) } };
-    });
+  const updateArrivalMapSource = async (sourceImage: string, sectionIndex?: number) => {
+    const current = currentPage.current;
+    if (
+      !current ||
+      (sectionIndex === undefined && current.details.sections.some((section) => section.map))
+    )
+      return;
+    const sections = [...current.details.sections];
+    const index = sectionIndex ?? arrivalMapSectionIndex(current.details);
+    if (index < 0 && sections.length >= 20) return;
+    const section: CustomEventDetails["sections"][number] =
+      index < 0 ? { title: "Parking & drop-off", body: "" } : sections[index];
+    if (!section) return;
+    const map: EventArrivalMapData = {
+      version: 1,
+      sourceImage,
+      status: "location_unavailable",
+      markers: section.map
+        ? section.map.markers.map((marker) => ({ ...marker, point: null, confirmed: false }))
+        : [
+            { label: "Parking", kind: "parking", note: "", point: null, confirmed: false },
+            {
+              label: "Student drop-off",
+              kind: "dropoff",
+              note: "",
+              point: null,
+              confirmed: false,
+            },
+          ],
+    };
+    if (index < 0) sections.push({ ...section, map });
+    else sections[index] = { ...section, map };
+    const next = { ...current, details: { ...current.details, sections } };
+    currentPage.current = next;
+    setPage(next);
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/event-themes/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "arrival-map",
+          category: next.category,
+          prompt: "Prepare the parking and drop-off map screenshot with the marked locations.",
+          currentDesign: next.design,
+          currentDetails: next.details,
+          arrivalMapSection: index < 0 ? sections.length - 1 : index,
+        }),
+      });
+      const result = await response.json();
+      const prepared = normalizeArrivalMap(result.map);
+      if (!response.ok || !prepared || prepared.sourceImage !== sourceImage)
+        throw new Error(result.error || "The parking map screenshot could not be prepared.");
+      setPage((latest) => {
+        if (!latest || latest.details.location !== next.details.location) return latest;
+        return {
+          ...latest,
+          details: {
+            ...latest.details,
+            sections: latest.details.sections.map((item) =>
+              item.map?.sourceImage === sourceImage ? { ...item, map: prepared } : item,
+            ),
+          },
+        };
+      });
+    } catch (failure) {
+      setError(
+        failure instanceof Error
+          ? failure.message
+          : "The parking map screenshot could not be prepared.",
+      );
+    } finally {
+      setBusy(false);
+    }
   };
   if (!page && !error) return <EventPageLoading />;
   if (!page)
@@ -367,21 +462,12 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
       </main>
     );
   const d = page.details;
-  const sectionOrder = customEventSectionOrder(d).filter((key) =>
-    key === "overview" ? Boolean(d.description.trim()) : key === "registry" ? d.registryLinks.length > 0 : true,
-  );
-  const sectionName = (key: string) => key === "overview" ? "Welcome & overview" :
-    key === "registry" ? "Registry" : d.sections[Number(key.slice(8))]?.title || `Section ${Number(key.slice(8)) + 1}`;
-  const moveSection = (key: string, direction: -1 | 1) => {
-    const index = sectionOrder.indexOf(key), nextIndex = index + direction;
-    if (index < 0 || nextIndex < 0 || nextIndex >= sectionOrder.length) return;
-    const order = [...sectionOrder];
-    [order[index], order[nextIndex]] = [order[nextIndex], order[index]];
-    const nextOrder = customEventSectionOrder({ ...d, sectionOrder: order });
-    const defaultOrder = customEventSectionOrder({ ...d, sectionOrder: undefined });
-    updateDetail("sectionOrder", JSON.stringify(nextOrder) === JSON.stringify(defaultOrder) ? undefined : nextOrder);
-    setOrderMessage(`${sectionName(key)} moved to position ${nextIndex + 1} of ${order.length}.`);
-  };
+  const sectionName = (key: string) =>
+    key === "overview"
+      ? "Welcome & overview"
+      : key === "registry"
+        ? "Registry"
+        : d.sections[Number(key.slice(8))]?.title || `Section ${Number(key.slice(8)) + 1}`;
   const field = (
     key: keyof Pick<
       CustomEventDetails,
@@ -400,412 +486,434 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
     label: string,
     type = "text",
   ) => (
-    <label className={styles.field}>
-      {label}
-      {key === "description" ? (
-        <textarea
-          {...fieldProps(key)}
-          rows={5}
-          value={d[key]}
-          maxLength={6000}
-          onChange={(e) => updateDetail(key, e.target.value)}
-        />
-      ) : (
-        <input
-          {...fieldProps(key)}
-          type={type}
-          value={d[key]}
-          maxLength={key === "location" ? 1000 : 300}
-          onChange={(e) => updateDetail(key, e.target.value)}
-        />
-      )}
-      {fieldError(key)}
-    </label>
+    <EventEditorInput
+      label={label}
+      id={`event-field-${key}`}
+      value={d[key]}
+      type={key === "description" ? "textarea" : type}
+      maxLength={key === "description" ? 6000 : key === "location" ? 1000 : 300}
+      error={fieldErrors[key]}
+      onChange={(value) => updateDetail(key, value)}
+    />
   );
-  return (
-    <main className={`${styles.editor} ${styles.editorWorkspace}`}>
-      <header className={styles.toolbar}>
-        <div>
-          <Link href={customEventGalleryHref(page.category)}>← Templates</Link>
-          <h1>Your event page</h1>
-        </div>
-        <div>
-          <button type="button" className={styles.secondary} disabled={busy} aria-pressed={editing} onClick={() => setEditing((value) => !value)}>
-            {editing ? "View event page" : "Edit details & design"}
-          </button>
-          {published ? (
-            <button
-              className={styles.secondary}
-              type="button"
-              disabled={busy}
-              onClick={cancelPublishedEdit}
-            >
-              Cancel
-            </button>
-          ) : (
-            <>
-              <button
-                className={styles.secondary}
-                type="button"
-                disabled={busy}
-                onClick={() => void showPreview()}
-              >
-                Preview <span aria-hidden="true">→</span>
-              </button>
-              <button
-                className={styles.secondary}
-                type="button"
-                disabled={busy}
-                onClick={() => {
-                  void persist("draft").catch(() => {});
-                }}
-              >
-                Save draft
-              </button>
-            </>
-          )}
-          {(!published || dirty) && <button
-            className={styles.primary}
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              void persist("published").catch(() => {});
-            }}
-          >
-            {imageBusy ? "Preparing image…" : operationBusy ? "Saving…" : published ? "Save changes" : "Publish"}
-          </button>}
-        </div>
-      </header>
-      {error && (
-        <p role="alert" className={styles.error}>
-          {error}
-        </p>
+  const menuToggles = (
+    <>
+      {d.sections.some((section) => section.map) && (
+        <EventEditorToggle
+          label="Show parking map"
+          icon={<MapPinned size={20} />}
+          checked={d.arrivalMapEnabled !== false}
+          onChange={(enabled) => updateDetail("arrivalMapEnabled", enabled ? undefined : false)}
+        />
       )}
-      {Object.keys(fieldErrors).length > 0 && (
-        <div role="alert" className={styles.error}>
-          <p>Correct these fields to continue:</p>
-          {Object.entries(fieldErrors).map(([key, message]) => (
-            <button key={key} type="button" className={styles.errorLink} onClick={() => focusField(key)}>{message}</button>
+      <EventEditorToggle
+        label="Show weather"
+        icon={<CloudSun size={20} />}
+        checked={d.weather?.enabled === true}
+        onChange={(enabled) => updateDetail("weather", { enabled, units: d.weather?.units || "f" })}
+      />
+      {d.weather?.enabled && (
+        <div className={styles.weatherUnits} role="group" aria-label="Temperature units">
+          <span>Temperature units</span>
+          {(["f", "c"] as const).map((units) => (
+            <button
+              type="button"
+              key={units}
+              aria-label={units === "f" ? "Fahrenheit" : "Celsius"}
+              aria-pressed={d.weather?.units === units}
+              onClick={() => updateDetail("weather", { enabled: true, units })}
+            >
+              {units === "f" ? "°F" : "°C"}
+            </button>
           ))}
         </div>
       )}
-      {message && (
-        <p role="status" className={styles.notice}>
-          {message}
-        </p>
-      )}
-      {previewOnly && (
-        <dialog ref={previewDialog} className={styles.pagePreviewDialog} aria-label="Event Page preview" onCancel={() => setPreviewOnly(false)}>
-          <header className={styles.pagePreviewHeader}>
-            <span>Event Page preview</span>
-            <button type="button" className={styles.secondary} onClick={() => setPreviewOnly(false)}>Close</button>
-          </header>
-          <CustomEventPageContent page={page} showGuestActions />
-        </dialog>
-      )}
-      {(
-        <div className={styles.workspace} style={editing ? undefined : { gridTemplateColumns: "minmax(0, 1fr)" }}>
-          <fieldset disabled={busy} className={styles.controls} aria-label="Event editing controls" hidden={!editing} style={editing ? undefined : { display: "none" }}>
-            <h2>Event details</h2>
-            {field("title", "Event title")}
-            <div className={styles.group}>
-              <h2>Public link</h2>
-              {savedId.current ? <>
-                <div className={styles.publicLinkField}>
-                  <label htmlFor="event-public-link" className={styles.field}>Custom link</label>
-                  <div className={styles.publicLinkControl} data-invalid={Boolean(linkError)}>
-                    <span className={styles.publicLinkPrefix}>envitefy.com/event/</span>
-                    <input id="event-public-link" className={styles.publicLinkInput}
-                      type="text" value={publicSlug} maxLength={MAX_PUBLIC_SLUG_LENGTH}
-                      placeholder="your-custom-link"
-                      autoCapitalize="none" autoCorrect="off" spellCheck={false}
-                      aria-invalid={Boolean(linkError)} aria-describedby="event-public-link-status"
-                      onChange={(event) => { setPublicSlug(event.target.value); setLinkError(""); setLinkMessage(""); }} />
-                  </div>
-                </div>
-                <button type="button" className={styles.secondary}
-                  disabled={busy || !publicSlug.trim() || publicSlug === savedPublicSlug}
-                  onClick={() => void savePublicLink()}>Save link</button>
-                <p id="event-public-link-status" role={linkError ? "alert" : "status"} className={linkError ? styles.error : undefined}>
-                  {linkError || linkMessage || "Save link updates the URL immediately. Previous links keep working. Event details and design are saved separately."}
-                </p>
-              </> : <p>Save a draft to create your public link, then edit it here.</p>}
-            </div>
-            {field("description", "Welcome & overview")}
-            {field("host", "Hosted by")}
-            <div className={styles.columns}>
-              {field("date", "Date", "date")}
-              {field("time", "Begins", "time")}
-              {field("endTime", "End time (optional)", "time")}
-              {field("endDate", "End date (optional)", "date")}
-            </div>
-            {field("venue", "Venue")}
-            {field("location", "Address or location")}
-            <div className={styles.group}>
-              <h2>Weather</h2>
-              <label className={styles.check}>
-                <input type="checkbox" checked={d.weather?.enabled === true}
-                  onChange={(event) => updateDetail("weather", { enabled: event.target.checked, units: d.weather?.units || "f" })} />
-                Show weather on the event page
-              </label>
-              <p>A compact forecast in the main event details, using your page's colors and fonts. Forecasts appear within three days of the event.</p>
-              {d.weather?.enabled && (
-                <label className={styles.field}>
-                  Temperature units
-                  <select value={d.weather.units} onChange={(event) => updateDetail("weather", { enabled: true, units: event.target.value === "c" ? "c" : "f" })}>
-                    <option value="f">Fahrenheit (°F)</option>
-                    <option value="c">Celsius (°C)</option>
-                  </select>
-                </label>
-              )}
-            </div>
-            <div className={styles.group}>
-              <h2>RSVP</h2>
-              <label className={styles.check}>
-                <input
-                  type="checkbox"
-                  checked={d.rsvpEnabled}
-                  onChange={(e) => updateDetail("rsvpEnabled", e.target.checked)}
-                />
-                Allow guests to RSVP
-              </label>
-              {d.rsvpEnabled && (
-                <>
-                  {field("rsvpEmail", "RSVP email (optional)", "email")}
-                  {field("rsvpPhone", "RSVP phone (optional)", "tel")}
-                </>
-              )}
-            </div>
-            <div className={styles.group}>
-              <h2>Registry</h2>
-              {d.registryLinks.map((link, index) => (
-                <div key={index} className={styles.group}>
-                  <label className={styles.field}>
-                    Label
-                    <input
-                      {...fieldProps(`registry-${index}-label`)}
-                      value={link.label}
-                      maxLength={180}
-                      onChange={(e) =>
-                        updateDetail(
-                          "registryLinks",
-                          d.registryLinks.map((item, i) =>
-                            i === index ? { ...item, label: e.target.value } : item,
-                          ),
-                        )
-                      }
-                    />
-                    {fieldError(`registry-${index}-label`)}
-                  </label>
-                  <label className={styles.field}>
-                    Link
-                    <input
-                      {...fieldProps(`registry-${index}-url`)}
-                      type="url"
-                      value={link.url}
-                      onChange={(e) =>
-                        updateDetail(
-                          "registryLinks",
-                          d.registryLinks.map((item, i) =>
-                            i === index ? { ...item, url: e.target.value } : item,
-                          ),
-                        )
-                      }
-                    />
-                    {fieldError(`registry-${index}-url`)}
-                  </label>
-                  <button
-                    type="button"
-                    className={styles.secondary}
-                    onClick={() =>
-                      updateDetail(
-                        "registryLinks",
-                        d.registryLinks.filter((_, i) => i !== index),
-                      )
-                    }
-                  >
-                    Remove link
-                  </button>
-                </div>
-              ))}
+    </>
+  );
+  return (
+    <EventSectionBuilderProvider layout={d.sectionLayout}
+      initialEntries={customEventSectionOrder(d).filter((id) => id === "overview" ? Boolean(d.description.trim()) : id === "registry" ? d.registryLinks.length > 0 : true).map((id) => ({ id, label: sectionName(id) }))}
+      onChange={(sectionLayout) => setPage((current) => current ? { ...current, details: { ...current.details, sectionLayout } } : current)}
+      catalog={customEventSectionOrder(d).map((id) => ({ id, label: sectionName(id) }))}
+      createSection={() => {
+        if (d.sections.length >= 20) return undefined;
+        const id = `section:${d.sections.length}`;
+        setPage((current) => current ? { ...current, details: { ...current.details, sections: [...current.details.sections, { title: "Information", body: "" }] } } : current);
+        return { id, label: "Information" };
+      }}
+      renderEditor={(id) => {
+        if (id === "overview") return <EventEditorInput label="Welcome message" type="textarea" value={d.description} onChange={(value) => updateDetail("description", value)} />;
+        if (id === "registry") return <>{d.registryLinks.map((link, index) => <div key={index}><EventEditorInput label="Link label" value={link.label} onChange={(label) => updateDetail("registryLinks", d.registryLinks.map((item, i) => i === index ? { ...item, label } : item))} /><EventEditorInput label="Link URL" value={link.url} onChange={(url) => updateDetail("registryLinks", d.registryLinks.map((item, i) => i === index ? { ...item, url } : item))} /></div>)}</>;
+        const index = Number(id.slice(8)), section = d.sections[index];
+        return section ? <><EventEditorInput label="Section heading" value={section.title} maxLength={180} onChange={(title) => updateDetail("sections", d.sections.map((item, i) => i === index ? { ...item, title } : item))} /><EventEditorInput label="Section content" type="textarea" value={section.body} maxLength={6000} onChange={(body) => updateDetail("sections", d.sections.map((item, i) => i === index ? { ...item, body } : item))} /></> : null;
+      }}>
+    <EventEditorWorkspace
+      editor={editor}
+      revealControls={activeSection}
+      templatesHref={customEventGalleryHref(page.category)}
+      notices={
+        Object.keys(fieldErrors).length > 0 ? (
+          <div role="alert" className={styles.error}>
+            <p>Correct these fields to continue:</p>
+            {Object.entries(fieldErrors).map(([key, message]) => (
               <button
+                key={key}
                 type="button"
-                className={styles.secondary}
-                disabled={d.registryLinks.length >= 20}
-                onClick={() =>
-                  updateDetail("registryLinks", [...d.registryLinks, { label: "", url: "" }])
-                }
+                className={styles.errorLink}
+                onClick={() => focusField(key)}
               >
-                Add registry link
+                {message}
               </button>
-            </div>
-            <div className={styles.group}>
-              <h2>Page sections</h2>
-              <p>Move sections to change their order on the page. Main event details and weather stay at the top.</p>
-              <ol className={styles.sectionOrder} aria-label="Page section order">
-                {sectionOrder.map((key, index) => (
-                  <li key={key} className={styles.sectionOrderRow}>
-                    <span>{sectionName(key)}</span>
-                    <div>
-                      <button type="button" className={styles.sectionMove} disabled={index === 0}
-                        aria-label={`Move ${sectionName(key)} up`} onClick={() => moveSection(key, -1)}>
-                        <ArrowUp size={18} aria-hidden="true" />
-                      </button>
-                      <button type="button" className={styles.sectionMove} disabled={index === sectionOrder.length - 1}
-                        aria-label={`Move ${sectionName(key)} down`} onClick={() => moveSection(key, 1)}>
-                        <ArrowDown size={18} aria-hidden="true" />
+            ))}
+          </div>
+        ) : null
+      }
+      preview={
+        <div className={styles.sharedPreview}>
+          <CustomEventPageContent
+            page={page}
+            showGuestActions
+            onGuestActionsChange={
+              busy
+                ? undefined
+                : (guestActions) =>
+                    setPage((current) =>
+                      current
+                        ? { ...current, details: { ...current.details, guestActions } }
+                        : current,
+                    )
+            }
+          />
+        </div>
+      }
+      controls={
+        <fieldset
+          disabled={busy}
+          className={styles.sharedControls}
+          aria-label="Event editing controls"
+        >
+          <EventEditorSections
+            menuContent={menuToggles}
+            activeSection={activeSection}
+            onSectionChange={setActiveSection}
+            sections={[
+              {
+                id: "details",
+                title: "Event details",
+                description: "Title, welcome, host, date and location.",
+                content: (
+                  <>
+                    {field("title", "Event title")}
+                    {field("description", "Welcome & overview")}
+                    {field("host", "Hosted by")}
+                    <div className={styles.columns}>
+                      {field("date", "Date", "date")}
+                      {field("time", "Begins", "time")}
+                      {field("endTime", "End time (optional)", "time")}
+                      {field("endDate", "End date (optional)", "date")}
+                    </div>
+                    {field("venue", "Venue")}
+                    {field("location", "Address or location")}
+                  </>
+                ),
+              },
+              {
+                id: "rsvp",
+                title: "RSVP",
+                description: "Guest response settings and contacts.",
+                content: (
+                  <>
+                    <div className={styles.group}>
+                      <h2>RSVP</h2>
+                      <label className={styles.check}>
+                        <input
+                          type="checkbox"
+                          checked={d.rsvpEnabled}
+                          onChange={(e) => updateDetail("rsvpEnabled", e.target.checked)}
+                        />
+                        Allow guests to RSVP
+                      </label>
+                      {d.rsvpEnabled && (
+                        <>
+                          {field("rsvpEmail", "RSVP email (optional)", "email")}
+                          {field("rsvpPhone", "RSVP phone (optional)", "tel")}
+                        </>
+                      )}
+                    </div>
+                  </>
+                ),
+              },
+              {
+                id: "registry",
+                title: "Gift List",
+                description: "Gift list and registry links.",
+                content: (
+                  <>
+                    <div className={styles.group}>
+                      <h2>Registry</h2>
+                      {d.registryLinks.map((link, index) => (
+                        <div key={index} className={styles.group}>
+                          <label className={styles.field}>
+                            Label
+                            <input
+                              {...fieldProps(`registry-${index}-label`)}
+                              value={link.label}
+                              maxLength={180}
+                              onChange={(e) =>
+                                updateDetail(
+                                  "registryLinks",
+                                  d.registryLinks.map((item, i) =>
+                                    i === index ? { ...item, label: e.target.value } : item,
+                                  ),
+                                )
+                              }
+                            />
+                            {fieldError(`registry-${index}-label`)}
+                          </label>
+                          <label className={styles.field}>
+                            Link
+                            <input
+                              {...fieldProps(`registry-${index}-url`)}
+                              type="url"
+                              value={link.url}
+                              onChange={(e) =>
+                                updateDetail(
+                                  "registryLinks",
+                                  d.registryLinks.map((item, i) =>
+                                    i === index ? { ...item, url: e.target.value } : item,
+                                  ),
+                                )
+                              }
+                            />
+                            {fieldError(`registry-${index}-url`)}
+                          </label>
+                          <button
+                            type="button"
+                            className={styles.secondary}
+                            onClick={() =>
+                              updateDetail(
+                                "registryLinks",
+                                d.registryLinks.filter((_, i) => i !== index),
+                              )
+                            }
+                          >
+                            Remove link
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        className={styles.secondary}
+                        disabled={d.registryLinks.length >= 20}
+                        onClick={() =>
+                          updateDetail("registryLinks", [
+                            ...d.registryLinks,
+                            { label: "", url: "" },
+                          ])
+                        }
+                      >
+                        Add registry link
                       </button>
                     </div>
-                  </li>
-                ))}
-              </ol>
-              <p className={styles.srOnly} role="status">{orderMessage}</p>
-              {d.sections.map((section, index) => (
-                <div key={index} className={styles.group}>
-                  <label className={styles.field}>
-                    Section heading
-                    <input
-                      {...fieldProps(`section-${index}-title`)}
-                      value={section.title}
-                      maxLength={180}
-                      onChange={(e) =>
-                        updateDetail(
-                          "sections",
-                          d.sections.map((item, i) =>
-                            i === index ? { ...item, title: e.target.value } : item,
-                          ),
-                        )
-                      }
-                    />
-                    {fieldError(`section-${index}-title`)}
-                  </label>
-                  <label className={styles.field}>
-                    Section content
-                    <textarea
-                      {...fieldProps(`section-${index}-body`)}
-                      value={section.body}
-                      maxLength={6000}
-                      rows={4}
-                      onChange={(e) =>
-                        updateDetail(
-                          "sections",
-                          d.sections.map((item, i) =>
-                            i === index ? { ...item, body: e.target.value } : item,
-                          ),
-                        )
-                      }
-                    />
-                    {fieldError(`section-${index}-body`)}
-                  </label>
-                  {section.map && <HeroImageEditor label="Replace source map"
-                    value={section.map.sourceImage} onBusyChange={setImageBusy}
-                    prepareImage={prepareArrivalMapImage}
-                    onChange={(sourceImage) => updateArrivalMapSource(sourceImage, index)} />}
-                  {section.map && <EventArrivalMap map={section.map} showProposed onRefresh={() => refreshArrivalMap(index)} onChange={(map) =>
-                    updateDetail("sections", d.sections.map((item, i) => i === index ? { ...item, map } : item))} />}
-                  {section.map && <button type="button" className={styles.secondary} onClick={() =>
-                    updateDetail("sections", d.sections.map((item, i) => {
-                      if (i !== index) return item;
-                      const { map: removedMap, ...sectionWithoutMap } = item;
-                      void removedMap;
-                      return sectionWithoutMap;
-                    }))}>Remove map</button>}
-                  <button
-                    type="button"
-                    className={styles.secondary}
-                    onClick={() => setPage((current) => current ? { ...current, details: removeCustomEventSection(current.details, index) } : current)}
-                  >
-                    Remove section
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                className={styles.secondary}
-                disabled={d.sections.length >= 20}
-                onClick={() => updateDetail("sections", [...d.sections, { title: "", body: "" }])}
-              >
-                Add section
-              </button>
-              {!d.sections.some((section) => section.map) && (
-                d.sections.length >= 20 && arrivalMapSectionIndex(d) < 0 ? (
-                  <button type="button" className={styles.secondary} disabled>Add parking / drop-off map</button>
-                ) : (
-                  <HeroImageEditor label="Add parking / drop-off map" onBusyChange={setImageBusy}
-                    prepareImage={prepareArrivalMapImage} onChange={updateArrivalMapSource} />
-                )
-              )}
-            </div>
-            <div className={styles.group}>
-              <h2>Design</h2>
-              <HeroImageEditor
-                label="Replace hero image"
-                prepareImage={prepareCustomEventHeroImage}
-                onBusyChange={setImageBusy}
-                onChange={(artwork) => setPage((current) => current ? {
-                  ...current,
-                  artwork,
-                  design: { ...current.design, description: "Hero image selected by the host." },
-                } : current)}
-              />
-              <p>{published ? "Your selected image is saved when you choose Save changes." : "Your selected image is saved when you choose Save draft or Publish."}</p>
-              <label className={styles.field}>
-                Layout
-                <select
-                  value={page.design.layout}
-                  onChange={(e) =>
-                    setPage({
-                      ...page,
-                      design: {
-                        ...page.design,
-                        layout: e.target.value as CustomEventPage["design"]["layout"],
-                      },
-                    })
-                  }
-                >
-                  {EVENT_DESIGN_LAYOUTS.map((layout) => (
-                    <option key={layout}>{layout}</option>
-                  ))}
-                </select>
-              </label>
-              <fieldset className={styles.field}>
-                <legend>Typography</legend>
-                <FontPairingSelect
-                  options={EVENT_DESIGN_FONT_PAIRS}
-                  value={page.design.font}
-                  onChange={(font) => setPage({ ...page, design: { ...page.design, font } })}
-                />
-              </fieldset>
-              <div className={styles.columns}>
-                {(["page", "surface", "ink", "accent"] as const).map((key) => (
-                  <label key={key} className={styles.field}>
-                    {key}
-                    <input
-                      type="color"
-                      value={page.design.colors[key]}
-                      onChange={(e) =>
-                        setPage({
-                          ...page,
-                          design: {
-                            ...page.design,
-                            colors: { ...page.design.colors, [key]: e.target.value },
-                          },
-                        })
-                      }
-                    />
-                  </label>
-                ))}
-              </div>
-              <button type="button" className={styles.secondary} onClick={() => setRedesign(true)}>
-                Redesign with Envitefy
-              </button>
-            </div>
-          </fieldset>
-          {/* biome-ignore lint/a11y/noNoninteractiveTabindex: The scrollable preview needs focus for native keyboard scrolling. */}
-          <div className={styles.preview} role="region" aria-label="Event page preview panel" tabIndex={0} style={editing ? undefined : { display: "block" }}>
-            <CustomEventPageContent page={page} showGuestActions onGuestActionsChange={busy ? undefined : (guestActions) => setPage((current) => current ? ({ ...current, details: { ...current.details, guestActions } }) : current)} />
-          </div>
-        </div>
+                  </>
+                ),
+              },
+              {
+                id: "sections",
+                title: "Page sections",
+                description: "Arrange and edit guest information.",
+                content: (
+                  <>
+                    <EventSectionPalette />
+                    <div className={styles.group}>
+                      {!d.sections.some((section) => section.map) &&
+                        (d.sections.length >= 20 && arrivalMapSectionIndex(d) < 0 ? (
+                          <button type="button" className={styles.secondary} disabled>
+                            Add parking / drop-off map
+                          </button>
+                        ) : (
+                          <HeroImageEditor
+                            label="Add parking / drop-off map"
+                            onBusyChange={setImageBusy}
+                            prepareImage={prepareArrivalMapImage}
+                            onChange={updateArrivalMapSource}
+                          />
+                        ))}
+                    </div>
+                  </>
+                ),
+              },
+              {
+                id: "design",
+                title: "Design",
+                description: "Photos, layout, typography and colors.",
+                content: (
+                  <>
+                    <div className={styles.group}>
+                      <h2>Design</h2>
+                      <HeroImageEditor
+                        label="Replace hero image"
+                        prepareImage={prepareCustomEventHeroImage}
+                        onBusyChange={setImageBusy}
+                        onChange={(artwork) =>
+                          setPage((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  artwork,
+                                  design: {
+                                    ...current.design,
+                                    description: "Hero image selected by the host.",
+                                  },
+                                }
+                              : current,
+                          )
+                        }
+                      />
+                      <p>
+                        {published
+                          ? "Your selected image is saved when you choose Save changes."
+                          : "Your selected image is saved when you choose Save draft or Publish."}
+                      </p>
+                      <CustomEventLayoutPicker
+                        page={page}
+                        onChange={(layout) =>
+                          setPage((current) =>
+                            current
+                              ? { ...current, design: { ...current.design, layout } }
+                              : current,
+                          )
+                        }
+                      />
+                      <fieldset className={styles.field}>
+                        <legend>Typography</legend>
+                        <FontPairingSelect
+                          options={EVENT_DESIGN_FONT_PAIRS}
+                          value={page.design.font}
+                          onChange={(font) =>
+                            setPage({ ...page, design: { ...page.design, font } })
+                          }
+                        />
+                      </fieldset>
+                      <div className={styles.columns}>
+                        {(["page", "surface", "ink", "accent"] as const).map((key) => (
+                          <label key={key} className={styles.field}>
+                            {key}
+                            <input
+                              type="color"
+                              value={page.design.colors[key]}
+                              onChange={(e) =>
+                                setPage({
+                                  ...page,
+                                  design: {
+                                    ...page.design,
+                                    colors: { ...page.design.colors, [key]: e.target.value },
+                                  },
+                                })
+                              }
+                            />
+                          </label>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.secondary}
+                        onClick={() => setRedesign(true)}
+                      >
+                        Redesign with Envitefy
+                      </button>
+                    </div>
+                  </>
+                ),
+              },
+              {
+                id: "link",
+                title: "Public link",
+                description: "Your event's public address.",
+                content: (
+                  <>
+                    <div className={styles.group}>
+                      <h2>Public link</h2>
+                      {savedId.current ? (
+                        <>
+                          <div className={styles.publicLinkField}>
+                            <label htmlFor="event-public-link" className={styles.field}>
+                              Custom link
+                            </label>
+                            <div
+                              className={styles.publicLinkControl}
+                              data-invalid={Boolean(linkError)}
+                            >
+                              <span className={styles.publicLinkPrefix}>envitefy.com/event/</span>
+                              <input
+                                id="event-public-link"
+                                className={styles.publicLinkInput}
+                                type="text"
+                                value={publicSlug}
+                                maxLength={MAX_PUBLIC_SLUG_LENGTH}
+                                placeholder="your-custom-link"
+                                autoCapitalize="none"
+                                autoCorrect="off"
+                                spellCheck={false}
+                                aria-invalid={Boolean(linkError)}
+                                aria-describedby="event-public-link-status"
+                                onChange={(event) => {
+                                  setPublicSlug(event.target.value);
+                                  setLinkError("");
+                                  setLinkMessage("");
+                                }}
+                              />
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            className={styles.secondary}
+                            disabled={busy || !publicSlug.trim() || publicSlug === savedPublicSlug}
+                            onClick={() => void savePublicLink()}
+                          >
+                            Save link
+                          </button>
+                          <p
+                            id="event-public-link-status"
+                            role={linkError ? "alert" : "status"}
+                            className={linkError ? styles.error : undefined}
+                          >
+                            {linkError ||
+                              linkMessage ||
+                              "Save link updates the URL immediately. Previous links keep working. Event details and design are saved separately."}
+                          </p>
+                        </>
+                      ) : (
+                        <p>Save a draft to create your public link, then edit it here.</p>
+                      )}
+                    </div>
+                  </>
+                ),
+              },
+            ]}
+          />
+        </fieldset>
+      }
+    >
+      {previewOnly && (
+        <dialog
+          ref={previewDialog}
+          className={styles.pagePreviewDialog}
+          aria-label="Event Page preview"
+          onCancel={() => setPreviewOnly(false)}
+        >
+          <header className={styles.pagePreviewHeader}>
+            <span>Event Page preview</span>
+            <button
+              type="button"
+              className={styles.secondary}
+              onClick={() => setPreviewOnly(false)}
+            >
+              Close
+            </button>
+          </header>
+          <EventSectionsReadOnly><CustomEventPageContent page={page} showGuestActions /></EventSectionsReadOnly>
+        </dialog>
       )}
       {redesign && (
         <EventCustomThemeDialog
@@ -818,6 +926,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
           }}
         />
       )}
-    </main>
+    </EventEditorWorkspace>
+    </EventSectionBuilderProvider>
   );
 }

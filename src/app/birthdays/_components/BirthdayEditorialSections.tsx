@@ -350,7 +350,7 @@ function StartWays() {
               </div>
             </div>
             <Link
-              href="/chat"
+              href="/event/birthdays"
               className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--birthday-yellow)] underline decoration-[#ffd66b]/40 underline-offset-8"
             >
               Create with Envitefy

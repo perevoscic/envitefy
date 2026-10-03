@@ -125,6 +125,7 @@ export function createLiveCardForm(timezone = "UTC"): LiveCardForm {
     eventType: "",
     design: "",
     referenceUrl: "",
+    generationQuality: "high",
     overview: "",
     date: "",
     startTime: "",
@@ -342,7 +343,6 @@ export function readLiveCardForm(value: unknown): LiveCardForm | null {
         : 12000);
   }
   form.eventType = LIVE_CARD_EVENT_TYPES.find((type) => type === source.eventType) || "";
-  if (source.generationQuality === "medium" || source.generationQuality === "high") form.generationQuality = source.generationQuality;
   form.format = source.format === "digital_flyer" ? "digital_flyer" : "live_card";
   if (Array.isArray(source.sourceEvidence))
     form.sourceEvidence = source.sourceEvidence.slice(0, 60).flatMap((item) => {

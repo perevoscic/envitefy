@@ -1,11 +1,13 @@
 // @ts-nocheck
 "use client";
+import { EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout, EventEditorInput as InputGroup } from "@/components/events/EventEditorFields";
+import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import { useEventHistoryClient } from "@/lib/event-history-client";
 import HeroImageEditor from "@/components/events/HeroImageEditor";
 import EventCanvas from "@/components/EventCanvas";
 
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
-import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
 import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
 import { BIRTHDAY_SAMPLES, birthdaySampleHeadline } from "@/data/birthday-samples";
@@ -16,10 +18,8 @@ import {
   Cake,
   CheckSquare,
   ChevronLeft,
-  ChevronRight,
   Gift,
   Image as ImageIcon,
-  Menu,
   Trash2,
   Type,
   Upload,
@@ -36,7 +36,6 @@ import {
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { ANNIVERSARY_DESIGN_CATALOG, BIRTHDAY_DESIGN_BY_ID, BIRTHDAY_DESIGN_CATALOG } from "@/data/birthday-design-catalog";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
-import { buildEventPath } from "@/utils/event-url";
 import { persistImageMediaValue as persistExistingImage } from "@/utils/media-upload-client";
 import { getRegistrySectionCopyForCategory } from "@/utils/registry-links";
 import BirthdayDesignThemes from "./_components/BirthdayDesignThemes";
@@ -264,61 +263,6 @@ const INITIAL_DATA = {
   ],
 };
 
-const MenuCard = ({ title, icon, desc, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="w-full text-left group bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex items-start gap-4"
-  >
-    <div className="bg-slate-50 p-3 rounded-lg text-slate-600 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors">
-      {icon}
-    </div>
-    <div className="flex-1">
-      <div className="flex justify-between items-center mb-1">
-        <h3 className="font-semibold text-slate-800">{title}</h3>
-        <ChevronRight
-          size={16}
-          className="text-slate-300 group-hover:text-indigo-400 transform group-hover:translate-x-1 transition-all"
-        />
-      </div>
-      <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
-    </div>
-  </button>
-);
-
-const EditorLayout = ({ title, onBack, children }) => (
-  <div className="animate-fade-in-right">
-    <div className="sticky top-0 z-10 bg-white flex items-center mb-6 pb-4 border-b border-slate-100 relative">
-      <button
-        aria-label="Back to details"
-        onClick={onBack}
-        className="mr-3 p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
-      >
-        <ChevronLeft size={20} />
-      </button>
-      <h2 className="text-lg font-serif font-bold text-slate-800 absolute left-1/2 transform -translate-x-1/2 w-full text-center pointer-events-none">
-        {title}
-      </h2>
-    </div>
-    {children}
-  </div>
-);
-
-const InputGroup = ({ label, value, onChange, type = "text", placeholder = "" }) => (
-  <div>
-    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
-      {label}
-    </label>
-    <input
-      aria-label={label}
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none"
-    />
-  </div>
-);
 
 // Helper function to calculate luminance from hex color (0-1, higher = lighter)
 const getLuminance = (hex: string): number => {
@@ -399,7 +343,7 @@ const _ThemeSwatch = ({
 export default function BirthdayTemplateCustomizePage() {
   const eventHistoryClient = useEventHistoryClient();
   const templateEditor = useTemplateEditor();
-  const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
+  const persistImageMediaValue = async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null;
   const search = useTemplateSearchParams();
   const router = useRouter();
   const { allowNavigation } = useProgressNavigation();
@@ -426,7 +370,7 @@ export default function BirthdayTemplateCustomizePage() {
   )?.id;
   const initialTemplateId = catalogTemplateId || birthdayTemplateCatalog[0]?.id;
   const [activeTemplateId, setActiveTemplateId] = useTemplateState<string | undefined>("activeTemplateId", initialTemplateId);
-  const [activeVariationId, setActiveVariationId] = useTemplateState<string | undefined>("activeVariationId", 
+  const [activeVariationId, setActiveVariationId] = useTemplateState<string | undefined>("activeVariationId",
     variationIdParam ||
       birthdayTemplateCatalog.find((t) => t.id === initialTemplateId)?.variations?.[0]?.id ||
       birthdayTemplateCatalog[0]?.variations?.[0]?.id,
@@ -479,27 +423,20 @@ export default function BirthdayTemplateCustomizePage() {
     mobileMenuOpen,
     openMobileMenu,
     closeMobileMenu,
-    previewTouchHandlers,
+    dismissMobileMenu, previewTouchHandlers,
     drawerTouchHandlers,
-  } = useMobileDrawer();
+  } = useMobileDrawer(true, "event-actions", true);
   const [_themesExpanded, setThemesExpanded] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const fontListRef = useRef<HTMLDivElement | null>(null);
   const [fontScrollTop, _setFontScrollTop] = useState(0);
   const [activeSection, setActiveSection] = useTemplateState<string>("activeSection", "details");
   const [submitting, setSubmitting] = useState(false);
-  const [uploadingAssets, setUploadingAssets] = useState(false);
-  const assetUploadTokenRef = useRef(
-    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-      ? crypto.randomUUID()
-      : `birthday-upload-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-  );
-  const assetUploadCounterRef = useRef(0);
-  const bumpAssetUploadCounter = useCallback((delta: number) => {
-    assetUploadCounterRef.current = Math.max(0, assetUploadCounterRef.current + delta);
-    setUploadingAssets(assetUploadCounterRef.current > 0);
-  }, []);
-  const [newHost, setNewHost] = useTemplateState("newHost", { name: "", role: "" });
+  const uploadingAssets = false;
+  const assetUploadTokenRef = useRef(crypto.randomUUID());
+
+
+const [newHost, setNewHost] = useTemplateState("newHost", { name: "", role: "" });
   const [newRegistry, setNewRegistry] = useTemplateState("newRegistry", { label: "", url: "" });
   const designGalleryHref = React.useMemo(() => {
     if (templateEditor) return `/${templateEditor.category}/templates`;
@@ -589,40 +526,8 @@ export default function BirthdayTemplateCustomizePage() {
     }));
   };
 
-  const uploadBirthdayAsset = useCallback(
-    async (file: File) => {
-      if (!file) return null;
-      if (templateEditor) return templateEditor.previewPhoto(file);
-      bumpAssetUploadCounter(1);
-      try {
-        const formData = new FormData();
-        formData.append("file", file, file.name);
-        if (editEventId) {
-          formData.append("eventId", editEventId);
-        } else {
-          formData.append("uploadToken", assetUploadTokenRef.current);
-        }
-        const res = await fetch("/api/uploads/birthday-asset", {
-          method: "POST",
-          body: formData,
-        });
-        if (!res.ok) {
-          const text = await res.text().catch(() => "");
-          throw new Error(text || "Upload failed");
-        }
-        const payload = await res.json().catch(() => null);
-        return payload?.url || null;
-      } catch (err) {
-        console.error("[Birthday] asset upload failed", err);
-        return null;
-      } finally {
-        bumpAssetUploadCounter(-1);
-      }
-    },
-    [bumpAssetUploadCounter],
-  );
 
-  const handleGalleryUpload = useCallback(
+const handleGalleryUpload = useCallback(
     async (e) => {
       const files = Array.from(e.target.files || []);
       if (!files.length) return;
@@ -641,23 +546,8 @@ export default function BirthdayTemplateCustomizePage() {
           ...entries.map(({ id, previewUrl }) => ({ id, url: previewUrl })),
         ],
       }));
-      if (templateEditor) return;
-      for (const entry of entries) {
-        const uploadedUrl = await uploadBirthdayAsset(entry.file);
-        if (!uploadedUrl) continue;
-        setData((prev) => ({
-          ...prev,
-          gallery: prev.gallery.map((item) => {
-            if (item.id !== entry.id || item.url !== entry.previewUrl) return item;
-            if (entry.previewUrl.startsWith("blob:")) {
-              URL.revokeObjectURL(entry.previewUrl);
-            }
-            return { ...item, url: uploadedUrl };
-          }),
-        }));
-      }
     },
-    [uploadBirthdayAsset],
+    [templateEditor],
   );
 
   const removeGalleryImage = useCallback((id) => {
@@ -998,218 +888,138 @@ export default function BirthdayTemplateCustomizePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editEventId]);
 
-  const handlePublish = useCallback(async () => {
-      if (templateEditor && !templateEditor.authenticated) { await templateEditor.requestSave(); return; }
-    if (submitting) return;
-    setSubmitting(true);
-    if (uploadingAssets) {
-      alert("Still uploading images—please wait for the uploads to finish.");
-      setSubmitting(false);
-      return;
-    }
-    try {
-      let startISO: string | null = null;
-      let endISO: string | null = null;
-      if (data.date) {
-        const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
-        const endLocal = getBirthdayEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
-        if (data.endTime && !endLocal) {
-          throw new Error("End time must be after the start. For an overnight party, choose the next day's end date.");
-        }
-        startISO = start.toISOString();
-        endISO = endLocal ? new Date(endLocal).toISOString() : null;
+  const buildEventPayload = useCallback(async () => {
+    let startISO: string | null = null;
+    let endISO: string | null = null;
+    if (data.date) {
+      const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
+      const endLocal = getBirthdayEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
+      if (data.endTime && !endLocal) {
+        throw new Error("End time must be after the start. For an overnight party, choose the next day's end date.");
       }
-
-      const locationParts = [data.venue, data.address, data.city, data.state].filter(Boolean);
-      const location = locationParts.length > 0 ? locationParts.join(", ") : undefined;
-
-      // Convert hero/background/gallery uploads so they persist
-      const heroToSave =
-        (await persistImageMediaValue({
-          value: data.images.hero,
-          eventId: editEventId || undefined,
-          uploadToken: editEventId ? undefined : assetUploadTokenRef.current,
-          fileName: "birthday-hero.png",
-        })) || resolveBirthdayTemplateHero(template?.heroImageName) || null;
-      const headlineBgToSave = await persistImageMediaValue({
-        value: data.images.headlineBg,
+      startISO = start.toISOString();
+      endISO = endLocal ? new Date(endLocal).toISOString() : null;
+    }
+    const locationParts = [data.venue, data.address, data.city, data.state].filter(Boolean);
+    const location = locationParts.length > 0 ? locationParts.join(", ") : undefined;
+    const heroToSave =
+      (await persistImageMediaValue({
+        value: data.images.hero,
         eventId: editEventId || undefined,
         uploadToken: editEventId ? undefined : assetUploadTokenRef.current,
-        fileName: "birthday-headline-bg.png",
-      });
-      const galleryToSave = await Promise.all(
-        (data.gallery || []).map(async (item) => ({
-          ...item,
-          url:
-            (await persistImageMediaValue({
-              value: item.url,
-              eventId: editEventId || undefined,
-              uploadToken: editEventId ? undefined : assetUploadTokenRef.current,
-              fileName: `birthday-gallery-${item.id || "image"}.png`,
-            })) || item.url,
-        })),
-      );
-
-      const currentProfessionalTheme =
-        PROFESSIONAL_THEMES.find((theme) => theme.id === data.theme.professionalThemeId) ||
-        PROFESSIONAL_THEMES[0];
-
-      const professionalPalette = getProfessionalThemePalette(currentProfessionalTheme);
-
-      const currentFont = FONTS[data.theme.font] || FONTS.playfair;
-      const currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
-      const templateIdForSave = template?.id || activeTemplateId || "party-pop";
-      const variationIdForSave =
-        data.theme?.professionalThemeId ||
-        activeVariationId ||
-        template?.variations?.[0]?.id ||
-        templateIdForSave;
-      const themeClasses =
-        PROFESSIONAL_THEME_CLASSES[variationIdForSave] ||
-        PROFESSIONAL_THEME_CLASSES[data.theme?.professionalThemeId || ""] ||
-        null;
-
-      const celebrationTitle = data.headlineTitle || (!editEventId ? birthdaySampleHeadline(data.theme.professionalThemeId, data.childName, data.age) : undefined) || (isAnniversaryDesign
-        ? `${data.childName}'s ${data.age}${getAgeSuffix(data.age)} Anniversary`
-        : `${data.childName}'s ${data.age}${getAgeSuffix(data.age)} Birthday`);
-      const payload: any = {
-        title: celebrationTitle,
-        data: {
-          category: isAnniversaryDesign ? "Anniversaries" : "Birthdays",
-          ownership: "owned",
-          createdVia: "birthday-renderer",
-          status: "published",
-          draftStatus: "published",
-          occasion: isAnniversaryDesign ? "anniversary" : "birthday",
-          createdManually: true,
-          startISO,
-          startAt: startISO,
-          start: startISO,
-          endISO,
-          endAt: endISO,
-          end: endISO,
-          date: data.date,
-          time: data.time,
-          endTime: data.endTime,
-          endDate: data.endTime ? data.endDate || data.date : "",
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          location,
-          venue: data.venue || undefined,
-          address: data.address || undefined,
-          city: data.city || undefined,
-          state: data.state || undefined,
-          description: data.partyDetails?.notes || undefined,
-          rsvp: data.rsvp.isEnabled ? data.rsvp.deadline || undefined : undefined,
-          rsvpEnabled: data.rsvp.isEnabled,
-          rsvpDeadline: data.rsvp.deadline || undefined,
-          numberOfGuests: 0,
-          templateId: templateIdForSave,
-          variationId: variationIdForSave,
-          // Customization data
-          birthdayName: data.childName,
-          childName: data.childName,
-          age: data.age,
-          partyDetails: data.partyDetails,
-          hosts: data.hosts,
-          theme: {
-            ...themeClasses,
-            ...currentProfessionalTheme,
-            ...data.theme,
-            id: variationIdForSave,
-            name: currentProfessionalTheme.name || themeClasses?.name || "Birthday Theme",
-            fontFamily: currentFont.preview,
-            fontSizeH1: currentSize.h1,
-            fontSizeH2: currentSize.h2,
-            fontSizeBody: currentSize.body,
-          },
-          fontId: data.theme.font,
-          fontSize: data.theme.fontSize,
+        fileName: "birthday-hero.png",
+      })) || resolveBirthdayTemplateHero(template?.heroImageName) || null;
+    const headlineBgToSave = await persistImageMediaValue({
+      value: data.images.headlineBg,
+      eventId: editEventId || undefined,
+      uploadToken: editEventId ? undefined : assetUploadTokenRef.current,
+      fileName: "birthday-headline-bg.png",
+    });
+    const galleryToSave = await Promise.all(
+      (data.gallery || []).map(async (item) => ({
+        ...item,
+        url:
+          (await persistImageMediaValue({
+            value: item.url,
+            eventId: editEventId || undefined,
+            uploadToken: editEventId ? undefined : assetUploadTokenRef.current,
+            fileName: `birthday-gallery-${item.id || "image"}.png`,
+          })) || item.url,
+      })),
+    );
+    const currentProfessionalTheme =
+      PROFESSIONAL_THEMES.find((theme) => theme.id === data.theme.professionalThemeId) ||
+      PROFESSIONAL_THEMES[0];
+    const professionalPalette = getProfessionalThemePalette(currentProfessionalTheme);
+    const currentFont = FONTS[data.theme.font] || FONTS.playfair;
+    const currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
+    const templateIdForSave = template?.id || activeTemplateId || "party-pop";
+    const variationIdForSave =
+      data.theme?.professionalThemeId ||
+      activeVariationId ||
+      template?.variations?.[0]?.id ||
+      templateIdForSave;
+    const themeClasses =
+      PROFESSIONAL_THEME_CLASSES[variationIdForSave] ||
+      PROFESSIONAL_THEME_CLASSES[data.theme?.professionalThemeId || ""] ||
+      null;
+    const celebrationTitle = data.headlineTitle || (!editEventId ? birthdaySampleHeadline(data.theme.professionalThemeId, data.childName, data.age) : undefined) || (isAnniversaryDesign
+      ? `${data.childName}'s ${data.age}${getAgeSuffix(data.age)} Anniversary`
+      : `${data.childName}'s ${data.age}${getAgeSuffix(data.age)} Birthday`);
+    const payload: any = {
+      title: celebrationTitle,
+      data: {
+        category: isAnniversaryDesign ? "Anniversaries" : "Birthdays",
+        ownership: "owned",
+        createdVia: "birthday-renderer",
+        status: "published",
+        draftStatus: "published",
+        occasion: isAnniversaryDesign ? "anniversary" : "birthday",
+        createdManually: true,
+        startISO,
+        startAt: startISO,
+        start: startISO,
+        endISO,
+        endAt: endISO,
+        end: endISO,
+        date: data.date,
+        time: data.time,
+        endTime: data.endTime,
+        endDate: data.endTime ? data.endDate || data.date : "",
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        location,
+        venue: data.venue || undefined,
+        address: data.address || undefined,
+        city: data.city || undefined,
+        state: data.state || undefined,
+        description: data.partyDetails?.notes || undefined,
+        rsvp: data.rsvp.isEnabled ? data.rsvp.deadline || undefined : undefined,
+        rsvpEnabled: data.rsvp.isEnabled,
+        rsvpDeadline: data.rsvp.deadline || undefined,
+        numberOfGuests: 0,
+        templateId: templateIdForSave,
+        variationId: variationIdForSave,
+        // Customization data
+        birthdayName: data.childName,
+        childName: data.childName,
+        age: data.age,
+        partyDetails: data.partyDetails,
+        hosts: data.hosts,
+        theme: {
+          ...themeClasses,
+          ...currentProfessionalTheme,
+          ...data.theme,
+          id: variationIdForSave,
+          name: currentProfessionalTheme.name || themeClasses?.name || "Birthday Theme",
           fontFamily: currentFont.preview,
-          fontSizeClass: currentSize.h1,
-          themePalette: professionalPalette,
-          registries: data.registries
-            .filter((r) => r.url.trim())
-            .map((r) => ({
-              label: r.label.trim() || registryCopy.sectionLabel,
-              url: r.url.trim(),
-            })),
-          heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
-          customHeroImage: heroToSave || undefined,
-          heroImage: heroToSave || undefined,
-          images: {
-            ...data.images,
-            hero: heroToSave || undefined,
-            headlineBg: headlineBgToSave || undefined,
-          },
-          gallery: galleryToSave,
+          fontSizeH1: currentSize.h1,
+          fontSizeH2: currentSize.h2,
+          fontSizeBody: currentSize.body,
         },
-      };
-        payload.data.status = "published";
-        payload.data.draftStatus = "published";
-        payload.data.manualEditor = null;
-
-
-      if (templateEditor) { await templateEditor.persist(payload, "published"); return; }
-
-      let id: string | undefined;
-
-      if (editEventId) {
-        const res = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            title: payload.title,
-            data: payload.data,
-          }),
-        });
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(errorText || "Failed to update event. Please try again.");
-        }
-        id = editEventId;
-      } else {
-        const r = await eventHistoryClient.fetch("/api/history", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload),
-        });
-        if (!r.ok) {
-          const errorText = await r.text();
-          throw new Error(errorText || "Failed to create event. Please try again.");
-        }
-        const j = await r.json().catch(() => ({}));
-        id = (j as any)?.id as string | undefined;
-      }
-
-      if (id) {
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(
-            new CustomEvent(editEventId ? "history:updated" : "history:created", {
-              detail: editEventId
-                ? { id }
-                : {
-                    id,
-                    title: payload.title,
-                    created_at: new Date().toISOString(),
-                    data: payload.data,
-                  },
-            }),
-          );
-        }
-        const params = editEventId ? { updated: true, t: Date.now() } : { created: true };
-        allowNavigation(() => router.push(buildEventPath(id, payload.title, params)));
-      } else {
-        throw new Error(editEventId ? "Failed to update event" : "Failed to create event");
-      }
-    } catch (err: any) {
-      const msg = String(err?.message || err || "Failed to create event");
-      alert(msg);
-    } finally {
-      setSubmitting(false);
-    }
-  }, [templateEditor, 
+        fontId: data.theme.font,
+        fontSize: data.theme.fontSize,
+        fontFamily: currentFont.preview,
+        fontSizeClass: currentSize.h1,
+        themePalette: professionalPalette,
+        registries: data.registries
+          .filter((r) => r.url.trim())
+          .map((r) => ({
+            label: r.label.trim() || registryCopy.sectionLabel,
+            url: r.url.trim(),
+          })),
+        heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
+        customHeroImage: heroToSave || undefined,
+        heroImage: heroToSave || undefined,
+        images: {
+          ...data.images,
+          hero: heroToSave || undefined,
+          headlineBg: headlineBgToSave || undefined,
+        },
+        gallery: galleryToSave,
+      },
+    };
+    return payload;
+  }, [templateEditor,
     submitting,
     uploadingAssets,
     data,
@@ -1222,6 +1032,8 @@ export default function BirthdayTemplateCustomizePage() {
     editEventId,
     router,
   ]);
+
+  const editor = useEventPageEditor({ snapshot: { data, activeTemplateId, activeVariationId, newHost, newRegistry }, category: isAnniversaryDesign ? "Anniversaries" : "Birthdays", templateId: data.theme.professionalThemeId, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting, busy: uploadingAssets, onBusyChange: setSubmitting, buildPayload: buildEventPayload, templateCategory: isAnniversaryDesign ? "anniversaries" : "birthdays" });
 
   useEffect(() => {
     if (galleryIndex >= data.gallery.length) {
@@ -1279,7 +1091,7 @@ export default function BirthdayTemplateCustomizePage() {
           }
           onClick={() => setActiveView("headline")}
         />
-        
+
         <MenuCard
           title="Party Details"
           icon={<Cake size={18} />}
@@ -1642,10 +1454,9 @@ export default function BirthdayTemplateCustomizePage() {
   }
 
   return (
-    <div className="relative flex min-h-screen h-[100dvh] w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
-      <EventCanvas
+    <EventEditorWorkspace sectionEditors={{ "headline": renderHeadlineEditor, "design": renderDesignEditor, "partyDetails": renderPartyDetailsEditor, "hosts": renderHostsEditor, "photos": renderPhotosEditor, "rsvp": renderRsvpEditor, "registry": renderRegistryEditor, details: renderPartyDetailsEditor }} artwork={data.images.hero} editor={editor} templatesHref={isAnniversaryDesign ? "/event/anniversaries" : "/event/birthdays"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
+ preview={<EventCanvas
         ref={previewRef}
-        {...previewTouchHandlers}
         className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
         style={{
           WebkitOverflowScrolling: "touch",
@@ -1654,7 +1465,7 @@ export default function BirthdayTemplateCustomizePage() {
       >
         <div className="w-full min-w-0 mb-4 md:mb-8 transition-all duration-500 ease-in-out">
           <div className="shadow-2xl md:rounded-xl overflow-hidden relative z-0">
-            <HeroImageEditor filterEnabled={data.heroImageFilterEnabled !== false} onFilterChange={(heroImageFilterEnabled) => setData((prev) => ({ ...prev, heroImageFilterEnabled }))} value={data.images.hero} onChange={(hero) => setData((prev) => ({ ...prev, images: { ...prev.images, hero } }))} className="absolute left-4 top-4 z-30" />
+            <HeroImageEditor value={data.images.hero} onChange={(hero) => setData((prev) => ({ ...prev, images: { ...prev.images, hero } }))} className="absolute left-4 top-4 z-30" />
             <BirthdayRenderer heroImageFilterEnabled={data.heroImageFilterEnabled !== false}
               template={activeRenderTheme}
               heroImageUrl={data.images.hero || null}
@@ -1681,39 +1492,13 @@ export default function BirthdayTemplateCustomizePage() {
             />
           </div>
         </div>
-      </EventCanvas>
+      </EventCanvas>}
+ controls={<><ScrollHandoffContainer className="min-h-full">
 
-      {mobileMenuOpen && (
-        <div
-          className="nav-chrome-mobile-drawer-backdrop md:hidden fixed inset-0 z-10"
-          onClick={closeMobileMenu}
-          role="presentation"
-        ></div>
-      )}
-
-      <div
-        className={`nav-chrome-mobile-drawer w-full md:w-[400px] md:shrink-0 flex flex-col z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
-          mobileMenuOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-        {...drawerTouchHandlers}
-      >
-        <ScrollHandoffContainer className="flex-1">
-          {mobileMenuOpen && (
-            <div className="nav-chrome-mobile-drawer-header md:hidden sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-3">
-              <button
-                onClick={closeMobileMenu}
-                className="nav-chrome-mobile-drawer-back-button flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
-              >
-                <ChevronLeft size={14} />
-                Back to preview
-              </button>
-              <span className="text-sm font-semibold text-slate-700">Customize</span>
-            </div>
-          )}
           <div className="p-6 pt-4 md:pt-6">
             {(activeView === "main" || activeView === "images") && renderMainMenu()}
             {activeView === "headline" && renderHeadlineEditor()}
-            
+
             {activeView === "design" && renderDesignEditor()}
             {activeView === "partyDetails" && renderPartyDetailsEditor()}
             {activeView === "hosts" && renderHostsEditor()}
@@ -1721,55 +1506,7 @@ export default function BirthdayTemplateCustomizePage() {
             {activeView === "rsvp" && renderRsvpEditor()}
             {activeView === "registry" && renderRegistryEditor()}
           </div>
-        </ScrollHandoffContainer>
-
-        <div className="sticky bottom-0 border-t border-[rgba(112,97,168,0.14)] bg-[rgba(246,241,255,0.92)] p-4 backdrop-blur-xl">
-          <div className="flex gap-3">
-            {editEventId && (
-              <button
-                onClick={() => router.push(`/event/${editEventId}`)}
-                className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
-              >
-                Cancel
-              </button>
-            )}
-            {!templateEditor && <LegacyTemplateDraftButton category={isAnniversaryDesign ? "anniversaries" : "birthdays"} templateId={data.theme.professionalThemeId} eventId={editEventId} snapshot={{ data, activeView, activeTemplateId, activeVariationId, activeSection, newHost, newRegistry }} disabled={submitting} ready={!loadingExisting} />}
-            <button
-              onClick={handlePublish}
-              disabled={submitting || uploadingAssets}
-              className={`${
-                editEventId ? "flex-1" : "w-full"
-              } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
-            >
-              {submitting
-                ? editEventId
-                  ? "Saving..."
-                  : "Publishing..."
-                : editEventId
-                  ? "Save"
-                  : templateEditor && !templateEditor.authenticated ? "Save and continue" : "Publish"}
-            </button>
-          </div>
-          {uploadingAssets && (
-            <p className="mt-2 text-xs text-slate-500">
-              Uploading one or more images—publish will finish once the upload completes.
-            </p>
-          )}
-        </div>
-      </div>
-
-      {!mobileMenuOpen && (
-        <div className="md:hidden fixed bottom-4 right-4 z-30">
-          <button
-            type="button"
-            onClick={openMobileMenu}
-            className="nav-chrome-mobile-drawer-trigger flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold"
-          >
-            <Menu size={18} />
-            Edit
-          </button>
-        </div>
-      )}
-    </div>
+        </ScrollHandoffContainer></>}
+></EventEditorWorkspace>
   );
 }

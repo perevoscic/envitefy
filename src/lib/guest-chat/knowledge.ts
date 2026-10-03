@@ -56,7 +56,7 @@ export const guestChatKnowledgeItems: GuestChatKnowledgeItem[] = [
     id: "concierge",
     question: "What is Envitefy Create?",
     answer:
-      "Envitefy Create is the chat that creates an event from a message, upload, or screenshot. It asks for missing details, then drafts the live invitation, RSVP, and guest page for you to review before sharing.",
+      "Envitefy Create includes the guided Live Card builder, Event Page template editors, and the separate Sign-up Form builder. Choose a design, enter the event details, review, then explicitly save or publish. This help chat answers questions about those tools.",
     keywords: ["concierge", "chat", "ai", "message", "draft", "assistant", "envitefy concierge", "create", "envitefy create"],
   },
   {

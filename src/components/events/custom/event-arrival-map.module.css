@@ -5,42 +5,44 @@
 }
 .map {
   position: relative;
-  display: block;
   width: 100%;
-  padding: 0;
+  min-width: 0;
   border: 1px solid currentColor;
   border-radius: 12px;
   overflow: hidden;
   background: var(--event-surface, #fff);
   color: var(--event-ink, #20332c);
 }
-button.map {
-  cursor: crosshair;
+.viewport {
+  position: relative;
+  overflow: hidden;
 }
-.map img {
+.viewport img {
+  position: absolute;
   display: block;
-  width: 100%;
+  max-width: none;
   height: auto;
+}
+.attribution {
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: 100% auto;
 }
 .pin {
   position: absolute;
   transform: translate(-50%, -50%);
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   background: #24483c;
   color: #fff;
   font:
-    700 15px system-ui,
+    700 16px system-ui,
     sans-serif;
-  border: 2px solid white;
+  border: 2px solid #fff;
   border-radius: 50%;
   box-shadow: 0 1px 6px #0006;
-}
-.pin[data-confirmed="false"] {
-  background: #70420f;
-  border-style: dashed;
 }
 .legend {
   list-style: none;
@@ -66,83 +68,11 @@ button.map {
     700 14px system-ui,
     sans-serif;
 }
+.location {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .legend p {
   margin: 4px 0;
   white-space: pre-wrap;
-}
-.legend a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  text-decoration: underline;
-}
-.hint {
-  font-size: 14px;
-}
-.tools {
-  display: grid;
-  gap: 12px;
-  font:
-    16px / 1.5 system-ui,
-    sans-serif;
-}
-.tools p {
-  margin: 0;
-}
-.tools label {
-  display: grid;
-  gap: 6px;
-}
-.tools input,
-.tools select,
-.tools textarea {
-  min-height: 44px;
-  min-width: 0;
-  width: 100%;
-  padding: 8px;
-  background: white;
-  color: #20332c;
-  border: 1px solid #75827c;
-  border-radius: 8px;
-}
-.tools button,
-.remove {
-  min-height: 44px;
-  padding: 8px 16px;
-  background: #24483c;
-  color: white;
-  border: 1px solid #24483c;
-  border-radius: 8px;
-  font: inherit;
-  cursor: pointer;
-}
-.tools button:disabled,
-.remove:disabled {
-  opacity: 0.55;
-  cursor: default;
-}
-.arrival button:focus-visible,
-.source summary:focus-visible,
-.tools input:focus-visible,
-.tools select:focus-visible,
-.tools textarea:focus-visible {
-  outline: 3px solid #7b50b0;
-  outline-offset: 3px;
-}
-.arrival button:active {
-  opacity: 0.8;
-}
-.source summary {
-  display: flex;
-  align-items: center;
-  min-height: 44px;
-  cursor: pointer;
-  text-decoration: underline;
-}
-.source img {
-  display: block;
-  max-width: 100%;
-  height: auto;
-  margin-top: 8px;
-  border-radius: 8px;
 }

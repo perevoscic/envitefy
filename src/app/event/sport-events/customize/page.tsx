@@ -1,5 +1,8 @@
 // @ts-nocheck
 "use client";
+import { EventEditorInput as InputGroup, EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout } from "@/components/events/EventEditorFields";
+import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import { useEventHistoryClient } from "@/lib/event-history-client";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
 
@@ -7,7 +10,6 @@ import HeroImageEditor from "@/components/events/HeroImageEditor";
 import EventCanvas from "@/components/EventCanvas";
 
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
-import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
 import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
 import { normalizeEventGuestActions } from "@/lib/event-guest-actions";
@@ -20,12 +22,9 @@ import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import {
   CheckSquare,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   ChevronUp,
   Edit2,
   MapPin,
-  Menu,
   Palette,
   Type,
 } from "lucide-react";
@@ -36,7 +35,6 @@ import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
 import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
-import { buildEventPath } from "@/utils/event-url";
 import { persistImageMediaValue as persistExistingImage } from "@/utils/media-upload-client";
 
 type FieldSpec = {
@@ -208,66 +206,6 @@ const baseInputClass =
 const baseTextareaClass =
   "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]";
 
-const InputGroup = ({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  readOnly = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: string;
-  readOnly?: boolean;
-}) => {
-  const [localValue, setLocalValue] = useState(value);
-
-  // Sync local state when value prop changes (from external updates)
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
-
-  const handleBlur = () => {
-    if (localValue !== value) {
-      onChange(localValue);
-    }
-  };
-
-  return (
-    <div className="space-y-2">
-      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-        {label}
-      </label>
-      {type === "textarea" ? (
-        <textarea
-        aria-label={label}
-          className={baseTextareaClass}
-          value={localValue}
-          onChange={(e) => { setLocalValue(e.target.value); onChange(e.target.value); }}
-          onBlur={handleBlur}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      ) : (
-        <input
-        aria-label={label}
-          type={type}
-          className={baseInputClass}
-          value={localValue}
-          onChange={(e) => { setLocalValue(e.target.value); onChange(e.target.value); }}
-          onBlur={handleBlur}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      )}
-    </div>
-  );
-};
-
-InputGroup.displayName = "InputGroup";
 
 const ThemeSwatch = ({
   theme,
@@ -294,37 +232,6 @@ const ThemeSwatch = ({
   </button>
 );
 
-const MenuCard = ({
-  title,
-  desc,
-  icon,
-  onClick,
-}: {
-  title: string;
-  desc: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="w-full text-left group bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex items-start gap-4"
-  >
-    <div className="bg-slate-50 p-3 rounded-lg text-slate-600 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors">
-      {icon}
-    </div>
-    <div className="flex-1">
-      <div className="flex justify-between items-center mb-1">
-        <h3 className="font-semibold text-slate-800">{title}</h3>
-        <ChevronRight
-          size={16}
-          className="text-slate-300 group-hover:text-indigo-400 transform group-hover:translate-x-1 transition-all"
-        />
-      </div>
-      <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
-    </div>
-  </button>
-);
 
 function buildSportSpecificConfig(
   baseConfig: SimpleTemplateConfig,
@@ -373,7 +280,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
   const eventHistoryClient = useEventHistoryClient();
     const templateEditor = useTemplateEditor();
-  const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
+  const persistImageMediaValue = async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null;
   const search = useTemplateSearchParams();
     const router = useRouter();
   const { allowNavigation } = useProgressNavigation();
@@ -449,9 +356,9 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       mobileMenuOpen,
       openMobileMenu,
       closeMobileMenu,
-      previewTouchHandlers,
+      dismissMobileMenu, previewTouchHandlers,
       drawerTouchHandlers,
-    } = useMobileDrawer();
+    } = useMobileDrawer(true, "event-actions", true);
     const fontListRef = useRef<HTMLDivElement | null>(null);
     const [fontScrollTop, setFontScrollTop] = useState(0);
 
@@ -618,42 +525,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       return hasDarkToken || hasDarkHex || idHintsDark;
     }, [currentTheme]);
 
-    const EditorLayout = ({
-      title,
-      children,
-      onBack,
-      showBack = true,
-    }: {
-      title: string;
-      children: React.ReactNode;
-      onBack: () => void;
-      showBack?: boolean;
-    }) => (
-      <div className="animate-fade-in-right">
-        <div className="flex items-center mb-6 pb-4 border-b border-slate-100">
-          <div className="mr-3 w-8">
-            {showBack && (
-              <button
-                aria-label="Back to details"
-        onClick={onBack}
-                className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
-              >
-                <ChevronLeft size={20} />
-              </button>
-            )}
-          </div>
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mr-auto">
-            Customize
-          </span>
-          <h2 className="text-lg font-serif font-bold text-slate-800 absolute left-1/2 transform -translate-x-1/2">
-            {title}
-          </h2>
-        </div>
-        {children}
-      </div>
-    );
 
-    const rawTextClass = currentTheme?.text || "";
+const rawTextClass = currentTheme?.text || "";
     const forceLightText = isDarkBackground && !rawTextClass.toLowerCase().includes("text-white");
     const textClass = forceLightText ? "text-white" : rawTextClass || "text-white";
     const accentClass = forceLightText ? "text-white" : currentTheme?.accent || textClass;
@@ -741,191 +614,125 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       }));
     }, []);
 
-    const handlePublish = useCallback(async () => {
-      if (templateEditor && !templateEditor.authenticated) { await templateEditor.requestSave(); return; }
-      if (submitting) return;
-      setSubmitting(true);
-      try {
-        if (data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)) {
-          throw new Error("End time must be after the start. For an overnight event, choose the next end date.");
-        }
-
-        let startISO: string | null = null;
-        let endISO: string | null = null;
-        if (data.date) {
-          const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
-          const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
-          const end = endLocal ? new Date(endLocal) : null;
-          startISO = start.toISOString();
-          endISO = end?.toISOString() || null;
-        }
-
-        const heroToSave =
-          (await persistImageMediaValue({
-            value: data.hero,
-            eventId: editEventId || undefined,
-            fileName: `${config.slug}-hero.png`,
-            fallbackValue: config.defaultHero,
-          })) || config.defaultHero;
-
-        const validThemeId =
-          themeId && config.themes.find((t) => t.id === themeId)
-            ? themeId
-            : config.themes[0]?.id || "default-theme";
-        const themeToSave = config.themes.find((t) => t.id === validThemeId) || config.themes[0];
-        const validFontId =
-          data.fontId && SPORT_FONTS.find((f) => f.id === data.fontId)
-            ? data.fontId
-            : SPORT_FONTS[0]?.id || "anton";
-        const validFontSize =
-          data.fontSize && FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize)
-            ? data.fontSize
-            : "medium";
-        const currentSelectedFont = SPORT_FONTS.find((f) => f.id === validFontId) || SPORT_FONTS[0];
-        const currentSelectedSize =
-          FONT_SIZE_OPTIONS.find((o) => o.id === validFontSize) || FONT_SIZE_OPTIONS[1];
-
-        const payload: any = {
-          title: data.title || config.displayName,
-          data: {
-            category: config.category,
-            createdVia:
-              existingEventDataRef.current.createdVia === "sports-discovery-v1"
-                ? "sports-discovery-v1"
-                : "simple-template",
-            createdManually: existingEventDataRef.current.createdVia !== "sports-discovery-v1",
-            primaryOutput: "event_page",
-            requestedOutputs: ["event_page"],
-            activityProfile: existingEventDataRef.current.activityProfile || sportPreset.key,
-            eventArchetype: existingEventDataRef.current.eventArchetype || undefined,
-            discoverySource: existingEventDataRef.current.discoverySource || undefined,
-            startISO,
-            endISO,
-            endAt: endISO,
-            end: endISO,
-            endTime: data.endTime,
-            endDate: data.endDate,
-            guestActions: data.guestActions,
-            guestPlanning: data.guestPlanning,
-            location: locationParts || undefined,
-            venue: data.venue || undefined,
-            description: data.details || undefined,
-            rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
-            numberOfGuests: 0,
-            templateId: config.slug,
-            bodyDesignId: `${sportPreset.key}--${style || "stadium"}`,
-            templateConfig: {
-              displayName: config.displayName,
-              categoryLabel: config.categoryLabel || config.displayName,
-              detailFields: config.detailFields,
-              rsvpCopy: config.rsvpCopy,
-            },
-            customFields: {
-              ...data.extra,
-              advancedSections: advancedState,
-            },
-            advancedSections: advancedState,
-            heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
-            heroImage: heroToSave,
-            themeId: validThemeId,
-            theme: themeToSave,
-            fontId: validFontId,
-            fontSize: validFontSize,
-            fontFamily: currentSelectedFont?.css,
-            fontSizeClass: currentSelectedSize?.className,
-            time: data.time,
-            date: data.date,
-          },
-        };
-        payload.data.status = "published";
-        payload.data.draftStatus = "published";
-        payload.data.manualEditor = null;
-
-
-      if (templateEditor) { await templateEditor.persist(payload, "published"); return; }
-
-        if (editEventId) {
-          const res = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ title: payload.title, data: payload.data }),
-          });
-          if (!res.ok) {
-            const txt = await res.text().catch(() => "");
-            console.error("[Edit] Update failed:", res.status, txt);
-            throw new Error("Failed to update event");
-          }
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(
-              new CustomEvent("history:updated", {
-                detail: { id: editEventId },
-              }),
-            );
-          }
-          allowNavigation(() => router.push(
-            buildEventPath(editEventId, payload.title, {
-              updated: true,
-              t: Date.now(),
-            }),
-          ));
-        } else {
-          const res = await eventHistoryClient.fetch("/api/history", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify(payload),
-          });
-          const json = await res.json().catch(() => ({}));
-          const id = (json as any)?.id as string | undefined;
-          if (!id) throw new Error("Failed to create event");
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(
-              new CustomEvent("history:created", {
-                detail: {
-                  id,
-                  title: payload.title,
-                  created_at: (json as any)?.created_at || new Date().toISOString(),
-                  data: payload.data,
-                },
-              }),
-            );
-          }
-          allowNavigation(() => router.push(buildEventPath(id, payload.title, { created: true })));
-        }
-      } catch (err: any) {
-        alert(String(err?.message || err || "Failed to create event"));
-      } finally {
-        setSubmitting(false);
+    const buildEventPayload = useCallback(async () => {
+      if (data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)) {
+        throw new Error("End time must be after the start. For an overnight event, choose the next end date.");
       }
+      let startISO: string | null = null;
+      let endISO: string | null = null;
+      if (data.date) {
+        const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
+        const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
+        const end = endLocal ? new Date(endLocal) : null;
+        startISO = start.toISOString();
+        endISO = end?.toISOString() || null;
+      }
+      const heroToSave =
+        (await persistImageMediaValue({
+          value: data.hero,
+          eventId: editEventId || undefined,
+          fileName: `${config.slug}-hero.png`,
+          fallbackValue: config.defaultHero,
+        })) || config.defaultHero;
+      const validThemeId =
+        themeId && config.themes.find((t) => t.id === themeId)
+          ? themeId
+          : config.themes[0]?.id || "default-theme";
+      const themeToSave = config.themes.find((t) => t.id === validThemeId) || config.themes[0];
+      const validFontId =
+        data.fontId && SPORT_FONTS.find((f) => f.id === data.fontId)
+          ? data.fontId
+          : SPORT_FONTS[0]?.id || "anton";
+      const validFontSize =
+        data.fontSize && FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize)
+          ? data.fontSize
+          : "medium";
+      const currentSelectedFont = SPORT_FONTS.find((f) => f.id === validFontId) || SPORT_FONTS[0];
+      const currentSelectedSize =
+        FONT_SIZE_OPTIONS.find((o) => o.id === validFontSize) || FONT_SIZE_OPTIONS[1];
+      const payload: any = {
+        title: data.title || config.displayName,
+        data: {
+          category: config.category,
+          createdVia:
+            existingEventDataRef.current.createdVia === "sports-discovery-v1"
+              ? "sports-discovery-v1"
+              : "simple-template",
+          createdManually: existingEventDataRef.current.createdVia !== "sports-discovery-v1",
+          primaryOutput: "event_page",
+          requestedOutputs: ["event_page"],
+          activityProfile: existingEventDataRef.current.activityProfile || sportPreset.key,
+          eventArchetype: existingEventDataRef.current.eventArchetype || undefined,
+          discoverySource: existingEventDataRef.current.discoverySource || undefined,
+          startISO,
+          endISO,
+          endAt: endISO,
+          end: endISO,
+          endTime: data.endTime,
+          endDate: data.endDate,
+          guestActions: data.guestActions,
+          guestPlanning: data.guestPlanning,
+          location: locationParts || undefined,
+          venue: data.venue || undefined,
+          description: data.details || undefined,
+          rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
+          numberOfGuests: 0,
+          templateId: config.slug,
+          bodyDesignId: `${sportPreset.key}--${style || "stadium"}`,
+          templateConfig: {
+            displayName: config.displayName,
+            categoryLabel: config.categoryLabel || config.displayName,
+            detailFields: config.detailFields,
+            rsvpCopy: config.rsvpCopy,
+          },
+          customFields: {
+            ...data.extra,
+            advancedSections: advancedState,
+          },
+          advancedSections: advancedState,
+          heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
+          heroImage: heroToSave,
+          themeId: validThemeId,
+          theme: themeToSave,
+          fontId: validFontId,
+          fontSize: validFontSize,
+          fontFamily: currentSelectedFont?.css,
+          fontSizeClass: currentSelectedSize?.className,
+          time: data.time,
+          date: data.date,
+        },
+      };
+      return payload;
     }, [data.heroImageFilterEnabled, templateEditor,
       submitting,
-      data.date,
-      data.time,
-      data.title,
-      data.details,
-      data.guestActions,
-      data.guestPlanning,
-      data.endTime,
-      data.endDate,
-      data.venue,
-      data.hero,
-      data.rsvpEnabled,
-      data.rsvpDeadline,
-      data.extra,
+    data.date,
+    data.time,
+    data.title,
+    data.details,
+    data.guestActions,
+    data.guestPlanning,
+    data.endTime,
+    data.endDate,
+    data.venue,
+    data.hero,
+    data.rsvpEnabled,
+    data.rsvpDeadline,
+    data.extra,
       advancedState,
       locationParts,
-      config.category,
-      config.displayName,
-      config.slug,
-      config.defaultHero,
-      config.detailFields,
-      config.rsvpCopy,
+    config.category,
+    config.displayName,
+    config.slug,
+    config.defaultHero,
+    config.detailFields,
+    config.rsvpCopy,
       router,
       themeId,
-      sportPreset.key,
+    sportPreset.key,
       style,
     ]);
+
+    const editor = useEventPageEditor({ snapshot: { data, advancedState, themeId }, category: config.category, templateId: `${data.extra.sport || "football"}--${search?.get("style") || "stadium"}`, eventId: editEventId, historyClient: eventHistoryClient, ready: !_loadingExisting, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload, templateCategory: "sport-events" });
 
     const rsvpCopy = {
       menuTitle: config.rsvpCopy?.menuTitle || "RSVP",
@@ -1285,9 +1092,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
     );
 
     return (
-      <div className="relative flex min-h-screen h-[100dvh] w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
-        <EventCanvas
-          {...previewTouchHandlers}
+      <EventEditorWorkspace sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "rsvp": renderRsvpEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/sport-events"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
+ preview={<EventCanvas
           className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
           style={{
             WebkitOverflowScrolling: "touch",
@@ -1312,7 +1118,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                       sizes="100vw"
                     />
                   )}
-                <HeroImageEditor filterEnabled={data.heroImageFilterEnabled !== false} onFilterChange={(heroImageFilterEnabled) => setData((prev) => ({ ...prev, heroImageFilterEnabled }))} value={data.hero} onChange={(hero) => setData((prev) => ({ ...prev, hero }))} className="absolute inset-x-4 bottom-4 z-10 flex justify-center" />
+                <HeroImageEditor value={data.hero} onChange={(hero) => setData((prev) => ({ ...prev, hero }))} className="absolute inset-x-4 bottom-4 z-10 flex justify-center" />
 </div>
 </TemplateImageTone>
 
@@ -1564,33 +1370,9 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
               </div>
             </div>
           </div>
-        </EventCanvas>
+        </EventCanvas>}
+ controls={<><ScrollHandoffContainer className="min-h-full">
 
-        {mobileMenuOpen && (
-          <div
-            className="nav-chrome-mobile-drawer-backdrop md:hidden fixed inset-0 z-10"
-            onClick={closeMobileMenu}
-            role="presentation"
-          ></div>
-        )}
-
-        <div
-          className={`nav-chrome-mobile-drawer w-full md:w-[400px] md:shrink-0 flex flex-col z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
-            mobileMenuOpen ? "translate-x-0" : "translate-x-full"
-          }`}
-          {...drawerTouchHandlers}
-        >
-          <ScrollHandoffContainer className="flex-1">
-            <div className="nav-chrome-mobile-drawer-header md:hidden sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-3">
-              <button
-                onClick={closeMobileMenu}
-                className="nav-chrome-mobile-drawer-back-button flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
-              >
-                <ChevronLeft size={14} />
-                Back to preview
-              </button>
-              <span className="text-sm font-semibold text-slate-700">Customize</span>
-            </div>
 
             <div className="p-6 pt-4 md:pt-6">
               {(activeView === "main" || activeView === "images") && renderMainMenu()}
@@ -1605,51 +1387,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                 ) : null,
               )}
             </div>
-          </ScrollHandoffContainer>
-
-          <div className="sticky bottom-0 border-t border-[rgba(112,97,168,0.14)] bg-[rgba(246,241,255,0.92)] p-4 backdrop-blur-xl">
-            <div className="flex gap-3">
-              {editEventId && (
-                <button
-                  onClick={() => router.push(`/event/${editEventId}`)}
-                  className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
-                >
-                  Cancel
-                </button>
-              )}
-              {!templateEditor && <LegacyTemplateDraftButton category={"sport-events"} templateId={`${data.extra.sport || "football"}--${search?.get("style") || "stadium"}`} eventId={editEventId} snapshot={{ data, activeView, advancedState, themeId, activeSection }} disabled={submitting} ready={!_loadingExisting} />}
-            <button
-                onClick={handlePublish}
-                disabled={submitting}
-                className={`${
-                  editEventId ? "flex-1" : "w-full"
-                } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
-              >
-                {submitting
-                  ? editEventId
-                    ? "Saving..."
-                    : "Publishing..."
-                  : editEventId
-                    ? "Save"
-                    : templateEditor && !templateEditor.authenticated ? "Save and continue" : "Publish"}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {!mobileMenuOpen && (
-          <div className="md:hidden fixed bottom-4 right-4 z-30">
-            <button
-              type="button"
-              onClick={openMobileMenu}
-              className="nav-chrome-mobile-drawer-trigger flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold"
-            >
-              <Menu size={18} />
-              Edit
-            </button>
-          </div>
-        )}
-      </div>
+          </ScrollHandoffContainer></>}
+></EventEditorWorkspace>
     );
   };
 }

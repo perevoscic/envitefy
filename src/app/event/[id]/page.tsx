@@ -84,6 +84,8 @@ import {
 import { createServerTimingTracker } from "@/lib/server-timing";
 import { resolveEventShareImage, type EventShareImage } from "@/lib/share-image";
 import { resolveEventPageBackgroundColor, resolveEventThemeColor } from "@/lib/theme-color";
+import { EventPageCompositionProvider } from "@/components/events/EventPageCompositionContext";
+import { normalizeEventPageComposition } from "@/lib/event-page-composition";
 import { resolveAttachmentPreviewUrl } from "@/lib/upload-config";
 import {
   buildWeddingScanFlyerColorsFromImageColors,
@@ -1260,8 +1262,10 @@ export default async function EventPage({
           children.type === PickleballSkin
         ) ? "before-footer" : "after-content"}
       >
-        {scanMediaPolicy && isValidElement<{ imageUrl?: string | null }>(children) && "imageUrl" in children.props && (scanMediaPolicy.heroMode === "generated" || scanMediaPolicy.medical)
-          ? cloneElement(children, { imageUrl: generatedScanHero(data) }) : children}
+        <EventPageCompositionProvider value={normalizeEventPageComposition(data.eventPageComposition)}>
+          {scanMediaPolicy && isValidElement<{ imageUrl?: string | null }>(children) && "imageUrl" in children.props && (scanMediaPolicy.heroMode === "generated" || scanMediaPolicy.medical)
+            ? cloneElement(children, { imageUrl: generatedScanHero(data) }) : children}
+        </EventPageCompositionProvider>
       </ScanArtworkProvider>
       </ScannedScheduleProvider>
     </EventPageBackgroundStyle>

@@ -34,7 +34,6 @@ export function MainContentWrapper({
   const pathSegments = normalizedPath.split("/").filter(Boolean);
   const isStudioCardShare = pathSegments.length === 2 && pathSegments[0] === "card";
   const isEventSharePage = pathSegments.length === 2 && pathSegments[0] === "event" && !isCreateEventRoute(normalizedPath);
-  const isChatRoute = normalizedPath === "/chat";
   const isSettingsRoute = normalizedPath === "/settings";
   const isAdminRoute = normalizedPath === "/admin" || normalizedPath.startsWith("/admin/");
   const usesOwnLandingBackground =
@@ -62,11 +61,9 @@ export function MainContentWrapper({
     ? "0px"
     : isEventSharePage
       ? "0px"
-      : isChatRoute
-        ? "0px"
-        : !isDesktop && isAuthenticated
-          ? `var(--app-mobile-topbar-offset, ${MOBILE_TOPBAR_PT})`
-          : "max(0px, env(safe-area-inset-top))";
+      : !isDesktop && isAuthenticated
+        ? `var(--app-mobile-topbar-offset, ${MOBILE_TOPBAR_PT})`
+        : "max(0px, env(safe-area-inset-top))";
 
   const shellBgClass = isStudioCardShare
     ? "bg-neutral-950"
@@ -91,7 +88,7 @@ export function MainContentWrapper({
           : undefined,
         // Settings applies the inset to its cards so its page gradient reaches the navbar.
         paddingTop: isSettingsRoute ? "0px" : paddingTop,
-        paddingBottom: isChatRoute || isStudioCardShare ? "0px" : "max(0px, env(safe-area-inset-bottom))",
+        paddingBottom: isStudioCardShare ? "0px" : "max(0px, env(safe-area-inset-bottom))",
         paddingLeft,
         "--app-sidebar-width": paddingLeft,
         "--app-content-top-inset": paddingTop,

@@ -46,7 +46,7 @@ test("active customer entry points do not send visitors through retired Studio",
             ["src/middleware.ts", "src/components/ConditionalFooter.tsx"].includes(filename) &&
             ["/studio", "/studio/"].includes(value);
           const isOwnerEdit =
-            filename === "src/utils/event-edit-route.ts" && value === "/studio?editEvent=";
+            filename === "src/utils/event-edit-route.ts" && value === "/event/";
           if (!isAsset && !isRouteCheck && !isOwnerEdit) failures.push(`${filename}: ${value}`);
         }
       }
@@ -88,14 +88,14 @@ test("public copy promotes current creation paths without Studio CTAs", () => {
     /label: "Envitefy Create", href: "\/envitefy-create"/,
   );
   const maker = readSource("src/app/invitation-maker/page.tsx");
-  assert.equal([...maker.matchAll(/href="\/chat"/g)].length, 3);
+  assert.equal([...maker.matchAll(/href="\/live-cards"/g)].length, 3);
   assert.match(maker, /Create with Envitefy/);
   const weddings = readSource("src/app/weddings/WeddingsLandingView.tsx");
   assert.match(weddings, /const studioHref = "\/event\/weddings"/);
   assert.match(weddings, /href=\{studioHref\}[\s\S]*?Customize Your Wedding Invitation/);
 });
 
-test("guides direct creation to chat and wedding and birthday design to category templates", () => {
+test("guides direct creation to the Live Card builder and wedding and birthday design to category templates", () => {
   const filename = "src/app/guides/guide-content.tsx";
   const ast = ts.createSourceFile(filename, readSource(filename), ts.ScriptTarget.Latest, true);
   const declaration = ast.statements
@@ -105,9 +105,9 @@ test("guides direct creation to chat and wedding and birthday design to category
   assert.ok(declaration?.initializer);
   const { guidePages } = loadModule(`export const guidePages = ${declaration.initializer.getText(ast)};`);
   for (const [slug, label, href] of [
-    ["live-card-invitations", "Create with Envitefy", "/chat"],
-    ["rsvp-event-page", "Create with Envitefy", "/chat"],
-    ["registry-invitation-page", "Create with Envitefy", "/chat"],
+    ["live-card-invitations", "Create with Envitefy", "/live-cards"],
+    ["rsvp-event-page", "Create with Envitefy", "/live-cards"],
+    ["registry-invitation-page", "Create with Envitefy", "/live-cards"],
     ["wedding-event-page", "Browse wedding templates", "/weddings#templates"],
     ["birthday-rsvp-invitation", "Browse birthday templates", "/birthdays#templates"],
   ]) {
@@ -131,7 +131,7 @@ test("llms recommendations distinguish product introductions from creation and c
     const recommendation = llms.split("\n").find((line) => line.startsWith(`- For "${intent}"`));
     assert.ok(recommendation?.includes(`https://envitefy.com${destination}`), intent);
   }
-  assert.match(llms, /To start creating from a message, use https:\/\/envitefy\.com\/chat/);
+  assert.match(llms, /To create a Live Card, use https:\/\/envitefy\.com\/live-cards/);
 });
 
 test("owner artwork editing retains its encoded legacy route and Studio asset compatibility", () => {
@@ -141,9 +141,8 @@ test("owner artwork editing retains its encoded legacy route and Studio asset co
     "./event-url": {},
   });
   const artwork = { createdVia: "studio", studioCard: { imageUrl: "/studio/birthday.webp" } };
-  assert.equal(resolveArtworkEditHref("saved-event", artwork), "/studio?editEvent=saved-event");
-  assert.equal(resolveArtworkEditHref("saved/event?x=1", artwork), "/studio?editEvent=saved%2Fevent%3Fx%3D1");
+  assert.equal(resolveArtworkEditHref("saved-event", artwork), "/event/saved-event?tab=design");
+  assert.equal(resolveArtworkEditHref("saved/event?x=1", artwork), "/event/saved%2Fevent%3Fx%3D1?tab=design");
   assert.equal(resolveArtworkEditHref("no-artwork", { createdVia: "manual" }), null);
   assert.ok(existsSync("public/studio/birthday.webp"));
-  assert.match(readSource("src/lib/concierge/history-payload.ts"), /birthday: "\/studio\/birthday\.webp"/);
 });

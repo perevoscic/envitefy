@@ -9,6 +9,11 @@ const { renderToStaticMarkup } = require("react-dom/server");
 const { createJiti } = require("jiti");
 
 const resolveFilename = Module._resolveFilename;
+const originalLoad = Module._load;
+Module._load = function (request, ...rest) {
+  if (request === "lucide-react") return new Proxy({}, { get: () => () => null });
+  return originalLoad.call(this, request, ...rest);
+};
 Module._resolveFilename = function (request, parent, ...rest) {
   return resolveFilename.call(
     this,
@@ -46,13 +51,20 @@ const profiles = require("../../data/template-body-presentations.json");
 const audit = require("../../../docs/design/template-body-audit-2026-09-11.json");
 const presentation = { layout: "book", surface: "frame", heading: "number", flow: "memories" };
 
-test("the audit covers every public template and every override has a distinct arrangement and shape in its category", () => {
+test("the dated audit still covers every body override with a distinct arrangement and shape in its category", () => {
   assert.deepEqual(new Set(Object.keys(profiles)), new Set(TEMPLATE_CATEGORIES.map((c) => c.slug)));
   for (const { slug } of TEMPLATE_CATEGORIES) {
     const templates = getPublicTemplates(slug);
     const entries = audit.filter((row) => row.category === slug);
-    assert.equal(entries.length, templates.length, slug);
-    assert.deepEqual(new Set(entries.map((e) => e.id)), new Set(templates.map((t) => t.id)), slug);
+    const currentIds = new Set(templates.map((template) => template.id));
+    for (const entry of entries) assert.ok(currentIds.has(entry.id), `${slug}/${entry.id}`);
+    for (const template of templates) {
+      if (getTemplateBodyPresentation(slug, template.id))
+        assert.ok(
+          entries.some((entry) => entry.id === template.id),
+          `${slug}/${template.id} has an audited body override`,
+        );
+    }
     const signatures = new Set();
     for (const row of entries) {
       const profile = getTemplateBodyPresentation(slug, row.id);
@@ -110,7 +122,8 @@ test("reordered sections keep their content, anchors and action handlers, with n
     { id: "photos" },
     React.createElement("a", { href: "/memory" }, "Memory"),
   );
-  const tree = Body({
+  let tree;
+  const props = {
     presentation,
     sections: [
       { id: "rsvp", content: rsvp },
@@ -118,7 +131,12 @@ test("reordered sections keep their content, anchors and action handlers, with n
       { id: "photos", content: gallery },
       { id: "notes", content: false },
     ],
-  });
+  };
+  function Capture() {
+    tree = Body(props);
+    return tree;
+  }
+  renderToStaticMarkup(React.createElement(Capture));
   const panels = tree.props.children.props.children;
   assert.deepEqual(
     panels.map((p) => p.props["data-body-section"]),
@@ -126,7 +144,10 @@ test("reordered sections keep their content, anchors and action handlers, with n
   );
   assert.equal(panels[0].props.children[1], gallery);
   assert.equal(panels[1].props.children[1].props.children.props.onClick, action);
-  assert.equal(Body({ presentation, sections: [{ id: "notes", content: null }] }), null);
+  function Empty() {
+    return Body({ presentation, sections: [{ id: "notes", content: null }] });
+  }
+  assert.equal(renderToStaticMarkup(React.createElement(Empty)), "");
   const markup = renderToStaticMarkup(tree);
   assert.ok(markup.includes('id="photos"'));
   assert.ok(markup.includes('id="rsvp"'));

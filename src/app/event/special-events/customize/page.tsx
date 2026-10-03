@@ -1,12 +1,16 @@
 // @ts-nocheck
 "use client";
+import EventPageSections from "@/components/events/EventPageSections";
+
+import { EventEditorInput as InputGroup, EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout } from "@/components/events/EventEditorFields";
+import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import { useEventHistoryClient } from "@/lib/event-history-client";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
 
 import HeroImageEditor from "@/components/events/HeroImageEditor";
 import EventCanvas from "@/components/EventCanvas";
 
-import { useManualEventProgress } from "@/hooks/useManualEventProgress";
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 
 import { normalizeEventGuestActions } from "@/lib/event-guest-actions";
@@ -20,17 +24,13 @@ import React, {
   useMemo,
   useState,
   useRef,
-  memo,
   useEffect,
 } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  ChevronLeft,
-  ChevronRight,
   ChevronDown,
   Edit2,
-  Menu,
   Type,
   Upload,
   CheckSquare,
@@ -41,7 +41,6 @@ import {
 } from "lucide-react";
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
-import { buildEventPath } from "@/utils/event-url";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
 
 // Google Fonts URL for all special event fonts
@@ -525,92 +524,6 @@ const DESIGN_THEMES = [
   },
 ];
 
-const InputGroup = memo(
-  ({
-    label,
-    value,
-    onChange,
-    placeholder,
-    type = "text",
-  }: {
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-    placeholder?: string;
-    type?: string;
-  }) => (
-    <div className="space-y-2">
-      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-        {label}
-      </label>
-      {type === "textarea" ? (
-        <textarea
-          className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-        />
-      ) : (
-        <input
-          type={type}
-          className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-        />
-      )}
-    </div>
-  ),
-  (prevProps, nextProps) => {
-    // Custom comparison to prevent unnecessary re-renders
-    // Note: onChange is excluded from comparison since parent creates new functions on each render
-    return (
-      prevProps.value === nextProps.value &&
-      prevProps.label === nextProps.label &&
-      prevProps.type === nextProps.type &&
-      prevProps.placeholder === nextProps.placeholder &&
-      prevProps.readOnly === nextProps.readOnly
-    );
-  }
-);
-
-InputGroup.displayName = "InputGroup";
-
-const MenuCard = ({ title, icon, desc, onClick }) => (
-  <div
-    onClick={onClick}
-    className="group bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex items-start gap-4"
-  >
-    <div className="bg-slate-50 p-3 rounded-lg text-slate-600 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors">
-      {icon}
-    </div>
-    <div className="flex-1">
-      <div className="flex justify-between items-center mb-1">
-        <h3 className="font-semibold text-slate-800">{title}</h3>
-        <ChevronRight
-          size={16}
-          className="text-slate-300 group-hover:text-indigo-400 transform group-hover:translate-x-1 transition-all"
-        />
-      </div>
-      <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
-    </div>
-  </div>
-);
-
-const EditorLayout = ({ title, onBack, children }) => (
-  <div className="animate-fade-in-right">
-    <div className="flex items-center mb-6 pb-4 border-b border-slate-100">
-      <button
-        onClick={onBack}
-        className="mr-3 p-2 hover:bg-slate-100 rounded-lg transition-colors"
-      >
-        <ChevronLeft size={20} className="text-slate-600" />
-      </button>
-      <h2 className="text-xl font-semibold text-slate-800">{title}</h2>
-    </div>
-    {children}
-  </div>
-);
 
 export default function SpecialEventsCustomizePage() {
   const eventHistoryClient = useEventHistoryClient();
@@ -771,9 +684,9 @@ export default function SpecialEventsCustomizePage() {
     mobileMenuOpen,
     openMobileMenu,
     closeMobileMenu,
-    previewTouchHandlers,
+    dismissMobileMenu, previewTouchHandlers,
     drawerTouchHandlers,
-  } = useMobileDrawer();
+  } = useMobileDrawer(true, "event-actions", true);
   const buildCalendarDetails = () => {
     const title = data.title || "Special Event";
     let start: Date | null = null;
@@ -1017,160 +930,78 @@ export default function SpecialEventsCustomizePage() {
     .filter(Boolean)
     .join(", ");
 
-  useManualEventProgress({
-    historyFetch: eventHistoryClient.fetch,
-    snapshot: { data },
-    category: "Special Events", templateId: "special-events", eventId: editEventId,
-    ready: !loadingExisting, busy: submitting,
-  });
 
-  const handlePublish = useCallback(async () => {
-    if (submitting || loadingExisting || loadError) return;
-    setSubmitting(true);
-    try {
-        if (data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)) {
-          throw new Error("End time must be after the start. For an overnight event, choose the next end date.");
-        }
-
-      let startISO: string | null = null;
-      let endISO: string | null = null;
-      if (data.date) {
-        const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
-        const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
-          const end = endLocal ? new Date(endLocal) : null;
-        startISO = start.toISOString();
-        endISO = end?.toISOString() || null;
-      }
-
-      const heroImageToSave =
-        (await persistImageMediaValue({
-          value: data.hero,
-          eventId: editEventId || undefined,
-          fileName: "special-event-hero.png",
-        })) || "/templates/hero-images/father-daughter-hero.jpeg";
-      const sponsorsToSave = await Promise.all(
-        (data.sponsors || []).map(async (sponsor: any) => ({
-          ...sponsor,
-          logo:
-            (await persistImageMediaValue({
-              value: sponsor?.logo || "",
-              eventId: editEventId || undefined,
-              fileName: `special-event-sponsor-${sponsor?.id || "logo"}.png`,
-            })) || sponsor?.logo || "",
-        })),
-      );
-
-      const payload: any = {
-        title: data.title || "Special Event",
-        data: {
-            ...savedEventData,
-          category: "special_events",
-          createdVia: "template",
-          createdManually: true,
-          startISO,
-          startAt: startISO,
-          start: startISO,
-          date: data.date,
-          time: data.time,
-          city: data.city,
-          state: data.state,
-          endISO,
-          endAt: endISO,
-          end: endISO,
-          endTime: data.endTime,
-          endDate: data.endDate,
-          guestActions: data.guestActions,
-          guestPlanning: data.guestPlanning,
-          location: editEventId && data.venue === (savedEventData.venue ?? savedEventData.location ?? "") && data.city === (savedEventData.city ?? "") && data.state === (savedEventData.state ?? "") && data.address === (savedEventData.address ?? "") ? savedEventData.location || locationParts : locationParts || undefined,
-          venue: data.venue || undefined,
-          address: data.address || undefined,
-          description: data.details || undefined,
-          rsvp: data.rsvpEnabled ? data.rsvpDeadline || null : null,
-            rsvpEnabled: data.rsvpEnabled,
-            rsvpDeadline: data.rsvpDeadline,
-          numberOfGuests: savedEventData.numberOfGuests ?? 0,
-          templateId: "special-event",
-          customFields: data.extra,
-          sponsors: sponsorsToSave,
-          heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
-          heroImage: heroImageToSave,
-          theme: data.theme,
-        },
-      };
-        payload.data.status = "published";
-        payload.data.draftStatus = "published";
-        payload.data.manualEditor = null;
-
-
-      let id: string | undefined;
-
-      if (editEventId) {
-        const response = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            title: payload.title,
-            data: payload.data,
-          }),
-        });
-        if (!response.ok) {
-          const error = await response.json().catch(() => null);
-          throw new Error(
-            typeof error?.error === "string" && error.error.trim()
-              ? error.error.trim()
-              : "Failed to update event",
-          );
-        }
-        id = editEventId;
-      } else {
-        const res = await eventHistoryClient.fetch("/api/history", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) {
-          const error = await res.json().catch(() => null);
-          throw new Error(
-            typeof error?.error === "string" && error.error.trim()
-              ? error.error.trim()
-              : "Failed to create event",
-          );
-        }
-        const json = await res.json().catch(() => ({}));
-        id = (json as any)?.id as string | undefined;
-      }
-
-      if (id) {
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(
-            new CustomEvent(editEventId ? "history:updated" : "history:created", {
-              detail: editEventId
-                ? { id }
-                : {
-                    id,
-                    title: payload.title,
-                    created_at: new Date().toISOString(),
-                    data: payload.data,
-                  },
-            })
-          );
-        }
-        const params = editEventId ? { updated: true } : { created: true };
-        allowNavigation(() => router.push(buildEventPath(id, payload.title, params)));
-      } else {
-        throw new Error(
-          editEventId ? "Failed to update event" : "Failed to create event"
-        );
-      }
-    } catch (err: any) {
-      const msg = String(err?.message || err || "Failed to create event");
-      alert(msg);
-    } finally {
-      setSubmitting(false);
+  const buildEventPayload = useCallback(async () => {
+    if (data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)) {
+      throw new Error("End time must be after the start. For an overnight event, choose the next end date.");
     }
+    let startISO: string | null = null;
+    let endISO: string | null = null;
+    if (data.date) {
+      const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
+      const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
+      const end = endLocal ? new Date(endLocal) : null;
+      startISO = start.toISOString();
+      endISO = end?.toISOString() || null;
+    }
+    const heroImageToSave =
+      (await persistImageMediaValue({
+        value: data.hero,
+        eventId: editEventId || undefined,
+        fileName: "special-event-hero.png",
+      })) || "/templates/hero-images/father-daughter-hero.jpeg";
+    const sponsorsToSave = await Promise.all(
+      (data.sponsors || []).map(async (sponsor: any) => ({
+        ...sponsor,
+        logo:
+          (await persistImageMediaValue({
+            value: sponsor?.logo || "",
+            eventId: editEventId || undefined,
+            fileName: `special-event-sponsor-${sponsor?.id || "logo"}.png`,
+          })) || sponsor?.logo || "",
+      })),
+    );
+    const payload: any = {
+      title: data.title || "Special Event",
+      data: {
+        ...savedEventData,
+        category: "special_events",
+        createdVia: "template",
+        createdManually: true,
+        startISO,
+        startAt: startISO,
+        start: startISO,
+        date: data.date,
+        time: data.time,
+        city: data.city,
+        state: data.state,
+        endISO,
+        endAt: endISO,
+        end: endISO,
+        endTime: data.endTime,
+        endDate: data.endDate,
+        guestActions: data.guestActions,
+        guestPlanning: data.guestPlanning,
+        location: editEventId && data.venue === (savedEventData.venue ?? savedEventData.location ?? "") && data.city === (savedEventData.city ?? "") && data.state === (savedEventData.state ?? "") && data.address === (savedEventData.address ?? "") ? savedEventData.location || locationParts : locationParts || undefined,
+        venue: data.venue || undefined,
+        address: data.address || undefined,
+        description: data.details || undefined,
+        rsvp: data.rsvpEnabled ? data.rsvpDeadline || null : null,
+        rsvpEnabled: data.rsvpEnabled,
+        rsvpDeadline: data.rsvpDeadline,
+        numberOfGuests: savedEventData.numberOfGuests ?? 0,
+        templateId: "special-event",
+        customFields: data.extra,
+        sponsors: sponsorsToSave,
+        heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
+        heroImage: heroImageToSave,
+        theme: data.theme,
+      },
+    };
+    return payload;
   }, [submitting, data, editEventId, router, locationParts, savedEventData, loadingExisting, loadError]);
+
+  const editor = useEventPageEditor({ snapshot: { data }, category: "Special Events", templateId: "special-events", eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload });
 
   // Filter out unwanted categories and get flat list of themes
   const availableThemes = useMemo(() => {
@@ -1219,33 +1050,7 @@ export default function SpecialEventsCustomizePage() {
         />
       </div>
 
-      <div className="mt-8 pt-6 border-t border-slate-200 w-full max-w-sm">
-        <div className="flex gap-3">
-          {editEventId && (
-            <button
-              onClick={() => router.push(`/event/${editEventId}`)}
-              className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
-            >
-              Cancel
-            </button>
-          )}
-          <button
-            onClick={handlePublish}
-            disabled={submitting}
-            className={`${
-              editEventId ? "flex-1" : "w-full"
-            } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
-          >
-            {submitting
-              ? editEventId
-                ? "Saving..."
-                : "Publishing..."
-              : editEventId
-              ? "Save"
-              : "Publish"}
-          </button>
-        </div>
-      </div>
+
     </div>
   );
 
@@ -1744,9 +1549,8 @@ export default function SpecialEventsCustomizePage() {
   );
 
   return (
-    <div className="relative flex min-h-screen h-[100dvh] w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
-      <EventCanvas
-        {...previewTouchHandlers}
+    <EventEditorWorkspace sectionEditors={{ "headline": renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "sponsors": renderSponsorsEditor, "rsvp": renderRsvpEditor }} artwork={data.hero} editor={editor} templatesHref={"/event/special-events"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
+ preview={<EventCanvas
         className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
         style={{
           WebkitOverflowScrolling: "touch",
@@ -1780,7 +1584,7 @@ export default function SpecialEventsCustomizePage() {
                     sizes="100vw"
                   />
                 )}
-              <HeroImageEditor filterEnabled={data.heroImageFilterEnabled !== false} onFilterChange={(heroImageFilterEnabled) => setData((prev) => ({ ...prev, heroImageFilterEnabled }))} value={data.hero} onChange={(hero) => setData((prev) => ({ ...prev, hero }))} className="absolute inset-x-4 bottom-4 z-10 flex justify-center" />
+              <HeroImageEditor value={data.hero} onChange={(hero) => setData((prev) => ({ ...prev, hero }))} className="absolute inset-x-4 bottom-4 z-10 flex justify-center" />
 </div>
 </TemplateImageTone>
 
@@ -1802,8 +1606,9 @@ export default function SpecialEventsCustomizePage() {
               </div>
 
               {/* Venue Section - Above Details */}
-              {(data.venue || data.address || data.city) && (
-                <section
+              <EventPageSections>
+{(data.venue || data.address || data.city) && (
+                <section id="details"
                   className={`py-10 border-t ${sectionBorder} px-6 md:px-10`}
                 >
                   <h2
@@ -1835,7 +1640,7 @@ export default function SpecialEventsCustomizePage() {
                 </section>
               )}
 
-              <section
+              <section id="details"
                 className={`py-10 border-t ${sectionBorder} px-6 md:px-10`}
               >
                 <h2
@@ -2004,7 +1809,7 @@ export default function SpecialEventsCustomizePage() {
               </section>
 
               {data.rsvpEnabled && (
-                <section className="max-w-2xl mx-auto text-center p-6 md:p-10">
+                <section id="rsvp" className="max-w-2xl mx-auto text-center p-6 md:p-10">
                   <h2
                     className={`${currentSize.h2} mb-6 ${accentClass}`}
                     style={{ ...titleColor, fontFamily: currentFont.title }}
@@ -2144,7 +1949,7 @@ export default function SpecialEventsCustomizePage() {
 
               {/* Sponsors Section */}
               {(data.sponsors || []).length > 0 && (
-                <section
+                <section id="details"
                   className={`py-10 border-t ${sectionBorder} px-6 md:px-10`}
                 >
                   <h2
@@ -2182,6 +1987,7 @@ export default function SpecialEventsCustomizePage() {
                   </div>
                 </section>
               )}
+</EventPageSections>
 
               <footer
                 className={`text-center py-8 border-t ${sectionBorder} mt-1`}
@@ -2191,37 +1997,9 @@ export default function SpecialEventsCustomizePage() {
             </div>
           </div>
         </div>
-      </EventCanvas>
+      </EventCanvas>}
+ controls={<><ScrollHandoffContainer className="min-h-full">
 
-      {mobileMenuOpen && (
-        <div
-          className="nav-chrome-mobile-drawer-backdrop md:hidden fixed inset-0 z-10"
-          onClick={closeMobileMenu}
-          role="presentation"
-        ></div>
-      )}
-
-      <div
-        className={`nav-chrome-mobile-drawer w-full md:w-[400px] md:shrink-0 flex flex-col z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
-          mobileMenuOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-        {...drawerTouchHandlers}
-      >
-        <ScrollHandoffContainer className="flex-1">
-          {mobileMenuOpen && (
-            <div className="nav-chrome-mobile-drawer-header md:hidden sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-3">
-              <button
-                onClick={closeMobileMenu}
-                className="nav-chrome-mobile-drawer-back-button flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
-              >
-                <ChevronLeft size={14} />
-                Back to preview
-              </button>
-              <span className="text-sm font-semibold text-slate-700">
-                Customize
-              </span>
-            </div>
-          )}
           <div className="p-6 pt-4 md:pt-6 pb-8">
             {(activeView === "main" || activeView === "images") && renderMainMenu()}
             {activeView === "headline" && renderHeadlineEditor()}
@@ -2231,21 +2009,7 @@ export default function SpecialEventsCustomizePage() {
             {activeView === "sponsors" && renderSponsorsEditor()}
             {activeView === "rsvp" && renderRsvpEditor()}
           </div>
-        </ScrollHandoffContainer>
-      </div>
-
-      {!mobileMenuOpen && (
-        <div className="md:hidden fixed bottom-4 right-4 z-30">
-          <button
-            type="button"
-            onClick={openMobileMenu}
-            className="nav-chrome-mobile-drawer-trigger flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold"
-          >
-            <Menu size={18} />
-            Edit
-          </button>
-        </div>
-      )}
-    </div>
+        </ScrollHandoffContainer></>}
+></EventEditorWorkspace>
   );
 }

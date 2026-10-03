@@ -1,0 +1,212 @@
+.mosaic {
+  display: grid;
+  gap: 1rem;
+  margin-top: 2.5rem;
+}
+
+.tile {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  min-width: 0;
+  min-height: 21rem;
+  overflow: hidden;
+  border: 1px solid #e4d8c4;
+  border-radius: 1.25rem;
+  background: #201a23;
+  color: #fff;
+  box-shadow: 0 12px 32px rgba(32, 26, 35, 0.09);
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease,
+    border-color 200ms ease;
+}
+
+.tile[data-category="weddings"] {
+  min-height: 27rem;
+  border-radius: 2.75rem 1.25rem 1.25rem 1.25rem;
+}
+
+.tile[data-category="birthdays"] {
+  min-height: 24rem;
+  border-radius: 1.25rem 2.75rem 1.25rem 1.25rem;
+}
+
+.tile[data-category="gender-reveal"] {
+  border-radius: 1.25rem 1.25rem 2.75rem 1.25rem;
+}
+
+.tile[data-category="signup-forms"] {
+  min-height: 23rem;
+}
+
+.tile[data-category="sports"] {
+  min-height: 25rem;
+  border-radius: 2.75rem 1.25rem 1.25rem 1.25rem;
+}
+
+.tile[data-category="gymnastics"] {
+  min-height: 23rem;
+  border-radius: 1.25rem 1.25rem 1.25rem 2.75rem;
+}
+
+.tile:focus-visible {
+  outline: 3px solid #a16207;
+  outline-offset: 5px;
+}
+
+.artwork {
+  object-fit: cover;
+  transition: transform 700ms ease;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(18, 12, 20, 0.04) 0%,
+    rgba(18, 12, 20, 0.16) 35%,
+    rgba(18, 12, 20, 0.76) 70%,
+    rgba(18, 12, 20, 0.94) 100%
+  );
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: clamp(1.25rem, 2.2vw, 2rem);
+}
+
+.eyebrow {
+  color: #f0d58f;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin-top: 0.5rem;
+  color: #fff;
+  font-family: var(--font-playfair), Georgia, serif;
+  font-size: clamp(1.75rem, 2.5vw, 2.5rem);
+  font-weight: 400;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.tile[data-category="weddings"] .title,
+.tile[data-category="birthdays"] .title {
+  font-size: clamp(2.25rem, 3.6vw, 3.5rem);
+}
+
+.promise {
+  max-width: 28rem;
+  margin-top: 0.75rem;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.9375rem;
+  line-height: 1.65;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  margin-top: 1.25rem;
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.625rem 0.875rem;
+  color: #201a23;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5;
+  transition: background-color 200ms ease;
+}
+
+@media (hover: hover) {
+  .tile:hover {
+    transform: translateY(-3px);
+    border-color: #c9b48a;
+    box-shadow: 0 18px 40px rgba(32, 26, 35, 0.16);
+  }
+
+  .tile:hover .artwork {
+    transform: scale(1.035);
+  }
+
+  .tile:hover .cta {
+    background: #f0d58f;
+  }
+}
+
+@media (min-width: 640px) {
+  .mosaic {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "weddings birthdays"
+      "weddings baby"
+      "bridal gender"
+      "signup signup"
+      "sports gymnastics";
+    grid-auto-rows: minmax(21rem, auto);
+  }
+
+  .tile[data-category] {
+    min-height: 0;
+  }
+
+  .tile[data-category="weddings"] {
+    grid-area: weddings;
+  }
+  .tile[data-category="birthdays"] {
+    grid-area: birthdays;
+  }
+  .tile[data-category="baby-showers"] {
+    grid-area: baby;
+  }
+  .tile[data-category="bridal-showers"] {
+    grid-area: bridal;
+  }
+  .tile[data-category="gender-reveal"] {
+    grid-area: gender;
+  }
+  .tile[data-category="signup-forms"] {
+    grid-area: signup;
+  }
+  .tile[data-category="sports"] {
+    grid-area: sports;
+  }
+  .tile[data-category="gymnastics"] {
+    grid-area: gymnastics;
+  }
+}
+
+@media (min-width: 1024px) {
+  .mosaic {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-areas:
+      "weddings weddings weddings weddings weddings weddings birthdays birthdays birthdays birthdays birthdays birthdays"
+      "weddings weddings weddings weddings weddings weddings baby baby baby bridal bridal bridal"
+      "gender gender gender signup signup signup signup signup sports sports sports sports"
+      "gymnastics gymnastics gymnastics gymnastics gymnastics gymnastics gymnastics gymnastics sports sports sports sports";
+    grid-auto-rows: minmax(20rem, auto);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile,
+  .artwork,
+  .cta {
+    transition: none;
+  }
+
+  .tile:hover,
+  .tile:hover .artwork {
+    transform: none;
+  }
+}

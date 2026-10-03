@@ -280,7 +280,7 @@ test("section order survives normalization, proofreading, removal, new sections 
   assert.deepEqual([...markup.matchAll(/data-event-section="([^"]+)"/g)].map((match) => match[1]), page.details.sectionOrder);
 });
 
-test("the shared guest renderer keeps all four layouts, facts, artwork, and safe links", () => {
+test("the shared guest renderer keeps every layout, facts, artwork, and safe links", () => {
   const Empty = () => null;
   const renderLoad = loader({
     "next/link": ({ children, ...props }) => React.createElement("a", props, children),
@@ -291,6 +291,7 @@ test("the shared guest renderer keeps all four layouts, facts, artwork, and safe
   const Page = renderLoad("src/components/events/custom/CustomEventPageContent.tsx").default;
   for (const layout of custom.EVENT_DESIGN_LAYOUTS) {
     const page = { ...example(), design: { ...design, layout } };
+    assert.equal(custom.normalizeCustomEventPage(page).design.layout, layout);
     const markup = renderToStaticMarkup(React.createElement(Page, { page }));
     assert.match(markup, new RegExp(`data-layout="${layout}"`));
     assert.ok(markup.includes(page.artwork));
@@ -427,6 +428,33 @@ test("information upload extracts event fields without generating artwork", asyn
   assert.equal(page.artwork, undefined);
   assert.equal(custom.normalizeCustomEventPage(page), null, "Extraction cannot open as a finished page with unrelated stock artwork");
   await assert.rejects(generation.generateEventTheme({ ...input, informationImages: [] }, new AbortController().signal), /Choose an event information image/);
+});
+
+test("information imports prepare a provider screenshot with locations while retaining their source", async () => {
+  const source = await sharp({ create: { width: 100, height: 100, channels: 3, background: "white" } }).png().toBuffer();
+  const details = { ...example().details, location: "23937 Panama City Beach Parkway", sections: [{ title: "Parking", body: "Keep reserved spaces clear." }] };
+  const descriptor = { sectionIndex: 0, imageIndex: 0, crop: { left: 0, top: 0, right: 1, bottom: 1 }, markers: [{ label: "Parking", kind: "parking", note: "Keep reserved spaces clear." }] };
+  const map = { version: 1, sourceImage: "data:image/webp;base64,YQ==", mapImage: "data:image/webp;base64,Yg==", status: "ready",
+    view: { latitude: 30.27481, longitude: -85.99046, zoom: 16, width: 960, height: 640 },
+    markers: [{ ...descriptor.markers[0], point: { x: 0.55, y: 0.44 }, confirmed: false }] };
+  let preparations = 0;
+  const reader = loader({ "./event-arrival-map-server": { prepareArrivalMap: async (value, images, address, signal) => {
+    preparations++;
+    assert.deepEqual(value, descriptor);
+    assert.match(images[0], /^data:image\/png;base64,/);
+    assert.equal(address, details.location);
+    assert.equal(signal.aborted, false);
+    return map;
+  } } })("src/lib/event-theme-generation.ts");
+  reader.eventThemeGenerationDeps.client = () => ({ chat: { completions: { create: async () => ({ choices: [{ finish_reason: "stop", message: {
+    content: JSON.stringify({ design, details, artworkPrompt: "Unused", mapSources: [descriptor] }),
+  } }] }) } } });
+  const input = reader.parseEventThemeRequest({ mode: "information", category: "general", prompt: "Read the event information", informationImages: [`data:image/png;base64,${source.toString("base64")}`] });
+  const page = await reader.generateEventTheme(input, new AbortController().signal);
+  assert.equal(preparations, 1);
+  assert.deepEqual(page.details.sections[0].map, map);
+  assert.equal(page.details.sections[0].body, details.sections[0].body);
+  assert.ok(custom.normalizeCustomEventInformation(page));
 });
 
 test("every event category turns uploaded information into a themed page without losing facts or sections", async () => {

@@ -57,7 +57,7 @@ export default function SignedOutPageChrome({
   const bottomNavItems: SignedOutBottomNavItem[] = [
     { label: "Home", href: "/", icon: Home, purpose: "Go to the main landing page." },
     ...(templateLink ? [{ ...templateLink, icon: LayoutTemplate, purpose: "Browse this category's templates." }] : []),
-    { label: "Create", href: "#concierge", icon: Sparkles, action: "concierge", featured: true, purpose: "Create with Envitefy." },
+    { label: "Help", href: "#concierge", icon: Sparkles, action: "concierge", featured: true, purpose: "Ask questions about Envitefy." },
     ...(sectionLink ? [{ ...sectionLink, icon: Eye, purpose: sectionLink.label }] : []),
     { label: "Menu", href: "#menu", icon: Menu, action: "menu", purpose: "Open the page menu." },
   ];

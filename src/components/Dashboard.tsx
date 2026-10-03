@@ -11,6 +11,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useEventCache } from "@/app/event-cache-context";
 import { type EventContextTab, useSidebar } from "@/app/sidebar-context";
 import HomeOverviewDashboard from "@/components/dashboard/HomeOverviewDashboard";
+import PendingCoHostInvitations from "@/components/dashboard/PendingCoHostInvitations";
+import { useCoHostInvitations } from "@/components/CoHostInvitationProvider";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import {
   type SnapPreviewKind,
@@ -281,6 +283,7 @@ export default function Dashboard({
   snapProcessingMode?: boolean;
 }) {
   const { data: session } = useSession();
+  const coHostInvitations = useCoHostInvitations();
   const pathname = usePathname();
   const {
     selectedEventId: sidebarSelectedEventId,
@@ -334,7 +337,6 @@ export default function Dashboard({
   const cancelledByUserRef = useRef(false);
   const isSubmittingRef = useRef(false);
   const activeScanAttemptIdRef = useRef<string | null>(null);
-  const uploadReturnToRef = useRef<string | null>(null);
   const objectPreviewUrlRef = useRef<string | null>(null);
   const submitScannedEventRef = useRef<(params: SubmitScannedEventParams) => Promise<boolean>>(
     async () => false,
@@ -1403,11 +1405,6 @@ export default function Dashboard({
       try {
         const params = new URLSearchParams(window.location.search);
         const action = (params.get("action") || "").toLowerCase();
-        const returnTo =
-          typeof params.get("returnTo") === "string" && params.get("returnTo")
-            ? params.get("returnTo")
-            : null;
-        uploadReturnToRef.current = returnTo;
         if (!action) return;
         const cleanup = () => {
           try {
@@ -1854,16 +1851,6 @@ export default function Dashboard({
           ocrMeta,
         });
         if (!saveResult.ok) {
-          if (uploadReturnToRef.current === "/chat") {
-            const qs = new URLSearchParams({
-              scanStatus: "failed",
-              scanError:
-                saveResult.error ||
-                "We couldn't save this event to your account. Please try again.",
-            });
-            router.push(`/chat?${qs.toString()}`);
-            return false;
-          }
           setError(
             saveResult.error === "Unable to resolve signed-in account"
               ? "We couldn't verify your signed-in account. Sign out and sign back in, then try again."
@@ -2123,6 +2110,9 @@ export default function Dashboard({
             <EventOwnerTabPlaceholder tab={activeEventTab} />
           ) : (
             <HomeOverviewDashboard
+              coHostInvitations={coHostInvitations.invitations}
+              coHostInvitationsUnavailable={Boolean(coHostInvitations.error) || coHostInvitations.loading}
+              invitationNotice={<PendingCoHostInvitations />}
               viewerName={viewerName}
               data={dashboardData}
               metrics={nextEventMetrics}
@@ -2131,7 +2121,7 @@ export default function Dashboard({
               metricsLoading={metricsLoading}
               loading={dashboardLoading}
               error={dashboardError}
-              onRetry={() => void refreshDashboard({ force: true })}
+              onRetry={() => { void refreshDashboard({ force: true }); void coHostInvitations.refresh(); }}
               onForceTravel={forceRecalculateTravel}
             />
           )}

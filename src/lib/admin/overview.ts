@@ -4,7 +4,6 @@ import {
   type AdminGa4DashboardSnapshot,
   type AdminGa4Status,
 } from "./analytics";
-import { getAdminConciergeData, type AdminConciergeData } from "./concierge";
 import {
   ADMIN_SCAN_SQL,
   daysAgo,
@@ -55,14 +54,12 @@ export type AdminOverviewData = {
     shares: number;
     rsvps: number;
     emailCampaigns: number;
-    conciergeSessions: number;
   };
   users: AdminUsersSummary;
   funnel: AdminFunnelStep[];
   ga4: AdminGa4Status;
   ga4Report: AdminGa4DashboardSnapshot;
   categoryPerformance: AdminEventCategorySummary[];
-  concierge: AdminConciergeData;
   needsAttention: AdminNeedsAttentionItem[];
   recentActivity: AdminRecentActivity[];
   growthInsights: AdminGrowthInsight[];
@@ -106,20 +103,6 @@ function createDatabaseUnavailableOverview(error: unknown): AdminOverviewData {
     topPages: [],
     topEvents: [],
   };
-  const concierge: AdminConciergeData = {
-    available: false,
-    summary: {
-      sessions: 0,
-      active7Days: 0,
-      published: 0,
-      drafts: 0,
-      threads: 0,
-      messages: 0,
-    },
-    statuses: [],
-    recentSessions: [],
-  };
-
   return {
     generatedAt: new Date().toISOString(),
     kpis: {
@@ -130,8 +113,7 @@ function createDatabaseUnavailableOverview(error: unknown): AdminOverviewData {
       shares: 0,
       rsvps: 0,
       emailCampaigns: 0,
-      conciergeSessions: 0,
-    },
+      },
     users,
     funnel: [
       { label: "Users", value: 0, href: "/admin/users" },
@@ -143,7 +125,6 @@ function createDatabaseUnavailableOverview(error: unknown): AdminOverviewData {
     ga4,
     ga4Report,
     categoryPerformance: [],
-    concierge,
     needsAttention: [
       {
         title: "Admin database is unavailable",
@@ -306,7 +287,6 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
   let events: Awaited<ReturnType<typeof getAdminEventsData>>;
   let scans: Awaited<ReturnType<typeof getAdminScanData>>;
   let analytics: Awaited<ReturnType<typeof getAdminAnalyticsOverviewSnapshot>>;
-  let concierge: AdminConciergeData;
   let emailCampaigns: EmailCampaignSummary;
   let recentActivity: AdminRecentActivity[];
   let growthInsights: AdminGrowthInsight[];
@@ -317,7 +297,6 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
       events,
       scans,
       analytics,
-      concierge,
       emailCampaigns,
       recentActivity,
       growthInsights,
@@ -330,7 +309,6 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
         includeEngagementCounts: false,
       }),
       getAdminAnalyticsOverviewSnapshot(),
-      getAdminConciergeData({ includeRecent: false }),
       getEmailCampaignSummary(),
       getRecentActivity(),
       getGrowthInsights(),
@@ -392,14 +370,12 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
       shares: events.summary.shares,
       rsvps: events.summary.rsvps,
       emailCampaigns: emailCampaigns.total,
-      conciergeSessions: concierge.summary.sessions,
-    },
+      },
     users,
     funnel,
     ga4: analytics.ga4,
     ga4Report: analytics.ga4Report,
     categoryPerformance: events.categories,
-    concierge,
     needsAttention,
     recentActivity,
     growthInsights,

@@ -1,11 +1,13 @@
 // @ts-nocheck
 "use client";
+import { EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout, EventEditorInput as InputGroup } from "@/components/events/EventEditorFields";
+import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import { useEventHistoryClient } from "@/lib/event-history-client";
 import HeroImageEditor from "@/components/events/HeroImageEditor";
 import EventCanvas from "@/components/EventCanvas";
 
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
-import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
 import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
 import GenderRevealTemplateView from "@/components/GenderRevealTemplateView";
@@ -23,10 +25,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ChevronLeft,
-  ChevronRight,
   ChevronDown,
-  Edit2,
   Users,
   Image as ImageIcon,
   Type,
@@ -42,7 +41,6 @@ import {
 } from "@/components/event-create/GenderRevealTemplateGallery";
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
-import { buildEventPath } from "@/utils/event-url";
 import { persistImageMediaValue as persistExistingImage } from "@/utils/media-upload-client";
 import {
   parseGenderRevealConfig,
@@ -317,75 +315,11 @@ const INITIAL_DATA = {
   ],
 };
 
-const MenuCard = ({ title, icon, desc, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="w-full text-left group bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex items-start gap-4"
-  >
-    <div className="bg-slate-50 p-3 rounded-lg text-slate-600 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors">
-      {icon}
-    </div>
-    <div className="flex-1">
-      <div className="flex justify-between items-center mb-1">
-        <h3 className="font-semibold text-slate-800">{title}</h3>
-        <ChevronRight
-          size={16}
-          className="text-slate-300 group-hover:text-indigo-400 transform group-hover:translate-x-1 transition-all"
-        />
-      </div>
-      <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
-    </div>
-  </button>
-);
-
-const EditorLayout = ({ title, onBack, children }) => (
-  <div className="animate-fade-in-right">
-    <div className="flex items-center mb-6 pb-4 border-b border-slate-100">
-      <button
-        aria-label="Back to details"
-        onClick={onBack}
-        className="mr-3 p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
-      >
-        <ChevronLeft size={20} />
-      </button>
-      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mr-auto">
-        Customize
-      </span>
-      <h2 className="text-lg font-serif font-bold text-slate-800 absolute left-1/2 transform -translate-x-1/2">
-        {title}
-      </h2>
-    </div>
-    {children}
-  </div>
-);
-
-const InputGroup = ({
-  label,
-  value,
-  onChange,
-  type = "text",
-  placeholder = "",
-}) => (
-  <div>
-    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
-      {label}
-    </label>
-    <input
-      aria-label={label}
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none"
-    />
-  </div>
-);
 
 export default function GenderRevealTemplateCustomizePage() {
   const eventHistoryClient = useEventHistoryClient();
   const templateEditor = useTemplateEditor();
-  const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
+  const persistImageMediaValue = async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null;
   const search = useTemplateSearchParams();
   const router = useRouter();
   const { allowNavigation } = useProgressNavigation();
@@ -408,9 +342,9 @@ export default function GenderRevealTemplateCustomizePage() {
     mobileMenuOpen,
     openMobileMenu,
     closeMobileMenu,
-    previewTouchHandlers,
+    dismissMobileMenu, previewTouchHandlers,
     drawerTouchHandlers,
-  } = useMobileDrawer();
+  } = useMobileDrawer(true, "event-actions", true);
   const [designOpen, setDesignOpen] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -599,9 +533,8 @@ export default function GenderRevealTemplateCustomizePage() {
     }));
   };
 
-  
 
-  const handleGalleryUpload = (e) => {
+const handleGalleryUpload = (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     const newImages = files.map((file) => ({
@@ -647,210 +580,119 @@ export default function GenderRevealTemplateCustomizePage() {
 
   const heroImageSrc = getGenderRevealDesign(resolvedTemplateId).heroImage;
 
-  const handlePublish = useCallback(async () => {
-      if (templateEditor && !templateEditor.authenticated) { await templateEditor.requestSave(); return; }
-    if (submitting) return;
-    setSubmitting(true);
-    try {
-      let startISO: string | null = null;
-      let endISO: string | null = null;
-      if (!data.date || !data.time) throw new Error("Enter an event date and start time before publishing.");
-      if (data.date) {
-        const start = new Date(`${data.date}T${data.time}:00`);
-        if (Number.isNaN(start.getTime())) throw new Error("Enter a valid event date and start time.");
-        startISO = start.toISOString();
-        if (data.endTime) {
-          const end = new Date(`${data.endDate || data.date}T${data.endTime}:00`);
-          if (Number.isNaN(end.getTime()) || end <= start) throw new Error("End time must be after the start time. Choose an end date for an overnight event.");
-          endISO = end.toISOString();
-        }
+  const buildEventPayload = useCallback(async () => {
+    let startISO: string | null = null;
+    let endISO: string | null = null;
+    if (!data.date || !data.time) throw new Error("Enter an event date and start time before publishing.");
+    if (data.date) {
+      const start = new Date(`${data.date}T${data.time}:00`);
+      if (Number.isNaN(start.getTime())) throw new Error("Enter a valid event date and start time.");
+      startISO = start.toISOString();
+      if (data.endTime) {
+        const end = new Date(`${data.endDate || data.date}T${data.endTime}:00`);
+        if (Number.isNaN(end.getTime()) || end <= start) throw new Error("End time must be after the start time. Choose an end date for an overnight event.");
+        endISO = end.toISOString();
       }
-
-      const location =
-        data.city && data.state ? `${data.city}, ${data.state}` : undefined;
-
-      // Resolve design selections (like baby showers and gymnastics)
-      // Use currentTheme which is the full theme object from data.theme
-      const selectedFont = FONTS[data.theme.font] || FONTS.playfair;
-      const selectedSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
-
-      const heroImageToSave = await persistImageMediaValue({
-        value: data.images.hero,
-        eventId: editEventId || undefined,
-        fileName: "gender-reveal-hero.png",
-        fallbackValue: heroImageSrc,
-      });
-
-      console.log("[Gender Reveal Publish] Final heroImageToSave:", {
-        exists: !!heroImageToSave,
-        type: heroImageToSave?.startsWith("data:")
-          ? "data-url"
-          : heroImageToSave?.startsWith("http")
-          ? "http-url"
-          : "other",
-        length: heroImageToSave?.length || 0,
-      });
-
-      const payload: any = {
-        title: data.eventTitle || "Gender Reveal Party",
-        data: {
-          category: "Gender Reveal",
-          createdVia: "template",
-          createdManually: true,
-          startAt: startISO,
-          start: startISO,
-          startISO,
-          endAt: endISO,
-          end: endISO,
-          endISO,
-          endDate: data.endDate,
-          endTime: data.endTime,
-          guestPlanning: data.guestPlanning,
-          location,
-          description: data.eventDetails.notes || undefined,
-          rsvp: data.rsvp.isEnabled
-            ? {
-                isEnabled: true,
-                deadline: data.rsvp.deadline || undefined,
-              }
-            : undefined,
-          rsvpEnabled: data.rsvp.isEnabled,
-          rsvpDeadline: data.rsvp.deadline || undefined,
-          numberOfGuests: Number(data.rsvp.expectedGuests) || 0,
-          templateId: resolvedTemplateId,
-          date: data.date,
-          time: data.time,
-          address: data.address || undefined,
-          city: data.city || undefined,
-          state: data.state || undefined,
-          venue: data.venue || undefined,
-          // Customization data
-          eventTitle: data.eventTitle,
-          parentsName: data.parentsName,
-          eventDetails: data.eventDetails,
-          hosts: data.hosts,
+    }
+    const location =
+      data.city && data.state ? `${data.city}, ${data.state}` : undefined;
+    const selectedFont = FONTS[data.theme.font] || FONTS.playfair;
+    const selectedSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
+    const heroImageToSave = await persistImageMediaValue({
+      value: data.images.hero,
+      eventId: editEventId || undefined,
+      fileName: "gender-reveal-hero.png",
+      fallbackValue: heroImageSrc,
+    });
+    const payload: any = {
+      title: data.eventTitle || "Gender Reveal Party",
+      data: {
+        category: "Gender Reveal",
+        createdVia: "template",
+        createdManually: true,
+        startAt: startISO,
+        start: startISO,
+        startISO,
+        endAt: endISO,
+        end: endISO,
+        endISO,
+        endDate: data.endDate,
+        endTime: data.endTime,
+        guestPlanning: data.guestPlanning,
+        location,
+        description: data.eventDetails.notes || undefined,
+        rsvp: data.rsvp.isEnabled
+          ? {
+            isEnabled: true,
+            deadline: data.rsvp.deadline || undefined,
+          }
+          : undefined,
+        rsvpEnabled: data.rsvp.isEnabled,
+        rsvpDeadline: data.rsvp.deadline || undefined,
+        numberOfGuests: Number(data.rsvp.expectedGuests) || 0,
+        templateId: resolvedTemplateId,
+        date: data.date,
+        time: data.time,
+        address: data.address || undefined,
+        city: data.city || undefined,
+        state: data.state || undefined,
+        venue: data.venue || undefined,
+        // Customization data
+        eventTitle: data.eventTitle,
+        parentsName: data.parentsName,
+        eventDetails: data.eventDetails,
+        hosts: data.hosts,
+        themeId:
+          currentTheme.id || currentTheme.themeId || data.theme.themeId,
+        theme: {
+          // Save the ENTIRE theme object (like gymnastics/baby showers) - includes all properties: bg, text, accent, bgStyle, name, etc.
+          ...currentTheme,
+          // Ensure id and themeId are set
+          id: currentTheme.id || currentTheme.themeId || data.theme.themeId,
           themeId:
             currentTheme.id || currentTheme.themeId || data.theme.themeId,
-          theme: {
-            // Save the ENTIRE theme object (like gymnastics/baby showers) - includes all properties: bg, text, accent, bgStyle, name, etc.
-            ...currentTheme,
-            // Ensure id and themeId are set
-            id: currentTheme.id || currentTheme.themeId || data.theme.themeId,
-            themeId:
-              currentTheme.id || currentTheme.themeId || data.theme.themeId,
-            // Add font-related properties on top
-            font: data.theme.font,
-            fontSize: data.theme.fontSize,
-            fontFamily: selectedFont.preview,
-            fontSizeH1: selectedSize.h1,
-            fontSizeH2: selectedSize.h2,
-            fontSizeClass: selectedSize.h1,
-          },
-          fontId: data.theme.font,
+          // Add font-related properties on top
+          font: data.theme.font,
           fontSize: data.theme.fontSize,
           fontFamily: selectedFont.preview,
+          fontSizeH1: selectedSize.h1,
+          fontSizeH2: selectedSize.h2,
           fontSizeClass: selectedSize.h1,
-          registries: data.registries
-            .filter((r) => r.url.trim())
-            .map((r) => ({
-              label: r.label.trim() || "Registry",
-              url: r.url.trim(),
-            })),
-          heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
-          customHeroImage: heroImageToSave,
-          heroImage: heroImageToSave, // Also save as heroImage for compatibility
-          // Also save in images object for compatibility
-          images: {
-            hero: heroImageToSave,
-          },
-          gallery: Array.isArray(data.gallery) ? data.gallery : [],
-          genderReveal: serializeGenderRevealConfig({
-            ...parseGenderRevealConfig({ genderReveal: data.genderReveal }),
-            ...data.genderReveal,
-            revealMethod: data.genderReveal?.revealMethod || "",
-            dressCode: data.genderReveal?.dressCode || "",
-            parking: data.genderReveal?.parking || "",
-            virtualOption: data.genderReveal?.virtualOption || "",
-            rainPlan: data.genderReveal?.rainPlan || "",
-            spoilersNote: data.genderReveal?.spoilersNote || "",
-          }),
         },
-      };
-        payload.data.status = "published";
-        payload.data.draftStatus = "published";
-        payload.data.manualEditor = null;
-
-
-      console.log(
-        "[Gender Reveal Publish] Payload data keys:",
-        Object.keys(payload.data)
-      );
-      console.log("[Gender Reveal Publish] Image saved in payload:", {
-        hasCustomHeroImage: !!payload.data.customHeroImage,
-        hasHeroImage: !!payload.data.heroImage,
-        hasImagesHero: !!payload.data.images?.hero,
-        customHeroImageLength: payload.data.customHeroImage?.length || 0,
-        heroImageLength: payload.data.heroImage?.length || 0,
-        imagesHeroLength: payload.data.images?.hero?.length || 0,
-      });
-
-      if (templateEditor) { await templateEditor.persist(payload, "published"); return; }
-
-      let id: string | undefined;
-
-      if (editEventId) {
-        const response = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            title: payload.title,
-            data: payload.data,
-          }),
-        });
-        if (!response.ok) throw new Error("Unable to publish this event. Your changes are still here.");
-        id = editEventId;
-      } else {
-        const r = await eventHistoryClient.fetch("/api/history", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload),
-        });
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok || !j.id) throw new Error(j.error || "Unable to publish this event. Your changes are still here.");
-        id = j.id;
-      }
-
-      if (id) {
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(
-            new CustomEvent(editEventId ? "history:updated" : "history:created", {
-              detail: editEventId
-                ? { id }
-                : {
-                    id,
-                    title: payload.title,
-                    created_at: new Date().toISOString(),
-                    data: payload.data,
-                  },
-            })
-          );
-        }
-        const params = editEventId ? { updated: true } : { created: true };
-        allowNavigation(() => router.push(buildEventPath(id, payload.title, params)));
-      } else {
-        throw new Error(
-          editEventId ? "Failed to update event" : "Failed to create event"
-        );
-      }
-    } catch (err: any) {
-      const msg = String(err?.message || err || "Failed to create event");
-      alert(msg);
-    } finally {
-      setSubmitting(false);
-    }
+        fontId: data.theme.font,
+        fontSize: data.theme.fontSize,
+        fontFamily: selectedFont.preview,
+        fontSizeClass: selectedSize.h1,
+        registries: data.registries
+          .filter((r) => r.url.trim())
+          .map((r) => ({
+            label: r.label.trim() || "Registry",
+            url: r.url.trim(),
+          })),
+        heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
+        customHeroImage: heroImageToSave,
+        heroImage: heroImageToSave, // Also save as heroImage for compatibility
+        // Also save in images object for compatibility
+        images: {
+          hero: heroImageToSave,
+        },
+        gallery: Array.isArray(data.gallery) ? data.gallery : [],
+        genderReveal: serializeGenderRevealConfig({
+          ...parseGenderRevealConfig({ genderReveal: data.genderReveal }),
+          ...data.genderReveal,
+          revealMethod: data.genderReveal?.revealMethod || "",
+          dressCode: data.genderReveal?.dressCode || "",
+          parking: data.genderReveal?.parking || "",
+          virtualOption: data.genderReveal?.virtualOption || "",
+          rainPlan: data.genderReveal?.rainPlan || "",
+          spoilersNote: data.genderReveal?.spoilersNote || "",
+        }),
+      },
+    };
+    return payload;
   }, [templateEditor, submitting, data, resolvedTemplateId, editEventId, router, heroImageSrc]);
+
+  const editor = useEventPageEditor({ snapshot: { data, newHost, newRegistry }, category: "Gender Reveal", templateId: resolvedTemplateId, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload, templateCategory: "gender-reveal" });
 
   // Render helpers instead of nested components so inputs keep focus across state updates.
   const renderMainMenu = () => (
@@ -881,7 +723,7 @@ export default function GenderRevealTemplateCustomizePage() {
           desc="Event title, date, location."
           onClick={() => setActiveView("headline")}
         />
-        
+
         <MenuCard
           title="Event Details"
           icon={<WandSparkles size={18} />}
@@ -975,9 +817,8 @@ export default function GenderRevealTemplateCustomizePage() {
     </EditorLayout>
   );
 
-  
 
-  const renderDesignEditor = () => (
+const renderDesignEditor = () => (
     <EditorLayout title="Design" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
         <div>
@@ -1481,10 +1322,9 @@ export default function GenderRevealTemplateCustomizePage() {
   };
 
   return (
-    <div className="relative flex min-h-screen h-[100dvh] w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
-      <EventCanvas
+    <EventEditorWorkspace sectionEditors={{ "headline": renderHeadlineEditor, "design": renderDesignEditor, "eventDetails": renderEventDetailsEditor, "hosts": renderHostsEditor, "photos": renderPhotosEditor, "rsvp": renderRsvpEditor, "registry": renderRegistryEditor, details: renderEventDetailsEditor }} artwork={data.images.hero} editor={editor} templatesHref={"/event/gender-reveal"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
+ preview={<EventCanvas
         ref={previewRef}
-        {...previewTouchHandlers}
         className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
         style={{
           WebkitOverflowScrolling: "touch",
@@ -1492,7 +1332,7 @@ export default function GenderRevealTemplateCustomizePage() {
         }}
       >
         <div className="relative w-full min-w-0 mb-4 md:mb-8">
-          <HeroImageEditor filterEnabled={data.heroImageFilterEnabled !== false} onFilterChange={(heroImageFilterEnabled) => setData((prev) => ({ ...prev, heroImageFilterEnabled }))} value={data.images.hero} onChange={(hero) => setData((prev) => ({ ...prev, images: { ...prev.images, hero } }))} className="absolute left-4 top-4 z-30" />
+          <HeroImageEditor value={data.images.hero} onChange={(hero) => setData((prev) => ({ ...prev, images: { ...prev.images, hero } }))} className="absolute left-4 top-4 z-30" />
           <GenderRevealTemplateView
             eventId=""
             eventTitle={data.eventTitle || "Our little surprise"}
@@ -1516,41 +1356,13 @@ export default function GenderRevealTemplateCustomizePage() {
             preview
           />
         </div>
-      </EventCanvas>
+      </EventCanvas>}
+ controls={<><ScrollHandoffContainer className="min-h-full">
 
-      {mobileMenuOpen && (
-        <div
-          className="nav-chrome-mobile-drawer-backdrop md:hidden fixed inset-0 z-10"
-          onClick={closeMobileMenu}
-          role="presentation"
-        ></div>
-      )}
-
-      <div
-        className={`nav-chrome-mobile-drawer w-full md:w-[400px] md:shrink-0 flex flex-col z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
-          mobileMenuOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-        {...drawerTouchHandlers}
-      >
-        <ScrollHandoffContainer className="flex-1">
-          {mobileMenuOpen && (
-            <div className="nav-chrome-mobile-drawer-header md:hidden sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-3">
-              <button
-                onClick={closeMobileMenu}
-                className="nav-chrome-mobile-drawer-back-button flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
-              >
-                <ChevronLeft size={14} />
-                Back to preview
-              </button>
-              <span className="text-sm font-semibold text-slate-700">
-                Customize
-              </span>
-            </div>
-          )}
           <div className="p-6 pt-4 md:pt-6">
             {(activeView === "main" || activeView === "images") && renderMainMenu()}
             {activeView === "headline" && renderHeadlineEditor()}
-            
+
             {activeView === "design" && renderDesignEditor()}
             {activeView === "eventDetails" && renderEventDetailsEditor()}
             {activeView === "hosts" && renderHostsEditor()}
@@ -1558,50 +1370,7 @@ export default function GenderRevealTemplateCustomizePage() {
             {activeView === "rsvp" && renderRsvpEditor()}
             {activeView === "registry" && renderRegistryEditor()}
           </div>
-        </ScrollHandoffContainer>
-
-        <div className="sticky bottom-0 border-t border-[rgba(112,97,168,0.14)] bg-[rgba(246,241,255,0.92)] p-4 backdrop-blur-xl">
-          <div className="flex gap-3">
-            {editEventId && (
-              <button
-                onClick={() => router.push(`/event/${editEventId}`)}
-                className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
-              >
-                Cancel
-              </button>
-            )}
-            {!templateEditor && <LegacyTemplateDraftButton category={"gender-reveal"} templateId={resolvedTemplateId} eventId={editEventId} snapshot={{ data, activeView, newHost, newRegistry }} disabled={submitting} ready={!loadingExisting} />}
-            <button
-              onClick={handlePublish}
-              disabled={submitting}
-              className={`${
-                editEventId ? "flex-1" : "w-full"
-              } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
-            >
-              {submitting
-                ? editEventId
-                  ? "Saving..."
-                  : "Publishing..."
-                : editEventId
-                ? "Save"
-                : templateEditor && !templateEditor.authenticated ? "Save and continue" : "Publish"}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {!mobileMenuOpen && (
-        <div className="md:hidden fixed bottom-4 right-4 z-30">
-          <button
-            type="button"
-            onClick={openMobileMenu}
-            className="nav-chrome-mobile-drawer-trigger flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold"
-          >
-            <Edit2 size={18} />
-            Edit
-          </button>
-        </div>
-      )}
-    </div>
+        </ScrollHandoffContainer></>}
+></EventEditorWorkspace>
   );
 }

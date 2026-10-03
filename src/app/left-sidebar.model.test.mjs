@@ -99,36 +99,24 @@ test("Drafts includes saved work across editors and dates without published, inv
     { id: "shared", title: "Shared draft", data: { status: "draft", shared: true } },
     { id: "undated", title: "Undated event", data: {} },
   ];
-  const threads = [
-    { id: "recent-thread", title: "Latest chat", status: "drafting", updatedAt: "2026-09-04" },
-    { id: "saved-thread", title: "Duplicate chat", status: "drafting" },
-    { id: "other-id", title: "Duplicate saved event", status: "drafting", savedEventId: "concierge" },
-    { id: "published-thread", title: "Stale draft thread", status: "drafting" },
-    { id: "published-chat", title: "Published chat", status: "published" },
-    { id: "publishing-chat", title: "Publishing chat", status: "publishing" },
-    { id: "archived-chat", title: "Archived chat", status: "archived" },
-    { id: "orphan-chat", title: "Deleted saved event", status: "drafting", savedEventId: "missing-event" },
-    { id: "deleted-chat", title: "Deleted chat", status: "deleted" },
-  ].map((thread) => ({ createdAt: "2026-08-01", updatedAt: "2026-08-01", savedEventId: null, ...thread }));
-  const before = structuredClone({ history, threads });
+  const before = structuredClone({ history });
   const drafts = buildSidebarDraftItems({
     history,
-    threads,
     isInvitedEventLikeRecord: (data) => data.ownership === "invited",
     buildEditLink: (id, data) => data.manualEditor
       ? `${data.manualEditor.path}?edit=${id}`
       : data.templateEditor
         ? `/${data.templateEditor.category}/templates/${data.templateEditor.templateId}/customize?edit=${id}`
-        : `/chat?thread=${data.conciergeDraft.creationSessionId}`,
+        : `/events/${id}/manage`,
   });
-  assert.deepEqual(drafts.map((draft) => draft.id), ["thread:recent-thread", "event:concierge", "event:signup", "event:manual"]);
+  assert.deepEqual(drafts.map((draft) => draft.id), ["event:concierge", "event:signup", "event:manual"]);
   assert.deepEqual(drafts.map((draft) => draft.href), [
-    "/chat?thread=recent-thread", "/chat?thread=saved-thread",
+    "/events/concierge/manage",
     "/signup-forms/templates/garden/customize?edit=signup", "/event/manual?edit=manual",
   ]);
-  assert.equal(drafts[0].eventId, null);
-  assert.equal(drafts[3].eventId, "manual");
-  assert.deepEqual({ history, threads }, before);
+  assert.equal(drafts[0].eventId, "concierge");
+  assert.equal(drafts[2].eventId, "manual");
+  assert.deepEqual({ history }, before);
 });
 
 test("sidebar chronology crosses category boundaries and keeps undated events last", async () => {

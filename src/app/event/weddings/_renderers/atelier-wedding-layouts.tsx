@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import EventPageSections from "@/components/events/EventPageSections";
 import styles from "./atelier-wedding-layouts.module.css";
 import {
   buildWeddingLocationHref,
@@ -382,7 +383,7 @@ function Details({ layout, event }: { layout: AtelierWeddingLayoutId; event: Eve
   return (
     <div className={styles.details}>
       {event.guestTools}
-      <div className={styles.storyAndSchedule}>
+      <EventPageSections><div className={styles.storyAndSchedule}>
         {event.story && (
           <section data-celebration-section id="atelier-story" className={styles.story}>
             <p className={styles.eyebrow}>A little about us</p>
@@ -500,6 +501,7 @@ function Details({ layout, event }: { layout: AtelierWeddingLayoutId; event: Eve
           )}
         </section>
       )}
+      </EventPageSections>
     </div>
   );
 }

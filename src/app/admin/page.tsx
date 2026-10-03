@@ -257,38 +257,6 @@ export default async function AdminDashboardPage() {
             ) : null}
           </AdminPanel>
 
-          <AdminPanel
-            title="Envitefy Create"
-            description="Draft session health"
-            action={
-              <Link href="/admin/concierge" className="text-sm font-semibold text-violet-700">
-                Open
-              </Link>
-            }
-          >
-            <AdminBarList
-              valueLabel="creation statuses"
-              rows={overview.concierge.statuses.slice(0, 5).map((status) => ({
-                label: status.status.replace(/[_-]+/g, " "),
-                value: status.count,
-              }))}
-            />
-            <div className="mt-4 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 sm:gap-3">
-              <div className="rounded-md bg-slate-50 p-3">
-                <p className="text-slate-500">Sessions</p>
-                <p className="mt-1 text-lg font-semibold text-slate-950">
-                  {formatNumber(overview.concierge.summary.sessions)}
-                </p>
-              </div>
-              <div className="rounded-md bg-slate-50 p-3">
-                <p className="text-slate-500">Active 7d</p>
-                <p className="mt-1 text-lg font-semibold text-slate-950">
-                  {formatNumber(overview.concierge.summary.active7Days)}
-                </p>
-              </div>
-            </div>
-          </AdminPanel>
-
           <AdminPanel title="Needs Attention">
             <div className="space-y-3">
               {overview.needsAttention.map((item) => (

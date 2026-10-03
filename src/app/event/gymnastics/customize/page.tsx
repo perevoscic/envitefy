@@ -1,7 +1,11 @@
 // @ts-nocheck
 "use client";
+import { EventEditorSection as GymnasticsEditorLayout } from "@/components/events/EventEditorFields";
+import { EventEditorInput as InputGroup, EventEditorMenuCard as MenuCard } from "@/components/events/EventEditorFields";
+import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import { useEventHistoryClient } from "@/lib/event-history-client";
-import { EventSectionBuilderProvider, EventSectionPalette, EventSectionsReadOnly, useSectionEditorClose } from "@/components/events/EventSectionBuilder";
+import { EventSectionBuilderProvider, EventSectionPalette, EventSectionsReadOnly } from "@/components/events/EventSectionBuilder";
 import { GYMNASTICS_SECTION_CATALOG, normalizeEventSectionLayout } from "@/lib/event-section-layout";
 
 import HeroImageEditor from "@/components/events/HeroImageEditor";
@@ -13,17 +17,13 @@ import EventCanvas from "@/components/EventCanvas";
 import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileTopbarSuppressor";
 
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
-import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
 import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
 import { GYM_EVENT_EDITOR_VIEWS } from "@/lib/event-page-workspace";
-import { ownerEventEditorReturnHref } from "@/lib/event-preview-viewport";
 import { type EventGuestPlanning, normalizeEventGuestPlanning, eventLocalDateParts, getEventEndLocal } from "@/lib/event-guest-planning";
 import {
   ChevronLeft,
-  ChevronRight,
-  Eye,
   Link as LinkIcon,
   Type,
   X,
@@ -49,7 +49,6 @@ import {
   getGymDiscoveryV2PipelineSummary,
   isGymDiscoveryV2EventData,
 } from "@/lib/discovery/event-data";
-import { buildEventPath } from "@/utils/event-url";
 import { persistImageMediaValue as persistExistingImage } from "@/utils/media-upload-client";
 
 type FieldSpec = {
@@ -267,69 +266,6 @@ const baseInputClass =
 const baseTextareaClass =
   "w-full p-3 rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]";
 
-const InputGroup = ({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  readOnly = false,
-  mutedValue = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: string;
-  readOnly?: boolean;
-  mutedValue?: boolean;
-}) => {
-  const [localValue, setLocalValue] = useState(value);
-  const toneClass = mutedValue ? "text-slate-500 focus:text-slate-900" : "text-slate-900";
-
-  // Sync local state when value prop changes (from external updates)
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
-
-  const handleBlur = () => {
-    if (localValue !== value) {
-      onChange(localValue);
-    }
-  };
-
-  return (
-    <div>
-      <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
-        {label}
-      </label>
-      {type === "textarea" ? (
-        <textarea
-        aria-label={label}
-          className={`${baseTextareaClass} ${toneClass}`}
-          value={localValue}
-          onChange={(e) => { setLocalValue(e.target.value); onChange(e.target.value); }}
-          onBlur={handleBlur}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      ) : (
-        <input
-        aria-label={label}
-          type={type}
-          className={`${baseInputClass} ${toneClass}`}
-          value={localValue}
-          onChange={(e) => { setLocalValue(e.target.value); onChange(e.target.value); }}
-          onBlur={handleBlur}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      )}
-    </div>
-  );
-};
-
-InputGroup.displayName = "InputGroup";
 
 /** Where each editor section appears on the generated public event page */
 const SECTION_SHOWS_ON_EVENT: Record<string, string> = {
@@ -353,64 +289,6 @@ const REMOVED_GYM_EDITOR_SECTIONS = new Set([
   "volunteers",
 ]);
 
-const MenuCard = ({
-  title,
-  desc,
-  icon,
-  status,
-  onClick,
-  showsOnEvent,
-}: {
-  title: string;
-  desc: string;
-  icon: React.ReactNode;
-  status?: "not-started" | "in-progress" | "ready";
-  onClick: () => void;
-  /** Where this section appears on the generated event page */
-  showsOnEvent?: string;
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="w-full text-left group bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex items-start gap-4"
-  >
-    <div className="bg-slate-50 p-3 rounded-lg text-slate-600 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors">
-      {icon}
-    </div>
-    <div className="flex-1">
-      <div className="flex justify-between items-center mb-1">
-        <h3 className="font-semibold text-slate-800">{title}</h3>
-        <div className="flex items-center gap-2">
-          {status && (
-            <span
-              className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
-                status === "ready"
-                  ? "bg-emerald-100 text-emerald-700"
-                  : status === "in-progress"
-                    ? "bg-amber-100 text-amber-700"
-                    : "bg-slate-100 text-slate-500"
-              }`}
-            >
-              {status === "ready"
-                ? "Ready"
-                : status === "in-progress"
-                  ? "In progress"
-                  : "Not started"}
-            </span>
-          )}
-          <ChevronRight
-            size={16}
-            className="text-slate-300 group-hover:text-indigo-400 transform group-hover:translate-x-1 transition-all"
-          />
-        </div>
-      </div>
-      <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
-      {showsOnEvent && (
-        <p className="text-[11px] text-slate-400 mt-1.5 italic">Shows on event: {showsOnEvent}</p>
-      )}
-    </div>
-  </button>
-);
 
 const SectionToggle = ({
   label,
@@ -702,93 +580,13 @@ const isDateWithinRange = (value: string, start: string, end: string) => {
 };
 
 /** Stable layout for section editors so inputs (e.g. Details description) don't remount and lose focus on re-render. */
-function GymnasticsEditorLayout({
-  isEmbed,
-  title,
-  children,
-  onBack,
-  showBack = true,
-}: {
-  isEmbed: boolean;
-  title: string;
-  children: React.ReactNode;
-  onBack: () => void;
-  showBack?: boolean;
-}) {
-  const closeSectionEditor = useSectionEditorClose();
-  if (closeSectionEditor) return <>{children}</>;
-  return (
-    <div className="animate-fade-in-right min-h-0" style={{ pointerEvents: "auto" }}>
-      <div
-        className="mb-6 pb-4 border-b border-slate-100 relative z-10"
-        style={{ pointerEvents: "auto" }}
-      >
-        {!isEmbed && (
-          <div className="flex items-center">
-            <div className="mr-3 w-8">
-              {showBack && (
-                <button
-                  type="button"
-                  aria-label="Back to details"
-        onClick={onBack}
-                  className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-              )}
-            </div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-              Customize
-            </span>
-          </div>
-        )}
-        <h2
-          className={`text-lg font-serif font-bold text-slate-800 ${isEmbed && showBack ? "flex items-center gap-2" : "mt-2 text-center"}`}
-        >
-          {isEmbed && showBack ? (
-            <>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onBack();
-                }}
-                className="min-w-[44px] min-h-[44px] -ml-2 flex items-center justify-center hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors cursor-pointer touch-manipulation"
-                aria-label="Back to menu"
-                style={{ pointerEvents: "auto" }}
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onBack();
-                }}
-                className="flex-1 text-left hover:bg-slate-100 rounded px-2 py-2 -mx-1 transition-colors cursor-pointer touch-manipulation min-h-[44px] flex items-center"
-                aria-label="Back to edit meet options"
-                style={{ pointerEvents: "auto" }}
-              >
-                {title}
-              </button>
-            </>
-          ) : (
-            title
-          )}
-        </h2>
-      </div>
-      {children}
-    </div>
-  );
-}
+
 
 function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
   const eventHistoryClient = useEventHistoryClient();
     const templateEditor = useTemplateEditor();
-  const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
+  const persistImageMediaValue = async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null;
   const search = useTemplateSearchParams();
     const router = useRouter();
   const { allowNavigation, requestLeave } = useProgressNavigation();
@@ -1019,7 +817,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       dismissMobileMenu,
       previewTouchHandlers,
       drawerTouchHandlers,
-    } = useMobileDrawer(undefined, "event-actions");
+    } = useMobileDrawer(true, "event-actions", true);
     const [fullscreenPreviewOpen, setFullscreenPreviewOpen] = useState(false);
     const handlePageTextChange = useCallback<GymnasticsPageTextChange>((key, value) => {
       setData((prev) => {
@@ -1840,383 +1638,265 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       setData((prev) => ({ ...prev, pageTemplateId }));
     }, []);
 
-    const handlePublish = useCallback(async () => {
-      if (templateEditor && !templateEditor.authenticated) { await templateEditor.requestSave(); return; }
-      if (submitting) return;
-      setSubmitting(true);
-      try {
-        if (data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)) {
-          throw new Error("End time must be after the start. For an overnight event, choose the next end date.");
-        }
-
-        const {
-          advancedSections: _ignoredAdvancedSections,
-          designTokens: _ignoredDesignTokens,
-          ...extraFieldsForSave
-        } = (data.extra || {}) as Record<string, any>;
-        let startISO: string | null = null;
-        let endISO: string | null = null;
-        if (data.date && data.time) {
-          const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
-          const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
-          const end = endLocal ? new Date(endLocal) : null;
-          startISO = start.toISOString();
-          endISO = end?.toISOString() || null;
-        }
-
-        const heroToSave =
-          (await persistImageMediaValue({
-            value: data.hero,
-            eventId: editEventId || undefined,
-            fileName: "gymnastics-hero.png",
-          })) || "";
-
-        const resolvedPageTemplateId =
-          data.pageTemplateId || resolveGymMeetTemplateId(data) || DEFAULT_GYM_MEET_TEMPLATE_ID;
-
-        console.log("[Publish] Saving meet page template:", {
+    const buildEventPayload = useCallback(async () => {
+      if (data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)) {
+        throw new Error("End time must be after the start. For an overnight event, choose the next end date.");
+      }
+      const {
+        advancedSections: _ignoredAdvancedSections,
+        designTokens: _ignoredDesignTokens,
+        ...extraFieldsForSave
+      } = (data.extra || {}) as Record<string, any>;
+      let startISO: string | null = null;
+      let endISO: string | null = null;
+      if (data.date && data.time) {
+        const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
+        const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
+        const end = endLocal ? new Date(endLocal) : null;
+        startISO = start.toISOString();
+        endISO = end?.toISOString() || null;
+      }
+      const heroToSave =
+        (await persistImageMediaValue({
+          value: data.hero,
+          eventId: editEventId || undefined,
+          fileName: "gymnastics-hero.png",
+        })) || "";
+      const resolvedPageTemplateId =
+        data.pageTemplateId || resolveGymMeetTemplateId(data) || DEFAULT_GYM_MEET_TEMPLATE_ID;
+      const isDiscoveryV2Update = Boolean(
+        editEventId &&
+        loadedDiscoveryPipelineSummary?.discoveryId &&
+        loadedDiscoverySource?.pipelineVersion === "gym-public-v3",
+      );
+      const isDiscoveryUpdate = Boolean(
+        editEventId && (isDiscoveryEdit || loadedDiscoverySource || isDiscoveryV2Update),
+      );
+      const builderDraft = {
+        event: {
+          title: data.title || config.displayName,
+          startISO,
+          endISO,
+          endAt: endISO,
+          end: endISO,
+          endTime: data.endTime,
+          endDate: data.endDate,
+          guestPlanning: data.guestPlanning,
+          timezone: data.timezone || undefined,
+          location: locationParts || undefined,
+          address: data.address || undefined,
+          venue: data.venue || undefined,
+          hostGym: data.hostGym || undefined,
+          city: data.city || undefined,
+          state: data.state || undefined,
+          details: data.details || undefined,
+          description: data.details || undefined,
+          rsvpEnabled: data.rsvpEnabled,
+          rsvpDeadline: data.rsvpDeadline || undefined,
+          templateId: config.slug,
           pageTemplateId: resolvedPageTemplateId,
-          editEventId,
-        });
-
-        const isDiscoveryV2Update = Boolean(
-          editEventId &&
-            loadedDiscoveryPipelineSummary?.discoveryId &&
-            loadedDiscoverySource?.pipelineVersion === "gym-public-v3",
-        );
-        const isDiscoveryUpdate = Boolean(
-          editEventId && (isDiscoveryEdit || loadedDiscoverySource || isDiscoveryV2Update),
-        );
-        const builderDraft = {
-          event: {
-            title: data.title || config.displayName,
-            startISO,
-            endISO,
-            endAt: endISO,
-            end: endISO,
-            endTime: data.endTime,
-            endDate: data.endDate,
-            guestPlanning: data.guestPlanning,
-            timezone: data.timezone || undefined,
-            location: locationParts || undefined,
-            address: data.address || undefined,
-            venue: data.venue || undefined,
-            hostGym: data.hostGym || undefined,
-            city: data.city || undefined,
-            state: data.state || undefined,
-            details: data.details || undefined,
-            description: data.details || undefined,
-            rsvpEnabled: data.rsvpEnabled,
-            rsvpDeadline: data.rsvpDeadline || undefined,
-            templateId: config.slug,
-            pageTemplateId: resolvedPageTemplateId,
-            fontSize: selectedSize.id,
-            fontSizeClass: selectedSize.className,
-            customFields: {
-              ...extraFieldsForSave,
-              team: extraFieldsForSave?.team || "",
-              advancedSections: advancedState,
-            },
-            heroImage: heroToSave,
-            heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
-            heroImageSettings: normalizeHeroImageSettings(data.heroImageSettings),
-            gymnasticsPageText: normalizeGymnasticsPageText(data.gymnasticsPageText),
-            sectionLayout: data.sectionLayout,
-            time: data.time,
-            date: data.date,
-            ...(data.passcodeRequired && data.passcode
-              ? {
-                  accessControl: {
-                    mode: "access-code",
-                    passcodePlain: data.passcode,
-                    passcodeHint: data.passcodeHint || undefined,
-                    requirePasscode: true,
-                  },
-                }
-              : data.passcodeRequired === false
-                ? {
-                    accessControl: {
-                      mode: "public",
-                      passcodeHint: "",
-                      requirePasscode: false,
-                    },
-                  }
-                : {}),
+          fontSize: selectedSize.id,
+          fontSizeClass: selectedSize.className,
+          customFields: {
+            ...extraFieldsForSave,
+            team: extraFieldsForSave?.team || "",
+            advancedSections: advancedState,
           },
-          venue: {
-            location: locationParts || undefined,
-            address: data.address || undefined,
-            venue: data.venue || undefined,
-            city: data.city || undefined,
-            state: data.state || undefined,
+          heroImage: heroToSave,
+          heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
+          heroImageSettings: normalizeHeroImageSettings(data.heroImageSettings),
+          gymnasticsPageText: normalizeGymnasticsPageText(data.gymnasticsPageText),
+          sectionLayout: data.sectionLayout,
+          time: data.time,
+          date: data.date,
+          ...(data.passcodeRequired && data.passcode
+            ? {
+              accessControl: {
+                mode: "access-code",
+                passcodePlain: data.passcode,
+                passcodeHint: data.passcodeHint || undefined,
+                requirePasscode: true,
+              },
+            }
+            : data.passcodeRequired === false
+              ? {
+                accessControl: {
+                  mode: "public",
+                  passcodeHint: "",
+                  requirePasscode: false,
+                },
+              }
+              : {}),
+        },
+        venue: {
+          location: locationParts || undefined,
+          address: data.address || undefined,
+          venue: data.venue || undefined,
+          city: data.city || undefined,
+          state: data.state || undefined,
+        },
+        advancedSections: advancedState,
+        canonicalLinks: {
+          links: Array.isArray(loadedDiscoveryPublicArtifacts?.quickAccess)
+            ? loadedDiscoveryPublicArtifacts.quickAccess
+            : [],
+        },
+        reviewFlags: Array.isArray(loadedDiscoveryPipelineSummary?.reviewFlags)
+          ? loadedDiscoveryPipelineSummary.reviewFlags
+          : [],
+      };
+      const payload: any = {
+        title: data.title || config.displayName,
+        data: {
+          category: isDiscoveryV2Update ? "gymnastics" : config.category,
+          primaryOutput: "event_page",
+          requestedOutputs: ["event_page"],
+          createdVia: isDiscoveryV2Update
+            ? "meet-discovery-v2"
+            : isDiscoveryUpdate
+              ? "meet-discovery"
+              : "simple-template",
+          createdManually: !isDiscoveryUpdate,
+          ...(isDiscoveryV2Update
+            ? {
+              builderDraft,
+              publicArtifacts:
+                loadedDiscoveryPublicArtifacts ||
+                ({
+                  pipelineVersion: "gym-public-v3",
+                  publishAssessment: {
+                    state: "needs_review",
+                    reasons: [],
+                  },
+                  hero: {
+                    title: data.title || config.displayName,
+                    dateLabel: data.date || "",
+                    venue: data.venue || data.address || "",
+                    badges: data.hostGym ? [data.hostGym] : [],
+                  },
+                  sections: loadedDiscoverySource?.publicPageSections || {},
+                  quickAccess: [],
+                } as Record<string, any>),
+              pipelineSummary: {
+                ...(loadedDiscoveryPipelineSummary || {}),
+                processingStage:
+                  loadedDiscoveryPipelineSummary?.processingStage || "review_ready",
+                needsHumanReview: Boolean(loadedDiscoveryPipelineSummary?.needsHumanReview),
+                publishReady: loadedDiscoveryPipelineSummary?.publishReady === true,
+                discoveryId: loadedDiscoveryPipelineSummary?.discoveryId || "",
+              },
+            }
+            : {}),
+          ...(!isDiscoveryV2Update &&
+            loadedDiscoverySource && {
+            discoverySource: {
+              ...loadedDiscoverySource,
+              updatedAt: new Date().toISOString(),
+            },
+          }),
+          startISO,
+          endISO,
+          endAt: endISO,
+          end: endISO,
+          endTime: data.endTime,
+          endDate: data.endDate,
+          guestPlanning: data.guestPlanning,
+          location: locationParts || undefined,
+          address: data.address || undefined,
+          venue: data.venue || undefined,
+          timezone: data.timezone || undefined,
+          hostGym: data.hostGym || undefined,
+          city: data.city || undefined,
+          state: data.state || undefined,
+          details: data.details || undefined,
+          description: data.details || undefined,
+          rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
+          rsvpEnabled: data.rsvpEnabled,
+          rsvpDeadline: data.rsvpDeadline || undefined,
+          numberOfGuests: 0,
+          templateId: config.slug,
+          pageTemplateId: resolvedPageTemplateId,
+          fontSize: selectedSize.id,
+          fontSizeClass: selectedSize.className,
+          templateConfig: {
+            displayName: config.displayName,
+            categoryLabel: config.categoryLabel || config.displayName,
+            detailFields: config.detailFields,
+            rsvpCopy: config.rsvpCopy,
+          },
+          customFields: {
+            ...extraFieldsForSave,
+            team: extraFieldsForSave?.team || "",
+            advancedSections: advancedState,
           },
           advancedSections: advancedState,
-          canonicalLinks: {
-            links: Array.isArray(loadedDiscoveryPublicArtifacts?.quickAccess)
-              ? loadedDiscoveryPublicArtifacts.quickAccess
-              : [],
-          },
-          reviewFlags: Array.isArray(loadedDiscoveryPipelineSummary?.reviewFlags)
-            ? loadedDiscoveryPipelineSummary.reviewFlags
-            : [],
-        };
-        const payload: any = {
-          title: data.title || config.displayName,
-          data: {
-            category: isDiscoveryV2Update ? "gymnastics" : config.category,
-            primaryOutput: "event_page",
-            requestedOutputs: ["event_page"],
-            createdVia: isDiscoveryV2Update
-              ? "meet-discovery-v2"
-              : isDiscoveryUpdate
-                ? "meet-discovery"
-                : "simple-template",
-            createdManually: !isDiscoveryUpdate,
-            ...(isDiscoveryV2Update
+          heroImage: heroToSave,
+          heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
+          heroImageSettings: normalizeHeroImageSettings(data.heroImageSettings),
+          gymnasticsPageText: normalizeGymnasticsPageText(data.gymnasticsPageText),
+          sectionLayout: data.sectionLayout,
+          time: data.time,
+          date: data.date,
+          ...(data.passcodeRequired && data.passcode
+            ? {
+              accessControl: {
+                mode: "access-code",
+                passcodePlain: data.passcode,
+                passcodeHint: data.passcodeHint || undefined,
+                requirePasscode: true,
+              },
+            }
+            : data.passcodeRequired === false
               ? {
-                  builderDraft,
-                  publicArtifacts:
-                    loadedDiscoveryPublicArtifacts ||
-                    ({
-                      pipelineVersion: "gym-public-v3",
-                      publishAssessment: {
-                        state: "needs_review",
-                        reasons: [],
-                      },
-                      hero: {
-                        title: data.title || config.displayName,
-                        dateLabel: data.date || "",
-                        venue: data.venue || data.address || "",
-                        badges: data.hostGym ? [data.hostGym] : [],
-                      },
-                      sections: loadedDiscoverySource?.publicPageSections || {},
-                      quickAccess: [],
-                    } as Record<string, any>),
-                  pipelineSummary: {
-                    ...(loadedDiscoveryPipelineSummary || {}),
-                    processingStage:
-                      loadedDiscoveryPipelineSummary?.processingStage || "review_ready",
-                    needsHumanReview: Boolean(loadedDiscoveryPipelineSummary?.needsHumanReview),
-                    publishReady: loadedDiscoveryPipelineSummary?.publishReady === true,
-                    discoveryId: loadedDiscoveryPipelineSummary?.discoveryId || "",
-                  },
-                }
+                accessControl: {
+                  mode: "public",
+                  passcodeHint: "",
+                  requirePasscode: false,
+                },
+              }
               : {}),
-            ...(!isDiscoveryV2Update &&
-              loadedDiscoverySource && {
-                discoverySource: {
-                  ...loadedDiscoverySource,
-                  updatedAt: new Date().toISOString(),
-                },
-              }),
-            startISO,
-            endISO,
-            endAt: endISO,
-            end: endISO,
-            endTime: data.endTime,
-            endDate: data.endDate,
-            guestPlanning: data.guestPlanning,
-            location: locationParts || undefined,
-            address: data.address || undefined,
-            venue: data.venue || undefined,
-            timezone: data.timezone || undefined,
-            hostGym: data.hostGym || undefined,
-            city: data.city || undefined,
-            state: data.state || undefined,
-            details: data.details || undefined,
-            description: data.details || undefined,
-            rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
-            rsvpEnabled: data.rsvpEnabled,
-            rsvpDeadline: data.rsvpDeadline || undefined,
-            numberOfGuests: 0,
-            templateId: config.slug,
-            pageTemplateId: resolvedPageTemplateId,
-            fontSize: selectedSize.id,
-            fontSizeClass: selectedSize.className,
-            templateConfig: {
-              displayName: config.displayName,
-              categoryLabel: config.categoryLabel || config.displayName,
-              detailFields: config.detailFields,
-              rsvpCopy: config.rsvpCopy,
-            },
-            customFields: {
-              ...extraFieldsForSave,
-              team: extraFieldsForSave?.team || "",
-              advancedSections: advancedState,
-            },
-            advancedSections: advancedState,
-            heroImage: heroToSave,
-            heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
-            heroImageSettings: normalizeHeroImageSettings(data.heroImageSettings),
-            gymnasticsPageText: normalizeGymnasticsPageText(data.gymnasticsPageText),
-            sectionLayout: data.sectionLayout,
-            time: data.time,
-            date: data.date,
-            ...(data.passcodeRequired && data.passcode
-              ? {
-                  accessControl: {
-                    mode: "access-code",
-                    passcodePlain: data.passcode,
-                    passcodeHint: data.passcodeHint || undefined,
-                    requirePasscode: true,
-                  },
-                }
-              : data.passcodeRequired === false
-                ? {
-                    accessControl: {
-                      mode: "public",
-                      passcodeHint: "",
-                      requirePasscode: false,
-                    },
-                  }
-                : {}),
-          },
-        };
-        payload.data.status = "published";
-        payload.data.draftStatus = "published";
-        payload.data.manualEditor = null;
-
-
-      if (templateEditor) { await templateEditor.persist(payload, "published"); return; }
-
-        if (editEventId) {
-          // When updating, send the full data object with theme and font
-          const updatePayload = {
-            title: payload.title,
-            data: payload.data,
-            ...(isNewDraft ? { claim: true } : {}),
-          };
-
-          console.log("[Publish] Sending update payload:", {
-            pageTemplateId: payload.data.pageTemplateId,
-            hasAdvancedSections: !!payload.data.advancedSections,
-          });
-
-          const res = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify(updatePayload),
-          });
-
-          if (!res.ok) {
-            const errorText = await res.text();
-            console.error("[Publish] Update failed:", res.status, errorText);
-            throw new Error("Failed to update event");
-          }
-
-          setDidExplicitSave(true);
-
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(
-              new CustomEvent("history:updated", {
-                detail: { id: editEventId },
-              }),
-            );
-          }
-
-          const result = await res.json().catch(() => ({}));
-          console.log("[Publish] Update successful, response:", {
-            pageTemplateId: result?.data?.pageTemplateId,
-          });
-
-          const savedPublicSlug =
-            typeof result?.public_slug === "string" ? result.public_slug : undefined;
-          const returnTo = buildEventPath(
-            editEventId,
-            payload.title,
-            { tab: "dashboard" },
-            savedPublicSlug,
-          );
-          const redirectUrl = buildEventPath(
-            editEventId,
-            payload.title,
-            { updated: true, t: Date.now(), preview: "owner", returnTo },
-            savedPublicSlug,
-          );
-
-          // When embedded in event page iframe, tell parent to exit edit mode and navigate.
-          if (typeof window !== "undefined" && (window as any).parent !== window) {
-            try {
-              (window as any).parent.postMessage(
-                {
-                  type: "envitefy:discovery-edit-saved",
-                  eventId: editEventId,
-                  redirectUrl,
-                },
-                window.location.origin,
-              );
-            } catch {}
-            return;
-          }
-          allowNavigation(() => router.push(redirectUrl));
-        } else {
-          const res = await eventHistoryClient.fetch("/api/history", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify(payload),
-          });
-          const json = await res.json().catch(() => ({}));
-          const id = (json as any)?.id as string | undefined;
-          if (!id) throw new Error("Failed to create event");
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(
-              new CustomEvent("history:created", {
-                detail: {
-                  id,
-                  title: payload.title,
-                  created_at: (json as any)?.created_at || new Date().toISOString(),
-                  data: payload.data,
-                },
-              }),
-            );
-          }
-          allowNavigation(() => router.push(buildEventPath(id, payload.title, { created: true })));
-        }
-      } catch (err: any) {
-        alert(String(err?.message || err || "Failed to create event"));
-      } finally {
-        setSubmitting(false);
-      }
+        },
+      };
+      if (isNewDraft) payload.claim = true;
+      return payload;
     }, [data.heroImageFilterEnabled, templateEditor,
       submitting,
-      data.date,
-      data.time,
-      data.title,
-      data.details,
-      data.guestPlanning,
-      data.endTime,
-      data.endDate,
-      data.venue,
-      data.address,
-      data.timezone,
-      data.hostGym,
-      data.city,
-      data.state,
-      data.hero,
-      data.heroImageSettings,
-      data.gymnasticsPageText,
-      data.sectionLayout,
-      data.pageTemplateId,
-      data.fontId,
-      data.fontSize,
-      data.rsvpEnabled,
-      data.rsvpDeadline,
-      data.extra,
-      data.passcodeRequired,
-      data.passcode,
-      data.passcodeHint,
-      data.simpleDesignTokens,
+    data.date,
+    data.time,
+    data.title,
+    data.details,
+    data.guestPlanning,
+    data.endTime,
+    data.endDate,
+    data.venue,
+    data.address,
+    data.timezone,
+    data.hostGym,
+    data.city,
+    data.state,
+    data.hero,
+    data.heroImageSettings,
+    data.gymnasticsPageText,
+    data.sectionLayout,
+    data.pageTemplateId,
+    data.fontId,
+    data.fontSize,
+    data.rsvpEnabled,
+    data.rsvpDeadline,
+    data.extra,
+    data.passcodeRequired,
+    data.passcode,
+    data.passcodeHint,
+    data.simpleDesignTokens,
       advancedState,
       locationParts,
-      config.category,
-      config.categoryLabel,
-      config.displayName,
-      config.slug,
-      config.defaultHero,
-      config.detailFields,
-      config.rsvpCopy,
+    config.category,
+    config.categoryLabel,
+    config.displayName,
+    config.slug,
+    config.defaultHero,
+    config.detailFields,
+    config.rsvpCopy,
       themeId,
       currentTheme,
       selectedSize,
@@ -2228,6 +1908,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       loadedDiscoverySource,
       router,
     ]);
+
+    const editor = useEventPageEditor({ snapshot: { data, advancedState, themeId }, category: config.category, templateId: data.pageTemplateId, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting, busy: discoverBusy, onBusyChange: setSubmitting, buildPayload: buildEventPayload, templateCategory: "gymnastics", onSaved: () => setDidExplicitSave(true) });
 
     const rsvpCopy = {
       menuTitle: config.rsvpCopy?.menuTitle || "RSVP",
@@ -2319,7 +2001,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             onClick={() => setActiveView("headline")}
             showsOnEvent={SECTION_SHOWS_ON_EVENT.headline}
           />
-          <EventSectionPalette />
           <MenuCard
             title="Passcode"
             desc="Protect this page with an access code."
@@ -2408,7 +2089,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const renderHeadlineEditor = useMemo(
       () => (
         <GymnasticsEditorLayout
-          isEmbed={isEmbed}
+
           title="Event Basics"
           onBack={handleBackToMain}
           showBack
@@ -2506,7 +2187,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const renderDesignEditor = () => (
       <GymnasticsEditorLayout
-        isEmbed={isEmbed}
+
         title="Design"
         onBack={() => setActiveView("main")}
         showBack
@@ -2562,7 +2243,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const renderDetailsEditor = () => (
       <GymnasticsEditorLayout
-        isEmbed={isEmbed}
+
         title="Details"
         onBack={() => setActiveView("main")}
         showBack
@@ -2739,7 +2420,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const renderDiscoverEditor = () => (
       <GymnasticsEditorLayout
-        isEmbed={isEmbed}
+
         title="Upload to Prefill"
         onBack={() => setActiveView("main")}
         showBack
@@ -2782,7 +2463,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const renderRsvpEditor = () => (
       <GymnasticsEditorLayout
-        isEmbed={isEmbed}
+
         title={rsvpCopy.editorTitle}
         onBack={() => setActiveView("main")}
         showBack
@@ -2842,7 +2523,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const renderPasscodeEditor = () => (
       <GymnasticsEditorLayout
-        isEmbed={isEmbed}
+
         title="Passcode"
         onBack={() => setActiveView("main")}
         showBack
@@ -2897,7 +2578,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const renderAdvancedEditor = (section: AdvancedSectionSpec) => (
       <GymnasticsEditorLayout
-        isEmbed={isEmbed}
+
         title={section.menuTitle}
         onBack={() => setActiveView("main")}
         showBack
@@ -3133,7 +2814,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       ) : null;
 
     const wrapSectionBuilder = (children: React.ReactNode) => (
-      <EventSectionBuilderProvider layout={data.sectionLayout}
+      <EventSectionBuilderProvider composition={{ value: editor.composition, onChange: editor.setComposition }} layout={data.sectionLayout}
         onChange={(sectionLayout) => setData((previous) => ({ ...previous, sectionLayout }))}
         catalog={GYMNASTICS_SECTION_CATALOG}
         renderEditor={(id) => {
@@ -3151,17 +2832,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     const sidebarPanel = (
-      <div
-        {...drawerTouchHandlers}
-        className={
-          isEmbed
-            ? "flex h-dvh min-h-0 w-full flex-1 flex-col overflow-hidden bg-white"
-            : `nav-chrome-mobile-drawer w-full md:w-[400px] md:shrink-0 flex flex-col z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
-                mobileMenuOpen ? "translate-x-0" : "translate-x-full"
-              }`
-        }
-      >
-        <div
+      <div className="min-h-full"><div
           ref={sidebarScrollRef}
           data-gym-editor-scroll="true"
           className="flex-1 min-h-0 overflow-y-auto"
@@ -3170,26 +2841,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             overscrollBehavior: "contain",
           }}
         >
-          {!isEmbed && (
-            <div className="nav-chrome-mobile-drawer-header md:hidden sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-3">
-              <button
-                type="button"
-                onClick={closeMobileMenu}
-                className="nav-chrome-mobile-drawer-back-button flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
-              >
-                <ChevronLeft size={16} aria-hidden="true" />
-                Back to event
-              </button>
-              <button
-                type="button"
-                onClick={openFullscreenPreview}
-                className="nav-chrome-mobile-drawer-back-button flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
-              >
-                <Eye size={16} aria-hidden="true" />
-                Preview
-              </button>
-            </div>
-          )}
+          {}
 
           <div
             className="p-4 pb-8 pt-4 md:p-6 md:pb-10 md:pt-6"
@@ -3220,106 +2872,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               ) : null,
             )}
           </div>
-        </div>
-
-        <div className="shrink-0 border-t border-slate-100 bg-slate-50 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-          <div className="mb-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Before Publish
-            </p>
-            {missingEssentials.length === 0 ? (
-              <p className="mt-1 text-xs text-emerald-700 font-medium">
-                Essentials complete. You are ready to publish.
-              </p>
-            ) : (
-              <p className="mt-1 text-xs text-amber-700">
-                <span>Missing: </span>
-                {missingEssentials.map((item, index) => (
-                  <React.Fragment key={`${item.view}-${item.label}`}>
-                    {index > 0 ? <span>, </span> : null}
-                    <button
-                      type="button"
-                      onClick={() => openEditorView(item.view)}
-                      className="inline-flex min-h-11 items-center rounded-md px-1 font-medium underline decoration-amber-400 underline-offset-2 hover:bg-amber-50 hover:text-amber-800"
-                    >
-                      {item.label}
-                    </button>
-                  </React.Fragment>
-                ))}
-              </p>
-            )}
-          </div>
-          <div className="grid auto-cols-fr grid-flow-col items-start gap-3 [&_button]:h-12 [&_button]:w-full [&_button]:whitespace-nowrap">
-            {editEventId && (
-              <button
-                onClick={() => {
-                  if (!didExplicitSave && isNewDraft && editEventId) {
-                    void (async () => {
-                      try {
-                        await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
-                          method: "DELETE",
-                          credentials: "include",
-                        });
-                      } catch {}
-
-                      if (isEmbed && typeof window !== "undefined") {
-                        try {
-                          (window as any).parent?.location?.assign("/event/gymnastics");
-                          return;
-                        } catch {}
-                      }
-
-                      router.push("/event/gymnastics");
-                    })();
-                    return;
-                  }
-                  const cancelHref = ownerEventEditorReturnHref(search) ||
-                    buildEventPath(editEventId, undefined, { tab: "event" });
-                  if (isEmbed && typeof window !== "undefined") {
-                    requestLeave(() => {
-                      try {
-                        window.parent?.postMessage(
-                          {
-                            type: "envitefy:discovery-preview-reset",
-                            eventId: editEventId,
-                          },
-                          window.location.origin,
-                        );
-                      } catch {
-                        // Best effort only for live preview reset.
-                      }
-                      try {
-                        window.parent.location.assign(cancelHref);
-                      } catch {
-                        router.push(cancelHref);
-                      }
-                    });
-                  } else {
-                    router.push(cancelHref);
-                  }
-                }}
-                className="min-h-11 flex-1 rounded-lg border border-slate-300 bg-white py-3 text-sm font-medium tracking-wide text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-            )}
-            {!templateEditor && <LegacyTemplateDraftButton category={"gymnastics"} templateId={data.pageTemplateId} eventId={editEventId} snapshot={{ data, activeView, advancedState, themeId, activeSection }} disabled={submitting} ready={!loadingExisting} />}
-            <button
-              onClick={handlePublish}
-              disabled={submitting || (!(templateEditor && !templateEditor.authenticated) && missingEssentials.length > 0)}
-              className="min-h-11 w-full rounded-lg bg-slate-900 py-3 text-sm font-medium tracking-wide text-white shadow-lg transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {submitting
-                ? editEventId
-                  ? "Saving..."
-                  : "Publishing..."
-                : editEventId
-                  ? "Save"
-                  : templateEditor && !templateEditor.authenticated ? "Save and continue" : "Publish"}
-            </button>
-          </div>
-        </div>
-      </div>
+        </div></div>
     );
 
     if (isDemoPreview) {
@@ -3410,17 +2963,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     if (isEmbed) {
       return wrapSectionBuilder(
-        <div className="h-dvh min-h-0 w-full bg-white flex flex-col overflow-hidden">
-          {sidebarPanel}
-        </div>
+        <EventEditorWorkspace editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed} preview={null} controls={sidebarPanel} />
       );
     }
 
     return wrapSectionBuilder(
-      <div className="relative flex min-h-screen h-[100dvh] w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
-        <EventCanvas
-          {...previewTouchHandlers}
-          aria-hidden={mobileMenuOpen ? true : undefined}
+      <EventEditorWorkspace sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "discover": renderDiscoverEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed}
+ preview={<EventCanvas
           className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
           style={{
             WebkitOverflowScrolling: "touch",
@@ -3450,7 +2999,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     heroImageSettings: { ...normalizeHeroImageSettings(prev.heroImageSettings), positionY },
                   }))}
                   heroImageAction={
-                    <HeroImageEditor filterEnabled={data.heroImageFilterEnabled !== false} onFilterChange={(heroImageFilterEnabled) => setData((prev) => ({ ...prev, heroImageFilterEnabled }))}
+                    <HeroImageEditor
                       value={data.hero}
                       onChange={(hero) => setData((prev) => ({
                         ...prev,
@@ -3481,18 +3030,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               )}
             </div>
           </div>
-        </EventCanvas>
-
-        {mobileMenuOpen && (
-          <div
-            className="nav-chrome-mobile-drawer-backdrop md:hidden fixed inset-0 z-10"
-            onClick={closeMobileMenu}
-            role="presentation"
-          ></div>
-        )}
-
-        {sidebarPanel}
-        <dialog
+        </EventCanvas>}
+ controls={sidebarPanel}
+><dialog
           ref={fullscreenPreviewRef}
           aria-label="Event preview"
           onCancel={(event) => {
@@ -3535,8 +3075,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               />
             </EventCanvas></EventSectionsReadOnly>
           ) : null}
-        </dialog>
-      </div>
+        </dialog></EventEditorWorkspace>
     );
   };
 }

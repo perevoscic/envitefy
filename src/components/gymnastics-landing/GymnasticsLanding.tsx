@@ -340,7 +340,7 @@ export default function GymnasticsLanding() {
         navLinks={marketingPageNavLinks("/gymnastics")}
         variant="transparent-dark"
         primaryCtaLabel="Browse templates"
-        authenticatedPrimaryHref="/chat"
+        authenticatedPrimaryHref="/event/gymnastics"
         brandHref="/"
         loginSuccessRedirectUrl="/"
         onGuestLoginAction={() => openAuth("login")}

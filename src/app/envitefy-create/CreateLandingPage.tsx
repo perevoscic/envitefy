@@ -30,19 +30,19 @@ const steps = [
   {
     title: "Tell us what’s happening",
     description:
-      "Sign in and choose a Live Card, Flyer/Invitation, or Event Page. Describe your event, or use the + menu to upload a photo, screenshot, flyer, or PDF.",
+      "Choose the guided Live Card builder, an Event Page template, or a Sign-up Form. Use Snap / Upload when you already have an invitation, flyer, screenshot, or PDF.",
     icon: MessageCircle,
   },
   {
     title: "Fill in the details together",
     description:
-      "Share the date, time, location, and the look you have in mind. Envitefy Create picks up the details you provide and asks for what’s missing. You can correct anything in the conversation.",
+      "Enter the title, date, time, location, and guest details in the editor. Live Card Design collects your visual direction and optional reference image.",
     icon: Paperclip,
   },
   {
     title: "Preview and make it yours",
     description:
-      "Choose Generate preview when it appears. Open Preview to review the design and guest actions, then keep chatting to refine the wording, artwork, or event details.",
+      "Review your artwork, wording and guest actions. Edit the details or design in the builder before explicitly saving or publishing.",
     icon: Sparkles,
   },
   {
@@ -57,7 +57,7 @@ const examples = [
   {
     label: "A birthday worth celebrating",
     prompt:
-      "Create a Live Card for Maya’s 30th birthday. We’re having a garden dinner on October 17, 2026, at 6 PM at my home in Austin. Think lilac flowers and warm string lights. Ask me for the address and RSVP details.",
+      "Create a Live Card for Maya’s 30th birthday. We’re having a garden dinner on October 17, 2026, at 6 PM at my home in Austin. Think lilac flowers and warm string lights. Add the address and RSVP details in Event details.",
   },
   {
     label: "An event from an upload",
@@ -67,7 +67,7 @@ const examples = [
   {
     label: "A little help getting started",
     prompt:
-      "I’m planning a baby shower and haven’t picked a theme yet. Help me with a few ideas and some invitation wording. We can work out the details together.",
+      "I’m planning a baby shower and haven’t picked a theme yet. Help me with a few ideas and some invitation wording. Add the details in the Event Page editor.",
   },
 ];
 
@@ -75,7 +75,7 @@ const faqs = [
   {
     question: "What is Envitefy Create?",
     answer:
-      "It’s Envitefy’s conversational event creator. Start with your own words or an upload, and it helps collect the event details, draft invitation wording, and create a design you can review before publishing.",
+      "Envitefy offers a guided Live Card builder, Event Page template editors, and a separate Sign-up Form builder. Choose the format for your event, add your details, and review before publishing.",
   },
   {
     question: "What is a Live Card?",
@@ -85,12 +85,12 @@ const faqs = [
   {
     question: "Do I need to have every detail ready?",
     answer:
-      "No. Start with what you know. You can ask for ideas and wording, add details as you go, and preview a draft while optional details are unfinished. Review and complete the required event information before publishing.",
+      "No. Start with what you know and add details as you go. Save a private draft when you want to return later, and complete the required event information before publishing.",
   },
   {
     question: "Does creating a preview publish my invitation?",
     answer:
-      "No. Generating a preview and publishing are separate steps. Review the draft, check the event facts, and ask for changes before you choose to publish and share.",
+      "No. Generating a preview and publishing are separate steps. Review the draft, check the event facts, and edit any changes before you choose to publish and share.",
   },
   {
     question: "Do my guests need an account or an app?",
@@ -109,7 +109,7 @@ function StartButton({ authenticated, onStart }: { authenticated: boolean; onSta
     </>
   );
   return authenticated ? (
-    <Link href="/" className={primaryButton}>
+    <Link href="/live-cards" className={primaryButton}>
       {content}
     </Link>
   ) : (
@@ -135,7 +135,7 @@ export default function CreateLandingPage() {
         navLinks={navigation}
         mobileNavLinks={[{ label: "Home", href: "/" }, ...navigation]}
         primaryCtaLabel="Create with Envitefy"
-        authenticatedPrimaryHref="/"
+        authenticatedPrimaryHref="/live-cards"
         loginSuccessRedirectUrl="/"
         onGuestLoginAction={() => openAuth("login")}
         onGuestPrimaryAction={() => openAuth("signup")}
@@ -149,7 +149,7 @@ export default function CreateLandingPage() {
               </p>
               <h1 className="max-w-xl font-serif text-[2.8rem] leading-[1.06] tracking-[-0.035em] sm:text-6xl lg:text-[4.2rem]">
                 Your next celebration starts with{" "}
-                <span className="text-[#7041d9]">a conversation.</span>
+                <span className="text-[#7041d9]">your design.</span>
               </h1>
               <p className="mt-6 max-w-lg text-base leading-8 text-[#655b70] sm:text-lg">
                 An idea, a few details, or a flyer you already have. Envitefy Create helps turn it into a
@@ -285,7 +285,7 @@ export default function CreateLandingPage() {
                 },
                 {
                   title: "Flyer / Invitation",
-                  copy: "A designed invitation with wording and artwork tailored to your occasion. Review the look and refine it in the conversation.",
+                  copy: "A designed invitation with wording and artwork tailored to your occasion. Review the look and refine it in the editor.",
                 },
                 {
                   title: "Event Page",
@@ -312,7 +312,7 @@ export default function CreateLandingPage() {
             Start something like this.
           </h2>
           <p className="mt-4 text-base leading-7 text-[#655b70]">
-            Use these as inspiration. Your first message doesn’t have to be perfect.
+            Use these as inspiration for your design and event details.
           </p>
           <div className="mt-9 grid gap-5 md:grid-cols-3">
             {examples.map((example) => (

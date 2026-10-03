@@ -3,7 +3,6 @@
 import {
   Baby,
   BarChart3,
-  Bot,
   Cake,
   CalendarDays,
   Camera,
@@ -32,7 +31,6 @@ import {
   Settings,
   ShieldCheck,
   Stethoscope,
-  Trash2,
   Trophy,
   Upload,
   User,
@@ -68,7 +66,6 @@ import EventSidebar from "@/components/navigation/EventSidebar";
 import MobileNavHeader from "@/components/navigation/MobileNavHeader";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { useMenu } from "@/contexts/MenuContext";
-import type { CreationThreadSummary, CreationThreadsResponse } from "@/lib/concierge/types";
 import { isInvitedEventLikeRecord } from "@/lib/dashboard-data";
 import { formatSportsScheduleSummary } from "@/lib/sports-schedule-navigation";
 import { buildEditLink } from "@/utils/event-edit-route";
@@ -184,30 +181,6 @@ function SidebarFootballMenuIcon({
       aria-hidden
     />
   );
-}
-
-function DraftThreadIcon({ size = 17, className }: { size?: number; className?: string }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-      aria-hidden="true"
-    >
-      <path
-        fillRule="evenodd"
-        d="M17,21 L17,23 L15,23 L15,21 L17,21 Z M19,21 L21,21 C21,22.1045695 20.1045695,23 19,23 L19,21 Z M13,21 L13,23 L11,23 L11,21 L13,21 Z M9,21 L9,23 L7,23 L7,21 L9,21 Z M5,21 L5,23 C3.8954305,23 3,22.1045695 3,21 L5,21 Z M19,13 L21,13 L21,15 L19,15 L19,13 Z M19,11 L19,9 L15,9 C13.8954305,9 13,8.1045695 13,7 L13,3 L5,3 L5,11 L3,11 L3,3 C3,1.8954305 3.8954305,1 5,1 L15.4142136,1 L21,6.58578644 L21,11 L19,11 Z M5,13 L5,15 L3,15 L3,13 L5,13 Z M19,17 L21,17 L21,19 L19,19 L19,17 Z M5,17 L5,19 L3,19 L3,17 L5,17 Z M15,3.41421356 L15,7 L18.5857864,7 L15,3.41421356 Z"
-      />
-    </svg>
-  );
-}
-
-function isDraftCreationThreadStatus(status: string) {
-  const normalized = status.trim().toLowerCase();
-  return normalized !== "published" && normalized !== "publishing";
 }
 
 function SidebarMyEventsMenuIcon({
@@ -535,7 +508,6 @@ const adminSidebarIcons: Record<
   dashboard: LayoutDashboard,
   users: Users,
   events: Gauge,
-  concierge: Bot,
   scans: Search,
   emails: Mail,
   "ad-studio": WandSparkles,
@@ -996,114 +968,6 @@ function DraftsPanel({
   );
 }
 
-function AiThreadsPanel({
-  threads,
-  activeThreadId,
-  onBack,
-  onNewChat,
-  onOpenThread,
-  onDeleteThread,
-}: {
-  threads: CreationThreadSummary[];
-  activeThreadId: string | null;
-  onBack: () => void;
-  onNewChat: () => void;
-  onOpenThread: (threadId: string) => void;
-  onDeleteThread: (thread: CreationThreadSummary) => void;
-}) {
-  return (
-    <SidebarListPanel
-      title="Envitefy Create"
-      titleClassName="!text-[1.1rem] !tracking-[0.06em]"
-      onBack={onBack}
-    >
-      <div className="space-y-3">
-        <Link
-          href="/chat"
-          onClick={onNewChat}
-          className={`${SIDEBAR_SUBMENU_ROW_CLASS} ${SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS}`}
-        >
-          <span className={`${SIDEBAR_SUBMENU_ICON_CLASS} ${SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS}`}>
-            <Plus size={18} />
-          </span>
-          <span className={`${SIDEBAR_SUBMENU_LABEL_CLASS} ${SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS}`}>
-            New chat
-          </span>
-        </Link>
-
-        <section className="space-y-1">
-          <div className="px-1 pt-1">
-            <p className="font-[var(--font-josefin-sans)] text-[0.82rem] font-bold uppercase tracking-[0.13em] leading-none text-[#6b5fc2]">
-              Drafts
-            </p>
-            <div className={`mt-1 ${SIDEBAR_DIVIDER_CLASS}`} />
-          </div>
-
-          {threads.length ? (
-            threads.map((thread) => {
-              const isActiveThread = activeThreadId === thread.id;
-              const isDraftThread = isDraftCreationThreadStatus(thread.status);
-              return (
-                <div key={thread.id} className="group flex items-center gap-2">
-                  <Link
-                    href={`/chat?thread=${encodeURIComponent(thread.id)}`}
-                    onClick={(event) => {
-                      if (!isPlainPrimaryLinkClick(event)) return;
-                      event.preventDefault();
-                      onOpenThread(thread.id);
-                    }}
-                    className={`${SIDEBAR_SUBMENU_ROW_CLASS} min-w-0 flex-1 ${
-                      isActiveThread
-                        ? SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS
-                        : SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS
-                    }`}
-                  >
-                    {isDraftThread ? (
-                      <span
-                        className={`flex h-7 w-7 shrink-0 items-center justify-center ${
-                          isActiveThread
-                            ? "text-[#6e59db]"
-                            : "text-[#beb9e8] group-hover:text-[#aba4e3]"
-                        }`}
-                      >
-                        <DraftThreadIcon size={17} />
-                      </span>
-                    ) : null}
-                    <span
-                      className={`${SIDEBAR_SUBMENU_LABEL_CLASS} ${
-                        isActiveThread
-                          ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
-                          : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
-                      }`}
-                    >
-                      {thread.title}
-                    </span>
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => onDeleteThread(thread)}
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-100 bg-white/90 text-red-500 opacity-0 shadow-[0_10px_20px_rgba(220,38,38,0.08)] transition group-hover:opacity-100 group-focus-within:opacity-100 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                    aria-label={`Delete ${thread.title}`}
-                    title="Delete chat"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              );
-            })
-          ) : (
-            <div
-              className={`${SIDEBAR_SUBMENU_CARD_CLASS} rounded-[24px] border-dashed px-4 py-6 text-center text-sm text-[#7e76b9]`}
-            >
-              No AI chats yet.
-            </div>
-          )}
-        </section>
-      </div>
-    </SidebarListPanel>
-  );
-}
-
 function FooterProfileMenu({
   isOpen,
   menuOpen,
@@ -1235,6 +1099,10 @@ function FooterProfileMenu({
 
               <div className="nav-chrome-divider mx-2 my-1 h-px" />
 
+              <div className="px-1.5 pb-3 pt-3">
+                <EnvitefySocialLinks placement="menu" />
+              </div>
+              <div className="nav-chrome-divider mx-2 my-1 h-px" />
               <button
                 type="button"
                 onClick={() => {
@@ -1247,10 +1115,6 @@ function FooterProfileMenu({
                 </span>
                 <span className="text-[13px] font-medium text-red-400">Log out</span>
               </button>
-              <div className="nav-chrome-divider mx-2 my-1 h-px" />
-              <div className="px-1.5 pb-3 pt-3">
-                <EnvitefySocialLinks placement="menu" />
-              </div>
             </div>
           </div>
         ) : null}
@@ -1269,43 +1133,12 @@ export default function LeftSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const isChatPath = (pathname || "").replace(/\/+$/, "") === "/chat";
-  const activeAiThreadId = searchParams.get("thread")?.trim() || null;
   const isSnapUploadStartActive = (pathname || "").replace(/\/+$/, "") === "/snap";
-  const [aiThreads, setAiThreads] = useState<CreationThreadSummary[]>([]);
   const drafts = useMemo(() => buildSidebarDraftItems({
     history: historySidebarItems,
-    threads: aiThreads,
     buildEditLink,
     isInvitedEventLikeRecord,
-  }), [historySidebarItems, aiThreads]);
-
-  useEffect(() => {
-    if (status !== "authenticated") {
-      setAiThreads([]);
-      return;
-    }
-
-    let cancelled = false;
-    async function loadAiThreads() {
-      try {
-        const response = await fetch("/api/creation/threads?limit=20", {
-          cache: "no-store",
-          credentials: "include",
-        });
-        const json = (await response.json().catch(() => null)) as CreationThreadsResponse | null;
-        if (cancelled || !response.ok || !json?.ok) return;
-        setAiThreads(json.threads);
-      } catch {}
-    }
-
-    void loadAiThreads();
-    window.addEventListener("envitefy:creation-threads-changed", loadAiThreads);
-    return () => {
-      cancelled = true;
-      window.removeEventListener("envitefy:creation-threads-changed", loadAiThreads);
-    };
-  }, [status, pathname]);
+  }), [historySidebarItems]);
 
   const viewModel = useLeftSidebarController({
     session,
@@ -1343,8 +1176,6 @@ export default function LeftSidebar() {
         : "translateX(100%)";
   const createEventOtherPanelTransform =
     viewModel.sidebarPage === "createEventOther" ? "translateX(0%)" : "translateX(100%)";
-  const aiThreadsPanelTransform =
-    viewModel.sidebarPage === "aiThreads" ? "translateX(0%)" : "translateX(100%)";
   const adminPanelTransform =
     viewModel.sidebarPage === "admin" ? "translateX(0%)" : "translateX(100%)";
   const draftsPanelTransform =
@@ -1381,50 +1212,11 @@ export default function LeftSidebar() {
     opacity: isActive ? 1 : 0,
   });
 
-  async function deleteAiThread(thread: CreationThreadSummary) {
-    const previousThreads = aiThreads;
-    setAiThreads((current) => current.filter((item) => item.id !== thread.id));
-    try {
-      const response = await fetch(`/api/creation/threads/${encodeURIComponent(thread.id)}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!response.ok) {
-        setAiThreads(previousThreads);
-        return;
-      }
-      if (activeAiThreadId === thread.id) {
-        router.push("/chat");
-      }
-      window.dispatchEvent(new CustomEvent("envitefy:creation-threads-changed"));
-    } catch {
-      setAiThreads(previousThreads);
-    }
-  }
-
-  const showFullMobileTopBar = viewModel.showMobileTopBar && !isChatPath;
-  const showChatTopBarReveal = viewModel.showMobileTopBar && isChatPath;
-
   return (
     <Sidebar open={viewModel.isOpen}>
-      {showChatTopBarReveal ? (
-        <button
-          data-app-navigation="reveal"
-          type="button"
-          className="nav-chrome-pill-secondary nav-chrome-motion fixed left-[max(0.75rem,env(safe-area-inset-left))] top-[calc(var(--envitefy-chat-layout-top,0px)+max(0.35rem,env(safe-area-inset-top)))] z-[6600] inline-flex h-10 w-10 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation items-center justify-center rounded-full lg:hidden"
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            viewModel.openSidebarFromTrigger();
-          }}
-          aria-label="Open navigation"
-        >
-          <SidebarNavigationMenuIcon size={24} />
-        </button>
-      ) : null}
       {!viewModel.isOpen ? (
         <MobileNavHeader
-          visible={showFullMobileTopBar}
+          visible={viewModel.showMobileTopBar}
           onOpenNavigation={viewModel.openSidebarFromTrigger}
           onHome={viewModel.goHomeFromSidebar}
           openButtonRef={viewModel.openBarButtonRef}
@@ -1599,25 +1391,7 @@ export default function LeftSidebar() {
                     <AdminNavigationPanel pathname={pathname} onBack={viewModel.backToRoot} />
                   </div>
 
-                  <div
-                    className={`${SIDEBAR_LIST_PANEL_CLASS} z-[9]`}
-                    style={panelStyle(
-                      aiThreadsPanelTransform,
-                      viewModel.sidebarPage === "aiThreads",
-                    )}
-                    data-sidebar-detail-panel
-                    inert={viewModel.isCompact || (viewModel.sidebarPage !== "aiThreads")}
-                    aria-hidden={viewModel.sidebarPage !== "aiThreads"}
-                  >
-                    <AiThreadsPanel
-                      threads={aiThreads}
-                      activeThreadId={activeAiThreadId}
-                      onBack={viewModel.backToRoot}
-                      onNewChat={viewModel.startNewAiChat}
-                      onOpenThread={viewModel.openAiThread}
-                      onDeleteThread={deleteAiThread}
-                    />
-                  </div>
+
 
                   <div
                     className={`${SIDEBAR_LIST_PANEL_CLASS} z-[10]`}

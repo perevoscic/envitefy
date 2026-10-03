@@ -17,7 +17,9 @@ test("guest chat explains SNAP and Envitefy Create", () => {
     const creation = buildDeterministicGuestChatAnswer(question);
     assert.equal(creation.matchedKnowledgeIds[0], "concierge");
     assert.match(creation.answer, /Envitefy Create/);
-    assert.match(creation.answer, /chat/i);
+    assert.match(creation.answer, /Live Card builder/);
+    assert.match(creation.answer, /help chat/);
+    assert.doesNotMatch(creation.answer, /chat that creates|asks for missing/);
     assert.doesNotMatch(creation.answer, /Concierge/);
   }
 });

@@ -1,6 +1,6 @@
 import { CAMPAIGN_OPERATION_TIMEOUT_MS, withCampaignTimeout } from "./create-campaign-timeout.mjs";
 
-const capturedPaths = new Set(["/api/creation/intake", "/api/creation/intake/stream", "/api/studio/generate", "/api/creation/draft"]);
+const capturedPaths = new Set(["/api/studio/generate"]);
 
 /** Chromium's default inspector body cache can evict streamed image JSON. Capture
  * from the same dedicated Network session whose large buffers we configure.

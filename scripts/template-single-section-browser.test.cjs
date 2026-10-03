@@ -65,6 +65,8 @@ function load(file) {
 }
 const h = React.createElement;
 const Body = load("src/components/templates/TemplateBodyLayout.tsx").default;
+const NativeSections = load("src/components/events/EventPageSections.tsx").default;
+const CompositionProvider = load("src/components/events/EventPageCompositionContext.tsx").EventPageCompositionProvider;
 const Signup = load("src/components/smart-signup-form/SignupViewer.tsx").default;
 const jiti = createJiti(__filename, { alias: { "@": path.resolve("src") }, fsCache: false });
 const { getPublicTemplates } = jiti(path.resolve("src/lib/public-template-catalog.ts"));
@@ -74,6 +76,37 @@ const { getTemplateBodyPresentation } = jiti(
 );
 const { getCelebrationDirection } = load("src/components/templates/celebration-materials.ts");
 const { createSignupTemplateForm } = jiti(path.resolve("src/lib/signup-starters.ts"));
+
+test("native Event Page layout choices respect saved section order and narrow containers", { timeout: 60000 }, async () => {
+  const layouts = ["split", "banner", "poster", "editorial", "spotlight", "minimal", "cards"];
+  const sections = ["schedule", "details", "travel"].map((id) => ({ id, content: h("section", { id, style: { padding: "20px" } }, h("h2", null, id), h("p", null, "Useful event information.")) }));
+  const markup = layouts.map((layout) => `<article data-layout-case="${layout}">${renderToStaticMarkup(h(CompositionProvider, { value: { version: 1, layout, sections: [], sectionLayout: { version: 1, order: ["travel", "schedule", "details"], hidden: [], added: [] } } }, h(NativeSections, { sections })))}</article>`).join("");
+  const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
+  const page = await browser.newPage();
+  try {
+    await page.setContent(`<style>${stylesheets.join("\n")}body{margin:0}article{width:100%;margin:20px 0;box-sizing:border-box}section{box-sizing:border-box;min-width:0}</style>${markup}`);
+    for (const width of [390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const layout of layouts) {
+        const article = page.locator(`[data-layout-case="${layout}"]`);
+        assert.deepEqual(await article.locator("[data-section-row]").evaluateAll((rows) => rows.map((row) => row.dataset.sectionRow)), ["travel", "schedule", "details"]);
+        assert.ok(await article.evaluate((element) => element.scrollWidth <= element.clientWidth + 1), `${layout} fits at ${width}px`);
+        if (["split", "cards"].includes(layout)) {
+          const first = await article.locator('[data-section-row="travel"]').boundingBox();
+          const second = await article.locator('[data-section-row="schedule"]').boundingBox();
+          assert.equal(Math.abs(first.y - second.y) < 1, width > 700, `${layout} columns at ${width}px`);
+        }
+      }
+    }
+    await page.addStyleTag({ content: "article{width:500px}" });
+    for (const layout of ["split", "cards"]) {
+      const article = page.locator(`[data-layout-case="${layout}"]`);
+      const first = await article.locator('[data-section-row="travel"]').boundingBox();
+      const second = await article.locator('[data-section-row="schedule"]').boundingBox();
+      assert.ok(second.y > first.y, `${layout} stacks inside a narrow desktop preview`);
+    }
+  } finally { await browser.close(); }
+});
 
 function sharedBody(category, id, count = 1) {
   return h(Body, {

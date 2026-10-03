@@ -82,6 +82,19 @@ test("Home shows the empty state only after a successful empty response", () => 
   assert.match(render({ data: emptyData }), /Nothing is scheduled yet/);
 });
 
+test("pending co-host invitations appear before the spotlight, count as attention, and survive event-load failure", () => {
+  const coHostInvitations = [{ id: "invite", eventId: "event", eventTitle: "Garden party", ownerName: "Taylor", expiresAt: "2030-10-10T12:00:00Z" }];
+  const invitationNotice = React.createElement("section", { id: "dashboard-cohost-invitations" }, "Pending co-host invitation");
+  const overview = { attention: [], conflicts: [], guests: [], signups: [], drafts: { count: 0, items: [] }, editLinks: {}, unavailable: [] };
+  const html = render({ data: { ...emptyData, overview }, coHostInvitations, invitationNotice });
+  assert.ok(html.indexOf("Pending co-host invitation") < html.indexOf("Nothing is scheduled yet"));
+  assert.match(html, /1 to review/);
+  assert.doesNotMatch(html, /All caught up/);
+  assert.match(render({ loading: true, coHostInvitations, invitationNotice }), /Pending co-host invitation/);
+  assert.match(render({ error: "Events unavailable", coHostInvitations, invitationNotice }), /Pending co-host invitation/);
+  assert.doesNotMatch(render({ data: { ...emptyData, overview }, coHostInvitationsUnavailable: true }), /All caught up/);
+});
+
 test("Home keeps loaded events visible during a refresh failure and lists the rest after the spotlight", () => {
   const event = (id, startAt) => ({ id, title: id, startAt, ownership: "owned" });
   const nearest = event("Nearest wedding", "2030-09-25T12:00:00Z");
@@ -167,7 +180,7 @@ test("Home keeps drafts and sign-up needs while omitting Guest responses", () =>
   const overview = {
     attention: [{ id: "venue", eventId: "school", eventTitle: "School night", kind: "venue", label: "Add event location", href: "/edit/school" }],
     conflicts: [], editLinks: { picnic: "/edit/picnic" }, unavailable: [],
-    drafts: { count: 1, items: [{ id: "draft", title: "Garden birthday", startAt: null, updatedAt: null, href: "/chat?thread=saved" }] },
+    drafts: { count: 1, items: [{ id: "draft", title: "Garden birthday", startAt: null, updatedAt: null, href: "/live-cards?edit=draft" }] },
     guests: [{ eventId: "picnic", title: "School picnic", going: 4, maybe: 1, declined: 2, awaitingShared: 3 }],
     signups: [{ eventId: "picnic", title: "School picnic", filled: 2, capacity: 3, remaining: 1, unlimitedSlots: 0, sections: [{ id: "snacks", title: "Snacks", remaining: 1, unlimitedSlots: 0 }] }],
   };
@@ -177,7 +190,7 @@ test("Home keeps drafts and sign-up needs while omitting Guest responses", () =>
   const review = renderToStaticMarkup(React.createElement(DashboardReviewDetails, { kind: "attention", overview }));
   assert.match(review, /href="\/edit\/school"/);
   assert.doesNotMatch(html, /id="dashboard-attention"|href="#dashboard-attention"/);
-  assert.match(html, /href="\/chat\?thread=saved"/);
+  assert.match(html, /href="\/live-cards\?edit=draft"/);
   assert.doesNotMatch(html, /Guest responses|dashboard-guests|3 shared invitations awaiting a reply|7 Replies/);
   assert.match(html, /1 open/);
   assert.match(html, /Forecast available closer to the event/);

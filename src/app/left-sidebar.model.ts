@@ -5,7 +5,6 @@ import {
   type EventProductOutput,
 } from "../utils/event-product-route.ts";
 import { buildScanPersonalization, resolveSavedScanPresentation } from "../lib/ocr/personalization.ts";
-import type { CreationThreadSummary } from "../lib/concierge/types.ts";
 import { isEventDraft } from "../lib/event-draft-access.ts";
 import { getSportsScheduleSummary, type SportsScheduleSummary } from "../lib/sports-schedule-navigation.ts";
 
@@ -15,7 +14,6 @@ export type SidebarPage =
   | "root"
   | "createEvent"
   | "createEventOther"
-  | "aiThreads"
   | "myEvents"
   | "schedules"
   | "signupForms"
@@ -57,23 +55,17 @@ export type SidebarDraftItem = {
 
 export function buildSidebarDraftItems({
   history,
-  threads,
   buildEditLink,
   isInvitedEventLikeRecord,
 }: {
   history: HistoryRow[];
-  threads: CreationThreadSummary[];
   buildEditLink: (id: string, data: Record<string, unknown>, title: string) => string;
   isInvitedEventLikeRecord: (data: Record<string, unknown>) => boolean;
 }): SidebarDraftItem[] {
   const items: SidebarDraftItem[] = [];
-  const threadIds = new Set<string>();
   for (const row of history) {
     const data = asSidebarRecord(row.data);
     if (!data) continue;
-    const concierge = asSidebarRecord(data.conciergeDraft);
-    const threadId = concierge?.creationSessionId || data.creationSessionId;
-    if (typeof threadId === "string") threadIds.add(threadId);
     if (!isEventDraft(data) || isInvitedHistoryEvent(data, isInvitedEventLikeRecord)) continue;
     items.push({
       id: `event:${row.id}`,
@@ -81,21 +73,6 @@ export function buildSidebarDraftItems({
       title: row.title || "Untitled event",
       href: buildEditLink(row.id, data, row.title),
       savedAt: typeof data.updatedAt === "string" ? data.updatedAt : row.created_at || null,
-    });
-  }
-  for (const thread of threads) {
-    const status = thread.status.trim().toLowerCase();
-    if (
-      ["published", "publishing", "archived", "canceled", "cancelled", "deleted"].includes(status) ||
-      threadIds.has(thread.id) ||
-      thread.savedEventId
-    ) continue;
-    items.push({
-      id: `thread:${thread.id}`,
-      eventId: null,
-      title: thread.title || "Untitled event",
-      href: `/chat?thread=${encodeURIComponent(thread.id)}`,
-      savedAt: thread.updatedAt || thread.createdAt || null,
     });
   }
   const savedTime = (value: string | null) => Date.parse(value || "") || 0;

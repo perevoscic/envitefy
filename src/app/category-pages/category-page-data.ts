@@ -748,7 +748,7 @@ export const useCasePages = [
       {
         question: "What is Envitefy Create?",
         answer:
-          "Envitefy Create is a chat that builds the reveal page from a message or upload. It asks for missing details, then drafts the invitation, RSVP, Team Pink or Team Blue, and guest page for you to review.",
+          "Choose a gender reveal template and add the event details in its editor. Review the invitation, RSVP, Team Pink or Team Blue, and guest page before publishing.",
       },
       {
         question: "Can guests RSVP with plus-ones?",
@@ -873,7 +873,7 @@ export const useCasePages = [
       {
         question: "What is Envitefy Create?",
         answer:
-          "Envitefy Create is a chat that builds the birthday page from a message or upload. It collects missing details, then drafts the invitation, household RSVP, map, and gift notes for you to approve.",
+          "Choose a birthday template and add the event details in its editor. Review the invitation, household RSVP, map, and gift notes before publishing.",
       },
       {
         question: "Can I add gift registry or wishlist links?",

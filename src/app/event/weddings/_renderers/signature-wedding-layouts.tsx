@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import EventPageNativeSections from "@/components/events/EventPageNativeSections";
 import { type EventData, Footer, pickTextColor, type ThemeConfig } from "./content-sections";
 
 export type SignatureWeddingLayoutId =
@@ -93,12 +94,14 @@ function Story({
 }) {
   if (!event.story) return null;
   return (
-    <section data-celebration-section className={className}>
+    <section id="story" aria-label={title} data-celebration-section className={className}>
       <p className={sectionLabel}>{title}</p>
       <p className="mt-4 text-sm leading-7 opacity-85">{event.story}</p>
     </section>
   );
 }
+
+Story.eventSectionId = "story";
 
 function Schedule({
   event,
@@ -351,18 +354,22 @@ function Schedule({
   );
 }
 
+Schedule.eventSectionId = "schedule";
+
 function Supplemental({
   theme,
   event,
   tone,
   background,
   foreground,
+  separateSections = false,
 }: {
   theme: ThemeConfig;
   event: EventData;
   tone: SupplementalTone;
   background: string;
   foreground?: string;
+  separateSections?: boolean;
 }) {
   const color = foreground || pickTextColor(background);
   const accent = theme.colors.secondary;
@@ -388,6 +395,103 @@ function Supplemental({
     botanical: "rounded-[3rem_3rem_1rem_1rem] border-white/25 bg-white/10",
     minimal: "rounded-none border-black/10 bg-white/20",
   };
+
+  if (separateSections)
+    return (
+      <>
+        {extras.map((extra, index) => (
+          <section
+            key={extra.title}
+            id={
+              extra.title === "Wedding Party"
+                ? "wedding-party"
+                : extra.title === "Travel"
+                  ? "travel"
+                  : "things-to-do"
+            }
+            data-celebration-section
+            className={`border p-6 ${toneClasses[tone]}`}
+            style={{
+              backgroundColor: background,
+              color,
+              transform: tone === "postcard" ? `rotate(${index % 2 ? 1 : -1}deg)` : undefined,
+            }}
+          >
+            <p className={sectionLabel} style={{ color: accent }}>
+              {extra.eyebrow}
+            </p>
+            <h2
+              className="mt-3 text-xl"
+              style={{ fontFamily: theme.fonts.headline, color: "inherit" }}
+            >
+              {extra.title}
+            </h2>
+            <p className="mt-3 text-sm leading-6 opacity-70">{extra.copy}</p>
+          </section>
+        ))}
+        {photos.length > 0 && (
+          <section
+            id="photos"
+            data-celebration-section
+            className="p-6"
+            style={{ backgroundColor: background, color }}
+          >
+            <h2 className="mb-4 text-xl">Photos</h2>
+            <div
+              className={`grid gap-3 ${tone === "editorial" ? "grid-cols-12" : "grid-cols-2 md:grid-cols-4"}`}
+            >
+              {photos.slice(0, 4).map((photo, index) => (
+                <img
+                  key={`${photo}-${index}`}
+                  src={photo}
+                  alt=""
+                  className={`h-44 w-full object-cover ${tone === "editorial" ? (index % 3 === 0 ? "col-span-7" : "col-span-5") : "rounded-xl"}`}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+        {Boolean(event.registry?.length) && (
+          <section
+            id="registry"
+            data-celebration-section
+            className="p-6"
+            style={{ backgroundColor: background, color }}
+          >
+            <h2 className="mb-4 text-xl">Registry</h2>
+            <div className="flex flex-wrap gap-3">
+              {event.registry?.map((registry, index) => (
+                <a
+                  key={`${registry.url}-${index}`}
+                  href={registry.url}
+                  className="border px-5 py-3 text-xs uppercase tracking-[0.18em]"
+                  style={{ borderColor: `${color}55` }}
+                >
+                  {registry.label || "Registry"}
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+        {event.rsvpEnabled && (
+          <section
+            id="rsvp"
+            data-celebration-section
+            className="p-6 text-center"
+            style={{ backgroundColor: background, color }}
+          >
+            <h2 className="mb-4 text-xl">RSVP</h2>
+            <a
+              href={event.rsvpLink || event.rsvp?.url || "#rsvp"}
+              className="inline-block px-7 py-3 text-xs font-bold uppercase tracking-[0.22em]"
+              style={{ backgroundColor: accent, color: pickTextColor(accent) }}
+            >
+              RSVP
+            </a>
+          </section>
+        )}
+      </>
+    );
 
   return (
     <section
@@ -486,14 +590,28 @@ function Page({
 }) {
   return (
     <div className="min-h-screen w-full overflow-hidden" style={{ fontFamily: theme.fonts.body }}>
-      {children}
-      <Supplemental
-        theme={theme}
-        event={event}
-        tone={supplementalTone}
-        background={supplementalBackground}
-        foreground={supplementalForeground}
-      />
+      <EventPageNativeSections
+        guestTools={event.guestTools}
+        supplementalSections={Supplemental({
+          theme,
+          event,
+          tone: supplementalTone,
+          background: supplementalBackground,
+          foreground: supplementalForeground,
+          separateSections: true,
+        })}
+        supplemental={
+          <Supplemental
+            theme={theme}
+            event={event}
+            tone={supplementalTone}
+            background={supplementalBackground}
+            foreground={supplementalForeground}
+          />
+        }
+      >
+        {children}
+      </EventPageNativeSections>
       <Footer theme={theme} event={event} backgroundColor={supplementalBackground} />
     </div>
   );
@@ -545,7 +663,7 @@ function MidnightElegance({ theme, event }: Omit<Props, "layout">) {
       </header>
       <main className="grid gap-10 bg-[#11142f] px-7 py-16 text-white md:grid-cols-[0.8fr_1.2fr] md:px-14">
         <Story event={event} title="The Love Note" className="border-t border-white/20 pt-6" />
-        <section data-celebration-section>
+        <section id="schedule" aria-label="Schedule" data-celebration-section>
           <p className={sectionLabel} style={{ color: theme.colors.secondary }}>
             Order of the evening
           </p>
@@ -604,7 +722,7 @@ function WildRoseHalo({ theme, event }: Omit<Props, "layout">) {
             title="How love bloomed"
             className="rounded-[50%_50%_8px_8px] border border-[#7b3446]/20 bg-white/60 px-7 pb-8 pt-14 text-center"
           />
-          <section data-celebration-section className="pt-8">
+          <section id="schedule" aria-label="Schedule" data-celebration-section className="pt-8">
             <p className={sectionLabel}>The celebration</p>
             <div className="mt-6">
               <Schedule event={event} mode="petals" accent={theme.colors.primary} />
@@ -713,7 +831,12 @@ function IvoryLaceCrest({ theme, event }: Omit<Props, "layout">) {
             <div className="mx-auto my-8 h-px max-w-md bg-[#6a645a]/30" />
             <Meta event={event} />
             <Story event={event} title="Their story" className="mx-auto mt-12 max-w-xl" />
-            <section data-celebration-section className="mx-auto mt-12 max-w-2xl text-left">
+            <section
+              id="schedule"
+              aria-label="Schedule"
+              data-celebration-section
+              className="mx-auto mt-12 max-w-2xl text-left"
+            >
               <Schedule event={event} mode="ledger" accent={theme.colors.secondary} />
             </section>
           </div>
@@ -758,7 +881,7 @@ function EmeraldGarden({ theme, event }: Omit<Props, "layout">) {
       <main className="bg-[#e9f2e9] px-6 py-16 text-[#17392b]">
         <div className="mx-auto max-w-5xl">
           <Story event={event} title="Rooted in love" className="mx-auto max-w-2xl text-center" />
-          <section data-celebration-section className="mt-14">
+          <section id="schedule" aria-label="Schedule" data-celebration-section className="mt-14">
             <p className={`${sectionLabel} text-center`}>The garden path</p>
             <div className="mt-8">
               <Schedule event={event} mode="steps" accent={theme.colors.primary} />
@@ -819,7 +942,7 @@ function BlushLinen({ theme, event }: Omit<Props, "layout">) {
       <main className="bg-[#fff9f7] px-6 py-16 text-[#4f4444]">
         <div className="mx-auto grid max-w-5xl gap-10 md:grid-cols-2">
           <Story event={event} title="Us, in bloom" className="rounded-3xl bg-[#f7e7e5] p-8" />
-          <section data-celebration-section>
+          <section id="schedule" aria-label="Schedule" data-celebration-section>
             <p className={sectionLabel}>Lovely little plans</p>
             <div className="mt-6">
               <Schedule event={event} mode="tiles" accent={theme.colors.primary} />
@@ -872,7 +995,7 @@ function SapphireMoonlit({ theme, event }: Omit<Props, "layout">) {
             title="Written in moonlight"
             className="mx-auto max-w-xl text-center"
           />
-          <section data-celebration-section className="mt-14">
+          <section id="schedule" aria-label="Schedule" data-celebration-section className="mt-14">
             <p className={`${sectionLabel} text-center`} style={{ color: theme.colors.secondary }}>
               Celestial alignment
             </p>
@@ -932,7 +1055,7 @@ function RusticStorybook({ theme, event }: Omit<Props, "layout">) {
             title="Prologue"
             className="first-letter:float-left first-letter:mr-3 first-letter:text-6xl"
           />
-          <section data-celebration-section>
+          <section id="schedule" aria-label="Schedule" data-celebration-section>
             <p className={sectionLabel}>Table of moments</p>
             <div className="mt-7">
               <Schedule event={event} mode="chapters" accent={theme.colors.primary} />
@@ -981,7 +1104,7 @@ function ChampagneVelvet({ theme, event }: Omit<Props, "layout">) {
             title="A grand romance"
             className="mx-auto max-w-2xl border-x border-[#d5b578]/25 px-8 text-center"
           />
-          <section data-celebration-section className="mt-16">
+          <section id="schedule" aria-label="Schedule" data-celebration-section className="mt-16">
             <p className={`${sectionLabel} text-center`} style={{ color: theme.colors.secondary }}>
               The soirée
             </p>
@@ -1030,7 +1153,7 @@ function CelestialWhisper({ theme, event }: Omit<Props, "layout">) {
             title="Our constellation"
             className="rounded-full border border-white/15 px-8 py-14 text-center"
           />
-          <section data-celebration-section>
+          <section id="schedule" aria-label="Schedule" data-celebration-section>
             <p className={sectionLabel}>When the stars align</p>
             <div className="mt-7">
               <Schedule event={event} mode="orbit" accent={theme.colors.secondary} />
@@ -1080,7 +1203,7 @@ function PearlTide({ theme, event }: Omit<Props, "layout">) {
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-10 md:grid-cols-[0.7fr_1.3fr]">
             <Story event={event} title="From shore to shore" className="max-w-sm" />
-            <section data-celebration-section>
+            <section id="schedule" aria-label="Schedule" data-celebration-section>
               <p className={sectionLabel}>The day, simply</p>
               <div className="mt-7">
                 <Schedule event={event} mode="rail" accent={theme.colors.primary} />
@@ -1130,7 +1253,7 @@ function CrimsonOrchard({ theme, event }: Omit<Props, "layout">) {
       </header>
       <main className="bg-[#fff8f7] px-6 py-16 text-[#481621]">
         <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-2">
-          <section data-celebration-section>
+          <section data-event-section="story" aria-label="Our story" data-celebration-section>
             <p className={sectionLabel}>Field notes</p>
             <Story
               event={event}
@@ -1138,7 +1261,7 @@ function CrimsonOrchard({ theme, event }: Omit<Props, "layout">) {
               className="mt-8 border-l-4 border-[#5a1f2a] pl-6"
             />
           </section>
-          <section data-celebration-section>
+          <section id="schedule" aria-label="Schedule" data-celebration-section>
             <p className={sectionLabel}>The harvest table</p>
             <div className="mt-7">
               <Schedule event={event} mode="ledger" accent={theme.colors.primary} />
@@ -1193,7 +1316,7 @@ function OpalineCrest({ theme, event }: Omit<Props, "layout">) {
       <main className="bg-[#ece6de] px-6 py-16 text-[#4d4943]">
         <div className="mx-auto max-w-4xl">
           <Story event={event} title="The house of us" className="mx-auto max-w-xl text-center" />
-          <section data-celebration-section className="mt-14">
+          <section id="schedule" aria-label="Schedule" data-celebration-section className="mt-14">
             <Schedule event={event} mode="plaques" accent={theme.colors.secondary} />
           </section>
         </div>
@@ -1238,7 +1361,12 @@ function VelvetMidnight({ theme, event }: Omit<Props, "layout">) {
       </header>
       <main className="grid bg-[#111229] text-white md:grid-cols-2">
         <Story event={event} title="After dark" className="px-8 py-16 md:px-14" />
-        <section data-celebration-section className="border-l border-white/10 px-8 py-16 md:px-14">
+        <section
+          id="schedule"
+          aria-label="Schedule"
+          data-celebration-section
+          className="border-l border-white/10 px-8 py-16 md:px-14"
+        >
           <p className={sectionLabel} style={{ color: theme.colors.secondary }}>
             The programme
           </p>
@@ -1297,7 +1425,7 @@ function LavenderCascade({ theme, event }: Omit<Props, "layout">) {
             title="A gentle kind of magic"
             className="mx-auto max-w-2xl rounded-[3rem] bg-white/70 p-9 text-center shadow-sm"
           />
-          <section data-celebration-section className="mt-14">
+          <section id="schedule" aria-label="Schedule" data-celebration-section className="mt-14">
             <Schedule event={event} mode="petals" accent={theme.colors.primary} />
           </section>
         </div>
@@ -1365,7 +1493,7 @@ function CoralSands({ theme, event }: Omit<Props, "layout">) {
             title="Our favorite journey"
             className="-rotate-1 rounded-lg bg-white p-8 shadow-md"
           />
-          <section data-celebration-section>
+          <section id="schedule" aria-label="Schedule" data-celebration-section>
             <p className={sectionLabel}>Your itinerary</p>
             <div className="mt-7">
               <Schedule event={event} mode="tickets" accent={theme.colors.primary} />
@@ -1422,7 +1550,7 @@ function EternalMarble({ theme, event }: Omit<Props, "layout">) {
             title="The inscription"
             className="mx-auto max-w-2xl border-l-8 border-[#b8c2cc] pl-7"
           />
-          <section data-celebration-section className="mt-14">
+          <section id="schedule" aria-label="Schedule" data-celebration-section className="mt-14">
             <p className={`${sectionLabel} text-center`}>The composition</p>
             <div className="mt-7">
               <Schedule event={event} mode="plaques" accent={theme.colors.secondary} />
@@ -1471,7 +1599,7 @@ function WillowFern({ theme, event }: Omit<Props, "layout">) {
             title="Where we took root"
             className="rounded-[4rem_4rem_1rem_1rem] border border-[#1f4d3a]/20 p-9"
           />
-          <section data-celebration-section>
+          <section id="schedule" aria-label="Schedule" data-celebration-section>
             <p className={sectionLabel}>Follow the fern path</p>
             <div className="mt-7">
               <Schedule event={event} mode="steps" accent={theme.colors.primary} />
@@ -1533,7 +1661,7 @@ function SilverFrost({ theme, event }: Omit<Props, "layout">) {
             title="A crystalline moment"
             className="mx-auto max-w-2xl text-center"
           />
-          <section data-celebration-section className="mt-14">
+          <section id="schedule" aria-label="Schedule" data-celebration-section className="mt-14">
             <Schedule event={event} mode="tiles" accent={theme.colors.primary} />
           </section>
         </div>
@@ -1594,7 +1722,7 @@ function AutumnEmber({ theme, event }: Omit<Props, "layout">) {
             title="Our turning season"
             className="border-t-4 border-[#7a3b1d] pt-7"
           />
-          <section data-celebration-section>
+          <section id="schedule" aria-label="Schedule" data-celebration-section>
             <p className={sectionLabel}>The celebration unfolds</p>
             <div className="mt-7">
               <Schedule event={event} mode="steps" accent={theme.colors.primary} />

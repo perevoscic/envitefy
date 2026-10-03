@@ -174,9 +174,6 @@ export type LeftSidebarControllerViewModel = {
   handleRootSnapNavigate: () => void;
   handleRootLiveCardNavigate: () => void;
   openCreateEventPage: () => void;
-  openAiThreadsPage: () => void;
-  openAiThread: (threadId: string) => void;
-  startNewAiChat: () => void;
   openMyEventsPage: () => void;
   openSchedulesPage: () => void;
   openSignupFormsPage: () => void;
@@ -346,11 +343,7 @@ export function useLeftSidebarController({
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarPage, setSidebarPage] = useState<SidebarPage>(() =>
-    normalizedPathname === "/chat"
-      ? "aiThreads"
-      : isCreateEventRoute(normalizedPathname)
-        ? "createEvent"
-        : "root",
+    isCreateEventRoute(normalizedPathname) ? "createEvent" : "root",
   );
   const [showPastMyEvents, setShowPastMyEvents] = useState(false);
   const [showPastInvitedEvents, setShowPastInvitedEvents] = useState(false);
@@ -382,7 +375,6 @@ export function useLeftSidebarController({
   const prevSidebarPageRef = useRef<SidebarPage>("root");
   const lastMobileRoutePathRef = useRef<string | null>(null);
   const lastAdminRouteSyncPathRef = useRef<string | null>(null);
-  const lastChatRouteSyncPathRef = useRef<string | null>(null);
   const lastEventListRouteSyncPathRef = useRef<string | null>(null);
 
   const mirrorLocalCalendarDefault = useCallback((provider: CalendarProviderKey | null) => {
@@ -488,18 +480,6 @@ export function useLeftSidebarController({
       void refreshConnectedCalendars();
     }
   }, [refreshConnectedCalendars, status]);
-
-  useEffect(() => {
-    if (normalizedPathname !== "/chat") {
-      lastChatRouteSyncPathRef.current = null;
-      return;
-    }
-    if (lastChatRouteSyncPathRef.current === normalizedPathname) return;
-
-    lastChatRouteSyncPathRef.current = normalizedPathname;
-    clearEventContext();
-    setSidebarPage("aiThreads");
-  }, [clearEventContext, normalizedPathname]);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -927,8 +907,8 @@ export function useLeftSidebarController({
   const goStudioFromSidebar = useCallback(() => {
     resetSidebarToRoot();
     try {
-      if (pathname !== "/chat") {
-        router.push("/chat");
+      if (pathname !== "/live-cards") {
+        router.push("/live-cards");
       }
     } catch {}
   }, [pathname, resetSidebarToRoot, router]);
@@ -1089,52 +1069,6 @@ export function useLeftSidebarController({
     setSidebarPage,
   ]);
 
-  const openAiThreadsPage = useCallback(() => {
-    clearEventContext();
-    router.push("/chat");
-    if (!isDesktop) {
-      setSidebarPage("aiThreads");
-      collapseSidebarOnTouch();
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("envitefy:chat:new"));
-      }
-      return;
-    }
-    setIsCollapsed(false);
-    setSidebarPage("aiThreads");
-  }, [
-    clearEventContext,
-    collapseSidebarOnTouch,
-    isDesktop,
-    router,
-    setIsCollapsed,
-    setSidebarPage,
-  ]);
-
-  const startNewAiChat = useCallback(() => {
-    clearEventContext();
-    setSidebarPage("aiThreads");
-    collapseSidebarOnTouch();
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("envitefy:chat:new"));
-    }
-  }, [clearEventContext, collapseSidebarOnTouch, setSidebarPage]);
-
-  const openAiThread = useCallback(
-    (threadId: string) => {
-      const cleanThreadId = String(threadId || "").trim();
-      if (!cleanThreadId) return;
-
-      clearEventContext();
-      setSidebarPage("aiThreads");
-      collapseSidebarOnTouch();
-
-      const nextHref = `/chat?thread=${encodeURIComponent(cleanThreadId)}`;
-      router.push(nextHref);
-    },
-    [clearEventContext, collapseSidebarOnTouch, router],
-  );
-
   const openMyEventsPage = useCallback(
     () => openCompactEventsPage("myEvents"),
     [openCompactEventsPage],
@@ -1172,7 +1106,7 @@ export function useLeftSidebarController({
         case "home":
           return pathname === "/" && sidebarPage === "root";
         case "studio":
-          return pathname === "/chat" && sidebarPage === "root";
+          return pathname === "/live-cards" && sidebarPage === "root";
         case "snap":
           return pathname === "/event" && sidebarPage === "root";
         case "create":
@@ -1455,7 +1389,7 @@ export function useLeftSidebarController({
     setSelectedEventHref(pending.href);
     setSelectedEventOwnerHref(pending.ownerHref);
     setSelectedEventEditHref(
-      pending.editHref && !/^\/chat(?:[/?#]|$)/.test(pending.editHref)
+      pending.editHref
         ? pending.editHref
         : resolveOwnerEditHref(pending.id, null, pending.title, pending.ownerHref),
     );
@@ -1874,9 +1808,6 @@ export function useLeftSidebarController({
     handleRootSnapNavigate,
     handleRootLiveCardNavigate,
     openCreateEventPage,
-    openAiThreadsPage,
-    openAiThread,
-    startNewAiChat,
     openMyEventsPage,
     openSchedulesPage,
     openSignupFormsPage,

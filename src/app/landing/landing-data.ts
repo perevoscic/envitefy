@@ -868,7 +868,7 @@ export const creationPaths = [
     title: "Envitefy Create",
     badge: "Fastest start",
     description:
-      "Describe the gathering and let Envitefy draft the invitation, page, RSVP flow, registry notes, and sign-up needs.",
+      "Choose the Live Card builder, an Event Page template, or the separate Sign-up Form builder. Add the details and review before publishing.",
     points: ["Best when the plan is still loose", "Good for hosts who want a polished first draft"],
     icon: "messageCircle",
   },

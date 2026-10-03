@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
@@ -19,6 +18,7 @@ import AuthModal from "@/components/auth/AuthModal";
 import SignupEditorToolbar from "@/components/smart-signup-form/SignupEditorToolbar";
 import { useUnsavedProgress } from "@/components/UnsavedProgressProvider";
 import { useEventHistoryClient } from "@/lib/event-history-client";
+import { isEventDraft } from "@/lib/event-draft-access";
 import { buildOwnerEventEditHref, ownerEventEditorReturnHref } from "@/lib/event-preview-viewport";
 import { getFamilyTemplateDesign } from "@/lib/family-template-designs";
 import { hasAnalyticsConsent } from "@/lib/privacy-preferences";
@@ -71,7 +71,7 @@ export type TemplateEditorRuntime = {
   duplicateSignup?: (form: SignupForm) => void;
   record: (key: string, value: DraftValue) => void;
   requestSave: () => Promise<void>;
-  persist: (payload: TemplateHistoryPayload, status: "draft" | "published") => Promise<void>;
+  persist: (payload: TemplateHistoryPayload, status: "draft" | "published", options?: { navigate?: boolean; snapshot?: EditorSnapshot }) => Promise<string>;
   previewPhoto: (file: File) => string;
 };
 const Context = createContext<TemplateEditorRuntime | null>(null);
@@ -257,7 +257,7 @@ export default function TemplateEditorProvider({
               : "This draft is unavailable for this account.",
           );
         const row = await response.json();
-        setPublished(row.data?.status === "published");
+        setPublished(!isEventDraft(row.data));
         const stored = row.data?.templateEditor;
         if (!stored || stored.category !== category)
           throw new Error("This event uses a different editor.");
@@ -457,7 +457,7 @@ export default function TemplateEditorProvider({
   );
 
   const persist = useCallback(
-    async (payload: TemplateHistoryPayload, nextStatus: "draft" | "published") => {
+    async (payload: TemplateHistoryPayload, nextStatus: "draft" | "published", options: { navigate?: boolean; snapshot?: EditorSnapshot } = {}) => {
       if (busyRef.current) throw new Error("Your progress is still saving. Please wait.");
       if (!draft.current) throw new Error("Your editor is still loading.");
       if (!authenticated) throw new Error("Sign in to save your event.");
@@ -466,7 +466,7 @@ export default function TemplateEditorProvider({
       setError("");
       setMessage("");
       try {
-        const current = draft.current;
+        const current = { ...draft.current, snapshot: options.snapshot || structuredClone(draft.current.snapshot) };
         const eventId = await saveTemplateDraftToAccount({
           request: (input, options) => typeof input === "string" ? eventHistoryClient.fetch(input, options) : fetch(input, options),
           draft: current,
@@ -476,14 +476,19 @@ export default function TemplateEditorProvider({
           status: nextStatus,
           authenticated,
           remoteMedia: remoteMedia.current,
+          existing: current.eventId ? eventHistoryClient.read(`/api/history/${encodeURIComponent(current.eventId)}`) : null,
         });
+        Object.assign(draft.current, { eventId: current.eventId, eventRevision: current.eventRevision, signupRevision: current.signupRevision, pendingSave: current.pendingSave });
+        // An explicit save attaches this mounted editor to its event; changing the URL
+        // must not reload the saved snapshot over edits made while the request ran.
+        savedEventId.current = eventId;
         savedFields.current = Object.fromEntries(
           Object.keys(savedFields.current).map((key) => [
             key,
             JSON.stringify(current.snapshot[key]),
           ]),
         );
-        setDirty(false);
+        setDirty(Object.entries(savedFields.current).some(([key, saved]) => JSON.stringify(draft.current?.snapshot[key]) !== saved));
         window.dispatchEvent(new CustomEvent("history:updated", { detail: { id: eventId } }));
         setPublished(nextStatus === "published");
         trackTemplateEvent(
@@ -511,7 +516,7 @@ export default function TemplateEditorProvider({
             `${templateEditorHref(category, templateId)}?edit=${encodeURIComponent(eventId)}`,
           );
         }
-        if (nextStatus === "published") {
+        if (nextStatus === "published" && options.navigate !== false) {
           await deleteTemplateDraft(current.id).catch(() => {});
           progress.allowNavigation(() =>
             router.push(
@@ -521,6 +526,7 @@ export default function TemplateEditorProvider({
             ),
           );
         }
+      return eventId;
       } finally {
         busyRef.current = false;
         setBusy(false);
@@ -541,7 +547,7 @@ export default function TemplateEditorProvider({
   }, [persist, category, info.name]);
 
   const progress = useUnsavedProgress({
-    dirty,
+    dirty: category === "signup-forms" && dirty,
     busy,
     save: async () => {
       if (authenticated) await saveDraft();
@@ -635,41 +641,10 @@ export default function TemplateEditorProvider({
   return (
     <Context.Provider value={runtime}>
       <div className={styles.shell}>
-        <div className="relative z-40 shrink-0 border-b border-[#ded5ca] bg-[#fffcf7]/95 px-4 py-3 backdrop-blur sm:px-8">
+        <div className="relative z-40 shrink-0 border-b border-[#ded5ca] bg-[#fffcf7]/95 px-4 py-3 backdrop-blur sm:px-8" hidden={category !== "signup-forms" && !error}>
           {category === "signup-forms" ? (
             <SignupEditorToolbar onBack={leave} onReset={() => setResetOpen(true)} onSave={() => void requestSave()} busy={busy} ready={editorReady} loaded={Boolean(initial)} />
-          ) : <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-3">
-            <Link href={`/${category}/templates`} className="text-sm font-semibold text-[#59405c]">
-              ← {info.name} templates
-            </Link>
-            <p className="text-xs text-[#746775]">
-              {authenticated
-                ? "Save a private draft, then publish when ready."
-                : "Customize freely. An account is required to save and share."}
-            </p>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                disabled={busy || !initial}
-                className="text-xs underline"
-                onClick={() => setResetOpen(true)}
-              >
-                Start over
-              </button>
-              <button
-                type="button"
-                disabled={busy || !editorReady}
-                onClick={() => void requestSave()}
-                className="rounded-full bg-[#59405c] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-              >
-                {busy
-                  ? "Saving…"
-                  : authenticated
-                    ? "Save draft"
-                    : "Save and continue"}
-              </button>
-            </div>
-          </div>}
+          ) : null}
           {!authenticated && (
             <p className="mx-auto mt-2 max-w-[1500px] text-xs text-[#746775]">
               {storageReady

@@ -3,7 +3,8 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { ArrowUpRight, CheckCircle2, TriangleAlert, X } from "lucide-react";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { type ReactNode, useRef, useState } from "react";
+import { OPEN_COHOST_INVITATIONS_EVENT } from "@/components/dashboard/PendingCoHostInvitations";
 import type { DashboardOverview } from "@/lib/dashboard-overview";
 
 type ReviewKind = "conflicts" | "attention";
@@ -11,9 +12,11 @@ type ReviewKind = "conflicts" | "attention";
 export function DashboardReviewDetails({
   kind,
   overview,
+  onNavigate,
 }: {
   kind: ReviewKind;
   overview: DashboardOverview;
+  onNavigate?: (href: string) => void;
 }) {
   if (kind === "conflicts") {
     return overview.conflicts.length ? (
@@ -54,12 +57,17 @@ export function DashboardReviewDetails({
     );
   }
 
-  const unavailable = overview.unavailable.includes("event details");
+  const unavailable =
+    overview.unavailable.includes("event details") ||
+    overview.unavailable.includes("co-host invitations");
   return (
     <>
       {unavailable ? (
         <p role="status" className="mb-3 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
-          Some event details couldn’t load. Refresh the dashboard to try again.
+          {overview.unavailable.includes("co-host invitations")
+            ? "Some co-host invitations couldn’t load."
+            : "Some event details couldn’t load."}{" "}
+          Refresh the dashboard to try again.
         </p>
       ) : null}
       {overview.attention.length ? (
@@ -68,6 +76,7 @@ export function DashboardReviewDetails({
             <li key={item.id}>
               <Link
                 href={item.href}
+                onClick={() => onNavigate?.(item.href)}
                 className="group flex min-h-20 items-center justify-between gap-3 rounded-xl px-2 py-3 focus-visible:outline-2 focus-visible:outline-indigo-600"
               >
                 <div className="min-w-0">
@@ -102,12 +111,24 @@ export function DashboardReviewDialog({
   overview: DashboardOverview;
   children: ReactNode;
 }) {
+  const [open, setOpen] = useState(false);
+  const focusInvitations = useRef(false);
   return (
-    <Dialog.Root>
+    <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>{children}</Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-[2000] bg-slate-900/35 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-[2001] max-h-[85dvh] w-[calc(100%_-_2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto overscroll-contain rounded-[28px] border border-slate-100 bg-white p-6 shadow-2xl focus:outline-none sm:p-8">
+        <Dialog.Content
+          onCloseAutoFocus={(event) => {
+            if (!focusInvitations.current) return;
+            event.preventDefault();
+            focusInvitations.current = false;
+            window.requestAnimationFrame(() =>
+              window.dispatchEvent(new Event(OPEN_COHOST_INVITATIONS_EVENT)),
+            );
+          }}
+          className="fixed left-1/2 top-1/2 z-[2001] max-h-[85dvh] w-[calc(100%_-_2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto overscroll-contain rounded-[28px] border border-slate-100 bg-white p-6 shadow-2xl focus:outline-none sm:p-8"
+        >
           <Dialog.Title className="pr-10 text-xl font-bold text-slate-900">
             {kind === "conflicts" ? "Schedule conflicts" : "Needs attention"}
           </Dialog.Title>
@@ -122,7 +143,14 @@ export function DashboardReviewDialog({
           >
             <X size={19} aria-hidden="true" />
           </Dialog.Close>
-          <DashboardReviewDetails kind={kind} overview={overview} />
+          <DashboardReviewDetails
+            kind={kind}
+            overview={overview}
+            onNavigate={(href) => {
+              focusInvitations.current = href === "/#dashboard-cohost-invitations";
+              setOpen(false);
+            }}
+          />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

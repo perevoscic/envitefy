@@ -20,6 +20,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { DashboardOverview } from "@/lib/dashboard-overview";
+import type { PendingCoHostInvitation } from "@/lib/event-collaboration-types";
 import { DashboardPlanningPanels, NextEventPlanning } from "./DashboardOverviewSections";
 import { DashboardReviewDialog } from "./DashboardReviewDialog";
 import DashboardGames from "./DashboardGames";
@@ -127,6 +128,9 @@ type DashboardEnrichMeta = {
 };
 
 type HomeOverviewDashboardProps = {
+  coHostInvitations?: PendingCoHostInvitation[];
+  invitationNotice?: ReactNode;
+  coHostInvitationsUnavailable?: boolean;
   viewerName: string;
   data: DashboardResponse | null;
   metrics: DashboardMetricsCache | null;
@@ -801,6 +805,9 @@ function LoadingDashboardState() {
 }
 
 export default function HomeOverviewDashboard({
+  coHostInvitations = [],
+  invitationNotice,
+  coHostInvitationsUnavailable = false,
   viewerName,
   data,
   metrics,
@@ -857,7 +864,18 @@ export default function HomeOverviewDashboard({
   );
 
   const overview = data?.overview;
-  const attentionCount = overview?.attention.length || 0;
+  const attentionCount = (overview?.attention.length || 0) + coHostInvitations.length;
+  const attentionOverview = overview ? {
+    ...overview,
+    attention: [
+      ...coHostInvitations.map((invite) => ({
+        id: `${invite.id}-cohost`, eventId: invite.eventId, eventTitle: invite.eventTitle,
+        label: "Accept co-host invitation", href: "/#dashboard-cohost-invitations", kind: "invitation" as const,
+      })),
+      ...overview.attention,
+    ],
+    unavailable: coHostInvitationsUnavailable ? [...overview.unavailable, "co-host invitations"] : overview.unavailable,
+  } : undefined;
   const conflictCount = overview?.conflicts.length || 0;
   const openSignupSpots = overview?.signups.reduce((total, form) => total + form.remaining, 0) || 0;
   const hasUnlimitedSignup = overview?.signups.some((form) => form.unlimitedSlots > 0) || false;
@@ -882,20 +900,21 @@ export default function HomeOverviewDashboard({
       description: "See coverage for your events", icon: Users, tone: "indigo" as const, href: "#dashboard-signups",
     }] : []),
     {
-      label: "Needs attention", value: overview && !overview.unavailable.includes("event details") ? (attentionCount ? `${attentionCount} to review` : "All caught up") : "Not available",
+      label: "Needs attention", value: coHostInvitations.length || (overview && !overview.unavailable.includes("event details") && !coHostInvitationsUnavailable) ? (attentionCount ? `${attentionCount} to review` : "All caught up") : "Not available",
       description: "Invitations and event details", icon: ListChecks, tone: "indigo",
-      review: overview ? { kind: "attention", overview } : undefined,
-      href: overview ? undefined : "#dashboard-agenda",
+      review: attentionOverview ? { kind: "attention", overview: attentionOverview } : undefined,
+      href: attentionOverview ? undefined : coHostInvitations.length ? "#dashboard-cohost-invitations" : "#dashboard-agenda",
     },
   ];
 
   if (!data && (loading || !error)) {
-    return <LoadingDashboardState />;
+    return <div className="relative">{invitationNotice ? <div className="absolute right-0 top-20 z-10 md:top-10">{invitationNotice}</div> : null}<LoadingDashboardState /></div>;
   }
 
   if (!data && error) {
     return (
       <div className="pt-20 md:pt-10">
+        {invitationNotice ? <div className="mb-4 flex justify-end">{invitationNotice}</div> : null}
         <section className="rounded-[32px] border border-slate-100 bg-white p-6 shadow-xl sm:p-10">
           <h1 className="text-2xl font-bold text-slate-900">Your events couldn’t load</h1>
           <p role="alert" className="mt-3 text-base text-slate-600">{error}</p>
@@ -930,10 +949,13 @@ export default function HomeOverviewDashboard({
             </p>
           ) : null}
         </div>
-        <button type="button" onClick={onRetry} disabled={loading} aria-busy={loading}
-          className="inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:text-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-60">
-          {loading ? "Refreshing…" : "Refresh dashboard"}
-        </button>
+        <div className="flex items-center gap-2 self-start">
+          {invitationNotice}
+          <button type="button" onClick={onRetry} disabled={loading} aria-busy={loading}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:text-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-60">
+            {loading ? "Refreshing…" : "Refresh dashboard"}
+          </button>
+        </div>
       </header>
 
       {error ? <p role="status" className="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900">Your latest refresh didn’t finish. Showing your previously loaded events.</p> : null}

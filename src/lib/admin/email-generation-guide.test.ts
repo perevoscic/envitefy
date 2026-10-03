@@ -31,7 +31,7 @@ test("guide builds audience-specific system prompts", () => {
 test("email prompts distinguish Concierge creation, introductions, and category templates", () => {
   for (const audience of ["individual", "broadcast"] as const) {
     const prompt = buildAdminEmailSystemPromptFromGuide(audience);
-    assert.match(prompt, /creation CTAs to https:\/\/envitefy\.com\/chat/);
+    assert.match(prompt, /creation CTAs to https:\/\/envitefy\.com\/live-cards/);
     assert.match(prompt, /introductions to https:\/\/envitefy\.com\/envitefy-create/);
     assert.match(prompt, /template CTAs to the matching category page/);
     assert.match(prompt, /Studio and \/studio are retired customer entry points; do not promote them/);

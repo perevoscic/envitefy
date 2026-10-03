@@ -42,6 +42,14 @@ export type EventAccessPerson = {
   emailStatus: "pending" | "sent" | "failed" | null;
 };
 
+export type PendingCoHostInvitation = {
+  id: string;
+  eventId: string;
+  eventTitle: string;
+  ownerName: string;
+  expiresAt: string;
+};
+
 export class EventCollaborationError extends Error {
   constructor(
     message: string,

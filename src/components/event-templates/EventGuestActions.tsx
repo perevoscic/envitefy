@@ -33,7 +33,6 @@ export default function EventGuestActions({
   inverse = false,
   timezone,
   allDay: suppliedAllDay,
-  compactMobile = false,
   visibility = {},
   onVisibilityChange,
 }: {
@@ -49,7 +48,6 @@ export default function EventGuestActions({
   inverse?: boolean;
   timezone?: string;
   allDay?: boolean;
-  compactMobile?: boolean;
   visibility?: EventGuestActionVisibility;
   onVisibilityChange?: (value: EventGuestActionVisibility) => void;
 }) {
@@ -158,7 +156,7 @@ export default function EventGuestActions({
     <section
       ref={actionsRef}
       aria-label="Plan your visit"
-      className={`${styles.actions} ${compactMobile ? styles.compactMobile : ""}`}
+      className={styles.actions}
       style={inverse ? { color: "#ffffff" } : undefined}
     >
       {start &&
@@ -177,28 +175,26 @@ export default function EventGuestActions({
           })}
         </p>
       ) : null}
-      <div className={`${styles.actionRow} flex flex-wrap items-start justify-center gap-3`}>
+      <div className={styles.actionRow}>
         {action(
           "calendar",
           links ? (
             <CalendarAction links={links} className={buttonClass}>
-              {compactMobile
-                ? (label) => (
-                    <>
-                      <CalendarPlus className="h-4 w-4 shrink-0" aria-hidden="true" />
-                      <span className={styles.fullLabel}>{label}</span>
-                      <span className={styles.shortLabel} aria-hidden="true">
-                        to calendar
-                      </span>
-                    </>
-                  )
-                : undefined}
+              {(label) => (
+                <>
+                  <CalendarPlus className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className={styles.fullLabel}>{label}</span>
+                  <span className={styles.shortLabel} aria-hidden="true">
+                    To Calendar
+                  </span>
+                </>
+              )}
             </CalendarAction>
           ) : onVisibilityChange ? (
-            <button type="button" className={buttonClass} disabled>
+            <button type="button" className={buttonClass} aria-label="Add to calendar" disabled>
               <CalendarPlus size={16} aria-hidden="true" />
               <span className={styles.fullLabel}>Add to calendar</span>
-              {compactMobile && <span className={styles.shortLabel}>to calendar</span>}
+              <span className={styles.shortLabel} aria-hidden="true">To Calendar</span>
             </button>
           ) : null,
         )}
@@ -214,17 +210,15 @@ export default function EventGuestActions({
             >
               <Navigation className="h-4 w-4" aria-hidden="true" />
               <span className={styles.fullLabel}>Get directions</span>
-              {compactMobile && (
-                <span className={styles.shortLabel} aria-hidden="true">
-                  Directions
-                </span>
-              )}
+              <span className={styles.shortLabel} aria-hidden="true">
+                Directions
+              </span>
             </a>
           ) : onVisibilityChange ? (
-            <button type="button" className={buttonClass} disabled>
+            <button type="button" className={buttonClass} aria-label="Get directions" disabled>
               <Navigation size={16} aria-hidden="true" />
               <span className={styles.fullLabel}>Get directions</span>
-              {compactMobile && <span className={styles.shortLabel}>Directions</span>}
+              <span className={styles.shortLabel} aria-hidden="true">Directions</span>
             </button>
           ) : null,
         )}
@@ -242,11 +236,9 @@ export default function EventGuestActions({
               <Share2 className="h-4 w-4" aria-hidden="true" />
             )}{" "}
             <span className={styles.fullLabel}>{copied ? "Link copied" : "Share event"}</span>
-            {compactMobile && (
-              <span className={styles.shortLabel} aria-hidden="true">
-                {copied ? "Copied" : "Share"}
-              </span>
-            )}
+            <span className={styles.shortLabel} aria-hidden="true">
+              {copied ? "Copied" : "Share"}
+            </span>
           </button>,
         )}
       </div>

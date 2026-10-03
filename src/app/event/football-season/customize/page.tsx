@@ -1,7 +1,10 @@
 // @ts-nocheck
 "use client";
+import { EventEditorInput as InputGroup, EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout } from "@/components/events/EventEditorFields";
+import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import { useEventHistoryClient } from "@/lib/event-history-client";
-import { EventSectionBuilderProvider, EventSectionPalette, EventSectionsReadOnly, useSectionEditorClose } from "@/components/events/EventSectionBuilder";
+import { EventSectionBuilderProvider, EventSectionPalette, EventSectionsReadOnly, } from "@/components/events/EventSectionBuilder";
 import { normalizeEventSectionLayout } from "@/lib/event-section-layout";
 import HeroImageEditor from "@/components/events/HeroImageEditor";
 import CustomEventUrlField, { checkCustomEventUrl } from "@/components/events/CustomEventUrlField";
@@ -16,9 +19,7 @@ import { parseCalendarDateTimeToIso } from "@/lib/calendar-date-time";
 import { footballEditorFields } from "@/lib/football-editor-data";
 import { FOOTBALL_SECTION_LABELS, normalizeFootballHiddenSections, type FootballSectionId } from "@/lib/football-section-visibility";
 import EventCanvas from "@/components/EventCanvas";
-import { ownerEventEditorReturnHref } from "@/lib/event-preview-viewport";
 
-import { useManualEventProgress } from "@/hooks/useManualEventProgress";
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 
 import FootballHero from "@/components/football-season-templates/FootballHero";
@@ -33,7 +34,6 @@ import { type EventGuestPlanning, normalizeEventGuestPlanning, eventLocalDatePar
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import {
   ChevronLeft,
-  ChevronRight,
   Globe,
   Link as LinkIcon,
   Type,
@@ -174,53 +174,6 @@ const cloneState = <T,>(value: T): T => {
 
 const safeString = (value: unknown): string => (typeof value === "string" ? value.trim() : "");
 
-const InputGroup = ({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  readOnly = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: string;
-  readOnly?: boolean;
-}) => {
-  const inputId = useId();
-  return (
-    <div className="space-y-2">
-      <label htmlFor={inputId} className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-        {label}
-      </label>
-      {type === "textarea" ? (
-        <textarea
-          id={inputId}
-          className={baseTextareaClass}
-          value={value || ""}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      ) : (
-        <input
-          id={inputId}
-          type={type}
-          className={baseInputClass}
-          value={value || ""}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      )}
-    </div>
-  );
-};
-
-InputGroup.displayName = "InputGroup";
-
 
 const FootballSeasonPreviewFrame = ({
   theme,
@@ -236,77 +189,6 @@ const FootballSeasonPreviewFrame = ({
   </div>
 );
 
-
-const MenuCard = ({
-  title,
-  desc,
-  icon,
-  onClick,
-}: {
-  title: string;
-  desc: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="w-full text-left group bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex items-start gap-4"
-  >
-    <div className="bg-slate-50 p-3 rounded-lg text-slate-600 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors">
-      {icon}
-    </div>
-    <div className="flex-1">
-      <div className="flex justify-between items-center mb-1">
-        <h3 className="font-semibold text-slate-800">{title}</h3>
-        <ChevronRight
-          size={16}
-          className="text-slate-300 group-hover:text-indigo-400 transform group-hover:translate-x-1 transition-all"
-        />
-      </div>
-      <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
-    </div>
-  </button>
-);
-
-const EditorLayout = ({
-      title,
-      children,
-      onBack,
-      showBack = true,
-    }: {
-      title: string;
-      children: React.ReactNode;
-      onBack: () => void;
-      showBack?: boolean;
-    }) => {
-      const closeSectionEditor = useSectionEditorClose();
-      if (closeSectionEditor) return <>{children}</>;
-      return (
-      <div className="animate-fade-in-right">
-        <div className="flex items-center mb-6 pb-4 border-b border-slate-100">
-          <div className="mr-3 w-8">
-            {showBack && (
-              <button
-                type="button" aria-label="Back to customization"
-                onClick={onBack}
-                className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
-              >
-                <ChevronLeft size={20} />
-              </button>
-            )}
-          </div>
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mr-auto">
-            Customize
-          </span>
-          <h2 className="text-lg font-serif font-bold text-slate-800 ml-3 min-w-0 text-right">
-            {title}
-          </h2>
-        </div>
-        {children}
-      </div>
-    );
-};
 
 function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
@@ -408,9 +290,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       mobileMenuOpen,
       openMobileMenu,
       closeMobileMenu,
-      previewTouchHandlers,
+      dismissMobileMenu, previewTouchHandlers,
       drawerTouchHandlers,
-    } = useMobileDrawer(undefined, "event-actions");
+    } = useMobileDrawer(true, "event-actions", true);
     const updateData = useCallback((field: string, value: any) => {
       setData((prev) => {
         const next = cloneState(prev || {});
@@ -733,233 +615,139 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         "The attendance card in the preview updates with these settings.",
     };
 
-  useManualEventProgress({
-    historyFetch: eventHistoryClient.fetch,
-    snapshot: { data: { ...data, title: resolvedTitle }, advancedState, pageTemplateId, loadedDiscoverySource, isDiscoveryEdit },
-    category: config.category, templateId: config.slug, eventId: editEventId,
-    ready: !progressLoading, busy: submitting || discoverBusy,
-  });
 
-    const handlePublish = useCallback(async () => {
-      if (submitting) return;
-      setSubmitting(true);
-      try {
-        let publicSlug: string | undefined;
-        if (data.publicSlugInput?.trim()) {
-          const validation = validateCustomEventPublicSlug(data.publicSlugInput);
-          try {
-            if (validation.error) throw new Error(validation.error);
-            await checkCustomEventUrl(validation.slug, editEventId);
-            publicSlug = validation.slug;
-          } catch (error) {
-            setActiveView("url");
-            throw error;
-          }
+    const buildEventPayload = useCallback(async () => {
+      let publicSlug: string | undefined;
+      if (data.publicSlugInput?.trim()) {
+        const validation = validateCustomEventPublicSlug(data.publicSlugInput);
+        try {
+          if (validation.error) throw new Error(validation.error);
+          await checkCustomEventUrl(validation.slug, editEventId);
+          publicSlug = validation.slug;
+        } catch (error) {
+          setActiveView("url");
+          throw error;
         }
-        if (data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)) {
-          throw new Error("End time must be after the start. For an overnight event, choose the next end date.");
-        }
-
-        let startISO: string | null = null;
-        let endISO: string | null = null;
-        if (data.date && data.time) {
-          const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
-          startISO = parseCalendarDateTimeToIso(`${data.date}T${data.time}`, data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
-          endISO = endLocal ? parseCalendarDateTimeToIso(endLocal, data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone) : null;
-        }
-
-        const heroToSave =
-          (await persistImageMediaValue({
-            value: resolvedHero,
-            eventId: editEventId || undefined,
-            fileName: `${config.slug}-hero.png`,
-            fallbackValue: resolvedHero,
-          })) || resolvedHero;
-
-        const currentSelectedSize =
-          FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) || FONT_SIZE_OPTIONS[1];
-        const derivedFontId = templateTypography.id;
-        const validFontSize = currentSelectedSize?.id || data.fontSize;
-        const themeToSave = {
-          id: pageTemplateId,
-          name: currentTemplate?.name || "Launchpad Editorial",
-          bg: currentTemplate?.previewClassName || "",
-          text: currentTemplate?.previewAccentClassName || "",
-          accent: currentTemplate?.previewAccentClassName || "",
-          preview: currentTemplate?.previewClassName || "",
-        };
-        const addressToSave =
-          data.extra?.stadiumAddress || data.extra?.address || locationParts || undefined;
-
-        const templateConfigForSave = {
-          slug: config.slug,
-          displayName: config.displayName,
-          category: config.category,
-          detailFields: config.detailFields,
-          advancedSectionIds: config.advancedSections?.map((s) => s.id) || [],
-          rsvpCopy,
-          pageTemplateId,
-        };
-
-        const normalizedAdvancedSections =
-          normalizeAdvancedSectionsForStorage(advancedState) || advancedState;
-        const isDiscoveryUpdate = isDiscoveryEdit;
-        const payload: any = {
-          title: resolvedTitle || config.displayName,
-          data: {
-            category: config.category,
-            displayName: config.displayName,
-            createdVia: isDiscoveryUpdate ? "football-discovery-v2" : "template",
-            createdManually: !isDiscoveryUpdate,
-            startISO,
-            endISO,
-            endAt: endISO,
-            end: endISO,
-            endTime: data.endTime,
-            endDate: data.endDate,
-            guestPlanning: data.guestPlanning,
-            footballHiddenSections: hiddenSections,
-            sectionLayout: data.sectionLayout,
-            footballPageText: normalizeFootballPageText(data.footballPageText),
-            date: data.date,
-            time: data.time,
-            timezone: data.timezone || undefined,
-            city: data.city,
-            state: data.state,
-            location: locationParts || undefined,
-            venue: data.venue || undefined,
-            description: data.details || undefined,
-            rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
-            rsvpEnabled: data.rsvpEnabled,
-            rsvpDeadline: data.rsvpDeadline || undefined,
-            numberOfGuests: 0,
-            templateId: config.slug,
-            templateConfig: templateConfigForSave,
-            pageTemplateId,
-            themeId: pageTemplateId,
-            theme: themeToSave,
-            fontId: derivedFontId,
-            fontSize: validFontSize,
-            fontFamily: templateTypography.fontFamilyName,
-            fontSizeClass: currentSelectedSize?.className,
-            ...(loadedDiscoverySource && {
-              discoverySource: {
-                ...loadedDiscoverySource,
-                workflow: "football",
-                updatedAt: new Date().toISOString(),
-              },
-            }),
-            customFields: {
-              ...data.extra,
-              team: resolveFootballTeamName(data.extra?.team, data.title),
-              advancedSections: normalizedAdvancedSections,
-            },
-            advancedSections: normalizedAdvancedSections,
-            heroImageFilterEnabled: false,
-            heroImage: heroToSave,
-            extra: { ...data.extra, team: resolveFootballTeamName(data.extra?.team, data.title) },
-            address: addressToSave,
-            ...(data.passcodeRequired && data.passcode
-              ? {
-                  accessControl: {
-                    mode: "access-code",
-                    passcodePlain: data.passcode,
-                    requirePasscode: true,
-                  },
-                }
-              : data.passcodeRequired === false
-                ? {
-                    accessControl: {
-                      mode: "public",
-                      requirePasscode: false,
-                    },
-                  }
-                : {}),
-          },
-        };
-        payload.data.status = "published";
-        payload.data.draftStatus = "published";
-        payload.data.manualEditor = null;
-        if (publicSlug) payload.publicSlug = publicSlug;
-
-        if (editEventId) {
-          const res = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({
-              title: payload.title,
-              data: payload.data,
-              ...(publicSlug ? { publicSlug } : {}),
-              ...(isNewDraft ? { claim: true } : {}),
-            }),
-          });
-          const saved = await res.json().catch(() => ({}));
-          if (!res.ok) {
-            if (res.status === 409 && publicSlug) setActiveView("url");
-            throw new Error(saved.error || "Failed to update event");
-          }
-          setDidExplicitSave(true);
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(
-              new CustomEvent("history:updated", {
-                detail: { id: editEventId },
-              }),
-            );
-          }
-          const redirectUrl = buildEventPath(editEventId, payload.title, {
-            tab: "event",
-            updated: true,
-            t: Date.now(),
-          }, saved.public_slug || saved.data?.publicSlug);
-          if (isEmbed && typeof window !== "undefined" && (window as any).parent !== window) {
-            try {
-              (window as any).parent.postMessage(
-                {
-                  type: "envitefy:discovery-edit-saved",
-                  eventId: editEventId,
-                  redirectUrl,
-                },
-                window.location.origin,
-              );
-            } catch {}
-            return;
-          }
-          allowNavigation(() => router.push(redirectUrl));
-        } else {
-          const res = await eventHistoryClient.fetch("/api/history", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify(payload),
-          });
-          const json = await res.json().catch(() => ({}));
-          if (!res.ok) {
-            if (res.status === 409 && publicSlug) setActiveView("url");
-            throw new Error(json.error || "Failed to create event");
-          }
-          const id = (json as any)?.id as string | undefined;
-          if (!id) throw new Error("Failed to create event");
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(
-              new CustomEvent("history:created", {
-                detail: {
-                  id,
-                  title: payload.title,
-                  public_slug: json.public_slug,
-                  created_at: (json as any)?.created_at || new Date().toISOString(),
-                  data: json.data || payload.data,
-                },
-              }),
-            );
-          }
-          allowNavigation(() => router.push(buildEventPath(id, payload.title, { created: true }, json.public_slug || json.data?.publicSlug)));
-        }
-      } catch (err: any) {
-        alert(String(err?.message || err || "Failed to save event"));
-      } finally {
-        setSubmitting(false);
       }
+      if (data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)) {
+        throw new Error("End time must be after the start. For an overnight event, choose the next end date.");
+      }
+      let startISO: string | null = null;
+      let endISO: string | null = null;
+      if (data.date && data.time) {
+        const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
+        startISO = parseCalendarDateTimeToIso(`${data.date}T${data.time}`, data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
+        endISO = endLocal ? parseCalendarDateTimeToIso(endLocal, data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone) : null;
+      }
+      const heroToSave =
+        (await persistImageMediaValue({
+          value: resolvedHero,
+          eventId: editEventId || undefined,
+          fileName: `${config.slug}-hero.png`,
+          fallbackValue: resolvedHero,
+        })) || resolvedHero;
+      const currentSelectedSize =
+        FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) || FONT_SIZE_OPTIONS[1];
+      const derivedFontId = templateTypography.id;
+      const validFontSize = currentSelectedSize?.id || data.fontSize;
+      const themeToSave = {
+        id: pageTemplateId,
+        name: currentTemplate?.name || "Launchpad Editorial",
+        bg: currentTemplate?.previewClassName || "",
+        text: currentTemplate?.previewAccentClassName || "",
+        accent: currentTemplate?.previewAccentClassName || "",
+        preview: currentTemplate?.previewClassName || "",
+      };
+      const addressToSave =
+        data.extra?.stadiumAddress || data.extra?.address || locationParts || undefined;
+      const templateConfigForSave = {
+        slug: config.slug,
+        displayName: config.displayName,
+        category: config.category,
+        detailFields: config.detailFields,
+        advancedSectionIds: config.advancedSections?.map((s) => s.id) || [],
+        rsvpCopy,
+        pageTemplateId,
+      };
+      const normalizedAdvancedSections =
+        normalizeAdvancedSectionsForStorage(advancedState) || advancedState;
+      const isDiscoveryUpdate = isDiscoveryEdit;
+      const payload: any = {
+        title: resolvedTitle || config.displayName,
+        data: {
+          category: config.category,
+          displayName: config.displayName,
+          createdVia: isDiscoveryUpdate ? "football-discovery-v2" : "template",
+          createdManually: !isDiscoveryUpdate,
+          startISO,
+          endISO,
+          endAt: endISO,
+          end: endISO,
+          endTime: data.endTime,
+          endDate: data.endDate,
+          guestPlanning: data.guestPlanning,
+          footballHiddenSections: hiddenSections,
+          sectionLayout: data.sectionLayout,
+          footballPageText: normalizeFootballPageText(data.footballPageText),
+          date: data.date,
+          time: data.time,
+          timezone: data.timezone || undefined,
+          city: data.city,
+          state: data.state,
+          location: locationParts || undefined,
+          venue: data.venue || undefined,
+          description: data.details || undefined,
+          rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
+          rsvpEnabled: data.rsvpEnabled,
+          rsvpDeadline: data.rsvpDeadline || undefined,
+          numberOfGuests: 0,
+          templateId: config.slug,
+          templateConfig: templateConfigForSave,
+          pageTemplateId,
+          themeId: pageTemplateId,
+          theme: themeToSave,
+          fontId: derivedFontId,
+          fontSize: validFontSize,
+          fontFamily: templateTypography.fontFamilyName,
+          fontSizeClass: currentSelectedSize?.className,
+          ...(loadedDiscoverySource && {
+            discoverySource: {
+              ...loadedDiscoverySource,
+              workflow: "football",
+              updatedAt: new Date().toISOString(),
+            },
+          }),
+          customFields: {
+            ...data.extra,
+            team: resolveFootballTeamName(data.extra?.team, data.title),
+            advancedSections: normalizedAdvancedSections,
+          },
+          advancedSections: normalizedAdvancedSections,
+          heroImageFilterEnabled: false,
+          heroImage: heroToSave,
+          extra: { ...data.extra, team: resolveFootballTeamName(data.extra?.team, data.title) },
+          address: addressToSave,
+          ...(data.passcodeRequired && data.passcode
+            ? {
+              accessControl: {
+                mode: "access-code",
+                passcodePlain: data.passcode,
+                requirePasscode: true,
+              },
+            }
+            : data.passcodeRequired === false
+              ? {
+                accessControl: {
+                  mode: "public",
+                  requirePasscode: false,
+                },
+              }
+              : {}),
+        },
+      };
+      if (publicSlug) payload.publicSlug = publicSlug;
+      if (isNewDraft) payload.claim = true;
+      return payload;
     }, [
       submitting,
       resolvedTitle,
@@ -999,6 +787,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       isNewDraft,
       router,
     ]);
+
+    const editor = useEventPageEditor({ snapshot: { data: { ...data, title: resolvedTitle }, advancedState, pageTemplateId, loadedDiscoverySource, isDiscoveryEdit }, category: config.category, templateId: config.slug, eventId: editEventId, historyClient: eventHistoryClient, ready: !progressLoading, busy: discoverBusy, onBusyChange: setSubmitting, buildPayload: buildEventPayload, onSaved: () => setDidExplicitSave(true) });
 
     const buildEventDetails = () => {
       const title = resolvedTitle || config.displayName;
@@ -1082,7 +872,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           <MenuCard title="Design" desc="Page style, typography, and colors." icon={<Type size={18} />} onClick={() => setActiveView("design")} />
           <MenuCard title="Custom URL" desc="Choose your page's shareable web address." icon={<LinkIcon size={18} />} onClick={() => setActiveView("url")} />
 
-          <EventSectionPalette />
           <MenuCard
             title="Passcode"
             desc="Require access code to view event."
@@ -1554,16 +1343,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const sectionCatalog = Object.entries(FOOTBALL_SECTION_LABELS).map(([id, label]) => ({ id, label, editorId: id }));
 
     return (
-      <EventSectionBuilderProvider layout={sectionLayout} catalog={sectionCatalog} renderEditor={renderSectionEditor}
+      <EventSectionBuilderProvider composition={{ value: editor.composition, onChange: editor.setComposition }} layout={sectionLayout} catalog={sectionCatalog} renderEditor={renderSectionEditor}
         onChange={(next) => setData((previous) => ({ ...previous, sectionLayout: next }))}>
-      <div
-        className={`relative flex w-full bg-slate-100 font-sans text-slate-900 ${
-          isEmbed ? "min-h-screen flex-col" : "min-h-screen h-[100dvh] overflow-clip"
-        }`}
-      >
-        {!isEmbed && (
-          <EventCanvas
-            {...previewTouchHandlers}
+      <EventEditorWorkspace sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "discover": renderDiscoverEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, "section": renderSectionEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/football-season"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed}
+ preview={<EventCanvas
             className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
             style={{
               WebkitOverflowScrolling: "touch",
@@ -1575,40 +1358,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 {renderFootballPage(false)}
               </div>
             </div>
-          </EventCanvas>
-        )}
+          </EventCanvas>}
+ controls={<><ScrollHandoffContainer className="min-h-full">
 
-        {!isEmbed && mobileMenuOpen && (
-          <div
-            className="nav-chrome-mobile-drawer-backdrop md:hidden fixed inset-0 z-10"
-            onClick={closeMobileMenu}
-            role="presentation"
-          ></div>
-        )}
-
-        <div
-          className={`w-full flex flex-col ${
-            isEmbed
-              ? "min-h-screen bg-white"
-              : `nav-chrome-mobile-drawer md:w-[400px] md:shrink-0 z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
-                  mobileMenuOpen ? "translate-x-0" : "translate-x-full max-md:invisible max-md:pointer-events-none"
-                }`
-          }`}
-          {...drawerTouchHandlers}
-        >
-          <ScrollHandoffContainer className="flex-1">
-            {!isEmbed && (
-              <div className="nav-chrome-mobile-drawer-header md:hidden sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-3">
-                <button
-                  onClick={closeMobileMenu}
-                  className="nav-chrome-mobile-drawer-back-button flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
-                >
-                  <ChevronLeft size={14} />
-                  Back to preview
-                </button>
-                <span className="text-sm font-semibold text-slate-700">Customize</span>
-              </div>
-            )}
 
             <div className="p-6 pt-4 md:pt-6">
               {(activeView === "main" || activeView === "images") && renderMainMenu()}
@@ -1628,52 +1380,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 ) : null,
               )}
             </div>
-          </ScrollHandoffContainer>
-
-          <div className="sticky bottom-0 border-t border-[rgba(112,97,168,0.14)] bg-[rgba(246,241,255,0.92)] p-4 backdrop-blur-xl">
-            <div className="flex gap-3">
-              {editEventId && (
-                <button
-                  onClick={() => {
-                    const cancelHref = ownerEventEditorReturnHref(search) ||
-                      buildEventPath(editEventId, undefined, { tab: "event" });
-                    if (isEmbed && window.parent !== window) {
-                      requestLeave(() => {
-                        window.parent.postMessage(
-                          { type: "envitefy:discovery-preview-reset", eventId: editEventId },
-                          window.location.origin,
-                        );
-                        window.parent.location.assign(cancelHref);
-                      });
-                    } else {
-                      router.push(cancelHref);
-                    }
-                  }}
-                  className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
-                >
-                  Cancel
-                </button>
-              )}
-              <button
-                onClick={handlePublish}
-                disabled={submitting}
-                className={`${
-                  editEventId ? "flex-1" : "w-full"
-                } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
-              >
-                {submitting
-                  ? editEventId
-                    ? "Saving..."
-                    : "Publishing..."
-                  : editEventId
-                    ? "Save"
-                    : "Publish"}
-              </button>
-            </div>
-          </div>
-        </div>
-
-      </div>
+          </ScrollHandoffContainer></>}
+></EventEditorWorkspace>
       <dialog ref={sectionPreviewRef} aria-label="Football event preview"
         onCancel={() => setSectionPreviewOpen(false)} onClose={() => setSectionPreviewOpen(false)}
         className="fixed inset-0 m-0 h-[100dvh] max-h-none w-full max-w-none overflow-y-auto border-0 p-0">

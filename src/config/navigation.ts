@@ -55,10 +55,10 @@ export const signedOutBottomNav: SignedOutBottomNavItem[] = [
       "Show finished live cards, RSVP pages, registry examples, sports examples, weddings, birthdays, and baby showers.",
   },
   {
-    label: "Create",
+    label: "Help",
     href: "#concierge",
     icon: Sparkles,
-    purpose: "Open Envitefy Create for signed-out users.",
+    purpose: "Answer questions about Envitefy for signed-out visitors.",
     action: "concierge",
     featured: true,
   },

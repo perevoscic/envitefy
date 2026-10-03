@@ -2,7 +2,6 @@ export type AdminNavItemId =
   | "dashboard"
   | "users"
   | "events"
-  | "concierge"
   | "scans"
   | "emails"
   | "ad-studio"
@@ -35,12 +34,6 @@ export const adminNavItems: AdminNavItem[] = [
     label: "Events",
     href: "/admin/events",
     description: "Created events and RSVP health",
-  },
-  {
-    id: "concierge",
-    label: "Envitefy Create",
-    href: "/admin/concierge",
-    description: "Draft sessions and conversation activity",
   },
   {
     id: "scans",

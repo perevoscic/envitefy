@@ -6,6 +6,50 @@
   color: #322347;
   background: #faf7ff;
 }
+.information {
+  padding: 24px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.information h2 {
+  margin: 0 0 12px;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+.information p {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+.sectionList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.sectionList li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e3daed;
+  padding: 6px 0;
+}
+.sectionList li > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.sectionList button {
+  min-width: 44px;
+  border-radius: 8px;
+}
+.sectionList button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
 .palette h3 {
   margin: 0 0 6px;
   font-weight: 700;
@@ -98,6 +142,58 @@
 }
 .canvas > * {
   grid-column: 1 / -1;
+}
+.canvas[data-event-body-layout] {
+  display: grid;
+  gap: 24px;
+}
+.canvas[data-event-body-layout="split"],
+.canvas[data-event-body-layout="cards"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+.canvas[data-event-body-layout="split"] > :is([data-section-row], [data-section-group]),
+.canvas[data-event-body-layout="cards"] > :is([data-section-row], [data-section-group]) {
+  grid-column: auto;
+}
+.canvas[data-event-body-layout="minimal"] {
+  max-width: 800px;
+  margin-inline: auto;
+}
+.canvas[data-event-body-layout="poster"] {
+  max-width: 960px;
+  margin-inline: auto;
+  text-align: center;
+}
+.canvas[data-event-body-layout="banner"] {
+  gap: 40px;
+}
+.canvas[data-event-body-layout="editorial"]
+  > :is([data-section-row], [data-section-group]):nth-of-type(even) {
+  margin-inline-start: 6%;
+}
+.canvas[data-event-body-layout="spotlight"]
+  > :is([data-section-row], [data-section-group]):first-of-type {
+  padding: 20px;
+  border: 1px solid currentColor;
+  border-radius: 16px;
+}
+@media (max-width: 700px) {
+  .canvas[data-event-body-layout] {
+    grid-template-columns: 1fr;
+  }
+  .canvas[data-event-body-layout="editorial"] > :is([data-section-row], [data-section-group]) {
+    margin-inline-start: 0;
+  }
+}
+@container event-sections (max-width: 700px) {
+  .canvas[data-event-body-layout] {
+    grid-template-columns: 1fr;
+  }
+}
+.rowGroup {
+  display: grid;
+  min-width: 0;
 }
 .row {
   display: grid;
@@ -331,8 +427,7 @@
   padding: 4px 8px;
 }
 @media (max-width: 767px) {
-  .grip,
-  .paletteItems {
+  .grip {
     display: none !important;
   }
   .dialog {
