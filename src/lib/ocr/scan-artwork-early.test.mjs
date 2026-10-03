@@ -7,6 +7,7 @@ import ts from "typescript";
 import * as personal from "./personalization.ts";
 import * as ticket from "./scan-artwork-ticket.ts";
 import * as media from "./scan-media.ts";
+import * as eventPublicSlug from "../../utils/event-public-slug.ts";
 
 const require = createRequire(import.meta.url);
 const profile = personal.buildScanPersonalization({
@@ -294,6 +295,11 @@ test("history saves immediately with the signed reservation while artwork is sti
     "../../app/api/history/route.ts",
     {
       "@/lib/signup-mutations": {},
+      "@/utils/event-public-slug": eventPublicSlug,
+      "@/lib/event-collaboration": {
+        eventRevision: () => "saved-revision",
+        listCollaborativeEvents: async () => [],
+      },
       "@/lib/event-draft-access": {},
       "next/server": { NextResponse: Response, after: (job) => jobs.push(job) },
       "next-auth": { getServerSession: async () => ({ user: { id: "owner" } }) },

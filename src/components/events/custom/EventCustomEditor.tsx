@@ -441,14 +441,18 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
             <div className={styles.group}>
               <h2>Public link</h2>
               {savedId.current ? <>
-                <label htmlFor="event-public-link">
-                  Event URL
-                  <span className="break-all text-sm">https://envitefy.com/event/</span>
-                  <input id="event-public-link" value={publicSlug} maxLength={MAX_PUBLIC_SLUG_LENGTH}
-                    autoCapitalize="none" autoCorrect="off" spellCheck={false}
-                    aria-invalid={Boolean(linkError)} aria-describedby="event-public-link-status"
-                    onChange={(event) => { setPublicSlug(event.target.value); setLinkError(""); setLinkMessage(""); }} />
-                </label>
+                <div className={styles.publicLinkField}>
+                  <label htmlFor="event-public-link" className={styles.field}>Custom link</label>
+                  <div className={styles.publicLinkControl} data-invalid={Boolean(linkError)}>
+                    <span className={styles.publicLinkPrefix}>envitefy.com/event/</span>
+                    <input id="event-public-link" className={styles.publicLinkInput}
+                      type="text" value={publicSlug} maxLength={MAX_PUBLIC_SLUG_LENGTH}
+                      placeholder="your-custom-link"
+                      autoCapitalize="none" autoCorrect="off" spellCheck={false}
+                      aria-invalid={Boolean(linkError)} aria-describedby="event-public-link-status"
+                      onChange={(event) => { setPublicSlug(event.target.value); setLinkError(""); setLinkMessage(""); }} />
+                  </div>
+                </div>
                 <button type="button" className={styles.secondary}
                   disabled={busy || !publicSlug.trim() || publicSlug === savedPublicSlug}
                   onClick={() => void savePublicLink()}>Save link</button>

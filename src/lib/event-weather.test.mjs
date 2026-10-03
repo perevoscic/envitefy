@@ -4,10 +4,27 @@ import { parseEventWeatherTarget } from "./event-weather.ts";
 import { getEventWeather } from "./event-weather-server.ts";
 
 test("weather requests reject invalid dates, times and locations without replacing missing facts", () => {
-  assert.deepEqual(parseEventWeatherTarget({ location: " Beach ", date: "2026-10-05", time: "09:30" }), { location: "Beach", date: "2026-10-05", time: "09:30" });
-  assert.deepEqual(parseEventWeatherTarget({ location: "", date: "", time: "" }), { location: "", date: "", time: "" });
-  for (const patch of [{ date: "2026-02-30" }, { time: "24:00" }, { date: "tomorrow" }, { location: "x".repeat(1001) }, { location: "Beach\nPark" }, { time: null }]) {
-    assert.equal(parseEventWeatherTarget({ location: "Beach", date: "2026-10-05", time: "09:30", ...patch }), null);
+  assert.deepEqual(
+    parseEventWeatherTarget({ location: " Beach ", date: "2026-10-05", time: "09:30" }),
+    { location: "Beach", date: "2026-10-05", time: "09:30" },
+  );
+  assert.deepEqual(parseEventWeatherTarget({ location: "", date: "", time: "" }), {
+    location: "",
+    date: "",
+    time: "",
+  });
+  for (const patch of [
+    { date: "2026-02-30" },
+    { time: "24:00" },
+    { date: "tomorrow" },
+    { location: "x".repeat(1001) },
+    { location: "Beach\nPark" },
+    { time: null },
+  ]) {
+    assert.equal(
+      parseEventWeatherTarget({ location: "Beach", date: "2026-10-05", time: "09:30", ...patch }),
+      null,
+    );
   }
 });
 
@@ -15,15 +32,45 @@ test("weather uses the venue's local day and event hour, caches lookups, and nev
   t.mock.timers.enable({ apis: ["Date"], now: Date.parse("2026-10-03T23:00:00Z") });
   const oldKey = process.env.WEATHERAPI_KEY;
   process.env.WEATHERAPI_KEY = "test-key";
-  t.after(() => { if (oldKey === undefined) delete process.env.WEATHERAPI_KEY; else process.env.WEATHERAPI_KEY = oldKey; });
-  const day = { condition: { text: "Partly cloudy" }, avgtemp_f: 77, avgtemp_c: 25, maxtemp_f: 82, maxtemp_c: 28, mintemp_f: 68, mintemp_c: 20, daily_chance_of_rain: 35, maxwind_mph: 14, maxwind_kph: 23 };
+  t.after(() => {
+    if (oldKey === undefined) delete process.env.WEATHERAPI_KEY;
+    else process.env.WEATHERAPI_KEY = oldKey;
+  });
+  const day = {
+    condition: { text: "Partly cloudy" },
+    avgtemp_f: 77,
+    avgtemp_c: 25,
+    maxtemp_f: 82,
+    maxtemp_c: 28,
+    mintemp_f: 68,
+    mintemp_c: 20,
+    daily_chance_of_rain: 35,
+    maxwind_mph: 14,
+    maxwind_kph: 23,
+  };
   const payload = {
     location: { name: "Panama City Beach", region: "Florida", localtime: "2026-10-03 18:00" },
     current: { temp_f: 99, condition: { text: "Wrong current weather" } },
-    forecast: { forecastday: [{ date: "2026-10-05", day, hour: [
-      { time: "2026-10-05 08:00", temp_f: 70, temp_c: 21, condition: { text: "Wrong hour" } },
-      { time: "2026-10-05 09:00", temp_f: 75, temp_c: 24, condition: { text: "Sunny" }, chance_of_rain: 0, wind_mph: 0, wind_kph: 0 },
-    ] }] },
+    forecast: {
+      forecastday: [
+        {
+          date: "2026-10-05",
+          day,
+          hour: [
+            { time: "2026-10-05 08:00", temp_f: 70, temp_c: 21, condition: { text: "Wrong hour" } },
+            {
+              time: "2026-10-05 09:00",
+              temp_f: 75,
+              temp_c: 24,
+              condition: { text: "Sunny" },
+              chance_of_rain: 0,
+              wind_mph: 0,
+              wind_kph: 0,
+            },
+          ],
+        },
+      ],
+    },
   };
   let calls = 0;
   t.mock.method(globalThis, "fetch", async (url) => {
@@ -34,7 +81,10 @@ test("weather uses the venue's local day and event hour, caches lookups, and nev
     return Response.json(payload);
   });
   const target = { location: "30.123,-85.789", date: "2026-10-05", time: "09:30" };
-  const [result, simultaneous] = await Promise.all([getEventWeather(target), getEventWeather(target)]);
+  const [result, simultaneous] = await Promise.all([
+    getEventWeather(target),
+    getEventWeather(target),
+  ]);
   assert.equal(calls, 1);
   assert.deepEqual(result, simultaneous);
   assert.equal(result.status, "available");
@@ -64,12 +114,102 @@ test("missing metrics stay absent and provider failures produce an unavailable s
   t.mock.timers.enable({ apis: ["Date"], now: Date.parse("2026-10-03T23:00:00Z") });
   const oldKey = process.env.WEATHERAPI_KEY;
   process.env.WEATHERAPI_KEY = "test-key";
-  t.after(() => { if (oldKey === undefined) delete process.env.WEATHERAPI_KEY; else process.env.WEATHERAPI_KEY = oldKey; });
+  t.after(() => {
+    if (oldKey === undefined) delete process.env.WEATHERAPI_KEY;
+    else process.env.WEATHERAPI_KEY = oldKey;
+  });
   const target = { location: "30.124,-85.789", date: "2026-10-05", time: "" };
-  t.mock.method(globalThis, "fetch", async () => Response.json({ location: {}, forecast: { forecastday: [{ date: target.date, day: { condition: { text: "Cloudy" }, avgtemp_f: null } }] } }));
+  t.mock.method(globalThis, "fetch", async () =>
+    Response.json({
+      location: {},
+      forecast: {
+        forecastday: [
+          { date: target.date, day: { condition: { text: "Cloudy" }, avgtemp_f: null } },
+        ],
+      },
+    }),
+  );
   const result = await getEventWeather(target);
   assert.equal(result.status, "available");
-  for (const metric of ["tempF", "tempC", "highF", "lowC", "rainChance", "windMph"]) assert.equal(result[metric], null);
-  globalThis.fetch.mock.mockImplementation(async () => { throw new Error("Provider timed out"); });
-  assert.equal((await getEventWeather({ ...target, location: "30.125,-85.789" })).status, "unavailable");
+  for (const metric of ["tempF", "tempC", "highF", "lowC", "rainChance", "windMph"])
+    assert.equal(result[metric], null);
+  globalThis.fetch.mock.mockImplementation(async () => {
+    throw new Error("Provider timed out");
+  });
+  assert.equal(
+    (await getEventWeather({ ...target, location: "30.125,-85.789" })).status,
+    "unavailable",
+  );
+});
+
+test("street-address weather uses verified coordinates, with a supplied-city fallback and no ambiguous city guesses", async (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: Date.parse("2026-10-03T23:00:00Z") });
+  const previousWeather = process.env.WEATHERAPI_KEY,
+    previousMaps = process.env.MAPBOX_ACCESS_TOKEN;
+  process.env.WEATHERAPI_KEY = "test-weather";
+  process.env.MAPBOX_ACCESS_TOKEN = "test-maps";
+  t.after(() => {
+    if (previousWeather === undefined) delete process.env.WEATHERAPI_KEY;
+    else process.env.WEATHERAPI_KEY = previousWeather;
+    if (previousMaps === undefined) delete process.env.MAPBOX_ACCESS_TOKEN;
+    else process.env.MAPBOX_ACCESS_TOKEN = previousMaps;
+  });
+  const calls = [];
+  const feature = (lat, lng, properties = {}) => ({
+    geometry: { coordinates: [lng, lat] },
+    properties,
+  });
+  t.mock.method(globalThis, "fetch", async (url) => {
+    calls.push([url.hostname, url.searchParams.get("q")]);
+    if (url.hostname === "api.mapbox.com") {
+      assert.equal(url.searchParams.get("autocomplete"), "false");
+      assert.equal(url.searchParams.get("permanent"), "true");
+      if (url.searchParams.get("q").startsWith("29397")) return Response.json({ features: [] });
+      if (url.searchParams.get("q") === "Ambiguous city")
+        return Response.json({ features: [feature(30.22, -85.84), feature(8.98, -79.51)] });
+      if (url.searchParams.get("q").startsWith("123"))
+        return Response.json({
+          features: [
+            feature(30.22, -85.84, {
+              feature_type: "address",
+              match_code: { address_number: "unmatched", confidence: "high" },
+            }),
+          ],
+        });
+      return Response.json({ features: [feature(30.22, -85.84, { feature_type: "place" })] });
+    }
+    assert.equal(url.hostname, "api.weatherapi.com");
+    assert.equal(
+      url.searchParams.get("q"),
+      "30.22,-85.84",
+      "WeatherAPI must receive Florida coordinates, not an ambiguous street string",
+    );
+    return Response.json({
+      location: { name: "Panama City Beach", region: "Florida" },
+      forecast: {
+        forecastday: [{ date: "2026-10-05", day: { condition: { text: "Sunny" }, avgtemp_f: 78 } }],
+      },
+    });
+  });
+  const target = {
+    location: "29397 Panama City Beach Pkwy, Panama City Beach, Florida",
+    date: "2026-10-05",
+    time: "",
+  };
+  assert.equal((await getEventWeather(target)).location, "Panama City Beach, Florida");
+  assert.deepEqual(calls, [
+    ["api.mapbox.com", target.location],
+    ["api.mapbox.com", "Panama City Beach, Florida"],
+    ["api.weatherapi.com", "30.22,-85.84"],
+  ]);
+  calls.length = 0;
+  assert.equal(
+    (await getEventWeather({ ...target, location: "Ambiguous city" })).status,
+    "location_unavailable",
+  );
+  assert.equal(
+    (await getEventWeather({ ...target, location: "123 Wrong Street" })).status,
+    "location_unavailable",
+  );
+  assert.equal(calls.filter(([host]) => host === "api.weatherapi.com").length, 0);
 });

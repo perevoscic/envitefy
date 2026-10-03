@@ -143,12 +143,7 @@ class PdfJsDomMatrixShim {
     this.m43 = 0;
     this.m44 = 1;
     this.isIdentity =
-      this.a === 1 &&
-      this.b === 0 &&
-      this.c === 0 &&
-      this.d === 1 &&
-      this.e === 0 &&
-      this.f === 0;
+      this.a === 1 && this.b === 0 && this.c === 0 && this.d === 1 && this.e === 0 && this.f === 0;
   }
 
   multiplySelf(other?: MatrixInput | string) {
@@ -428,9 +423,7 @@ export async function rasterizePdfPageToPng(
   return sharpPageImage || (await renderPdfPageToPngWithPdfJs(pdfBuffer, pageIndex));
 }
 
-export async function extractPdfAnnotationLinks(
-  pdfBuffer: Buffer,
-): Promise<PdfAnnotationLink[]> {
+export async function extractPdfAnnotationLinks(pdfBuffer: Buffer): Promise<PdfAnnotationLink[]> {
   const pdfjs = await getPdfJs();
   if (!pdfjs) return [];
 
@@ -457,8 +450,12 @@ export async function extractPdfAnnotationLinks(
           const key = `${pageNumber}|${url}`;
           if (seen.has(key)) continue;
           seen.add(key);
-          const nearby = pdfLinkContext(Array.isArray(annotation?.rect) ? annotation.rect : [], textContent.items || []);
-          const label = nearby.label ||
+          const nearby = pdfLinkContext(
+            Array.isArray(annotation?.rect) ? annotation.rect : [],
+            textContent.items || [],
+          );
+          const label =
+            nearby.label ||
             safeString(annotation?.title) ||
             safeString(annotation?.contents) ||
             safeString(annotation?.fieldName) ||
@@ -487,9 +484,7 @@ export async function extractPdfAnnotationLinks(
   }
 }
 
-export async function extractPdfTextWithPdfJs(
-  pdfBuffer: Buffer,
-): Promise<PdfTextExtractionResult> {
+export async function extractPdfTextWithPdfJs(pdfBuffer: Buffer): Promise<PdfTextExtractionResult> {
   const pdfjs = await getPdfJs();
   if (!pdfjs) return { text: "", pages: [] };
 

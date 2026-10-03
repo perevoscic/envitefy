@@ -53,6 +53,11 @@ const nextConfig = (phase: string): NextConfig => ({
   // `next dev` is more stable when it runs without standalone packaging artifacts.
   ...(phase === PHASE_DEVELOPMENT_SERVER ? {} : { output: "standalone" }),
   outputFileTracingRoot: process.cwd(),
+  outputFileTracingExcludes: {
+    // Next's tracing matcher also matches /api/upload against /api/uploads/...
+    // This handler accepts header photos only, so remove the inherited PDF files.
+    "/api/uploads/birthday-asset": pdfRuntimeFiles,
+  },
   outputFileTracingIncludes: {
     ...Object.fromEntries(pdfProcessingRoutes.map((route) => [route, [...pdfRuntimeFiles]])),
     "/api/livecard-builder/location": ["./node_modules/geo-tz/data/timezones-1970.geojson.*"],
@@ -71,9 +76,7 @@ const nextConfig = (phase: string): NextConfig => ({
     "/api/scan/event-page": [...pdfRuntimeFiles, "./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/events/*/scan-artwork": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/events/*/original": [...pdfRuntimeFiles, "./node_modules/ffmpeg-static/ffmpeg*"],
-    "/*": [
-      "./public/fonts/Josefin_Sans/static/JosefinSans-Regular.ttf",
-    ],
+    "/*": ["./public/fonts/Josefin_Sans/static/JosefinSans-Regular.ttf"],
   },
 
   // Keep heavy server deps out of the serverless bundle (stays under Vercel 300MB limit)

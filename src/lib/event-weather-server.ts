@@ -4,13 +4,20 @@ const cache = new Map<string, { expires: number; value: EventWeatherResult }>();
 const pending = new Map<string, Promise<EventWeatherResult>>();
 const DAY_MS = 86_400_000;
 const record = (value: unknown): Record<string, unknown> =>
-  value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
-const number = (value: unknown): number | null => typeof value === "number" && Number.isFinite(value) ? value : null;
-const text = (value: unknown): string => typeof value === "string" ? value.trim().slice(0, 300) : "";
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+const number = (value: unknown): number | null =>
+  typeof value === "number" && Number.isFinite(value) ? value : null;
+const text = (value: unknown): string =>
+  typeof value === "string" ? value.trim().slice(0, 300) : "";
 
-async function resolveWeatherCoordinates(location: string): Promise<{ query: string } | Exclude<EventWeatherResult, EventWeatherForecast>> {
+async function resolveWeatherCoordinates(
+  location: string,
+): Promise<{ query: string } | Exclude<EventWeatherResult, EventWeatherForecast>> {
   const inline = location.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
-  if (inline && Math.abs(Number(inline[1])) <= 90 && Math.abs(Number(inline[2])) <= 180) return { query: `${Number(inline[1])},${Number(inline[2])}` };
+  if (inline && Math.abs(Number(inline[1])) <= 90 && Math.abs(Number(inline[2])) <= 180)
+    return { query: `${Number(inline[1])},${Number(inline[2])}` };
   const token = process.env.MAPBOX_ACCESS_TOKEN || process.env.MAPBOX_API_KEY;
   if (!token) return { status: "unconfigured" };
   if (location.length > 256 || location.includes(";")) return { status: "location_unavailable" };
@@ -25,34 +32,55 @@ async function resolveWeatherCoordinates(location: string): Promise<{ query: str
     const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(5000) });
     if (!response.ok) return { status: "unavailable" };
     const data = record(await response.json());
-    const candidates = (Array.isArray(data.features) ? data.features : []).map(record).flatMap((feature) => {
-      const coordinates = record(feature.geometry).coordinates;
-      const properties = record(feature.properties);
-      if (!Array.isArray(coordinates) || number(coordinates[0]) === null || number(coordinates[1]) === null || Math.abs(coordinates[0]) > 180 || Math.abs(coordinates[1]) > 90) return [];
-      // An address lookup must retain the supplied house number and a strong provider match.
-      if (/^\d+[a-z]?\s/i.test(location)) {
-        const match = record(properties.match_code);
-        if (properties.feature_type !== "address" || match.address_number !== "matched" || !["exact", "high"].includes(text(match.confidence))) return [];
-      }
-      return [{ lat: coordinates[1] as number, lng: coordinates[0] as number }];
-    });
+    const candidates = (Array.isArray(data.features) ? data.features : [])
+      .map(record)
+      .flatMap((feature) => {
+        const coordinates = record(feature.geometry).coordinates;
+        const properties = record(feature.properties);
+        if (
+          !Array.isArray(coordinates) ||
+          number(coordinates[0]) === null ||
+          number(coordinates[1]) === null ||
+          Math.abs(coordinates[0]) > 180 ||
+          Math.abs(coordinates[1]) > 90
+        )
+          return [];
+        // An address lookup must retain the supplied house number and a strong provider match.
+        if (/^\d+[a-z]?\s/i.test(location)) {
+          const match = record(properties.match_code);
+          if (
+            properties.feature_type !== "address" ||
+            match.address_number !== "matched" ||
+            !["exact", "high"].includes(text(match.confidence))
+          )
+            return [];
+        }
+        return [{ lat: coordinates[1] as number, lng: coordinates[0] as number }];
+      });
     const point = candidates[0];
     if (!point && /^\d+[a-z]?\s/i.test(location) && location.includes(",")) {
       // Weather can use the explicitly supplied city even when a street number has no match.
       // This never changes the saved address or invents a different city.
-      const area = location.split(",").slice(1).map((part) => part.trim()).filter(Boolean).join(", ");
-      if (area) return resolveWeatherCoordinates(area);
-    }
-    if (!point && /^\d+[a-z]?\s/i.test(location) && location.includes(",")) {
-      // Weather can use the explicitly supplied city even when a street number has no match.
-      // This never changes the saved address or invents a different city.
-      const area = location.split(",").slice(1).map((part) => part.trim()).filter(Boolean).join(", ");
+      const area = location
+        .split(",")
+        .slice(1)
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .join(", ");
       if (area) return resolveWeatherCoordinates(area);
     }
     // Nearby neighborhood variants can share a forecast; distant matches remain ambiguous.
-    if (!point || candidates.some((other) => Math.abs(other.lat - point.lat) > 0.2 || Math.abs(other.lng - point.lng) > 0.2)) return { status: "location_unavailable" };
+    if (
+      !point ||
+      candidates.some(
+        (other) => Math.abs(other.lat - point.lat) > 0.2 || Math.abs(other.lng - point.lng) > 0.2,
+      )
+    )
+      return { status: "location_unavailable" };
     return { query: `${point.lat},${point.lng}` };
-  } catch { return { status: "unavailable" }; }
+  } catch {
+    return { status: "unavailable" };
+  }
 }
 
 async function fetchForecast(target: EventWeatherTarget, key: string): Promise<EventWeatherResult> {
@@ -78,7 +106,9 @@ async function fetchForecast(target: EventWeatherTarget, key: string): Promise<E
     if (!selected) return { status: "outside_window" };
     const day = record(selected.day);
     const hours = Array.isArray(selected.hour) ? selected.hour.map(record) : [];
-    const hour = target.time ? hours.find((item) => text(item.time) === `${target.date} ${target.time.slice(0, 2)}:00`) : null;
+    const hour = target.time
+      ? hours.find((item) => text(item.time) === `${target.date} ${target.time.slice(0, 2)}:00`)
+      : null;
     if (target.time && !hour) return { status: "unavailable" };
     const weather = hour || day;
     const summary = text(record(weather.condition).text);
@@ -88,13 +118,17 @@ async function fetchForecast(target: EventWeatherTarget, key: string): Promise<E
     const rain = number(hour ? hour.chance_of_rain : day.daily_chance_of_rain);
     const result: EventWeatherForecast = {
       status: "available",
-      location: [text(place.name), text(place.region)].filter(Boolean).join(", ") || target.location,
+      location:
+        [text(place.name), text(place.region)].filter(Boolean).join(", ") || target.location,
       date: target.date,
       time: hour ? text(hour.time).slice(11, 16) : null,
       summary,
-      tempF, tempC,
-      highF: number(day.maxtemp_f), highC: number(day.maxtemp_c),
-      lowF: number(day.mintemp_f), lowC: number(day.mintemp_c),
+      tempF,
+      tempC,
+      highF: number(day.maxtemp_f),
+      highC: number(day.maxtemp_c),
+      lowF: number(day.mintemp_f),
+      lowC: number(day.mintemp_c),
       rainChance: rain !== null && rain >= 0 && rain <= 100 ? rain : null,
       windMph: number(hour ? hour.wind_mph : day.maxwind_mph),
       windKph: number(hour ? hour.wind_kph : day.maxwind_kph),
@@ -122,11 +156,16 @@ export async function getEventWeather(target: EventWeatherTarget): Promise<Event
   if (inFlight) return inFlight;
   for (const [entryKey, entry] of cache) if (entry.expires <= Date.now()) cache.delete(entryKey);
   if (pending.size >= 100) return { status: "unavailable" };
-  const job = fetchForecast(target, apiKey).then((value) => {
-    if (cache.size >= 500) cache.delete(cache.keys().next().value!);
-    cache.set(cacheKey, { value, expires: Date.now() + (value.status === "available" ? 15 * 60_000 : 60_000) });
-    return value;
-  }).finally(() => pending.delete(cacheKey));
+  const job = fetchForecast(target, apiKey)
+    .then((value) => {
+      if (cache.size >= 500) cache.delete(cache.keys().next().value!);
+      cache.set(cacheKey, {
+        value,
+        expires: Date.now() + (value.status === "available" ? 15 * 60_000 : 60_000),
+      });
+      return value;
+    })
+    .finally(() => pending.delete(cacheKey));
   pending.set(cacheKey, job);
   return job;
 }

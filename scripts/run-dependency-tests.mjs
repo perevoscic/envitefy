@@ -21,7 +21,10 @@ registerHooks({
       if (!extname(target.pathname) && existsSync(new URL(`${target.href}.ts`))) {
         target = new URL(`${target.href}.ts`);
       }
-      return nextResolve(fileURLToPath(target), context);
+      return nextResolve(
+        context.conditions?.includes("require") ? fileURLToPath(target) : target.href,
+        context,
+      );
     }
     return nextResolve(specifier, context);
   },

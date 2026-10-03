@@ -51,7 +51,8 @@ type UploadBlobParams = {
   access: BlobAccess;
 };
 
-const BLOB_STORE_ACCESS_ERROR = /cannot use (?:public|private) access on a (?:private|public) store/i;
+const BLOB_STORE_ACCESS_ERROR =
+  /cannot use (?:public|private) access on a (?:private|public) store/i;
 
 let detectedBlobStoreAccess: BlobAccess | null = null;
 
@@ -86,7 +87,12 @@ export type DiscoverySourceResult = {
 };
 
 export function sanitizePathSegment(value: string): string {
-  return value.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 120) || "upload";
+  return (
+    value
+      .replace(/[^a-zA-Z0-9._-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 120) || "upload"
+  );
 }
 
 export function getScopeId(eventId?: string | null, uploadToken?: string | null): string {
@@ -291,7 +297,10 @@ function resolveImageOptimizationOptions(
   };
 }
 
-export async function readAndValidateUploadFile(file: File, usage: UploadUsage): Promise<ValidatedUpload> {
+export async function readAndValidateUploadFile(
+  file: File,
+  usage: UploadUsage,
+): Promise<ValidatedUpload> {
   const validation = validateUploadFileMeta({
     fileName: file.name,
     mimeType: file.type,
@@ -409,9 +418,10 @@ export async function processImageUpload(params: {
   const orientedWidth = originalMeta.autoOrient.width;
   // Full-resolution artwork is kept for printing/editing. Reuse the display when
   // it already has the full dimensions instead of uploading an identical source.
-  const sourceBytes = orientedWidth > processed.display.width
-    ? await encodeScanArtworkWebp(params.validated.bytes)
-    : null;
+  const sourceBytes =
+    orientedWidth > processed.display.width
+      ? await encodeScanArtworkWebp(params.validated.bytes)
+      : null;
   const sourceMeta = sourceBytes ? await sharp(sourceBytes).metadata() : null;
   const [display, thumb] = await Promise.all([
     uploadWebpAsset({
@@ -433,17 +443,18 @@ export async function processImageUpload(params: {
       access: "public",
     }),
   ]);
-  const source = sourceBytes && sourceMeta
-    ? await uploadWebpAsset({
-        scopeId: params.scopeId,
-        usage: params.usage,
-        assetKind: "source",
-        bytes: sourceBytes,
-        width: sourceMeta.width || 1,
-        height: sourceMeta.height || 1,
-        access: "public",
-      })
-    : display;
+  const source =
+    sourceBytes && sourceMeta
+      ? await uploadWebpAsset({
+          scopeId: params.scopeId,
+          usage: params.usage,
+          assetKind: "source",
+          bytes: sourceBytes,
+          width: sourceMeta.width || 1,
+          height: sourceMeta.height || 1,
+          access: "public",
+        })
+      : display;
 
   const attachment =
     params.usage === "attachment"
@@ -514,35 +525,54 @@ export async function processImageUpload(params: {
 }
 
 /** Photo-only entry points keep PDF processing out of their module graph. */
-export { processPublicImageUpload as processPublicUpload, processBufferImageUpload as processBufferUpload };
+export {
+  processPublicImageUpload as processPublicUpload,
+  processBufferImageUpload as processBufferUpload,
+};
 
-export async function processPublicImageUpload(params: PublicUploadParams): Promise<UploadResponse> {
+export async function processPublicImageUpload(
+  params: PublicUploadParams,
+): Promise<UploadResponse> {
   const validated = await readAndValidateUploadFile(params.file, params.usage);
   return processValidatedImageUpload({ ...params, validated });
 }
 
-export async function processBufferImageUpload(params: BufferUploadParams): Promise<UploadResponse> {
+export async function processBufferImageUpload(
+  params: BufferUploadParams,
+): Promise<UploadResponse> {
   const validation = validateUploadFileMeta({
-    fileName: params.fileName, mimeType: params.mimeType,
-    sizeBytes: params.bytes.length, usage: params.usage,
+    fileName: params.fileName,
+    mimeType: params.mimeType,
+    sizeBytes: params.bytes.length,
+    usage: params.usage,
   });
   if (!validation.ok) {
     throw Object.assign(new Error(validation.error), { status: validation.status });
   }
-  return processValidatedImageUpload({ ...params, validated: {
-    bytes: params.bytes, fileName: params.fileName || "upload",
-    mimeType: validation.mimeType, sizeBytes: params.bytes.length, kind: validation.kind,
-  } });
+  return processValidatedImageUpload({
+    ...params,
+    validated: {
+      bytes: params.bytes,
+      fileName: params.fileName || "upload",
+      mimeType: validation.mimeType,
+      sizeBytes: params.bytes.length,
+      kind: validation.kind,
+    },
+  });
 }
 
 async function processValidatedImageUpload(params: {
-  validated: ValidatedUpload; usage: UploadUsage; eventId?: string | null; uploadToken?: string | null;
+  validated: ValidatedUpload;
+  usage: UploadUsage;
+  eventId?: string | null;
+  uploadToken?: string | null;
 }): Promise<UploadResponse> {
   if (params.validated.kind !== "image") {
     throw Object.assign(new Error("Choose a JPG, PNG or WebP image"), { status: 415 });
   }
   return processImageUpload({
-    validated: params.validated, usage: params.usage,
+    validated: params.validated,
+    usage: params.usage,
     scopeId: getScopeId(params.eventId, params.uploadToken),
   });
 }

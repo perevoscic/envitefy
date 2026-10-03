@@ -1,17 +1,31 @@
 // General attachment uploads support PDFs. Image-only callers import
 // media-upload-image directly so authentication and photo routes stay lightweight.
 import {
-  getScopeId, getImageOutputName, sanitizePathSegment, stripExtension,
-  uploadBlobAsset, uploadWebpAsset, renderImageVariants, processImageUpload,
-  processImageBufferWithVariants, readAndValidateUploadFile,
-  type ValidatedUpload, type PublicUploadParams, type BufferUploadParams, type DiscoverySourceResult,
+  getScopeId,
+  getImageOutputName,
+  sanitizePathSegment,
+  stripExtension,
+  uploadBlobAsset,
+  uploadWebpAsset,
+  renderImageVariants,
+  processImageUpload,
+  processImageBufferWithVariants,
+  readAndValidateUploadFile,
+  type ValidatedUpload,
+  type PublicUploadParams,
+  type BufferUploadParams,
+  type DiscoverySourceResult,
 } from "./media-upload-image.ts";
 import { validateUploadFileMeta, type UploadResponse, type UploadUsage } from "./upload-config.ts";
 
 // Preserve the existing shared upload API for legacy callers.
 export {
-  processImageBufferForUpload, processImageBufferWithVariants, readAndValidateUploadFile,
-  uploadPublicBinaryAsset, uploadPrivateBinaryAsset, resolveEmailEmbedAssetUrl,
+  processImageBufferForUpload,
+  processImageBufferWithVariants,
+  readAndValidateUploadFile,
+  uploadPublicBinaryAsset,
+  uploadPrivateBinaryAsset,
+  resolveEmailEmbedAssetUrl,
 } from "./media-upload-image.ts";
 
 async function processPdfUpload(params: {

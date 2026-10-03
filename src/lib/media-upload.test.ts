@@ -3,10 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import sharp from "sharp";
 
-import {
-  processImageBufferForUpload,
-  processImageBufferWithVariants,
-} from "./media-upload.ts";
+import { processImageBufferForUpload, processImageBufferWithVariants } from "./media-upload.ts";
 import { SHARP_UPLOAD_PRESETS } from "./upload-config.ts";
 
 test("processImageBufferForUpload generates bounded webp display and thumb assets", async () => {
@@ -60,10 +57,7 @@ test("processImageBufferWithVariants supports display-only optimization", async 
 test("image uploads use separate WebP source paths only when full resolution needs them", () => {
   const source = readFileSync(new URL("./media-upload-image.ts", import.meta.url), "utf8");
 
-  assert.match(
-    source,
-    /assetKind: "source"/,
-  );
+  assert.match(source, /assetKind: "source"/);
   assert.match(
     source,
     /pathname: `event-media\/\$\{params\.scopeId\}\/\$\{params\.usage\}\/\$\{params\.assetKind\}\.webp`/,
@@ -76,8 +70,5 @@ test("account media can prefer the private store without losing public-store com
 
   assert.match(source, /export async function uploadPrivateBinaryAsset/);
   assert.match(source, /access: "private"/);
-  assert.match(
-    source,
-    /resolvedAccess = preferredAccess === "public" \? "private" : "public"/,
-  );
+  assert.match(source, /resolvedAccess = preferredAccess === "public" \? "private" : "public"/);
 });

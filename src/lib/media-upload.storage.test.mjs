@@ -12,46 +12,77 @@ function harness({ pdfPreview } = {}) {
   const pdfLoads = [];
   const modules = new Map();
   function loadSource(file) {
-  if (modules.has(file)) return modules.get(file);
-  const source = readFileSync(new URL(file, import.meta.url), "utf8");
-  const { outputText } = ts.transpileModule(source, {
-    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, esModuleInterop: true },
-  });
-  const module = { exports: {} };
-  vm.runInNewContext(outputText, {
-    module, exports: module.exports, Buffer,
-    console: { log() {} },
-    require: (specifier) => specifier === "@vercel/blob" ? {
-      put: async (pathname, bytes, options) => {
-        uploads.push({ pathname, bytes, options });
-        return { pathname, url: `https://assets.example.test/${pathname}` };
+    if (modules.has(file)) return modules.get(file);
+    const source = readFileSync(new URL(file, import.meta.url), "utf8");
+    const { outputText } = ts.transpileModule(source, {
+      compilerOptions: {
+        target: ts.ScriptTarget.ES2022,
+        module: ts.ModuleKind.CommonJS,
+        esModuleInterop: true,
       },
-    } : specifier === "./media-upload-image.ts" ? loadSource(specifier)
-      : specifier === "./pdf-optimize.ts" ? {
-        optimizePdfWithQpdf: async (buffer) => { pdfLoads.push("optimize"); return { buffer }; },
-      } : specifier === "./pdf-raster.ts" ? {
-        rasterizePdfPageToPng: async () => {
-          pdfLoads.push("render");
-          if (!pdfPreview) throw new Error("Unexpected PDF in image test");
-          return pdfPreview;
-        },
-      } : require(specifier),
-  });
-  modules.set(file, module.exports);
-  return module.exports;
+    });
+    const module = { exports: {} };
+    vm.runInNewContext(outputText, {
+      module,
+      exports: module.exports,
+      Buffer,
+      console: { log() {} },
+      require: (specifier) =>
+        specifier === "@vercel/blob"
+          ? {
+              put: async (pathname, bytes, options) => {
+                uploads.push({ pathname, bytes, options });
+                return { pathname, url: `https://assets.example.test/${pathname}` };
+              },
+            }
+          : specifier === "./media-upload-image.ts"
+            ? loadSource(specifier)
+            : specifier === "./pdf-optimize.ts"
+              ? {
+                  optimizePdfWithQpdf: async (buffer) => {
+                    pdfLoads.push("optimize");
+                    return { buffer };
+                  },
+                }
+              : specifier === "./pdf-raster.ts"
+                ? {
+                    rasterizePdfPageToPng: async () => {
+                      pdfLoads.push("render");
+                      if (!pdfPreview) throw new Error("Unexpected PDF in image test");
+                      return pdfPreview;
+                    },
+                  }
+                : require(specifier),
+    });
+    modules.set(file, module.exports);
+    return module.exports;
   }
-  return { ...loadSource("./media-upload.ts"), imageUploads: loadSource("./media-upload-image.ts"), uploads, pdfLoads };
+  return {
+    ...loadSource("./media-upload.ts"),
+    imageUploads: loadSource("./media-upload-image.ts"),
+    uploads,
+    pdfLoads,
+  };
 }
 async function fixture(format, width = 160, height = 100) {
-  return sharp({ create: { width, height, channels: 4, background: { r: 65, g: 120, b: 170, alpha: 0.4 } } })
-    .toFormat(format).toBuffer();
+  return sharp({
+    create: { width, height, channels: 4, background: { r: 65, g: 120, b: 170, alpha: 0.4 } },
+  })
+    .toFormat(format)
+    .toBuffer();
 }
 
 test("PNG/JPEG attachments upload only two WebPs and return matching names, types, sizes and source URLs", async () => {
   for (const format of ["png", "jpeg"]) {
     const h = harness();
     const input = await fixture(format);
-    const result = await h.processBufferUpload({ bytes: input, fileName: `invite.${format}`, mimeType: `image/${format}`, usage: "attachment", uploadToken: "upload-test" });
+    const result = await h.processBufferUpload({
+      bytes: input,
+      fileName: `invite.${format}`,
+      mimeType: `image/${format}`,
+      usage: "attachment",
+      uploadToken: "upload-test",
+    });
     assert.equal(h.uploads.length, 2);
     assert.deepEqual(h.pdfLoads, []);
     for (const item of h.uploads) {
@@ -75,41 +106,72 @@ test("PNG/JPEG attachments upload only two WebPs and return matching names, type
 test("validated PDF attachments render a preview and preserve the original PDF", async () => {
   const h = harness({ pdfPreview: await fixture("png") });
   const input = Buffer.from("%PDF-1.7 test original");
-  const result = await h.processBufferUpload({ bytes: input, fileName: "invite.pdf", mimeType: "application/pdf", usage: "attachment" });
+  const result = await h.processBufferUpload({
+    bytes: input,
+    fileName: "invite.pdf",
+    mimeType: "application/pdf",
+    usage: "attachment",
+  });
   assert.deepEqual(h.pdfLoads, ["optimize", "render"]);
   assert.equal(result.kind, "pdf");
   assert.equal(result.stored.display.mimeType, "image/webp");
   assert.equal(result.stored.source.mimeType, "application/pdf");
   assert.equal(h.uploads.length, 3);
-  const original = h.uploads.find(upload => upload.pathname.endsWith("source.pdf"));
+  const original = h.uploads.find((upload) => upload.pathname.endsWith("source.pdf"));
   assert.deepEqual(original.bytes, input);
 });
 
 test("photo-only entry points accept images and reject PDFs before rendering or uploading", async () => {
   const h = harness();
-  const result = await h.imageUploads.processBufferUpload({ bytes: await fixture("webp"), fileName: "photo.webp", mimeType: "image/webp", usage: "header" });
+  const result = await h.imageUploads.processBufferUpload({
+    bytes: await fixture("webp"),
+    fileName: "photo.webp",
+    mimeType: "image/webp",
+    usage: "header",
+  });
   assert.equal(result.kind, "image");
   const count = h.uploads.length;
-  await assert.rejects(h.imageUploads.processBufferUpload({ bytes: Buffer.from("%PDF-1.7"), fileName: "invite.pdf", mimeType: "application/pdf", usage: "attachment" }), { status: 415 });
-  await assert.rejects(h.imageUploads.processPublicUpload({ file: new File(["%PDF-1.7"], "invite.pdf", { type: "application/pdf" }), usage: "header" }), { status: 415 });
+  await assert.rejects(
+    h.imageUploads.processBufferUpload({
+      bytes: Buffer.from("%PDF-1.7"),
+      fileName: "invite.pdf",
+      mimeType: "application/pdf",
+      usage: "attachment",
+    }),
+    { status: 415 },
+  );
+  await assert.rejects(
+    h.imageUploads.processPublicUpload({
+      file: new File(["%PDF-1.7"], "invite.pdf", { type: "application/pdf" }),
+      usage: "header",
+    }),
+    { status: 415 },
+  );
   assert.equal(h.uploads.length, count);
   assert.deepEqual(h.pdfLoads, []);
 });
 
 test("large images retain full-resolution WebP for source/download without a PNG copy", async () => {
   const h = harness();
-  const result = await h.processBufferUpload({ bytes: await fixture("png", 3000, 800), fileName: "poster.png", usage: "header" });
+  const result = await h.processBufferUpload({
+    bytes: await fixture("png", 3000, 800),
+    fileName: "poster.png",
+    usage: "header",
+  });
   assert.equal(h.uploads.length, 3);
   assert.equal(result.stored.display.width, 2400);
   assert.equal(result.stored.source.width, 3000);
   assert.equal(result.stored.source.height, 800);
   assert.match(result.stored.source.url, /\/source\.webp$/);
-  assert.ok(h.uploads.every(item => item.options.contentType === "image/webp"));
+  assert.ok(h.uploads.every((item) => item.options.contentType === "image/webp"));
 });
 
 test("EXIF-rotated JPEGs preserve the visible orientation in the saved source metadata", async () => {
   const h = harness();
-  const bytes = await sharp(await fixture("jpeg", 120, 80)).withMetadata({ orientation: 6 }).jpeg().toBuffer();
+  const bytes = await sharp(await fixture("jpeg", 120, 80))
+    .withMetadata({ orientation: 6 })
+    .jpeg()
+    .toBuffer();
   const result = await h.processBufferUpload({ bytes, fileName: "phone.JPG", usage: "attachment" });
   assert.equal(result.stored.source.width, 80);
   assert.equal(result.stored.source.height, 120);
@@ -119,7 +181,11 @@ test("EXIF-rotated JPEGs preserve the visible orientation in the saved source me
 test("binary and email upload entry points also convert PNG/JPEG before storing", async () => {
   for (const access of ["Public", "Private"]) {
     const h = harness();
-    const uploaded = await h[`upload${access}BinaryAsset`]({ bytes: await fixture("png"), pathname: "event-media/email/header/Image.PNG", contentType: "image/png" });
+    const uploaded = await h[`upload${access}BinaryAsset`]({
+      bytes: await fixture("png"),
+      pathname: "event-media/email/header/Image.PNG",
+      contentType: "image/png",
+    });
     assert.equal(h.uploads.length, 1);
     assert.equal(uploaded.pathname, "event-media/email/header/Image.webp");
     assert.equal(h.uploads[0].options.contentType, "image/webp");
@@ -129,10 +195,20 @@ test("binary and email upload entry points also convert PNG/JPEG before storing"
 
 test("invalid images fail before any Blob writes; non-image binaries pass through", async () => {
   const h = harness();
-  await assert.rejects(h.processBufferUpload({ bytes: Buffer.from("broken png"), fileName: "broken.png", usage: "header" }));
+  await assert.rejects(
+    h.processBufferUpload({
+      bytes: Buffer.from("broken png"),
+      fileName: "broken.png",
+      usage: "header",
+    }),
+  );
   assert.equal(h.uploads.length, 0);
   const bytes = Buffer.from("EVS1 encrypted original document");
-  const result = await h.uploadPublicBinaryAsset({ bytes, pathname: "private-scan-originals/example.bin", contentType: "application/octet-stream" });
+  const result = await h.uploadPublicBinaryAsset({
+    bytes,
+    pathname: "private-scan-originals/example.bin",
+    contentType: "application/octet-stream",
+  });
   assert.equal(result.pathname, "private-scan-originals/example.bin");
   assert.equal(h.uploads[0].bytes, bytes);
 });
@@ -140,7 +216,12 @@ test("invalid images fail before any Blob writes; non-image binaries pass throug
 test("already-verified WebPs are reused without another lossy conversion", async () => {
   const h = harness();
   const bytes = await fixture("webp");
-  const result = await h.processBufferUpload({ bytes, fileName: "invite.webp", mimeType: "image/webp", usage: "header" });
+  const result = await h.processBufferUpload({
+    bytes,
+    fileName: "invite.webp",
+    mimeType: "image/webp",
+    usage: "header",
+  });
   assert.equal(h.uploads.length, 2);
   assert.deepEqual(h.uploads[0].bytes, bytes);
   assert.equal(result.stored.source.url, result.stored.display.url);
@@ -151,7 +232,13 @@ test("encoder failures stop uploads instead of falling back to storing PNG origi
   process.env.IMAGE_FFMPEG_PATH = "/nonexistent/envitefy-test-ffmpeg";
   try {
     const h = harness();
-    await assert.rejects(h.uploadPublicBinaryAsset({ bytes: await fixture("png"), pathname: "event-media/test/header/original.png", contentType: "image/png" }));
+    await assert.rejects(
+      h.uploadPublicBinaryAsset({
+        bytes: await fixture("png"),
+        pathname: "event-media/test/header/original.png",
+        contentType: "image/png",
+      }),
+    );
     assert.equal(h.uploads.length, 0);
   } finally {
     if (previous === undefined) delete process.env.IMAGE_FFMPEG_PATH;
