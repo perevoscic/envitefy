@@ -32,6 +32,12 @@ function loadRoute({ userId = "owner", ownerId = "owner", generate, existingData
     "next/server": { NextResponse: Response },
     "next-auth": { getServerSession: async () => ({ user: { id: userId } }) },
     "@/lib/auth": { authOptions: {}, resolveSessionUserId: async () => userId },
+    "@/lib/event-collaboration": {
+      getEventPermissions: async () => ({ canEdit: userId === ownerId }),
+      eventRevision: () => "revision",
+      saveCollaborativeEvent: async ({ eventId, title, patch }) => { if (title) calls.writes.push({ id: eventId, title }); calls.writes.push({ id: eventId, data: patch }); return { id: eventId, data: patch }; },
+    },
+    "@/lib/event-collaboration-types": { supportsEventCollaboration: () => true, EventCollaborationError: class extends Error {} },
     "@/app/studio/studio-workspace-builders": {
       buildDeterministicScheduleLine: (details) => `${details.eventDate} ${details.startTime}`,
       refreshLiveCardInvitationData: (details) => ({ title: details.eventTitle, theme: {}, eventDetails: details }),

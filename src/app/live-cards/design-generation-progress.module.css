@@ -208,3 +208,16 @@
     opacity: 0.45;
   }
 }
+.mockWording {
+  max-width: 100%;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.mockWording small {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  opacity: 0.7;
+}
+.mockWording p { font-size: 13px; }
+.mockWording strong { display: block; font-family: Georgia, serif; font-size: 20px; }

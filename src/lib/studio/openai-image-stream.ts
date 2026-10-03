@@ -6,6 +6,9 @@ export type ImageGenerationOptions = {
   size?: "1024x1024" | "1536x1024" | "1024x1536" | "1024x2176" | "auto";
   onPartialImage?: (imageDataUrl: string) => void;
   signal?: AbortSignal;
+  background?: "transparent" | "opaque" | "auto";
+  quality?: "low" | "medium" | "high" | "auto";
+  requestContext?: { jobId: string; revision: string; attempt: number };
 };
 
 type ImageStreamBody = {

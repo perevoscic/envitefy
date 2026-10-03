@@ -1,4 +1,6 @@
 "use client";
+import { useEventHistoryClient } from "@/lib/event-history-client";
+import EventAccessDialog from "@/components/EventAccessDialog";
 
 import {
   ArrowLeft,
@@ -51,7 +53,7 @@ import {
   mergeResolvedLocation,
   readBuilderPlace,
 } from "@/lib/livecard-location";
-import { LiveCardGenerationFailure, readLiveCardGenerationFailure } from "@/lib/livecard-generation-failure";
+import { LiveCardGenerationFailure } from "@/lib/livecard-generation-failure";
 import { liveCardWordingKey, mergeLiveCardProofread } from "@/lib/livecard-wording";
 import { composeSharedCard } from "@/lib/shared-card-canvas";
 import {
@@ -59,10 +61,11 @@ import {
   readSharedCardDesign,
   sharedCardArtworkUrl,
 } from "@/lib/shared-card-design";
-import { readGenerationStream, type GenerationStage } from "@/lib/studio/generation-progress";
+import { type GenerationStage } from "@/lib/studio/generation-progress";
 import { buildEventPath, buildStudioCardPath } from "@/utils/event-url";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
 import { resolveNativeShareData } from "@/utils/native-share";
+import { readTemplateDraft, writeTemplateDraft, deleteTemplateDraft, type EditorSnapshot } from "@/lib/template-draft-storage";
 import DesignGenerationProgress from "./DesignGenerationProgress";
 import DesignSuggestions from "./DesignSuggestions";
 import LocationField from "./LocationField";
@@ -187,16 +190,28 @@ type BuilderStep = 1 | 2 | 3;
 type DetailTab = (typeof DETAIL_TABS)[number];
 type PreparationIssue = { stage: "locations" | "wording" | "lettering"; message: string; retryable: boolean; code?: string };
 export default function LiveCardBuilder({ initialEventId }: { initialEventId: string | null }) {
+  const eventHistoryClient = useEventHistoryClient();
+  const [canManageAccess, setCanManageAccess] = useState(!initialEventId);
+  const [saveConflict, setSaveConflict] = useState(false);
   const [form, setForm] = useState(createLiveCardForm);
   const [artwork, setArtwork] = useState<LiveCardArtwork | null>(null);
+  const [alternative, setAlternative] = useState<LiveCardArtwork | null>(null);
+  const retainedVersions = useRef<LiveCardArtwork[]>([]);
   const checkedWording = useRef("");
   const wordingController = useRef<AbortController | null>(null);
   const pendingWording = useRef<Promise<boolean> | null>(null);
+  const attemptedHeadlines = useRef(new Set<string>());
+  const artworkJobId = useRef<string | null>(null);
+  const recoveryId = useRef("");
+  const recoveryDiscarded = useRef(false);
+  const [jobState, setJobState] = useState<{ stage: string; startedAt: string; state: string; mode: string; attempt: number; elapsedMs: number } | null>(null);
   const preparationFailure = useRef("");
   const preparationStage = useRef<PreparationIssue["stage"]>("wording");
   const preparationSurface = useRef<"review" | "preview">("review");
   const feedbackVersion = useRef(0);
   const [preparationIssue, setPreparationIssue] = useState<PreparationIssue | null>(null);
+  const [wordingSuggestion, setWordingSuggestion] = useState<{ before: LiveCardForm; corrected: LiveCardForm } | null>(null);
+  const [wordingStatus, setWordingStatus] = useState("");
   const saving = useRef(false);
   const [publishProgress, setPublishProgress] = useState(false);
   const [publishStage, setPublishStage] = useState<PublishStage>("wording");
@@ -256,7 +271,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
   const canReview =
     Boolean(artwork) &&
     !designChanged &&
-    !generation &&
+    (!generation || jobState?.mode === "background") &&
     Object.keys(preparationErrors).length === 0;
 
   useEffect(() => {
@@ -264,21 +279,26 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     let active = true;
     setReady(false);
     setLoadError("");
-    draftId.current ||= crypto.randomUUID();
+    recoveryDiscarded.current = false;
+    const recoveryKey = `envitefy:live-card-recovery:${initialEventId || "new"}`;
+    recoveryId.current = sessionStorage.getItem(recoveryKey) || crypto.randomUUID();
+    sessionStorage.setItem(recoveryKey, recoveryId.current);
+    draftId.current ||= recoveryId.current;
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
     async function load() {
       let nextForm = createLiveCardForm(timezone);
       let nextArtwork: LiveCardArtwork | null = null;
       if (initialEventId) {
-        const response = await fetch(`/api/history/${encodeURIComponent(initialEventId)}`, {
+        const response = await eventHistoryClient.fetch(`/api/history/${encodeURIComponent(initialEventId)}`, {
           signal: controller.signal,
           cache: "no-store",
         });
         const row = asRecord(await response.json());
+        setCanManageAccess(asRecord(row.permissions).canManageCollaborators === true);
         const data = asRecord(row.data);
         if (!response.ok)
           throw new Error(
-            "This card could not be opened. Check that you are signed in to its owner account.",
+            "This card could not be opened. Sign in with its owner or invited co-host account.",
           );
         if (data.createdVia !== LIVE_CARD_BUILDER_SOURCE)
           throw new Error("This event uses a different editor. Open it from My Events.");
@@ -312,11 +332,30 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       }
       if (!active) return;
 
+      const savedBaseline = serialize({ form: nextForm, artwork: nextArtwork });
+      const recovery = await readTemplateDraft("live-card-recovery", recoveryId.current).catch(() => null);
+      const restoredRecovery = recovery?.snapshot;
+      const recoveredForm = readLiveCardForm(restoredRecovery?.form);
+      if (recoveredForm && restoredRecovery) {
+        const recoveredArtwork = restoredRecovery.artwork as unknown as LiveCardArtwork | null;
+        const recoveryIsClean = initialEventId && restoredRecovery.baseline === serialize({ form: restoredRecovery.form as unknown as LiveCardForm, artwork: recoveredArtwork });
+        // A clean local copy uses the explicit server save, including its persisted asset URLs.
+        if (!recoveryIsClean) { nextForm = recoveredForm; nextArtwork = recoveredArtwork; }
+        artworkJobId.current = typeof restoredRecovery.jobId === "string" ? restoredRecovery.jobId : null;
+        setAlternative(restoredRecovery.alternative as unknown as LiveCardArtwork | null || null);
+        retainedVersions.current = Array.isArray(restoredRecovery.versions) ? restoredRecovery.versions as unknown as LiveCardArtwork[] : [];
+        for (const revision of Array.isArray(restoredRecovery.attempted) ? restoredRecovery.attempted : [])
+          if (typeof revision === "string") attemptedHeadlines.current.add(revision);
+        setStep(restoredRecovery.step === 3 ? 3 : restoredRecovery.step === 2 || nextArtwork || artworkJobId.current ? 2 : 1);
+      }
+
       setForm(nextForm);
       checkedWording.current = "";
       setArtwork(nextArtwork);
-      setBaseline(serialize({ form: nextForm, artwork: nextArtwork }));
+      setBaseline(savedBaseline);
       setReady(true);
+      snapshotRef.current = { form: nextForm, artwork: nextArtwork };
+      if (artworkJobId.current) void followArtworkJob(artworkJobId.current, nextForm);
     }
     void load().catch((failure: Error) => {
       if (active && !controller.signal.aborted) setLoadError(failure.message);
@@ -330,11 +369,95 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
   useEffect(
     () => () => {
       generationVersion.current += 1;
+      // Disconnecting does not cancel the durable provider workflow.
       generationController.current?.abort();
       wordingController.current?.abort();
     },
     [],
   );
+
+  useEffect(() => {
+    if (!ready || !recoveryId.current) return;
+    void retainRecovery();
+  }, [form, artwork, alternative, baseline, step, ready]);
+
+  async function retainRecovery() {
+    if (!recoveryId.current || recoveryDiscarded.current) return;
+    await writeTemplateDraft({ version: 1, id: recoveryId.current, category: "live-card-recovery", templateId: "live-card",
+      updatedAt: Date.now(), assets: {}, snapshot: { ...snapshotRef.current, baseline, alternative, versions: retainedVersions.current, step, jobId: artworkJobId.current, attempted: [...attemptedHeadlines.current] } as unknown as EditorSnapshot }).catch(() => {
+        setMessage("Browser recovery storage is unavailable. Save a draft explicitly to retain your changes.");
+      });
+  }
+
+  async function followArtworkJob(id: string, submitted: LiveCardForm) {
+    const version = ++generationVersion.current;
+    generationController.current?.abort();
+    const controller = new AbortController();
+    generationController.current = controller;
+    setGeneration("generating");
+    try {
+      while (!controller.signal.aborted && version === generationVersion.current) {
+        const response = await fetch(`/api/livecard-builder/jobs?id=${encodeURIComponent(id)}`, { cache: "no-store", signal: controller.signal });
+        const job = asRecord(asRecord(await response.json()).job);
+        if (!response.ok) throw new Error("Your artwork job could not be reconnected. Retry reconnecting; no new generation has started.");
+        setJobState({ stage: String(job.stage), state: String(job.state), startedAt: String(job.created_at), mode: String(job.mode || "generate"), attempt: Number(job.attempt) || 1, elapsedMs: Number(job.elapsed_ms) || 0 });
+        const design = readSharedCardDesign(job.design);
+        const current = snapshotRef.current;
+        const sameDesign = sharedCardDesignKey(current.form) === sharedCardDesignKey(submitted);
+        const matchingWords = !design?.headline || hasGeneratedCardHeadline({ title: current.form.title, headlineIntro: current.form.headlineIntro, sharedDesign: design });
+        if (design && sameDesign && !saving.current && artworkJobId.current === id && job.mode !== "background") {
+          const usableDesign = matchingWords ? design : { ...design, headline: undefined };
+          const nextArtwork = { imageUrl: design.backgroundUrl, designKey: sharedCardDesignKey(submitted), invitationData: { sharedDesign: usableDesign } };
+          snapshotRef.current = { ...current, artwork: nextArtwork }; setArtwork(nextArtwork);
+        }
+        if (job.state === "ready") {
+          if (saving.current) { await new Promise((resolve) => setTimeout(resolve, 250)); continue; }
+          artworkJobId.current = null;
+          if (job.mode === "background" && design && sameDesign && matchingWords) setAlternative({ imageUrl: design.backgroundUrl, designKey: sharedCardDesignKey(submitted), invitationData: { sharedDesign: design } });
+          await retainRecovery();
+          if (!matchingWords) throw new Error("The finished lettering belongs to earlier wording. Confirm an updated lettering request to use your new words.");
+          return design;
+        }
+        if (["failed", "stopped", "cancel_requested"].includes(String(job.state))) {
+          setGenerationRetryable(job.error_code !== "safety_refused");
+          throw new Error(typeof job.error === "string" ? job.error : "Cancellation requested. Local follow-on work stopped; provider execution status unknown.");
+        }
+        if (["lettering", "checking"].includes(String(job.stage))) { setPreparingHeadline(true); setPublishStage(job.stage as PublishStage); }
+        else setGeneration(job.stage === "background_preparing" ? "preparing" : job.stage === "background_checking" ? "checking" : job.stage === "background_encoding" ? "exporting" : "generating");
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+      return null;
+    } catch (failure) {
+      if (!controller.signal.aborted) setGenerationError(failure instanceof Error ? failure.message : "Artwork reconnection failed.");
+      return null;
+    } finally {
+      if (version === generationVersion.current) { setGeneration(null); setPreparingHeadline(false); }
+    }
+  }
+
+  async function requestArtworkJob(submitted: LiveCardForm, design: ReturnType<typeof readSharedCardDesign>, mode: "generate" | "repair" | "verify" | "background") {
+    setGenerationError("");
+    const response = await fetch("/api/livecard-builder/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ form: submitted, design, mode, eventId: savedId.current, key: mode === "generate" && !["failed", "stopped", "cancel_requested"].includes(jobState?.state || "") ? draftId.current : `${draftId.current}:${crypto.randomUUID()}` }) });
+    const body = asRecord(await response.json());
+    const job = asRecord(body.job);
+    if (!response.ok || typeof job.id !== "string") throw new Error(typeof body.error === "string" ? body.error : "The artwork job could not be started.");
+    artworkJobId.current = job.id;
+    await retainRecovery();
+    return followArtworkJob(job.id, submitted);
+  }
+
+  async function cancelGeneration() {
+    const id = artworkJobId.current;
+    if (!id) return;
+    const response = await fetch("/api/livecard-builder/jobs", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+    if (!response.ok) { setError("The cancellation request could not be saved. The job may still be running; retry Cancel generation."); return; }
+    setJobState((current) => current ? { ...current, state: "cancel_requested" } : current);
+    setMessage("Cancellation requested. Provider execution status unknown.");
+    generationController.current?.abort();
+    generationVersion.current++;
+    setGeneration(null); setPreparingHeadline(false);
+  }
 
   useEffect(() => {
     if (dirty) setMessage("");
@@ -359,6 +482,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
 
   function cancelPreparation() {
     if (working) return;
+    if (artworkJobId.current) { void cancelGeneration(); return; }
     const message = publishProgress
       ? published ? "Saving canceled. Your edits are still here." : "Publishing canceled. Your edits are still here."
       : "Preparation canceled. Your edits are still here.";
@@ -473,56 +597,28 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     return false;
   }
 
-  async function prepareHeadline(signal: AbortSignal): Promise<boolean> {
+  async function prepareHeadline(signal: AbortSignal, mode: "automatic" | "repair" | "verify" = "automatic"): Promise<boolean> {
     if (!isCurrentPreparation(signal)) return false;
     const before = snapshotRef.current;
     const design = before.artwork?.invitationData?.sharedDesign;
     if (
       !design ||
-      hasGeneratedCardHeadline({
+      (mode === "automatic" && hasGeneratedCardHeadline({
         title: before.form.title,
         headlineIntro: before.form.headlineIntro,
         sharedDesign: design,
-      })
+      }))
     )
       return true;
+    const revision = JSON.stringify([design.backgroundUrl, before.form.title.trim(), before.form.headlineIntro.trim(), before.form.design]);
+    if (mode === "automatic" && attemptedHeadlines.current.has(revision))
+      return failPreparation("Lettering was already attempted for these words. Preview the result, retry verification or explicitly repair lettering.");
+    attemptedHeadlines.current.add(revision);
     setPreparingHeadline(true);
     updatePreparationStage("lettering");
     try {
-      const response = await fetch("/api/livecard-builder/headline", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/x-ndjson" },
-        signal,
-        body: JSON.stringify({ form: before.form, design }),
-      });
-      let result: Record<string, unknown> = {};
-      if (response.headers.get("content-type")?.includes("application/x-ndjson") && response.body) {
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffered = "";
-        try {
-          while (true) {
-            const chunk = await reader.read();
-            buffered += decoder.decode(chunk.value, { stream: !chunk.done });
-            const lines = buffered.split("\n");
-            buffered = lines.pop() || "";
-            for (const line of lines) {
-              if (!line.trim()) continue;
-              const message = asRecord(JSON.parse(line));
-              if (message.stage === "lettering_repair" && isCurrentPreparation(signal)) setPublishStage("lettering_repair");
-              if (message.headline || message.error) result = message;
-            }
-            if (chunk.done) break;
-          }
-        } finally {
-          reader.releaseLock();
-        }
-      } else {
-        result = asRecord(await response.json());
-      }
-      const updated = readSharedCardDesign({ ...design, headline: result.headline });
-      if (!response.ok || !updated?.headline)
-        throw readLiveCardGenerationFailure(result, "lettering", "The title artwork could not be prepared. Select Review to retry.");
+      const updated = await requestArtworkJob(before.form, design, mode === "verify" ? "verify" : "repair");
+      if (!updated?.headline) return false;
       if (!isCurrentPreparation(signal)) return false;
       const current = snapshotRef.current;
       if (
@@ -536,7 +632,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
         })
       ) {
         failPreparation(
-          "Your title or design changed while the lettering was being drawn. Select Review to prepare the latest version.",
+          "Your title or design changed while the lettering was being drawn. Select Create updated lettering to confirm a new request.",
         );
         return false;
       }
@@ -563,6 +659,15 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     }
   }
 
+  async function retryHeadline(mode: "repair" | "verify") {
+    if (preparingHeadline || working) return;
+    const controller = new AbortController();
+    wordingController.current = controller;
+    setPreparationIssue(null);
+    setError("");
+    await prepareHeadline(controller.signal, mode);
+  }
+
   function prepareWording(finalizeArtwork = true): Promise<boolean> {
     if (pendingWording.current) return pendingWording.current;
     const controller = new AbortController();
@@ -585,7 +690,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
             if (
               finalizeArtwork &&
               (!(await locations) || !(await prepareLocations(controller.signal)) ||
-                !(await prepareHeadline(controller.signal)) ||
+                !(await Promise.resolve(hasGeneratedCardHeadline({ title: snapshotRef.current.form.title, headlineIntro: snapshotRef.current.form.headlineIntro, sharedDesign: snapshotRef.current.artwork?.invitationData?.sharedDesign }))) ||
                 !(await prepareLocations(controller.signal)))
             )
               return false;
@@ -594,25 +699,32 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
             continue;
           }
           updatePreparationStage("wording");
-          const response = await fetch("/api/livecard-builder/assist", {
+          let response: Response;
+          try { response = await fetch("/api/livecard-builder/assist", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            signal: controller.signal,
+            signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]),
             body: JSON.stringify({ mode: "wording", form: before }),
-          });
-          const result = asRecord(await response.json());
+          }); } catch {
+            if (!isCurrentPreparation(controller.signal)) return false;
+            checkedWording.current = liveCardWordingKey(before);
+            setMessage("Wording verification unavailable. Continuing with your confirmed wording.");
+            setWordingStatus("Wording verification unavailable. Continuing with your confirmed wording.");
+            continue;
+          }
+          const result = asRecord(await response.json().catch(() => null));
           const corrected = readLiveCardForm(result.form);
-          if (!response.ok || !corrected)
-            throw new Error(
-              typeof result.error === "string"
-                ? result.error
-                : "We couldn’t check the wording. Your original text is unchanged. Please try again.",
-            );
+          if (!response.ok || !corrected) {
+            checkedWording.current = liveCardWordingKey(before);
+            setMessage("Wording verification unavailable. Continuing with your confirmed wording.");
+            setWordingStatus("Wording verification unavailable. Continuing with your confirmed wording.");
+            continue;
+          }
           if (!isCurrentPreparation(controller.signal)) return false;
-          const next = mergeLiveCardProofread(snapshotRef.current.form, before, corrected);
-          checkedWording.current = liveCardWordingKey(corrected);
-          snapshotRef.current = { ...snapshotRef.current, form: next };
-          setForm(next);
+          setWordingStatus("");
+          if (liveCardWordingKey(corrected) !== liveCardWordingKey(before)) setWordingSuggestion({ before, corrected });
+          // A suggestion must never silently change wording already submitted for lettering.
+          checkedWording.current = liveCardWordingKey(before);
           // Let previews and download callbacks observe the corrected text before continuing.
           await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
         }
@@ -678,6 +790,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     if (generation) return;
     const current = snapshotRef.current.form;
     const validation = validateLiveCard(current, "design");
+    if (!current.title.trim()) validation.title = "Add the event title before creating lettering.";
     setErrors(validation);
     if (Object.keys(validation).length) {
       setStep(1);
@@ -701,27 +814,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       const prepared = current;
       if (version !== generationVersion.current) return;
       setGeneration("generating");
-      const response = await fetch("/api/livecard-builder/design", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/x-ndjson" },
-        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(240000)]),
-        body: JSON.stringify({ form: prepared }),
-      });
-      const body = asRecord(response.headers.get("content-type")?.includes("application/x-ndjson") && response.body
-        ? await readGenerationStream(response.body, (event) => {
-            if (version === generationVersion.current && !controller.signal.aborted && event.type === "stage") setGeneration(event.stage);
-          })
-        : await response.json());
-      const sharedDesign = readSharedCardDesign(body.design);
-      if (!response.ok || !sharedDesign)
-        throw readLiveCardGenerationFailure(body, "design", "The design could not be created. Please retry.");
-      if (version !== generationVersion.current || controller.signal.aborted) return;
-      // Apply artwork only. The host may have changed any event field while we waited.
-      setArtwork({
-        imageUrl: sharedDesign.backgroundUrl,
-        designKey: sharedCardDesignKey(prepared),
-        invitationData: { sharedDesign },
-      });
+      await requestArtworkJob(prepared, undefined, "generate");
     } catch (failure) {
       if (version === generationVersion.current && !controller.signal.aborted) {
         setGenerationRetryable(!(failure instanceof LiveCardGenerationFailure) || failure.retryable);
@@ -751,10 +844,6 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       setPublishProgress(true);
     }
     try {
-      if (publish && !(await prepareWording()))
-        throw new Error(
-          preparationFailure.current || "Preparation stopped. Your edits are still here.",
-        );
       const captured = snapshotRef.current;
       if (publish) {
         const validation = validateLiveCard(captured.form, "publish");
@@ -767,6 +856,11 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
           throw new Error("Your artwork is still generating. You can save a draft while you wait.");
         if (!captured.artwork || !isArtworkCurrent(captured.form, captured.artwork))
           throw new Error("Generate the current design before publishing.");
+        const headline = captured.artwork.invitationData?.sharedDesign?.headline;
+        if (captured.artwork.invitationData?.sharedDesign && !hasGeneratedCardHeadline({ title: captured.form.title, headlineIntro: captured.form.headlineIntro, sharedDesign: captured.artwork.invitationData.sharedDesign }))
+          throw new Error("Create and review lettering matching these confirmed words before publishing.");
+        if (headline?.validation && headline.validation.status !== "passed")
+          throw new Error("Review the lettering findings and retry verification or repair lettering before publishing.");
       }
       setWorking(true);
       setError("");
@@ -774,16 +868,24 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       setPublishStage("saving");
       const sharedDesign = captured.artwork?.invitationData?.sharedDesign;
       // Independent uploads start only after the host explicitly saves.
-      const [prepared, backgroundUrl, headlineUrl] = await Promise.all([
+      const [prepared, backgroundUrl, headlineUrl, layerUrl] = await Promise.all([
         persistReference(captured.form),
         sharedDesign ? persistBackground(sharedDesign.backgroundUrl) : Promise.resolve(null),
         sharedDesign?.headline ? persistBackground(sharedDesign.headline.imageUrl) : Promise.resolve(null),
+        sharedDesign?.headline?.layerUrl ? persistBackground(sharedDesign.headline.layerUrl) : Promise.resolve(null),
       ]);
       let savedArtwork = captured.artwork;
+      const currentArtwork = sharedDesign && captured.artwork
+        ? { ...captured.artwork, designKey: sharedCardDesignKey(prepared) }
+        : captured.artwork;
+      if (currentArtwork && currentArtwork !== captured.artwork) {
+        setArtwork((latest) => latest && latest.designKey === captured.artwork?.designKey ? { ...latest, designKey: currentArtwork.designKey } : latest);
+        savedArtwork = { ...savedArtwork!, designKey: currentArtwork.designKey };
+      }
       if (savedArtwork?.invitationData?.sharedDesign && backgroundUrl) {
         const headline = savedArtwork.invitationData.sharedDesign.headline;
         const savedHeadline = headline && headlineUrl
-          ? { ...headline, imageUrl: headlineUrl }
+          ? { ...headline, imageUrl: headlineUrl, ...(layerUrl ? { layerUrl } : {}) }
           : undefined;
         const invitationData = liveCardInvitation(prepared, {
           ...savedArtwork.invitationData,
@@ -808,12 +910,13 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       );
       const id = savedId.current;
       setPublishStage("publishing");
-      const response = await fetch(id ? `/api/history/${encodeURIComponent(id)}` : "/api/history", {
+      const response = await eventHistoryClient.fetch(id ? `/api/history/${encodeURIComponent(id)}` : "/api/history", {
         method: id ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...payload, ...(id ? {} : { clientDraftId: draftId.current }) }),
       });
       let row = asRecord(await response.json());
+      setSaveConflict(row.code === "event_changed" || row.code === "revision_required");
       if (!response.ok || typeof row.id !== "string")
         throw new Error(
           typeof row.error === "string"
@@ -822,7 +925,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
         );
       // A lost initial response can leave the idempotent POST pointing at an older snapshot.
       if (!id && response.status === 200) {
-        const retry = await fetch(`/api/history/${encodeURIComponent(row.id)}`, {
+        const retry = await eventHistoryClient.fetch(`/api/history/${encodeURIComponent(row.id)}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -832,13 +935,15 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
           throw new Error("Your latest changes could not be saved. Please retry.");
       }
       savedId.current = String(row.id);
+      sessionStorage.setItem(`envitefy:live-card-recovery:${savedId.current}`, recoveryId.current);
+      if (sessionStorage.getItem("envitefy:live-card-recovery:new") === recoveryId.current) sessionStorage.removeItem("envitefy:live-card-recovery:new");
       setOwnerUrl(buildEventPath(
         savedId.current,
         prepared.title,
         { tab: "dashboard" },
         typeof row.public_slug === "string" ? row.public_slug : undefined,
       ));
-      setBaseline(serialize({ form: prepared, artwork: captured.artwork }));
+      setBaseline(serialize({ form: prepared, artwork: currentArtwork }));
       setPublished(publish);
       if (publish)
         setPublicUrl(
@@ -879,10 +984,12 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     dirty,
     busy: working || preparingWording,
     save: () => save(),
-    discard: () => {
+    discard: async () => {
+      recoveryDiscarded.current = true;
       generationVersion.current += 1;
       generationController.current?.abort();
       wordingController.current?.abort();
+      if (recoveryId.current) await deleteTemplateDraft(recoveryId.current);
     },
   });
 
@@ -1087,7 +1194,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
         <Sparkles size={17} aria-hidden="true" />
         <div>
           <strong>Temporary lettering preview</strong>
-          <p>Your title and opening line use a temporary font. Review creates the finished lettering.</p>
+          <p>Your title and opening line use a temporary font until the matching AI lettering is ready.</p>
         </div>
       </div>
     ) : null;
@@ -1167,11 +1274,17 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       artworkToolbar={cardToolbar()}
     />
   ) : generation ? (
-    <DesignGenerationProgress stage={generation} />
+    <DesignGenerationProgress stage={generation} mockTitle={form.title} mockOpeningLine={form.headlineIntro} />
   ) : (
     <div className={styles.previewEmpty}>
       {partialImage ? (
         <img src={partialImage} alt="Your artwork taking shape" />
+      ) : form.title.trim() ? (
+        <div role="group" aria-label="Temporary wording preview">
+          <small>Temporary wording preview</small>
+          {form.headlineIntro.trim() && <p>{form.headlineIntro}</p>}
+          <strong>{form.title}</strong>
+        </div>
       ) : (
         <>
           <span className={styles.emptyIcon}>
@@ -1190,6 +1303,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     <p role="status" className={styles.success}><Check size={18} />{message}</p>
   ) : null;
   const saveActions = (
+    <>
     <div
       className={styles.saveActions}
       role="group"
@@ -1211,23 +1325,42 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
         aria-describedby={
           step === 2 && detailIssues.length ? "livecard-required-details" : undefined
         }
-        onClick={() => saveWithFeedback(true, !published)}
+        onClick={() => published || step === 3 ? saveWithFeedback(true, false) : void goToStep(3)}
       >
         {published ? (
           <><Save size={17} />{working || preparingWording ? "Saving…" : "Save changes"}</>
         ) : (
-          <>Publish <ArrowRight size={17} /></>
+          <>{step === 3 ? "Publish invitation" : "Review invitation"} <ArrowRight size={17} /></>
         )}
       </button>
     </div>
+      {published && publicUrl && !dirty && <div className={styles.shareActions} role="group" aria-label="Share published invitation">
+        <button type="button" className={styles.secondary} onClick={async () => {
+          try { await navigator.clipboard.writeText(publicUrl); setShareFeedback("Guest link copied."); }
+          catch { setError("Your browser couldn't copy the guest link. Use Share invitation to share it."); }
+        }}>Copy guest link</button>
+        <button type="button" className={styles.secondary} onClick={() => void shareCard()}>Share invitation</button>
+      </div>}
+    </>
   );
 
-  const preparationFeedback = !publishProgress && (preparingWording ? (
-    <section className={styles.preparation} aria-label="Preparing your Live Card">
+  const headlineValidation = artwork?.invitationData?.sharedDesign?.headline?.validation;
+  const preparationFeedback = !publishProgress && (preparingWording || preparingHeadline ? (
+        <section className={styles.preparation} aria-label="Preparing your Live Card">
       <div role="status" aria-live="polite" aria-atomic="true">
         <Loader2 size={18} className={styles.spin} aria-hidden="true" /> {PUBLISH_STAGES[publishStage].title}
       </div>
       <button type="button" className={styles.textButton} onClick={cancelPreparation}>Cancel</button>
+    </section>
+  ) : headlineValidation && headlineValidation.status !== "passed" ? (
+    <section className={styles.letteringRetry} aria-label="Lettering findings">
+      <p role="status">{headlineValidation.unavailableReason === "refused" ? "The provider refused lettering verification. Your artwork is retained. No automatic repair has started." : headlineValidation.status === "unavailable" ? `Verification unavailable (${headlineValidation.unavailableReason || "checker error"}). Your lettering is preserved.` : `Lettering concern: ${headlineValidation.issues.join(", ")}.`}</p>
+      <p>Expected title: {form.title}. {form.headlineIntro.trim() && <>Expected opening line: {form.headlineIntro}.</>}</p>
+      {headlineValidation.visibleText?.length ? <p>Observed wording: {headlineValidation.visibleText.join(" · ")}</p> : null}
+      {headlineValidation.findings?.map((finding, index) => <p key={`${finding.field}-${index}`}>{finding.field.replace("_", " ")} · {finding.region} · {finding.concernType}: {finding.explanation}{finding.expectedWording && ` Expected: ${finding.expectedWording}.`}{finding.observedWording && ` Observed: ${finding.observedWording}.`}</p>)}
+      {headlineValidation.repairInstructions?.map((finding, index) => <p key={index}>{finding}</p>)}
+      <button type="button" className={styles.secondary} onClick={() => void retryHeadline("verify")}>Retry verification</button>
+      {headlineValidation.unavailableReason !== "refused" && <button type="button" className={styles.secondary} onClick={() => void retryHeadline("repair")}>Repair lettering</button>}
     </section>
   ) : preparationIssue ? (
     <div className={preparationIssue.stage === "lettering" ? styles.letteringRetry : styles.generationError}>
@@ -1236,7 +1369,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       </div>
       {preparationIssue.retryable && preparationIssue.stage !== "locations" && (
         <button type="button" className={styles.secondary} disabled={working || generation !== null}
-          onClick={() => preparationSurface.current === "preview" ? void openPreview() : void goToStep(3)}>
+          onClick={() => preparationIssue.stage === "lettering" ? void retryHeadline("repair") : preparationSurface.current === "preview" ? void openPreview() : void goToStep(3)}>
           {preparationIssue.stage === "lettering" ? "Try lettering again" : "Retry wording"}
         </button>
       )}
@@ -1257,7 +1390,42 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       style={{ "--builder-artwork-ratio": previewRatio } as CSSProperties}
     >
       {!previewOpen && letteringNotice}
+      {letteringNotice && !preparingHeadline && !generation && <button type="button" className={styles.secondary} onClick={() => void retryHeadline("repair")}>Create updated lettering</button>}
       {!previewOpen && preparationFeedback}
+      {jobState && <section className={styles.preparation} aria-label="Artwork job status">
+        {jobState.state === "cancel_requested" && <p role="status">Cancellation requested. Provider execution status unknown.</p>}
+        <p role="status">{jobState.stage === "background_checking" ? "Checking background" : jobState.stage === "background_encoding" ? "Preparing background image" : jobState.stage === "background_preparing" ? "Planning background" : jobState.stage === "background_generating" ? "Creating background" : jobState.stage === "lettering" ? jobState.mode === "repair" ? "Repairing lettering" : "Creating title and opening-line artwork" : jobState.stage === "checking" ? jobState.mode === "verify" ? "Checking existing lettering again" : "Checking lettering" : jobState.stage === "ready" ? "Ready to review" : jobState.state} · attempt {jobState.attempt} · {Math.floor(jobState.elapsedMs / 1000)} seconds elapsed · started {new Date(jobState.startedAt).toLocaleTimeString()}</p>
+        {jobState.elapsedMs >= 240000 && artworkJobId.current && <p>This stage has taken over four minutes. You can keep editing, reconnect to this same job, or cancel generation. Reconnecting does not request another image.</p>}
+        {artworkJobId.current && <button type="button" className={styles.textButton} onClick={() => void cancelGeneration()}>Cancel generation</button>}
+        {artworkJobId.current && (!generation || jobState.elapsedMs >= 240000) && <button type="button" className={styles.secondary} onClick={() => void followArtworkJob(artworkJobId.current!, snapshotRef.current.form)}>Reconnect to artwork</button>}
+      </section>}
+      {artwork?.invitationData?.sharedDesign?.quality === "medium" && artwork.invitationData.sharedDesign.headline?.layerUrl && artwork.invitationData.sharedDesign.headline.layout && !generation && !alternative && <button type="button" className={styles.secondary} disabled={working} onClick={() => void requestArtworkJob({ ...snapshotRef.current.form, generationQuality: "high" }, artwork.invitationData?.sharedDesign, "background").catch((failure: Error) => setError(failure.message))}>Generate higher-quality alternative</button>}
+      {alternative && <section className={styles.preparation} aria-label="Higher-quality alternative">
+        <p>This is a new background version. Your current invitation stays selected until you apply it.</p>
+        <img src={alternative.invitationData?.sharedDesign?.headline?.imageUrl || alternative.imageUrl} alt="Higher-quality invitation alternative" style={{ width: "100%", maxHeight: "50vh", objectFit: "contain" }} />
+        <button type="button" className={styles.secondary} disabled={working} onClick={() => {
+          if (!isArtworkCurrent(snapshotRef.current.form, alternative) || !hasGeneratedCardHeadline({ title: snapshotRef.current.form.title, headlineIntro: snapshotRef.current.form.headlineIntro, sharedDesign: alternative.invitationData?.sharedDesign })) { setError("This alternative belongs to earlier wording or design. Keep editing and explicitly request matching lettering."); return; }
+          if (snapshotRef.current.artwork) retainedVersions.current.push(snapshotRef.current.artwork);
+          const nextForm = { ...snapshotRef.current.form, generationQuality: alternative.invitationData?.sharedDesign?.quality || "high" as const };
+          snapshotRef.current = { form: nextForm, artwork: alternative }; setForm(nextForm); setArtwork(alternative); setAlternative(null);
+        }}>Apply this version</button>
+        <button type="button" className={styles.textButton} onClick={() => { retainedVersions.current.push(alternative); setAlternative(null); }}>Keep current version</button>
+      </section>}
+      {retainedVersions.current.length > 0 && <section className={styles.preparation} aria-label="Earlier artwork versions">
+        {retainedVersions.current.map((version, index) => <button key={`${version.imageUrl.slice(-40)}-${index}`} type="button" className={styles.textButton} disabled={working || !isArtworkCurrent(form, version)} onClick={() => setAlternative(version)}>Preview earlier version {index + 1}</button>)}
+      </section>}
+      {wordingStatus && <section className={styles.preparation} aria-label="Wording verification status">
+        <p role="status">{wordingStatus}</p>
+        <button type="button" className={styles.textButton} disabled={preparingWording} onClick={() => { checkedWording.current = ""; void prepareWording(); }}>Retry wording verification</button>
+      </section>}
+      {wordingSuggestion && <section className={styles.preparation} aria-label="Wording suggestion">
+        <p>Optional wording corrections are available. Applying them confirms a new wording revision.</p>
+        <button type="button" className={styles.secondary} onClick={() => {
+          const next = mergeLiveCardProofread(snapshotRef.current.form, wordingSuggestion.before, wordingSuggestion.corrected);
+          snapshotRef.current = { ...snapshotRef.current, form: next }; setForm(next); setWordingSuggestion(null); setStep(2);
+        }}>Apply wording suggestion</button>
+        <button type="button" className={styles.textButton} onClick={() => setWordingSuggestion(null)}>Keep my wording</button>
+      </section>}
       {step !== 3 && (
         <div className={styles.mobilePreviewControls}>
           {preview && (
@@ -1271,7 +1439,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
               {activePreviewFormat === "live_card" ? "Live Card" : "invitation"}
             </button>
           )}
-          {!artwork && generation && <DesignGenerationProgress stage={generation} compact />}
+          {!artwork && generation && <DesignGenerationProgress stage={generation} compact mockTitle={form.title} mockOpeningLine={form.headlineIntro} />}
         </div>
       )}
       {step === 3 && preview ? (
@@ -1279,7 +1447,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
           <div className={styles.outputHeading}>
             <div>
               <h2 ref={reviewHeadingRef} tabIndex={-1}>
-                {activePreviewFormat === "live_card" ? "Your Live Card" : "Your saved design"}
+                Review your invitation
               </h2>
               <p>
                 {hasSharedDesign
@@ -1292,17 +1460,11 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
             </button>
           </div>
           <div className={styles.outputGrid}>
-            {outputs.map(({ format, name, description, icon: Icon }) => {
+            {outputs.map(({ format, name }) => {
               const outputPreview = previewFor(format);
               if (!outputPreview) return null;
               return (
                 <section key={format} className={styles.outputCard} aria-label={`${name} output`}>
-                  <div className={styles.outputLabel}>
-                    <Icon size={20} aria-hidden="true" />
-                    <h3>{name}</h3>
-                    <span>{format === "live_card" ? "Share a link" : "Download an image"}</span>
-                  </div>
-                  <p>{description}</p>
                   <div className={styles.outputArtwork}>
                     <StudioShowcaseLiveCard
                       preview={outputPreview}
@@ -1406,6 +1568,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
           <p className={styles.eyebrow}>LIVE CARD</p>
           <h1>{savedId.current ? "Edit your Live Card" : "Create your Live Card"}</h1>
         </div>
+        {savedId.current && canManageAccess && <EventAccessDialog eventId={savedId.current} eventTitle={form.title || "this Live Card"} />}
       </header>
       <nav aria-label="Card creation steps" className={styles.steps}>
         {STEPS.map((label, index) => (
@@ -1424,6 +1587,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       {error && !preparationIssue && (
         <p role="alert" className={styles.error}>{error}</p>
       )}
+      {saveConflict && savedId.current && <p className={styles.error}><a href={`/live-cards?edit=${encodeURIComponent(savedId.current)}`} target="_blank" rel="noreferrer" className="underline">Open the latest saved card</a>. Your edits remain in this editor.</p>}
       <div className={styles.workspace} data-step={step} data-has-artwork={Boolean(artwork)}>
         {step === 3 && previewPane}
         <div className={styles.editor} data-step={step}>
@@ -1476,6 +1640,14 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                       {LIVE_CARD_EVENT_TYPES.map((type) => (
                         <option key={type}>{type}</option>
                       ))}
+                    </select>
+                  </Field>
+                  {textField("headlineIntro", "Opening line (optional)", { placeholder: "You’re invited" })}
+                  {textField("title", "Event title", { required: true, placeholder: "Movie Under the Stars" })}
+                  <Field label="Generation quality" id="livecard-generationQuality">
+                    <select id="livecard-generationQuality" value={form.generationQuality || "high"} onChange={(event) => change("generationQuality", event.target.value === "medium" ? "medium" : "high")} disabled={Boolean(artwork || generation)}>
+                      <option value="high">Standard quality</option>
+                      <option value="medium">Fast generation — medium quality</option>
                     </select>
                   </Field>
                   {textField("design", "Describe your design", {
@@ -1590,13 +1762,13 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                       <div className={styles.formStack}>
                         {textField("headlineIntro", "Opening line (optional)", {
                           placeholder: "You're invited",
-                          hint: "Drawn above the title when you review your card. Leave blank to omit it.",
+                          hint: "Included in AI lettering when supplied. Leave blank to omit it.",
                         })}
                         {textField("title", "Event title or name", {
                           placeholder: eventPlaceholders.title,
                           required: true,
                           hint: !artwork || hasSharedDesign
-                            ? "Edit the wording here. Review creates lettering that matches your design."
+                            ? "Changed wording needs an explicit lettering repair. Event logistics reuse the existing artwork."
                             : undefined,
                         })}
                         {textField("overview", "Message to guests (optional)", {
@@ -1949,7 +2121,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                     disabled={
                       working ||
                       preparingWording ||
-                      (!generation && (!form.eventType || !form.design.trim()))
+                      (!generation && (!form.eventType || !form.title.trim() || !form.design.trim()))
                     }
                   >
                     {generation || (artwork && !designChanged)

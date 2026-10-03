@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { getEventHistoryById } from "@/lib/db";
 import { isEventDraft } from "@/lib/event-draft-access";
+import { getEventPermissions } from "@/lib/event-collaboration";
 import {
   EventMessageError,
   validateEventMessage,
@@ -41,8 +42,8 @@ async function ownerContext(context: Context) {
   if (!userId) throw new MessageRequestError("Sign in to email guests.", 401);
   const { id } = await context.params;
   const event = await getEventHistoryById(id);
-  if (!event || event.user_id !== userId)
-    throw new MessageRequestError("Only the event owner can manage messages.", 403);
+  if (!event || !(await getEventPermissions(event, userId)).canManageResponses)
+    throw new MessageRequestError("Only the owner and co-hosts can manage messages.", 403);
   if (isEventDraft(event.data))
     throw new MessageRequestError("Publish the event before emailing guests.", 409);
   const host = readOwnerRsvpSettings(event.data);

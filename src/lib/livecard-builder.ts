@@ -92,6 +92,7 @@ export type LiveCardForm = {
   eventType: LiveCardEventType | "";
   design: string;
   referenceUrl: string;
+  generationQuality?: "high" | "medium";
   overview: string;
   date: string;
   startTime: string;
@@ -332,13 +333,16 @@ export function readLiveCardForm(value: unknown): LiveCardForm | null {
   if (!source) return null;
   const form = createLiveCardForm();
   for (const key of Object.keys(form) as Array<keyof LiveCardForm>) {
-    if (key === "locations" || key === "eventType" || key === "format" || key === "sourceEvidence")
+    if (key === "locations" || key === "eventType" || key === "format" || key === "sourceEvidence" || key === "generationQuality")
       continue;
     if (key === "rsvpEnabled" || key === "registryEnabled") form[key] = source[key] === true;
     else if (typeof source[key] === "string")
-      form[key] = source[key].slice(0, key === "referenceUrl" ? 4096 : 12000);
+      form[key] = source[key].slice(0, key === "referenceUrl"
+        ? /^data:image\/(?:webp|png|jpeg);base64,/.test(source[key]) ? 16 * 1024 * 1024 + 32 : 4096
+        : 12000);
   }
   form.eventType = LIVE_CARD_EVENT_TYPES.find((type) => type === source.eventType) || "";
+  if (source.generationQuality === "medium" || source.generationQuality === "high") form.generationQuality = source.generationQuality;
   form.format = source.format === "digital_flyer" ? "digital_flyer" : "live_card";
   if (Array.isArray(source.sourceEvidence))
     form.sourceEvidence = source.sourceEvidence.slice(0, 60).flatMap((item) => {

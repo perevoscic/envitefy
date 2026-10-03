@@ -3,6 +3,7 @@ export type LiveCardGenerationCode =
   | "quality_rejected"
   | "verification_unavailable"
   | "generation_failed"
+  | "safety_refused"
   | "invalid_artwork";
 
 const ISSUE_CODES = new Set([
@@ -42,7 +43,7 @@ export class LiveCardGenerationFailure extends Error {
 export function readLiveCardGenerationFailure(
   response: Record<string, unknown>, stage: LiveCardGenerationStage, fallback: string,
 ): LiveCardGenerationFailure {
-  const codes = ["quality_rejected", "verification_unavailable", "generation_failed", "invalid_artwork"];
+  const codes = ["quality_rejected", "verification_unavailable", "generation_failed", "safety_refused", "invalid_artwork"];
   return new LiveCardGenerationFailure(
     typeof response.error === "string" ? response.error : fallback,
     stage,

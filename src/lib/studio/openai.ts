@@ -82,6 +82,13 @@ function resolveImageSize(): "1024x1024" | "1536x1024" | "1024x1536" | "auto" {
   return "1024x1536";
 }
 
+function imageProviderError(error: { code?: string; status?: number; request_id?: string; message?: string }, options: ImageGenerationOptions) {
+  const refused = /content_policy|moderation_blocked|safety_system|safety_violation/.test(error.code || "");
+  console.error("livecard_image_failure", { ...options.requestContext, status: error.status, requestId: error.request_id,
+    code: error.code, message: error.message?.slice(0, 1000), transportRetries: 0 });
+  return buildError(refused ? "safety_refused" : "provider_error", error.message || "OpenAI image request failed", { status: error.status, retryable: !refused });
+}
+
 function generationImageSize(product?: StudioProduct): NonNullable<ImageGenerationOptions["size"]> {
   return product === "live_card" ? LIVE_CARD_ARTWORK.size : product === "event_page" ? "1536x1024" : resolveImageSize();
 }
@@ -240,7 +247,7 @@ async function postOpenAiImageGeneration(
         imageDataUrl: await streamOpenAiImage(client, {
           model, image: uploadables, prompt,
           size: options.size ?? generationImageSize(product),
-          quality: resolveImageQuality(), background: resolveImageBackground(model), n: 1,
+          quality: options.quality ?? resolveImageQuality(), background: options.background ?? resolveImageBackground(model), n: 1,
         }, options),
       };
       const response = await client.images.edit({
@@ -248,10 +255,14 @@ async function postOpenAiImageGeneration(
         image: uploadables,
         prompt,
         size: sdkImageSize(options.size ?? generationImageSize(product)),
-        quality: resolveImageQuality(),
-        background: resolveImageBackground(model),
+        quality: options.quality ?? resolveImageQuality(),
+        background: options.background ?? resolveImageBackground(model),
+        ...{ output_format: "png" as const },
         n: 1,
       }, { signal: options.signal, timeout: 180_000, maxRetries: 0 });
+      console.info("livecard_image_request", { ...options.requestContext, endpoint: "images.edit", model,
+        quality: options.quality ?? resolveImageQuality(), requestId: response._request_id,
+        usage: (response as unknown as { usage?: unknown }).usage, transportRetries: 0 });
       const imageData = response.data?.[0]?.b64_json || "";
       if (!imageData) {
         return {
@@ -272,14 +283,7 @@ async function postOpenAiImageGeneration(
       const message = error instanceof Error ? error.message : "OpenAI request failed";
       return {
         ok: false,
-        error: buildError(
-          message.includes("not configured") ? "missing_api_key" : "provider_error",
-          message,
-          {
-            retryable: !message.includes("not configured"),
-            status: typeof error?.status === "number" ? error.status : undefined,
-          },
-        ),
+        error: message.includes("not configured") ? buildError("missing_api_key", message, { retryable: false }) : imageProviderError(error, options),
         warnings,
       };
     }
@@ -291,19 +295,22 @@ async function postOpenAiImageGeneration(
       ok: true, warnings,
       imageDataUrl: await streamOpenAiImage(client, {
         model, prompt, size: options.size ?? generationImageSize(product),
-        quality: resolveImageQuality(), background: resolveImageBackground(model), n: 1,
+        quality: options.quality ?? resolveImageQuality(), background: options.background ?? resolveImageBackground(model), n: 1,
       }, options),
     };
     const response = await client.images.generate({
       model,
       prompt,
       size: sdkImageSize(options.size ?? generationImageSize(product)),
-      quality: resolveImageQuality(),
-      background: resolveImageBackground(model),
+      quality: options.quality ?? resolveImageQuality(),
+      background: options.background ?? resolveImageBackground(model),
       output_format: "png",
       moderation: "auto",
       n: 1,
     }, { signal: options.signal, timeout: 180_000, maxRetries: 0 });
+    console.info("livecard_image_request", { ...options.requestContext, endpoint: "images.generate", model,
+      quality: options.quality ?? resolveImageQuality(), requestId: response._request_id,
+      usage: (response as unknown as { usage?: unknown }).usage, transportRetries: 0 });
     const imageData = response.data?.[0]?.b64_json || "";
     if (!imageData) {
       return {
@@ -324,14 +331,7 @@ async function postOpenAiImageGeneration(
     const message = error instanceof Error ? error.message : "OpenAI request failed";
     return {
       ok: false,
-      error: buildError(
-        message.includes("not configured") ? "missing_api_key" : "provider_error",
-        message,
-        {
-          retryable: !message.includes("not configured"),
-          status: typeof error?.status === "number" ? error.status : undefined,
-        },
-      ),
+      error: message.includes("not configured") ? buildError("missing_api_key", message, { retryable: false }) : imageProviderError(error, options),
       warnings,
     };
   }

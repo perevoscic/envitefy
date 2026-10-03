@@ -53,3 +53,31 @@ test("lettering checks require concrete obstruction evidence and preserve approv
   }, { letteringOnly: true, references: [{ mimeType: "image/png", data: "c291cmNl" }] });
   assert.equal(result.status, "passed");
 });
+
+test("layered findings distinguish concrete missing wording, refusal and unavailable checks", async () => {
+  const savedKey = process.env.OPENAI_API_KEY; process.env.OPENAI_API_KEY = "test-key";
+  const finding = { field: "opening_line", expectedWording: "You're invited", observedWording: "", region: "above title", concernType: "missing_copy", explanation: "The supplied opening line is absent." };
+  const payload = { visibleText: ["Livia is turning 10"], issues: ["missing_copy"], findings: [finding], repairInstructions: ["Restore the exact opening line."], requestedChangesApplied: true };
+  const outcomes = [
+    { choice: { finish_reason: "stop", message: { content: JSON.stringify(payload) } }, status: "failed" },
+    { choice: { finish_reason: "stop", message: { content: "not JSON" } }, status: "unavailable", reason: "checker_error" },
+    { choice: { finish_reason: "length", message: { content: "{}" } }, status: "unavailable", reason: "incomplete" },
+    { choice: { finish_reason: "stop", message: { refusal: "Provider refusal", content: null } }, status: "unavailable", reason: "refused" },
+    { error: new Error("Controlled checker timeout"), status: "unavailable", reason: "checker_error" },
+  ];
+  try {
+    for (const outcome of outcomes) {
+      mock.restoreAll();
+      let checks = 0;
+      mock.method(artworkCheckDeps, "createClient", () => ({ chat: { completions: { create: async (request, options) => {
+        checks++; assert.equal(options.maxRetries, 0); assert.ok(request.response_format.json_schema.schema.properties.findings);
+        if (outcome.error) throw outcome.error;
+        return { choices: [outcome.choice] };
+      } } } }));
+      const result = await verifyStudioArtwork("data:image/png;base64,cmVzdWx0", { ...event, requiredArtworkLines: ["You're invited"] }, "live_card", { layeredLettering: true, letteringOnly: true });
+      assert.equal(checks, 1); assert.equal(result.status, outcome.status);
+      if (outcome.reason) assert.equal(result.unavailableReason, outcome.reason);
+      else assert.deepEqual(result.findings, [finding]);
+    }
+  } finally { if (savedKey === undefined) delete process.env.OPENAI_API_KEY; else process.env.OPENAI_API_KEY = savedKey; }
+});

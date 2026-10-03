@@ -67,12 +67,14 @@ export async function saveCustomEventPage({
   clientDraftId,
   status,
   existing = {},
+  historyFetch = fetch,
 }: {
   page: CustomEventPage;
   eventId?: string;
   clientDraftId: string;
   status: "draft" | "published";
   existing?: Record<string, unknown>;
+  historyFetch?: (input: string, options?: RequestInit) => Promise<Response>;
 }): Promise<{ id: string; page: CustomEventPage; data: Record<string, unknown> }> {
   const errors = customEventFieldErrors(page, status === "published");
   if (Object.keys(errors).length) throw new Error(Object.values(errors).join(" "));
@@ -109,7 +111,7 @@ export async function saveCustomEventPage({
   const data: Record<string, unknown> = keepLivePage
     ? { ...existing, customEventPageDraft: savedPage }
     : { ...existing, ...customEventPageData(savedPage), status, draftStatus: status };
-  const response = await fetch(
+  const response = await historyFetch(
     eventId ? `/api/history/${encodeURIComponent(eventId)}` : "/api/history",
     {
       method: eventId ? "PATCH" : "POST",
@@ -137,6 +139,7 @@ export async function saveCustomEventPage({
       clientDraftId,
       status,
       existing,
+      historyFetch,
     });
   }
   window.dispatchEvent(new CustomEvent("history:updated", { detail: { id: result.id } }));

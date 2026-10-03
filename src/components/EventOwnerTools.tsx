@@ -27,6 +27,7 @@ import ArtworkPreviewDialog from "@/components/ArtworkPreviewDialog";
 import ArtworkDownloadButton from "@/components/ArtworkDownloadButton";
 import ownerStyles from "./EventOwnerTools.module.css";
 import EventDeleteModal from "@/components/EventDeleteModal";
+import EventAccessDialog from "@/components/EventAccessDialog";
 import EventResponseDashboard from "@/components/EventResponseDashboard";
 import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileTopbarSuppressor";
 import OwnerCardPreviewTeaser from "@/components/OwnerCardPreviewTeaser";
@@ -44,6 +45,8 @@ import { trackEventInteraction } from "@/utils/event-tracking-client";
 import { buildStudioCardPath } from "@/utils/event-url";
 
 type EventOwnerToolsProps = {
+  isOwner?: boolean;
+  canManageAccess?: boolean;
   eventId: string;
   eventTitle: string;
   eventData: Record<string, unknown> | null;
@@ -85,6 +88,7 @@ type DesignEditFields = {
 };
 
 type DesignPreviewCandidate = {
+  revision?: string;
   imageDataUrl: string;
   fields: DesignEditFields;
   title: string;
@@ -704,6 +708,8 @@ function shouldOpenPreviewInStudioCard(preview: ProductPreviewModel): boolean {
 }
 
 export default function EventOwnerTools({
+  isOwner = true,
+  canManageAccess = false,
   eventId,
   eventTitle,
   eventData,
@@ -900,6 +906,8 @@ export default function EventOwnerTools({
           )}
           <OwnerWorkspaceHeader
             eventId={eventId}
+            isOwner={isOwner}
+            canManageAccess={canManageAccess}
             title={currentEventTitle}
             editHref={primaryEditHref}
             detailsEditHref={resolvedArtworkEditHref ? resolvedEditHref : null}
@@ -922,7 +930,7 @@ export default function EventOwnerTools({
               tabs={ownerWorkspaceTabs}
             />
           ) : null}
-          {activeOwnerTab === "design" || (isGuidedCard && activeOwnerTab === "dashboard") ? (
+          {isOwner && (activeOwnerTab === "design" || (isGuidedCard && activeOwnerTab === "dashboard")) ? (
             <OwnerPublicLinkPanel
               eventId={eventId}
               activeTab={activeOwnerTab}
@@ -957,6 +965,7 @@ export default function EventOwnerTools({
 
         <aside className="hidden w-full min-w-0 lg:sticky lg:top-5 lg:flex lg:h-[calc(100dvh-2.5rem)] lg:items-center lg:justify-end lg:self-start">
           <EventProductPreview
+            canDownload={isOwner}
             eventId={eventId}
             eventTitle={currentEventTitle}
             preview={effectivePreview}
@@ -966,6 +975,7 @@ export default function EventOwnerTools({
         </aside>
       </div>
       <OwnerProductViewer
+        canDownload={isOwner}
         open={productViewerMode !== null}
         heading={productViewerMode === "changes" ? "Proposed changes" : `Current ${productName}`}
         description={
@@ -1078,6 +1088,7 @@ function OwnerWorkspaceTabs({
 }
 
 function EventProductPreview({
+  canDownload,
   eventId,
   eventTitle,
   preview,
@@ -1086,6 +1097,7 @@ function EventProductPreview({
   className = "",
   heightMode = "fixed",
 }: {
+  canDownload: boolean;
   eventId: string;
   eventTitle: string;
   preview: ProductPreviewModel;
@@ -1126,7 +1138,7 @@ function EventProductPreview({
             positions={preview.positions as any}
             shareUrl={publicUrl}
             embeddedPreview
-            canDownload
+            canDownload={canDownload}
             fitToWorkspace
             actionsPlacement="overlay"
             className="flex w-full items-center justify-center"
@@ -1175,6 +1187,8 @@ function EventProductPreview({
 }
 
 function OwnerWorkspaceHeader({
+  isOwner = true,
+  canManageAccess = false,
   eventId,
   title,
   editHref,
@@ -1183,6 +1197,8 @@ function OwnerWorkspaceHeader({
   onShare,
   mobileCardPreview,
 }: {
+  isOwner?: boolean;
+  canManageAccess?: boolean;
   eventId: string;
   title: string;
   editHref: string;
@@ -1199,7 +1215,7 @@ function OwnerWorkspaceHeader({
       <div className="space-y-3 sm:space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-[0.66rem] font-black uppercase tracking-[0.16em] text-[#786bd6]">
-            Owner workspace
+            {isOwner ? "Owner workspace" : "Co-host workspace"}
           </p>
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
             {!detailsEditHref ? (
@@ -1222,12 +1238,13 @@ function OwnerWorkspaceHeader({
               <Eye size={20} strokeWidth={2.2} aria-hidden="true" />
               <span>Preview</span>
             </button>
-            <EventDeleteModal
+            {canManageAccess && <EventAccessDialog eventId={eventId} eventTitle={title} />}
+            {isOwner && <EventDeleteModal
               eventId={eventId}
               eventTitle={title}
               buttonClassName={deleteButtonClassName}
               labelClassName="hidden sm:inline"
-            />
+            />}
             <button
               type="button"
               onClick={onShare}
@@ -1465,6 +1482,7 @@ function OwnerTabContent({
 }
 
 function OwnerProductViewer({
+  canDownload,
   open,
   heading,
   description,
@@ -1477,6 +1495,7 @@ function OwnerProductViewer({
   onClose,
   onReturnFocus,
 }: {
+  canDownload: boolean;
   open: boolean;
   heading: string;
   description: string;
@@ -1499,14 +1518,14 @@ function OwnerProductViewer({
         aspectRatio={preview.invitationData?.heroTextMode === "overlay" ? 9 / 16 : 2 / 3}
         onClose={onClose}
         onReturnFocus={onReturnFocus}
-        downloadAction={
+        downloadAction={canDownload ? (
           <ArtworkDownloadButton
             variant="icon"
             imageUrl={preview.imageUrl}
             title={eventTitle}
             invitationData={preview.invitationData ? { ...preview.invitationData, publicUrl } : null}
           />
-        }
+        ) : undefined}
       >
         <SharedStudioCardFrame
           eventId={eventId}
@@ -1555,6 +1574,7 @@ function OwnerProductViewer({
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
             <div className="flex min-h-full items-center justify-center">
               <EventProductPreview
+                canDownload={canDownload}
                 eventId={eventId}
                 eventTitle={eventTitle}
                 preview={preview}
@@ -1712,6 +1732,7 @@ function OwnerDesignPanel({
       const nextFields = buildDesignEditFields(nextForm);
       setForm(nextForm);
       setCandidate({
+        revision: typeof json.revision === "string" ? json.revision : undefined,
         imageDataUrl: nextImageDataUrl,
         fields: nextFields,
         title: nextTitle,
@@ -1750,6 +1771,7 @@ function OwnerDesignPanel({
     try {
       const json = await requestCardEdit(eventId, {
         action: "save",
+        expectedRevision: candidate.revision,
         fields: candidate.fields,
         imageDataUrl: candidate.imageDataUrl,
       });

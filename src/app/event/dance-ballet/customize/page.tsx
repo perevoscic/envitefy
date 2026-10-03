@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import { useEventHistoryClient } from "@/lib/event-history-client";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
 
 import HeroImageEditor from "@/components/events/HeroImageEditor";
@@ -1692,6 +1693,7 @@ const MenuCard = ({
 
 function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
+  const eventHistoryClient = useEventHistoryClient();
     const search = useSearchParams();
     const router = useRouter();
   const { allowNavigation } = useProgressNavigation();
@@ -1799,7 +1801,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         if (!editEventId) return;
         setLoadingExisting(true);
         try {
-          const res = await fetch(`/api/history/${editEventId}`, {
+          const res = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
             cache: "no-store",
           });
           if (!res.ok) {
@@ -2138,6 +2140,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }, []);
 
   useManualEventProgress({
+    historyFetch: eventHistoryClient.fetch,
     snapshot: { data, advancedState, themeId },
     category: config.category, templateId: config.slug, eventId: editEventId,
     ready: !_loadingExisting, busy: submitting,
@@ -2254,7 +2257,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
 
         if (editEventId) {
-          const res = await fetch(`/api/history/${editEventId}`, {
+          const res = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -2279,7 +2282,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             })
           ));
         } else {
-          const res = await fetch("/api/history", {
+          const res = await eventHistoryClient.fetch("/api/history", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",

@@ -24,6 +24,14 @@ const design: SharedCardDesign = {
   accent: "#876035",
   surface: "#fff4ec",
 };
+
+test("persisted lettering placement must have positive dimensions inside the canvas", () => {
+  const headline = { imageUrl: "/composite.webp", title: "Movie", intro: "", layerUrl: "/layer.webp" };
+  const layout = { left: 12, top: 27, width: 40, height: 40, canvasWidth: 100, canvasHeight: 150 };
+  assert.deepEqual(readSharedCardDesign({ ...design, headline: { ...headline, layout } })?.headline?.layout, layout);
+  for (const invalid of [{ ...layout, width: 0 }, { ...layout, left: 90 }, { ...layout, canvasHeight: 0 }])
+    assert.equal(readSharedCardDesign({ ...design, headline: { ...headline, layout: invalid } })?.headline?.layout, undefined);
+});
 const measure = (text: string, size: number) => text.length * size * 0.51;
 
 test("shared background survives event type, format, title, contact, location and time changes; visual changes invalidate it", () => {

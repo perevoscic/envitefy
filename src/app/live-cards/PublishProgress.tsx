@@ -5,7 +5,7 @@ import { Sparkles } from "lucide-react";
 import { LiveCardIcon } from "@/components/icons/LiveCardIcon";
 import styles from "./publish-progress.module.css";
 
-export type PublishStage = "locations" | "wording" | "lettering" | "lettering_repair" | "saving" | "publishing" | "opening";
+export type PublishStage = "locations" | "wording" | "lettering" | "checking" | "lettering_repair" | "saving" | "publishing" | "opening";
 
 export const PUBLISH_STAGES: Record<PublishStage, { title: string; description: string }> = {
   locations: {
@@ -13,22 +13,23 @@ export const PUBLISH_STAGES: Record<PublishStage, { title: string; description: 
     description: "Checking your venues and their local times.",
   },
   wording: {
-    title: "Polishing your words",
+    title: "Checking invitation wording",
     description: "Checking spelling and grammar while keeping your event details intact.",
   },
   lettering: {
-    title: "Bringing your title to life",
+    title: "Creating title and opening-line artwork",
     description:
-      "Drawing and checking lettering that belongs to your design. This can take a few minutes.",
+      "Creating one coordinated lettering asset for your saved background.",
   },
   saving: {
-    title: "Putting it all together",
+    title: "Saving artwork",
     description: "Saving your finished artwork and preparing the card for your guests.",
   },
   lettering_repair: {
-    title: "Finishing your title",
-    description: "Refining the lettering to match your artwork.",
+    title: "Repairing lettering",
+    description: "Creating the explicitly requested replacement lettering.",
   },
+  checking: { title: "Checking lettering", description: "Verifying existing artwork without generating another image." },
   opening: {
     title: "Published. Opening your dashboard",
     description: "Your Live Card is saved and ready to share. Opening its sharing and guest-response tools.",

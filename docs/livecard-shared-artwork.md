@@ -1,5 +1,7 @@
 # Shared Live Card and Invite artwork
 
+October 2, 2026 update: the current specification is [Live Card layered artwork](livecard-layered-artwork.md). It supersedes the historical flow and editable-font behavior below. New cards use a text-free background plus isolated AI lettering, deterministic composition, one automatic lettering attempt, explicit repairs and verification retries, durable jobs/recovery, three visible steps, Review-only publication and post-publication sharing. The September 22 verification below is historical evidence, not verification of the current changes.
+
 New guided designs use a text-free 2:3 background and editable text. The introductory headline and title appear in both formats; event details appear on the downloadable invitation. Live Card guest buttons stay over the bottom of the artwork and never enter the image export.
 
 ## Implementation

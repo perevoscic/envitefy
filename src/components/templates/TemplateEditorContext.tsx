@@ -18,6 +18,7 @@ import {
 import AuthModal from "@/components/auth/AuthModal";
 import SignupEditorToolbar from "@/components/smart-signup-form/SignupEditorToolbar";
 import { useUnsavedProgress } from "@/components/UnsavedProgressProvider";
+import { useEventHistoryClient } from "@/lib/event-history-client";
 import { buildOwnerEventEditHref, ownerEventEditorReturnHref } from "@/lib/event-preview-viewport";
 import { getFamilyTemplateDesign } from "@/lib/family-template-designs";
 import { hasAnalyticsConsent } from "@/lib/privacy-preferences";
@@ -154,6 +155,7 @@ export default function TemplateEditorProvider({
   children: ReactNode;
 }) {
   const router = useRouter();
+  const eventHistoryClient = useEventHistoryClient();
   const search = useSearchParams();
   const { status, update } = useSession();
   const authenticated = status === "authenticated";
@@ -245,7 +247,7 @@ export default function TemplateEditorProvider({
           );
         }
       if (editId) {
-        const response = await fetch(`/api/history/${encodeURIComponent(editId)}`, {
+        const response = await eventHistoryClient.fetch(`/api/history/${encodeURIComponent(editId)}`, {
           credentials: "include",
         });
         if (!response.ok)
@@ -282,7 +284,10 @@ export default function TemplateEditorProvider({
               }),
             assets: {},
             eventId: editId,
+            eventRevision: row.revision,
           };
+        if (typeof saved.eventRevision === "string") eventHistoryClient.remember(`/api/history/${encodeURIComponent(editId)}`, saved.eventRevision);
+        else if (typeof row.revision === "string") saved.eventRevision = row.revision;
       }
       if (cancelled) return;
       if (!editId) setPublished(false);
@@ -463,6 +468,7 @@ export default function TemplateEditorProvider({
       try {
         const current = draft.current;
         const eventId = await saveTemplateDraftToAccount({
+          request: (input, options) => typeof input === "string" ? eventHistoryClient.fetch(input, options) : fetch(input, options),
           draft: current,
           payload,
           category,

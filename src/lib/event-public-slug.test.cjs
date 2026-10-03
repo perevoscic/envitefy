@@ -165,8 +165,9 @@ test("availability checks require authentication and ownership, and never save a
   const calls = [];
   const endpoint = loadSource("src/app/api/events/public-slug/route.ts", {
     "@/lib/auth": { getAuthenticatedRequestUser: async () => authenticated ? { ok: true, userId: "owner" } : { ok: false } },
+    "@/lib/event-collaboration": { getEventPermissions: async () => ({ canEdit: owned }) },
     "@/lib/db": {
-      getEventHistoryOwnerById: async () => ({ user_id: owned ? "owner" : "other" }),
+      getEventHistoryById: async () => ({ user_id: owned ? "owner" : "other" }),
       isEventPublicSlugAvailable: async (...args) => { calls.push(args); return args[0] !== "taken-game"; },
     },
   });

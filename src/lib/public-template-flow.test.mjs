@@ -491,6 +491,11 @@ test("history updates require ownership, with explicit legacy intake claiming pr
   let saved = { id: draftId, user_id: "owner", title: "Private event", data: { status: "draft" } };
   let mutations = 0;
   const route = loadTs("src/app/api/history/[id]/route.ts", {
+    "@/lib/event-collaboration": {
+      getEventPermissions: async (row, viewer) => ({ canEdit: Boolean(viewer && row.user_id === viewer), role: viewer && row.user_id === viewer ? "owner" : null }),
+      saveCollaborativeEvent: async ({ patch }) => { mutations++; saved = { ...saved, data: { ...saved.data, ...patch } }; return saved; },
+      collaboratorUserIds: async () => [],
+    },
     "next/headers": {},
     "next/server": {
       NextResponse: { json: (body, options) => json(body, options?.status || 200) },

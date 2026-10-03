@@ -14,6 +14,7 @@ function loadQuery(db) {
     (name) => {
       if (name === "@/lib/dashboard-data") return dashboardData;
       if (name === "@/lib/db") return db;
+      if (name === "@/lib/event-collaboration") return { listCollaborativeEvents: async () => [] };
       throw new Error(`Unexpected dependency: ${name}`);
     },
     module,

@@ -25,6 +25,8 @@ import { prepareCardEditPreviewImage, streamCardEditPreview } from "@/lib/studio
 import { buildCardRegistryDataPatch, normalizeCardRegistryLink } from "@/lib/studio/card-registry";
 import { generateStudioInvitation } from "@/lib/studio/generate";
 import { parseDataUrlBase64 } from "@/utils/data-url";
+import { eventRevision, getEventPermissions, saveCollaborativeEvent } from "@/lib/event-collaboration";
+import { EventCollaborationError, supportsEventCollaboration } from "@/lib/event-collaboration-types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -256,7 +258,7 @@ function buildNextDetails(item: MediaItem, fields: Record<string, unknown>) {
   return { nextDetails, changedFields };
 }
 
-async function previewCardEdit(item: MediaItem, fields: Record<string, unknown>) {
+async function previewCardEdit(item: MediaItem, fields: Record<string, unknown>, revision: string) {
   const { nextDetails, changedFields } = buildNextDetails(item, fields);
   if (changedFields.length === 0) {
     return NextResponse.json({ error: "No design changes requested." }, { status: 400 });
@@ -266,6 +268,7 @@ async function previewCardEdit(item: MediaItem, fields: Record<string, unknown>)
     return NextResponse.json({
       ok: true,
       action: "preview",
+      revision,
       title: item.data?.title || nextDetails.eventTitle,
       imageDataUrl: item.url,
       invitationData: { ...item.data, eventDetails: nextDetails },
@@ -303,6 +306,7 @@ async function previewCardEdit(item: MediaItem, fields: Record<string, unknown>)
   return NextResponse.json({
     ok: true,
     action: "preview",
+    revision,
     title: readString(nextDetails.eventTitle) || "Untitled event",
     imageDataUrl,
     invitationData,
@@ -313,6 +317,7 @@ async function previewCardEdit(item: MediaItem, fields: Record<string, unknown>)
 }
 
 async function saveCardEdit(params: {
+  expectedRevision: string | null;
   id: string;
   item: MediaItem;
   userId: string;
@@ -347,7 +352,9 @@ async function saveCardEdit(params: {
           : {}),
       },
     };
-    const updatedRow = await updateEventHistoryDataMerge(params.id, dataPatch);
+    const updatedRow = supportsEventCollaboration(existing)
+      ? await saveCollaborativeEvent({ eventId: params.id, userId: params.userId, patch: dataPatch, expectedRevision: params.expectedRevision })
+      : await updateEventHistoryDataMerge(params.id, dataPatch);
     invalidateHistoryAndDashboardForUser(params.userId);
     await invalidateSharedHistoryViewers(params.id);
     return NextResponse.json({
@@ -399,8 +406,13 @@ async function saveCardEdit(params: {
       ? buildCardRegistryDataPatch(params.existingData, nextDetails.registryLink) : {}),
   };
 
-  await updateEventHistoryTitle(params.id, payload.title);
-  const updatedRow = await updateEventHistoryDataMerge(params.id, dataPatch);
+  let updatedRow;
+  if (supportsEventCollaboration(isRecord(params.existingData) ? params.existingData : null)) {
+    updatedRow = await saveCollaborativeEvent({ eventId: params.id, userId: params.userId, patch: dataPatch, title: payload.title, expectedRevision: params.expectedRevision });
+  } else {
+    await updateEventHistoryTitle(params.id, payload.title);
+    updatedRow = await updateEventHistoryDataMerge(params.id, dataPatch);
+  }
   invalidateHistoryAndDashboardForUser(params.userId);
   await invalidateSharedHistoryViewers(params.id);
 
@@ -429,7 +441,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!existing) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    if (existing.user_id !== userId) {
+    if (!(await getEventPermissions(existing, userId)).canEdit) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -464,6 +476,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (action === "save") {
       const imageDataUrl = isRecord(body) ? readString(body.imageDataUrl) : "";
       return await saveCardEdit({
+        expectedRevision: isRecord(body) && typeof body.expectedRevision === "string" ? body.expectedRevision : null,
         id,
         item,
         userId,
@@ -473,8 +486,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       });
     }
 
-    return streamCardEditPreview(() => previewCardEdit(item, fields));
+    return streamCardEditPreview(() => previewCardEdit(item, fields, eventRevision(existing)));
   } catch (error) {
+    if (error instanceof EventCollaborationError) return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
     const message = error instanceof Error ? error.message : "Internal server error";
     return NextResponse.json({ error: message || "Internal server error" }, { status: 500 });
   }

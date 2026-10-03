@@ -17,6 +17,7 @@ type InvitedEventLikeRecord =
   | undefined;
 
 export type DashboardEvent = {
+  collaborationRole?: "cohost" | null;
   id: string;
   publicHref?: string;
   ownerHref?: string;
@@ -399,6 +400,7 @@ export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
   const publicHref = buildEventProductPath({ eventId: row.id, title: row.title, data, publicSlug });
   return {
     id: row.id,
+    collaborationRole: data.collaborationRole === "cohost" ? "cohost" : null,
     publicHref,
     ownerHref: publicHref.startsWith("/smart-signup-form/")
       ? publicHref

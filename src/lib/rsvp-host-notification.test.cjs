@@ -15,11 +15,13 @@ function setup({ eventData = {}, hostEmail = "host@example.test", ownerEmail = "
     "@/lib/event-draft-access-server": { guardDraftRequest: async () => null },
     "@/lib/history-cache": { invalidateUserHistory() {} },
     "@/lib/dashboard-cache": { invalidateUserDashboard() {} },
+    "@/lib/event-collaboration": { invalidateEventCollaborators: async () => {} },
     "@/lib/absolute-url": { absoluteUrl: async (path) => `https://envitefy.com${path}` },
     "@/utils/calendar-handoff": { buildCalendarHandoffPath: () => "/calendar/add" },
     "@/lib/calendar-date-time": { parseCalendarDateTimeToIso: () => null },
     "@/lib/calendar-preference": { CALENDAR_PROVIDER_NAMES: {} },
     "@/lib/db": {
+      getEventHistoryById: async () => ({ id: "event-id", user_id: "owner-id", data: { category: "Birthday", ...eventData } }),
       getUserIdByEmail: async () => self ? "owner-id" : "guest-id",
       query: async (sql) => {
         statements.push(sql);

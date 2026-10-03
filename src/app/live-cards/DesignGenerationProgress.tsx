@@ -7,16 +7,25 @@ export default function DesignGenerationProgress({
   title = "Creating your design",
   description = "Keep adding your event details.",
   statusText,
+  mockTitle,
+  mockOpeningLine,
 }: {
   stage: GenerationStage;
   compact?: boolean;
   title?: string;
   description?: string;
   statusText?: string;
+  mockTitle?: string;
+  mockOpeningLine?: string;
 }) {
   const stageLabel = statusText || GENERATION_STAGE_LABELS[stage];
   return (
     <section className={compact ? styles.compact : styles.panel} aria-label="Design generation">
+      {mockTitle && <div className={styles.mockWording} role="group" aria-label="Temporary wording preview">
+        <small>Temporary wording preview</small>
+        {mockOpeningLine?.trim() && <p>{mockOpeningLine}</p>}
+        <strong>{mockTitle}</strong>
+      </div>}
       {!compact && (
         <>
           <div className={styles.cardStack} aria-hidden="true">

@@ -54,7 +54,7 @@ test("legacy event links open standalone signup forms instead of the unsupported
 test("reachable sharing checks retain owner, anonymous, accepted, pending and missing-share-table behavior", async () => {
   const statements = page.body.statements;
   const start = statements.findIndex(node => ts.isVariableStatement(node) && node.declarationList.declarations[0].name.getText(ast) === "recipientAccepted");
-  const end = statements.findIndex((node, index) => index > start && ts.isIfStatement(node) && node.expression.getText(ast) === "!isOwner");
+  const end = statements.findIndex((node, index) => index > start && ts.isIfStatement(node) && node.expression.getText(ast) === "!isOwner && !collaborationPermissions.canEdit");
   assert.ok(start >= 0 && end > start);
   const code = statements.slice(start, end + 1).map(node => node.getText(ast)).join("\n");
   const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
@@ -68,8 +68,8 @@ test("reachable sharing checks retain owner, anonymous, accepted, pending and mi
   ]) {
     for (const autoAccept of [false, true]) {
       const writes = [];
-      const run = new AsyncFunction("isOwner", "userId", "row", "timing", "isEventSharedWithUser", "isEventSharePendingForUser", "autoAccept", "fetch", `${ts.transpile(code)}; return { recipientAccepted, isReadOnly };`);
-      const result = await run(fixture.owner, fixture.userId, { id: "offline-event" }, { time: (_name, fn) => fn() }, async () => fixture.access, async () => fixture.pending, autoAccept, async (...args) => { writes.push(args); });
+      const run = new AsyncFunction("isOwner", "userId", "row", "timing", "isEventSharedWithUser", "isEventSharePendingForUser", "autoAccept", "fetch", "collaborationPermissions", `${ts.transpile(code)}; return { recipientAccepted, isReadOnly };`);
+      const result = await run(fixture.owner, fixture.userId, { id: "offline-event" }, { time: (_name, fn) => fn() }, async () => fixture.access, async () => fixture.pending, autoAccept, async (...args) => { writes.push(args); }, { canEdit: fixture.owner, role: fixture.owner ? "owner" : null });
       assert.deepEqual(result, { recipientAccepted: fixture.accepted, isReadOnly: fixture.readonly });
       assert.equal(writes.length, fixture.pending && autoAccept ? 1 : 0);
       if (writes.length) assert.deepEqual(JSON.parse(writes[0][1].body), { eventId: "offline-event" });

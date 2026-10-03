@@ -21,6 +21,7 @@ const files = [
   "src/lib/live-card-*.test.ts",
   "src/lib/guest-rsvp.test.ts",
   "src/lib/event-messages.test.cjs",
+  "scripts/event-collaboration.test.cjs",
   "src/lib/event-product-routing.test.cjs",
   "src/lib/event-public-slug.test.cjs",
   "src/lib/rsvp-host-notification.test.cjs",

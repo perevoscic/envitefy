@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import { useEventHistoryClient } from "@/lib/event-history-client";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
 
 import HeroImageEditor from "@/components/events/HeroImageEditor";
@@ -612,6 +613,7 @@ const EditorLayout = ({ title, onBack, children }) => (
 );
 
 export default function SpecialEventsCustomizePage() {
+  const eventHistoryClient = useEventHistoryClient();
   const search = useSearchParams();
   const router = useRouter();
   const { allowNavigation } = useProgressNavigation();
@@ -684,7 +686,7 @@ export default function SpecialEventsCustomizePage() {
     setLoadError("");
     void (async () => {
       try {
-        const response = await fetch(`/api/history/${editEventId}`, { credentials: "include", cache: "no-store" });
+        const response = await eventHistoryClient.fetch(`/api/history/${editEventId}`, { credentials: "include", cache: "no-store" });
         if (!response.ok) throw new Error("Could not load this event. Reload the page before making changes.");
         const row = await response.json();
         if (cancelled) return;
@@ -1016,6 +1018,7 @@ export default function SpecialEventsCustomizePage() {
     .join(", ");
 
   useManualEventProgress({
+    historyFetch: eventHistoryClient.fetch,
     snapshot: { data },
     category: "Special Events", templateId: "special-events", eventId: editEventId,
     ready: !loadingExisting, busy: submitting,
@@ -1102,7 +1105,7 @@ export default function SpecialEventsCustomizePage() {
       let id: string | undefined;
 
       if (editEventId) {
-        const response = await fetch(`/api/history/${editEventId}`, {
+        const response = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -1121,7 +1124,7 @@ export default function SpecialEventsCustomizePage() {
         }
         id = editEventId;
       } else {
-        const res = await fetch("/api/history", {
+        const res = await eventHistoryClient.fetch("/api/history", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",

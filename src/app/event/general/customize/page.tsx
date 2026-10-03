@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import { useEventHistoryClient } from "@/lib/event-history-client";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
 
 import HeroImageEditor from "@/components/events/HeroImageEditor";
@@ -223,6 +224,7 @@ const MenuCard = ({
 
 function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
+  const eventHistoryClient = useEventHistoryClient();
     const search = useSearchParams();
     const router = useRouter();
   const { allowNavigation } = useProgressNavigation();
@@ -332,7 +334,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     setLoadError("");
     void (async () => {
       try {
-        const response = await fetch(`/api/history/${editEventId}`, { credentials: "include", cache: "no-store" });
+        const response = await eventHistoryClient.fetch(`/api/history/${editEventId}`, { credentials: "include", cache: "no-store" });
         if (!response.ok) throw new Error("Could not load this event. Reload the page before making changes.");
         const row = await response.json();
         if (cancelled) return;
@@ -484,6 +486,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }, []);
 
   useManualEventProgress({
+    historyFetch: eventHistoryClient.fetch,
     snapshot: { data, advancedState, themeId },
     category: config.category, templateId: config.slug, eventId: editEventId,
     ready: !loadingExisting, busy: submitting,
@@ -575,7 +578,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         payload.data.manualEditor = null;
 
 
-        const res = await fetch(editEventId ? `/api/history/${editEventId}` : "/api/history", {
+        const res = await eventHistoryClient.fetch(editEventId ? `/api/history/${editEventId}` : "/api/history", {
           method: editEventId ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",

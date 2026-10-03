@@ -81,13 +81,14 @@ test("message validation permits partial drafts but requires subject and body to
   assert.equal(validGuestEmail("guest@example.test"), true);
 });
 
-test("owner-only API rejects guests, other owners, drafts and forged recipient lists; GET never sends", async () => {
+test("owner and co-host API rejects guests, other owners, drafts and forged recipient lists; GET never sends", async () => {
   let owner = null;
   let draft = false;
   const calls = [];
   const route = loadTs("src/app/api/events/[id]/messages/route.ts", {
     "next-auth": { getServerSession: async () => ({ user: { id: owner } }) },
     "@/lib/auth": { authOptions: {}, resolveSessionUserId: async () => owner },
+    "@/lib/event-collaboration": { getEventPermissions: async () => ({ canManageResponses: owner === "owner" || owner === "cohost" }) },
     "@/lib/db": { getEventHistoryById: async () => ({ user_id: "owner", title: "Party", data: { status: draft ? "draft" : "published" }, public_slug: "party" }) },
     "@/lib/event-messages": {
       ensureEventMessages: async () => {},
@@ -109,6 +110,8 @@ test("owner-only API rejects guests, other owners, drafts and forged recipient l
   assert.equal(loaded.headers.get("cache-control"), "private, no-store");
   assert.equal((await loaded.json()).audienceCount, 1);
   assert.equal(calls.length, 0);
+  owner = "cohost";
+  assert.equal((await route.GET(new Request("https://envitefy.com"), context)).status, 200);
   const payload = { action: "send", id: randomUUID(), subject: "Update", body: "Hello", recipients: ["no@example.test"], userId: "other" };
   const sent = await route.POST(new Request("https://envitefy.com", { method: "POST", body: JSON.stringify(payload) }), context);
   assert.equal(sent.status, 200);

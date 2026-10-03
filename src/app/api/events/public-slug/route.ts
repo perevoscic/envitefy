@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedRequestUser } from "@/lib/auth";
-import { getEventHistoryOwnerById, isEventPublicSlugAvailable } from "@/lib/db";
+import { getEventHistoryById, isEventPublicSlugAvailable } from "@/lib/db";
+import { getEventPermissions } from "@/lib/event-collaboration";
 import { validateCustomEventPublicSlug } from "@/utils/event-public-slug";
 
 export const runtime = "nodejs";
@@ -18,8 +19,8 @@ export async function GET(request: Request) {
     if (eventId) {
       if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(eventId))
         return NextResponse.json({ error: "Invalid event." }, { status: 400 });
-      const owner = await getEventHistoryOwnerById(eventId);
-      if (!owner || owner.user_id !== user.userId)
+      const owner = await getEventHistoryById(eventId);
+      if (!owner || !(await getEventPermissions(owner, user.userId)).canEdit)
         return NextResponse.json({ error: "You cannot change this event's URL." }, { status: 403 });
     }
     const available = await isEventPublicSlugAvailable(result.slug, eventId);

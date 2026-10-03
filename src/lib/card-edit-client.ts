@@ -1,4 +1,5 @@
 type CardEditRequest = {
+  expectedRevision?: string;
   action: "preview" | "save";
   fields: Record<string, string>;
   imageDataUrl?: string;

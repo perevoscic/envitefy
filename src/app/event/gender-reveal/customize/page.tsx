@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import { useEventHistoryClient } from "@/lib/event-history-client";
 import HeroImageEditor from "@/components/events/HeroImageEditor";
 import EventCanvas from "@/components/EventCanvas";
 
@@ -382,6 +383,7 @@ const InputGroup = ({
 );
 
 export default function GenderRevealTemplateCustomizePage() {
+  const eventHistoryClient = useEventHistoryClient();
   const templateEditor = useTemplateEditor();
   const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
   const search = useTemplateSearchParams();
@@ -424,7 +426,7 @@ export default function GenderRevealTemplateCustomizePage() {
       hasLoadedRef.current = true;
       setLoadingExisting(true);
       try {
-        const res = await fetch(`/api/history/${editEventId}`, {
+        const res = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
           cache: "no-store",
         });
         if (!res.ok) {
@@ -797,7 +799,7 @@ export default function GenderRevealTemplateCustomizePage() {
       let id: string | undefined;
 
       if (editEventId) {
-        const response = await fetch(`/api/history/${editEventId}`, {
+        const response = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -809,7 +811,7 @@ export default function GenderRevealTemplateCustomizePage() {
         if (!response.ok) throw new Error("Unable to publish this event. Your changes are still here.");
         id = editEventId;
       } else {
-        const r = await fetch("/api/history", {
+        const r = await eventHistoryClient.fetch("/api/history", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",

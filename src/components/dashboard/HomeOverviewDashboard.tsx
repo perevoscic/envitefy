@@ -35,6 +35,7 @@ import {
 } from "@/lib/thumbnail-focus";
 
 type DashboardEventItem = {
+  collaborationRole?: "cohost" | null;
   id: string;
   publicHref?: string;
   ownerHref?: string;
@@ -381,7 +382,7 @@ function InvitationEventCard({
 
             <div className="absolute left-6 top-6">
               <span className="rounded-full border border-white/20 bg-black/30 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white backdrop-blur-xl">
-                {inviteCardCategoryBadge(item.category, relationLabel)}
+                {item.collaborationRole === "cohost" ? "Co-host" : inviteCardCategoryBadge(item.category, relationLabel)}
               </span>
             </div>
 

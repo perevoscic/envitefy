@@ -158,6 +158,19 @@
 .saveActions svg {
   flex-shrink: 0;
 }
+.shareActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  max-width: 640px;
+  margin-inline: auto;
+}
+.shareActions button {
+  flex: 1;
+  min-width: 0;
+  padding-inline: 8px;
+  white-space: normal;
+}
 .cardSaveActions {
   width: min(100%, var(--builder-artwork-width, 370px));
   margin-inline: auto;
@@ -171,6 +184,9 @@
   margin: 0;
   padding: 0;
   border: 0;
+}
+.previewSaveActions .shareActions {
+  display: none;
 }
 .primary,
 .secondary {
@@ -305,10 +321,10 @@
   width: 100%;
   max-width: 640px;
   margin-inline: auto;
-  padding: 22px;
-  background: #fffcf9;
-  border: 1px solid var(--line);
-  border-radius: 22px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 .outputLabel {
   display: flex;
@@ -1199,7 +1215,7 @@
     gap: 16px;
   }
   .outputCard {
-    padding: 16px;
+    padding: 0;
   }
   .inlineArtwork {
     display: none;

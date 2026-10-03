@@ -73,6 +73,21 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
       name: "Create from what the customer already has",
       features: [
         {
+          id: "event-cohosts",
+          name: "Invite a co-host",
+          availability: "event-dependent",
+          customerPromise: "Invite someone to help manage one saved event or Live Card from their own account.",
+          proofPoints: [
+            "The owner uses Manage access to invite an email address, including someone who has not created an Envitefy account yet.",
+            "The recipient signs in or creates an account with the invited email and explicitly accepts access to the original event.",
+            "Co-hosts can edit, save and publish event details and artwork, and manage that event's RSVPs and guest messages.",
+            "Invitations expire after seven days. The owner can resend, cancel an invitation or remove a co-host's access.",
+            "Ownership stays with the original host. Only the owner can delete the event, manage co-hosts, change the public URL or unpublish it.",
+            "Shared editors reject conflicting saves and retain local edits. Private scans and Sign-up Forms keep their separate access rules.",
+          ],
+          sellWhen: ["Couples, planners, family members or team organizers want to share the work of managing an authored event or Live Card."],
+        },
+        {
           id: "snap-source-import",
           name: "Envitefy Snap",
           availability: "core",

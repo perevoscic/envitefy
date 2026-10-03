@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { getEventHistoryById } from "@/lib/db";
+import { getEventPermissions, invalidateEventCollaborators } from "@/lib/event-collaboration";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { buildEventAssetContent } from "@/lib/concierge/assets";
 import {
@@ -30,10 +31,10 @@ async function requireOwnedEvent(eventId: string) {
   if (!event) {
     return { error: NextResponse.json({ error: "Event not found" }, { status: 404 }) };
   }
-  if (event.user_id !== userId) {
+  if (!(await getEventPermissions(event, userId)).canEdit) {
     return { error: NextResponse.json({ error: "Not found" }, { status: 404 }) };
   }
-  return { userId, event };
+  return { userId: event.user_id || userId, event };
 }
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -79,5 +80,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   });
   invalidateUserHistory(owned.userId);
   invalidateUserDashboard(owned.userId);
+  await invalidateEventCollaborators(owned.event);
   return NextResponse.json({ asset }, { status: 201 });
 }

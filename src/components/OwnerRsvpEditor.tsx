@@ -4,6 +4,7 @@ import { Loader2, Pencil, Save, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { useUnsavedProgress } from "@/components/UnsavedProgressProvider";
+import { useEventHistoryClient } from "@/lib/event-history-client";
 import {
   readOwnerRsvpSettings,
   validateOwnerRsvpSettings,
@@ -18,6 +19,7 @@ export default function OwnerRsvpEditor({
   eventData: Record<string, unknown> | null;
 }) {
   const router = useRouter();
+  const eventHistoryClient = useEventHistoryClient();
   const formId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
   const hostInput = useRef<HTMLInputElement>(null);
@@ -42,12 +44,25 @@ export default function OwnerRsvpEditor({
     trigger.current?.focus();
   }
 
+  async function startEditing() {
+    setError(""); setSaved(false); setSaving(true);
+    eventHistoryClient.clear(`/api/history/${encodeURIComponent(eventId)}`);
+    try {
+      const response = await eventHistoryClient.fetch(`/api/history/${encodeURIComponent(eventId)}`, { cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "RSVP details could not be loaded.");
+      const latest = readOwnerRsvpSettings(result.data);
+      setBaseline(latest); setForm(latest); setOpen(true);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "RSVP details could not be loaded."); }
+    finally { setSaving(false); }
+  }
+
   async function save() {
     setError("");
     setSaving(true);
     try {
       const settings = validateOwnerRsvpSettings(form);
-      const response = await fetch(`/api/history/${encodeURIComponent(eventId)}`, {
+      const response = await eventHistoryClient.fetch(`/api/history/${encodeURIComponent(eventId)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rsvpSettings: settings }),
@@ -85,9 +100,9 @@ export default function OwnerRsvpEditor({
           aria-expanded={open}
           aria-controls={formId}
           onClick={() => {
-            setOpen(true);
-            setSaved(false);
+            void startEditing();
           }}
+          disabled={saving}
           className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
         >
           <Pencil size={13} aria-hidden="true" />
@@ -99,6 +114,7 @@ export default function OwnerRsvpEditor({
           RSVP details saved.
         </p>
       ) : null}
+      {!open && error ? <p role="alert" className="mt-3 text-sm font-medium text-rose-700">{error}</p> : null}
       {open ? (
         <form
           id={formId}

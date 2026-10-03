@@ -5,7 +5,9 @@ import { after, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { absoluteUrl } from "@/lib/absolute-url";
 import { authOptions } from "@/lib/auth";
-import { getUserIdByEmail, query } from "@/lib/db";
+import { getEventHistoryById, getUserIdByEmail, query } from "@/lib/db";
+import { getEventPermissions, invalidateEventCollaborators } from "@/lib/event-collaboration";
+import { supportsEventCollaboration } from "@/lib/event-collaboration-types";
 import { sendHostRsvpNotificationEmail, sendRsvpConfirmationEmail } from "@/lib/email";
 import { validGuestEmail } from "@/lib/event-message-types";
 import { readOwnerRsvpSettings } from "@/lib/owner-rsvp-settings";
@@ -70,6 +72,16 @@ type EventDetailsRow = {
 };
 
 let rsvpTableReady: boolean | null = null;
+
+async function rsvpManager(eventId: string, email: string) {
+  const [event, userId] = await Promise.all([getEventHistoryById(eventId), getUserIdByEmail(email)]);
+  if (!event || !(await getEventPermissions(event, userId)).canManageResponses) return { rows: [] as { id: string | null }[] };
+  return { rows: [{ id: event.user_id || null }] };
+}
+async function invalidateRsvpManagers(eventId: string) {
+  const event = await getEventHistoryById(eventId);
+  if (event && supportsEventCollaboration(event.data)) await invalidateEventCollaborators(event);
+}
 let rsvpTableCheckInflight: Promise<boolean> | null = null;
 let rsvpV2ColumnsReady: Promise<void> | null = null;
 
@@ -615,6 +627,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     for (const affectedId of [eventRow.user_id, userId]) {
       if (affectedId) { invalidateUserHistory(affectedId); invalidateUserDashboard(affectedId); }
     }
+    await invalidateRsvpManagers(eventId);
 
     const publicSlug = firstString(eventRow.public_slug, eventRow.data?.publicSlug);
     const eventUrl = await timing.time("event_url", () =>
@@ -759,7 +772,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           [eventId],
         ),
       );
-      isOwner = ownerCheck.rows[0]?.email === sessionUserEmail;
+      isOwner = ownerCheck.rows[0]?.email === sessionUserEmail || (await rsvpManager(eventId, sessionUserEmail)).rows.length > 0;
     }
 
     const baseResponse: Record<string, unknown> = {
@@ -822,14 +835,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (!sessionUserEmail)
       return jsonWithTiming(timing, { error: "Unauthorized" }, { status: 401 });
 
-    const ownerCheck = await timing.time("owner_check", () =>
-      query(
-        `
-      SELECT u.id FROM event_history e JOIN users u ON e.user_id = u.id WHERE e.id = $1 AND u.email = $2 LIMIT 1
-    `,
-        [eventId, sessionUserEmail],
-      ),
-    );
+    const ownerCheck = await timing.time("owner_check", () => rsvpManager(eventId, sessionUserEmail));
     if (ownerCheck.rows.length === 0)
       return jsonWithTiming(timing, { error: "Forbidden" }, { status: 403 });
 
@@ -871,6 +877,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     for (const affectedId of [ownerCheck.rows[0]?.id, tUserId]) {
       if (typeof affectedId === "string" && affectedId) { invalidateUserHistory(affectedId); invalidateUserDashboard(affectedId); }
     }
+    await invalidateRsvpManagers(eventId);
 
     return jsonWithTiming(timing, { ok: true });
   } catch (err: unknown) {
@@ -894,14 +901,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     if (!sessionUserEmail)
       return jsonWithTiming(timing, { error: "Unauthorized" }, { status: 401 });
 
-    const ownerCheck = await timing.time("owner_check", () =>
-      query(
-        `
-      SELECT u.id FROM event_history e JOIN users u ON e.user_id = u.id WHERE e.id = $1 AND u.email = $2 LIMIT 1
-    `,
-        [eventId, sessionUserEmail],
-      ),
-    );
+    const ownerCheck = await timing.time("owner_check", () => rsvpManager(eventId, sessionUserEmail));
     if (ownerCheck.rows.length === 0)
       return jsonWithTiming(timing, { error: "Forbidden" }, { status: 403 });
 
@@ -942,6 +942,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     for (const affectedId of [ownerCheck.rows[0]?.id, tUserId]) {
       if (typeof affectedId === "string" && affectedId) { invalidateUserHistory(affectedId); invalidateUserDashboard(affectedId); }
     }
+    await invalidateRsvpManagers(eventId);
 
     return jsonWithTiming(timing, { ok: true, deleted: resultCount });
   } catch (err: unknown) {

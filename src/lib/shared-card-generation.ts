@@ -38,7 +38,8 @@ Generate the background only. Do not copy event facts or any words from the refe
 export async function generateSharedCard(
   form: LiveCardForm,
   signal?: AbortSignal,
-  onStage?: (stage: "preparing" | "generating" | "checking" | "encoding") => void,
+  onStage?: (stage: "preparing" | "generating" | "checking" | "encoding") => void | Promise<void>,
+  requestContext?: { jobId: string; revision: string; attempt: number },
 ): Promise<SharedCardDesign> {
   signal = AbortSignal.any([AbortSignal.timeout(240000), ...(signal ? [signal] : [])]);
   const startedAt = Date.now();
@@ -46,7 +47,7 @@ export async function generateSharedCard(
   let issues: string[] = [];
   try {
     signal?.throwIfAborted();
-    onStage?.("preparing");
+    await onStage?.("preparing");
     const model = resolveConciergeOpenAiPlannerModel();
     const client = sharedCardGenerationDeps.createClient();
     const response = await client.chat.completions.create(
@@ -122,17 +123,17 @@ export async function generateSharedCard(
       throw new Error(
         "The reference image could not be opened. Re-upload it before creating the design.",
       );
-    onStage?.("generating");
+    await onStage?.("generating");
     const result = await sharedCardGenerationDeps.generateImage(
       sharedBackgroundPrompt(form, design),
       references,
       "digital_flyer",
-      { signal, size: "1024x1536" },
+      { signal, size: "1024x1536", quality: form.generationQuality, requestContext },
     );
-    if (!result.ok) throw new LiveCardGenerationFailure(result.error.message, "design", "generation_failed");
+    if (!result.ok) throw new LiveCardGenerationFailure(result.error.message, "design", result.error.code === "safety_refused" ? "safety_refused" : "generation_failed", [], result.error.retryable);
     signal?.throwIfAborted();
     // Use the existing text-free artwork contract. No automatic second image job.
-    onStage?.("checking");
+    await onStage?.("checking");
     const check = await sharedCardGenerationDeps.verify(
       result.imageDataUrl,
       {
@@ -157,7 +158,7 @@ export async function generateSharedCard(
     }
     // Preserve the existing background-check policy; record checker outages separately.
     if (check.status === "unavailable") outcome = "verification_unavailable";
-    onStage?.("encoding");
+    await onStage?.("encoding");
     const original = Buffer.from(
       result.imageDataUrl.slice(result.imageDataUrl.indexOf(",") + 1),
       "base64",
@@ -176,7 +177,7 @@ export async function generateSharedCard(
     });
     signal?.throwIfAborted();
     // Originals stay in memory and are released; only the verified WebP is returned.
-    return { ...design, backgroundUrl: `data:image/webp;base64,${webp.toString("base64")}` };
+    return { ...design, ...(form.generationQuality ? { quality: form.generationQuality } : {}), backgroundUrl: `data:image/webp;base64,${webp.toString("base64")}` };
   } catch (error) {
     outcome = signal?.aborted ? "cancelled" : error instanceof LiveCardGenerationFailure ? error.code : "generation_failed";
     if (error instanceof LiveCardGenerationFailure) issues = error.issues;

@@ -1,15 +1,24 @@
 import { composeGuestLocation } from "./guest-event-details.ts";
 
+export type LetteringFinding = { field: "title" | "opening_line" | "lettering" | "composition"; expectedWording: string; observedWording: string; region: string; concernType: string; explanation: string };
+
 /** A background and typography recipe shared by the Live Card and its invitation. */
 export type SharedCardDesign = {
   version: 1;
   backgroundUrl: string;
+  quality?: "high" | "medium";
   font: "classic" | "modern" | "playful";
   typography?: CardTypography;
   ink: string;
   accent: string;
   surface: string;
-  headline?: { imageUrl: string; title: string; intro: string };
+  headline?: {
+    imageUrl: string; title: string; intro: string;
+    layerUrl?: string;
+    attempt?: number;
+    layout?: { left: number; top: number; width: number; height: number; canvasWidth: number; canvasHeight: number };
+    validation?: { status: "passed" | "failed" | "unavailable"; issues: string[]; visibleText?: string[]; repairInstructions?: string[]; findings?: LetteringFinding[]; unavailableReason?: string };
+  };
 };
 
 export const CARD_WIDTH = 1000;
@@ -153,9 +162,14 @@ export function readSharedCardDesign(value: unknown): SharedCardDesign | undefin
     raw.headline && typeof raw.headline === "object"
       ? (raw.headline as Record<string, unknown>)
       : {};
+  const placement = headline.layout && typeof headline.layout === "object" ? headline.layout as Record<string, unknown> : null;
+  const validPlacement = placement && ["left", "top", "width", "height", "canvasWidth", "canvasHeight"].every((key) => Number.isInteger(placement[key]) && Number(placement[key]) >= 0)
+    && Number(placement.width) > 0 && Number(placement.height) > 0 && Number(placement.canvasWidth) > 0 && Number(placement.canvasHeight) > 0
+    && Number(placement.left) + Number(placement.width) <= Number(placement.canvasWidth) && Number(placement.top) + Number(placement.height) <= Number(placement.canvasHeight);
   return {
     version: 1,
     backgroundUrl: raw.backgroundUrl,
+    ...(raw.quality === "high" || raw.quality === "medium" ? { quality: raw.quality } : {}),
     font: raw.font === "modern" || raw.font === "playful" ? raw.font : "classic",
     ...(typeof raw.typography === "string" && Object.hasOwn(CARD_TYPOGRAPHY, raw.typography)
       ? { typography: raw.typography as CardTypography }
@@ -167,7 +181,33 @@ export function readSharedCardDesign(value: unknown): SharedCardDesign | undefin
     /^(?:https?:\/\/|data:image\/(?:webp|png|jpeg);base64,|\/(?!\/))/.test(headline.imageUrl) &&
     typeof headline.title === "string" &&
     typeof headline.intro === "string"
-      ? { headline: { imageUrl: headline.imageUrl, title: headline.title, intro: headline.intro } }
+      ? { headline: {
+          imageUrl: headline.imageUrl, title: headline.title, intro: headline.intro,
+          ...(Number.isInteger(headline.attempt) && Number(headline.attempt) > 0 ? { attempt: Number(headline.attempt) } : {}),
+          ...(typeof headline.layerUrl === "string" && /^(?:https?:\/\/|data:image\/(?:webp|png|jpeg);base64,|\/(?!\/))/.test(headline.layerUrl)
+            ? { layerUrl: headline.layerUrl } : {}),
+          ...(validPlacement
+            ? { layout: headline.layout as NonNullable<NonNullable<SharedCardDesign["headline"]>["layout"]> } : {}),
+          ...(headline.validation && typeof headline.validation === "object" &&
+            ["passed", "failed", "unavailable"].includes(String((headline.validation as Record<string, unknown>).status))
+            ? { validation: {
+                status: (headline.validation as { status: "passed" | "failed" | "unavailable" }).status,
+                issues: Array.isArray((headline.validation as Record<string, unknown>).issues)
+                  ? ((headline.validation as Record<string, unknown>).issues as unknown[]).filter((item): item is string => typeof item === "string").slice(0, 30) : [],
+                visibleText: Array.isArray((headline.validation as Record<string, unknown>).visibleText)
+                  ? ((headline.validation as Record<string, unknown>).visibleText as unknown[]).filter((item): item is string => typeof item === "string").slice(0, 30) : [],
+                repairInstructions: Array.isArray((headline.validation as Record<string, unknown>).repairInstructions)
+                  ? ((headline.validation as Record<string, unknown>).repairInstructions as unknown[]).filter((item): item is string => typeof item === "string").slice(0, 12) : [],
+                ...(Array.isArray((headline.validation as Record<string, unknown>).findings) ? { findings: ((headline.validation as Record<string, unknown>).findings as unknown[]).slice(0, 20).flatMap((item) => {
+                  if (!item || typeof item !== "object") return [];
+                  const finding = item as Record<string, unknown>;
+                  if (!["title", "opening_line", "lettering", "composition"].includes(String(finding.field)) || !["expectedWording", "observedWording", "region", "concernType", "explanation"].every((key) => typeof finding[key] === "string" && String(finding[key]).length <= 4000)) return [];
+                  return [finding as LetteringFinding];
+                }) } : {}),
+                ...(typeof (headline.validation as Record<string, unknown>).unavailableReason === "string"
+                  ? { unavailableReason: String((headline.validation as Record<string, unknown>).unavailableReason) } : {}),
+              } } : {}),
+        } }
       : {}),
   };
 }

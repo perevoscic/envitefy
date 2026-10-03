@@ -1,4 +1,5 @@
 "use client";
+import { useEventHistoryClient } from "@/lib/event-history-client";
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -8,6 +9,7 @@ import { isEventDraft } from "@/lib/event-draft-access";
 import { buildEventPath } from "@/utils/event-url";
 
 function ScheduleEditor() {
+  const eventHistoryClient = useEventHistoryClient();
   const search = useSearchParams();
   const router = useRouter();
   const id = search?.get("edit") || "";
@@ -22,7 +24,7 @@ function ScheduleEditor() {
     async function load() {
       try {
         if (!id) throw new Error("Choose a saved schedule to edit.");
-        const response = await fetch(`/api/history/${encodeURIComponent(id)}`, {
+        const response = await eventHistoryClient.fetch(`/api/history/${encodeURIComponent(id)}`, {
           signal: controller.signal,
           credentials: "include",
           cache: "no-store",
@@ -58,7 +60,7 @@ function ScheduleEditor() {
       savedStatus={savedStatus}
       onDiscard={() => router.push(eventHref)}
       onSave={async (next, status) => {
-        const response = await fetch(`/api/history/${encodeURIComponent(id)}`, {
+        const response = await eventHistoryClient.fetch(`/api/history/${encodeURIComponent(id)}`, {
           method: "PATCH",
           credentials: "include",
           headers: { "Content-Type": "application/json" },

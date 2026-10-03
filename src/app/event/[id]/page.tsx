@@ -205,6 +205,8 @@ function DeletedEventNotice({ missingEventKey }: { missingEventKey?: string }) {
 }
 
 export const dynamic = "force-dynamic";
+import { getEventPermissions } from "@/lib/event-collaboration";
+import { supportsEventCollaboration } from "@/lib/event-collaboration-types";
 const EVENT_PAGE_TIMING_ENV = process.env.EVENT_PAGE_TIMING === "1";
 
 const getCachedEventHistoryBySlugOrId = cache(async (value: string, userId?: string | null) =>
@@ -1077,10 +1079,11 @@ export default async function EventPage({
     return <DeletedEventNotice missingEventKey={identity ? undefined : awaitedParams.id} />;
   }
   const isOwner = Boolean(userId && row.user_id && userId === row.user_id);
+  const collaborationPermissions = await getEventPermissions(row, userId);
   if (isOwner && isEventDraft(row.data) && (row.data?.templateEditor || row.data?.customEventPage)) redirect(resolveEditHref(row.id, row.data, row.title));
-  let recipientAccepted = false;
+  let recipientAccepted = collaborationPermissions.role === "cohost";
   let isReadOnly = false;
-  if (!isOwner) {
+  if (!isOwner && !collaborationPermissions.canEdit) {
     if (!userId) {
       // Allow viewing in read-only mode for non-authenticated users
       isReadOnly = true;
@@ -1275,7 +1278,7 @@ export default async function EventPage({
       discoveryCreatedVia,
       (data as any)?.invitedFromScan,
     ) === "invited";
-  const canManageCreatedEvent = isOwner && !isScannedInviteEvent;
+  const canManageCreatedEvent = collaborationPermissions.canEdit && !isScannedInviteEvent;
   const canEditCreatedEvent = canManageCreatedEvent && !isScannedOrUploadedEventData(data);
   const numberOfGuests = getRsvpDashboardGuestCount(data);
   const ownerRsvpDashboardEnabled = canShowOwnerRsvpDashboard(data);
@@ -1292,7 +1295,7 @@ export default async function EventPage({
     publicSlug,
   });
   const showOwnerEventView =
-    isOwner &&
+    collaborationPermissions.canEdit &&
     !ownerPreviewMode &&
     (requestedTab === "event" ||
       (!requestedTab &&
@@ -1407,6 +1410,8 @@ export default async function EventPage({
     return (
       <EventOwnerView
         eventId={row.id}
+        canDelete={isOwner}
+        canManageAccess={isOwner && supportsEventCollaboration(data)}
         title={title}
         publicHref={publicEventHref}
         editHref={resolveOwnerEditHref(row.id, data, title, ownerEventHref)}
@@ -1440,6 +1445,8 @@ export default async function EventPage({
     return renderWithEventPageBackground(
       <EventOwnerTools
         eventId={row.id}
+        isOwner={isOwner}
+        canManageAccess={isOwner && supportsEventCollaboration(data)}
         eventTitle={title}
         eventData={data}
         eventHref={publicEventHref}

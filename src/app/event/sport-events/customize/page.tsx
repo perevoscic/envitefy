@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import { useEventHistoryClient } from "@/lib/event-history-client";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
 
 import HeroImageEditor from "@/components/events/HeroImageEditor";
@@ -370,6 +371,7 @@ function buildSportSpecificConfig(
 
 function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
+  const eventHistoryClient = useEventHistoryClient();
     const templateEditor = useTemplateEditor();
   const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
   const search = useTemplateSearchParams();
@@ -490,7 +492,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
         if (!editEventId) return;
         setLoadingExisting(true);
         try {
-          const res = await fetch(`/api/history/${editEventId}`, {
+          const res = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
             cache: "no-store",
           });
           if (!res.ok) {
@@ -843,7 +845,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       if (templateEditor) { await templateEditor.persist(payload, "published"); return; }
 
         if (editEventId) {
-          const res = await fetch(`/api/history/${editEventId}`, {
+          const res = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -868,7 +870,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
             }),
           ));
         } else {
-          const res = await fetch("/api/history", {
+          const res = await eventHistoryClient.fetch("/api/history", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",

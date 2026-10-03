@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
-import { getEventHistoryOwnerById } from "@/lib/db";
+import { getEventHistoryById } from "@/lib/db";
+import { getEventPermissions } from "@/lib/event-collaboration";
 import { processPublicUpload } from "@/lib/media-upload";
 
 export const runtime = "nodejs";
@@ -16,8 +17,8 @@ export async function POST(request: Request) {
     if (!(file instanceof File))
       return NextResponse.json({ error: "Choose a photo" }, { status: 400 });
     if (eventId) {
-      const row = await getEventHistoryOwnerById(eventId);
-      if (!row || row.user_id !== userId)
+      const row = await getEventHistoryById(eventId);
+      if (!row || !(await getEventPermissions(row, userId)).canEdit)
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const upload = await processPublicUpload({

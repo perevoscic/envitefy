@@ -10,6 +10,7 @@ import {
   type EventHistoryRow,
 } from "@/lib/db";
 
+import { listCollaborativeEvents } from "@/lib/event-collaboration";
 const DASHBOARD_HISTORY_ROW_CAP = 200;
 
 export type DashboardEventQueryDiagnostics = {
@@ -39,6 +40,7 @@ function rowsToDashboardEvents(rows: EventHistoryRow[]): {
     .map<DashboardEvent | null>((row) => {
       const event = toDashboardEvent({
         id: row.id,
+        public_slug: row.public_slug,
         title: row.title,
         data: row.data,
         created_at: row.created_at,
@@ -69,7 +71,7 @@ export async function listDashboardEventsForUser(
   const safeLimit = Math.max(1, Math.floor(limit));
   const rowLimit = Math.max(1, Math.min(DASHBOARD_HISTORY_ROW_CAP, safeLimit));
   try {
-    const rows = await listDashboardHistoryWindowForUser(userId, rowLimit);
+    const rows = [...await listCollaborativeEvents(userId), ...await listDashboardHistoryWindowForUser(userId, rowLimit)];
     const windowResult = rowsToDashboardEvents(rows);
     const events = windowResult.events;
     // The database orders the user's full event history by event date before
@@ -93,11 +95,11 @@ export async function listDashboardEventsForUser(
       code === "57014" ||
       /statement timeout|canceling statement due to statement timeout/i.test(message);
     if (!isTimeout) throw err;
-    const fallbackRows = await listDashboardHistoryFallbackForUser(
+    const fallbackRows = [...await listCollaborativeEvents(userId), ...await listDashboardHistoryFallbackForUser(
       userId,
       safeLimit,
       safeLimit
-    );
+    )];
     const fallbackResult = rowsToDashboardEvents(fallbackRows);
     return {
       events: fallbackResult.events,

@@ -1,6 +1,7 @@
 "use client";
 
 import HeroImageEditor from "@/components/events/HeroImageEditor";
+import { useEventHistoryClient } from "@/lib/event-history-client";
 import { prepareCustomEventHeroImage } from "@/lib/custom-event-hero-image";
 import { FontPairingSelect } from "@/components/design-panel/FontPairingSelect";
 import Link from "next/link";
@@ -27,6 +28,7 @@ import styles from "./custom-event.module.css";
 import EventCustomThemeDialog from "./EventCustomThemeDialog";
 
 export default function EventCustomEditor({ initialPage }: { initialPage?: CustomEventPage } = {}) {
+  const eventHistoryClient = useEventHistoryClient();
   const search = useSearchParams(),
     router = useRouter();
   const editId = search?.get("edit") || undefined;
@@ -97,7 +99,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
       }
       if (editId) {
         setPage(null);
-        const response = await fetch(`/api/history/${encodeURIComponent(editId)}`, {
+        const response = await eventHistoryClient.fetch(`/api/history/${encodeURIComponent(editId)}`, {
           credentials: "include",
         });
         if (!response.ok)
@@ -208,6 +210,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
     clientDraftId.current ||= crypto.randomUUID();
     try {
       const result = await saveCustomEventPage({
+        historyFetch: eventHistoryClient.fetch,
         page: status === "published" ? await prepareWording(page) : page,
         status,
         eventId: savedId.current,

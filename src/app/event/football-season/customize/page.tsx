@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import { useEventHistoryClient } from "@/lib/event-history-client";
 import { EventSectionBuilderProvider, EventSectionPalette, EventSectionsReadOnly, useSectionEditorClose } from "@/components/events/EventSectionBuilder";
 import { normalizeEventSectionLayout } from "@/lib/event-section-layout";
 import HeroImageEditor from "@/components/events/HeroImageEditor";
@@ -309,6 +310,7 @@ const EditorLayout = ({
 
 function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
+  const eventHistoryClient = useEventHistoryClient();
     const search = useSearchParams();
     const router = useRouter();
   const { allowNavigation, requestLeave } = useProgressNavigation();
@@ -472,7 +474,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           return;
         }
         try {
-          const res = await fetch(`/api/history/${editEventId}`);
+          const res = await eventHistoryClient.fetch(`/api/history/${editEventId}`);
           if (!res.ok) return;
           const json = await res.json();
           const existing = json?.data || {};
@@ -732,6 +734,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     };
 
   useManualEventProgress({
+    historyFetch: eventHistoryClient.fetch,
     snapshot: { data: { ...data, title: resolvedTitle }, advancedState, pageTemplateId, loadedDiscoverySource, isDiscoveryEdit },
     category: config.category, templateId: config.slug, eventId: editEventId,
     ready: !progressLoading, busy: submitting || discoverBusy,
@@ -880,7 +883,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         if (publicSlug) payload.publicSlug = publicSlug;
 
         if (editEventId) {
-          const res = await fetch(`/api/history/${editEventId}`, {
+          const res = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -924,7 +927,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           }
           allowNavigation(() => router.push(redirectUrl));
         } else {
-          const res = await fetch("/api/history", {
+          const res = await eventHistoryClient.fetch("/api/history", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",

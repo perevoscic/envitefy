@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import { useEventHistoryClient } from "@/lib/event-history-client";
 import HeroImageEditor from "@/components/events/HeroImageEditor";
 import EventCanvas from "@/components/EventCanvas";
 
@@ -396,6 +397,7 @@ const _ThemeSwatch = ({
 );
 
 export default function BirthdayTemplateCustomizePage() {
+  const eventHistoryClient = useEventHistoryClient();
   const templateEditor = useTemplateEditor();
   const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
   const search = useTemplateSearchParams();
@@ -882,7 +884,7 @@ export default function BirthdayTemplateCustomizePage() {
       if (!editEventId) return;
       setLoadingExisting(true);
       try {
-        const res = await fetch(`/api/history/${editEventId}`, {
+        const res = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
           cache: "no-store",
         });
         if (!res.ok) {
@@ -1152,7 +1154,7 @@ export default function BirthdayTemplateCustomizePage() {
       let id: string | undefined;
 
       if (editEventId) {
-        const res = await fetch(`/api/history/${editEventId}`, {
+        const res = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -1167,7 +1169,7 @@ export default function BirthdayTemplateCustomizePage() {
         }
         id = editEventId;
       } else {
-        const r = await fetch("/api/history", {
+        const r = await eventHistoryClient.fetch("/api/history", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",

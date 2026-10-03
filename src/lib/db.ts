@@ -1674,6 +1674,13 @@ export type EventHistoryRow = {
 
 const EVENT_HISTORY_DEBUG = process.env.EVENT_HISTORY_DEBUG === "1";
 
+/** Canonicalize collaborative saves with the same rules used by legacy history writers. */
+export function prepareEventHistoryData(data: Record<string, any>): Record<string, any> {
+  const safe = sanitizeJsonValueForPostgres(data);
+  normalizeCanonicalStartFields(safe);
+  return safe;
+}
+
 function summarizeEventHistoryRowForLog(row: EventHistoryRow) {
   const data = row?.data && typeof row.data === "object" ? row.data : {};
   return {
@@ -3181,6 +3188,8 @@ async function persistEventPublicSlug(params: {
   addPreviousAsAlias?: boolean;
   data?: Record<string, any>;
   title?: string;
+  collaborationUserId?: string;
+  expectedRevision?: string | null;
 }): Promise<EventHistoryRow | null> {
   return withEventPublicSlugTransaction(async (client) => {
     const currentRes = await client.query<EventHistoryRow>(
@@ -3192,6 +3201,15 @@ async function persistEventPublicSlug(params: {
     );
     const current = currentRes.rows[0] || null;
     if (!current) return null;
+
+    if (params.collaborationUserId) {
+      const { eventRevision } = await import("@/lib/event-collaboration");
+      const { EventCollaborationError } = await import("@/lib/event-collaboration-types");
+      if (current.user_id !== params.collaborationUserId) throw new EventCollaborationError("Only the owner can change this event link.", 403, "owner_required");
+      const members = await client.query("SELECT 1 FROM event_collaborators WHERE event_id=$1 AND revoked_at IS NULL LIMIT 1", [current.id]);
+      if (!params.expectedRevision && members.rows.length) throw new EventCollaborationError("Reopen the editor before saving. Your edits are still here.", 428, "revision_required");
+      if (params.expectedRevision && params.expectedRevision !== eventRevision(current)) throw new EventCollaborationError("This event changed since you opened it. Your edits are still here. Reopen the latest event before saving.", 409, "event_changed");
+    }
 
     const nextSlug = makeEventPublicSlugRoutable(params.publicSlug);
     if (!(await isEventPublicSlugAvailable(nextSlug, params.eventId, client))) {
@@ -3262,10 +3280,16 @@ export async function updateEventHistoryPublicSlug(params: {
   publicSlug: string;
   data?: Record<string, any>;
   title?: string;
+  collaborationUserId?: string;
+  expectedRevision?: string | null;
 }): Promise<EventHistoryRow | null> {
   const nextSlug = makeEventPublicSlugRoutable(params.publicSlug);
   if (!nextSlug || nextSlug === "event") {
     throw new Error("Enter a more specific event link.");
+  }
+  if (params.collaborationUserId) {
+    const { ensureEventCollaboration } = await import("@/lib/event-collaboration");
+    await ensureEventCollaboration();
   }
   return await persistEventPublicSlug({
     eventId: params.id,
@@ -3273,6 +3297,8 @@ export async function updateEventHistoryPublicSlug(params: {
     addPreviousAsAlias: true,
     data: params.data,
     title: params.title,
+    collaborationUserId: params.collaborationUserId,
+    expectedRevision: params.expectedRevision,
   });
 }
 
@@ -3443,7 +3469,15 @@ export async function getEventHistoryPublicRenderById(
   viewerId?: string | null,
 ): Promise<EventHistoryPublicRow | null> {
   const slugReadyRow = await getEventHistoryById(id);
-  if (!slugReadyRow || !canReadEventDraft(slugReadyRow.data, slugReadyRow.user_id, viewerId)) return null;
+  if (!slugReadyRow) return null;
+  let cohostDraftClause = "";
+  if (!canReadEventDraft(slugReadyRow.data, slugReadyRow.user_id, viewerId)) {
+    const { getEventPermissions } = await import("@/lib/event-collaboration");
+    if (!(await getEventPermissions(slugReadyRow, viewerId)).canEdit) return null;
+    // Add the membership query only after its protected schema has been initialized.
+    // Recheck here so a revocation between permission lookup and rendering denies the draft.
+    cohostDraftClause = " or exists(select 1 from event_collaborators c where c.event_id=event_history.id and c.user_id=$2::uuid and c.revoked_at is null)";
+  }
   const dataSql = "data";
   const projection = buildEventHistoryPublicDataProjectionSql(dataSql, "id");
   const res = await query<EventHistoryPublicQueryRow>(
@@ -3495,7 +3529,7 @@ export async function getEventHistoryPublicRenderById(
        and (user_id = $2::uuid or (
          lower(trim(coalesce(data->>'status', ''))) <> 'draft'
          and lower(trim(coalesce(data->>'draftStatus', ''))) <> 'draft'
-       ))
+       )${cohostDraftClause})
      limit 1`,
     [id, viewerId || null],
   );

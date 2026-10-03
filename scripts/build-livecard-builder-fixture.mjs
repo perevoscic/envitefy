@@ -13,7 +13,8 @@ await fs.writeFile(
 import { createRoot } from "react-dom/client";
 import LiveCardBuilder from "../../src/app/live-cards/LiveCardBuilder";
 import UnsavedProgressProvider from "../../src/components/UnsavedProgressProvider";
-createRoot(document.getElementById("root")!).render(<UnsavedProgressProvider><a href="/leave" id="leave">Leave editor</a><LiveCardBuilder initialEventId={new URLSearchParams(location.search).get("edit")} /></UnsavedProgressProvider>);`,
+import SharedStudioCardPage from "../../src/components/studio/SharedStudioCardPage";
+createRoot(document.getElementById("root")!).render(window.__publishedCard ? <SharedStudioCardPage {...window.__publishedCard} /> : <UnsavedProgressProvider><a href="/leave" id="leave">Leave editor</a><LiveCardBuilder initialEventId={new URLSearchParams(location.search).get("edit")} /></UnsavedProgressProvider>);`,
 );
 const moduleStyles = new Map();
 const build = await Bun.build({
@@ -51,10 +52,6 @@ const build = await Bun.build({
           { filter: /^next\/dist\/shared\/lib\/app-router-context.shared-runtime$/ },
           () => ({ path: "router", namespace: "fixture" }),
         );
-        builder.onResolve({ filter: /^@\/components\/CalendarAction$/ }, () => ({
-          path: "calendar",
-          namespace: "fixture",
-        }));
         builder.onLoad({ filter: /.*/, namespace: "fixture" }, ({ path: name }) => ({
           loader: "tsx",
           contents:

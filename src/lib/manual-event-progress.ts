@@ -39,6 +39,7 @@ export async function saveManualEventProgress({
   templateId,
   path,
   clientDraftId,
+  historyFetch = fetch,
 }: {
   eventId?: string;
   snapshot: EditorSnapshot;
@@ -46,11 +47,12 @@ export async function saveManualEventProgress({
   templateId?: string;
   path: string;
   clientDraftId: string;
+  historyFetch?: (input: string, options?: RequestInit) => Promise<Response>;
 }): Promise<string> {
   if (!EDITOR_PATHS.has(path)) throw new Error("This editor cannot save progress here.");
   let existing: EditorSnapshot = {};
   if (eventId) {
-    const response = await fetch(`/api/history/${encodeURIComponent(eventId)}`, {
+    const response = await historyFetch(`/api/history/${encodeURIComponent(eventId)}`, {
       credentials: "include",
     });
     if (!response.ok) throw new Error("Unable to open this event. Please retry saving.");
@@ -101,7 +103,7 @@ export async function saveManualEventProgress({
       ? parseCalendarDateTimeToIso(`${endDate}T${data.endTime}`, timezone)
       : null;
   const title = String(data.title || "Event draft");
-  const response = await fetch(
+  const response = await historyFetch(
     eventId ? `/api/history/${encodeURIComponent(eventId)}` : "/api/history",
     {
       method: eventId ? "PATCH" : "POST",
@@ -169,6 +171,7 @@ export async function saveManualEventProgress({
       templateId,
       path,
       clientDraftId,
+      historyFetch,
     });
   }
   window.dispatchEvent(new CustomEvent("history:updated", { detail: { id: result.id } }));

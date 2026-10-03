@@ -15,6 +15,8 @@ test("dashboard, Design and dialog card previews opt into preview-only RSVP cont
   const route = readSource("src/app/card/[id]/page.tsx");
   assert.match(route, /previewMode=\{isOwner && explicitOwnerPreview\}/);
   assert.match(route, /canDownload=\{isOwner\}/);
+  assert.equal([...source.matchAll(/canDownload=\{isOwner\}/g)].length, 2);
+  assert.match(source, /downloadAction=\{canDownload \? \(/);
 });
 
 test("owner workspace keeps public actions in the header and not duplicated under live product", () => {
@@ -37,7 +39,7 @@ test("owner workspace keeps public actions in the header and not duplicated unde
   assert.match(source, /aria-label="Share"/);
   assert.match(source, /aria-label="Preview"/);
   assert.doesNotMatch(source, /viewCurrentLabel|View current/);
-  assert.match(source, />\s*Owner workspace\s*</);
+  assert.match(source, /isOwner \? "Owner workspace" : "Co-host workspace"/);
   assert.match(source, /aria-label="Edit"/);
   assert.match(
     source,

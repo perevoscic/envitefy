@@ -68,6 +68,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
   const saves = [];
   const generations = [];
   const headlines = [];
+  const jobs = new Map();
   let holdHeadline = false;
   let releaseHeadline;
   let headlineStarted;
@@ -75,6 +76,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
   const locationRequests = [];
   await page.addInitScript(() => {
     window.__sharedCards = [];
+    window.__opened = []; window.open = (url) => { window.__opened.push(String(url)); return null; };
     Object.defineProperty(navigator, "canShare", { configurable: true, value: () => true });
     Object.defineProperty(navigator, "share", { configurable: true, value: async (data) => { window.__sharedCards.push(data); } });
     window.__cardDraws = [];
@@ -121,6 +123,32 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     const request = route.request();
     if (!request.url().startsWith(origin)) return route.abort();
     const url = new URL(request.url());
+    if (url.pathname === "/api/livecard-builder/jobs") {
+      if (request.method() === "PATCH") {
+        const job = jobs.get(request.postDataJSON().id); job.state = "stopped";
+        return route.fulfill({ json: { job, providerCancellation: "unconfirmed" } });
+      }
+      if (request.method() === "GET") return route.fulfill({ json: { job: jobs.get(url.searchParams.get("id")) } });
+      const input = request.postDataJSON();
+      const job = { id: `job-${jobs.size + 1}`, mode: input.mode, form: input.form, attempt: input.mode === "repair" ? 2 : 1, state: "running", stage: input.design ? "lettering" : "background_generating", created_at: new Date().toISOString(), design: input.design || null };
+      jobs.set(job.id, job);
+      void (async () => {
+        if (!job.design) {
+          generations.push(input); generationStarted(); await gate;
+          if (job.state === "stopped") return;
+          if (failGeneration) { job.state = "failed"; job.error = "We couldn't finish the design. Please retry."; return; }
+          job.design = { version: 1, backgroundUrl: `${origin}/artwork.webp`, font: "classic", typography: "cinematic", ink: "#542235", accent: "#875226", surface: "#fff4ec" };
+        }
+        job.stage = "lettering";
+        headlines.push({ form: input.form, design: job.design });
+        if (holdHeadline) { holdHeadline = false; await new Promise((resolve) => { releaseHeadline = resolve; headlineStarted(); }); }
+        if (job.state === "stopped") return;
+        if (failHeadline) { job.state = "failed"; job.error = "The title artwork could not be verified. Your card is unchanged. Try lettering again."; return; }
+        job.design = { ...job.design, headline: { imageUrl: `${origin}/headline.webp?${new URLSearchParams({ title: input.form.title.trim(), intro: input.form.headlineIntro.trim() })}`, title: input.form.title.trim(), intro: input.form.headlineIntro.trim(), validation: { status: "passed", issues: [] } } };
+        job.state = "ready"; job.stage = "ready";
+      })();
+      return route.fulfill({ status: 202, json: { job } });
+    }
     if (url.pathname === "/api/livecard-builder/assist") {
       const { form, mode } = request.postDataJSON();
       assert.equal(mode, "wording", "only automatic proofreading calls the assistance API");
@@ -335,6 +363,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     await page.setViewportSize({ width: 1440, height: 1080 });
     await page.getByLabel("Event type", { exact: true }).selectOption("Birthday");
     await page.getByLabel("Describe your design").fill("Pink movie night with popcorn and stars");
+    await page.getByLabel("Event title", { exact: true }).fill("Livia's Movie Night");
     assert.equal(await page.getByRole("button", { name: "Generate & continue", exact: true }).isEnabled(), true);
     assert.equal(saves.length, 0, "typing stays in memory");
     assert.equal(generations.length, 0, "generation needs an explicit action");
@@ -343,7 +372,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     await started;
     await page.getByLabel("Event title or name").waitFor();
     assert.equal(await page.getByRole("button", { name: "2 Event details", exact: true }).getAttribute("aria-current"), "step", "generation opens Event details immediately");
-    assert.equal(generations[0].form.title, "");
+    assert.equal(generations[0].form.title, "Livia's Movie Night");
     assert.equal(generations[0].form.eventType, "Birthday", "the occasion is sent with the design request");
     assert.equal(generations[0].form.date, "");
     const generationPanel = page.getByRole("region", { name: "Design generation", exact: true });
@@ -364,7 +393,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     }
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.setViewportSize({ width: 1440, height: 1080 });
-    assert.equal(await page.getByRole("button", { name: "Publish", exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole("button", { name: "Review invitation", exact: true }).isDisabled(), true);
     assert.equal(await page.getByRole("button", { name: "3 Review", exact: true }).isDisabled(), true);
     // Returning to Design while the request runs must not start a duplicate job.
     await page.getByRole("button", { name: "1 Design", exact: true }).click();
@@ -376,7 +405,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     const eventTitle = page.getByLabel("Event title or name");
     const guestMessage = page.getByLabel("Message to guests (optional)", { exact: true });
     assert.equal(await eventTitle.getAttribute("placeholder"), "Our Gender Reveal");
-    assert.equal(await eventTitle.inputValue(), "", "category examples stay placeholders");
+    assert.equal(await eventTitle.inputValue(), "Livia's Movie Night", "category examples stay placeholders and retain the Design title");
     assert.match(await guestMessage.getAttribute("placeholder"), /surprise/);
     assert.equal(await guestMessage.inputValue(), "");
     await page.screenshot({ path: path.join(out, "gender-reveal-placeholders.png"), fullPage: true });
@@ -458,8 +487,8 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     await page.getByRole("heading", { name: "Edit your Live Card", exact: true }).waitFor();
     assert.equal(stored.data.status, "draft");
     releaseGeneration();
-    await page.getByText("Your design is ready.", { exact: true }).waitFor();
-    await page.getByText("Temporary lettering preview", { exact: true }).waitFor();
+    await page.locator("[data-live-card-artwork]").first().waitFor();
+    await page.waitForFunction(() => !document.querySelector('[aria-label="Creating your design"]'));
     assert.equal(await page.getByRole("progressbar", { name: "Creating your design", exact: true }).count(), 0, "the progress animation is removed when artwork arrives");
     const shareButton = page.getByRole("button", { name: "Share Live Card", exact: true });
     assert.equal(await shareButton.isDisabled(), true, "a saved draft does not expose a public share link");
@@ -470,8 +499,8 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.ok(eyeBounds.x + eyeBounds.width <= cardBounds.x + cardBounds.width && eyeBounds.x > cardBounds.x + cardBounds.width / 2 && eyeBounds.y < cardBounds.y + 24, "the eye button sits inside the top-right corner");
     await openSection("Basics");
     assert.equal(await page.getByLabel("Event title or name").inputValue(), "Livia's Movie Night");
-    assert.equal(await page.getByRole("button", { name: "Publish", exact: true }).isEnabled(), true, "entering event details during generation does not invalidate artwork");
-    assert.equal(await page.getByRole("button", { name: /Review Live Card|Review & publish/ }).count(), 0, "only Publish is offered beneath the card");
+    assert.equal(await page.getByRole("button", { name: "Review invitation", exact: true }).isEnabled(), true, "entering event details during generation does not invalidate artwork");
+    assert.equal(await page.getByRole("button", { name: "Publish invitation", exact: true }).count(), 0, "publication is offered only in Review");
     const cardActions = await page.getByRole("group", { name: "Save and publish", exact: true }).boundingBox();
     const currentCardBounds = await page.getByRole("complementary", { name: "Artwork preview" }).locator("[data-live-card-artwork]").boundingBox();
     assert.ok(cardActions.y >= currentCardBounds.y + currentCardBounds.height, "Save and Publish sit below the Live Card");
@@ -498,21 +527,19 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     const savesBeforeEarlyPreview = saves.length;
     failProofread = true;
     await page.getByRole("button", { name: "Preview Live Card", exact: true }).click();
-    await page.getByRole("button", { name: "Retry wording", exact: true }).waitFor();
+    await page.getByRole("dialog").waitFor();
     assert.equal(locationRequests.length, 0, "failed preview wording never resolves venues");
-    assert.equal(headlines.length, 0, "failed preview wording never draws lettering");
+    assert.equal(headlines.length, 1, "failed preview wording reuses completed lettering");
     failProofread = false;
-    await page.getByRole("button", { name: "Retry wording", exact: true }).click();
     const earlyPreview = page.getByRole("dialog");
     await earlyPreview.waitFor();
-    await earlyPreview.getByText("Temporary lettering preview", { exact: true }).waitFor();
+    assert.equal(await earlyPreview.getByText("Temporary lettering preview", { exact: true }).count(), 0);
     for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
       await page.setViewportSize(viewport);
       await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-      const notice = earlyPreview.getByRole("status").filter({ hasText: "Temporary lettering preview" });
-      const bounds = await notice.boundingBox();
-      assert.ok(bounds && bounds.x >= 0 && bounds.y >= 0 && bounds.x + bounds.width <= viewport.width && bounds.y + bounds.height <= viewport.height, "temporary lettering guidance stays visible in phone previews");
-      for (const name of ["Save draft", "Publish", "Close preview"]) {
+      const bounds = await earlyPreview.locator("[data-live-card-artwork]").boundingBox();
+      assert.ok(bounds && bounds.x >= 0 && bounds.y >= 0 && bounds.x + bounds.width <= viewport.width && bounds.y + bounds.height <= viewport.height, "completed artwork fits phone previews");
+      for (const name of ["Save draft", "Review invitation", "Close preview"]) {
         const control = await earlyPreview.getByRole("button", { name, exact: true }).boundingBox();
         assert.ok(control && control.y >= 0 && control.y + control.height <= viewport.height, `${name} stays visible with the temporary lettering notice`);
       }
@@ -521,7 +548,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     await page.setViewportSize({ width: 1440, height: 1080 });
     assert.equal(await earlyPreview.getByRole("button", { name: "Share Live Card", exact: true }).isDisabled(), true);
     assert.equal(locationRequests.length, 0, "preview does not require location resolution");
-    assert.equal(headlines.length, 0, "the eye button does not generate lettering");
+    assert.equal(headlines.length, 1, "the eye button does not generate additional lettering");
     assert.equal(saves.length, savesBeforeEarlyPreview, "preview does not save");
     const backdropPixel = await earlyPreview.evaluate((dialog) => {
       const canvas = document.createElement("canvas");
@@ -593,7 +620,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     await openSection("When & Where");
     await page.getByLabel("Venue name", { exact: true }).fill("Unavailable venue");
     const savesBeforeLocationFailure = saves.length;
-    await page.getByRole("button", { name: "Publish", exact: true }).click();
+    await page.getByRole("button", { name: "Review invitation", exact: true }).click();
     await page.getByText("Confirm the highlighted location before publishing. Your other details are still here.", { exact: true }).waitFor();
     assert.equal(await page.locator("[data-publish-progress]").count(), 0, "location failures close progress and return to the relevant form");
     assert.equal(saves.length, savesBeforeLocationFailure, "location failure cannot publish");
@@ -624,7 +651,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     await page.getByLabel("Change venue", { exact: true }).fill("456 Lake St, Chicago");
     await page.getByRole("button", { name: "3 Review", exact: true }).click();
     await page.getByRole("button", { name: "Preview Live Card", exact: true }).click();
-    assert.equal(headlines.length, 1, "Review draws title lettering once; later date and venue edits reuse it");
+    assert.equal(headlines.length, 1, "Review and later date and venue edits reuse lettering created during Event details");
     assert.equal(headlines[0].form.title, "Livia's Movie Night");
     await page.getByRole("dialog").locator('img[src*="/headline.webp"]').waitFor();
     const dialog = page.getByRole("dialog");
@@ -650,7 +677,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     await page.getByRole("button", { name: "3 Review", exact: true }).click();
     await page.getByRole("button", { name: "Preview Live Card", exact: true }).click();
     assert.equal(await dialog.getByRole("button", { name: "RSVP", exact: true }).count(), 0);
-    assert.equal(await dialog.getByRole("button", { name: "Registry", exact: true }).count(), 0);
+    assert.equal(await dialog.getByRole("button", { name: /^(?:Registry|Gift List)$/ }).count(), 0);
     await page.getByRole("button", { name: "Close preview", exact: true }).click();
     await page.getByRole("button", { name: "2 Event details", exact: true }).click();
     await openSection("RSVP");
@@ -667,6 +694,9 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     const savedBeforeProofreading = saves.length;
     await page.getByRole("button", { name: "3 Review", exact: true }).click();
     await page.getByRole("region", { name: "Review your Live Card", exact: true }).waitFor();
+    await page.getByRole("button", { name: "Apply wording suggestion", exact: true }).click();
+    await page.getByRole("button", { name: "3 Review", exact: true }).click();
+    await page.getByRole("region", { name: "Review your Live Card", exact: true }).waitFor();
     assert.equal(await page.getByRole("button", { name: "Check grammar & spelling", exact: true }).count(), 0);
     assert.equal(await page.getByRole("button", { name: "Use reviewed wording", exact: true }).count(), 0);
     assert.equal(await page.getByRole("region", { name: "Review Overview wording", exact: true }).count(), 0);
@@ -674,7 +704,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.match(await page.locator("dl").textContent(), /Oct 4, 2026, 6:00 PM–9:00 PM/, "Review includes both times in Chicago despite a Tokyo browser");
     assert.equal(await page.getByText("Temporary lettering preview", { exact: true }).count(), 0, "finished lettering has no temporary-font notice");
     assert.equal(await page.getByLabel("Live card share link").count(), 0);
-    await page.waitForFunction(() => document.activeElement?.textContent === "Your Live Card");
+    await page.waitForFunction(() => document.activeElement?.textContent === "Review your invitation");
     await page.getByRole("region", { name: "Live Card output", exact: true }).getByRole("button", { name: "Preview Live Card", exact: true }).focus();
     await page.keyboard.press("Tab");
     assert.match(await page.evaluate(() => document.activeElement?.textContent), /Save draft/, "keyboard reaches the save actions below the card");
@@ -683,14 +713,15 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     await page.keyboard.press("Tab");
     assert.match(await page.evaluate(() => document.activeElement?.textContent), /Download invitation/);
     await page.screenshot({ path: path.join(out, "desktop-review.png"), fullPage: true });
-    await page.getByRole("button", { name: "Registry", exact: true }).click();
+    await page.getByRole("button", { name: "Gift List", exact: true }).click();
     await page.getByText("Your presence is our present.", { exact: true }).waitFor();
+    await page.getByRole("button", { name: "Visit Gift List", exact: true }).click();
+    assert.equal(await page.evaluate(() => window.__opened.at(-1)), "https://example.com/gifts");
     await page.getByRole("button", { name: "Close card details", exact: true }).click();
     failSave = true;
     holdSave = true;
     const publishing = new Promise((resolve) => { saveStarted = resolve; });
-    await page.getByRole("button", { name: "2 Event details", exact: true }).click();
-    await page.getByRole("button", { name: "Publish", exact: true }).click();
+    await page.getByRole("button", { name: "Publish invitation", exact: true }).click();
     await publishing;
     await page.locator('[data-publish-progress="publishing"]').waitFor();
     assert.equal(await page.getByRole("button", { name: "Cancel and keep editing", exact: true }).count(), 0, "persistence cannot be canceled halfway through");
@@ -699,9 +730,9 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.equal(await page.locator("[data-publish-progress]").count(), 0, "failed saves close progress");
     assert.equal(stored.data.status, "draft");
     failSave = false;
-    await page.getByRole("button", { name: "Publish", exact: true }).click();
-    await page.getByRole("heading", { name: "Owner dashboard", exact: true }).waitFor();
-    assert.equal(new URL(page.url()).searchParams.get("tab"), "dashboard");
+    await page.getByRole("button", { name: "Publish invitation", exact: true }).click();
+    await page.getByText("Your Live Card is published. It's ready to share.", { exact: true }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "Copy guest link", exact: true }).isVisible(), true);
     assert.equal(stored.data.description, "A movie and dinner with friends.\n\nBring a jacket.", "collapsed instructions are still included when publishing");
     assert.equal(stored.data.startISO, "2026-10-04T23:00:00.000Z");
     assert.equal(stored.data.additionalLocations[0].label, "Dinner");
@@ -718,6 +749,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     const shared = await page.evaluate(() => window.__sharedCards[0]);
     assert.equal(new URL(shared.url).origin, "https://envitefy.com");
     assert.ok(shared.url.includes("movie-night"), "share uses the saved public slug");
+    await page.getByRole("button", { name: "2 Event details", exact: true }).click();
     await page.getByRole("button", { name: "Message to guests (optional)", exact: true }).click();
     await page.getByLabel("Message to guests (optional)").waitFor();
     assert.equal(
@@ -758,78 +790,52 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     await page.getByLabel("Event title or name").fill("Superseded title");
     holdHeadline = true;
     const drawingHeadline = new Promise((resolve) => { headlineStarted = resolve; });
-    await page.getByRole("button", { name: "3 Review", exact: true }).click();
+    await page.getByRole("button", { name: "Create updated lettering", exact: true }).click();
     await drawingHeadline;
-    await page.getByRole("complementary", { name: "Artwork preview" }).getByText("Bringing your title to life", { exact: true }).waitFor();
-    await page.getByLabel("Event title or name").fill("Updated title");
-    releaseHeadline();
-    await page.getByText("Your title or design changed while the lettering was being drawn. Select Review to prepare the latest version.", { exact: true }).waitFor();
-    assert.equal(headlines.length, beforeTitleEdits + 1, "a stale title result does not start another paid request automatically");
-    assert.equal(await page.getByLabel("Event title or name").inputValue(), "Updated title");
-    assert.equal(saves.length, beforeTitleSaves, "lettering preparation never saves progress");
-    holdHeadline = true;
-    const reviewToCancel = new Promise((resolve) => { headlineStarted = resolve; });
-    await page.getByRole("button", { name: "Try lettering again", exact: true }).click();
-    await reviewToCancel;
-    const cancelledHeadline = releaseHeadline;
     const preparingRegion = page.getByRole("region", { name: "Preparing your Live Card", exact: true });
     await preparingRegion.waitFor();
     assert.equal(await preparingRegion.getByRole("status").getAttribute("aria-live"), "polite");
-    assert.equal(await preparingRegion.locator("[aria-valuenow]").count(), 0, "compact preparation has no invented percentage");
+    assert.equal(await preparingRegion.locator("[aria-valuenow]").count(), 0);
+    await page.getByLabel("Event title or name").fill("Updated title");
+    releaseHeadline();
+    await page.getByText("The finished lettering belongs to earlier wording. Confirm an updated lettering request to use your new words.", { exact: true }).waitFor();
+    assert.equal(headlines.length, beforeTitleEdits + 1, "late lettering does not trigger an automatic replacement request");
+    assert.equal(await page.getByLabel("Event title or name").inputValue(), "Updated title");
+    assert.equal(saves.length, beforeTitleSaves);
+    holdHeadline = true;
+    const repairToCancel = new Promise((resolve) => { headlineStarted = resolve; });
+    await page.getByRole("button", { name: "Create updated lettering", exact: true }).click();
+    await repairToCancel;
+    const cancelledHeadline = releaseHeadline;
     await page.emulateMedia({ reducedMotion: "reduce" });
     assert.equal(await preparingRegion.locator("svg").evaluate((node) => getComputedStyle(node).animationName), "none");
     await page.emulateMedia({ reducedMotion: "no-preference" });
-    await preparingRegion.getByRole("button", { name: "Cancel", exact: true }).click();
-    await page.getByText("Preparation canceled. Your edits are still here.", { exact: true }).waitFor();
-    assert.equal(saves.length, beforeTitleSaves);
-    holdHeadline = true;
-    const preparingPublish = new Promise((resolve) => { headlineStarted = resolve; });
-    await page.getByRole("button", { name: "Save changes", exact: true }).click();
-    await preparingPublish;
-    cancelledHeadline();
-    const progress = page.locator('[data-publish-progress="lettering"]');
-    await progress.waitFor();
-    assert.equal(await progress.getByRole("progressbar").getAttribute("aria-valuenow"), null, "progress has no invented percentage");
-    await page.keyboard.press("Tab");
-    assert.equal(await progress.evaluate((dialog) => dialog.contains(document.activeElement)), true, "keyboard focus stays in progress");
     for (const viewport of [{ width: 1440, height: 1080 }, { width: 390, height: 844 }, { width: 320, height: 740 }, { width: 844, height: 390 }]) {
       await page.setViewportSize(viewport);
-      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-      const bounds = await progress.boundingBox();
-      assert.equal(Math.round(bounds.width), viewport.width);
-      assert.equal(Math.round(bounds.height), viewport.height);
-      assert.equal(await progress.evaluate((dialog) => dialog.scrollWidth <= dialog.clientWidth && dialog.scrollHeight <= dialog.clientHeight), true, "progress fits the whole viewport");
-      await page.screenshot({ path: path.join(out, `publish-progress-${viewport.width}.png`) });
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "generation and recovery controls fit portrait and landscape");
     }
-    await page.emulateMedia({ reducedMotion: "reduce" });
-    assert.equal(await progress.evaluate((dialog) => [...dialog.querySelectorAll("*")].every((el) => getComputedStyle(el).animationName === "none")), true, "reduced motion disables progress animations");
-    await page.emulateMedia({ reducedMotion: "no-preference" });
-    await page.getByRole("button", { name: "Cancel and keep editing", exact: true }).click();
-    await page.getByText("Saving canceled. Your edits are still here.", { exact: true }).waitFor();
-    releaseHeadline();
-    assert.equal(saves.length, beforeTitleSaves, "canceling preparation never saves or publishes");
+    await page.getByRole("button", { name: "Cancel generation", exact: true }).click();
+    await page.getByText("Cancellation requested. Provider execution status unknown.", { exact: true }).waitFor();
+    cancelledHeadline();
+    assert.equal(saves.length, beforeTitleSaves, "explicit cancellation does not save or publish");
     assert.equal(await page.getByLabel("Event title or name").inputValue(), "Updated title");
     await page.setViewportSize({ width: 1440, height: 1080 });
     failHeadline = true;
-    await page.getByRole("button", { name: "Save changes", exact: true }).click();
-    await page.getByText("The title artwork could not be verified. Your card is unchanged. Select Review to try again.", { exact: true }).waitFor();
-    assert.equal(await page.locator("[data-publish-progress]").count(), 0, "lettering failures close progress");
-    assert.equal(saves.length, beforeTitleSaves, "lettering failure cannot publish");
-    assert.equal(await page.getByLabel("Event title or name").inputValue(), "Updated title");
+    await page.getByRole("button", { name: "Create updated lettering", exact: true }).click();
+    await page.getByText("The title artwork could not be verified. Your card is unchanged. Try lettering again.", { exact: true }).waitFor();
+    assert.equal(saves.length, beforeTitleSaves, "a failed repair cannot publish");
     failHeadline = false;
     const locationsBeforeRetry = locationRequests.length;
     const wordingBeforeRetry = wordingRequests.length;
-    await page.getByRole("button", { name: "Try lettering again", exact: true }).click();
-    await page.getByRole("region", { name: "Review your Live Card", exact: true }).waitFor();
-    assert.equal(locationRequests.length, locationsBeforeRetry, "lettering retry reuses verified venues");
-    assert.equal(wordingRequests.length, wordingBeforeRetry, "lettering retry reuses approved wording");
-    assert.equal(saves.length, beforeTitleSaves, "retry of a failed save prepares Review without silently saving");
+    await page.getByRole("button", { name: "Create updated lettering", exact: true }).click();
+    await page.locator('img[src*="title=Updated"]').first().waitFor();
+    assert.equal(locationRequests.length, locationsBeforeRetry);
+    assert.equal(wordingRequests.length, wordingBeforeRetry);
+    assert.equal(saves.length, beforeTitleSaves);
     assert.equal(headlines.at(-1).form.title, "Updated title");
-    assert.equal(
-      await page.getByRole("button", { name: "Save changes", exact: true }).isDisabled(),
-      false,
-      "editable headlines do not invalidate the background",
-    );
+    await page.getByRole("button", { name: "3 Review", exact: true }).click();
+    await page.getByRole("region", { name: "Review your Live Card", exact: true }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).isDisabled(), false);
     assert.equal(generations.length, 1);
     await page.getByRole("button", { name: "1 Design", exact: true }).click();
     await page.getByLabel("Describe your design").fill("Pink curtains with gold stars");
@@ -1037,18 +1043,20 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     failProofread = true;
     await page.getByLabel("Message to guests (optional)").fill("A movie and dinner with freinds.");
     await page.getByRole("button", { name: "3 Review", exact: true }).click();
-    await page.getByText("Proofreading unavailable", { exact: true }).waitFor();
+    await page.getByText("Wording verification unavailable. Continuing with your confirmed wording.", { exact: true }).waitFor();
+    await page.getByRole("button", { name: "2 Event details", exact: true }).click();
     assert.equal(await page.getByLabel("Message to guests (optional)").inputValue(), "A movie and dinner with freinds.");
     failProofread = false;
     holdProofread = true;
     const proofreading = new Promise((resolve) => { proofreadStarted = resolve; });
-    await page.getByRole("button", { name: "Retry wording", exact: true }).click();
+    await page.getByRole("button", { name: "Retry wording verification", exact: true }).click();
     await proofreading;
     await page.getByLabel("Message to guests (optional)").fill("My latest Overview at amc with freinds.");
     releaseProofread();
-    await page.getByRole("region", { name: "Review your Live Card", exact: true }).waitFor();
-    await page.getByRole("button", { name: "2 Event details", exact: true }).click();
-    assert.equal(await page.getByLabel("Message to guests (optional)").inputValue(), "My latest Overview at AMC with friends.", "newer manual wording is retained and automatically corrected");
+    await page.getByRole("button", { name: "Apply wording suggestion", exact: true }).waitFor();
+    assert.equal(await page.getByLabel("Message to guests (optional)").inputValue(), "My latest Overview at amc with freinds.", "late suggestions never overwrite newer user wording");
+    await page.getByRole("button", { name: "Apply wording suggestion", exact: true }).click();
+    assert.equal(await page.getByLabel("Message to guests (optional)").inputValue(), "My latest Overview at AMC with friends.", "explicitly confirmed corrections preserve newer manual wording");
     assert.equal(wordingRequests.at(-1).overview, "My latest Overview at amc with freinds.", "newer edits are checked again");
     await page.getByRole("button", { name: "3 Review", exact: true }).click();
     await page.getByRole("region", { name: "Review your Live Card", exact: true }).waitFor();
@@ -1099,7 +1107,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
           saveRequests: saves.length,
           runtimeErrors,
           verified: [
-            "automatic spelling and AMC capitalization before review, download and publication",
+            "explicitly confirmed spelling and AMC capitalization without overwriting concurrent edits",
             "proofreading failures retain text and concurrent edits are rechecked",
             "Design first with immediate event entry while artwork generates",
             "description helpers and preview header removed while artwork, toggle and review previews remain",
@@ -1110,7 +1118,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
             "invitation text is composed only for download",
             "Live Card only in editor, review and fullscreen",
             "Live Card artwork fits on phones and landscape",
-            "publish navigates to owner dashboard",
+            "Review-only publication followed by stable guest-link sharing confirmation",
             "concurrent edits",
             "compact tabs and keyboard navigation",
             "save during generation",
@@ -1128,7 +1136,6 @@ test("Live Card: location retries, explicit saves, invitation download and respo
           mocked: [
             "image generation",
             "history storage",
-            "calendar provider chooser",
             "Next image and router shell",
           ],
         },

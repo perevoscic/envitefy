@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import sharp from "sharp";
-import { liveCardGenerationErrorResponse } from "./livecard-generation-failure";
 import { createLiveCardForm } from "./livecard-builder";
 import {
   cardHeadlinePrompt,
@@ -42,6 +41,7 @@ test("editing a saved title loads the relative background through the real refer
   };
   headlineGenerationDeps.verify = async () => ({ status: "passed", issues: [] });
   headlineGenerationDeps.encode = async (buffer) => buffer;
+  headlineGenerationDeps.compose = async (_background, layer) => ({ composite: layer, layer, layout: { left: 0, top: 0, width: 100, height: 150, canvasWidth: 100, canvasHeight: 150 } });
   const result = await generateCardHeadline({
     ...createLiveCardForm(), title: "Lizzy's Graduation! 2026", design: "Garden celebration",
   }, { ...design, backgroundUrl });
@@ -166,6 +166,7 @@ test("generated lettering requires verification, preserves exact text, and retur
     return { status, issues: [] };
   };
   headlineGenerationDeps.encode = async (buffer) => sharp(buffer).webp().toBuffer();
+  headlineGenerationDeps.compose = async (_background, layer) => ({ composite: await sharp(layer).webp().toBuffer(), layer, layout: { left: 0, top: 0, width: 100, height: 150, canvasWidth: 100, canvasHeight: 150 } });
   try {
     const result = await generateCardHeadline(form, design);
     assert.equal(result.title, form.title);
@@ -178,25 +179,25 @@ test("generated lettering requires verification, preserves exact text, and retur
     assert.equal(inMemoryResult.title, form.title, "the full lettering pipeline accepts unsaved artwork");
     for (const value of ["failed", "unavailable"] as const) {
       status = value;
-      await assert.rejects(generateCardHeadline(form, design), (error: unknown) => {
-        const response = liveCardGenerationErrorResponse(error, "lettering");
-        assert.match(response.error, value === "failed" ? /lettering check found/ : /check could not complete/);
-        assert.equal(response.code, value === "failed" ? "quality_rejected" : "verification_unavailable");
-        assert.equal(response.retryable, true);
-        return true;
-      });
+      const candidate = await generateCardHeadline(form, design);
+      assert.equal(candidate.validation?.status, value);
+      assert.match(candidate.imageUrl, /^data:image\/webp;base64,/);
+      const beforeVerification = calls;
+      const verified = await generateCardHeadline(form, { ...design, headline: candidate }, undefined, undefined, true);
+      assert.equal(calls, beforeVerification, "verification retry never dispatches image generation");
+      assert.equal(verified.imageUrl, candidate.imageUrl, "verification uses the same image");
     }
     assert.equal(
       calls,
-      6,
-      "only a failed visual check gets one bounded correction; unavailable checks never regenerate",
+      4,
+      "each explicit generation makes one request; concerns and outages never regenerate",
     );
   } finally {
     Object.assign(headlineGenerationDeps, original);
   }
 });
 
-test("failed lettering is repaired once against the original background and verified before export", async () => {
+test("checker rejection retains the candidate and never requests an automatic repair", async () => {
   const original = { ...headlineGenerationDeps };
   const image = await sharp({ create: { width: 100, height: 150, channels: 3, background: "#dddddd" } }).png().toBuffer();
   const reference = { mimeType: "image/png", data: image.toString("base64") };
@@ -210,10 +211,6 @@ test("failed lettering is repaired once against the original background and veri
     generated++;
     assert.deepEqual(references, [reference]);
     assert.match(prompt, /Home Sweet Home/);
-    if (generated === 2) {
-      assert.match(prompt, /original background again/);
-      assert.match(prompt, /Restore the missing second Home/);
-    }
     return { ok: true, imageDataUrl: `data:image/png;base64,${image.toString("base64")}`, warnings: [] };
   };
   headlineGenerationDeps.verify = async (_image, _event, _product, context) => {
@@ -223,22 +220,23 @@ test("failed lettering is repaired once against the original background and veri
     : { status: "passed", issues: [] };
   };
   headlineGenerationDeps.encode = async (buffer) => { encoded++; return sharp(buffer).webp().toBuffer(); };
+  headlineGenerationDeps.compose = async (_background, layer) => ({ composite: await sharp(layer).webp().toBuffer(), layer, layout: { left: 0, top: 0, width: 100, height: 150, canvasWidth: 100, canvasHeight: 150 } });
   try {
-    const result = await generateCardHeadline(form, design, undefined, () => { repairs++; });
+    const result = await generateCardHeadline(form, design, undefined, (stage) => { if (stage === "lettering") repairs++; });
     assert.equal(result.title, form.title);
     assert.match(result.imageUrl, /^data:image\/webp;base64,/);
-    assert.equal(generated, 2);
-    assert.equal(checked, 2);
-    assert.equal(encoded, 1);
-    assert.equal(repairs, 1, "report correction only when the bounded repair starts");
+    assert.equal(generated, 1);
+    assert.equal(checked, 1);
+    assert.equal(encoded, 0);
+    assert.equal(result.validation?.status, "failed");
+    assert.equal(repairs, 1, "one truthful generation stage");
     for (const status of ["failed", "unavailable"] as const) {
       generated = checked = encoded = 0;
-      headlineGenerationDeps.verify = async () => ++checked === 1
-        ? { status: "failed", issues: ["missing_copy"], repairInstructions: ["Restore the missing second Home"] }
-        : { status, issues: status === "failed" ? ["missing_copy"] : [] };
-      await assert.rejects(generateCardHeadline(form, design), status === "failed" ? /lettering check found/ : /check could not complete/);
-      assert.equal(generated, status === "failed" ? 3 : 2);
-      assert.equal(encoded, 0, "a rejected or unverified repair is never exported");
+      headlineGenerationDeps.verify = async () => { checked++; return { status, issues: status === "failed" ? ["missing_copy"] : [] }; };
+      const retained = await generateCardHeadline(form, design);
+      assert.equal(retained.validation?.status, status);
+      assert.equal(generated, 1);
+      assert.equal(checked, 1);
     }
     generated = encoded = 0;
     const controller = new AbortController();

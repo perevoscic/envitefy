@@ -13,6 +13,7 @@ export function useManualEventProgress({
   path,
   ready = true,
   busy = false,
+  historyFetch,
 }: {
   snapshot: object;
   category: string;
@@ -21,6 +22,7 @@ export function useManualEventProgress({
   path?: string;
   ready?: boolean;
   busy?: boolean;
+  historyFetch?: (input: string, options?: RequestInit) => Promise<Response>;
 }) {
   const savedId = useRef(eventId);
   const clientDraftId = useRef<string | null>(null);
@@ -37,6 +39,7 @@ export function useManualEventProgress({
         eventId: savedId.current,
         path: path || window.location.pathname,
         clientDraftId: clientDraftId.current,
+        historyFetch,
       });
     },
   });

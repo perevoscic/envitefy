@@ -24,6 +24,8 @@ import {
 } from "@/lib/event-access";
 import { deleteEventHistoryWithCleanup } from "@/lib/event-cleanup";
 import { isEventDraft } from "@/lib/event-draft-access";
+import { eventRevision, getEventPermissions, saveCollaborativeEvent, collaboratorUserIds } from "@/lib/event-collaboration";
+import { EventCollaborationError, supportsEventCollaboration } from "@/lib/event-collaboration-types";
 import { findTransientEventMedia } from "@/lib/event-media";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { buildOwnerRsvpSettingsPatch, validateOwnerRsvpSettings } from "@/lib/owner-rsvp-settings";
@@ -122,14 +124,15 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
 
   const session: any = await getServerSession(authOptions as any);
   const userId = await resolveSessionUserId(session);
-  if (userId && row.user_id === userId) {
+  const permissions = await getEventPermissions(row, userId);
+  if (userId && (row.user_id === userId || permissions.canEdit)) {
     if (HISTORY_ITEM_DEBUG) {
       console.error("[history] GET by id: response_bytes", {
         id,
         bytes: estimateJsonBytes(row),
       });
     }
-    return NextResponse.json(row);
+    return NextResponse.json({ ...row, revision: eventRevision(row), permissions }, { headers: { "Cache-Control": "private, no-store" } });
   }
 
   const url = new URL(req.url);
@@ -181,12 +184,14 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   const body = await req.json().catch(() => ({}));
   const existing = await getEventHistoryById(id);
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (existing.user_id !== userId && !(existing.user_id === null && body?.claim === true)) {
+  const permissions = await getEventPermissions(existing, userId);
+  if (!permissions.canEdit && !(existing.user_id === null && body?.claim === true)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const claimRequested = body?.claim === true;
-  const requestedSlug = body.publicSlug === undefined ? null : validateCustomEventPublicSlug(body.publicSlug);
+  let requestedSlug = body.publicSlug === undefined ? null : validateCustomEventPublicSlug(body.publicSlug);
   if (requestedSlug?.error) return NextResponse.json({ error: requestedSlug.error }, { status: 400 });
+  if (requestedSlug?.slug === existing.public_slug) requestedSlug = null;
   let claimedRow = existing;
   let claimed = false;
   if (claimRequested) {
@@ -223,6 +228,35 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   }
   const hasDataUpdate =
     body && (body.category != null || body.data != null || requestedSlug || rsvpSettingsPatch);
+
+  if (supportsEventCollaboration(existing.data) && existing.user_id && !claimRequested && !requestedSlug) {
+    if (!hasDataUpdate && !hasTitleUpdate) return NextResponse.json({ error: "No updatable fields" }, { status: 400 });
+    const patch = { ...(isRecord(body.data) ? body.data : {}), ...(rsvpSettingsPatch || {}), ...(body.category != null ? { category: String(body.category) } : {}) };
+    if ("scanSchedule" in patch) {
+      const schedule = normalizeScanSchedule(patch.scanSchedule);
+      if (!schedule) return NextResponse.json({ error: "A schedule needs at least one valid row." }, { status: 400 });
+      Object.assign(patch, scanScheduleHistoryFields(schedule));
+      patch.scanSchedule = schedule;
+      patch.scheduleItems = schedule.items;
+      patch.ownership = "owned";
+      patch.invitedFromScan = false;
+      if (isRecord(existing.data?.conciergeDraft)) patch.conciergeDraft = { ...existing.data.conciergeDraft, ...(isRecord(patch.conciergeDraft) ? patch.conciergeDraft : {}), ...scanScheduleHistoryFields(schedule), title: schedule.title, scanSchedule: schedule };
+      if (isRecord(existing.data?.publicEvent)) patch.publicEvent = { ...existing.data.publicEvent, ...(isRecord(patch.publicEvent) ? patch.publicEvent : {}), scheduleLine: scanScheduleHistoryFields(schedule).scheduleLine, scheduleItems: schedule.items };
+    }
+    if ("accessControl" in patch) patch.accessControl = await normalizeAccessControlPayload(patch.accessControl, existing.data?.accessControl || null);
+    const issues = findTransientEventMedia(patch);
+    if (issues.length) return buildMediaValidationResponse(issues);
+    try {
+      const row = await saveCollaborativeEvent({ eventId: id, userId, patch, title: titleInput,
+        expectedRevision: typeof body.expectedRevision === "string" ? body.expectedRevision : req.headers.get("If-Match")?.replace(/^"|"$/g, "") || null });
+      await invalidateSharedHistoryViewers(id);
+      return NextResponse.json(row, { headers: { "Cache-Control": "private, no-store" } });
+    } catch (error) {
+      if (error instanceof EventCollaborationError) return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+      throw error;
+    }
+  }
+  if (permissions.role === "cohost") return NextResponse.json({ error: "Only the owner can change this event setting." }, { status: 403 });
 
   let updatedRow = claimedRow;
   let changed = false;
@@ -283,8 +317,11 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
       try {
         updatedRow = (await updateEventHistoryPublicSlug({
           id, publicSlug: requestedSlug.slug, data: mergedData, title: titleInput,
+          ...(supportsEventCollaboration(existing.data) ? { collaborationUserId: userId,
+            expectedRevision: typeof body.expectedRevision === "string" ? body.expectedRevision : req.headers.get("If-Match")?.replace(/^"|"$/g, "") || null } : {}),
         })) || updatedRow;
       } catch (error) {
+        if (error instanceof EventCollaborationError) return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
         const message = error instanceof Error ? error.message : "Unable to save this event URL.";
         return NextResponse.json({ error: message }, { status: /already in use/i.test(message) ? 409 : 500 });
       }
@@ -371,6 +408,10 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
       invalidateHistoryAndDashboardForUser(userId);
     }
     await invalidateSharedHistoryViewers(id);
+    if (supportsEventCollaboration(updatedRow.data)) {
+      for (const collaborator of await collaboratorUserIds(id)) invalidateHistoryAndDashboardForUser(collaborator);
+      return NextResponse.json({ ...updatedRow, revision: eventRevision(updatedRow) });
+    }
     return NextResponse.json(updatedRow);
   }
 
@@ -397,7 +438,7 @@ export async function DELETE(_req: Request, context: { params: Promise<{ id: str
   if (existing.user_id !== userId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const affectedRecipients = await listShareRecipientUserIdsForEvent(id).catch(() => []);
+  const affectedRecipients = [...await listShareRecipientUserIdsForEvent(id).catch(() => []), ...await collaboratorUserIds(id)];
   await deleteEventHistoryWithCleanup({ id, row: existing });
   // Invalidate cache for the owner
   if (existing.user_id) {

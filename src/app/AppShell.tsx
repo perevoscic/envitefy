@@ -95,7 +95,8 @@ export default function AppShell({
   const isChatPath = pathname.replace(/\/+$/, "") === "/chat";
   const isEventPreview = searchParams?.get("preview") === "owner";
   const isCalendarHandoff = pathname.replace(/\/+$/, "") === "/calendar/add";
-  const showAppChrome = isAuthenticated && !onMarketing && !isStudioCardShare && !isCreateLanding && !isEventPreview && !isCalendarHandoff && !pathname.startsWith("/mobile/");
+  const isCoHostInvitation = pathname.replace(/\/+$/, "") === "/cohost-invite";
+  const showAppChrome = isAuthenticated && !onMarketing && !isStudioCardShare && !isCreateLanding && !isEventPreview && !isCalendarHandoff && !isCoHostInvitation && !pathname.startsWith("/mobile/");
   const isRedirectingFromMarketing = pathname === "/landing" && isAuthenticated;
   const isLightweightLanding = pathname === "/event" && !isAuthenticated;
 

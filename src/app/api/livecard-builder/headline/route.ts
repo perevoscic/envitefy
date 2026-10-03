@@ -37,7 +37,7 @@ export async function POST(request: Request) {
           if (!cancelled && !signal.aborted) controller.enqueue(encoder.encode(`${JSON.stringify(value)}\n`));
         };
         try {
-          const headline = await generateCardHeadline(form, design, signal, () => send({ stage: "lettering_repair" }));
+          const headline = await generateCardHeadline(form, design, signal, (stage) => send({ stage }), input.mode === "verify");
           send({ headline });
         } catch (error) {
           send(liveCardGenerationErrorResponse(error, "lettering"));
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
   }
   try {
     return NextResponse.json(
-      { headline: await generateCardHeadline(form, design, request.signal) },
+      { headline: await generateCardHeadline(form, design, request.signal, undefined, input.mode === "verify") },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {

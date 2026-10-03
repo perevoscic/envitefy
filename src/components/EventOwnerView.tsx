@@ -8,9 +8,12 @@ import { buildEmbeddedEventPreviewHref, buildOwnerEventEditHref, buildOwnerEvent
 import type { EventPreviewEntryContext } from "@/lib/event-preview-viewport";
 import { trackEventInteraction } from "@/utils/event-tracking-client";
 import EventDeleteModal from "@/components/EventDeleteModal";
+import EventAccessDialog from "@/components/EventAccessDialog";
 import EventPreviewViewport from "./EventPreviewViewport";
 
 type Props = {
+  canDelete?: boolean;
+  canManageAccess?: boolean;
   eventId: string;
   title: string;
   publicHref: string;
@@ -21,6 +24,8 @@ type Props = {
 };
 
 export default function EventOwnerView({
+  canDelete = true,
+  canManageAccess = false,
   eventId,
   title,
   publicHref,
@@ -78,13 +83,14 @@ export default function EventOwnerView({
         <Share2 size={19} aria-hidden="true" />
         <span>{copied ? "Copied" : "Share"}</span>
       </button>
-      <EventDeleteModal
+      {canManageAccess && <EventAccessDialog eventId={eventId} eventTitle={title} className={`inline-flex ${actionClassName}`} />}
+      {canDelete && <EventDeleteModal
         eventId={eventId}
         eventTitle={title}
         ariaLabel="Delete event"
         buttonClassName={`inline-flex ${actionClassName}`}
         labelClassName="inline"
-      />
+      />}
       {copied ? (
         <span role="status" className="sr-only">
           Event link copied

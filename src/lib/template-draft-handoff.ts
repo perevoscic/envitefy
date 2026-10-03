@@ -89,7 +89,7 @@ export async function saveTemplateDraftToAccount({
     request(url, {
       method,
       credentials: "include",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(method === "PATCH" && draft.eventRevision ? { "If-Match": draft.eventRevision } : {}) },
       body: JSON.stringify(body),
     });
   const creating = !draft.eventId;
@@ -127,6 +127,7 @@ export async function saveTemplateDraftToAccount({
 
   if (category === "signup-forms")
     draft.signupRevision = Number(row.data?.signupForm?.revision || 0);
+  if (typeof row.revision === "string") draft.eventRevision = row.revision;
   draft.pendingSave = false;
   return row.id;
 }

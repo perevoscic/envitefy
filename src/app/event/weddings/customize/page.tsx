@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import { useEventHistoryClient } from "@/lib/event-history-client";
 import HeroImageEditor from "@/components/events/HeroImageEditor";
 import EventCanvas from "@/components/EventCanvas";
 
@@ -1556,6 +1557,7 @@ const ThemeGraphics = ({ themeId, isThumbnail = false }) => {
 // --- Components ---
 
 const App = () => {
+  const eventHistoryClient = useEventHistoryClient();
   const templateEditor = useTemplateEditor();
   const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
   const search = useTemplateSearchParams();
@@ -1623,7 +1625,7 @@ const App = () => {
 
     (async () => {
       try {
-        const res = await fetch(`/api/history/${editEventId}`, {
+        const res = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
           method: "GET",
           credentials: "include",
         });
@@ -2100,7 +2102,7 @@ const App = () => {
       if (templateEditor) { await templateEditor.persist(payload, "published"); return; }
 
       if (editEventId) {
-        const response = await fetch(`/api/history/${editEventId}`, {
+        const response = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -2112,7 +2114,7 @@ const App = () => {
         if (!response.ok) throw new Error("Unable to publish this event. Your changes are still here.");
         id = editEventId;
       } else {
-        const r = await fetch("/api/history", {
+        const r = await eventHistoryClient.fetch("/api/history", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -2171,7 +2173,7 @@ const App = () => {
       let id: string | undefined = editEventId;
 
       if (id) {
-        const response = await fetch(`/api/history/${id}`, {
+        const response = await eventHistoryClient.fetch(`/api/history/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -2189,7 +2191,7 @@ const App = () => {
           );
         }
       } else {
-        const res = await fetch("/api/history", {
+        const res = await eventHistoryClient.fetch("/api/history", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",

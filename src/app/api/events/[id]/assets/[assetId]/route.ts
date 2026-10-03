@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { getEventHistoryById } from "@/lib/db";
+import { getEventPermissions, invalidateEventCollaborators } from "@/lib/event-collaboration";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { deleteEventAsset, updateEventAsset } from "@/lib/concierge/event-storage";
 
@@ -25,10 +26,10 @@ async function requireOwnedEvent(eventId: string) {
   if (!event) {
     return { error: NextResponse.json({ error: "Event not found" }, { status: 404 }) };
   }
-  if (event.user_id !== userId) {
+  if (!(await getEventPermissions(event, userId)).canEdit) {
     return { error: NextResponse.json({ error: "Not found" }, { status: 404 }) };
   }
-  return { userId };
+  return { userId: event.user_id || userId, event };
 }
 
 export async function PATCH(
@@ -54,6 +55,7 @@ export async function PATCH(
   if (!asset) return NextResponse.json({ error: "Asset not found" }, { status: 404 });
   invalidateUserHistory(owned.userId);
   invalidateUserDashboard(owned.userId);
+  await invalidateEventCollaborators(owned.event);
   return NextResponse.json({ asset });
 }
 
@@ -68,5 +70,6 @@ export async function DELETE(
   if (!deleted) return NextResponse.json({ error: "Asset not found" }, { status: 404 });
   invalidateUserHistory(owned.userId);
   invalidateUserDashboard(owned.userId);
+  await invalidateEventCollaborators(owned.event);
   return NextResponse.json({ ok: true });
 }

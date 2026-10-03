@@ -418,15 +418,17 @@ export default async function SharedCardPage(props: {
   const session: any = await getServerSession(authOptions as any);
   const userId = await resolveSessionUserId(session);
   const isOwner = Boolean(userId && sharedCard.row.user_id && userId === sharedCard.row.user_id);
+  const { getEventPermissions } = await import("@/lib/event-collaboration");
+  const canManageCard = (await getEventPermissions(sharedCard.row, userId)).canEdit;
   const explicitOwnerPreview = readSearchParam(awaitedSearchParams.preview) === "owner";
-  const ownerPreviewEmbedded = isOwner && explicitOwnerPreview && readSearchParam(awaitedSearchParams.embed) === "dashboard-preview";
+  const ownerPreviewEmbedded = canManageCard && explicitOwnerPreview && readSearchParam(awaitedSearchParams.embed) === "dashboard-preview";
   const ownerWorkspaceHref = `${buildEventPath(
     sharedCard.row.id,
     sharedCard.title,
     undefined,
     sharedCard.row.public_slug,
   )}?tab=design`;
-  const returnHref = isOwner && explicitOwnerPreview
+  const returnHref = canManageCard && explicitOwnerPreview
     ? sanitizeInternalReturnHref(readSearchParam(awaitedSearchParams.returnTo)) ||
       ownerWorkspaceHref
     : "";
@@ -435,7 +437,7 @@ export default async function SharedCardPage(props: {
     redirect(`${canonical}${buildOwnerPreviewSearch(returnHref, ownerPreviewEmbedded)}`);
   }
 
-  if (isOwner && !explicitOwnerPreview) {
+  if (canManageCard && !explicitOwnerPreview) {
     redirect(ownerWorkspaceHref);
   }
 

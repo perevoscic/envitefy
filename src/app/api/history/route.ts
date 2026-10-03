@@ -3,6 +3,7 @@ import { isEventDraft } from "@/lib/event-draft-access";
 import { isClientDraftId } from "@/lib/event-draft-access";
 import { createHash } from "node:crypto";
 import { after, NextResponse } from "next/server";
+import { eventRevision, listCollaborativeEvents } from "@/lib/event-collaboration";
 import { adoptEarlyScanArtwork, generateSavedScanArtwork, prepareSavedScanArtwork } from "@/lib/ocr/scan-artwork";
 import { prepareSavedScanDisplay } from "@/lib/ocr/original-display-state";
 import { getServerSession } from "next-auth";
@@ -235,6 +236,14 @@ export async function GET(req: Request) {
         setCachedHistory(userId, view, limit, timeFilter, light, cacheRevision);
       }
     }
+    const collaborative = finalizeItems((await listCollaborativeEvents(userId)).filter((row) => {
+      if (timeFilter === "all") return true;
+      const end = row.data?.endAt || row.data?.endISO || row.data?.end || row.data?.startAt || row.data?.startISO || row.data?.start;
+      const timestamp = typeof end === "string" ? Date.parse(end) : Number.NaN;
+      return Number.isFinite(timestamp) && (timeFilter === "past" ? timestamp < Date.now() : timestamp >= Date.now());
+    }).slice(0, limit));
+    const seenCollaborative = new Set(collaborative.map((row) => row.id));
+    light = [...collaborative, ...(light || []).filter((row) => !seenCollaborative.has(row.id))];
     const diagnostics = {
       itemCount: Array.isArray(light) ? light.length : 0,
       degradedReason,
@@ -334,7 +343,7 @@ export async function POST(req: Request) {
     if (body.clientDraftId !== undefined && !isClientDraftId(body.clientDraftId)) return NextResponse.json({ error: "Invalid draft identity" }, { status: 400 });
     if (body.clientDraftId) {
       const existing = await getEventHistoryById(body.clientDraftId);
-      if (existing) return existing.user_id === userId ? NextResponse.json(existing) : NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      if (existing) return existing.user_id === userId ? NextResponse.json({ ...existing, revision: eventRevision(existing) }) : NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     scanAttemptId =
       typeof body?.scanAttemptId === "string" && body.scanAttemptId.trim()
@@ -462,7 +471,7 @@ export async function POST(req: Request) {
         userId: row?.user_id || null,
       });
     }
-    return NextResponse.json(row, { status: 201 });
+    return NextResponse.json({ ...row, ...(row ? { revision: eventRevision(row) } : {}) }, { status: 201 });
   } catch (err: any) {
     if (scanAttemptId) {
       console.error("[history] scan insert failed", {

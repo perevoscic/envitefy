@@ -19,12 +19,12 @@ function request(stream = true) {
   });
 }
 
-test("correction status precedes the finished headline, while JSON callers remain compatible", async () => {
+test("checking status precedes the finished headline, while JSON callers remain compatible", async () => {
   const headline = { title: "Graduation", imageUrl: "data:image/webp;base64,test" };
-  const api = route(async (_form, _design, _signal, onRepair) => { onRepair?.(); return headline; });
+  const api = route(async (_form, _design, _signal, onStage) => { onStage?.("checking"); return headline; });
   const response = await api.POST(request());
   assert.match(response.headers.get("content-type"), /application\/x-ndjson/);
-  assert.deepEqual((await response.text()).trim().split("\n").map(JSON.parse), [{ stage: "lettering_repair" }, { headline }]);
+  assert.deepEqual((await response.text()).trim().split("\n").map(JSON.parse), [{ stage: "checking" }, { headline }]);
   assert.deepEqual(await (await api.POST(request(false))).json(), { headline });
 });
 

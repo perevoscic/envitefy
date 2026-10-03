@@ -84,10 +84,13 @@ export async function proofreadLiveCardOverview(before: LiveCardForm) {
 
 export async function proofreadLiveCardWording(before: LiveCardForm, overviewOnly = false) {
   if (overviewOnly && !before.overview.trim()) return { form: before, questions: [] };
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 30000, maxRetries: 0 });
+  const configuredDeadline = Number(process.env.LIVECARD_PROOFREAD_TIMEOUT_MS || "10000");
+  const deadline = Number.isFinite(configuredDeadline) ? Math.max(1000, Math.min(30000, configuredDeadline)) : 10000;
+  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: deadline, maxRetries: 0 });
   const model = resolveConciergeOpenAiExtractionModel();
   const startedAt = Date.now();
-  const response = await client.chat.completions.create({
+  let response: OpenAI.Chat.Completions.ChatCompletion;
+  try { response = await client.chat.completions.create({
     model,
     ...creationModelBudget(model, "correction"),
     response_format: {
@@ -131,7 +134,13 @@ export async function proofreadLiveCardWording(before: LiveCardForm, overviewOnl
         }),
       },
     ],
-  });
+  }, { signal: AbortSignal.timeout(deadline), maxRetries: 0 }); } catch (error) {
+    const provider = error as { status?: number; request_id?: string; name?: string; message?: string };
+    console.error("livecard_proofread_failure", { model, attempt: 1, deadlineMs: deadline, elapsedMs: Date.now() - startedAt,
+      status: provider.status, requestId: provider.request_id, name: provider.name, error: provider.message?.slice(0, 1000),
+      timingScope: "client elapsed; provider queue and processing times unavailable" });
+    throw error;
+  }
   const choice = response.choices[0];
   const valid =
     choice?.finish_reason === "stop" && !choice.message.refusal && choice.message.content;

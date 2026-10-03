@@ -11,7 +11,8 @@ test("history item GET protects raw rows and exposes only sanitized public rows"
 
   assert.match(source, /const session: any = await getServerSession\(authOptions as any\)/);
   assert.match(source, /const userId = await resolveSessionUserId\(session\)/);
-  assert.match(source, /if \(userId && row\.user_id === userId\)/);
+  assert.match(source, /const permissions = await getEventPermissions\(row, userId\)/);
+  assert.match(source, /row\.user_id === userId \|\| permissions\.canEdit/);
   assert.match(source, /const publicRequested =/);
   assert.match(source, /url\.searchParams\.get\("public"\) === "1"/);
   assert.match(

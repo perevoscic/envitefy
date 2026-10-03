@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import { useEventHistoryClient } from "@/lib/event-history-client";
 import { EventSectionBuilderProvider, EventSectionPalette, EventSectionsReadOnly, useSectionEditorClose } from "@/components/events/EventSectionBuilder";
 import { GYMNASTICS_SECTION_CATALOG, normalizeEventSectionLayout } from "@/lib/event-section-layout";
 
@@ -785,6 +786,7 @@ function GymnasticsEditorLayout({
 
 function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
+  const eventHistoryClient = useEventHistoryClient();
     const templateEditor = useTemplateEditor();
   const persistImageMediaValue = templateEditor ? async ({ value, fallbackValue }: Parameters<typeof persistExistingImage>[0]) => value || fallbackValue || null : persistExistingImage;
   const search = useTemplateSearchParams();
@@ -1350,7 +1352,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       const loadExisting = async () => {
         setLoadingExisting(true);
         try {
-          const res = await fetch(`/api/history/${editEventId}`, {
+          const res = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
             cache: "no-store",
             credentials: "include",
             signal: controller.signal,
@@ -2090,7 +2092,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             hasAdvancedSections: !!payload.data.advancedSections,
           });
 
-          const res = await fetch(`/api/history/${editEventId}`, {
+          const res = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -2149,7 +2151,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           }
           allowNavigation(() => router.push(redirectUrl));
         } else {
-          const res = await fetch("/api/history", {
+          const res = await eventHistoryClient.fetch("/api/history", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -3254,7 +3256,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   if (!didExplicitSave && isNewDraft && editEventId) {
                     void (async () => {
                       try {
-                        await fetch(`/api/history/${editEventId}`, {
+                        await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
                           method: "DELETE",
                           credentials: "include",
                         });
