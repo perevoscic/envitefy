@@ -12,6 +12,8 @@ The tables are server-only: row-level security and revoked client grants commit 
 
 `prisma/manual_sql/20261002_event_collaboration.sql` creates event memberships, email invitations and edit activity. The same idempotent schema setup runs through the server data layer. Invitation tokens contain 32 random bytes; only their SHA-256 hashes are stored. They expire after seven days. Resending cancels the prior pending invitation. Acceptance, resend, removal and collaborative saves lock the event row before modifying access, preventing duplicate acceptance and revocation/save races.
 
+On a cold server process, a read-only catalog query checks the installed tables, indexes, row-level security and revoked client grants. An already migrated, secured database skips the setup transaction and its exclusive table locks. Missing or unsecured tables still run the original transactional setup. The owner lookup for Manage access reads only ownership and eligibility fields; it does not load artwork or initialize public links.
+
 The email uses the existing Zoho SMTP transport and Envitefy signature. SMTP acceptance is recorded as sent; it is not a delivery receipt. Failures leave an invitation visible with a Resend action. Raw tokens travel in an email URL fragment and POST body, with no-referrer/noindex on the acceptance page; they are not used as ongoing editing credentials. Auth redirects preserve the invitation while requiring an explicit Accept after authentication.
 
 ## Editing
@@ -29,3 +31,11 @@ Run `node --test scripts/event-collaboration.test.cjs` for invitation/account bi
 Implementation verification: type checking passed; all 1,387 Create remediation tests passed, including 11 co-host behavior tests. All six browser checks passed in an unrestricted run. A later sandbox run passed five and could not write an owner-preview screenshot; that owner check passed again outside the sandbox. Mobile access and acceptance screenshots were inspected. Biome checks passed. VS Code diagnostics could not run because the Chat to CLI bridge was unavailable.
 
 The separate `EventOwnerView.test.mjs` suite passes eight of eleven tests. Its same three failures reproduce with the original HEAD component sources: outdated owner-action and card fixtures, and a dialog mock missing a component. These failures were not changed by this feature.
+
+## Loading performance (October 3, 2026)
+
+The local `.next-dev/trace` recorded a collaboration route compilation of 12.3 seconds within a 15-second request, another cold request of 16.7 seconds, and a warm request of 607 milliseconds. These are development-server measurements; the reported 25-second wait was not captured directly. A read-only check against the configured database found the migration already installed and no active lock waits. The optimized schema, owner and roster queries took 45, 43 and 52 milliseconds respectively in that check. No schema or event data was changed by profiling.
+
+List loading now has its own status and leaves the invite form usable. Reopening shows the previous roster while refreshing. Closing cancels an unfinished read, and starting an invitation or removal cancels older reads so they cannot overwrite its updated roster. Email submission still awaits Zoho acceptance before claiming the invitation was sent. Each collaboration response includes private, uncached `Server-Timing` measurements for session, user lookup, owner check, schema readiness, roster and applicable mutation/SMTP work. Slow requests log those stage durations without emails, event IDs or invitation tokens.
+
+The 13 co-host behavior tests, the mobile browser check (including deferred reads, invitation races and reopening), type checking and Biome checks passed after this optimization.

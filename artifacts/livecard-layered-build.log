@@ -1,0 +1,306 @@
+
+> envitefy@0.1.0 build
+> node scripts/next-build.js
+
+   ▲ Next.js 15.5.25
+   - Environments: .env
+
+   Creating an optimized production build ...
+   Using tsconfig file: tsconfig.application.json
+   Using tsconfig file: tsconfig.application.json
+   Using tsconfig file: tsconfig.application.json
+ ✓ Compiled successfully in 4.2min
+   Linting and checking validity of types ...
+   Collecting page data ...
+ ⚠ Using edge runtime on a page currently disables static generation for that page
+   Generating static pages (0/147) ...
+   Generating static pages (36/147) 
+   Generating static pages (73/147) 
+   Generating static pages (110/147) 
+ ✓ Generating static pages (147/147)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                                          Size  First Load JS
+┌ ƒ /                                                               223 B         393 kB
+├ ƒ /_not-found                                                     504 B         105 kB
+├ ƒ /[category]/templates                                         6.99 kB         586 kB
+├ ƒ /[category]/templates/[templateId]/customize                  6.54 kB         322 kB
+├ ƒ /about                                                        9.48 kB         152 kB
+├ ƒ /admin                                                          170 B         108 kB
+├ ƒ /admin/ad-studio                                              12.9 kB         121 kB
+├ ƒ /admin/analytics                                                189 B         108 kB
+├ ƒ /admin/campaigns                                                504 B         105 kB
+├ ƒ /admin/concierge                                                189 B         108 kB
+├ ƒ /admin/emails                                                   15 kB         132 kB
+├ ƒ /admin/emails/editor                                          4.07 kB         132 kB
+├ ƒ /admin/emails/event-share                                     4.38 kB         121 kB
+├ ƒ /admin/emails/magazine                                        1.76 kB         129 kB
+├ ƒ /admin/emails/password-changed                                4.42 kB         121 kB
+├ ƒ /admin/emails/password-reset                                  4.33 kB         121 kB
+├ ƒ /admin/events                                                   189 B         108 kB
+├ ƒ /admin/health                                                   189 B         108 kB
+├ ƒ /admin/landing-preview                                        7.92 kB         237 kB
+├ ƒ /admin/marketing-assets                                         504 B         105 kB
+├ ƒ /admin/marketing-campaigns                                      504 B         105 kB
+├ ƒ /admin/scans                                                    170 B         108 kB
+├ ƒ /admin/scans/[id]                                               179 B         113 kB
+├ ƒ /admin/settings                                                 189 B         108 kB
+├ ƒ /admin/users                                                  9.76 kB         127 kB
+├ ƒ /anniversaries                                                  685 B         580 kB
+├ ƒ /api/admin/ad-studio/assets/[runId]                             504 B         105 kB
+├ ƒ /api/admin/ad-studio/generate                                   504 B         105 kB
+├ ƒ /api/admin/ad-studio/images                                     504 B         105 kB
+├ ƒ /api/admin/ad-studio/video                                      504 B         105 kB
+├ ƒ /api/admin/analytics                                            504 B         105 kB
+├ ƒ /api/admin/campaigns                                            504 B         105 kB
+├ ƒ /api/admin/campaigns/[id]                                       504 B         105 kB
+├ ƒ /api/admin/campaigns/process-due                                504 B         105 kB
+├ ƒ /api/admin/campaigns/send                                       504 B         105 kB
+├ ƒ /api/admin/campaigns/send-raw                                   504 B         105 kB
+├ ƒ /api/admin/concierge                                            504 B         105 kB
+├ ƒ /api/admin/emails/generate                                      504 B         105 kB
+├ ƒ /api/admin/events                                               504 B         105 kB
+├ ƒ /api/admin/marketing-campaigns                                  504 B         105 kB
+├ ƒ /api/admin/marketing-campaigns/[runId]                          504 B         105 kB
+├ ƒ /api/admin/marketing-campaigns/[runId]/asset                    504 B         105 kB
+├ ƒ /api/admin/marketing-campaigns/[runId]/captions                 504 B         105 kB
+├ ƒ /api/admin/marketing-campaigns/[runId]/captions/regenerate      504 B         105 kB
+├ ƒ /api/admin/marketing-campaigns/[runId]/preview-frame            504 B         105 kB
+├ ƒ /api/admin/marketing-campaigns/[runId]/social-images            504 B         105 kB
+├ ƒ /api/admin/marketing-campaigns/[runId]/storyboard/regenerate    504 B         105 kB
+├ ƒ /api/admin/marketing-campaigns/[runId]/video                    504 B         105 kB
+├ ƒ /api/admin/marketing-campaigns/prompt-ideas                     504 B         105 kB
+├ ƒ /api/admin/overview                                             504 B         105 kB
+├ ƒ /api/admin/scan-attempts/[id]/preview                           504 B         105 kB
+├ ƒ /api/admin/scans                                                504 B         105 kB
+├ ƒ /api/admin/stats                                                504 B         105 kB
+├ ƒ /api/admin/users/[id]                                           504 B         105 kB
+├ ƒ /api/admin/users/[id]/debug-links                               504 B         105 kB
+├ ƒ /api/admin/users/filter                                         504 B         105 kB
+├ ƒ /api/admin/users/search                                         504 B         105 kB
+├ ƒ /api/analytics/events                                           504 B         105 kB
+├ ƒ /api/auth/[...nextauth]                                         504 B         105 kB
+├ ƒ /api/auth/forgot                                                504 B         105 kB
+├ ƒ /api/auth/legal-acceptance                                      504 B         105 kB
+├ ƒ /api/auth/reset                                                 504 B         105 kB
+├ ƒ /api/auth/signup                                                504 B         105 kB
+├ ƒ /api/auth/signup-source                                         504 B         105 kB
+├ ƒ /api/blob/[...path]                                             504 B         105 kB
+├ ƒ /api/calendars                                                  504 B         105 kB
+├ ƒ /api/calendars/apple                                            504 B         105 kB
+├ ƒ /api/calendars/apple/feed/[token]                               504 B         105 kB
+├ ƒ /api/client-log                                                 504 B         105 kB
+├ ƒ /api/concierge/events/[id]/message                              504 B         105 kB
+├ ƒ /api/concierge/message                                          504 B         105 kB
+├ ƒ /api/contact                                                    504 B         105 kB
+├ ƒ /api/creation/draft                                             504 B         105 kB
+├ ƒ /api/creation/intake                                            504 B         105 kB
+├ ƒ /api/creation/intake/stream                                     504 B         105 kB
+├ ƒ /api/creation/threads                                           504 B         105 kB
+├ ƒ /api/creation/threads/[id]                                      504 B         105 kB
+├ ƒ /api/dashboard                                                  504 B         105 kB
+├ ƒ /api/dashboard/enrich-next-event                                504 B         105 kB
+├ ƒ /api/db-test                                                    504 B         105 kB
+├ ƒ /api/debug                                                      504 B         105 kB
+├ ƒ /api/debug-db                                                   504 B         105 kB
+├ ƒ /api/debug-egress                                               504 B         105 kB
+├ ƒ /api/debug-env                                                  504 B         105 kB
+├ ƒ /api/debug-ocr                                                  504 B         105 kB
+├ ƒ /api/debug-vision                                               504 B         105 kB
+├ ƒ /api/debug/history                                              504 B         105 kB
+├ ƒ /api/debug/oauth-tokens                                         504 B         105 kB
+├ ƒ /api/discovery/[eventId]/cancel                                 504 B         105 kB
+├ ƒ /api/discovery/[eventId]/run                                    504 B         105 kB
+├ ƒ /api/discovery/[eventId]/status                                 504 B         105 kB
+├ ƒ /api/discovery/intake                                           504 B         105 kB
+├ ƒ /api/email/unsubscribe                                          504 B         105 kB
+├ ƒ /api/event-pages                                                504 B         105 kB
+├ ƒ /api/event-pages/[id]                                           504 B         105 kB
+├ ƒ /api/event-pages/slug/[slug]                                    504 B         105 kB
+├ ƒ /api/event-themes/generate                                      504 B         105 kB
+├ ƒ /api/events/[id]/assets                                         504 B         105 kB
+├ ƒ /api/events/[id]/assets/[assetId]                               504 B         105 kB
+├ ƒ /api/events/[id]/card/edit                                      504 B         105 kB
+├ ƒ /api/events/[id]/messages                                       504 B         105 kB
+├ ƒ /api/events/[id]/original                                       504 B         105 kB
+├ ƒ /api/events/[id]/public-slug                                    504 B         105 kB
+├ ƒ /api/events/[id]/rsvp                                           504 B         105 kB
+├ ƒ /api/events/[id]/scan-artwork                                   504 B         105 kB
+├ ƒ /api/events/[id]/thumbnail                                      504 B         105 kB
+├ ƒ /api/events/[id]/unlock                                         504 B         105 kB
+├ ƒ /api/events/[id]/update-theme                                   504 B         105 kB
+├ ƒ /api/events/calendar/auto                                       504 B         105 kB
+├ ƒ /api/events/google                                              504 B         105 kB
+├ ƒ /api/events/google/bulk                                         504 B         105 kB
+├ ƒ /api/events/ics/bulk                                            504 B         105 kB
+├ ƒ /api/events/outlook                                             504 B         105 kB
+├ ƒ /api/events/outlook/bulk                                        504 B         105 kB
+├ ƒ /api/events/public-slug                                         504 B         105 kB
+├ ƒ /api/events/share                                               504 B         105 kB
+├ ƒ /api/events/share/accept                                        504 B         105 kB
+├ ƒ /api/events/share/remove                                        504 B         105 kB
+├ ƒ /api/football/game-context                                      504 B         105 kB
+├ ƒ /api/football/prefill                                           504 B         105 kB
+├ ƒ /api/google/auth                                                504 B         105 kB
+├ ƒ /api/google/callback                                            504 B         105 kB
+├ ƒ /api/google/insert                                              504 B         105 kB
+├ ƒ /api/guest-chat                                                 504 B         105 kB
+├ ƒ /api/health                                                     504 B         105 kB
+├ ƒ /api/history                                                    504 B         105 kB
+├ ƒ /api/history/[id]                                               504 B         105 kB
+├ ƒ /api/history/[id]/carpool                                       504 B         105 kB
+├ ƒ /api/history/[id]/signup                                        504 B         105 kB
+├ ƒ /api/history/[id]/signup/manage                                 504 B         105 kB
+├ ƒ /api/history/[id]/signup/recover                                504 B         105 kB
+├ ƒ /api/history/[id]/volunteer                                     504 B         105 kB
+├ ƒ /api/ics                                                        504 B         105 kB
+├ ƒ /api/ingest                                                     504 B         105 kB
+├ ƒ /api/internal/scan-diagnostics                                  504 B         105 kB
+├ ƒ /api/livecard-builder/assist                                    504 B         105 kB
+├ ƒ /api/livecard-builder/design                                    504 B         105 kB
+├ ƒ /api/livecard-builder/headline                                  504 B         105 kB
+├ ƒ /api/livecard-builder/jobs                                      504 B         105 kB
+├ ƒ /api/livecard-builder/location                                  504 B         105 kB
+├ ƒ /api/maps/static                                                504 B         105 kB
+├ ƒ /api/meet/[eventId]                                             504 B         105 kB
+├ ƒ /api/mobile/auth/authorize                                      504 B         105 kB
+├ ƒ /api/mobile/auth/exchange                                       504 B         105 kB
+├ ƒ /api/net                                                        504 B         105 kB
+├ ƒ /api/oauth/disconnect                                           504 B         105 kB
+├ ƒ /api/ocr                                                        504 B         105 kB
+├ ƒ /api/outlook/auth                                               504 B         105 kB
+├ ƒ /api/outlook/callback                                           504 B         105 kB
+├ ƒ /api/outlook/insert                                             504 B         105 kB
+├ ƒ /api/parse/[eventId]/enrich                                     504 B         105 kB
+├ ƒ /api/registry/add                                               504 B         105 kB
+├ ƒ /api/registry/autofill                                          504 B         105 kB
+├ ƒ /api/registry/claim                                             504 B         105 kB
+├ ƒ /api/registry/list                                              504 B         105 kB
+├ ƒ /api/rsvp/attendance                                            504 B         105 kB
+├ ƒ /api/scan/event-page                                            504 B         105 kB
+├ ƒ /api/signup-themes/generate                                     504 B         105 kB
+├ ƒ /api/studio/generate                                            504 B         105 kB
+├ ƒ /api/studio/library                                             504 B         105 kB
+├ ƒ /api/templates/media                                            504 B         105 kB
+├ ƒ /api/templates/signup                                           504 B         105 kB
+├ ƒ /api/upload                                                     504 B         105 kB
+├ ƒ /api/uploads/birthday-asset                                     504 B         105 kB
+├ ƒ /api/user/change-password                                       504 B         105 kB
+├ ƒ /api/user/feature-visibility                                    504 B         105 kB
+├ ƒ /api/user/profile                                               504 B         105 kB
+├ ƒ /api/user/profile/avatar                                        504 B         105 kB
+├ ○ /apple-icon.png                                                   0 B            0 B
+├ ƒ /baby-showers                                                 3.72 kB         583 kB
+├ ƒ /birthdays                                                    6.93 kB         586 kB
+├ ƒ /bridal-showers                                               8.35 kB         588 kB
+├ ƒ /calendar                                                       504 B         105 kB
+├ ƒ /calendar/add                                                    4 kB         139 kB
+├ ƒ /card/[id]                                                    8.29 kB         232 kB
+├ ƒ /chat                                                          103 kB         438 kB
+├ ƒ /contact                                                      6.83 kB         144 kB
+├ ƒ /delete-account                                               7.29 kB         139 kB
+├ ƒ /e/[slug]                                                       16 kB         165 kB
+├ ƒ /envitefy-concierge                                             504 B         105 kB
+├ ƒ /envitefy-create                                              11.1 kB         148 kB
+├ ƒ /event                                                         4.1 kB         111 kB
+├ ƒ /event/[id]                                                   74.9 kB         854 kB
+├ ƒ /event/anniversaries                                          11.4 kB         470 kB
+├ ƒ /event/anniversaries/customize                                  287 B         448 kB
+├ ƒ /event/appointments                                           6.83 kB         121 kB
+├ ƒ /event/appointments/customize                                 24.7 kB         359 kB
+├ ƒ /event/baby-showers                                           7.53 kB         500 kB
+├ ƒ /event/baby-showers/customize                                 28.8 kB         499 kB
+├ ƒ /event/birthdays                                              19.1 kB         221 kB
+├ ƒ /event/birthdays/customize                                    4.63 kB         448 kB
+├ ƒ /event/cheerleading/customize                                 31.9 kB         366 kB
+├ ƒ /event/dance-ballet/customize                                 31.9 kB         366 kB
+├ ƒ /event/design/customize                                       25.4 kB         364 kB
+├ ƒ /event/football                                                 165 B         210 kB
+├ ƒ /event/football-season/customize                                217 B         273 kB
+├ ƒ /event/football/customize                                       217 B         273 kB
+├ ƒ /event/gender-reveal                                          7.51 kB         500 kB
+├ ƒ /event/gender-reveal/customize                                  22 kB         391 kB
+├ ƒ /event/general                                                  15 kB         251 kB
+├ ƒ /event/general/customize                                      26.3 kB         361 kB
+├ ƒ /event/gymnastics                                             13.9 kB         184 kB
+├ ƒ /event/gymnastics/customize                                   87.7 kB         549 kB
+├ ƒ /event/manual                                                 20.1 kB         140 kB
+├ ƒ /event/new                                                      504 B         105 kB
+├ ƒ /event/scan-artwork-preview                                   19.8 kB         236 kB
+├ ƒ /event/schedule/customize                                      8.9 kB         128 kB
+├ ƒ /event/soccer/customize                                       30.8 kB         365 kB
+├ ƒ /event/special-events                                         4.64 kB         161 kB
+├ ƒ /event/special-events/customize                               27.8 kB         362 kB
+├ ƒ /event/sport-events                                           11.7 kB         158 kB
+├ ƒ /event/sport-events/customize                                 22.7 kB         375 kB
+├ ƒ /event/weddings                                               12.3 kB         479 kB
+├ ƒ /event/weddings/[id]/registry                                   504 B         105 kB
+├ ƒ /event/weddings/customize                                     42.9 kB         493 kB
+├ ƒ /event/weddings/customize/[id]                                  504 B         105 kB
+├ ƒ /event/workshops/customize                                    23.7 kB         358 kB
+├ ƒ /events/[id]/manage                                            9.2 kB         160 kB
+├ ƒ /faq                                                          6.47 kB         144 kB
+├ ƒ /football                                                     11.3 kB         232 kB
+├ ƒ /football/templates                                             165 B         210 kB
+├ ƒ /forgot                                                       2.24 kB         110 kB
+├ ƒ /gender-reveal                                                3.42 kB         583 kB
+├ ƒ /guides                                                       3.32 kB         139 kB
+├ ƒ /guides/birthday-rsvp-invitation                              3.36 kB         139 kB
+├ ƒ /guides/flyer-to-event-page                                   3.36 kB         139 kB
+├ ƒ /guides/gymnastics-meet-page                                  3.36 kB         139 kB
+├ ƒ /guides/live-card-invitations                                 3.36 kB         139 kB
+├ ƒ /guides/pdf-to-event-page                                     3.36 kB         139 kB
+├ ƒ /guides/registry-invitation-page                              3.36 kB         139 kB
+├ ƒ /guides/rsvp-event-page                                       3.36 kB         139 kB
+├ ƒ /guides/share-event-page-without-app                          3.36 kB         139 kB
+├ ƒ /guides/smart-signup-forms                                    3.36 kB         139 kB
+├ ƒ /guides/wedding-event-page                                    3.36 kB         139 kB
+├ ƒ /gymnastics                                                   18.8 kB         541 kB
+├ ƒ /how-it-works                                                 1.96 kB         106 kB
+├ ○ /icon.png                                                         0 B            0 B
+├ ƒ /invitation-maker                                             6.91 kB         201 kB
+├ ƒ /landing                                                      25.1 kB         160 kB
+├ ƒ /live-cards                                                   38.5 kB         306 kB
+├ ƒ /media/[...path]                                                504 B         105 kB
+├ ƒ /media/events/[id]/thumbnail                                    504 B         105 kB
+├ ƒ /mobile/sign-in                                               3.66 kB         130 kB
+├ ƒ /open                                                           344 B         105 kB
+├ ƒ /privacy                                                        147 B         142 kB
+├ ƒ /registry/[id]                                                  504 B         105 kB
+├ ƒ /reset                                                        1.97 kB         115 kB
+├ ○ /robots.txt                                                     504 B         105 kB
+├ ƒ /settings                                                     19.1 kB         157 kB
+├ ƒ /showcase                                                     6.91 kB         201 kB
+├ ● /showcase/[slug]                                              10.2 kB         234 kB
+├   ├ /showcase/lara-s-7th-dino-quest
+├   ├ /showcase/friday-night-lights-a
+├   ├ /showcase/garden-vows
+├   └ [+10 more paths]
+├ ƒ /signup-forms                                                 3.42 kB         583 kB
+├ ○ /sitemap.xml                                                    504 B         105 kB
+├ ƒ /smart-signup-form                                            3.98 kB         168 kB
+├ ƒ /smart-signup-form/[id]                                       28.6 kB         386 kB
+├ ƒ /smart-signup-form/[id]/manage                                5.04 kB         109 kB
+├ ƒ /snap                                                           14 kB         422 kB
+├ ƒ /sport-events                                                   229 B         589 kB
+├ ƒ /sports                                                         228 B         589 kB
+├ ƒ /studio                                                         504 B         105 kB
+├ ƒ /templates/signup                                             22.6 kB         418 kB
+├ ƒ /terms                                                          147 B         142 kB
+├ ƒ /unsubscribe                                                    189 B         108 kB
+├ ƒ /verify-request                                                 504 B         105 kB
+├ ƒ /weddings                                                     5.64 kB         585 kB
+└ ƒ /who-its-for                                                  1.97 kB         110 kB
++ First Load JS shared by all                                      104 kB
+  ├ chunks/1255-623a1bc706ecd6cc.js                               46.1 kB
+  ├ chunks/4bd1b696-100b9d70ed4e49c1.js                           54.2 kB
+  └ other shared chunks (total)                                   4.05 kB
+
+
+ƒ Middleware                                                      59.8 kB
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+

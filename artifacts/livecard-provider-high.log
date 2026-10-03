@@ -1,0 +1,79 @@
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  workload: 'extraction',
+  model: 'gpt-5.6-terra',
+  durationMs: 2173,
+  outcome: 'success',
+  inputTokens: 370,
+  outputTokens: 43,
+  reasoningTokens: 0
+}
+livecard_image_request {
+  jobId: 'private-qa-normal-high',
+  revision: '2df886b7eb6b6a457b623fc2da2aab8e98c421f9387800dd299de2a5b03cd78a',
+  attempt: 1,
+  endpoint: 'images.generate',
+  model: 'gpt-image-2.5-flare',
+  quality: 'high',
+  requestId: 'req_4cbeeac62c924236bbfbff1cdaf83492',
+  usage: {
+    input_tokens: 624,
+    input_tokens_details: { image_tokens: 0, text_tokens: 624 },
+    output_tokens: 1372,
+    output_tokens_details: { image_tokens: 1372, text_tokens: 0 },
+    total_tokens: 1996
+  },
+  transportRetries: 0
+}
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  workload: 'visual_check',
+  model: 'gpt-6-astra',
+  durationMs: 2709,
+  outcome: 'success',
+  inputTokens: 3525,
+  outputTokens: 28,
+  reasoningTokens: 0
+}
+livecard_generation {
+  stage: 'design',
+  durationMs: 22705,
+  attempt: 1,
+  outcome: 'success',
+  issues: []
+}
+livecard_image_request {
+  jobId: 'private-qa-normal-high',
+  revision: '2df886b7eb6b6a457b623fc2da2aab8e98c421f9387800dd299de2a5b03cd78a',
+  attempt: 1,
+  endpoint: 'images.edit',
+  model: 'gpt-image-2.5-flare',
+  quality: 'high',
+  requestId: 'req_dd0cec986d274bf18106cec532d8426e',
+  usage: {
+    input_tokens: 2181,
+    input_tokens_details: { image_tokens: 1536, text_tokens: 645 },
+    output_tokens: 1372,
+    output_tokens_details: { image_tokens: 1372, text_tokens: 0 },
+    total_tokens: 3553
+  },
+  transportRetries: 0
+}
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  workload: 'visual_check',
+  model: 'gpt-6-astra',
+  durationMs: 2677,
+  outcome: 'success',
+  inputTokens: 3132,
+  outputTokens: 37,
+  reasoningTokens: 0
+}
+livecard_generation {
+  stage: 'lettering',
+  durationMs: 24007,
+  attempt: 1,
+  outcome: 'success',
+  issues: []
+}
+{"scenario":"normal-high","jobId":"private-qa-normal-high","revision":"2df886b7eb6b6a457b623fc2da2aab8e98c421f9387800dd299de2a5b03cd78a","attempt":1,"providerRequests":[{"jobId":"private-qa-normal-high","revision":"2df886b7eb6b6a457b623fc2da2aab8e98c421f9387800dd299de2a5b03cd78a","attempt":1,"endpoint":"images.generate","model":"gpt-image-2.5-flare","quality":"high","requestId":"req_4cbeeac62c924236bbfbff1cdaf83492","usage":{"input_tokens":624,"input_tokens_details":{"image_tokens":0,"text_tokens":624},"output_tokens":1372,"output_tokens_details":{"image_tokens":1372,"text_tokens":0},"total_tokens":1996},"transportRetries":0},{"jobId":"private-qa-normal-high","revision":"2df886b7eb6b6a457b623fc2da2aab8e98c421f9387800dd299de2a5b03cd78a","attempt":1,"endpoint":"images.edit","model":"gpt-image-2.5-flare","quality":"high","requestId":"req_dd0cec986d274bf18106cec532d8426e","usage":{"input_tokens":2181,"input_tokens_details":{"image_tokens":1536,"text_tokens":645},"output_tokens":1372,"output_tokens_details":{"image_tokens":1372,"text_tokens":0},"total_tokens":3553},"transportRetries":0}],"model":"gpt-image-2.5-flare","editModel":"gpt-image-2.5-flare","quality":"high","counts":{"background":1,"lettering":1,"validation":2,"repair":0,"upload":0,"publication":0},"durations":[{"stage":"background","durationMs":16108},{"stage":"validation","durationMs":2711},{"stage":"conversion","durationMs":1709},{"stage":"lettering","durationMs":20528},{"stage":"composition","durationMs":800},{"stage":"validation","durationMs":2678}],"totalMs":46721,"validation":{"status":"passed","issues":[],"visibleText":["You’re invited","Movie Under the Stars"],"repairInstructions":[]},"layout":{"left":246,"top":276,"width":531,"height":460,"canvasWidth":1024,"canvasHeight":1536}}
