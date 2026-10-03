@@ -9,6 +9,7 @@ import {
   CUSTOM_EVENT_CATEGORIES,
   type CustomEventPage,
   customEventPageData,
+  customEventSectionOrder,
   EVENT_DESIGN_FONTS,
   EVENT_DESIGN_FONT_PAIRS,
   safeEventLink,
@@ -16,6 +17,7 @@ import {
 import "@/components/birthdays/redesign/birthday-fonts.css";
 import styles from "./custom-event.module.css";
 import EventWeatherSection from "./EventWeatherSection";
+import EventArrivalMap from "./EventArrivalMap";
 
 export default function CustomEventPageContent({
   page,
@@ -34,6 +36,8 @@ export default function CustomEventPageContent({
 }) {
   const [rsvpOpen, setRsvpOpen] = useState(false);
   const { design, details: d } = page;
+  const titleAboveDetails = design.layout === "split" || design.layout === "editorial";
+  const title = <h1 className={styles.heroTitle}>{d.title || "Your event title"}</h1>;
   const registryLinks = d.registryLinks.filter((link) => safeEventLink(link.url));
   const data = customEventPageData(page);
   const date = d.date
@@ -75,12 +79,13 @@ export default function CustomEventPageContent({
           <Link href={`/events/${encodeURIComponent(eventId)}/manage`}>Host dashboard</Link>
         </nav>
       )}
-      <header className={styles.hero}>
+      <header className={`${styles.hero} ${titleAboveDetails ? styles.heroWithTitle : ""}`}>
+        {titleAboveDetails && title}
         <div className={styles.artwork}>
           <img src={page.artwork} alt={design.description} />
         </div>
         <div className={styles.intro}>
-          <h1>{d.title || "Your event title"}</h1>
+          {!titleAboveDetails && title}
           {d.host && <p className={styles.host}>Hosted by {d.host}</p>}
           {(date || time) && (
             <p className={styles.when}>{[date, time && d.endTime ? `${time} – ${new Date(`2000-01-01T${d.endTime}:00Z`).toLocaleTimeString("en-US", { timeZone: "UTC", hour: "numeric", minute: "2-digit" })}${d.endDate && d.endDate !== d.date ? ` (${d.endDate})` : ""}` : time].filter(Boolean).join(" · ")}</p>
@@ -98,27 +103,22 @@ export default function CustomEventPageContent({
               RSVP
             </button>
           )}
+          {d.weather?.enabled && (
+            <EventWeatherSection eventId={eventId} date={d.date} time={d.time}
+              location={d.location || d.venue} units={d.weather.units} />
+          )}
         </div>
       </header>
       <div className={styles.content}>
-        {d.description && (
-          <section className={styles.section}>
+        {customEventSectionOrder(d).map((key) => {
+          if (key === "overview") return d.description ? (
+          <section key={key} className={styles.section} data-event-section={key}>
             <h2>You're invited</h2>
             <p>{d.description}</p>
           </section>
-        )}
-        {d.weather?.enabled && (
-          <EventWeatherSection eventId={eventId} date={d.date} time={d.time}
-            location={d.location || d.venue} units={d.weather.units} />
-        )}
-        {d.sections.map((section, index) => (
-          <section key={index} className={styles.section}>
-            <h2>{section.title}</h2>
-            <p>{section.body}</p>
-          </section>
-        ))}
-        {registryLinks.length > 0 && (
-          <section className={styles.section}>
+          ) : null;
+          if (key === "registry") return registryLinks.length > 0 ? (
+          <section key={key} className={styles.section} data-event-section={key}>
             <h2>Registry</h2>
             <div className={styles.links}>
               {registryLinks.map((link, index) => (
@@ -133,7 +133,16 @@ export default function CustomEventPageContent({
               ))}
             </div>
           </section>
-        )}
+          ) : null;
+          const section = d.sections[Number(key.slice(8))];
+          return section ? (
+            <section key={key} className={styles.section} data-event-section={key}>
+              <h2>{section.title}</h2>
+              <p>{section.body}</p>
+              {section.map && <EventArrivalMap map={section.map} showProposed={!eventId || isOwner} />}
+            </section>
+          ) : null;
+        })}
         {showGuestActions && (
           <EventGuestActions
             compactMobile

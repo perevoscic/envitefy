@@ -106,7 +106,18 @@ export async function saveCustomEventPage({
     fileName: "event-page-artwork.webp",
   });
   if (!artwork) throw new Error("Your artwork could not be saved. Please try again.");
-  const savedPage = { ...valid, artwork };
+  const sections = [];
+  for (const section of valid.details.sections) {
+    if (!section.map) { sections.push(section); continue; }
+    const sourceImage = await persistImageMediaValue({ value: section.map.sourceImage,
+      preferOriginal: true, fileName: "event-arrival-source.webp" });
+    const mapImage = section.map.mapImage ? await persistImageMediaValue({ value: section.map.mapImage,
+      preferOriginal: true, fileName: "event-arrival-map.webp" }) : undefined;
+    if (!sourceImage || (section.map.mapImage && !mapImage))
+      throw new Error("Your parking map could not be saved. Your event is still open; please retry.");
+    sections.push({ ...section, map: { ...section.map, sourceImage, ...(mapImage ? { mapImage } : {}) } });
+  }
+  const savedPage = { ...valid, artwork, details: { ...valid.details, sections } };
   const keepLivePage = existing.status === "published" && status === "draft";
   const data: Record<string, unknown> = keepLivePage
     ? { ...existing, customEventPageDraft: savedPage }

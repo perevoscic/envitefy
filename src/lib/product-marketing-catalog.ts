@@ -204,9 +204,10 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           name: "Weather on custom Event Pages",
           availability: "event-dependent",
           customerPromise:
-            "Give guests a useful event forecast in a section that matches the page's theme.",
+            "Give guests a useful event forecast beside the main event details, matching the page's theme.",
           proofPoints: [
-            "Hosts add Weather in the custom Event Page editor and choose Fahrenheit or Celsius. The section inherits the selected colors, fonts and section layout in editor previews and published pages.",
+            "Hosts add a compact Weather widget beneath the main event details and choose Fahrenheit or Celsius. Split and editorial layouts place the title across the top, with details and weather beside the image below. The widget inherits the selected colors and fonts in editor previews and published pages.",
+            "Hosts and guests can refresh the forecast. Refresh checks the provider again without saving the event, and keeps the previous forecast visible if the provider temporarily fails.",
             "With the weather provider configured and a supported location, forecasts use the event's local date and start hour. Available details include conditions, temperature, daily highs and lows, rain chance and wind; events without a start time show a daily forecast.",
             "Dates outside the three-day forecast window show when forecasts become available. Missing details and temporary provider failures have clear messages, without substituting today's weather for the event forecast.",
             "Weather settings stay in memory until an explicit save or publish. Private saved changes stay off the published page; protected events retain their access rules.",
@@ -214,6 +215,30 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           sellWhen: [
             "A host is preparing a custom Event Page for an outdoor gathering, field trip or other weather-sensitive event and wants guests to see a near-term forecast.",
           ],
+        },
+        {
+          id: "custom-event-arrival-maps",
+          name: "Parking and drop-off maps on custom Event Pages",
+          availability: "event-dependent",
+          customerPromise: "Show a marked street map and the original handout beside parking and student drop-off instructions.",
+          proofPoints: [
+            "Hosts can attach a source map to a custom Event Page section and create a Mapbox street-map snapshot from a uniquely matched event street address.",
+            "Parking and drop-off markers can be placed with a tap or keyboard, compared with the source map, and explicitly confirmed. Guests receive directions only for confirmed positions.",
+            "Map images, instructions and marker edits remain in memory until an explicit save; saved maps reopen with the event and keep Mapbox attribution.",
+          ],
+          sellWhen: ["A host has parking, drop-off or entrance instructions in a handout and wants guests to find each location from the event page."],
+        },
+        {
+          id: "custom-event-section-order",
+          name: "Rearrange custom Event Page sections",
+          availability: "event-dependent",
+          customerPromise: "Put your event's welcome, schedule, instructions and registry in the order that works best for guests.",
+          proofPoints: [
+            "Move up and Move down controls reorder the welcome, custom sections and registry, with immediate updates in the event preview. Main event details and optional weather stay at the top.",
+            "On desktop, the editing controls and event preview scroll independently, so hosts can edit a section while keeping their place on the page.",
+            "Section order stays in memory until explicitly saved and appears in the published event after publishing or Save changes.",
+          ],
+          sellWhen: ["A host is editing a custom Event Page and wants the guest information arranged in a particular order."],
         },
         {
           id: "saved-event-workspace",

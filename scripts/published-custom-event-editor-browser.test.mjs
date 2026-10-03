@@ -18,7 +18,7 @@ test("published custom Event Page edits save changes to the same live page and c
     version: 1, category: "general",
     artwork: `data:image/webp;base64,${image.toString("base64")}`,
     design: { version: 1, name: "Park", description: "Coastal park", layout: "split", font: "editorial", colors: { page: "#e9f4f6", surface: "#ffffff", ink: "#193840", accent: "#60508e" } },
-    details: { title: "Gateway Field Trip - Camp Helen State Park", description: "Explore the dune lake.", date: "2026-10-05", time: "09:30", endDate: "", endTime: "12:30", timezone: "America/Chicago", venue: "Camp Helen State Park", location: "Panama City Beach", host: "Gateway", rsvpEmail: "", rsvpPhone: "", rsvpEnabled: false, sections: [], registryLinks: [] },
+    details: { title: "Gateway Field Trip - Camp Helen State Park", description: "Explore the dune lake.", date: "2026-10-05", time: "09:30", endDate: "", endTime: "12:30", timezone: "America/Chicago", venue: "Camp Helen State Park", location: "Panama City Beach", host: "Gateway", rsvpEmail: "", rsvpPhone: "", rsvpEnabled: false, sections: [{ title: "Schedule", body: "Meet at 9:30 AM." }, { title: "What to bring", body: "Comfortable shoes." }], registryLinks: [] },
   };
   try {
     for (const width of [1280, 390]) {
@@ -97,6 +97,13 @@ test("published custom Event Page edits save changes to the same live page and c
       assert.equal(wording.length, 0);
 
       await open();
+      const order = page.getByRole("list", { name: "Page section order" });
+      await order.getByRole("button", { name: "Move What to bring up", exact: true }).click();
+      await save.waitFor();
+      await order.getByRole("button", { name: "Move What to bring down", exact: true }).click();
+      await page.waitForFunction(() => !window.editorProgress.dirty);
+      assert.equal(await save.count(), 0, "Reverting section order keeps a legacy page clean");
+      assert.equal(writes.length, 0, "Moving sections does not save automatically");
       await title.fill("Updated field trip");
       await save.waitFor();
       await page.getByRole("button", { name: "View event page", exact: true }).click();

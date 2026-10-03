@@ -69,11 +69,12 @@ test("signup form primes the signup-source cookie before email and Google signup
   assert.doesNotMatch(signupFormSource, /recaptcha\/api\.js\?render/);
 });
 
-test("recaptcha hook validates that api.js accepted the configured render key", () => {
+test("recaptcha hook uses Google's public readiness and execution APIs", () => {
   const hookSource = readSource("src/hooks/useRecaptcha.ts");
 
-  assert.match(hookSource, /function validateRecaptchaRenderKey/);
-  assert.match(hookSource, /window\.___grecaptcha_cfg\?\.render\?\.includes\(siteKey\)/);
+  assert.doesNotMatch(hookSource, /___grecaptcha_cfg|validateRecaptchaRenderKey/);
+  assert.match(hookSource, /grecaptcha\.ready\(/);
+  assert.match(hookSource, /grecaptcha\.execute\(siteKey, \{ action \}\)/);
   assert.match(hookSource, /process\.env\.NODE_ENV === "production"/);
   assert.match(hookSource, /NEXT_PUBLIC_RECAPTCHA_ENABLE_IN_DEV/);
   assert.match(hookSource, /Skipping reCAPTCHA in development/);

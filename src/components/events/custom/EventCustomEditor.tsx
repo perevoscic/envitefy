@@ -1,6 +1,7 @@
 "use client";
 
 import HeroImageEditor from "@/components/events/HeroImageEditor";
+import { ArrowDown, ArrowUp } from "lucide-react";
 import { useEventHistoryClient } from "@/lib/event-history-client";
 import { prepareCustomEventHeroImage } from "@/lib/custom-event-hero-image";
 import { FontPairingSelect } from "@/components/design-panel/FontPairingSelect";
@@ -14,6 +15,8 @@ import {
   type CustomEventPage,
   customEventCategory,
   customEventGalleryHref,
+  customEventSectionOrder,
+  removeCustomEventSection,
   customEventWording,
   EVENT_DESIGN_FONT_PAIRS,
   EVENT_DESIGN_LAYOUTS,
@@ -24,9 +27,24 @@ import { customEventFieldErrors, saveCustomEventPage, withCustomEventTimezone } 
 import { buildEventPath } from "@/utils/event-url";
 import { validateCustomEventPublicSlug, MAX_PUBLIC_SLUG_LENGTH } from "@/utils/event-public-slug";
 import CustomEventPageContent from "./CustomEventPageContent";
+import EventArrivalMap from "./EventArrivalMap";
+import { type EventArrivalMap as EventArrivalMapData, normalizeArrivalMap } from "@/lib/event-arrival-map";
 import styles from "./custom-event.module.css";
 import EventCustomThemeDialog from "./EventCustomThemeDialog";
 import EventPageLoading from "./EventPageLoading";
+
+const arrivalMapSectionIndex = (details: CustomEventDetails) => {
+  const candidates = details.sections.flatMap((section, index) =>
+    /\bparking\b/i.test(section.title) && /\bdrop[\s-]*off\b/i.test(section.title) ? [index] : [],
+  );
+  return candidates.length === 1 ? candidates[0] : -1;
+};
+
+const prepareArrivalMapImage = async (source: string) => {
+  const image = await prepareCustomEventHeroImage(source);
+  if (image.length > 2_800_000) throw new Error("Choose a smaller map image (under 2 MB).");
+  return image;
+};
 
 export default function EventCustomEditor({ initialPage }: { initialPage?: CustomEventPage } = {}) {
   const eventHistoryClient = useEventHistoryClient();
@@ -62,6 +80,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
     <span id={`event-error-${key}`} className={styles.error}>{fieldErrors[key]}</span>
   ) : null;
   const [message, setMessage] = useState("");
+  const [orderMessage, setOrderMessage] = useState("");
   const [redesign, setRedesign] = useState(false);
   const [published, setPublished] = useState(false);
   const [publicSlug, setPublicSlug] = useState("");
@@ -297,6 +316,40 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
     setPage((previous) =>
       previous ? { ...previous, details: { ...previous.details, [key]: value } } : previous,
     );
+  const updateArrivalMapSource = (sourceImage: string, sectionIndex?: number) =>
+    setPage((current) => {
+      if (!current || (sectionIndex === undefined && current.details.sections.some((section) => section.map))) return current;
+      const sections = [...current.details.sections];
+      const index = sectionIndex ?? arrivalMapSectionIndex(current.details);
+      if (index < 0 && sections.length >= 20) return current;
+      const section: CustomEventDetails["sections"][number] = index < 0 ? { title: "Parking & drop-off", body: "" } : sections[index];
+      if (!section) return current;
+      const map: EventArrivalMapData = {
+        version: 1, sourceImage, status: "location_unavailable",
+        markers: section.map ? section.map.markers.map((marker) => ({ ...marker, point: null, confirmed: false })) : [
+          { label: "Parking", kind: "parking", note: "", point: null, confirmed: false },
+          { label: "Student drop-off", kind: "dropoff", note: "", point: null, confirmed: false },
+        ],
+      };
+      if (index < 0) sections.push({ ...section, map });
+      else sections[index] = { ...section, map };
+      return { ...current, details: { ...current.details, sections } };
+    });
+  const refreshArrivalMap = async (index: number) => {
+    const section = page?.details.sections[index];
+    if (!page || !section?.map || saving.current) throw new Error("Wait for the event save to finish, then refresh the map.");
+    const snapshot = JSON.stringify(section.map), address = page.details.location;
+    const response = await fetch("/api/event-themes/generate", { method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "arrival-map",
+        category: page.category, prompt: "Refresh this arrival map from the current event address.",
+        currentDesign: page.design, currentDetails: page.details, arrivalMapSection: index }) });
+    const result = await response.json(), map = normalizeArrivalMap(result.map);
+    if (!response.ok || !map) throw new Error(result.error || "The map could not be refreshed. Please retry.");
+    setPage((current) => {
+      if (!current || current.details.location !== address || JSON.stringify(current.details.sections[index]?.map) !== snapshot) return current;
+      return { ...current, details: { ...current.details, sections: current.details.sections.map((item, i) => i === index ? { ...item, map } : item) } };
+    });
+  };
   if (!page && !error) return <EventPageLoading />;
   if (!page)
     return (
@@ -314,6 +367,21 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
       </main>
     );
   const d = page.details;
+  const sectionOrder = customEventSectionOrder(d).filter((key) =>
+    key === "overview" ? Boolean(d.description.trim()) : key === "registry" ? d.registryLinks.length > 0 : true,
+  );
+  const sectionName = (key: string) => key === "overview" ? "Welcome & overview" :
+    key === "registry" ? "Registry" : d.sections[Number(key.slice(8))]?.title || `Section ${Number(key.slice(8)) + 1}`;
+  const moveSection = (key: string, direction: -1 | 1) => {
+    const index = sectionOrder.indexOf(key), nextIndex = index + direction;
+    if (index < 0 || nextIndex < 0 || nextIndex >= sectionOrder.length) return;
+    const order = [...sectionOrder];
+    [order[index], order[nextIndex]] = [order[nextIndex], order[index]];
+    const nextOrder = customEventSectionOrder({ ...d, sectionOrder: order });
+    const defaultOrder = customEventSectionOrder({ ...d, sectionOrder: undefined });
+    updateDetail("sectionOrder", JSON.stringify(nextOrder) === JSON.stringify(defaultOrder) ? undefined : nextOrder);
+    setOrderMessage(`${sectionName(key)} moved to position ${nextIndex + 1} of ${order.length}.`);
+  };
   const field = (
     key: keyof Pick<
       CustomEventDetails,
@@ -355,7 +423,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
     </label>
   );
   return (
-    <main className={styles.editor}>
+    <main className={`${styles.editor} ${styles.editorWorkspace}`}>
       <header className={styles.toolbar}>
         <div>
           <Link href={customEventGalleryHref(page.category)}>← Templates</Link>
@@ -437,7 +505,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
       )}
       {(
         <div className={styles.workspace} style={editing ? undefined : { gridTemplateColumns: "minmax(0, 1fr)" }}>
-          <fieldset disabled={busy} className={styles.controls} hidden={!editing} style={editing ? undefined : { display: "none" }}>
+          <fieldset disabled={busy} className={styles.controls} aria-label="Event editing controls" hidden={!editing} style={editing ? undefined : { display: "none" }}>
             <h2>Event details</h2>
             {field("title", "Event title")}
             <div className={styles.group}>
@@ -480,7 +548,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
                   onChange={(event) => updateDetail("weather", { enabled: event.target.checked, units: d.weather?.units || "f" })} />
                 Show weather on the event page
               </label>
-              <p>Uses your event date and location. Forecasts appear within three days of the event and match your page's colors and fonts.</p>
+              <p>A compact forecast in the main event details, using your page's colors and fonts. Forecasts appear within three days of the event.</p>
               {d.weather?.enabled && (
                 <label className={styles.field}>
                   Temperature units
@@ -573,6 +641,25 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
             </div>
             <div className={styles.group}>
               <h2>Page sections</h2>
+              <p>Move sections to change their order on the page. Main event details and weather stay at the top.</p>
+              <ol className={styles.sectionOrder} aria-label="Page section order">
+                {sectionOrder.map((key, index) => (
+                  <li key={key} className={styles.sectionOrderRow}>
+                    <span>{sectionName(key)}</span>
+                    <div>
+                      <button type="button" className={styles.sectionMove} disabled={index === 0}
+                        aria-label={`Move ${sectionName(key)} up`} onClick={() => moveSection(key, -1)}>
+                        <ArrowUp size={18} aria-hidden="true" />
+                      </button>
+                      <button type="button" className={styles.sectionMove} disabled={index === sectionOrder.length - 1}
+                        aria-label={`Move ${sectionName(key)} down`} onClick={() => moveSection(key, 1)}>
+                        <ArrowDown size={18} aria-hidden="true" />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              <p className={styles.srOnly} role="status">{orderMessage}</p>
               {d.sections.map((section, index) => (
                 <div key={index} className={styles.group}>
                   <label className={styles.field}>
@@ -610,15 +697,23 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
                     />
                     {fieldError(`section-${index}-body`)}
                   </label>
+                  {section.map && <HeroImageEditor label="Replace source map"
+                    value={section.map.sourceImage} onBusyChange={setImageBusy}
+                    prepareImage={prepareArrivalMapImage}
+                    onChange={(sourceImage) => updateArrivalMapSource(sourceImage, index)} />}
+                  {section.map && <EventArrivalMap map={section.map} showProposed onRefresh={() => refreshArrivalMap(index)} onChange={(map) =>
+                    updateDetail("sections", d.sections.map((item, i) => i === index ? { ...item, map } : item))} />}
+                  {section.map && <button type="button" className={styles.secondary} onClick={() =>
+                    updateDetail("sections", d.sections.map((item, i) => {
+                      if (i !== index) return item;
+                      const { map: removedMap, ...sectionWithoutMap } = item;
+                      void removedMap;
+                      return sectionWithoutMap;
+                    }))}>Remove map</button>}
                   <button
                     type="button"
                     className={styles.secondary}
-                    onClick={() =>
-                      updateDetail(
-                        "sections",
-                        d.sections.filter((_, i) => i !== index),
-                      )
-                    }
+                    onClick={() => setPage((current) => current ? { ...current, details: removeCustomEventSection(current.details, index) } : current)}
                   >
                     Remove section
                   </button>
@@ -632,6 +727,14 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
               >
                 Add section
               </button>
+              {!d.sections.some((section) => section.map) && (
+                d.sections.length >= 20 && arrivalMapSectionIndex(d) < 0 ? (
+                  <button type="button" className={styles.secondary} disabled>Add parking / drop-off map</button>
+                ) : (
+                  <HeroImageEditor label="Add parking / drop-off map" onBusyChange={setImageBusy}
+                    prepareImage={prepareArrivalMapImage} onChange={updateArrivalMapSource} />
+                )
+              )}
             </div>
             <div className={styles.group}>
               <h2>Design</h2>
@@ -698,7 +801,8 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
               </button>
             </div>
           </fieldset>
-          <div className={styles.preview} style={editing ? undefined : { display: "block" }}>
+          {/* biome-ignore lint/a11y/noNoninteractiveTabindex: The scrollable preview needs focus for native keyboard scrolling. */}
+          <div className={styles.preview} role="region" aria-label="Event page preview panel" tabIndex={0} style={editing ? undefined : { display: "block" }}>
             <CustomEventPageContent page={page} showGuestActions onGuestActionsChange={busy ? undefined : (guestActions) => setPage((current) => current ? ({ ...current, details: { ...current.details, guestActions } }) : current)} />
           </div>
         </div>

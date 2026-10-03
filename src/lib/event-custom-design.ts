@@ -1,4 +1,5 @@
 import { parseCalendarDateTimeToIso } from "./calendar-date-time";
+import { normalizeArrivalMap, type EventArrivalMap } from "./event-arrival-map";
 import { normalizeEventGuestActions, type EventGuestActionVisibility } from "./event-guest-actions";
 import { colorContrast } from "./color-contrast";
 import { GALLERY_FONT_PAIRS, LIBRARY_FONT_PAIRS, type GalleryFontPairId } from "./font-library";
@@ -73,8 +74,9 @@ export const EVENT_DETAIL_FIELDS = [
 export type CustomEventDetails = Record<(typeof EVENT_DETAIL_FIELDS)[number], string> & {
   guestActions?: EventGuestActionVisibility;
   weather?: { enabled: boolean; units: "f" | "c" };
+  sectionOrder?: string[];
   rsvpEnabled: boolean;
-  sections: Array<{ title: string; body: string }>;
+  sections: Array<{ title: string; body: string; map?: EventArrivalMap }>;
   registryLinks: Array<{ label: string; url: string }>;
 };
 export type CustomEventPage = {
@@ -103,6 +105,24 @@ export const emptyCustomEventDetails = (): CustomEventDetails => ({
   sections: [],
   registryLinks: [],
 });
+export function customEventSectionOrder(details: CustomEventDetails): string[] {
+  const keys = ["overview", ...details.sections.map((_, index) => `section:${index}`), "registry"];
+  const saved = [...new Set(details.sectionOrder || [])].filter((key) => keys.includes(key));
+  return [...saved, ...keys.filter((key) => !saved.includes(key))];
+}
+export function removeCustomEventSection(details: CustomEventDetails, index: number): CustomEventDetails {
+  const next = {
+    ...details,
+    sections: details.sections.filter((_, i) => i !== index),
+    sectionOrder: customEventSectionOrder(details).filter((key) => key !== `section:${index}`).map((key) => {
+      if (!key.startsWith("section:")) return key;
+      const position = Number(key.slice(8));
+      return `section:${position > index ? position - 1 : position}`;
+    }),
+  };
+  const defaultOrder = customEventSectionOrder({ ...next, sectionOrder: undefined });
+  return { ...next, sectionOrder: JSON.stringify(next.sectionOrder) === JSON.stringify(defaultOrder) ? undefined : next.sectionOrder };
+}
 export function customEventWording(details: CustomEventDetails): string[] {
   return [
     details.title,
@@ -252,7 +272,9 @@ export function normalizeCustomEventDetails(value: unknown): CustomEventDetails 
           row.body.length > 6000
         )
           return null;
-        details.sections.push({ title: row.title, body: row.body });
+        const map = row.map == null ? undefined : normalizeArrivalMap(row.map);
+        if (map === null) return null;
+        details.sections.push({ title: row.title, body: row.body, ...(map ? { map } : {}) });
       } else {
         const url = safeEventLink(row.url);
         if ((row.url !== "" && !url) || typeof row.label !== "string" || row.label.length > 180)
@@ -260,6 +282,14 @@ export function normalizeCustomEventDetails(value: unknown): CustomEventDetails 
         details.registryLinks.push({ label: row.label, url: url || "" });
       }
     }
+  }
+  if (raw.sectionOrder != null) {
+    const keys = customEventSectionOrder(details);
+    if (!Array.isArray(raw.sectionOrder) || raw.sectionOrder.length > keys.length ||
+      raw.sectionOrder.some((key) => typeof key !== "string" || !keys.includes(key)) ||
+      new Set(raw.sectionOrder).size !== raw.sectionOrder.length) return null;
+    const order = customEventSectionOrder({ ...details, sectionOrder: raw.sectionOrder });
+    if (JSON.stringify(order) !== JSON.stringify(keys)) details.sectionOrder = order;
   }
   return details;
 }

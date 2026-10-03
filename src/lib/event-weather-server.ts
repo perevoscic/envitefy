@@ -1,6 +1,6 @@
 import type { EventWeatherForecast, EventWeatherResult, EventWeatherTarget } from "./event-weather";
 
-const cache = new Map<string, { expires: number; value: EventWeatherResult }>();
+const cache = new Map<string, { expires: number; refreshedAt?: number; value: EventWeatherResult }>();
 const pending = new Map<string, Promise<EventWeatherResult>>();
 const DAY_MS = 86_400_000;
 const record = (value: unknown): Record<string, unknown> =>
@@ -140,20 +140,22 @@ async function fetchForecast(target: EventWeatherTarget, key: string): Promise<E
   }
 }
 
-export async function getEventWeather(target: EventWeatherTarget): Promise<EventWeatherResult> {
+export async function getEventWeather(target: EventWeatherTarget, options: { refresh?: boolean } = {}): Promise<EventWeatherResult> {
   if (!target.location || !target.date) return { status: "missing_details" };
   // A one-day margin accounts for the venue's calendar day before its timezone is returned.
   const utcToday = Date.parse(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`);
   const delta = (Date.parse(`${target.date}T00:00:00Z`) - utcToday) / DAY_MS;
   if (delta < -1) return { status: "past" };
   if (delta > 3) return { status: "outside_window" };
-  const apiKey = process.env.WEATHERAPI_KEY || process.env.WEATHERAPI_API_KEY;
+  const apiKey = process.env.WEATHERAPI_API_KEY || process.env.WEATHERAPI_KEY;
   if (!apiKey) return { status: "unconfigured" };
   const cacheKey = JSON.stringify([target.location.toLowerCase(), target.date, target.time]);
   const cached = cache.get(cacheKey);
-  if (cached && cached.expires > Date.now()) return cached.value;
   const inFlight = pending.get(cacheKey);
   if (inFlight) return inFlight;
+  // An explicit refresh bypasses the normal cache. Coalesce repeated refreshes for 30 seconds.
+  if (cached && cached.expires > Date.now() &&
+    (!options.refresh || (cached.refreshedAt !== undefined && Date.now() - cached.refreshedAt < 30_000))) return cached.value;
   for (const [entryKey, entry] of cache) if (entry.expires <= Date.now()) cache.delete(entryKey);
   if (pending.size >= 100) return { status: "unavailable" };
   const job = fetchForecast(target, apiKey)
@@ -161,6 +163,7 @@ export async function getEventWeather(target: EventWeatherTarget): Promise<Event
       if (cache.size >= 500) cache.delete(cache.keys().next().value!);
       cache.set(cacheKey, {
         value,
+        ...(options.refresh ? { refreshedAt: Date.now() } : {}),
         expires: Date.now() + (value.status === "available" ? 15 * 60_000 : 60_000),
       });
       return value;

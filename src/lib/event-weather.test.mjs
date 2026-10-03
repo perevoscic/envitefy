@@ -97,6 +97,15 @@ test("weather uses the venue's local day and event hour, caches lookups, and nev
   assert.equal(result.location, "Panama City Beach, Florida");
   assert.deepEqual(await getEventWeather(target), result);
   assert.equal(calls, 1);
+  payload.forecast.forecastday[0].hour[1].temp_f = 76;
+  const refreshed = await getEventWeather(target, { refresh: true });
+  assert.equal(refreshed.tempF, 76, "Manual refresh bypasses the ordinary 15-minute cache");
+  assert.equal(calls, 2);
+  assert.deepEqual(await getEventWeather(target, { refresh: true }), refreshed);
+  assert.equal(calls, 2, "Repeated explicit refreshes are coalesced for 30 seconds");
+  t.mock.timers.tick(31_000);
+  await Promise.all([getEventWeather(target, { refresh: true }), getEventWeather(target, { refresh: true })]);
+  assert.equal(calls, 3, "Concurrent refreshes share one provider lookup");
   const daily = await getEventWeather({ ...target, time: "" });
   assert.equal(daily.tempF, 77);
   assert.equal(daily.time, null);

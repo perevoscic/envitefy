@@ -49,6 +49,8 @@ export async function POST(request: Request) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw))
       return json({ error: "Invalid weather request." }, 400);
     const body = raw as Record<string, unknown>;
+    if (body.refresh != null && typeof body.refresh !== "boolean")
+      return json({ error: "Invalid weather refresh request." }, 400);
     const userId = await resolveSessionUserId(await getServerSession(authOptions));
     let target: EventWeatherTarget | null;
     let requestKey: string;
@@ -97,7 +99,7 @@ export async function POST(request: Request) {
       return json({ error: "Please wait a minute before checking weather again." }, 429);
     entry.count++;
     requests.set(requestKey, entry);
-    return json(await getEventWeather(target));
+    return json(await getEventWeather(target, { refresh: body.refresh === true }));
   } catch {
     return json({ status: "unavailable" }, 503);
   }

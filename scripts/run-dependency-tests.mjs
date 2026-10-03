@@ -45,3 +45,4 @@ for (const file of [
   await import(new URL(file, sourceRoot).href);
 }
 await import("./dependency-compatibility.test.mjs");
+await import("./pdf-route-tracing.test.mjs");

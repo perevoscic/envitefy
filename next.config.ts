@@ -53,15 +53,14 @@ const nextConfig = (phase: string): NextConfig => ({
   // `next dev` is more stable when it runs without standalone packaging artifacts.
   ...(phase === PHASE_DEVELOPMENT_SERVER ? {} : { output: "standalone" }),
   outputFileTracingRoot: process.cwd(),
-  outputFileTracingExcludes: {
-    // Next's tracing matcher also matches /api/upload against /api/uploads/...
-    // This handler accepts header photos only, so remove the inherited PDF files.
-    "/api/uploads/birthday-asset": pdfRuntimeFiles,
-  },
   outputFileTracingIncludes: {
-    ...Object.fromEntries(pdfProcessingRoutes.map((route) => [route, [...pdfRuntimeFiles]])),
+    // Next matches these globs as substrings. Require the route to end here so
+    // /api/upload does not add PDF files to /api/uploads/birthday-asset.
+    ...Object.fromEntries(
+      pdfProcessingRoutes.map((route) => [`${route}(?![\\s\\S])`, [...pdfRuntimeFiles]]),
+    ),
     "/api/livecard-builder/location": ["./node_modules/geo-tz/data/timezones-1970.geojson.*"],
-    "/api/upload": [...pdfRuntimeFiles, "./node_modules/ffmpeg-static/ffmpeg*"],
+    "/api/upload": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/uploads/*": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/studio/generate": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/events/*/card/edit": ["./node_modules/ffmpeg-static/ffmpeg*"],
@@ -69,13 +68,13 @@ const nextConfig = (phase: string): NextConfig => ({
     "/api/user/profile/avatar": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/templates/media": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/discovery/**": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/ingest": [...pdfRuntimeFiles, "./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/football/prefill": [...pdfRuntimeFiles, "./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/ocr": [...pdfRuntimeFiles, "./node_modules/ffmpeg-static/ffmpeg*"],
+    "/api/ingest": ["./node_modules/ffmpeg-static/ffmpeg*"],
+    "/api/football/prefill": ["./node_modules/ffmpeg-static/ffmpeg*"],
+    "/api/ocr": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/history": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/scan/event-page": [...pdfRuntimeFiles, "./node_modules/ffmpeg-static/ffmpeg*"],
+    "/api/scan/event-page": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/events/*/scan-artwork": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/events/*/original": [...pdfRuntimeFiles, "./node_modules/ffmpeg-static/ffmpeg*"],
+    "/api/events/*/original": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/*": ["./public/fonts/Josefin_Sans/static/JosefinSans-Regular.ttf"],
   },
 

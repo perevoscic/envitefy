@@ -28,6 +28,7 @@ const files = [
   "src/lib/guest-event-details.test.ts",
   "src/lib/scan-event-page.test.mjs",
   "src/lib/event-custom-design.test.mjs",
+  "src/lib/event-arrival-map.test.cjs",
   "src/components/smart-signup-form/signup-preview-markup.test.mjs",
   "src/app/event/general/page.test.mjs",
   ...scripts["test:calendar"].replace(/^node --test /, "").split(" "),

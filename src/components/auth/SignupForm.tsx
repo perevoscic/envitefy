@@ -56,8 +56,9 @@ export default function SignupForm({
   const toastTimerRef = useRef<number | undefined>(undefined);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [legalError, setLegalError] = useState<string | null>(null);
-  const { executeRecaptcha, recaptchaConfigured, recaptchaReady } = useRecaptcha();
-  const recaptchaLoading = recaptchaConfigured && !recaptchaReady;
+  const { executeRecaptcha, recaptchaConfigured, recaptchaReady, recaptchaError, retryRecaptcha } =
+    useRecaptcha();
+  const recaptchaBlocked = recaptchaConfigured && !recaptchaReady;
   const textInputClass = cx(
     "w-full rounded-xl border border-border/80 bg-white/85 px-4 py-3 text-sm text-foreground/90 shadow-inner transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)]",
     isInlineDark &&
@@ -467,13 +468,33 @@ export default function SignupForm({
             {legalError}
           </p>
         )}
+        {recaptchaBlocked && (
+          <div
+            role={recaptchaError ? "alert" : "status"}
+            className={cx("text-sm text-muted-foreground", isInlineDark && "!text-white/72")}
+          >
+            {recaptchaError || "Preparing security verification..."}
+            {recaptchaError && (
+              <button
+                type="button"
+                onClick={retryRecaptcha}
+                className={cx(
+                  "ml-2 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60",
+                  isInlineDark && "!text-[#f0d58f]",
+                )}
+              >
+                Retry
+              </button>
+            )}
+          </div>
+        )}
         <Button
           type="submit"
           size="lg"
-          disabled={submitting || recaptchaLoading || !agreeTerms}
+          disabled={submitting || recaptchaBlocked || !agreeTerms}
           className="group w-full !rounded-full bg-gradient-to-r from-brand to-brand-glow text-primary-foreground shadow-xl shadow-brand/30 hover:opacity-95"
         >
-          {submitting ? "Creating..." : recaptchaLoading ? "Loading..." : "Create account"}
+          {submitting ? "Creating..." : "Create account"}
           <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
         </Button>
         <p className={cx("text-center text-sm text-muted-foreground", isInlineDark && "!text-white/68")}>

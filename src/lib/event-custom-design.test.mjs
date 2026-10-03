@@ -251,6 +251,35 @@ test("every creation category has distinct copy, icons and accessible gallery co
   }
 });
 
+test("section order survives normalization, proofreading, removal, new sections and guest rendering", () => {
+  const page = example();
+  page.details.sections.push({ title: "What to bring", body: "A picnic blanket." });
+  page.details.sectionOrder = ["section:1", "registry", "overview", "section:0"];
+  const restored = custom.normalizeCustomEventPage(JSON.parse(JSON.stringify(page)));
+  assert.deepEqual(custom.customEventSectionOrder(restored.details), page.details.sectionOrder);
+  assert.deepEqual(custom.applyCustomEventWording(restored.details, custom.customEventWording(restored.details)).sectionOrder, page.details.sectionOrder);
+  const removed = custom.removeCustomEventSection(restored.details, 0);
+  assert.equal(removed.sections[0].title, "What to bring");
+  assert.deepEqual(removed.sectionOrder, ["section:0", "registry", "overview"]);
+  removed.sections.push({ title: "Getting here", body: "Use the main entrance." });
+  assert.deepEqual(custom.customEventSectionOrder(removed), ["section:0", "registry", "overview", "section:1"]);
+  for (const sectionOrder of [["section:99"], ["overview", "overview"], [0], "overview"])
+    assert.equal(custom.normalizeCustomEventDetails({ ...page.details, sectionOrder }), null);
+  assert.equal(custom.normalizeCustomEventDetails({ ...page.details, sectionOrder: ["overview", "section:0", "section:1", "registry"] }).sectionOrder, undefined, "Default ordering preserves legacy serialization");
+  const legacyDetails = example().details;
+  const undone = custom.removeCustomEventSection({ ...legacyDetails, sections: [...legacyDetails.sections, { title: "Extra section", body: "" }] }, 1);
+  assert.equal(JSON.stringify(undone), JSON.stringify(legacyDetails), "Adding and removing a section restores clean legacy content");
+  const Empty = () => null;
+  const Page = loader({
+    "next/link": ({ children, ...props }) => React.createElement("a", props, children),
+    "@/components/GuestRsvpModal": Empty,
+    "@/components/event-templates/EventGuestActions": Empty,
+    "@/components/branding/EnvitefyEventBranding": Empty,
+  })("src/components/events/custom/CustomEventPageContent.tsx").default;
+  const markup = renderToStaticMarkup(React.createElement(Page, { page: restored }));
+  assert.deepEqual([...markup.matchAll(/data-event-section="([^"]+)"/g)].map((match) => match[1]), page.details.sectionOrder);
+});
+
 test("the shared guest renderer keeps all four layouts, facts, artwork, and safe links", () => {
   const Empty = () => null;
   const renderLoad = loader({

@@ -7,6 +7,7 @@ import {
   generateEventTheme,
   parseEventThemeRequest,
   prepareEventThemeWording,
+  refreshEventArrivalMap,
 } from "@/lib/event-theme-generation";
 
 export const runtime = "nodejs";
@@ -96,6 +97,7 @@ export async function POST(request: Request) {
     return json(
       await (input.mode === "wording"
         ? prepareEventThemeWording(input, signal)
+        : input.mode === "arrival-map" ? refreshEventArrivalMap(input, signal)
         : generateEventTheme(input, signal)),
     );
   } catch (error) {

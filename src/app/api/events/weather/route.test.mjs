@@ -15,6 +15,7 @@ const details = {
 };
 function harness({ userId = null, data = {}, canEdit = false, recipient = false } = {}) {
   const calls = [];
+  const refreshOptions = [];
   const mocks = {
     "next/server": { NextResponse: { json: (body, options) => Response.json(body, options) } },
     "next-auth": { getServerSession: async () => ({}) },
@@ -45,8 +46,9 @@ function harness({ userId = null, data = {}, canEdit = false, recipient = false 
     "@/lib/event-custom-design": { normalizeCustomEventPage: (value) => value },
     "@/lib/event-weather": { parseEventWeatherTarget },
     "@/lib/event-weather-server": {
-      getEventWeather: async (target) => {
+      getEventWeather: async (target, options) => {
         calls.push(target);
+        refreshOptions.push(options);
         return { status: "available", ...target };
       },
     },
@@ -65,6 +67,7 @@ function harness({ userId = null, data = {}, canEdit = false, recipient = false 
   );
   return {
     calls,
+    refreshOptions,
     send: (body, headers = {}) =>
       module.exports.POST(
         new Request("http://localhost/api/events/weather", {
@@ -97,6 +100,20 @@ test("anonymous visitors can only request enabled, published event weather using
   });
   assert.equal((await disabled.send({ eventId: id })).status, 404);
   assert.deepEqual(disabled.calls, []);
+});
+
+test("manual refresh uses saved event facts and preserves the same access restrictions", async () => {
+  const h = harness();
+  assert.equal((await h.send({ eventId: id, refresh: true, location: "Injected" })).status, 200);
+  assert.deepEqual(h.calls, [{ location: details.location, date: details.date, time: details.time }]);
+  assert.deepEqual(h.refreshOptions, [{ refresh: true }]);
+  assert.equal((await h.send({ eventId: id, refresh: "yes" })).status, 400);
+  const locked = harness({ data: { accessControl: { requirePasscode: true, passcodeHash: "hashed" } } });
+  assert.equal((await locked.send({ eventId: id, refresh: true })).status, 403);
+  assert.deepEqual(locked.calls, []);
+  const preview = harness({ userId: "host" });
+  assert.equal((await preview.send({ location: "Paris", date: "2026-10-05", time: "", refresh: true })).status, 200);
+  assert.deepEqual(preview.refreshOptions, [{ refresh: true }]);
 });
 
 test("draft and passcode restrictions are checked before weather lookup", async () => {
