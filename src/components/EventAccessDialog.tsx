@@ -1,11 +1,61 @@
 "use client";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Loader2, UserPlus, X } from "lucide-react";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Loader2,
+  Mail,
+  RotateCw,
+  Trash2,
+  UserPlus,
+  Users,
+  X,
+} from "lucide-react";
+import { type FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import type { EventAccessPerson } from "@/lib/event-collaboration-types";
 
 const button =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 disabled:opacity-50";
+function accessStatus(person: EventAccessPerson): { label: string; pill: string } {
+  if (person.status === "accepted")
+    return { label: "Co-host", pill: "border-emerald-200 bg-emerald-50 text-emerald-700" };
+  if (person.status === "expired")
+    return { label: "Expired", pill: "border-slate-200 bg-slate-50 text-slate-500" };
+  if (person.emailStatus === "failed")
+    return { label: "Email failed", pill: "border-rose-200 bg-rose-50 text-rose-700" };
+  if (person.status === "pending")
+    return { label: "Pending", pill: "border-amber-200 bg-amber-50 text-amber-700" };
+  return { label: "Removed", pill: "border-slate-200 bg-slate-50 text-slate-500" };
+}
+
+function StatusPill({ className, children }: { className: string; children: ReactNode }) {
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center rounded-md border px-1.5 py-px text-[11px] font-medium leading-4 ${className}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+function Avatar({ text, tone }: { text: string; tone: "owner" | "member" | "invite" }) {
+  const style =
+    tone === "owner"
+      ? "bg-slate-900 text-white"
+      : tone === "member"
+        ? "bg-violet-100 text-violet-800"
+        : "border border-dashed border-slate-300 bg-white text-slate-500";
+  return (
+    <span
+      aria-hidden="true"
+      className={`grid size-9 shrink-0 place-items-center rounded-full text-[13px] font-semibold ${style}`}
+    >
+      {text}
+    </span>
+  );
+}
+
 export default function EventAccessDialog({
   eventId,
   eventTitle,
@@ -127,120 +177,194 @@ export default function EventAccessDialog({
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[90] bg-slate-950/50 backdrop-blur-sm" />
+        <Dialog.Overlay className="fixed inset-0 z-[90] bg-slate-950/45 backdrop-blur-[3px]" />
         <Dialog.Content
           onCloseAutoFocus={(event) => {
             event.preventDefault();
             trigger.current?.focus();
           }}
-          className="fixed left-1/2 top-1/2 z-[91] max-h-[85dvh] w-[calc(100%_-_2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl bg-white p-5 text-slate-950 shadow-2xl sm:p-7"
+          className="fixed left-1/2 top-1/2 z-[91] flex max-h-[88dvh] w-[calc(100%_-_2rem)] max-w-[32rem] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-white text-slate-950 shadow-[0_24px_70px_-16px_rgba(15,23,42,0.45)] ring-1 ring-slate-900/[0.08]"
         >
-          <Dialog.Close
-            className={`${button} absolute right-2 top-2 min-w-11 text-slate-700`}
-            aria-label="Close manage access"
-          >
-            <X size={20} />
-          </Dialog.Close>
-          <Dialog.Title className="pr-10 text-xl font-semibold">Manage access</Dialog.Title>
-          <Dialog.Description className="mt-2 text-sm leading-relaxed text-slate-600">
-            Invite a co-host to {eventTitle}. They can edit, save and publish this event and manage
-            its RSVPs and messages. Only you can manage co-hosts or delete the event.
-          </Dialog.Description>
-          <form onSubmit={submit} className="mt-5 space-y-2">
-            <label htmlFor={`cohost-email-${eventId}`} className="text-sm font-semibold">
-              Co-host email
-            </label>
-            <input
-              id={`cohost-email-${eventId}`}
-              type="email"
-              required
-              maxLength={254}
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="min-h-11 w-full rounded-xl border border-slate-300 px-3 text-base outline-violet-600"
-            />
-            <p className="text-sm text-slate-600">
-              They can create an account when they accept. Access applies only to this event.
-            </p>
-            <button
-              type="submit"
-              disabled={busy}
-              className={`${button} w-full bg-violet-700 text-white hover:bg-violet-800`}
-            >
-              {busy ? (
-                <Loader2
-                  size={18}
-                  className="animate-spin motion-reduce:animate-none"
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="relative px-5 pt-5 sm:px-6 sm:pt-6">
+              <Dialog.Close
+                className={`${button} absolute right-2.5 top-2.5 min-w-11 text-slate-400 hover:bg-slate-100 hover:text-slate-700`}
+                aria-label="Close manage access"
+              >
+                <X size={18} />
+              </Dialog.Close>
+              <div className="flex items-start gap-3.5 pr-10">
+                <span
                   aria-hidden="true"
-                />
-              ) : (
-                <UserPlus size={18} aria-hidden="true" />
-              )}
-              Invite co-host
-            </button>
-          </form>
-          {error && (
-            <p role="alert" className="mt-3 text-sm text-rose-700">
-              {error}
-            </p>
-          )}
-          {message && (
-            <p role="status" className="mt-3 text-sm text-slate-700">
-              {message}
-            </p>
-          )}
-          <div className="mt-6 border-t border-slate-200 pt-4">
-            <h3 className="font-semibold">Co-hosts and invitations</h3>
-            {loading ? (
-              <p role="status" className="mt-2 text-sm">
-                {loaded ? "Refreshing access…" : "Loading access…"}
-              </p>
-            ) : (
-              loaded &&
-              !people.length && <p className="mt-2 text-sm text-slate-600">No co-hosts yet.</p>
-            )}
-            <ul className="mt-2 divide-y divide-slate-200">
-              {people.map((person) => (
-                <li key={person.id} className="py-3">
-                  <p className="break-words text-sm font-semibold">{person.name || person.email}</p>
-                  {person.name && (
-                    <p className="break-words text-sm text-slate-600">{person.email}</p>
-                  )}
-                  <p className="mt-1 text-sm text-slate-600">
-                    {person.status === "accepted"
-                      ? "Co-host"
-                      : person.status === "expired"
-                        ? "Invitation expired"
-                        : person.emailStatus === "failed"
-                          ? "Invitation email failed"
-                          : person.status === "pending"
-                            ? "Invitation pending"
-                            : "Access removed"}
-                  </p>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    {person.status !== "accepted" && (
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void request("POST", person.email)}
-                        className={`${button} text-violet-700 hover:bg-violet-50`}
-                      >
-                        Resend
-                      </button>
+                  className="grid size-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm"
+                >
+                  <Users size={18} />
+                </span>
+                <div className="min-w-0">
+                  <Dialog.Title className="text-[17px] font-semibold leading-6 tracking-tight">
+                    Manage access
+                  </Dialog.Title>
+                  <Dialog.Description className="mt-0.5 text-[13px] leading-5 text-slate-500">
+                    Invite co-hosts to help run{" "}
+                    <span className="font-medium text-slate-800">{eventTitle}</span>.
+                  </Dialog.Description>
+                </div>
+              </div>
+              <form onSubmit={submit} className="mt-6">
+                <label
+                  htmlFor={`cohost-email-${eventId}`}
+                  className="text-[13px] font-medium text-slate-700"
+                >
+                  Co-host email
+                </label>
+                <div className="mt-1.5 flex items-center gap-1 rounded-xl border border-slate-300 bg-white p-1 pl-3 shadow-sm transition focus-within:border-slate-900 focus-within:ring-4 focus-within:ring-slate-900/10">
+                  <Mail size={16} aria-hidden="true" className="shrink-0 text-slate-400" />
+                  <input
+                    id={`cohost-email-${eventId}`}
+                    type="email"
+                    required
+                    maxLength={254}
+                    autoComplete="email"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    className="h-10 min-w-0 flex-1 bg-transparent px-1.5 text-base text-slate-900 outline-none placeholder:text-slate-400 sm:text-sm"
+                  />
+                  <button
+                    type="submit"
+                    disabled={busy}
+                    aria-label="Invite co-host"
+                    className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 disabled:opacity-50"
+                  >
+                    {busy && (
+                      <Loader2
+                        size={15}
+                        className="animate-spin motion-reduce:animate-none"
+                        aria-hidden="true"
+                      />
                     )}
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void request("DELETE", undefined, person.id)}
-                      className={`${button} text-rose-700 hover:bg-rose-50`}
-                    >
-                      {person.status === "accepted" ? "Remove access" : "Cancel invitation"}
-                    </button>
+                    Invite
+                  </button>
+                </div>
+              </form>
+              {error && (
+                <p
+                  role="alert"
+                  className="mt-3 flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] text-rose-800"
+                >
+                  <AlertCircle size={15} className="mt-0.5 shrink-0" aria-hidden="true" />
+                  {error}
+                </p>
+              )}
+              {message && (
+                <p
+                  role="status"
+                  className="mt-3 flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-800"
+                >
+                  <CheckCircle2 size={15} className="mt-0.5 shrink-0" aria-hidden="true" />
+                  {message}
+                </p>
+              )}
+            </div>
+            <div className="px-5 pb-2 pt-6 sm:px-6">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="flex items-center gap-2 text-[13px] font-semibold text-slate-900">
+                  People with access
+                  <span className="rounded-full bg-slate-100 px-1.5 py-px text-[11px] font-medium tabular-nums text-slate-600">
+                    {people.length + 1}
+                  </span>
+                </h3>
+                {loading && (
+                  <p role="status" className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <Loader2
+                      size={12}
+                      className="animate-spin motion-reduce:animate-none"
+                      aria-hidden="true"
+                    />
+                    {loaded ? "Refreshing access…" : "Loading access…"}
+                  </p>
+                )}
+              </div>
+              <ul className="mt-1.5">
+                <li className="flex items-center gap-3 py-2.5">
+                  <Avatar text="Y" tone="owner" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-slate-900">You</p>
+                    <p className="text-xs text-slate-500">Event owner</p>
                   </div>
+                  <StatusPill className="mr-1 border-violet-200 bg-violet-50 text-violet-700">
+                    Owner
+                  </StatusPill>
                 </li>
-              ))}
-            </ul>
+                {people.map((person) => {
+                  const status = accessStatus(person);
+                  return (
+                    <li key={person.id} className="flex items-center gap-3 py-2.5">
+                      <Avatar
+                        text={(person.name || person.email).trim().charAt(0).toUpperCase()}
+                        tone={person.status === "accepted" ? "member" : "invite"}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className="truncate text-sm font-medium text-slate-900"
+                          title={person.name || person.email}
+                        >
+                          {person.name || person.email}
+                        </p>
+                        <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
+                          <StatusPill className={status.pill}>{status.label}</StatusPill>
+                          {person.name && (
+                            <span className="truncate text-xs text-slate-500" title={person.email}>
+                              {person.email}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center">
+                        {person.status !== "accepted" && (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            aria-label="Resend"
+                            title="Resend invitation"
+                            onClick={() => void request("POST", person.email)}
+                            className={`${button} min-w-11 rounded-lg px-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900`}
+                          >
+                            <RotateCw size={15} aria-hidden="true" />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          disabled={busy}
+                          aria-label={
+                            person.status === "accepted" ? "Remove access" : "Cancel invitation"
+                          }
+                          title={
+                            person.status === "accepted" ? "Remove access" : "Cancel invitation"
+                          }
+                          onClick={() => void request("DELETE", undefined, person.id)}
+                          className={`${button} min-w-11 rounded-lg px-2 text-slate-500 hover:bg-rose-50 hover:text-rose-700`}
+                        >
+                          <Trash2 size={15} aria-hidden="true" />
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              {loaded && !loading && !people.length && (
+                <p className="pb-2 text-xs text-slate-500">No co-hosts yet.</p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/80 px-5 py-3 sm:px-6">
+            <p className="flex items-center gap-1.5 text-xs text-slate-500">
+              <Clock size={13} className="shrink-0" aria-hidden="true" />
+              Invites expire after 7 days.
+            </p>
+            <Dialog.Close className="inline-flex min-h-9 shrink-0 items-center rounded-lg border border-slate-300 bg-white px-3.5 text-sm font-medium text-slate-800 shadow-sm hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600">
+              Done
+            </Dialog.Close>
           </div>
         </Dialog.Content>
       </Dialog.Portal>
