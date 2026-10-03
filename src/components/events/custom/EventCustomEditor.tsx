@@ -26,6 +26,7 @@ import { validateCustomEventPublicSlug, MAX_PUBLIC_SLUG_LENGTH } from "@/utils/e
 import CustomEventPageContent from "./CustomEventPageContent";
 import styles from "./custom-event.module.css";
 import EventCustomThemeDialog from "./EventCustomThemeDialog";
+import EventPageLoading from "./EventPageLoading";
 
 export default function EventCustomEditor({ initialPage }: { initialPage?: CustomEventPage } = {}) {
   const eventHistoryClient = useEventHistoryClient();
@@ -296,11 +297,12 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
     setPage((previous) =>
       previous ? { ...previous, details: { ...previous.details, [key]: value } } : previous,
     );
+  if (!page && !error) return <EventPageLoading />;
   if (!page)
     return (
-      <div className="p-10">
-        <p role={error ? "alert" : "status"}>{error || "Opening your event page…"}</p>
-        {error && (
+      <main className={styles.editor}>
+        <div className={styles.loadError}>
+          <p role="alert">{error}</p>
           <button
             type="button"
             className={styles.secondary}
@@ -308,8 +310,8 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
           >
             Retry
           </button>
-        )}
-      </div>
+        </div>
+      </main>
     );
   const d = page.details;
   const field = (
