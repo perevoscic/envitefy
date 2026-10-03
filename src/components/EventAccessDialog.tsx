@@ -2,11 +2,9 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   AlertCircle,
-  Check,
   CheckCircle2,
   Clock,
   Loader2,
-  Lock,
   Mail,
   RotateCw,
   Trash2,
@@ -267,20 +265,6 @@ export default function EventAccessDialog({
                   {message}
                 </p>
               )}
-              <ul className="mt-4 grid gap-x-4 gap-y-1.5 rounded-xl bg-slate-50 px-3.5 py-3 text-[13px] text-slate-600 sm:grid-cols-2">
-                {["Edit, save and publish", "Manage RSVPs & messages"].map((item) => (
-                  <li key={item} className="flex items-center gap-2">
-                    <Check size={14} className="shrink-0 text-emerald-600" aria-hidden="true" />
-                    {item}
-                  </li>
-                ))}
-                {["Only you manage co-hosts", "Only you can delete"].map((item) => (
-                  <li key={item} className="flex items-center gap-2">
-                    <Lock size={13} className="shrink-0 text-slate-400" aria-hidden="true" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
             </div>
             <div className="px-5 pb-2 pt-6 sm:px-6">
               <div className="flex items-center justify-between gap-3">
