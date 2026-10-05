@@ -5,15 +5,6 @@ import { useEffect, useState } from "react";
 import type { EventWeatherResult } from "@/lib/event-weather";
 import styles from "./custom-event.module.css";
 
-const messages = {
-  missing_details: "The forecast will appear once the event has a date and a location.",
-  location_unavailable: "The forecast needs a clear city or full street address for this location.",
-  outside_window: "The forecast will be available closer to the event, within three days of the date.",
-  past: "The forecast is no longer available for this event date.",
-  unconfigured: "Weather forecasts are temporarily unavailable.",
-  unavailable: "We couldn't load the forecast right now. Please try again shortly.",
-};
-
 type WeatherState = { key: string; result: EventWeatherResult | null; busy: boolean; refreshFailed: boolean };
 
 export default function EventWeatherSection({ eventId, date, time, location, units }: {
@@ -66,6 +57,8 @@ export default function EventWeatherSection({ eventId, date, time, location, uni
   }, [key, date, time, location, eventId, request]);
 
   const forecast = result?.status === "available" ? result : null;
+  // Keep checking while hidden so the panel appears when a forecast becomes available.
+  if (!forecast) return null;
   const temp = forecast && (units === "c" ? forecast.tempC : forecast.tempF);
   const high = forecast && (units === "c" ? forecast.highC : forecast.highF);
   const low = forecast && (units === "c" ? forecast.lowC : forecast.lowF);
@@ -78,18 +71,16 @@ export default function EventWeatherSection({ eventId, date, time, location, uni
     : /sunny|clear/i.test(summary) ? Sun : Cloud;
   const timeLabel = forecast?.time
     ? new Date(`2000-01-01T${forecast.time}:00Z`).toLocaleTimeString("en-US", { timeZone: "UTC", hour: "numeric", minute: "2-digit" }) : "";
-  const status = !date || !location ? "missing_details" : result?.status;
   return (
     <section className={styles.weather} aria-label="Event weather">
       <div className={styles.weatherHeading}>
         <h2>Weather</h2>
-        <button type="button" className={styles.weatherRefresh} disabled={busy || status === "missing_details"}
+        <button type="button" className={styles.weatherRefresh} disabled={busy}
           aria-label="Refresh weather" onClick={() => setRequest((value) => ({ key, version: value.version + 1, refresh: true }))}>
           <RefreshCw size={14} aria-hidden="true" />{busy ? "Refreshing…" : "Refresh"}
         </button>
       </div>
       <div aria-live="polite" aria-atomic="true" aria-busy={busy}>
-        {forecast ? <>
           <div className={styles.weatherConditions}>
             <Icon size={28} strokeWidth={1.5} aria-hidden="true" />
             {temp !== null && <div className={styles.weatherTemperature}>{Math.round(temp)}<span>{degree}</span></div>}
@@ -108,9 +99,6 @@ export default function EventWeatherSection({ eventId, date, time, location, uni
             Updated {new Date(forecast.checkedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })} · <a href="https://www.weatherapi.com/" target="_blank" rel="noopener noreferrer">WeatherAPI.com</a>
           </p>
           {state?.key === key && state.refreshFailed && <p className={styles.weatherEmpty}>Couldn't refresh. Showing the last forecast.</p>}
-        </> : <p className={styles.weatherEmpty}>
-          {status && status !== "available" ? messages[status] : "Checking the event forecast…"}
-        </p>}
       </div>
     </section>
   );

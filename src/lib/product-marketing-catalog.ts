@@ -199,7 +199,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Hosts turn on Show weather directly in the editor menu and choose Fahrenheit or Celsius with inline buttons. Hiding weather retains the chosen units. The compact forecast appears beneath the main event details, inheriting the selected colors and fonts in editor previews and published pages.",
             "Hosts and guests can refresh the forecast. Refresh checks the provider again without saving the event, and keeps the previous forecast visible if the provider temporarily fails.",
             "With the weather provider configured and a supported location, forecasts use the event's local date and start hour. Available details include conditions, temperature, daily highs and lows, rain chance and wind; events without a start time show a daily forecast.",
-            "Dates outside the three-day forecast window show when forecasts become available. Missing details and temporary provider failures have clear messages, without substituting today's weather for the event forecast.",
+            "The weather panel stays hidden until an event forecast is available, including dates outside the three-day forecast window, missing details and initial provider failures. Enabled weather checks automatically while the page is open and appears when available. A failed refresh retains the last forecast, without substituting today's weather for the event forecast.",
             "Weather settings stay in memory until an explicit save or publish. Private saved changes stay off the published page; protected events retain their access rules.",
           ],
           sellWhen: [
