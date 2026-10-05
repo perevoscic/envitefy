@@ -10,6 +10,7 @@ function compile(file, mocks = {}) {
   new Function("require", "module", "exports", code)((name) => {
     if (mocks[name]) return mocks[name];
     if (name === "./event-collaboration-types") return compile("src/lib/event-collaboration-types.ts");
+    if (name === "./event-response") return compile("src/lib/event-response.ts");
     if (name === "@/lib/event-draft-access") return compile("src/lib/event-draft-access.ts");
     return nativeRequire(name);
   }, module, module.exports);
@@ -261,10 +262,114 @@ test("editor revision tracking is isolated and keeps the baseline after a reject
     await second.fetch("/api/history/event"); conflict = true;
     conflict = false; await first.fetch("/api/history/event"); conflict = true;
     await first.fetch("/api/history/event", { method: "PATCH" });
-    assert.equal(calls.at(-1).headers.get("If-Match"), "one");
+    assert.equal(calls.at(-1).headers.get("If-Match"), null);
+    assert.equal(JSON.parse(calls.at(-1).body).expectedRevision, "one");
     await first.fetch("/api/history/event", { method: "PATCH" });
-    assert.equal(calls.at(-1).headers.get("If-Match"), "one");
+    assert.equal(JSON.parse(calls.at(-1).body).expectedRevision, "one");
   } finally { global.fetch = original; }
+});
+
+test("a custom link save advances the editor revision before a date save, while other edits still conflict", async () => {
+  const { createEventHistoryClient } = compile("src/lib/event-history-client.ts", { react: { useMemo: f => f() } });
+  const original = global.fetch;
+  let revision = "original";
+  let date = "2026-10-05";
+  const requests = [];
+  global.fetch = async (url, options) => {
+    if (options.method === "PATCH") {
+      assert.equal(options.headers.has("If-Match"), false);
+      const body = JSON.parse(options.body);
+      requests.push(body);
+      if (body.expectedRevision !== revision) return Response.json({ error: "changed", code: "event_changed" }, { status: 409 });
+      if (url.endsWith("/public-slug")) {
+        revision = "custom-link";
+        return Response.json({ id: "event", revision, publicSlug: body.publicSlug });
+      }
+      date = body.data.date;
+      revision = "date-saved";
+    }
+    return Response.json({ id: "event", revision, data: { date } });
+  };
+  try {
+    const client = createEventHistoryClient();
+    await client.fetch("/api/history/event");
+    await client.fetch("/api/events/event/public-slug", { method: "PATCH", body: JSON.stringify({ publicSlug: "field-trip" }) });
+    const saved = await client.fetch("/api/history/event", { method: "PATCH", body: JSON.stringify({ data: { date: "2026-11-02" } }) });
+    assert.equal(saved.status, 200);
+    assert.equal(date, "2026-11-02");
+    assert.equal(requests[1].expectedRevision, "custom-link");
+    revision = "another-editor";
+    const rejected = await client.fetch("/api/history/event", { method: "PATCH", body: JSON.stringify({ data: { date: "2026-11-03" } }) });
+    assert.equal(rejected.status, 409);
+    assert.equal(date, "2026-11-02");
+  } finally { global.fetch = original; }
+});
+
+test("platform text errors preserve the revision and produce a usable editor message", async () => {
+  const { createEventHistoryClient } = compile("src/lib/event-history-client.ts", { react: { useMemo: f => f() } });
+  const original = global.fetch;
+  let failed = false;
+  global.fetch = async () => failed
+    ? new Response("An error occurred\nPRECONDITION_FAILED", { status: 412 })
+    : Response.json({ id: "event", revision: "original", data: {} });
+  try {
+    const client = createEventHistoryClient();
+    await client.fetch("/api/history/event");
+    failed = true;
+    await assert.rejects(client.fetch("/api/history/event", { method: "PATCH", body: "{}" }), error => {
+      assert.match(error.message, /could not confirm.*412/);
+      assert.match(error.message, /Your edits are still here/);
+      assert.doesNotMatch(error.message, /Unexpected token/);
+      return true;
+    });
+    let retried;
+    global.fetch = async (_url, options) => { retried = JSON.parse(options.body); return Response.json({ error: "changed" }, { status: 409 }); };
+    await client.fetch("/api/history/event", { method: "PATCH", body: "{}" });
+    assert.equal(retried.expectedRevision, "original");
+  } finally { global.fetch = original; }
+});
+
+test("public link API returns its committed revision and retains owner and conflict checks", async () => {
+  const errors = compile("src/lib/event-collaboration-types.ts");
+  const { api, event } = fixture();
+  let user = "owner";
+  let stale = false;
+  const route = compile("src/app/api/events/[id]/public-slug/route.ts", {
+    "@/utils/event-product-route": { buildEventProductPath: () => "/event/field-trip" },
+    "next-auth": { getServerSession: async () => ({}) },
+    "@/lib/auth": { authOptions: {}, resolveSessionUserId: async () => user },
+    "@/lib/dashboard-cache": { invalidateUserDashboard: () => {} },
+    "@/lib/history-cache": { invalidateUserHistory: () => {} },
+    "@/lib/event-collaboration": api,
+    "@/lib/event-collaboration-types": errors,
+    "@/utils/event-public-slug": { makeEventPublicSlugRoutable: value => value },
+    "@/utils/event-url": { buildEventPath: () => "/event/field-trip", buildStudioCardPath: () => "/card/field-trip", buildEventSlugSegment: () => "field-trip" },
+    "@/lib/db": {
+      getEventHistoryById: async () => event,
+      listShareRecipientUserIdsForEvent: async () => [],
+      updateEventHistoryPublicSlug: async params => {
+        assert.equal(params.collaborationUserId, "owner");
+        assert.equal(params.expectedRevision, "original");
+        if (stale) throw new errors.EventCollaborationError("Event changed", 409, "event_changed");
+        return { ...event, public_slug: params.publicSlug, data: { ...event.data, publicSlug: params.publicSlug } };
+      },
+    },
+  });
+  const request = () => new Request("https://envitefy.com/api/events/event/public-slug", { method: "PATCH", body: JSON.stringify({ publicSlug: "field-trip", expectedRevision: "original" }) });
+  const context = { params: Promise.resolve({ id: "event" }) };
+  const response = await route.PATCH(request(), context);
+  const result = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(result.id, "event");
+  assert.equal(result.revision, api.eventRevision({ ...event, data: { ...event.data, publicSlug: "field-trip" } }));
+  stale = true;
+  const conflict = await route.PATCH(request(), context);
+  assert.equal(conflict.status, 409);
+  assert.equal((await conflict.json()).code, "event_changed");
+  user = "friend";
+  assert.equal((await route.PATCH(request(), context)).status, 403);
+  user = null;
+  assert.equal((await route.PATCH(request(), context)).status, 401);
 });
 
 test("collaboration schema commits table creation and client access revocation together", async () => {
@@ -410,6 +515,7 @@ test("a resumed browser template draft keeps its earlier revision until a succes
     request: async (url, options) => { calls.push([url, options]); return Response.json({ id: "event", revision: "saved" }); },
   });
   assert.equal(calls[0][0], "/api/history/event");
-  assert.equal(new Headers(calls[0][1].headers).get("If-Match"), "earlier");
+  assert.equal(new Headers(calls[0][1].headers).get("If-Match"), null);
+  assert.equal(JSON.parse(calls[0][1].body).expectedRevision, "earlier");
   assert.equal(draft.eventRevision, "saved");
 });

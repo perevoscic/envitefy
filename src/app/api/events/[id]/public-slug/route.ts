@@ -9,6 +9,8 @@ import {
   updateEventHistoryPublicSlug,
 } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
+import { eventRevision } from "@/lib/event-collaboration";
+import { EventCollaborationError, supportsEventCollaboration } from "@/lib/event-collaboration-types";
 import { makeEventPublicSlugRoutable } from "@/utils/event-public-slug";
 import { buildEventPath, buildEventSlugSegment, buildStudioCardPath } from "@/utils/event-url";
 
@@ -51,7 +53,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: "Enter a more specific event link." }, { status: 400 });
     }
 
-    const updated = await updateEventHistoryPublicSlug({ id, publicSlug: requestedSlug });
+    const updated = await updateEventHistoryPublicSlug({
+      id,
+      publicSlug: requestedSlug,
+      ...(supportsEventCollaboration(existing.data) ? {
+        collaborationUserId: userId,
+        expectedRevision: typeof body.expectedRevision === "string" ? body.expectedRevision : eventRevision(existing),
+      } : {}),
+    });
     if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     await invalidateEventViewers(id, userId);
@@ -59,6 +68,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const publicSlug = updated.public_slug || requestedSlug;
     return NextResponse.json({
       ok: true,
+      id: updated.id,
+      revision: eventRevision(updated),
       publicSlug,
       segment: buildEventSlugSegment(updated.id, updated.title, publicSlug),
       publicPath: buildEventProductPath({ eventId: updated.id, title: updated.title, data: updated.data, publicSlug }),
@@ -71,6 +82,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       )}`,
     });
   } catch (err) {
+    if (err instanceof EventCollaborationError)
+      return NextResponse.json({ error: err.message, code: err.code }, { status: err.status });
     const message = err instanceof Error ? err.message : "The event link could not be updated.";
     return NextResponse.json(
       { error: message },

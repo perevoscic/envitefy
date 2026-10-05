@@ -98,8 +98,8 @@ export async function saveTemplateDraftToAccount({
     request(url, {
       method,
       credentials: "include",
-      headers: { "Content-Type": "application/json", ...(method === "PATCH" && draft.eventRevision ? { "If-Match": draft.eventRevision } : {}) },
-      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...body, ...(method === "PATCH" && draft.eventRevision ? { expectedRevision: draft.eventRevision } : {}) }),
     });
   const creating = !draft.eventId;
   const response = await send(

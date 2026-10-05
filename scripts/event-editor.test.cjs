@@ -60,7 +60,8 @@ test("published saves update the same record with the original revision and gues
     historyFetch: client.fetch,
   });
   assert.equal(calls[2].url, "/api/history/saved-event");
-  assert.equal(calls[2].options.headers.get("If-Match"), "v1");
+  assert.equal(calls[2].options.headers.get("If-Match"), null);
+  assert.equal(JSON.parse(calls[2].options.body).expectedRevision, "v1");
   assert.equal(row.data.status, "published");
   assert.equal(row.data.numberOfGuests, 12);
   assert.deepEqual(row.data.customMetadata, { keep: true });
@@ -105,7 +106,8 @@ test("template publication saves the latest editor snapshot without losing RSVP 
   assert.equal(id, "same-event");
   assert.equal(writes.length, 1);
   assert.equal(writes[0].url, "/api/history/same-event");
-  assert.equal(writes[0].options.headers["If-Match"], "v1");
+  assert.equal(writes[0].options.headers["If-Match"], undefined);
+  assert.equal(writes[0].body.expectedRevision, "v1");
   assert.equal(writes[0].body.data.status, "published");
   assert.equal(writes[0].body.data.numberOfGuests, 7);
   assert.deepEqual(writes[0].body.data.templateEditor.snapshot, snapshot);

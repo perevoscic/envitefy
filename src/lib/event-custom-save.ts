@@ -10,6 +10,7 @@ import {
   safeEventLink,
 } from "./event-custom-design";
 import { parseCalendarDateTimeToIso } from "./calendar-date-time";
+import { readEventResponse } from "./event-response";
 
 export function customEventFieldErrors(page: CustomEventPage, publishing: boolean): Record<string, string> {
   const d = page.details;
@@ -135,7 +136,7 @@ export async function saveCustomEventPage({
       }),
     },
   );
-  const result = await response.json();
+  const result = await readEventResponse(response);
   if (!response.ok || !result.id)
     throw new Error(result.error || "Your event page could not be saved. Please try again.");
   // Retried POSTs may recover the original identity without applying the latest content.

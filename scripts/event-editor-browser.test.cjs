@@ -96,6 +96,18 @@ test("one Event Page editor protects saves and navigation across creation modes 
       url = new URL(req.url());
     if (url.pathname === "/fixture.js")
       return route.fulfill({ contentType: "text/javascript", body: script });
+    if (/^\/api\/events\/[^/]+\/public-slug$/.test(url.pathname)) {
+      const id = url.pathname.split("/")[3];
+      const previous = records.get(id);
+      const body = req.postDataJSON();
+      assert.equal(req.headers()["if-match"], undefined);
+      if (body.expectedRevision !== previous.revision)
+        return route.fulfill({ status: 409, contentType: "application/json", body: JSON.stringify({ error: "Event changed" }) });
+      previous.public_slug = body.publicSlug;
+      previous.data.publicSlug = body.publicSlug;
+      previous.revision = "custom-link-saved";
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ id, revision: previous.revision, publicSlug: body.publicSlug }) });
+    }
     if (url.pathname.startsWith("/api/history")) {
       const id = url.pathname.split("/")[3];
       if (req.method() === "GET")
@@ -108,8 +120,9 @@ test("one Event Page editor protects saves and navigation across creation modes 
         path: url.pathname,
         method: req.method(),
         body,
-        revision: req.headers()["if-match"],
+        revision: body.expectedRevision,
       });
+      assert.equal(req.headers()["if-match"], undefined, "event revisions must bypass HTTP entity preconditions");
       if (failSave)
         return route.fulfill({
           status: 409,
@@ -408,16 +421,29 @@ test("one Event Page editor protects saves and navigation across creation modes 
           const savedId = new URL(savedUrl).searchParams.get("edit");
           records.get(savedId).data.status = "published";
           records.get(savedId).data.draftStatus = "published";
+          records.get(savedId).data.customEventPage.details.date = "2026-10-05";
           await page.reload();
           await page.getByRole("button", { name: /Event details/ }).click();
           assert.equal(await page.getByRole("button", { name: "Save draft", exact: true }).count(), 0);
           assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).count(), 0);
+          await page.getByLabel("Date", { exact: true }).fill("2026-11-02");
+          await click("Back to details");
+          await controls.getByRole("button", { name: /^Public link/ }).click();
+          await page.getByLabel("Custom link", { exact: true }).fill("gateway-field-trip-2nd-grade-2026");
+          await click("Save link");
+          await page.getByText("Link updated. Previous links still work.", { exact: true }).waitFor();
+          await click("Back to details");
+          await controls.getByRole("button", { name: /Event details/ }).click();
+          assert.equal(await page.getByLabel("Date", { exact: true }).inputValue(), "2026-11-02", "saving the URL preserves unsaved date edits");
           await title.fill("Published upload update");
           await click("Save changes");
           await page.locator("[data-destination]").waitFor();
           assert.equal(writes.at(-1).path, `/api/history/${savedId}`);
           assert.equal(writes.at(-1).body.data.status, "published");
           assert.equal(writes.at(-1).body.data.customEventPage.details.title, "Published upload update");
+          assert.equal(writes.at(-1).body.data.customEventPage.details.date, "2026-11-02");
+          assert.equal(writes.at(-1).revision, "custom-link-saved");
+          assert.equal(writes.at(-1).body.data.publicSlug, "gateway-field-trip-2nd-grade-2026");
         }
       }
     }

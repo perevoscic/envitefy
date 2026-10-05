@@ -3,6 +3,7 @@
 import HeroImageEditor from "@/components/events/HeroImageEditor";
 import { CloudSun, MapPinned } from "lucide-react";
 import { useEventHistoryClient } from "@/lib/event-history-client";
+import { readEventResponse } from "@/lib/event-response";
 import { isEventDraft } from "@/lib/event-draft-access";
 import { prepareCustomEventHeroImage } from "@/lib/custom-event-hero-image";
 import { FontPairingSelect } from "@/components/design-panel/FontPairingSelect";
@@ -177,7 +178,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
           throw new Error(
             "This event page could not be opened. Sign in to its host account and retry.",
           );
-        const row = await response.json();
+        const row = await readEventResponse(response);
         const saved = normalizeCustomEventPage(
           row.data?.customEventPageDraft || row.data?.customEventPage,
         );
@@ -232,7 +233,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
         currentDetails: current.details,
       }),
     });
-    const result = await response.json();
+    const result = await readEventResponse(response);
     if (!response.ok || !result.details)
       throw new Error(result.error || "Your wording could not be prepared. Please try again.");
     const details = applyCustomEventWording(current.details, customEventWording(result.details));
@@ -340,7 +341,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
     saving.current = true;
     setBusy(true);
     try {
-      const response = await fetch(
+      const response = await eventHistoryClient.fetch(
         `/api/events/${encodeURIComponent(savedId.current)}/public-slug`,
         {
           method: "PATCH",
@@ -349,7 +350,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
           body: JSON.stringify({ publicSlug: validation.slug }),
         },
       );
-      const result = await response.json();
+      const result = await readEventResponse(response);
       if (!response.ok) throw new Error(result.error || "The event link could not be updated.");
       existing.current = { ...existing.current, publicSlug: result.publicSlug };
       setPublicSlug(result.publicSlug);
@@ -419,7 +420,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
           arrivalMapSection: index < 0 ? sections.length - 1 : index,
         }),
       });
-      const result = await response.json();
+      const result = await readEventResponse(response);
       const prepared = normalizeArrivalMap(result.map);
       if (!response.ok || !prepared || prepared.sourceImage !== sourceImage)
         throw new Error(result.error || "The parking map screenshot could not be prepared.");
