@@ -130,22 +130,22 @@ test("guest preview and sharing describe actual public or invitation access", ()
 test("saved signup drafts allow owner invitations and co-host controls omit owner actions", () => {
   const Share = load("src/components/smart-signup-form/SignupSharing.tsx", baseMocks).default;
   const saved = renderToStaticMarkup(React.createElement(Share, { eventId: "saved", published: false }));
-  assert.match(saved, /aria-label="Manage access"/);
+  assert.match(saved, /aria-label="Invite co-host"/);
   assert.match(saved, /Publish your signup to get a shareable link/);
   const unsaved = renderToStaticMarkup(React.createElement(Share, { published: false }));
   assert.match(unsaved, /Save a draft or publish to invite co-hosts/);
-  assert.doesNotMatch(unsaved, /aria-label="Manage access"/);
+  assert.doesNotMatch(unsaved, /aria-label="Invite co-host"|aria-label="Manage access"/);
   const cohostShare = renderToStaticMarkup(React.createElement(Share, { eventId: "saved", canManageCollaborators: false, requiresInvitation: true }));
-  assert.doesNotMatch(cohostShare, /aria-label="Manage access"|Invite people &amp; check access/);
+  assert.doesNotMatch(cohostShare, /aria-label="Invite co-host"|aria-label="Manage access"|Invite people &amp; check access/);
   const Actions = load("src/components/smart-signup-form/SignupOwnerActions.tsx", {
     ...baseMocks, "@/components/EventDeleteModal": { __esModule: true, default: () => React.createElement("button", null, "Delete form") },
   }).default;
   const props = { eventId: "saved", eventTitle: "Signup", eventData: {}, form: createSignupThemeForm("harvest-table") };
   const owner = renderToStaticMarkup(React.createElement(Actions, props));
-  assert.match(owner, /Manage access|Duplicate form|Delete form/);
+  assert.match(owner, /Invite co-host/);
   const cohost = renderToStaticMarkup(React.createElement(Actions, { ...props, isOwner: false }));
   assert.match(cohost, /aria-label="Edit event"/);
-  assert.doesNotMatch(cohost, /Manage access|Duplicate form|Delete form/);
+  assert.doesNotMatch(cohost, /Invite co-host|Manage access|Duplicate form|Delete form/);
 });
 
 test("public guests can find their signup without exposing recovery inside owner tools or previews", () => {

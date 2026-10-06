@@ -83,7 +83,7 @@ test("signup builder keeps mobile actions in one row, moves dates, protects navi
     await page.goto(`${base}/previous`);
     await page.goto(`${base}${editorPath}?edit=saved-form`);
     await page.getByRole("button", { name: "Duplicate event", exact: true }).waitFor();
-    await click("Manage access");
+    await click("Invite co-host");
     await page.getByRole("dialog", { name: "Manage access" }).waitFor();
     await page.getByText(/Co-hosts can edit and publish this form/).waitFor();
     await page.getByRole("textbox", { name: "Co-host email", exact: true }).fill("helper@example.com");
@@ -93,6 +93,7 @@ test("signup builder keeps mobile actions in one row, moves dates, protects navi
     assert.equal(writes[0].path, "/api/events/saved-form/collaborators");
     await page.screenshot({ path: path.join(output, "mobile-cohost-invitation.png") });
     await click("Done");
+    await page.getByRole("button", { name: "Manage access", exact: true }).waitFor();
     writes.length = 0;
     for (const width of [320, 375, 430, 844]) {
       await page.setViewportSize({ width, height: width === 844 ? 390 : 812 });
@@ -154,7 +155,7 @@ test("signup builder keeps mobile actions in one row, moves dates, protects navi
     await page.getByText("Previous page: /previous", { exact: true }).waitFor();
     await page.goto(`${base}${editorPath}?edit=saved-form&role=cohost`);
     await page.getByRole("button", { name: "Save changes", exact: true }).waitFor();
-    assert.equal(await page.getByRole("button", { name: "Manage access", exact: true }).count(), 0);
+    assert.equal(await page.getByRole("button", { name: /^(Invite co-host|Manage access)$/ }).count(), 0);
     await click("Reopen signups");
     await click("Save changes");
     await page.getByText("Published.", { exact: true }).waitFor();
@@ -174,12 +175,12 @@ test("signup builder keeps mobile actions in one row, moves dates, protects navi
     }));
     await page.goto(`${base}${editorPath}`);
     await page.getByText("Save a draft or publish to invite co-hosts.", { exact: true }).waitFor();
-    assert.equal(await page.getByRole("button", { name: "Manage access", exact: true }).count(), 0);
+    assert.equal(await page.getByRole("button", { name: /^(Invite co-host|Manage access)$/ }).count(), 0);
     await click("Save as draft");
-    await page.getByRole("button", { name: "Manage access", exact: true }).waitFor();
+    await page.getByRole("button", { name: "Invite co-host", exact: true }).waitFor();
     assert.equal(writes.at(-1).method, "POST");
     assert.equal(writes.at(-1).data.data.status, "draft");
-    await click("Manage access");
+    await click("Invite co-host");
     await page.getByRole("dialog", { name: "Manage access" }).waitFor();
     await page.getByText("Form owner", { exact: true }).waitFor();
     await click("Done");

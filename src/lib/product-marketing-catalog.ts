@@ -78,7 +78,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           availability: "event-dependent",
           customerPromise: "Invite someone to help manage one saved event or Live Card from their own account.",
           proofPoints: [
-            "The owner uses Manage access to invite an email address, including someone who has not created an Envitefy account yet.",
+            "The owner uses Invite co-host to invite an email address, including someone who has not created an Envitefy account yet. The action becomes Manage access when a co-host or invitation exists.",
             "The recipient signs in or creates an account with the invited email and explicitly accepts access to the original event.",
             "Co-hosts can edit, save and publish event details and artwork, and manage that event's RSVPs and guest messages.",
             "Invitations expire after seven days. The owner can resend, cancel an invitation or remove a co-host's access.",
@@ -527,7 +527,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Create Event offers the account's enabled event categories and Sign-up Form. The Sign-up Forms sidebar collection appears after the first published form, or immediately for people who joined for forms; explicitly saved drafts remain in Drafts.",
             "New accounts created from the signup forms category default to Sign-up Form creation, with the template gallery as their starting point. Existing account preferences are preserved.",
             "Signed-in organizers keep their account's sidebar and mobile menu throughout the signup template gallery and editor, with Save, Discard, or Keep editing when leaving unsaved work.",
-            "Published signup pages keep Edit, Manage access, Duplicate and Delete at the top right for owners. On phones, Calendar, Directions and Share fit in one row with icons and accessible touch targets.",
+            "Published signup pages keep Edit, Invite co-host (Manage access once someone is invited), Duplicate and Delete at the top right for owners. On phones, Calendar, Directions and Share fit in one row with icons and accessible touch targets.",
             "Owners can invite co-hosts by email from saved sign-up forms and the builder. Recipients explicitly accept with the invited account before editing and publishing the same form, viewing and managing participants, exporting CSV and opening or closing signups. Only the owner can manage co-host access, delete the form, change its public URL or unpublish it. Invitations expire after seven days and can be resent or cancelled.",
             "The signup builder has compact Back, Start over and Save as draft controls, side-by-side mobile preview actions, and a desktop Cancel action. Sharing lives in the builder; published forms provide their guest link and drafts explain when it becomes available. Duplicate event opens an unsaved copy of the design and content without participants. Moving the event start keeps its existing duration, and date errors link to the editable field.",
             "Organizers can create sections and slots with labels, quantities, capacity, time windows, and notes.",

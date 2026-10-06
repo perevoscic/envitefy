@@ -12,7 +12,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { type FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import { type FormEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import type { EventAccessPerson } from "@/lib/event-collaboration-types";
 
 const button =
@@ -82,23 +82,8 @@ export default function EventAccessDialog({
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const endpoint = `/api/events/${encodeURIComponent(eventId)}/collaborators`;
-  useEffect(() => {
-    setOpen(false);
-    setPeople([]);
-    setLoaded(false);
-    setLoading(false);
-    setBusy(false);
-    setEmail("");
-    setError("");
-    setMessage("");
-    mutationPending.current = false;
-    return () => {
-      readController.current?.abort();
-      readController.current = null;
-      requestId.current += 1;
-    };
-  }, [eventId]);
-  async function request(method = "GET", recipient?: string, personId?: string) {
+  const accessLabel = people.length ? "Manage access" : "Invite co-host";
+  const request = useCallback(async (method = "GET", recipient?: string, personId?: string) => {
     if (mutationPending.current) return;
     readController.current?.abort();
     const currentId = ++requestId.current;
@@ -151,7 +136,21 @@ export default function EventAccessDialog({
         }
       }
     }
-  }
+  }, [endpoint, resourceType]);
+  useEffect(() => {
+    setOpen(false);
+    setPeople([]);
+    setLoaded(false);
+    setBusy(false);
+    setEmail("");
+    mutationPending.current = false;
+    void request();
+    return () => {
+      readController.current?.abort();
+      readController.current = null;
+      requestId.current += 1;
+    };
+  }, [request]);
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void request("POST", email.trim());
@@ -174,11 +173,11 @@ export default function EventAccessDialog({
         <button
           ref={trigger}
           type="button"
-          aria-label="Manage access"
+          aria-label={accessLabel}
           className={className || `${button} text-violet-700 hover:bg-violet-50`}
         >
           <UserPlus size={18} aria-hidden="true" />
-          <span className={labelClassName}>Manage access</span>
+          <span className={labelClassName}>{accessLabel}</span>
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>

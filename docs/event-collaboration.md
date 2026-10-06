@@ -1,12 +1,12 @@
 # Event co-hosts
 
-The owner opens **Manage access** from a saved Live Card or the event management workspace and invites an email address. The recipient may create an account after receiving the invitation. They must sign in with the invited email and explicitly accept before gaining access. Acceptance opens the original event workspace, and its dashboard card carries a **Co-host** badge.
+The owner opens **Invite co-host** from a saved Live Card or the event management workspace and invites an email address. The action changes to **Manage access** while any accepted co-host or pending/expired invitation remains, including after reloading the page. Removing the last person or invitation restores **Invite co-host**. The recipient may create an account after receiving the invitation. They must sign in with the invited email and explicitly accept before gaining access. Acceptance opens the original event workspace, and its dashboard card carries a **Co-host** badge.
 
 Co-hosts can edit event details and artwork, save drafts, publish, and manage RSVP responses and guest messages. Only the owner can delete the event, manage collaborators, change its public URL or unpublish it. Ownership remains `event_history.user_id`; collaboration grants no access to another event or to the owner's account integrations. Private scans remain excluded.
 
 ## Sign-up form co-hosts (October 6, 2026)
 
-Saved sign-up forms offer **Manage access** in the builder's **Share your signup** section, including saved drafts, and in the published form's host toolbar. New forms explain that a draft save or publication is required first; inviting never saves editor changes. The same seven-day invitations, explicit acceptance, recipient notifications, resend, cancellation and removal apply. Acceptance opens the original form's **Host dashboard**, or its editor for a draft.
+Saved sign-up forms offer **Invite co-host** in the builder's **Share your signup** section, including saved drafts, and in the published form's host toolbar. The action becomes **Manage access** when a co-host or invitation exists. New forms explain that a draft save or publication is required first; inviting never saves editor changes. The same seven-day invitations, explicit acceptance, recipient notifications, resend, cancellation and removal apply. Acceptance opens the original form's **Host dashboard**, or its editor for a draft.
 
 Accepted co-hosts can edit and publish the form, view participant contacts and answers, export CSV, edit or cancel participant responses and open or close signups. Guest and restricted participant access remain separate; pending co-host invitations grant no editing or participant data access. The published toolbar reserves access management, duplication and deletion for the owner. Public URL changes and unpublishing remain owner-only. A published form's co-host editor uses **Save changes** and **Save and leave** retains publication.
 

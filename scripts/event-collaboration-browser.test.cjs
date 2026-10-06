@@ -62,7 +62,7 @@ test("owner access controls and invited signup/login preserve the event and expl
   });
   try {
     await page.goto(base);
-    await page.getByRole("button", { name: "Manage access", exact: true }).click();
+    await page.getByRole("button", { name: "Invite co-host", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Manage access" }); await dialog.waitFor();
     await page.getByText("Loading access…", { exact: true }).waitFor();
     assert.equal(await page.getByRole("button", { name: "Invite co-host", exact: true }).isEnabled(), true, "a slow roster never blocks an invitation");
@@ -70,20 +70,24 @@ test("owner access controls and invited signup/login preserve the event and expl
     await page.getByLabel("Co-host email", { exact: true }).fill("new@test.com");
     await page.getByRole("button", { name: "Invite co-host", exact: true }).click();
     await page.getByText("Invitation sent. It expires in seven days.").waitFor();
-    holdReads = false; heldReads.splice(0).forEach(resolve => resolve());
+    holdReads = false; heldReads.splice(0).forEach(resolve => { resolve(); });
     await Promise.all(readReplies);
     assert.equal(await page.getByText("new@test.com", { exact: true }).count(), 1, "a late initial GET cannot erase the newly created invitation");
     assert.deepEqual(actions[0], { email: "new@test.com" });
     const bounds = await dialog.boundingBox(); assert.ok(bounds.x >= 0 && bounds.x+bounds.width <= 391);
     const close = await page.getByRole("button", { name: "Close manage access" }).boundingBox(); assert.ok(close.height >= 44 && close.width >= 44);
     await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Manage access", exact: true }).waitFor();
+    await page.reload();
+    await page.getByRole("button", { name: "Manage access", exact: true }).waitFor();
+    assert.equal(await page.getByRole("dialog").count(), 0, "saved invitations update the trigger without opening the dialog");
     holdReads = true;
     await page.getByRole("button", { name: "Manage access", exact: true }).click();
     await page.getByText("Refreshing access…", { exact: true }).waitFor();
     assert.equal(await page.getByText("new@test.com", { exact: true }).count(), 1, "reopening shows the previous roster while refreshing");
     assert.equal(await page.getByRole("button", { name: "Invite co-host", exact: true }).isEnabled(), true);
     await page.keyboard.press("Escape");
-    holdReads = false; heldReads.splice(0).forEach(resolve => resolve());
+    holdReads = false; heldReads.splice(0).forEach(resolve => { resolve(); });
     await Promise.all(readReplies);
     await page.getByRole("button", { name: "Manage access", exact: true }).click();
     await page.getByText("Refreshing access…", { exact: true }).waitFor({ state: "hidden" });
@@ -93,8 +97,8 @@ test("owner access controls and invited signup/login preserve the event and expl
     await page.getByText("Access removed. This person can no longer edit the event.").waitFor();
     await page.screenshot({ path: path.join(output, "access-mobile.png"), fullPage: true });
     await page.keyboard.press("Escape");
-    await page.waitForFunction(() => document.activeElement?.tagName === "BUTTON" && document.activeElement.textContent === "Manage access");
-    assert.equal(await page.getByRole("button", { name: "Manage access", exact: true }).evaluate(element => element === document.activeElement), true);
+    await page.waitForFunction(() => document.activeElement?.tagName === "BUTTON" && document.activeElement.textContent === "Invite co-host");
+    assert.equal(await page.getByRole("button", { name: "Invite co-host", exact: true }).evaluate(element => element === document.activeElement), true);
     actions.length = 0;
     await page.goto(`${base}/cohost-invite#${token}`);
     await page.getByRole("button", { name: "Create an account", exact: true }).waitFor();
