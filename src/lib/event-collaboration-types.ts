@@ -8,11 +8,10 @@ export type EventPermissions = {
   canDelete: boolean;
 };
 
-/** Collaboration is for authored events; private scans and signup responses retain their own access rules. */
+/** Authored events and signup forms support co-hosts; private scans retain their own access rules. */
 export function supportsEventCollaboration(data: Record<string, any> | null | undefined): boolean {
   if (
     !data ||
-    data.signupForm ||
     data.attachment ||
     data.invitedFromScan ||
     data.ownership === "invited"

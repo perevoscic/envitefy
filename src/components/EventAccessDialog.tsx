@@ -60,10 +60,14 @@ export default function EventAccessDialog({
   eventId,
   eventTitle,
   className,
+  resourceType = "event",
+  labelClassName,
 }: {
   eventId: string;
   eventTitle: string;
   className?: string;
+  resourceType?: "event" | "signup";
+  labelClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -133,7 +137,7 @@ export default function EventAccessDialog({
             : "The invitation was created, but its email could not be sent. Use Resend to try again.",
         );
       } else if (method === "DELETE")
-        setMessage("Access removed. This person can no longer edit the event.");
+        setMessage(`Access removed. This person can no longer edit the ${resourceType === "signup" ? "form" : "event"}.`);
     } catch (cause) {
       if (currentId !== requestId.current || controller?.signal.aborted) return;
       setError(cause instanceof Error ? cause.message : "Access could not be loaded.");
@@ -170,10 +174,11 @@ export default function EventAccessDialog({
         <button
           ref={trigger}
           type="button"
+          aria-label="Manage access"
           className={className || `${button} text-violet-700 hover:bg-violet-50`}
         >
           <UserPlus size={18} aria-hidden="true" />
-          <span>Manage access</span>
+          <span className={labelClassName}>Manage access</span>
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>
@@ -210,6 +215,11 @@ export default function EventAccessDialog({
                   </Dialog.Description>
                 </div>
               </div>
+              {resourceType === "signup" && (
+                <p className="mt-3 text-[13px] leading-5 text-slate-600">
+                  Co-hosts can edit and publish this form, view and manage participants, export responses and open or close signups. Only you can manage co-host access or delete the form.
+                </p>
+              )}
               <form onSubmit={submit} className="mt-6">
                 <label
                   htmlFor={`cohost-email-${eventId}`}
@@ -290,7 +300,7 @@ export default function EventAccessDialog({
                   <Avatar text="Y" tone="owner" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-slate-900">You</p>
-                    <p className="text-xs text-slate-500">Event owner</p>
+                    <p className="text-xs text-slate-500">{resourceType === "signup" ? "Form owner" : "Event owner"}</p>
                   </div>
                   <StatusPill className="mr-1 border-violet-200 bg-violet-50 text-violet-700">
                     Owner

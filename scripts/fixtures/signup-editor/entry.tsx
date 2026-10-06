@@ -1,4 +1,3 @@
-import React from "react";
 import { createRoot } from "react-dom/client";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import UnsavedProgressProvider from "../../../src/components/UnsavedProgressProvider";
@@ -13,7 +12,7 @@ const form = { ...createSignupThemeForm("school-days"), title: "Maple Grove Pare
 };
 const originalFetch = window.fetch.bind(window);
 window.fetch = async (input, init) => {
-  if (String(input) === "/api/history/saved-form" && !init?.method) return new Response(JSON.stringify({ id: "saved-form", data: { status: "published", signupForm: form, templateEditor: { category: "signup-forms", templateId: "editorial--school-days", snapshot: { form } } } }), { status: 200 });
+  if (String(input) === "/api/history/saved-form" && !init?.method) return new Response(JSON.stringify({ id: "saved-form", revision: "original-revision", permissions: { canManageCollaborators: new URLSearchParams(location.search).get("role") !== "cohost" }, data: { status: "published", signupForm: form, templateEditor: { category: "signup-forms", templateId: "editorial--school-days", snapshot: { form } } } }), { status: 200 });
   return originalFetch(input, init);
 };
 const changeRoute = (url: string, replace = false) => {

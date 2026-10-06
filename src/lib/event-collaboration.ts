@@ -1,8 +1,10 @@
 import { createHash, randomBytes } from "node:crypto";
+import type { PoolClient } from "pg";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
-import { type EventHistoryRow, prepareEventHistoryData, query, withClient } from "@/lib/db";
+import { type EventHistoryRow, getEventHistoryById, mutateSignupEvent, prepareEventHistoryData, query, withClient } from "@/lib/db";
 import { isEventDraft } from "@/lib/event-draft-access";
 import { invalidateUserHistory } from "@/lib/history-cache";
+import { updateSignupDefinition } from "@/lib/signup-mutations";
 import {
   type EventAccessPerson,
   EventCollaborationError,
@@ -166,15 +168,69 @@ export function eventRevision(row: Pick<EventHistoryRow, "title" | "data">): str
     .digest("hex");
 }
 
+/** Keep signup reservations and the dedicated form store in the same locked transaction. */
+export async function saveCollaborativeSignupEvent(params: {
+  eventId: string;
+  userId: string;
+  expectedRevision: string | null;
+  patch: Record<string, any>;
+  title?: string;
+}): Promise<EventHistoryRow & { revision: string }> {
+  await ensureEventCollaboration();
+  const saved = await mutateSignupEvent(params.eventId, async (row, client) => {
+    const permissions = await getEventPermissions(row, params.userId, client);
+    if (!permissions.canEdit || !supportsEventCollaboration(row.data))
+      throw new EventCollaborationError("You no longer have editing access to this form.", 403, "access_revoked");
+    const members = await client.query(
+      "SELECT 1 FROM event_collaborators WHERE event_id=$1 AND revoked_at IS NULL LIMIT 1",
+      [row.id],
+    );
+    if (!params.expectedRevision && (permissions.role !== "owner" || members.rows.length))
+      throw new EventCollaborationError("Reopen the editor to load the current form before saving. Your edits are still available here.", 428, "revision_required");
+    if (params.expectedRevision && params.expectedRevision !== eventRevision(row))
+      throw new EventCollaborationError("This form changed since you opened it. Your edits are still here. Copy any changes you want to keep, then reopen the latest form before saving.", 409, "event_changed");
+    const data = prepareEventHistoryData({ ...row.data, ...params.patch });
+    if (permissions.role !== "owner" && (
+      !data.signupForm || !supportsEventCollaboration(data) ||
+      (!isEventDraft(row.data) && isEventDraft(data)) || data.publicSlug !== row.data.publicSlug
+    )) throw new EventCollaborationError("Only the owner can change ownership, the public URL or unpublish this form.", 403, "owner_required");
+    if ("signupForm" in params.patch) {
+      data.signupForm = updateSignupDefinition(row.data?.signupForm, params.patch.signupForm, isEventDraft(data));
+    }
+    // Saved editor snapshots must never restore old participant responses or revisions.
+    if (data.templateEditor && data.signupForm) {
+      data.templateEditor = { ...data.templateEditor, snapshot: {
+        ...data.templateEditor.snapshot, form: { ...data.signupForm, responses: [] },
+      } };
+    }
+    delete data.responses;
+    delete data.collaborationRole;
+    await client.query("INSERT INTO event_edit_activity(event_id,user_id,action) VALUES($1,$2,$3)",
+      [row.id, params.userId, isEventDraft(data) ? "saved_draft" : "saved_changes"]);
+    return { data, title: params.title, result: null };
+  });
+  if (!saved) throw new EventCollaborationError("Form not found.", 404, "not_found");
+  await invalidateEventCollaborators(saved.row);
+  return { ...saved.row, revision: eventRevision(saved.row) };
+}
+
+export async function collaboratorWorkspaceHref(eventId: string): Promise<string> {
+  const row = await getEventHistoryById(eventId);
+  return row?.data?.signupForm
+    ? `/smart-signup-form/${row.public_slug || eventId}#signup-host-dashboard`
+    : `/event/${eventId}?tab=dashboard`;
+}
+
 export async function getEventPermissions(
   event: EventHistoryRow,
   userId: string | null | undefined,
+  client?: PoolClient,
 ) {
   if (!userId) return eventPermissions(null);
   if (event.user_id === userId) return eventPermissions("owner");
   if (!supportsEventCollaboration(event.data)) return eventPermissions(null);
   await ensureEventCollaboration();
-  const result = await query<{ allowed: boolean }>(
+  const result = await (client ? client.query.bind(client) : query)<{ allowed: boolean }>(
     "SELECT EXISTS(SELECT 1 FROM event_collaborators WHERE event_id=$1 AND user_id=$2 AND revoked_at IS NULL) AS allowed",
     [event.id, userId],
   );
@@ -240,7 +296,7 @@ export async function requireCollaborationOwner(
     );
   if (!supportsEventCollaboration(event.data))
     throw new EventCollaborationError(
-      "Co-host access is available for authored events and Live Cards.",
+      "Co-host access is available for authored events, Live Cards and sign-up forms.",
       400,
       "unsupported_event",
     );
@@ -381,6 +437,7 @@ type InviteRecord = {
   expires_at: string;
   eventTitle: string;
   ownerName: string;
+  isSignupForm?: boolean;
 };
 export async function readCollaboratorInvitation(token: string): Promise<InviteRecord | null> {
   if (!/^[a-f0-9]{64}$/.test(token)) return null;
@@ -388,7 +445,8 @@ export async function readCollaboratorInvitation(token: string): Promise<InviteR
   return (
     (
       await query<InviteRecord>(
-        `SELECT i.*,e.title AS "eventTitle",trim(concat_ws(' ',u.first_name,u.last_name)) AS "ownerName"
+        `SELECT i.*,e.title AS "eventTitle",trim(concat_ws(' ',u.first_name,u.last_name)) AS "ownerName",
+      (jsonb_typeof(e.data->'signupForm')='object') AS "isSignupForm"
     FROM event_collaborator_invites i JOIN event_history e ON e.id=i.event_id JOIN users u ON u.id=i.invited_by
     WHERE i.token_hash=$1`,
         [createHash("sha256").update(token).digest("hex")],

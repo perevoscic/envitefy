@@ -39,7 +39,7 @@ test("signup builder keeps mobile actions in one row, moves dates, protects navi
     compiler.run((error, stats) => compiler.close(() => error || stats?.hasErrors() ? reject(error || new Error(stats.toString({ all: false, errors: true }))) : resolve()));
   });
   const css = (await require("postcss")([require("@tailwindcss/postcss")()]).process(
-    '@import "tailwindcss" source(none);\n@source "../components/smart-signup-form";\n@source "../components/templates/TemplateEditorContext.tsx";\n@source "../components/UnsavedProgressProvider.tsx";\n@source "../app/templates/signup/page.tsx";',
+    '@import "tailwindcss" source(none);\n@source "../components/smart-signup-form";\n@source "../components/EventAccessDialog.tsx";\n@source "../components/templates/TemplateEditorContext.tsx";\n@source "../components/UnsavedProgressProvider.tsx";\n@source "../app/templates/signup/page.tsx";',
     { from: path.resolve("src/app/globals.css") },
   )).css;
   const script = fs.readFileSync(path.join(output, "fixture.js"));
@@ -56,6 +56,11 @@ test("signup builder keeps mobile actions in one row, moves dates, protects navi
     const url = new URL(req.url());
     if (url.origin !== base) return route.abort();
     if (url.pathname === "/fixture.js") return route.fulfill({ contentType: "text/javascript", body: script });
+    if (url.pathname.endsWith("/collaborators")) {
+      if (req.method() === "GET") return route.fulfill({ json: { people: [] } });
+      writes.push({ path: url.pathname, method: req.method(), data: req.postDataJSON() });
+      return route.fulfill({ status: 201, json: { emailSent: true, people: [{ id: "invite", email: req.postDataJSON().email, name: "", status: "pending", emailStatus: "sent" }] } });
+    }
     if (req.method() !== "GET") {
       writes.push({ path: url.pathname, method: req.method(), data: req.postDataJSON() });
       return route.fulfill({ status: 200, json: { id: "new-copy", data: req.postDataJSON().data } });
@@ -78,6 +83,17 @@ test("signup builder keeps mobile actions in one row, moves dates, protects navi
     await page.goto(`${base}/previous`);
     await page.goto(`${base}${editorPath}?edit=saved-form`);
     await page.getByRole("button", { name: "Duplicate event", exact: true }).waitFor();
+    await click("Manage access");
+    await page.getByRole("dialog", { name: "Manage access" }).waitFor();
+    await page.getByText(/Co-hosts can edit and publish this form/).waitFor();
+    await page.getByRole("textbox", { name: "Co-host email", exact: true }).fill("helper@example.com");
+    await page.getByRole("button", { name: "Invite co-host", exact: true }).click();
+    await page.getByText("Invitation sent. It expires in seven days.", { exact: true }).waitFor();
+    assert.equal(writes.length, 1, "inviting only writes the invitation, never form edits");
+    assert.equal(writes[0].path, "/api/events/saved-form/collaborators");
+    await page.screenshot({ path: path.join(output, "mobile-cohost-invitation.png") });
+    await click("Done");
+    writes.length = 0;
     for (const width of [320, 375, 430, 844]) {
       await page.setViewportSize({ width, height: width === 844 ? 390 : 812 });
       const nav = page.getByRole("navigation", { name: "Signup editor" });
@@ -136,10 +152,37 @@ test("signup builder keeps mobile actions in one row, moves dates, protects navi
     await page.getByRole("button", { name: "Duplicate event", exact: true }).waitFor();
     await click("← Back");
     await page.getByText("Previous page: /previous", { exact: true }).waitFor();
+    await page.goto(`${base}${editorPath}?edit=saved-form&role=cohost`);
+    await page.getByRole("button", { name: "Save changes", exact: true }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "Manage access", exact: true }).count(), 0);
+    await click("Reopen signups");
+    await click("Save changes");
+    await page.getByText("Published.", { exact: true }).waitFor();
+    assert.equal(writes.at(-1).method, "PATCH");
+    assert.equal(writes.at(-1).path, "/api/history/saved-form");
+    assert.equal(writes.at(-1).data.data.status, "published");
+    await page.screenshot({ path: path.join(output, "cohost-saved-changes.png") });
+    await page.goto(`${base}/previous`);
     await page.goto(`${base}${editorPath}?edit=saved-form`);
     await page.getByRole("button", { name: "Duplicate event", exact: true }).waitFor();
     await click("Cancel");
     await page.getByText("Previous page: /previous", { exact: true }).waitFor();
+    await page.evaluate(() => new Promise((resolve, reject) => {
+      const request = indexedDB.deleteDatabase("envitefy-template-drafts");
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    }));
+    await page.goto(`${base}${editorPath}`);
+    await page.getByText("Save a draft or publish to invite co-hosts.", { exact: true }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "Manage access", exact: true }).count(), 0);
+    await click("Save as draft");
+    await page.getByRole("button", { name: "Manage access", exact: true }).waitFor();
+    assert.equal(writes.at(-1).method, "POST");
+    assert.equal(writes.at(-1).data.data.status, "draft");
+    await click("Manage access");
+    await page.getByRole("dialog", { name: "Manage access" }).waitFor();
+    await page.getByText("Form owner", { exact: true }).waitFor();
+    await click("Done");
     assert.deepEqual(errors, []);
   } catch (error) {
     await page.screenshot({ path: path.join(output, "failure.png") });

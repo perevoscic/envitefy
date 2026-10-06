@@ -191,7 +191,7 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
                 />
               </SignupPageRenderer>
               <div className={composer.sharing}>
-                <SignupSharing eventId={editor?.eventId} published={Boolean(editor?.published)} requiresInvitation={requiresInvitation} />
+                <SignupSharing eventId={editor?.eventId} eventTitle={form.title} published={Boolean(editor?.published)} requiresInvitation={requiresInvitation} canManageCollaborators={editor?.canManageCollaborators} />
               </div>
             </div>
             <aside
@@ -306,7 +306,7 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
               Back to editing
             </button>
           ) : (
-            <span className={`${styles.help} ${composer.footerHelp}`}>Changes stay private until you publish.</span>
+            <span className={`${styles.help} ${composer.footerHelp}`}>{editor?.published && editor.canManageCollaborators === false ? "Save changes updates the published form." : "Changes stay private until you publish."}</span>
           )}
           <div className={composer.footerActions}>
             {editor?.leave && (

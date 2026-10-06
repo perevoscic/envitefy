@@ -132,7 +132,7 @@ function transactionalStore(initial, failMirror = false) {
     let release, stagedRow, stagedMirror;
     const client = { query: async (sql, params) => {
       if (sql.includes("for update")) { const before = queue; queue = new Promise(resolve => { release = resolve; }); await before; return { rows: [structuredClone(row)] }; }
-      if (sql.startsWith("update event_history")) { stagedRow = { ...row, data: JSON.parse(params[1]) }; return { rows: [stagedRow] }; }
+      if (sql.startsWith("update event_history")) { stagedRow = { ...row, data: JSON.parse(params[1]), title: params[2] }; return { rows: [stagedRow] }; }
       if (sql.includes("insert into signup_forms")) { if (failMirror) throw new Error("mirror unavailable"); stagedMirror = JSON.parse(params[1]); }
       if (sql === "commit") { row = stagedRow; mirror = stagedMirror; release?.(); }
       if (sql === "rollback") release?.();
@@ -216,7 +216,8 @@ test("the signup API returns guest-safe data and rejects editing another partici
     "@/lib/history-cache": { invalidateUserHistory() {} },
     "@/lib/dashboard-cache": { invalidateUserDashboard() {} },
     "@/lib/smart-signup-indexing": { isIndexablePublicSmartSignupData: () => true },
-    "@/lib/db": { getEventHistoryById: async () => row, isEventSharedWithUser: async () => Boolean(userId), listShareRecipientUserIdsForEvent: async () => [], mutateSignupEvent: async (_id, change) => { const next = change(row); return { row: { ...row, data: next.data }, result: next.result }; } },
+    "@/lib/db": { getEventHistoryById: async () => row, isEventSharedWithUser: async () => Boolean(userId), listShareRecipientUserIdsForEvent: async () => [], mutateSignupEvent: async (_id, change) => { const next = await change(row); return { row: { ...row, data: next.data }, result: next.result }; } },
+    "@/lib/event-collaboration": { getEventPermissions: async () => ({ canManageResponses: userId === "host" }), collaboratorUserIds: async () => [] },
     "@/lib/email": { sendSignupConfirmationEmail: async () => { throw new Error("Unexpected email attempt in this read/denial test"); } },
     "@/lib/absolute-url": { absoluteUrl: async path => `https://example.com${path}` },
   });

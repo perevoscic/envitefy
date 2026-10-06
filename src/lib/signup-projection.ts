@@ -5,9 +5,9 @@ import { ownsSignupResponse, type SignupIdentity, withoutSignupGuestId } from ".
 /** Contacts and answers are never part of the public board payload. */
 export function projectSignupForm(
   form: SignupForm,
-  viewer: SignupIdentity & { isOwner?: boolean } = {},
+  viewer: SignupIdentity & { isOwner?: boolean; canManageResponses?: boolean } = {},
 ): SignupForm {
-  if (viewer.isOwner) return { ...form, responses: form.responses.map(withoutSignupGuestId) };
+  if (viewer.isOwner || viewer.canManageResponses) return { ...form, responses: form.responses.map(withoutSignupGuestId) };
   const availability = form.sections.flatMap((section) =>
     section.slots.map((slot) => ({
       sectionId: section.id,

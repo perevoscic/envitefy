@@ -66,6 +66,7 @@ export type TemplateEditorRuntime = {
   published?: boolean;
   hasUnpublishedChanges?: boolean;
   signupRequiresInvitation?: boolean;
+  canManageCollaborators?: boolean;
   eventId?: string;
   leave?: () => void;
   duplicateSignup?: (form: SignupForm) => void;
@@ -164,6 +165,7 @@ export default function TemplateEditorProvider({
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [published, setPublished] = useState(false);
+  const [canManageCollaborators, setCanManageCollaborators] = useState(true);
   const [authOpen, setAuthOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
@@ -258,6 +260,7 @@ export default function TemplateEditorProvider({
           );
         const row = await response.json();
         setPublished(!isEventDraft(row.data));
+        setCanManageCollaborators(row.permissions?.canManageCollaborators !== false);
         const stored = row.data?.templateEditor;
         if (!stored || stored.category !== category)
           throw new Error("This event uses a different editor.");
@@ -290,7 +293,7 @@ export default function TemplateEditorProvider({
         else if (typeof row.revision === "string") saved.eventRevision = row.revision;
       }
       if (cancelled) return;
-      if (!editId) setPublished(false);
+      if (!editId) { setPublished(false); setCanManageCollaborators(true); }
       savedEventId.current = editId || null;
       if (requestedDraft && !saved)
         setError(
@@ -503,7 +506,7 @@ export default function TemplateEditorProvider({
         }
         setMessage(
           nextStatus === "draft"
-            ? "Draft saved. Only you can view it until you publish."
+            ? "Draft saved. Only you and accepted co-hosts can view it until you publish."
             : "Published.",
         );
         if (category === "signup-forms" && nextStatus === "draft") {
@@ -542,9 +545,10 @@ export default function TemplateEditorProvider({
         category,
         Intl.DateTimeFormat().resolvedOptions().timeZone,
       ),
-      "draft",
+      category === "signup-forms" && published && !canManageCollaborators ? "published" : "draft",
+      { navigate: false },
     );
-  }, [persist, category, info.name]);
+  }, [persist, category, info.name, published, canManageCollaborators]);
 
   const progress = useUnsavedProgress({
     dirty: category === "signup-forms" && dirty,
@@ -600,6 +604,7 @@ export default function TemplateEditorProvider({
     else router.push(draft.current?.eventId ? `/smart-signup-form/${draft.current.eventId}` : "/");
   }, [router]);
 
+  const currentEventId = draft.current?.eventId;
   const runtime = useMemo<TemplateEditorRuntime>(
     () => ({
       category,
@@ -609,7 +614,8 @@ export default function TemplateEditorProvider({
       published,
       hasUnpublishedChanges: !published || dirty,
       signupRequiresInvitation: draft.current?.signupRequiresInvitation,
-      eventId: draft.current?.eventId,
+      canManageCollaborators,
+      eventId: currentEventId,
       leave,
       duplicateSignup(form) {
         progress.requestLeave(() => {
@@ -634,7 +640,7 @@ export default function TemplateEditorProvider({
         return url;
       },
     }),
-    [category, templateId, initial, authenticated, published, dirty, record, requestSave, persist, leave, progress, router],
+    [category, templateId, initial, authenticated, published, dirty, canManageCollaborators, currentEventId, record, requestSave, persist, leave, progress, router],
   );
 
   const returnUrl = `${templateEditorHref(category, templateId)}?${editId && !draft.current ? `edit=${encodeURIComponent(editId)}` : `draft=${draft.current?.id || ""}`}`;
@@ -643,7 +649,7 @@ export default function TemplateEditorProvider({
       <div className={styles.shell}>
         <div className="relative z-40 shrink-0 border-b border-[#ded5ca] bg-[#fffcf7]/95 px-4 py-3 backdrop-blur sm:px-8" hidden={category !== "signup-forms" && !error}>
           {category === "signup-forms" ? (
-            <SignupEditorToolbar onBack={leave} onReset={() => setResetOpen(true)} onSave={() => void requestSave()} busy={busy} ready={editorReady} loaded={Boolean(initial)} />
+            <SignupEditorToolbar onBack={leave} onReset={() => setResetOpen(true)} onSave={() => void requestSave()} busy={busy} ready={editorReady} loaded={Boolean(initial)} saveLabel={published && !canManageCollaborators ? "Save changes" : "Save as draft"} />
           ) : null}
           {!authenticated && (
             <p className="mx-auto mt-2 max-w-[1500px] text-xs text-[#746775]">

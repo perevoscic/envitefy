@@ -4,6 +4,7 @@ import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import {
   acceptCoHostInvitationById,
   acceptCollaboratorInvitation,
+  collaboratorWorkspaceHref,
   declineCoHostInvitationById,
   listPendingCoHostInvitations,
   readCollaboratorInvitation,
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ declined: true }, { headers });
       }
       const eventId = await acceptCoHostInvitationById(raw.invitationId, userId);
-      return NextResponse.json({ eventId, href: `/event/${eventId}?tab=dashboard` }, { headers });
+      return NextResponse.json({ eventId, href: await collaboratorWorkspaceHref(eventId) }, { headers });
     }
     const token =
       raw && typeof raw === "object" && "token" in raw && typeof raw.token === "string"
@@ -99,18 +100,19 @@ export async function POST(request: Request) {
           "sign_in_required",
         );
       const eventId = await acceptCollaboratorInvitation(token, userId);
-      return NextResponse.json({ eventId, href: `/event/${eventId}?tab=dashboard` }, { headers });
+      return NextResponse.json({ eventId, href: await collaboratorWorkspaceHref(eventId) }, { headers });
     }
     // Limited invitation metadata only; no private event fields or guest contacts.
     return NextResponse.json(
       {
         title: invite.eventTitle,
+        isSignupForm: Boolean(invite.isSignupForm),
         ownerName: invite.ownerName || "The event owner",
         email: invite.email,
         available,
         accepted: Boolean(invite.accepted_at),
         acceptedByCurrentUser,
-        href: acceptedByCurrentUser ? `/event/${invite.event_id}?tab=dashboard` : null,
+        href: acceptedByCurrentUser ? await collaboratorWorkspaceHref(invite.event_id) : null,
         signedInEmail: session?.user?.email || null,
       },
       { headers },

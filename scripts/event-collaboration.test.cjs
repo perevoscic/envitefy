@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
+const path = require("node:path");
 const crypto = require("node:crypto");
 const test = require("node:test");
 const ts = require("typescript");
@@ -12,6 +13,10 @@ function compile(file, mocks = {}) {
     if (name === "./event-collaboration-types") return compile("src/lib/event-collaboration-types.ts");
     if (name === "./event-response") return compile("src/lib/event-response.ts");
     if (name === "@/lib/event-draft-access") return compile("src/lib/event-draft-access.ts");
+    if (name.startsWith("@/") || name.startsWith(".")) {
+      const base = name.startsWith("@/") ? path.resolve("src", name.slice(2)) : path.resolve(path.dirname(file), name);
+      return compile([base, `${base}.ts`, `${base}.tsx`, `${base}.js`].find(fs.existsSync), mocks);
+    }
     return nativeRequire(name);
   }, module, module.exports);
   return module.exports;
@@ -77,10 +82,17 @@ function fixture() {
     return { rows };
   }
   const errors = compile("src/lib/event-collaboration-types.ts");
+  const withClient = async callback => { const previous = queue; let release; queue = new Promise(resolve => { release = resolve; }); await previous; try { return await callback({ query }); } finally { release(); } };
   const api = compile("src/lib/event-collaboration.ts", {
     "./event-collaboration-types": errors,
     "@/lib/db": { query, getEventHistoryById: async id => state.events.find(e => e.id === id), prepareEventHistoryData: d => d,
-      withClient: async callback => { const previous = queue; let release; queue = new Promise(resolve => { release = resolve; }); await previous; try { return await callback({ query }); } finally { release(); } } },
+      withClient, mutateSignupEvent: async (id, change) => withClient(async client => {
+        const row = state.events.find(e => e.id === id);
+        const next = await change(structuredClone(row), client);
+        Object.assign(row, { data: next.data, title: next.title || row.title });
+        state.signupMirror = structuredClone(next.data.signupForm);
+        return { row: structuredClone(row), result: next.result };
+      }) },
     "@/lib/history-cache": { invalidateUserHistory: id => state.invalidated.push(id) },
     "@/lib/dashboard-cache": { invalidateUserDashboard: id => state.invalidated.push(id) },
   });
@@ -167,7 +179,7 @@ test("dashboard acceptance rechecks account binding, expiry, revocation and elig
     if (mode === "expired") state.invites[0].expires_at = "2000-01-01";
     if (mode === "revoked") await api.revokeEventCollaborator("event", "owner", invite.id);
     if (mode === "used") await api.acceptCoHostInvitationById(invite.id, "friend");
-    if (mode === "unsupported") state.events[0].data.signupForm = {};
+    if (mode === "unsupported") state.events[0].data.attachment = {};
     await assert.rejects(api.acceptCoHostInvitationById(invite.id, mode === "wrong" ? "owner" : "friend"), e => e.status === (mode === "wrong" ? 404 : 410), mode);
     if (mode !== "used") assert.equal(state.members.length, 0, mode);
   }
@@ -243,10 +255,10 @@ test("concurrent saves accept one revision and reject the stale writer without o
   await assert.rejects(api.saveCollaborativeEvent({ eventId: "event", userId: "owner", expectedRevision: null, patch: {} }), e => e.status === 428);
 });
 
-test("co-host access does not include private scans, signup forms or unpublishing", async () => {
+test("co-host access does not include private scans or unpublishing", async () => {
   const { api, event, state } = fixture();
   state.members.push({ event_id: "event", user_id: "friend", revoked_at: null });
-  for (const data of [{ attachment: {} }, { signupForm: {} }, { createdVia: "ocr" }, { ownership: "invited" }])
+  for (const data of [{ attachment: {} }, { createdVia: "ocr" }, { ownership: "invited" }])
     assert.equal((await api.getEventPermissions({ ...event, data }, "friend")).canEdit, false);
   event.data.status = "published";
   await assert.rejects(api.saveCollaborativeEvent({ eventId: "event", userId: "friend", expectedRevision: api.eventRevision(event), patch: { status: "draft" } }), e => e.status === 403);
@@ -416,7 +428,7 @@ test("access management reads ownership without running public-link setup or ret
   assert.deepEqual(calls[0].args, ["event", "owner"]);
   assert.ok(calls[0].sql.includes("user_id=$2"));
   assert.equal(calls[0].sql.includes("studioCard"), false);
-  for (const data of [{ attachment: {} }, { signupForm: {} }, { invitedFromScan: true }, { ownership: "invited" }, { createdVia: "OCR" }]) {
+  for (const data of [{ attachment: {} }, { invitedFromScan: true }, { ownership: "invited" }, { createdVia: "OCR" }]) {
     row = { ...row, data };
     await assert.rejects(api.requireCollaborationOwner("event", "owner"), error => error.code === "unsupported_event");
   }
@@ -441,6 +453,7 @@ test("invitation APIs require owner management and explicit authenticated accept
       revokeEventCollaborator: async (...args) => calls.push(["revoke", ...args]),
       readCollaboratorInvitation: async () => ({ email: "friend@test.com", eventTitle: "Garden party", ownerName: "Host", accepted_by: null, accepted_at: null, revoked_at: null, expires_at: new Date(Date.now()+86400000).toISOString() }),
       acceptCollaboratorInvitation: async () => { calls.push(["accept"]); return eventId; },
+      collaboratorWorkspaceHref: async id => `/event/${id}?tab=dashboard`,
     },
     "@/lib/event-message-types": { validGuestEmail: value => /^[^@]+@[^@]+\.[^@]+$/.test(value) },
     "@/lib/public-asset-url": { resolvePublicAssetOrigin: () => "https://envitefy.com" },
@@ -478,6 +491,101 @@ test("invitation APIs require owner management and explicit authenticated accept
   user = "friend";
   const accepted = await acceptance.POST(request({ token: "b".repeat(64), action: "accept" }));
   assert.equal((await accepted.json()).href, `/event/${eventId}?tab=dashboard`);
+});
+
+function signupFixture(status = "draft") {
+  const value = fixture();
+  const form = compile("src/lib/signup-starters.ts").createSignupThemeForm("harvest-table");
+  form.start = "2030-10-20T12:00";
+  form.end = "2030-10-20T14:00";
+  form.settings.signupOpensAt = null;
+  form.settings.signupClosesAt = null;
+  form.revision = 3;
+  form.responses = [{ id: "participant", userId: "guest", name: "Guest", email: "private@test.com", phone: null,
+    status: "confirmed", slots: [{ sectionId: form.sections[0].id, slotId: form.sections[0].slots[0].id, quantity: 1 }],
+    answers: [], guests: 0, createdAt: "2030-01-01T00:00:00Z", updatedAt: "2030-01-01T00:00:00Z" }];
+  value.event.data = { status, createdVia: "template", signupForm: form,
+    templateEditor: { category: "signup-forms", templateId: "editorial--harvest-table", snapshot: { form } } };
+  return value;
+}
+
+test("signup co-host invitations use the same recipient binding and open the form host dashboard", async () => {
+  const { api, state, event } = signupFixture();
+  event.public_slug = "shared-signup";
+  assert.equal((await api.requireCollaborationOwner(event.id, "owner")).id, event.id);
+  const invite = await api.inviteEventCollaborator(event.id, "owner", "friend@test.com");
+  assert.equal((await api.listPendingCoHostInvitations("friend")).length, 1);
+  assert.equal((await api.getEventPermissions(event, "friend")).canEdit, false);
+  await assert.rejects(api.acceptCollaboratorInvitation(invite.token, "owner"), e => e.code === "wrong_account");
+  let user = "friend";
+  const route = compile("src/app/api/cohost-invitations/route.ts", {
+    "next-auth": { getServerSession: async () => ({ user: { email: "friend@test.com" } }) },
+    "@/lib/auth": { authOptions: {}, resolveSessionUserId: async () => user },
+    "@/lib/event-collaboration": api, "@/lib/event-collaboration-types": compile("src/lib/event-collaboration-types.ts"),
+  });
+  const response = await route.POST(new Request("https://envitefy.com/api/cohost-invitations", {
+    method: "POST", body: JSON.stringify({ invitationId: invite.id, action: "accept" }),
+  }));
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).href, "/smart-signup-form/shared-signup#signup-host-dashboard");
+  assert.deepEqual(await api.listPendingCoHostInvitations(user), []);
+  const permissions = await api.getEventPermissions(event, user);
+  assert.equal(permissions.canEdit, true);
+  assert.equal(permissions.canManageResponses, true);
+  assert.equal(permissions.canManageCollaborators, false);
+  assert.equal(permissions.canDelete, false);
+  await api.revokeEventCollaborator(event.id, "owner", user);
+  assert.equal((await api.getEventPermissions(event, user)).canEdit, false);
+  assert.equal(state.members[0].revoked_at !== null, true);
+});
+
+test("signup co-host saves retain reservations, update both stores and the title, and reject stale or revoked writes", async () => {
+  const { api, state, event } = signupFixture();
+  const invite = await api.inviteEventCollaborator(event.id, "owner", "friend@test.com");
+  await api.acceptCollaboratorInvitation(invite.token, "friend");
+  const revision = api.eventRevision(event);
+  const form = { ...event.data.signupForm, title: "Shared form", responses: [] };
+  const saved = await api.saveCollaborativeSignupEvent({ eventId: event.id, userId: "friend", expectedRevision: revision,
+    title: form.title, patch: { signupForm: form } });
+  assert.equal(saved.title, "Shared form");
+  assert.equal(saved.user_id, "owner");
+  assert.equal(saved.data.signupForm.responses[0].email, "private@test.com");
+  assert.equal(saved.data.signupForm.revision, 4);
+  assert.deepEqual(state.signupMirror, saved.data.signupForm);
+  assert.deepEqual(saved.data.templateEditor.snapshot.form.responses, []);
+  assert.equal(saved.data.templateEditor.snapshot.form.revision, 4);
+  await assert.rejects(api.saveCollaborativeSignupEvent({ eventId: event.id, userId: "owner", expectedRevision: revision, patch: { signupForm: form } }), e => e.code === "event_changed");
+  await api.revokeEventCollaborator(event.id, "owner", "friend");
+  await assert.rejects(api.saveCollaborativeSignupEvent({ eventId: event.id, userId: "friend", expectedRevision: saved.revision, patch: {} }), e => e.status === 403);
+  assert.equal(state.events[0].title, "Shared form");
+});
+
+test("published signup co-hosts can publish edits but cannot unpublish, remove the form or change its public URL", async () => {
+  const { api, event } = signupFixture("published");
+  const invite = await api.inviteEventCollaborator(event.id, "owner", "friend@test.com");
+  await api.acceptCollaboratorInvitation(invite.token, "friend");
+  for (const patch of [{ status: "draft" }, { draftStatus: "draft" }, { signupForm: null }, { publicSlug: "changed" }]) {
+    await assert.rejects(api.saveCollaborativeSignupEvent({ eventId: event.id, userId: "friend", expectedRevision: api.eventRevision(event), patch }), e => e.code === "owner_required");
+  }
+  const saved = await api.saveCollaborativeSignupEvent({ eventId: event.id, userId: "friend", expectedRevision: api.eventRevision(event),
+    patch: { status: "published", signupForm: { ...event.data.signupForm, description: "Bring your supplies", responses: [] } } });
+  assert.equal(saved.data.status, "published");
+  assert.equal(saved.data.signupForm.description, "Bring your supplies");
+  await assert.rejects(api.inviteEventCollaborator(event.id, "friend", "other@test.com"), e => e.status === 403);
+});
+
+test("simultaneous signup definition saves accept only one baseline and a co-host cannot save without one", async () => {
+  const { api, state, event } = signupFixture();
+  const invite = await api.inviteEventCollaborator(event.id, "owner", "friend@test.com");
+  await api.acceptCollaboratorInvitation(invite.token, "friend");
+  const expectedRevision = api.eventRevision(event);
+  const results = await Promise.allSettled(["owner", "friend"].map((userId, i) => api.saveCollaborativeSignupEvent({
+    eventId: event.id, userId, expectedRevision, title: `Shared ${i}`, patch: { signupForm: { ...event.data.signupForm, title: `Shared ${i}` } },
+  })));
+  assert.equal(results.filter(r => r.status === "fulfilled").length, 1);
+  assert.equal(results.find(r => r.status === "rejected").reason.code, "event_changed");
+  assert.equal(state.events[0].title, "Shared 0");
+  await assert.rejects(api.saveCollaborativeSignupEvent({ eventId: event.id, userId: "friend", expectedRevision: null, patch: {} }), e => e.code === "revision_required");
 });
 
 test("draft rendering rechecks co-host membership in its database read and keeps anonymous drafts private", async () => {

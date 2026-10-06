@@ -35,6 +35,7 @@ test("owner access controls and invited signup/login preserve the event and expl
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const errors = []; const actions = []; const token = "a".repeat(64); let people = []; let available = true;
   let holdReads = true; const heldReads = []; const readReplies = [];
+  let isSignupForm = false;
   page.on("pageerror", error => errors.push(error.message));
   await page.route("**/*", async route => {
     const request = route.request(); const url = new URL(request.url());
@@ -51,9 +52,9 @@ test("owner access controls and invited signup/login preserve the event and expl
     }
     if (url.pathname === "/api/cohost-invitations") {
       const input = request.postDataJSON(); actions.push(input); assert.equal(input.token, token);
-      if (input.action === "accept") return route.fulfill({ contentType: "application/json", body: JSON.stringify({ eventId: "qa-event", href: "/event/qa-event?tab=dashboard" }) });
+      if (input.action === "accept") return route.fulfill({ contentType: "application/json", body: JSON.stringify({ eventId: "qa-event", href: isSignupForm ? "/smart-signup-form/qa-signup#signup-host-dashboard" : "/event/qa-event?tab=dashboard" }) });
       const signedInEmail = await page.evaluate(() => sessionStorage.getItem("qa:email"));
-      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ title: "Garden party", ownerName: "Taylor", email: "friend@test.com", available, accepted: false, acceptedByCurrentUser: false, signedInEmail }) });
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ title: "Garden party", isSignupForm, ownerName: "Taylor", email: "friend@test.com", available, accepted: false, acceptedByCurrentUser: false, signedInEmail }) });
     }
     if (url.pathname.startsWith("/api/auth/") || url.pathname.startsWith("/api/legal/")) return route.fulfill({ contentType: "application/json", body: "{}" });
     if (request.url().startsWith(base)) return route.continue();
@@ -126,6 +127,17 @@ test("owner access controls and invited signup/login preserve the event and expl
     available = false; await page.reload();
     await page.getByText(/This invitation has expired or has already been used/).waitFor();
     assert.equal(await page.getByRole("button", { name: "Accept invitation", exact: true }).count(), 0);
+    available = true;
+    isSignupForm = true;
+    await page.goto(base);
+    await page.goto(`${base}/cohost-invite#${token}`);
+    await page.getByText(/You can edit and publish this sign-up form, view and manage participants/).waitFor();
+    await page.getByRole("button", { name: "Accept invitation", exact: true }).waitFor();
+    assert.equal(actions.filter(action => action.action === "accept").length, 1, "form invitations also need explicit acceptance");
+    await page.screenshot({ path: path.join(output, "signup-accept-mobile.png"), fullPage: true });
+    await page.getByRole("button", { name: "Accept invitation", exact: true }).click();
+    await page.waitForURL("**/smart-signup-form/qa-signup#signup-host-dashboard");
+    assert.equal(actions.filter(action => action.action === "accept").length, 2);
     assert.deepEqual(errors, []);
   } catch (error) { throw new Error(`${error.stack}\nBrowser errors: ${JSON.stringify(errors)}\nPage text: ${(await page.locator('body').innerText()).slice(0, 1000)}`); }
   finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }

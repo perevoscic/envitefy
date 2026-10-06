@@ -9,6 +9,7 @@ import {
   mutateSignupEvent,
 } from "@/lib/db";
 import { sendSignupConfirmationEmail } from "@/lib/email";
+import { collaboratorUserIds, getEventPermissions } from "@/lib/event-collaboration";
 import { isEventDraft } from "@/lib/event-draft-access";
 import { guardDraftRequest } from "@/lib/event-draft-access-server";
 import { invalidateUserHistory } from "@/lib/history-cache";
@@ -54,9 +55,9 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
     if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
     const session = await getServerSession(authOptions);
     const userId = await resolveSessionUserId(session);
-    const isOwner = Boolean(userId && userId === row.user_id);
+    const canManage = (await getEventPermissions(row, userId)).canManageResponses;
     const shared = userId ? await isEventSharedWithUser(id, userId) : false;
-    if (!isOwner && !shared && !allowsPublicSignup(row.data))
+    if (!canManage && !shared && !allowsPublicSignup(row.data))
       return NextResponse.json(
         { error: "Access is limited to invited contacts." },
         { status: 403 },
@@ -69,7 +70,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
     };
     return NextResponse.json(
       {
-        signupForm: projectSignupForm(form, { isOwner, ...identity }),
+        signupForm: projectSignupForm(form, { canManageResponses: canManage, ...identity }),
         myResponseId: ownSignupResponseId(form, identity),
       },
       { headers: { "Cache-Control": "private, no-store" } },
@@ -95,10 +96,10 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
     const guestToken = currentGuestToken || (!userId ? createSignupGuestToken() : null);
     const identity: SignupIdentity = { userId, guestId: signupGuestId(guestToken) };
     const shared = userId ? await isEventSharedWithUser(id, userId) : false;
-    const saved = await mutateSignupEvent(id, (row) => {
+    const saved = await mutateSignupEvent(id, async (row, client) => {
       if (isEventDraft(row.data)) throw new SignupMutationError("Not found", 404);
-      const isOwner = Boolean(userId && row.user_id === userId);
-      if (!isOwner && !shared && !allowsPublicSignup(row.data))
+      const canManage = (await getEventPermissions(row, userId, client)).canManageResponses;
+      if (!canManage && !shared && !allowsPublicSignup(row.data))
         throw new SignupMutationError(
           "Access is limited to invited contacts. Ask the organizer to share this event with your account.",
           403,
@@ -113,22 +114,23 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
         ...identity,
         email,
         name: session?.user?.name,
-        isOwner,
+        isOwner: canManage,
       });
-      return { data: { ...row.data, signupForm: change.form }, result: { ...change, isOwner } };
+      return { data: { ...row.data, signupForm: change.form }, result: { ...change, canManage } };
     });
     if (!saved) return NextResponse.json({ error: "Not found" }, { status: 404 });
     const viewers = new Set([
       saved.row.user_id,
       userId,
       ...(await listShareRecipientUserIdsForEvent(id).catch(() => [])),
+      ...(await collaboratorUserIds(id)),
     ]);
     for (const viewer of viewers)
       if (viewer) {
         invalidateUserHistory(viewer);
         invalidateUserDashboard(viewer);
       }
-    const { form, response, isOwner } = saved.result;
+    const { form, response, canManage } = saved.result;
     let confirmationEmail: SignupConfirmationEmailStatus = "not_requested";
     // Await the attempt so the runtime cannot discard it after the response. A mail failure
     // never turns a committed reservation into a failed request that guests would retry.
@@ -159,7 +161,7 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
         ok: true,
         status: response?.status,
         confirmationEmail,
-        signupForm: projectSignupForm(form, { isOwner, ...identity }),
+        signupForm: projectSignupForm(form, { canManageResponses: canManage, ...identity }),
         response: response ? withoutSignupGuestId(response) : undefined,
         myResponseId: ownSignupResponseId(form, identity),
       },

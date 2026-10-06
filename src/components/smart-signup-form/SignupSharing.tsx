@@ -3,6 +3,7 @@ import { Check, Copy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 import { signupAccessInstructions } from "@/lib/signup-access";
+import EventAccessDialog from "@/components/EventAccessDialog";
 
 type Recipient = { id: string; name: string; email: string; status: "pending" | "accepted" };
 const actionClass =
@@ -13,11 +14,15 @@ export default function SignupSharing({
   requiresInvitation = false,
   publicPath,
   published = true,
+  canManageCollaborators = true,
+  eventTitle = "this sign-up form",
 }: {
   eventId?: string;
   requiresInvitation?: boolean;
   publicPath?: string;
   published?: boolean;
+  canManageCollaborators?: boolean;
+  eventTitle?: string;
 }) {
   const linkId = useId();
   const [link, setLink] = useState("");
@@ -62,6 +67,9 @@ export default function SignupSharing({
       className="rounded-xl border border-[var(--signup-border)] bg-[var(--signup-surface)] p-4 space-y-3"
     >
       <h3 className="font-semibold">Share your signup</h3>
+      {canManageCollaborators && (eventId ? (
+        <EventAccessDialog eventId={eventId} eventTitle={eventTitle} resourceType="signup" className={`${actionClass} inline-flex items-center gap-2`} />
+      ) : <p className="text-sm">Save a draft or publish to invite co-hosts.</p>)}
       {!published || !eventId ? (
         <p className="text-sm">Publish your signup to get a shareable link.</p>
       ) : <>
@@ -107,7 +115,7 @@ export default function SignupSharing({
         <a href={`${publicPath || `/smart-signup-form/${encodeURIComponent(eventId)}`}#signup-host-dashboard`} className={`${actionClass} inline-flex items-center`}>
           View host dashboard
         </a>
-        {requiresInvitation && (
+        {requiresInvitation && canManageCollaborators && (
           <button
             type="button"
             className={actionClass}
@@ -118,7 +126,7 @@ export default function SignupSharing({
           </button>
         )}
       </div>
-      {requiresInvitation && open && (
+      {requiresInvitation && canManageCollaborators && open && (
         <div className="space-y-3 border-t border-[var(--signup-border)] pt-4">
           <form
             className="flex flex-wrap gap-3"

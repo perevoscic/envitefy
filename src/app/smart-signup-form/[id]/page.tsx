@@ -27,6 +27,7 @@ import {
   isEventSharePendingForUser,
 } from "@/lib/db";
 import { isEventDraft } from "@/lib/event-draft-access";
+import { getEventPermissions } from "@/lib/event-collaboration";
 import {
   buildEmbeddedEventPreviewHref,
   eventPreviewReturnHref,
@@ -348,7 +349,8 @@ export default async function SignupPage({
     return signupUnavailablePage();
   }
   if (!row) return notFound();
-  if (row.user_id === userId && isEventDraft(row.data) && row.data?.templateEditor)
+  const permissions = await getEventPermissions(row, userId);
+  if (permissions.canEdit && isEventDraft(row.data) && row.data?.templateEditor)
     redirect(resolveEditHref(row.id, row.data, row.title));
   const canonicalSegment = buildEventSlugSegment(row.id, row.title, row.public_slug);
   const canonicalPath = `/smart-signup-form/${canonicalSegment}`;
@@ -391,8 +393,9 @@ export default async function SignupPage({
   }
 
   const isOwner = Boolean(userId && row.user_id && userId === row.user_id);
+  const canManage = permissions.canManageResponses;
   const recipientAccepted = userId ? (await isEventSharedWithUser(row.id, userId)) === true : false;
-  const viewerKind: "owner" | "guest" | "readonly" = isOwner
+  const viewerKind: "owner" | "guest" | "readonly" = canManage
     ? "owner"
     : isPublicSignupPage || (sessionEmail && recipientAccepted)
       ? "guest"
@@ -425,7 +428,7 @@ export default async function SignupPage({
     );
   }
 
-  if (!isOwner && !recipientAccepted && !isPublicSignupPage) {
+  if (!canManage && !recipientAccepted && !isPublicSignupPage) {
     const pending = userId ? await isEventSharePendingForUser(row.id, userId) : false;
     return (
       <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
@@ -453,7 +456,7 @@ export default async function SignupPage({
     guestId,
     managedResponseId: managedSignupResponseId(signupCookies.get(signupManagementCookieName(row.id))?.value, row.id, signupForm),
   };
-  const visibleForm = projectSignupForm(signupForm, { isOwner, ...identity });
+  const visibleForm = projectSignupForm(signupForm, { canManageResponses: canManage, ...identity });
   if (ownerPreviewMode && !ownerPreviewEmbedded) {
     return (
       <EventPreviewViewport
@@ -478,12 +481,13 @@ export default async function SignupPage({
         <SignupPageRenderer
           form={visibleForm}
           ownerActions={
-            isOwner && !ownerPreviewMode ? (
+            permissions.canEdit && !ownerPreviewMode ? (
               <SignupOwnerActions
                 eventId={row.id}
                 eventTitle={row.title || "Smart sign-up"}
                 eventData={data}
                 form={visibleForm}
+                isOwner={isOwner}
               />
             ) : undefined
           }

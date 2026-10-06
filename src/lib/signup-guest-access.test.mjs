@@ -79,6 +79,7 @@ function setup({ sendConfirmation = async () => {} } = {}) {
   };
   let userId = null;
   let shared = false;
+  let cohost = false;
   let draftDenied = false;
   const mail = [];
   const recoveryMail = [];
@@ -95,6 +96,10 @@ function setup({ sendConfirmation = async () => {} } = {}) {
     },
     "@/lib/history-cache": { invalidateUserHistory() {} },
     "@/lib/dashboard-cache": { invalidateUserDashboard() {} },
+    "@/lib/event-collaboration": {
+      getEventPermissions: async () => ({ canManageResponses: userId === "host" || (userId === "helper" && cohost) }),
+      collaboratorUserIds: async () => cohost ? ["helper"] : [],
+    },
     "@/lib/db": {
       getEventHistoryById: async () => row,
       isEventSharedWithUser: async () => shared,
@@ -108,7 +113,7 @@ function setup({ sendConfirmation = async () => {} } = {}) {
         return true;
       },
       mutateSignupEvent: async (_id, change) => {
-        const next = change(row);
+        const next = await change(row);
         row = { ...row, data: next.data };
         return { row, result: next.result };
       },
@@ -164,6 +169,7 @@ function setup({ sendConfirmation = async () => {} } = {}) {
     acceptInvitation: () => {
       shared = true;
     },
+    setCoHost: (value) => { cohost = value; },
     setDraft: (guard = true) => {
       row.data.status = "draft";
       draftDenied = guard;
@@ -315,6 +321,30 @@ test("response IDs and matching email addresses cannot reveal or change another 
   app.signIn(null);
   assert.equal((await app.get()).status, 200);
   assert.equal((await app.post(app.reservation())).status, 409);
+});
+
+test("accepted form co-hosts manage participants and restricted forms; revocation removes those privileges", async () => {
+  const app = setup();
+  const saved = await (await app.post(app.reservation())).json();
+  app.signIn("helper");
+  assert.deepEqual((await (await app.get()).json()).signupForm.responses, []);
+  assert.equal((await app.post({ action: "set-open", enabled: false })).status, 403);
+  app.setCoHost(true);
+  const managed = await (await app.get()).json();
+  assert.equal(managed.signupForm.responses[0].email, "one@example.com");
+  assert.ok(!JSON.stringify(managed).includes("guestId"));
+  const edited = await app.post(app.reservation({ signupId: saved.response.id, name: "Edited participant" }));
+  assert.equal(edited.status, 200);
+  assert.equal(app.row().data.signupForm.responses[0].name, "Edited participant");
+  assert.equal((await app.post({ action: "set-open", enabled: false })).status, 200);
+  assert.equal((await app.post({ action: "cancel", signupId: saved.response.id })).status, 200);
+  app.row().data.signupForm.visibility = "restricted";
+  assert.equal((await app.get()).status, 200);
+  app.setCoHost(false);
+  assert.equal((await app.get()).status, 403);
+  assert.equal((await app.post({ action: "set-open", enabled: true })).status, 403);
+  app.row().data.signupForm.visibility = undefined;
+  assert.deepEqual((await (await app.get()).json()).signupForm.responses, []);
 });
 
 test("capacity, private forms, drafts and cross-origin writes remain protected", async () => {
@@ -583,6 +613,12 @@ test("confirmation and recovery emails contain private management links in HTML 
     assert.equal(sent[1].from, "Envitefy Sign-up Forms <signup-forms@envitefy.com>");
     assert.ok(sent[1].html.includes(app.mail[0].manageUrl));
     assert.ok(sent[1].text.includes(app.mail[0].manageUrl));
+    await email.sendCoHostInvitationEmail({ toEmail: "helper@example.com", ownerName: "Host", eventTitle: "Breakfast",
+      acceptUrl: "https://envitefy.com/cohost-invite#test-token", isSignupForm: true });
+    assert.equal(sent[2].from, "Envitefy Sign-up Forms <signup-forms@envitefy.com>");
+    assert.match(sent[2].html, /manage participants, export responses and open or close signups/);
+    assert.doesNotMatch(sent[2].html, /manage RSVPs and guest messages/);
+    assert.match(sent[2].text, /cohost-invite#test-token/);
     for (const message of sent) {
       const visibleCopy = message.html.replace(/<[^>]*>/g, "");
       assert.ok(!visibleCopy.includes(app.mail[0].manageUrl));

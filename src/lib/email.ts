@@ -130,18 +130,21 @@ export async function sendShareEventEmail(params: {
 }
 
 export async function sendCoHostInvitationEmail(params: {
-  toEmail: string; ownerName: string; eventTitle: string; acceptUrl: string;
+  toEmail: string; ownerName: string; eventTitle: string; acceptUrl: string; isSignupForm?: boolean;
 }): Promise<void> {
+  const access = params.isSignupForm
+    ? "You can edit, save and publish this sign-up form, manage participants, export responses and open or close signups. Access applies only to this form."
+    : "You can edit, save and publish this event and Live Card and manage its RSVPs and guest messages. Access applies only to this event.";
   const html = createEmailTemplate({
     preheader: `${params.ownerName} invited you to co-host ${params.eventTitle}`,
     title: "You're invited to co-host",
-    body: `<p>${escapeHtml(params.ownerName)} invited you to manage <strong>${escapeHtml(params.eventTitle)}</strong>.</p><p>As a co-host, you can edit the event and Live Card, save and publish changes, and manage RSVPs and guest messages. Access applies only to this event.</p><p>Sign in or create an Envitefy account using ${escapeHtml(params.toEmail)} to accept.</p>`,
+    body: `<p>${escapeHtml(params.ownerName)} invited you to manage <strong>${escapeHtml(params.eventTitle)}</strong>.</p><p>${access}</p><p>Sign in or create an Envitefy account using ${escapeHtml(params.toEmail)} to accept.</p>`,
     buttonText: "Accept invitation", buttonUrl: params.acceptUrl,
     footerText: "This invitation expires in seven days. The owner can remove access at any time.",
   });
-  await sendTransactionalEmail({ ...resolveNoReplySender(), to: params.toEmail,
+  await sendTransactionalEmail({ ...(params.isSignupForm ? { from: SIGNUP_FORMS_SENDER } : resolveNoReplySender()), to: params.toEmail,
     subject: `You're invited to co-host ${params.eventTitle}`,
-    text: `${params.ownerName} invited you to co-host ${params.eventTitle}.\nYou can edit, save and publish this event and manage its RSVPs and messages.\nSign in or create an account with ${params.toEmail}.\nAccept invitation: ${params.acceptUrl}\nThis invitation expires in seven days.${signupTextSignature}`, html });
+    text: `${params.ownerName} invited you to co-host ${params.eventTitle}.\n${access}\nSign in or create an account with ${params.toEmail}.\nAccept invitation: ${params.acceptUrl}\nThis invitation expires in seven days.${signupTextSignature}`, html });
 }
 
 export async function sendPasswordChangeConfirmationEmail(params: {

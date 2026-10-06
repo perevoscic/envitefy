@@ -67,6 +67,14 @@ const baseMocks = {
     Navigation: (props) => React.createElement("svg", props),
     Share2: (props) => React.createElement("svg", props),
     Link: (props) => React.createElement("svg", props),
+    AlertCircle: (props) => React.createElement("svg", props),
+    CheckCircle2: (props) => React.createElement("svg", props),
+    Clock: (props) => React.createElement("svg", props),
+    Loader2: (props) => React.createElement("svg", props),
+    Mail: (props) => React.createElement("svg", props),
+    RotateCw: (props) => React.createElement("svg", props),
+    UserPlus: (props) => React.createElement("svg", props),
+    Users: (props) => React.createElement("svg", props),
   },
   "next/navigation": { useRouter: () => ({}) },
   "next-auth/react": { useSession: () => ({ status: "authenticated", update: async () => {} }) },
@@ -117,6 +125,27 @@ test("guest preview and sharing describe actual public or invitation access", ()
   assert.match(render(true), /sign in and accept an invitation/);
   assert.match(renderToStaticMarkup(React.createElement(Share, { eventId: "test", requiresInvitation: false })), /Anyone with this link can sign up/);
   assert.match(renderToStaticMarkup(React.createElement(Share, { eventId: "test", requiresInvitation: true })), /Sharing the link alone does not grant access/);
+});
+
+test("saved signup drafts allow owner invitations and co-host controls omit owner actions", () => {
+  const Share = load("src/components/smart-signup-form/SignupSharing.tsx", baseMocks).default;
+  const saved = renderToStaticMarkup(React.createElement(Share, { eventId: "saved", published: false }));
+  assert.match(saved, /aria-label="Manage access"/);
+  assert.match(saved, /Publish your signup to get a shareable link/);
+  const unsaved = renderToStaticMarkup(React.createElement(Share, { published: false }));
+  assert.match(unsaved, /Save a draft or publish to invite co-hosts/);
+  assert.doesNotMatch(unsaved, /aria-label="Manage access"/);
+  const cohostShare = renderToStaticMarkup(React.createElement(Share, { eventId: "saved", canManageCollaborators: false, requiresInvitation: true }));
+  assert.doesNotMatch(cohostShare, /aria-label="Manage access"|Invite people &amp; check access/);
+  const Actions = load("src/components/smart-signup-form/SignupOwnerActions.tsx", {
+    ...baseMocks, "@/components/EventDeleteModal": { __esModule: true, default: () => React.createElement("button", null, "Delete form") },
+  }).default;
+  const props = { eventId: "saved", eventTitle: "Signup", eventData: {}, form: createSignupThemeForm("harvest-table") };
+  const owner = renderToStaticMarkup(React.createElement(Actions, props));
+  assert.match(owner, /Manage access|Duplicate form|Delete form/);
+  const cohost = renderToStaticMarkup(React.createElement(Actions, { ...props, isOwner: false }));
+  assert.match(cohost, /aria-label="Edit event"/);
+  assert.doesNotMatch(cohost, /Manage access|Duplicate form|Delete form/);
 });
 
 test("public guests can find their signup without exposing recovery inside owner tools or previews", () => {

@@ -89,6 +89,7 @@ export async function POST(request: Request, context: Context) {
           toEmail: email,
           ownerName: owned.name,
           eventTitle: invite.event.title,
+          isSignupForm: Boolean(invite.event.data?.signupForm),
           acceptUrl: `${resolvePublicAssetOrigin()}/cohost-invite#${invite.token}`,
         }),
       );

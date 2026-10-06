@@ -24,7 +24,7 @@ import {
 } from "@/lib/event-access";
 import { deleteEventHistoryWithCleanup } from "@/lib/event-cleanup";
 import { isEventDraft } from "@/lib/event-draft-access";
-import { eventRevision, getEventPermissions, saveCollaborativeEvent, collaboratorUserIds } from "@/lib/event-collaboration";
+import { eventRevision, getEventPermissions, saveCollaborativeEvent, saveCollaborativeSignupEvent, collaboratorUserIds } from "@/lib/event-collaboration";
 import { EventCollaborationError, supportsEventCollaboration } from "@/lib/event-collaboration-types";
 import { findTransientEventMedia } from "@/lib/event-media";
 import { invalidateUserHistory } from "@/lib/history-cache";
@@ -247,12 +247,14 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     const issues = findTransientEventMedia(patch);
     if (issues.length) return buildMediaValidationResponse(issues);
     try {
-      const row = await saveCollaborativeEvent({ eventId: id, userId, patch, title: titleInput,
+      const save = existing.data?.signupForm || patch.signupForm ? saveCollaborativeSignupEvent : saveCollaborativeEvent;
+      const row = await save({ eventId: id, userId, patch, title: titleInput,
         expectedRevision: typeof body.expectedRevision === "string" ? body.expectedRevision : req.headers.get("If-Match")?.replace(/^"|"$/g, "") || null });
       await invalidateSharedHistoryViewers(id);
       return NextResponse.json(row, { headers: { "Cache-Control": "private, no-store" } });
     } catch (error) {
       if (error instanceof EventCollaborationError) return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+      if (error instanceof SignupMutationError) return NextResponse.json({ error: error.message }, { status: error.status });
       throw error;
     }
   }

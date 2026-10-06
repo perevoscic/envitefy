@@ -7,6 +7,7 @@ import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 
 type Invitation = {
   title: string;
+  isSignupForm?: boolean;
   ownerName: string;
   email: string;
   available: boolean;
@@ -120,14 +121,15 @@ export default function CoHostInvitation() {
                     className="mt-0.5 shrink-0 text-slate-400"
                   />
                   <p className="text-[13px] leading-5 text-slate-600">
-                    You can edit the event and Live Card, save and publish changes, and manage RSVPs
-                    and guest messages.
+                    {invitation.isSignupForm
+                      ? "You can edit and publish this sign-up form, view and manage participants, export responses and open or close signups."
+                      : "You can edit the event and Live Card, save and publish changes, and manage RSVPs and guest messages."}
                   </p>
                 </div>
               </div>
               {invitation.acceptedByCurrentUser && invitation.href ? (
                 <a href={invitation.href} className={`${button} ${primary} w-full`}>
-                  Open event workspace
+                  {invitation.isSignupForm ? "Open form dashboard" : "Open event workspace"}
                 </a>
               ) : !invitation.available ? (
                 <p
@@ -222,7 +224,7 @@ export default function CoHostInvitation() {
         </div>
         <div className="flex items-center gap-1.5 border-t border-slate-200 bg-slate-50/80 px-5 py-3 text-xs text-slate-500 sm:px-6">
           <Lock size={13} className="shrink-0" aria-hidden="true" />
-          Access applies only to this event.
+          Access applies only to this {invitation?.isSignupForm ? "form" : "event"}.
         </div>
         <AuthModal
           open={authOpen}

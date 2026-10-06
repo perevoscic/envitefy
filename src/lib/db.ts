@@ -5516,7 +5516,9 @@ export async function consumeSignupRecoveryLimit(
 /** Serialize signup definitions and reservations on the event row, then commit both stores. */
 export async function mutateSignupEvent<T>(
   eventId: string,
-  mutate: (row: EventHistoryRow) => { data: Record<string, any>; result: T },
+  mutate: (row: EventHistoryRow, client: PoolClient) =>
+    { data: Record<string, any>; result: T; title?: string } |
+    Promise<{ data: Record<string, any>; result: T; title?: string }>,
 ): Promise<{ row: EventHistoryRow; result: T } | null> {
   await ensureSignupFormsTable();
   return withClient(async (client) => {
@@ -5528,12 +5530,12 @@ export async function mutateSignupEvent<T>(
       );
       const current = locked.rows[0];
       if (!current) { await client.query("rollback"); return null; }
-      const change = mutate(current);
+      const change = await mutate(current, client);
       const safeData = sanitizeJsonValueForPostgres(change.data);
       normalizeCanonicalStartFields(safeData);
       const updated = await client.query<EventHistoryRow>(
-        "update event_history set data = $2::jsonb where id = $1 returning id, user_id, title, data, public_slug, created_at",
-        [eventId, JSON.stringify(safeData)],
+        "update event_history set data = $2::jsonb, title = $3 where id = $1 returning id, user_id, title, data, public_slug, created_at",
+        [eventId, JSON.stringify(safeData), change.title || current.title],
       );
       if (safeData.signupForm) {
         await client.query(

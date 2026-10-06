@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import EventDeleteModal from "@/components/EventDeleteModal";
+import EventAccessDialog from "@/components/EventAccessDialog";
 import type { SignupForm } from "@/types/signup";
 import { resolveEditHref } from "@/utils/event-edit-route";
 import styles from "./signup-theme.module.css";
@@ -14,11 +15,13 @@ export default function SignupOwnerActions({
   eventTitle,
   eventData,
   form,
+  isOwner = true,
 }: {
   eventId: string;
   eventTitle: string;
   eventData: Record<string, unknown>;
   form: SignupForm;
+  isOwner?: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
@@ -52,7 +55,8 @@ export default function SignupOwnerActions({
           <Pencil className="size-4" aria-hidden="true" />
           <span className={styles.ownerLabel}>Edit</span>
         </Link>
-        <button
+        {isOwner && <EventAccessDialog eventId={eventId} eventTitle={eventTitle} resourceType="signup" className={styles.ownerButton} labelClassName={styles.ownerLabel} />}
+        {isOwner && <><button
           type="button"
           onClick={duplicate}
           className={styles.ownerButton}
@@ -70,7 +74,7 @@ export default function SignupOwnerActions({
         >
           <Trash2 className="size-4" aria-hidden="true" />
           <span className={styles.ownerLabel}>Delete</span>
-        </EventDeleteModal>
+        </EventDeleteModal></>}
       </nav>
       {error && (
         <p role="alert" className={styles.ownerError}>
