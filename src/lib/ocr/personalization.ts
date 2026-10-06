@@ -18,6 +18,8 @@ type PersonalizationInput = {
   personName?: string | null;
   personBirthDate?: string | null;
   personAge?: number | null;
+  /** The extraction model's SCAN_ART_THEMES choice for the occasion. */
+  artTheme?: string | null;
 };
 
 const SPECIALTIES: [RegExp, string, string[]][] = [
@@ -106,6 +108,13 @@ const TOPICS: [RegExp, string, string[]][] = [
   [/\btravel|\bflight|\btrip/i, "travel", ["suitcase", "abstract route curves"]],
   [/\breligious|\bchurch|\bworship/i, "community gathering", ["soft light", "olive branches"]],
 ];
+
+/**
+ * Art themes the extraction model chooses from by reading the whole source. The
+ * catalog fixes how each theme looks and keeps saved briefs free of arbitrary
+ * prompt text; the patterns are only an offline fallback.
+ */
+export const SCAN_ART_THEMES = TOPICS.map(([, subject]) => subject);
 
 const THEMES: [RegExp, string][] = [
   [/\bdinosaur|\bdino\b/i, "friendly dinosaurs"],
@@ -212,6 +221,7 @@ export function buildScanPersonalization(input: PersonalizationInput): ScanPerso
   // The title names the occasion; body text can mention others ("head count after Halloween").
   const titleText = [input.category, input.title].filter(Boolean).join("\n");
   const topic =
+    TOPICS.find(([, subject]) => subject === input.artTheme) ||
     TOPICS.find(([pattern]) => pattern.test(titleText)) ||
     TOPICS.find(([pattern]) => pattern.test(text));
   const subject = medical ? specialty?.[1] || "medical" : topic?.[1] || "event";

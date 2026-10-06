@@ -8,6 +8,7 @@ import {
 } from "../creation/source-evidence.ts";
 import type { EventOcrLlmResult } from "./types.ts";
 import { validCalendarDate } from "../concierge/readiness.ts";
+import { SCAN_ART_THEMES } from "./personalization.ts";
 
 const strings = (keys: string[]) => Object.fromEntries(keys.map((key) => [key, nullableString]));
 const number = { type: ["number", "null"] };
@@ -66,6 +67,7 @@ export const EVENT_EXTRACTION_SCHEMA = strictObject({
   birthdayAge: { type: ["integer", "null"] },
   personAge: { type: ["integer", "null"] },
   scanSourceKind: { type: "string", enum: ["paperwork", "designed", "unknown"] },
+  artTheme: { type: ["string", "null"], enum: [...SCAN_ART_THEMES, null] },
   yearVisible: { type: ["boolean", "null"] },
   ocrFacts: { type: "array", items: fact },
   thumbnailFocus: {

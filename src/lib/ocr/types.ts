@@ -10,6 +10,8 @@ export type EventOcrLlmResult = {
   personBirthDate?: string | null;
   personAge?: number | null;
   scanSourceKind?: "paperwork" | "designed" | "unknown";
+  /** Occasion chosen from SCAN_ART_THEMES for generated artwork. */
+  artTheme?: string | null;
   start?: string | null;
   end?: string | null;
   address?: string;

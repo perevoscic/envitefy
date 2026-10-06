@@ -183,3 +183,14 @@ test("holiday titles choose holiday artwork even when the body mentions another 
   assert.match(prompt, /evergreen, cranberry red/);
   assert.doesNotMatch(prompt, /pale sage/);
 });
+
+test("the extraction model's art theme decides the artwork without keyword matches", () => {
+  assert.equal(
+    buildScanPersonalization({ title: "Team night out", artTheme: "Christmas celebration" }).subject,
+    "Christmas celebration",
+  );
+  assert.equal(
+    buildScanPersonalization({ title: "Team night out", artTheme: "print the guest list" }).subject,
+    "event",
+  );
+});

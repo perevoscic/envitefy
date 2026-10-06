@@ -994,10 +994,13 @@ export async function handleOcrRequest(request: Request) {
       finalStart = safeDate(llmImage.start) || start;
       llmReturnedEndString = typeof llmImage.end === "string" && llmImage.end.trim().length > 0;
       finalEnd = safeDate(llmImage.end) || end;
+      // The vision extraction cites its address or reports it missing; a regex
+      // guess from the transcript would only reintroduce lines it rejected
+      // (attendee counts, phone numbers, headers).
       finalAddress =
         typeof llmImage.address === "string" && llmImage.address.trim()
           ? llmImage.address.trim()
-          : addressOnly;
+          : "";
       if (
         looksLikeParkingOrDirectionsNote(finalAddress) ||
         looksLikeAttendeeListOrOverflow(finalAddress)
@@ -1232,7 +1235,7 @@ export async function handleOcrRequest(request: Request) {
     ) {
       if (!finalVenue) finalVenue = splitLocation.venue;
     }
-    if (!finalVenue) {
+    if (!finalVenue && !llmImage) {
       const fallbackVenue = pickVenueLabelForSentence(addressWithVenue, finalDescription, raw);
       if (
         fallbackVenue &&
@@ -1576,7 +1579,8 @@ export async function handleOcrRequest(request: Request) {
       venue: finalVenue,
       location: finalAddress,
       hostName: hostNameFinal,
-      context: [raw, description, finalTitle].filter(Boolean).join("\n"),
+      // Without a vision extraction, fall back to scanning the transcript for a venue line.
+      context: llmImage ? undefined : [raw, description, finalTitle].filter(Boolean).join("\n"),
     });
     const normalizedFieldRsvp = normalizeOcrRsvpFields({
       rsvp: deferredRsvp,
@@ -1592,6 +1596,7 @@ export async function handleOcrRequest(request: Request) {
       personName: llmImage?.personName || llmImage?.birthdayName,
       personBirthDate: llmImage?.personBirthDate,
       personAge: llmImage?.personAge ?? llmImage?.birthdayAge,
+      artTheme: llmImage?.artTheme,
     });
     // The reliable brief is ready before deep schedules, location enrichment and skin work.
     scanAttemptId = scanAttemptId || `scan-${randomUUID()}`;
