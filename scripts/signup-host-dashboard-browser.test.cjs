@@ -90,6 +90,10 @@ test("host signup views, icon actions, filters and saved email preferences work 
     await page.getByRole("combobox", { name: "Status", exact: true }).selectOption("active");
     await page.getByText("Email alerts", { exact: true }).click();
     await page.getByText("host@example.test", { exact: true }).waitFor();
+    await page.getByText(/Owners and accepted co-hosts receive signup emails automatically/).waitFor();
+    for (const label of ["Receive signup emails", "New signups", "Signup changes", "Cancellations", "Waitlist additions and confirmations"]) {
+      assert.equal(await page.getByRole("checkbox", { name: label, exact: true }).isChecked(), true);
+    }
     const checkbox = page.getByRole("checkbox", { name: "New signups", exact: true });
     await checkbox.uncheck(); failSave = true;
     await page.getByRole("button", { name: "Save email preferences", exact: true }).click();
@@ -132,6 +136,11 @@ test("host signup views, icon actions, filters and saved email preferences work 
     await page.getByRole("button", { name: "Save email preferences", exact: true }).click();
     await page.getByText("Email alert preferences saved.", { exact: true }).waitFor();
     assert.deepEqual(posts.at(-1).preferences, { newSignups: false, changes: false, cancellations: false, waitlist: false });
+    await page.reload();
+    await page.getByText("Email alerts", { exact: true }).click();
+    for (const label of ["Receive signup emails", "New signups", "Signup changes", "Cancellations", "Waitlist additions and confirmations"]) {
+      assert.equal(await page.getByRole("checkbox", { name: label, exact: true }).isChecked(), false, "saved opt-out survives reload");
+    }
     assert.deepEqual(failures, []);
   } finally {
     await browser?.close();

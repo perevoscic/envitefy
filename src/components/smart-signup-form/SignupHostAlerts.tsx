@@ -109,8 +109,9 @@ export default function SignupHostAlerts({ eventId }: { eventId: string }) {
               <strong>{settings.email || "No email address on your account"}</strong>.
             </p>
             <p className="text-[var(--signup-muted)]">
-              These settings apply to your account for this form. Alerts include who signed up and
-              their selections. Other co-hosts choose their own alerts.
+              Owners and accepted co-hosts receive signup emails automatically, including who signed
+              up and their selections. Turn them off or choose which updates you receive for this
+              form. Your choices apply only to your account.
             </p>
             <label className="flex min-h-11 cursor-pointer items-center gap-3 font-semibold">
               <input

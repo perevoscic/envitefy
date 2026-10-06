@@ -90,9 +90,9 @@ export async function enqueueSignupHostAlerts(
   if (!activities.length) return;
   const recipients = await client.query<Recipient>(
     `
-    SELECT u.id, coalesce(p.new_signups,u.id=$2) AS "newSignups",
-      coalesce(p.changes,u.id=$2) AS changes, coalesce(p.cancellations,u.id=$2) AS cancellations,
-      coalesce(p.waitlist,u.id=$2) AS waitlist
+    SELECT u.id, coalesce(p.new_signups,true) AS "newSignups",
+      coalesce(p.changes,true) AS changes, coalesce(p.cancellations,true) AS cancellations,
+      coalesce(p.waitlist,true) AS waitlist
     FROM users u LEFT JOIN signup_host_alert_preferences p ON p.event_id=$1 AND p.user_id=u.id
     WHERE u.id=$2 OR EXISTS(SELECT 1 FROM event_collaborators c WHERE c.event_id=$1 AND c.user_id=u.id AND c.revoked_at IS NULL)`,
     [row.id, row.user_id],
@@ -114,15 +114,15 @@ export async function signupHostAlertSettings(row: EventHistoryRow, userId: stri
   await ensureSignupHostAlerts();
   const result = await query<SignupHostAlertPreferences & { email: string | null }>(
     `
-    SELECT u.email, coalesce(p.new_signups,u.id=$2) AS "newSignups",
-      coalesce(p.changes,u.id=$2) AS changes, coalesce(p.cancellations,u.id=$2) AS cancellations,
-      coalesce(p.waitlist,u.id=$2) AS waitlist
-    FROM users u LEFT JOIN signup_host_alert_preferences p ON p.event_id=$1 AND p.user_id=u.id WHERE u.id=$3`,
-    [row.id, row.user_id, userId],
+    SELECT u.email, coalesce(p.new_signups,true) AS "newSignups",
+      coalesce(p.changes,true) AS changes, coalesce(p.cancellations,true) AS cancellations,
+      coalesce(p.waitlist,true) AS waitlist
+    FROM users u LEFT JOIN signup_host_alert_preferences p ON p.event_id=$1 AND p.user_id=u.id WHERE u.id=$2`,
+    [row.id, userId],
   );
   const { email, ...preferences } = result.rows[0] || {
     email: null,
-    ...defaultSignupHostPreferences(row.user_id === userId),
+    ...defaultSignupHostPreferences(),
   };
   const deliveries = await query<{
     id: string;

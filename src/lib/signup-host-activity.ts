@@ -35,8 +35,8 @@ export const SIGNUP_ALERT_LABELS: Record<SignupHostAlertKind, string> = {
   promoted: "Confirmed from the waitlist",
 };
 
-export function defaultSignupHostPreferences(owner: boolean): SignupHostAlertPreferences {
-  return { newSignups: owner, changes: owner, cancellations: owner, waitlist: owner };
+export function defaultSignupHostPreferences(): SignupHostAlertPreferences {
+  return { newSignups: true, changes: true, cancellations: true, waitlist: true };
 }
 
 export function wantsSignupHostAlert(

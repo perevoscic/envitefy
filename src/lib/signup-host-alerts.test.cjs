@@ -40,11 +40,21 @@ test("timestamp-only changes, reordered selections and repeat cancellations do n
   assert.deepEqual(activity.signupHostActivities(form([cancelled]), form([{ ...cancelled, updatedAt: "later" }])), []);
 });
 
-function setup({ sendFailure, owner = true, allowed = true, optIn = true, ackFailure = false, draft = false } = {}) {
+function optedOutPreferences() {
+  return { newSignups: false, changes: false, cancellations: false, waitlist: false };
+}
+
+function setup({ sendFailure, owner = true, allowed = true, preferences = null, ackFailure = false, draft = false } = {}) {
   const jobs = [];
   const mail = [];
   const statements = [];
-  let prefs = activity.defaultSignupHostPreferences(optIn);
+  let prefs = preferences;
+  const projectedPreferences = (sql) => {
+    for (const column of ["new_signups", "changes", "cancellations", "waitlist"]) {
+      assert.ok(sql.includes(`coalesce(p.${column},true)`), `${column} defaults on only when no preference is saved`);
+    }
+    return prefs || { newSignups: true, changes: true, cancellations: true, waitlist: true };
+  };
   const row = { id: "event", user_id: owner ? "recipient" : "owner", title: "Fall picnic", public_slug: "fall-picnic",
     data: { status: draft ? "draft" : "published", signupForm: form() } };
   let schemaReady = true;
@@ -52,7 +62,7 @@ function setup({ sendFailure, owner = true, allowed = true, optIn = true, ackFai
     statements.push({ sql, args });
     if (sql.includes("FROM pg_class")) return { rows: [{ ready: schemaReady }] };
     if (/^(BEGIN|COMMIT|ROLLBACK)/.test(sql) || sql.startsWith("\nCREATE TABLE")) return { rows: [] };
-    if (sql.includes("SELECT u.id")) return { rows: [{ id: "recipient", ...prefs }] };
+    if (sql.includes("SELECT u.id")) return { rows: [{ id: "recipient", ...projectedPreferences(sql) }] };
     if (sql.startsWith("INSERT INTO signup_host_alerts")) {
       jobs.push({ id: args[0], event_id: args[1], recipient_id: args[2], change_id: args[3], activity: JSON.parse(args[4]), status: "pending", attempts: 0 });
       return { rows: [] };
@@ -61,7 +71,11 @@ function setup({ sendFailure, owner = true, allowed = true, optIn = true, ackFai
       prefs = { newSignups: args[2], changes: args[3], cancellations: args[4], waitlist: args[5] };
       return { rows: [] };
     }
-    if (sql.includes("SELECT u.email")) return { rows: [{ email: "host@example.test", ...prefs }] };
+    if (sql.includes("SELECT u.email")) {
+      assert.deepEqual(args, [row.id, "recipient"], "settings are read for the requesting host's account");
+      assert.ok(sql.includes("WHERE u.id=$2"));
+      return { rows: [{ email: "host@example.test", ...projectedPreferences(sql) }] };
+    }
     if (sql.includes("SELECT id,activity")) return { rows: jobs.map((job) => ({ id: job.id, kind: job.activity.kind, name: job.activity.name, status: job.status, createdAt: "2026-10-06T12:00:00Z" })) };
     if (sql.startsWith("UPDATE signup_host_alerts")) {
       if (sql.includes("WHERE id=(SELECT")) {
@@ -91,19 +105,47 @@ function setup({ sendFailure, owner = true, allowed = true, optIn = true, ackFai
   });
   return { api, jobs, mail, statements, row, client, setSchemaMissing: () => { schemaReady = false; },
     enqueue: () => api.enqueueSignupHostAlerts(client, row, form(), form([response()])),
-    optOut: () => { prefs = activity.defaultSignupHostPreferences(false); } };
+    optOut: () => { prefs = optedOutPreferences(); } };
 }
 
-test("owner alerts default on, co-host alerts default off, and queue creation uses the supplied reservation transaction", async () => {
-  assert.equal(activity.defaultSignupHostPreferences(true).newSignups, true);
-  assert.equal(activity.defaultSignupHostPreferences(false).newSignups, false);
-  const fixture = setup();
-  await fixture.enqueue();
-  assert.equal(fixture.jobs.length, 1);
-  assert.ok(fixture.statements[0].sql.includes("c.revoked_at IS NULL"));
-  assert.ok(fixture.statements.some(({ sql }) => sql.includes("ON CONFLICT(change_id,recipient_id) DO NOTHING")));
-  const optedOut = setup({ owner: false, optIn: false });
-  await optedOut.enqueue(); assert.equal(optedOut.jobs.length, 0);
+test("owners and accepted co-hosts receive alerts without opening settings or saving preferences", async () => {
+  const defaults = { newSignups: true, changes: true, cancellations: true, waitlist: true };
+  assert.deepEqual(activity.defaultSignupHostPreferences(), defaults);
+  for (const owner of [true, false]) {
+    const fixture = setup({ owner });
+    await fixture.enqueue();
+    assert.equal(fixture.jobs.length, 1);
+    assert.ok(fixture.statements[0].sql.includes("c.revoked_at IS NULL"));
+    assert.ok(fixture.statements.some(({ sql }) => sql.includes("ON CONFLICT(change_id,recipient_id) DO NOTHING")));
+    const settings = await fixture.api.signupHostAlertSettings(fixture.row, "recipient");
+    assert.deepEqual(settings.preferences, defaults);
+    assert.equal(fixture.statements.some(({ sql }) => sql.startsWith("INSERT INTO signup_host_alert_preferences")), false);
+    await fixture.api.processSignupHostAlerts();
+    assert.equal(fixture.mail.length, 1);
+  }
+});
+
+test("saved full and individual opt-outs remain effective for owners and co-hosts", async () => {
+  for (const owner of [true, false]) {
+    for (const preferences of [optedOutPreferences(), { newSignups: true, changes: false, cancellations: true, waitlist: false }]) {
+      const fixture = setup({ owner, preferences });
+      const settings = await fixture.api.signupHostAlertSettings(fixture.row, "recipient");
+      assert.deepEqual(settings.preferences, preferences);
+      assert.equal(fixture.statements.some(({ sql }) => sql.startsWith("INSERT INTO signup_host_alert_preferences")), false);
+      for (const [before, after] of [
+        [form(), form([response()])],
+        [form([response()]), form([response({ note: "Bring ice" })])],
+        [form([response()]), form([response({ status: "cancelled" })])],
+        [form(), form([response({ status: "waitlisted" })])],
+        [form([response({ status: "waitlisted" })]), form([response()])],
+      ]) await fixture.api.enqueueSignupHostAlerts(fixture.client, fixture.row, before, after);
+      assert.deepEqual(fixture.jobs.map((job) => job.activity.kind), preferences.newSignups ? ["new_signup", "cancelled"] : []);
+      const saved = await fixture.api.saveSignupHostAlertPreferences("event", "recipient", optedOutPreferences());
+      assert.deepEqual(saved.preferences, optedOutPreferences());
+      await fixture.api.processSignupHostAlerts();
+      assert.equal(fixture.mail.length, 0, "opting out before delivery also suppresses queued alerts");
+    }
+  }
 });
 
 test("accepted sends are not sent again and link to the authenticated host dashboard", async () => {
@@ -204,7 +246,7 @@ test("schema setup protects tables atomically and matches the checked-in SQL mig
 
 test("preferences cannot be saved after membership is revoked", async () => {
   const fixture = setup({ allowed: false });
-  await assert.rejects(() => fixture.api.saveSignupHostAlertPreferences("event", "recipient", activity.defaultSignupHostPreferences(true)), /no longer have access/);
+  await assert.rejects(() => fixture.api.saveSignupHostAlertPreferences("event", "recipient", activity.defaultSignupHostPreferences()), /no longer have access/);
   assert.equal(fixture.statements.some(({ sql }) => sql.startsWith("INSERT INTO signup_host_alert_preferences")), false);
 });
 
@@ -218,7 +260,7 @@ test("alert API refuses anonymous guests, pending invitees, foreign origins and 
     "@/lib/auth": { authOptions: {}, resolveSessionUserId: async () => userId },
     "@/lib/db": { getEventHistoryById: async () => row },
     "@/lib/event-collaboration": { getEventPermissions: async () => ({ canManageResponses: allowed }) },
-    "@/lib/signup-host-alerts": { signupHostAlertSettings: async () => ({ email: "host@example.test", preferences: activity.defaultSignupHostPreferences(true), deliveries: [] }),
+    "@/lib/signup-host-alerts": { signupHostAlertSettings: async () => ({ email: "host@example.test", preferences: activity.defaultSignupHostPreferences(), deliveries: [] }),
       saveSignupHostAlertPreferences: async (...args) => saved.push(args), processSignupHostAlerts: async () => {}, retrySignupHostAlert: async () => {} },
   });
   const context = { params: Promise.resolve({ id: "event" }) };
@@ -227,13 +269,13 @@ test("alert API refuses anonymous guests, pending invitees, foreign origins and 
   userId = "pending";
   assert.equal((await route.GET(new Request(url), context)).status, 403);
   userId = "cohost"; allowed = true;
-  const body = { userId: "forged-owner", email: "forged@example.test", preferences: activity.defaultSignupHostPreferences(true) };
+  const body = { userId: "forged-owner", email: "forged@example.test", preferences: activity.defaultSignupHostPreferences() };
   const post = (origin) => route.POST(new Request(url, { method: "POST", headers: { origin }, body: JSON.stringify(body) }), context);
   assert.equal((await post("https://evil.test")).status, 403);
   const result = await post("https://envitefy.com");
   assert.equal(result.status, 200); assert.equal(result.headers.get("cache-control"), "private, no-store");
   assert.equal(saved[0][1], "cohost");
-  assert.deepEqual(saved[0][2], activity.defaultSignupHostPreferences(true));
+  assert.deepEqual(saved[0][2], activity.defaultSignupHostPreferences());
 });
 
 test("host email escapes guest content, uses Zoho sender and preserves selections without guest management tokens", async () => {
