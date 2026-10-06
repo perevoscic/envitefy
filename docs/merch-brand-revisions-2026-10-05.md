@@ -1,0 +1,20 @@
+# Envitefy brand-focused shirt revisions
+
+Generated with the built-in OpenAI image tool, October 5, 2026. User requested the official logo instead of generic envelope graphics. Reference assets: public/brand/envitefy-wordmark.png and public/brand/e-only.png. Concept mockups; production layouts must place exact original assets.
+
+## make-it-a-thing-brand-v2
+
+Output: output/merch/make-it-a-thing-brand-v2.webp
+
+Prompt:
+
+Use case: product-mockup. Create a highly polished brand-faithful Envitefy apparel concept photographed in a landscape studio composition. Two complete oversized heavyweight washed-black cotton T-shirts side by side, FRONT on the left and BACK on the right, warm pale-gray background, soft real shadows, premium fabric. This is a revision away from generic invitation-envelope illustrations toward the ACTUAL Envitefy brand assets. Reference image 1 is the locked official lowercase envitefy wordmark: reproduce the original exact letter shapes, spacing and purple-to-blue gradient without redesign. Reference image 2 is the official standalone E-and-paper-plane logo: reproduce its EXACT silhouette, open lowercase e shape and connected angular paper-plane form with its original blue-purple gradient; use it as the main hero graphic, do NOT substitute a literal envelope or generic paper plane, do NOT invent a new logo. FRONT: tasteful small official wordmark alone on wearer’s left chest. BACK: at upper back the exact words "MAKE IT" then "A THING." in two compact rows, clean bold modern ivory sans-serif with refined spacing; below slogan, a large official E-and-paper-plane mark centered, about 9 inches wide, recognizable and uncluttered with generous negative space. Below the large mark a modest official lowercase envitefy wordmark in its original gradient, and exact small ivory domain "envitefy.com". Hierarchy: slogan and E mark strongest, small wordmark and website quietly support. Keep the print balanced within upper and middle back, no huge clutter reaching hem. Branding-focused premium streetwear. NO envelopes, NO invitation card graphics, NO confetti, NO stars, NO swirls, NO rings, NO decorative clipart, NO QR code. Garments completely visible. Tiny labels FRONT and BACK outside shirts. Printed graphics should be flat and clear on fabric, logo edges sharp.
+
+## host-club-brand-v2
+
+Output: output/merch/host-club-brand-v2.webp
+
+Prompt:
+
+Use case: product-mockup. Create premium branded Envitefy THE HOST CLUB T-shirt mockups, landscape editorial studio image showing two complete heavyweight washed-lavender oversized cotton shirts, FRONT left, BACK right, warm cream background, tactile fabric, real subtle folds and natural soft shadows. Reference image 1 is the locked official lowercase envitefy wordmark: preserve exact logo letterforms, spacing, original purple-to-blue gradient. Reference image 2 is the actual official standalone E-and-paper-plane brand mark: retain EXACT recognizable shape, lowercase e with integrated angular paper plane, and original blue-purple gradient; do not redraw into a different logo, do not use envelope icon. FRONT: small official gradient envitefy wordmark at wearer’s left chest. BACK: retain refined club-emblem aesthetic, exact ivory words "THE HOST CLUB" following a broad semicircular arc above a LARGE central official E-and-paper-plane mark from reference 2. A simple fine ivory circle frames the mark with plenty of breathing room and a gap at top for the curved type. The official mark should occupy most of the circle interior, unmistakably branding the garment. NO envelope, NO extra planet orbit, NO stars, NO confetti, NO invented icons. Below circular emblem exact ivory uppercase words "BRING PEOPLE TOGETHER." in small tasteful tracked sans-serif, and exact small ivory domain "envitefy.com". Large logo uses its original blue-purple gradient against lavender; other back printing ivory. Keep shirt sophisticated, minimal, brand-faithful, visually balanced, screenprint-quality clarity. Both full garments visible, with small FRONT and BACK labels below outside shirts. No other text.
+
