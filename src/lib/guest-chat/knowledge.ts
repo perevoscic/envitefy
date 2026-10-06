@@ -5,20 +5,15 @@ export type GuestChatKnowledgeItem = {
   keywords: string[];
 };
 
-export const guestChatStarterQuestions = [
-  "Do guests need an account?",
-  "Can I upload an invite or flyer?",
-  "How do RSVPs work?",
-  "What can an event page include?",
-] as const;
+export { guestChatStarterQuestions } from "./starters.ts";
 
 export const guestChatKnowledgeItems: GuestChatKnowledgeItem[] = [
   {
     id: "product-overview",
     question: "What does Envitefy create?",
     answer:
-      "Envitefy helps hosts create polished hosted event pages with live invitations, RSVP flows, maps, calendar saves, registry links, smart sign-ups, updates, and guest-facing details from one shareable link. You can start with SNAP, Envitefy Create, or a category template.",
-    keywords: ["envitefy", "what", "create", "event", "page", "invitation", "hosted", "host"],
+      "Envitefy helps hosts create Live Cards (animated invitation cards), themed Event Pages, and Sign-up Forms, each shared with one link. Guests can RSVP, get directions, save the date to their calendar, open registry links, and claim sign-up slots. You can start from a design, a category template, or by uploading an invite or flyer you already have.",
+    keywords: ["envitefy", "make", "create", "event", "page", "invitation", "hosted", "host", "offer", "features"],
   },
   {
     id: "guest-account",
@@ -53,11 +48,25 @@ export const guestChatKnowledgeItems: GuestChatKnowledgeItem[] = [
     keywords: ["snap", "upload", "ocr", "photo", "camera", "flyer", "screenshot", "pdf", "extract"],
   },
   {
-    id: "concierge",
-    question: "What is Envitefy Create?",
+    id: "live-card",
+    question: "How do I create a Live Card?",
     answer:
-      "Envitefy Create includes the guided Live Card builder, Event Page template editors, and the separate Sign-up Form builder. Choose a design, enter the event details, review, then explicitly save or publish. This help chat answers questions about those tools.",
-    keywords: ["concierge", "chat", "ai", "message", "draft", "assistant", "envitefy concierge", "create", "envitefy create"],
+      "Sign in and open Live Card from Create. In Design, pick the event type and describe the look you want (you can add a reference image), then select Generate & continue. While the artwork is being made, fill in Event details: title, date and time, location, RSVP and registry. Review the card, then Publish and share the guest link. Guests tap buttons on the card for RSVP, details, location, calendar and registry.",
+    keywords: ["live card", "livecard", "card", "animated", "artwork", "design", "generate", "invitation card"],
+  },
+  {
+    id: "choose-product",
+    question: "Should I use a Live Card, an Event Page, or a Sign-up Form?",
+    answer:
+      "Choose a Live Card for a striking invitation card with RSVP and guest buttons, ideal for parties, showers and weddings. Choose an Event Page for a fuller website with schedules, sections, maps and updates, like a wedding weekend, sports season or school event. Choose a Sign-up Form when guests need to claim volunteer roles, items or time slots.",
+    keywords: ["which", "choose", "difference", "should i use", "versus", "vs", "best", "where to start"],
+  },
+  {
+    id: "concierge",
+    question: "What is Envitefy Concierge?",
+    answer:
+      "Envitefy Concierge is this help chat. It answers questions about Envitefy and helps you choose where to start. Creating happens in the Live Card builder, the Event Page editors, and the Sign-up Form builder, where you save drafts and publish when you are ready.",
+    keywords: ["concierge", "chat", "ai", "assistant", "envitefy concierge", "envitefy create"],
   },
   {
     id: "my-events-vs-invited",

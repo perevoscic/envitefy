@@ -79,6 +79,23 @@ test("desktop Concierge slides past the hero and preserves the question chat and
       return route.fulfill({ contentType: "text/javascript", body: script });
     if (url.pathname === "/api/guest-chat") {
       questions.push(route.request().postDataJSON());
+      if (questions.length === 2) {
+        const events = [
+          { type: "delta", text: "Start in the Live Card " },
+          { type: "delta", text: "builder." },
+          {
+            type: "done",
+            ok: true,
+            answer:
+              "Start in the Live Card builder.\n\nWant to try it now? Create an account to get started.",
+            signupSuggested: true,
+          },
+        ];
+        return route.fulfill({
+          contentType: "application/x-ndjson",
+          body: `${events.map((event) => JSON.stringify(event)).join("\n")}\n`,
+        });
+      }
       return route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({ ok: true, answer: "Guests can RSVP from the shared event page." }),
@@ -182,6 +199,12 @@ test("desktop Concierge slides past the hero and preserves the question chat and
     await dialog.getByText("Guests can RSVP from the shared event page.").waitFor();
     assert.equal(questions.length, 1);
     assert.equal(questions[0].message, "How do RSVPs work?");
+    assert.equal(questions[0].stream, true);
+    assert.deepEqual(questions[0].history, [{ role: "user", text: "How do RSVPs work?" }]);
+    await dialog.getByLabel("Question for Envitefy Concierge").fill("How do I create a Live Card?");
+    await dialog.getByRole("button", { name: "Send Envitefy Concierge message" }).click();
+    await dialog.getByText(/Start in the Live Card builder\.\s+Want to try it now\?/).waitFor();
+    await dialog.getByRole("button", { name: "Create account" }).waitFor();
     await page.screenshot({ path: path.join(output, "desktop-concierge.png") });
     await page.keyboard.press("Escape");
     await dialog.waitFor({ state: "hidden" });

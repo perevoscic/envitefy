@@ -4,7 +4,7 @@ import { Loader2, Mail, MessageCircle, Send, Sparkles, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
-import { guestChatStarterQuestions } from "@/lib/guest-chat/knowledge";
+import { guestChatStarterQuestions } from "@/lib/guest-chat/starters";
 
 type ChatRole = "assistant" | "user";
 

@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Send, UserPlus, X } from "lucide-react";
 import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
+import { guestChatStarterQuestions } from "@/lib/guest-chat/starters";
 import styles from "./concierge-sheet.module.css";
 
 type ChatRole = "assistant" | "user";
@@ -31,16 +32,8 @@ type ConciergeSheetProps = {
 const welcomeMessage: ChatMessage = {
   id: "welcome",
   role: "assistant",
-  text: "Ask me about Envitefy, Live Cards, Event Pages, Sign-up Forms, uploads, or guest actions. I can explain how they work and help you choose where to start.",
+  text: "Hi! I'm Envitefy Concierge. Ask me anything about creating or sharing your event.",
 };
-
-const conciergeQuickPrompts = [
-  "How do I create a Live Card?",
-  "Can I upload an invite or flyer?",
-  "What can guests do?",
-  "How do RSVPs work?",
-  "Can I add a registry?",
-];
 
 const conciergeLogoMaskStyle = {
   WebkitMask: "url(/logo-colored.png) center / contain no-repeat",
@@ -73,6 +66,7 @@ export default function ConciergeSheet({
   const [messages, setMessages] = useState<ChatMessage[]>([welcomeMessage]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [streamingReplyId, setStreamingReplyId] = useState<string | null>(null);
   const [isDesktop, setIsDesktop] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -163,6 +157,16 @@ export default function ConciergeSheet({
     setInput("");
     setIsSending(true);
 
+    const replyId = makeMessageId();
+    const showReply = (text: string, signupSuggested?: boolean) =>
+      setMessages((current) => {
+        const reply: ChatMessage = { id: replyId, role: "assistant", text, signupSuggested };
+        return current.some((message) => message.id === replyId)
+          ? current.map((message) => (message.id === replyId ? reply : message))
+          : [...current, reply];
+      });
+
+    let streamed = "";
     try {
       const res = await fetch("/api/guest-chat", {
         method: "POST",
@@ -170,41 +174,72 @@ export default function ConciergeSheet({
         credentials: "include",
         body: JSON.stringify({
           message: userMessage.text,
-          history: nextMessages.slice(-10).map((message) => ({
-            role: message.role,
-            text: message.text,
-          })),
+          stream: true,
+          history: nextMessages
+            .filter((message) => message.id !== welcomeMessage.id)
+            .slice(-10)
+            .map((message) => ({
+              role: message.role,
+              text: message.text,
+            })),
         }),
       });
+
+      if (res.ok && res.body && res.headers.get("content-type")?.includes("ndjson")) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffered = "";
+        let finished = false;
+        while (!finished) {
+          const { value, done } = await reader.read();
+          buffered += decoder.decode(value, { stream: !done });
+          const lines = buffered.split("\n");
+          buffered = done ? "" : lines.pop() || "";
+          for (const line of lines) {
+            let event: unknown;
+            try {
+              event = JSON.parse(line);
+            } catch {
+              continue;
+            }
+            if (!isRecord(event)) continue;
+            if (event.type === "delta" && typeof event.text === "string") {
+              streamed += event.text;
+              setStreamingReplyId(replyId);
+              showReply(streamed);
+            } else if (event.type === "done") {
+              const data = parseGuestChatResponse(event);
+              showReply(data.answer || streamed, Boolean(data.signupSuggested));
+              finished = true;
+            }
+          }
+          if (done) finished = true;
+        }
+        if (!streamed) throw new Error("Envitefy Concierge is temporarily unavailable.");
+        return;
+      }
+
       const data = parseGuestChatResponse(await res.json().catch(() => ({})));
       if (!res.ok || !data.ok) {
         throw new Error(data.error || "Envitefy Concierge is temporarily unavailable.");
       }
 
-      setMessages((current) => [
-        ...current,
-        {
-          id: makeMessageId(),
-          role: "assistant",
-          text:
-            data.answer ||
-            "I can help with event ideas, RSVP, gift links, registry details, and guest setup.",
-          signupSuggested: Boolean(data.signupSuggested),
-        },
-      ]);
+      showReply(
+        data.answer ||
+          "I can help with Live Cards, Event Pages, Sign-up Forms, RSVPs and guest actions.",
+        Boolean(data.signupSuggested),
+      );
     } catch (error) {
-      setMessages((current) => [
-        ...current,
-        {
-          id: makeMessageId(),
-          role: "assistant",
-          text:
-            error instanceof Error
-              ? error.message
-              : "Envitefy Concierge is temporarily unavailable.",
-        },
-      ]);
+      // Keep a partly streamed answer rather than replacing it with an error.
+      if (!streamed) {
+        showReply(
+          error instanceof Error && error.message
+            ? error.message
+            : "Envitefy Concierge is temporarily unavailable.",
+        );
+      }
     } finally {
+      setStreamingReplyId(null);
       setIsSending(false);
     }
   }
@@ -328,7 +363,7 @@ export default function ConciergeSheet({
 
                 {messages.length === 1 && !isSending ? (
                   <div className="grid gap-2 pt-2">
-                    {conciergeQuickPrompts.map((prompt) => (
+                    {guestChatStarterQuestions.map((prompt) => (
                       <button
                         key={prompt}
                         type="button"
@@ -341,7 +376,7 @@ export default function ConciergeSheet({
                   </div>
                 ) : null}
 
-                {isSending ? (
+                {isSending && !streamingReplyId ? (
                   <div className="flex justify-start">
                     <div className="flex items-center gap-2 rounded-2xl border border-[#eadff6] bg-white/95 px-3.5 py-2.5 text-sm text-[#665d68] shadow-sm">
                       <Loader2 className="h-4 w-4 animate-spin text-[#8257e6]" aria-hidden="true" />

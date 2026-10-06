@@ -675,16 +675,10 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(conciergeSheet, /bg-\[#f6d477\]/);
   assert.match(conciergeSheet, /style=\{\{ color: "#f9df94" \}\}/);
   assert.doesNotMatch(conciergeSheet, /<Sparkles/);
-  assert.match(conciergeSheet, /Ask me about Envitefy/);
-  for (const prompt of [
-    "How do I create a Live Card?",
-    "Can I upload an invite or flyer?",
-    "What can guests do?",
-    "How do RSVPs work?",
-    "Can I add a registry?",
-  ]) {
-    assert.match(conciergeSheet, new RegExp(prompt.replace(/[?]/g, "\\?")));
-  }
+  assert.match(conciergeSheet, /Ask me anything about creating or sharing your event/);
+  assert.match(conciergeSheet, /guestChatStarterQuestions\.map\(/);
+  assert.match(conciergeSheet, /stream: true/);
+  assert.doesNotMatch(conciergeSheet, /How do I create a Live Card\?/);
   assert.match(conciergeSheet, /signupSuggested/);
   assert.match(conciergeSheet, /Create account/);
   assert.match(conciergeSheet, /h-\[82vh\] max-h-\[85vh\] min-h-\[70vh\]/);

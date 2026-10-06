@@ -16,6 +16,9 @@ export type GuestChatAnswer = {
 };
 
 const MAX_HISTORY_MESSAGES = 10;
+
+export const GUEST_CHAT_OUT_OF_SCOPE_ANSWER =
+  "I can only help with Envitefy, like creating Live Cards, Event Pages and Sign-up Forms, RSVPs, uploads, registries and what guests can do. What would you like to know?";
 const MAX_HISTORY_TEXT_LENGTH = 1200;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -39,10 +42,6 @@ export function normalizeGuestChatHistory(value: unknown): GuestChatMessage[] {
     })
     .filter((entry): entry is GuestChatMessage => Boolean(entry))
     .slice(-MAX_HISTORY_MESSAGES);
-}
-
-export function formatGuestChatHistoryForPrompt(history: GuestChatMessage[]) {
-  return history.map((message) => `${message.role}: ${message.text}`).join("\n");
 }
 
 function asksForHuman(message: string) {
@@ -72,27 +71,30 @@ function asksSpecificEventQuestion(message: string) {
   );
 }
 
-function looksEnvitefyRelated(message: string, matchedCount: number) {
-  if (matchedCount > 0) return true;
-  return /\b(envitefy|event|invite|invitation|rsvp|guest|host|registry|signup|sign-up|calendar|map|flyer|pdf|wedding|birthday|shower)\b/i.test(
-    message,
+const ENVITEFY_TOPIC_PATTERN =
+  /\b(envitefy|concierge|live\s*cards?|event\s*pages?|events?|sign[-\s]?ups?|signup\s*forms?|invites?|invitations?|rsvps?|guests?|hosts?|hosting|registry|registries|gifts?|wishlist|templates?|designs?|artwork|flyers?|uploads?|snap|scan|photo|pdf|calendar|maps?|directions|publish|share|link|account|sign\s*in|log\s*in|price|pricing|cost|free|cards?|qr|party|parties|wedding|birthday|shower|reveal|reunion|meet|game|volunteer)\b/i;
+
+function looksEnvitefyRelated(message: string) {
+  return ENVITEFY_TOPIC_PATTERN.test(message);
+}
+
+/** Only an explicit request to make an account gets the fixed signup answer. */
+function hasDirectAccountCreationIntent(message: string) {
+  return (
+    /\b(?:create|make|open|start|set up)\s+(?:an?\s+|my\s+)?account\b/i.test(message) ||
+    /\b(?:sign\s*me\s*up|register\s+me)\b/i.test(message)
   );
 }
 
-function hasDirectAccountCreationIntent(message: string) {
+/** Creation intent still gets a real answer, followed by a signup suggestion. */
+function hasCreationIntent(message: string) {
   return (
-    /\b(?:create|make|open|start|set up)\s+(?:an?\s+)?account\b/i.test(message) ||
-    /\b(?:can|could|should)\s+i\s+(?:create|make|open|start|set up)\s+(?:an?\s+)?account\b/i.test(
-      message,
-    ) ||
     /\b(?:i|we)\s+(?:am|are|'m|'re|want|would like|ready)\s+(?:to\s+)?(?:try|start|create|make|build|get going)\b/i.test(
       message,
     ) ||
-    /\b(?:i|we)\s+(?:need|want)\s+(?:to\s+)?(?:create|make|build)\b/i.test(
-      message,
-    ) ||
+    /\b(?:i|we)\s+(?:need|want)\s+(?:to\s+)?(?:create|make|build)\b/i.test(message) ||
     /\b(?:let'?s|lets)\s+(?:try|start|create|make|build|do it|get going)\b/i.test(message) ||
-    /\b(?:sign\s*me\s*up|try\s+now|start\s+now|get\s+started)\b/i.test(message) ||
+    /\b(?:try\s+now|start\s+now|get\s+started)\b/i.test(message) ||
     /\bhow\s+(?:do|can)\s+i\s+(?:start|get started|create|try|make)\b/i.test(message)
   );
 }
@@ -131,7 +133,7 @@ export function shouldSuggestGuestSignup(
     return false;
   }
 
-  if (hasDirectAccountCreationIntent(cleaned)) return true;
+  if (hasDirectAccountCreationIntent(cleaned) || hasCreationIntent(cleaned)) return true;
 
   const latestAssistant =
     [...history].reverse().find((entry) => entry.role === "assistant")?.text || "";
@@ -150,13 +152,21 @@ export function shouldSuggestGuestSignup(
   );
 }
 
-export function appendGuestSignupPrompt(answer: string) {
-  const cleaned = cleanText(answer, 1600);
-  if (!cleaned) return "Want to try it now? Create an account to start your event page.";
-  if (/\b(?:try it now|create an account|start your event page|get started)\b/i.test(cleaned)) {
-    return cleaned;
+export const GUEST_SIGNUP_PROMPT = "Want to try it now? Create an account to get started.";
+
+/** The text to add after an answer so it ends with the signup prompt ("" if it already does). */
+export function guestSignupPromptSuffix(answer: string) {
+  const trimmed = answer.trim();
+  if (!trimmed) return GUEST_SIGNUP_PROMPT;
+  if (/\b(?:try it now|create an account|start your event page|get started)\b/i.test(trimmed)) {
+    return "";
   }
-  return `${cleaned}\n\nWant to try it now? Create an account to start your event page.`;
+  return `\n\n${GUEST_SIGNUP_PROMPT}`;
+}
+
+export function appendGuestSignupPrompt(answer: string) {
+  const trimmed = answer.trim().slice(0, 1600);
+  return `${trimmed}${guestSignupPromptSuffix(trimmed)}`;
 }
 
 export function buildDeterministicGuestChatAnswer(message: string): GuestChatAnswer {
@@ -177,7 +187,7 @@ export function buildDeterministicGuestChatAnswer(message: string): GuestChatAns
   if (hasDirectAccountCreationIntent(cleaned)) {
     return {
       answer:
-        "Yes. If you're ready to create your own event page, create an account to save the draft and publish it. I can still answer planning questions here first.",
+        "Select Create account below to sign up. Once you're in, you can start a Live Card, an Event Page, or a Sign-up Form, save it as a draft, and publish when you're ready.",
       handoffSuggested: false,
       signupSuggested: true,
       matchedKnowledgeIds,
@@ -233,10 +243,9 @@ export function buildDeterministicGuestChatAnswer(message: string): GuestChatAns
     };
   }
 
-  if (!looksEnvitefyRelated(cleaned, matches.length)) {
+  if (!looksEnvitefyRelated(cleaned)) {
     return {
-      answer:
-        "I can help with Envitefy questions about hosted event pages, invitations, RSVP, uploads, registry links, calendar saves, maps, and smart sign-ups.",
+      answer: GUEST_CHAT_OUT_OF_SCOPE_ANSWER,
       handoffSuggested: false,
       signupSuggested: false,
       matchedKnowledgeIds,
@@ -257,10 +266,10 @@ export function buildDeterministicGuestChatAnswer(message: string): GuestChatAns
 
   return {
     answer:
-      "Envitefy helps hosts create shareable event pages with details, RSVP, maps, calendar saves, registry links, and sign-up options. For account-specific or event-specific help, contact Envitefy support.",
-    handoffSuggested: true,
+      "Envitefy helps hosts create Live Cards, Event Pages and Sign-up Forms, each shared with one link where guests can RSVP, get directions, save the date and open registry links.",
+    handoffSuggested: false,
     signupSuggested: false,
     matchedKnowledgeIds,
-    aiAllowed: false,
+    aiAllowed: true,
   };
 }

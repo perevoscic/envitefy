@@ -3,24 +3,51 @@ import test from "node:test";
 import {
   appendGuestSignupPrompt,
   buildDeterministicGuestChatAnswer,
+  GUEST_CHAT_OUT_OF_SCOPE_ANSWER,
   normalizeGuestChatHistory,
   shouldSuggestGuestSignup,
 } from "./respond.ts";
+import { guestChatStarterQuestions } from "./starters.ts";
 
-test("guest chat explains SNAP and Envitefy Create", () => {
+test("guest chat explains SNAP and Envitefy Concierge", () => {
   const snap = buildDeterministicGuestChatAnswer("What is SNAP?");
   assert.equal(snap.matchedKnowledgeIds.includes("snap"), true);
   assert.match(snap.answer, /SNAP/i);
   assert.match(snap.answer, /upload/i);
 
-  for (const question of ["What is Envitefy Create?", "What is Envitefy Concierge?"]) {
-    const creation = buildDeterministicGuestChatAnswer(question);
-    assert.equal(creation.matchedKnowledgeIds[0], "concierge");
-    assert.match(creation.answer, /Envitefy Create/);
-    assert.match(creation.answer, /Live Card builder/);
-    assert.match(creation.answer, /help chat/);
-    assert.doesNotMatch(creation.answer, /chat that creates|asks for missing/);
-    assert.doesNotMatch(creation.answer, /Concierge/);
+  const concierge = buildDeterministicGuestChatAnswer("What is Envitefy Concierge?");
+  assert.equal(concierge.matchedKnowledgeIds[0], "concierge");
+  assert.match(concierge.answer, /help chat/);
+  assert.match(concierge.answer, /Live Card builder/);
+});
+
+test("how-to creation questions get a real answer, not a canned signup reply", () => {
+  const result = buildDeterministicGuestChatAnswer("How do I create a Live Card?");
+
+  assert.equal(result.matchedKnowledgeIds[0], "live-card");
+  assert.equal(result.aiAllowed, true);
+  assert.equal(result.signupSuggested, false);
+  assert.doesNotMatch(result.answer, /^Yes\./);
+  assert.match(result.answer, /Design/);
+  assert.match(result.answer, /Publish/);
+  assert.equal(shouldSuggestGuestSignup("How do I create a Live Card?"), true);
+});
+
+test("every starter question reaches a matching answer", () => {
+  const expected = ["product-overview", "choose-product", "guest-account", "uploads", "rsvp"];
+  guestChatStarterQuestions.forEach((question, index) => {
+    const result = buildDeterministicGuestChatAnswer(question);
+    assert.equal(result.aiAllowed, true, question);
+    assert.equal(result.signupSuggested, false, question);
+    assert.ok(result.matchedKnowledgeIds.includes(expected[index]), question);
+  });
+});
+
+test("guest chat redirects questions outside Envitefy", () => {
+  for (const question of ["Write me a Python script", "What's the weather in Paris?"]) {
+    const result = buildDeterministicGuestChatAnswer(question);
+    assert.equal(result.aiAllowed, false, question);
+    assert.equal(result.answer, GUEST_CHAT_OUT_OF_SCOPE_ANSWER);
   }
 });
 
@@ -49,7 +76,7 @@ test("guest chat suggests signup when the visitor is ready to create", () => {
   const direct = buildDeterministicGuestChatAnswer("I want to create an account and try this now.");
 
   assert.equal(direct.signupSuggested, true);
-  assert.match(direct.answer, /create an account/i);
+  assert.match(direct.answer, /Create account below/);
 
   const conversational = shouldSuggestGuestSignup("Sounds good", [
     {
@@ -62,6 +89,10 @@ test("guest chat suggests signup when the visitor is ready to create", () => {
   assert.match(
     appendGuestSignupPrompt("Envitefy can create a hosted event page with RSVP."),
     /Want to try it now\? Create an account/i,
+  );
+  assert.equal(
+    appendGuestSignupPrompt("1. Pick a design\n2. Publish"),
+    "1. Pick a design\n2. Publish\n\nWant to try it now? Create an account to get started.",
   );
   assert.equal(shouldSuggestGuestSignup("We need to start at 5 PM."), false);
 });
