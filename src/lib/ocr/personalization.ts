@@ -58,6 +58,32 @@ const SPECIALTIES: [RegExp, string, string[]][] = [
 ];
 
 const TOPICS: [RegExp, string, string[]][] = [
+  // Holidays come first: a "Christmas Parade" or "Halloween Party" is about the holiday.
+  [
+    /\bchristmas|\bx-?mas\b|\bsanta\b|\byuletide|\bholiday\s+(?:party|parade|lights|market)/i,
+    "Christmas celebration",
+    ["evergreen garland", "twinkling string lights", "wrapped gifts"],
+  ],
+  [/\bhanukk?ah|\bchanukah/i, "Hanukkah celebration", ["menorah", "blue and silver stars"]],
+  [
+    /\bhalloween|\btrunk[- ]or[- ]treat/i,
+    "Halloween celebration",
+    ["carved pumpkins", "autumn leaves"],
+  ],
+  [
+    /\bthanksgiving|\bfriendsgiving/i,
+    "Thanksgiving gathering",
+    ["harvest pumpkins", "autumn leaves"],
+  ],
+  [/\beaster\b|\begg\s+hunt/i, "Easter celebration", ["painted eggs", "spring tulips"]],
+  [
+    /\b(?:fourth|4th)\s+of\s+july|\bindependence\s+day|\bmemorial\s+day/i,
+    "patriotic celebration",
+    ["fireworks", "star bunting"],
+  ],
+  [/\bnew\s+year'?s?\b/i, "New Year celebration", ["fireworks", "golden confetti"]],
+  [/\bparade\b/i, "parade", ["parade float", "festive bunting", "confetti"]],
+  [/\bfestival|\bcarnival|\bfair\b/i, "festival", ["festive bunting", "string lights"]],
   [/\bgymnast/i, "gymnastics", ["gymnastics ribbon", "balance beam"]],
   [/\bfootball/i, "football", ["football", "field lines"]],
   [/\bbasketball/i, "basketball", ["basketball", "court arcs"]],
@@ -87,7 +113,21 @@ const THEMES: [RegExp, string][] = [
   [/\bbutterfl/i, "butterflies"],
   [/\bbeach|\bocean|\bmermaid/i, "shells and ocean waves"],
   [/\bart\b|\bpaint/i, "paintbrushes and colorful brush marks"],
+  [/\bparade\b/i, "parade float"],
 ];
+
+const DEFAULT_PALETTE = "warm ivory and pale sage with teal, soft blue and butter-yellow accents";
+
+// The default pastel palette reads as spring florals; holidays need their own colors.
+const SUBJECT_PALETTES: Record<string, string> = {
+  "Christmas celebration": "deep evergreen, cranberry red, warm gold and snowy ivory",
+  "Hanukkah celebration": "royal blue, silver and soft white with warm candle-gold accents",
+  "Halloween celebration": "pumpkin orange, deep plum and charcoal with warm ivory",
+  "Thanksgiving gathering": "rust, amber, deep gold and warm cream",
+  "Easter celebration": "soft lilac, mint, butter-yellow and blush on ivory",
+  "patriotic celebration": "navy, brick red and crisp white with gold sparkle",
+  "New Year celebration": "midnight navy, champagne gold and silver",
+};
 
 function calendarParts(value: string | null | undefined): [number, number, number] | null {
   const iso = value?.match(/^(\d{4})-(\d{2})-(\d{2})(?:T|$)/);
@@ -169,7 +209,11 @@ export function buildScanPersonalization(input: PersonalizationInput): ScanPerso
     Number(input.personAge) <= 120
       ? Number(input.personAge)
       : null);
-  const topic = TOPICS.find(([pattern]) => pattern.test(text));
+  // The title names the occasion; body text can mention others ("head count after Halloween").
+  const titleText = [input.category, input.title].filter(Boolean).join("\n");
+  const topic =
+    TOPICS.find(([pattern]) => pattern.test(titleText)) ||
+    TOPICS.find(([pattern]) => pattern.test(text));
   const subject = medical ? specialty?.[1] || "medical" : topic?.[1] || "event";
   const motifs = medical
     ? specialty?.[2] || ["rounded stethoscope", "botanical leaves"]
@@ -317,7 +361,8 @@ export function buildScanArtworkPrompt(profile: ScanPersonalization, variation: 
     "Create an original landscape decorative background for an event page, not an invitation or UI mockup.",
     `Subject: ${profile.subject}${profile.medical ? " appointment" : ""}. Motifs: ${profile.motifs.join(", ")}.`,
     `Audience and tone: ${audience}. Do not infer gender, appearance or interests.`,
-    "Use soft gouache, subtle paper grain, warm ivory and pale sage with teal, soft blue and butter-yellow accents. Place recognizable motifs around the outer edges and corners; keep the broad center and upper-left middle light and almost empty for dark headings and white information cards. Design for both wide desktop and narrow mobile crops.",
+    `Use soft gouache, subtle paper grain, ${SUBJECT_PALETTES[profile.subject] || DEFAULT_PALETTE}.`,
+    "Place recognizable motifs around the outer edges and corners; keep the broad center and upper-left middle light and almost empty for dark headings and white information cards. Design for both wide desktop and narrow mobile crops.",
     profile.medical
       ? "Reassuring medical objects only. No procedure, needles, surgical tools, distress, diagnoses or detailed anatomy."
       : "Match the supplied occasion and motifs; do not invent personal details.",
@@ -334,6 +379,6 @@ export function buildScanHeroPrompt(profile: ScanPersonalization, variation: str
     )
     .replace(
       "Place recognizable motifs around the outer edges and corners; keep the broad center and upper-left middle light and almost empty for dark headings and white information cards. Design for both wide desktop and narrow mobile crops.",
-      "Make the subject a complete, recognizable central composition with comfortable breathing room inside a portrait crop. Keep all important objects visible. No empty center reserved for text. Coordinate with a warm ivory and pale sage page background.",
+      "Make the subject a complete, recognizable central composition with comfortable breathing room inside a portrait crop. Keep all important objects visible. No empty center reserved for text. Coordinate with the page background palette.",
     );
 }

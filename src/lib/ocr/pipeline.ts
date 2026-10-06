@@ -22,6 +22,7 @@ import {
 import { buildOcrFacts, mergeOcrFacts, normalizeOcrFacts } from "@/lib/ocr/facts";
 import { getOcrFailureResponse, shouldStopOcrFallbacks } from "@/lib/ocr/failure";
 import {
+  looksLikeAttendeeListOrOverflow,
   looksLikeParkingOrDirectionsNote,
   normalizeOcrLocationFields,
   normalizeOcrRsvpFields,
@@ -869,6 +870,8 @@ export async function handleOcrRequest(request: Request) {
       let scoreValue = 0;
       if (looksLikeHostOrganizerLine(line)) scoreValue -= 20;
       if (looksLikeParkingOrDirectionsNote(line)) scoreValue -= 15;
+      // "+8 others" matches the street-number pattern; attendee lists are never places.
+      if (looksLikeAttendeeListOrOverflow(line)) scoreValue -= 20;
       if (timeToken.test(line)) scoreValue -= 10;
       if (hasStreetNumber.test(line)) scoreValue += 5;
       if (venueOrSuffix.test(line)) scoreValue += 3;
@@ -960,7 +963,7 @@ export async function handleOcrRequest(request: Request) {
         if (withNum) addressOnly = withNum.trim();
       }
     }
-    if (looksLikeParkingOrDirectionsNote(addressOnly)) {
+    if (looksLikeParkingOrDirectionsNote(addressOnly) || looksLikeAttendeeListOrOverflow(addressOnly)) {
       addressOnly = "";
     }
 
@@ -995,7 +998,10 @@ export async function handleOcrRequest(request: Request) {
         typeof llmImage.address === "string" && llmImage.address.trim()
           ? llmImage.address.trim()
           : addressOnly;
-      if (looksLikeParkingOrDirectionsNote(finalAddress)) {
+      if (
+        looksLikeParkingOrDirectionsNote(finalAddress) ||
+        looksLikeAttendeeListOrOverflow(finalAddress)
+      ) {
         finalAddress = "";
       }
       finalVenue =

@@ -777,23 +777,26 @@ function stripLeadingHostArticle(value: string): string {
 function appendUniqueFact(facts: string[], value: string | null | undefined) {
   const cleaned = cleanFlyerFact(String(value || "")).replace(/[.!?]+$/g, "");
   if (!cleaned || cleaned.length < 3) return;
-  const key = cleaned
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-  if (
-    !key ||
-    facts.some(
-      (item) =>
-        item
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, " ")
-          .trim() === key,
-    )
-  ) {
+  const factKey = (item: string) =>
+    ` ${item
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim()} `;
+  const key = factKey(cleaned);
+  if (!key.trim()) return;
+  // Regex reminders can re-capture the tail of a sentence the model already
+  // returned; keep only the most complete wording.
+  if (facts.some((item) => factKey(item).includes(key))) return;
+  const formatted = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  const containedIndex = facts.findIndex((item) => key.includes(factKey(item)));
+  if (containedIndex >= 0) {
+    facts.splice(containedIndex, 1, formatted);
+    for (let index = facts.length - 1; index > containedIndex; index -= 1) {
+      if (key.includes(factKey(facts[index]))) facts.splice(index, 1);
+    }
     return;
   }
-  facts.push(cleaned.charAt(0).toUpperCase() + cleaned.slice(1));
+  facts.push(formatted);
 }
 
 /**

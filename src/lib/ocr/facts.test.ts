@@ -92,3 +92,15 @@ test("filterRegistryOcrFacts removes registry facts when a registry action is re
   ]);
   assert.deepEqual(filterRegistryOcrFacts(facts, false), facts);
 });
+
+test("meeting invite attendee rosters are not detail cards", () => {
+  const facts = normalizeOcrFacts([
+    { label: "Required Attendees", value: "Nichole Standridge; Hannah Overholser" },
+    { label: "Optional", value: "Kyle Krebs" },
+    { label: "Organizer", value: "Maggie Weaver" },
+  ]);
+  assert.deepEqual(
+    facts.map((fact) => fact.label),
+    ["Organizer"],
+  );
+});

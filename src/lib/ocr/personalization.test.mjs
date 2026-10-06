@@ -169,3 +169,17 @@ test("older saved appointments can use patient facts without migrating the sourc
   );
   assert.equal(resolveSavedScanPersonalization({ createdVia: "manual" }, "ENT appointment"), null);
 });
+
+test("holiday titles choose holiday artwork even when the body mentions another occasion", () => {
+  const profile = buildScanPersonalization({
+    title: "Grand Blvd Christmas Parade",
+    category: "General Events",
+    sourceText: "We will have a float and will get a better head count after halloween!",
+  });
+  assert.equal(profile.subject, "Christmas celebration");
+  assert.ok(profile.motifs.includes("parade float"));
+  assert.equal(normalizeScanPersonalization(profile)?.subject, "Christmas celebration");
+  const prompt = buildScanArtworkPrompt(profile, "variation");
+  assert.match(prompt, /evergreen, cranberry red/);
+  assert.doesNotMatch(prompt, /pale sage/);
+});

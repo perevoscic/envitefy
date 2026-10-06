@@ -400,3 +400,20 @@ test("extractHostedByFromFlyerText captures printed host group", () => {
     "Neighborhood Rec Group",
   );
 });
+
+test("meeting invite attendee overflow is never a location and reminders do not repeat notes", () => {
+  for (const value of [
+    "8 others",
+    "+8 others",
+    "Caidan Cryar; Michael Collins; Brian Weaver; +8 others",
+    "Required _Sales_Office_Distribution; Nichole Standridge",
+  ]) {
+    assert.equal(normalizeOcrLocationFields({ location: value }).location, null, value);
+  }
+  assert.equal(normalizeOcrLocationFields({ location: "8 Mile Rd" }).location, "8 Mile Rd");
+
+  const body =
+    "We will have a float, candy/ducks to toss out to the parade attendees, and matching shirts! If you plan to come and bring your family to walk in the parade please let marketing know 😎 We encourage you to invite your team members to attend and will get a better head count after halloween!";
+  const notes = combineGuestInfoFacts(body, null, extractGuestReminderFromFlyerText(body));
+  assert.equal(notes?.match(/walk in the parade/gi)?.length, 1);
+});

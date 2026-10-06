@@ -107,6 +107,18 @@ export function looksLikeMenuOrFlavorDetails(value: unknown): boolean {
   return Boolean(flavorMatches && flavorMatches.length >= 2);
 }
 
+/**
+ * Calendar/meeting screenshots list attendees ("Required: A; B; +8 others").
+ * Those names and the overflow count are never a place.
+ */
+export function looksLikeAttendeeListOrOverflow(value: unknown): boolean {
+  const text = cleanOcrFieldValue(value);
+  if (!text) return false;
+  if (/(?:^|[;,]\s*)\+?\s*\d+\s+(?:others?|more)\s*$/i.test(text)) return true;
+  if (/^(?:required|optional)(?:\s+attendees)?\s*:?\s/i.test(text)) return true;
+  return (text.match(/;/g) || []).length >= 2;
+}
+
 export function looksLikeParkingOrDirectionsNote(value: unknown): boolean {
   const text = cleanOcrFieldValue(value);
   if (!text) return false;
@@ -160,7 +172,8 @@ export function normalizeOcrLocationFields(args: {
     !looksLikeMenuOrFlavorDetails(venueCandidate) &&
     !looksLikeDateOrTimeFragment(venueCandidate) &&
     !looksLikeVenueNarrative(venueCandidate) &&
-    !looksLikeParkingOrDirectionsNote(venueCandidate)
+    !looksLikeParkingOrDirectionsNote(venueCandidate) &&
+    !looksLikeAttendeeListOrOverflow(venueCandidate)
       ? venueCandidate
       : inferVenueFromContext([venueCandidate, args.context].filter(Boolean).join("\n"));
   const locationCandidate = firstCleanString(args.location, args.address, args.fallbackLocation);
@@ -170,6 +183,7 @@ export function normalizeOcrLocationFields(args: {
     !looksLikeDateOrTimeFragment(locationCandidate) &&
     !looksLikeVenueNarrative(locationCandidate) &&
     !looksLikeParkingOrDirectionsNote(locationCandidate) &&
+    !looksLikeAttendeeListOrOverflow(locationCandidate) &&
     (!venue || locationCandidate.toLowerCase() !== venue.toLowerCase())
       ? locationCandidate
       : null;

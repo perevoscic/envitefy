@@ -58,6 +58,9 @@ const DUPLICATE_STOP_WORDS = new Set([
 const SEMANTIC_TIMING_FACT_LABELS = /^(?:check[-\s]?in|games?\s+start)$/i;
 const SEMANTIC_APPOINTMENT_FACT_LABELS =
   /^(?:patient(?:\s+(?:name|id|identifier|number))?|clinician|appointment\s+provider|fax)$/i;
+// Calendar/meeting invites list who was invited; guests never need that roster.
+const ATTENDEE_FACT_LABEL =
+  /^(?:(?:required|optional)(?:\s+(?:attendees?|invitees?|guests?))?|attendees?|invitees?|participants?|recipients?|to|cc|bcc|guest\s+list)$/i;
 const REGISTRY_FACT_LABEL =
   /\b(?:gift\s*(?:list|registry)|registry|registries|wishlist|wish\s*list)\b/i;
 const REGISTRY_FACT_VALUE =
@@ -186,6 +189,7 @@ export function normalizeOcrFacts(value: unknown): OcrFact[] {
     const rawValue =
       item && typeof item === "object" && "value" in item ? cleanText((item as any).value) : "";
     const normalizedLabel = normalizeFactLabel(label, rawValue);
+    if (ATTENDEE_FACT_LABEL.test(normalizedLabel)) continue;
 
     for (const part of splitFactValue(stripFactLabelPrefix(normalizedLabel, rawValue))) {
       const key = factKey(normalizedLabel, part);
@@ -220,7 +224,7 @@ export function mergeOcrFacts(...groups: Array<OcrFact[] | null | undefined>): O
     for (const fact of group || []) {
       const label = normalizeFactLabel(fact.label, fact.value);
       const value = stripFactLabelPrefix(label, fact.value);
-      if (!value) continue;
+      if (!value || ATTENDEE_FACT_LABEL.test(label)) continue;
       const key = factKey(label, value);
       const canonicalValue = valueKey(value);
       if (
