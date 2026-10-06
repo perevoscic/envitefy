@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { useId, useState } from "react";
 import {
   ArrowUpRight,
   Clock,
@@ -9,6 +7,8 @@ import {
   MapPin,
   Navigation,
 } from "lucide-react";
+import Link from "next/link";
+import { useId, useState } from "react";
 import type { DashboardOverview } from "@/lib/dashboard-overview";
 
 type AgendaEvent = {
@@ -287,11 +287,14 @@ export function DashboardPlanningPanels({ overview }: { overview?: DashboardOver
             {overview.signups.map((signup) => (
               <li key={signup.eventId} className="rounded-2xl border border-slate-100 p-4">
                 <Link
-                  href={`/smart-signup-form/${encodeURIComponent(signup.eventId)}`}
+                  href={`/smart-signup-form/${encodeURIComponent(signup.eventId)}#signup-host-dashboard`}
                   className="flex min-h-11 items-center justify-between gap-3 text-sm font-semibold text-slate-800 hover:text-indigo-600"
                 >
                   <span className="break-words">{signup.title}</span>
                   <ArrowUpRight size={16} className="shrink-0" />
+                </Link>
+                <Link href={`/smart-signup-form/${encodeURIComponent(signup.eventId)}#signup-host-dashboard`} className="inline-flex min-h-11 items-center text-sm font-semibold text-indigo-700 underline">
+                  View signups
                 </Link>
                 {signup.capacity > 0 ? (
                   <>

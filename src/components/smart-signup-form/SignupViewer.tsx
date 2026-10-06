@@ -23,6 +23,7 @@ import {
   remainingCapacityForSlot,
 } from "@/utils/signup";
 import SignupEmailNotice from "./SignupEmailNotice";
+import SignupHostDashboard from "./SignupHostDashboard";
 import SignupRecovery from "./SignupRecovery";
 import themeStyles from "./signup-theme.module.css";
 
@@ -87,20 +88,6 @@ const formatSlotRange = (start?: string | null, end?: string | null): string | n
   if (startLabel) return `Starts ${startLabel}`;
   if (endLabel) return `Ends ${endLabel}`;
   return null;
-};
-
-const formatUsDateTime = (value?: string | null): string => {
-  if (!value) return "";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleString("en-US", {
-    month: "numeric",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
 };
 
 const summarizeResponseSlots = (form: SignupForm, response: SignupResponse): string => {
@@ -191,18 +178,6 @@ const SignupViewer: React.FC<Props> = ({
     }
   };
   const maxGuests = form.settings.maxGuestsPerSignup || 1;
-
-  const sectionProgress = form.sections
-    .filter((section) => section.slots.length)
-    .map((section) => {
-      const unlimited = section.slots.some((slot) => slot.capacity === null);
-      const capacity = section.slots.reduce((sum, slot) => sum + (slot.capacity || 0), 0);
-      const confirmed = section.slots.reduce(
-        (sum, slot) => sum + countConfirmedForSlot(form, section.id, slot.id),
-        0,
-      );
-      return { section, capacity, confirmed, unlimited };
-    });
 
   const myResponse = useMemo(
     () =>
@@ -529,18 +504,6 @@ const SignupViewer: React.FC<Props> = ({
     setAnswers(answersMap);
   };
 
-  const [participantSearch, setParticipantSearch] = useState("");
-  const visibleResponses = useMemo(
-    () =>
-      form.responses.filter(
-        (response) =>
-          !participantSearch.trim() ||
-          `${response.name} ${response.email || ""} ${summarizeResponseSlots(form, response)} ${(response.answers || []).map((answer) => answer.value).join(" ")}`
-            .toLowerCase()
-            .includes(participantSearch.trim().toLowerCase()),
-      ),
-    [form, participantSearch],
-  );
   const exportCsv = () => {
     const url = URL.createObjectURL(
       new Blob([signupResponsesCsv(form)], { type: "text/csv;charset=utf-8" }),
@@ -570,59 +533,6 @@ const SignupViewer: React.FC<Props> = ({
       setLoading(false);
     }
   };
-  const confirmedResponses = useMemo(
-    () => visibleResponses.filter((response) => response.status === "confirmed"),
-    [visibleResponses],
-  );
-  const waitlistedResponses = useMemo(
-    () => visibleResponses.filter((response) => response.status === "waitlisted"),
-    [visibleResponses],
-  );
-  const cancelledResponses = useMemo(
-    () => visibleResponses.filter((response) => response.status === "cancelled"),
-    [visibleResponses],
-  );
-
-  const responseDetails = (response: SignupResponse) => (
-    <details className="mt-3 rounded-lg border border-[var(--signup-border)] p-3">
-      <summary className="min-h-11 cursor-pointer font-semibold">Participant details</summary>
-      <dl className="space-y-2 break-words text-sm">
-        {response.email && (
-          <div>
-            <dt>Email</dt>
-            <dd>{response.email}</dd>
-          </div>
-        )}
-        {response.phone && (
-          <div>
-            <dt>Phone</dt>
-            <dd>{response.phone}</dd>
-          </div>
-        )}
-        {!!response.guests && (
-          <div>
-            <dt>Extra guests</dt>
-            <dd>{response.guests}</dd>
-          </div>
-        )}
-        {form.questions.map((question) => (
-          <div key={question.id}>
-            <dt className="font-medium">{question.prompt}</dt>
-            <dd>
-              {response.answers?.find((answer) => answer.questionId === question.id)?.value ||
-                "Not provided"}
-            </dd>
-          </div>
-        ))}
-        {response.note && (
-          <div>
-            <dt>Note</dt>
-            <dd>{response.note}</dd>
-          </div>
-        )}
-      </dl>
-    </details>
-  );
   if (!form.sections.length) return null;
   const boardTitle = form.boardTitle ?? "Sign-up board";
   const boardDescription =
@@ -1181,185 +1091,20 @@ const SignupViewer: React.FC<Props> = ({
       )}
 
       {viewerKind === "owner" && !hideOwnerTools && (
-        <div
-          id="signup-host-dashboard"
-          className="scroll-mt-6 rounded-2xl border border-[var(--signup-border)] bg-[var(--signup-surface)] p-5 space-y-4 shadow-sm"
-        >
-          <header className="flex flex-wrap items-center justify-between gap-4">
-            <h3 className="text-lg font-bold text-[var(--signup-text)]">Host dashboard</h3>
-          </header>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {sectionProgress.map(({ section, capacity, confirmed, unlimited }) => (
-              <div key={section.id} className="rounded-lg border border-[var(--signup-border)] p-3">
-                <h4 className="font-semibold">{section.title}</h4>
-                {section.unitLabel && <p className="text-xs">Counted in {section.unitLabel}</p>}
-                <p className="text-sm">
-                  {confirmed} confirmed
-                  {unlimited
-                    ? " · Unlimited capacity"
-                    : ` · ${Math.max(0, capacity - confirmed)} of ${capacity} remaining`}
-                </p>
-              </div>
-            ))}
-          </div>
-          <div className="mb-5 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-center">
-            <input
-              aria-label="Search participants"
-              placeholder="Search name, email, slot, or answer"
-              value={participantSearch}
-              onChange={(event) => setParticipantSearch(event.target.value)}
-              className="col-span-2 min-h-11 w-full min-w-0 sm:w-auto sm:flex-1 rounded-lg border border-[var(--signup-border)] px-3 py-2"
-            />
-            <button
-              type="button"
-              onClick={exportCsv}
-              className="rounded-lg border border-[var(--signup-border)] px-3 py-2 text-sm"
-            >
-              Export CSV
-            </button>
-            <button
-              type="button"
-              onClick={setOpen}
-              disabled={loading}
-              className="rounded-lg border border-[var(--signup-border)] px-3 py-2 text-sm"
-            >
-              {form.enabled ? "Close signups" : "Reopen signups"}
-            </button>
-          </div>
-          {visibleResponses.length === 0 && (
-            <p className="text-sm text-[var(--signup-muted)]">
-              {participantSearch
-                ? "No participants match your search."
-                : "Your first signup will appear here."}
-            </p>
-          )}
-          <div className="space-y-4">
-            {confirmedResponses.length > 0 && (
-              <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--signup-muted)] mb-2">
-                  Confirmed
-                </h4>
-                <div className="space-y-2">
-                  {confirmedResponses.map((response) => (
-                    <div
-                      key={response.id}
-                      className="rounded-xl border border-[var(--signup-border)] bg-[var(--signup-page)] px-4 py-3 text-sm"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-semibold text-[var(--signup-text)]">
-                          {response.name}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-[var(--signup-muted)]">
-                            {formatUsDateTime(response.updatedAt || response.createdAt || "")}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleEditResponse(response)}
-                            disabled={loading || removingResponseId === response.id}
-                            className="text-xs px-3 py-1.5 rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] text-[var(--signup-text)] hover:bg-[var(--signup-page)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Edit sign-up"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveResponse(response.id)}
-                            disabled={loading || removingResponseId === response.id}
-                            className="text-xs px-3 py-1.5 rounded-lg border border-red-300 bg-[var(--signup-surface)] text-red-700 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Remove sign-up"
-                          >
-                            {removingResponseId === response.id ? "Removing..." : "Remove"}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="text-sm text-[var(--signup-muted)] mt-2">
-                        {summarizeResponseSlots(form, response) || "No slots selected"}
-                      </div>
-                      <div className="text-xs text-[var(--signup-muted)] mt-1.5 flex flex-wrap gap-3">
-                        {response.email && <span>{response.email}</span>}
-                        {response.phone && <span>{response.phone}</span>}
-                        {!!response.guests && response.guests > 0 && (
-                          <span>{response.guests} guests</span>
-                        )}
-                      </div>
-                      {responseDetails(response)}
-                      {response.note && (
-                        <div className="mt-2 text-sm text-[var(--signup-muted)] bg-[var(--signup-surface)] rounded-lg px-3 py-2 border border-[var(--signup-border)]">
-                          <span className="font-medium">Note:</span> {response.note}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {waitlistedResponses.length > 0 && (
-              <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--signup-muted)] mb-2">
-                  Waitlist
-                </h4>
-                <div className="space-y-2">
-                  {waitlistedResponses.map((response) => (
-                    <div
-                      key={response.id}
-                      className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-semibold text-amber-900">{response.name}</span>
-                        <span className="text-xs text-amber-700">
-                          {formatUsDateTime(response.updatedAt || response.createdAt || "")}
-                        </span>
-                      </div>
-                      <div className="text-sm text-amber-800 mt-2">
-                        {summarizeResponseSlots(form, response) || "No slots selected"}
-                      </div>
-                      {responseDetails(response)}
-                      <div className="mt-3 flex flex-wrap gap-3">
-                        <button
-                          type="button"
-                          className="min-h-11 rounded-lg border px-4"
-                          disabled={loading || !canInteract}
-                          onClick={() => handleEditResponse(response)}
-                        >
-                          Edit signup
-                        </button>
-                        <button
-                          type="button"
-                          className="min-h-11 rounded-lg border px-4"
-                          disabled={loading || removingResponseId === response.id}
-                          onClick={() => handleRemoveResponse(response.id)}
-                        >
-                          Cancel signup
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {cancelledResponses.length > 0 && (
-              <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--signup-muted)] mb-2">
-                  Cancelled (for audit trail)
-                </h4>
-                <div className="space-y-2 text-sm text-[var(--signup-muted)]">
-                  {cancelledResponses.map((response) => (
-                    <div
-                      key={response.id}
-                      className="rounded-lg bg-[var(--signup-page)] px-3 py-2 border border-[var(--signup-border)]"
-                    >
-                      {response.name} —{" "}
-                      {formatUsDateTime(response.updatedAt || response.createdAt || "")}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <SignupHostDashboard
+          key={`${eventId}:${viewerId || "owner"}`}
+          eventId={eventId}
+          form={form}
+          loading={loading}
+          refreshing={refreshing}
+          removingResponseId={removingResponseId}
+          canEdit={canInteract}
+          onEdit={handleEditResponse}
+          onRemove={handleRemoveResponse}
+          onExport={exportCsv}
+          onSetOpen={setOpen}
+          onRefresh={refresh}
+        />
       )}
       {confirmOpen && (
         <div

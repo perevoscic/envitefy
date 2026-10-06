@@ -2,8 +2,8 @@
 import { Check, Copy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
-import { signupAccessInstructions } from "@/lib/signup-access";
 import EventAccessDialog from "@/components/EventAccessDialog";
+import { signupAccessInstructions } from "@/lib/signup-access";
 
 type Recipient = { id: string; name: string; email: string; status: "pending" | "accepted" };
 const actionClass =
@@ -113,7 +113,7 @@ export default function SignupSharing({
       </div>
       <div className="flex flex-wrap gap-3">
         <a href={`${publicPath || `/smart-signup-form/${encodeURIComponent(eventId)}`}#signup-host-dashboard`} className={`${actionClass} inline-flex items-center`}>
-          View host dashboard
+          View signups
         </a>
         {requiresInvitation && canManageCollaborators && (
           <button

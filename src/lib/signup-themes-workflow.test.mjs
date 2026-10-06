@@ -209,7 +209,8 @@ test("the signup API returns guest-safe data and rejects editing another partici
   const row = { id: "event", user_id: "host", title: "Signup", data: { signupForm: claimed.form } };
   let userId = null;
   const route = load("src/app/api/history/[id]/signup/route.ts", {
-    "next/server": { NextResponse: Response },
+    "next/server": { NextResponse: Response, after: () => {} },
+    "@/lib/signup-host-alerts": { ensureSignupHostAlerts: async () => {}, enqueueSignupHostAlerts: async () => {}, processSignupHostAlerts: async () => {} },
     "next-auth": { getServerSession: async () => userId ? { user: { email: `${userId}@example.com`, name: userId } } : null },
     "@/lib/auth": { authOptions: {}, resolveSessionUserId: async () => userId },
     "@/lib/event-draft-access-server": { guardDraftRequest: async () => null },
@@ -217,7 +218,7 @@ test("the signup API returns guest-safe data and rejects editing another partici
     "@/lib/dashboard-cache": { invalidateUserDashboard() {} },
     "@/lib/smart-signup-indexing": { isIndexablePublicSmartSignupData: () => true },
     "@/lib/db": { getEventHistoryById: async () => row, isEventSharedWithUser: async () => Boolean(userId), listShareRecipientUserIdsForEvent: async () => [], mutateSignupEvent: async (_id, change) => { const next = await change(row); return { row: { ...row, data: next.data }, result: next.result }; } },
-    "@/lib/event-collaboration": { getEventPermissions: async () => ({ canManageResponses: userId === "host" }), collaboratorUserIds: async () => [] },
+    "@/lib/event-collaboration": { ensureEventCollaboration: async () => {}, getEventPermissions: async () => ({ canManageResponses: userId === "host" }), collaboratorUserIds: async () => [] },
     "@/lib/email": { sendSignupConfirmationEmail: async () => { throw new Error("Unexpected email attempt in this read/denial test"); } },
     "@/lib/absolute-url": { absoluteUrl: async path => `https://example.com${path}` },
   });

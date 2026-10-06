@@ -75,6 +75,8 @@ const baseMocks = {
     RotateCw: (props) => React.createElement("svg", props),
     UserPlus: (props) => React.createElement("svg", props),
     Users: (props) => React.createElement("svg", props),
+    UsersRound: (props) => React.createElement("svg", props),
+    LoaderCircle: (props) => React.createElement("svg", props),
   },
   "next/navigation": { useRouter: () => ({}) },
   "next-auth/react": { useSession: () => ({ status: "authenticated", update: async () => {} }) },

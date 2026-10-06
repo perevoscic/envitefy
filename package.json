@@ -20,6 +20,7 @@
     "test:customer-entrypoints": "node scripts/run-customer-entrypoint-tests.mjs",
     "test:concierge": "node --import ./scripts/lib/create-offline-network.mjs --test --test-concurrency=1 src/app/landing/page.test.mjs src/lib/guest-chat/respond.test.mjs scripts/concierge-scroll-browser.test.cjs",
     "test:cohosts": "node --test --test-concurrency=1 scripts/event-collaboration.test.cjs src/components/dashboard/HomeOverviewDashboard.render.test.mjs scripts/cohost-notifications-browser.test.cjs scripts/event-collaboration-browser.test.cjs",
+    "test:signup-hosts": "node --test --test-concurrency=1 src/lib/signup-host-alerts.test.cjs src/lib/signup-guest-access.test.mjs src/lib/signup-themes-workflow.test.mjs scripts/signup-host-dashboard-browser.test.cjs",
     "test:dependencies": "node scripts/run-dependency-tests.mjs",
     "test:create-facts": "node --test src/lib/event-date-parser.test.mjs src/lib/ocr/inferred-invite-date.test.mjs src/lib/concierge/artwork-redesign-intent.test.mjs src/lib/concierge/host-brief.test.mjs src/lib/concierge/openai-config.test.mjs src/lib/creation/creation-v2.test.mjs src/lib/livecard-workflow.test.ts",
     "test:create-campaign": "node --test scripts/lib/create-campaign-budget.test.mjs scripts/lib/create-campaign-date.test.mjs scripts/lib/create-campaign-guest.test.mjs scripts/lib/create-campaign-network.test.mjs scripts/lib/create-campaign-timeout.test.mjs",

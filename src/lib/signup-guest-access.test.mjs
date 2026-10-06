@@ -85,6 +85,8 @@ function setup({ sendConfirmation = async () => {} } = {}) {
   const recoveryMail = [];
   const limits = new Map();
   const appLoad = loader({
+    "next/server": { ...nativeRequire("next/server"), after: () => {} },
+    "@/lib/signup-host-alerts": { ensureSignupHostAlerts: async () => {}, enqueueSignupHostAlerts: async () => {}, processSignupHostAlerts: async () => {} },
     "next-auth": {
       getServerSession: async () =>
         userId ? { user: { email: `${userId}@example.com`, name: userId } } : null,
@@ -97,6 +99,7 @@ function setup({ sendConfirmation = async () => {} } = {}) {
     "@/lib/history-cache": { invalidateUserHistory() {} },
     "@/lib/dashboard-cache": { invalidateUserDashboard() {} },
     "@/lib/event-collaboration": {
+      ensureEventCollaboration: async () => {},
       getEventPermissions: async () => ({ canManageResponses: userId === "host" || (userId === "helper" && cohost) }),
       collaboratorUserIds: async () => cohost ? ["helper"] : [],
     },

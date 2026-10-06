@@ -1,11 +1,11 @@
 "use client";
 
-import { Copy, Pencil, Trash2 } from "lucide-react";
+import { Copy, Pencil, Trash2, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import EventDeleteModal from "@/components/EventDeleteModal";
 import EventAccessDialog from "@/components/EventAccessDialog";
+import EventDeleteModal from "@/components/EventDeleteModal";
 import type { SignupForm } from "@/types/signup";
 import { resolveEditHref } from "@/utils/event-edit-route";
 import styles from "./signup-theme.module.css";
@@ -46,6 +46,10 @@ export default function SignupOwnerActions({
   return (
     <>
       <nav aria-label="Manage signup form" className={styles.ownerToolbar}>
+        <a href="#signup-host-dashboard" className={styles.ownerButton}>
+          <UsersRound className="size-4" aria-hidden="true" />
+          <span className={styles.ownerLabel}>View signups</span>
+        </a>
         <Link
           href={resolveEditHref(eventId, eventData, eventTitle)}
           className={styles.ownerButton}

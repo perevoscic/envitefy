@@ -1,10 +1,11 @@
 import { getUserByEmail } from "@/lib/db";
 import { normalizeEnvitefySender, SIGNUP_FORMS_SENDER } from "@/lib/email-sender";
 import { createEmailTemplate, escapeHtml } from "@/lib/email-template";
+import { validGuestEmail } from "@/lib/event-message-types";
 import { sendTransactionalEmail } from "@/lib/mail-transport";
 import { buildPublicAssetUrl, resolvePublicAssetOrigin } from "@/lib/public-asset-url";
-import { validGuestEmail } from "@/lib/event-message-types";
 import { formatSignupDateRange } from "@/lib/signup-display";
+import { SIGNUP_ALERT_LABELS, type SignupHostActivity } from "@/lib/signup-host-activity";
 import type { SignupForm, SignupResponse } from "@/types/signup";
 
 // Re-export for backwards compatibility
@@ -503,6 +504,40 @@ export async function sendSignupConfirmationEmail(params: {
     .join("\n");
 
   await sendTransactionalEmail({ from, to, subject, text: text + signupTextSignature, html });
+}
+
+export async function sendSignupHostAlertEmail(params: {
+  toEmail: string;
+  eventTitle: string;
+  dashboardUrl: string;
+  activity: SignupHostActivity;
+}): Promise<void> {
+  const activity = params.activity;
+  const heading = SIGNUP_ALERT_LABELS[activity.kind];
+  const selectionsLabel = activity.kind === "cancelled" ? "Cancelled selections" : "Selections";
+  const details = ([
+    ["Participant", activity.name], ["Status", activity.status],
+    [selectionsLabel, activity.selections.join("\n")],
+    ...(activity.kind === "changed" && activity.previousSelections.join() !== activity.selections.join()
+      ? [["Previous selections", activity.previousSelections.join("\n")] as [string, string]] : []),
+    ["What changed", activity.changes.join("\n")],
+    ["Extra guests", activity.guests ? String(activity.guests) : ""],
+    ["Email", activity.email || ""], ["Phone", activity.phone || ""], ["Note", activity.note || ""],
+    ...activity.answers.map(({ question, answer }): [string, string] => [question, answer]),
+  ] satisfies Array<[string, string]>).filter(([, value]) => Boolean(value));
+  const summary = `${heading}: ${activity.name} · ${params.eventTitle}`;
+  await sendTransactionalEmail({
+    from: SIGNUP_FORMS_SENDER, to: params.toEmail,
+    subject: summary.replace(/[\r\n]+/g, " "),
+    ...(activity.email && validGuestEmail(activity.email) ? { replyTo: activity.email } : {}),
+    text: `${summary}\n\n${details.map(([label, value]) => `${label}: ${value}`).join("\n\n")}\n\nView signups: ${params.dashboardUrl}${signupTextSignature}`,
+    html: createEmailTemplate({
+      title: heading, preheader: summary,
+      body: `<p>${escapeHtml(params.eventTitle)}</p>${details.map(([label, value]) => `<p style="font-size:14px;line-height:1.6;"><strong>${escapeHtml(label)}:</strong><br/>${escapeHtml(value).replace(/\r?\n/g, "<br/>")}</p>`).join("")}`,
+      buttonText: "View signups", buttonUrl: params.dashboardUrl,
+      footerText: "Manage your email alerts in the signup form’s Host dashboard.",
+    }),
+  });
 }
 
 export async function sendSignupRecoveryEmail(params: {

@@ -40,8 +40,8 @@ export default function SignupSettingsEditor({
       {toggle("collectPhone", "Require phone number")}
       <p>
         When an email is collected, guests receive a confirmation with their choices and a private
-        link to update or cancel. Automatic reminders are not currently sent. Use the Host dashboard
-        to export responses and follow up through your usual email or group channel.
+        link to update or cancel. Manage host email alerts and export responses in the Host dashboard
+        using View signups. Automatic participant reminders are not currently sent.
       </p>
       <h3>Overall form limits</h3>
       <p>

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
@@ -9,7 +9,7 @@ import {
   mutateSignupEvent,
 } from "@/lib/db";
 import { sendSignupConfirmationEmail } from "@/lib/email";
-import { collaboratorUserIds, getEventPermissions } from "@/lib/event-collaboration";
+import { collaboratorUserIds, ensureEventCollaboration, getEventPermissions } from "@/lib/event-collaboration";
 import { isEventDraft } from "@/lib/event-draft-access";
 import { guardDraftRequest } from "@/lib/event-draft-access-server";
 import { invalidateUserHistory } from "@/lib/history-cache";
@@ -20,6 +20,7 @@ import {
   signupGuestCookieName,
   signupGuestId,
 } from "@/lib/signup-guest-cookie";
+import { enqueueSignupHostAlerts, ensureSignupHostAlerts, processSignupHostAlerts } from "@/lib/signup-host-alerts";
 import {
   ownSignupResponseId,
   type SignupIdentity,
@@ -45,6 +46,7 @@ import type { SignupConfirmationEmailStatus } from "@/types/signup";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 120;
 
 export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
@@ -96,6 +98,8 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
     const guestToken = currentGuestToken || (!userId ? createSignupGuestToken() : null);
     const identity: SignupIdentity = { userId, guestId: signupGuestId(guestToken) };
     const shared = userId ? await isEventSharedWithUser(id, userId) : false;
+    await ensureEventCollaboration();
+    await ensureSignupHostAlerts();
     const saved = await mutateSignupEvent(id, async (row, client) => {
       if (isEventDraft(row.data)) throw new SignupMutationError("Not found", 404);
       const canManage = (await getEventPermissions(row, userId, client)).canManageResponses;
@@ -116,9 +120,14 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
         name: session?.user?.name,
         isOwner: canManage,
       });
+      await enqueueSignupHostAlerts(client, row, form, change.form);
       return { data: { ...row.data, signupForm: change.form }, result: { ...change, canManage } };
     });
     if (!saved) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    after(async () => {
+      try { await processSignupHostAlerts({ eventId: id }); }
+      catch { console.error("[signup-host-alerts] Processing deferred to retry worker"); }
+    });
     const viewers = new Set([
       saved.row.user_id,
       userId,
