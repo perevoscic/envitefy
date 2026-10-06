@@ -10,6 +10,8 @@ import {
 } from "@/lib/upload-config";
 import type { SignupHeaderImageAsset } from "@/types/signup";
 import { preparePickedImage } from "@/utils/pickImage";
+import { replaceTransientEventMedia } from "@/lib/event-media";
+import { isMedicalAppointmentCategory } from "@/lib/medical-appointments";
 
 const LIVE_MULTIPART_IMAGE_TARGET_BYTES = 3.75 * 1024 * 1024;
 
@@ -152,6 +154,20 @@ export async function uploadSignupHeaderImage(file: File): Promise<SignupHeaderI
     usage: "header",
   });
   return signupHeaderImageFromUpload(upload, file.name || "image.webp");
+}
+
+/** Called when saving an authored public event, including nested builder snapshots. */
+export async function persistPublicEventMedia<T extends Record<string, any>>(data: T): Promise<T> {
+  return replaceTransientEventMedia(data, async entry => {
+    if (data.accessControl?.requirePasscode || isMedicalAppointmentCategory(data.category)) throw new Error("Upload private event media through authenticated storage before saving");
+    const file = await fileFromMediaValue(entry.value, "event-media");
+    if (!file) throw new Error("Could not read the selected media. Your changes are still here.");
+    const pdf = file.type === "application/pdf";
+    const upload = await uploadMediaFile({ file, usage: pdf ? "attachment" : "header" });
+    const url = pdf ? upload.eventMedia.attachment?.dataUrl : upload.stored.display?.url;
+    if (!url) throw new Error("Media upload did not return a stored file");
+    return url;
+  });
 }
 
 async function fileFromMediaValue(value: string, fileName: string): Promise<File | null> {

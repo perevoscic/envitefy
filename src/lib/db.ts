@@ -41,6 +41,8 @@ import type {
   EventDiscoveryRow,
 } from "@/lib/discovery/types";
 import { invalidateUserHistory } from "@/lib/history-cache";
+import { recordQueryEgress } from "@/lib/query-egress";
+import { assertPersistableEventMedia } from "@/lib/event-media";
 import type { HistoryTimeFilter, HistoryView } from "@/lib/history-view";
 import { buildEventStartAtTsSql } from "@/lib/pg-event-start-ts";
 import {
@@ -313,7 +315,9 @@ export async function query<T extends QueryResultRow = QueryResultRow>(
   text: string,
   params: any[] = [],
 ): Promise<QueryResult<T>> {
-  return withClient((client) => client.query<T>(text, params));
+  const result = await withClient((client) => client.query<T>(text, params));
+  recordQueryEgress(`sql:${createHash("sha256").update(text.replace(/\s+/g, " ").trim()).digest("hex").slice(0, 12)}`, result.rows);
+  return result;
 }
 
 const ensureReadyKeys = new Set<string>();
@@ -1677,6 +1681,7 @@ const EVENT_HISTORY_DEBUG = process.env.EVENT_HISTORY_DEBUG === "1";
 /** Canonicalize collaborative saves with the same rules used by legacy history writers. */
 export function prepareEventHistoryData(data: Record<string, any>): Record<string, any> {
   const safe = sanitizeJsonValueForPostgres(data);
+  assertPersistableEventMedia(safe);
   normalizeCanonicalStartFields(safe);
   return safe;
 }
@@ -1962,7 +1967,8 @@ function buildScanPatientFactsSql(dataSql: string): string {
     where lower(trim(fact->>'label')) in ('patient', 'patient name'))`;
 }
 
-function buildHistoryDataProjectionSql(params: {
+export function buildHistoryDataProjectionSql(params: {
+  idSql?: string;
   view: HistoryView;
   dataSql: string;
   categorySql: string;
@@ -2131,7 +2137,9 @@ function buildHistoryDataProjectionSql(params: {
     )`;
   }
 
-  return `${dataSql} || jsonb_build_object(
+  // Even the legacy full-list view must exclude editor snapshots and binary media
+  // in PostgreSQL. Single-event editor reads still receive the complete document.
+  return `${_buildDashboardDataProjectionSql(params.idSql || "eh.id", dataSql, ownershipSql, invitedFromScanSql, shareStatusSql)} || jsonb_build_object(
     'category', ${categorySql},
     'shared', ${sharedSql},
     'sharedOut', ${sharedOutSql},
@@ -2156,7 +2164,7 @@ export function buildOwnedHistoryOwnershipSql(dataSql: string): string {
 
 function buildDashboardMediaRouteSql(
   idSql: string,
-  variant: "thumbnail" | "hero" | "attachment",
+  variant: "thumbnail" | "hero" | "attachment" | "signup-cover",
   dataTextSql: string,
 ): string {
   return `('/api/events/' || ${idSql} || '/thumbnail?variant=${variant}&v=' || md5(${dataTextSql}))`;
@@ -2169,7 +2177,7 @@ function buildDashboardSafeMediaJsonSql(rawJsonSql: string, rawTextSql: string):
   end`;
 }
 
-function buildDashboardCoverImageUrlSql(dataSql: string, idSql: string): string {
+export function buildDashboardCoverImageUrlSql(dataSql: string, idSql: string): string {
   const coverTextSql = `${dataSql}->>'coverImageUrl'`;
   const thumbnailTextSql = `${dataSql}->>'thumbnail'`;
   const customHeroTextSql = `${dataSql}->>'customHeroImage'`;
@@ -2178,6 +2186,10 @@ function buildDashboardCoverImageUrlSql(dataSql: string, idSql: string): string 
   const attachmentDataUrlSql = `${dataSql}#>>'{attachment,dataUrl}'`;
   const attachmentPreviewUrlSql = `${dataSql}#>>'{attachment,previewImageUrl}'`;
   const attachmentThumbnailUrlSql = `${dataSql}#>>'{attachment,thumbnailUrl}'`;
+  const signupCoverTextSql = `coalesce(
+    nullif(${dataSql}#>>'{signupForm,header,images,0,dataUrl}', ''),
+    nullif(${dataSql}#>>'{signupForm,header,backgroundImage,dataUrl}', '')
+  )`;
   return `case
     when nullif(${coverTextSql}, '') is not null
       and coalesce(${coverTextSql}, '') not like 'data:%'
@@ -2194,6 +2206,10 @@ function buildDashboardCoverImageUrlSql(dataSql: string, idSql: string): string 
     then ${buildDashboardMediaRouteSql(idSql, "hero", heroTextSql)}
     when nullif(${heroTextSql}, '') is not null
     then ${heroTextSql}
+    when coalesce(${signupCoverTextSql}, '') like 'data:%'
+    then ${buildDashboardMediaRouteSql(idSql, "signup-cover", signupCoverTextSql)}
+    when ${signupCoverTextSql} is not null
+    then ${signupCoverTextSql}
     when ${attachmentTypeSql} like 'image/%'
       and coalesce(${attachmentDataUrlSql}, '') like 'data:%'
     then ${buildDashboardMediaRouteSql(idSql, "attachment", attachmentDataUrlSql)}
@@ -2246,6 +2262,9 @@ function _buildDashboardDataProjectionSql(
       `${dataSql}->>'heroImage'`,
     )},
     'templateEditor', ((${dataSql}->'templateEditor') - 'snapshot'),
+    'pageTemplateId', ${dataSql}->'pageTemplateId',
+    'templateId', ${dataSql}->'templateId',
+    'variationId', ${dataSql}->'variationId',
     'status', ${dataSql}->'status',
     'draftStatus', ${dataSql}->'draftStatus',
     'sidebarSports', ${buildSidebarSportsProjectionSql(dataSql)},
@@ -2308,6 +2327,9 @@ function _buildDashboardDataProjectionSql(
 }
 
 type DashboardProjectionQueryRow = {
+  page_template_id: string | null;
+  template_id: string | null;
+  variation_id: string | null;
   has_signup_form: boolean;
   draft_status: string | null;
   sidebar_sports: unknown;
@@ -2479,6 +2501,9 @@ function mapDashboardProjectionRowToEventHistoryRow(
       thumbnail: row.thumbnail ?? null,
       heroImage: row.hero_image ?? null,
       templateEditor: row.template_editor ?? null,
+      pageTemplateId: row.page_template_id ?? null,
+      templateId: row.template_id ?? null,
+      variationId: row.variation_id ?? null,
       status: row.status ?? null,
       draftStatus: row.draft_status ?? null,
       sidebarSports: row.sidebar_sports ?? null,
@@ -2634,7 +2659,7 @@ function buildOwnedHistoryOwnershipTextSql(dataSql: string): string {
   end`;
 }
 
-function buildOwnedHistoryStudioVisibilitySql(dataSql: string): string {
+export function buildOwnedHistoryStudioVisibilitySql(dataSql: string): string {
   return `(
     lower(coalesce(${dataSql}->>'createdVia', '')) <> 'studio'
     or (
@@ -2712,6 +2737,9 @@ async function listProjectedDashboardHistoryRowsByIds(
          "coalesce(eh.data, '{}'::jsonb)->>'heroImage'",
        )} as hero_image,
        ((coalesce(eh.data, '{}'::jsonb)->'templateEditor') - 'snapshot') as template_editor,
+       coalesce(eh.data, '{}'::jsonb)->>'pageTemplateId' as page_template_id,
+       coalesce(eh.data, '{}'::jsonb)->>'templateId' as template_id,
+       coalesce(eh.data, '{}'::jsonb)->>'variationId' as variation_id,
        coalesce(eh.data, '{}'::jsonb)->'status' as status,
        coalesce(eh.data, '{}'::jsonb)->>'draftStatus' as draft_status,
        ${buildSidebarSportsProjectionSql("coalesce(eh.data, '{}'::jsonb)")} as sidebar_sports,
@@ -2763,6 +2791,7 @@ async function listProjectedDashboardHistoryRowsByIds(
       requestedRows.map((row) => row.share_status ?? null),
     ],
   );
+  recordQueryEgress("history.dashboard-projection", res.rows || []);
   return (res.rows || []).map(mapDashboardProjectionRowToEventHistoryRow);
 }
 
@@ -2881,6 +2910,7 @@ async function listProjectedSidebarHistoryRowsByIds(
       requestedRows.map((row) => row.share_status ?? null),
     ],
   );
+  recordQueryEgress("history.sidebar-projection", res.rows || []);
   return (res.rows || []).map(mapSidebarProjectionRowToEventHistoryRow);
 }
 
@@ -3227,6 +3257,7 @@ async function persistEventPublicSlug(params: {
     }
 
     const safeData = params.data ? sanitizeJsonValueForPostgres(params.data) : null;
+    if (safeData) assertPersistableEventMedia(safeData);
     if (safeData) normalizeCanonicalStartFields(safeData);
     const res = await client.query<EventHistoryRow>(
       `update event_history
@@ -3311,6 +3342,7 @@ export async function insertEventHistory(params: {
 }): Promise<EventHistoryRow> {
   const id = params.clientDraftId || randomUUID();
   const safeData = sanitizeJsonValueForPostgres(params.data ?? {});
+  assertPersistableEventMedia(safeData);
   if (safeData && typeof safeData === "object") {
     normalizeCanonicalStartFields(safeData);
   }
@@ -3445,14 +3477,16 @@ export async function getEventHistoryIdentityById(
   id: string,
 ): Promise<EventHistoryIdentityRow | null> {
   await ensureEventPublicSlugSchema();
-  const res = await query<EventHistoryRow>(
-    `select id, user_id, title, data, public_slug, created_at
+  const res = await query<EventHistoryIdentityRow>(
+    `select id, user_id, title, public_slug, created_at
      from event_history
      where id = $1
      limit 1`,
     [id],
   );
-  const row = await ensureEventHistoryRowPublicSlug(res.rows[0] || null);
+  const identity = res.rows[0] || null;
+  if (!identity || identity.public_slug) return identity;
+  const row = await getEventHistoryById(id);
   return row
     ? {
         id: row.id,
@@ -3564,6 +3598,7 @@ export async function updateEventHistoryTitle(
 
 /** Update this nested discovery result atomically without replacing the rest of the event. */
 export async function updateEventTravelAccommodation(id: string, accommodation: object): Promise<EventHistoryRow | null> {
+  assertPersistableEventMedia(accommodation);
   await ensureEventPublicSlugSchema();
   const res = await query<EventHistoryRow>(
     `update event_history set data = jsonb_set(coalesce(data, '{}'::jsonb), '{discoverySource}',
@@ -3583,6 +3618,7 @@ export async function updateEventHistoryDataMerge(
   // Merge provided patch object into existing JSONB data. Later keys override.
   // jsonb concatenation '||' merges objects shallowly; sufficient for category updates.
   const safePatch = sanitizeJsonValueForPostgres(patch ?? {});
+  assertPersistableEventMedia(safePatch);
   const res = await query<EventHistoryRow>(
     `update event_history
      set data = coalesce(data, '{}'::jsonb) || $2::jsonb
@@ -3610,6 +3646,7 @@ export async function updateEventHistoryData(
 ): Promise<EventHistoryRow | null> {
   await ensureEventPublicSlugSchema();
   const safeData = sanitizeJsonValueForPostgres(data ?? {});
+  assertPersistableEventMedia(safeData);
   normalizeCanonicalStartFields(safeData);
   const res = await query<EventHistoryRow>(
     `update event_history
@@ -3650,8 +3687,8 @@ export async function getEventHistoryByUserAndSlug(
 ): Promise<EventHistoryRow | null> {
   await ensureEventPublicSlugSchema();
   // Fetch a handful of recent events and match by slug server-side to avoid DB funcs
-  const res = await query<EventHistoryRow>(
-    `select id, user_id, title, data, public_slug, created_at
+  const res = await query<EventHistoryIdentityRow>(
+    `select id, user_id, title, public_slug, created_at
      from event_history
      where user_id = $1
      order by created_at desc nulls last, id desc
@@ -3662,7 +3699,7 @@ export async function getEventHistoryByUserAndSlug(
   const target = slug.toLowerCase();
   for (const r of rows) {
     const s = slugifyTitleForQuery(r.title || "");
-    if (s && s === target) return await ensureEventHistoryRowPublicSlug(r);
+    if (s && s === target) return await getEventHistoryById(r.id);
   }
   return null;
 }
@@ -3723,7 +3760,7 @@ export async function resolveEventHistoryIdentityBySlugOrId(params: {
   }
   await ensureEventPublicSlugSchema();
   const res = await query<EventHistoryIdentityRow>(
-    `select id, user_id, title, data, public_slug, created_at
+    `select id, user_id, title, public_slug, created_at
      from event_history
      order by created_at desc
      limit 500`,
@@ -3732,14 +3769,7 @@ export async function resolveEventHistoryIdentityBySlugOrId(params: {
   for (const row of rows) {
     const current = slugifyTitleForQuery(row.title || "");
     if (current && current === slug) {
-      const ensured = await ensureEventHistoryRowPublicSlug({
-        id: row.id,
-        user_id: row.user_id,
-        title: row.title,
-        data: (row as EventHistoryRow).data,
-        public_slug: row.public_slug,
-        created_at: row.created_at,
-      });
+      const ensured = await getEventHistoryIdentityById(row.id);
       return ensured
         ? {
             id: ensured.id,
@@ -3781,16 +3811,19 @@ async function getEventHistoryByPublicSlug(slug: string): Promise<EventHistoryRo
 async function getEventHistoryIdentityByPublicSlug(
   slug: string,
 ): Promise<EventHistoryIdentityRow | null> {
-  const row = await getEventHistoryByPublicSlug(slug);
-  return row
-    ? {
-        id: row.id,
-        user_id: row.user_id,
-        title: row.title,
-        public_slug: row.public_slug,
-        created_at: row.created_at,
-      }
-    : null;
+  await ensureEventPublicSlugSchema();
+  const normalized = makeEventPublicSlugRoutable(slug);
+  const current = await query<EventHistoryIdentityRow>(
+    `select id, user_id, title, public_slug, created_at from event_history
+     where lower(public_slug) = lower($1) limit 1`, [normalized],
+  );
+  if (current.rows[0]) return current.rows[0];
+  const alias = await query<EventHistoryIdentityRow>(
+    `select eh.id, eh.user_id, eh.title, eh.public_slug, eh.created_at
+     from event_public_slug_aliases a join event_history eh on eh.id = a.event_id
+     where lower(a.alias) = lower($1) limit 1`, [normalized],
+  );
+  return alias.rows[0] || null;
 }
 
 export async function getEventHistoryPublicRenderBySlugOrId(params: {
@@ -4158,6 +4191,7 @@ export type EventHistoryMediaVariant =
   | "attachment"
   | "profile"
   | "hero"
+  | "signup-cover"
   | "signup-header";
 
 export async function getEventHistoryMediaDataUrlById(
@@ -4174,6 +4208,10 @@ export async function getEventHistoryMediaDataUrlById(
          nullif(data->>'heroImage', '')
        )
        when $2 = 'signup-header' then nullif(data#>>'{signupForm,header,backgroundImage,dataUrl}', '')
+       when $2 = 'signup-cover' then coalesce(
+         nullif(data#>>'{signupForm,header,images,0,dataUrl}', ''),
+         nullif(data#>>'{signupForm,header,backgroundImage,dataUrl}', '')
+       )
        when $2 = 'thumbnail' then nullif(data->>'thumbnail', '')
        else coalesce(
          nullif(data->>'thumbnail', ''),
@@ -4230,8 +4268,8 @@ export async function getEventHistoryBySlugOrId(params: {
   }
   // Fallback: try a broader search across recent events for any user (limited)
   await ensureEventPublicSlugSchema();
-  const res = await query<EventHistoryRow>(
-    `select id, user_id, title, data, public_slug, created_at
+  const res = await query<EventHistoryIdentityRow>(
+    `select id, user_id, title, public_slug, created_at
      from event_history
      order by created_at desc
      limit 500`,
@@ -4239,7 +4277,7 @@ export async function getEventHistoryBySlugOrId(params: {
   const rows = res.rows || [];
   for (const r of rows) {
     const s = slugifyTitleForQuery(r.title || "");
-    if (s && s === slug) return await ensureEventHistoryRowPublicSlug(r);
+    if (s && s === slug) return await getEventHistoryById(r.id);
   }
   return null;
 }
@@ -5532,6 +5570,7 @@ export async function mutateSignupEvent<T>(
       if (!current) { await client.query("rollback"); return null; }
       const change = await mutate(current, client);
       const safeData = sanitizeJsonValueForPostgres(change.data);
+      assertPersistableEventMedia(safeData);
       normalizeCanonicalStartFields(safeData);
       const updated = await client.query<EventHistoryRow>(
         "update event_history set data = $2::jsonb, title = $3 where id = $1 returning id, user_id, title, data, public_slug, created_at",

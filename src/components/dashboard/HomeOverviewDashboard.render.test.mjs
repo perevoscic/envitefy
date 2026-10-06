@@ -82,6 +82,19 @@ test("Home shows the empty state only after a successful empty response", () => 
   assert.match(render({ data: emptyData }), /Nothing is scheduled yet/);
 });
 
+test("Home renders saved signup and gymnastics artwork on its event cards", () => {
+  const event = (id, data) => dashboardData.toDashboardEvent({
+    id,
+    title: id,
+    data: { startAt: "2030-10-10T18:00:00Z", ...data },
+  });
+  const gym = event("Fright Invite", { category: "Gymnastics", pageTemplateId: "airborne-atlas", heroImage: "" });
+  const signup = event("Maple Grove Field Day", { signupForm: { header: { backgroundImage: { dataUrl: "/templates/signup/editorial/school-days.webp" } } } });
+  const html = render({ data: { ...emptyData, nextEvent: gym, upcoming: [gym, signup] } });
+  assert.match(html, /src="\/templates\/gymnastics\/collection-2026\/airborne-atlas\.webp"/);
+  assert.match(html, /src="\/templates\/signup\/editorial\/school-days\.webp"/);
+});
+
 test("pending co-host invitations appear before the spotlight, count as attention, and survive event-load failure", () => {
   const coHostInvitations = [{ id: "invite", eventId: "event", eventTitle: "Garden party", ownerName: "Taylor", expiresAt: "2030-10-10T12:00:00Z" }];
   const invitationNotice = React.createElement("section", { id: "dashboard-cohost-invitations" }, "Pending co-host invitation");

@@ -6,6 +6,8 @@ import {
   findInlineEventMedia,
   findTransientEventMedia,
   setValueAtPath,
+  assertPersistableEventMedia,
+  replaceTransientEventMedia,
 } from "./event-media.ts";
 
 test("findTransientEventMedia inspects nested fields and gallery items", () => {
@@ -55,6 +57,39 @@ test("findInlineEventMedia reports inline paths and setValueAtPath updates them"
 
   setValueAtPath(data, ["images", "hero"], "https://blob.example.com/event-media/hero.webp");
   assert.equal(data.images.hero, "https://blob.example.com/event-media/hero.webp");
+});
+
+test("legacy builder snapshots cannot hide inline images and validation never echoes their bytes", () => {
+  const data: any = {
+    builderDraft: { event: { customFields: { advancedSections: { logistics: { gymLayoutImage: "  DATA:image/png;base64,private-image-contents" } } } } },
+    customSections: [{ media: "blob:https://envitefy.com/private-id" }],
+  };
+  const issues = findTransientEventMedia(data);
+  assert.deepEqual(issues.map((entry) => entry.fieldPath), [
+    "builderDraft.event.customFields.advancedSections.logistics.gymLayoutImage", "customSections[0].media",
+  ]);
+  assert.ok(!JSON.stringify(issues).includes("private-image-contents"));
+  assert.throws(() => assertPersistableEventMedia(data), /Upload media before saving/);
+  data.self = data;
+  assert.equal(findTransientEventMedia(data).length, 2, "cycles must terminate");
+  assert.doesNotThrow(() => assertPersistableEventMedia({ thumbnail: "/api/events/123/private-media/456" }));
+});
+
+test("encrypted private media is included in Blob cleanup", () => {
+  assert.deepEqual(collectAppOwnedBlobUrls({ privateMedia: { asset: { dataUrl: "https://example.public.blob.vercel-storage.com/private-scan-originals/image.bin" } } }), ["https://example.public.blob.vercel-storage.com/private-scan-originals/image.bin"]);
+});
+
+test("explicit media persistence deduplicates nested copies and keeps unsaved state on failure", async () => {
+  const image = "data:image/webp;base64,private-image";
+  const source = { builderDraft: { event: { layout: image }, layout: image } };
+  let uploads = 0;
+  const next = await replaceTransientEventMedia(source, async () => { uploads++; return "https://assets.test/image.webp"; });
+  assert.equal(uploads, 1);
+  assert.equal(next.builderDraft.layout, "https://assets.test/image.webp");
+  assert.equal(next.builderDraft.event.layout, "https://assets.test/image.webp");
+  assert.equal(source.builderDraft.layout, image);
+  await assert.rejects(replaceTransientEventMedia(source, async () => { throw new Error("Upload failed"); }), /Upload failed/);
+  assert.equal(source.builderDraft.layout, image);
 });
 
 test("findTransientEventMedia and collectAppOwnedBlobUrls include sponsor logos", () => {

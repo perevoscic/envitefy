@@ -26,6 +26,11 @@ export function encryptScanOriginal(bytes: Buffer, ownerId: string): Buffer {
   return Buffer.concat([Buffer.from("EVS1"), iv, cipher.getAuthTag(), ciphertext]);
 }
 
+/** A non-secret key identifier lets maintenance verify the deployed decryptor. */
+export function scanOriginalKeyId(): string {
+  return createHash("sha256").update(encryptionKey()).digest("hex").slice(0, 16);
+}
+
 export function decryptScanOriginal(bytes: Buffer, ownerId: string): Buffer {
   if (bytes.length < 32 || bytes.subarray(0, 4).toString() !== "EVS1")
     throw new Error("Invalid private document");

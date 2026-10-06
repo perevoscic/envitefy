@@ -1,7 +1,8 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { PoolClient } from "pg";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
-import { type EventHistoryRow, getEventHistoryById, mutateSignupEvent, prepareEventHistoryData, query, withClient } from "@/lib/db";
+import { type EventHistoryRow, buildHistoryDataProjectionSql, getEventHistoryById, mutateSignupEvent, prepareEventHistoryData, query, withClient } from "@/lib/db";
+import type { HistoryView } from "@/lib/history-view";
 import { isEventDraft } from "@/lib/event-draft-access";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { updateSignupDefinition } from "@/lib/signup-mutations";
@@ -256,13 +257,28 @@ export async function invalidateEventCollaborators(event: EventHistoryRow): Prom
   }
 }
 
-export async function listCollaborativeEvents(userId: string): Promise<EventHistoryRow[]> {
+export async function listCollaborativeEvents(userId: string, view: HistoryView = "full", limit = 200): Promise<EventHistoryRow[]> {
   await ensureEventCollaboration();
+  const dataSql = "coalesce(e.data, '{}'::jsonb)";
+  const projection = buildHistoryDataProjectionSql({
+    view, idSql: "e.id", dataSql, categorySql: `${dataSql}->'category'`,
+    sharedSql: "false", sharedOutSql: "false", ownershipSql: "to_jsonb('owned'::text)",
+    invitedFromScanSql: "false", shareStatusSql: "null",
+  });
   const rows = (
     await query<EventHistoryRow>(
-      `SELECT e.id,e.user_id,e.title,e.data,e.public_slug,e.created_at FROM event_history e
-    JOIN event_collaborators c ON c.event_id=e.id WHERE c.user_id=$1 AND c.revoked_at IS NULL ORDER BY e.created_at DESC LIMIT 200`,
-      [userId],
+      `SELECT e.id,e.user_id,e.title,(${projection} || jsonb_build_object(
+       'startAt', e.data->'startAt', 'startISO', e.data->'startISO', 'start', e.data->'start',
+       'endAt', e.data->'endAt', 'endISO', e.data->'endISO', 'end', e.data->'end')) AS data,
+       e.public_slug,e.created_at FROM event_history e
+       JOIN event_collaborators c ON c.event_id=e.id
+       WHERE c.user_id=$1 AND c.revoked_at IS NULL
+         AND coalesce(e.data->'attachment', 'null'::jsonb) = 'null'::jsonb
+         AND coalesce(e.data->>'invitedFromScan', 'false') <> 'true'
+         AND coalesce(e.data->>'ownership', '') <> 'invited'
+         AND coalesce(e.data->>'createdVia', '') !~* '(ocr|scan|upload|snap)'
+       ORDER BY e.created_at DESC LIMIT $2`,
+      [userId, Math.max(1, Math.min(200, Math.floor(limit) || 40))],
     )
   ).rows;
   return rows

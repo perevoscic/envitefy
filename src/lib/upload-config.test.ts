@@ -75,3 +75,26 @@ test("resolveCoverImageUrlFromEventData prefers pdf preview urls over pdf source
 
   assert.equal(cover, "https://blob.example.com/display.webp");
 });
+
+test("signup covers use the saved header artwork and prefer its first gallery image", () => {
+  const backgroundImage = { dataUrl: "/templates/signup/editorial/school-days.webp" };
+  assert.equal(
+    resolveCoverImageUrlFromEventData({ signupForm: { header: { backgroundImage } } }),
+    backgroundImage.dataUrl,
+  );
+  assert.equal(
+    resolveCoverImageUrlFromEventData({
+      signupForm: {
+        header: { backgroundImage, images: [{ dataUrl: "/api/blob/event-media/gallery.webp" }] },
+      },
+    }),
+    "/api/blob/event-media/gallery.webp",
+  );
+  assert.equal(
+    resolveCoverImageUrlFromEventData({
+      coverImageUrl: "/api/blob/event-media/cover.webp",
+      signupForm: { header: { backgroundImage } },
+    }),
+    "/api/blob/event-media/cover.webp",
+  );
+});

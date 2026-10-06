@@ -34,6 +34,7 @@ export async function GET(
       variantParam === "thumbnail" ||
       variantParam === "profile" ||
       variantParam === "hero" ||
+      variantParam === "signup-cover" ||
       variantParam === "signup-header"
         ? (variantParam as EventHistoryMediaVariant)
         : null;

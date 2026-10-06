@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedRequestUser } from "@/lib/auth";
 import { query } from "@/lib/db";
+import { withQueryRoute } from "@/lib/query-egress";
 import {
   isDraftStatus,
   isScannedInviteCreatedVia,
@@ -517,6 +518,10 @@ function withTiming(
 }
 
 export async function GET(req: Request) {
+  return withQueryRoute("GET /api/dashboard", () => getDashboard(req));
+}
+
+async function getDashboard(req: Request) {
   const url = new URL(req.url);
   const timing = createServerTimingTracker(isTimingRequested(url));
   try {

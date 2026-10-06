@@ -21,6 +21,7 @@ function loadSource(file, mocks = {}) {
   return exports;
 }
 const slugs = loadSource("src/utils/event-public-slug.ts");
+const { assertPersistableEventMedia } = loadSource("src/lib/event-media.ts");
 const { suggestFootballPublicSlug } = loadSource("src/lib/football-custom-url.ts");
 
 test("public addresses cannot collide with any static event route, including future categories", () => {
@@ -110,7 +111,7 @@ function databaseFixture() {
   const section = source.slice(source.indexOf("function addPublicSlugToData"), source.indexOf("export async function getEventHistoryById"));
   const code = ts.transpileModule(section, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const dependencies = {
-    ...slugs, randomUUID, query, withClient, ensureEventPublicSlugSchema: async () => {},
+    ...slugs, randomUUID, query, withClient, assertPersistableEventMedia, ensureEventPublicSlugSchema: async () => {},
     sanitizeJsonValueForPostgres: structuredClone, normalizeCanonicalStartFields: () => {},
     getEventHistoryById: async id => rows.get(id),
   };

@@ -15,6 +15,7 @@ import {
 } from "@/lib/db";
 import { hydrateDiscoveryFileInput } from "@/lib/discovery-file-hydration";
 import { invalidateUserHistory } from "@/lib/history-cache";
+import { storePublicEventMedia } from "@/lib/public-event-media-storage";
 import {
   buildTravelAccommodationState,
   enrichTravelAccommodation,
@@ -411,7 +412,7 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
     };
 
     const persistStartedAt = Date.now();
-    await updateEventHistoryData(eventId, nextData);
+    await updateEventHistoryData(eventId, await storePublicEventMedia(nextData, eventId));
     performance.persistMs = durationMs(persistStartedAt);
     if (safeString(enrichedParseResult.title)) {
       await updateEventHistoryTitle(eventId, enrichedParseResult.title);

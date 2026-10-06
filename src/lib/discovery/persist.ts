@@ -4,6 +4,7 @@ import {
   DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
 } from "@/components/gym-meet-templates/registry";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
+import { storePublicEventMedia } from "@/lib/public-event-media-storage";
 import {
   deleteEventHistoryById,
   getEventDiscoveryByEventId,
@@ -348,7 +349,7 @@ export async function persistDiscoveryEventSnapshot(params: {
     hostGym: safeString(builderEvent.hostGym) || safeString(current.hostGym) || "",
     ...(params.eventDataPatch || {}),
   };
-  const updated = await updateEventHistoryData(params.eventId, nextData);
+  const updated = await updateEventHistoryData(params.eventId, await storePublicEventMedia(nextData, params.eventId));
   if (nextTitle && nextTitle !== row.title) {
     await updateEventHistoryTitle(params.eventId, nextTitle);
   }

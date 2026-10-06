@@ -23,6 +23,7 @@ import {
 import { normalizeAccessControlPayload } from "@/lib/event-access";
 import { findTransientEventMedia } from "@/lib/event-media";
 import {
+  coalesceHistoryRead,
   getCachedHistory,
   getHistoryCacheRevision,
   getCachedHistoryStale,
@@ -35,6 +36,8 @@ import {
   normalizeHistoryView,
   redactHistoryHeavyFields,
 } from "@/lib/history-view";
+import { withQueryRoute } from "@/lib/query-egress";
+import { decodeHistoryCursor, listHistoryCardPage } from "@/lib/history-page";
 import { markScanAttemptSaved } from "@/lib/scan-attempts";
 import { validateCustomEventPublicSlug } from "@/utils/event-public-slug";
 
@@ -95,12 +98,22 @@ function buildMediaValidationResponse(issues: ReturnType<typeof findTransientEve
 }
 
 export async function GET(req: Request) {
+  return withQueryRoute("GET /api/history", () => getHistory(req));
+}
+
+async function getHistory(req: Request) {
   try {
     const url = new URL(req.url);
     const limitRaw = url.searchParams.get("limit");
     const viewRaw = url.searchParams.get("view");
     const timeRaw = url.searchParams.get("time");
-    const limit = Math.max(1, Math.min(200, Number.parseInt(limitRaw || "40", 10)));
+    const limit = Math.max(1, Math.min(200, Number.parseInt(limitRaw || "40", 10) || 40));
+    let cardCursor: ReturnType<typeof decodeHistoryCursor> = null;
+    if (viewRaw?.trim().toLowerCase() === "cards") {
+      try { cardCursor = decodeHistoryCursor(url.searchParams.get("cursor")); }
+      catch { return NextResponse.json({ error: "Invalid history cursor" }, { status: 400 }); }
+      if (timeRaw && timeRaw !== "all") return NextResponse.json({ error: "Card pages currently support time=all" }, { status: 400 });
+    }
     const view = normalizeHistoryView(viewRaw);
     const timeFilter = normalizeHistoryTimeFilter(timeRaw);
 
@@ -123,6 +136,11 @@ export async function GET(req: Request) {
           hasSession: Boolean(sessionUser),
         },
       });
+    }
+
+    if (viewRaw?.trim().toLowerCase() === "cards") {
+      const page = await listHistoryCardPage(userId, limit, cardCursor);
+      return NextResponse.json(page, { headers: { "Cache-Control": "private, no-store" } });
     }
 
     const finalizeItems = (rows: any[]) =>
@@ -161,6 +179,9 @@ export async function GET(req: Request) {
     let degradedReason: string | null = null;
     let shouldCacheResponse = true;
     let responseSource = cached ? "cache" : "query";
+    const loadHistory = () => useCache
+      ? coalesceHistoryRead(userId, view, limit, timeFilter, () => listHistoryForUser({ userId, view, limit, timeFilter }))
+      : listHistoryForUser({ userId, view, limit, timeFilter });
     if (cached) {
       light = cached;
     } else {
@@ -168,9 +189,9 @@ export async function GET(req: Request) {
       if (view === "sidebar" && timeFilter === "all") {
         responseSource = "dashboard-fallback";
         try {
-          rows = await listDashboardHistoryFallbackForUser(userId, limit, limit);
+          rows = await coalesceHistoryRead(userId, "sidebar", limit, timeFilter, () => listDashboardHistoryFallbackForUser(userId, limit, limit));
           if (!rows.length) {
-            rows = await listHistoryForUser({ userId, view, limit, timeFilter });
+            rows = await loadHistory();
             responseSource = "dashboard-fallback-empty-union-fallback";
           }
         } catch (err) {
@@ -201,7 +222,7 @@ export async function GET(req: Request) {
       } else {
         responseSource = "history-union";
         try {
-          rows = await listHistoryForUser({ userId, view, limit, timeFilter });
+          rows = await loadHistory();
         } catch (err) {
           const canUseFastSidebarFallback =
             view === "sidebar" &&
@@ -236,7 +257,7 @@ export async function GET(req: Request) {
         setCachedHistory(userId, view, limit, timeFilter, light, cacheRevision);
       }
     }
-    const collaborative = finalizeItems((await listCollaborativeEvents(userId)).filter((row) => {
+    const collaborative = finalizeItems((await listCollaborativeEvents(userId, view, limit)).filter((row) => {
       if (timeFilter === "all") return true;
       const end = row.data?.endAt || row.data?.endISO || row.data?.end || row.data?.startAt || row.data?.startISO || row.data?.start;
       const timestamp = typeof end === "string" ? Date.parse(end) : Number.NaN;

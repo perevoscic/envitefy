@@ -94,6 +94,7 @@ export function withoutMedicalSourceMedia(
     "birthDate",
     "birthday",
     "profileImage",
+    "privateMedia",
     "headerImageUrl",
   ])
     delete out[key];

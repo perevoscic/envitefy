@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { assertPersistableEventMedia } from "./event-media.ts";
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
@@ -141,7 +142,7 @@ function transactionalStore(initial, failMirror = false) {
     return callback(client);
   };
   const exports = {};
-  new Function("exports", "withClient", "ensureSignupFormsTable", "sanitizeJsonValueForPostgres", "normalizeCanonicalStartFields", code)(exports, withClient, async () => {}, value => value, () => {});
+  new Function("exports", "withClient", "ensureSignupFormsTable", "sanitizeJsonValueForPostgres", "normalizeCanonicalStartFields", "assertPersistableEventMedia", code)(exports, withClient, async () => {}, value => value, () => {}, assertPersistableEventMedia);
   return { mutate: exports.mutateSignupEvent, read: () => ({ row, mirror }) };
 }
 

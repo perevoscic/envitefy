@@ -269,6 +269,37 @@ test("toDashboardEvent uses image attachment urls as dashboard covers", () => {
   assert.equal(event?.coverImageUrl, "https://blob.example.com/display.webp");
 });
 
+test("gymnastics cards use the selected template artwork when no custom hero was saved", () => {
+  const row = {
+    id: "gymnastics-card",
+    title: "Fright Invite",
+    data: {
+      startAt: "2030-10-10T18:00:00Z",
+      category: "Gymnastics",
+      createdVia: "meet-discovery-v2",
+      pageTemplateId: "neon-runway",
+      heroImage: "",
+    },
+  };
+  assert.equal(
+    toDashboardEvent(row)?.coverImageUrl,
+    "/templates/gymnastics/collection-2026/neon-runway.webp",
+  );
+  assert.equal(
+    toDashboardEvent({ ...row, data: { ...row.data, pageTemplateId: "retired-template" } })?.coverImageUrl,
+    "/templates/gymnastics/collection-2026/airborne-atlas.webp",
+  );
+  assert.equal(
+    toDashboardEvent({ ...row, data: { ...row.data, heroImage: "/api/blob/event-media/custom.webp" } })?.coverImageUrl,
+    "/api/blob/event-media/custom.webp",
+  );
+  assert.equal(
+    toDashboardEvent({ ...row, data: { ...row.data, createdVia: "ocr" } })?.coverImageUrl,
+    null,
+    "scanned events retain their own source/generated artwork policy",
+  );
+});
+
 test("toDashboardEvent uses pdf preview urls instead of pdf source urls as covers", () => {
   const event = toDashboardEvent({
     id: "evt_4",
@@ -285,6 +316,16 @@ test("toDashboardEvent uses pdf preview urls instead of pdf source urls as cover
   });
 
   assert.equal(event?.coverImageUrl, "https://blob.example.com/display.webp");
+});
+
+test("football and wedding cards recover their selected template artwork without replacing uploads", () => {
+  const row = { id: "template-card", title: "Saved template", data: { startAt: "2030-10-10T18:00:00Z" } };
+  const football = { ...row.data, category: "sport_football_season", templateId: "football-season", pageTemplateId: "airborne-atlas" };
+  assert.equal(toDashboardEvent({ ...row, data: football })?.coverImageUrl, "/images/football/templates/launchpad-editorial.webp");
+  const wedding = { ...row.data, category: "Weddings", templateId: "wedding", variationId: "gilded-wedding" };
+  assert.equal(toDashboardEvent({ ...row, data: wedding })?.coverImageUrl, "/templates/wedding-placeholders/gilded-twilight-hero.jpeg");
+  assert.equal(toDashboardEvent({ ...row, data: { ...wedding, heroImage: "/api/blob/event-media/upload.webp" } })?.coverImageUrl, "/api/blob/event-media/upload.webp");
+  assert.equal(toDashboardEvent({ ...row, data: { ...row.data, category: "Weddings" } })?.coverImageUrl, null, "a manual event with no saved design remains without artwork");
 });
 
 test("toDashboardEvent preserves and clamps valid dashboard thumbnail focus", () => {

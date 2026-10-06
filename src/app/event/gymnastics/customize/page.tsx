@@ -49,7 +49,7 @@ import {
   getGymDiscoveryV2PipelineSummary,
   isGymDiscoveryV2EventData,
 } from "@/lib/discovery/event-data";
-import { persistImageMediaValue as persistExistingImage } from "@/utils/media-upload-client";
+import { persistImageMediaValue as persistExistingImage, persistPublicEventMedia } from "@/utils/media-upload-client";
 
 type FieldSpec = {
   key: string;
@@ -1858,6 +1858,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         },
       };
       if (isNewDraft) payload.claim = true;
+      payload.data = await persistPublicEventMedia(payload.data);
       return payload;
     }, [data.heroImageFilterEnabled, templateEditor,
       submitting,

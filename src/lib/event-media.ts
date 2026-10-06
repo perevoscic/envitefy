@@ -32,6 +32,12 @@ const STATIC_STRING_PATHS: Array<Array<string | number>> = [
   ["profileImage", "dataUrl"],
   ["openHouse", "realtorImageUrl"],
   ["signupForm", "header", "backgroundImage", "dataUrl"],
+  ["advancedSections", "logistics", "gymLayoutImage"],
+  ["customFields", "advancedSections", "logistics", "gymLayoutImage"],
+  ["builderDraft", "advancedSections", "logistics", "gymLayoutImage"],
+  ["builderDraft", "event", "advancedSections", "logistics", "gymLayoutImage"],
+  ["builderDraft", "event", "customFields", "advancedSections", "logistics", "gymLayoutImage"],
+  ["discoverySource", "extractionMeta", "gymLayoutImageDataUrl"],
 ];
 
 function getPathLabel(pathSegments: Array<string | number>): string {
@@ -126,6 +132,29 @@ export function listEventMediaEntries(source: unknown): EventMediaEntry[] {
   collectSignupHeaderEntries(entries, source);
   collectSponsorEntries(entries, source);
   collectOpenHouseEntries(entries, source);
+  const privateMedia = (source as any).privateMedia;
+  if (privateMedia && typeof privateMedia === "object" && !Array.isArray(privateMedia)) {
+    for (const key of Object.keys(privateMedia)) addEntry(entries, source, ["privateMedia", key, "dataUrl"]);
+  }
+  // Legacy editor snapshots and custom sections can contain media at any depth.
+  // Keep the known durable URL paths above, then discover every transient URL.
+  const known = new Set(entries.map((entry) => JSON.stringify(entry.pathSegments)));
+  const seen = new WeakSet<object>();
+  const visit = (value: unknown, path: Array<string | number>): void => {
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (/^(data:|blob:)/i.test(trimmed) && !known.has(JSON.stringify(path))) {
+        entries.push({ fieldPath: getPathLabel(path), pathSegments: path, value: trimmed });
+      }
+      return;
+    }
+    if (!value || typeof value !== "object" || seen.has(value)) return;
+    seen.add(value);
+    if (Array.isArray(value)) value.forEach((item, index) => { visit(item, [...path, index]); });
+    else Object.entries(value).forEach(([key, item]) => { visit(item, [...path, key]); });
+    seen.delete(value);
+  };
+  visit(source, []);
   return entries;
 }
 
@@ -135,7 +164,8 @@ function buildIssue(entry: EventMediaEntry, kind: EventMediaIssueKind): EventMed
     fieldPath: entry.fieldPath,
     kind,
     mimeType: parsed?.mimeType || null,
-    valuePreview: entry.value.slice(0, 80),
+    // Validation responses must not echo encoded image/document contents.
+    valuePreview: kind === "inline-data-url" ? `data:${parsed?.mimeType || "unknown"};…` : "blob:…",
   };
 }
 
@@ -207,15 +237,15 @@ function extractAppOwnedBlobRef(value: string): string | null {
 
 export function findInlineEventMedia(source: unknown): EventMediaIssue[] {
   return listEventMediaEntries(source)
-    .filter((entry) => entry.value.startsWith("data:"))
+    .filter((entry) => /^data:/i.test(entry.value))
     .map((entry) => buildIssue(entry, "inline-data-url"));
 }
 
 export function findTransientEventMedia(source: unknown): EventMediaIssue[] {
   return listEventMediaEntries(source)
-    .filter((entry) => entry.value.startsWith("data:") || isBrowserObjectUrl(entry.value))
+    .filter((entry) => /^data:/i.test(entry.value) || isBrowserObjectUrl(entry.value))
     .map((entry) =>
-      buildIssue(entry, entry.value.startsWith("data:") ? "inline-data-url" : "browser-object-url"),
+      buildIssue(entry, /^data:/i.test(entry.value) ? "inline-data-url" : "browser-object-url"),
     );
 }
 
@@ -226,4 +256,34 @@ export function collectAppOwnedBlobUrls(source: unknown): string[] {
     if (ref) urls.add(ref);
   }
   return Array.from(urls);
+}
+
+/** Shared write boundary also covers server jobs that bypass the history APIs. */
+export function assertPersistableEventMedia(source: unknown): void {
+  const issues = findTransientEventMedia(source);
+  if (issues.length) {
+    throw new Error(`Upload media before saving: ${issues.map((issue) => issue.fieldPath).join(", ")}`);
+  }
+}
+
+/** Upload a snapshot only on an explicit persistence action, retaining caller state on failure. */
+export async function replaceTransientEventMedia<T extends Record<string, any>>(
+  source: T,
+  upload: (entry: EventMediaEntry) => Promise<string>,
+): Promise<T> {
+  const entries = listEventMediaEntries(source).filter(entry => /^(data:|blob:)/i.test(entry.value));
+  if (!entries.length) return source;
+  const next = structuredClone(source);
+  const replacements = new Map<string, string>();
+  for (const entry of entries) {
+    let url = replacements.get(entry.value);
+    if (!url) {
+      url = await upload(entry);
+      if (!url || /^(data:|blob:)/i.test(url)) throw new Error("Media upload did not return a stored file");
+      replacements.set(entry.value, url);
+    }
+    setValueAtPath(next, entry.pathSegments, url);
+  }
+  assertPersistableEventMedia(next);
+  return next;
 }

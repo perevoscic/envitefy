@@ -13,6 +13,7 @@ type CacheEntry<T> = {
 const CACHE_TTL_MS = 30 * 1000; // 30 seconds
 const cache = new Map<string, CacheEntry<any>>();
 const userRevisions = new Map<string, number>();
+const inflight = new Map<string, Promise<any[]>>();
 let clearRevision = 0;
 
 export function getHistoryCacheRevision(userId: string): string {
@@ -88,6 +89,25 @@ export function invalidateAllHistory(): void {
   clearRevision += 1;
   userRevisions.clear();
   cache.clear();
+  inflight.clear();
+}
+
+/** Scope concurrent reads to the account, filters and mutation revision. */
+export function coalesceHistoryRead(
+  userId: string,
+  view: CacheableHistoryView,
+  limit: number,
+  timeFilter: HistoryTimeFilter,
+  load: () => Promise<any[]>,
+): Promise<any[]> {
+  const key = `${getCacheKey(userId, view, limit, timeFilter)}:${getHistoryCacheRevision(userId)}`;
+  const pending = inflight.get(key);
+  if (pending) return pending;
+  const promise = Promise.resolve().then(load).finally(() => {
+    if (inflight.get(key) === promise) inflight.delete(key);
+  });
+  inflight.set(key, promise);
+  return promise;
 }
 
 export function cleanupExpiredEntries(): void {

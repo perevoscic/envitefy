@@ -18,6 +18,7 @@ import {
   buildTravelAccommodationState,
   enrichTravelAccommodation,
 } from "@/lib/travel-accommodation-enrichment";
+import { storePublicEventMedia } from "@/lib/public-event-media-storage";
 
 function safeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -160,5 +161,5 @@ export async function runInlineGymnasticsEnrichmentPhase(params: {
     },
   };
 
-  return { nextData };
+  return { nextData: await storePublicEventMedia(nextData, params.eventId) };
 }

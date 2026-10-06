@@ -66,6 +66,9 @@ test("dashboard and general history projections preserve canonical event slugs",
   );
   assert.ok(dashboardProjection, "expected fast dashboard projection");
   assert.match(dashboardProjection[0], /eh\.public_slug/);
+  assert.match(dashboardProjection[0], /->>'pageTemplateId' as page_template_id/);
+  assert.match(dashboardProjection[0], /->>'templateId' as template_id/);
+  assert.match(dashboardProjection[0], /->>'variationId' as variation_id/);
   assert.match(dashboardProjection[0], /buildSidebarSportsProjectionSql/);
   assert.match(dashboardProjection[0], /draft_status/);
   assert.match(
@@ -78,6 +81,9 @@ test("dashboard and general history projections preserve canonical event slugs",
   );
   assert.ok(dashboardMapper, "expected dashboard mapper");
   assert.match(dashboardMapper[0], /public_slug: row\.public_slug \|\| null/);
+  assert.match(dashboardMapper[0], /pageTemplateId: row\.page_template_id/);
+  assert.match(dashboardMapper[0], /templateId: row\.template_id/);
+  assert.match(dashboardMapper[0], /variationId: row\.variation_id/);
   assert.match(dashboardMapper[0], /sidebarSports: row\.sidebar_sports/);
   assert.match(dashboardMapper[0], /draftStatus: row\.draft_status/);
 
@@ -88,6 +94,21 @@ test("dashboard and general history projections preserve canonical event slugs",
   const ownQuery = source.match(/function buildHistoryOwnOnlyQuery[\s\S]*?\n\}/);
   assert.ok(ownQuery, "expected owned history query");
   assert.match(ownQuery[0], /public_slug,\n\s*data,/);
+});
+
+test("dashboard cover SQL includes signup artwork and serves legacy inline headers separately", () => {
+  const source = readSource("src/lib/db.ts");
+  const coverProjection = source.match(/export function buildDashboardCoverImageUrlSql[\s\S]*?\n\}/);
+  assert.ok(coverProjection);
+  assert.match(coverProjection[0], /signupForm,header,images,0,dataUrl/);
+  assert.match(coverProjection[0], /signupForm,header,backgroundImage,dataUrl/);
+  assert.match(coverProjection[0], /buildDashboardMediaRouteSql\(idSql, "signup-cover", signupCoverTextSql\)/);
+  assert.match(source, /'pageTemplateId', \$\{dataSql\}->'pageTemplateId'/);
+  assert.match(source, /when \$2 = 'signup-cover' then coalesce\(/);
+  assert.match(
+    readSource("src/app/api/events/[id]/thumbnail/route.ts"),
+    /variantParam === "signup-cover"/,
+  );
 });
 
 test("dashboard fallback rows keep published signup forms in the sidebar collection", async () => {

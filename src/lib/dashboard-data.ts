@@ -3,6 +3,12 @@ import { buildEventPath } from "../utils/event-url.ts";
 import { normalizeThumbnailFocus, type ThumbnailFocus } from "./thumbnail-focus.ts";
 import { resolveCoverImageUrlFromEventData } from "./upload-config.ts";
 import { resolveSavedScanPresentation } from "./ocr/personalization.ts";
+import {
+  getGymMeetTemplateMeta,
+  resolveGymMeetTemplateId,
+} from "../components/gym-meet-templates/registry.ts";
+import { getFootballDesign } from "../components/football-season-templates/footballDesigns.ts";
+import weddingTemplateCatalog from "../../templates/weddings/index.json" with { type: "json" };
 
 export type DashboardEventOwnership = "owned" | "invited";
 export type DashboardEventShareStatus = "accepted" | "pending" | null;
@@ -371,6 +377,25 @@ export function getEventEndIso(data: any): string | null {
   );
 }
 
+function resolveDashboardTemplateArtwork(data: any, category: string | null, createdVia: string | null): string | null {
+  if (isScannedInviteCreatedVia(createdVia)) return null;
+  const normalizedCategory = category?.trim().toLowerCase();
+  if (normalizedCategory === "gymnastics") {
+    return getGymMeetTemplateMeta(resolveGymMeetTemplateId(data)).artwork || null;
+  }
+  if (normalizedCategory === "sport_football_season" || data.templateId === "football-season") {
+    return getFootballDesign(data.pageTemplateId).hero;
+  }
+  if (normalizedCategory === "weddings") {
+    const designId = firstString(
+      data.variationId,
+      data.templateEditor?.category === "weddings" ? data.templateEditor.templateId : null,
+    );
+    return weddingTemplateCatalog.find((design) => design.id === designId)?.heroImage || null;
+  }
+  return null;
+}
+
 export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
   const data = row?.data || {};
   const createdVia = normalizeCreatedVia(data?.createdVia);
@@ -398,6 +423,9 @@ export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
 
   const publicSlug = row.public_slug || data.publicSlug;
   const publicHref = buildEventProductPath({ eventId: row.id, title: row.title, data, publicSlug });
+  const category = normalizeDashboardEventCategory(data, row);
+  const coverImageUrl = resolveCoverImageUrlFromEventData({ ...data, title: row.title });
+  const templateArtwork = coverImageUrl ? null : resolveDashboardTemplateArtwork(data, category, createdVia);
   return {
     id: row.id,
     collaborationRole: data.collaborationRole === "cohost" ? "cohost" : null,
@@ -415,10 +443,10 @@ export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
     locationText,
     locationLat,
     locationLng,
-    coverImageUrl: resolveCoverImageUrlFromEventData({ ...data, title: row.title }),
+    coverImageUrl: coverImageUrl || templateArtwork || null,
     thumbnailFocus: normalizeThumbnailFocus(data?.thumbnailFocus),
     status: normalizeStatus(data?.status),
-    category: normalizeDashboardEventCategory(data, row),
+    category,
     updatedAt: parseIso(data?.updatedAt) ?? parseIso(row?.created_at) ?? null,
     numberOfGuests,
     hasRsvp,

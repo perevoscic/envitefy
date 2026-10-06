@@ -251,6 +251,12 @@ export function resolveCoverImageUrlFromEventData(data: Record<string, any> | nu
   const heroImage = typeof data.heroImage === "string" && data.heroImage.trim() ? data.heroImage : null;
   if (heroImage) return sanitizePersistedMediaUrl(heroImage);
 
+  const signupHeader = data.signupForm?.header;
+  const signupCover = signupHeader?.images?.[0]?.dataUrl || signupHeader?.backgroundImage?.dataUrl;
+  if (typeof signupCover === "string" && signupCover.trim()) {
+    return sanitizePersistedMediaUrl(signupCover);
+  }
+
   return resolveAttachmentPreviewUrl(
     data.attachment && typeof data.attachment === "object" ? data.attachment : null,
     null,
