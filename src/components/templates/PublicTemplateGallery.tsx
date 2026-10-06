@@ -84,7 +84,8 @@ export default function PublicTemplateGallery({
           String(template[filter.key]) === selectedFilters[filter.key],
       ) && matchesPublicTemplateSearch(template, query),
   ));
-  const shown = featured ? templates.slice(0, 6) : filtered.slice(0, visible);
+  const alignBottoms = featured && category === "signup-forms";
+  const shown = featured ? templates.slice(0, alignBottoms ? 10 : 6) : filtered.slice(0, visible);
   useEffect(() => {
     trackTemplateEvent("template_gallery_view", category);
     let active = true;
@@ -212,7 +213,7 @@ export default function PublicTemplateGallery({
             ))}
           </div>
         )}
-        <TemplateMasonryGrid>
+        <TemplateMasonryGrid alignBottoms={alignBottoms} desktopColumns={alignBottoms ? 5 : 4}>
           {shown.map((template) => (
             <TemplateMasonryCard
               key={template.id}

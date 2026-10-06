@@ -78,6 +78,7 @@ const result = await Bun.build({
   entrypoints: [entry],
   outdir: out,
   target: "browser",
+  external: ["/fonts/*"],
   minify: false,
   define: { "process.env": JSON.stringify({ NODE_ENV: "test" }) },
   plugins: [

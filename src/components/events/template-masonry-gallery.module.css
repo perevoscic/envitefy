@@ -60,6 +60,20 @@
   border-radius: 0;
 }
 
+/* Preserve the mosaic and extend its last cards to a shared bottom edge. */
+.masonry[data-align-bottoms] > .slot {
+  --extension-height: var(--extension-height-2, 0);
+  --extension-count: var(--extension-count-2, 0);
+}
+
+.masonry[data-align-bottoms] .preview > :global([data-template-thumbnail-preview]) {
+  aspect-ratio: auto;
+  height: calc(
+    (1 / var(--tile-ratio) + var(--extension-height)) * var(--artwork-width) +
+    var(--extension-count) * (var(--tile-chrome) + var(--tile-gap))
+  );
+}
+
 .tile:hover,
 .tile[data-selected] {
   border-color: rgb(52 45 56 / 24%);
@@ -132,10 +146,27 @@
     --column-count: 4;
   }
 
+  .masonry[data-align-bottoms]:not([data-compact]) > .slot {
+    --extension-height: var(--extension-height-4, 0);
+    --extension-count: var(--extension-count-4, 0);
+  }
+
   .masonry:not([data-compact]) > .slot {
     --column: var(--column-4);
     --preceding-height: var(--height-4);
     --preceding-count: var(--count-4);
+  }
+
+  .masonry[data-desktop-columns="5"]:not([data-compact]) {
+    --column-count: 5;
+  }
+
+  .masonry[data-desktop-columns="5"]:not([data-compact]) > .slot {
+    --column: var(--column-5);
+    --preceding-height: var(--height-5);
+    --preceding-count: var(--count-5);
+    --extension-height: var(--extension-height-5, 0);
+    --extension-count: var(--extension-count-5, 0);
   }
 }
 

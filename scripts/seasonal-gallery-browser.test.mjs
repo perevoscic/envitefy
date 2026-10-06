@@ -116,7 +116,21 @@ test("seasonal galleries mix upcoming occasions, retain filters and links, and f
     }
     await goto("signup-forms", "&featured=1");
     assert.equal(await page.getByRole("combobox", { name: "Template order" }).count(), 0);
-    assert.equal(await cards().count(), 6);
+    assert.equal(await cards().count(), 10);
+    for (const width of [1280, 640, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      await cards().locator("img").evaluateAll((images) => images.forEach((img) => { img.loading = "eager"; }));
+      await page.waitForFunction(() => [...document.querySelectorAll('[data-template-masonry-card] img')].every((img) => img.complete && img.naturalWidth > 0));
+      await cards().locator("img").evaluateAll((images) => Promise.all(images.map((img) => img.decode())));
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const columns = width >= 1024 ? 5 : 2;
+      const firstBottoms = await cards().evaluateAll((nodes, columns) => nodes.slice(0, columns).map((node) => node.getBoundingClientRect().bottom), columns);
+      assert.ok(Math.max(...firstBottoms) - Math.min(...firstBottoms) > 5, `featured signup retains varied mosaic heights at ${width}`);
+      const bottoms = await cards().evaluateAll((nodes, columns) => nodes.slice(-columns).map((node) => node.getBoundingClientRect().bottom), columns);
+      assert.ok(Math.max(...bottoms) - Math.min(...bottoms) < 1, `featured signup bottom edges align at ${width}`);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      await page.screenshot({ path: path.join(out, `signup-forms-featured-${width}.png`), fullPage: true });
+    }
     await goto("weddings");
     assert.equal(await page.getByRole("combobox", { name: "Template order" }).inputValue(), "seasonal");
     await goto("birthdays");
