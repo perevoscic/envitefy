@@ -1,6 +1,6 @@
 "use client";
 import { Calendar, Clock, FileText, MapPin, User, WandSparkles, X } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 
 export type SnapProcessingStatus = "idle" | "uploading" | "scanning" | "creating";
 export type SnapPreviewKind = "image" | "pdf" | "file" | null;
@@ -12,6 +12,7 @@ type SnapProcessingCardProps = {
   previewKind: SnapPreviewKind;
   previewFileName?: string | null;
   previewMimeType?: string | null;
+  files?: File[];
   onCancel: () => void;
 };
 
@@ -22,6 +23,7 @@ export function SnapProcessingCard({
   previewKind,
   previewFileName,
   previewMimeType,
+  files = [],
   onCancel,
 }: SnapProcessingCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
@@ -34,14 +36,21 @@ export function SnapProcessingCard({
 
   const isScanning = status === "scanning";
   const isCreating = status === "creating";
+  const isMultiFile = files.length > 1;
   const statusLabel = isCreating
     ? "Creating Event Page"
     : isScanning
-      ? "Analysing Flyer"
-      : "Uploading Flyer";
+      ? isMultiFile
+        ? "Analysing Files"
+        : "Analysing Flyer"
+      : isMultiFile
+        ? "Uploading Files"
+        : "Uploading Flyer";
   const statusIntro = isCreating
     ? "Building the event page from the extracted details."
-    : "Upload your flyer, we'll extract the details.";
+    : isMultiFile
+      ? `Reading ${files.length} files together for one event.`
+      : "Upload your flyer, we'll extract the details.";
   const fileLabel =
     previewFileName?.trim() ||
     (previewKind === "pdf" ? "Uploaded PDF" : previewKind === "file" ? "Uploaded file" : "Upload");
@@ -143,6 +152,8 @@ export function SnapProcessingCard({
               </div>
             )}
           </div>
+
+          {isMultiFile && <SelectedFilesStrip files={files} />}
 
           <div className="w-full">
             <div className="mb-2 flex items-center justify-between">
@@ -254,6 +265,55 @@ export function SnapProcessingCard({
           }
         }
       `}</style>
+    </div>
+  );
+}
+
+function SelectedFilesStrip({ files }: { files: File[] }) {
+  const thumbnails = useMemo(
+    () =>
+      files.map((file) => ({
+        file,
+        url: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
+      })),
+    [files],
+  );
+
+  useEffect(
+    () => () => {
+      for (const { url } of thumbnails) if (url) URL.revokeObjectURL(url);
+    },
+    [thumbnails],
+  );
+
+  return (
+    <div className="mb-5 w-full">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#685691]">
+        {files.length} files selected
+      </p>
+      <ul className="-m-1 flex gap-2 overflow-x-auto p-1">
+        {thumbnails.map(({ file, url }, index) => (
+          <li
+            key={`${file.name}-${file.lastModified}-${index}`}
+            title={file.name}
+            className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border bg-[#f9f5ff] ${
+              index === 0 ? "border-[#8f75de] ring-2 ring-[#8f75de]/30" : "border-[#d8cff5]"
+            }`}
+          >
+            {url ? (
+              <img src={url} alt={file.name} className="h-full w-full object-cover" />
+            ) : (
+              <span className="flex h-full w-full flex-col items-center justify-center gap-0.5 text-[#7d6aa9]">
+                <FileText className="h-5 w-5" aria-hidden="true" />
+                <span className="sr-only">{file.name}</span>
+                <span aria-hidden="true" className="text-[9px] font-bold uppercase">
+                  {/\.pdf$/i.test(file.name) || file.type === "application/pdf" ? "PDF" : "File"}
+                </span>
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

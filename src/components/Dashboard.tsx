@@ -275,6 +275,8 @@ type DashboardInitialEventContext = {
   numberOfGuests?: number;
 };
 
+const MAX_SCAN_FILES = 5;
+
 export default function Dashboard({
   initialEventContext = null,
   snapProcessingMode = false,
@@ -309,13 +311,7 @@ export default function Dashboard({
   const selectedEventNumberOfGuests = getRsvpDashboardGuestCount(initialEventContext);
   const isSignedIn = Boolean(session?.user);
   const originIdentity = session?.user?.email?.trim().toLowerCase() || "";
-  const [selectedScanFiles, setSelectedScanFiles] = useState<File[]>([]);
-  const scanFilesDialogRef = useRef<HTMLDialogElement>(null);
-  const reviewingScanFiles = selectedScanFiles.length > 0;
-  useEffect(() => {
-    const dialog = scanFilesDialogRef.current;
-    if (reviewingScanFiles && dialog && !dialog.open) dialog.showModal();
-  }, [reviewingScanFiles]);
+  const [scanFiles, setScanFiles] = useState<File[]>([]);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [, setLoading] = useState(false);
@@ -831,6 +827,7 @@ export default function Dashboard({
     activeOcrAbortRef.current = null;
     activeScanAttemptIdRef.current = null;
     resetScanUi();
+    setScanFiles([]);
     setLoading(false);
     setError(null);
     setOcrText("");
@@ -1343,14 +1340,31 @@ export default function Dashboard({
         return;
       }
       const files = Array.isArray(selected) ? selected : [selected];
+      if (!files.length) return;
+      const scanAttemptId = pendingScanAttemptId || createClientAttemptId("scan");
+      if (files.length > MAX_SCAN_FILES) {
+        setError(`Choose up to ${MAX_SCAN_FILES} files for one event.`);
+        return;
+      }
+      const invalid = files
+        .map((file) => ({ file, validationError: validateClientUploadFile(file, "attachment") }))
+        .find((entry) => entry.validationError);
+      if (invalid?.validationError) {
+        const { file: invalidFile, validationError } = invalid;
+        setError(validationError);
+        logUploadIssue(new Error(validationError), "client-validation", {
+          fileName: invalidFile.name,
+          fileSize: invalidFile.size,
+          fileType: invalidFile.type,
+          scanAttemptId,
+        });
+        return;
+      }
       setError(null);
-      setSelectedScanFiles(previous => {
-        if (previous.length + files.length > 5) { setError("Choose up to five files. Remove a file before adding more."); return previous; }
-        const invalid = files.map(file => validateClientUploadFile(file, "attachment")).find(Boolean);
-        if (invalid) { setError(invalid); return previous; }
-        return [...previous, ...files];
-      });
-      return;
+      activeScanAttemptIdRef.current = scanAttemptId;
+      setScanFiles(files);
+      startScanUi(files[0], previewOverride);
+      void ingest(files[0], scanAttemptId, files.slice(1));
     },
     [ingest, logUploadIssue, startScanUi],
   );
@@ -1984,22 +1998,6 @@ export default function Dashboard({
         onChange={(event) => { onFile(Array.from(event.target.files || [])); event.target.value = ""; }}
         className="hidden"
       />
-      {selectedScanFiles.length > 0 && (
-        <dialog ref={scanFilesDialogRef} className="fixed inset-0 z-[7002] m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-lg rounded-2xl bg-white p-0 backdrop:bg-black/50" aria-label="Review scan files" onCancel={() => setSelectedScanFiles([])}>
-          <div className="w-full max-w-lg rounded-2xl bg-white p-5 text-slate-900">
-            <h2 className="text-lg font-semibold">Scan files ({selectedScanFiles.length}/5)</h2>
-            <p className="mt-2 text-sm">Add up to five photos or files for this event.</p>
-            {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
-            <ul className="my-4 max-h-64 overflow-auto">{selectedScanFiles.map((file, index) => <li key={`${file.name}-${file.lastModified}-${index}`} className="flex items-center justify-between gap-2"><span className="truncate">{file.name}</span><button type="button" className="min-h-11 px-3" aria-label={`Remove ${file.name}`} onClick={() => setSelectedScanFiles(files => files.filter((_, i) => i !== index))}>Remove</button></li>)}</ul>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" className="min-h-11 rounded-lg border px-3" disabled={selectedScanFiles.length >= 5} onClick={() => cameraInputRef.current?.click()}>Take another photo</button>
-              <button type="button" className="min-h-11 rounded-lg border px-3" disabled={selectedScanFiles.length >= 5} onClick={() => fileInputRef.current?.click()}>Add files</button>
-              <button type="button" className="min-h-11 rounded-lg border px-3" onClick={() => setSelectedScanFiles([])}>Cancel</button>
-              <button type="button" className="min-h-11 rounded-lg bg-violet-700 px-4 text-white" onClick={() => { const files = selectedScanFiles; setSelectedScanFiles([]); setError(null); const attempt = createClientAttemptId("scan"); activeScanAttemptIdRef.current = attempt; startScanUi(files[0]); void ingest(files[0], attempt, files.slice(1)); }}>Read files</button>
-            </div>
-          </div>
-        </dialog>
-      )}
       {!snapProcessingMode && showHeaderRow && (
         <div
           className={`w-full max-w-6xl mt-0 flex flex-col gap-4 ${
@@ -2150,6 +2148,7 @@ export default function Dashboard({
               previewKind={previewKind}
               previewFileName={previewFileName}
               previewMimeType={previewMimeType}
+              files={scanFiles}
               onCancel={resetForm}
             />
           </div>
