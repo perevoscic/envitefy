@@ -17,7 +17,7 @@ test("dashboard upload action reads durable pending uploads before reopening the
   assert.match(source, /const pendingUpload = await takePendingSnapUpload\(\);/);
   assert.match(
     source,
-    /if \(pendingUpload\) \{\s*onFile\(\s*pendingUpload\.file,\s*pendingUpload\.previewUrl \?\? null,\s*pendingUpload\.scanAttemptId,\s*\);\s*\} else \{/s,
+    /if \(pendingUpload\) \{\s*onFile\(\s*pendingUpload\.files \|\| pendingUpload\.file,\s*pendingUpload\.previewUrl \?\? null,\s*pendingUpload\.scanAttemptId,\s*\);\s*\} else \{/s,
   );
 });
 
