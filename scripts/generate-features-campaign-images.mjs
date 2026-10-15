@@ -94,7 +94,7 @@ for (const image of IMAGES) {
     model,
     prompt,
     size: image.size,
-    quality: "high",
+    quality: "medium",
     output_format: "png",
     n: 1,
   });
@@ -116,7 +116,7 @@ for (const image of IMAGES) {
     "-c:v",
     "libwebp",
     "-quality",
-    "85",
+    "75",
     "-compression_level",
     "6",
     webpPath,
