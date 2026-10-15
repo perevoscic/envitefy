@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useAdminAccess } from "@/components/admin/AdminAccessProvider";
+import type { AdminUserListItem, AdminUserListPage } from "@/lib/admin-user-metrics-sql";
 import { buildEventProductPath } from "@/utils/event-product-route";
 
 const EVENT_TYPE_LABELS = {
@@ -65,19 +66,26 @@ export default function AdminUsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [overviewRefreshKey, setOverviewRefreshKey] = useState(0);
   const [q, setQ] = useState("");
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<AdminUserListItem[]>([]);
   const [usersCursor, setUsersCursor] = useState<string | null>(null);
-  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(true);
   const [usersError, setUsersError] = useState<string | null>(null);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [activeStatView, setActiveStatView] = useState<StatView>(null);
+  const [activeStatView, setActiveStatView] = useState<StatView>("all");
+  const [appliedQuery, setAppliedQuery] = useState("");
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const usersCache = useRef(new Map<string, AdminUserListPage>());
+  const activeUsersKey = useRef("all");
+  const usersRequest = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (status !== "authenticated" || !isAdmin) return;
     const controller = new AbortController();
     const fetchStats = async () => {
       setError(null);
+      if (activeUsersKey.current === "all") {
+        setUsersLoading(true);
+        setUsersError(null);
+      }
       try {
         const res = await fetch("/api/admin/stats", {
           cache: "no-store",
@@ -92,15 +100,43 @@ export default function AdminUsersPage() {
         const json = await res.json();
         if (controller.signal.aborted) return;
         setOverview(json.overview);
+        usersCache.current.set("all", json.users);
+        if (activeUsersKey.current === "all") {
+          setUsers(json.users.items);
+          setUsersCursor(json.users.nextCursor);
+          setUsersLoading(false);
+        }
         setError(null);
       } catch (e) {
         if (controller.signal.aborted) return;
         setError(e instanceof Error ? e.message : "Could not load platform overview. Please retry.");
+        if (activeUsersKey.current === "all") {
+          setUsersLoading(false);
+          setUsersError("Could not load the user list. Please retry.");
+        }
       }
     };
     void fetchStats();
     return () => controller.abort();
   }, [status, isAdmin, adminEmail, overviewRefreshKey]);
+
+  useEffect(() => {
+    // Keep cached account data scoped to the authorized admin session.
+    activeUsersKey.current = "all";
+    setActiveStatView("all");
+    setQ("");
+    setAppliedQuery("");
+    setUsers([]);
+    setUsersCursor(null);
+    setUsersError(null);
+    setUsersLoading(true);
+    setOverview(null);
+    setError(null);
+    return () => {
+      usersRequest.current?.abort();
+      usersCache.current.clear();
+    };
+  }, [adminEmail, status, isAdmin]);
 
   if (status === "loading") {
     return <div className="p-6">Loading…</div>;
@@ -127,80 +163,78 @@ export default function AdminUsersPage() {
   const scanStats = overview ? getEventTypeStats(overview.scansByCategory) : [];
 
   function handleClearSearch() {
+    usersRequest.current?.abort();
+    activeUsersKey.current = "all";
     setQ("");
-    setUsers([]);
-    setUsersCursor(null);
-    setUsersError(null);
-    setHasSearched(false);
-    setActiveStatView(null);
+    setAppliedQuery("");
+    const cached = usersCache.current.get("all");
+    setUsers(cached?.items || []);
+    setUsersCursor(cached?.nextCursor || null);
+    setUsersError(!cached && error ? "Could not load the user list. Please retry." : null);
+    setUsersLoading(!cached && !error);
+    setActiveStatView("all");
   }
 
   async function handleSearch() {
     if (!q.trim()) {
-      setUsers([]);
-      setUsersCursor(null);
-      setUsersError(null);
-      setHasSearched(false);
+      handleClearSearch();
       return;
     }
-    setUsersLoading(true);
-    setUsersError(null);
-    setHasSearched(true);
+    setAppliedQuery(q.trim());
     setActiveStatView(null);
-    try {
-      const res = await fetchUsers(q.trim());
-      setUsers(res.items || []);
-      setUsersCursor(res.nextCursor || null);
-    } catch (e: any) {
-      setUsersError(e?.message || String(e));
-    } finally {
-      setUsersLoading(false);
-    }
+    await loadUsersView(null, q.trim());
   }
 
   async function handleStatClick(view: StatView) {
     setActiveStatView(view);
     setQ("");
-    setHasSearched(true);
-    setUsersLoading(true);
-    setUsersError(null);
+    setAppliedQuery("");
+    await loadUsersView(view);
+  }
 
+  async function loadUsersView(view: StatView, search = "", cursor?: string) {
+    usersRequest.current?.abort();
+    const key = view || `search:${search.toLowerCase()}`;
+    activeUsersKey.current = key;
+    setUsersError(null);
+    const cached = usersCache.current.get(key);
+    if (!cursor && cached) {
+      setUsers(cached.items);
+      setUsersCursor(cached.nextCursor);
+      setUsersLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    usersRequest.current = controller;
+    setUsersLoading(true);
+    if (!cursor) {
+      setUsers([]);
+      setUsersCursor(null);
+    }
     try {
-      const res = await fetchStatUsers(
-        view,
-        null,
-        view === "all" ? Math.min(200, Math.max(100, overview?.totalUsers || 0)) : undefined,
-      );
-      setUsers(res.items || []);
-      setUsersCursor(res.nextCursor || null);
+      const res = view
+        ? await fetchStatUsers(view, cursor, view === "all" ? 100 : undefined, controller.signal)
+        : await fetchUsers(search, cursor, controller.signal);
+      if (controller.signal.aborted) return;
+      const page = {
+        items: cursor ? [...(cached?.items || []), ...res.items] : res.items,
+        nextCursor: res.nextCursor,
+      };
+      usersCache.current.set(key, page);
+      setUsers(page.items);
+      setUsersCursor(page.nextCursor);
     } catch (e: any) {
+      if (controller.signal.aborted) return;
       setUsersError(e?.message || String(e));
     } finally {
-      setUsersLoading(false);
+      if (!controller.signal.aborted) setUsersLoading(false);
     }
   }
 
   async function handleLoadMore() {
-    if ((!q.trim() && !activeStatView) || !usersCursor) return;
-    setUsersLoading(true);
-    setUsersError(null);
-    try {
-      const res = activeStatView
-        ? await fetchStatUsers(
-            activeStatView,
-            usersCursor,
-            activeStatView === "all"
-              ? Math.min(200, Math.max(100, overview?.totalUsers || 0))
-              : undefined,
-          )
-        : await fetchUsers(q.trim(), usersCursor);
-      setUsers((prev) => [...prev, ...(res.items || [])]);
-      setUsersCursor(res.nextCursor || null);
-    } catch (e: any) {
-      setUsersError(e?.message || String(e));
-    } finally {
-      setUsersLoading(false);
-    }
+    if (!usersCursor || usersLoading) return;
+    await loadUsersView(activeStatView, appliedQuery, usersCursor);
   }
 
   function getActiveViewTitle(): string {
@@ -210,7 +244,7 @@ export default function AdminUsersPage() {
     return "User Search";
   }
 
-  async function handleDeleteUser(user: any) {
+  async function handleDeleteUser(user: AdminUserListItem) {
     const displayName =
       [user?.first_name, user?.last_name].filter(Boolean).join(" ").trim() ||
       user?.email ||
@@ -225,6 +259,14 @@ export default function AdminUsersPage() {
 
     try {
       await deleteAdminUser(user.id);
+      usersRequest.current?.abort();
+      for (const [key, page] of usersCache.current) {
+        usersCache.current.set(key, {
+          ...page,
+          items: page.items.filter((entry) => entry.id !== user.id),
+        });
+      }
+      setUsersLoading(false);
       setUsers((prev) => prev.filter((entry) => entry.id !== user.id));
       setOverviewRefreshKey((key) => key + 1);
     } catch (e: any) {
@@ -357,7 +399,7 @@ export default function AdminUsersPage() {
               </p>
             </div>
             <div className="p-6">
-              {activeStatView && (
+              {activeStatView && activeStatView !== "all" && (
                 <div className="mb-4 flex items-center justify-between rounded-lg border border-[#cbbbf1] bg-[#f4efff] px-4 py-3">
                   <span className="text-sm text-[#6f57c8] font-medium">
                     Active Filter: {getActiveViewTitle()}
@@ -382,13 +424,13 @@ export default function AdminUsersPage() {
                 <div className="flex-1 relative">
                   <input
                     type="text"
+                    aria-label="Search users"
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleSearch();
                     }}
                     placeholder="Search by email, first or last name..."
-                    disabled={!!activeStatView}
                     className="min-h-12 w-full rounded-2xl border border-[#d8d0f3] bg-white py-3 pr-10 pl-11 text-base text-[#483a74] transition-all placeholder:text-[#766b9d] focus:border-[#9b86df] focus:ring-2 focus:ring-[#baa9ea]/55 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm"
                     suppressHydrationWarning
                   />
@@ -411,6 +453,7 @@ export default function AdminUsersPage() {
                       onClick={handleClearSearch}
                       className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full transition-colors hover:bg-[#f1edff]"
                       title="Clear search"
+                      aria-label="Clear search"
                     >
                       <svg
                         className="w-4 h-4 text-[#998fc0]"
@@ -430,10 +473,10 @@ export default function AdminUsersPage() {
                 </div>
                 <button
                   onClick={handleSearch}
-                  disabled={usersLoading || !!activeStatView}
+                  disabled={usersLoading}
                   className="px-6 py-3 text-sm font-semibold overflow-hidden rounded-2xl bg-gradient-to-r from-[#8b70de] to-[#6f57c8] hover:from-[#7f63d8] hover:to-[#5f49bb] text-white shadow-lg shadow-[#8b70de]/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap"
                 >
-                  {usersLoading ? (
+                  {usersLoading && !activeStatView ? (
                     <>
                       <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
                         <circle
@@ -474,12 +517,32 @@ export default function AdminUsersPage() {
               </div>
 
               {usersError && (
-                <div className="rounded-lg border border-error/30 bg-error/10 text-error p-3 text-sm mb-4">
-                  {usersError}
+                <div
+                  role="alert"
+                  className="rounded-lg border border-error/30 bg-error/10 text-error p-3 text-sm mb-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span>{usersError}</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        loadUsersView(activeStatView, appliedQuery, usersCursor || undefined)
+                      }
+                      className="min-h-11 shrink-0 font-semibold underline underline-offset-4"
+                    >
+                      Retry users
+                    </button>
+                  </div>
                 </div>
               )}
 
-              {hasSearched && users.length === 0 && !usersLoading && (
+              {usersLoading && users.length === 0 && (
+                <div role="status" aria-busy="true" className="py-8 text-center text-[#5b4d86]">
+                  Loading users…
+                </div>
+              )}
+
+              {users.length === 0 && !usersLoading && !usersError && (
                 <div className="text-center py-8 text-[#9186bb]">
                   <svg
                     className="mx-auto h-12 w-12 mb-3"
@@ -495,7 +558,9 @@ export default function AdminUsersPage() {
                     />
                   </svg>
                   <p className="font-medium">No users found</p>
-                  <p className="text-sm mt-1">Try a different search query</p>
+                  <p className="text-sm mt-1">
+                    {activeStatView ? "No user accounts to display." : "Try a different search query"}
+                  </p>
                 </div>
               )}
 
@@ -1229,7 +1294,7 @@ function _Td({ children, className }: { children: any; className?: string }) {
   return <td className={`px-4 py-3 text-muted-foreground ${className || ""}`}>{children}</td>;
 }
 
-function formatDate(value?: string, options?: { forceUsNumeric?: boolean }) {
+function formatDate(value?: string | null, options?: { forceUsNumeric?: boolean }) {
   if (!value) return "-";
   try {
     const d = new Date(value);
@@ -1247,22 +1312,24 @@ function formatDate(value?: string, options?: { forceUsNumeric?: boolean }) {
   }
 }
 
-async function fetchUsers(q: string, cursor?: string | null) {
+async function fetchUsers(q: string, cursor?: string | null, signal?: AbortSignal) {
   const params = new URLSearchParams();
   if (q) params.set("q", q);
   if (cursor) params.set("cursor", cursor);
   const res = await fetch(`/api/admin/users/search?${params.toString()}`, {
     cache: "no-store",
+    signal,
   });
   if (!res.ok) throw new Error(`Search failed: ${res.status}`);
-  return (await res.json()) as {
-    ok: boolean;
-    items: any[];
-    nextCursor: string | null;
-  };
+  return (await res.json()) as AdminUserListPage;
 }
 
-async function fetchStatUsers(view: StatView, cursor?: string | null, limit?: number) {
+async function fetchStatUsers(
+  view: StatView,
+  cursor?: string | null,
+  limit?: number,
+  signal?: AbortSignal,
+) {
   const params = new URLSearchParams();
   if (view) params.set("view", view);
   if (cursor) params.set("cursor", cursor);
@@ -1271,13 +1338,10 @@ async function fetchStatUsers(view: StatView, cursor?: string | null, limit?: nu
   }
   const res = await fetch(`/api/admin/users/filter?${params.toString()}`, {
     cache: "no-store",
+    signal,
   });
   if (!res.ok) throw new Error(`Failed to fetch ${view} users: ${res.status}`);
-  return (await res.json()) as {
-    ok: boolean;
-    items: any[];
-    nextCursor: string | null;
-  };
+  return (await res.json()) as AdminUserListPage;
 }
 
 async function deleteAdminUser(userId: string) {

@@ -9,7 +9,7 @@ import * as metrics from "../../../../lib/admin-user-metrics-sql.ts";
 const require = createRequire(import.meta.url);
 const nextServer = require("next/server");
 
-function loadRoute(name, { rows = [], authenticated = true, admin = true } = {}) {
+function loadRoute(name, { rows = [], authenticated = true, admin = true, pageData } = {}) {
   const filename = new URL(`./${name}/route.ts`, import.meta.url);
   const source = readFileSync(filename, "utf8");
   const { outputText } = ts.transpileModule(source, {
@@ -33,6 +33,10 @@ function loadRoute(name, { rows = [], authenticated = true, admin = true } = {})
       if (name === "@/lib/db") {
         return {
           getIsAdminByEmail: async () => admin,
+          getAdminUsersPageData: async () => {
+            calls.push({ kind: "page-data" });
+            return pageData;
+          },
           query: async (sql, values) => {
             calls.push({ sql, values: Array.from(values) });
             return { rows };
@@ -52,6 +56,24 @@ const users = [
   { id: "00000000-0000-0000-0000-000000000002", email: "alice@example.test", created_at: "2026-09-07T12:00:00.000Z", scans_total: 4, shares_sent: 2 },
   { id: "00000000-0000-0000-0000-000000000001", email: "bob@example.test", created_at: "2026-09-06T12:00:00.000Z", scans_total: 1, shares_sent: 0 },
 ];
+
+test("stats returns the overview and initial directory in the same admin-authorized response", async () => {
+  const pageData = { overview: { totalUsers: 2 }, users: { items: users, nextCursor: null } };
+  const route = loadRoute("../stats", { pageData });
+  const response = await route.GET();
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { ok: true, ...pageData });
+  assert.deepEqual(route.calls, [{ kind: "page-data" }]);
+});
+
+for (const access of [{ authenticated: false, admin: false, status: 401 }, { authenticated: true, admin: false, status: 403 }]) {
+  test(`stats rejects ${access.status} before loading the user directory`, async () => {
+    const route = loadRoute("../stats", access);
+    const response = await route.GET();
+    assert.equal(response.status, access.status);
+    assert.equal(route.calls.length, 0);
+  });
+}
 
 for (const view of ["all", "scans", "shares"]) {
   test(`${view} users load and paginate through the shared database connection`, async () => {

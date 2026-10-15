@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getAdminOverviewStats, getIsAdminByEmail } from "@/lib/db";
+import { getAdminUsersPageData, getIsAdminByEmail } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,9 +14,9 @@ export async function GET() {
     const isAdmin = await getIsAdminByEmail(email);
     if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const overview = await getAdminOverviewStats();
+    const { overview, users } = await getAdminUsersPageData();
 
-    return NextResponse.json({ ok: true, overview });
+    return NextResponse.json({ ok: true, overview, users });
   } catch (err: any) {
     try { console.error("[admin stats] GET error", err); } catch {}
     return NextResponse.json({ error: String(err?.message || err || "unknown error") }, { status: 500 });

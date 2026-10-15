@@ -38,8 +38,10 @@ function createPage({ status = "authenticated", isAdmin = true, popupProps } = {
     module,
     exports: module.exports,
     AbortController,
+    URLSearchParams,
     Error,
     document: { addEventListener() {}, removeEventListener() {} },
+    window: { confirm: () => true },
     fetch(url, options) {
       const request = { url, ...options, ...deferred() };
       requests.push(request);
@@ -114,10 +116,137 @@ function text(tree) {
   return tree && typeof tree === "object" ? text(tree.props?.children) : "";
 }
 
-const success = () => Response.json({ overview: {
+const alice = {
+  id: "user-alice", email: "alice@example.test", first_name: "Alice", last_name: "Example",
+  created_at: "2026-10-01T12:00:00.000Z", events_total: 2, scans_total: 1,
+};
+const bob = { ...alice, id: "user-bob", email: "bob@example.test", first_name: "Bob" };
+const success = (users = { items: [alice], nextCursor: null }) => Response.json({ overview: {
   totalUsers: 64, totalScans: 93, totalEvents: 273, totalShares: 10,
   eventsByCategory: {}, scansByCategory: {},
-} });
+}, users });
+
+function button(tree, label) {
+  return nodes(tree).find((node) => node.type === "button" && text(node).trim() === label);
+}
+
+async function search(page, query) {
+  nodes(page.render()).find((node) => node.type === "input").props.onChange({ target: { value: query } });
+  const pending = button(page.render(), "Search").props.onClick();
+  return { pending };
+}
+
+test("the overview loads the user list immediately and Total Users reuses it", async () => {
+  const page = createPage();
+  page.render();
+  assert.match(text(page.render()), /Loading users/);
+  assert.equal(page.requests.length, 1);
+  assert.equal(page.requests[0].url, "/api/admin/stats");
+  page.requests[0].resolve(success());
+  await setImmediate();
+  const loaded = page.render();
+  assert.match(text(loaded), /alice@example.test/);
+  assert.doesNotMatch(text(loaded), /Loading users|Clear Filter/);
+  assert.equal(nodes(loaded).find((node) => node.type === "input").props.disabled, undefined);
+  await nodes(loaded).find((node) => node.props?.label === "Total Users").props.onClick();
+  assert.equal(page.requests.length, 1);
+  assert.match(text(page.render()), /alice@example.test/);
+  page.unmount();
+});
+
+test("clearing a search restores the loaded directory without another request", async () => {
+  const page = createPage();
+  page.render();
+  page.requests[0].resolve(success());
+  await setImmediate();
+  const { pending } = await search(page, "bob");
+  page.requests[1].resolve(Response.json({ items: [bob], nextCursor: null }));
+  await pending;
+  assert.match(text(page.render()), /bob@example.test/);
+  nodes(page.render()).find((node) => node.props?.title === "Clear search").props.onClick();
+  assert.match(text(page.render()), /alice@example.test/);
+  assert.doesNotMatch(text(page.render()), /bob@example.test/);
+  assert.equal(page.requests.length, 2);
+  await search(page, "bob");
+  assert.match(text(page.render()), /bob@example.test/);
+  assert.equal(page.requests.length, 2);
+  page.unmount();
+});
+
+test("Load more appends users and Total Users preserves the loaded pages", async () => {
+  const page = createPage();
+  page.render();
+  page.requests[0].resolve(success({ items: [alice], nextCursor: "users-page-2" }));
+  await setImmediate();
+  const pending = button(page.render(), "Load more").props.onClick();
+  assert.equal(page.requests[1].url, "/api/admin/users/filter?view=all&cursor=users-page-2&limit=100");
+  page.requests[1].resolve(Response.json({ items: [bob], nextCursor: null }));
+  await pending;
+  const loaded = page.render();
+  assert.match(text(loaded), /alice@example.test/);
+  assert.match(text(loaded), /bob@example.test/);
+  await nodes(loaded).find((node) => node.props?.label === "Total Users").props.onClick();
+  assert.match(text(page.render()), /bob@example.test/);
+  assert.equal(page.requests.length, 2);
+  page.unmount();
+});
+
+test("a search response arriving after Clear cannot replace the directory", async () => {
+  const page = createPage();
+  page.render();
+  page.requests[0].resolve(success());
+  await setImmediate();
+  const { pending } = await search(page, "bob");
+  nodes(page.render()).find((node) => node.props?.title === "Clear search").props.onClick();
+  assert.equal(page.requests[1].signal.aborted, true);
+  page.requests[1].resolve(Response.json({ items: [bob], nextCursor: null }));
+  await pending;
+  assert.match(text(page.render()), /alice@example.test/);
+  assert.doesNotMatch(text(page.render()), /bob@example.test|Loading users/);
+  page.unmount();
+});
+
+test("failed pagination keeps loaded users and retries the same cursor", async () => {
+  const page = createPage();
+  page.render();
+  page.requests[0].resolve(success({ items: [alice], nextCursor: "users-page-2" }));
+  await setImmediate();
+  const pending = button(page.render(), "Load more").props.onClick();
+  page.requests[1].resolve(new Response(null, { status: 500 }));
+  await pending;
+  const failed = page.render();
+  assert.match(text(failed), /alice@example.test/);
+  assert.doesNotMatch(text(failed), /No users found/);
+  const retry = button(failed, "Retry users").props.onClick();
+  assert.equal(page.requests[2].url, page.requests[1].url);
+  page.requests[2].resolve(Response.json({ items: [bob], nextCursor: null }));
+  await retry;
+  assert.match(text(page.render()), /alice@example.test/);
+  assert.match(text(page.render()), /bob@example.test/);
+  page.unmount();
+});
+
+test("deleting a search result removes it from the cached directory too", async () => {
+  const page = createPage();
+  page.render();
+  page.requests[0].resolve(success({ items: [alice, bob], nextCursor: null }));
+  await setImmediate();
+  const { pending } = await search(page, "alice");
+  page.requests[1].resolve(Response.json({ items: [alice], nextCursor: null }));
+  await pending;
+  const deletion = button(page.render(), "Delete").props.onClick();
+  assert.equal(page.requests[2].method, "DELETE");
+  page.requests[2].resolve(Response.json({ ok: true, userId: alice.id }));
+  await deletion;
+  const deleted = page.render();
+  nodes(deleted).find((node) => node.props?.title === "Clear search").props.onClick();
+  assert.doesNotMatch(text(page.render()), /alice@example.test/);
+  assert.match(text(page.render()), /bob@example.test/);
+  // Deletion refreshes the combined response rather than separately reloading users.
+  assert.equal(page.requests.length, 4);
+  assert.equal(page.requests[3].url, "/api/admin/stats");
+  page.unmount();
+});
 
 test("overview failure stops loading and Retry recovers without a stale banner", async () => {
   const page = createPage();

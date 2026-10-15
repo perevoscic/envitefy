@@ -25,7 +25,12 @@ import {
   type EventPageStatus,
   type EventTheme,
 } from "@/features/event-pages/schemas/eventBlueprint.schema";
-import { ADMIN_USER_METRICS_CTE_SQL } from "@/lib/admin-user-metrics-sql";
+import {
+  ADMIN_USER_METRICS_CTE_SQL,
+  ADMIN_USER_METRICS_SELECT_SQL,
+  type AdminUserListItem,
+  type AdminUserListPage,
+} from "@/lib/admin-user-metrics-sql";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { normalizeCanonicalStartFields } from "@/lib/dashboard-data";
 import {
@@ -751,8 +756,12 @@ export type AdminOverviewStats = {
   };
 };
 
-export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
+export async function getAdminUsersPageData(): Promise<{
+  overview: AdminOverviewStats;
+  users: AdminUserListPage;
+}> {
   await ensureUsersHasAdminAndMetricsColumns();
+  const usersLimit = 100;
   const [users, events, shares, scans, categories] = await Promise.all([
     query<{ n: string }>(`select count(*)::text as n from users`),
     query<{ n: string }>(`select count(*)::text as n from event_history`),
@@ -767,6 +776,7 @@ export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
       scans_play_days: string | null;
       scans_general_events: string | null;
       scans_car_pool: string | null;
+      initial_users: AdminUserListItem[];
     }>(`
       ${ADMIN_USER_METRICS_CTE_SQL}
       select
@@ -778,7 +788,16 @@ export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
         coalesce(sum(scans_doctor_appointments), 0)::text as scans_doctor_appointments,
         coalesce(sum(scans_play_days), 0)::text as scans_play_days,
         coalesce(sum(scans_general_events), 0)::text as scans_general_events,
-        coalesce(sum(scans_car_pool), 0)::text as scans_car_pool
+        coalesce(sum(scans_car_pool), 0)::text as scans_car_pool,
+        (
+          select coalesce(jsonb_agg(initial_user order by created_at desc nulls last, id desc), '[]'::jsonb)
+          from (
+            select ${ADMIN_USER_METRICS_SELECT_SQL}
+            from admin_users_with_metrics
+            order by created_at desc nulls last, id desc
+            limit ${usersLimit + 1}
+          ) initial_user
+        ) as initial_users
       from admin_users_with_metrics
     `),
     query<{
@@ -807,7 +826,13 @@ export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
   const categoryRow = categories.rows[0] || {};
   const scansRow = scans.rows[0] || {};
   const toNumber = (value: string | null | undefined) => Number(value || 0);
-  return {
+  const initialUsers = scansRow.initial_users || [];
+  const lastUser = initialUsers[usersLimit - 1];
+  const nextCursor =
+    initialUsers.length > usersLimit && lastUser?.created_at && lastUser.id
+      ? Buffer.from(JSON.stringify({ created_at: lastUser.created_at, id: lastUser.id })).toString("base64")
+      : null;
+  const overview: AdminOverviewStats = {
     totalUsers: Number(users.rows[0]?.n || 0),
     totalEvents: Number(events.rows[0]?.n || 0),
     totalShares: Number(shares.rows[0]?.n || 0),
@@ -833,6 +858,7 @@ export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
       scans_car_pool: toNumber(scansRow.scans_car_pool),
     },
   };
+  return { overview, users: { items: initialUsers.slice(0, usersLimit), nextCursor } };
 }
 
 export async function getTopUsersByScans(

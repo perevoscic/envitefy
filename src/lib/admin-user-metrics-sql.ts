@@ -1,3 +1,31 @@
+type AdminUserMetricCategory =
+  | "birthdays"
+  | "weddings"
+  | "sport_events"
+  | "appointments"
+  | "doctor_appointments"
+  | "play_days"
+  | "general_events"
+  | "car_pool";
+
+export type AdminUserListItem = {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  created_at: string | null;
+  scans_total: number;
+  shares_sent: number;
+  events_total: number;
+  last_event_created_at: string | null;
+  last_scan_created_at: string | null;
+} & Record<`scans_${AdminUserMetricCategory}` | `events_${AdminUserMetricCategory}`, number>;
+
+export type AdminUserListPage = {
+  items: AdminUserListItem[];
+  nextCursor: string | null;
+};
+
 export const ADMIN_USER_METRICS_CTE_SQL = `
   with event_metrics as (
     select
