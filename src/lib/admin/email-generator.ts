@@ -1362,12 +1362,6 @@ async function generateQaApprovedStillBytes(params: {
   );
 }
 
-function promptRequestsFreshImages(prompt: string): boolean {
-  return /\b(?:new|different|replace|regenerate|change|update|refresh)\s+(?:hero\s+)?(?:images?|visuals?|pictures?|photos?|demos?|scenarios?|art|graphics?)\b/i.test(
-    prompt,
-  );
-}
-
 async function generateScenarioStillAssets(
   input: AdminEmailGenerationRequest,
   scenarioRows: AdminEmailScenarioRow[],
@@ -1379,41 +1373,14 @@ async function generateScenarioStillAssets(
     inspectImage?: GenerateAdminEmailDraftDeps["inspectImage"];
   },
 ): Promise<AdminEmailImageAsset[]> {
-  const existingById = new Map(
-    reusableStillAssets(input.currentImageAssets).map((asset) => [
-      asset.scenarioId as AdminEmailScenarioId,
-      asset,
-    ]),
-  );
-  const selectedScenarioIds = scenarioRows.map((row) => row.scenarioId);
-  // Only regenerate every scenario when the user explicitly asks; otherwise fill gaps
-  // for the scenarios selected by the client brief.
-  const forceAll = promptRequestsFreshImages(input.prompt);
-  const reuseIds = selectedScenarioIds.filter(
-    (scenarioId) => !forceAll && existingById.has(scenarioId),
-  );
-  const regenerateIds = selectedScenarioIds.filter(
-    (scenarioId) => forceAll || !existingById.has(scenarioId),
-  );
-
+  // Every generation creates new artwork; earlier drafts and the site image library are never reused.
   logAdminEmail("info", "scenario_still_plan", {
-    forceAll,
     imageModel: params.imageModel,
-    reuseIds,
-    regenerateIds,
+    regenerateIds: scenarioRows.map((row) => row.scenarioId),
   });
 
   return Promise.all(
     scenarioRows.map(async (row) => {
-      const existing = existingById.get(row.scenarioId);
-      if (!forceAll && existing) {
-        logAdminEmail("info", "scenario_still_reused", {
-          scenarioId: row.scenarioId,
-          urlHost: safeUrlHost(existing.url),
-        });
-        return existing;
-      }
-
       const prompt = buildStillImagePrompt(input.prompt, row.imageScene);
       const scenarioStartedAt = Date.now();
       logAdminEmail("info", "scenario_still_generate_start", {
@@ -1469,29 +1436,6 @@ async function generateEmailImageAssets(
   },
 ): Promise<AdminEmailImageAsset[]> {
   return generateScenarioStillAssets(input, scenarioRows, params);
-}
-
-function shouldRegenerateImage(
-  input: AdminEmailGenerationRequest,
-  scenarioRows: AdminEmailScenarioRow[],
-): boolean {
-  // Always rebuild when legacy GIFs/demo assets were stripped or any selected scenario still is missing.
-  if (
-    !hasCompleteScenarioStillAssets(
-      input.currentImageAssets,
-      scenarioRows.map((row) => row.scenarioId),
-    )
-  ) {
-    return true;
-  }
-  const currentScenes = new Map(
-    input.currentScenarioRows.map((row) => [row.scenarioId, row.imageScene]),
-  );
-  if (scenarioRows.some((row) => currentScenes.get(row.scenarioId) !== row.imageScene)) {
-    return true;
-  }
-  if (/\.gif(?:$|[?#])/i.test(input.currentBodyHtml || "")) return true;
-  return promptRequestsFreshImages(input.prompt);
 }
 
 export function buildCtaButtonHtml(params: {
@@ -1726,12 +1670,6 @@ export function ensureDraftIncludesImageAssets(
   });
 }
 
-function reusableStillAssets(assets: AdminEmailImageAsset[]): AdminEmailImageAsset[] {
-  return assets.filter(
-    (asset) => Boolean(asset.scenarioId) && asset.role === "scenario" && !isGifAssetUrl(asset.url),
-  );
-}
-
 export async function generateAdminEmailDraft(
   input: AdminEmailGenerationRequest,
   deps: GenerateAdminEmailDraftDeps = {},
@@ -1745,13 +1683,11 @@ export async function generateAdminEmailDraft(
   const model = resolveAdminEmailGeneratorModel(deps.openAiModel);
   const imageModel = resolveAdminEmailImageModel(deps.openAiImageModel);
   const client = deps.createOpenAiClient?.(apiKey) || new OpenAI({ apiKey });
-  const reusableAssets = reusableStillAssets(input.currentImageAssets);
 
   logAdminEmail("info", "draft_generate_start", {
     audienceMode: input.audienceMode,
     model,
     imageModel,
-    reusableAssetCount: reusableAssets.length,
     promptChars: input.prompt.length,
     hasCurrentBodyHtml: Boolean(input.currentBodyHtml),
   });
@@ -1813,7 +1749,7 @@ export async function generateAdminEmailDraft(
           { role: "developer", content: buildSystemPrompt(input.audienceMode) },
           {
             role: "user",
-            content: buildUserPrompt(input, reusableAssets.length, correctionViolations),
+            content: buildUserPrompt(input, 0, correctionViolations),
           },
         ],
       });
@@ -1898,31 +1834,20 @@ export async function generateAdminEmailDraft(
     );
   }
 
-  const selectedScenarioIds = new Set(draft.scenarioRows.map((row) => row.scenarioId));
-  const selectedReusableAssets = reusableAssets.filter(
-    (asset) => asset.scenarioId && selectedScenarioIds.has(asset.scenarioId),
-  );
-  const imageInput = { ...input, currentImageAssets: selectedReusableAssets };
-  const regenerateImages = shouldRegenerateImage(imageInput, draft.scenarioRows);
-
   logAdminEmail("info", "draft_scenario_plan", {
     audienceMode: input.audienceMode,
     selectedScenarioIds: draft.scenarioRows.map((row) => row.scenarioId),
-    regenerateImages,
-    reusableAssetCount: selectedReusableAssets.length,
   });
 
   let imageAssets: AdminEmailImageAsset[];
   try {
-    imageAssets = regenerateImages
-      ? await generateEmailImageAssets(imageInput, draft.scenarioRows, {
-          client,
-          imageModel,
-          generateImage: deps.generateImage,
-          uploadImage: deps.uploadImage,
-          inspectImage: deps.inspectImage,
-        })
-      : selectedReusableAssets;
+    imageAssets = await generateEmailImageAssets(input, draft.scenarioRows, {
+      client,
+      imageModel,
+      generateImage: deps.generateImage,
+      uploadImage: deps.uploadImage,
+      inspectImage: deps.inspectImage,
+    });
   } catch (error) {
     logAdminEmail("error", "draft_image_phase_failed", {
       audienceMode: input.audienceMode,

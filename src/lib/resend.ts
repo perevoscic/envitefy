@@ -96,9 +96,10 @@ export interface BulkEmailResult {
  * Send bulk emails using Resend with batching
  */
 export async function sendBulkEmail(params: BulkEmailParams): Promise<BulkEmailResult> {
-  const postalAddress = process.env.LEGAL_POSTAL_ADDRESS?.trim();
+  // Optional at the owner's request; when set, the footer includes it as CAN-SPAM expects.
+  const postalAddress = process.env.LEGAL_POSTAL_ADDRESS?.trim() || "";
   if (!postalAddress) {
-    throw new Error("LEGAL_POSTAL_ADDRESS is required before sending marketing email");
+    console.warn("[resend] LEGAL_POSTAL_ADDRESS is not set; sending without a postal address");
   }
   const fromEmail = normalizeEnvitefySender(
     params.fromEmail ||
@@ -131,7 +132,7 @@ export async function sendBulkEmail(params: BulkEmailParams): Promise<BulkEmailR
           .replace(/\{\{lastName\}\}/g, lastName);
         const unsubscribeUrl = await createMarketingUnsubscribeUrl(recipient.email);
 
-        const complianceFooter = `<div style="margin:32px auto 0;padding:20px;text-align:center;border-top:1px solid #e5e7eb;font:12px/1.6 Arial,sans-serif;color:#6b7280"><p style="margin:0">Envitefy · ${postalAddress.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</p><p style="margin:6px 0 0"><a href="${unsubscribeUrl}" style="color:#52605c;text-decoration:underline">Unsubscribe from marketing emails</a></p></div>`;
+        const complianceFooter = `<div style="margin:32px auto 0;padding:20px;text-align:center;border-top:1px solid #e5e7eb;font:12px/1.6 Arial,sans-serif;color:#6b7280"><p style="margin:0">Envitefy${postalAddress ? ` · ${postalAddress.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}` : ""}</p><p style="margin:6px 0 0"><a href="${unsubscribeUrl}" style="color:#52605c;text-decoration:underline">Unsubscribe from marketing emails</a></p></div>`;
 
         const html = params.rawHtml
           ? personalizedBody.replace(/<\/body>/i, `${complianceFooter}</body>`)

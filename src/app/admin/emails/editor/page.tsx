@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAdminAccess } from "@/components/admin/AdminAccessProvider";
 import {
+  FEATURES_OCT26_SUBJECT,
+  renderFeaturesEmail,
+} from "@/lib/email-templates/features-oct26";
+import {
   MAGAZINE_1_SUBJECT,
   renderMagazineEmail,
 } from "@/lib/email-templates/magazine-1";
@@ -128,6 +132,17 @@ export default function EmailEditorPage() {
     setSubject(MAGAZINE_1_SUBJECT);
     setHtml(
       renderMagazineEmail({
+        baseUrl:
+          typeof window !== "undefined" ? window.location.origin : "https://envitefy.com",
+      }),
+    );
+    setMessage(null);
+  }
+
+  function insertFeaturesTemplate() {
+    setSubject(FEATURES_OCT26_SUBJECT);
+    setHtml(
+      renderFeaturesEmail({
         baseUrl:
           typeof window !== "undefined" ? window.location.origin : "https://envitefy.com",
       }),
@@ -395,6 +410,13 @@ export default function EmailEditorPage() {
               className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[#f6f2ff] hover:bg-[#eee7ff] border border-[#d8d0f3] transition-colors text-[#4b3f72]"
             >
               📰 Load magazine template
+            </button>
+            <button
+              type="button"
+              onClick={insertFeaturesTemplate}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[#f6f2ff] hover:bg-[#eee7ff] border border-[#d8d0f3] transition-colors text-[#4b3f72]"
+            >
+              ✨ Load features template
             </button>
             <button
               type="button"

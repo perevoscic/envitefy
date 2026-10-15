@@ -53,7 +53,7 @@ test("campaigns suppress opt-outs and carry compliance controls", async () => {
     read("src/lib/resend.ts"),
   ]);
   assert.match(campaigns, /marketing_opt_out_at IS NULL/);
-  assert.match(resend, /LEGAL_POSTAL_ADDRESS is required/);
+  assert.match(resend, /LEGAL_POSTAL_ADDRESS/);
   assert.match(resend, /List-Unsubscribe/);
   assert.match(resend, /createMarketingUnsubscribeUrl/);
 });
