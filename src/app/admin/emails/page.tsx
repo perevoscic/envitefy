@@ -1,4 +1,4 @@
-import { CheckCircle2, Code2, KeyRound, Mail, Newspaper, Send, Share2 } from "lucide-react";
+import { CheckCircle2, Code2, KeyRound, Mail, Newspaper, Send, Share2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { AdminPageHeader, AdminPanel, AdminStatusBadge } from "@/components/admin/AdminPrimitives";
 import AdminEmailPromptGenerator from "@/components/admin/AdminEmailPromptGenerator";
@@ -28,6 +28,13 @@ const emailTools = [
     description: "Preview the magazine-style relaunch announcement.",
     href: "/admin/emails/magazine",
     icon: Newspaper,
+    badge: "Template",
+  },
+  {
+    title: "Features Campaign",
+    description: "Preview the Snap, Live Cards, Event Pages, Sign-up Forms and RSVP campaign.",
+    href: "/admin/emails/features",
+    icon: Sparkles,
     badge: "Template",
   },
   {
