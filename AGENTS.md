@@ -430,6 +430,7 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
 - Every launched customer-facing feature must add or update its catalog entry in the same change. Include the customer promise, concrete proof points, availability (`core`, `event-dependent`, or `specialized`), and when the marketing team should sell it.
 - Do not duplicate the complete feature inventory inside `src/lib/admin/email-generation-guide.ts`; keep that file focused on campaign behavior and let it consume the shared catalog so future feature updates reach email generation automatically.
 - Do not add admin-only, disabled, feature-flagged, experimental, or unverified capabilities to the marketing catalog.
+- Fresh email campaign images (October 15, 2026): every email campaign, including hand-built HTML campaigns and every run of the admin email generator, gets newly generated images. Never reuse images from `public/`, earlier campaigns or the current draft. `generateAdminEmailDraft` regenerates every scenario image on each run, including revisions. Convert new artwork to WebP per the generated-image rule.
 
 ## Envitefy Video Studio
 
