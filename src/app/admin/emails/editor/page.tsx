@@ -55,7 +55,8 @@ function personalize(html: string) {
   return html
     .replace(/\{\{greeting\}\}/g, "Hi Taylor")
     .replace(/\{\{firstName\}\}/g, "Taylor")
-    .replace(/\{\{lastName\}\}/g, "Smith");
+    .replace(/\{\{lastName\}\}/g, "Smith")
+    .replace(/\{\{unsubscribeUrl\}\}/g, "#unsubscribe-preview");
 }
 
 export default function EmailEditorPage() {
@@ -293,7 +294,11 @@ export default function EmailEditorPage() {
             <code className="bg-[#f2edff] px-1 py-0.5 rounded text-[#5f49bb]">
               {"{{greeting}}"}
             </code>{" "}
-            substitution.
+            substitution. Put{" "}
+            <code className="bg-[#f2edff] px-1 py-0.5 rounded text-[#5f49bb]">
+              {"{{unsubscribeUrl}}"}
+            </code>{" "}
+            in a link to place the unsubscribe link yourself.
           </p>
         </div>
 

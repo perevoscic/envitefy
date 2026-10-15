@@ -251,6 +251,7 @@ export const FEATURES_OCT26_HTML = `<!doctype html>
                   </tr>
                 </table>
                 <p style="margin:20px 0 0; font-size:12px; color:#9CA3AF;">You're receiving this because you have an Envitefy account.</p>
+                <p style="margin:6px 0 0; font-size:12px; color:#9CA3AF;"><a href="{{unsubscribeUrl}}" target="_blank" style="color:#737373; text-decoration:underline;">Unsubscribe</a></p>
                 <p style="margin:6px 0 0; font-size:12px; color:#9CA3AF;">&copy; 2026 Envitefy. All rights reserved.</p>
               </td>
             </tr>

@@ -128,7 +128,7 @@ ${socialIconsRow}
                   &copy; ${currentYear} Envitefy. All rights reserved.
                 </p>
                 ${params.postalAddress ? `<p style="margin:8px 0 0; font-size:12px; line-height:1.5; color:#9CA3AF;">${escapeHtml(params.postalAddress)}</p>` : ""}
-                ${params.unsubscribeUrl ? `<p style="margin:8px 0 0; font-size:12px; color:#737373;"><a href="${escapeHtml(params.unsubscribeUrl)}" style="color:#52605c; text-decoration:underline;">Unsubscribe from marketing emails</a></p>` : ""}
+                ${params.unsubscribeUrl ? `<p style="margin:8px 0 0; font-size:12px; color:#737373;"><a href="${escapeHtml(params.unsubscribeUrl)}" style="color:#52605c; text-decoration:underline;">Unsubscribe</a></p>` : ""}
               </td>
             </tr>
           </table>

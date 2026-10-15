@@ -132,10 +132,20 @@ export async function sendBulkEmail(params: BulkEmailParams): Promise<BulkEmailR
           .replace(/\{\{lastName\}\}/g, lastName);
         const unsubscribeUrl = await createMarketingUnsubscribeUrl(recipient.email);
 
-        const complianceFooter = `<div style="margin:32px auto 0;padding:20px;text-align:center;border-top:1px solid #e5e7eb;font:12px/1.6 Arial,sans-serif;color:#6b7280"><p style="margin:0">Envitefy${postalAddress ? ` · ${postalAddress.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}` : ""}</p><p style="margin:6px 0 0"><a href="${unsubscribeUrl}" style="color:#52605c;text-decoration:underline">Unsubscribe from marketing emails</a></p></div>`;
+        const complianceFooter = `<div style="margin:32px auto 0;padding:20px;text-align:center;border-top:1px solid #e5e7eb;font:12px/1.6 Arial,sans-serif;color:#6b7280"><p style="margin:0">Envitefy${postalAddress ? ` · ${postalAddress.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}` : ""}</p><p style="margin:6px 0 0"><a href="${unsubscribeUrl}" style="color:#52605c;text-decoration:underline">Unsubscribe</a></p></div>`;
 
+        // Raw HTML that places {{unsubscribeUrl}} itself gets no separate unsubscribe strip;
+        // a configured postal address is still appended.
+        const hasInlineUnsubscribe = /\{\{unsubscribeUrl\}\}/.test(personalizedBody);
+        const addressFooter = postalAddress
+          ? `<div style="margin:24px auto 0;padding:12px;text-align:center;font:12px/1.6 Arial,sans-serif;color:#6b7280">Envitefy · ${postalAddress.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</div>`
+          : "";
         const html = params.rawHtml
-          ? personalizedBody.replace(/<\/body>/i, `${complianceFooter}</body>`)
+          ? hasInlineUnsubscribe
+            ? personalizedBody
+                .replace(/\{\{unsubscribeUrl\}\}/g, unsubscribeUrl)
+                .replace(/<\/body>/i, `${addressFooter}</body>`)
+            : personalizedBody.replace(/<\/body>/i, `${complianceFooter}</body>`)
           : createEmailTemplate({
               title: params.subject,
               body: personalizedBody,
