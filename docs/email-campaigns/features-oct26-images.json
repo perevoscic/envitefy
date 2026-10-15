@@ -1,0 +1,38 @@
+[
+  {
+    "file": "public/email/features-oct26/hero.webp",
+    "model": "gpt-image-2.5-flare",
+    "size": "1536x1024",
+    "prompt": "Create one premium documentary stock photograph for an Envitefy email campaign. A warm backyard evening party at golden hour: a long table with flowers and candles, string lights overhead, a few friends laughing in soft focus, and one guest in the foreground glancing at a phone showing an elegant invitation card. Pastel lavender and soft blue accents. Professional documentary / stock photography for a brand marketing email. Natural light, realistic skin and fabric texture, believable anatomy and hands, calm single-scene composition. No logos, wordmarks, watermarks, floating icons, holograms or collage effects."
+  },
+  {
+    "file": "public/email/features-oct26/snap.webp",
+    "model": "gpt-image-2.5-flare",
+    "size": "1024x1024",
+    "prompt": "Create one premium documentary stock photograph for an Envitefy email campaign. Close-up of a parent's hands at a bright kitchen counter photographing a printed children's birthday party invitation with a smartphone. The invitation is colorful and readable as a party card; a fridge and morning light softly blurred behind. Professional documentary / stock photography for a brand marketing email. Natural light, realistic skin and fabric texture, believable anatomy and hands, calm single-scene composition. No logos, wordmarks, watermarks, floating icons, holograms or collage effects."
+  },
+  {
+    "file": "public/email/features-oct26/live-card.webp",
+    "model": "gpt-image-2.5-flare",
+    "size": "1024x1024",
+    "prompt": "Create one premium documentary stock photograph for an Envitefy email campaign. A young couple on a sofa smiling at a phone screen showing a beautifully illustrated wedding invitation with round buttons along the bottom. Cozy living room, natural window light, shallow depth of field on the phone. Professional documentary / stock photography for a brand marketing email. Natural light, realistic skin and fabric texture, believable anatomy and hands, calm single-scene composition. No logos, wordmarks, watermarks, floating icons, holograms or collage effects."
+  },
+  {
+    "file": "public/email/features-oct26/event-page.webp",
+    "model": "gpt-image-2.5-flare",
+    "size": "1024x1024",
+    "prompt": "Create one premium documentary stock photograph for an Envitefy email campaign. A host at a sunny café table scrolling an event website on a laptop: a hero photo of a garden shower, a schedule section and a small map are visible but soft. Coffee cup and a notebook beside the laptop. Professional documentary / stock photography for a brand marketing email. Natural light, realistic skin and fabric texture, believable anatomy and hands, calm single-scene composition. No logos, wordmarks, watermarks, floating icons, holograms or collage effects."
+  },
+  {
+    "file": "public/email/features-oct26/signup.webp",
+    "model": "gpt-image-2.5-flare",
+    "size": "1024x1024",
+    "prompt": "Create one premium documentary stock photograph for an Envitefy email campaign. Volunteers at a community potluck setting out dishes on a long table in a church hall or community center, one organizer holding a phone with a sign-up list. Diverse ages, friendly and candid. Professional documentary / stock photography for a brand marketing email. Natural light, realistic skin and fabric texture, believable anatomy and hands, calm single-scene composition. No logos, wordmarks, watermarks, floating icons, holograms or collage effects."
+  },
+  {
+    "file": "public/email/features-oct26/rsvp.webp",
+    "model": "gpt-image-2.5-flare",
+    "size": "1024x1024",
+    "prompt": "Create one premium documentary stock photograph for an Envitefy email campaign. A relaxed host at a tidy planning table with a laptop open to a guest list of responses and headcounts, a small stack of gift boxes and a calendar nearby. Soft afternoon light, calm and organized. Professional documentary / stock photography for a brand marketing email. Natural light, realistic skin and fabric texture, believable anatomy and hands, calm single-scene composition. No logos, wordmarks, watermarks, floating icons, holograms or collage effects."
+  }
+]
