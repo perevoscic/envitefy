@@ -1,0 +1,13 @@
+url: ${MAESTRO_BASE_URL}/mobile/sign-in?challenge=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&state=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+---
+- launchApp:
+    clearState: true
+- runFlow:
+    when:
+      visible: "Essential only"
+    commands:
+      - tapOn: "Essential only"
+- extendedWaitUntil:
+    visible:
+      id: login-email-input
+    timeout: 30000

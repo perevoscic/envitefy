@@ -1,0 +1,19 @@
+url: ${MAESTRO_BASE_URL}
+name: QA05 private scanned appointment
+tags: [scan, privacy]
+---
+- runFlow: ../shared/login.yaml
+- openLink: ${MAESTRO_BASE_URL}/event/${MAESTRO_EVENT_ID}
+- extendedWaitUntil:
+    visible: ${MAESTRO_PRIVATE_EVENT_TITLE}
+    timeout: 60000
+- assertVisible: ${MAESTRO_PATIENT_NAME}
+- assertVisible: ${MAESTRO_CLINICIAN_NAME}
+- scrollUntilVisible:
+    element:
+      text: "Original document"
+    direction: DOWN
+    timeout: 15000
+- assertVisible: "Original document"
+- assertNotVisible: "Invite co-host"
+- takeScreenshot: owner-scan-details

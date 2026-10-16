@@ -1,0 +1,23 @@
+url: ${MAESTRO_BASE_URL}
+name: QA04 Event Page sections
+tags: [event-page, composition]
+---
+- runFlow: ../shared/login.yaml
+- openLink: ${MAESTRO_BASE_URL}/event/general/customize?templateId=coffee-conversation
+- extendedWaitUntil:
+    visible: "Page sections"
+    timeout: 60000
+- tapOn: "Page sections"
+- tapOn: "Add section"
+- tapOn: "Custom section.*"
+- extendedWaitUntil:
+    visible: "Section heading"
+    timeout: 15000
+- tapOn: "Section heading"
+- eraseText: 50
+- inputText: "QA04 arrival information"
+- tapOn: "Section content"
+- inputText: "Use the north entrance."
+- assertVisible: "QA04 arrival information"
+- assertVisible: "Use the north entrance."
+- takeScreenshot: custom-event-section

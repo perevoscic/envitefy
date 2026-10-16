@@ -1,0 +1,16 @@
+url: ${MAESTRO_BASE_URL}
+name: QA06 signup host dashboard
+tags: [signup, host]
+---
+- runFlow: ../shared/login.yaml
+- openLink: ${MAESTRO_BASE_URL}/smart-signup-form/${MAESTRO_EVENT_ID}
+- extendedWaitUntil:
+    visible: "View signups"
+    timeout: 60000
+- tapOn: "View signups"
+- assertVisible: "Host dashboard"
+- tapOn: "By person"
+- assertVisible: "Confirmed signups"
+- tapOn: "By item/shift"
+- assertVisible: ${MAESTRO_SLOT_LABEL}
+- takeScreenshot: signup-host-dashboard

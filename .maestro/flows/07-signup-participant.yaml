@@ -1,0 +1,41 @@
+url: ${MAESTRO_BASE_URL}
+name: QA07 signup participant
+tags: [signup, participant]
+---
+- runFlow: ../shared/login.yaml
+- openLink: ${MAESTRO_BASE_URL}/smart-signup-form/${MAESTRO_EVENT_ID}
+- scrollUntilVisible:
+    element:
+      id: "Select ${MAESTRO_SLOT_LABEL}"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "Select ${MAESTRO_SLOT_LABEL}"
+- tapOn:
+    id: signup-input-name
+- eraseText: 50
+- inputText: "QA07 Participant"
+- tapOn:
+    id: signup-input-email
+- eraseText: 50
+- inputText: ${MAESTRO_EMAIL}
+- tapOn: "Save my sign-up"
+- extendedWaitUntil:
+    visible: "Sign-up confirmed!"
+    timeout: 30000
+- takeScreenshot: participant-confirmation
+- tapOn: "Got it"
+- tapOn: "Edit my signup"
+- tapOn:
+    id: "Additional note"
+- inputText: "QA07 updated note"
+- tapOn: "Update sign-up"
+- extendedWaitUntil:
+    visible: "Sign-up confirmed!"
+    timeout: 30000
+- tapOn: "Got it"
+- tapOn: "Cancel my signup"
+- extendedWaitUntil:
+    visible: "Cancelled. Thanks for letting us know!"
+    timeout: 30000
+- takeScreenshot: participant-cancelled

@@ -1,0 +1,34 @@
+url: ${MAESTRO_BASE_URL}
+name: QA09 event co-host acceptance
+tags: [cohost, permissions]
+---
+- runFlow: ../shared/login.yaml
+- openLink: ${MAESTRO_BASE_URL}/
+- extendedWaitUntil:
+    visible:
+      id: "Co-host invitations, 1 pending"
+    timeout: 60000
+- tapOn:
+    id: "Co-host invitations, 1 pending"
+- tapOn:
+    id: "Accept co-host invitation for ${MAESTRO_EVENT_TITLE}"
+- extendedWaitUntil:
+    visible: ${MAESTRO_EVENT_TITLE}
+    timeout: 60000
+- assertNotVisible: "Manage access"
+- assertNotVisible: "Invite co-host"
+- openLink: ${MAESTRO_BASE_URL}/live-cards?edit=${MAESTRO_EVENT_ID}
+- extendedWaitUntil:
+    visible: "Save changes"
+    timeout: 60000
+- tapOn: "Message to guests.*"
+- tapOn:
+    id: livecard-overview
+- eraseText: 50
+- inputText: "QA09 co-host guest message"
+- tapOn: "Save changes"
+- extendedWaitUntil:
+    visible: "Changes saved.*"
+    timeout: 60000
+- assertNotVisible: "Invite co-host"
+- takeScreenshot: event-cohost-access

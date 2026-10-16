@@ -1,0 +1,22 @@
+url: ${MAESTRO_BASE_URL}/landing?auth=login
+name: QA01 authentication and session
+tags: [auth, smoke]
+---
+- runFlow: ../shared/open-login.yaml
+- tapOn:
+    id: login-email-input
+- inputText: ${MAESTRO_EMAIL}
+- tapOn:
+    id: login-password-input
+- inputText: incorrect-maestro-password
+- tapOn:
+    text: "Sign in"
+    index: 0
+- assertVisible: "Invalid email or password"
+- runFlow: ../shared/login.yaml
+- openLink: ${MAESTRO_BASE_URL}/
+- extendedWaitUntil:
+    visible:
+      id: 'Account menu for.*'
+    timeout: 60000
+- takeScreenshot: authenticated-dashboard

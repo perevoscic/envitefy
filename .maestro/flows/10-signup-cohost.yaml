@@ -1,0 +1,38 @@
+url: ${MAESTRO_BASE_URL}
+name: QA10 signup co-host acceptance
+tags: [signup, cohost, permissions]
+---
+- runFlow: ../shared/login.yaml
+- openLink: ${MAESTRO_BASE_URL}/
+- extendedWaitUntil:
+    visible:
+      id: "Co-host invitations, 1 pending"
+    timeout: 60000
+- tapOn:
+    id: "Co-host invitations, 1 pending"
+- tapOn:
+    id: "Accept co-host invitation for ${MAESTRO_EVENT_TITLE}"
+- extendedWaitUntil:
+    visible: "Host dashboard"
+    timeout: 60000
+- tapOn: "By person"
+- assertNotVisible: "Manage access"
+- assertNotVisible: "Delete form"
+- tapOn:
+    id: "Edit event"
+- extendedWaitUntil:
+    visible:
+      id: "Edit event title"
+    timeout: 60000
+- tapOn:
+    id: "Edit event title"
+- inputText: "QA10 co-host updated title"
+- tapOn:
+    id: "Done editing event title"
+- tapOn: "Save changes"
+- extendedWaitUntil:
+    visible: "Published."
+    timeout: 60000
+- openLink: ${MAESTRO_BASE_URL}/smart-signup-form/${MAESTRO_EVENT_ID}
+- assertVisible: "QA10 co-host updated title"
+- takeScreenshot: signup-cohost-access

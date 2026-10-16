@@ -1,0 +1,31 @@
+url: ${MAESTRO_BASE_URL}/landing
+---
+- runFlow: open-login.yaml
+- tapOn:
+    id: login-email-input
+- inputText: ${MAESTRO_EMAIL}
+- tapOn:
+    id: login-password-input
+- inputText: ${MAESTRO_PASSWORD}
+- tapOn:
+    text: "Sign in"
+    index: 0
+- extendedWaitUntil:
+    visible: "Signed in as.*"
+    timeout: 60000
+- openLink: ${MAESTRO_BASE_URL}/api/auth/session
+- extendedWaitUntil:
+    visible: '.*${MAESTRO_EMAIL_PATTERN}.*'
+    timeout: 60000
+- openLink: ${MAESTRO_BASE_URL}/
+- extendedWaitUntil:
+    visible: "Essential only"
+    timeout: 30000
+- tapOn: "Essential only"
+- runFlow:
+    when:
+      visible:
+        id: "Dismiss"
+    commands:
+      - tapOn:
+          id: "Dismiss"

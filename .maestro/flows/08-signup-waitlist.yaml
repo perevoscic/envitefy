@@ -1,0 +1,27 @@
+url: ${MAESTRO_BASE_URL}
+name: QA08 full-slot waitlist
+tags: [signup, waitlist]
+---
+- runFlow: ../shared/login.yaml
+- openLink: ${MAESTRO_BASE_URL}/smart-signup-form/${MAESTRO_EVENT_ID}
+- scrollUntilVisible:
+    element:
+      id: "Select ${MAESTRO_SLOT_LABEL}"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "Select ${MAESTRO_SLOT_LABEL}"
+- tapOn:
+    id: signup-input-name
+- eraseText: 50
+- inputText: "QA08 Waitlist"
+- tapOn:
+    id: signup-input-email
+- eraseText: 50
+- inputText: ${MAESTRO_EMAIL}
+- tapOn: "Put all my selections on the waitlist"
+- tapOn: "Save my sign-up"
+- extendedWaitUntil:
+    visible: "You're on the waitlist"
+    timeout: 30000
+- takeScreenshot: waitlist-confirmation

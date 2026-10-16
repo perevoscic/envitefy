@@ -30,6 +30,7 @@
 # Generated exports, screenshots, previews, and verification reports stay local.
 /output/
 /qa-artifacts/
+/.tools/
 /tmp/
 /.clawpatch/
 /.data/
@@ -43,6 +44,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!/.maestro/accounts.env.example
 
 # vercel
 .vercel
