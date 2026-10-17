@@ -1,6 +1,6 @@
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { ROOT, selectScenarios } from "./lib/maestro-core.mjs";
+import { ACTIVE_SCENARIOS, DEFERRED_ACCOUNTS, DISABLED_ACCOUNTS, ROOT } from "./lib/maestro-core.mjs";
 
 const root = path.join(ROOT, "output/maestro");
 const optional = async (file, fallback) => {
@@ -25,12 +25,15 @@ for (const entry of await readdir(root, { withFileTypes: true })) {
 }
 const accounts = [];
 const issues = new Map();
-for (const scenario of selectScenarios()) {
+for (const scenario of ACTIVE_SCENARIOS) {
   const state = runs
     .filter((run) => run.account === scenario.account)
     .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0];
   if (!state) {
-    accounts.push({ account: scenario.account, status: "Not started" });
+    accounts.push({
+      account: scenario.account,
+      status: DEFERRED_ACCOUNTS.has(scenario.account) ? "Deferred by owner; not started" : "Not started",
+    });
     continue;
   }
   const dir = path.join(root, state.runId);
@@ -99,7 +102,9 @@ for (const scenario of selectScenarios()) {
 const report = {
   generatedAt: new Date().toISOString(),
   target: "Google Play Android com.envitefy.app 1.0.3 (5)",
-  excludedAccount: "QA11",
+  excludedAccount: DISABLED_ACCOUNTS.size === 1 ? [...DISABLED_ACCOUNTS][0] : null,
+  excludedAccounts: [...DISABLED_ACCOUNTS],
+  deferredAccounts: [...DEFERRED_ACCOUNTS],
   cameraTesting: await optional(path.join(root, "camera-testing-unavailable.json"), null),
   accounts,
   confirmedIssuePatterns: issues.size,
@@ -130,6 +135,6 @@ const cameraNote = report.cameraTesting
   : "";
 await writeFile(
   path.join(root, "activity-index.html"),
-  `<!doctype html><html lang="en"><meta charset="utf-8"><title>Envitefy Android testing</title><style>body{font:16px system-ui;max-width:1200px;margin:32px auto;padding:0 20px;color:#211c2b}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:10px;text-align:left;vertical-align:top}</style><h1>Envitefy Android account activity</h1><p>${escapeHtml(report.generatedAt)} · ${escapeHtml(report.target)} · QA11 excluded</p>${cameraNote}<p>Each completed account needs real Snap creation, matching ownership, anonymous guest-page verification and an observed reopened event route. Setup steps and the separate specialized business suite are not counted as completed account activity.</p><p><a href="confirmed-issues.html">${issues.size} confirmed mismatch patterns across accounts</a> · <a href="confirmed-issues.json">Issue data</a></p><table><tr><th>Account</th><th>Verified activity</th><th>Last Maestro stage</th><th>Confirmed findings</th><th>Evidence</th></tr>${rows}</table><p>Per-account reports retain screenshots, logs, failed attempts and causes. Unknown causes remain unconfirmed.</p></html>`,
+  `<!doctype html><html lang="en"><meta charset="utf-8"><title>Envitefy Android testing</title><style>body{font:16px system-ui;max-width:1200px;margin:32px auto;padding:0 20px;color:#211c2b}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:10px;text-align:left;vertical-align:top}</style><h1>Envitefy Android account activity</h1><p>${escapeHtml(report.generatedAt)} · ${escapeHtml(report.target)} · ${accounts.length} configured accounts${report.excludedAccounts.length ? ` · Excluded: ${escapeHtml(report.excludedAccounts.join(", "))}` : ""}</p>${cameraNote}<p>Each completed account needs real Snap creation, matching ownership, anonymous guest-page verification and an observed reopened event route. Setup steps and the separate specialized business suite are not counted as completed account activity.</p><p><a href="confirmed-issues.html">${issues.size} confirmed mismatch patterns across accounts</a> · <a href="confirmed-issues.json">Issue data</a></p><table><tr><th>Account</th><th>Verified activity</th><th>Last Maestro stage</th><th>Confirmed findings</th><th>Evidence</th></tr>${rows}</table><p>Per-account reports retain screenshots, logs, failed attempts and causes. Unknown causes remain unconfirmed.</p></html>`,
 );
 console.log(`Account status: ${path.join(root, "activity-index.html")}`);

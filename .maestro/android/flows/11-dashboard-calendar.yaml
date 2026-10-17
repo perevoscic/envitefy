@@ -1,10 +1,11 @@
-# Disabled by user instruction: do not run QA11.
-url: ${MAESTRO_BASE_URL}
+# Android accessibility selectors: device calibration is pending.
+appId: ${MAESTRO_ANDROID_APP_ID}
 name: QA11 dashboard filters and calendar
 tags: [dashboard, calendar]
 ---
 - runFlow: ../shared/login.yaml
-- openLink: ${MAESTRO_BASE_URL}/
+- openLink:
+    link: ${MAESTRO_BASE_URL}/
 - scrollUntilVisible:
     element:
       text: "My events.*"
@@ -15,11 +16,10 @@ tags: [dashboard, calendar]
 - tapOn: "Invited events.*"
 - assertNotVisible: ${MAESTRO_EVENT_TITLE}
 - tapOn: "My events.*"
-- openLink: ${MAESTRO_BASE_URL}/card/${MAESTRO_EVENT_ID}
+- openLink:
+    link: ${MAESTRO_BASE_URL}/card/${MAESTRO_EVENT_ID}
 - extendedWaitUntil:
-    visible:
-      id: "To Calendar"
+    visible: "(?i)to calendar"
     timeout: 60000
-- tapOn:
-    id: "To Calendar"
+- tapOn: "(?i)to calendar"
 - takeScreenshot: calendar-choices

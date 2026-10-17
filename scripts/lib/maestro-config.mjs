@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { parseEnv } from "node:util";
-import { ACTIVE_SCENARIOS, DISABLED_ACCOUNTS, ROOT, SCENARIOS } from "./maestro-core.mjs";
+import { DEFAULT_SCENARIOS, DISABLED_ACCOUNTS, ROOT, SCENARIOS } from "./maestro-core.mjs";
 
 export function appOrigin(value) {
   const url = new URL(value);
@@ -30,11 +30,11 @@ const resourceAccounts = new Set([
   "QA11",
   "QA12",
 ]);
-const titleAccounts = new Set(["QA05", "QA09", "QA10"]);
+const titleAccounts = new Set(["QA05", "QA09", "QA10", "QA11"]);
 
-export function configuredAccounts(values, scenarios = ACTIVE_SCENARIOS) {
+export function configuredAccounts(values, scenarios = DEFAULT_SCENARIOS) {
   if (scenarios.some((item) => DISABLED_ACCOUNTS.has(item.account)))
-    throw new Error("QA11 is disabled by user instruction.");
+    throw new Error("A disabled account cannot be configured.");
   if (values.MAESTRO_PLATFORM && !["android", "web"].includes(values.MAESTRO_PLATFORM))
     throw new Error("MAESTRO_PLATFORM must be android or web.");
   if (

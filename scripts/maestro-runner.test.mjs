@@ -68,23 +68,35 @@ test("mutating test environments reject remote origins, credentials and paths", 
   assert.throws(() => contained("/safe/root", "../../private"));
 });
 
-test("QA11 cannot be selected and its supplied credentials are never loaded", () => {
+test("deferred QA11 stays prepared for explicit selection and is omitted from default runs", () => {
   assert.equal(selectScenarios().length, 11);
+  assert.ok(!selectScenarios().some((item) => item.account === "QA11"));
+  assert.ok(selectScenarios().some((item) => item.account === "QA12"));
+  assert.throws(() => selectScenarios(["QA13"]), /Unknown flow selection/);
   for (const selector of ["QA11", "11", "11-dashboard-calendar"])
-    assert.throws(() => selectScenarios([selector]), /disabled/);
+    assert.deepEqual(
+      selectScenarios([selector]).map((item) => item.account),
+      ["QA11"],
+    );
+  assert.throws(
+    () =>
+      configuredAccounts({ MAESTRO_BASE_URL: "https://envitefy.com" }, selectScenarios(["QA11"])),
+    /MAESTRO_QA11_EMAIL/,
+  );
   const configured = configuredAccounts(
     {
       MAESTRO_BASE_URL: "https://envitefy.com",
-      MAESTRO_QA01_EMAIL: "one@example.test",
-      MAESTRO_QA01_PASSWORD: "selected-password",
-      MAESTRO_QA11_EMAIL: "excluded@example.test",
-      MAESTRO_QA11_PASSWORD: "must-never-be-used",
+      MAESTRO_QA11_EMAIL: "calendar@example.test",
+      MAESTRO_QA11_PASSWORD: "  selected-calendar-password  ",
+      MAESTRO_QA11_EVENT_ID: "00000000-0000-4000-8000-000000000011",
+      MAESTRO_QA11_EVENT_TITLE: "QA11 calendar test",
     },
-    [{ account: "QA01" }],
+    selectScenarios(["QA11"]),
   );
-  assert.equal(configured.accounts[10].disabled, true);
-  assert.equal(configured.accounts[10].password, "");
-  assert.ok(!configured.secretValues.includes("must-never-be-used"));
+  assert.equal(configured.accounts[10].email, "calendar@example.test");
+  assert.equal(configured.accounts[10].password, "  selected-calendar-password  ");
+  assert.equal(configured.accounts[10].eventTitle, "QA11 calendar test");
+  assert.ok(configured.secretValues.includes("  selected-calendar-password  "));
 });
 
 test("Google credentials are explicitly distinguished from Envitefy password accounts", () => {
@@ -134,7 +146,8 @@ test("Android preflight rejects sideloaded builds before any app action", async 
   assert.ok(commands.every((command) => !/install |am start|clear /.test(command)));
 });
 
-test("eleven Android flows target the native app and retain the account exclusion", async () => {
+test("all twelve Android flows target the native app and have website counterparts", async () => {
+  assert.equal(ACTIVE_SCENARIOS.length, 12);
   for (const scenario of ACTIVE_SCENARIOS) {
     const flow = await readFile(
       path.resolve(".maestro/android/flows", path.basename(scenario.file)),
@@ -142,7 +155,7 @@ test("eleven Android flows target the native app and retain the account exclusio
     );
     assert.match(flow, /appId: \$\{MAESTRO_ANDROID_APP_ID\}/);
     assert.doesNotMatch(flow, /^url:/m);
-    assert.notEqual(scenario.account, "QA11");
+    assert.ok(await readFile(path.resolve(scenario.file), "utf8"));
   }
   const login = await readFile(".maestro/android/shared/open-login.yaml", "utf8");
   assert.match(login, /api\/auth\/signout/);

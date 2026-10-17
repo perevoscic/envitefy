@@ -27,8 +27,13 @@ export const SCENARIOS = [
   file: `.maestro/flows/${id}.yaml`,
 }));
 
-export const DISABLED_ACCOUNTS = new Set(["QA11"]);
+export const DISABLED_ACCOUNTS = new Set();
+// QA11's flow is prepared, but its next live run was deferred by the owner.
+export const DEFERRED_ACCOUNTS = new Set(["QA11"]);
 export const ACTIVE_SCENARIOS = SCENARIOS.filter((item) => !DISABLED_ACCOUNTS.has(item.account));
+export const DEFAULT_SCENARIOS = ACTIVE_SCENARIOS.filter(
+  (item) => !DEFERRED_ACCOUNTS.has(item.account),
+);
 
 export function selectScenarios(selectors) {
   const matches = (item, selector) =>
@@ -38,10 +43,10 @@ export function selectScenarios(selectors) {
       SCENARIOS.some((item) => matches(item, selector) && DISABLED_ACCOUNTS.has(item.account)),
     )
   )
-    throw new Error("QA11 is disabled by user instruction and cannot be selected.");
+    throw new Error("A disabled account cannot be selected.");
   if (selectors?.some((selector) => !ACTIVE_SCENARIOS.some((item) => matches(item, selector))))
     throw new Error("Unknown flow selection. Run npm run test:maestro -- --list.");
-  return ACTIVE_SCENARIOS.filter(
+  return (selectors ? ACTIVE_SCENARIOS : DEFAULT_SCENARIOS).filter(
     (item) => !selectors || selectors.some((selector) => matches(item, selector)),
   );
 }

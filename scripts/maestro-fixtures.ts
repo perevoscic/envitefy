@@ -111,6 +111,7 @@ function signup(owner: number, key: string, { full = false, cohost = false } = {
 const events = [
   card(2, "draft invitation", "draft"),
   card(3, "published invitation"),
+  card(11, "calendar invitation"),
   card(2, "cohost invitation"),
   signup(6, "host signup"),
   signup(6, "participant signup"),

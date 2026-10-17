@@ -17,7 +17,7 @@ import { acquireAndroidUiLock } from "./lib/maestro-ui-lock.mjs";
 const accountOption = process.argv.indexOf("--account");
 const account = accountOption < 0 ? "QA01" : process.argv[accountOption + 1];
 if (!/^QA\d{2}$/.test(account || "")) throw new Error("Select a QA account alias.");
-selectScenarios([account]); // Refuses QA11 before loading or using credentials.
+selectScenarios([account]); // Reject unknown or disabled accounts before loading credentials.
 const values = {
   ...parseEnv(await readFile(path.join(ROOT, ".env.maestro.local"), "utf8")),
   ...process.env,
@@ -124,7 +124,7 @@ await writeFile(
         step === "smoke"
           ? "This checks the Play app launch, landing menu and sign-in form. No Envitefy login, signup, account creation or business workflow is performed."
           : step === "session"
-            ? "This checks an existing signed-in session, dashboard and matching profile email. It does not run a new login or the eleven business workflows."
+            ? "This checks an existing signed-in session, dashboard and matching profile email. It does not run a new login or the twelve business workflows."
             : step === "signup"
               ? "This checks Google signup and the dashboard only. The other account workflows and server permission checks remain unverified."
               : "A Google setup step does not verify enrollment, installation, or Envitefy behavior. Password submission may require further account verification.",

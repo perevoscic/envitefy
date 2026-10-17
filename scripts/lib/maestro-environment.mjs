@@ -267,7 +267,7 @@ export async function startEnvironment(runDir) {
         key("waitlist signup"),
         key("cohost invitation"),
         key("cohost signup"),
-        null,
+        key("calendar invitation"),
         key("private scan"),
       ];
       accounts.forEach((account, index) => {

@@ -9,6 +9,7 @@ import {
   ARTIFACT_ROOT,
   classifyFailure,
   contained,
+  DEFERRED_ACCOUNTS,
   localOrigin,
   maestroCommand,
   ROOT,
@@ -22,8 +23,10 @@ import { inspectFailure, updateFindingRegistry, writeReports } from "./lib/maest
 
 const args = process.argv.slice(2);
 if (args.includes("--list")) {
-  for (const item of ACTIVE_SCENARIOS) console.log(`${item.account}  ${item.id}  ${item.name}`);
-  console.log("QA11 is excluded by user instruction.");
+  for (const item of ACTIVE_SCENARIOS)
+    console.log(
+      `${item.account}  ${item.id}  ${item.name}${DEFERRED_ACCOUNTS.has(item.account) ? " (deferred; omitted from default runs)" : ""}`,
+    );
   process.exit(0);
 }
 const option = (name) => {
@@ -150,7 +153,7 @@ try {
   }
   console.log(
     localFixtures
-      ? `Local Envitefy ready at ${environment.baseUrl}. Eleven synthetic accounts seeded; QA11 excluded.`
+      ? `Local Envitefy ready at ${environment.baseUrl}. ${ACTIVE_SCENARIOS.length} synthetic accounts seeded.`
       : `Using supplied test accounts at ${environment.baseUrl}.`,
   );
   for (const scenario of scenarios) {

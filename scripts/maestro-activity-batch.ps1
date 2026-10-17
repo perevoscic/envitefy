@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('QA01','QA02','QA03','QA04','QA05','QA06','QA07','QA08','QA09','QA10','QA12')]
+    [ValidateSet('QA01','QA02','QA03','QA04','QA05','QA06','QA07','QA08','QA09','QA10','QA11','QA12')]
     [string[]]$Accounts,
     [switch]$ProvisionTestAccounts
 )

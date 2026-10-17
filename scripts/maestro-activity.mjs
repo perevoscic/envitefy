@@ -25,7 +25,7 @@ const option = (name, fallback) => {
   return index < 0 ? fallback : args[index + 1];
 };
 const account = option("--account", "QA01");
-selectScenarios([account]); // Never loads or uses QA11.
+selectScenarios([account]); // Reject unknown or disabled accounts before loading credentials.
 const step = option("--step", "open-snap");
 if (!/^[a-z][a-z-]+$/.test(step)) throw new Error("Invalid activity step.");
 if (step === "google-sign-out-limit" && !args.includes("--allow-google-web-signout"))
