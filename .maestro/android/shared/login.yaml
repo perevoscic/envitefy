@@ -1,0 +1,26 @@
+appId: ${MAESTRO_ANDROID_APP_ID}
+---
+- runFlow: open-login.yaml
+- tapOn: "Sign in with Google"
+# Requires the corresponding Google account to be signed in on this test device.
+# Calibrate this chooser on the Play build before enabling the account runner.
+- extendedWaitUntil:
+    visible: "Choose an account"
+    timeout: 60000
+- tapOn: '.*${MAESTRO_EMAIL_PATTERN}.*'
+- extendedWaitUntil:
+    visible: "Signed in as.*"
+    timeout: 60000
+- assertVisible: '.*${MAESTRO_EMAIL_PATTERN}.*'
+- openLink:
+    link: ${MAESTRO_BASE_URL}/
+- runFlow:
+    when:
+      visible: "Essential only"
+    commands:
+      - tapOn: "Essential only"
+- runFlow:
+    when:
+      visible: "Dismiss"
+    commands:
+      - tapOn: "Dismiss"

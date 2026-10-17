@@ -1,0 +1,14 @@
+appId: com.android.chrome
+name: Open the Google tester email form from the longer account chooser
+---
+- assertVisible: 'accounts\.google\.com'
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- tapOn: "Use another account|Использовать другой аккаунт"
+- extendedWaitUntil:
+    visible:
+      id: "identifierId"
+    timeout: 30000
+- takeScreenshot: selected-tester-email-form

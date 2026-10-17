@@ -1,0 +1,15 @@
+appId: com.android.chrome
+name: Submit the account owner's Google verification code
+---
+- assertVisible: 'accounts\.google\.com'
+- assertVisible: '.*${MAESTRO_EMAIL_PATTERN}.*'
+- assertVisible: "Enter the 6-digit code.*"
+- tapOn:
+    id: "idvPin"
+- eraseText
+- inputText: ${MAESTRO_VERIFICATION_CODE}
+- hideKeyboard
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: google-code-submission-result

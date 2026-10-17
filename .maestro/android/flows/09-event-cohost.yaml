@@ -1,0 +1,38 @@
+# Android accessibility selectors: device calibration is pending.
+appId: ${MAESTRO_ANDROID_APP_ID}
+name: QA09 event co-host acceptance
+tags: [cohost, permissions]
+---
+- runFlow: ../shared/login.yaml
+- openLink:
+    link: ${MAESTRO_BASE_URL}/
+- extendedWaitUntil:
+    visible:
+      text: "Co-host invitations, 1 pending"
+    timeout: 60000
+- tapOn:
+    text: "Co-host invitations, 1 pending"
+- tapOn:
+    text: "Accept co-host invitation for ${MAESTRO_EVENT_TITLE}"
+- extendedWaitUntil:
+    visible: ${MAESTRO_EVENT_TITLE}
+    timeout: 60000
+- assertNotVisible: "Manage access"
+- assertNotVisible: "Invite co-host"
+- openLink:
+    link: ${MAESTRO_BASE_URL}/live-cards?edit=${MAESTRO_EVENT_ID}
+- extendedWaitUntil:
+    visible: "Save changes"
+    timeout: 60000
+- tapOn: "Message to guests.*"
+- tapOn:
+    text: 'Message to guests \(optional\)'
+- eraseText: 50
+- inputText: "QA09 co-host guest message"
+- hideKeyboard
+- tapOn: "Save changes"
+- extendedWaitUntil:
+    visible: "Changes saved.*"
+    timeout: 60000
+- assertNotVisible: "Invite co-host"
+- takeScreenshot: event-cohost-access

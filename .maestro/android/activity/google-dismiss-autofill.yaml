@@ -1,0 +1,6 @@
+appId: com.android.chrome
+name: Decline optional Google autofill setup
+---
+- assertVisible: "Autofill with Google"
+- tapOn: "Cancel"
+- takeScreenshot: google-autofill-declined

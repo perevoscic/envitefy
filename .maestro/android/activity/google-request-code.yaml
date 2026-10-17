@@ -1,0 +1,11 @@
+appId: com.android.chrome
+name: Request the selected tester's Google verification code
+---
+- assertVisible: 'accounts\.google\.com'
+- assertVisible: '${MAESTRO_EMAIL_PATTERN}'
+- assertVisible: "Your recovery phone recently changed"
+- tapOn: "Get code"
+- extendedWaitUntil:
+    visible: "Enter the 6-digit code.*"
+    timeout: 30000
+- takeScreenshot: google-code-requested

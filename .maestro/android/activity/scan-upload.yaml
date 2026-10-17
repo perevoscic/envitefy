@@ -1,0 +1,10 @@
+appId: com.envitefy.app
+name: Real Snap OCR and event creation
+---
+- tapOn:
+    text: '${MAESTRO_SNAP_PICKER_PATTERN}'
+- extendedWaitUntil:
+    visible: "(?s).*${MAESTRO_ACCOUNT}.*Test.*Workshop.*|Failed.*|We couldn't.*|Unable.*|Try again"
+    timeout: 180000
+- takeScreenshot: snap-processing-result
+- assertVisible: "(?s).*${MAESTRO_ACCOUNT}.*Test.*Workshop.*"

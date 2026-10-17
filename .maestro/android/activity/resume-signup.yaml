@@ -1,0 +1,50 @@
+appId: com.envitefy.app
+name: Resume authorized Envitefy signup after Google device setup
+---
+- assertNotVisible: "Something went wrong"
+- runFlow:
+    when:
+      visible: "Open in new Chrome tab"
+    commands:
+      - pressKey: Back
+- extendedWaitUntil:
+    visible: "Open menu|Start Creating|Sign up with Google|Choose an account"
+    timeout: 60000
+- runFlow:
+    when:
+      visible: "Open menu"
+      notVisible: "(?i)sign up with google"
+    commands:
+      - tapOn:
+          text: "Open menu"
+          retryTapIfNoChange: true
+- runFlow:
+    when:
+      visible: "Start Creating"
+      notVisible: "(?i)sign up with google"
+    commands:
+      - tapOn:
+          text: "Start Creating"
+- runFlow:
+    when:
+      visible: "Open in new Chrome tab"
+    commands:
+      - pressKey: Back
+- extendedWaitUntil:
+    visible: "(?i)sign up with google|Choose an account|Выберите аккаунт"
+    timeout: 15000
+- runFlow:
+    when:
+      visible: "Sign up with Google"
+    commands:
+      - tapOn:
+          text: 'I confirm I am at least 18, agree to the Terms of Use, and acknowledge the Privacy Policy\.'
+          checked: false
+          optional: true
+      - tapOn:
+          text: "Sign up with Google"
+          retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: "Choose an account|Выберите аккаунт"
+    timeout: 60000
+- takeScreenshot: resumed-google-chooser

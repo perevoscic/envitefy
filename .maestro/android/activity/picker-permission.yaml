@@ -1,0 +1,6 @@
+appId: com.envitefy.app
+name: Decline camera permission because camera testing is unavailable
+---
+- assertVisible: "(?s).*take pictures.*record video.*"
+- tapOn: "Don.t allow"
+- takeScreenshot: picker-after-permission

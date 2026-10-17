@@ -1,0 +1,17 @@
+appId: ${MAESTRO_ANDROID_APP_ID}
+---
+- launchApp:
+    permissions:
+      all: unset
+# TWA sessions belong to Chrome. Sign out only from Envitefy; never clear Chrome data.
+- openLink:
+    link: ${MAESTRO_BASE_URL}/api/auth/signout
+- extendedWaitUntil:
+    visible: "Sign out"
+    timeout: 30000
+- tapOn: "Sign out"
+- openLink:
+    link: ${MAESTRO_BASE_URL}/mobile/sign-in?challenge=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&state=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+- extendedWaitUntil:
+    visible: "Sign in with Google"
+    timeout: 30000

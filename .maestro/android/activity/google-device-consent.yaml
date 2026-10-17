@@ -1,0 +1,9 @@
+appId: com.google.android.gms
+name: Required Google tester device consent
+---
+- assertVisible: "Google Terms of Service"
+- tapOn: "I agree"
+- extendedWaitUntil:
+    visible: "Google services|Add account to device|Choose an account|Welcome.*|ACCEPT"
+    timeout: 60000
+- takeScreenshot: google-device-consent-result

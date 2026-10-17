@@ -1,0 +1,46 @@
+# Android accessibility selectors: device calibration is pending.
+appId: ${MAESTRO_ANDROID_APP_ID}
+name: QA07 signup participant
+tags: [signup, participant]
+---
+- runFlow: ../shared/login.yaml
+- openLink:
+    link: ${MAESTRO_BASE_URL}/smart-signup-form/${MAESTRO_EVENT_ID}
+- scrollUntilVisible:
+    element:
+      text: "Select ${MAESTRO_SLOT_LABEL}"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    text: "Select ${MAESTRO_SLOT_LABEL}"
+- tapOn:
+    text: "Your name"
+- eraseText: 50
+- inputText: "QA07 Participant"
+- hideKeyboard
+- tapOn:
+    text: "Email address"
+- eraseText: 50
+- inputText: ${MAESTRO_EMAIL}
+- hideKeyboard
+- tapOn: "Save my sign-up"
+- extendedWaitUntil:
+    visible: "Sign-up confirmed!"
+    timeout: 30000
+- takeScreenshot: participant-confirmation
+- tapOn: "Got it"
+- tapOn: "Edit my signup"
+- tapOn:
+    text: "Additional note"
+- inputText: "QA07 updated note"
+- hideKeyboard
+- tapOn: "Update sign-up"
+- extendedWaitUntil:
+    visible: "Sign-up confirmed!"
+    timeout: 30000
+- tapOn: "Got it"
+- tapOn: "Cancel my signup"
+- extendedWaitUntil:
+    visible: "Cancelled. Thanks for letting us know!"
+    timeout: 30000
+- takeScreenshot: participant-cancelled

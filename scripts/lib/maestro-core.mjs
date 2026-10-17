@@ -27,6 +27,25 @@ export const SCENARIOS = [
   file: `.maestro/flows/${id}.yaml`,
 }));
 
+export const DISABLED_ACCOUNTS = new Set(["QA11"]);
+export const ACTIVE_SCENARIOS = SCENARIOS.filter((item) => !DISABLED_ACCOUNTS.has(item.account));
+
+export function selectScenarios(selectors) {
+  const matches = (item, selector) =>
+    item.account === selector || item.id === selector || item.id.startsWith(`${selector}-`);
+  if (
+    selectors?.some((selector) =>
+      SCENARIOS.some((item) => matches(item, selector) && DISABLED_ACCOUNTS.has(item.account)),
+    )
+  )
+    throw new Error("QA11 is disabled by user instruction and cannot be selected.");
+  if (selectors?.some((selector) => !ACTIVE_SCENARIOS.some((item) => matches(item, selector))))
+    throw new Error("Unknown flow selection. Run npm run test:maestro -- --list.");
+  return ACTIVE_SCENARIOS.filter(
+    (item) => !selectors || selectors.some((selector) => matches(item, selector)),
+  );
+}
+
 export function localOrigin(value) {
   const url = new URL(value);
   if (
@@ -201,8 +220,8 @@ export async function maestroCommand() {
   };
 }
 
-export async function snapshotFlow(scenario, artifactDir) {
-  const source = path.join(ROOT, ".maestro");
+export async function snapshotFlow(scenario, artifactDir, platform = "web") {
+  const source = path.join(ROOT, platform === "android" ? ".maestro/android" : ".maestro");
   const target = contained(artifactDir, "source");
   const files = [
     `flows/${path.basename(scenario.file)}`,
@@ -239,7 +258,7 @@ export function classifyFailure({ timedOut, spawnError, output = "" }) {
     return "incomplete_check";
   if (
     spawnError ||
-    /Unable to obtain|Unable to create driver|chrome.*not reachable|UnknownHostException|Connection refused|Invalid.*Flow|Invalid command|Failed to parse|NoSuchFileException/i.test(
+    /Media File Not Found|Maestro instrumentation could not be initialized|DeviceServerDiedException|StatusRuntimeException: UNAVAILABLE|Unable to obtain|Unable to create driver|chrome.*not reachable|UnknownHostException|Connection refused|Invalid.*Flow|Invalid command|Failed to parse|NoSuchFileException/i.test(
       output,
     )
   )

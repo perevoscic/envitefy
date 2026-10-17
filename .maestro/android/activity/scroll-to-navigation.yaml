@@ -1,0 +1,8 @@
+appId: com.envitefy.app
+name: Return to the app navigation after a native file picker
+---
+- scrollUntilVisible:
+    element: "Open navigation"
+    direction: UP
+    timeout: 30000
+- takeScreenshot: navigation-restored

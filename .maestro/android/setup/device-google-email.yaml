@@ -1,0 +1,15 @@
+appId: com.google.android.gms
+name: Authorized Google device account email
+---
+- assertVisible: "Sign in - Google Accounts"
+- extendedWaitUntil:
+    visible: "Email or phone"
+    timeout: 30000
+- tapOn: "Email or phone"
+- inputText: ${MAESTRO_EMAIL}
+- hideKeyboard
+- tapOn: "(?i)next"
+- extendedWaitUntil:
+    visible: "Welcome"
+    timeout: 60000
+- takeScreenshot: google-device-password-step

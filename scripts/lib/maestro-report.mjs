@@ -116,6 +116,31 @@ export async function writeReports(runDir, results, metadata = {}, secrets = [])
     });
     bugs.set(id, bug);
   }
+  let confirmed = [];
+  try {
+    confirmed = JSON.parse(await readFile(path.join(runDir, "confirmed-findings.json"), "utf8"));
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  for (const finding of confirmed.filter((item) => item.status === "confirmed_observed_mismatch")) {
+    bugs.set(`confirmed:${finding.id}`, {
+      ...finding,
+      classification: "confirmed_app_defect",
+      severity: "untriaged",
+      title: finding.title || finding.id,
+      expected: JSON.stringify(finding.expected),
+      actual: JSON.stringify(finding.actual),
+      steps: finding.evidence || [],
+      occurrences: [
+        {
+          account: finding.account,
+          scenario: finding.id,
+          eventId: finding.eventId,
+          artifactDir: ".",
+        },
+      ],
+    });
+  }
   const report = {
     ...metadata,
     generatedAt: new Date().toISOString(),
@@ -124,7 +149,9 @@ export async function writeReports(runDir, results, metadata = {}, secrets = [])
       failed: results.filter((item) => item.status === "failed").length,
       skipped: results.filter((item) => item.status === "skipped").length,
       findings: bugs.size,
-      confirmedDefects: 0,
+      confirmedDefects: [...bugs.values()].filter(
+        (item) => item.classification === "confirmed_app_defect",
+      ).length,
     },
     results,
     findings: [...bugs.values()],
@@ -138,7 +165,7 @@ export async function writeReports(runDir, results, metadata = {}, secrets = [])
     "",
     `Passed: ${report.summary.passed} · Failed/incomplete: ${report.summary.failed} · Skipped: ${report.summary.skipped}`,
     "",
-    "Findings require triage. A test failure or timeout is not automatically a confirmed app defect.",
+    `Confirmed app defects from evidence review: ${report.summary.confirmedDefects}. Other findings require triage; a test failure or timeout alone does not confirm an app defect.`,
     "",
     "| Account | Scenario | Result | Classification | Evidence |",
     "| --- | --- | --- | --- | --- |",
@@ -156,6 +183,7 @@ export async function writeReports(runDir, results, metadata = {}, secrets = [])
       "",
       `Observed: ${item.actual}`,
       "",
+      ...(item.cause ? [`Cause: ${item.cause}`, ""] : []),
       ...item.steps.map((step) => `- ${step}`),
       "",
     ]),
@@ -176,7 +204,7 @@ export async function writeReports(runDir, results, metadata = {}, secrets = [])
   await writeFile(
     path.join(runDir, "report.html"),
     safe(
-      `<!doctype html><html lang="en"><meta charset="utf-8"><title>Envitefy Maestro report</title><style>body{font:16px system-ui;max-width:1400px;margin:32px auto;padding:0 20px;color:#211c2b}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:12px;text-align:left;vertical-align:top}img{max-height:180px;object-fit:contain}pre{white-space:pre-wrap}</style><h1>Envitefy Maestro report</h1><p>${escapeHtml(report.summary.passed)} passed · ${escapeHtml(report.summary.failed)} failed/incomplete · ${escapeHtml(report.summary.skipped)} skipped. Findings require review.</p><table><thead><tr><th>Account</th><th>Scenario</th><th>Result</th><th>Classification</th><th>Evidence</th></tr></thead><tbody>${rows.join("")}</tbody></table><h2>Coverage limits</h2><ul>${(metadata.limitations || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></html>`,
+      `<!doctype html><html lang="en"><meta charset="utf-8"><title>Envitefy Maestro report</title><style>body{font:16px system-ui;max-width:1400px;margin:32px auto;padding:0 20px;color:#211c2b}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:12px;text-align:left;vertical-align:top}img{max-height:180px;object-fit:contain}pre{white-space:pre-wrap}</style><h1>Envitefy Maestro report</h1><p>${escapeHtml(report.summary.passed)} passed · ${escapeHtml(report.summary.failed)} failed/incomplete · ${escapeHtml(report.summary.skipped)} skipped · ${escapeHtml(report.summary.confirmedDefects)} confirmed app defects from evidence review.</p>${report.summary.confirmedDefects ? '<p><a href="activity-summary.html">Confirmed findings and causes</a> · <a href="confirmed-findings.json">Finding evidence</a></p>' : ""}<table><thead><tr><th>Account</th><th>Scenario</th><th>Result</th><th>Classification</th><th>Evidence</th></tr></thead><tbody>${rows.join("")}</tbody></table><h2>Coverage limits</h2><ul>${(metadata.limitations || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></html>`,
     ),
   );
   return report;

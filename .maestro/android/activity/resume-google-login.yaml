@@ -1,0 +1,33 @@
+appId: com.envitefy.app
+name: Resume Login to an existing Google tester account
+---
+# Existing-account Sign In only; no signup or consent controls.
+- runFlow:
+    when:
+      visible: "Open menu"
+      notVisible: "(?i)^(login|sign in)$"
+    commands:
+      - tapOn: "Open menu"
+- runFlow:
+    when:
+      visible: "(?i)^(login|sign in)$"
+      notVisible: "Sign in with Google"
+    commands:
+      - tapOn: "(?i)^(login|sign in)$"
+- extendedWaitUntil:
+    visible: "Sign in with Google"
+    timeout: 30000
+- takeScreenshot: existing-account-login
+- tapOn: "Sign in with Google"
+- extendedWaitUntil:
+    visible: "Choose an account|Выберите аккаунт"
+    timeout: 60000
+- scrollUntilVisible:
+    element: '.*${MAESTRO_EMAIL_PATTERN}.*'
+    direction: UP
+    timeout: 30000
+- tapOn: '.*${MAESTRO_EMAIL_PATTERN}.*'
+- extendedWaitUntil:
+    visible: "Continue|Продолжить|Welcome.*|Open navigation|Access Denied"
+    timeout: 60000
+- takeScreenshot: existing-account-google-result

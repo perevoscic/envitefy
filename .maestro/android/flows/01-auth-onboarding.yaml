@@ -1,0 +1,13 @@
+# Android accessibility selectors: device calibration is pending.
+appId: ${MAESTRO_ANDROID_APP_ID}
+name: QA01 authentication and session
+tags: [auth, smoke]
+---
+- runFlow: ../shared/login.yaml
+- openLink:
+    link: ${MAESTRO_BASE_URL}/
+- extendedWaitUntil:
+    visible:
+      text: "Welcome.*"
+    timeout: 60000
+- takeScreenshot: authenticated-dashboard

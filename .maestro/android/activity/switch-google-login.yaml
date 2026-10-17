@@ -1,0 +1,42 @@
+appId: com.envitefy.app
+name: Sign in to a previously verified Google tester account
+---
+# Existing-account Login only: no signup controls or legal-consent action.
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          when:
+            notVisible: "Account menu for.*"
+          commands:
+            - tapOn: "Open navigation"
+      - extendedWaitUntil:
+          visible: "Account menu for.*"
+          timeout: 5000
+- tapOn: "Account menu for.*"
+- extendedWaitUntil:
+    visible: "(?i)log out"
+    timeout: 30000
+- tapOn: "(?i)log out"
+- extendedWaitUntil:
+    visible: "Open menu"
+    timeout: 60000
+- tapOn: "Open menu"
+- tapOn: "(?i)^(login|sign in)$"
+- extendedWaitUntil:
+    visible: "Sign in with Google"
+    timeout: 30000
+- takeScreenshot: existing-account-login
+- tapOn: "Sign in with Google"
+- extendedWaitUntil:
+    visible: "Choose an account|Выберите аккаунт"
+    timeout: 60000
+- scrollUntilVisible:
+    element: '.*${MAESTRO_EMAIL_PATTERN}.*'
+    direction: UP
+    timeout: 30000
+- tapOn: '.*${MAESTRO_EMAIL_PATTERN}.*'
+- extendedWaitUntil:
+    visible: "Continue|Продолжить|Welcome.*|Open navigation|Access Denied"
+    timeout: 60000
+- takeScreenshot: existing-account-google-result

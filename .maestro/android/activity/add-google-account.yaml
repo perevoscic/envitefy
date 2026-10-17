@@ -1,0 +1,11 @@
+appId: com.android.chrome
+name: Add the authorized Google tester to the emulator
+---
+- assertVisible: "Add account to device"
+- tapOn:
+    text: "Add account to device"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: "Email or phone|Checking info.*|Sign in"
+    timeout: 60000
+- takeScreenshot: add-google-account

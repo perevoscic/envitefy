@@ -1,0 +1,6 @@
+appId: com.envitefy.app
+name: Import the selected tester's uniquely named Snap flyer
+---
+- addMedia:
+    - ${MAESTRO_SNAP_FILE}
+- takeScreenshot: account-flyer-imported

@@ -20,6 +20,8 @@
     "test:customer-entrypoints": "node scripts/run-customer-entrypoint-tests.mjs",
     "maestro:install": "powershell -NoProfile -File scripts/maestro-install.ps1 -WithPostgres",
     "maestro:doctor": "node scripts/maestro-doctor.mjs",
+    "maestro:android:doctor": "node scripts/maestro-android-doctor.mjs",
+    "maestro:android:emulator": "powershell -NoProfile -File scripts/maestro-android-emulator.ps1 -Wait",
     "test:maestro": "node scripts/maestro-run.mjs",
     "maestro:check": "node scripts/maestro-run.mjs --check",
     "test:maestro:local": "node scripts/maestro-run.mjs --local-fixtures",

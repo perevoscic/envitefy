@@ -1,0 +1,28 @@
+appId: com.android.chrome
+name: Select the authorized Google tester for Envitefy
+---
+- assertVisible: 'accounts\.google\.com'
+- assertVisible: "Choose an account|Выберите аккаунт"
+- runFlow:
+    when:
+      visible: '.*${MAESTRO_EMAIL_PATTERN}.*'
+    commands:
+      - tapOn:
+          text: '.*${MAESTRO_EMAIL_PATTERN}.*'
+          retryTapIfNoChange: true
+- runFlow:
+    when:
+      visible: "Choose an account|Выберите аккаунт"
+      notVisible: '.*${MAESTRO_EMAIL_PATTERN}.*'
+    commands:
+      - swipe:
+          direction: UP
+      - swipe:
+          direction: UP
+      - extendedWaitUntil:
+          visible: "Use another account|Использовать другой аккаунт"
+          timeout: 10000
+      - tapOn:
+          text: "Use another account|Использовать другой аккаунт"
+          retryTapIfNoChange: true
+- takeScreenshot: google-selected-tester

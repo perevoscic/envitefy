@@ -1,0 +1,12 @@
+appId: com.envitefy.app
+name: Inspect the saved dashboard card at the top of the page
+---
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+- takeScreenshot: dashboard-top-card

@@ -1,0 +1,17 @@
+appId: com.envitefy.app
+name: Snap upload from verified account navigation
+---
+- assertVisible: "Account menu for.*"
+- tapOn:
+    text: "(?i)snap / upload"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: "Upload file"
+    timeout: 60000
+- assertVisible: "Snap flyer"
+- takeScreenshot: snap-upload-start
+- addMedia:
+    - ${MAESTRO_SNAP_FILE}
+- tapOn:
+    text: "Upload file"
+- takeScreenshot: android-file-picker

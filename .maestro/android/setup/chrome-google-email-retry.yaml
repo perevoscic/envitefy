@@ -1,0 +1,15 @@
+appId: com.android.chrome
+name: Google email input with focus verification
+---
+- assertVisible: 'accounts\.google\.com'
+- tapOn:
+    id: "identifierId"
+- pressKey: Backspace
+- inputText: ${MAESTRO_EMAIL}
+- assertVisible: '${MAESTRO_EMAIL_PATTERN}'
+- hideKeyboard
+- tapOn: "Next"
+- extendedWaitUntil:
+    visible: "Welcome"
+    timeout: 60000
+- takeScreenshot: google-email-retry-result

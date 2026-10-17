@@ -1,0 +1,34 @@
+# Android accessibility selectors: device calibration is pending.
+appId: ${MAESTRO_ANDROID_APP_ID}
+name: QA02 Live Card draft and publication
+tags: [livecard, persistence]
+---
+- runFlow: ../shared/login.yaml
+- openLink:
+    link: ${MAESTRO_BASE_URL}/live-cards?edit=${MAESTRO_EVENT_ID}
+- extendedWaitUntil:
+    visible: "Basics"
+    timeout: 60000
+- tapOn: "Message to guests.*"
+- tapOn:
+    text: 'Message to guests \(optional\)'
+- eraseText: 50
+- inputText: "QA02 saved guest message"
+- hideKeyboard
+- tapOn: "Save draft"
+- extendedWaitUntil:
+    visible: "Draft saved.*"
+    timeout: 60000
+- openLink:
+    link: ${MAESTRO_BASE_URL}/live-cards?edit=${MAESTRO_EVENT_ID}
+- tapOn: "Message to guests.*"
+- assertVisible: "QA02 saved guest message"
+- tapOn: "Review invitation"
+- extendedWaitUntil:
+    visible: "Publish invitation"
+    timeout: 60000
+- tapOn: "Publish invitation"
+- extendedWaitUntil:
+    visible: "Copy guest link"
+    timeout: 60000
+- takeScreenshot: published-invitation

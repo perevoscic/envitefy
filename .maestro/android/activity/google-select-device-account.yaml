@@ -1,0 +1,8 @@
+appId: com.android.chrome
+name: Select the authorized tester in Chrome account controls
+---
+- assertVisible: "Signed in to Google as"
+- tapOn:
+    text: '.*${MAESTRO_EMAIL_PATTERN}.*'
+    retryTapIfNoChange: true
+- takeScreenshot: google-device-account-selected

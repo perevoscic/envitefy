@@ -1,0 +1,16 @@
+# Android accessibility selectors: device calibration is pending.
+appId: ${MAESTRO_ANDROID_APP_ID}
+name: QA12 cross-account isolation
+tags: [security, isolation]
+---
+- runFlow: ../shared/login.yaml
+- openLink:
+    link: ${MAESTRO_BASE_URL}/event/${MAESTRO_EVENT_ID}
+- assertNotVisible: ${MAESTRO_PATIENT_NAME}
+- assertNotVisible: ${MAESTRO_CLINICIAN_NAME}
+- assertNotVisible: "View signups"
+- openLink:
+    link: ${MAESTRO_BASE_URL}/api/history/${MAESTRO_EVENT_ID}
+- assertNotVisible: ${MAESTRO_PATIENT_NAME}
+- assertNotVisible: ${MAESTRO_PRIVATE_EVENT_TITLE}
+- takeScreenshot: private-event-denied

@@ -1,0 +1,72 @@
+appId: com.envitefy.app
+name: Switch to the next Google tester signup
+---
+- runFlow:
+    when:
+      visible: "Open navigation"
+    commands:
+      - tapOn:
+          text: "Open navigation"
+          retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: "Account menu for.*"
+    timeout: 30000
+- tapOn:
+    text: "Account menu for.*"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: "(?i)log out"
+    timeout: 30000
+- tapOn: "(?i)log out"
+- extendedWaitUntil:
+    visible: "Open menu"
+    timeout: 60000
+- tapOn:
+    text: "Open menu"
+    retryTapIfNoChange: true
+- tapOn:
+    text: "Start Creating"
+- runFlow:
+    when:
+      visible: "Open in new Chrome tab"
+    commands:
+      - pressKey: Back
+- extendedWaitUntil:
+    visible: "(?i)sign up with google"
+    timeout: 30000
+- tapOn:
+    text: 'I confirm I am at least 18, agree to the Terms of Use, and acknowledge the Privacy Policy\.'
+- takeScreenshot: signup-consent
+- tapOn:
+    text: "(?i)sign up with google"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: "Choose an account|Выберите аккаунт"
+    timeout: 60000
+- runFlow:
+    when:
+      visible: '.*${MAESTRO_EMAIL_PATTERN}.*'
+    commands:
+      - tapOn: '.*${MAESTRO_EMAIL_PATTERN}.*'
+- runFlow:
+    when:
+      visible: "Choose an account|Выберите аккаунт"
+      notVisible: '.*${MAESTRO_EMAIL_PATTERN}.*'
+    commands:
+      - swipe:
+          direction: UP
+      - swipe:
+          direction: UP
+      - extendedWaitUntil:
+          visible: "Use another account|Использовать другой аккаунт"
+          timeout: 10000
+      - tapOn: "Use another account|Использовать другой аккаунт"
+- runFlow:
+    when:
+      visible: "Sign in to Chrome"
+    commands:
+      - tapOn: "Skip"
+- extendedWaitUntil:
+    visible: "Email or phone|Телефон или электронный адрес|Continue|Продолжить|Welcome.*|Open navigation|Signed in to Google as"
+    timeout: 60000
+- takeScreenshot: google-next-tester-email

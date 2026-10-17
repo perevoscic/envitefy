@@ -1,0 +1,27 @@
+# Android accessibility selectors: device calibration is pending.
+appId: ${MAESTRO_ANDROID_APP_ID}
+name: QA03 edit a published Live Card
+tags: [livecard, persistence]
+---
+- runFlow: ../shared/login.yaml
+- openLink:
+    link: ${MAESTRO_BASE_URL}/live-cards?edit=${MAESTRO_EVENT_ID}
+- extendedWaitUntil:
+    visible: "Save changes"
+    timeout: 60000
+- tapOn: "Message to guests.*"
+- tapOn:
+    text: 'Message to guests \(optional\)'
+- eraseText: 50
+- inputText: "QA03 changed guest message"
+- hideKeyboard
+- tapOn: "Save changes"
+- extendedWaitUntil:
+    visible: "Changes saved.*"
+    timeout: 60000
+- openLink:
+    link: ${MAESTRO_BASE_URL}/live-cards?edit=${MAESTRO_EVENT_ID}
+- tapOn: "Message to guests.*"
+- assertVisible: "QA03 changed guest message"
+- assertNotVisible: "Publish invitation"
+- takeScreenshot: published-changes-retained

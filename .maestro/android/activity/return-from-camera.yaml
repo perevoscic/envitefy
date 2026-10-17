@@ -1,0 +1,7 @@
+appId: com.android.camera2
+name: Return from the unexpected native camera without taking a picture
+---
+- pressKey: Back
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: returned-from-camera

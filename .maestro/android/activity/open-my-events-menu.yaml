@@ -1,0 +1,16 @@
+appId: com.envitefy.app
+name: Inspect the saved-event navigation before selecting its record
+---
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          when:
+            notVisible: "Account menu for.*"
+          commands:
+            - tapOn: "Open navigation"
+      - extendedWaitUntil:
+          visible: "Account menu for.*"
+          timeout: 5000
+- tapOn: "(?i)my events.*"
+- takeScreenshot: my-events-menu

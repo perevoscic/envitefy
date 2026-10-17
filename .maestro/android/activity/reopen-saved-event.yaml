@@ -1,0 +1,32 @@
+appId: com.envitefy.app
+name: Reopen the saved Snap event from My Events
+---
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          when:
+            notVisible: "Account menu for.*"
+          commands:
+            - tapOn: "Open navigation"
+      - extendedWaitUntil:
+          visible: "Account menu for.*"
+          timeout: 5000
+- runFlow:
+    when:
+      visible: "(?i)back"
+    commands:
+      - tapOn: "(?i)back"
+- extendedWaitUntil:
+    visible: "(?i)my events.*"
+    timeout: 30000
+- tapOn:
+    text: "(?i)my events.*"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: '(?s)^[^:]+: [^ ]+ ${MAESTRO_ACCOUNT} Test Workshop.*'
+    timeout: 30000
+- tapOn:
+    text: '(?s)^[^:]+: [^ ]+ ${MAESTRO_ACCOUNT} Test Workshop.*'
+    retryTapIfNoChange: true
+- takeScreenshot: reopened-saved-event

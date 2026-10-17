@@ -1,0 +1,31 @@
+# Android accessibility selectors: device calibration is pending.
+appId: ${MAESTRO_ANDROID_APP_ID}
+name: QA08 full-slot waitlist
+tags: [signup, waitlist]
+---
+- runFlow: ../shared/login.yaml
+- openLink:
+    link: ${MAESTRO_BASE_URL}/smart-signup-form/${MAESTRO_EVENT_ID}
+- scrollUntilVisible:
+    element:
+      text: "Select ${MAESTRO_SLOT_LABEL}"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    text: "Select ${MAESTRO_SLOT_LABEL}"
+- tapOn:
+    text: "Your name"
+- eraseText: 50
+- inputText: "QA08 Waitlist"
+- hideKeyboard
+- tapOn:
+    text: "Email address"
+- eraseText: 50
+- inputText: ${MAESTRO_EMAIL}
+- hideKeyboard
+- tapOn: "Put all my selections on the waitlist"
+- tapOn: "Save my sign-up"
+- extendedWaitUntil:
+    visible: "You're on the waitlist"
+    timeout: 30000
+- takeScreenshot: waitlist-confirmation

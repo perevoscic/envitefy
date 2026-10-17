@@ -1,0 +1,42 @@
+# Android accessibility selectors: device calibration is pending.
+appId: ${MAESTRO_ANDROID_APP_ID}
+name: QA10 signup co-host acceptance
+tags: [signup, cohost, permissions]
+---
+- runFlow: ../shared/login.yaml
+- openLink:
+    link: ${MAESTRO_BASE_URL}/
+- extendedWaitUntil:
+    visible:
+      text: "Co-host invitations, 1 pending"
+    timeout: 60000
+- tapOn:
+    text: "Co-host invitations, 1 pending"
+- tapOn:
+    text: "Accept co-host invitation for ${MAESTRO_EVENT_TITLE}"
+- extendedWaitUntil:
+    visible: "Host dashboard"
+    timeout: 60000
+- tapOn: "By person"
+- assertNotVisible: "Manage access"
+- assertNotVisible: "Delete form"
+- tapOn:
+    text: "Edit event"
+- extendedWaitUntil:
+    visible:
+      text: "Edit event title"
+    timeout: 60000
+- tapOn:
+    text: "Edit event title"
+- inputText: "QA10 co-host updated title"
+- hideKeyboard
+- tapOn:
+    text: "Done editing event title"
+- tapOn: "Save changes"
+- extendedWaitUntil:
+    visible: "Published."
+    timeout: 60000
+- openLink:
+    link: ${MAESTRO_BASE_URL}/smart-signup-form/${MAESTRO_EVENT_ID}
+- assertVisible: "QA10 co-host updated title"
+- takeScreenshot: signup-cohost-access

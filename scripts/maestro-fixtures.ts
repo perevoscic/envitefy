@@ -112,8 +112,6 @@ const events = [
   card(2, "draft invitation", "draft"),
   card(3, "published invitation"),
   card(2, "cohost invitation"),
-  card(11, "calendar gathering"),
-  card(11, "second gathering"),
   signup(6, "host signup"),
   signup(6, "participant signup"),
   signup(6, "waitlist signup", { full: true }),

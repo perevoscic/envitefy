@@ -3,8 +3,10 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { ANDROID_APP_ID, inspectAndroid, selectAndroidDevice } from "./lib/maestro-android.mjs";
 import { appOrigin, configuredAccounts } from "./lib/maestro-config.mjs";
 import {
+  ACTIVE_SCENARIOS,
   classifyFailure,
   contained,
   fingerprint,
@@ -12,7 +14,9 @@ import {
   redact,
   runProcess,
   scrubArtifacts,
+  selectScenarios,
 } from "./lib/maestro-core.mjs";
+import { authenticatedRequest } from "./lib/maestro-environment.mjs";
 import { inspectFailure, updateFindingRegistry, writeReports } from "./lib/maestro-report.mjs";
 
 test("supplied-account checks stop on missing values without exposing credentials", () => {
@@ -39,7 +43,7 @@ test("configured origins require HTTPS remotely and reject embedded credentials"
 test("a selected supplied account preserves password spaces and needs no synthetic fixtures", () => {
   const environment = configuredAccounts(
     {
-      MAESTRO_BASE_URL: "https://qa.example.test",
+      MAESTRO_BASE_URL: "https://envitefy.com",
       MAESTRO_QA01_EMAIL: "first@example.test",
       MAESTRO_QA01_PASSWORD: "  intentional spaces  ",
     },
@@ -62,6 +66,90 @@ test("mutating test environments reject remote origins, credentials and paths", 
     assert.throws(() => localOrigin(url));
   assert.equal(localOrigin("http://127.0.0.1:3217"), "http://127.0.0.1:3217");
   assert.throws(() => contained("/safe/root", "../../private"));
+});
+
+test("QA11 cannot be selected and its supplied credentials are never loaded", () => {
+  assert.equal(selectScenarios().length, 11);
+  for (const selector of ["QA11", "11", "11-dashboard-calendar"])
+    assert.throws(() => selectScenarios([selector]), /disabled/);
+  const configured = configuredAccounts(
+    {
+      MAESTRO_BASE_URL: "https://envitefy.com",
+      MAESTRO_QA01_EMAIL: "one@example.test",
+      MAESTRO_QA01_PASSWORD: "selected-password",
+      MAESTRO_QA11_EMAIL: "excluded@example.test",
+      MAESTRO_QA11_PASSWORD: "must-never-be-used",
+    },
+    [{ account: "QA01" }],
+  );
+  assert.equal(configured.accounts[10].disabled, true);
+  assert.equal(configured.accounts[10].password, "");
+  assert.ok(!configured.secretValues.includes("must-never-be-used"));
+});
+
+test("Google credentials are explicitly distinguished from Envitefy password accounts", () => {
+  const environment = configuredAccounts(
+    {
+      MAESTRO_BASE_URL: "https://envitefy.com",
+      MAESTRO_AUTH_PROVIDER: "google",
+      MAESTRO_QA01_EMAIL: "one@example.test",
+      MAESTRO_QA01_PASSWORD: "google-password",
+    },
+    [{ account: "QA01" }],
+  );
+  assert.equal(environment.authProvider, "google");
+});
+
+test("Google credentials are rejected before an Envitefy password request is created", async () => {
+  await assert.rejects(
+    () => authenticatedRequest("https://envitefy.com", { authProvider: "google" }),
+    /must not be sent/,
+  );
+});
+
+test("Android selection distinguishes missing, unauthorized and ambiguous devices", () => {
+  assert.throws(() => selectAndroidDevice("List of devices attached\n"), /No authorized/);
+  assert.throws(() => selectAndroidDevice("phone unauthorized\n", "phone"), /unauthorized/);
+  assert.throws(() => selectAndroidDevice("one device\ntwo device\n"), /Multiple/);
+  assert.equal(selectAndroidDevice("emulator-5556 device product:pixel\n"), "emulator-5556");
+});
+
+test("Android preflight rejects sideloaded builds before any app action", async () => {
+  const commands = [];
+  await assert.rejects(
+    () =>
+      inspectAndroid({ androidAppId: ANDROID_APP_ID }, async (_, args) => {
+        commands.push(args.join(" "));
+        return {
+          exitCode: 0,
+          output:
+            args[0] === "devices"
+              ? "phone device\n"
+              : `package:${ANDROID_APP_ID} installer=com.android.shell\n`,
+        };
+      }),
+    /not identified as Google Play installed/,
+  );
+  assert.equal(commands.length, 2);
+  assert.ok(commands.every((command) => !/install |am start|clear /.test(command)));
+});
+
+test("eleven Android flows target the native app and retain the account exclusion", async () => {
+  for (const scenario of ACTIVE_SCENARIOS) {
+    const flow = await readFile(
+      path.resolve(".maestro/android/flows", path.basename(scenario.file)),
+      "utf8",
+    );
+    assert.match(flow, /appId: \$\{MAESTRO_ANDROID_APP_ID\}/);
+    assert.doesNotMatch(flow, /^url:/m);
+    assert.notEqual(scenario.account, "QA11");
+  }
+  const login = await readFile(".maestro/android/shared/open-login.yaml", "utf8");
+  assert.match(login, /api\/auth\/signout/);
+  assert.doesNotMatch(login, /clearState/);
+  const oauth = await readFile(".maestro/android/shared/login.yaml", "utf8");
+  assert.match(oauth, /Sign in with Google/);
+  assert.doesNotMatch(oauth, /\$\{MAESTRO_PASSWORD\}/);
 });
 
 test("redaction preserves valid JSON while removing credentials and authorization", () => {

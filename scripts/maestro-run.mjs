@@ -1,9 +1,11 @@
 import { execFileSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { inspectAndroid } from "./lib/maestro-android.mjs";
 import { companionChecks } from "./lib/maestro-companion.mjs";
 import { loadConfiguredEnvironment } from "./lib/maestro-config.mjs";
 import {
+  ACTIVE_SCENARIOS,
   ARTIFACT_ROOT,
   classifyFailure,
   contained,
@@ -11,8 +13,8 @@ import {
   maestroCommand,
   ROOT,
   runProcess,
-  SCENARIOS,
   scrubArtifacts,
+  selectScenarios,
   snapshotFlow,
 } from "./lib/maestro-core.mjs";
 import { startEnvironment, warmScenario } from "./lib/maestro-environment.mjs";
@@ -20,7 +22,8 @@ import { inspectFailure, updateFindingRegistry, writeReports } from "./lib/maest
 
 const args = process.argv.slice(2);
 if (args.includes("--list")) {
-  for (const item of SCENARIOS) console.log(`${item.account}  ${item.id}  ${item.name}`);
+  for (const item of ACTIVE_SCENARIOS) console.log(`${item.account}  ${item.id}  ${item.name}`);
+  console.log("QA11 is excluded by user instruction.");
   process.exit(0);
 }
 const option = (name) => {
@@ -42,13 +45,13 @@ const unknown = args.filter(
 );
 if (unknown.length) throw new Error(`Unknown arguments: ${unknown.join(", ")}`);
 const selected = option("--flow")?.split(",");
-const matches = (item, selector) =>
-  item.id === selector || item.account === selector || item.id.startsWith(`${selector}-`);
-if (selected?.some((selector) => !SCENARIOS.some((item) => matches(item, selector))))
-  throw new Error("Unknown flow selection. Run npm run test:maestro -- --list.");
-const scenarios = SCENARIOS.filter(
-  (item) => !selected || selected.some((selector) => matches(item, selector)),
-);
+let scenarios;
+try {
+  scenarios = selectScenarios(selected);
+} catch (error) {
+  console.error(error.message);
+  process.exit(1);
+}
 if (!scenarios.length) throw new Error("No matching flow. Run npm run test:maestro -- --list.");
 const localFixtures = args.includes("--local-fixtures") || Boolean(option("--attach"));
 if (args.includes("--check") && localFixtures)
@@ -62,11 +65,18 @@ if (!localFixtures) {
     process.exit(1);
   }
 }
+const platform = localFixtures ? "web" : configuredEnvironment.platform;
 if (args.includes("--check")) {
   console.log(
     `Configuration complete for ${scenarios.length} selected accounts at ${configuredEnvironment.baseUrl}. No browser, login or app requests were started.`,
   );
   process.exit(0);
+}
+if (configuredEnvironment?.authProvider === "google") {
+  console.error(
+    "Google tester credentials are configured. They will not be submitted to Envitefy's password endpoint. Complete Google Play setup and calibrate the Android Google OAuth login before running these website-derived account workflows.",
+  );
+  process.exit(1);
 }
 const timeoutMs = Number(option("--timeout-ms") || 240000);
 if (!Number.isInteger(timeoutMs) || timeoutMs < 10000 || timeoutMs > 900000)
@@ -88,13 +98,16 @@ const metadata = {
   runId,
   commit,
   environment: localFixtures ? "isolated-local" : "user-configured",
+  platform,
   limitations: [
     "Existing accounts, artwork and scans are prerequisites; registration, generation and scan upload are not exercised.",
     "AI generation, provider OCR and email inbox delivery are not verified.",
     localFixtures
       ? "Seeded artwork and scan data exercise application editing and display."
       : "Supplied test records will be modified; the environment's normal notification configuration applies.",
-    "Maestro browser support covers Chromium; browser/device coverage is not universal.",
+    platform === "android"
+      ? "Android selectors and workflows require verification on the Play-installed build; desktop results do not certify Android."
+      : "Maestro browser support covers Chromium; browser/device coverage is not universal.",
     "UI permission assertions do not independently certify server authorization.",
   ],
 };
@@ -128,9 +141,16 @@ try {
     };
   } else environment = configuredEnvironment || (await startEnvironment(runDir));
   secrets = environment.secretValues;
+  if (platform === "android") {
+    metadata.android = await inspectAndroid(environment);
+    await writeFile(
+      path.join(runDir, "android-device.json"),
+      JSON.stringify(metadata.android, null, 2),
+    );
+  }
   console.log(
     localFixtures
-      ? `Local Envitefy ready at ${environment.baseUrl}. Twelve synthetic accounts seeded.`
+      ? `Local Envitefy ready at ${environment.baseUrl}. Eleven synthetic accounts seeded; QA11 excluded.`
       : `Using supplied test accounts at ${environment.baseUrl}.`,
   );
   for (const scenario of scenarios) {
@@ -157,14 +177,15 @@ try {
       console.log("  route preparation failed; continuing with the next account.");
       continue;
     }
-    const sourceSnapshot = await snapshotFlow(scenario, dir);
+    const sourceSnapshot = await snapshotFlow(scenario, dir, platform);
     const result = await runProcess(
       command.binary,
       [
+        ...(platform === "android" ? ["--device", metadata.android.serial] : []),
         "test",
-        ...(args.includes("--headed") ? [] : ["--headless"]),
-        "--screen-size",
-        "1440x1000",
+        ...(platform === "android"
+          ? []
+          : [...(args.includes("--headed") ? [] : ["--headless"]), "--screen-size", "1440x1000"]),
         "--no-ansi",
         "--format",
         "JUNIT",
@@ -180,6 +201,7 @@ try {
         env: {
           ...command.env,
           MAESTRO_BASE_URL: environment.baseUrl,
+          MAESTRO_ANDROID_APP_ID: environment.androidAppId || "com.envitefy.app",
           MAESTRO_EMAIL: account.email,
           MAESTRO_EMAIL_PATTERN: selectorText(account.email),
           MAESTRO_PASSWORD: account.password,
@@ -209,7 +231,10 @@ try {
       name: scenario.name,
       account: scenario.account,
       role: scenario.role,
-      file: scenario.file,
+      file:
+        platform === "android"
+          ? scenario.file.replace(".maestro/flows/", ".maestro/android/flows/")
+          : scenario.file,
       sourceDigest: sourceSnapshot.digest,
       startedAt,
       durationMs: Date.now() - Date.parse(startedAt),

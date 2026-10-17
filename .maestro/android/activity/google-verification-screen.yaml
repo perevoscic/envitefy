@@ -1,0 +1,12 @@
+appId: com.google.android.gms
+name: Inspect Google verification after declining password storage
+---
+- runFlow:
+    when:
+      visible: "Save password to Google Password Manager.*"
+    commands:
+      - tapOn: "Not now"
+- extendedWaitUntil:
+    visible: "2-Step Verification|Verify.*|Welcome|I agree|Google services"
+    timeout: 30000
+- takeScreenshot: google-verification

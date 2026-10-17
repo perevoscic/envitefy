@@ -1,0 +1,7 @@
+appId: com.envitefy.app
+name: Android document picker
+---
+- tapOn:
+    text: "Files"
+    retryTapIfNoChange: true
+- takeScreenshot: android-documents

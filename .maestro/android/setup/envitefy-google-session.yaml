@@ -1,0 +1,30 @@
+appId: com.envitefy.app
+name: Envitefy Google tester session and profile
+---
+- launchApp:
+    permissions:
+      all: unset
+- openLink:
+    link: https://envitefy.com/
+- extendedWaitUntil:
+    visible: "Welcome,.*"
+    timeout: 60000
+- runFlow:
+    when:
+      visible: "Essential only"
+    commands:
+      - tapOn: "Essential only"
+- assertNotVisible: "Access Denied"
+- takeScreenshot: authenticated-dashboard
+- openLink:
+    link: https://envitefy.com/settings
+- extendedWaitUntil:
+    visible: '.*${MAESTRO_EMAIL_PATTERN}.*'
+    timeout: 60000
+- assertVisible: "Email"
+- takeScreenshot: authenticated-profile
+- openLink:
+    link: https://envitefy.com/
+- extendedWaitUntil:
+    visible: "Welcome,.*"
+    timeout: 60000

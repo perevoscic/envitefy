@@ -1,0 +1,10 @@
+appId: com.android.chrome
+name: Request the selected tester's previous recovery phone verification
+---
+- assertVisible: "accounts.google.com"
+- assertVisible: '${MAESTRO_EMAIL_PATTERN}'
+- assertVisible: "Previous recovery phone"
+- tapOn: "Previous recovery phone"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: google-previous-phone-result

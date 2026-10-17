@@ -1,0 +1,7 @@
+appId: com.envitefy.app
+name: Restore the installed Play app without submitting another scan
+---
+- extendedWaitUntil:
+    visible: "Open navigation|Open menu|Welcome.*"
+    timeout: 60000
+- takeScreenshot: restored-play-app

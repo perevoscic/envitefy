@@ -1,0 +1,58 @@
+appId: com.envitefy.app
+name: Saved Snap event on the account dashboard
+---
+- runFlow:
+    when:
+      visible: "Keep scanned events.*"
+    commands:
+      - tapOn: "(?i)not now"
+- runFlow:
+    when:
+      notVisible: "Welcome,.*"
+    commands:
+      - extendedWaitUntil:
+          visible: "(?i)open navigation|back|home"
+          timeout: 30000
+      - runFlow:
+          when:
+            visible: "Open navigation"
+          commands:
+            - tapOn:
+                text: "Open navigation"
+                retryTapIfNoChange: true
+      - runFlow:
+          when:
+            visible: "(?i)back"
+          commands:
+            - tapOn: "(?i)back"
+      - extendedWaitUntil:
+          visible: "(?i)home|refresh dashboard"
+          timeout: 30000
+      - runFlow:
+          when:
+            visible: "(?i)home"
+          commands:
+            - tapOn: "(?i)home"
+- extendedWaitUntil:
+    visible: "Refresh dashboard"
+    timeout: 60000
+- tapOn:
+    text: "Refresh dashboard"
+- waitForAnimationToEnd:
+    timeout: 10000
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+- scrollUntilVisible:
+    element:
+      text: '^[^ ]+ ${MAESTRO_ACCOUNT} Test Workshop$'
+      index: 1
+    direction: UP
+    visibilityPercentage: 50
+    timeout: 30000
+- takeScreenshot: saved-event-on-dashboard

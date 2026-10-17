@@ -1,0 +1,9 @@
+appId: com.google.android.gms
+name: Confirm the QA login just initiated on the trusted test device
+---
+- assertVisible: "Are you trying to sign in.*"
+- assertVisible: '${MAESTRO_EMAIL_PATTERN}'
+- assertVisible: "Android"
+- assertVisible: "Just now"
+- tapOn: "Yes, it's me"
+- takeScreenshot: google-current-signin-confirmed

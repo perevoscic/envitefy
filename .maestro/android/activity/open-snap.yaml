@@ -1,0 +1,30 @@
+appId: com.envitefy.app
+name: Account identity and Snap upload entry
+---
+- extendedWaitUntil:
+    visible: "Open navigation"
+    timeout: 60000
+- tapOn: "Open navigation"
+- tapOn: "Account menu for.*"
+- tapOn: "Profile"
+- scrollUntilVisible:
+    element: '.*${MAESTRO_EMAIL_PATTERN}.*'
+    direction: DOWN
+    timeout: 30000
+- assertVisible: '.*${MAESTRO_EMAIL_PATTERN}.*'
+- tapOn: "Open navigation"
+- tapOn: "(?i)home"
+- extendedWaitUntil:
+    visible: "Welcome,.*"
+    timeout: 60000
+- tapOn: "Open navigation"
+- tapOn: "(?i)snap / upload"
+- extendedWaitUntil:
+    visible: "Upload file"
+    timeout: 60000
+- assertVisible: "Snap flyer"
+- takeScreenshot: snap-upload-start
+- addMedia:
+    - ${MAESTRO_SNAP_FILE}
+- tapOn: "Upload file"
+- takeScreenshot: android-file-picker

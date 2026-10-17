@@ -1,0 +1,10 @@
+appId: com.envitefy.app
+name: Review the existing Snap result without repeating the upload
+---
+- runFlow:
+    when:
+      visible: "Keep scanned events.*"
+    commands:
+      - tapOn: "(?i)not now"
+- assertVisible: "(?s).*${MAESTRO_ACCOUNT}.*Test.*Workshop.*"
+- takeScreenshot: existing-snap-result

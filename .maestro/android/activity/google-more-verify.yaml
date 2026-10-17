@@ -1,0 +1,9 @@
+appId: com.android.chrome
+name: Inspect Google verification choices for the selected tester
+---
+- assertVisible: "accounts.google.com"
+- assertVisible: '${MAESTRO_EMAIL_PATTERN}'
+- tapOn: "More ways to verify"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: google-verification-choices

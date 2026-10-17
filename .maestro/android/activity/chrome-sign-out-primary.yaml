@@ -1,0 +1,6 @@
+appId: com.android.chrome
+name: Sign out the previous Chrome Google account for tester switching
+---
+- assertVisible: "Signed in to Google as"
+- tapOn: "Sign out"
+- takeScreenshot: chrome-primary-signout-result

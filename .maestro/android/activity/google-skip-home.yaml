@@ -1,0 +1,6 @@
+appId: com.google.android.gms
+name: Skip optional Google home address
+---
+- assertVisible: "Set a home address"
+- tapOn: "Skip"
+- takeScreenshot: google-after-home-skip

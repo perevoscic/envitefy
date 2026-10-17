@@ -1,0 +1,55 @@
+appId: com.envitefy.app
+name: Verify the selected tester in the Envitefy Profile
+---
+- extendedWaitUntil:
+    visible: "Open navigation|Account menu for.*"
+    timeout: 60000
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          when:
+            notVisible: "Account menu for.*"
+          commands:
+            - tapOn:
+                text: "Open navigation"
+      - extendedWaitUntil:
+          visible: "Account menu for.*"
+          timeout: 5000
+- tapOn:
+    text: "Account menu for.*"
+    retryTapIfNoChange: true
+- tapOn:
+    text: "Profile"
+    retryTapIfNoChange: true
+- scrollUntilVisible:
+    element: '.*${MAESTRO_EMAIL_PATTERN}.*'
+    direction: DOWN
+    timeout: 30000
+- assertVisible: '.*${MAESTRO_EMAIL_PATTERN}.*'
+- takeScreenshot: verified-envitefy-account
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          when:
+            notVisible: "Account menu for.*"
+          commands:
+            - tapOn: "Open navigation"
+      - extendedWaitUntil:
+          visible: "Account menu for.*"
+          timeout: 5000
+- runFlow:
+    when:
+      visible: "Back"
+    commands:
+      - tapOn: "Back"
+- assertVisible: "(?i)snap / upload"

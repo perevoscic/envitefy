@@ -1,0 +1,9 @@
+appId: com.android.chrome
+name: Leave Android account settings and return to Google OAuth
+---
+- assertVisible: "(?s).*Accounts for Owner.*"
+- back
+- extendedWaitUntil:
+    visible: 'accounts\.google\.com'
+    timeout: 30000
+- takeScreenshot: after-android-account-settings

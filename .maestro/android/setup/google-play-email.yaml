@@ -1,0 +1,28 @@
+appId: com.android.vending
+name: Google Play tester sign-in email
+---
+- openLink:
+    link: market://details?id=com.envitefy.app
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 30000
+- tapOn: "Sign in"
+- extendedWaitUntil:
+    visible: "Sign in with ease|Email or phone"
+    timeout: 120000
+- runFlow:
+    when:
+      visible: "Sign in with ease"
+    commands:
+      - tapOn: "(?i)skip"
+- extendedWaitUntil:
+    visible: "Email or phone"
+    timeout: 60000
+- tapOn: "Email or phone"
+- inputText: ${MAESTRO_EMAIL}
+- hideKeyboard
+- tapOn: "Next"
+- extendedWaitUntil:
+    visible: "Welcome"
+    timeout: 60000
+- takeScreenshot: google-password-step

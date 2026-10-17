@@ -1,3 +1,4 @@
+# Disabled by user instruction: do not run QA11.
 url: ${MAESTRO_BASE_URL}
 name: QA11 dashboard filters and calendar
 tags: [dashboard, calendar]

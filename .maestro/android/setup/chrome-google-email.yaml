@@ -1,0 +1,56 @@
+appId: com.android.chrome
+name: Google OAuth tester email
+---
+- runFlow:
+    when:
+      visible: "Sign in to Chrome"
+    commands:
+      - tapOn: "Skip"
+- runFlow:
+    when:
+      visible: "Choose a saved passkey.*"
+    commands:
+      - tapOn: "Close"
+- assertVisible: 'accounts\.google\.com'
+- extendedWaitUntil:
+    visible:
+      id: "identifierId"
+    timeout: 30000
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          when:
+            visible: "Choose a saved passkey.*"
+          commands:
+            - tapOn: "Close"
+      - tapOn:
+          id: "identifierId"
+      - runFlow:
+          when:
+            visible: "Choose a saved passkey.*"
+          commands:
+            - tapOn: "Close"
+      - pressKey: Backspace
+      - eraseText
+      - inputText: ${MAESTRO_EMAIL}
+      - extendedWaitUntil:
+          visible: '${MAESTRO_EMAIL_PATTERN}'
+          timeout: 5000
+- hideKeyboard
+- tapOn: "Next|Далее"
+- extendedWaitUntil:
+    visible: "Enter your password|Введите пароль|I'm not a robot"
+    timeout: 60000
+- runFlow:
+    when:
+      visible: "I'm not a robot"
+    commands:
+      - assertVisible: '${MAESTRO_EMAIL_PATTERN}'
+      - tapOn:
+          id: "recaptcha-anchor"
+      - takeScreenshot: google-checkbox-result
+- extendedWaitUntil:
+    visible: "Enter your password|Введите пароль"
+    timeout: 30000
+- takeScreenshot: google-oauth-password-step

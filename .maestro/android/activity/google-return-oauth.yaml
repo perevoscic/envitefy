@@ -1,0 +1,17 @@
+appId: com.android.chrome
+name: Return from native Google settings to OAuth
+---
+- runFlow:
+    when:
+      visible: "Autofill with Google"
+    commands:
+      - back
+- runFlow:
+    when:
+      visible: "Signed in to Google as"
+    commands:
+      - back
+- extendedWaitUntil:
+    visible: 'accounts\.google\.com'
+    timeout: 30000
+- takeScreenshot: google-oauth-return

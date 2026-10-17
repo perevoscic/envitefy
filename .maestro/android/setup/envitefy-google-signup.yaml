@@ -1,0 +1,45 @@
+appId: com.envitefy.app
+name: Envitefy Google tester signup and dashboard
+---
+- launchApp:
+    permissions:
+      all: unset
+- openLink:
+    link: https://envitefy.com/
+- extendedWaitUntil:
+    visible: "Open menu"
+    timeout: 30000
+- tapOn: "Open menu"
+- tapOn: "Start Creating"
+- extendedWaitUntil:
+    visible: "(?i)sign up with google"
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 10000
+- tapOn:
+    text: 'I confirm I am at least 18, agree to the Terms of Use, and acknowledge the Privacy Policy\.'
+    checked: false
+- assertVisible:
+    text: 'I confirm I am at least 18, agree to the Terms of Use, and acknowledge the Privacy Policy\.'
+    checked: true
+- takeScreenshot: legal-acceptance-checked
+- tapOn: "(?i)sign up with google"
+- extendedWaitUntil:
+    visible: "Choose an account"
+    timeout: 60000
+- tapOn: '.*${MAESTRO_EMAIL_PATTERN}.*'
+- extendedWaitUntil:
+    visible: "Continue|Welcome,.*|Access Denied"
+    timeout: 60000
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - assertVisible: '.*${MAESTRO_EMAIL_PATTERN}.*'
+      - tapOn: "Continue"
+- extendedWaitUntil:
+    visible: "Welcome,.*|Access Denied"
+    timeout: 90000
+- takeScreenshot: google-signup-result
+- assertNotVisible: "Access Denied"
+- assertVisible: "Welcome,.*"

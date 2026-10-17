@@ -13,7 +13,14 @@ import {
   startCampaignWebProxy,
 } from "./create-campaign-environment.mjs";
 import { appOrigin } from "./maestro-config.mjs";
-import { contained, localOrigin, ROOT, runProcess, SCENARIOS } from "./maestro-core.mjs";
+import {
+  contained,
+  DISABLED_ACCOUNTS,
+  localOrigin,
+  ROOT,
+  runProcess,
+  SCENARIOS,
+} from "./maestro-core.mjs";
 
 export async function startEnvironment(runDir) {
   const runtimeDir = contained(runDir, "runtime");
@@ -27,13 +34,17 @@ export async function startEnvironment(runDir) {
   const suffix = process.platform === "win32" ? ".exe" : "";
   await access(path.join(pgBin, `initdb${suffix}`));
   const databasePassword = randomBytes(24).toString("base64url");
-  const accounts = SCENARIOS.map((item) => ({
-    alias: item.account,
-    id: randomUUID(),
-    email: `${item.account.toLowerCase()}@maestro.example.test`,
-    password: randomBytes(24).toString("base64url"),
-    role: item.role,
-  }));
+  const accounts = SCENARIOS.map((item) =>
+    DISABLED_ACCOUNTS.has(item.account)
+      ? { alias: item.account, disabled: true, id: null, email: "", password: "" }
+      : {
+          alias: item.account,
+          id: randomUUID(),
+          email: `${item.account.toLowerCase()}@maestro.example.test`,
+          password: randomBytes(24).toString("base64url"),
+          role: item.role,
+        },
+  );
   const secrets = {
     databasePassword,
     accounts,
@@ -139,7 +150,7 @@ export async function startEnvironment(runDir) {
       ]) {
         await client.query(await readFile(path.join(ROOT, "prisma/manual_sql", file), "utf8"));
       }
-      for (const account of accounts) {
+      for (const account of accounts.filter((item) => !item.disabled)) {
         const salt = randomBytes(16).toString("hex");
         const hash = `${salt}:${scryptSync(account.password, Buffer.from(salt, "hex"), 64).toString("hex")}`;
         await client.query(
@@ -256,7 +267,7 @@ export async function startEnvironment(runDir) {
         key("waitlist signup"),
         key("cohost invitation"),
         key("cohost signup"),
-        key("calendar gathering"),
+        null,
         key("private scan"),
       ];
       accounts.forEach((account, index) => {
@@ -406,6 +417,8 @@ export async function startEnvironment(runDir) {
 }
 
 export async function authenticatedRequest(baseUrl, account) {
+  if (account.authProvider === "google")
+    throw new Error("Google tester credentials must not be sent to Envitefy's password endpoint.");
   appOrigin(baseUrl);
   const context = await request.newContext({ baseURL: baseUrl, timeout: 180000 });
   try {

@@ -1,0 +1,12 @@
+appId: com.android.chrome
+name: Required Google name and email consent for Envitefy
+---
+- assertVisible: 'accounts\.google\.com'
+- assertVisible: '.*${MAESTRO_EMAIL_PATTERN}.*'
+- assertVisible: ".*Envitefy.*"
+- tapOn: "Continue|Продолжить"
+- extendedWaitUntil:
+    visible: "Welcome.*|Open navigation|Access Denied|You do not have permission.*"
+    timeout: 60000
+- takeScreenshot: envitefy-google-signup-result
+- assertNotVisible: "Access Denied"

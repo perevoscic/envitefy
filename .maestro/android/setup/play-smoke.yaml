@@ -1,0 +1,20 @@
+appId: com.envitefy.app
+name: Google Play app launch and sign-in screen
+---
+- launchApp:
+    permissions:
+      all: unset
+- openLink:
+    link: https://envitefy.com/
+- extendedWaitUntil:
+    visible: "Open menu"
+    timeout: 30000
+- tapOn: "Open menu"
+- tapOn: "Sign In"
+- extendedWaitUntil:
+    visible: "(?i)sign in with google"
+    timeout: 30000
+- assertVisible: "(?i)welcome back"
+- assertVisible: "Email"
+- assertVisible: "Password"
+- takeScreenshot: play-app-sign-in

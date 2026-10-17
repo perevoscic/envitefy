@@ -1,0 +1,21 @@
+appId: com.envitefy.app
+name: Open the native picker for the selected tester's flyer
+---
+- runFlow:
+    when:
+      visible: "Only this time"
+    commands:
+      - assertVisible: "(?s).*take pictures.*record video.*"
+      - tapOn: "Don.t allow"
+- extendedWaitUntil:
+    visible: 'Files|${MAESTRO_SNAP_PICKER_PATTERN}'
+    timeout: 30000
+- runFlow:
+    when:
+      visible: "Files"
+    commands:
+      - tapOn: "Files"
+- extendedWaitUntil:
+    visible: '${MAESTRO_SNAP_PICKER_PATTERN}'
+    timeout: 30000
+- takeScreenshot: account-flyer-in-native-picker

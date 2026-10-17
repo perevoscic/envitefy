@@ -1,0 +1,9 @@
+appId: com.android.chrome
+name: Close the failed Google OAuth attempt
+---
+- assertVisible: "Something went wrong"
+- tapOn: "Close tab"
+- extendedWaitUntil:
+    visible: "(?i)sign up with google|Open menu"
+    timeout: 30000
+- takeScreenshot: envitefy-signup-return
