@@ -1,4 +1,5 @@
 import type { SportDetectionResult, SportEventArchetype } from "@/lib/sports-discovery";
+import type { CreationCategory } from "@/lib/creation-access";
 
 export type DiscoveryWorkflow = "gymnastics" | "football" | "sports";
 
@@ -52,6 +53,19 @@ export type DiscoverySourceRecord = {
   originalSizeBytes?: number | null;
   optimizedByQpdf?: boolean | null;
   dataUrl?: string | null;
+  /** Host-authored corrections and instructions, retained separately from source evidence. */
+  text?: string;
+  originalFiles?: Array<{ name: string; mimeType: string; sizeBytes: number }>;
+  /** Server-written only, stored in event_discoveries.source rather than editable event data. */
+  creationAuthorization?: {
+    version: 1;
+    userId: string;
+    product: "event_page";
+    category: CreationCategory;
+    authorizedAt: string;
+    /** Set only after a successful, authorized explicit first save. */
+    savedAt?: string;
+  };
   activityProfile?: string | null;
   eventArchetype?: SportEventArchetype | null;
   createdAt: string;

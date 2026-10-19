@@ -32,6 +32,10 @@ const Renderer = require('./GymMeetTemplateRenderer.tsx').default;
 const Preview = require('./GymnasticsPreview.tsx').default;
 const { normalizeHeroImageSettings } = require('../../lib/hero-image-settings.ts');
 const { buildTemplateDraftPayload } = require('../../lib/template-draft-payload.ts');
+const { saveTemplateDraftToAccount } = require('../../lib/template-draft-handoff.ts');
+const {
+  GYMNASTICS_TITLE_FONTS, normalizeGymnasticsTitleFont, gymnasticsTitleFontFamily,
+} = require('../../lib/gymnastics-title-font.ts');
 const noAction = () => {};
 const escaped = value => value.replaceAll('&', '&amp;').replaceAll("'", '&#x27;');
 const rsvpProps = {
@@ -46,6 +50,77 @@ test('image appearance normalizes fit and position while discarding the old manu
   assert.deepEqual(normalizeHeroImageSettings(undefined), { positionY: 50, fit: 'cover' });
   assert.deepEqual(normalizeHeroImageSettings({ positionY: -30, fit: 'invalid', tint: 90 }), { positionY: 0, fit: 'cover' });
   assert.deepEqual(normalizeHeroImageSettings({ positionY: NaN, fit: 'contain', tint: '50' }), { positionY: 50, fit: 'contain' });
+});
+
+test('title font choices are limited to bundled collection fonts and preserve design defaults', () => {
+  const css = fs.readFileSync(path.join(__dirname, 'collection-fonts.css'), 'utf8');
+  for (const font of GYMNASTICS_TITLE_FONTS) {
+    assert.equal(normalizeGymnasticsTitleFont(font.id), font.id);
+    assert.equal(gymnasticsTitleFontFamily(font.id), font.fontFamily);
+    const family = font.fontFamily.match(/^"([^"]+)"/)[1];
+    assert.ok(css.includes(`font-family: "${family}"`), `${font.id}: collection font is loaded`);
+  }
+  for (const value of [undefined, null, '', 'unknown', '"Injected Font"', {}, 1]) {
+    assert.equal(normalizeGymnasticsTitleFont(value), '');
+    assert.equal(gymnasticsTitleFontFamily(value), undefined);
+  }
+  for (const design of designs) {
+    const p = props(design);
+    assert.equal(p.model.gymnasticsTitleFont, '', design.id);
+    const native = renderToStaticMarkup(React.createElement(Renderer, p)).match(/<h1\b[^>]*>/)[0];
+    assert.ok(!native.includes('font-family:'), `${design.id}: default retains the design font`);
+  }
+  for (const [selected, expected] of [['', ''], ['unknown', ''], ['orbitron', 'orbitron']]) {
+    const model = normalizeGymMeetEventData({ eventTitle: 'Meet', navItems: [], rosterAthletes: [], eventData: {
+      createdVia: 'meet-discovery-v2', gymnasticsTitleFont: selected, fontId: 'inter',
+      builderDraft: { event: { gymnasticsTitleFont: 'anton' } },
+    } });
+    assert.equal(model.gymnasticsTitleFont, expected, 'the top-level selection overrides a stale discovery font');
+  }
+});
+
+test('selected title fonts survive explicit account saves and reloads across all designs', async () => {
+  for (const [index, design] of designs.entries()) {
+    const font = GYMNASTICS_TITLE_FONTS[index % GYMNASTICS_TITLE_FONTS.length];
+    const snapshot = { data: {
+      title: 'Spring club meet', pageTemplateId: design.id,
+      gymnasticsTitleFont: font.id, fontId: 'inter',
+      createdVia: 'meet-discovery-v2',
+      builderDraft: { event: { gymnasticsTitleFont: 'anton' } },
+    } };
+    const payload = buildTemplateDraftPayload(snapshot, 'gymnastics', 'America/Chicago');
+    assert.equal(payload.data.gymnasticsTitleFont, font.id, `${design.id}: draft payload`);
+    let saved;
+    const draft = {
+      version: 1, id: `font-${design.id}`, category: 'gymnastics', templateId: design.id,
+      updatedAt: Date.now(), snapshot, assets: {}, eventId: `saved-${design.id}`, eventRevision: 'v1',
+    };
+    await saveTemplateDraftToAccount({
+      draft, payload, category: 'gymnastics', templateId: design.id,
+      status: 'published', authenticated: true, remoteMedia: {},
+      request: async (url, options) => {
+        assert.equal(url, `/api/history/saved-${design.id}`);
+        assert.equal(options.method, 'PATCH');
+        saved = JSON.parse(options.body);
+        return Response.json({ id: draft.eventId, revision: 'v2', title: saved.title, data: saved.data });
+      },
+    });
+    assert.equal(saved.data.gymnasticsTitleFont, font.id, `${design.id}: top-level account value`);
+    assert.equal(saved.data.templateEditor.snapshot.data.gymnasticsTitleFont, font.id, `${design.id}: recovery snapshot`);
+    const restored = JSON.parse(JSON.stringify(saved));
+    const p = props(design);
+    p.model = normalizeGymMeetEventData({ eventTitle: restored.title, eventData: restored.data, navItems: [], rosterAthletes: [] });
+    assert.equal(p.model.gymnasticsTitleFont, font.id, `${design.id}: reloaded selection`);
+    const heading = renderToStaticMarkup(React.createElement(Renderer, p)).match(/<h1\b[^>]*>/)[0];
+    assert.ok(heading.includes(`font-family:${font.fontFamily.replaceAll('"', '&quot;')}`), `${design.id}: rendered font override`);
+    const defaultSnapshot = { data: { ...restored.data, gymnasticsTitleFont: '' } };
+    const defaults = JSON.parse(JSON.stringify(buildTemplateDraftPayload(defaultSnapshot, 'gymnastics', 'America/Chicago')));
+    assert.equal(defaults.data.gymnasticsTitleFont, '', `${design.id}: explicit default survives saving`);
+    p.model = normalizeGymMeetEventData({ eventTitle: defaults.title, eventData: defaults.data, navItems: [], rosterAthletes: [] });
+    assert.equal(p.model.gymnasticsTitleFont, '', `${design.id}: saved default wins over stale V2 font`);
+    const defaultHeading = renderToStaticMarkup(React.createElement(Renderer, p)).match(/<h1\b[^>]*>/)[0];
+    assert.ok(!defaultHeading.includes('font-family:'), `${design.id}: resetting restores native typography`);
+  }
 });
 
 test('explicit draft snapshots retain image adjustments through public rendering for all designs', () => {

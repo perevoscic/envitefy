@@ -4,6 +4,7 @@ import { useRef, type CSSProperties, type ReactNode } from "react";
 import HeroImageDragOverlay from "@/components/events/HeroImageDragOverlay";
 import InlineEditableText from "@/components/events/InlineEditableText";
 import type { GymnasticsPageTextChange } from "@/lib/gymnastics-page-text";
+import { gymnasticsTitleFontFamily } from "@/lib/gymnastics-title-font";
 import { useGymnasticsPageText } from "./useGymnasticsPageText";
 import { normalizeHeroImageSettings } from "@/lib/hero-image-settings";
 import type { GymMeetPageTemplateMeta, GymMeetRenderModel } from "./types";
@@ -110,7 +111,10 @@ export default function GymnasticsScene({
           {host ? (
             <p className={styles.eyebrow}>{pageText("hostByline", `${host} presents`)}</p>
           ) : null}
-          <h1 className={typography.heroClassName}>
+          <h1
+            className={typography.heroClassName}
+            style={{ fontFamily: gymnasticsTitleFontFamily(model.gymnasticsTitleFont) }}
+          >
             <InlineEditableText
               label="Event title"
               value={model.authoredTitle || undefined}

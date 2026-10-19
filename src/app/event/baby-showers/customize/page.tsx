@@ -603,7 +603,7 @@ const handleGalleryUpload = (e) => {
       { key: "rsvpDeadline", label: "RSVP By" },
     ];
     const payload: any = {
-      title: isBridal ? data.eventTitle || `${data.momName}’s Bridal Shower` : `${data.babyName}'s Baby Shower`,
+      title: data.eventTitle || (isBridal ? `${data.momName}’s Bridal Shower` : `${data.babyName}'s Baby Shower`),
       data: {
         category: isBridal ? "Bridal Showers" : "Baby Showers",
         occasion: isBridal ? "bridal-shower" : "baby-shower",
@@ -634,7 +634,7 @@ const handleGalleryUpload = (e) => {
         numberOfGuests: 0,
         templateId: template.id,
         templateConfig: {
-          displayName: isBridal ? `${data.momName}’s Bridal Shower` : `${data.babyName}'s Baby Shower`,
+          displayName: data.eventTitle || (isBridal ? `${data.momName}’s Bridal Shower` : `${data.babyName}'s Baby Shower`),
           categoryLabel: isBridal ? "Bridal Shower" : "Baby Shower",
           detailFields,
           rsvpCopy: {
@@ -761,8 +761,8 @@ const handleGalleryUpload = (e) => {
       <div className="space-y-6">
         <InputGroup
           label={isBridal ? "Invitation title" : "Baby’s Name"}
-          value={isBridal ? data.eventTitle : data.babyName}
-          onChange={(v) => updateData(isBridal ? "eventTitle" : "babyName", v)}
+          value={isBridal || typeof data.eventTitle === "string" ? data.eventTitle : data.babyName}
+          onChange={(v) => updateData(isBridal || typeof data.eventTitle === "string" ? "eventTitle" : "babyName", v)}
           placeholder={isBridal ? "A toast to the bride" : "Baby"}
         />
         <InputGroup
@@ -1223,7 +1223,7 @@ const renderDesignEditor = () => (
           <HeroImageEditor value={data.images.hero} onChange={(hero) => setData((prev) => ({ ...prev, images: { ...prev.images, hero } }))} className="absolute left-4 top-4 z-30" />
           <BabyShowerTemplateView
             eventId=""
-            eventTitle={isBridal ? data.eventTitle : `${data.babyName}'s Baby Shower`}
+            eventTitle={data.eventTitle || (isBridal ? `${data.momName}’s Bridal Shower` : `${data.babyName}'s Baby Shower`)}
             eventData={{
               ...data,
               occasion: isBridal ? "bridal-shower" : undefined,

@@ -22,6 +22,7 @@ test("Sign-up Forms appears for published forms, forms-focused accounts and admi
   ]) {
     let opened = false;
     let createOpened = false;
+    let signupFormOpened = false;
     const links = [];
     const bindings = {
       Home: icon, Upload: icon, LiveCardIcon: icon, Plus: icon,
@@ -39,6 +40,7 @@ test("Sign-up Forms appears for published forms, forms-focused accounts and admi
       isSnapUploadActive: false, ...scenario,
       onSignupForms: () => { opened = true; },
       onCreate: () => { createOpened = true; },
+      onSignupForm: () => { signupFormOpened = true; },
     }));
     const formsLink = links.find((link) => link.label === "Sign-up Forms");
     assert.equal(links.some((link) => link.label === "Live Card"), true, scenario.name);
@@ -53,7 +55,32 @@ test("Sign-up Forms appears for published forms, forms-focused accounts and admi
     assert.equal(links.some((link) => link.label === "Admin"), scenario.isAdmin);
     assert.equal(links.find((link) => link.label === "Drafts").badge, scenario.draftsCount);
     links.find((link) => link.label === "Create Event").onClick();
-    assert.equal(createOpened, true, "the first form remains discoverable through Create Event");
+    assert.equal(createOpened, true);
+    links.find((link) => link.label === "Sign-up Form").onClick();
+    assert.equal(signupFormOpened, true, "the first form is discoverable from its own root entry");
     assert.match(markup, /aria-label="Main navigation"/);
+  }
+});
+
+test("unified navigation keeps creation products independent and saved-work sidebar lists accessible", () => {
+  for (const [pages, signup] of [[true, false], [false, true], [true, true], [false, false]]) {
+    const links = [];
+    const bindings = {
+      Home: icon, Upload: icon, LiveCardIcon: icon, Plus: icon,
+      SidebarMyEventsMenuIcon: icon, Trophy: icon, ClipboardList: icon,
+      FileEdit: icon, ShieldCheck: icon,
+      SidebarLink: ({ link }) => { links.push(link); return React.createElement("button", null, link.label); },
+    };
+    const RootNavigationPanel = new Function("require", "exports", ...Object.keys(bindings), `${code}; return RootNavigationPanel;`)(require, {}, ...Object.values(bindings));
+    renderToStaticMarkup(React.createElement(RootNavigationPanel, {
+      pathname: "/events", sidebarPage: "root", eventContextSourcePage: "myEvents",
+      hasCreateEventAccess: pages, hasSignupFormAccess: signup, unifiedCreation: true,
+      createEntryLabel: "Event Page", isCreateEntryActive: false, isSnapUploadActive: false,
+      isAdmin: false, createdEventsCount: 3, schedulesCount: 1, signupFormsCount: 1,
+      draftsCount: 1, isSignupFormsDefault: false,
+    }));
+    assert.deepEqual(links.map(link => link.label), ["Home", "Snap a Flyer", "Live Card", ...(pages ? ["Event Page"] : []), ...(signup ? ["Sign-up Form"] : []), "My Events", "Schedules", "Sign-up Forms", "Drafts"]);
+    assert.equal(links.find(link => link.label === "My Events").active, true);
+    assert.equal(links.find(link => link.label === "My Events").badge, 3);
   }
 });

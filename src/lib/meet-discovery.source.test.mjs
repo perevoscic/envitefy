@@ -73,15 +73,14 @@ test("meet discovery routes staged parsing to Astra and vision extraction to Lun
   assert.match(source, /callOpenAiTargetedParse/);
 });
 
-test("meet discovery uses supported model parameters and recovers from retired Gemini models", () => {
+test("meet discovery uses supported OpenAI parameters without a hidden full-document provider fallback", () => {
   const source = readSource("src/lib/meet-discovery/core.ts");
 
-  assert.match(source, /const DEFAULT_GEMINI_PARSE_MODEL = "gemini-3\.6-flash";/);
   assert.doesNotMatch(
     source,
     /model: resolveDiscoveryParseModel\(\),\s*temperature: 0,/,
   );
-  assert.match(source, /response\.status === 404 && index < models\.length - 1/);
-  assert.match(source, /configured Gemini model was not found; retrying fallback/);
+  assert.doesNotMatch(source, /callGeminiParse|generativelanguage\.googleapis\.com|GEMINI_API_KEY/);
+  assert.match(source, /throw new Error\(openAiErrorMessage/);
   assert.doesNotMatch(source, /gemini-1\.5-flash/);
 });

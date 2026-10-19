@@ -1,3 +1,4 @@
+import { checkDiscoveryCreationSaveAccess, checkEventCreationAccess, markDiscoveryCreationSaved } from "@/lib/creation-access-server";
 import { normalizeScanSchedule, scanScheduleHistoryFields } from "@/lib/scan-schedule";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
@@ -188,6 +189,11 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   if (!permissions.canEdit && !(existing.user_id === null && body?.claim === true)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  const discoveryImport = Boolean(existing.data?.pipelineSummary?.workflow || existing.data?.discoverySource?.workflow || /^(meet-discovery|football-discovery|sports-discovery)/.test(String(existing.data?.createdVia || "")));
+  if (discoveryImport && permissions.canEdit) {
+    const denied = await checkDiscoveryCreationSaveAccess(userId, existing, { ...existing.data, ...(isRecord(body.data) ? body.data : {}), ...(body.category != null ? { category: body.category } : {}) });
+    if (denied) return denied;
+  }
   const claimRequested = body?.claim === true;
   let requestedSlug = body.publicSlug === undefined ? null : validateCustomEventPublicSlug(body.publicSlug);
   if (requestedSlug?.error) return NextResponse.json({ error: requestedSlug.error }, { status: 400 });
@@ -196,6 +202,8 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   let claimed = false;
   if (claimRequested) {
     if (!existing.user_id) {
+      const creationDenied = await checkEventCreationAccess(userId, { ...existing.data, ...(body.data || {}) });
+      if (creationDenied) return creationDenied;
       const claimedAttempt = await claimEventHistoryById(id, userId);
       const refreshed = claimedAttempt || (await getEventHistoryById(id));
       if (!refreshed || refreshed.user_id !== userId) {
@@ -250,6 +258,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
       const save = existing.data?.signupForm || patch.signupForm ? saveCollaborativeSignupEvent : saveCollaborativeEvent;
       const row = await save({ eventId: id, userId, patch, title: titleInput,
         expectedRevision: typeof body.expectedRevision === "string" ? body.expectedRevision : req.headers.get("If-Match")?.replace(/^"|"$/g, "") || null });
+      if (discoveryImport) await markDiscoveryCreationSaved(id, existing.user_id || null);
       await invalidateSharedHistoryViewers(id);
       return NextResponse.json(row, { headers: { "Cache-Control": "private, no-store" } });
     } catch (error) {
@@ -403,6 +412,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   }
 
   if (changed) {
+    if (discoveryImport) await markDiscoveryCreationSaved(id, existing.user_id || null);
     // Invalidate cache for the previous owner, or the new owner when a claim was performed.
     if (existing.user_id) {
       invalidateHistoryAndDashboardForUser(existing.user_id);

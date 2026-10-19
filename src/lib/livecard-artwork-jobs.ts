@@ -1,3 +1,5 @@
+import { requireCreationAccess } from "./creation-access-server";
+import { liveCardCreationCategories } from "./creation-access";
 import { createHash, randomUUID } from "node:crypto";
 import { query } from "./db";
 import type { LiveCardForm } from "./livecard-builder";
@@ -10,13 +12,14 @@ import { LiveCardGenerationFailure } from "./livecard-generation-failure";
 
 export type ArtworkJob = {
   event_id?: string | null;
+  actor_id?: string | null;
   id: string; owner_id: string; revision: string;
   state: "queued" | "running" | "ready" | "failed" | "cancel_requested" | "stopped";
   stage: string; form: LiveCardForm; design: SharedCardDesign | null;
   mode: "generate" | "repair" | "verify" | "background"; attempt: number; error: string | null; error_code?: string | null;
   created_at: string; updated_at: string;
 };
-export const artworkJobDeps = { query, background: generateSharedCard, headline: generateCardHeadline, references: resolveHeadlineBackground, compose: composeCardLettering };
+export const artworkJobDeps = { authorize: requireCreationAccess, query, background: generateSharedCard, headline: generateCardHeadline, references: resolveHeadlineBackground, compose: composeCardLettering };
 let schema: Promise<unknown> | undefined;
 async function ensureSchema() {
   schema ||= artworkJobDeps.query(`CREATE TABLE IF NOT EXISTS livecard_artwork_jobs (
@@ -24,7 +27,7 @@ async function ensureSchema() {
     state text NOT NULL, stage text NOT NULL, mode text NOT NULL, attempt integer NOT NULL DEFAULT 1,
     form jsonb NOT NULL, design jsonb, error text, error_code text,
     created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
-    UNIQUE(owner_id, revision))`).then(() => artworkJobDeps.query("ALTER TABLE livecard_artwork_jobs ADD COLUMN IF NOT EXISTS attempt integer NOT NULL DEFAULT 1, ADD COLUMN IF NOT EXISTS error_code text, ADD COLUMN IF NOT EXISTS event_id uuid")).catch((error) => { schema = undefined; throw error; });
+    UNIQUE(owner_id, revision))`).then(() => artworkJobDeps.query("ALTER TABLE livecard_artwork_jobs ADD COLUMN IF NOT EXISTS attempt integer NOT NULL DEFAULT 1, ADD COLUMN IF NOT EXISTS error_code text, ADD COLUMN IF NOT EXISTS event_id uuid, ADD COLUMN IF NOT EXISTS actor_id text")).catch((error) => { schema = undefined; throw error; });
   await schema;
 }
 export async function readArtworkJob(owner: string, id: string) {
@@ -35,7 +38,7 @@ export async function readArtworkJobForAccess(id: string) {
   await ensureSchema();
   return (await artworkJobDeps.query<ArtworkJob>("SELECT * FROM livecard_artwork_jobs WHERE id=$1", [id])).rows[0] || null;
 }
-export async function createArtworkJob(owner: string, key: string, form: LiveCardForm, design: SharedCardDesign | null, mode: ArtworkJob["mode"], eventId: string | null = null) {
+export async function createArtworkJob(owner: string, key: string, form: LiveCardForm, design: SharedCardDesign | null, mode: ArtworkJob["mode"], eventId: string | null = null, actorId: string = owner) {
   await ensureSchema();
   const revision = createHash("sha256").update(JSON.stringify([key, sharedCardDesignKey(form), form.title.trim(), form.headlineIntro.trim(), mode, design?.backgroundUrl, form.generationQuality, eventId])).digest("hex");
   const attempt = mode === "repair" ? (await artworkJobDeps.query<{ attempt: number }>(
@@ -43,10 +46,10 @@ export async function createArtworkJob(owner: string, key: string, form: LiveCar
     [owner, design?.backgroundUrl, design?.headline?.attempt || 1])).rows[0]?.attempt || 2
     : mode === "verify" || mode === "background" ? design?.headline?.attempt || 1 : 1;
   const row = (await artworkJobDeps.query<ArtworkJob>(`INSERT INTO livecard_artwork_jobs
-    (id,owner_id,revision,state,stage,mode,form,design,attempt,event_id) VALUES ($1,$2,$3,'queued','queued',$4,$5::jsonb,$6::jsonb,$7,$8)
+    (id,owner_id,revision,state,stage,mode,form,design,attempt,event_id,actor_id) VALUES ($1,$2,$3,'queued','queued',$4,$5::jsonb,$6::jsonb,$7,$8,$9)
     ON CONFLICT (owner_id,revision) DO UPDATE SET revision=EXCLUDED.revision RETURNING *`,
   [randomUUID(), owner, revision, mode, JSON.stringify(form), design ? JSON.stringify(design) : null,
-    attempt, eventId])).rows[0];
+    attempt, eventId, actorId])).rows[0];
   return row;
 }
 export async function cancelArtworkJob(owner: string, id: string) {
@@ -80,6 +83,8 @@ export async function runArtworkJob(owner: string, id: string) {
     void guard().catch(() => controller.abort()).finally(() => { polling = false; });
   }, 2000);
   try {
+    const authorize = () => artworkJobDeps.authorize(claimed.actor_id || owner, { product: "live_card", ...(claimed.event_id ? { eventId: claimed.event_id } : { categories: liveCardCreationCategories(claimed.form) }) });
+    await authorize();
     await guard();
     let design = claimed.design;
     const previous = design;
@@ -101,6 +106,8 @@ export async function runArtworkJob(owner: string, id: string) {
       await guard();
       design = { ...design, headline: { ...previous.headline, imageUrl: `data:image/webp;base64,${composition.composite.toString("base64")}`, layout: composition.layout } };
     }
+    // A long background generation may outlive a grant or co-host membership.
+    await authorize();
     const headline = await artworkJobDeps.headline(claimed.form, design, controller.signal, stage, claimed.mode === "verify" || claimed.mode === "background", { jobId: id, revision: claimed.revision, attempt: claimed.attempt });
     await guard();
     // Conditional commit closes the cancellation-before-completion race.

@@ -1,3 +1,4 @@
+import { checkCreationAccess } from "@/lib/creation-access-server";
 import { parseEventDates } from "@/lib/event-date-parser";
 import { extractSportsSchedule, hasSportsScheduleText } from "./sports-schedule.ts";
 import { scanScheduleFromOcr } from "../scan-schedule.ts";
@@ -408,23 +409,32 @@ export async function handleOcrRequest(request: Request) {
       const checked = validateUploadFileMeta({ fileName: item.name, mimeType: item.type, sizeBytes: item.size, usage: "attachment" });
       if (!checked.ok) return corsJson(request, { error: checked.error }, { status: checked.status });
     }
-    const file = files[0];
-    if (!(file instanceof File)) {
+    const file = files[0] instanceof File ? files[0] as File : null;
+    const sourceText = typeof formData.get("text") === "string" ? String(formData.get("text")).replace(/\r\n/g, "\n").trim() : "";
+    if (sourceText.length > (file ? 12_000 : 120_000)) return corsJson(request, { error: "Keep event details under the source limit." }, { status: 400 });
+    if (!file && sourceText) {
+      const textSession = await getServerSession(authOptions);
+      const textUserId = await resolveSessionUserId(textSession);
+      if (!textUserId) return corsJson(request, { error: "Sign in to save personal event details." }, { status: 401 });
+      const denied = await checkCreationAccess(textUserId, { product: "snap" });
+      if (denied) return denied;
+    }
+    if (!file && !sourceText) {
       return corsJson(request, { error: "No file" }, { status: 400 });
     }
 
-    const validation = validateUploadFileMeta({
+    const validation = file ? validateUploadFileMeta({
       fileName: file.name,
       mimeType: file.type,
       sizeBytes: file.size,
       usage: "attachment",
-    });
+    }) : { ok: true as const, mimeType: "text/plain" };
     if (!validation.ok) {
       return corsJson(request, { error: validation.error }, { status: validation.status });
     }
 
     const mime = validation.mimeType;
-    const inputBuffer: Buffer = Buffer.from(await file.arrayBuffer());
+    const inputBuffer: Buffer = file ? Buffer.from(await file.arrayBuffer()) : Buffer.alloc(0);
     let ocrBuffer: Buffer = inputBuffer;
     let visionMime = mime || "application/octet-stream";
 
@@ -464,7 +474,7 @@ export async function handleOcrRequest(request: Request) {
     let colorBuffer: Buffer = ocrBuffer;
     let colorMime = visionMime;
     try {
-      colorBuffer = await sharp(ocrBuffer)
+      if (file) colorBuffer = await sharp(ocrBuffer)
         .rotate()
         .resize({ width: 1600, height: files.length > 1 ? 8000 : 1600, fit: "inside", withoutEnlargement: true })
         .jpeg({ quality: 88 })
@@ -474,7 +484,7 @@ export async function handleOcrRequest(request: Request) {
 
     const preprocessStartedAt = Date.now();
     try {
-      ocrBuffer = await sharp(ocrBuffer)
+      if (file) ocrBuffer = await sharp(ocrBuffer)
         .rotate()
         .resize({ width: 2000, height: files.length > 1 ? 10000 : 2000, fit: "inside", withoutEnlargement: true })
         .grayscale()
@@ -486,8 +496,8 @@ export async function handleOcrRequest(request: Request) {
     stage.preprocessMs = Date.now() - preprocessStartedAt;
 
     let llmImage: any = null;
-    let raw = "";
-    let ocrSource = "none";
+    let raw = file ? "" : sourceText;
+    let ocrSource = file ? "none" : "provided-text";
     let lastOcrFailureCode: string | null = null;
     let providerFailureCode: string | null = null;
     const fallbackOcrModel = resolveOcrModel(true);
@@ -538,7 +548,7 @@ export async function handleOcrRequest(request: Request) {
     };
 
     const primaryStartedAt = Date.now();
-    if (turboMode && remainingBudgetMs(startedAt, totalBudgetMs, 2_000) > 0) {
+    if (!raw && turboMode && remainingBudgetMs(startedAt, totalBudgetMs, 2_000) > 0) {
       const openAiTimeoutMs = clampTimeoutMs(
         Math.min(12_000, OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 4_000)),
         OPENAI_TIMEOUT_MS,
@@ -659,8 +669,8 @@ export async function handleOcrRequest(request: Request) {
       if (scanAttemptId) {
         console.warn("[ocr] extraction failed", {
           scanAttemptId,
-          fileName: file.name || null,
-          fileSize: file.size || null,
+          fileName: file?.name || null,
+          fileSize: file?.size || null,
           mimeType: mime,
           providerConfigured,
           code: failure.code,
@@ -692,6 +702,7 @@ export async function handleOcrRequest(request: Request) {
       );
     }
 
+    if (file && sourceText) raw += `\n\nHOST-AUTHORED CORRECTIONS AND INSTRUCTIONS (factual corrections override source; visual styling stays out of guest wording):\n${sourceText}`;
     const lines = raw
       .split("\n")
       .map((line) => line.trim())
@@ -1604,10 +1615,10 @@ export async function handleOcrRequest(request: Request) {
     const session = await getServerSession(authOptions);
     const artworkUserId = await resolveSessionUserId(session);
     stage.sessionMs = Date.now() - sessionStartedAt;
-    earlyArtwork = startEarlyScanArtwork({
+    earlyArtwork = file ? startEarlyScanArtwork({
       userId: artworkUserId, scanAttemptId, title: finalTitle,
       sourceKind: llmImage?.scanSourceKind || "unknown", profile: scanPersonalization,
-    });
+    }) : null;
     if (earlyArtwork) {
       const work = earlyArtwork.done;
       // Start immediately; after keeps the running promise alive after the OCR response.
@@ -1947,7 +1958,7 @@ export async function handleOcrRequest(request: Request) {
       .join("\n");
     let category: string | null = detectCategory(categoryDetectionText);
     if (practiceSchedule.detected) category = "Sport Events";
-    const normalizedOpenHouse = await uploadOpenHouseVisualAssets({
+    const normalizedOpenHouse = file ? await uploadOpenHouseVisualAssets({
       imageBytes: colorBuffer,
       scanAttemptId,
       openHouse:
@@ -1957,7 +1968,7 @@ export async function handleOcrRequest(request: Request) {
               address: llmImage?.openHouse?.address || fieldsGuess.location || finalAddress,
             })
           : null,
-    });
+    }) : null;
 
     const isPickleballOcrEvent = isPickleballOcrSkinCandidate({
       category,
@@ -2028,7 +2039,7 @@ export async function handleOcrRequest(request: Request) {
           : category;
     const ocrSkinSportKind = isPickleballOcrEvent ? "pickleball" : null;
     let ocrSkin: Awaited<ReturnType<typeof inferOcrSkinSelection>> = null;
-    if (enableSkinInference && isOcrInviteCategory(ocrSkinCategory)) {
+    if (file && enableSkinInference && isOcrInviteCategory(ocrSkinCategory)) {
       const skinStartedAt = Date.now();
       const skinResult = await withFallbackTimeout(
         inferOcrSkinSelection({
@@ -2072,13 +2083,13 @@ export async function handleOcrRequest(request: Request) {
         title: fieldsGuess.title || finalTitle,
         category,
         sourceType: "upload",
-        fileName: file.name || null,
-        fileSize: file.size || null,
+        fileName: file?.name || null,
+        fileSize: file?.size || null,
         mimeType: mime,
         ocrSource,
         ocrText: raw,
         fieldsGuess,
-        diagnosticImageBytes: colorBuffer,
+        diagnosticImageBytes: file ? colorBuffer : undefined,
       });
       stage.accountingMs = Date.now() - accountingStartedAt;
     }
@@ -2110,8 +2121,8 @@ export async function handleOcrRequest(request: Request) {
     if (scanAttemptId) {
       console.log("[ocr] complete", {
         scanAttemptId,
-        fileName: file.name || null,
-        fileSize: file.size || null,
+        fileName: file?.name || null,
+        fileSize: file?.size || null,
         mimeType: mime,
         category,
         timings: ocrTiming,

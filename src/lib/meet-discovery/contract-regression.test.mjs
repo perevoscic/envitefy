@@ -14,6 +14,22 @@ function loadFunction(name, dependencies) {
   return new Function(...Object.keys(dependencies), compiled)(...Object.values(dependencies));
 }
 
+test("pasted specialty details enter the existing parser without invoking media or network extraction", async () => {
+  const extract = loadFunction("extractDiscoveryText", {
+    exports: {},
+    normalizeDiscoveryExtractionOptions: () => ({}),
+    throwIfExtractionAborted: () => {},
+    createDiscoveryRequestCache: () => ({}),
+    parseDataUrl: (url) => ({ mimeType: "text/plain", buffer: Buffer.from(url.split(",")[1], "base64") }),
+  });
+  const text = "Gymnastics meet: session 1 October 25 at 9am at City Gym.";
+  const result = await extract({ type: "file", mimeType: "text/plain", dataUrl: `data:text/plain;base64,${Buffer.from(text).toString("base64")}` });
+  assert.equal(result.extractedText, text);
+  assert.equal(result.extractionMeta.usedOcr, false);
+  assert.deepEqual(result.extractionMeta.linkedAssets, []);
+  await assert.rejects(() => extract({ type: "file", mimeType: "text/plain", dataUrl: `data:text/plain;base64,${Buffer.from("x".repeat(12_001)).toString("base64")}` }), /under 12,000/);
+});
+
 test("retired schedule extraction is absent without restoring its public parse contract", () => {
   assert.doesNotMatch(source, /ParseResult\["schedule"\]/);
   assert.doesNotMatch(source, /GYMNASTICS_SCHEDULE_JSON_SCHEMA|function _deriveScheduleFromImages|function _callOpenAiScheduleParse/);

@@ -6,7 +6,7 @@ const templatesByIntent: Partial<Record<SignupIntent, TemplateKey[]>> = {
   football: ["football_season"],
   sport_events: ["sport_events"],
   weddings: ["weddings"],
-  bridal_showers: ["baby_showers"],
+  bridal_showers: ["bridal_showers"],
   baby_showers: ["baby_showers"],
   gender_reveal: ["gender_reveal"],
   birthdays: ["birthdays"],
@@ -26,7 +26,7 @@ export function buildSignupDefaults(intent: SignupIntent, signupPath?: string | 
       : undefined,
   });
   return {
-    v: 3,
+    v: 4,
     persona: visibility.persona,
     personas: visibility.personas,
     visibleTemplateKeys: visibility.visibleTemplateKeys,

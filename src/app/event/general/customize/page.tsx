@@ -1,6 +1,7 @@
 // @ts-nocheck
 "use client";
 import EventPageSections from "@/components/events/EventPageSections";
+import { useCreationEditorHydration } from "@/components/events/useCreationEditorHydration";
 
 import { EventEditorInput as InputGroup, EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout } from "@/components/events/EventEditorFields";
 import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
@@ -9,8 +10,10 @@ import { useEventHistoryClient } from "@/lib/event-history-client";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
 
 import HeroImageEditor from "@/components/events/HeroImageEditor";
+import CreationTemplateGallery from "@/components/event-create/CreationTemplateGallery";
 import EventCanvas from "@/components/EventCanvas";
-import { getGeneralEventDesign } from "@/lib/general-event-designs";
+import { GENERAL_EVENT_DESIGNS, getGeneralEventDesign } from "@/lib/general-event-designs";
+import type { CreationTemplate } from "@/lib/create/template-selection";
 import "@/components/birthdays/redesign/birthday-fonts.css";
 
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
@@ -26,6 +29,7 @@ import React, {
   useMemo,
   useState,
   useEffect,
+  useRef,
 } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -223,6 +227,30 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       initialDesign?.id ?? config.themes[0]?.id ?? "default-theme"
     );
     const [activeView, setActiveView] = useState<string>("main");
+    const creationReady = useCreationEditorHydration({ category: "general", eventId: editEventId, snapshot: { data, advancedState, themeId }, restore: saved => { if (saved.data) setData(saved.data); if (saved.advancedState) setAdvancedState(saved.advancedState); if (saved.themeId !== undefined) setThemeId(saved.themeId); }, onError: setLoadError });
+    const designGalleryScrollRef = useRef<HTMLDivElement>(null);
+    const designTemplates = useMemo<CreationTemplate[]>(() => GENERAL_EVENT_DESIGNS.map((design) => ({
+      id: design.id,
+      title: design.name,
+      imageUrl: design.artwork,
+      description: design.description,
+      style: design.style,
+      category: "general",
+      family: "general",
+      href: `/event/general/customize?templateId=${encodeURIComponent(design.id)}`,
+    })), []);
+    const paletteThemes = config.themes.filter((theme) => !getGeneralEventDesign(theme.id));
+    const selectDesign = useCallback((template: CreationTemplate) => {
+      const design = getGeneralEventDesign(template.id);
+      if (!design) return;
+      setThemeId(design.id);
+      setData((previous) => ({
+        ...previous,
+        hero: !previous.hero || previous.hero === config.defaultHero || previous.hero === config.prefill?.hero || GENERAL_EVENT_DESIGNS.some((item) => item.artwork === previous.hero)
+          ? design.artwork
+          : previous.hero,
+      }));
+    }, []);
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
     const [rsvpAttending, setRsvpAttending] = useState("yes");
     const [submitting, setSubmitting] = useState(false);
@@ -314,7 +342,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
   }, [editEventId]);
 
     const currentTheme = useMemo(() => {
-      const base = config.themes.find((theme) => theme.id === themeId) || config.themes[0];
+      const design = getGeneralEventDesign(themeId);
+      const base = design ? { id: design.id, name: design.name, ...design.theme } : config.themes.find((theme) => theme.id === themeId) || config.themes[0];
       return (savedEventData.themeId || savedEventData.theme?.id || savedEventData.theme?.themeId) === themeId
         ? { ...base, ...(savedEventData.theme || {}) }
         : base;
@@ -491,7 +520,7 @@ const rawTextClass = currentTheme?.text || "";
       router,
     ]);
 
-    const editor = useEventPageEditor({ snapshot: { data, advancedState, themeId }, category: config.category, templateId: config.slug, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload });
+    const editor = useEventPageEditor({ snapshot: { data, advancedState, themeId }, category: config.category, templateId: config.slug, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting && creationReady, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload });
 
     const rsvpCopy = {
       menuTitle: config.rsvpCopy?.menuTitle || "RSVP",
@@ -659,12 +688,19 @@ const rawTextClass = currentTheme?.text || "";
         showBack
       >
         <div className="space-y-3">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-700">Choose a design</h3>
+            <p className="mt-1 text-xs text-slate-500">Your event details stay in place.</p>
+          </div>
+          <div ref={designGalleryScrollRef} className="max-h-[65vh] overflow-y-auto overscroll-contain pr-1" role="region" aria-label="General event designs" tabIndex={0}>
+            <CreationTemplateGallery templates={designTemplates} onSelect={selectDesign} selectedTemplateId={themeId} scrollRoot={designGalleryScrollRef} compact />
+          </div>
           <button
             onClick={() => setThemesExpanded(!themesExpanded)}
             className="w-full flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-700 transition-colors"
           >
             <div className="flex items-center gap-2">
-              <Palette size={16} /> Theme ({config.themes.length})
+              <Palette size={16} /> Color presets ({paletteThemes.length})
             </div>
             {themesExpanded ? (
               <ChevronUp size={16} />
@@ -674,7 +710,7 @@ const rawTextClass = currentTheme?.text || "";
           </button>
           {themesExpanded && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-none overflow-visible pr-1">
-              {config.themes.map((theme) => (
+              {paletteThemes.map((theme) => (
                 <ThemeSwatch
                   key={theme.id}
                   theme={theme}

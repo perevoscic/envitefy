@@ -8,6 +8,9 @@ import "@/components/smart-signup-form/signup-custom-theme.module.css";
 import dynamic from "next/dynamic";
 import type { TemplateCategory } from "@/lib/template-categories";
 import TemplateEditorProvider from "./TemplateEditorContext";
+import { useSearchParams } from "next/navigation";
+import CreationAccessBoundary from "@/components/event-create/CreationAccessBoundary";
+import { normalizeCreationCategory } from "@/lib/creation-access";
 
 const loading = () => (
   <p role="status" className="p-10 text-center">
@@ -58,7 +61,12 @@ export default function PublicTemplateEditor({
   templateId: string;
 }) {
   const Editor = editors[category];
+  const search = useSearchParams();
+  const creationCategory = category === "sport-events"
+    ? normalizeCreationCategory(search?.get("sport") || templateId.split("--")[0]) || category
+    : category;
   return (
+    <CreationAccessBoundary product={category === "signup-forms" ? "signup_form" : "event_page"} category={category === "signup-forms" ? undefined : creationCategory} eventId={search?.get("edit")}>
     <TemplateEditorProvider
       key={`${category}/${templateId}`}
       category={category}
@@ -66,5 +74,6 @@ export default function PublicTemplateEditor({
     >
       <Editor />
     </TemplateEditorProvider>
+    </CreationAccessBoundary>
   );
 }

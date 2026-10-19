@@ -6,6 +6,7 @@ import { normalizeHeroImageSettings } from "@/lib/hero-image-settings";
 import { normalizeGymnasticsPageText } from "@/lib/gymnastics-page-text";
 import { resolveGymMeetTemplateId } from "./registry";
 import { GymMeetRenderModel } from "./types";
+import { normalizeGymnasticsTitleFont } from "@/lib/gymnastics-title-font";
 import { buildGymMeetDiscoveryContent } from "./buildGymMeetDiscoveryContent";
 import { normalizeGymMeetTitleSize } from "./titleSizing";
 import { inflateGymDiscoveryV2EventData } from "@/lib/discovery/event-data";
@@ -272,6 +273,7 @@ export const normalizeGymMeetEventData = ({
   headerLocation?: string;
 }): GymMeetRenderModel => {
   const savedPageText = eventData?.gymnasticsPageText ?? eventData?.customFields?.gymnasticsPageText;
+  const savedTitleFont = eventData?.gymnasticsTitleFont ?? eventData?.customFields?.gymnasticsTitleFont;
   eventData = inflateGymDiscoveryV2EventData(eventData);
   const customFields = eventData?.customFields || {};
   const advancedSections = eventData?.advancedSections || customFields?.advancedSections || {};
@@ -455,6 +457,7 @@ export const normalizeGymMeetEventData = ({
     title: safeString(eventData?.eventTitle || eventTitle || "Gymnastics Meet"),
     authoredTitle: safeString(eventData?.title ?? eventData?.eventTitle ?? eventTitle),
     titleSize: normalizeGymMeetTitleSize(eventData?.fontSize),
+    gymnasticsTitleFont: normalizeGymnasticsTitleFont(savedTitleFont ?? eventData?.gymnasticsTitleFont ?? customFields?.gymnasticsTitleFont),
     heroImage: safeString(eventData?.heroImage || eventData?.customHeroImage),
     heroImageSettings: normalizeHeroImageSettings(eventData?.heroImageSettings),
     heroImageFilterEnabled: eventData?.heroImageFilterEnabled !== false,

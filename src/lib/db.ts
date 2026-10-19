@@ -1,6 +1,6 @@
 import { buildSignupDefaults } from "@/lib/signup-defaults";
 import type { SignupIntent, SignupSource } from "@/lib/signup-intent";
-import { canReadEventDraft } from "@/lib/event-draft-access";
+import { canReadEventDraft, legacyDiscoveryDraftSql } from "@/lib/event-draft-access";
 import { buildSidebarSportsProjectionSql } from "@/lib/sports-schedule-navigation";
 import { resolveScanMediaPolicy, withoutMedicalSourceMedia } from "@/lib/ocr/scan-media";
 import { resolveSavedScanPersonalization } from "@/lib/ocr/personalization";
@@ -1195,11 +1195,12 @@ export async function updateFeatureVisibilityByEmail(params: {
   visibleTemplateKeys: string[];
   defaultCreateIntent?: string | null;
   sportPreferences?: SportPreferences;
+  quickAccess?: string[];
 }): Promise<void> {
   await ensureUsersHasFeatureVisibilityColumn();
   const lower = params.email.toLowerCase();
   const payload: Record<string, unknown> = {
-    v: 3,
+    v: 4,
     persona: params.persona || null,
     personas: Array.isArray(params.personas)
       ? params.personas
@@ -1212,6 +1213,7 @@ export async function updateFeatureVisibilityByEmail(params: {
   if (params.sportPreferences) {
     payload.sportPreferences = normalizeSportPreferences(params.sportPreferences);
   }
+  if (params.quickAccess) payload.quickAccess = params.quickAccess;
   await query(
     `update users
         set feature_visibility = coalesce(feature_visibility, '{}'::jsonb) || $2::jsonb
@@ -1896,7 +1898,7 @@ function buildHistoryEventStartAtSql(startRawSql: string): string {
 }
 
 function buildHistoryStatusSql(dataSql: string): string {
-  return `lower(trim(coalesce(${dataSql}->>'status', '')))`;
+  return `case when ${legacyDiscoveryDraftSql(dataSql)} then 'draft' else lower(trim(coalesce(${dataSql}->>'status', ''))) end`;
 }
 
 function buildHistoryTimeFilterSql(timeFilter: HistoryTimeFilter, alias: string): string {
@@ -3050,6 +3052,7 @@ function buildHistoryUnionQuery(view: HistoryView, timeFilter: HistoryTimeFilter
       where es.recipient_user_id = $1
        and lower(trim(coalesce(eh.data->>'status', ''))) <> 'draft'
        and lower(trim(coalesce(eh.data->>'draftStatus', ''))) <> 'draft'
+       and not ${legacyDiscoveryDraftSql('eh.data')}
         and es.status in ('pending', 'accepted')
         and es.revoked_at is null
     ),
@@ -3589,6 +3592,7 @@ export async function getEventHistoryPublicRenderById(
        and (user_id = $2::uuid or (
          lower(trim(coalesce(data->>'status', ''))) <> 'draft'
          and lower(trim(coalesce(data->>'draftStatus', ''))) <> 'draft'
+         and not ${legacyDiscoveryDraftSql('data')}
        )${cohostDraftClause})
      limit 1`,
     [id, viewerId || null],
@@ -4422,6 +4426,7 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
         where es.recipient_user_id = $1
        and lower(trim(coalesce(eh.data->>'status', ''))) <> 'draft'
        and lower(trim(coalesce(eh.data->>'draftStatus', ''))) <> 'draft'
+       and not ${legacyDiscoveryDraftSql('eh.data')}
           and es.status in ('pending', 'accepted')
           and es.revoked_at is null
       ) shared_rows
@@ -4556,6 +4561,7 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
         where es.recipient_user_id = $1
        and lower(trim(coalesce(eh.data->>'status', ''))) <> 'draft'
        and lower(trim(coalesce(eh.data->>'draftStatus', ''))) <> 'draft'
+       and not ${legacyDiscoveryDraftSql('eh.data')}
           and es.status in ('pending', 'accepted')
           and es.revoked_at is null
       ) shared_rows
@@ -4680,6 +4686,7 @@ export async function listSharedEventHistoryByRecipient(
      where es.recipient_user_id = $1
        and lower(trim(coalesce(eh.data->>'status', ''))) <> 'draft'
        and lower(trim(coalesce(eh.data->>'draftStatus', ''))) <> 'draft'
+       and not ${legacyDiscoveryDraftSql('eh.data')}
        and es.status = 'accepted'
        and es.revoked_at is null
      order by eh.created_at desc nulls last, eh.id desc
@@ -4844,6 +4851,14 @@ async function ensureEventDiscoveriesTable(): Promise<void> {
       alter table event_discoveries
         add column if not exists updated_at timestamptz default now()
     `);
+  });
+  await ensureOnce("event_discoveries_server_access", async () => {
+    await query(`ALTER TABLE event_discoveries ENABLE ROW LEVEL SECURITY;
+      REVOKE ALL ON TABLE event_discoveries FROM PUBLIC;
+      DO $$ BEGIN
+        IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='anon') THEN REVOKE ALL ON TABLE event_discoveries FROM anon; END IF;
+        IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='authenticated') THEN REVOKE ALL ON TABLE event_discoveries FROM authenticated; END IF;
+      END $$;`);
   });
 }
 
@@ -5027,7 +5042,8 @@ export async function updateEventDiscovery(params: {
   if (!existing) return null;
   const res = await query<EventDiscoveryQueryRow>(
     `update event_discoveries
-     set source = $2::jsonb,
+     set source = ($2::jsonb - 'creationAuthorization') || case when source ? 'creationAuthorization'
+       then jsonb_build_object('creationAuthorization',source->'creationAuthorization') else '{}'::jsonb end,
          document = $3::jsonb,
          canonical_parse = $4::jsonb,
          enrichment = $5::jsonb,
@@ -5294,6 +5310,7 @@ export async function listAcceptedSharedEventsForUser(userId: string): Promise<E
      where es.recipient_user_id = $1
        and lower(trim(coalesce(eh.data->>'status', ''))) <> 'draft'
        and lower(trim(coalesce(eh.data->>'draftStatus', ''))) <> 'draft'
+       and not ${legacyDiscoveryDraftSql('eh.data')}
        and es.status = 'accepted'
        and es.revoked_at is null
      order by eh.created_at desc nulls last, eh.id desc`,
@@ -5873,7 +5890,8 @@ export async function claimRegistryItem(params: {
        and claimed + $2 <= quantity
        and exists (select 1 from event_history eh where eh.id = registry_items.event_id
          and lower(trim(coalesce(eh.data->>'status', ''))) <> 'draft'
-         and lower(trim(coalesce(eh.data->>'draftStatus', ''))) <> 'draft')
+         and lower(trim(coalesce(eh.data->>'draftStatus', ''))) <> 'draft'
+       and not ${legacyDiscoveryDraftSql('eh.data')})
      returning id, event_id, title, affiliate_url, image_url, price, quantity, claimed, category, notes, created_at, updated_at`,
     [params.itemId, qty],
   );

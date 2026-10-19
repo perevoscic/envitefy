@@ -92,6 +92,9 @@ import {
   SIDEBAR_WIDTH_REM,
 } from "./left-sidebar.model";
 import { useSidebar } from "./sidebar-context";
+import { UNIFIED_CREATION_ENABLED } from "@/lib/create/release";
+import { creationIntakeOwner } from "@/lib/create/creation-intake";
+import { useCreationDrafts } from "@/hooks/useCreationDrafts";
 
 
 const SIDEBAR_GYM_MASK_STYLE = (size: number): CSSProperties => ({
@@ -411,6 +414,8 @@ function RootNavigationPanel({
   sidebarPage,
   eventContextSourcePage,
   hasCreateEventAccess,
+  hasSignupFormAccess = hasCreateEventAccess,
+  unifiedCreation = false,
   createEntryLabel,
   isCreateEntryActive,
   isSnapUploadActive,
@@ -424,6 +429,8 @@ function RootNavigationPanel({
   onSnapUpload,
   onLiveCard,
   onCreate,
+  onSignupForm,
+  isSignupFormCreateActive,
   onMyEvents,
   onSchedules,
   onSignupForms,
@@ -434,6 +441,8 @@ function RootNavigationPanel({
   sidebarPage: string;
   eventContextSourcePage: string;
   hasCreateEventAccess: boolean;
+  hasSignupFormAccess?: boolean;
+  unifiedCreation?: boolean;
   createEntryLabel: string;
   isCreateEntryActive: boolean;
   isSnapUploadActive: boolean;
@@ -447,6 +456,8 @@ function RootNavigationPanel({
   onSnapUpload: () => void;
   onLiveCard: () => void;
   onCreate: () => void;
+  onSignupForm: () => void;
+  isSignupFormCreateActive: boolean;
   onMyEvents: () => void;
   onSchedules: () => void;
   onSignupForms: () => void;
@@ -461,6 +472,7 @@ function RootNavigationPanel({
       pathname && (pathname.startsWith("/event/") || pathname.startsWith("/smart-signup-form/")),
     );
   const isMyEventsActive =
+    pathname === "/events" ||
     sidebarPage === "myEvents" ||
     (sidebarPage === "eventContext" && eventContextSourcePage === "myEvents") ||
     (isViewingEventFromListInRoot && eventContextSourcePage === "myEvents");
@@ -478,13 +490,18 @@ function RootNavigationPanel({
     <nav aria-label="Main navigation" className="space-y-5 pt-2">
       <div className="space-y-1.5">
         <SidebarLink link={{ label: "Home", href: "/", icon: <Home />, onClick: onHome, active: isHomeActive }} />
-        <SidebarLink link={{ label: "Snap / Upload", icon: <Upload />, onClick: onSnapUpload, active: isSnapUploadActive }} />
+        {unifiedCreation ? <p className="px-3 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8f7aa5]">Create</p> : null}
+        <SidebarLink link={{ label: unifiedCreation ? "Snap a Flyer" : "Snap / Upload", icon: <Upload />, onClick: onSnapUpload, active: isSnapUploadActive }} />
         <SidebarLink link={{ label: "Live Card", icon: <LiveCardIcon />, onClick: onLiveCard, active: pathname === "/live-cards" }} />
         {hasCreateEventAccess ? (
           <SidebarLink link={{ label: createEntryLabel, icon: <Plus />, onClick: onCreate, active: isCreateEntryActive }} />
         ) : null}
+        {hasSignupFormAccess ? (
+          <SidebarLink link={{ label: "Sign-up Form", icon: <ClipboardList aria-hidden="true" />, onClick: onSignupForm, active: isSignupFormCreateActive }} />
+        ) : null}
       </div>
       <div className="space-y-1.5 border-t border-violet-200/40 pt-4">
+        {unifiedCreation ? <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8f7aa5]">Manage</p> : null}
         <SidebarLink link={{ label: "My Events", icon: <SidebarMyEventsMenuIcon size={20} active={isMyEventsActive} />, onClick: onMyEvents, active: isMyEventsActive, badge: createdEventsCount }} />
         <SidebarLink link={{ label: "Schedules", icon: <Trophy />, onClick: onSchedules, active: isSchedulesActive, badge: schedulesCount }} />
         {isAdmin || isSignupFormsDefault || signupFormsCount > 0 ? (
@@ -1133,12 +1150,16 @@ export default function LeftSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const ownerId = status === "authenticated" ? creationIntakeOwner(session?.user) : "";
+  const { intakes: creationIntakes } = useCreationDrafts(ownerId, `${pathname}?${searchParams}`, UNIFIED_CREATION_ENABLED);
   const isSnapUploadStartActive = (pathname || "").replace(/\/+$/, "") === "/snap";
   const drafts = useMemo(() => buildSidebarDraftItems({
     history: historySidebarItems,
+    creationIntakes,
+    ownerId,
     buildEditLink,
     isInvitedEventLikeRecord,
-  }), [historySidebarItems]);
+  }), [historySidebarItems, creationIntakes, ownerId]);
 
   const viewModel = useLeftSidebarController({
     session,
@@ -1360,6 +1381,8 @@ export default function LeftSidebar() {
                       sidebarPage={viewModel.sidebarPage}
                       eventContextSourcePage={viewModel.eventContextSourcePage}
                       hasCreateEventAccess={viewModel.hasCreateEventAccess}
+                      hasSignupFormAccess={viewModel.hasSignupFormAccess}
+                      unifiedCreation={UNIFIED_CREATION_ENABLED}
                       createEntryLabel={viewModel.createEntryLabel}
                       isCreateEntryActive={viewModel.isCreateEntryActive}
                       isSnapUploadActive={isSnapUploadStartActive}
@@ -1373,6 +1396,8 @@ export default function LeftSidebar() {
                       onSnapUpload={viewModel.handleRootSnapNavigate}
                       onLiveCard={viewModel.handleRootLiveCardNavigate}
                       onCreate={viewModel.openCreateEventPage}
+                      onSignupForm={viewModel.handleRootSignupFormNavigate}
+                      isSignupFormCreateActive={viewModel.isSignupFormCreateActive}
                       onMyEvents={viewModel.openMyEventsPage}
                       onSchedules={viewModel.openSchedulesPage}
                       onSignupForms={viewModel.openSignupFormsPage}

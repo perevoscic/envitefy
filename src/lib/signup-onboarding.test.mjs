@@ -218,6 +218,7 @@ test("preference loading and failed refreshes do not reveal unrelated creation c
   let stateIndex = 0;
   let payload = null;
   const { useFeatureVisibility } = evaluate(readFileSync("src/hooks/useFeatureVisibility.ts", "utf8"), "src/hooks/useFeatureVisibility.ts", {
+    "next-auth/react": { useSession: () => ({ data: { user: { email: "" } }, status: "authenticated" }) },
     react: {
       useState: (initial) => {
         const index = stateIndex++;

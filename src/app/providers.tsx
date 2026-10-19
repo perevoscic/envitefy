@@ -20,6 +20,7 @@ import PwaInstallToast from "@/components/PwaInstallToast";
 import UnsavedProgressProvider from "@/components/UnsavedProgressProvider";
 import NativeIOSBridge from "@/components/NativeIOSBridge";
 import ThemeColorSync from "@/components/ThemeColorSync";
+import CreationIntakeCleanup from "@/components/events/CreationIntakeCleanup";
 import { ThemeKey, ThemeVariant, resolveThemeCssVariables } from "@/themes";
 
 type ThemeContextValue = {
@@ -107,6 +108,7 @@ export default function Providers({
       refetchOnWindowFocus={process.env.NODE_ENV === "production"}
     >
       <UnsavedProgressProvider>
+      <CreationIntakeCleanup />
       <NativeIOSBridge />
       <SidebarProvider>
         <ThemeProvider>

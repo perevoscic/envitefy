@@ -45,6 +45,8 @@ import {
 import styles from "./custom-event.module.css";
 import EventCustomThemeDialog from "./EventCustomThemeDialog";
 import EventPageLoading from "./EventPageLoading";
+import { getSession } from "next-auth/react";
+import { creationIntakeOwner, readCreationIntake, writeCreationIntake } from "@/lib/create/creation-intake";
 
 const arrivalMapSectionIndex = (details: CustomEventDetails) => {
   const candidates = details.sections.flatMap((section, index) =>
@@ -90,6 +92,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
   const editId = search?.get("edit") || undefined;
   const category = customEventCategory(search?.get("category")) || "general";
   const token = search?.get("themePreview");
+  const intakeId = search?.get("intake");
   const [activeSection, setActiveSection] = useState("main");
   const [page, setPage] = useState<CustomEventPage | null>(null);
   const currentPage = useRef(page);
@@ -192,6 +195,15 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
         setPage(initialized);
         setBaseline(JSON.stringify(initialized));
         setPublished(!isEventDraft(row.data));
+      } else if (intakeId) {
+        const session = await getSession();
+        const intake = await readCreationIntake(creationIntakeOwner(session?.user), intakeId);
+        if (cancelled) return;
+        const selected = normalizeCustomEventPage(intake?.customPage);
+        if (!selected) throw new Error("This creation belongs to another account or has expired. Return to Create to start again.");
+        setPage(withCustomEventTimezone(selected));
+        setBaseline("");
+        preparedWording.current = JSON.stringify(customEventWording(selected.details));
       } else {
         await Promise.resolve();
         if (cancelled) return;
@@ -217,7 +229,17 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
       cancelled = true;
     };
     // Only a route change or explicit retry initializes the editor.
-  }, [category, editId, token, router, retry, initialPage]);
+  }, [category, editId, token, intakeId, router, retry, initialPage]);
+  useEffect(() => {
+    if (!intakeId || editId || !page) return;
+    const timer = window.setTimeout(() => {
+      void getSession().then(async session => {
+        const intake = await readCreationIntake(creationIntakeOwner(session?.user), intakeId);
+        if (intake) await writeCreationIntake({ ...intake, customPage: page });
+      }).catch(() => setError("Browser recovery could not be updated. Keep this tab open or save a draft."));
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [editId, intakeId, page]);
   const prepareWording = async (current: CustomEventPage): Promise<CustomEventPage> => {
     const key = JSON.stringify(customEventWording(current.details));
     if (preparedWording.current === key) return current;
@@ -226,6 +248,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        eventId: editId || undefined,
         mode: "wording",
         category: current.category,
         prompt: "Prepare the current guest-facing wording.",
@@ -412,6 +435,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          eventId: editId || undefined,
           mode: "arrival-map",
           category: next.category,
           prompt: "Prepare the parking and drop-off map screenshot with the marked locations.",

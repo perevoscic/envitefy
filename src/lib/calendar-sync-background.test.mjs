@@ -53,6 +53,11 @@ function harness({
     h.release = resolve;
   });
   const mocks = {
+    "@/lib/creation-access-server": { checkEventCreationAccess: async () => null },
+    "@/lib/event-collaboration": { eventRevision: () => "revision" },
+    "@/lib/query-egress": {},
+    "@/lib/history-page": {},
+    "@/utils/event-public-slug": {},
     "node:crypto": { randomUUID: () => "new-claim" },
     "next/server": { NextResponse: Response, after: (job) => h.jobs.push(job) },
     "next-auth": {

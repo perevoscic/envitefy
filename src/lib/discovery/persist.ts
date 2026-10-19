@@ -12,7 +12,9 @@ import {
   insertEventDiscovery,
   insertEventHistory,
   updateEventHistoryData,
-  updateEventHistoryTitle,
+  prepareEventHistoryData,
+  query,
+  type EventHistoryRow,
 } from "@/lib/db";
 import {
   buildEmptyDiscoveryBuilderDraft,
@@ -66,7 +68,8 @@ export function buildDiscoveryShellEventData(params: {
     endAt: null,
     timezone: "America/Chicago",
     category: isFootball ? "sport_football_season" : isSports ? "sport_event" : "gymnastics",
-    status: "processing",
+    status: "draft",
+    draftStatus: "draft",
     createdVia: isFootball
       ? "football-discovery-v2"
       : isSports
@@ -102,6 +105,7 @@ export function buildDiscoveryShellEventData(params: {
 }
 
 export async function createDiscoveryShell(params: {
+  eventId?: string;
   userId: string | null;
   workflow: DiscoveryWorkflow;
   title: string;
@@ -110,6 +114,7 @@ export async function createDiscoveryShell(params: {
   pageTemplateId?: string | null;
 }) {
   const historyRow = await insertEventHistory({
+    clientDraftId: params.eventId,
     userId: params.userId,
     title: params.title,
     data: buildDiscoveryShellEventData({
@@ -123,6 +128,8 @@ export async function createDiscoveryShell(params: {
     }),
   });
   try {
+    const existing = await getEventDiscoveryByEventId(historyRow.id);
+    if (existing) return { eventId: historyRow.id, discoveryId: existing.id, historyRow, discoveryRow: existing, created: false };
     const discoveryRow = await insertEventDiscovery({
       eventId: historyRow.id,
       workflow: params.workflow,
@@ -148,6 +155,7 @@ export async function createDiscoveryShell(params: {
       discoveryId: discoveryRow.id,
       historyRow,
       discoveryRow,
+      created: true,
     };
   } catch (error) {
     await deleteEventHistoryById(historyRow.id).catch(() => {});
@@ -193,11 +201,14 @@ export async function ensureDiscoveryForExistingEvent(eventId: string) {
   const row = await getEventHistoryById(eventId);
   if (!row) return null;
   const current = (row.data || {}) as Record<string, any>;
-  const source =
+  const rawSource =
     current?.discoverySource?.input && typeof current.discoverySource.input === "object"
       ? (current.discoverySource.input as DiscoverySourceRecord)
       : null;
-  if (!source?.type) return null;
+  if (!rawSource?.type) return null;
+  // History payloads are client-editable. Only authenticated intake can write
+  // a creation authorization stamp into the protected discovery record.
+  const { creationAuthorization: _untrustedStamp, ...source } = rawSource;
   const workflow = inferLegacyDiscoveryWorkflow(current);
   if (!workflow) return null;
   const pipeline = createDiscoveryPipelineState({
@@ -282,7 +293,9 @@ export async function persistDiscoveryEventSnapshot(params: {
       : isSports
         ? safeString(builderEvent.category) || "sport_event"
         : "gymnastics",
-    status: params.status,
+    // Parsing prepares a private draft; only an explicit editor publication makes it public.
+    status: current.status === "published" || current.draftStatus === "published" ? "published" : current.status === "cancelled" ? "cancelled" : "draft",
+    draftStatus: current.status === "published" || current.draftStatus === "published" ? "published" : "draft",
     createdVia: isFootball
       ? "football-discovery-v2"
       : isSports
@@ -349,10 +362,16 @@ export async function persistDiscoveryEventSnapshot(params: {
     hostGym: safeString(builderEvent.hostGym) || safeString(current.hostGym) || "",
     ...(params.eventDataPatch || {}),
   };
-  const updated = await updateEventHistoryData(params.eventId, await storePublicEventMedia(nextData, params.eventId));
-  if (nextTitle && nextTitle !== row.title) {
-    await updateEventHistoryTitle(params.eventId, nextTitle);
-  }
+  const explicitlyEdited = Boolean(current.manualEditor || current.templateEditor);
+  const prepared = prepareEventHistoryData(explicitlyEdited
+    ? { ...current, pipelineSummary: nextData.pipelineSummary }
+    : await storePublicEventMedia(nextData, params.eventId));
+  // A cancelled import or concurrent explicit editor save must win over a slow worker.
+  const result = await query<EventHistoryRow>(`UPDATE event_history SET data=$2::jsonb,title=$4
+    WHERE id=$1 AND data=$3::jsonb
+      AND NOT EXISTS (SELECT 1 FROM event_discovery_controls c WHERE c.event_id=$1::text AND c.cancel_requested_at IS NOT NULL)
+    RETURNING id,user_id,title,data,public_slug,created_at`, [params.eventId, JSON.stringify(prepared), JSON.stringify(current), explicitlyEdited ? row.title : nextTitle || row.title]);
+  const updated = result.rows[0] || null;
   if (row.user_id) {
     invalidateUserHistory(row.user_id);
     invalidateUserDashboard(row.user_id);

@@ -306,6 +306,7 @@ test("authentication and malformed requests cannot reach the generation provider
     "next/server": { NextResponse: { json: (body, options) => Response.json(body, options) } },
     "next-auth": { getServerSession: async () => ({}) },
     "@/lib/auth": { authOptions: {}, resolveSessionUserId: async () => userId },
+    "@/lib/creation-access-server": { checkCreationAccess: async () => null },
     "@/lib/signup-theme-generation": {
       ...generation,
       generateSignupTheme: async () => {

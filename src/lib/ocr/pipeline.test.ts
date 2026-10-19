@@ -2,9 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-test("pipeline keeps explicit early no-file guard", async () => {
+test("pipeline requires an actual file or bounded authenticated text", async () => {
   const source = await readFile(new URL("./pipeline.ts", import.meta.url), "utf8");
-  assert.match(source, /if \(!\(file instanceof File\)\)/);
+  assert.match(source, /if \(!file && !sourceText\)/);
+  assert.match(source, /if \(!file && sourceText\)/);
+  assert.match(source, /checkCreationAccess\(textUserId, \{ product: "snap" \}\)/);
   assert.match(source, /error: "No file"/);
 });
 

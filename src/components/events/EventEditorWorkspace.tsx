@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, Pencil, PanelsTopLeft, ListPlus } from "lucide-react";
+import { Eye, Pencil, PanelsTopLeft, ListPlus, X } from "lucide-react";
 import { EventEditorMenuCard, EventEditorSection } from "./EventEditorFields";
 import { EventPageCompositionProvider } from "./EventPageCompositionContext";
 import {
@@ -87,6 +87,8 @@ export default function EventEditorWorkspace({
   artwork,
   title,
   compositionMenu = "cards",
+  pageEditing = false,
+  viewLabels,
 }: {
   editor: EventPageEditorSession;
   preview: ReactNode;
@@ -102,6 +104,9 @@ export default function EventEditorWorkspace({
   title?: string;
   /** "inline" hides the default cards; the controls render them through EventEditorToolsConsumer. */
   compositionMenu?: "cards" | "inline";
+  /** The canvas stays editable when its settings panel is hidden. */
+  pageEditing?: boolean;
+  viewLabels?: { page: string; controls: string };
 }) {
   const nativeBuilder = useEventSectionBuilder();
   const [tool, setTool] = useState<EventEditorTool | null>(null);
@@ -157,18 +162,25 @@ export default function EventEditorWorkspace({
   const viewActions = !embedded && (
     <div className={styles.views} role="group" aria-label="Editor view">
       {currentEditing ? (
-        <button type="button" onClick={showPage}>
-          <Eye size={17} aria-hidden="true" />
-          Preview
+        <button
+          type="button"
+          onClick={showPage}
+          className={pageEditing ? styles.closeSettings : undefined}
+          aria-label={pageEditing ? viewLabels?.page || "Close settings" : undefined}
+          title={pageEditing ? viewLabels?.page || "Close settings" : undefined}
+        >
+          {pageEditing ? <X size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}
+          {!pageEditing && (viewLabels?.page || "Preview")}
         </button>
       ) : (
         <button type="button" onClick={showEditing}>
-          <Pencil size={17} aria-hidden="true" />
-          Edit
+          {pageEditing ? <PanelsTopLeft size={17} aria-hidden="true" /> : <Pencil size={17} aria-hidden="true" />}
+          {viewLabels?.controls || "Edit"}
         </button>
       )}
     </div>
   );
+  const settingsInFooter = pageEditing && !currentEditing;
   const workspace = (
     <section
       className={styles.workspace}
@@ -176,6 +188,7 @@ export default function EventEditorWorkspace({
       data-editing={editing}
       data-mobile-editing={mobileEditing}
       data-embedded={embedded}
+      data-bottom-settings={settingsInFooter}
     >
       {editor.error && (
         <p className={styles.error} role="alert">
@@ -189,7 +202,7 @@ export default function EventEditorWorkspace({
       )}
       {notices}
       <div className={styles.body}>
-        {(!inlineHeader || !currentEditing) && (
+        {(!inlineHeader || !currentEditing) && !settingsInFooter && (
           <header className={styles.header}>{viewActions}</header>
         )}
         <div
@@ -201,7 +214,7 @@ export default function EventEditorWorkspace({
           inert={editor.busy ? true : undefined}
           {...drawer?.previewTouchHandlers}
         >
-          <EventSectionsReadOnly readOnly={!currentEditing}>{preview}</EventSectionsReadOnly>
+          <EventSectionsReadOnly readOnly={!currentEditing && !pageEditing}>{preview}</EventSectionsReadOnly>
         </div>
         <aside
           className={styles.panel}
@@ -259,7 +272,8 @@ export default function EventEditorWorkspace({
             </div>
           </div>
         </aside>
-        <footer className={styles.footer}>
+        <footer className={styles.footer} data-bottom-settings={settingsInFooter}>
+          {settingsInFooter && viewActions}
           <EventEditorActions editor={editor} />
         </footer>
       </div>

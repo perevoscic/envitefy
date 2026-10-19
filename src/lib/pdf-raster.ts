@@ -20,6 +20,7 @@ export type PdfTextExtractionPage = {
 export type PdfTextExtractionResult = {
   text: string;
   pages: PdfTextExtractionPage[];
+  pageCount?: number;
 };
 
 let pdfJsPromise: Promise<any | null> | null = null;
@@ -508,6 +509,7 @@ export async function extractPdfTextWithPdfJs(pdfBuffer: Buffer): Promise<PdfTex
     return {
       text: pages.map((page) => page.text).join("\n\n"),
       pages,
+      pageCount,
     };
   } catch (error) {
     logPdfWarning("pdf text extraction failed", error);

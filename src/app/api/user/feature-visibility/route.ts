@@ -8,6 +8,8 @@ import {
   TEMPLATE_KEYS,
 } from "@/config/feature-visibility";
 import { getAuthenticatedRequestUser } from "@/lib/auth";
+import { creationAllowed, filterCreationTemplateKeys, normalizeCreationCategory, type CreationAccess } from "@/lib/creation-access";
+import { getCreationAccess } from "@/lib/creation-access-server";
 import {
   getFeatureVisibilityByEmail,
   getSportPreferenceSuggestionByEmail,
@@ -28,6 +30,7 @@ type FeatureVisibilityPayload = {
   visibleTemplateKeys?: unknown;
   defaultCreateIntent?: unknown;
   sportPreferences?: unknown;
+  quickAccess?: unknown;
 };
 
 function readMetadata(row: Awaited<ReturnType<typeof getFeatureVisibilityByEmail>>) {
@@ -35,6 +38,17 @@ function readMetadata(row: Awaited<ReturnType<typeof getFeatureVisibilityByEmail
     return null;
   }
   return row.feature_visibility as FeatureVisibilityPayload;
+}
+function allowedSportPreferences(value: unknown, access: CreationAccess) {
+  const preferences = normalizeSportPreferences(value);
+  return normalizeSportPreferences({ ...preferences, enabledSports: preferences.enabledSports.filter((sport) => creationAllowed(access, "event_page", normalizeCreationCategory(sport) || "sport-events")) });
+}
+function allowedDefaultIntent(value: string | null, access: CreationAccess): ReturnType<typeof normalizeSignupIntent> {
+  if (!value) return null;
+  if (value === "signup_forms") return access.allowedProducts.includes("signup_form") ? value : null;
+  if (value === "snap") return access.allowedProducts.includes("snap") ? value : null;
+  const category = normalizeCreationCategory(value);
+  return category && creationAllowed(access, "event_page", category) ? normalizeSignupIntent(value) : null;
 }
 
 function buildResponse(
@@ -51,6 +65,7 @@ function buildResponse(
       defaultCreateIntent: null,
       sportPreferences: { ...EMPTY_SPORT_PREFERENCES },
       sportPreferenceSuggestion,
+      quickAccess: ["snap", "upload", "smart_signup"],
     };
   }
 
@@ -74,6 +89,7 @@ function buildResponse(
     defaultCreateIntent: normalizeSignupIntent(metadata.defaultCreateIntent),
     sportPreferences: normalizeSportPreferences(metadata.sportPreferences),
     sportPreferenceSuggestion,
+    quickAccess: Array.isArray(metadata.quickAccess) ? metadata.quickAccess.filter((key) => key === "snap" || key === "upload" || key === "smart_signup") : ["snap", "upload", "smart_signup"],
   };
 }
 
@@ -89,7 +105,12 @@ export async function GET(req: Request) {
   const suggestion = configured
     ? null
     : await getSportPreferenceSuggestionByEmail(authUser.email, row);
-  return NextResponse.json(buildResponse(row, suggestion));
+  const payload = buildResponse(row, suggestion);
+  const access = await getCreationAccess(authUser.userId);
+  payload.visibleTemplateKeys = filterCreationTemplateKeys(payload.visibleTemplateKeys, access);
+  payload.sportPreferences = allowedSportPreferences(payload.sportPreferences, access);
+  payload.defaultCreateIntent = allowedDefaultIntent(payload.defaultCreateIntent, access);
+  return NextResponse.json(payload, { headers: { "Cache-Control": "private, no-store" } });
 }
 
 export async function PUT(req: Request) {
@@ -140,6 +161,10 @@ export async function PUT(req: Request) {
       : normalizeSignupIntent(existingMetadata?.defaultCreateIntent),
     sportPreferences,
   });
+  const access = await getCreationAccess(authUser.userId);
+  resolved.visibleTemplateKeys = filterCreationTemplateKeys(resolved.visibleTemplateKeys, access);
+  resolved.sportPreferences = allowedSportPreferences(resolved.sportPreferences, access);
+  resolved.defaultCreateIntent = allowedDefaultIntent(resolved.defaultCreateIntent, access);
 
   await updateFeatureVisibilityByEmail({
     email,
@@ -148,6 +173,9 @@ export async function PUT(req: Request) {
     visibleTemplateKeys: resolved.visibleTemplateKeys,
     defaultCreateIntent: resolved.defaultCreateIntent,
     sportPreferences: resolved.sportPreferences,
+    quickAccess: Object.hasOwn(body, "quickAccess") && Array.isArray(body.quickAccess)
+      ? body.quickAccess.filter((key): key is string => key === "snap" || key === "upload" || key === "smart_signup")
+      : undefined,
   });
 
   if (

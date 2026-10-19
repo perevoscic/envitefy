@@ -16,16 +16,17 @@ test("left sidebar renders personalized create navigation for signed-in accounts
   );
   assert.match(
     source,
-    /const createMenuItems = useMemo\(\s*\(\) =>\s*canRenderCreateEventNavigation\s*\? getCreateEventSections/s,
+    /const createMenuEntries = useMemo\(\s*\(\) =>\s*canRenderCreateEventNavigation\s*\? getCreateEventSections/s,
   );
   assert.match(
     source,
-    /const hasCreateEventAccess = useMemo\(\s*\(\) =>\s*canRenderCreateEventNavigation &&\s*createMenuOptionCount > 0,\s*\[canRenderCreateEventNavigation, createMenuOptionCount\],?\s*\)/s,
+    /const hasCreateEventAccess = useMemo\([\s\S]*?creationAccess\.access\?\.allowedProducts\.includes\("event_page"\)/,
   );
   assert.match(source, /featureVisibility\.hasLoadedPreferences\s*\? featureVisibility\.visibleTemplateKeys : EMPTY_TEMPLATE_KEYS/);
   const openCreate = source.slice(source.indexOf("const openCreateEventPage ="), source.indexOf("const openMyEventsPage ="));
-  assert.match(openCreate, /setSidebarPage\("createEvent"\)/);
-  assert.doesNotMatch(openCreate, /router\.push/);
+  // Create Event opens the Create page, which lists the categories as tiles.
+  assert.match(openCreate, /router\.push\("\/create"\)/);
+  assert.match(source, /const createMenuItems = useMemo\(\s*\(\) => createMenuEntries\.filter\(\(item\) => !isSignupFormCreateHref\(item\.href\)\)/);
 });
 
 test("left sidebar controller resets create panel state when create access disappears", () => {
@@ -47,7 +48,7 @@ test("event creation routes open Create Event and do not activate My Events", ()
 
   assert.match(
     controllerSource,
-    /const isCreateEntryActive =\s*isCreateRouteActive \|\| sidebarPage === "createEvent" \|\| sidebarPage === "createEventOther";/,
+    /const isCreateEntryActive =\s*\(isCreateRouteActive && !isSignupFormCreateActive\) \|\|\s*sidebarPage === "createEvent" \|\|\s*sidebarPage === "createEventOther";/,
   );
   assert.match(
     viewSource,
@@ -93,7 +94,7 @@ test("left sidebar uses current builders without legacy chat requests or navigat
   const controller = readSource("src/app/left-sidebar.controller.ts");
   const model = readSource("src/app/left-sidebar.model.ts");
   assert.match(source, /label: "Live Card"/);
-  assert.match(source, /label: "Snap \/ Upload"/);
+  assert.match(source, /label: unifiedCreation \? "Snap a Flyer" : "Snap \/ Upload"/);
   assert.match(source, /buildSidebarDraftItems/);
   assert.doesNotMatch(source + controller + model, /aiThreads|AiThreadsPanel|creation\/threads|creation-threads-changed|envitefy:chat:new|\/chat/);
 });

@@ -48,6 +48,16 @@ const Body = require("../components/events/EventPageSections.tsx").default;
 const NativeBody = require("../components/events/EventPageNativeSections.tsx").default;
 const Signature = require("../app/event/weddings/_renderers/signature-wedding-layouts.tsx").default;
 const h = React.createElement;
+test("imported native information retains provider maps, attribution and unconfirmed markers", () => {
+  const map = { version: 1, sourceImage: "data:image/webp;base64,YQ==", mapImage: "data:image/webp;base64,YQ==", status: "ready", view: { latitude: 30, longitude: -85, zoom: 16, width: 960, height: 640 }, markers: [{ label: "East parking", kind: "parking", note: "Use the entrance.", point: { x: 0.5, y: 0.5 }, confirmed: false }] };
+  const value = normalizeEventPageComposition({ version: 1, sections: [{ id: "info:arrival", title: "Arrival", body: "Keep this instruction.", map }] });
+  assert.deepEqual(value.sections[0].map, map);
+  const html = renderToStaticMarkup(h(EventPageCompositionProvider, { value }, h(Body, null)));
+  assert.match(html, /Street map of the event area/);
+  assert.match(html, /East parking/);
+  assert.match(html, /Keep this instruction/);
+  assert.ok(!html.includes("destination="), "Unconfirmed source positions never become directions");
+});
 const composition = {
   version: 1,
   layout: "cards",

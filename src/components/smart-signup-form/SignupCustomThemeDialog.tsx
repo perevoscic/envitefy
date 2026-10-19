@@ -30,12 +30,14 @@ export default function SignupCustomThemeDialog({
   onClose,
   isNew = false,
   initialMessage = "",
+  eventId,
 }: {
   form: SignupForm;
   onUseTheme: (theme: SignupThemeProposal) => void;
   onClose: () => void;
   isNew?: boolean;
   initialMessage?: string;
+  eventId?: string | null;
 }) {
   const { status, update } = useSession();
   const profile = getCategoryCustomDesignProfile("signup-forms");
@@ -182,6 +184,7 @@ export default function SignupCustomThemeDialog({
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
         body: JSON.stringify({
+          eventId: eventId || undefined,
           prompt,
           currentTheme,
           generateArtwork: !keepArtwork || !hasArtwork,

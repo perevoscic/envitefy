@@ -21,6 +21,9 @@ import { useEventHistoryClient } from "@/lib/event-history-client";
 import { isEventDraft } from "@/lib/event-draft-access";
 import { buildOwnerEventEditHref, ownerEventEditorReturnHref } from "@/lib/event-preview-viewport";
 import { getFamilyTemplateDesign } from "@/lib/family-template-designs";
+import { hydrateCreationValue } from "@/lib/create/editor-handoff";
+import { attachCreationIntakeEvent, creationIntakeOwner, readCreationIntake } from "@/lib/create/creation-intake";
+import type { CustomEventInformation } from "@/lib/event-custom-design";
 import { hasAnalyticsConsent } from "@/lib/privacy-preferences";
 import { BRIDAL_PRESETS, getPublicTemplate } from "@/lib/public-template-catalog";
 import { allowsPublicSignup } from "@/lib/signup-access";
@@ -84,13 +87,11 @@ export function useTemplateState<S>(
   initial: S | (() => S),
 ): [S, Dispatch<SetStateAction<S>>] {
   const editor = useTemplateEditor();
-  const [value, setValue] = useState<S>(() =>
-    editor && Object.hasOwn(editor.initial, key)
-      ? (editor.initial[key] as S)
-      : typeof initial === "function"
-        ? (initial as () => S)()
-        : initial,
-  );
+  const [value, setValue] = useState<S>(() => {
+    if (editor && Object.hasOwn(editor.initial, key)) return editor.initial[key] as S;
+    const value = typeof initial === "function" ? (initial as () => S)() : initial;
+    return hydrateCreationValue(editor?.category || "", key, value, editor?.initial.creationInformation as unknown as CustomEventInformation | undefined, editor?.templateId);
+  });
   useEffect(() => {
     if (editor) editor.record(key, JSON.parse(JSON.stringify(value ?? null)) as DraftValue);
   }, [editor, key, value]);
@@ -158,7 +159,7 @@ export default function TemplateEditorProvider({
   const router = useRouter();
   const eventHistoryClient = useEventHistoryClient();
   const search = useSearchParams();
-  const { status, update } = useSession();
+  const { data: session, status, update } = useSession();
   const authenticated = status === "authenticated";
   const [initial, setInitial] = useState<EditorSnapshot | null>(null);
   const [error, setError] = useState("");
@@ -183,8 +184,11 @@ export default function TemplateEditorProvider({
   const remoteMedia = useRef<Record<string, string>>({});
   const firstEdit = useRef(false);
   const writeQueue = useRef<Promise<void>>(Promise.resolve());
+  const recoveryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const editId = search?.get("edit");
   const requestedDraft = search?.get("draft");
+  const requestedIntake = search?.get("intake");
+  const draftOwnerId = creationIntakeOwner(session?.user);
   const themePreview =
     category === "signup-forms" && !editId && !requestedDraft ? search?.get("themePreview") : null;
   const themeHandoff = useRef<{ token: string; form: SignupForm } | null>(null);
@@ -217,6 +221,12 @@ export default function TemplateEditorProvider({
     let cancelled = false;
     async function initialize() {
       let saved: TemplateDraft | null = null;
+      const intakeId = requestedIntake;
+      if (intakeId && !editId) {
+        if (status === "loading") return;
+        const owned = await readCreationIntake(creationIntakeOwner(session?.user), intakeId);
+        if (!owned) throw new Error("This creation belongs to another account or has expired. Return to Create to start again.");
+      }
       if (themePreview) {
         // Let Strict Mode clean up its first effect before consuming the one-use handoff.
         await Promise.resolve();
@@ -308,7 +318,8 @@ export default function TemplateEditorProvider({
         snapshot: {},
         assets: {},
       };
-      if (current.templateId !== templateId && !requestedDraft) {
+      if (current.ownerId && current.ownerId !== creationIntakeOwner(session?.user)) throw new Error("Sign in to the account that started this browser draft.");
+      if (current.templateId !== templateId && (!requestedDraft || Boolean(intakeId))) {
         const previousTemplate = getPublicTemplate(category, current.templateId);
         const selected = getPublicTemplate(category, templateId)!;
         const raw = current.snapshot.data;
@@ -404,7 +415,7 @@ export default function TemplateEditorProvider({
     return () => {
       cancelled = true;
     };
-  }, [category, templateId, requestedDraft, editId, themePreview, router, loadAttempt]);
+  }, [category, templateId, requestedDraft, editId, themePreview, router, loadAttempt, status, draftOwnerId, requestedIntake]);
 
   useEffect(
     () => () => {
@@ -438,6 +449,12 @@ export default function TemplateEditorProvider({
       const wasPresent = Object.hasOwn(current.snapshot, key);
       current.snapshot = { ...current.snapshot, [key]: value };
       current.updatedAt = Date.now();
+      if (requestedIntake && !current.eventId) {
+        if (recoveryTimer.current) clearTimeout(recoveryTimer.current);
+        recoveryTimer.current = setTimeout(() => {
+          void flush().catch(() => setError("Browser recovery could not be updated. Keep this tab open or explicitly save a draft."));
+        }, 250);
+      }
       if (
         wasPresent &&
         ["data", "form", "themeId", "advancedState"].includes(key) &&
@@ -456,8 +473,11 @@ export default function TemplateEditorProvider({
         );
       }
     },
-    [category, templateId],
+    [category, templateId, requestedIntake, flush],
   );
+  useEffect(() => () => {
+    if (recoveryTimer.current) { clearTimeout(recoveryTimer.current); void flush().catch(() => {}); }
+  }, [flush]);
 
   const persist = useCallback(
     async (payload: TemplateHistoryPayload, nextStatus: "draft" | "published", options: { navigate?: boolean; snapshot?: EditorSnapshot } = {}) => {
@@ -485,6 +505,7 @@ export default function TemplateEditorProvider({
         // An explicit save attaches this mounted editor to its event; changing the URL
         // must not reload the saved snapshot over edits made while the request ran.
         savedEventId.current = eventId;
+        if (search?.get("intake")) void attachCreationIntakeEvent(creationIntakeOwner(session?.user), search.get("intake")!, eventId).catch(() => {});
         savedFields.current = Object.fromEntries(
           Object.keys(savedFields.current).map((key) => [
             key,

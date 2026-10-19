@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { getServerSession, type Session } from "next-auth";
 import Script from "next/script";
 import SnapLaunchCards from "@/app/event/SnapLaunchCards";
+import { UNIFIED_CREATION_ENABLED } from "@/lib/create/release";
 import Dashboard from "@/components/Dashboard";
 import SnapLanding from "@/components/snap-landing/SnapLanding";
 import { authOptions } from "@/lib/auth";
@@ -47,7 +48,7 @@ function AuthenticatedSnapUploadStart() {
       <div className="mx-auto w-full max-w-5xl">
         <section className="mx-auto max-w-4xl text-center">
           <p className="mb-4 text-xs font-bold uppercase tracking-[0.26em] text-[#6b5ee8]">
-            Snap / Upload
+            {UNIFIED_CREATION_ENABLED ? "Snap a Flyer" : "Snap / Upload"}
           </p>
           <h1 className="pb-[0.08em] text-[clamp(1.65rem,8.8vw,2.85rem)] font-semibold leading-[1] tracking-[-0.06em] text-[#151229] [font-family:var(--font-playfair),Georgia,serif] sm:text-[clamp(3.2rem,8vw,5.5rem)]">
             <span className="inline-block max-w-full whitespace-nowrap">Snap or upload your</span>
@@ -59,8 +60,8 @@ function AuthenticatedSnapUploadStart() {
         </section>
         <SnapLaunchCards processInPage />
         <p className="mx-auto mt-6 max-w-3xl pb-10 text-center text-lg leading-8 text-[#767287] sm:mt-8 sm:text-[1.35rem]">
-          Envitefy reads the details, detects invitation types, and routes them into polished,
-          interactive event pages automatically.
+          Upload a flyer, invitation, screenshot, schedule or PDF. Envitefy reads the details
+          so you can save the event and use its calendar tools.
         </p>
       </div>
     </main>

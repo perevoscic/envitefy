@@ -7,6 +7,8 @@ import {
 import { buildScanPersonalization, resolveSavedScanPresentation } from "../lib/ocr/personalization.ts";
 import { isEventDraft } from "../lib/event-draft-access.ts";
 import { getSportsScheduleSummary, type SportsScheduleSummary } from "../lib/sports-schedule-navigation.ts";
+import { buildCreationDraftItems } from "../lib/create/creation-drafts.ts";
+import type { CreationIntake } from "../lib/create/creation-intake.ts";
 
 export type CalendarProviderKey = "google" | "microsoft" | "apple";
 
@@ -55,14 +57,22 @@ export type SidebarDraftItem = {
 
 export function buildSidebarDraftItems({
   history,
+  creationIntakes = [],
+  ownerId = "",
   buildEditLink,
   isInvitedEventLikeRecord,
 }: {
   history: HistoryRow[];
+  creationIntakes?: CreationIntake[];
+  ownerId?: string;
   buildEditLink: (id: string, data: Record<string, unknown>, title: string) => string;
   isInvitedEventLikeRecord: (data: Record<string, unknown>) => boolean;
 }): SidebarDraftItem[] {
-  const items: SidebarDraftItem[] = [];
+  const items: SidebarDraftItem[] = buildCreationDraftItems({
+    intakes: creationIntakes,
+    ownerId,
+    savedEventIds: history.map((row) => row.id),
+  });
   for (const row of history) {
     const data = asSidebarRecord(row.data);
     if (!data) continue;

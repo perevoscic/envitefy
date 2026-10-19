@@ -1,16 +1,16 @@
 import assert from "node:assert/strict";
-import fs from "node:fs";
-import path from "node:path";
 import test from "node:test";
+import loadTs from "../../../../scripts/lib/event-messages-test-loader.cjs";
 
-const repoRoot = process.cwd();
-
-const readSource = (relativePath) =>
-  fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
-
-test("/event/new redirects to the gymnastics builder", () => {
-  const source = readSource("src/app/event/new/page.tsx");
-
-  assert.match(source, /import \{ redirect \} from "next\/navigation";/);
-  assert.match(source, /redirect\("\/event\/gymnastics"\);/);
+test("legacy new creation uses Create and preserves its query context", async () => {
+  let destination;
+  const { default: page } = loadTs("src/app/event/new/page.tsx", { "next/navigation": { redirect: (href) => { destination = href; } } });
+  await page({ searchParams: Promise.resolve({ source: "upload", intake: "token" }) });
+  assert.equal(destination, "/create?source=upload&intake=token");
+});
+test("legacy saved edit reaches the saved event resolver with its identity intact", async () => {
+  let destination;
+  const { default: page } = loadTs("src/app/event/new/page.tsx", { "next/navigation": { redirect: (href) => { destination = href; } } });
+  await page({ searchParams: Promise.resolve({ edit: "saved-id", embed: "1" }) });
+  assert.equal(destination, "/event/saved-id?edit=saved-id&embed=1");
 });

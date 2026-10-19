@@ -21,10 +21,12 @@ export default function SignupDesignPanel({
   form,
   onChange,
   onUseTheme,
+  eventId,
 }: {
   form: SignupForm;
   onChange: (form: SignupForm) => void;
   onUseTheme: () => void;
+  eventId?: string | null;
 }) {
   const [error, setError] = useState("");
   const [redesignOpen, setRedesignOpen] = useState(false);
@@ -48,6 +50,7 @@ export default function SignupDesignPanel({
       {redesignOpen && (
         <SignupCustomThemeDialog
           form={form}
+          eventId={eventId}
           onClose={() => setRedesignOpen(false)}
           onUseTheme={(theme) => {
             onChange(restoreSignupTheme(form, theme));

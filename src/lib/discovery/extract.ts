@@ -49,6 +49,8 @@ export async function runDiscoveryExtractStageWithMode(
     performance,
     signal: options?.signal,
   });
+  const hostNotes = safeString(discovery.source.text);
+  if (hostNotes) extraction.extractedText += `\n\nHOST-AUTHORED CORRECTIONS AND INSTRUCTIONS (factual corrections override source; visual styling stays out of guest wording):\n${hostNotes}`;
 
   const rawPages = Array.isArray((extraction.extractionMeta as any)?.pages)
     ? ((extraction.extractionMeta as any).pages as Array<Record<string, any>>)

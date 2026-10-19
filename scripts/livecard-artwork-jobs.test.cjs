@@ -19,6 +19,7 @@ function harness(mode = "generate", initialState = "queued") {
   };
   const api = loadTs("src/lib/livecard-artwork-jobs.ts", {
     "./db": { query },
+    "./creation-access-server": { requireCreationAccess: async () => {} },
     "./livecard-builder": { sharedCardDesignKey: () => "design" },
     "./shared-card-generation": { generateSharedCard: async (_form, signal, stage) => { await stage("generating"); signal.throwIfAborted(); backgrounds++; return { backgroundUrl: "original" }; } },
     "./shared-card-headline": { generateCardHeadline: async (_form, _design, signal, stage, verify) => { await stage(verify ? "checking" : "lettering"); signal.throwIfAborted(); if (verify) verification++; else lettering++; return { imageUrl: "candidate", validation: { status: "failed", issues: ["missing_copy"] } }; } },
@@ -79,4 +80,24 @@ test("cancellation after background stops queued lettering and a running ambiguo
   const ambiguous = harness("generate", "running");
   await ambiguous.api.runArtworkJob("owner", "job-1");
   assert.deepEqual(ambiguous.counts(), { backgrounds: 0, lettering: 0, verification: 0 });
+});
+
+
+test("revoked creation or co-host access prevents queued provider work", async () => {
+  const h = harness();
+  h.api.artworkJobDeps.authorize = async () => { throw new Error("Access revoked"); };
+  await h.api.runArtworkJob("owner", "job-1");
+  assert.deepEqual(h.counts(), { backgrounds: 0, lettering: 0, verification: 0 });
+  assert.equal(h.row.state, "failed");
+  assert.match(h.row.error, /Access revoked/);
+});
+
+test("grant revocation during a background request prevents the next paid lettering stage", async () => {
+  const h = harness();
+  let checks = 0;
+  h.api.artworkJobDeps.authorize = async () => { if (++checks > 1) throw new Error("Access revoked after background"); };
+  await h.api.runArtworkJob("owner", "job-1");
+  assert.deepEqual(h.counts(), { backgrounds: 1, lettering: 0, verification: 0 });
+  assert.equal(h.row.state, "failed");
+  assert.match(h.row.error, /revoked after background/);
 });

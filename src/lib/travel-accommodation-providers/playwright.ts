@@ -2,6 +2,7 @@ import type { Browser, BrowserContext, Page } from "playwright";
 import { markdownHotelLinks, parseHotelEvidence } from "../travel-accommodation-evidence";
 import { extractHotelEvidenceWithAstra } from "./astra";
 import type { TravelProviderOptions, TravelProviderResult } from "./budget";
+import { fulfillPublicDiscoveryRequest } from "@/lib/discovery-browser";
 
 export async function readHotelPage(page: Page): Promise<string> {
   return page.evaluate(() => {
@@ -44,7 +45,9 @@ export async function extractHotelsWithPlaywright(
       timeout: Math.min(options.timeoutMs, 10000),
     });
     options.signal.throwIfAborted();
-    context = await browser.newContext();
+    context = await browser.newContext({ serviceWorkers: "block" });
+    await context.route("**/*", fulfillPublicDiscoveryRequest);
+    await context.routeWebSocket("**/*", (socket) => socket.close());
     const page = await context.newPage();
     await page.goto(url, {
       waitUntil: "domcontentloaded",

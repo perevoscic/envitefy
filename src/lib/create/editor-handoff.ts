@@ -1,0 +1,120 @@
+import { emptyCustomEventDetails, type CustomEventInformation } from "../event-custom-design";
+import type { EventPageComposition } from "../event-page-composition";
+import { readTemplateDraft, writeTemplateDraft, type DraftValue, type EditorSnapshot, type TemplateDraft } from "../template-draft-storage";
+import { getPublicTemplate } from "../public-template-catalog";
+import { getTemplateCategory } from "../template-categories";
+import { createEmptySignupTemplateForm } from "../signup-starters";
+import { createLiveCardForm, type LiveCardEventType } from "../livecard-builder";
+import { customCategoryForGuess, discoveryTargetForSport } from "./create-intent";
+import { writeCreationIntake, type CreationIntake } from "./creation-intake";
+import type { CreationTemplate } from "./template-selection";
+import { getGeneralEventDesign } from "../general-event-designs";
+import { parseCalendarDateTimeToIso } from "../calendar-date-time";
+import type { EventEditorPayload } from "../event-editor";
+import { normalizeCreationCategory } from "../creation-access";
+
+export function creationComposition(information?: CustomEventInformation): EventPageComposition | undefined {
+  if (!information) return;
+  const d = information.details;
+  const contact = [d.host ? `Host: ${d.host}` : "", d.rsvpPhone ? `Phone: ${d.rsvpPhone}` : "", d.rsvpEmail ? `Email: ${d.rsvpEmail}` : ""].filter(Boolean).join("\n");
+  return { version: 1, sections: [...d.sections.map((section, index) => ({ id: `info:import-${index}`, ...section })), ...(contact ? [{ id: "info:import-contact", title: "Host & RSVP", body: contact }] : [])] };
+}
+
+/** Imported event-local clocks keep their supplied zone through native writers. */
+export function creationNativePayload(payload: EventEditorPayload, snapshot: object): EventEditorPayload {
+  const data = object(object(snapshot).data);
+  const facts: Record<string, DraftValue | undefined> = {};
+  for (const key of ["rsvpPhone", "rsvpEmail", "hostName"]) if (typeof data[key] === "string") facts[key] = data[key];
+  if (typeof data.timezone === "string" && data.timezone && typeof data.date === "string" && data.date) {
+    const start = parseCalendarDateTimeToIso(`${data.date}${data.time ? `T${data.time}` : ""}`, data.timezone);
+    const end = data.endTime ? parseCalendarDateTimeToIso(`${data.endDate || data.date}T${data.endTime}`, data.timezone) : null;
+    Object.assign(facts, { timezone: data.timezone, tz: data.timezone, start, startAt: start, startISO: start, end, endAt: end, endISO: end, allDay: !data.time });
+  }
+  return { ...payload, data: { ...payload.data, ...facts } };
+}
+const object = (value: unknown): Record<string, any> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, any> : {};
+/** Start with the native editor's complete structural defaults, replacing sample facts only. */
+export function hydrateCreationValue<S>(category: string, key: string, initial: S, information?: CustomEventInformation, templateId?: string): S {
+  if (!information || key !== "data") return initial;
+  const d = information.details, data = structuredClone(initial) as Record<string, any>;
+  Object.assign(data, { date: d.date, time: d.time, endDate: d.endDate, endTime: d.endTime, timezone: d.timezone, venue: d.venue, address: d.location, city: "", state: "", title: d.title, details: d.description, rsvpEnabled: d.rsvpEnabled, rsvpDeadline: "", hostName: d.host, rsvpPhone: d.rsvpPhone, rsvpEmail: d.rsvpEmail });
+  if ("rsvp" in data) data.rsvp = { ...object(data.rsvp), isEnabled: d.rsvpEnabled, deadline: "", phone: d.rsvpPhone, email: d.rsvpEmail };
+  if ("hosts" in data) data.hosts = d.host ? [{ id: 1, name: d.host, role: "Host" }] : [];
+  for (const key of ["gallery", "weddingParty", "thingsToDo", "schedule"]) if (key in data) data[key] = [];
+  for (const key of ["registry", "registries"]) if (key in data) data[key] = d.registryLinks.map((link, index) => ({ id: index + 1, ...link }));
+  if ("travel" in data) data.travel = { hotels: [], airports: [], directions: d.location, shuttle: "" };
+  if (category === "weddings") Object.assign(data, { partner1: d.title, partner2: "", story: d.description, theme: { ...object(data.theme), themeId: templateId } });
+  if (category === "birthdays" || category === "anniversaries") {
+    const name = d.title.match(/^(.+?)(?:['’]s|\s+turns?\s+\d)/i)?.[1] || "";
+    const age = d.title.match(/\b(\d{1,3})(?:st|nd|rd|th)?\s+(?:birthday|anniversary)|\bturn(?:s|ing)?\s+(\d{1,3})/i);
+    Object.assign(data, { childName: name, age: age ? Number(age[1] || age[2]) : "", headlineTitle: d.title, partyDetails: { ...object(data.partyDetails), theme: "", activities: "", notes: d.description }, theme: { ...object(data.theme), professionalThemeId: templateId } });
+  }
+  if (category === "baby-showers" || category === "bridal-showers") Object.assign(data, { eventTitle: d.title, babyName: "", momName: "", babyDetails: { ...object(data.babyDetails), expectingDate: "", gender: "", notes: d.description }, momDetails: { notes: "" } });
+  if (category === "gender-reveal") Object.assign(data, { eventTitle: d.title, parentsName: "", eventDetails: { expectingDate: "", notes: d.description } });
+  if (category === "gymnastics") data.pageTemplateId = templateId;
+  if (["appointments", "workshops", "special-events"].includes(category)) data.hero = getGeneralEventDesign(templateId)?.artwork || data.hero;
+  return data as S;
+}
+
+export function creationSignupForm(information: CustomEventInformation | undefined, templateId: string) {
+  const template = getPublicTemplate("signup-forms", templateId);
+  const form = createEmptySignupTemplateForm(template || undefined);
+  if (!information) return form;
+  const d = information.details;
+  return { ...form, title: d.title, description: d.description, venue: d.venue, location: d.location, start: d.date ? `${d.date}${d.time ? `T${d.time}` : ""}` : null, end: (d.endDate || d.date) && d.endTime ? `${d.endDate || d.date}T${d.endTime}` : null, timezone: d.timezone || null, sections: d.sections.map((section, index) => ({ id: `import-${index}`, kind: "info" as const, title: section.title, description: section.body, slots: [] })), responses: [], availability: undefined };
+}
+export function creationLiveCardForm(information?: CustomEventInformation) {
+  const form = createLiveCardForm("");
+  if (!information) return form;
+  const d = information.details;
+  const types: Record<string, LiveCardEventType> = { birthdays: "Birthday", weddings: "Wedding", anniversaries: "Anniversary", "baby-showers": "Baby shower", "bridal-showers": "Bridal shower", "gender-reveal": "Gender reveal" };
+  return { ...form, title: d.title, creationCategory: normalizeCreationCategory(information.category) || "general", eventType: types[information.category] || "General event", overview: d.description, date: d.date, startTime: d.time, endDate: d.endDate, endTime: d.endTime, timezone: d.timezone, hostName: d.host, hostPhone: d.rsvpPhone, hostEmail: d.rsvpEmail, rsvpEnabled: d.rsvpEnabled, registryEnabled: Boolean(d.registryLinks.length), registryUrl: d.registryLinks[0]?.url || "", instructions: d.sections.map(section => `${section.title}\n${section.body}`).join("\n\n"), locations: [{ ...form.locations[0], venue: d.venue, address: d.location, resolution: "unresolved" as const }] };
+}
+
+/** This prepares a browser draft only. Explicit editor Save/Publish owns server persistence. */
+export async function prepareCreationEditor(intake: CreationIntake, template: CreationTemplate): Promise<string> {
+  const guess = intake.guess || intake.classification;
+  const changingFamily = intake.editorFamily && intake.editorFamily !== template.family;
+  const current = await writeCreationIntake({ ...intake, phase: "editor", selectedTemplateId: template.id, editorFamily: template.family, ...(changingFamily ? { editorSnapshot: undefined, eventId: undefined } : {}) });
+  if (["native", "football"].includes(template.family) && intake.discoveryEventId && guess?.category === "sports" && guess.sport) {
+    const url = new URL(discoveryTargetForSport(guess.sport).builderHref(intake.discoveryEventId), "https://envitefy.local");
+    url.searchParams.set("templateId", template.id);
+    if (guess.sport !== "gymnastics" && guess.sport !== "football") url.searchParams.set("style", template.id.split("--")[1] || "stadium");
+    url.searchParams.set("intake", current.id);
+    return url.pathname + url.search;
+  }
+  const url = new URL(template.href, "https://envitefy.local");
+  if (current.eventId) { url.searchParams.set("edit", current.eventId); return url.pathname + url.search; }
+  url.searchParams.set("intake", current.id);
+  if (template.family === "native" || template.family === "signup") {
+    const category = getTemplateCategory(template.category);
+    if (!category) throw new Error("This design could not be opened. Choose another design.");
+    const previous = await readTemplateDraft(category.slug, current.id);
+    if (previous?.ownerId && previous.ownerId !== current.ownerId) throw new Error("Sign in to the account that started this event.");
+    const snapshot: EditorSnapshot = previous?.category === category.slug ? previous.snapshot : {};
+    if (!previous) {
+      snapshot.creationInformation = JSON.parse(JSON.stringify(informationForCreation(current))) as DraftValue;
+      const composition = creationComposition(current.information);
+      if (composition) snapshot.pageComposition = JSON.parse(JSON.stringify(composition)) as DraftValue;
+      if (category.slug === "signup-forms") snapshot.form = JSON.parse(JSON.stringify(creationSignupForm(current.information, template.id))) as DraftValue;
+    }
+    const draft: TemplateDraft = { version: 1, id: current.id, ownerId: current.ownerId, category: category.slug, templateId: previous?.templateId || template.id, updatedAt: Date.now(), snapshot, assets: previous?.assets || {} };
+    await writeTemplateDraft(draft);
+    url.searchParams.set("draft", draft.id);
+  }
+  if (template.family === "custom" && !current.customPage) throw new Error("Create a design before opening this event page.");
+  return url.pathname + url.search;
+}
+
+export function informationForCreation(intake: CreationIntake): CustomEventInformation {
+  return intake.information || { version: 1, kind: "information", category: intake.guess ? customCategoryForGuess(intake.guess) : "general", design: { version: 1, name: "Event page", description: "", layout: "banner", font: "editorial", colors: { page: "#ffffff", surface: "#ffffff", ink: "#251f3d", accent: "#675cf4" } }, details: emptyCustomEventDetails() };
+}
+
+export async function prepareOriginalCreationEditor(intake: CreationIntake): Promise<string> {
+  const file = intake.source.files[0];
+  if (intake.source.files.length !== 1 || !/^image\/(jpeg|png|webp)$/.test(file?.type || "")) throw new Error("Choose one invitation image to keep its original design.");
+  const artwork = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("The invitation image could not be opened.")); reader.onerror = () => reject(reader.error); reader.readAsDataURL(file); });
+  const information = informationForCreation(intake);
+  const customPage = { version: 1 as const, category: information.category, design: information.design, details: information.details, artwork };
+  return prepareCreationEditor({ ...intake, customPage }, { id: "original-upload", title: "Keep uploaded design", imageUrl: artwork, category: information.category, description: "", style: "Original", family: "custom", href: `/event/design/customize?category=${information.category}` });
+}

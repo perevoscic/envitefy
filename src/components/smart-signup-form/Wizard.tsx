@@ -278,6 +278,7 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
                     Create a custom look or fine-tune your selected design.
                   </p>
                   <SignupDesignPanel
+                    eventId={editor?.eventId}
                     form={form}
                     onChange={onChange}
                     onUseTheme={() => {

@@ -24,6 +24,9 @@ import {
 import { ownerEventEditorReturnHref } from "@/lib/event-preview-viewport";
 import { buildEventPath } from "@/utils/event-url";
 import { isEventDraft } from "@/lib/event-draft-access";
+import { getSession } from "next-auth/react";
+import { attachCreationIntakeEvent, creationIntakeOwner, readCreationIntake, writeCreationIntake } from "@/lib/create/creation-intake";
+import { creationComposition, creationNativePayload } from "@/lib/create/editor-handoff";
 
 export type EventPageEditorSession = {
   published: boolean;
@@ -99,6 +102,19 @@ export function useEventPageEditor({
   );
   const [compositionReady, setCompositionReady] = useState(!id.current || Boolean(template));
   const hydratedComposition = useRef(Boolean(template) || !id.current);
+  const intakeId = search?.get("intake");
+  const [intakeCompositionReady, setIntakeCompositionReady] = useState(!intakeId || Boolean(id.current) || Boolean(template) || Boolean(savePage));
+  useEffect(() => {
+    if (!intakeId || id.current || template || intakeCompositionReady) return;
+    let active = true;
+    void getSession().then(async session => {
+      const intake = await readCreationIntake(creationIntakeOwner(session?.user), intakeId);
+      if (!active || !intake) return;
+      setComposition(normalizeEventPageComposition(intake.editorSnapshot?.pageComposition) || creationComposition(intake.information));
+      setIntakeCompositionReady(true);
+    }).catch(() => setError("Your imported sections could not be restored. Reload this editor or return to Create."));
+    return () => { active = false; };
+  }, [intakeId, template, intakeCompositionReady]);
   useEffect(() => {
     if (hydratedComposition.current || !ready || !loaded) return;
     hydratedComposition.current = true;
@@ -113,7 +129,7 @@ export function useEventPageEditor({
     setCompositionReady(true);
   }, [loaded, ready]);
   const normalizedComposition = normalizeEventPageComposition(composition);
-  const editorReady = ready && (Boolean(savePage) || compositionReady);
+  const editorReady = ready && intakeCompositionReady && (Boolean(savePage) || compositionReady);
   const composedSnapshot =
     !savePage && normalizedComposition
       ? { ...snapshot, pageComposition: normalizedComposition }
@@ -125,7 +141,7 @@ export function useEventPageEditor({
     content,
     buildPayload: buildPayload
       ? async () => {
-          const payload = await buildPayload();
+          const payload = creationNativePayload(await buildPayload(), composedSnapshot);
           return !savePage
             ? {
                 ...payload,
@@ -138,6 +154,16 @@ export function useEventPageEditor({
         }
       : undefined,
   };
+  useEffect(() => {
+    if (!intakeId || !ready || id.current || template || !intakeCompositionReady) return;
+    const timer = window.setTimeout(() => {
+      void getSession().then(async session => {
+        const intake = await readCreationIntake(creationIntakeOwner(session?.user), intakeId);
+        if (intake) await writeCreationIntake({ ...intake, editorSnapshot: JSON.parse(JSON.stringify(latest.current.snapshot)) });
+      }).catch(() => setError("Browser recovery could not be updated. Keep this tab open or explicitly save a draft."));
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [content, intakeId, ready, template, intakeCompositionReady]);
   useEffect(() => {
     if (template && !savePage)
       template.record(
@@ -262,6 +288,10 @@ export function useEventPageEditor({
       }
       progress.markSaved(savedContent);
       if (id.current) onSaved?.(id.current);
+      if (intakeId && id.current) {
+        const savedId = id.current;
+        void getSession().then(session => attachCreationIntakeEvent(creationIntakeOwner(session?.user), intakeId, savedId)).catch(() => {});
+      }
       window.dispatchEvent(new CustomEvent("history:updated", { detail: { id: id.current } }));
       setMessage(publish ? "Changes saved." : "Draft saved.");
       if (navigate && publish && href)

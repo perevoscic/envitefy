@@ -69,7 +69,7 @@ export default function FloatingActionStrip({
         </span>
       ) : null}
       {onPreview ? (
-        <span className="hidden md:block">
+        <span>
           <button
             type="button"
             onClick={onPreview}
@@ -78,7 +78,7 @@ export default function FloatingActionStrip({
             title="Preview event"
           >
             <Eye size={16} aria-hidden="true" />
-            <span>Preview</span>
+            <span className="hidden sm:inline">Preview</span>
           </button>
         </span>
       ) : null}

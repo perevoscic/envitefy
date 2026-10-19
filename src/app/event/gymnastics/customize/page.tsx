@@ -11,6 +11,7 @@ import { GYMNASTICS_SECTION_CATALOG, normalizeEventSectionLayout } from "@/lib/e
 import HeroImageEditor from "@/components/events/HeroImageEditor";
 import { DEFAULT_HERO_IMAGE_SETTINGS, normalizeHeroImageSettings } from "@/lib/hero-image-settings";
 import { normalizeGymnasticsPageText, type GymnasticsPageTextChange } from "@/lib/gymnastics-page-text";
+import { GYMNASTICS_TITLE_FONTS, normalizeGymnasticsTitleFont } from "@/lib/gymnastics-title-font";
 
 import FileUploadInput from "@/components/ui/FileUploadInput";
 import EventCanvas from "@/components/EventCanvas";
@@ -26,7 +27,9 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Eye,
   ListPlus,
+  MoveVertical,
   Lock,
   Palette,
   PanelsTopLeft,
@@ -681,6 +684,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       heroImageFilterEnabled: true,
       heroImageSettings: { ...DEFAULT_HERO_IMAGE_SETTINGS },
       gymnasticsPageText: normalizeGymnasticsPageText(undefined),
+      gymnasticsTitleFont: "",
       sectionLayout: normalizeEventSectionLayout({ version: 1 }),
       rsvpEnabled: false,
       rsvpDeadline:
@@ -871,14 +875,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       });
     }, [setData]);
     const fullscreenPreviewRef = useRef<HTMLDialogElement>(null);
+    const fullscreenMenuWasOpen = useRef(false);
     const openFullscreenPreview = useCallback(() => {
+      fullscreenMenuWasOpen.current = mobileMenuOpen;
       dismissMobileMenu();
       setFullscreenPreviewOpen(true);
-    }, [dismissMobileMenu]);
+    }, [dismissMobileMenu, mobileMenuOpen]);
     const closeFullscreenPreview = useCallback(() => {
       fullscreenPreviewRef.current?.close();
       setFullscreenPreviewOpen(false);
-      if (window.innerWidth < 768) openMobileMenu();
+      if (window.innerWidth < 768 && fullscreenMenuWasOpen.current) openMobileMenu();
     }, [openMobileMenu]);
     useEffect(() => {
       const dialog = fullscreenPreviewRef.current;
@@ -1115,7 +1121,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       setActiveView(view);
       if (typeof window !== "undefined") {
         window.requestAnimationFrame(() => {
-          sidebarScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+          sidebarScrollRef.current
+            ?.closest('aside[aria-label="Event editing controls"]')
+            ?.scrollTo({ top: 0, behavior: "smooth" });
         });
       }
     }, []);
@@ -1159,6 +1167,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         "headline",
         "images",
         "design",
+        "image-position",
         "details",
         "discover",
         "rsvp",
@@ -1275,7 +1284,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
           console.log("[Edit] Loaded event data:", {
             title: json?.title,
-            pageTemplateId: effectiveExisting.pageTemplateId,
+            pageTemplateId: search?.get("intake") && isGymMeetTemplateId(selectedTemplateId) ? selectedTemplateId : effectiveExisting.pageTemplateId,
             heroImage: effectiveExisting.heroImage,
             themeId: effectiveExisting.themeId,
             theme: effectiveExisting.theme,
@@ -1361,8 +1370,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             heroImageFilterEnabled: effectiveExisting.heroImageFilterEnabled !== false,
             heroImageSettings: normalizeHeroImageSettings(effectiveExisting.heroImageSettings),
             gymnasticsPageText: normalizeGymnasticsPageText(effectiveExisting.gymnasticsPageText ?? effectiveExisting.customFields?.gymnasticsPageText),
+            gymnasticsTitleFont: normalizeGymnasticsTitleFont(
+              existing.gymnasticsTitleFont ?? existing.customFields?.gymnasticsTitleFont ??
+              effectiveExisting.gymnasticsTitleFont ?? effectiveExisting.customFields?.gymnasticsTitleFont,
+            ),
             sectionLayout: normalizeEventSectionLayout(effectiveExisting.sectionLayout) || normalizeEventSectionLayout({ version: 1 }),
-            pageTemplateId: resolveGymMeetTemplateId(effectiveExisting),
+            pageTemplateId: search?.get("intake") && isGymMeetTemplateId(selectedTemplateId) ? selectedTemplateId : resolveGymMeetTemplateId(effectiveExisting),
             rsvpEnabled:
               typeof effectiveExisting.rsvpEnabled === "boolean"
                 ? effectiveExisting.rsvpEnabled
@@ -1747,6 +1760,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
           heroImageSettings: normalizeHeroImageSettings(data.heroImageSettings),
           gymnasticsPageText: normalizeGymnasticsPageText(data.gymnasticsPageText),
+          gymnasticsTitleFont: normalizeGymnasticsTitleFont(data.gymnasticsTitleFont),
           sectionLayout: data.sectionLayout,
           time: data.time,
           date: data.date,
@@ -1875,6 +1889,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
           heroImageSettings: normalizeHeroImageSettings(data.heroImageSettings),
           gymnasticsPageText: normalizeGymnasticsPageText(data.gymnasticsPageText),
+          gymnasticsTitleFont: normalizeGymnasticsTitleFont(data.gymnasticsTitleFont),
           sectionLayout: data.sectionLayout,
           time: data.time,
           date: data.date,
@@ -1919,6 +1934,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     data.hero,
     data.heroImageSettings,
     data.gymnasticsPageText,
+    data.gymnasticsTitleFont,
     data.sectionLayout,
     data.pageTemplateId,
     data.fontId,
@@ -2017,7 +2033,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           )
         )}
 
-        <EditorMenuGroup label="Your page">
+        <p className="text-sm text-[#6d627d]">Edit wording with the pencils on your page.</p>
+        <EditorMenuGroup label="Page settings">
           <EditorMenuRow
             title="Event basics"
             value={data.title?.trim() || "Title, date and venue"}
@@ -2030,6 +2047,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             value={getGymMeetTemplateMeta(resolveGymMeetTemplateId(data)).name}
             icon={<Palette size={18} />}
             onClick={() => setActiveView("design")}
+          />
+          <EditorMenuRow
+            title="Image position"
+            value={data.heroImageSettings?.fit === "contain" ? "Full image" : "Fit and framing"}
+            icon={<MoveVertical size={18} />}
+            onClick={() => setActiveView("image-position")}
           />
           <EventEditorToolsConsumer>
             {(tools) => (
@@ -2130,6 +2153,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         heroImageFilterEnabled: true,
         heroImageSettings: { ...DEFAULT_HERO_IMAGE_SETTINGS },
         gymnasticsPageText: {},
+        gymnasticsTitleFont: "",
         extra: Object.fromEntries(config.detailFields.map((f) => [f.key, ""])),
       }));
       setAdvancedState(buildMinimalAdvancedState(config.advancedSections));
@@ -2242,16 +2266,18 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         showBack
       >
         <div className="space-y-4">
-          <TemplateSelector
-            value={resolveGymMeetTemplateId(data)}
-            onChange={handleTemplateSelection}
-          />
-          {!useParseDrivenSections ? (
-            <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={resetToBlank} className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600">Clear sample details</button>
-              <button type="button" onClick={applySampleData} className="min-h-11 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700">Load sample meet</button>
-            </div>
-          ) : null}
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <label className="block text-sm font-semibold text-slate-700" htmlFor="gymnastics-title-font">Title font</label>
+            <select
+              id="gymnastics-title-font"
+              value={data.gymnasticsTitleFont || ""}
+              onChange={(event) => updateData("gymnasticsTitleFont", event.target.value)}
+              className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700"
+            >
+              <option value="">Design default</option>
+              {GYMNASTICS_TITLE_FONTS.map((font) => <option key={font.id} value={font.id}>{font.label}</option>)}
+            </select>
+          </section>
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -2273,6 +2299,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   <button
                     key={option.id}
                     type="button"
+                    aria-pressed={active}
                     onClick={() => updateData("fontSize", option.id)}
                     className={`rounded-xl border px-3 py-3 text-sm font-semibold transition ${
                       active
@@ -2286,9 +2313,56 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               })}
             </div>
           </section>
+          <TemplateSelector
+            value={resolveGymMeetTemplateId(data)}
+            onChange={handleTemplateSelection}
+          />
+          {!useParseDrivenSections ? (
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={resetToBlank} className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600">Clear sample details</button>
+              <button type="button" onClick={applySampleData} className="min-h-11 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700">Load sample meet</button>
+            </div>
+          ) : null}
         </div>
       </GymnasticsEditorLayout>
     );
+
+    const renderImagePositionEditor = () => {
+      const settings = normalizeHeroImageSettings(data.heroImageSettings);
+      return (
+        <GymnasticsEditorLayout title="Image position" onBack={handleBackToMain} showBack>
+          <div className="space-y-6">
+            <label className="block text-sm font-semibold text-slate-700" htmlFor="gymnastics-image-fit">
+              Image fit
+              <select
+                id="gymnastics-image-fit"
+                value={settings.fit}
+                onChange={(event) => updateData("heroImageSettings", { ...settings, fit: event.target.value })}
+                className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700"
+              >
+                <option value="cover">Fill image frame</option>
+                <option value="contain">Show full image</option>
+              </select>
+            </label>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700" htmlFor="gymnastics-image-position">Vertical position</label>
+              <input
+                id="gymnastics-image-position"
+                type="range"
+                min="0"
+                max="100"
+                value={settings.positionY}
+                disabled={settings.fit === "contain"}
+                onChange={(event) => updateData("heroImageSettings", { ...settings, positionY: Number(event.target.value) })}
+                className="mt-2 min-h-11 w-full accent-violet-700 disabled:opacity-40"
+              />
+              <div className="flex justify-between text-xs text-slate-500"><span>Top</span><span>Bottom</span></div>
+              <p className="mt-3 text-sm text-slate-500">Fill the frame to adjust the crop, or drag the image directly on your page.</p>
+            </div>
+          </div>
+        </GymnasticsEditorLayout>
+      );
+    };
 
     const renderDetailsEditor = () => (
       <GymnasticsEditorLayout
@@ -2735,6 +2809,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
         heroImageSettings: normalizeHeroImageSettings(data.heroImageSettings),
         gymnasticsPageText: normalizeGymnasticsPageText(data.gymnasticsPageText),
+        gymnasticsTitleFont: normalizeGymnasticsTitleFont(data.gymnasticsTitleFont),
             sectionLayout: data.sectionLayout || { version: 1, order: [], hidden: [], added: [] },
         time: data.time,
         date: data.date,
@@ -2783,6 +2858,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.hero,
       data.heroImageSettings,
       data.gymnasticsPageText,
+      data.gymnasticsTitleFont,
       data.sectionLayout,
       data.pageTemplateId,
       data.passcode,
@@ -2890,15 +2966,20 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           ) : (
             <p className="text-sm font-semibold text-[#3a3150]">{editEventId ? "Edit meet page" : "Meet page"}</p>
           )}
-          {headerAction}
+          <div className="flex items-center gap-2">
+            {!isEmbed && <button
+              type="button"
+              onClick={openFullscreenPreview}
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#d9cfea] bg-white px-3 text-[13px] font-semibold text-[#493d5c] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700"
+            >
+              <Eye size={17} aria-hidden="true" /> Preview
+            </button>}
+            {headerAction}
+          </div>
         </div><div
           ref={sidebarScrollRef}
           data-gym-editor-scroll="true"
-          className="flex-1 min-h-0 overflow-y-auto"
-          style={{
-            WebkitOverflowScrolling: "touch",
-            overscrollBehavior: "contain",
-          }}
+          className="min-h-0"
         >
           {}
 
@@ -2921,6 +3002,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             {activeView === "headline" && renderHeadlineEditor}
 
             {activeView === "design" && renderDesignEditor()}
+            {activeView === "image-position" && renderImagePositionEditor()}
             {activeView === "details" && renderDetailsEditor()}
             {activeView === "discover" && renderDiscoverEditor()}
             {activeView === "rsvp" && renderRsvpEditor()}
@@ -3028,6 +3110,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     return wrapSectionBuilder(
       <EventEditorWorkspace sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "discover": renderDiscoverEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed}
+ pageEditing viewLabels={{ page: "Close settings", controls: "Page settings" }}
  preview={<EventCanvas
           className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
           style={{
@@ -3052,7 +3135,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   key={`preview-${previewEventId}`}
                   onMobileEdit={mobileMenuOpen ? undefined : openMobileMenu}
                   onPreview={openFullscreenPreview}
-                  onPageTextChange={mobileMenuOpen ? undefined : handlePageTextChange}
+                  onPageTextChange={handlePageTextChange}
                   onHeroImagePositionChange={(positionY) => setData((prev) => ({
                     ...prev,
                     heroImageSettings: { ...normalizeHeroImageSettings(prev.heroImageSettings), positionY },
@@ -3131,7 +3214,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 sessionEmail={null}
                 disableProtectedSectionLocks
                 hideOwnerActions
-                onMobileEdit={closeFullscreenPreview}
               />
             </EventCanvas></EventSectionsReadOnly>
           ) : null}

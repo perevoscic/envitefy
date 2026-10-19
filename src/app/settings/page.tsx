@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import {
   type ChangeEvent,
   useCallback,
@@ -53,6 +54,8 @@ import { PROFILE_AVATAR_ACCEPT, validateProfileAvatarMeta } from "@/lib/profile-
 import { MobileActionBar } from "@/components/ui/MobileActionBar";
 import AppleCalendarConnection, { type AppleCalendarStatus } from "@/components/AppleCalendarConnection";
 import ProfileAccountDeletion from "@/components/account/ProfileAccountDeletion";
+import CreationAccessSettings from "@/components/account/CreationAccessSettings";
+import { UNIFIED_CREATION_ENABLED } from "@/lib/create/release";
 
 type CalendarProvider = "google" | "microsoft" | "apple";
 type ConnectedCalendarProvider = Exclude<CalendarProvider, "apple">;
@@ -94,6 +97,7 @@ type ApiState<T> = { loading: boolean; error: string | null; data?: T };
 type CalendarConnectionMessage = { kind: "success" | "error"; text: string };
 
 export default function SettingsPage() {
+  const settingsSectionQuery = useSearchParams()?.get("section") || "";
   const { data: session, status: sessionStatus } = useSession();
 
   // Profile form state
@@ -267,7 +271,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const syncSectionFromHash = () => {
-      const hash = window.location.hash.replace(/^#/, "");
+      const hash = window.location.hash.replace(/^#/, "") || settingsSectionQuery;
       if (hash === "your-sports" || hash === "creation") {
         setActiveSettingsSection("creation");
       } else if (hash === "calendars" || hash === "security" || hash === "profile") {
@@ -277,7 +281,7 @@ export default function SettingsPage() {
     syncSectionFromHash();
     window.addEventListener("hashchange", syncSectionFromHash);
     return () => window.removeEventListener("hashchange", syncSectionFromHash);
-  }, []);
+  }, [settingsSectionQuery]);
 
   const normalizeProvider = (value: unknown): CalendarProvider | null => {
     if (typeof value !== "string") return null;
@@ -1186,6 +1190,7 @@ export default function SettingsPage() {
           <section
             className={`${activeSettingsSection === "creation" ? "block" : "hidden"} space-y-6 rounded-[1.75rem] border border-[#dcd3ee] bg-gradient-to-br from-white via-[#fcfaff] to-[#f4efff] p-5 shadow-[0_18px_55px_rgba(65,51,92,0.08)] sm:p-7`}
           >
+            {UNIFIED_CREATION_ENABLED ? <CreationAccessSettings /> : <>
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#7964ad]">
                 Workspace preferences
@@ -1394,6 +1399,7 @@ export default function SettingsPage() {
                 Reset personalization
               </button>
             </MobileActionBar>
+            </>}
           </section>
         </div>
         </div>

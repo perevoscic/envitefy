@@ -1,3 +1,5 @@
+import { readPublicCreateUrl } from "@/lib/create/read-source";
+
 type BrowserDiscoveryDepth = 0 | 1;
 
 type BrowserDiscoveryAction = {
@@ -75,12 +77,35 @@ type PlaywrightBrowserContext = {
   newPage(): Promise<PlaywrightPage>;
   waitForEvent(name: "page", options?: { timeout?: number }): Promise<PlaywrightPage>;
   close(): Promise<void>;
+  route(pattern: string, handler: (route: DiscoveryBrowserRoute) => Promise<void>): Promise<unknown>;
+  routeWebSocket(pattern: string, handler: (socket: { close(): void }) => void): Promise<unknown>;
 };
 
 type PlaywrightBrowser = {
-  newContext(options?: { acceptDownloads?: boolean }): Promise<PlaywrightBrowserContext>;
+  newContext(options?: { acceptDownloads?: boolean; serviceWorkers?: "block" }): Promise<PlaywrightBrowserContext>;
   close(): Promise<void>;
 };
+
+type DiscoveryBrowserRoute = {
+  request(): { url(): string; method(): string };
+  abort(): Promise<void>;
+  fulfill(options: { status: number; headers: Record<string, string>; body: Buffer }): Promise<void>;
+};
+
+/** Never let Chromium resolve or fetch an unvalidated linked/subresource URL itself. */
+export async function fulfillPublicDiscoveryRequest(route: DiscoveryBrowserRoute) {
+  const request = route.request();
+  if (!["GET", "HEAD"].includes(request.method())) { await route.abort(); return; }
+  try {
+    const response = await readPublicCreateUrl(request.url(), AbortSignal.timeout(12_000));
+    const redirected = new URL(response.url).toString() !== new URL(request.url()).toString();
+    await route.fulfill({
+      status: redirected ? 302 : 200,
+      headers: redirected ? { location: response.url } : { "content-type": response.mimeType, "access-control-allow-origin": "*" },
+      body: redirected || request.method() === "HEAD" ? Buffer.alloc(0) : response.bytes,
+    });
+  } catch { await route.abort(); }
+}
 
 function safeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -294,7 +319,9 @@ export async function collectDiscoveryBrowserData(
   const maxChildPages = options?.maxChildPages ?? 3;
   const maxActionablesPerPage = options?.maxActionablesPerPage ?? 12;
   const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ acceptDownloads: true });
+  const context = await browser.newContext({ acceptDownloads: true, serviceWorkers: "block" });
+  await context.route("**/*", fulfillPublicDiscoveryRequest);
+  await context.routeWebSocket("**/*", (socket) => socket.close());
   const page = await context.newPage();
   const candidateMap = new Map<string, BrowserDiscoveryCandidate>();
   const pageMap = new Map<string, BrowserDiscoveryPage>();

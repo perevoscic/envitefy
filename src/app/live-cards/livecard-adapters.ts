@@ -149,6 +149,7 @@ export function liveCardHistoryPayload(
       title: form.title.trim() || "Untitled Live Card",
       description: invitationData.description,
       createdVia: LIVE_CARD_BUILDER_SOURCE,
+      creationCategory: form.creationCategory || undefined,
       status,
       ownership: "owned",
       isDraft: status === "draft",

@@ -3,6 +3,7 @@
 import { EventEditorInput as InputGroup, EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout } from "@/components/events/EventEditorFields";
 import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
 import { useEventPageEditor } from "@/components/events/useEventPageEditor";
+import { useCreationEditorHydration } from "@/components/events/useCreationEditorHydration";
 import { useEventHistoryClient } from "@/lib/event-history-client";
 import { EventSectionBuilderProvider, EventSectionsReadOnly } from "@/components/events/EventSectionBuilder";
 import { normalizeEventSectionLayout } from "@/lib/event-section-layout";
@@ -257,6 +258,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       return isGymMeetTemplateId(selected) ? selected : DEFAULT_GYM_MEET_TEMPLATE_ID;
     });
     const [activeView, setActiveView] = useState<string>("main");
+    const [creationError, setCreationError] = useState("");
+    const creationReady = useCreationEditorHydration({ category: "football", eventId: editEventId, snapshot: { data, advancedState, pageTemplateId }, restore: saved => { if (saved.data) setData(saved.data); if (saved.advancedState) setAdvancedState(saved.advancedState); }, onError: setCreationError });
     const [sectionPreviewOpen, setSectionPreviewOpen] = useState(false);
     const sectionPreviewRef = useRef<HTMLDialogElement>(null);
     useEffect(() => {
@@ -448,7 +451,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             existing.templateConfig?.themeId ||
             existing.themeId;
           setPageTemplateId(
-            isGymMeetTemplateId(incomingTemplateId)
+            search?.get("intake") && isGymMeetTemplateId(search?.get("templateId"))
+              ? search.get("templateId")
+              : isGymMeetTemplateId(incomingTemplateId)
               ? incomingTemplateId
               : DEFAULT_GYM_MEET_TEMPLATE_ID,
           );
@@ -788,7 +793,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       router,
     ]);
 
-    const editor = useEventPageEditor({ snapshot: { data: { ...data, title: resolvedTitle }, advancedState, pageTemplateId, loadedDiscoverySource, isDiscoveryEdit }, category: config.category, templateId: config.slug, eventId: editEventId, historyClient: eventHistoryClient, ready: !progressLoading, busy: discoverBusy, onBusyChange: setSubmitting, buildPayload: buildEventPayload, onSaved: () => setDidExplicitSave(true) });
+    const editor = useEventPageEditor({ snapshot: { data: { ...data, title: resolvedTitle }, advancedState, pageTemplateId, loadedDiscoverySource, isDiscoveryEdit }, category: config.category, templateId: config.slug, eventId: editEventId, historyClient: eventHistoryClient, ready: !progressLoading && creationReady, busy: discoverBusy, onBusyChange: setSubmitting, buildPayload: buildEventPayload, onSaved: () => setDidExplicitSave(true) });
 
     const buildEventDetails = () => {
       const title = resolvedTitle || config.displayName;
@@ -1345,7 +1350,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     return (
       <EventSectionBuilderProvider composition={{ value: editor.composition, onChange: editor.setComposition }} layout={sectionLayout} catalog={sectionCatalog} renderEditor={renderSectionEditor}
         onChange={(next) => setData((previous) => ({ ...previous, sectionLayout: next }))}>
-      <EventEditorWorkspace sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "discover": renderDiscoverEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, "section": renderSectionEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/football-season"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed}
+      <EventEditorWorkspace notices={creationError ? <p role="alert">{creationError}</p> : undefined} sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "discover": renderDiscoverEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, "section": renderSectionEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/football-season"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed}
  preview={<EventCanvas
             className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
             style={{

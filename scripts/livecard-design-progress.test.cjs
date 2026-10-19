@@ -5,6 +5,8 @@ const loadTs = require("./lib/event-messages-test-loader.cjs");
 function route(generate) {
   return loadTs("src/app/api/livecard-builder/design/route.ts", {
     "next/server": { NextResponse: { json: (body, options) => Response.json(body, options) } },
+    "@/lib/auth": { getAuthenticatedRequestUser: async () => ({ ok: true, userId: "owner" }) },
+    "@/lib/creation-access-server": { checkCreationAccess: async () => null },
     "@/lib/livecard-api-access": { builderApiAccess: async () => null },
     "@/lib/livecard-builder": { readLiveCardForm: () => ({ title: "Science night" }), validateLiveCard: () => ({}) },
     "@/lib/shared-card-generation": { generateSharedCard: generate },

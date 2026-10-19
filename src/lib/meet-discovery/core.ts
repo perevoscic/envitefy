@@ -2039,13 +2039,6 @@ function resolveDiscoveryVisionModel(): string {
   return safeString(process.env.OPENAI_DISCOVERY_VISION_MODEL) || "gpt-5.6-luna";
 }
 
-const DEFAULT_GEMINI_PARSE_MODEL = "gemini-3.6-flash";
-
-function resolveGeminiParseModels(): string[] {
-  const configuredModel = safeString(process.env.GEMINI_MODEL);
-  return uniqueBy([configuredModel, DEFAULT_GEMINI_PARSE_MODEL].filter(Boolean), (model) => model);
-}
-
 let openAiClient: OpenAI | null = null;
 function getOpenAiClient(): OpenAI {
   const apiKey = process.env.OPENAI_API_KEY || "";
@@ -4774,21 +4767,11 @@ async function fetchWithLimit(
     options.signal.addEventListener("abort", abortFromSignal, { once: true });
   }
   try {
-    const response = await fetch(url, {
-      redirect: "follow",
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; EnvitefyBot/1.0; +https://envitefy.com)",
-      },
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      throw new Error(`Fetch failed (${response.status})`);
-    }
-    const contentType = response.headers.get("content-type") || "";
-    const arr = new Uint8Array(await response.arrayBuffer());
-    const sliced = arr.slice(0, Math.min(arr.length, MAX_FETCH_BYTES));
-    const buffer = Buffer.from(sliced);
+    const { readPublicCreateUrl } = await import("@/lib/create/read-source");
+    const remote = await readPublicCreateUrl(url, controller.signal);
+    const contentType = remote.mimeType;
+    if (remote.bytes.length > MAX_FETCH_BYTES) throw new Error("Discovery source exceeds its size limit");
+    const buffer = remote.bytes;
     let text = "";
     if (/text\/html|text\/plain|application\/json|application\/ld\+json/i.test(contentType)) {
       text = buffer.toString("utf8");
@@ -5421,6 +5404,11 @@ export async function extractDiscoveryText(
     const parsed = input.dataUrl ? parseDataUrl(input.dataUrl) : null;
     if (!parsed) throw new Error("Invalid file payload");
     const mime = (parsed.mimeType || input.mimeType || "").toLowerCase();
+    if (mime === "text/plain") {
+      const extractedText = parsed.buffer.toString("utf8").trim();
+      if (!extractedText || extractedText.length > 12_000) throw new Error("Paste event details under 12,000 characters.");
+      return { extractedText, extractionMeta: { sourceType: "file", usedOcr: false, linkedAssets: [], discoveredLinks: [], resourceLinks: [], crawledPages: [] }, performance };
+    }
     if (/pdf/.test(mime)) {
       const { text, usedOcr, coachPageHints, textQuality, qualitySignals, pages, annotationLinks } =
         await extractTextFromPdf(parsed.buffer, {
@@ -7870,76 +7858,6 @@ async function callOpenAiTargetedParse(
   };
 }
 
-async function callGeminiParse(
-  text: string,
-  evidence: DiscoveryEvidence,
-  traceId?: string,
-): Promise<{ result: ParseResult | null; raw: string }> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "";
-  if (!apiKey) throw new Error("Gemini API key is not configured");
-  const models = resolveGeminiParseModels();
-  let lastFailure = "Gemini request failed";
-
-  for (const [index, model] of models.entries()) {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
-      model,
-    )}:generateContent?key=${encodeURIComponent(apiKey)}`;
-    const startedAt = Date.now();
-    logDiscoveryDebug("[meet-discovery] gemini parse request started", {
-      traceId: traceId || null,
-      model,
-    });
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        generationConfig: {
-          temperature: 0,
-          responseMimeType: "application/json",
-        },
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: buildProfessionalParsePrompt(evidence, text) }],
-          },
-        ],
-      }),
-    });
-    if (!response.ok) {
-      const responseDetail = (await response.text().catch(() => ""))
-        .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, 500);
-      lastFailure = `Gemini request failed (${response.status}) for model ${model}${
-        responseDetail ? `: ${responseDetail}` : ""
-      }`;
-      const canRetrySupportedDefault = response.status === 404 && index < models.length - 1;
-      if (canRetrySupportedDefault) {
-        console.warn("[meet-discovery] configured Gemini model was not found; retrying fallback", {
-          traceId: traceId || null,
-          model,
-          fallbackModel: models[index + 1],
-        });
-        continue;
-      }
-      throw new Error(lastFailure);
-    }
-    const json = (await response.json()) as {
-      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-    };
-    logDiscoveryDebug("[meet-discovery] gemini parse request finished", {
-      traceId: traceId || null,
-      model,
-      durationMs: Date.now() - startedAt,
-    });
-    const raw = safeString(json.candidates?.[0]?.content?.parts?.[0]?.text);
-    const parsed = normalizeParseResult(extractJsonObject(raw));
-    return { result: parsed, raw };
-  }
-
-  throw new Error(lastFailure);
-}
-
 export async function finalizeMeetParseResult(
   value: ParseResult,
   extractedText: string,
@@ -8152,46 +8070,9 @@ export async function parseMeetFromExtractedText(
     });
     openAiErrorMessage = String(err?.message || "OpenAI parse failed.");
   }
-  const hasGeminiKey = Boolean(
-    safeString(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY),
-  );
-  if (!hasGeminiKey) {
-    throw new Error(
-      openAiErrorMessage ||
-        "OpenAI parsing failed and Gemini fallback is not configured. Set GEMINI_API_KEY to enable fallback.",
-    );
-  }
-  logDiscoveryDebug("[meet-discovery] falling back to gemini", {
-    traceId,
-    reason: openAiErrorMessage || "openai_invalid_json",
-  });
-  const geminiStartedAt = Date.now();
-  const gemini = await callGeminiParse(extractedText, evidence, options?.traceId);
-  if (options?.performance) {
-    options.performance.modelParseMs += Date.now() - geminiStartedAt;
-  }
-  if (!gemini.result) {
-    throw new Error("Gemini returned invalid JSON");
-  }
-  const finalizedGemini = await finalizeMeetParseResult(
-    gemini.result,
-    extractedText,
-    extractionMeta,
-    {
-      traceId: options?.traceId,
-      mode: options?.mode,
-      performance: options?.performance,
-    },
-  );
-  return {
-    parseResult: {
-      ...finalizedGemini,
-      title: resolveDiscoveryEventTitle(finalizedGemini.title, fallbackTitle),
-    },
-    modelUsed: "gemini",
-    rawModelOutput: gemini.raw || openAiRaw,
-    evidence,
-  };
+  // Keep the source and report the OpenAI failure so the same intake can resume.
+  // Full-document extraction must never silently switch to another provider.
+  throw new Error(openAiErrorMessage || "OpenAI parsing could not finish. Retry to resume this import.");
 }
 
 function splitDateTime(iso: string | null): { date: string; time: string } {

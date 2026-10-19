@@ -1,3 +1,4 @@
+import { checkCreationAccess } from "@/lib/creation-access-server";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
       503,
     );
   let input: SignupThemeGenerationRequest;
+  let eventId: string | null = null;
   try {
     const reader = request.body?.getReader();
     if (!reader) return json({ error: "Describe your theme first." }, 400);
@@ -48,7 +50,9 @@ export async function POST(request: Request) {
       }
       chunks.push(value);
     }
-    input = parseSignupThemeRequest(JSON.parse(Buffer.concat(chunks).toString("utf8")));
+    const raw = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    eventId = typeof raw.eventId === "string" ? raw.eventId : null;
+    input = parseSignupThemeRequest(raw);
   } catch (error) {
     return json(
       {
@@ -60,6 +64,8 @@ export async function POST(request: Request) {
       400,
     );
   }
+  const creationDenied = await checkCreationAccess(userId, { product: "signup_form", eventId });
+  if (creationDenied) return creationDenied;
   const now = Date.now();
   for (const [key, entry] of requests)
     if (entry.resetAt <= now && !entry.active) requests.delete(key);

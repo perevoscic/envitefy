@@ -13,6 +13,10 @@ function toAbortError(reason?: unknown) {
 }
 
 const activeDiscoveryControllers = new Map<string, AbortController>();
+export function hasActiveDiscoveryPipeline(eventId: string) {
+  const controller = activeDiscoveryControllers.get(eventId);
+  return Boolean(controller && !controller.signal.aborted);
+}
 
 export function beginDiscoveryPipelineCancellationScope(eventId: string) {
   const prior = activeDiscoveryControllers.get(eventId);

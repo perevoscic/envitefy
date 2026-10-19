@@ -119,6 +119,40 @@ test("Drafts includes saved work across editors and dates without published, inv
   assert.deepEqual({ history }, before);
 });
 
+test("Drafts includes current browser work, preserves its recovery step and omits saved or expired copies", async () => {
+  const { buildSidebarDraftItems } = await loadModelModule();
+  const now = Date.now();
+  const intake = (id, overrides = {}) => ({
+    version: 1, id, ownerId: "owner-a", revision: 1, updatedAt: now,
+    phase: "source", source: { kind: "scratch", files: [], text: "" }, ...overrides,
+  });
+  const history = [
+    { id: "saved", title: "Saved draft", created_at: new Date(now - 3000).toISOString(), data: { status: "draft" } },
+    { id: "published-sport", title: "Published meet", data: { status: "published" } },
+  ];
+  const creationIntakes = [
+    intake("editor", { updatedAt: now - 1000, phase: "editor", guess: { category: "general", sport: null }, information: { details: { title: "Browser event" } } }),
+    intake("source", { source: { kind: "files", files: [{ name: "meet packet.pdf" }], text: "" } }),
+    intake("recognizing", { updatedAt: now - 2000, phase: "recognizing", guess: { category: "sports", sport: "gymnastics" } }),
+    intake("foreign", { ownerId: "owner-b" }),
+    intake("expired", { updatedAt: now - 7 * 24 * 60 * 60 * 1000 - 1 }),
+    intake("saved-copy", { eventId: "saved" }),
+    intake("saved-outside-sidebar", { eventId: "not-in-sidebar-projection" }),
+    intake("published-copy", { discoveryEventId: "published-sport" }),
+    intake("discovery-copy", { discoveryEventId: "saved" }),
+  ];
+  const before = structuredClone({ history, creationIntakes });
+  const drafts = buildSidebarDraftItems({ history, creationIntakes, ownerId: "owner-a", buildEditLink: (id) => `/edit/${id}`, isInvitedEventLikeRecord: () => false });
+  assert.deepEqual(drafts.map((draft) => draft.id), ["intake:source", "intake:editor", "intake:recognizing", "event:saved"]);
+  assert.deepEqual(drafts.slice(0, 3).map((draft) => draft.href), [
+    "/create?intake=source&step=source", "/create?intake=editor&step=templates", "/create?intake=recognizing&step=source",
+  ]);
+  assert.deepEqual(drafts.slice(0, 3).map((draft) => draft.title), ["meet packet.pdf", "Browser event", "Unfinished event"]);
+  assert.ok(drafts.slice(0, 3).every((draft) => draft.eventId === null), "browser work resumes without fetching an unsaved server record");
+  assert.equal(buildSidebarDraftItems({ history: [], creationIntakes, ownerId: "", buildEditLink: () => "", isInvitedEventLikeRecord: () => false }).length, 0, "signed-out Drafts never admits browser work");
+  assert.deepEqual({ history, creationIntakes }, before);
+});
+
 test("sidebar chronology crosses category boundaries and keeps undated events last", async () => {
   const { buildGroupedEventLists, getChronologicalEventItems } = await loadModelModule();
   const history = [

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { checkCreationAccess } from "@/lib/creation-access-server";
+import { normalizeCreationCategory } from "@/lib/creation-access";
 import { generateAndPersistInvitation, invitationResponseStream } from "@/lib/studio/generation-response";
 import { resolveStudioProvider } from "@/lib/studio/provider";
 import { parseStudioGenerateRequest, type StudioGenerateFailureResponse } from "@/lib/studio/types";
@@ -59,6 +61,11 @@ export async function POST(request: Request) {
       return buildFailureResponse(400, "invalid_request", parsed.error, false);
     }
 
+    const userId = await resolveSessionUserId(session);
+    if (!userId) return buildFailureResponse(401, "unauthorized", "Sign in to create artwork.", false);
+    const operation = parsed.value as unknown as Record<string, any>;
+    const creationDenied = await checkCreationAccess(userId, { product: "live_card", ...(typeof operation.eventId === "string" ? { eventId: operation.eventId } : { category: normalizeCreationCategory(operation.event?.category) || "general" }) });
+    if (creationDenied) return creationDenied;
     if (request.headers.get("accept")?.includes("application/x-ndjson")) {
       return new Response(invitationResponseStream(
         (options) => generateAndPersistInvitation(parsed.value, options), request.signal,

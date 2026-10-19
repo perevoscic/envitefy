@@ -12,6 +12,7 @@ import { useEventHistoryClient } from "../../src/lib/event-history-client";
 import EventCustomEditor from "../../src/components/events/custom/EventCustomEditor";
 import Birthdays from "../../src/app/event/birthdays/customize/page";
 import General from "../../src/app/event/general/customize/page";
+import Gymnastics from "../../src/app/event/gymnastics/customize/page";
 import TemplateEditorProvider from "../../src/components/templates/TemplateEditorContext";
 import EventGuestActions from "../../src/components/event-templates/EventGuestActions";
 import type { EventGuestActionVisibility } from "../../src/lib/event-guest-actions";
@@ -155,7 +156,7 @@ function App() {
   const pathname = usePathname();
   const search = useSearchParams();
   if (!pathname.includes("customize")) return <div data-destination>{pathname}</div>;
-  const mode = search.get("mode");
+  const mode = search.get("mode") || (pathname.includes("gymnastics") ? "gymnastics" : null);
   if (mode === "guest-actions") return <GuestActionsFixture />;
   return (
     <UnsavedProgressProvider>
@@ -164,6 +165,8 @@ function App() {
         <TemplateEditorProvider category="birthdays" templateId="candy-dreams">
           <Birthdays />
         </TemplateEditorProvider>
+      ) : mode === "gymnastics" ? (
+        <Gymnastics />
       ) : mode === "manual" ? (
         <General />
       ) : mode === "upload" || mode === "create" ? (

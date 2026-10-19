@@ -38,11 +38,15 @@ function setup({ signedIn = true, admin = false, existing = {}, ownerId = "owner
     return row;
   };
   const imports = {
+    "@/lib/creation-access-server": { checkEventCreationAccess: async () => null, checkCreationAccess: async () => null },
+    "@/lib/creation-access": { normalizeCreationCategory: () => "general", liveCardCreationCategories: () => ["general"] },
+    "@/lib/event-collaboration": { eventRevision: () => "revision", getEventPermissions: async (event, viewer) => ({ canEdit: Boolean(viewer && event.user_id === viewer), role: viewer && event.user_id === viewer ? "owner" : null }) },
+    "@/lib/event-collaboration-types": { supportsEventCollaboration: () => false },
     "next/server": {
       NextResponse: { json: (body, options = {}) => ({ body, status: options.status || 200 }) },
     },
     "next-auth": { getServerSession: async () => session },
-    "@/lib/auth": { authOptions: {}, resolveSessionUserId: async () => session?.user.id || null },
+    "@/lib/auth": { authOptions: {}, resolveSessionUserId: async () => session?.user.id || null, getAuthenticatedRequestUser: async () => session ? ({ ok: true, userId: session.user.id }) : ({ ok: false }) },
     "@/lib/db": {
       getIsAdminByEmail: async () => {
         checks += 1;
