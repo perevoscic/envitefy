@@ -8,7 +8,7 @@ import { requireCreationAccess } from "@/lib/creation-access-server";
 import { validDiscoveryIntakeKey, withIdempotentDiscoveryIntake } from "./intake-recovery";
 import { createDiscoveryShell } from "@/lib/discovery/persist";
 import { createDiscoveryPipelineState } from "@/lib/discovery/shared";
-import type { DiscoverySourceRecord, DiscoveryWorkflow } from "@/lib/discovery/types";
+import type { DiscoveryDocument, DiscoverySourceRecord, DiscoveryWorkflow } from "@/lib/discovery/types";
 import { uploadDiscoveryInputToBlob } from "@/lib/discovery-input-storage";
 import { prepareDiscoverySourceFile } from "@/lib/media-upload";
 import {
@@ -58,6 +58,12 @@ export async function intakeDiscovery(params: {
   request: Request;
   userId: string | null;
   workflow?: DiscoveryWorkflow;
+  /** Trusted, server-read evidence; never populated from request JSON. */
+  document?: DiscoveryDocument;
+  validatedUrl?: string;
+  onStage?: (stage: string) => void;
+  /** In-process handoff avoids serializing and parsing an already-read upload again. */
+  sourceForm?: FormData;
 }) {
   const contentType = safeString(params.request.headers.get("content-type")).toLowerCase();
   const now = new Date().toISOString();
@@ -72,7 +78,7 @@ export async function intakeDiscovery(params: {
   let text = "";
 
   if (contentType.includes("multipart/form-data")) {
-    const formData = await params.request.formData();
+    const formData = params.sourceForm || await params.request.formData();
     clientIntakeId = validDiscoveryIntakeKey(formData.get("clientIntakeId"));
     text = safeString(formData.get("text"));
     const requestedTemplate = formData.get("pageTemplateId");
@@ -101,6 +107,7 @@ export async function intakeDiscovery(params: {
       const combined = await sharp({ create: { width, height: top, channels: 3, background: "white" } }).composite(layers).jpeg({ quality: 85 }).toBuffer();
       file = new File([new Uint8Array(combined)], "event-document-pages.jpg", { type: "image/jpeg" });
     }
+    params.onStage?.("preparing_source");
     const prepared = await prepareDiscoverySourceFile(file);
     title = file.name?.replace(/\.[^.]+$/, "") || title;
     source = {
@@ -141,7 +148,8 @@ export async function intakeDiscovery(params: {
     try {
       normalizedUrl = new URL(rawUrl).toString();
       // Validate public addressing and redirects before this URL reaches the specialty crawler.
-      await readPublicCreateUrl(normalizedUrl, AbortSignal.any([params.request.signal, AbortSignal.timeout(20_000)]));
+      if (params.validatedUrl !== normalizedUrl)
+        await readPublicCreateUrl(normalizedUrl, AbortSignal.any([params.request.signal, AbortSignal.timeout(20_000)]));
       title = suffixTitleForWorkflow(
         new URL(normalizedUrl).hostname.replace(/^www\./i, ""),
         workflow,
@@ -173,6 +181,7 @@ export async function intakeDiscovery(params: {
   const pipeline = createDiscoveryPipelineState({
     processingStage: "ingested",
   });
+  params.onStage?.("creating_draft");
   const created = await createDiscoveryShell({
     eventId,
     workflow,
@@ -182,11 +191,13 @@ export async function intakeDiscovery(params: {
     title,
     source: retainedSource,
     pipeline,
+    document: params.document,
     pageTemplateId: workflow === "gymnastics" || workflow === "football" ? pageTemplateId : null,
   });
 
   try {
   if (fileBuffer && retainedSource.type === "file") {
+    params.onStage?.("storing_source");
     const { pathname, url } = await uploadDiscoveryInputToBlob({
       eventId: created.eventId,
       fileName: retainedSource.fileName || "upload",

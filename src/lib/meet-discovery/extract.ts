@@ -1,1 +1,1 @@
-export { buildDiscoveryEvidence, extractDiscoveryText } from "./core";
+export { buildDiscoveryEvidence, enrichDiscoveryFileLayout, needsDiscoveryFileLayout, extractDiscoveryText } from "./core";

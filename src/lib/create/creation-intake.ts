@@ -10,6 +10,8 @@ export type CreationIntake = {
   source: CreationSource; classification?: CreateClassification; guess?: CreateGuess;
   information?: CustomEventInformation; sourceText?: string; discoveryEventId?: string;
   selectedTemplateId?: string; eventId?: string; customPage?: CustomEventPage;
+  /** This identity may already have durable server work, even after a lost response. */
+  sourceReadStarted?: boolean;
   editorSnapshot?: Record<string, unknown>;
   editorFamily?: string;
 };

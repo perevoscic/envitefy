@@ -12,6 +12,7 @@ import { getGeneralEventDesign } from "../general-event-designs";
 import { parseCalendarDateTimeToIso } from "../calendar-date-time";
 import type { EventEditorPayload } from "../event-editor";
 import { normalizeCreationCategory } from "../creation-access";
+import { buildGymnasticsEventDateTimes } from "../gymnastics-event-dates";
 
 export function creationComposition(information?: CustomEventInformation): EventPageComposition | undefined {
   if (!information) return;
@@ -26,9 +27,16 @@ export function creationNativePayload(payload: EventEditorPayload, snapshot: obj
   const facts: Record<string, DraftValue | undefined> = {};
   for (const key of ["rsvpPhone", "rsvpEmail", "hostName"]) if (typeof data[key] === "string") facts[key] = data[key];
   if (typeof data.timezone === "string" && data.timezone && typeof data.date === "string" && data.date) {
-    const start = parseCalendarDateTimeToIso(`${data.date}${data.time ? `T${data.time}` : ""}`, data.timezone);
-    const end = data.endTime ? parseCalendarDateTimeToIso(`${data.endDate || data.date}T${data.endTime}`, data.timezone) : null;
-    Object.assign(facts, { timezone: data.timezone, tz: data.timezone, start, startAt: start, startISO: start, end, endAt: end, endISO: end, allDay: !data.time });
+    const gymnastics = String(payload.data.category || "").toLowerCase() === "gymnastics";
+    const dates = gymnastics ? buildGymnasticsEventDateTimes(data) : null;
+    const start = dates ? dates.startISO : parseCalendarDateTimeToIso(`${data.date}${data.time ? `T${data.time}` : ""}`, data.timezone);
+    const end = dates ? dates.endISO : data.endTime ? parseCalendarDateTimeToIso(`${data.endDate || data.date}T${data.endTime}`, data.timezone) : null;
+    Object.assign(facts, { timezone: data.timezone, tz: data.timezone, start, startAt: start, startISO: start, end, endAt: end, endISO: end, allDay: dates?.allDay ?? !data.time });
+    if (gymnastics) facts.gymnasticsDateVersion = 1;
+    if (gymnastics && payload.data.builderDraft) {
+      const builder = object(payload.data.builderDraft);
+      facts.builderDraft = { ...builder, event: { ...object(builder.event), ...facts } };
+    }
   }
   return { ...payload, data: { ...payload.data, ...facts } };
 }

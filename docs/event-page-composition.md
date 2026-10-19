@@ -34,6 +34,7 @@ For a future category, supply scoped `sectionEditors` to `EventEditorWorkspace`,
 - `src/lib/event-page-composition.test.cjs`: normalization, safe text, saved order, hidden sections, guest controls, all seven layouts and legacy markup.
 - `src/lib/event-section-layout.test.cjs`: existing football/gymnastics arrangements and guest pages.
 - `scripts/event-editor-browser.test.cjs`: desktop and phone editing, adding, Undo/restoring, moving, native field editing, explicit saves, reopen and publication.
+- `scripts/event-section-layout-browser.test.cjs`: rendered section widths, centered Minimal/Poster layouts, toolbar containment and responsive columns in editing and guest views. The shared canvas needs an explicit width because inline-size containment and auto margins otherwise collapse centered grid items; responsive rules target its descendants so narrow previews also work on desktop.
 - `src/app/event/customize-layout.source.test.mjs`: all 14 category modules supply scoped editors and use the shared workspace.
 
 Live Cards, private scans and Sign-up Forms retain their separate product workflows.

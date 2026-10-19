@@ -19,7 +19,7 @@ test("co-host notices refresh, preserve pending invites, accept explicitly and c
   };
   const auth = writeMock(
     "auth",
-    `import { useEffect, useState } from 'react'; export function useSession() {const [email,setEmail]=useState(()=>sessionStorage.getItem('qa:email')||'friend@test.com');useEffect(()=>{const update=()=>setEmail(sessionStorage.getItem('qa:email')||'');window.addEventListener('qa:account',update);return()=>window.removeEventListener('qa:account',update);},[]);return {data:email?{user:{email}}:null,status:email?'authenticated':'unauthenticated'};}`,
+    `import { useEffect, useState } from 'react'; export function useSession() {const [email,setEmail]=useState(()=>sessionStorage.getItem('qa:email')||'friend@test.com');useEffect(()=>{const update=()=>setEmail(sessionStorage.getItem('qa:email')||'');window.addEventListener('qa:account',update);return()=>window.removeEventListener('qa:account',update);},[]);useEffect(()=>{document.documentElement.dataset.qaAccount=email;},[email]);return {data:email?{user:{email}}:null,status:email?'authenticated':'unauthenticated'};}`,
   );
   const navigation = writeMock(
     "navigation",
@@ -304,16 +304,23 @@ test("co-host notices refresh, preserve pending invites, accept explicitly and c
     await page.getByRole("button", { name: "Co-host invitations, none pending" }).waitFor();
     await page.keyboard.press("Escape");
     pending = [];
+    const switchedAccountRead = page.waitForResponse(response =>
+      response.url().endsWith("/api/cohost-invitations") && response.request().method() === "GET",
+    );
     await page.evaluate(() => {
       sessionStorage.setItem("qa:email", "other@test.com");
       window.dispatchEvent(new Event("qa:account"));
     });
+    await switchedAccountRead;
     await page.getByRole("button", { name: "Co-host invitations, none pending" }).waitFor();
     await page.getByText("All caught up", { exact: true }).waitFor();
     await page.evaluate(() => {
       sessionStorage.removeItem("qa:email");
       window.dispatchEvent(new Event("qa:account"));
     });
+    // The empty-invitations UI also matched the previous account. Wait for the
+    // mocked session commit before measuring whether signed-out polling stops.
+    await page.waitForFunction(() => document.documentElement.dataset.qaAccount === "");
     const before = reads.length;
     await page.clock.fastForward(30_000);
     assert.equal(reads.length, before, "signed-out users do not poll invitation data");

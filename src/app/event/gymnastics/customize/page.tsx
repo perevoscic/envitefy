@@ -21,8 +21,11 @@ import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
+import { mergeDiscoveryEditorRefresh } from "@/lib/create/merge-discovery-editor-refresh";
+import { resolveDiscoveryClientParseTimeoutMs } from "@/lib/discovery-budget";
 import { GYM_EVENT_EDITOR_VIEWS } from "@/lib/event-page-workspace";
-import { type EventGuestPlanning, normalizeEventGuestPlanning, eventLocalDateParts, getEventEndLocal } from "@/lib/event-guest-planning";
+import { type EventGuestPlanning, normalizeEventGuestPlanning, getEventEndLocal } from "@/lib/event-guest-planning";
+import { buildGymnasticsEventDateTimes, hydrateGymnasticsEventDates } from "@/lib/gymnastics-event-dates";
 import {
   CalendarDays,
   ChevronLeft,
@@ -635,6 +638,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const router = useRouter();
   const { allowNavigation, requestLeave } = useProgressNavigation();
     const editEventId = search?.get("edit") ?? undefined;
+    const discoveryEventId = editEventId || templateEditor?.eventId;
+    const templateEventData = templateEditor?.eventData;
     const selectedTemplateId = search?.get("templateId");
     const demoMode = search?.get("demo") === "1";
     const isEmbed = search?.get("embed") === "1";
@@ -723,25 +728,29 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [discoverError, setDiscoverError] = useState("");
     const [loadingExisting, setLoadingExisting] = useState(() => Boolean(search?.get("edit")));
     const [loadedDiscoverySource, setLoadedDiscoverySource] = useState<Record<string, any> | null>(
-      null,
+      () => isGymDiscoveryV2EventData(templateEventData) ? buildLegacyDiscoverySourceFromV2(templateEventData) : templateEventData?.discoverySource || null,
     );
     const [loadedDiscoveryPublicArtifacts, setLoadedDiscoveryPublicArtifacts] = useState<Record<
       string,
       any
-    > | null>(null);
+    > | null>(() => templateEventData?.publicArtifacts || null);
     const [loadedDiscoveryPipelineSummary, setLoadedDiscoveryPipelineSummary] = useState<Record<
       string,
       any
-    > | null>(null);
+    > | null>(() => getGymDiscoveryV2PipelineSummary(templateEventData));
     const [discoveryEnrichmentState, setDiscoveryEnrichmentState] = useState<Record<
       string,
       any
     > | null>(null);
     const [discoveryEnrichmentBusy, setDiscoveryEnrichmentBusy] = useState(false);
-    const [isDiscoveryEdit, setIsDiscoveryEdit] = useState(false);
+    const [isDiscoveryEdit, setIsDiscoveryEdit] = useState(() => isGymDiscoveryV2EventData(templateEventData) || templateEventData?.createdVia === "meet-discovery" || Boolean(templateEventData?.discoverySource?.input));
     const [loadVersion, setLoadVersion] = useState(0);
     const repairAttemptedRef = useRef(false);
     const enrichRequestStartedRef = useRef(false);
+    const loadedDataRef = useRef<typeof data | null>(null);
+    const loadedAdvancedRef = useRef<typeof advancedState | null>(null);
+    const loadedThemeRef = useRef<string | null>(null);
+    const enrichmentControllerRef = useRef<AbortController | null>(null);
     const sidebarScrollRef = useRef<HTMLDivElement | null>(null);
     useEffect(() => {
       setDismissedSuggestedExtraFields({});
@@ -749,16 +758,23 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     useEffect(() => {
       repairAttemptedRef.current = false;
+      loadedDataRef.current = null;
+      loadedAdvancedRef.current = null;
+      loadedThemeRef.current = null;
     }, [editEventId]);
 
     useEffect(() => {
       enrichRequestStartedRef.current = false;
       setDiscoveryEnrichmentBusy(false);
-    }, [editEventId, loadVersion]);
+      return () => enrichmentControllerRef.current?.abort();
+    }, [editEventId]);
 
     const runDiscoveryEnrichment = useCallback(
       async ({ force = false }: { force?: boolean } = {}) => {
         if (!editEventId) return { ok: false, status: 0 };
+        const controller = new AbortController();
+        enrichmentControllerRef.current?.abort();
+        enrichmentControllerRef.current = controller;
         setDiscoveryEnrichmentBusy(true);
         try {
           const runRes = await fetch(
@@ -766,9 +782,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             {
               method: "POST",
               credentials: "include",
+              signal: controller.signal,
             },
           );
           const runJson = await runRes.json().catch(() => ({}));
+          controller.signal.throwIfAborted();
           if (!runRes.ok) {
             throw new Error(runJson?.error || "Failed discovery rerun");
           }
@@ -779,13 +797,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             finishedAt: null,
             lastError: "",
           });
-          const deadlineAt = Date.now() + 90_000;
+          const deadlineAt = Date.now() + resolveDiscoveryClientParseTimeoutMs("file");
           while (Date.now() < deadlineAt) {
             const statusRes = await fetch(`/api/discovery/${editEventId}/status`, {
               credentials: "include",
               cache: "no-store",
+              signal: controller.signal,
             });
             const statusJson = await statusRes.json().catch(() => ({}));
+            controller.signal.throwIfAborted();
             if (!statusRes.ok) {
               throw new Error(statusJson?.error || "Failed to poll discovery status");
             }
@@ -807,6 +827,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           }
           throw new Error("Discovery rerun timed out");
         } catch (err) {
+          if (controller.signal.aborted) return { ok: false, status: 0 };
           console.error("[Edit] Discovery enrichment failed", err);
           setDiscoveryEnrichmentState((prev) => ({
             ...(prev || {}),
@@ -817,7 +838,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           }));
           return { ok: false, status: 500 };
         } finally {
-          setDiscoveryEnrichmentBusy(false);
+          if (enrichmentControllerRef.current === controller) setDiscoveryEnrichmentBusy(false);
         }
       },
       [editEventId],
@@ -1028,7 +1049,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       loadedDiscoverySource?.input || loadedDiscoverySource?.parseResult,
     );
     const useParseDrivenSections = Boolean(
-      editEventId && (isDiscoveryEdit || hasDiscoveryParsePayload),
+      discoveryEventId && (isDiscoveryEdit || hasDiscoveryParsePayload),
     );
     const visibleAdvancedSections = useMemo(() => {
       const allSections = config.advancedSections || [];
@@ -1068,13 +1089,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const headlineStatus: "not-started" | "in-progress" | "ready" = (() => {
       const filled = [
         Boolean(data.title?.trim()),
-        Boolean(data.date || data.time),
+        Boolean(data.date),
         Boolean(data.timezone?.trim()),
-        Boolean(data.time),
         Boolean(data.venue?.trim() || data.address?.trim()),
       ].filter(Boolean).length;
       if (filled === 0) return "not-started";
-      return filled >= 5 ? "ready" : "in-progress";
+      return filled >= 4 ? "ready" : "in-progress";
     })();
 
     const hasStructuredDetailsContent = Boolean(
@@ -1101,7 +1121,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const missingEssentials = [
       !data.title?.trim() ? { label: "Event title", view: "headline" } : null,
       !data.date ? { label: "Date", view: "headline" } : null,
-      !data.time ? { label: "Start time in Event Basics", view: "headline" } : null,
       !data.timezone?.trim() ? { label: "Timezone", view: "headline" } : null,
       !data.venue?.trim() && !data.address?.trim()
         ? { label: "Venue or address", view: "headline" }
@@ -1191,7 +1210,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       let finished = false;
 
       const loadExisting = async () => {
-        setLoadingExisting(true);
+        // Enrichment refreshes keep the editor mounted and usable.
+        if (!loadedDataRef.current) setLoadingExisting(true);
         try {
           const res = await eventHistoryClient.fetch(`/api/history/${editEventId}`, {
             cache: "no-store",
@@ -1250,19 +1270,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               ? (existingPipelineSummary as Record<string, any>)
               : null,
           );
+          const pipelineStage = asTrimmedString(existingPipelineSummary?.processingStage);
+          const pipelineCompleted = ["review_ready", "published"].includes(pipelineStage);
+          const pipelineFailed = pipelineStage.startsWith("failed_");
           setDiscoveryEnrichmentState(
             isDiscoveryV2
               ? {
-                  state:
-                    existingPipelineSummary?.processingStage === "review_ready"
-                      ? "completed"
-                      : "running",
-                  pending: existingPipelineSummary?.processingStage !== "review_ready",
-                  finishedAt:
-                    existingPipelineSummary?.processingStage === "review_ready"
-                      ? new Date().toISOString()
-                      : null,
-                  lastError: "",
+                  state: pipelineCompleted ? "completed" : pipelineFailed ? "failed" : "running",
+                  pending: !pipelineCompleted && !pipelineFailed,
+                  finishedAt: pipelineCompleted || pipelineFailed ? new Date().toISOString() : null,
+                  lastError: pipelineFailed ? asTrimmedString(existingPipelineSummary?.errorMessage) : "",
                 }
               : existingDiscoverySource?.enrichment &&
                   typeof existingDiscoverySource.enrichment === "object"
@@ -1288,23 +1305,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             existing: effectiveExisting,
           });
 
-          const startIso =
-            effectiveExisting.start || effectiveExisting.startISO || effectiveExisting.startIso;
-          let loadedDate: string | undefined;
-          let loadedTime: string | undefined;
-          if (typeof startIso === "string") {
-            const isoMatch = startIso.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
-            if (isoMatch) {
-              loadedDate = isoMatch[1];
-              loadedTime = isoMatch[2];
-            } else {
-              const d = new Date(startIso);
-              if (!Number.isNaN(d.getTime())) {
-                loadedDate = d.toISOString().split("T")[0];
-                loadedTime = d.toISOString().slice(11, 16);
-              }
-            }
-          }
           const savedDisplayDateLabel = existing.customFields?.meetDateRangeLabel ??
             existing.extra?.meetDateRangeLabel ?? effectiveExisting.customFields?.meetDateRangeLabel ??
             effectiveExisting.extra?.meetDateRangeLabel;
@@ -1316,14 +1316,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             existingDiscoverySource?.parseResult?.dates ||
             effectiveExisting?.customFields?.meetDateRangeLabel;
           const parsedRange = parseDiscoveryDateRange(parseDatesLabel);
-          const existingDateCandidate = normalizeIsoDate(effectiveExisting.date || loadedDate);
-          const resolvedDate = existingDateCandidate || parsedRange.start || "";
+          const loadedDates = hydrateGymnasticsEventDates(effectiveExisting, parsedRange);
+          const resolvedDate = normalizeIsoDate(loadedDates.date);
           const isExistingDiscoveryEvent =
             isDiscoveryV2 ||
             existingCreatedVia === "meet-discovery" ||
             Boolean(existingDiscoverySource?.input);
-          const resolvedTime =
-            asTrimmedString(effectiveExisting.time) || asTrimmedString(loadedTime);
+          const resolvedTime = loadedDates.time;
 
           // Load all data fields, prioritizing existing values
           const accessControl = effectiveExisting.accessControl || {};
@@ -1337,109 +1336,123 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               )
             : effectiveExisting.details || effectiveExisting.description || "";
 
-          setData((prev) => ({
-            ...prev,
-            title: json?.title || effectiveExisting.title || prev.title,
-            guestPlanning: normalizeEventGuestPlanning(effectiveExisting.guestPlanning),
-            endTime: effectiveExisting.endTime || eventLocalDateParts(effectiveExisting.endISO || effectiveExisting.endAt || effectiveExisting.end).time,
-            endDate: effectiveExisting.endDate || eventLocalDateParts(effectiveExisting.endISO || effectiveExisting.endAt || effectiveExisting.end).date,
-            date: resolvedDate || (isExistingDiscoveryEvent ? "" : prev.date),
-            time: resolvedTime || (isExistingDiscoveryEvent ? "" : prev.time),
-            timezone: effectiveExisting.timezone || prev.timezone,
-            hostGym:
-              effectiveExisting.hostGym ||
-              effectiveExisting.team ||
-              effectiveExisting.customFields?.team ||
-              inferredHostGym ||
-              prev.hostGym,
-            city: effectiveExisting.city || prev.city,
-            state: effectiveExisting.state || prev.state,
-            address: typeof existing.address === "string" ? existing.address :
-              effectiveExisting.address ?? existingDiscoverySource?.parseResult?.address ?? prev.address,
-            venue: typeof existing.venue === "string" ? existing.venue :
-              effectiveExisting.venue ?? effectiveExisting.location ?? prev.venue,
-            details: editableDetails,
-            hero: effectiveExisting.heroImage || effectiveExisting.hero || prev.hero,
-            heroImageFilterEnabled: effectiveExisting.heroImageFilterEnabled !== false,
-            heroImageSettings: normalizeHeroImageSettings(effectiveExisting.heroImageSettings),
-            gymnasticsPageText: normalizeGymnasticsPageText(effectiveExisting.gymnasticsPageText ?? effectiveExisting.customFields?.gymnasticsPageText),
-            gymnasticsTitleFont: normalizeGymnasticsTitleFont(
-              existing.gymnasticsTitleFont ?? existing.customFields?.gymnasticsTitleFont ??
-              effectiveExisting.gymnasticsTitleFont ?? effectiveExisting.customFields?.gymnasticsTitleFont,
-            ),
-            sectionLayout: normalizeEventSectionLayout(effectiveExisting.sectionLayout) || normalizeEventSectionLayout({ version: 1 }),
-            pageTemplateId: search?.get("intake") && isGymMeetTemplateId(selectedTemplateId) ? selectedTemplateId : resolveGymMeetTemplateId(effectiveExisting),
-            rsvpEnabled:
-              typeof effectiveExisting.rsvpEnabled === "boolean"
-                ? effectiveExisting.rsvpEnabled
-                : prev.rsvpEnabled,
-            rsvpDeadline: effectiveExisting.rsvpDeadline || prev.rsvpDeadline,
-            fontId:
-              effectiveExisting.fontId != null
-                ? effectiveExisting.fontId
-                : prev.fontId || GYM_FONTS[0]?.id || "inter",
-            fontSize:
-              effectiveExisting.fontSize != null
-                ? effectiveExisting.fontSize
-                : prev.fontSize || "medium",
-            passcodeRequired: hasPasscode,
-            passcode: "", // Never load plain passcode for security
-            passcodeHint:
-              typeof accessControl?.passcodeHint === "string" ? accessControl.passcodeHint : "",
-            simpleDesignTokens:
-              effectiveExisting.designTokens ||
-              effectiveExisting.customFields?.designTokens ||
-              prev.simpleDesignTokens ||
-              null,
-            extra: {
-              ...prev.extra,
-              ...(effectiveExisting.extra || {}),
-              ...(effectiveExisting.customFields || {}),
-              meetDateRangeLabel: resolvedDisplayDateLabel,
-              team:
+          const previousServerData = loadedDataRef.current;
+          setData((prev) => {
+            const base = previousServerData || prev;
+            const incoming = {
+              ...base,
+              title: json?.title || effectiveExisting.title || base.title,
+              guestPlanning: normalizeEventGuestPlanning(effectiveExisting.guestPlanning),
+              endTime: loadedDates.endTime,
+              endDate: loadedDates.endDate,
+              date: resolvedDate || (isExistingDiscoveryEvent ? "" : base.date),
+              time: resolvedTime || (isExistingDiscoveryEvent ? "" : base.time),
+              timezone: typeof effectiveExisting.timezone === "string" ? effectiveExisting.timezone : isExistingDiscoveryEvent ? "" : base.timezone,
+              hostGym:
+                effectiveExisting.hostGym ||
                 effectiveExisting.team ||
                 effectiveExisting.customFields?.team ||
                 inferredHostGym ||
-                prev.extra?.team ||
-                "",
-            },
-          }));
+                base.hostGym,
+              city: effectiveExisting.city || base.city,
+              state: effectiveExisting.state || base.state,
+              address: typeof existing.address === "string" ? existing.address :
+                effectiveExisting.address ?? existingDiscoverySource?.parseResult?.address ?? base.address,
+              venue: typeof existing.venue === "string" ? existing.venue :
+                effectiveExisting.venue ?? effectiveExisting.location ?? base.venue,
+              details: editableDetails,
+              hero: effectiveExisting.heroImage || effectiveExisting.hero || base.hero,
+              heroImageFilterEnabled: effectiveExisting.heroImageFilterEnabled !== false,
+              heroImageSettings: normalizeHeroImageSettings(effectiveExisting.heroImageSettings),
+              gymnasticsPageText: normalizeGymnasticsPageText(effectiveExisting.gymnasticsPageText ?? effectiveExisting.customFields?.gymnasticsPageText),
+              gymnasticsTitleFont: normalizeGymnasticsTitleFont(
+                existing.gymnasticsTitleFont ?? existing.customFields?.gymnasticsTitleFont ??
+                effectiveExisting.gymnasticsTitleFont ?? effectiveExisting.customFields?.gymnasticsTitleFont,
+              ),
+              sectionLayout: normalizeEventSectionLayout(effectiveExisting.sectionLayout) || normalizeEventSectionLayout({ version: 1 }),
+              pageTemplateId: search?.get("intake") && isGymMeetTemplateId(selectedTemplateId) ? selectedTemplateId : resolveGymMeetTemplateId(effectiveExisting),
+              rsvpEnabled:
+                typeof effectiveExisting.rsvpEnabled === "boolean"
+                  ? effectiveExisting.rsvpEnabled
+                  : base.rsvpEnabled,
+              rsvpDeadline: effectiveExisting.rsvpDeadline || base.rsvpDeadline,
+              fontId:
+                effectiveExisting.fontId != null
+                  ? effectiveExisting.fontId
+                  : base.fontId || GYM_FONTS[0]?.id || "inter",
+              fontSize:
+                effectiveExisting.fontSize != null
+                  ? effectiveExisting.fontSize
+                  : base.fontSize || "medium",
+              passcodeRequired: hasPasscode,
+              passcode: "", // Never load plain passcode for security
+              passcodeHint:
+                typeof accessControl?.passcodeHint === "string" ? accessControl.passcodeHint : "",
+              simpleDesignTokens:
+                effectiveExisting.designTokens ||
+                effectiveExisting.customFields?.designTokens ||
+                base.simpleDesignTokens ||
+                null,
+              extra: {
+                ...base.extra,
+                ...(effectiveExisting.extra || {}),
+                ...(effectiveExisting.customFields || {}),
+                meetDateRangeLabel: resolvedDisplayDateLabel,
+                team:
+                  effectiveExisting.team ||
+                  effectiveExisting.customFields?.team ||
+                  inferredHostGym ||
+                  base.extra?.team ||
+                  "",
+              },
+            };
+            loadedDataRef.current = incoming;
+            return previousServerData ? mergeDiscoveryEditorRefresh(prev, previousServerData, incoming) : incoming;
+          });
 
           const incomingAdvanced =
             effectiveExisting.advancedSections ||
             effectiveExisting.customFields?.advancedSections ||
             effectiveExisting.advanced ||
             {};
-          if (incomingAdvanced && Object.keys(incomingAdvanced).length) {
-            setAdvancedState((prev) => ({ ...prev, ...incomingAdvanced }));
-          }
+          const previousServerAdvanced = loadedAdvancedRef.current;
+          setAdvancedState((prev) => {
+            const incoming = { ...(previousServerAdvanced || prev), ...incomingAdvanced };
+            loadedAdvancedRef.current = incoming;
+            return previousServerAdvanced ? mergeDiscoveryEditorRefresh(prev, previousServerAdvanced, incoming) : incoming;
+          });
 
-          // Load theme - this is critical!
+          const applyLoadedTheme = (incoming: string) => {
+            const previousServer = loadedThemeRef.current;
+            loadedThemeRef.current = incoming;
+            setThemeId((current) => previousServer === null ? incoming : mergeDiscoveryEditorRefresh(current, previousServer, incoming));
+          };
+          // Load theme without replacing a selection made during enrichment.
           if (effectiveExisting.themeId) {
             // Validate themeId exists in config
             const themeExists = config.themes.find((t) => t.id === effectiveExisting.themeId);
             if (themeExists) {
               console.log("[Edit] Setting themeId:", effectiveExisting.themeId);
-              setThemeId(effectiveExisting.themeId);
+              applyLoadedTheme(effectiveExisting.themeId);
             } else {
               console.warn(
                 "[Edit] ThemeId not found in config, using default:",
                 effectiveExisting.themeId,
               );
-              setThemeId(config.themes[0]?.id || "default-theme");
+              applyLoadedTheme(config.themes[0]?.id || "default-theme");
             }
           } else if (effectiveExisting.theme?.id) {
             const themeExists = config.themes.find((t) => t.id === effectiveExisting.theme.id);
             if (themeExists) {
               console.log("[Edit] Setting themeId from theme object:", effectiveExisting.theme.id);
-              setThemeId(effectiveExisting.theme.id);
+              applyLoadedTheme(effectiveExisting.theme.id);
             } else {
               console.warn("[Edit] Theme from object not found in config, using default");
-              setThemeId(config.themes[0]?.id || "default-theme");
+              applyLoadedTheme(config.themes[0]?.id || "default-theme");
             }
           } else {
             console.warn("[Edit] No themeId found in existing data, using default");
-            setThemeId(config.themes[0]?.id || "default-theme");
+            applyLoadedTheme(config.themes[0]?.id || "default-theme");
           }
 
           // Validate fontId and fontSize after state updates
@@ -1495,6 +1508,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       if (demoMode) return;
       if (!editEventId || !isDiscoveryEdit || loadingExisting) return;
       if (repairAttemptedRef.current) return;
+      if (discoveryEnrichmentState?.pending || ["running", "failed"].includes(discoveryEnrichmentState?.state)) return;
       if (!loadedDiscoverySource?.input) return;
 
       const parseResult = loadedDiscoverySource?.parseResult || {};
@@ -1584,6 +1598,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       advancedState?.meet?.registrationInfo,
       advancedState?.meet?.scoringInfo,
       data.date,
+      discoveryEnrichmentState,
       editEventId,
       isDiscoveryEdit,
       loadedDiscoverySource,
@@ -1595,7 +1610,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     useEffect(() => {
       if (demoMode) return;
       if (!editEventId || !isDiscoveryEdit || loadingExisting) return;
-      if (!loadedDiscoverySource?.input) return;
+      if (!loadedDiscoverySource?.input && !loadedDiscoveryPipelineSummary?.discoveryId) return;
       if (!discoveryEnrichmentState?.pending) return;
       if (enrichRequestStartedRef.current) return;
 
@@ -1620,24 +1635,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       editEventId,
       isDiscoveryEdit,
       loadedDiscoverySource,
+      loadedDiscoveryPipelineSummary,
       loadingExisting,
       runDiscoveryEnrichment,
       demoMode,
     ]);
 
-    useEffect(() => {
-      if (demoMode) return;
-      if (!editEventId || !isDiscoveryEdit || loadingExisting) return;
-      if (discoveryEnrichmentState?.state !== "running") return;
-
-      const intervalId = window.setInterval(() => {
-        setLoadVersion((prev) => prev + 1);
-      }, 5000);
-
-      return () => {
-        window.clearInterval(intervalId);
-      };
-    }, [discoveryEnrichmentState?.state, editEventId, isDiscoveryEdit, loadingExisting, demoMode]);
 
     useEffect(() => {
       if (!navItems.length) return;
@@ -1694,15 +1697,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         designTokens: _ignoredDesignTokens,
         ...extraFieldsForSave
       } = (data.extra || {}) as Record<string, any>;
-      let startISO: string | null = null;
-      let endISO: string | null = null;
-      if (data.date && data.time) {
-        const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
-        const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
-        const end = endLocal ? new Date(endLocal) : null;
-        startISO = start.toISOString();
-        endISO = end?.toISOString() || null;
-      }
+      const { startISO, endISO, allDay } = buildGymnasticsEventDateTimes(data);
       const heroToSave =
         (await persistImageMediaValue({
           value: data.hero,
@@ -1712,18 +1707,20 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       const resolvedPageTemplateId =
         data.pageTemplateId || resolveGymMeetTemplateId(data) || DEFAULT_GYM_MEET_TEMPLATE_ID;
       const isDiscoveryV2Update = Boolean(
-        editEventId &&
+        discoveryEventId &&
         loadedDiscoveryPipelineSummary?.discoveryId &&
         loadedDiscoverySource?.pipelineVersion === "gym-public-v3",
       );
       const isDiscoveryUpdate = Boolean(
-        editEventId && (isDiscoveryEdit || loadedDiscoverySource || isDiscoveryV2Update),
+        discoveryEventId && (isDiscoveryEdit || loadedDiscoverySource || isDiscoveryV2Update),
       );
       const builderDraft = {
         event: {
           title: data.title || config.displayName,
           startISO,
           endISO,
+          allDay,
+          gymnasticsDateVersion: 1,
           endAt: endISO,
           end: endISO,
           endTime: data.endTime,
@@ -1844,6 +1841,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           }),
           startISO,
           endISO,
+          allDay,
+          gymnasticsDateVersion: 1,
           endAt: endISO,
           end: endISO,
           endTime: data.endTime,
@@ -1952,6 +1951,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       currentTheme,
       selectedSize,
       editEventId,
+      discoveryEventId,
       isNewDraft,
       isDiscoveryEdit,
       loadedDiscoveryPipelineSummary,
@@ -2509,7 +2509,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           throw new Error(parseJson?.error || "Failed to start discovery");
         }
         let builderReady = false;
-        while (!builderReady) {
+        const deadlineAt = Date.now() + resolveDiscoveryClientParseTimeoutMs("file");
+        while (!builderReady && Date.now() < deadlineAt) {
           await new Promise((resolve) => window.setTimeout(resolve, 1000));
           const statusRes = await fetch(`/api/discovery/${eventId}/status`, {
             credentials: "include",
@@ -2519,11 +2520,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           if (!statusRes.ok) {
             throw new Error(statusJson?.error || "Failed to load discovery status");
           }
-          if (statusJson?.errorCode) {
-            throw new Error(statusJson.errorCode);
+          if (statusJson?.errorCode && !statusJson?.draftReady && !statusJson?.builderReady) {
+            throw new Error(statusJson?.errorMessage || statusJson.errorCode);
           }
-          builderReady = statusJson?.builderReady === true;
+          builderReady = statusJson?.draftReady === true || statusJson?.builderReady === true;
         }
+        if (!builderReady) throw new Error("Reading this event is taking longer than expected. Your source is kept; please retry.");
         log("routing to builder", { eventId });
         router.push(`/event/gymnastics/customize?edit=${eventId}&new=1`);
       } catch (err: any) {
@@ -2715,21 +2717,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         designTokens: _ignoredDesignTokens,
         ...extraFieldsForPreview
       } = (data.extra || {}) as Record<string, any>;
-      let startISO: string | null = null;
-      let endISO: string | null = null;
-      if (data.date && data.time) {
-        const start = new Date(`${data.date}T${data.time}:00`);
-        if (!Number.isNaN(start.getTime())) {
-          const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
-          const end = endLocal ? new Date(endLocal) : null;
-          startISO = start.toISOString();
-          endISO = end?.toISOString() || null;
-        }
-      }
+      const { startISO, endISO, allDay } = buildGymnasticsEventDateTimes(data);
 
       // For existing meet-discovery edits, keep the discovery layout in preview
       const isDiscoveryPreview = Boolean(
-        editEventId && (isDiscoveryEdit || loadedDiscoverySource || useParseDrivenSections),
+        discoveryEventId && (isDiscoveryEdit || loadedDiscoverySource || useParseDrivenSections),
       );
       const isDiscoveryV2Preview = Boolean(
         isDiscoveryPreview &&
@@ -2762,6 +2754,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           : {}),
         startISO,
         endISO,
+        allDay,
+        gymnasticsDateVersion: 1,
         endAt: endISO,
         end: endISO,
         endTime: data.endTime,
@@ -2835,6 +2829,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       config.rsvpCopy,
       config.slug,
       editEventId,
+      discoveryEventId,
       isDiscoveryEdit,
       loadedDiscoveryPipelineSummary,
       loadedDiscoveryPublicArtifacts,

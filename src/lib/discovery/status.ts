@@ -19,9 +19,11 @@ const DISCOVERY_DRAFT_READY_STAGES = new Set([
 ]);
 
 export function isDiscoveryDraftReady(discovery: DiscoveryStatusSource): boolean {
+  if (discovery.pipeline.errorCode === "cancelled") return false;
   const processingStage = safeString(discovery.pipeline.processingStage);
   const lastSuccessfulStage = safeString(discovery.pipeline.lastSuccessfulStage);
   return (
+    lastSuccessfulStage === "map" ||
     DISCOVERY_DRAFT_READY_STAGES.has(processingStage) ||
     DISCOVERY_DRAFT_READY_STAGES.has(lastSuccessfulStage)
   );

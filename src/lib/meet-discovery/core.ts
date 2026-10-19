@@ -5,7 +5,11 @@ import { inflateRawSync, inflateSync } from "node:zlib";
 import * as chrono from "chrono-node";
 import OpenAI from "openai";
 import sharp from "sharp";
+import { buildGymnasticsEventDateTimes, gymnasticsDateParts } from "../gymnastics-event-dates";
+import { resolveDiscoveryVenueTimezone } from "./venue-timezone";
+import { parseCalendarDateTimeToIso } from "../calendar-date-time";
 import { hotelUrl, projectTravelHotels } from "../travel-accommodation-evidence";
+import { isHotelResourceLink, selectHotelResourceFallback } from "../hotel-resource-links";
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
   DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
@@ -949,16 +953,19 @@ function toIsoOrNull(value: unknown): string | null {
     return null;
   }
   if (/^\d{4}-\d{2}-\d{2}$/i.test(asText)) {
-    return `${asText}T00:00:00.000Z`;
+    return parseCalendarDateTimeToIso(asText, "UTC") ? asText : null;
   }
   const normalized = asText.includes("T")
     ? asText
     : asText.includes(" ")
       ? asText.replace(" ", "T")
       : `${asText}T00:00:00`;
-  const d = new Date(normalized);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toISOString();
+  // A source clock without an offset is event-local until its venue timezone is known.
+  if (!/(?:Z|[+-]\d{2}:\d{2})$/i.test(normalized)) {
+    return parseCalendarDateTimeToIso(normalized, "UTC") ? normalized : null;
+  }
+  if (!parseCalendarDateTimeToIso(normalized, "UTC")) return null;
+  return normalized;
 }
 
 function toIsoDateOnlyOrNull(value: unknown): string | null {
@@ -2940,6 +2947,8 @@ async function extractGymLayoutImageFromPdf(
     performance?: DiscoveryPerformance;
     budgetMs?: number;
     cache?: DiscoveryRequestCache;
+    /** Previously read page text avoids another document OCR pass. */
+    pageTexts?: Array<{ pageNumber: number; text: string }>;
   },
 ): Promise<GymLayoutExtraction> {
   const startedAt = Date.now();
@@ -2988,7 +2997,8 @@ async function extractGymLayoutImageFromPdf(
         mimeType: "image/png",
       });
       if (!pageImage) continue;
-      const pageText = await extractTextFromImage(pageImage, options?.cache, {
+      const knownPage = options?.pageTexts?.find((item) => item.pageNumber === page + 1);
+      const pageText = knownPage ? knownPage.text : await extractTextFromImage(pageImage, options?.cache, {
         aiArtifact: {
           workflow: "gymnastics",
           stage: "pdf-layout-ocr-page",
@@ -3327,11 +3337,14 @@ function normalizeResourceLinkLabel(label: string, url: string, contextText = ""
   const normalizedContext = safeString(contextText)
     .replace(/\s{2,}/g, " ")
     .trim();
-  const kind = classifyResourceLink(
-    [cleanedLabel, normalizedContext].filter(Boolean).join(" "),
-    url,
-    null,
+  const contextualKind = classifyResourceLink(
+    [cleanedLabel, normalizedContext].filter(Boolean).join(" "), url, null,
   );
+  const kind = contextualKind === "travel_accommodation" || contextualKind === "hotel_booking"
+    ? isHotelResourceLink({ label: cleanedLabel, url, contextText: normalizedContext })
+      ? contextualKind
+      : classifyResourceLink(cleanedLabel, url, null)
+    : contextualKind;
   switch (kind) {
     case "travel_accommodation":
     case "hotel_booking":
@@ -3452,6 +3465,11 @@ function deriveDiscoveryAnchorLabel(
   const context = extractDiscoveryAnchorContext(fullHtml, anchorIndex);
   const preferredLabel =
     (!looksLikeGenericResourceLabel(context.heading) && context.heading) || baseLabel;
+  // A nearby section heading cannot turn a generic sponsor anchor into a hotel.
+  const contextKind = classifyResourceLink(preferredLabel, url.toString(), null);
+  if (contextKind === "travel_accommodation" || contextKind === "hotel_booking") {
+    return normalizeResourceLinkLabel(baseLabel, url.toString(), context.blockText);
+  }
   return normalizeResourceLinkLabel(preferredLabel, url.toString(), context.contextText);
 }
 
@@ -3588,10 +3606,7 @@ function classifyResourceLink(
     /\/results\/?$/i.test(pathname) ||
     (/\bresults?\b/i.test(haystack) && !assetLike && !liveResultsDomain);
 
-  if (
-    /\bgroupbook\b/i.test(haystack) ||
-    /\b(hotels?|lodging|travel|stay|booking|room block)\b/i.test(haystack)
-  ) {
+  if (isHotelResourceLink({ label: safeLabel, url: safeUrl })) {
     return "travel_accommodation";
   }
   if (
@@ -3696,7 +3711,9 @@ function classifyGymResourceRenderTarget(link: DiscoveryResourceLink): GymResour
   ) {
     return "hidden";
   }
-  if (link.kind === "hotel_booking" || link.kind === "travel_accommodation") return "hotels";
+  if (link.kind === "hotel_booking" || link.kind === "travel_accommodation") {
+    return isHotelResourceLink(link) ? "hotels" : "hidden";
+  }
   if (link.kind === "results_hub" || link.kind === "results_live" || link.kind === "results_pdf") {
     return "results";
   }
@@ -4551,8 +4568,8 @@ function derivePdfAnnotationLabel(
     }
   }
 
-  if (/click here for all host hotels|host hotels?|reservations link|group hotel/i.test(pageText)) {
-    return inferKindBasedPdfLabel("hotel_booking", pageText, link.url);
+  if (isHotelResourceLink({ url: link.url, label: explicitLabel, contextText: link.contextText })) {
+    return inferKindBasedPdfLabel("hotel_booking", safeString(link.contextText), link.url);
   }
   if (/pre[-\s]?sale|spectator admissions?|tickets?/i.test(pageText)) {
     return inferKindBasedPdfLabel("admission", pageText, link.url);
@@ -5264,7 +5281,7 @@ export function buildDefaultGymMeetData() {
     pageTemplateId: DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
     date: "",
     time: "",
-    timezone: "America/Chicago",
+    timezone: null,
     hostGym: "",
     venue: "",
     address: "",
@@ -5390,6 +5407,77 @@ export function buildDefaultGymMeetData() {
     },
     discoverySource: {},
   } as Record<string, any>;
+}
+
+export function needsDiscoveryFileLayout(
+  input: DiscoverySourceInput,
+  extractedText: string,
+  extractionMeta: ExtractionResult["extractionMeta"],
+): boolean {
+  if (input.type !== "file" || extractionMeta.gymLayoutSelection || extractionMeta.gymLayoutImageDataUrl) return false;
+  const mime = (input.mimeType || "").toLowerCase();
+  return /pdf/.test(mime) || (/image\/(png|jpe?g|webp)/.test(mime) && looksLikeGymLayoutText(extractedText));
+}
+
+/** Add the visual map evidence without reading the event's text a second time. */
+export async function enrichDiscoveryFileLayout(
+  input: DiscoverySourceInput,
+  extractedText: string,
+  extractionMeta: ExtractionResult["extractionMeta"],
+  options?: {
+    budgetMs?: number;
+    performance?: DiscoveryPerformance;
+    signal?: AbortSignal;
+    pageTexts?: Array<{ pageNumber: number; text: string }>;
+  },
+): Promise<ExtractionResult["extractionMeta"]> {
+  throwIfExtractionAborted(options?.signal);
+  if (input.type !== "file") throw new Error("Expected file discovery input");
+  const parsed = input.dataUrl ? parseDataUrl(input.dataUrl) : null;
+  if (!parsed) throw new Error("Invalid file payload");
+  const mime = (parsed.mimeType || input.mimeType || "").toLowerCase();
+  const cache = createDiscoveryRequestCache();
+  if (/pdf/.test(mime)) {
+    const layout = await extractGymLayoutImageFromPdf(parsed.buffer, {
+      maxPages: GYM_LAYOUT_PDF_MAX_PAGES,
+      maxAiCandidates: 2,
+      budgetMs: options?.budgetMs,
+      performance: options?.performance,
+      cache,
+      pageTexts: options?.pageTexts,
+    });
+    throwIfExtractionAborted(options?.signal);
+    return {
+      ...extractionMeta,
+      gymLayoutImageDataUrl: layout.dataUrl || null,
+      gymLayoutFacts: sanitizeVenueFactLines([
+        ...pickArray(extractionMeta.gymLayoutFacts),
+        ...layout.facts,
+        ...extractHallFactsFromText(extractedText),
+      ], { mode: "strict", maxLines: 14, requireAnchor: true, excludePatterns: [/traffic|disney on ice|benchmark(?:\s+international)?\s+arena/i, /official results|live scoring|daylight savings/i] }),
+      gymLayoutZones: layout.zones,
+      gymLayoutPage: layout.page,
+      gymLayoutSelection: layout.selection,
+    };
+  }
+  if (/image\/(png|jpe?g|webp)/.test(mime) && looksLikeGymLayoutText(extractedText)) {
+    const image = await toOptimizedImageDataUrl(parsed.buffer, cache);
+    const zones = image
+      ? await openAiExtractGymLayoutZones(parsed.buffer, parsed.mimeType || "image/png", options?.performance)
+      : [];
+    throwIfExtractionAborted(options?.signal);
+    return {
+      ...extractionMeta,
+      gymLayoutImageDataUrl: image,
+      gymLayoutZones: zones,
+      gymLayoutPage: extractionMeta.gymLayoutPage ?? null,
+      gymLayoutFacts: uniqueBy([
+        ...pickArray(extractionMeta.gymLayoutFacts),
+        ...extractHallFactsFromText(extractedText),
+      ], (fact) => fact),
+    };
+  }
+  return extractionMeta;
 }
 
 export async function extractDiscoveryText(
@@ -6831,6 +6919,9 @@ function buildTargetedParsePrompt(
     "Routing rules:",
     "- Keep strings short and factual.",
     "- Preserve meet date ranges exactly when explicit.",
+    "- Date-only meet ranges use YYYY-MM-DD startAt/endAt, without midnight, UTC, or a session clock. Keep the final day inclusive.",
+    "- Use event-local clocks only when the source explicitly gives an overall event start/end time; doors-open or individual-session times do not supply those clocks.",
+    "- timezone must be an explicitly sourced IANA zone; otherwise null. Venue geographic verification happens separately.",
     "- Do not use update stamps, posted timestamps, or deadline dates as event dates.",
     "- Section headings are not titles.",
     "- Packet intro prose is not hero copy or meet-details summary text.",
@@ -7048,6 +7139,9 @@ function buildProfessionalParsePrompt(
     "- `rotationOrder`: populate ONLY when the source explicitly lists an apparatus/rotation sequence.",
     "- Narrative references to rotation sheets are NOT a sequence; set `rotationOrder` to null and keep narrative in operational notes.",
     "- For `dates`, preserve meet ranges exactly when present (example: `March 6-8, 2026`).",
+    "- For date-only meet ranges, use YYYY-MM-DD `startAt`/`endAt` with an inclusive final day. Never add midnight, UTC or session clocks.",
+    "- Only source-provided overall start/end clocks may appear in `startAt`/`endAt`; doors-open and individual-session times stay in their own fields.",
+    "- Use an explicitly sourced IANA `timezone` only; otherwise null. Venue geographic verification happens separately.",
     "- Never use update/revision stamps (e.g., `Updated February 23, 2026`) as meet date values.",
     "- Never use posted timestamps (for example `Posted 3/4/26`) as meet date values.",
     "- Never use traffic windows or unrelated schedule snippets as primary meet dates.",
@@ -7554,8 +7648,8 @@ function reconcileParsedDates(parseResult: ParseResult, extractedText: string): 
 
   const preserveIsoTime = (iso: string | null, nextDate: string | null) => {
     if (!iso || !nextDate) return iso;
-    const match = iso.match(/T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/);
-    if (!match) return `${nextDate}T00:00:00.000Z`;
+    const match = iso.match(/T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})?$/);
+    if (!match) return nextDate;
     return `${nextDate}${match[0]}`;
   };
 
@@ -8075,14 +8169,8 @@ export async function parseMeetFromExtractedText(
   throw new Error(openAiErrorMessage || "OpenAI parsing could not finish. Retry to resume this import.");
 }
 
-function splitDateTime(iso: string | null): { date: string; time: string } {
-  if (!iso) return { date: "", time: "" };
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return { date: "", time: "" };
-  return {
-    date: d.toISOString().slice(0, 10),
-    time: d.toISOString().slice(11, 16),
-  };
+function splitDateTime(iso: string | null, timezone?: string | null): { date: string; time: string } {
+  return gymnasticsDateParts(iso, timezone);
 }
 
 function isDateWithinRange(value: string, start: string | null, end: string | null): boolean {
@@ -8096,15 +8184,12 @@ function isDateWithinRange(value: string, start: string | null, end: string | nu
 function hasExplicitIsoTimeComponent(value: unknown): boolean {
   const text = safeString(value);
   if (!text) return false;
-  const match = text.match(/T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?Z$/i);
-  if (!match) return false;
-  return !(match[1] === "00" && match[2] === "00" && safeString(match[3] || "00") === "00");
+  const match = text.match(/T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})?$/i);
+  return Boolean(match);
 }
 
 function hasAnyDiscoveryTimeSignal(parseResult: ParseResult): boolean {
   return [
-    parseResult.startAt,
-    parseResult.endAt,
     parseResult.athlete?.stretchTime,
     parseResult.athlete?.marchIn,
     parseResult.meetDetails?.warmup,
@@ -8115,9 +8200,7 @@ function hasAnyDiscoveryTimeSignal(parseResult: ParseResult): boolean {
 }
 
 function hasExplicitDiscoveryStartTime(parseResult: ParseResult): boolean {
-  if (hasExplicitIsoTimeComponent(parseResult.startAt)) return true;
-  if (!parseResult.startAt) return false;
-  return hasAnyDiscoveryTimeSignal(parseResult);
+  return hasExplicitIsoTimeComponent(parseResult.startAt);
 }
 
 function buildTextDerivedLink(
@@ -8738,7 +8821,10 @@ function buildGymPublicPageSections(params: {
     }))
     .map((item) => ({
       ...item,
-      renderTarget: item.renderTarget || classifyGymResourceRenderTarget(item),
+      renderTarget:
+        item.renderTarget === "hotels"
+          ? classifyGymResourceRenderTarget(item)
+          : item.renderTarget || classifyGymResourceRenderTarget(item),
     }));
   const hotelLinks = publicResourceLinks
     .filter((item) => item.renderTarget === "hotels")
@@ -8753,12 +8839,10 @@ function buildGymPublicPageSections(params: {
     normalizeTravelAccommodationHotels(baseData?.advancedSections?.logistics?.hotels),
     baseData?.advancedSections?.logistics?.discoveredHotelIds || [],
   ).hotels;
-  const travelFallbackLink =
-    normalizeUrl(
-      travelAccommodationState?.fallbackLink ||
-        extractionMeta?.travelAccommodationSummary?.fallbackLink ||
-        hotelLinks[0]?.url,
-    ) || null;
+  const travelFallbackLink = selectHotelResourceFallback(
+    [travelAccommodationState?.fallbackLink, extractionMeta?.travelAccommodationSummary?.fallbackLink, ...hotelLinks.map((link) => link.url)],
+    hotelLinks,
+  );
   const documentLinks = publicResourceLinks
     .filter((item) => item.renderTarget === "documents")
     .map((item) => ({ label: item.label, url: item.url }));
@@ -9119,8 +9203,12 @@ export async function mapParseResultToGymData(
     fallbackTitle ||
     (looksLikeDiscoveryPlaceholderTitle(baseTitle) ? "" : baseTitle);
   const resolvedPageTemplateId = resolveGymMeetTemplateId(baseData) || DEFAULT_GYM_MEET_TEMPLATE_ID;
+  const knownVenueTimezone = baseData?.gymnasticsDateVersion === 1 && baseData?.address === parseResult.address
+    ? baseData.timezone : null;
+  const mappedTimezone = await resolveDiscoveryVenueTimezone(parseResult.timezone || knownVenueTimezone, parseResult.address);
   const hasExplicitStartTime = hasExplicitDiscoveryStartTime(parseResult);
-  const { date, time } = splitDateTime(parseResult.startAt);
+  const { date, time } = splitDateTime(parseResult.startAt, mappedTimezone);
+  const parsedEnd = splitDateTime(parseResult.endAt, mappedTimezone);
   const derivedRange = deriveDateRangeFromText(parseResult.dates);
   const hasDateConflictWithRange =
     Boolean(date) &&
@@ -9207,11 +9295,10 @@ export async function mapParseResultToGymData(
     existingAdvanced.logistics?.discoveredHotelIds || [],
   );
   const travelAccommodationHotels = hotelProjection.hotels;
-  const travelAccommodationFallbackLink =
-    normalizeUrl(
-      travelAccommodationState?.fallbackLink ||
-        effectiveExtractionMeta?.travelAccommodationSummary?.fallbackLink,
-    ) || null;
+  const travelAccommodationFallbackLink = selectHotelResourceFallback(
+    [travelAccommodationState?.fallbackLink, effectiveExtractionMeta?.travelAccommodationSummary?.fallbackLink],
+    resourceLinks,
+  );
   const derivedTravelNarrative = summarizeHotelsForNarrative(
     travelAccommodationHotels.map((hotel) => ({
       name: hotel.name,
@@ -9604,7 +9691,7 @@ export async function mapParseResultToGymData(
       fallbackTravelLink:
         safeString(publicTravel?.fallbackLink) ||
         travelAccommodationFallbackLink ||
-        safeString(existingAdvanced.logistics?.fallbackTravelLink) ||
+        selectHotelResourceFallback([existingAdvanced.logistics?.fallbackTravelLink], resourceLinks) ||
         "",
       mealPlan: parseResult.logistics.meals || "",
       feeAmount: parseResult.logistics.fees || "",
@@ -9750,24 +9837,13 @@ export async function mapParseResultToGymData(
     if (safeString(baseData?.date) === mappedDate) return safeString(baseData?.time) || "";
     return "";
   })();
-  const mappedStartISO = (() => {
-    if (!hasExplicitStartTime) return null;
-    if (parseResult.startAt && !hasDateConflictWithRange) return parseResult.startAt;
-    const existingStart = safeString(toIsoOrNull(baseData?.startISO));
-    if (existingStart && mappedDate && existingStart.startsWith(mappedDate)) {
-      return existingStart;
-    }
-    return null;
-  })();
-  const mappedEndISO = (() => {
-    if (!hasExplicitStartTime) return null;
-    if (parseResult.endAt && !hasDateConflictWithRange) return parseResult.endAt;
-    const existingEnd = safeString(toIsoOrNull(baseData?.endISO));
-    if (existingEnd && mappedDate && existingEnd.startsWith(mappedDate)) {
-      return existingEnd;
-    }
-    return null;
-  })();
+  const mappedEndDate = parsedEnd.date || derivedRange.endDate || "";
+  const mappedEndTime = hasExplicitStartTime && hasExplicitIsoTimeComponent(parseResult.endAt)
+    ? parsedEnd.time : "";
+  const { startISO: mappedStartISO, endISO: mappedEndISO, allDay } = buildGymnasticsEventDateTimes({
+    date: mappedDate, time: mappedTime, endDate: mappedEndDate, endTime: mappedEndTime,
+    timezone: mappedTimezone,
+  });
 
   const finalMapped = {
     ...baseData,
@@ -9777,9 +9853,13 @@ export async function mapParseResultToGymData(
       : safeString(baseData?.details),
     date: mappedDate,
     time: mappedTime,
+    endDate: mappedEndDate,
+    endTime: mappedEndTime,
+    allDay,
+    gymnasticsDateVersion: 1,
     startISO: mappedStartISO,
     endISO: mappedEndISO,
-    timezone: parseResult.timezone || baseData?.timezone || null,
+    timezone: mappedTimezone,
     venue: parseResult.venue || baseData?.venue || "",
     address: parseResult.address || baseData?.address || "",
     hostGym:

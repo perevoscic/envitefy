@@ -1,0 +1,65 @@
+{
+  "generatedAt": "2026-10-19T05:30:25.718Z",
+  "run": "node docs/qa/gymnast-mom-2026-10-19/signup-handler-diagnostics.mjs --write",
+  "source": "src/app/api/auth/signup/route.ts",
+  "scope": "Actual POST handler with real signup-intent helpers; persistence, notification delivery and successful legal verification mocked. Development reCAPTCHA bypass; network forbidden. No accounts created or emails sent.",
+  "limitation": "This isolates server input validation. It does not exercise a real database, live signup, browser email validation, CAPTCHA, or production deployment.",
+  "interpretation": "The one-character password and malformed-email cases reach account insertion. Empty values are rejected. Assertions preserve the observed behavior for reproduction, not the desired validation policy.",
+  "cases": [
+    {
+      "id": "valid_control",
+      "email": "gymnast-parent@example.test",
+      "passwordLength": 36,
+      "status": 200,
+      "reachedAccountInsert": true,
+      "notificationCalls": 1,
+      "response": {
+        "ok": true
+      }
+    },
+    {
+      "id": "one_character_password",
+      "email": "gymnast-parent@example.test",
+      "passwordLength": 1,
+      "status": 200,
+      "reachedAccountInsert": true,
+      "notificationCalls": 1,
+      "response": {
+        "ok": true
+      }
+    },
+    {
+      "id": "malformed_email",
+      "email": "not-an-email",
+      "passwordLength": 36,
+      "status": 200,
+      "reachedAccountInsert": true,
+      "notificationCalls": 1,
+      "response": {
+        "ok": true
+      }
+    },
+    {
+      "id": "empty_email_control",
+      "email": "",
+      "passwordLength": 36,
+      "status": 400,
+      "reachedAccountInsert": false,
+      "notificationCalls": 0,
+      "response": {
+        "error": "Email and password are required"
+      }
+    },
+    {
+      "id": "empty_password_control",
+      "email": "gymnast-parent@example.test",
+      "passwordLength": 0,
+      "status": 400,
+      "reachedAccountInsert": false,
+      "notificationCalls": 0,
+      "response": {
+        "error": "Email and password are required"
+      }
+    }
+  ]
+}

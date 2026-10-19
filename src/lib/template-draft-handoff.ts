@@ -16,6 +16,22 @@ export type TemplateHistoryPayload = {
   claim?: boolean;
 };
 
+const draftRecord = (value: unknown): Record<string, DraftValue> =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, DraftValue>
+    : {};
+
+/** Omitted fields retain their saved values; explicit empty values replace them. */
+function mergeSnapshotFields(base: unknown, edited: Record<string, DraftValue>) {
+  const merged = { ...draftRecord(base) };
+  for (const [key, value] of Object.entries(edited)) {
+    merged[key] = value && typeof value === "object" && !Array.isArray(value)
+      ? mergeSnapshotFields(merged[key], value)
+      : value;
+  }
+  return merged;
+}
+
 /** Upload and save only after authentication; leave browser data intact on every failure. */
 export async function saveTemplateDraftToAccount({
   draft,
@@ -66,6 +82,65 @@ export async function saveTemplateDraftToAccount({
     Intl.DateTimeFormat().resolvedOptions().timeZone,
   );
   const signup = data.signupForm;
+  // Saving an imported page with a template snapshot does not turn it into a
+  // manually created event. Its source still selects the imported guest layout.
+  const source = data.discoverySource || existing?.data.discoverySource;
+  const hasSource = source && typeof source === "object" &&
+    (("input" in source && source.input) || ("parseResult" in source && source.parseResult));
+  const pipelineSummary = data.pipelineSummary || existing?.data.pipelineSummary;
+  const hasV2Identity = Boolean((data.builderDraft || existing?.data.builderDraft) &&
+    (data.publicArtifacts || existing?.data.publicArtifacts) &&
+    pipelineSummary && typeof pipelineSummary === "object" &&
+    "discoveryId" in pipelineSummary && pipelineSummary.discoveryId);
+  const restoredImport = category === "gymnastics" && (hasSource || hasV2Identity);
+  const createdVia = data.createdVia || (restoredImport
+    ? hasV2Identity ? "meet-discovery-v2" : "meet-discovery"
+    : existing?.data.createdVia || "template");
+  const imported = createdVia === "meet-discovery" || createdVia === "meet-discovery-v2";
+  const existingBuilder = data.builderDraft || existing?.data.builderDraft;
+  const snapshotFields: Record<string, DraftValue> = {};
+  if (category === "gymnastics" && imported) {
+    const fields = draftRecord(savedSnapshot.data);
+    const baseline = { ...draftRecord(draftRecord(existingBuilder).event), ...draftRecord(existing?.data) };
+    for (const key of ["title", "date", "time", "endDate", "endTime", "timezone", "tz", "start", "startAt", "startISO", "end", "endAt", "endISO", "allDay", "gymnasticsDateVersion", "guestPlanning", "venue", "address", "hostGym", "city", "state", "details", "rsvpEnabled", "rsvpDeadline", "pageTemplateId", "fontId", "fontSize", "heroImageFilterEnabled", "heroImageSettings", "gymnasticsPageText", "gymnasticsTitleFont", "sectionLayout"]) {
+      if (Object.hasOwn(fields, key)) snapshotFields[key] = fields[key];
+      else if (Object.hasOwn(baseline, key)) snapshotFields[key] = baseline[key];
+    }
+    for (const [key, alias] of [["venue", "location"], ["details", "description"], ["hero", "heroImage"], ["simpleDesignTokens", "designTokens"]]) {
+      if (Object.hasOwn(fields, key)) snapshotFields[alias] = fields[key];
+    }
+    if (Object.hasOwn(fields, "date") || Object.hasOwn(baseline, "date")) {
+      const dates = buildTemplateDraftPayload({ data: { ...baseline, ...fields } }, category,
+        Intl.DateTimeFormat().resolvedOptions().timeZone).data;
+      for (const key of ["tz", "start", "startAt", "startISO", "end", "endAt", "endISO", "allDay", "gymnasticsDateVersion"]) {
+        if (dates[key] !== undefined) snapshotFields[key] = dates[key];
+      }
+    }
+    if (Object.hasOwn(savedSnapshot, "themeId")) snapshotFields.themeId = savedSnapshot.themeId;
+    if (Object.hasOwn(fields, "extra")) snapshotFields.customFields = fields.extra;
+    if (Object.hasOwn(savedSnapshot, "advancedState")) {
+      snapshotFields.advancedSections = savedSnapshot.advancedState;
+      snapshotFields.customFields = {
+        ...draftRecord(snapshotFields.customFields),
+        advancedSections: savedSnapshot.advancedState,
+      };
+    }
+  }
+  const builderDraft = category === "gymnastics" && imported && existingBuilder &&
+    typeof existingBuilder === "object" && !Array.isArray(existingBuilder)
+    ? {
+        ...existingBuilder,
+        event: mergeSnapshotFields("event" in existingBuilder ? existingBuilder.event : {}, snapshotFields),
+        venue: mergeSnapshotFields("venue" in existingBuilder ? existingBuilder.venue : {},
+          Object.fromEntries(["location", "venue", "address", "city", "state"]
+            .filter(key => Object.hasOwn(snapshotFields, key)).map(key => [key, snapshotFields[key]]))),
+        ...(Object.hasOwn(snapshotFields, "advancedSections")
+          ? { advancedSections: snapshotFields.advancedSections && typeof snapshotFields.advancedSections === "object" && !Array.isArray(snapshotFields.advancedSections)
+            ? mergeSnapshotFields("advancedSections" in existingBuilder ? existingBuilder.advancedSections : {}, snapshotFields.advancedSections)
+            : snapshotFields.advancedSections }
+          : {}),
+      }
+    : undefined;
   if (
     category === "signup-forms" &&
     signup &&
@@ -78,9 +153,8 @@ export async function saveTemplateDraftToAccount({
     ...payload,
     clientDraftId: draft.id,
     data: {
-      ...existing?.data,
-      ...canonical.data,
-      ...data,
+      ...mergeSnapshotFields({ ...existing?.data, ...canonical.data, ...data }, snapshotFields),
+      ...(builderDraft ? { builderDraft } : {}),
       ...(existing && "numberOfGuests" in existing.data
         ? { numberOfGuests: existing.data.numberOfGuests }
         : {}),
@@ -89,8 +163,8 @@ export async function saveTemplateDraftToAccount({
       ownership: "owned",
       status,
       draftStatus: status,
-      createdVia: data.createdVia || "template",
-      createdManually: true,
+      createdVia,
+      createdManually: imported ? false : data.createdManually ?? existing?.data.createdManually ?? true,
       templateEditor: { category, templateId, snapshot: savedSnapshot },
     },
   };

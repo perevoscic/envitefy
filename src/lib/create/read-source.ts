@@ -4,7 +4,7 @@ import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
 import OpenAI from "openai";
 import sharp from "sharp";
-import { extractPdfTextWithPdfJs, rasterizePdfPageToPng } from "@/lib/pdf-raster";
+import { createPdfPageRasterizer, extractPdfTextWithPdfJs } from "@/lib/pdf-raster";
 import { validateUploadFileMeta, UPLOAD_LIMITS } from "@/lib/upload-config";
 import { resolveConciergeOpenAiPlannerModel } from "@/lib/concierge/openai-config";
 import { creationModelBudget } from "@/lib/creation/openai-workloads";
@@ -67,8 +67,8 @@ export const createSourceDeps = {
       request.on("error", reject);
       request.end();
     }),
-  pdfText: extractPdfTextWithPdfJs,
-  rasterize: rasterizePdfPageToPng,
+  pdfText: (bytes: Buffer) => extractPdfTextWithPdfJs(bytes, { includeAnnotations: true }),
+  rasterizer: createPdfPageRasterizer,
   transcribe: async (images: string[], signal: AbortSignal): Promise<string[]> => {
     const model = resolveConciergeOpenAiPlannerModel({ simple: true });
     const response = await new OpenAI({ apiKey: process.env.OPENAI_API_KEY, maxRetries: 0 }).chat.completions.create({
@@ -132,10 +132,21 @@ export async function normalizeCreateImage(bytes: Buffer): Promise<string> {
   } catch { throw new CreateSourceError("An image could not be read. Choose a JPG, PNG or WebP photo."); }
 }
 
-export type ReadCreateSourceResult = { text: string; images: string[]; url?: string; pageCount: number };
+export type ReadCreateSourceResult = {
+  text: string;
+  images: string[];
+  url?: string;
+  pageCount: number;
+  pages?: Array<{ pageNumber: number; text: string; image?: string }>;
+  links?: Array<{ url: string; label?: string; pageNumber?: number; contextText?: string; source?: "pdf_annotation" }>;
+  usedOcr?: boolean;
+};
+export type ReadCreateSourceOptions = { onStage?: (stage: "reading" | "transcribing") => void };
 
 /** Extract every accepted page; reject over-budget documents instead of silently truncating. */
-export async function readCreateSource(input: { files?: File[]; url?: string; text?: string }, signal: AbortSignal): Promise<ReadCreateSourceResult> {
+export async function readCreateSource(input: { files?: File[]; url?: string; text?: string }, signal: AbortSignal, options: ReadCreateSourceOptions = {}): Promise<ReadCreateSourceResult> {
+  signal.throwIfAborted();
+  options.onStage?.("reading");
   const files = [...(input.files || [])];
   if (files.length > 5) throw new CreateSourceError("Choose up to five files.");
   if (input.url && files.length) throw new CreateSourceError("Choose files or a public link, then add optional notes.");
@@ -153,6 +164,7 @@ export async function readCreateSource(input: { files?: File[]; url?: string; te
     } else throw new CreateSourceError("That link isn't a readable event page, PDF or photo. Upload a screenshot instead.", 422);
   }
   const pages: Array<{ text: string; image?: string }> = [];
+  const links: NonNullable<ReadCreateSourceResult["links"]> = [];
   for (const file of files) {
     signal.throwIfAborted();
     const checked = validateUploadFileMeta({ fileName: file.name, mimeType: file.type, sizeBytes: file.size, usage: "attachment" });
@@ -163,17 +175,26 @@ export async function readCreateSource(input: { files?: File[]; url?: string; te
       const pageCount = extracted.pageCount || Math.max(0, ...extracted.pages.map((page) => page.num));
       if (!pageCount) throw new CreateSourceError("That PDF could not be opened. Try a new PDF or photos of its pages.", 422);
       if (pageCount + pages.length > CREATE_SOURCE_MAX_PAGES) throw new CreateSourceError(`Choose a document with up to ${CREATE_SOURCE_MAX_PAGES} pages, or split it into smaller files.`, 413);
-      for (let index = 0; index < pageCount; index++) {
-        signal.throwIfAborted();
-        const text = extracted.pages.find((page) => page.num === index + 1)?.text || "";
-        const image = await createSourceDeps.rasterize(bytes, index);
-        if (!image && !text.trim()) throw new CreateSourceError(`PDF page ${index + 1} could not be read. Upload a photo of that page.`, 422);
-        pages.push({ text, image: image ? await normalizeCreateImage(image) : undefined });
+      const pageOffset = pages.length;
+      links.push(...(extracted.links || []).map((link) => ({ ...link, pageNumber: pageOffset + link.pageNumber, label: link.label || undefined, contextText: link.contextText || undefined })));
+      const rasterizer = createSourceDeps.rasterizer(bytes, signal);
+      try {
+        for (let index = 0; index < pageCount; index++) {
+          signal.throwIfAborted();
+          const text = extracted.pages.find((page) => page.num === index + 1)?.text || "";
+          // Text-layer PDFs may still contain source maps, diagrams and schedule tables.
+          const image = await rasterizer.rasterize(index);
+          if (!image && !text.trim()) throw new CreateSourceError(`PDF page ${index + 1} could not be read. Upload a photo of that page.`, 422);
+          pages.push({ text, image: image ? await normalizeCreateImage(image) : undefined });
+        }
+      } finally {
+        await rasterizer.dispose();
       }
     } else pages.push({ text: "", image: await normalizeCreateImage(bytes) });
   }
   if (pages.length > CREATE_SOURCE_MAX_PAGES) throw new CreateSourceError(`Choose up to ${CREATE_SOURCE_MAX_PAGES} document pages per import.`, 413);
   const unread = pages.map((page, index) => ({ page, index })).filter(({ page }) => page.text.trim().length < 30 && page.image);
+  if (unread.length) options.onStage?.("transcribing");
   // Bounded calls retain the page order and fail the whole operation if any page is unreadable.
   for (let offset = 0; offset < unread.length; offset += 5) {
     signal.throwIfAborted();
@@ -184,5 +205,13 @@ export async function readCreateSource(input: { files?: File[]; url?: string; te
   const text = [remoteText, ...pages.map((page, index) => `Page ${index + 1}\n${page.text}`)].filter(Boolean).join("\n\n").trim();
   if (text.length > MAX_SOURCE_TEXT) throw new CreateSourceError("This source has too much text to read in one import. Split it into smaller files.", 413);
   if (!text && !input.text?.trim()) throw new CreateSourceError("Add a document, public link or event details first.");
-  return { text, images: pages.flatMap((page) => page.image ? [page.image] : []), url, pageCount: pages.length || 1 };
+  return {
+    text,
+    images: pages.flatMap((page) => page.image ? [page.image] : []),
+    url,
+    pageCount: pages.length || 1,
+    pages: pages.map((page, index) => ({ pageNumber: index + 1, ...page })),
+    links,
+    usedOcr: unread.length > 0,
+  };
 }

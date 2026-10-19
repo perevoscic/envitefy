@@ -45,7 +45,7 @@ test("unified creation retains sources, recommends native templates and protects
   let workspaceAccountTest = false, delayedEditStarted = false, delayedEditFinished = false;
   let retryUploadFailed = false, releaseCancelledRead = null, cancelledReadFinished = false;
   let sportsDiscoveryActive = false;
-  const discoveryRequests = [], discoveryIntakes = new Map(), discoveryEvents = new Map();
+  const discoveryRequests = [], discoveryIntakes = new Map(), discoveryEvents = new Map(), sportsSourceUploads = [];
   const historyRequests = [], editRequests = [];
   const eventRows = [
     { id: "picnic", title: "Community Picnic", public_slug: "community-picnic", data: { primaryOutput: "event_page", ownership: "owned", status: "published", category: "General Events", start: "2027-05-03T18:00:00Z", timezone: "America/New_York", location: "Riverside Park" } },
@@ -92,6 +92,19 @@ test("unified creation retains sources, recommends native templates and protects
       const sport = raw.includes("gymnastics") ? "gymnastics" : raw.includes("football") ? "football" : null;
       const category = ambiguous || sport ? "sports" : wedding ? "weddings" : json?.url ? "general" : "birthdays";
       const title = ambiguous ? "Youth sports schedule" : sport === "gymnastics" ? "Spring gymnastics meet" : sport === "football" ? "Eagles football season" : wedding ? "Taylor and Casey's wedding" : json?.url ? "Community festival from the public page" : replacement ? "Elliot's 9th birthday" : "Maya's 7th birthday";
+      if (sportsDiscoveryActive && sport && !ambiguous) {
+        const clientIntakeId = json?.clientIntakeId || raw.match(/name="clientIntakeId"\r\n\r\n([^\r\n]+)/)?.[1];
+        const eventId = `fixture-sport-${discoveryEvents.size + 1}`;
+        const selectedSport = json?.sport || raw.match(/name="sport"\r\n\r\n([^\r\n]+)/)?.[1] || sport;
+        const state = { eventId, clientIntakeId, raw, sport: selectedSport, runCount: 0, cancelled: false };
+        discoveryIntakes.set(clientIntakeId, state); discoveryEvents.set(eventId, state);
+        sportsSourceUploads.push(state);
+        if (raw.includes("lost-response-gymnastics.pdf")) return route.fulfill({ contentType: "application/x-ndjson", body: '{"stage":"storing_source"}\n{"result":' });
+        return route.fulfill({ contentType: "application/x-ndjson", body: [
+          { stage: "reading" }, { stage: "classifying" }, { stage: "storing_source" },
+          { result: { classification: { category, sport, confidence: "high", alternatives: [] }, sourceText: `${title}. Facts read from the actual submitted source.`, discoveryEventId: eventId } },
+        ].map(value => JSON.stringify(value)).join("\n") + "\n" });
+      }
       try {
         return await route.fulfill({ contentType: "application/json", body: JSON.stringify({ classification: { category, sport, confidence: ambiguous || raw.includes("uncertain-flyer") ? "low" : "high", alternatives: [] }, information: information(title, ambiguous ? "sport-events" : sport || category, replacement ? "Meadow Hall" : "Riverside Park"), sourceText: `${title}. Facts read from the actual submitted source.` }) });
       } catch (error) {
@@ -100,7 +113,7 @@ test("unified creation retains sources, recommends native templates and protects
         if (cancelled) cancelledReadFinished = true;
       }
     }
-    if (sportsDiscoveryActive && url.pathname.startsWith("/api/discovery/")) {
+    if ((sportsDiscoveryActive && url.pathname.startsWith("/api/discovery/")) || (url.pathname === "/api/discovery/intake" && req.method() === "DELETE")) {
       const method = req.method(), raw = req.postData() || "";
       const json = req.headers()["content-type"]?.includes("application/json") ? req.postDataJSON() : null;
       const multipartField = key => raw.match(new RegExp(`name="${key}"\\r\\n\\r\\n([^\\r\\n]+)`))?.[1];
@@ -120,10 +133,10 @@ test("unified creation retains sources, recommends native templates and protects
       const match = url.pathname.match(/^\/api\/discovery\/([^/]+)\/(run|status)$/), state = match && discoveryEvents.get(match[1]);
       if (state && match[2] === "run" && method === "POST") {
         state.runCount++;
-        const failing = state.raw.includes("retry-gymnastics.pdf") && state.runCount === 1;
+        const failing = state.raw.includes("retry-gymnastics.pdf") && state.sport !== "football" && state.runCount === 1;
         return route.fulfill({ status: failing ? 503 : 200, contentType: "application/json", body: JSON.stringify(failing ? { error: "Schedule importer temporarily unavailable. Retry your retained import." } : { accepted: true }) });
       }
-      if (state && match[2] === "status" && method === "GET") return route.fulfill({ contentType: "application/json", body: JSON.stringify({ builderReady: !state.raw.includes("cancel-gymnastics.pdf"), processingStage: state.raw.includes("cancel-gymnastics.pdf") ? "parse" : "review_ready" }) });
+      if (state && match[2] === "status" && method === "GET") return route.fulfill({ contentType: "application/json", body: JSON.stringify({ draftReady: !state.raw.includes("cancel-gymnastics.pdf"), builderReady: false, processingStage: state.raw.includes("cancel-gymnastics.pdf") ? "parse" : "enrich" }) });
       forbidden.push({ path: url.pathname, method });
       return route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ error: "Unexpected sports discovery request" }) });
     }
@@ -721,11 +734,12 @@ test("unified creation retains sources, recommends native templates and protects
       sportsDiscoveryActive = true;
       const readIntake = id => page.evaluate(async id => { const row = await window.__creationBrowser.readCreationIntake("unified-host", id); return row ? { ...row, source: { ...row.source, files: row.source.files.map(file => ({ name: file.name, size: file.size })) } } : null; }, id);
       const intakePosts = () => discoveryRequests.filter(request => request.path === "/api/discovery/intake" && request.method === "POST");
-      const cancellations = () => discoveryRequests.filter(request => request.path === "/api/discovery/intake" && request.method === "DELETE");
+      const cancellationBaseline = discoveryRequests.filter(request => request.path === "/api/discovery/intake" && request.method === "DELETE").length;
+      const cancellations = () => discoveryRequests.filter(request => request.path === "/api/discovery/intake" && request.method === "DELETE").slice(cancellationBaseline);
       try {
         for (const sport of ["gymnastics", "football"]) {
           await openCreate();
-          const readsBefore = extracts.length, postsBefore = intakePosts().length;
+          const readsBefore = extracts.length, postsBefore = intakePosts().length, uploadsBefore = sportsSourceUploads.length;
           const bytes = Buffer.from(`%PDF-1.4\nOriginal ${sport} event packet\n%%EOF`);
           await page.locator('input[type="file"][aria-label="Upload event information"]').setInputFiles({ name: `${sport}-packet.pdf`, mimeType: "application/pdf", buffer: bytes });
           const id = await waitForImportedEditor(), imported = await readIntake(id), destination = new URL(page.url());
@@ -734,9 +748,10 @@ test("unified creation retains sources, recommends native templates and protects
           assert.equal(destination.searchParams.get("edit"), imported.discoveryEventId);
           assert.equal(destination.searchParams.get("templateId"), firstDesign, "the first compatible design opens automatically and remains changeable in the editor");
           assert.equal(imported.selectedTemplateId, firstDesign); assert.equal(imported.source.files[0].size, bytes.length);
-          assert.equal(extracts.length, readsBefore + 1); assert.equal(intakePosts().length, postsBefore + 1);
-          assert.equal(intakePosts().at(-1).clientIntakeId, id);
-          assert.match(intakePosts().at(-1).raw, new RegExp(`Original ${sport} event packet`));
+          assert.equal(extracts.length, readsBefore + 1); assert.equal(intakePosts().length, postsBefore, "sports sources are never uploaded a second time");
+          assert.equal(sportsSourceUploads.length, uploadsBefore + 1);
+          assert.equal(sportsSourceUploads.at(-1).clientIntakeId, id);
+          assert.match(sportsSourceUploads.at(-1).raw, new RegExp(`Original ${sport} event packet`));
           assert.equal(discoveryEvents.get(imported.discoveryEventId).runCount, 1);
           assert.equal(cancellations().length, 0, "successful automatic editor handoffs never cancel their durable import");
         }
@@ -748,15 +763,37 @@ test("unified creation retains sources, recommends native templates and protects
         await templates.waitFor();
         const failedId = new URL(page.url()).searchParams.get("intake"), failed = await readIntake(failedId);
         assert.ok(failed.discoveryEventId, "the durable event identity is retained before starting structured parsing");
-        assert.equal(intakePosts().length, beforeRetryPost + 1); assert.equal(cancellations().length, 0);
+        assert.equal(intakePosts().length, beforeRetryPost); assert.equal(cancellations().length, 0);
         await page.waitForTimeout(350);
         assert.equal(discoveryEvents.get(failed.discoveryEventId).runCount, 1, "a transient import failure waits for an explicit retry");
         await click("Continue to editor");
         assert.equal(await waitForImportedEditor(), failedId);
         assert.equal(new URL(page.url()).searchParams.get("edit"), failed.discoveryEventId);
         assert.equal(discoveryEvents.get(failed.discoveryEventId).runCount, 2);
-        assert.equal(intakePosts().length, beforeRetryPost + 1, "retry resumes the same shell without importing another source");
+        assert.equal(intakePosts().length, beforeRetryPost, "retry resumes the same shell without importing another source");
         assert.equal(extracts.length, beforeRetryRead + 1, "retry reuses parsed source details");
+
+        await openCreate();
+        await page.locator('input[type="file"][aria-label="Upload event information"]').setInputFiles({ name: "retry-gymnastics.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\nChoose a different sport after importer failure\n%%EOF") });
+        await page.getByRole("alert").filter({ hasText: "Schedule importer temporarily unavailable." }).waitFor();
+        await templates.waitFor();
+        const oldSportId = new URL(page.url()).searchParams.get("intake");
+        await templates.getByRole("combobox", { name: "Event type", exact: true }).selectOption("sports:football");
+        const newSportId = await waitForImportedEditor();
+        assert.notEqual(newSportId, oldSportId, "a corrected sport receives a fresh durable identity before reading");
+        assert.equal(new URL(page.url()).pathname, "/event/football/customize");
+        assert.equal(discoveryEvents.get((await readIntake(newSportId)).discoveryEventId).sport, "football");
+
+        await openCreate();
+        await page.locator('input[type="file"][aria-label="Upload event information"]').setInputFiles({ name: "lost-response-gymnastics.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\nOriginal source whose response was interrupted\n%%EOF") });
+        await page.getByRole("alert").filter({ hasText: "Retry to resume your source" }).waitFor();
+        const interruptedId = new URL(page.url()).searchParams.get("intake");
+        assert.ok(discoveryIntakes.has(interruptedId), "the server may retain a shell before its result reaches the browser");
+        await click("Remove lost-response-gymnastics.pdf");
+        await page.locator('input[type="file"][aria-label="Upload event information"]').setInputFiles({ name: "replacement-football.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\nReplacement football source\n%%EOF") });
+        const replacementId = await waitForImportedEditor();
+        assert.notEqual(replacementId, interruptedId, "replacing an unrecognized submitted source never recovers the old file's shell");
+        assert.equal(new URL(page.url()).pathname, "/event/football/customize");
 
         await openCreate();
         const beforeCancelRead = extracts.length;
@@ -769,7 +806,7 @@ test("unified creation retains sources, recommends native templates and protects
         const retainedId = new URL(page.url()).searchParams.get("intake"), retained = await readIntake(retainedId);
         assert.notEqual(retainedId, cancelledId, "a cancelled import gets a fresh identity for a future attempt");
         assert.equal(retained.source.files[0].name, "cancel-gymnastics.pdf");
-        assert.equal(retained.information.details.title, "Spring gymnastics meet");
+        assert.match(retained.sourceText, /Spring gymnastics meet/);
         await page.waitForTimeout(350);
         assert.equal(discoveryEvents.get(cancelled.discoveryEventId).runCount, 1, "cancellation does not automatically resume structured parsing");
         assert.equal(extracts.length, beforeCancelRead + 1);

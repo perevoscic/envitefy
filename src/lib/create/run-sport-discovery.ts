@@ -11,6 +11,21 @@ export function sportDiscoveryStageLabel(progress: number, sourceType: "file" | 
   return "Opening the editor…";
 }
 
+/** Match the actual server stage rather than estimating it from elapsed time or progress. */
+export function sportDiscoveryProcessingStageLabel(stage: string): string {
+  const labels: Record<string, string> = {
+    ingested: "Preparing your event source…",
+    extract: "Reading the schedule and event details…",
+    parse: "Finding games, sessions and venues…",
+    map: "Organizing dates, venues and links…",
+    enrich: "Finishing venue, parking and attendee details…",
+    compose_public: "Building your editable event page…",
+    review_ready: "Opening the editor…",
+    published: "Opening the editor…",
+  };
+  return labels[stage] || "Checking event processing…";
+}
+
 /** Call only for the host's explicit cancellation, never a transient request failure/unmount. */
 export async function cancelSportDiscovery(eventId: string | null, clientIntakeId?: string) {
   if (clientIntakeId) {
@@ -52,69 +67,92 @@ export async function runSportDiscovery(params: {
   sport: string; file?: File; files?: File[]; url?: string; text?: string;
   clientIntakeId?: string; existingEventId?: string | null; pageTemplateId?: string;
   signal: AbortSignal; onProgress: (progress: number) => void;
+  onStage?: (label: string) => void; timeoutMs?: number;
   onEventId: (eventId: string) => void | Promise<void>;
 }): Promise<string> {
-  const { signal, onProgress, onEventId } = params;
+  const { onProgress, onEventId, onStage } = params;
   const target = discoveryTargetForSport(params.sport);
   const files = params.files?.length ? params.files : params.file ? [params.file] : [];
-  const sourceType = files.length || !params.url ? "file" : "url";
-  let eventId = params.existingEventId || "";
-  signal.throwIfAborted();
-  onProgress(files.length ? 5 : 8);
-  if (!eventId && params.clientIntakeId) {
-    const response = await fetch(`/api/discovery/intake?clientIntakeId=${encodeURIComponent(params.clientIntakeId)}`, { credentials: "include", cache: "no-store", signal });
-    if (!response.ok) throw new Error("Your previous import could not be checked. Please retry; your source is kept.");
-    const recovered = await response.json();
-    if (typeof recovered.eventId === "string") eventId = recovered.eventId;
-  }
-  if (!eventId) {
-    let body: BodyInit;
-    let headers: Record<string, string> | undefined;
-    const values = { workflow: target.workflow, activityProfile: target.activityProfile || undefined, text: params.text, clientIntakeId: params.clientIntakeId, pageTemplateId: params.pageTemplateId };
-    if (files.length) {
-      const form = new FormData();
-      for (const file of files) form.append("file", file);
-      for (const [key, value] of Object.entries(values)) if (value) form.append(key, value);
-      body = form;
-    } else {
-      headers = { "Content-Type": "application/json" };
-      body = JSON.stringify({ ...values, url: params.url });
-    }
-    const response = await fetch("/api/discovery/intake", { method: "POST", credentials: "include", headers, body, signal });
-    const intake = await response.json().catch(() => ({}));
-    if (!response.ok || !intake.eventId) throw new Error(intake.error || "Your event source could not be imported.");
-    eventId = intake.eventId;
-  }
-  signal.throwIfAborted();
-  await onEventId(eventId);
-  signal.throwIfAborted();
-  onProgress(28);
-  const runResponse = await fetch(`/api/discovery/${encodeURIComponent(eventId)}/run`, { method: "POST", credentials: "include", signal });
-  const run = await runResponse.json().catch(() => ({}));
-  if (!runResponse.ok) throw new Error(run.error || "The import could not be resumed. Your source is kept.");
-  const startedAt = Date.now();
-  const timeoutMs = resolveDiscoveryClientParseTimeoutMs(sourceType);
-  let transientFailures = 0;
-  while (Date.now() - startedAt < timeoutMs) {
+  const sourceType = params.url && !files.length ? "url" : "file";
+  const timeoutMs = params.timeoutMs ?? resolveDiscoveryClientParseTimeoutMs(sourceType);
+  const controller = new AbortController();
+  const signal = controller.signal;
+  const timeoutError = new Error("Reading this event is taking longer than expected. Retry to resume your existing import.");
+  timeoutError.name = "TimeoutError";
+  const forwardAbort = () => controller.abort(params.signal.reason);
+  params.signal.addEventListener("abort", forwardAbort, { once: true });
+  const timeout = setTimeout(() => controller.abort(timeoutError), timeoutMs);
+  if (params.signal.aborted) forwardAbort();
+  try {
+    let eventId = params.existingEventId || "";
     signal.throwIfAborted();
-    let response: Response;
-    try { response = await fetch(`/api/discovery/${encodeURIComponent(eventId)}/status`, { credentials: "include", cache: "no-store", signal }); }
-    catch (error) {
-      if (signal.aborted || ++transientFailures > 3) throw error;
+    onProgress(files.length ? 5 : 8);
+    if (eventId) onStage?.("Resuming your import…");
+    if (!eventId && params.clientIntakeId) {
+      onStage?.("Checking your retained import…");
+      const response = await fetch(`/api/discovery/intake?clientIntakeId=${encodeURIComponent(params.clientIntakeId)}`, { credentials: "include", cache: "no-store", signal });
+      if (!response.ok) throw new Error("Your previous import could not be checked. Please retry; your source is kept.");
+      const recovered = await response.json();
+      signal.throwIfAborted();
+      if (typeof recovered.eventId === "string") eventId = recovered.eventId;
+    }
+    if (!eventId) {
+      let body: BodyInit;
+      let headers: Record<string, string> | undefined;
+      const values = { workflow: target.workflow, activityProfile: target.activityProfile || undefined, text: params.text, clientIntakeId: params.clientIntakeId, pageTemplateId: params.pageTemplateId };
+      if (files.length) {
+        const form = new FormData();
+        for (const file of files) form.append("file", file);
+        for (const [key, value] of Object.entries(values)) if (value) form.append(key, value);
+        body = form;
+      } else {
+        headers = { "Content-Type": "application/json" };
+        body = JSON.stringify({ ...values, url: params.url });
+      }
+      onStage?.("Preparing and storing your source…");
+      const response = await fetch("/api/discovery/intake", { method: "POST", credentials: "include", headers, body, signal });
+      const intake = await response.json().catch(() => ({}));
+      signal.throwIfAborted();
+      if (!response.ok || !intake.eventId) throw new Error(intake.error || "Your event source could not be imported.");
+      eventId = intake.eventId;
+    }
+    signal.throwIfAborted();
+    await onEventId(eventId);
+    signal.throwIfAborted();
+    onProgress(28);
+    onStage?.("Starting event processing…");
+    const runResponse = await fetch(`/api/discovery/${encodeURIComponent(eventId)}/run`, { method: "POST", credentials: "include", signal });
+    const run = await runResponse.json().catch(() => ({}));
+    signal.throwIfAborted();
+    if (!runResponse.ok) throw new Error(run.error || "The import could not be resumed. Your source is kept.");
+    let transientFailures = 0;
+    while (true) {
+      signal.throwIfAborted();
+      let response: Response;
+      try { response = await fetch(`/api/discovery/${encodeURIComponent(eventId)}/status`, { credentials: "include", cache: "no-store", signal }); }
+      catch (error) {
+        if (signal.aborted || ++transientFailures > 3) throw error;
+        await pause(signal);
+        continue;
+      }
+      const status = await response.json().catch(() => ({}));
+      signal.throwIfAborted();
+      if (response.status >= 500 && ++transientFailures <= 3) { await pause(signal); continue; }
+      if (!response.ok) throw new Error(status.error || "Progress could not be checked. Please retry to resume this import.");
+      transientFailures = 0;
+      // Optional enrichment may fail after the core draft has already been stored.
+      if (status.errorCode && !status.draftReady && !status.builderReady) throw new Error(status.errorMessage || "The event needs another import attempt. Your source is kept.");
+      onStage?.(sportDiscoveryProcessingStageLabel(status.processingStage));
+      onProgress(STAGE_PROGRESS[status.processingStage] || 35);
+      if (status.draftReady || status.builderReady) {
+        onStage?.("Opening the editor…");
+        onProgress(100);
+        return sportDiscoveryBuilderHref(params.sport, eventId, params.pageTemplateId);
+      }
       await pause(signal);
-      continue;
     }
-    const status = await response.json().catch(() => ({}));
-    if (response.status >= 500 && ++transientFailures <= 3) { await pause(signal); continue; }
-    if (!response.ok) throw new Error(status.error || "Progress could not be checked. Please retry to resume this import.");
-    transientFailures = 0;
-    if (status.errorCode) throw new Error(status.errorMessage || "The event needs another import attempt. Your source is kept.");
-    onProgress(STAGE_PROGRESS[status.processingStage] || 35);
-    if (status.builderReady) {
-      onProgress(100);
-      return sportDiscoveryBuilderHref(params.sport, eventId, params.pageTemplateId);
-    }
-    await pause(signal);
+  } finally {
+    clearTimeout(timeout);
+    params.signal.removeEventListener("abort", forwardAbort);
   }
-  throw new Error("Reading this event is taking longer than expected. Retry to resume your existing import.");
 }

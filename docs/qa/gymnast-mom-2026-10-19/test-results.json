@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-19",
+  "tests": {
+    "signup_onboarding_access": {
+      "passed": 28,
+      "failed": 0,
+      "log": "signup-tests.txt"
+    },
+    "gymnastics_source_and_unified_import": {
+      "passed": 37,
+      "failed": 0,
+      "log": "gymnastics-tests.txt"
+    },
+    "legacy_launcher_and_routing": {
+      "passed": 10,
+      "failed": 1,
+      "failure": "src/components/event-create/launcher-runtime-guards.test.mjs:18 expects removed resolveGymnasticsUrlParseProgress source expression"
+    }
+  },
+  "isolated_signup_cases": 5,
+  "source_callback_diagnostics": [
+    "timezone",
+    "dateOnlyMeet",
+    "unmount",
+    "retry"
+  ],
+  "live_account_created": true,
+  "live_private_drafts_saved": 2,
+  "publication_tested": false
+}

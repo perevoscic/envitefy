@@ -117,14 +117,14 @@ export default function AuthModal({
   if (!open) return null;
 
   return (
-    <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={isLogin ? "Log in" : "Create an account"} className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto py-6 auth-modal">
+    <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={isLogin ? "Log in" : "Create an account"} className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-6 auth-modal">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-[rgba(24,14,10,0.45)] backdrop-blur-[6px] backdrop-saturate-150"
+        className="fixed inset-0 bg-[rgba(24,14,10,0.45)] backdrop-blur-[6px] backdrop-saturate-150"
         onClick={onClose}
       />
       {/* Wrapper creates a stacking context for a top-most close button */}
-      <div className="relative w-full sm:w-[480px] max-w-[92vw]">
+      <div className="relative my-auto w-full shrink-0 sm:w-[480px] max-w-[92vw]">
         {/* Card */}
         <div className="relative bg-surface/95 text-foreground rounded-3xl p-6 sm:p-8 wedding-glow-card auth-card-gradient">
           <div className="flex flex-col items-center gap-3 pb-7 text-center">

@@ -17,6 +17,10 @@ Native editor recovery also uses the existing owner-tagged template-draft store.
 
 Sports discovery uses an account-and-intake key, advisory transaction locking and deterministic event identity. Retries resume the same shell and completed stages. Cancellation is persisted in `event_discovery_controls`; process-local aborts are an optimization. Leaving the page or losing a request does not cancel work. Processing and review-ready shells remain private drafts, including historical shells without a draft marker. Explicitly published records keep their publication state.
 
+Recognized, permitted sports uploads hand their original files and server-extracted text directly from `/api/create/extract` into durable intake. The browser sends the file once and retains the returned discovery ID before starting the specialty parser. These imports skip generic Event Page planning and reuse ordered page text, OCR results and PDF annotation links; file enrichment reads only missing visual map evidence. URL imports retain the deeper specialty crawl. The extraction response streams actual reading, transcription, classification, file preparation and recovery-storage stages. A submitted-source marker rotates intake identity when a source is replaced after an interrupted response. Explicit cancellation also covers a sports shell whose ID has not yet reached the browser.
+
+The editor opens after core fields and sections have been mapped (`draftReady`), while optional enrichment continues. Gymnastics completion refreshes merge untouched fields into the mounted editor and preserve host changes and intentional clears. Server snapshots retain their explicit-save and compare-and-swap guards, so background work cannot replace an explicit host save. Client timeouts retain the durable import for an explicit retry.
+
 Medical and personal appointments continue through Snap's private document/calendar workflow. They are not automatically converted into public host pages.
 
 ## Access and preferences

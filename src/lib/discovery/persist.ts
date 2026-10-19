@@ -26,6 +26,7 @@ import {
 } from "@/lib/discovery/shared";
 import type {
   DiscoveryBuilderDraft,
+  DiscoveryDocument,
   DiscoveryPipelineState,
   DiscoveryPublicArtifacts,
   DiscoverySourceRecord,
@@ -66,7 +67,7 @@ export function buildDiscoveryShellEventData(params: {
     startAt: null,
     endISO: null,
     endAt: null,
-    timezone: "America/Chicago",
+    timezone: params.workflow === "gymnastics" ? null : "America/Chicago",
     category: isFootball ? "sport_football_season" : isSports ? "sport_event" : "gymnastics",
     status: "draft",
     draftStatus: "draft",
@@ -111,6 +112,7 @@ export async function createDiscoveryShell(params: {
   title: string;
   source: DiscoverySourceRecord;
   pipeline: DiscoveryPipelineState;
+  document?: DiscoveryDocument;
   pageTemplateId?: string | null;
 }) {
   const historyRow = await insertEventHistory({
@@ -135,7 +137,7 @@ export async function createDiscoveryShell(params: {
       workflow: params.workflow,
       source: params.source,
       pipeline: params.pipeline,
-      document: null,
+      document: params.document || null,
       canonicalParse: null,
       enrichment: null,
       debug: null,
@@ -276,14 +278,19 @@ export async function persistDiscoveryEventSnapshot(params: {
   const gymPageTemplateId = params.workflow === "gymnastics"
     ? resolveGymDiscoveryTemplateSelection(safeString(current.pageTemplateId), safeString(params.pageTemplateId) || safeString(builderEvent.pageTemplateId))
     : null;
+  const snapshotDate = (provided: string | null | undefined, parsed: any, previous: any) =>
+    params.workflow === "gymnastics"
+      ? provided !== undefined ? provided : parsed !== undefined ? parsed : previous ?? null
+      : provided ?? parsed ?? previous ?? null;
   const nextData = {
     ...current,
     title: nextTitle,
-    startISO: params.startISO ?? builderEvent.startISO ?? current.startISO ?? null,
-    startAt: params.startISO ?? builderEvent.startISO ?? current.startAt ?? null,
-    endISO: params.endISO ?? builderEvent.endISO ?? current.endISO ?? null,
-    endAt: params.endISO ?? builderEvent.endISO ?? current.endAt ?? null,
-    timezone:
+    startISO: snapshotDate(params.startISO, builderEvent.startISO, current.startISO),
+    startAt: snapshotDate(params.startISO, builderEvent.startISO, current.startAt),
+    endISO: snapshotDate(params.endISO, builderEvent.endISO, current.endISO),
+    endAt: snapshotDate(params.endISO, builderEvent.endISO, current.endAt),
+    timezone: params.workflow === "gymnastics" ?
+      (params.timezone !== undefined ? params.timezone : builderEvent.timezone !== undefined ? builderEvent.timezone : current.timezone ?? null) :
       safeString(params.timezone) ||
       safeString(builderEvent.timezone) ||
       safeString(current.timezone) ||
@@ -345,6 +352,13 @@ export async function persistDiscoveryEventSnapshot(params: {
       safeString(current.location),
     date: safeString(builderEvent.date) || safeString(current.date),
     time: safeString(builderEvent.time) || safeString(current.time),
+    ...(params.workflow === "gymnastics" ? {
+      time: typeof builderEvent.time === "string" ? builderEvent.time : safeString(current.time),
+      endDate: typeof builderEvent.endDate === "string" ? builderEvent.endDate : safeString(current.endDate),
+      endTime: typeof builderEvent.endTime === "string" ? builderEvent.endTime : safeString(current.endTime),
+      allDay: builderEvent.allDay ?? current.allDay,
+      gymnasticsDateVersion: builderEvent.gymnasticsDateVersion ?? current.gymnasticsDateVersion,
+    } : {}),
     details: safeString(builderEvent.details) || safeString(current.details) || "",
     customFields:
       builderEvent.customFields && typeof builderEvent.customFields === "object"

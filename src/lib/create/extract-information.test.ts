@@ -43,3 +43,35 @@ test("medical sources remain in Snap without entering the public Event Page plan
   expect(result.destination).toBe("snap");
   expect(result.information).toBeUndefined();
 });
+
+test("the authorized sports handoff reuses the single server read and skips generic page planning", async () => {
+  const source = { text: "Gymnastics meet October 25: Session 1 at 9 AM, Session 2 at noon.", images: ["data:image/jpeg;base64,AA=="], pageCount: 1 };
+  let reads = 0;
+  const stages: string[] = [];
+  createExtractionDeps.read = async () => { reads++; return source; };
+  createExtractionDeps.classify = async () => ({ category: "sports", sport: "gymnastics", confidence: "high", alternatives: [] });
+  createExtractionDeps.information = async () => { throw new Error("Generic information planning must not run for a specialty import"); };
+  const result = await extractCreateInformation({ files: [new File(["photo"], "meet.jpg")] }, new AbortController().signal, async () => true, {
+    onStage: stage => stages.push(stage),
+    prepareSports: async (evidence, classification) => {
+      expect(evidence).toBe(source);
+      expect(classification.sport).toBe("gymnastics");
+      return "retained-meet";
+    },
+  });
+  expect(reads).toBe(1);
+  expect(result.discoveryEventId).toBe("retained-meet");
+  expect(result.sourceText).toBe(source.text);
+  expect(result.information).toBeUndefined();
+  expect(stages).toEqual(["reading", "classifying"]);
+});
+
+test("restricted sports never prepare a durable import", async () => {
+  createExtractionDeps.read = async () => ({ text: "Gymnastics meet October 25 at City Gym", images: [], pageCount: 1 });
+  createExtractionDeps.classify = async () => ({ category: "sports", sport: "gymnastics", confidence: "high", alternatives: [] });
+  const result = await extractCreateInformation({}, new AbortController().signal, async () => false, {
+    prepareSports: async () => { throw new Error("Unavailable categories must not create a shell"); },
+  });
+  expect(result.accessRequired).toBe(true);
+  expect(result.discoveryEventId).toBeUndefined();
+});

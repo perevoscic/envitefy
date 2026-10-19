@@ -71,6 +71,8 @@ export type TemplateEditorRuntime = {
   signupRequiresInvitation?: boolean;
   canManageCollaborators?: boolean;
   eventId?: string;
+  /** Saved import metadata supplements the snapshot without replacing editable fields. */
+  eventData?: Record<string, unknown>;
   leave?: () => void;
   duplicateSignup?: (form: SignupForm) => void;
   record: (key: string, value: DraftValue) => void;
@@ -162,6 +164,7 @@ export default function TemplateEditorProvider({
   const { data: session, status, update } = useSession();
   const authenticated = status === "authenticated";
   const [initial, setInitial] = useState<EditorSnapshot | null>(null);
+  const [eventData, setEventData] = useState<Record<string, unknown> | undefined>();
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -221,6 +224,7 @@ export default function TemplateEditorProvider({
     let cancelled = false;
     async function initialize() {
       let saved: TemplateDraft | null = null;
+      let loadedEventData: Record<string, unknown> | undefined;
       const intakeId = requestedIntake;
       if (intakeId && !editId) {
         if (status === "loading") return;
@@ -269,6 +273,7 @@ export default function TemplateEditorProvider({
               : "This draft is unavailable for this account.",
           );
         const row = await response.json();
+        loadedEventData = row.data;
         setPublished(!isEventDraft(row.data));
         setCanManageCollaborators(row.permissions?.canManageCollaborators !== false);
         const stored = row.data?.templateEditor;
@@ -405,6 +410,7 @@ export default function TemplateEditorProvider({
         : {};
       interacted.current = Boolean(themePreview);
       setDirty(Boolean(themePreview));
+      setEventData(loadedEventData);
       setInitial(current.snapshot);
       setGeneration((value) => value + 1);
       trackTemplateEvent("template_editor_view", category, templateId);
@@ -637,6 +643,7 @@ export default function TemplateEditorProvider({
       signupRequiresInvitation: draft.current?.signupRequiresInvitation,
       canManageCollaborators,
       eventId: currentEventId,
+      eventData,
       leave,
       duplicateSignup(form) {
         progress.requestLeave(() => {
@@ -661,7 +668,7 @@ export default function TemplateEditorProvider({
         return url;
       },
     }),
-    [category, templateId, initial, authenticated, published, dirty, canManageCollaborators, currentEventId, record, requestSave, persist, leave, progress, router],
+    [category, templateId, initial, eventData, authenticated, published, dirty, canManageCollaborators, currentEventId, record, requestSave, persist, leave, progress, router],
   );
 
   const returnUrl = `${templateEditorHref(category, templateId)}?${editId && !draft.current ? `edit=${encodeURIComponent(editId)}` : `draft=${draft.current?.id || ""}`}`;
@@ -716,6 +723,7 @@ export default function TemplateEditorProvider({
                     remoteMedia.current = {};
                     setEditorReady(false);
                     setPublished(false);
+                    setEventData(undefined);
                     setInitial({});
                     setGeneration((n) => n + 1);
                     setMessage("");

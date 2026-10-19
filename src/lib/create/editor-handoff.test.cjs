@@ -32,6 +32,24 @@ test("native hydration keeps structural design state and replaces sample facts w
   assert.equal(payload.title, "Current edited title"); assert.equal(payload.data.start, "2027-05-03T18:30:00.000Z");
   assert.equal(payload.data.end, null); assert.equal(payload.data.rsvpPhone, "5551234567");
 });
+test("gymnastics shared saves keep the nested builder event on the same venue-local dates", () => {
+  const fields = { date: "2027-01-16", time: "08:00", endDate: "2027-01-16", endTime: "10:00", timezone: "America/Los_Angeles" };
+  const draft = { event: { title: "Preserved meet", startISO: "browser-zone-error" }, venue: { venue: "Arena" }, advancedSections: { meet: { doorsOpen: "7 AM" } } };
+  const payload = { title: "Preserved meet", data: { category: "gymnastics", builderDraft: draft } };
+  const saved = creationNativePayload(payload, { data: fields });
+  assert.equal(saved.data.startISO, "2027-01-16T16:00:00.000Z");
+  assert.equal(saved.data.endISO, "2027-01-16T18:00:00.000Z");
+  assert.equal(saved.data.builderDraft.event.startISO, saved.data.startISO);
+  assert.equal(saved.data.builderDraft.event.endISO, saved.data.endISO);
+  assert.equal(saved.data.builderDraft.event.gymnasticsDateVersion, 1);
+  assert.deepEqual(saved.data.builderDraft.venue, draft.venue);
+  assert.deepEqual(saved.data.builderDraft.advancedSections, draft.advancedSections);
+  assert.equal(draft.event.startISO, "browser-zone-error", "normalization never mutates the editor's captured payload");
+  const allDay = creationNativePayload(payload, { data: { ...fields, date: "2026-03-06", time: "", endDate: "2026-03-08", endTime: "" } });
+  assert.equal(allDay.data.startISO, "2026-03-06");
+  assert.equal(allDay.data.endISO, "2026-03-09");
+  assert.equal(allDay.data.builderDraft.event.allDay, true);
+});
 test("each recommended native design resolves to the matching actual catalog and sport", () => {
   for (const guess of [{ category: "birthdays", sport: null }, { category: "weddings", sport: null }, { category: "general", sport: null }, { category: "sports", sport: "football" }, { category: "sports", sport: "gymnastics" }, { category: "sports", sport: "soccer" }, { category: "signup-forms", sport: null }]) {
     const designs = getCreationTemplates(guess);

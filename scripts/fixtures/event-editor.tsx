@@ -14,6 +14,7 @@ import Birthdays from "../../src/app/event/birthdays/customize/page";
 import General from "../../src/app/event/general/customize/page";
 import Gymnastics from "../../src/app/event/gymnastics/customize/page";
 import TemplateEditorProvider from "../../src/components/templates/TemplateEditorContext";
+import SimpleTemplateView from "../../src/components/SimpleTemplateView";
 import EventGuestActions from "../../src/components/event-templates/EventGuestActions";
 import type { EventGuestActionVisibility } from "../../src/lib/event-guest-actions";
 import { usePathname, useSearchParams, useRouter } from "./signup-editor/navigation";
@@ -152,11 +153,21 @@ function GuestActionsFixture() {
   );
 }
 
+function SavedGymnasticsPreview() {
+  const search = useSearchParams();
+  const id = search.get("edit") || "";
+  const [row, setRow] = useState<any>(null);
+  useEffect(() => {
+    void fetch(`/api/history/${encodeURIComponent(id)}`).then(response => response.json()).then(setRow);
+  }, [id]);
+  return row ? <SimpleTemplateView eventId={id} eventData={row.data} eventTitle={row.title} isOwner={false} isReadOnly={true} viewerKind="readonly" shareUrl="" sessionEmail={null} disableProtectedSectionLocks={true} hideOwnerActions={true} /> : null;
+}
+
 function App() {
   const pathname = usePathname();
   const search = useSearchParams();
   if (!pathname.includes("customize")) return <div data-destination>{pathname}</div>;
-  const mode = search.get("mode") || (pathname.includes("gymnastics") ? "gymnastics" : null);
+  const mode = search.get("mode") || (pathname.includes("/gymnastics/templates/") ? "gymnastics-template" : pathname.includes("gymnastics") ? "gymnastics" : null);
   if (mode === "guest-actions") return <GuestActionsFixture />;
   return (
     <UnsavedProgressProvider>
@@ -165,6 +176,12 @@ function App() {
         <TemplateEditorProvider category="birthdays" templateId="candy-dreams">
           <Birthdays />
         </TemplateEditorProvider>
+      ) : mode === "gymnastics-template" ? (
+        <TemplateEditorProvider category="gymnastics" templateId="airborne-atlas">
+          <Gymnastics />
+        </TemplateEditorProvider>
+      ) : mode === "gymnastics-guest" ? (
+        <SavedGymnasticsPreview />
       ) : mode === "gymnastics" ? (
         <Gymnastics />
       ) : mode === "manual" ? (

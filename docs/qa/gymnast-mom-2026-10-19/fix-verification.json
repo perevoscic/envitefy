@@ -1,0 +1,106 @@
+{
+  "date": "2026-10-19",
+  "scope": [
+    "F2",
+    "F3",
+    "F4",
+    "F8"
+  ],
+  "checks": [
+    {
+      "command": "npm run test:unified-create",
+      "passed": 166,
+      "failed": 0
+    },
+    {
+      "command": "npm run test:event-editor",
+      "passed": 42,
+      "failed": 0
+    },
+    {
+      "command": "npm run test:calendar",
+      "passed": 36,
+      "failed": 0
+    },
+    {
+      "command": "npm run test:cohosts",
+      "passed": 43,
+      "failed": 0
+    },
+    {
+      "command": "npm run test:signup-hosts",
+      "passed": 48,
+      "failed": 0
+    },
+    {
+      "command": "npm run test:create-browser",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "command": "npm run typecheck",
+      "result": "passed"
+    },
+    {
+      "command": "targeted Biome lint",
+      "result": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    },
+    {
+      "command": "npm run test:create-remediation",
+      "passed": 828,
+      "failed": 2,
+      "baseline": "Both failures reproduced unchanged at HEAD in an isolated fixture",
+      "failures": [
+        "scripts/egress-remediation.test.cjs:113: extra all/all/empty filter bind arguments",
+        "src/lib/livecard-workflow.test.ts: extensionless creation-access import from livecard-builder.ts"
+      ]
+    },
+    {
+      "check": "legacy gymnastics renderer suite",
+      "passed": 24,
+      "failed": 21,
+      "baseline": "Identical failure names/count using HEAD renderer"
+    }
+  ],
+  "live_verification": {
+    "origin": "http://localhost:3001",
+    "events": [
+      {
+        "id": "44dd1c61-3be2-4194-a291-30b41de5fe52",
+        "dates": [
+          "2026-03-06",
+          "2026-03-08"
+        ],
+        "timezone": "America/New_York",
+        "time": "",
+        "endTime": "",
+        "fresh_reload": true,
+        "venue_guidance": "Coffee Bar entrance retained",
+        "welcome": "Intentional empty value retained"
+      },
+      {
+        "id": "5952f2d4-7dd3-43b3-9a23-96022190f0e7",
+        "dates": [
+          "2026-04-10",
+          "2026-04-12"
+        ],
+        "timezone": "America/New_York",
+        "time": "",
+        "endTime": "",
+        "fresh_reload": true,
+        "book_hotel_links": 8,
+        "awards_vendor_links": 0
+      }
+    ],
+    "publication": "private drafts only"
+  },
+  "limits": [
+    "No production deployment or bulk migration",
+    "Other original QA findings remain outside this four-item follow-up",
+    "Future timezone resolution depends on a unique verified address result; unresolved zones remain empty"
+  ]
+}

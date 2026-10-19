@@ -138,6 +138,7 @@
   align-items: center;
   gap: 4px;
   min-width: 0;
+  max-width: 100%;
   font:
     600 13px / 1.4 system-ui,
     sans-serif;
@@ -146,11 +147,19 @@
   display: flex;
   flex-shrink: 0;
 }
+.toolbar .actions {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
 .sectionLabel {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 .canvas {
+  /* Inline-size containment cannot supply an auto-sized, centered grid item's width. */
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   container: event-sections / inline-size;
 }
 .canvas > * {
@@ -195,13 +204,17 @@
   .canvas[data-event-body-layout] {
     grid-template-columns: 1fr;
   }
-  .canvas[data-event-body-layout="editorial"] > :is([data-section-row], [data-section-group]) {
+  .canvas[data-event-body-layout="editorial"] > :is([data-section-row], [data-section-group]):nth-of-type(even) {
     margin-inline-start: 0;
   }
 }
 @container event-sections (max-width: 700px) {
-  .canvas[data-event-body-layout] {
-    grid-template-columns: 1fr;
+  .canvas[data-event-body-layout="split"] > :is([data-section-row], [data-section-group]),
+  .canvas[data-event-body-layout="cards"] > :is([data-section-row], [data-section-group]) {
+    grid-column: 1 / -1;
+  }
+  .canvas[data-event-body-layout="editorial"] > :is([data-section-row], [data-section-group]):nth-of-type(even) {
+    margin-inline-start: 0;
   }
 }
 .rowGroup {

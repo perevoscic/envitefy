@@ -135,6 +135,18 @@ test("meet calendar keeps the host timezone and supplied end", () => {
   assert.equal(query.get("enddt"), "2026-10-23T21:00:00.000Z");
 });
 
+test("a date-only March 6–8 meet keeps the inclusive final day in guest calendar links", () => {
+  const { actions } = render({ eventData: { ...props.eventData, date: "2026-03-06", time: "", endDate: "2026-03-08", endTime: "", startISO: "2026-03-06", endISO: "2026-03-09", allDay: true, gymnasticsDateVersion: 1, timezone: "America/New_York" } });
+  assert.equal(new URL(actions.calendarLinks.google).searchParams.get("dates"), "20260306/20260309");
+  assert.equal(new URL(actions.calendarLinks.outlook).searchParams.get("enddt"), "2026-03-09");
+});
+
+test("a timed imported meet requires the venue timezone before offering guest calendar links", () => {
+  const { actions, html } = render({ eventData: { ...props.eventData, gymnasticsDateVersion: 1, timezone: null, allDay: false } });
+  assert.equal(actions.calendarLinks, null);
+  assert.ok(!html.includes('aria-label="Add to calendar"'));
+});
+
 test("undated meet hides calendar without hiding Share", () => {
   const { actions, html } = render({ eventData: { ...props.eventData, date: "", time: "" } });
   assert.equal(actions.calendarLinks, null);

@@ -4,14 +4,15 @@
     "incremental": false
   },
   "include": [
+    ".next-dev-3001/types/**/*.ts",
+    ".next-dev/types/**/*.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
     "next.config.ts",
     "src/**/*.js",
     "src/**/*.jsx",
     "src/**/*.ts",
-    "src/**/*.tsx",
-    ".next-dev/types/**/*.ts"
+    "src/**/*.tsx"
   ],
   "exclude": [
     "node_modules",

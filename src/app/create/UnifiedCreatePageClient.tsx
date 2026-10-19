@@ -27,7 +27,6 @@ import { useCreationAccess } from "@/hooks/useCreationAccess";
 import {
   CREATE_CATEGORIES,
   CREATE_SPORT_KEYS,
-  type CreateClassification,
   type CreateGuess,
   createGuessLabel,
   customCategoryForGuess,
@@ -51,10 +50,10 @@ import {
 import {
   cancelSportDiscovery,
   runSportDiscovery,
-  sportDiscoveryStageLabel,
 } from "@/lib/create/run-sport-discovery";
 import { type CreationTemplate, getCreationTemplates } from "@/lib/create/template-selection";
-import type { CustomEventInformation, CustomEventPage } from "@/lib/event-custom-design";
+import { CREATE_EXTRACTION_STAGE_LABELS, readCreateExtractionResponse } from "@/lib/create/extraction-progress";
+import { normalizeCustomEventInformation, type CustomEventInformation, type CustomEventPage } from "@/lib/event-custom-design";
 import { savePendingSnapUpload } from "@/lib/pending-snap-upload";
 import { getUploadAcceptAttribute } from "@/lib/upload-config";
 import { validateClientUploadFile } from "@/utils/media-upload-client";
@@ -102,6 +101,7 @@ export default function UnifiedCreatePageClient() {
   const request = useRef<AbortController | null>(null),
     epoch = useRef(0),
     submitting = useRef(false);
+  const preparingLiveCard = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null),
     headingRef = useRef<HTMLHeadingElement>(null);
   const [phase, setPhase] = useState<Phase>("source");
@@ -325,7 +325,7 @@ export default function UnifiedCreatePageClient() {
     const previous = current.current;
     if (previous)
       update(
-        previous.guess || previous.classification || previous.discoveryEventId
+        previous.guess || previous.classification || previous.discoveryEventId || previous.sourceReadStarted
           ? createCreationIntake(ownerId, previous.source)
           : {
               ...previous,
@@ -449,7 +449,7 @@ export default function UnifiedCreatePageClient() {
       version = ++epoch.current;
     request.current = controller;
     setError("");
-    setWorkingLabel("Reading your event information…");
+    setWorkingLabel("Retaining your source in this browser…");
     setPhase("recognizing");
     try {
       // Let any earlier source write finish before saving recognition, so its
@@ -457,7 +457,7 @@ export default function UnifiedCreatePageClient() {
       await sourceSaves.current.catch(() => {});
       if (version !== epoch.current || controller.signal.aborted) return;
       let next = current.current || createCreationIntake(ownerId, source);
-      next = await persist({ ...next, source, phase: "recognizing" });
+      next = await persist({ ...next, source, sourceReadStarted: true, phase: "recognizing" });
       if (version !== epoch.current) return;
       setLocation(next.id, "source");
       if (source.kind === "scratch" && !source.text.trim()) {
@@ -475,35 +475,33 @@ export default function UnifiedCreatePageClient() {
           const form = new FormData();
           for (const file of source.files) form.append("file", file);
           form.set("text", source.text);
+          form.set("clientIntakeId", next.id);
           if (confirmedGuess) form.set("category", customCategoryForGuess(confirmedGuess));
+          if (confirmedGuess?.sport) form.set("sport", confirmedGuess.sport);
           body = form;
         } else {
           headers = { "Content-Type": "application/json" };
           body = JSON.stringify({
             url: source.kind === "url" ? source.url : undefined,
             text: source.text,
+            clientIntakeId: next.id,
             ...(confirmedGuess ? { category: customCategoryForGuess(confirmedGuess) } : {}),
+            ...(confirmedGuess?.sport ? { sport: confirmedGuess.sport } : {}),
           });
         }
+        setWorkingLabel(source.kind === "files" ? "Uploading your file for reading…" : source.kind === "url" ? "Opening your public event page…" : "Sending your event details…");
         const response = await fetch("/api/create/extract", {
           method: "POST",
           credentials: "include",
-          headers,
+          headers: { ...headers, Accept: "application/x-ndjson" },
           body,
-          signal: controller.signal,
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(285_000)]),
         });
-        const result = (await response.json().catch(() => ({}))) as {
-          classification?: CreateClassification;
-          information?: CustomEventInformation;
-          sourceText?: string;
-          error?: string;
-        };
+        const result = await readCreateExtractionResponse(response, (stage) => {
+          if (version === epoch.current && !controller.signal.aborted && CREATE_EXTRACTION_STAGE_LABELS[stage])
+            setWorkingLabel(CREATE_EXTRACTION_STAGE_LABELS[stage]);
+        });
         if (version !== epoch.current || controller.signal.aborted) return;
-        if (!response.ok)
-          throw new Error(
-            result.error ||
-              "We couldn't read that source. Your information is retained so you can retry.",
-          );
         if (!result.classification)
           throw new Error("Choose an event type so we can open the right editor.");
         next = await persist({
@@ -512,6 +510,7 @@ export default function UnifiedCreatePageClient() {
           guess: confirmedGuess || result.classification,
           information: result.information ? withCalendarDate(next, result.information) : undefined,
           sourceText: result.sourceText,
+          discoveryEventId: result.discoveryEventId,
           phase: "templates",
         });
       }
@@ -549,15 +548,61 @@ export default function UnifiedCreatePageClient() {
     setLocation(id, "source");
     void readSource();
   }, [intake?.id, ready, canCreatePage, restoring, phase]);
+  const openLiveCard = async (template: CreationTemplate) => {
+    const previous = current.current;
+    if (!previous || submitting.current) return;
+    if (previous.information) {
+      await openTemplate(template);
+      return;
+    }
+    const selected = previous.guess || previous.classification;
+    if (selected?.category !== "sports" || !previous.sourceText) return;
+    const controller = new AbortController(), version = ++epoch.current;
+    submitting.current = true;
+    request.current = controller;
+    preparingLiveCard.current = controller;
+    setPhase("opening");
+    setError("");
+    setWorkingLabel("Preparing your Live Card details…");
+    try {
+      // Alternate output preparation is explicit. Reuse the completed read and
+      // keep the original sports shell and source files available for recovery.
+      const response = await fetch("/api/create/extract", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", Accept: "application/x-ndjson" },
+        body: JSON.stringify({ sourceText: previous.sourceText, text: previous.source.text, category: customCategoryForGuess(selected) }),
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(285_000)]),
+      });
+      const result = await readCreateExtractionResponse(response, (stage) => {
+        if (version === epoch.current && !controller.signal.aborted && CREATE_EXTRACTION_STAGE_LABELS[stage])
+          setWorkingLabel(CREATE_EXTRACTION_STAGE_LABELS[stage]);
+      });
+      if (version !== epoch.current || controller.signal.aborted) return;
+      const information = normalizeCustomEventInformation(result.information);
+      if (!information || information.category !== customCategoryForGuess(selected))
+        throw new Error("Your Live Card details could not be prepared. Your event source is kept; please retry.");
+      const next = await persist({ ...previous, information: withCalendarDate(previous, information) });
+      if (version !== epoch.current || controller.signal.aborted) return;
+      await openTemplate(template, next, { version, controller });
+    } catch (failure) {
+      if (version === epoch.current && !controller.signal.aborted) {
+        setPhase("templates");
+        setError(failure instanceof Error ? failure.message : "Your Live Card details could not be prepared. Please retry.");
+      }
+    } finally {
+      if (preparingLiveCard.current === controller) preparingLiveCard.current = null;
+      if (request.current === controller) {
+        request.current = null;
+        submitting.current = false;
+      }
+    }
+  };
   const chooseCategory = async (selected: CreateGuess) => {
     if (!allowedCreationGuess(selected, allowedCategories)) return;
     if (phase === "templates" && current.current) {
       const previous = current.current,
         category = customCategoryForGuess(selected);
-      if (!previous.information && previous.source.kind !== "scratch") {
-        await readSource(undefined, selected);
-        return;
-      }
       const version = ++epoch.current;
       request.current?.abort();
       const changed =
@@ -579,6 +624,10 @@ export default function UnifiedCreatePageClient() {
       });
       if (version !== epoch.current || saved.ownerId !== activeOwner.current) return;
       setLocation(saved.id, "templates");
+      if (!saved.information && !saved.discoveryEventId && saved.source.kind !== "scratch") {
+        await readSource(undefined, selected);
+        return;
+      }
       if (saved.source.kind !== "scratch") {
         const template = defaultTemplateFor(saved, true);
         if (template) await openTemplate(template, saved);
@@ -626,23 +675,14 @@ export default function UnifiedCreatePageClient() {
           clientIntakeId: next.id,
           existingEventId: next.discoveryEventId,
           pageTemplateId: template.id,
+          onStage: (label) => {
+            if (version === epoch.current) setWorkingLabel(label);
+          },
           onEventId: async (id) => {
             if (version !== epoch.current) return;
             next = await persist({ ...next, discoveryEventId: id });
           },
-          onProgress: (value) => {
-            if (version === epoch.current)
-              setWorkingLabel(
-                sportDiscoveryStageLabel(
-                  value,
-                  next.source.kind === "url"
-                    ? "url"
-                    : next.source.kind === "text"
-                      ? "text"
-                      : "file",
-                ),
-              );
-          },
+          onProgress: () => {},
         });
         const target = new URL(href, window.location.origin);
         target.searchParams.set("intake", next.id);
@@ -677,10 +717,12 @@ export default function UnifiedCreatePageClient() {
     request.current?.abort();
     request.current = null;
     submitting.current = false;
+    // Reading can now prepare the sports shell before its response arrives.
+    // Cancel by the durable key even if its event ID has not reached this tab.
     const sportsImport =
-      phase === "opening" &&
-      previous?.guess?.category === "sports" &&
-      ["files", "url", "text"].includes(previous.source.kind);
+      !preparingLiveCard.current &&
+      (phase === "recognizing" || (phase === "opening" && previous?.guess?.category === "sports")) &&
+      !!previous && ["files", "url", "text"].includes(previous.source.kind);
     if (sportsImport && previous)
       await cancelSportDiscovery(previous.discoveryEventId || null, previous.id);
     if (previous) {
@@ -1454,14 +1496,14 @@ export default function UnifiedCreatePageClient() {
                       Keep uploaded design
                     </button>
                   ) : null}
-                  {information &&
+                  {(information || (guess.category === "sports" && !!intake?.sourceText)) &&
                   !signupIntent &&
                   access.access?.allowedProducts.includes("live_card") ? (
                     <button
                       type="button"
                       className={control}
                       onClick={() =>
-                        void openTemplate({
+                        void openLiveCard({
                           id: "live-card",
                           title: "Live Card",
                           imageUrl: "",

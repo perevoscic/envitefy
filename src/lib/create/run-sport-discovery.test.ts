@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import { cancelSportDiscovery, runSportDiscovery, sportDiscoveryBuilderHref, sportDiscoveryStageLabel } from "./run-sport-discovery";
+import { cancelSportDiscovery, runSportDiscovery, sportDiscoveryBuilderHref, sportDiscoveryProcessingStageLabel, sportDiscoveryStageLabel } from "./run-sport-discovery";
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });
 const json = (body: object, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -84,4 +84,52 @@ test("explicit cancellation uses the persistent intake key even before an event 
     return json({ accepted: true });
   }) as typeof fetch;
   await cancelSportDiscovery(null, "intake-pending-1");
+});
+
+test("a stored core draft opens the editor before optional enrichment finishes", async () => {
+  const stages: string[] = [];
+  let statusReads = 0;
+  globalThis.fetch = (async (input) => {
+    if (String(input).endsWith("/run")) return json({ accepted: true });
+    statusReads += 1;
+    return json({ draftReady: true, builderReady: false, processingStage: "enrich" });
+  }) as typeof fetch;
+  const href = await runSportDiscovery({ sport: "gymnastics", existingEventId: "core-ready", signal: new AbortController().signal, onEventId: () => {}, onProgress: () => {}, onStage: (label) => stages.push(label) });
+  expect(href).toContain("edit=core-ready");
+  expect(statusReads).toBe(1);
+  expect(stages).toEqual(["Resuming your import…", "Starting event processing…", "Finishing venue, parking and attendee details…", "Opening the editor…"]);
+});
+
+test("optional enrichment failure retains access to a ready draft", async () => {
+  globalThis.fetch = (async (input) => String(input).endsWith("/run") ? json({ accepted: true }) : json({ draftReady: true, builderReady: false, processingStage: "failed_enrich", errorCode: "provider_unavailable", errorMessage: "Optional lookup failed" })) as typeof fetch;
+  await expect(runSportDiscovery({ sport: "football", existingEventId: "core-ready", signal: new AbortController().signal, onEventId: () => {}, onProgress: () => {} })).resolves.toContain("edit=core-ready");
+});
+
+test("retained check and source storage report their real stage", async () => {
+  const stages: string[] = [];
+  globalThis.fetch = (async (input) => {
+    const url = String(input);
+    if (url.includes("intake?")) return json({ eventId: null });
+    if (url === "/api/discovery/intake") return json({ eventId: "new-event" });
+    if (url.endsWith("/run")) return json({ accepted: true });
+    return json({ draftReady: true, builderReady: false, processingStage: "enrich" });
+  }) as typeof fetch;
+  await runSportDiscovery({ sport: "gymnastics", clientIntakeId: "retained-source", text: "Meet details", signal: new AbortController().signal, onEventId: () => {}, onProgress: () => {}, onStage: (label) => stages.push(label) });
+  expect(stages.slice(0, 3)).toEqual(["Checking your retained import…", "Preparing and storing your source…", "Starting event processing…"]);
+  expect(sportDiscoveryProcessingStageLabel("parse")).toBe("Finding games, sessions and venues…");
+  expect(sportDiscoveryProcessingStageLabel("map")).toBe("Organizing dates, venues and links…");
+});
+
+test("the client timeout covers a stalled initial intake without cancelling the retained server import", async () => {
+  const calls: string[] = [];
+  const caller = new AbortController();
+  globalThis.fetch = ((input, init) => {
+    calls.push(String(input));
+    return new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
+    });
+  }) as typeof fetch;
+  await expect(runSportDiscovery({ sport: "gymnastics", clientIntakeId: "retained-source", text: "Meet details", timeoutMs: 5, signal: caller.signal, onEventId: () => {}, onProgress: () => {} })).rejects.toThrow("Retry to resume your existing import");
+  expect(caller.signal.aborted).toBe(false);
+  expect(calls).toEqual(["/api/discovery/intake?clientIntakeId=retained-source"]);
 });
