@@ -145,16 +145,23 @@ export function getTemplateLinks(
 
   const preferences = normalizeSportPreferences(sportPreferences);
   const primary = preferences.setupCompleted ? preferences.primarySport : null;
+  // Gymnastics leads the sports rows, ahead of Football.
+  const gymnastics = ALL_TEMPLATE_LINKS.find((link) => link.key === "gymnastics");
+  if (gymnastics && (primary === "gymnastics" || !visible || visible.has("gymnastics"))) {
+    standardLinks.push(gymnastics);
+  }
   const football = ALL_TEMPLATE_LINKS.find((link) => link.key === "football_season");
   if (football && (!visible || visible.has("football_season"))) standardLinks.push(football);
-  if (primary === "football" || (visible?.has("football_season") && !visible.has("sport_events") && !visible.has("gymnastics"))) {
+  if (
+    primary === "football" ||
+    primary === "gymnastics" ||
+    (visible && !visible.has("sport_events"))
+  ) {
     return standardLinks;
   }
-  const source = ALL_TEMPLATE_LINKS.find((link) =>
-    primary === "gymnastics" ? link.key === "gymnastics" : link.key === "sport_events",
-  );
+  const source = ALL_TEMPLATE_LINKS.find((link) => link.key === "sport_events");
   standardLinks.push({
-    key: primary === "gymnastics" ? "gymnastics" : "sport_events",
+    key: "sport_events",
     label: primary ? getSportCreationLabel(primary) : "Sports",
     href: primary ? buildSportCreationHref(primary) : "/event/sport-events",
     icon: source?.icon || "🏅",

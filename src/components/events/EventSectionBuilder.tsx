@@ -525,6 +525,9 @@ export function EventSectionPalette() {
         Add section
       </button>
       <div className={styles.paletteItems}>
+        <span className={styles.paletteLabel} aria-hidden="true">
+          On your page
+        </span>
         <ol className={styles.sectionList} aria-label="Page section order">
           {current.map((section, index) => (
             <li key={section.id}>
@@ -564,9 +567,18 @@ export function EventSectionPalette() {
             </li>
           ))}
         </ol>
-        {available.map((section) => (
-          <CatalogItem key={section.id} section={section} index={builder.entries.length} />
-        ))}
+        {available.length > 0 && (
+          <>
+            <span className={styles.paletteLabel} aria-hidden="true">
+              More sections
+            </span>
+            <div className={styles.catalogGrid}>
+              {available.map((section) => (
+                <CatalogItem key={section.id} section={section} index={builder.entries.length} />
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </section>
   );

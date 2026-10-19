@@ -10,7 +10,7 @@ import {
   useEventSectionBuilder,
 } from "./EventSectionBuilder";
 import EventPageLayoutPicker from "./EventPageLayoutPicker";
-import { useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { eventEditorActions } from "@/lib/event-editor";
 import type { EventPageEditorSession } from "./useEventPageEditor";
@@ -56,6 +56,23 @@ export function EventEditorActions({ editor }: { editor: EventPageEditorSession 
   );
 }
 
+type EventEditorTool = "sections" | "layout";
+type EventEditorTools = {
+  openTool: (tool: EventEditorTool) => void;
+  layout?: string;
+};
+const EventEditorToolsContext = createContext<EventEditorTools | null>(null);
+
+/** Lets an editor place Page sections and Layout inside its own menu instead of the default cards. */
+export function EventEditorToolsConsumer({
+  children,
+}: {
+  children: (tools: EventEditorTools) => ReactNode;
+}) {
+  const tools = useContext(EventEditorToolsContext);
+  return tools ? children(tools) : null;
+}
+
 /** The same mounted preview, editing panel and actions for every authored Event Page. */
 export default function EventEditorWorkspace({
   editor,
@@ -69,6 +86,7 @@ export default function EventEditorWorkspace({
   sectionEditors,
   artwork,
   title,
+  compositionMenu = "cards",
 }: {
   editor: EventPageEditorSession;
   preview: ReactNode;
@@ -82,9 +100,11 @@ export default function EventEditorWorkspace({
   sectionEditors?: Record<string, () => ReactNode>;
   artwork?: string;
   title?: string;
+  /** "inline" hides the default cards; the controls render them through EventEditorToolsConsumer. */
+  compositionMenu?: "cards" | "inline";
 }) {
   const nativeBuilder = useEventSectionBuilder();
-  const [tool, setTool] = useState<"sections" | "layout" | null>(null);
+  const [tool, setTool] = useState<EventEditorTool | null>(null);
   const renderSectionEditor = (id: string) => {
     if (sectionEditors?.[id]) return sectionEditors[id]();
     const alias = /travel|getting.here/i.test(id)
@@ -193,7 +213,7 @@ export default function EventEditorWorkspace({
             data-inline-header={inlineHeader}
             inert={editor.busy ? true : undefined}
           >
-            {editor.setComposition && sectionEditors && !tool && (
+            {editor.setComposition && sectionEditors && !tool && compositionMenu === "cards" && (
               <div className={styles.compositionMenu}>
                 <EventEditorMenuCard
                   title="Page sections"
@@ -227,7 +247,15 @@ export default function EventEditorWorkspace({
               </EventEditorSection>
             )}
             <div hidden={Boolean(tool)}>
-              {typeof controls === "function" ? controls(viewActions) : controls}
+              <EventEditorToolsContext.Provider
+                value={
+                  editor.setComposition && sectionEditors
+                    ? { openTool: setTool, layout: editor.composition?.layout }
+                    : null
+                }
+              >
+                {typeof controls === "function" ? controls(viewActions) : controls}
+              </EventEditorToolsContext.Provider>
             </div>
           </div>
         </aside>

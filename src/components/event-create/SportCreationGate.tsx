@@ -230,24 +230,20 @@ export default function SportCreationGate({
   return (
     <>
       {preferences.enabledSports.length > 1 || requestedWasDisabled ? (
-        <div className="sport-creation-notice border-b border-[#e7e2ef] bg-white/90 px-4 pb-3 pt-20 backdrop-blur sm:px-6 lg:py-3">
-          <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.17em] text-[#8a8294]">
-                Creating for
-              </p>
-              <p className="text-sm font-black text-[#2b2234]">
-                {getSportCreationLabel(activeSport)}
-              </p>
-            </div>
-            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+        <div className="sport-creation-notice border-b border-[#e7e2ef] bg-white/90 px-4 pb-2 pt-20 backdrop-blur sm:px-8 lg:px-12 lg:py-2">
+          <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <p className="text-sm text-[#6b6376]">
+              Creating for{" "}
+              <span className="font-bold text-[#2b2234]">{getSportCreationLabel(activeSport)}</span>
+            </p>
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-x-3 gap-y-2">
               {preferences.enabledSports.length > 1 ? (
-                <label className="flex min-w-0 items-center justify-between gap-2 text-xs font-bold text-[#665e70]">
-                  Switch sport
+                <label className="flex min-w-0 items-center gap-2 text-xs font-semibold text-[#665e70]">
+                  <span className="sr-only sm:not-sr-only">Switch sport</span>
                   <select
                     value={activeSport}
                     onChange={(event) => router.push(buildSportCreationHref(event.target.value))}
-                    className="min-h-11 min-w-0 rounded-xl border border-[#dcd5e7] bg-white px-3 py-2 text-base font-bold text-[#30283a] sm:text-sm"
+                    className="min-h-10 min-w-0 rounded-lg border border-[#dcd5e7] bg-white px-3 py-1.5 text-base font-semibold text-[#30283a] sm:text-sm"
                   >
                     {preferences.enabledSports.map((sport) => (
                       <option key={sport} value={sport}>

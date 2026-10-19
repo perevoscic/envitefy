@@ -36,6 +36,8 @@ type GymnasticsLauncherProps = {
   forwardQueryString?: string;
   defaultDateParam?: string;
   variant?: "page" | "panel";
+  panelTitle?: string;
+  panelDescription?: string;
 };
 
 type DiscoveryInput = { file?: File; url?: string };
@@ -105,6 +107,8 @@ export default function GymnasticsLauncher({
   forwardQueryString,
   defaultDateParam,
   variant = "page",
+  panelTitle = "Fill this page from your meet",
+  panelDescription = "Upload the meet packet or paste the organizer’s link. Every detail stays editable.",
 }: GymnasticsLauncherProps) {
   const router = useRouter();
   const requestedTemplateId = new URLSearchParams(forwardQueryString || "").get("templateId");
@@ -575,25 +579,32 @@ export default function GymnasticsLauncher({
 
   if (variant === "panel") {
     return (
-      <section aria-label="Import meet details" className="w-full rounded-2xl border border-violet-100 bg-violet-50/60 p-4 text-left">
-        <p className="text-sm font-semibold text-slate-800">Have your meet details already?</p>
-        <p className="mt-1 text-xs leading-5 text-slate-500">Fill this design from a packet or public meet link.</p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={discoveryBusy} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-semibold text-violet-700 hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50">
+      <section aria-label="Import meet details" className="w-full rounded-2xl bg-[linear-gradient(140deg,#2b2150_0%,#4a3a8a_100%)] p-4 text-left text-white shadow-[0_12px_30px_rgba(43,33,80,0.22)]">
+        <div className="flex items-start gap-3">
+          <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/12 text-white">
+            <WandSparkles className="h-[18px] w-[18px]" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[15px] font-semibold leading-5">{panelTitle}</p>
+            <p className="mt-1 text-[13px] leading-5 text-white/75">{panelDescription}</p>
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={discoveryBusy} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-[#2b2150] transition hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-50">
             <Upload className="h-4 w-4" aria-hidden="true" /> Upload packet
           </button>
-          <button type="button" onClick={() => setSelectedPath("url")} disabled={discoveryBusy} aria-expanded={selectedPath === "url"} aria-controls="gym-meet-import-url" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-semibold text-violet-700 hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50">
-            <Globe className="h-4 w-4" aria-hidden="true" /> Paste URL
+          <button type="button" onClick={() => setSelectedPath(selectedPath === "url" ? "upload" : "url")} disabled={discoveryBusy} aria-expanded={selectedPath === "url"} aria-controls="gym-meet-import-url" className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-50 ${selectedPath === "url" ? "border-white/60 bg-white/20" : "border-white/30 bg-white/10 hover:bg-white/15"}`}>
+            <Globe className="h-4 w-4" aria-hidden="true" /> Paste link
           </button>
         </div>
         <input ref={fileInputRef} type="file" aria-label="Meet packet" accept=".pdf,image/png,image/jpeg,image/jpg" className="hidden" onChange={(event) => { const file = event.target.files?.[0] || null; event.target.value = ""; void handleUploadPick(file); }} />
         {selectedPath === "url" ? (
-          <form id="gym-meet-import-url" className="mt-3 space-y-3" onSubmit={(event) => { event.preventDefault(); void handleUrlSync(); }}>
-            <label className="block text-xs font-semibold text-slate-600">
-              Public meet URL
-              <input type="url" value={meetUrl} onChange={(event) => setMeetUrl(event.target.value)} placeholder="https://meet-site.com/event" disabled={discoveryBusy} className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base font-normal text-slate-900 outline-none focus:ring-2 focus:ring-violet-400" />
+          <form id="gym-meet-import-url" className="mt-3 flex gap-2" onSubmit={(event) => { event.preventDefault(); void handleUrlSync(); }}>
+            <label className="min-w-0 flex-1">
+              <span className="sr-only">Public meet URL</span>
+              <input type="url" value={meetUrl} onChange={(event) => setMeetUrl(event.target.value)} placeholder="https://meet-site.com/event" disabled={discoveryBusy} className="min-h-11 w-full rounded-xl border-0 bg-white px-3 py-2 text-base text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-violet-300" />
             </label>
-            {!urlBusy ? <button type="submit" disabled={discoveryBusy} className="min-h-11 w-full rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50">Fill from this link</button> : null}
+            {!urlBusy ? <button type="submit" disabled={discoveryBusy} className="min-h-11 shrink-0 rounded-xl bg-[#a98bff] px-4 text-sm font-semibold text-[#1d1638] transition hover:bg-[#bba3ff] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-50">Import</button> : null}
           </form>
         ) : null}
         {discoveryBusy ? (
@@ -601,7 +612,7 @@ export default function GymnasticsLauncher({
             <DiscoveryProgressPanel cancelLabel={uploadBusy ? "Cancel upload" : "Cancel import"} label={uploadBusy ? uploadStageLabel : urlStageLabel} progress={uploadBusy ? uploadProgress : urlProgress} onCancel={cancelDiscovery} showDetails={false} theme={GYM_DISCOVERY_PROGRESS_THEME} />
           </div>
         ) : null}
-        {uploadFileName ? <p className="mt-2 truncate text-xs text-slate-500">{uploadFileName}</p> : null}
+        {uploadFileName ? <p className="mt-2 truncate text-xs text-white/70">{uploadFileName}</p> : null}
         {renderDiscoveryError(uploadError)}
         {renderDiscoveryError(urlError)}
       </section>

@@ -27,6 +27,7 @@ export default function EventDesignGallery<Design extends EventGalleryDesign>({
   getHref,
   renderPreview,
   onSelect,
+  customThemePlacement = "callout",
 }: {
   title: string;
   category: string;
@@ -35,6 +36,8 @@ export default function EventDesignGallery<Design extends EventGalleryDesign>({
   getHref: (design: Design) => string;
   renderPreview: (design: Design) => ReactNode;
   onSelect?: (event: MouseEvent<HTMLAnchorElement>, design: Design) => void;
+  /** "toolbar" puts a compact Create with Envitefy button beside the filters. */
+  customThemePlacement?: "callout" | "toolbar";
 }) {
   const seasonal = useSeasonalTemplates(designs);
   const [query, setQuery] = useState("");
@@ -50,7 +53,7 @@ export default function EventDesignGallery<Design extends EventGalleryDesign>({
   return (
     <main className={`${categoryGalleryPageClassName(category)} min-h-screen text-[#342d38]`}>
       {header}
-      <EventCustomThemeLauncher category={category} />
+      {customThemePlacement === "callout" && <EventCustomThemeLauncher category={category} />}
       <section aria-label="Filter designs" className="border-b border-[#e8dfe5] px-5 py-5 sm:px-8 lg:px-12">
         <div className="mx-auto max-w-[1500px]">
           <div className="grid min-w-0 grid-cols-2 gap-3 sm:flex sm:flex-row sm:flex-wrap">
@@ -66,6 +69,11 @@ export default function EventDesignGallery<Design extends EventGalleryDesign>({
                 {styles.map((option) => <option key={option}>{option}</option>)}
               </select>
             </label>
+            {customThemePlacement === "toolbar" && (
+              <div className="col-span-2 sm:ml-auto">
+                <EventCustomThemeLauncher category={category} compact />
+              </div>
+            )}
           </div>
         </div>
       </section>

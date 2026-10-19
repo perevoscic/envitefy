@@ -13,7 +13,13 @@ export default function GymnasticsDesignGallery() {
     <EventDesignGallery
       title="Gymnastics"
       category="gymnastics"
-      header={<GymnasticsGalleryHeader count={GYM_MEET_TEMPLATE_LIBRARY.length} />}
+      header={
+        <GymnasticsGalleryHeader
+          count={GYM_MEET_TEMPLATE_LIBRARY.length}
+          forwardQueryString={date ? new URLSearchParams({ d: date }).toString() : undefined}
+        />
+      }
+      customThemePlacement="toolbar"
       designs={GYM_MEET_TEMPLATE_LIBRARY}
       getHref={(design) => {
         const params = new URLSearchParams({ templateId: design.id });

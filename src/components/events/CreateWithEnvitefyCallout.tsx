@@ -19,17 +19,68 @@ export default function CreateWithEnvitefyCallout({
   category,
   onImport,
   busy = false,
+  compact = false,
 }: {
   onClick: () => void;
   category: CustomDesignCategory;
   onImport?: () => void;
   busy?: boolean;
+  /** A single toolbar button for galleries whose header already carries the primary actions. */
+  compact?: boolean;
 }) {
   const { status, update } = useSession();
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const canCreate = status === "authenticated" && !busy;
   const profile = getCategoryCustomDesignProfile(category);
+  const authModal = authOpen && (
+    <AuthModal
+      open
+      mode={authMode}
+      onModeChange={setAuthMode}
+      onClose={() => setAuthOpen(false)}
+      allowGoogleAuth={false}
+      description={`Sign in to generate your custom ${category === "signup-forms" ? "signup form" : "event page"}.`}
+      onAuthenticated={async () => {
+        await update();
+        setAuthOpen(false);
+        onClick();
+      }}
+    />
+  );
+  if (compact) {
+    return (
+      <div
+        data-custom-design-category={category}
+        style={categoryCustomDesignStyle(category)}
+        className="flex flex-wrap items-center gap-2"
+      >
+        <button
+          type="button"
+          onClick={onClick}
+          disabled={!canCreate}
+          title={profile.description}
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[var(--create-border)] bg-white px-5 text-sm font-semibold text-[var(--create-accent)] transition-colors enabled:hover:bg-[var(--create-background)] disabled:cursor-not-allowed disabled:text-[#9ca3af] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--create-accent)]"
+        >
+          <CategoryCustomDesignIcon category={category} className="h-4 w-4 shrink-0" />
+          Create with Envitefy
+        </button>
+        {status === "unauthenticated" && (
+          <button
+            type="button"
+            onClick={() => {
+              setAuthMode("login");
+              setAuthOpen(true);
+            }}
+            className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-[var(--create-accent)] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--create-accent)]"
+          >
+            Sign in to generate
+          </button>
+        )}
+        {authModal}
+      </div>
+    );
+  }
   return (
     <div
       data-custom-design-category={category}
@@ -74,21 +125,7 @@ export default function CreateWithEnvitefyCallout({
           </button>
         )}
       </div>
-      {authOpen && (
-        <AuthModal
-          open
-          mode={authMode}
-          onModeChange={setAuthMode}
-          onClose={() => setAuthOpen(false)}
-          allowGoogleAuth={false}
-          description={`Sign in to generate your custom ${category === "signup-forms" ? "signup form" : "event page"}.`}
-          onAuthenticated={async () => {
-            await update();
-            setAuthOpen(false);
-            onClick();
-          }}
-        />
-      )}
+      {authModal}
     </div>
   );
 }

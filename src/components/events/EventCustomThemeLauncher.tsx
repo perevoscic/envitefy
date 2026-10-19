@@ -16,9 +16,12 @@ class UploadSignInRequired extends Error {}
 export default function EventCustomThemeLauncher({
   category,
   contained = false,
+  compact = false,
 }: {
   category: string;
   contained?: boolean;
+  /** Render only the Create with Envitefy toolbar button, without the information upload. */
+  compact?: boolean;
 }) {
   const router = useRouter();
   const search = useSearchParams();
@@ -123,8 +126,8 @@ export default function EventCustomThemeLauncher({
   }, [status, authOpen]);
   if (!key) return null;
   return (
-    <div className={contained ? "my-4 sm:my-8" : "mx-auto max-w-[1500px] px-5 py-4 sm:px-8 sm:py-8 lg:px-12"}>
-      {!importing && <CreateWithEnvitefyCallout category={key} onClick={() => setOpen(true)} onImport={() => picker.current?.click()} />}
+    <div className={compact ? "min-w-0" : contained ? "my-4 sm:my-8" : "mx-auto max-w-[1500px] px-5 py-4 sm:px-8 sm:py-8 lg:px-12"}>
+      {!importing && <CreateWithEnvitefyCallout category={key} compact={compact} onClick={() => setOpen(true)} onImport={compact ? undefined : () => picker.current?.click()} />}
       <input ref={picker} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" aria-label="Upload event information images" onChange={(event) => { const files = Array.from(event.target.files || []); event.target.value = ""; void importInformation(files); }} />
       {importing && <div className="mt-4" aria-busy="true"><DesignGenerationProgress stage="generating" title="Creating your event page" description="Your event details, theme and artwork are coming together." statusText={stage} /><button type="button" className="mt-3 min-h-11 rounded-full border px-4 text-sm" onClick={() => request.current?.abort()}>Cancel</button></div>}
       {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
