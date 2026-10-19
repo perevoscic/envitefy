@@ -229,7 +229,14 @@ export default function SportCreationGate({
 
   return (
     <>
-      {preferences.enabledSports.length > 1 || requestedWasDisabled ? (
+      {surface === "gymnastics" ? (
+        requestedWasDisabled ? (
+          <p className="sport-creation-notice border-b border-amber-100 bg-amber-50 px-4 pb-2 pt-20 text-xs text-amber-900 sm:px-8 lg:px-12 lg:py-2">
+            {getSportCreationLabel(rejectedSport)} is not enabled for this account. We opened your
+            primary sport instead. Add it in Profile Settings if you manage it.
+          </p>
+        ) : null
+      ) : preferences.enabledSports.length > 1 || requestedWasDisabled ? (
         <div className="sport-creation-notice border-b border-[#e7e2ef] bg-white/90 px-4 pb-2 pt-20 backdrop-blur sm:px-8 lg:px-12 lg:py-2">
           <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <p className="text-sm text-[#6b6376]">
