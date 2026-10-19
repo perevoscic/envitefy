@@ -625,8 +625,17 @@ test("one Event Page editor protects saves and navigation across creation modes 
       if (width === 390) await viewActions.getByRole("button", { name: "Close settings", exact: true }).click();
       for (const [label, value] of Object.entries(wording)) await editWording(label, value);
       await editWording("Event title", `Gasparilla Classic ${width}`);
+      await editWording("Display date", "March 6–8, 2027");
+      await editWording("Venue", "Tampa Convention Center — East Hall");
+      await editWording("Address", "");
+      await preview.getByRole("button", { name: "Edit address", exact: true }).click();
+      await preview.getByLabel("Address", { exact: true }).fill("333 S Franklin St, Tampa, FL 33602");
+      await preview.getByRole("button", { name: "Done editing address", exact: true }).click();
       if (width === 390) await viewActions.getByRole("button", { name: "Page settings", exact: true }).click();
       assert.equal(await page.getByLabel("Event Title", { exact: true }).inputValue(), `Gasparilla Classic ${width}`, "inline wording and settings share canonical event data");
+      assert.equal(await page.getByLabel("Display Date", { exact: true }).inputValue(), "March 6–8, 2027");
+      assert.equal(await page.getByLabel("Venue", { exact: true }).inputValue(), "Tampa Convention Center — East Hall");
+      assert.equal(await page.getByLabel("Date", { exact: true }).inputValue(), "2026-11-06", "inline display wording keeps the explicit calendar date");
 
       // Wheel from inside the form must reach the final input above the save overlay.
       await gymControls.evaluate((element) => { element.scrollTop = 0; });
@@ -673,6 +682,8 @@ test("one Event Page editor protects saves and navigation across creation modes 
       assert.equal(gymSaved.gymnasticsTitleFont, "montserrat");
       assert.equal(gymSaved.heroImageSettings.positionY, 1);
       assert.equal(gymSaved.address, `333 S Franklin St, Tampa, FL 33602, Hall ${width}`);
+      assert.equal(gymSaved.venue, "Tampa Convention Center — East Hall");
+      assert.equal(gymSaved.customFields.meetDateRangeLabel, "March 6–8, 2027");
       assert.deepEqual(gymSaved.gymnasticsPageText, Object.fromEntries(Object.entries(wording).map(([label, value]) => [{ "Top-left label": "mastheadLeft", "Top-right label": "mastheadRight", "Welcome message": "invitation", Encouragement: "tagline", "Bottom-left label": "signoffLeft", "Bottom-right label": "signoffRight" }[label], value])));
       await page.goto(gymUrl);
       await gymControls.getByRole("button", { name: /^Design/ }).click();

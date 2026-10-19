@@ -372,6 +372,9 @@ export type GymMeetRenderModel = {
   address?: string;
   headerLocation?: string;
   dateLabel?: string;
+  authoredDateLabel?: string;
+  authoredVenue?: string;
+  authoredAddress?: string;
   timeLabel?: string;
   detailsText?: string;
   authoredTitle?: string;

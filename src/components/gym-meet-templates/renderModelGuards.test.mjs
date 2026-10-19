@@ -127,22 +127,22 @@ test("gymnastics renderers do not repeat header facts in a Meet Snapshot section
   }
 });
 
-test("hero address rendering falls back to parsed and map addresses when eventData.address is blank", () => {
+test("hero address rendering falls back only when its canonical address is missing", () => {
   const normalizeSource = readSource(
     "src/components/gym-meet-templates/normalizeGymMeetEventData.ts",
   );
 
   assert.match(
     normalizeSource,
-    /const resolvedAddress = collapseRepeatedDisplayText\(\s*eventData\?\.address \|\| parseResult\?\.address \|\| mapAddress\s*\);/,
-    "normalizeGymMeetEventData no longer falls back to parseResult.address/mapAddress",
+    /const resolvedAddress = collapseRepeatedDisplayText\(\s*authoredAddress \?\? \(parseResult\?\.address \|\| mapAddress\)\s*\);/,
+    "missing addresses retain parsed/map fallback while an explicit clear stays empty",
   );
 
   const sceneSource = readSource("src/components/gym-meet-templates/GymnasticsScene.tsx");
   assert.match(
     sceneSource,
-    /model\.address \|\| model\.mapAddress \|\| model\.headerLocation/,
-    "GymnasticsScene no longer falls back to mapAddress in the hero address line",
+    /model\.address \?\? model\.mapAddress \?\? model\.headerLocation/,
+    "GymnasticsScene must preserve an intentionally empty address",
   );
 });
 

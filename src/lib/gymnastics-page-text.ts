@@ -7,6 +7,9 @@ export const GYMNASTICS_PAGE_TEXT_LABELS = {
   signoffRight: "Bottom-right label",
   eventTitle: "Event title",
   eventDetails: "Event description",
+  eventDisplayDate: "Display date",
+  eventVenue: "Venue",
+  eventAddress: "Address",
   hostByline: "Host introduction",
   meetDay: "Meet day label",
   startingAt: "Start time label",
@@ -78,10 +81,13 @@ export function normalizeGymnasticsPageText(value: unknown): GymnasticsPageText 
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const result: GymnasticsPageText = {};
   for (const [key, text] of Object.entries(value)) {
-    // Titles stay in the canonical event title so calendars and saved cards agree.
+    // Event facts stay in their canonical fields, separate from decorative wording.
     if (
       key !== "eventTitle" &&
       key !== "eventDetails" &&
+      key !== "eventDisplayDate" &&
+      key !== "eventVenue" &&
+      key !== "eventAddress" &&
       isGymnasticsPageTextKey(key) &&
       typeof text === "string"
     ) {
@@ -89,4 +95,32 @@ export function normalizeGymnasticsPageText(value: unknown): GymnasticsPageText 
     }
   }
   return result;
+}
+
+type GymnasticsEditableData = {
+  title?: string;
+  details?: string;
+  venue?: string;
+  address?: string;
+  extra?: Record<string, unknown>;
+  gymnasticsPageText?: GymnasticsPageText;
+};
+
+/** Inline facts and sidebar inputs update the same event data. */
+export function applyGymnasticsPageTextChange<T extends GymnasticsEditableData>(
+  previous: T,
+  key: GymnasticsPageTextKey,
+  value: string | undefined,
+): T {
+  if (key === "eventTitle") return { ...previous, title: value ?? "" };
+  if (key === "eventDetails") return { ...previous, details: value ?? "" };
+  if (key === "eventVenue") return { ...previous, venue: value ?? "" };
+  if (key === "eventAddress") return { ...previous, address: value ?? "" };
+  if (key === "eventDisplayDate") {
+    return { ...previous, extra: { ...previous.extra, meetDateRangeLabel: value ?? "" } };
+  }
+  const gymnasticsPageText = normalizeGymnasticsPageText(previous.gymnasticsPageText);
+  if (value === undefined) delete gymnasticsPageText[key];
+  else gymnasticsPageText[key] = value;
+  return { ...previous, gymnasticsPageText };
 }

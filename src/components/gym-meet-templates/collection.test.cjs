@@ -123,6 +123,85 @@ test('selected title fonts survive explicit account saves and reloads across all
   }
 });
 
+test('hero fact values preserve canonical clears, missing-field fallbacks and latest discovery edits', () => {
+  const normalize = (eventData, mapAddress) => normalizeGymMeetEventData({
+    eventTitle: 'Meet', eventData, mapAddress, navItems: [], rosterAthletes: [],
+  });
+  const stale = {
+    createdVia: 'meet-discovery-v2', date: '2026-03-06', time: '09:00',
+    builderDraft: {
+      event: { venue: 'Old arena', address: '100 Old Street', customFields: { meetDateRangeLabel: 'March 6-8, 2026' } },
+      venue: { venue: 'Old arena', address: '100 Old Street' },
+    },
+    discoverySource: { parseResult: { address: '200 Parsed Street' } },
+  };
+  const latest = normalize({
+    ...stale, venue: 'New arena', address: '300 New Street',
+    customFields: { meetDateRangeLabel: 'March 7-9, 2027' },
+  }, '400 Map Street');
+  assert.equal(latest.authoredVenue, 'New arena');
+  assert.equal(latest.venue, 'New arena');
+  assert.equal(latest.authoredAddress, '300 New Street');
+  assert.equal(latest.address, '300 New Street');
+  assert.equal(latest.authoredDateLabel, 'March 7-9, 2027');
+  assert.equal(latest.dateLabel, 'March 7-9, 2027');
+  const cleared = normalize({ ...stale, venue: '', address: '', customFields: { meetDateRangeLabel: '' } }, '400 Map Street');
+  assert.equal(cleared.authoredVenue, '');
+  assert.equal(cleared.venue, '');
+  assert.equal(cleared.authoredAddress, '');
+  assert.equal(cleared.address, '');
+  assert.equal(cleared.mapAddress, '');
+  assert.equal(cleared.authoredDateLabel, '');
+  assert.match(cleared.dateLabel, /Mar 6, 2026/, 'clearing Display Date restores the calendar date');
+  const missing = normalize({ date: '2026-03-06', discoverySource: { parseResult: { address: '200 Parsed Street' } } }, '400 Map Street');
+  assert.equal(missing.authoredAddress, undefined);
+  assert.equal(missing.address, '200 Parsed Street');
+  assert.equal(normalize({}, '400 Map Street').address, '400 Map Street');
+  assert.equal(normalize({ extra: { meetDateRangeLabel: 'March 7-9, 2027' } }).authoredDateLabel, 'March 7-9, 2027', 'browser drafts retain the existing extra field');
+  assert.equal(stale.builderDraft.venue.address, '100 Old Street', 'normalization does not mutate saved discovery snapshots');
+  const p = props(designs[0]);
+  p.model = normalize({ venue: 'Main Arena Main Arena', address: '333 Franklin St, 333 Franklin St' });
+  assert.equal(p.model.authoredVenue, 'Main Arena Main Arena', 'editing retains the canonical input');
+  assert.equal(p.model.venue, 'Main Arena');
+  assert.equal(p.model.address, '333 Franklin St');
+  const guestFacts = renderToStaticMarkup(React.createElement(Renderer, p)).match(/<dl class="facts">[\s\S]*?<\/dl>/)[0];
+  assert.ok(!guestFacts.includes('Main Arena Main Arena'), 'guest facts retain duplicate-venue cleanup');
+  assert.ok(!guestFacts.includes('333 Franklin St, 333 Franklin St'), 'guest facts retain duplicate-address cleanup');
+  const editorFacts = renderToStaticMarkup(React.createElement(Renderer, { ...p, onPageTextChange: noAction }));
+  for (const label of ['display date', 'venue', 'address']) {
+    assert.ok(editorFacts.includes(`aria-label="Edit ${label}"`), `${label} has its own value editor`);
+  }
+  assert.ok(!guestFacts.includes('aria-label="Edit '), 'guests never receive fact editors');
+});
+
+test('hero fact edits survive explicit saves across all designs without moving calendar dates', () => {
+  for (const design of designs) {
+    const source = {
+      title: 'Spring club meet', pageTemplateId: design.id, createdVia: 'meet-discovery-v2',
+      date: '2026-03-06', time: '09:00', timezone: 'America/New_York',
+      venue: 'Tampa Convention Center, Hall B', address: '333 S Franklin St, Tampa, FL 33602',
+      customFields: { meetDateRangeLabel: 'March 7-9, 2027' },
+      builderDraft: {
+        event: { date: '2026-03-06', time: '09:00', customFields: { meetDateRangeLabel: 'March 6-8, 2026' } },
+        venue: { venue: 'Old arena', address: '100 Old Street' },
+      },
+    };
+    const before = JSON.parse(JSON.stringify(source));
+    const restored = JSON.parse(JSON.stringify(buildTemplateDraftPayload({ data: source }, 'gymnastics', source.timezone)));
+    assert.equal(restored.data.date, '2026-03-06', design.id);
+    assert.equal(restored.data.time, '09:00', design.id);
+    assert.equal(restored.data.startISO, '2026-03-06T14:00:00.000Z', `${design.id}: Display Date does not change calendar dates`);
+    const p = props(design);
+    p.model = normalizeGymMeetEventData({ eventTitle: restored.title, eventData: restored.data, navItems: [], rosterAthletes: [] });
+    assert.equal(p.model.authoredDateLabel, source.customFields.meetDateRangeLabel, design.id);
+    assert.equal(p.model.authoredVenue, source.venue, design.id);
+    assert.equal(p.model.authoredAddress, source.address, design.id);
+    const html = renderToStaticMarkup(React.createElement(Renderer, p));
+    for (const value of [source.customFields.meetDateRangeLabel, source.venue, source.address]) assert.ok(html.includes(value), `${design.id}: ${value}`);
+    assert.deepEqual(source, before, `${design.id}: rendering retains explicit calendar values`);
+  }
+});
+
 test('explicit draft snapshots retain image adjustments through public rendering for all designs', () => {
   for (const design of designs) {
     const appearance = { positionY: 15, fit: 'contain' };

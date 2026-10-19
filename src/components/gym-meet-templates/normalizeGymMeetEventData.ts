@@ -274,8 +274,24 @@ export const normalizeGymMeetEventData = ({
 }): GymMeetRenderModel => {
   const savedPageText = eventData?.gymnasticsPageText ?? eventData?.customFields?.gymnasticsPageText;
   const savedTitleFont = eventData?.gymnasticsTitleFont ?? eventData?.customFields?.gymnasticsTitleFont;
-  eventData = inflateGymDiscoveryV2EventData(eventData);
-  const customFields = eventData?.customFields || {};
+  const savedVenue = typeof eventData?.venue === "string" ? eventData.venue : undefined;
+  const savedAddress = typeof eventData?.address === "string" ? eventData.address : undefined;
+  const savedDateLabel = eventData?.customFields?.meetDateRangeLabel ?? eventData?.extra?.meetDateRangeLabel;
+  eventData = {
+    ...inflateGymDiscoveryV2EventData(eventData),
+    // Latest canonical edits, including clears, take priority over discovery snapshots.
+    ...(savedVenue !== undefined ? { venue: savedVenue } : {}),
+    ...(savedAddress !== undefined ? { address: savedAddress } : {}),
+  };
+  const customFields = {
+    ...(eventData?.customFields || {}),
+    ...(typeof savedDateLabel === "string" ? { meetDateRangeLabel: savedDateLabel } : {}),
+  };
+  const authoredDateLabel = typeof customFields.meetDateRangeLabel === "string"
+    ? customFields.meetDateRangeLabel
+    : undefined;
+  const authoredVenue = typeof eventData?.venue === "string" ? eventData.venue : undefined;
+  const authoredAddress = typeof eventData?.address === "string" ? eventData.address : undefined;
   const advancedSections = eventData?.advancedSections || customFields?.advancedSections || {};
   const meet = advancedSections?.meet || {};
   const practiceBlocks = Array.isArray(advancedSections?.practice?.blocks)
@@ -418,7 +434,7 @@ export const normalizeGymMeetEventData = ({
     ? stripDiscoveryGeneratedDetails(rawDiscoveryDetails)
     : rawDiscoveryDetails;
   const resolvedAddress = collapseRepeatedDisplayText(
-    eventData?.address || parseResult?.address || mapAddress
+    authoredAddress ?? (parseResult?.address || mapAddress)
   );
   const resolvedHeaderLocation = collapseRepeatedDisplayText(
     headerLocation || eventData?.location || eventData?.venue || resolvedAddress
@@ -463,6 +479,9 @@ export const normalizeGymMeetEventData = ({
     heroImageFilterEnabled: eventData?.heroImageFilterEnabled !== false,
     gymnasticsPageText: normalizeGymnasticsPageText(savedPageText ?? eventData?.gymnasticsPageText ?? customFields?.gymnasticsPageText),
     hostGym: collapseRepeatedDisplayText(sanitizeDisplayHostGym(eventData?.hostGym)),
+    authoredDateLabel,
+    authoredVenue,
+    authoredAddress,
     venue: collapseRepeatedDisplayText(eventData?.venue),
     address: resolvedAddress,
     headerLocation: resolvedHeaderLocation,
@@ -494,7 +513,7 @@ export const normalizeGymMeetEventData = ({
     announcements,
     rsvpEnabled: Boolean(eventData?.rsvpEnabled),
     rsvpDeadline: safeString(eventData?.rsvpDeadline),
-    mapAddress: safeString(mapAddress || resolvedAddress),
+    mapAddress: authoredAddress !== undefined ? resolvedAddress : safeString(mapAddress || resolvedAddress),
     venueFacts,
     spectatorNotes,
     rulesNotes,

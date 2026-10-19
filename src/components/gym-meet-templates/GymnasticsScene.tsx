@@ -38,7 +38,7 @@ export default function GymnasticsScene({
   onHeroImagePositionChange?: (positionY: number) => void;
   onPageTextChange?: GymnasticsPageTextChange;
 }) {
-  const address = model.address || model.mapAddress || model.headerLocation;
+  const address = model.address ?? model.mapAddress ?? model.headerLocation;
   const host = model.hostGym || model.team;
   const typography = getGymMeetTitleTypography(design.id);
   const imageSettings = normalizeHeroImageSettings(model.heroImageSettings);
@@ -135,10 +135,19 @@ export default function GymnasticsScene({
         </div>
 
         <dl className={styles.facts}>
-          {model.dateLabel ? (
+          {model.dateLabel || onPageTextChange ? (
             <div>
               <dt>{pageText("meetDay", "Meet day")}</dt>
-              <dd>{model.dateLabel}</dd>
+              <dd>
+                <InlineEditableText
+                  label="Display date"
+                  value={onPageTextChange ? model.authoredDateLabel || undefined : undefined}
+                  fallback={model.dateLabel || ""}
+                  maxLength={240}
+                  description="This is the date shown on the page. Change calendar dates and times in Page settings."
+                  onChange={onPageTextChange ? (value) => onPageTextChange("eventDisplayDate", value) : undefined}
+                />
+              </dd>
             </div>
           ) : null}
           {model.timeLabel ? (
@@ -147,12 +156,30 @@ export default function GymnasticsScene({
               <dd>{model.timeLabel}</dd>
             </div>
           ) : null}
-          {model.venue || address ? (
+          {model.venue || address || onPageTextChange ? (
             <div>
               <dt>{pageText("venueLabel", "The venue")}</dt>
-              <dd>{model.venue || address}</dd>
-              {model.venue && address && model.venue !== address ? (
-                <dd className={styles.address}>{address}</dd>
+              {model.venue || onPageTextChange ? (
+                <dd>
+                  <InlineEditableText
+                    label="Venue"
+                    value={onPageTextChange ? model.authoredVenue : undefined}
+                    fallback={model.venue || ""}
+                    maxLength={240}
+                    onChange={onPageTextChange ? (value) => onPageTextChange("eventVenue", value) : undefined}
+                  />
+                </dd>
+              ) : null}
+              {(address && model.venue !== address) || onPageTextChange ? (
+                <dd className={model.venue || onPageTextChange ? styles.address : undefined}>
+                  <InlineEditableText
+                    label="Address"
+                    value={onPageTextChange ? model.authoredAddress : undefined}
+                    fallback={address || ""}
+                    maxLength={400}
+                    onChange={onPageTextChange ? (value) => onPageTextChange("eventAddress", value) : undefined}
+                  />
+                </dd>
               ) : null}
             </div>
           ) : null}

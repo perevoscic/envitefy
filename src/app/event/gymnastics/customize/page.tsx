@@ -10,7 +10,7 @@ import { GYMNASTICS_SECTION_CATALOG, normalizeEventSectionLayout } from "@/lib/e
 
 import HeroImageEditor from "@/components/events/HeroImageEditor";
 import { DEFAULT_HERO_IMAGE_SETTINGS, normalizeHeroImageSettings } from "@/lib/hero-image-settings";
-import { normalizeGymnasticsPageText, type GymnasticsPageTextChange } from "@/lib/gymnastics-page-text";
+import { applyGymnasticsPageTextChange, normalizeGymnasticsPageText, type GymnasticsPageTextChange } from "@/lib/gymnastics-page-text";
 import { GYMNASTICS_TITLE_FONTS, normalizeGymnasticsTitleFont } from "@/lib/gymnastics-title-font";
 
 import FileUploadInput from "@/components/ui/FileUploadInput";
@@ -865,14 +865,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     } = useMobileDrawer(true, "event-actions", true);
     const [fullscreenPreviewOpen, setFullscreenPreviewOpen] = useState(false);
     const handlePageTextChange = useCallback<GymnasticsPageTextChange>((key, value) => {
-      setData((prev) => {
-        if (key === "eventTitle") return { ...prev, title: value ?? "" };
-        if (key === "eventDetails") return { ...prev, details: value ?? "" };
-        const gymnasticsPageText = normalizeGymnasticsPageText(prev.gymnasticsPageText);
-        if (value === undefined) delete gymnasticsPageText[key];
-        else gymnasticsPageText[key] = value;
-        return { ...prev, gymnasticsPageText };
-      });
+      setData((prev) => applyGymnasticsPageTextChange(prev, key, value));
     }, [setData]);
     const fullscreenPreviewRef = useRef<HTMLDialogElement>(null);
     const fullscreenMenuWasOpen = useRef(false);
@@ -1312,21 +1305,19 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               }
             }
           }
-          const resolvedDisplayDateLabel =
-            sanitizeDisplayDateLabel(effectiveExisting?.customFields?.meetDateRangeLabel) ||
-            sanitizeDisplayDateLabel(existingDiscoverySource?.parseResult?.dates);
+          const savedDisplayDateLabel = existing.customFields?.meetDateRangeLabel ??
+            existing.extra?.meetDateRangeLabel ?? effectiveExisting.customFields?.meetDateRangeLabel ??
+            effectiveExisting.extra?.meetDateRangeLabel;
+          const resolvedDisplayDateLabel = typeof savedDisplayDateLabel === "string"
+            ? sanitizeDisplayDateLabel(savedDisplayDateLabel)
+            : sanitizeDisplayDateLabel(existingDiscoverySource?.parseResult?.dates);
           const parseDatesLabel =
             resolvedDisplayDateLabel ||
             existingDiscoverySource?.parseResult?.dates ||
             effectiveExisting?.customFields?.meetDateRangeLabel;
           const parsedRange = parseDiscoveryDateRange(parseDatesLabel);
           const existingDateCandidate = normalizeIsoDate(effectiveExisting.date || loadedDate);
-          const resolvedDate =
-            parsedRange.start &&
-            (!existingDateCandidate ||
-              !isDateWithinRange(existingDateCandidate, parsedRange.start, parsedRange.end))
-              ? parsedRange.start
-              : existingDateCandidate || "";
+          const resolvedDate = existingDateCandidate || parsedRange.start || "";
           const isExistingDiscoveryEvent =
             isDiscoveryV2 ||
             existingCreatedVia === "meet-discovery" ||
@@ -1363,8 +1354,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               prev.hostGym,
             city: effectiveExisting.city || prev.city,
             state: effectiveExisting.state || prev.state,
-            address: effectiveExisting.address || prev.address,
-            venue: effectiveExisting.venue || effectiveExisting.location || prev.venue,
+            address: typeof existing.address === "string" ? existing.address :
+              effectiveExisting.address ?? existingDiscoverySource?.parseResult?.address ?? prev.address,
+            venue: typeof existing.venue === "string" ? existing.venue :
+              effectiveExisting.venue ?? effectiveExisting.location ?? prev.venue,
             details: editableDetails,
             hero: effectiveExisting.heroImage || effectiveExisting.hero || prev.hero,
             heroImageFilterEnabled: effectiveExisting.heroImageFilterEnabled !== false,
@@ -1737,9 +1730,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           endDate: data.endDate,
           guestPlanning: data.guestPlanning,
           timezone: data.timezone || undefined,
-          location: locationParts || undefined,
-          address: data.address || undefined,
-          venue: data.venue || undefined,
+          location: locationParts,
+          address: data.address,
+          venue: data.venue,
           hostGym: data.hostGym || undefined,
           city: data.city || undefined,
           state: data.state || undefined,
@@ -1784,9 +1777,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               : {}),
         },
         venue: {
-          location: locationParts || undefined,
-          address: data.address || undefined,
-          venue: data.venue || undefined,
+          location: locationParts,
+          address: data.address,
+          venue: data.venue,
           city: data.city || undefined,
           state: data.state || undefined,
         },
@@ -1856,9 +1849,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           endTime: data.endTime,
           endDate: data.endDate,
           guestPlanning: data.guestPlanning,
-          location: locationParts || undefined,
-          address: data.address || undefined,
-          venue: data.venue || undefined,
+          location: locationParts,
+          address: data.address,
+          venue: data.venue,
           timezone: data.timezone || undefined,
           hostGym: data.hostGym || undefined,
           city: data.city || undefined,
@@ -2774,9 +2767,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         endTime: data.endTime,
         endDate: data.endDate,
         guestPlanning: data.guestPlanning,
-        location: locationParts || undefined,
-        address: data.address || undefined,
-        venue: data.venue || undefined,
+        location: locationParts,
+        address: data.address,
+        venue: data.venue,
         timezone: data.timezone || undefined,
         hostGym: data.hostGym || undefined,
         city: data.city || undefined,
