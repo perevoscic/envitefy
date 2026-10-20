@@ -51,6 +51,8 @@ export default async function AdminDashboardPage() {
         description="A first-party view of Envitefy growth, event creation, share activity, Envitefy Create usage, and tracking readiness."
       />
 
+      <Link href="/admin/creation-access" className="inline-flex min-h-11 items-center rounded-lg border border-violet-200 bg-white px-4 text-sm font-semibold text-violet-700">Review creation access</Link>
+
       <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <AdminMetricCard
           label="Users"

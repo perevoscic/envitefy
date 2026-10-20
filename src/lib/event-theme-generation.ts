@@ -42,6 +42,8 @@ export type EventThemeRequest = {
   referenceImage?: string;
   // Fact sources for the planner only; these must never become artwork references.
   informationImages?: string[];
+  /** Readable source text, kept separate from host-authored corrections/design instructions. */
+  informationText?: string;
   referenceImageMode: "use" | "inspire";
 };
 export function parseEventThemeRequest(value: unknown): EventThemeRequest {
@@ -214,7 +216,7 @@ export async function generateEventTheme(
       throw new EventThemeRequestError("An event information file could not be read. Try another JPG, PNG or WebP.");
     }
   }));
-  if (input.mode === "information" && !informationImages.length)
+  if (input.mode === "information" && !informationImages.length && !input.informationText?.trim())
     throw new EventThemeRequestError("Choose an event information image first.");
   let reference: StudioResolvedSourceImage | undefined;
   if (input.referenceImage) {
@@ -243,6 +245,7 @@ export async function generateEventTheme(
     referenceDate: new Date().toISOString().slice(0, 10),
     category: CUSTOM_EVENT_CATEGORIES[input.category],
     request: input.prompt,
+    ...(input.informationText ? { sourceDocumentText: input.informationText } : {}),
     currentDesign: input.currentDesign,
     currentDetails: input.currentDetails,
     referenceMode: input.referenceImageMode,
@@ -303,8 +306,9 @@ ARTWORK: artworkPrompt under 2000 characters, describing the specific subject an
   )
     throw new Error("Invalid design response");
   if (!input.currentDetails) {
-    details.date = normalizeExtractedEventDate(details.date, input.prompt, details.timezone || undefined);
-    details.endDate = normalizeExtractedEventDate(details.endDate, input.prompt, details.timezone || undefined);
+    const dateSource = [input.informationText, input.prompt].filter(Boolean).join("\n\n");
+    details.date = normalizeExtractedEventDate(details.date, dateSource, details.timezone || undefined);
+    details.endDate = normalizeExtractedEventDate(details.endDate, dateSource, details.timezone || undefined);
     // Invalid map metadata cannot discard otherwise successfully extracted event facts.
     const usedSections = new Set<number>();
     for (const raw of Array.isArray(result.mapSources) ? result.mapSources.slice(0, 3) : []) {

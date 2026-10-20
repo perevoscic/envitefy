@@ -12,6 +12,7 @@ import {
 import {
   CUSTOM_EVENT_CATEGORIES,
   type CustomEventCategory,
+  type CustomEventInformation,
   type CustomEventPage,
   EVENT_DESIGN_PROMPT_LIMIT,
   EVENT_DESIGN_REFERENCE_LIMIT,
@@ -24,6 +25,7 @@ import DesignGenerationProgress from "@/app/live-cards/DesignGenerationProgress"
 export default function EventCustomThemeDialog({
   category,
   initialPage,
+  initialInformation,
   initialMessage,
   initialPrompt = "",
   onClose,
@@ -31,10 +33,11 @@ export default function EventCustomThemeDialog({
 }: {
   category: CustomEventCategory;
   initialPage?: CustomEventPage;
+  initialInformation?: CustomEventInformation;
   initialMessage?: string;
   initialPrompt?: string;
   onClose: () => void;
-  onUseDesign: (page: CustomEventPage) => void;
+  onUseDesign: (page: CustomEventPage) => void | Promise<void>;
 }) {
   const { status, update } = useSession();
   const profile = getCategoryCustomDesignProfile(category);
@@ -48,6 +51,7 @@ export default function EventCustomThemeDialog({
   const [history, setHistory] = useState<CustomEventPage[]>([]);
   const [preview, setPreview] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [applying, setApplying] = useState(false);
   const [reading, setReading] = useState(false);
   const [error, setError] = useState("");
   const [authOpen, setAuthOpen] = useState(false);
@@ -164,8 +168,8 @@ export default function EventCustomThemeDialog({
           informationImages: information.map((file) => file.dataUrl),
           referenceImage: reference?.dataUrl,
           referenceImageMode: referenceMode,
-          currentDesign: candidate?.design,
-          currentDetails: candidate?.details,
+          currentDesign: candidate?.design || initialInformation?.design,
+          currentDetails: candidate?.details || initialInformation?.details,
         }),
       });
       const result = await response.json();
@@ -180,7 +184,7 @@ export default function EventCustomThemeDialog({
         throw new Error("The design could not be read. Please try again.");
       if (controller.signal.aborted) return;
       if (candidate) setHistory((previous) => [...previous.slice(-2), candidate]);
-      setCandidate(candidate ? { ...next, details: candidate.details } : next);
+      setCandidate(candidate ? { ...next, details: candidate.details } : initialInformation ? { ...next, details: initialInformation.details } : next);
       setPreview(true);
       setPrompt("");
     } catch (failure) {
@@ -372,9 +376,17 @@ export default function EventCustomThemeDialog({
                   <button
                     className={styles.primary}
                     type="button"
-                    onClick={() => onUseDesign(candidate)}
+                    disabled={applying}
+                    onClick={async () => {
+                      if (applying) return;
+                      setApplying(true);
+                      setError("");
+                      try { await onUseDesign(candidate); }
+                      catch (failure) { setError(failure instanceof Error ? failure.message : "Your design could not be retained. Please retry."); }
+                      finally { setApplying(false); }
+                    }}
                   >
-                    Use this design
+                    {applying ? "Opening your design…" : "Use this design"}
                   </button>
                 </>
               ) : (

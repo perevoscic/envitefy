@@ -1,4 +1,5 @@
 import { attachDiscoveryFailureMetadata } from "@/lib/discovery/failure-summary";
+import { throwIfDiscoveryCancelled } from "@/lib/discovery/cancel";
 import { safeString } from "@/lib/discovery/shared";
 import type {
   DiscoveryDocument,
@@ -10,9 +11,17 @@ import {
   createDiscoveryPerformance,
   type DiscoverySourceInput,
   extractDiscoveryText,
+  enrichDiscoveryFileLayout,
+  needsDiscoveryFileLayout,
   isDiscoveryDebugArtifactsEnabled,
   resolveDiscoveryBudget,
 } from "@/lib/meet-discovery";
+
+export const discoveryExtractionDeps = {
+  hydrateDiscoveryFileInput,
+  extractDiscoveryText,
+  enrichDiscoveryFileLayout,
+};
 
 function sourceTypeFromInput(input: DiscoverySourceInput): "pdf" | "image" | "url" {
   if (input.type === "url") return "url";
@@ -23,7 +32,57 @@ export async function runDiscoveryExtractStage(
   discovery: EventDiscoveryRow,
   options?: { signal?: AbortSignal },
 ) {
+  throwIfDiscoveryCancelled(options?.signal);
+  // This document is written by intake only after verifying the server's source
+  // read. Browser-authored extracted text never selects this path.
+  const document = discovery.document;
+  if (document?.extractionMeta.sourceReadVersion === 1 &&
+      document.extractionMeta.reusedCreateSource === true &&
+      safeString(document.extractionMeta.extractedText).length >= 20) {
+    const hostNotes = safeString(discovery.source.text);
+    const extractedText = safeString(document.extractionMeta.extractedText) +
+      (hostNotes && !document.extractionMeta.hostNotesIncluded
+        ? `\n\nHOST-AUTHORED CORRECTIONS AND INSTRUCTIONS (factual corrections override source; visual styling stays out of guest wording):\n${hostNotes}`
+        : "");
+    const reused: DiscoveryDocument = {
+      ...document,
+      extractionMeta: { ...document.extractionMeta, extractedText, hostNotesIncluded: true },
+    };
+    return {
+      document: reused,
+      sourceInput: discovery.source,
+      debug: { extractionMeta: reused.extractionMeta, extractionPerformance: reused.extractionMeta.performance || createDiscoveryPerformance() },
+    };
+  }
   return runDiscoveryExtractStageWithMode(discovery, "core", options);
+}
+
+/** Retain the completed file read; only missing visual map evidence needs bytes. */
+export async function enrichDiscoveryFileDocument(
+  discovery: EventDiscoveryRow,
+  options?: { signal?: AbortSignal },
+): Promise<DiscoveryDocument> {
+  throwIfDiscoveryCancelled(options?.signal);
+  const document = discovery.document;
+  if (!document) throw new Error("Document extraction must complete before enrich.");
+  let sourceInput = discovery.source as DiscoverySourceInput;
+  const extractedText = safeString(document.extractionMeta.extractedText);
+  if (sourceInput.type !== "file" || !needsDiscoveryFileLayout(sourceInput, extractedText, document.extractionMeta as any)) return document;
+  if (!safeString(sourceInput.dataUrl)) {
+    const hydrated = await discoveryExtractionDeps.hydrateDiscoveryFileInput(discovery.eventId, sourceInput, null);
+    if (!hydrated.ok) throw new Error(hydrated.error);
+    sourceInput = hydrated.hydrated;
+  }
+  const existingPages = Array.isArray(document.extractionMeta.accommodationPageTexts)
+    ? document.extractionMeta.accommodationPageTexts as Array<{ pageNumber: number; text: string }>
+    : document.extractionMeta.sourceReadVersion === 1 ? document.pages : [];
+  const extractionMeta = await discoveryExtractionDeps.enrichDiscoveryFileLayout(sourceInput, extractedText, document.extractionMeta as any, {
+    signal: options?.signal,
+    budgetMs: resolveDiscoveryBudget("enrich", "file"),
+    performance: createDiscoveryPerformance(),
+    pageTexts: existingPages,
+  });
+  return { ...document, extractionMeta: { ...document.extractionMeta, ...extractionMeta } };
 }
 
 export async function runDiscoveryExtractStageWithMode(
@@ -33,7 +92,7 @@ export async function runDiscoveryExtractStageWithMode(
 ) {
   let sourceInput = discovery.source as DiscoverySourceInput;
   if (sourceInput.type === "file" && !safeString(sourceInput.dataUrl)) {
-    const hydrated = await hydrateDiscoveryFileInput(discovery.eventId, sourceInput, null);
+    const hydrated = await discoveryExtractionDeps.hydrateDiscoveryFileInput(discovery.eventId, sourceInput, null);
     if (!hydrated.ok) {
       throw new Error(hydrated.error);
     }
@@ -41,7 +100,7 @@ export async function runDiscoveryExtractStageWithMode(
   }
 
   const performance = createDiscoveryPerformance();
-  const extraction = await extractDiscoveryText(sourceInput, {
+  const extraction = await discoveryExtractionDeps.extractDiscoveryText(sourceInput, {
     workflow: discovery.workflow,
     mode,
     budgetMs: resolveDiscoveryBudget(mode, sourceInput.type),
@@ -49,6 +108,8 @@ export async function runDiscoveryExtractStageWithMode(
     performance,
     signal: options?.signal,
   });
+  const hostNotes = safeString(discovery.source.text);
+  if (hostNotes) extraction.extractedText += `\n\nHOST-AUTHORED CORRECTIONS AND INSTRUCTIONS (factual corrections override source; visual styling stays out of guest wording):\n${hostNotes}`;
 
   const rawPages = Array.isArray((extraction.extractionMeta as any)?.pages)
     ? ((extraction.extractionMeta as any).pages as Array<Record<string, any>>)

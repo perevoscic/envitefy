@@ -406,6 +406,7 @@ test("history POST requires authentication and returns same-owner retries withou
   let inserts = 0;
   let saved = null;
   const route = loadTs("src/app/api/history/route.ts", {
+    "@/lib/creation-access-server": { checkEventCreationAccess: async () => null },
     "next/server": {
       NextResponse: { json: (body, options) => json(body, options?.status || 200) },
     },
@@ -486,11 +487,69 @@ test("incomplete drafts retain canonical dates, timezone, and signup fields", ()
   assert.deepEqual(signup.data.signupForm.sections, [{ title: "Drivers", slots: [] }]);
 });
 
+test("gymnastics drafts preserve calendar-only ranges without adopting the browser's timezone", () => {
+  const { buildTemplateDraftPayload } = loadTs("src/lib/template-draft-payload.ts");
+  const fields = { title: "Gasparilla Classic", date: "2026-03-06", time: "", endDate: "2026-03-08", endTime: "", timezone: "America/New_York" };
+  const payload = buildTemplateDraftPayload({ data: fields }, "gymnastics", "America/Chicago");
+  assert.equal(payload.data.startISO, "2026-03-06");
+  assert.equal(payload.data.endISO, "2026-03-09", "the calendar end is exclusive; the editable final day remains March 8");
+  assert.equal(payload.data.endDate, "2026-03-08");
+  assert.equal(payload.data.allDay, true);
+  assert.equal(payload.data.gymnasticsDateVersion, 1);
+  assert.equal(payload.data.timezone, "America/New_York");
+  const unresolved = buildTemplateDraftPayload({ data: { ...fields, timezone: "" } }, "gymnastics", "America/Chicago");
+  assert.equal(unresolved.data.timezone, "", "an unresolved venue does not silently use the parent browser's zone");
+});
+
+test("imported gymnastics snapshots update inflated guest facts while preserving omitted source fields", async () => {
+  const { buildTemplateDraftPayload } = loadTs("src/lib/template-draft-payload.ts");
+  const { inflateGymDiscoveryV2EventData } = loadTs("src/lib/discovery/event-data.ts");
+  const event = { title: "Source meet", venue: "Source arena", address: "Source address", details: "Source instructions", description: "Source instructions", startISO: "2026-03-06", customFields: { retained: "Keep this field" } };
+  const advancedSections = { meet: { doorsOpen: "7 AM", judgingNotes: "Retained notes", operationalNotes: ["Source note"] }, logistics: { parking: "Retained parking" } };
+  const source = { input: { type: "file" }, parseResult: { dates: "March 6–8, 2026" } };
+  const existing = { id: draftId, title: event.title, revision: "existing-revision", data: {
+    ...event, advancedSections, createdVia: "meet-discovery-v2", discoverySource: source,
+    builderDraft: { event, venue: { venue: event.venue, address: event.address, neighborhood: "Retained neighborhood" }, advancedSections },
+    publicArtifacts: { pipelineVersion: "gym-public-v3", sections: {} }, pipelineSummary: { discoveryId: "source-discovery" },
+  } };
+  const snapshot = { data: { title: "Edited meet", venue: "Corrected arena", address: "", details: "", extra: { meetDateRangeLabel: "Custom wording" } }, advancedState: { meet: { doorsOpen: "", operationalNotes: [] } }, themeId: "host-theme" };
+  const current = { version: 1, id: draftId, eventId: draftId, eventRevision: existing.revision, category: "gymnastics", templateId: "airborne-atlas", updatedAt: Date.now(), snapshot, assets: {} };
+  let saved;
+  await handoff.saveTemplateDraftToAccount({ draft: current, payload: buildTemplateDraftPayload(snapshot, "gymnastics", "America/Chicago"), category: "gymnastics", templateId: current.templateId, status: "draft", authenticated: true, remoteMedia: {}, existing,
+    request: async (url, options) => {
+      assert.equal(options.method, "PATCH");
+      saved = JSON.parse(options.body);
+      assert.equal(saved.expectedRevision, existing.revision);
+      return json({ ...saved, id: draftId, revision: "saved-revision" });
+    },
+  });
+  const guest = inflateGymDiscoveryV2EventData(saved.data);
+  assert.equal(guest.title, "Edited meet");
+  assert.equal(guest.venue, "Corrected arena");
+  assert.equal(guest.location, "Corrected arena");
+  assert.equal(guest.address, "");
+  assert.equal(guest.details, "");
+  assert.equal(guest.description, "");
+  assert.equal(guest.startISO, "2026-03-06", "omitted snapshot dates retain the nested event date");
+  assert.equal(saved.data.startISO, guest.startISO, "the top-level calendar fact also retains an omitted date");
+  assert.equal(guest.neighborhood, "Retained neighborhood");
+  assert.equal(guest.customFields.retained, "Keep this field");
+  assert.equal(guest.customFields.meetDateRangeLabel, "Custom wording");
+  assert.equal(guest.themeId, "host-theme");
+  assert.equal(guest.advancedSections.meet.doorsOpen, "");
+  assert.deepEqual(guest.advancedSections.meet.operationalNotes, []);
+  assert.equal(guest.advancedSections.meet.judgingNotes, "Retained notes");
+  assert.equal(guest.advancedSections.logistics.parking, "Retained parking");
+  assert.deepEqual(saved.data.discoverySource, source);
+  assert.equal(existing.data.builderDraft.venue.address, "Source address", "save projection does not mutate loaded import metadata");
+});
+
 test("history updates require ownership, with explicit legacy intake claiming preserved", async () => {
   let userId = null;
   let saved = { id: draftId, user_id: "owner", title: "Private event", data: { status: "draft" } };
   let mutations = 0;
   const route = loadTs("src/app/api/history/[id]/route.ts", {
+    "@/lib/creation-access-server": { checkEventCreationAccess: async () => null },
     "@/lib/event-collaboration": {
       getEventPermissions: async (row, viewer) => ({ canEdit: Boolean(viewer && row.user_id === viewer), role: viewer && row.user_id === viewer ? "owner" : null }),
       saveCollaborativeEvent: async ({ patch }) => { mutations++; saved = { ...saved, data: { ...saved.data, ...patch } }; return saved; },

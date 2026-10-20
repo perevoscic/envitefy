@@ -12,7 +12,9 @@ import {
   insertEventDiscovery,
   insertEventHistory,
   updateEventHistoryData,
-  updateEventHistoryTitle,
+  prepareEventHistoryData,
+  query,
+  type EventHistoryRow,
 } from "@/lib/db";
 import {
   buildEmptyDiscoveryBuilderDraft,
@@ -24,6 +26,7 @@ import {
 } from "@/lib/discovery/shared";
 import type {
   DiscoveryBuilderDraft,
+  DiscoveryDocument,
   DiscoveryPipelineState,
   DiscoveryPublicArtifacts,
   DiscoverySourceRecord,
@@ -64,9 +67,10 @@ export function buildDiscoveryShellEventData(params: {
     startAt: null,
     endISO: null,
     endAt: null,
-    timezone: "America/Chicago",
+    timezone: params.workflow === "gymnastics" ? null : "America/Chicago",
     category: isFootball ? "sport_football_season" : isSports ? "sport_event" : "gymnastics",
-    status: "processing",
+    status: "draft",
+    draftStatus: "draft",
     createdVia: isFootball
       ? "football-discovery-v2"
       : isSports
@@ -102,14 +106,17 @@ export function buildDiscoveryShellEventData(params: {
 }
 
 export async function createDiscoveryShell(params: {
+  eventId?: string;
   userId: string | null;
   workflow: DiscoveryWorkflow;
   title: string;
   source: DiscoverySourceRecord;
   pipeline: DiscoveryPipelineState;
+  document?: DiscoveryDocument;
   pageTemplateId?: string | null;
 }) {
   const historyRow = await insertEventHistory({
+    clientDraftId: params.eventId,
     userId: params.userId,
     title: params.title,
     data: buildDiscoveryShellEventData({
@@ -123,12 +130,14 @@ export async function createDiscoveryShell(params: {
     }),
   });
   try {
+    const existing = await getEventDiscoveryByEventId(historyRow.id);
+    if (existing) return { eventId: historyRow.id, discoveryId: existing.id, historyRow, discoveryRow: existing, created: false };
     const discoveryRow = await insertEventDiscovery({
       eventId: historyRow.id,
       workflow: params.workflow,
       source: params.source,
       pipeline: params.pipeline,
-      document: null,
+      document: params.document || null,
       canonicalParse: null,
       enrichment: null,
       debug: null,
@@ -148,6 +157,7 @@ export async function createDiscoveryShell(params: {
       discoveryId: discoveryRow.id,
       historyRow,
       discoveryRow,
+      created: true,
     };
   } catch (error) {
     await deleteEventHistoryById(historyRow.id).catch(() => {});
@@ -193,11 +203,14 @@ export async function ensureDiscoveryForExistingEvent(eventId: string) {
   const row = await getEventHistoryById(eventId);
   if (!row) return null;
   const current = (row.data || {}) as Record<string, any>;
-  const source =
+  const rawSource =
     current?.discoverySource?.input && typeof current.discoverySource.input === "object"
       ? (current.discoverySource.input as DiscoverySourceRecord)
       : null;
-  if (!source?.type) return null;
+  if (!rawSource?.type) return null;
+  // History payloads are client-editable. Only authenticated intake can write
+  // a creation authorization stamp into the protected discovery record.
+  const { creationAuthorization: _untrustedStamp, ...source } = rawSource;
   const workflow = inferLegacyDiscoveryWorkflow(current);
   if (!workflow) return null;
   const pipeline = createDiscoveryPipelineState({
@@ -265,14 +278,19 @@ export async function persistDiscoveryEventSnapshot(params: {
   const gymPageTemplateId = params.workflow === "gymnastics"
     ? resolveGymDiscoveryTemplateSelection(safeString(current.pageTemplateId), safeString(params.pageTemplateId) || safeString(builderEvent.pageTemplateId))
     : null;
+  const snapshotDate = (provided: string | null | undefined, parsed: any, previous: any) =>
+    params.workflow === "gymnastics"
+      ? provided !== undefined ? provided : parsed !== undefined ? parsed : previous ?? null
+      : provided ?? parsed ?? previous ?? null;
   const nextData = {
     ...current,
     title: nextTitle,
-    startISO: params.startISO ?? builderEvent.startISO ?? current.startISO ?? null,
-    startAt: params.startISO ?? builderEvent.startISO ?? current.startAt ?? null,
-    endISO: params.endISO ?? builderEvent.endISO ?? current.endISO ?? null,
-    endAt: params.endISO ?? builderEvent.endISO ?? current.endAt ?? null,
-    timezone:
+    startISO: snapshotDate(params.startISO, builderEvent.startISO, current.startISO),
+    startAt: snapshotDate(params.startISO, builderEvent.startISO, current.startAt),
+    endISO: snapshotDate(params.endISO, builderEvent.endISO, current.endISO),
+    endAt: snapshotDate(params.endISO, builderEvent.endISO, current.endAt),
+    timezone: params.workflow === "gymnastics" ?
+      (params.timezone !== undefined ? params.timezone : builderEvent.timezone !== undefined ? builderEvent.timezone : current.timezone ?? null) :
       safeString(params.timezone) ||
       safeString(builderEvent.timezone) ||
       safeString(current.timezone) ||
@@ -282,7 +300,9 @@ export async function persistDiscoveryEventSnapshot(params: {
       : isSports
         ? safeString(builderEvent.category) || "sport_event"
         : "gymnastics",
-    status: params.status,
+    // Parsing prepares a private draft; only an explicit editor publication makes it public.
+    status: current.status === "published" || current.draftStatus === "published" ? "published" : current.status === "cancelled" ? "cancelled" : "draft",
+    draftStatus: current.status === "published" || current.draftStatus === "published" ? "published" : "draft",
     createdVia: isFootball
       ? "football-discovery-v2"
       : isSports
@@ -332,6 +352,13 @@ export async function persistDiscoveryEventSnapshot(params: {
       safeString(current.location),
     date: safeString(builderEvent.date) || safeString(current.date),
     time: safeString(builderEvent.time) || safeString(current.time),
+    ...(params.workflow === "gymnastics" ? {
+      time: typeof builderEvent.time === "string" ? builderEvent.time : safeString(current.time),
+      endDate: typeof builderEvent.endDate === "string" ? builderEvent.endDate : safeString(current.endDate),
+      endTime: typeof builderEvent.endTime === "string" ? builderEvent.endTime : safeString(current.endTime),
+      allDay: builderEvent.allDay ?? current.allDay,
+      gymnasticsDateVersion: builderEvent.gymnasticsDateVersion ?? current.gymnasticsDateVersion,
+    } : {}),
     details: safeString(builderEvent.details) || safeString(current.details) || "",
     customFields:
       builderEvent.customFields && typeof builderEvent.customFields === "object"
@@ -349,10 +376,16 @@ export async function persistDiscoveryEventSnapshot(params: {
     hostGym: safeString(builderEvent.hostGym) || safeString(current.hostGym) || "",
     ...(params.eventDataPatch || {}),
   };
-  const updated = await updateEventHistoryData(params.eventId, await storePublicEventMedia(nextData, params.eventId));
-  if (nextTitle && nextTitle !== row.title) {
-    await updateEventHistoryTitle(params.eventId, nextTitle);
-  }
+  const explicitlyEdited = Boolean(current.manualEditor || current.templateEditor);
+  const prepared = prepareEventHistoryData(explicitlyEdited
+    ? { ...current, pipelineSummary: nextData.pipelineSummary }
+    : await storePublicEventMedia(nextData, params.eventId));
+  // A cancelled import or concurrent explicit editor save must win over a slow worker.
+  const result = await query<EventHistoryRow>(`UPDATE event_history SET data=$2::jsonb,title=$4
+    WHERE id=$1 AND data=$3::jsonb
+      AND NOT EXISTS (SELECT 1 FROM event_discovery_controls c WHERE c.event_id=$1::text AND c.cancel_requested_at IS NOT NULL)
+    RETURNING id,user_id,title,data,public_slug,created_at`, [params.eventId, JSON.stringify(prepared), JSON.stringify(current), explicitlyEdited ? row.title : nextTitle || row.title]);
+  const updated = result.rows[0] || null;
   if (row.user_id) {
     invalidateUserHistory(row.user_id);
     invalidateUserDashboard(row.user_id);

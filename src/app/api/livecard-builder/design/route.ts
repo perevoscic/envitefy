@@ -1,3 +1,6 @@
+import { getAuthenticatedRequestUser } from "@/lib/auth";
+import { checkCreationAccess } from "@/lib/creation-access-server";
+import { liveCardCreationCategories } from "@/lib/creation-access";
 import { NextResponse } from "next/server";
 import { builderApiAccess } from "@/lib/livecard-api-access";
 import { readLiveCardForm, validateLiveCard } from "@/lib/livecard-builder";
@@ -19,6 +22,11 @@ export async function POST(request: Request) {
       { error: "Choose an event type and describe how you would like your invitation to look." },
       { status: 400 },
     );
+  const accessUser = await getAuthenticatedRequestUser(request);
+  if (!accessUser.ok) return NextResponse.json({ error: "Sign in to create artwork." }, { status: 401 });
+  const accessRaw = input as Record<string, unknown>;
+  const creationDenied = await checkCreationAccess(accessUser.userId, { product: "live_card", ...(typeof accessRaw?.eventId === "string" ? { eventId: accessRaw.eventId } : { categories: liveCardCreationCategories(form) }) });
+  if (creationDenied) return creationDenied;
   if (request.headers.get("accept")?.includes("application/x-ndjson")) {
     const encoder = new TextEncoder();
     const controller = new AbortController();

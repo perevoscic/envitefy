@@ -4,6 +4,9 @@ import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { getEventDiscoveryStatusByEventId, getEventHistoryOwnerById } from "@/lib/db";
 import { buildDiscoveryStatusResponse } from "@/lib/discovery/status";
 import { ensureDiscoveryForExistingEvent } from "@/lib/discovery/persist";
+import { isDiscoveryCancellationRequested } from "@/lib/discovery/intake-recovery";
+import { getEventPermissions } from "@/lib/event-collaboration";
+import { getEventHistoryById } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +19,9 @@ export async function GET(_request: Request, context: { params: Promise<{ eventI
   const { eventId } = await context.params;
   const historyRow = await getEventHistoryOwnerById(eventId);
   if (!historyRow) return NextResponse.json({ error: "Event not found" }, { status: 404 });
-  if (historyRow.user_id && historyRow.user_id !== userId) {
+  const fullRow = historyRow.user_id && historyRow.user_id !== userId ? await getEventHistoryById(eventId) : null;
+  const canRead = historyRow.user_id === userId || Boolean(fullRow && (await getEventPermissions(fullRow, userId)).canEdit);
+  if (!canRead) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -43,5 +48,7 @@ export async function GET(_request: Request, context: { params: Promise<{ eventI
     );
   }
 
-  return NextResponse.json(buildDiscoveryStatusResponse(discovery));
+  const status = buildDiscoveryStatusResponse(discovery);
+  if (await isDiscoveryCancellationRequested(eventId)) return NextResponse.json({ ...status, draftReady: false, builderReady: false, errorCode: "cancelled", errorMessage: "This import was cancelled." });
+  return NextResponse.json(status);
 }

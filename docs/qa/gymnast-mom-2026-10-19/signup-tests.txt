@@ -1,0 +1,58 @@
+✔ signup-source route validates the source and sets the signup cookie (0.632917ms)
+✔ signup route requires a reCAPTCHA token in production when verification is configured (0.191083ms)
+✔ signup form primes the signup-source cookie before email and Google signup (0.862833ms)
+✔ recaptcha hook uses Google's public readiness and execution APIs (0.352ms)
+✔ shared recaptcha verifier also skips by default in development (0.121416ms)
+✔ intake stamps only the authenticated server-authorized category and ignores forged request authorization (45.629834ms)
+✔ each worker stage reloads authoritative source authorization before further paid work (4.49275ms)
+✔ run endpoint returns an actionable denial without dispatching a revoked new import (4.142709ms)
+✔ the response lifecycle waits for the actual background worker Promise (2.971542ms)
+✔ run registers paid background processing with the server response lifecycle (2.671834ms)
+[signup] Request received {
+  email: 'test@example.test',
+  hasToken: false,
+  tokenLength: 0,
+  hasSecretKey: false,
+  requestedSignupSource: 'snap',
+  cookieSignupSource: 'football',
+  requestedSignupIntent: 'football',
+  cookieSignupIntent: 'football'
+}
+[signup] Skipping reCAPTCHA verification { reason: 'no secret key' }
+[signup] Request received {
+  email: 'test@example.test',
+  hasToken: false,
+  tokenLength: 0,
+  hasSecretKey: false,
+  requestedSignupSource: 'snap',
+  cookieSignupSource: 'signup_forms',
+  requestedSignupIntent: 'signup_forms',
+  cookieSignupIntent: 'signup_forms'
+}
+[signup] Skipping reCAPTCHA verification { reason: 'no secret key' }
+✔ sports category signup enables just that sport, with Snap, Upload and sign-up forms intact (1.036208ms)
+✔ landing context survives galleries and generic signup; an explicit new category wins (0.141ms)
+✔ sign-up form acquisition defaults to the gallery without unrelated event categories (0.157542ms)
+✔ create menus show only the selected sport and let settings add more categories (34.846209ms)
+✔ Create Event offers sign-up forms alongside enabled categories and respects the preferred order (29.936958ms)
+✔ sign-up galleries and editors keep Create Event active without classifying published forms as creation (19.571458ms)
+✔ General Events opens the template gallery and stays active in the editor (20.314583ms)
+✔ General Events sits directly below Sign-up Form without bypassing category preferences (18.397542ms)
+✔ preference loading and failed refreshes do not reveal unrelated creation categories (33.762709ms)
+✔ signup-source primes category cookies for Google and generic forms and rejects invalid intent (11.441042ms)
+✔ email signup forwards football and original path into account creation (5.617542ms)
+✔ email signup forwards signup_forms and original path into account creation (3.99975ms)
+✔ middleware records visits, but ignores prefetches and signed-in browsing (13.933ms)
+✔ Google signup preserves football defaults, while existing accounts remain unchanged (18.28175ms)
+✔ Google signup preserves signup_forms defaults, while existing accounts remain unchanged (10.772375ms)
+✔ Next matcher excludes public prefetches without bypassing protected routes (92.976417ms)
+✔ both account inserts persist category preferences atomically with the new user (16.374291ms)
+✔ football landing uses shared navigation and a real WebP hero (4.49475ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 550.445333

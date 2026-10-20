@@ -5,6 +5,7 @@ import React from "react";
 import type { EventGuestPlanning } from "@/lib/event-guest-planning";
 import type { HeroImageSettings } from "@/lib/hero-image-settings";
 import type { GymnasticsPageText, GymnasticsPageTextChange } from "@/lib/gymnastics-page-text";
+import type { GymnasticsTitleFont } from "@/lib/gymnastics-title-font";
 
 export type GymMeetTemplateId =
   | "airborne-atlas"
@@ -361,6 +362,7 @@ export type GymMeetRenderModel = {
   pageTemplateId: GymMeetTemplateId;
   title: string;
   titleSize: GymMeetTitleSize;
+  gymnasticsTitleFont?: GymnasticsTitleFont | "";
   heroImage?: string;
   heroImageFilterEnabled?: boolean;
   heroImageSettings?: HeroImageSettings;
@@ -370,6 +372,9 @@ export type GymMeetRenderModel = {
   address?: string;
   headerLocation?: string;
   dateLabel?: string;
+  authoredDateLabel?: string;
+  authoredVenue?: string;
+  authoredAddress?: string;
   timeLabel?: string;
   detailsText?: string;
   authoredTitle?: string;

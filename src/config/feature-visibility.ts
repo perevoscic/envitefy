@@ -20,6 +20,7 @@ export type TemplateKey =
   | "weddings"
   | "anniversaries"
   | "baby_showers"
+  | "bridal_showers"
   | "gender_reveal"
   | "appointments"
   | "football_season"
@@ -60,6 +61,7 @@ export const ENABLED_TEMPLATE_KEYS: TemplateKey[] = [
   "weddings",
   "anniversaries",
   "baby_showers",
+  "bridal_showers",
   "gender_reveal",
   "sport_events",
   "gymnastics",
@@ -96,6 +98,13 @@ const ALL_TEMPLATE_DEFINITIONS: TemplateDef[] = [
     label: "Baby Showers",
     href: "/event/baby-showers",
     icon: "🍼",
+    section: "milestones",
+  },
+  {
+    key: "bridal_showers",
+    label: "Bridal Showers",
+    href: "/event/baby-showers/customize?occasion=bridal-shower",
+    icon: "💐",
     section: "milestones",
   },
   {
@@ -289,8 +298,8 @@ export function normalizeTemplateKeys(keys: unknown): TemplateKey[] {
   return out;
 }
 
-// Anniversaries used to live inside Birthdays. Expand older saved preferences
-// once; version 3 preserves an explicit choice to hide the new category.
+// Previously combined categories retain their old visibility until the account
+// explicitly saves independent preferences (anniversaries v3, bridal showers v4).
 export function migrateAnniversaryTemplateKeys(keys: unknown, version: unknown): TemplateKey[] {
   const normalized = normalizeTemplateKeys(keys);
   if (
@@ -299,6 +308,9 @@ export function migrateAnniversaryTemplateKeys(keys: unknown, version: unknown):
     !normalized.includes("anniversaries")
   ) {
     normalized.push("anniversaries");
+  }
+  if (!(typeof version === "number" && version >= 4) && normalized.includes("baby_showers") && !normalized.includes("bridal_showers")) {
+    normalized.push("bridal_showers");
   }
   return normalized;
 }
@@ -407,6 +419,7 @@ export function mapEventCategoryKeyToTemplateKey(
     weddings: "weddings",
     anniversaries: "anniversaries",
     baby_showers: "baby_showers",
+    bridal_showers: "bridal_showers",
     gender_reveal: "gender_reveal",
     appointments: "appointments",
     sport_events: "sport_events",
@@ -428,6 +441,7 @@ export function inferTemplateKeyFromEventData(input: {
   if (text.includes("birthday")) return "birthdays";
   if (text.includes("wedding")) return "weddings";
   if (text.includes("baby shower")) return "baby_showers";
+  if (text.includes("bridal shower")) return "bridal_showers";
   if (text.includes("gender reveal")) return "gender_reveal";
   if (text.includes("doctor") || text.includes("appointment")) return "appointments";
   if (text.includes("football")) return "football_season";

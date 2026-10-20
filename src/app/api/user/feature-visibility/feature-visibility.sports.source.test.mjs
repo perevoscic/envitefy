@@ -18,10 +18,11 @@ test("feature visibility preserves unrelated JSON metadata and exposes sport set
   assert.match(api, /\[sports-preferences\] updated/);
 });
 
-test("the shared setup gate prioritizes a valid URL sport and never auto-enables disabled sports", () => {
+test("the shared setup gate preserves explicit sport intent and requires loaded, allowed access before saving", () => {
   const gate = readSource("src/components/event-create/SportCreationGate.tsx");
   assert.match(gate, /explicitSport\s*\? \{ sport: explicitSport, source: "url" as const \}/);
-  assert.match(gate, /preferences\.enabledSports\.includes\(explicitSport\)/);
-  assert.match(gate, /is not enabled for this account/);
+  assert.match(gate, /const activeSport = explicitSport \|\|/);
+  assert.match(gate, /!sport \|\| !allowedSport\(sport\) \|\| !visibility\.hasLoadedPreferences/);
+  assert.match(gate, /new URLSearchParams\(queryString\)/);
   assert.match(gate, /href="\/settings#your-sports"/);
 });

@@ -14,6 +14,8 @@ describe("gymnastics template selection through discovery", () => {
 });
 
 let storedEvent = { id: "test-meet", title: "Test meet", user_id: null, data: {} };
+let concurrentSave = false;
+let cancelled = false;
 mock.module("@/lib/db", () => ({
   getEventHistoryById: async () => storedEvent,
   updateEventHistoryData: async (_id, data) => { storedEvent = { ...storedEvent, data }; return storedEvent; },
@@ -22,6 +24,12 @@ mock.module("@/lib/db", () => ({
   insertEventDiscovery: async () => ({ id: "test-discovery" }),
   getEventDiscoveryByEventId: async () => null,
   deleteEventHistoryById: async () => {},
+  prepareEventHistoryData: (data) => data,
+  query: async (_sql, [_id, data, expected, title]) => {
+    if (concurrentSave || cancelled || JSON.stringify(storedEvent.data) !== expected) return { rows: [] };
+    storedEvent = { ...storedEvent, title, data: JSON.parse(data) };
+    return { rows: [storedEvent] };
+  },
 }));
 
 const { createDiscoveryShell, persistDiscoveryEventSnapshot } = await import("./persist");
@@ -34,6 +42,8 @@ test("intake shell, parsed draft, and enrichment retain the selected design in s
     source: { type: "url", url: "https://example.com/meet", createdAt: "2028-09-21", updatedAt: "2028-09-21" },
   });
   expect(storedEvent.data.pageTemplateId).toBe("neon-runway");
+  expect(storedEvent.data.status).toBe("draft");
+  expect(storedEvent.data.draftStatus).toBe("draft");
   const parsedDraft = buildEmptyGymBuilderDraft();
   parsedDraft.event.pageTemplateId = "airborne-atlas";
   const snapshot = {
@@ -49,4 +59,23 @@ test("intake shell, parsed draft, and enrichment retain the selected design in s
   await persistDiscoveryEventSnapshot(snapshot);
   expect(storedEvent.data.pageTemplateId).toBe("petal-poise");
   expect(storedEvent.data.builderDraft.event.pageTemplateId).toBe("petal-poise");
+});
+
+test("slow enrichment cannot overwrite an explicit editor save or cancellation", async () => {
+  const original = { ...storedEvent, data: { ...storedEvent.data, manualEditor: { snapshot: { data: { title: "Host edited title" } } }, title: "Host edited title", venue: "Host venue", status: "published", draftStatus: "published" } };
+  storedEvent = original;
+  const snapshot = { workflow: "gymnastics", eventId: storedEvent.id, title: "Old extracted title", discoveryId: "test-discovery", status: "review_ready", pipeline: createDiscoveryPipelineState(), builderDraft: buildEmptyGymBuilderDraft(), publicArtifacts: buildEmptyGymPublicArtifacts("Old title") };
+  await persistDiscoveryEventSnapshot(snapshot);
+  expect(storedEvent.data.title).toBe("Host edited title");
+  expect(storedEvent.data.venue).toBe("Host venue");
+  expect(storedEvent.data.status).toBe("published");
+  concurrentSave = true;
+  const unchanged = JSON.stringify(storedEvent);
+  await persistDiscoveryEventSnapshot(snapshot);
+  expect(JSON.stringify(storedEvent)).toBe(unchanged);
+  concurrentSave = false;
+  cancelled = true;
+  await persistDiscoveryEventSnapshot(snapshot);
+  expect(JSON.stringify(storedEvent)).toBe(unchanged);
+  cancelled = false;
 });

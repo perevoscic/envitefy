@@ -1,3 +1,4 @@
+import { checkEventCreationAccess } from "@/lib/creation-access-server";
 import { updateSignupDefinition, SignupMutationError } from "@/lib/signup-mutations";
 import { isEventDraft } from "@/lib/event-draft-access";
 import { isClientDraftId } from "@/lib/event-draft-access";
@@ -139,7 +140,11 @@ async function getHistory(req: Request) {
     }
 
     if (viewRaw?.trim().toLowerCase() === "cards") {
-      const page = await listHistoryCardPage(userId, limit, cardCursor);
+      const page = await listHistoryCardPage(userId, limit, cardCursor, {
+        kind: url.searchParams.get("kind"),
+        relation: url.searchParams.get("relation"),
+        search: url.searchParams.get("q") || "",
+      });
       return NextResponse.json(page, { headers: { "Cache-Control": "private, no-store" } });
     }
 
@@ -373,6 +378,8 @@ export async function POST(req: Request) {
     const rawTitle = (body.title as string) || "Event";
     const title = String(rawTitle).slice(0, 300);
     const data = body.data ?? {};
+    const creationDenied = await checkEventCreationAccess(userId, data);
+    if (creationDenied) return creationDenied;
     const dataJson = JSON.stringify(data);
     const dataPayloadBytes = Buffer.byteLength(dataJson, "utf8");
     if (data && typeof data === "object" && "accessControl" in data) {

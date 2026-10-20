@@ -1,3 +1,4 @@
+import { checkCreationAccess } from "@/lib/creation-access-server";
 import { randomUUID } from "node:crypto";
 import { parseEventDates } from "@/lib/event-date-parser";
 import { getServerSession } from "next-auth";
@@ -441,6 +442,8 @@ export async function POST(request: Request) {
         { status: 410 },
       );
     }
+    const accessUser = await resolveSessionUserId(await getServerSession(authOptions));
+    if (accessUser) { const denied = await checkCreationAccess(accessUser, { product: "snap" }); if (denied) return denied; }
     return await handleLegacyIngest(request);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

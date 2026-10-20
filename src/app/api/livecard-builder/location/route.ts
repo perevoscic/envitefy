@@ -1,3 +1,5 @@
+import { getAuthenticatedRequestUser } from "@/lib/auth";
+import { checkCreationAccess } from "@/lib/creation-access-server";
 import { NextResponse } from "next/server";
 import { builderApiAccess } from "@/lib/livecard-api-access";
 import { searchBuilderLocation } from "@/lib/livecard-location-server";
@@ -11,6 +13,10 @@ export async function POST(request: Request) {
   if (!raw || typeof raw !== "object")
     return NextResponse.json({ error: "Enter a venue or address." }, { status: 400 });
   const body = raw as Record<string, unknown>;
+  const accessUser = await getAuthenticatedRequestUser(request);
+  if (!accessUser.ok) return NextResponse.json({ error: "Sign in to continue." }, { status: 401 });
+  const creationDenied = await checkCreationAccess(accessUser.userId, { product: "live_card", eventId: typeof body.eventId === "string" ? body.eventId : null });
+  if (creationDenied) return creationDenied;
   const value = (key: string) =>
     typeof body[key] === "string" ? body[key].slice(0, 500).trim() : "";
   try {

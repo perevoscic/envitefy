@@ -1,0 +1,317 @@
+- region "Event page preview panel":
+  - button "Share event":
+    - generic: Share
+  - button "Add to calendar":
+    - generic: Add to calendar
+  - button "Preview event":
+    - generic: Preview
+  - generic: Gymnastics meet
+  - button "Edit top-left label":
+  - generic: A day to remember
+  - button "Edit top-right label":
+  - figure:
+    - img "Balance beam arabesque in a sunlit timber-roof gymnasium; editorial sports photography, navy leotard, warm ivory architecture"
+    - button "Change hero image":
+      - text: Change
+    - button "Show full image":
+  - heading "2026 Women’s Gasparilla Classic Edit event title" [level=1]:
+    - generic: 2026 Women’s Gasparilla Classic
+    - button "Edit event title":
+  - term:
+    - generic: Meet day
+    - button "Edit meet day label":
+  - definition:
+    - generic: March 6-8, 2026
+    - button "Edit display date":
+  - term:
+    - generic: The venue
+    - button "Edit venue label":
+  - definition:
+    - generic: Tampa Convention Center
+    - button "Edit venue":
+  - definition:
+    - generic: 333 S Franklin St, Tampa, FL 33602
+    - button "Edit address":
+  - paragraph:
+    - generic: A beautiful day to fly
+    - button "Edit welcome message":
+  - generic: Together, we rise.
+  - button "Edit encouragement":
+  - generic: Gymnastics
+  - button "Edit bottom-left label":
+  - generic: Tampa Convention Center
+  - button "Edit bottom-right label":
+  - button "Add section at position 1":
+    - text: Add section
+  - button "Reorder Meet Details":
+  - generic: Meet Details
+  - button "Edit Meet Details":
+  - button "Move Meet Details up" [disabled]:
+  - button "Move Meet Details down":
+  - button "Remove Meet Details section":
+  - button "Place another section beside Meet Details":
+    - text: Place beside
+  - region "Meet Details Edit meet details section heading":
+    - heading "Meet Details Edit meet details section heading" [level=2]:
+      - generic: Meet Details
+      - button "Edit meet details section heading":
+    - paragraph:
+      - generic: "2026 Women’s Gasparilla Classic takes place March 6-8, 2026 at Tampa Convention Center. Doors open: 7:00am each day. Arrival guidance: Arrive one hour before the first session of the day; 45 minutes before other sessions. Allow 30-45 minutes to walk to the hall, register your gymnast and reach the competitive floor. Allow extra travel time, especially Friday. Rotation sheets: No hard copies at the competition. Print or download from the meet website; refresh your browser for the latest copy."
+      - button "Edit event description":
+    - paragraph:
+      - generic: Rotation Sheets
+      - button "Edit rotation sheets label":
+    - paragraph:
+      - generic: No hard copies at the competition. Print or download from the meet website; refresh your browser for the latest copy.
+      - button "Edit rotation sheets text":
+  - button "Add section at position 2":
+    - text: Add section
+  - button "Reorder Admission":
+  - generic: Admission
+  - button "Edit Admission":
+  - button "Move Admission up":
+  - button "Move Admission down":
+  - button "Remove Admission section":
+  - button "Place another section beside Admission":
+    - text: Place beside
+  - region "Admission Edit admission section heading":
+    - heading "Admission Edit admission section heading" [level=2]:
+      - generic: Admission
+      - button "Edit admission section heading":
+    - paragraph:
+      - generic: Adults
+      - button "Edit adults label":
+    - paragraph: Cash $25
+    - paragraph:
+      - generic: Cash. Daily admission only; no weekend passes.
+      - button "Edit adults text":
+    - paragraph:
+      - generic: Children (5-17)
+      - button "Edit children (5-17) label":
+    - paragraph: Cash $20
+    - paragraph:
+      - generic: Cash. Daily admission only; no weekend passes.
+      - button "Edit children (5-17) text":
+    - paragraph:
+      - generic: Admission Note
+      - button "Edit admission note heading":
+    - paragraph:
+      - generic: No weekend passes.
+      - button "Edit admission note text":
+  - button "Add section at position 3":
+    - text: Add section
+  - button "Reorder Travel & parking":
+  - generic: Travel & parking
+  - button "Edit Travel & parking":
+  - button "Move Travel & parking up":
+  - button "Move Travel & parking down":
+  - button "Remove Travel & parking section":
+  - button "Place another section beside Travel & parking":
+    - text: Place beside
+  - region "Travel & parking Edit travel & parking section heading":
+    - heading "Travel & parking Edit travel & parking section heading" [level=2]:
+      - generic: Travel & parking
+      - button "Edit travel & parking section heading":
+    - paragraph:
+      - generic: Parking & arrival
+      - button "Edit parking & arrival heading":
+    - paragraph:
+      - generic: Managed by the City of Tampa Parking Department. Rates vary with downtown events and activity. Pay by mobile app or garage payment machine before leaving the garage. Uber, Lyft and taxi drop-off is just beyond the Front Drive entrance at 333 S. Franklin St., across from Water Street. The Front Drive rideshare drop-off is the recommended location to drop off persons with disabilities.
+      - button "Edit parking & arrival text":
+    - paragraph:
+      - generic: Traffic & travel
+      - button "Edit traffic & travel heading":
+    - paragraph:
+      - generic: "Disney on Ice at Benchmark International Arena will increase traffic and affect parking rates: March 6, 3-5pm and 7-9pm; March 7, 11am-1pm and 7-9pm; March 8, 11am-1pm and 3-5pm. Friday traffic may be heavy."
+      - button "Edit traffic & travel text":
+    - heading "Parking Links Edit parking links heading" [level=4]:
+      - generic: Parking Links
+      - button "Edit parking links heading":
+    - link "Parking lots and garages map":
+      - /url: https://www.arcgis.com/apps/dashboards/12288a4774a9436b91953388b6770ff7
+      - text: Parking lots and garages map
+    - button "Edit parking lots and garages map button caption":
+    - link "Pay by mobile app":
+      - /url: https://www.tampa.gov/parking/programs/pay-by-phone-parking
+      - text: Pay by mobile app
+    - button "Edit pay by mobile app button caption":
+    - link "Hourly and daily parking rates":
+      - /url: https://www.tampa.gov/parking/info/parking-hourly-and-daily-rates
+      - text: Hourly and daily parking rates
+    - button "Edit hourly and daily parking rates button caption":
+    - heading "Arrival Map Edit arrival map heading" [level=4]:
+      - generic: Arrival Map
+      - button "Edit arrival map heading":
+    - iframe
+    - link "Directions":
+      - /url: https://www.google.com/maps/search/?api=1&query=333%20S%20Franklin%20St%2C%20Tampa%2C%20FL%2033602
+      - generic: Directions
+  - button "Add section at position 4":
+    - text: Add section
+  - button "Reorder Hotels & Travel":
+  - generic: Hotels & Travel
+  - button "Edit Hotels & Travel":
+  - button "Move Hotels & Travel up":
+  - button "Move Hotels & Travel down":
+  - button "Remove Hotels & Travel section":
+  - button "Place another section beside Hotels & Travel":
+    - text: Place beside
+  - region "Hotels & Travel Edit hotels & travel section heading":
+    - heading "Hotels & Travel Edit hotels & travel section heading" [level=2]:
+      - generic: Hotels & Travel
+      - button "Edit hotels & travel section heading":
+    - paragraph:
+      - generic: Stay / Travel Note
+      - button "Edit stay / travel note label":
+    - paragraph:
+      - generic: Hotel and travel details are available on the official booking page.
+      - button "Edit stay / travel note text":
+    - heading "Hotel & Travel Links Edit hotel & travel links heading" [level=4]:
+      - generic: Hotel & Travel Links
+      - button "Edit hotel & travel links heading":
+    - link "Hotels & Travel":
+      - /url: https://www.lightningcity.com./
+      - text: Hotels & Travel
+    - button "Edit hotels & travel button caption":
+  - button "Add section at position 5":
+    - text: Add section
+  - button "Reorder Safety Policy":
+  - generic: Safety Policy
+  - button "Edit Safety Policy":
+  - button "Move Safety Policy up":
+  - button "Move Safety Policy down":
+  - button "Remove Safety Policy section":
+  - button "Place another section beside Safety Policy":
+    - text: Place beside
+  - region "Safety Policy Edit safety policy section heading":
+    - heading "Safety Policy Edit safety policy section heading" [level=2]:
+      - generic: Safety Policy
+      - button "Edit safety policy section heading":
+    - paragraph:
+      - generic: Food & Beverage
+      - button "Edit food & beverage label":
+    - paragraph:
+      - generic: Outside food and beverages are prohibited except for dietary restrictions or food allergies.
+      - button "Edit food & beverage text":
+    - paragraph:
+      - generic: Hydration
+      - button "Edit hydration label":
+    - paragraph:
+      - generic: Send gymnasts with a water bottle. Bottle filling stations are available throughout the facility.
+      - button "Edit hydration text":
+    - paragraph:
+      - generic: Service Animals
+      - button "Edit service animals label":
+    - paragraph:
+      - generic: Only service dogs with a certificate are allowed.
+      - button "Edit service animals text":
+    - paragraph:
+      - generic: Safety Policy
+      - button "Edit safety policy label":
+    - paragraph:
+      - generic: Supervise children who are not competing. Leave footballs, baseballs and other throwing objects at home.
+      - button "Edit safety policy text":
+  - button "Add section at position 6":
+    - text: Add section
+  - button "Reorder Documents & links":
+  - generic: Documents & links
+  - button "Edit Documents & links":
+  - button "Move Documents & links up":
+  - button "Move Documents & links down" [disabled]:
+  - button "Remove Documents & links section":
+  - button "Place another section beside Documents & links":
+    - text: Place beside
+  - region "Documents & links Edit documents & links section heading":
+    - heading "Documents & links Edit documents & links section heading" [level=2]:
+      - generic: Documents & links
+      - button "Edit documents & links section heading":
+    - link "Parking lots and garages map":
+      - /url: https://www.arcgis.com/apps/dashboards/12288a4774a9436b91953388b6770ff7
+      - text: Parking lots and garages map
+    - button "Edit parking lots and garages map button caption":
+    - link "Pay by mobile app":
+      - /url: https://www.tampa.gov/parking/programs/pay-by-phone-parking
+      - text: Pay by mobile app
+    - button "Edit pay by mobile app button caption":
+    - link "Hourly and daily parking rates":
+      - /url: https://www.tampa.gov/parking/info/parking-hourly-and-daily-rates
+      - text: Hourly and daily parking rates
+    - button "Edit hourly and daily parking rates button caption":
+    - link "Hotels & Travel":
+      - /url: https://www.lightningcity.com./
+      - text: Hotels & Travel
+    - button "Edit hotels & travel button caption":
+  - button "Add section at position 7":
+    - text: Add section
+  - link "Envitefy Gymnastics (opens in a new tab)":
+    - /url: https://envitefy.com
+    - img "envitefy":
+      - generic: envitefy
+  - paragraph: CREATE | SHARE | ENJOY
+  - paragraph:
+    - strong: Created with Envitefy
+    - link "Create now":
+      - /url: https://envitefy.com/
+  - navigation "Follow Envitefy":
+    - list:
+      - link "Envitefy on Instagram (opens in a new tab)":
+        - /url: https://www.instagram.com/envitefy/
+        - generic: Envitefy on Instagram (opens in a new tab)
+      - link "Envitefy on Facebook (opens in a new tab)":
+        - /url: https://www.facebook.com/envitefy/
+        - generic: Envitefy on Facebook (opens in a new tab)
+      - link "Envitefy on YouTube (opens in a new tab)":
+        - /url: https://www.youtube.com/@envitefy
+        - generic: Envitefy on YouTube (opens in a new tab)
+      - link "Envitefy on TikTok (opens in a new tab)":
+        - /url: https://www.tiktok.com/@envitefy
+        - generic: Envitefy on TikTok (opens in a new tab)
+      - link "Envitefy on Reddit (opens in a new tab)":
+        - /url: https://www.reddit.com/user/envitefy/
+        - generic: Envitefy on Reddit (opens in a new tab)
+- complementary "Event editing controls":
+  - paragraph: Meet page
+  - button "Preview":
+    - text: Preview
+  - group "Editor view":
+    - button "Close settings":
+  - button "Back to details":
+  - heading "Event Basics" [level=2]
+  - generic: Event Title
+  - textbox "Event Title":
+    - /placeholder: e.g. 2026 Florida Xcel State Championships
+    - text: 2026 Women’s Gasparilla Classic
+  - generic: Date
+  - textbox "Date": 2026-03-06
+  - generic: Time
+  - textbox "Time": 00:00
+  - text: End time (optional)
+  - textbox "End time (optional)": 18:00
+  - text: End date (if different)
+  - textbox "End date (if different)": 2026-03-07
+  - generic: Display Date
+  - textbox "Display Date":
+    - /placeholder: e.g. March 6-8, 2026
+    - text: March 6-8, 2026
+  - paragraph: Set the exact event start above. For multi-day meets, use Display Date to show a range (e.g. March 6-8, 2026) in the header. Leave blank to use the single date.
+  - generic: Timezone
+  - textbox "Timezone":
+    - /placeholder: America/Chicago
+    - text: America/Chicago
+  - generic: Host Gym
+  - textbox "Host Gym":
+    - /placeholder: Northern Illinois Gymnastics
+  - generic: Venue
+  - textbox "Venue":
+    - /placeholder: Arena or gym name
+    - text: Tampa Convention Center
+  - generic: Address
+  - textbox "Address":
+    - /placeholder: Street address
+    - text: 333 S Franklin St, Tampa, FL 33602
+- group "Save event":
+  - button "Cancel"
+  - button "Save draft"
+  - button "Publish"
+- status
+- alert: Make it yours | Envitefy

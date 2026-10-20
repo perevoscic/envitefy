@@ -1,3 +1,4 @@
+import { isHotelResourceLink } from "./hotel-resource-links";
 import {
   HOTEL_FIELDS,
   hotelDeadlineIso,
@@ -416,7 +417,7 @@ export function detectTravelAccommodationCandidates(
   const links = Array.isArray(input.links) ? input.links : [];
   for (const link of links) {
     const url = normalizeUrl(link?.url) || null;
-    if (!url) continue;
+    if (!url || !isHotelResourceLink(link)) continue;
     const label = safeString(link?.label);
     const contextText = safeString(link?.contextText) || null;
     const sectionHeading = safeString(link?.sectionHeading) || null;
@@ -468,6 +469,11 @@ export function detectTravelAccommodationCandidates(
         if (!hasAccommodation && urls.length === 0) continue;
         if (urls.length === 0) continue;
         const primaryUrl = urls[0] || null;
+        const urlLineIndex = lines.findIndex((line, lineIndex) => lineIndex >= idx && lineIndex < idx + 5 && extractUrls(line).includes(primaryUrl || ""));
+        const urlLine = lines[urlLineIndex] || "";
+        const localLabel = urlLine.replace(URL_PATTERN, "").replace(/[\[\]()]/g, " ").trim();
+        const adjacentLabel = !localLabel ? lines[urlLineIndex - 1] || "" : "";
+        if (!isHotelResourceLink({ url: primaryUrl, label: localLabel || adjacentLabel })) continue;
         const subtype = detectSubtypeFromText(slice, primaryUrl);
         if (
           countTermHits(slice, ACCOMMODATION_TERMS) === 0 &&
@@ -499,6 +505,8 @@ export function detectTravelAccommodationCandidates(
       const snippet = extractedText.split(/\n+/).find((line) => line.includes(url)) || `${url}`;
       const combined = normalizeWhitespace(`${snippet} ${url}`);
       if (!combined) continue;
+      const localLabel = snippet.replace(URL_PATTERN, "").replace(/[\[\]()]/g, " ").trim();
+      if (!isHotelResourceLink({ url, label: localLabel })) continue;
       if (countTermHits(combined, ACCOMMODATION_TERMS) === 0 && !looksLikeBookingUrl(url)) continue;
       const subtype = detectSubtypeFromText(combined, url);
       candidates.push(
@@ -786,7 +794,7 @@ function resolveTargets(candidates: TravelAccommodationCandidate[]): TravelAccom
   const targets: TravelAccommodationTarget[] = [];
   for (const candidate of Array.isArray(candidates) ? candidates : []) {
     const url = normalizeUrl(candidate.url);
-    if (!url) continue;
+    if (!url || !isHotelResourceLink({ url, label: candidate.linkLabel || candidate.label, contextText: candidate.contextText })) continue;
     const rank = candidateSubtypeRank(candidate.subtype) + sameHostBoost(candidate);
     const role =
       candidate.subtype === "hotel_card_with_booking_link"

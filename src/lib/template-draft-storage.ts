@@ -10,6 +10,7 @@ export type EditorSnapshot = Record<string, DraftValue>;
 export type TemplateDraft = {
   version: 1;
   id: string;
+  ownerId?: string;
   category: string;
   templateId: string;
   updatedAt: number;

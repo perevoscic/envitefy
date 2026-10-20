@@ -6,6 +6,7 @@ import {
   type EventPageCompositionRuntime,
 } from "./EventPageCompositionContext";
 import { EventEditorInput } from "./EventEditorFields";
+import EventArrivalMap from "./custom/EventArrivalMap";
 
 import {
   closestCenter,
@@ -741,6 +742,7 @@ export function EventSectionCanvas({
           <section data-event-section={section.id} className={styles.information}>
             <h2>{section.title}</h2>
             <p>{section.body}</p>
+            {section.map && <EventArrivalMap map={section.map} />}
           </section>
         ),
       })),

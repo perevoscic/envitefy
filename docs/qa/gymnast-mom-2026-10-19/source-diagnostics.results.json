@@ -1,0 +1,108 @@
+{
+  "scope": "Offline source-backed diagnostics, not end-to-end browser results",
+  "sourceLocations": {
+    "payload": "src/app/event/gymnastics/customize/page.tsx:1708",
+    "preview": "src/app/event/gymnastics/customize/page.tsx:2734",
+    "legacyImport": "src/components/event-create/GymnasticsLauncher.tsx:261"
+  },
+  "timezone": {
+    "scenario": "08:00 Los Angeles meet while parent browser uses Chicago",
+    "status": "reproduced in actual source callbacks; top-level save repair also verified",
+    "browserZone": "America/Chicago",
+    "eventZone": "America/Los_Angeles",
+    "expected": "2027-01-16T16:00:00.000Z",
+    "previewStartISO": "2027-01-16T14:00:00.000Z",
+    "previewGuestCalendarStart": "2027-01-16T14:00:00.000Z",
+    "finalTopLevelStartISO": "2027-01-16T16:00:00.000Z",
+    "finalNestedBuilderStartISO": "2027-01-16T14:00:00.000Z",
+    "nestedDifferenceHours": -2,
+    "limit": "Published guest rendering/calendar impact requires live verification because the shared writer repairs top-level fields."
+  },
+  "dateOnlyMeet": {
+    "scenario": "March 6–8, 2026 date-only meet; no session time and no parsed timezone",
+    "status": "source reconstruction exactly matches browser-reported editor values; raw model response not inspected",
+    "dateOnlyInputs": {
+      "start": "2026-03-06",
+      "end": "2026-03-08"
+    },
+    "syntheticStartISO": "2026-03-06T00:00:00.000Z",
+    "syntheticEndISO": "2026-03-08T00:00:00.000Z",
+    "midnightIncorrectlyTreatedAsExplicitTime": true,
+    "editor": {
+      "date": "2026-03-06",
+      "time": "00:00",
+      "endDate": "2026-03-07",
+      "endTime": "18:00",
+      "timezone": "America/Chicago"
+    },
+    "expected": "Retain date range without inventing a session clock; derive/confirm venue timezone instead of applying Chicago to a Tampa meet.",
+    "causes": [
+      "Date-only parsing converts dates to midnight UTC.",
+      "Explicit-time detection then finds clock-shaped text within those synthetic ISO values.",
+      "Start hydration reads literal UTC clock text; end hydration uses browser-local getters.",
+      "A missing parsed timezone retains the shell's hard-coded America/Chicago."
+    ]
+  },
+  "unmount": {
+    "scenario": "Unmount while an import is running; no explicit Cancel click",
+    "status": "reproduced",
+    "calls": [
+      {
+        "url": "/api/discovery/offline-in-progress-meet/cancel",
+        "method": "POST"
+      }
+    ],
+    "impact": "Server endpoint persists cancellation and hides the unsaved import shell.",
+    "serverEvidence": "src/app/api/discovery/[eventId]/cancel/route.ts:31"
+  },
+  "retry": {
+    "scenario": "One transient status-network error, then retry the same meet URL",
+    "status": "reproduced",
+    "calls": [
+      {
+        "url": "/api/discovery/intake",
+        "method": "POST",
+        "body": {
+          "url": "https://example.invalid/offline-meet"
+        }
+      },
+      {
+        "url": "/api/discovery/offline-meet-1/run",
+        "method": "POST"
+      },
+      {
+        "url": "/api/discovery/offline-meet-1/status",
+        "method": "GET"
+      },
+      {
+        "url": "/api/discovery/intake",
+        "method": "POST",
+        "body": {
+          "url": "https://example.invalid/offline-meet"
+        }
+      },
+      {
+        "url": "/api/discovery/offline-meet-2/run",
+        "method": "POST"
+      },
+      {
+        "url": "/api/discovery/offline-meet-2/status",
+        "method": "GET"
+      }
+    ],
+    "createdImports": 2,
+    "opens": "/event/gymnastics/customize?edit=offline-meet-2&new=1",
+    "impact": "The original import can continue on the server while retry creates and opens a second event."
+  },
+  "sourceHashes": {
+    "src/app/event/gymnastics/customize/page.tsx": "f293d7a24d552613c03cf639339717f7912a3d3d89900ddf6a3ee7e1020fa2df",
+    "src/components/event-create/GymnasticsLauncher.tsx": "fddef0d0de2d0b2c87eb8e5e91e528d537c31994faec02ff6b8e3798a12bb688",
+    "src/lib/calendar-date-time.ts": "09165d679e41cef953125b6a7723da8f4de97195af20d60b6c5fa8588a56d7eb",
+    "src/lib/create/editor-handoff.ts": "ca6b94e4e5dcf9e3370d6a417248129faa7617e8ea28bdf6800fe3d63e90f64c",
+    "src/components/events/useEventPageEditor.ts": "01a5179d242d1689664e98307dec0d2aad1637d8c45be9cb3d3898713b05ff32",
+    "src/components/SimpleTemplateView.tsx": "1e747a6bb4671a715d11a726b3131f5633777888100fdb722b688639a4b9a1c1",
+    "src/lib/meet-discovery/core.ts": "6e76353ce89c7faad385f0c2544c4a71167301cfcc12bed620fb26258e83ec58",
+    "src/lib/discovery/persist.ts": "9f892a8a23443fd23392b1db211e4aa541855b7e9a51bb4c111145553d15b57a",
+    "src/lib/event-guest-planning.ts": "a87f5f529abf519922561dc1a2ea85e2950ddbf936701d32045c6b2eaca7ca90"
+  }
+}

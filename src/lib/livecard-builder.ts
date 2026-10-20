@@ -1,4 +1,5 @@
 import { localClockToIso } from "./creation/calendar-validation.ts";
+import { normalizeCreationCategory } from "./creation-access";
 
 export const LIVE_CARD_BUILDER_PATH = "/live-cards";
 export const LIVE_CARD_BUILDER_SOURCE = "livecard-builder";
@@ -90,6 +91,7 @@ export type LiveCardForm = {
   title: string;
   headlineIntro: string;
   eventType: LiveCardEventType | "";
+  creationCategory?: string;
   design: string;
   referenceUrl: string;
   generationQuality?: "high" | "medium";
@@ -123,6 +125,7 @@ export function createLiveCardForm(timezone = "UTC"): LiveCardForm {
     title: "",
     headlineIntro: "You're invited",
     eventType: "",
+    creationCategory: "",
     design: "",
     referenceUrl: "",
     generationQuality: "high",
@@ -334,7 +337,7 @@ export function readLiveCardForm(value: unknown): LiveCardForm | null {
   if (!source) return null;
   const form = createLiveCardForm();
   for (const key of Object.keys(form) as Array<keyof LiveCardForm>) {
-    if (key === "locations" || key === "eventType" || key === "format" || key === "sourceEvidence" || key === "generationQuality")
+    if (key === "locations" || key === "eventType" || key === "creationCategory" || key === "format" || key === "sourceEvidence" || key === "generationQuality")
       continue;
     if (key === "rsvpEnabled" || key === "registryEnabled") form[key] = source[key] === true;
     else if (typeof source[key] === "string")
@@ -343,6 +346,7 @@ export function readLiveCardForm(value: unknown): LiveCardForm | null {
         : 12000);
   }
   form.eventType = LIVE_CARD_EVENT_TYPES.find((type) => type === source.eventType) || "";
+  form.creationCategory = normalizeCreationCategory(source.creationCategory) || "";
   form.format = source.format === "digital_flyer" ? "digital_flyer" : "live_card";
   if (Array.isArray(source.sourceEvidence))
     form.sourceEvidence = source.sourceEvidence.slice(0, 60).flatMap((item) => {

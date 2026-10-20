@@ -596,8 +596,9 @@ test("draft rendering rechecks co-host membership in its database read and keeps
   const event = { id: "event", user_id: "owner", title: "Party", data: { status: "draft" } };
   let active = true, revokeDuringRead = false; const reads = [];
   const module = { exports: {} };
-  new Function("getEventHistoryById", "canReadEventDraft", "query", "mapEventHistoryPublicRow", "resolveScanMediaPolicy", "buildEventHistoryPublicDataProjectionSql", "require", "module", "exports", code)(
+  new Function("getEventHistoryById", "canReadEventDraft", "legacyDiscoveryDraftSql", "query", "mapEventHistoryPublicRow", "resolveScanMediaPolicy", "buildEventHistoryPublicDataProjectionSql", "require", "module", "exports", code)(
     async () => event, (data, owner, viewer) => data.status !== "draft" || owner === viewer,
+    compile("src/lib/event-draft-access.ts").legacyDiscoveryDraftSql,
     async (sql, args) => { reads.push(sql); return { rows: args[1] === "owner" || (args[1] === "cohost" && active && sql.includes("c.revoked_at is null")) ? [event] : [] }; },
     row => row || null, () => null, () => "data",
     () => ({ getEventPermissions: async (_event, viewer) => { const canEdit = viewer === "cohost" && active; if (revokeDuringRead) active = false; return { canEdit }; } }), module, module.exports,

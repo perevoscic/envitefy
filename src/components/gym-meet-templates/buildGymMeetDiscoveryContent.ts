@@ -16,6 +16,7 @@ import {
   stripLinkedDomainMentions,
 } from "./displayText";
 import type { GymMeetDiscoveryContent, GymMeetDiscoverySection, GymMeetLinkAction } from "./types";
+import { isHotelResourceLink, selectHotelResourceFallback } from "@/lib/hotel-resource-links";
 
 const safeString = (value: unknown): string =>
   typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim();
@@ -285,7 +286,9 @@ const classifyResourceRenderTarget = (item: any) => {
   if (["roster", "team_divisions", "rotation_hub", "rotation_sheet"].includes(kind)) {
     return "hidden";
   }
-  if (kind === "hotel_booking" || kind === "travel_accommodation") return "hotels";
+  if (kind === "hotel_booking" || kind === "travel_accommodation") {
+    return isHotelResourceLink(item) ? "hotels" : "hidden";
+  }
   if (["results_hub", "results_live", "results_pdf"].includes(kind)) return "results";
   if (kind === "admission") return "admission";
   if (kind === "parking") return "traffic_parking";
@@ -1460,12 +1463,15 @@ export function buildGymMeetDiscoveryContent({
       ...item,
       audience,
       renderTarget:
-        safeString(item?.renderTarget) || classifyResourceRenderTarget({ ...item, audience }),
+        safeString(item?.renderTarget) === "hotels"
+          ? classifyResourceRenderTarget({ ...item, audience })
+          : safeString(item?.renderTarget) || classifyResourceRenderTarget({ ...item, audience }),
     };
   });
   const hasStructuredResources = resourceLinks.length > 0;
   const pickStructuredResourceLinks = (...kinds: string[]) =>
-    resourceLinks.filter((item) => kinds.includes(item.kind));
+    resourceLinks.filter((item) => kinds.includes(item.kind))
+      .filter((item) => !["travel_accommodation", "hotel_booking"].includes(item.kind) || isHotelResourceLink(item));
   const toResourceActions = (...kinds: string[]) =>
     uniqueLinks(
       pickStructuredResourceLinks(...kinds).map((item) => ({
@@ -1831,12 +1837,10 @@ export function buildGymMeetDiscoveryContent({
     const publicTravelFallbackLinks = uniqueLinks(
       [
         ...hotelLinks,
-        safeString(effectivePublicSections?.travel?.fallbackLink)
-          ? {
-              label: "Hotels & Travel",
-              url: safeString(effectivePublicSections?.travel?.fallbackLink),
-            }
-          : null,
+        (() => {
+          const url = selectHotelResourceFallback([effectivePublicSections?.travel?.fallbackLink], hotelLinks);
+          return url ? { label: "Hotels & Travel", url } : null;
+        })(),
       ].filter(Boolean),
       8,
     );
@@ -2340,7 +2344,7 @@ export function buildGymMeetDiscoveryContent({
     "photo_video",
     "apparel_form",
   );
-  const structuredHotelLinks = toResourceActions("travel_accommodation", "hotel_booking");
+  const structuredHotelLinks = toResourceActions("travel_accommodation", "hotel_booking").filter(isHotelResourceLink);
 
   const resultsLinks = uniqueTextLines(
     structuredResultsLinks.length > 0
@@ -3361,7 +3365,7 @@ export function buildGymMeetDiscoveryContent({
           })(),
         ],
     8,
-  );
+  ).filter(isHotelResourceLink);
   const structuredHotelCards = buildStructuredHotelCards(advancedSections?.logistics?.hotels);
   const venueLinks = uniqueLinks(
     normalizedLinks.filter((item) =>

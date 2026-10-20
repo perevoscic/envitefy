@@ -2,12 +2,14 @@ import {
   getEventDiscoveryByEventId,
   updateEventDiscovery,
   updateEventTravelAccommodation,
+  getEventHistoryById,
 } from "@/lib/db";
 import {
   beginDiscoveryPipelineCancellationScope,
   finishDiscoveryPipelineCancellationScope,
   isDiscoveryCancellationError,
   throwIfDiscoveryCancelled,
+  hasActiveDiscoveryPipeline,
 } from "@/lib/discovery/cancel";
 import { runDiscoveryComposePublicStage } from "@/lib/discovery/compose-public";
 import { runDiscoveryEnrichStage } from "@/lib/discovery/enrich";
@@ -31,6 +33,9 @@ import { buildDiscoveryStatusResponse } from "@/lib/discovery/status";
 import type { DiscoveryFailureStage, EventDiscoveryRow } from "@/lib/discovery/types";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
+import { isDiscoveryCancellationRequested } from "./intake-recovery";
+import { getEventPermissions } from "@/lib/event-collaboration";
+import { requireDiscoveryCreationAccess } from "@/lib/creation-access-server";
 
 function resolveFailureStage(stage: string): DiscoveryFailureStage {
   switch (stage) {
@@ -88,13 +93,30 @@ async function enterStage(
   });
 }
 
-function assertActive(signal?: AbortSignal) {
+async function assertActive(eventId: string, signal?: AbortSignal, actorUserId?: string) {
   throwIfDiscoveryCancelled(signal);
+  if (actorUserId) {
+    const currentHistory = await getEventHistoryById(eventId);
+    if (!currentHistory?.user_id || !(await getEventPermissions(currentHistory, actorUserId)).canEdit) throw Object.assign(new Error("Your access to this event changed. Ask the host to resume this import."), { status: 403, code: "access_revoked" });
+    const currentDiscovery = await getEventDiscoveryByEventId(eventId);
+    if (!currentDiscovery) throw new Error("Your retained import could not be loaded. Please retry.");
+    await requireDiscoveryCreationAccess(currentHistory, currentDiscovery.source, actorUserId);
+  }
+  if (await isDiscoveryCancellationRequested(eventId)) {
+    const error = new Error("Discovery cancelled");
+    error.name = "AbortError";
+    throw error;
+  }
 }
 
-export async function runDiscoveryPipeline(eventId: string, options?: { signal?: AbortSignal }) {
+export async function runDiscoveryPipeline(eventId: string, options?: { signal?: AbortSignal; actorUserId?: string }) {
   const discovery = await getEventDiscoveryByEventId(eventId);
   if (!discovery) return null;
+  const history = await getEventHistoryById(eventId);
+  if (!history?.user_id || (options?.actorUserId && !(await getEventPermissions(history, options.actorUserId)).canEdit)) return null;
+  const actorUserId = options?.actorUserId || history.user_id;
+  if (await isDiscoveryCancellationRequested(eventId)) return null;
+  if (["review_ready", "published"].includes(discovery.pipeline.processingStage)) return buildDiscoveryStatusResponse(discovery);
   const leased = await acquireDiscoveryLease(discovery);
   if (!leased) {
     const current = await getEventDiscoveryByEventId(eventId);
@@ -102,12 +124,17 @@ export async function runDiscoveryPipeline(eventId: string, options?: { signal?:
   }
 
   let current = leased.discovery;
+  const stages = ["extract", "parse", "map", "enrich", "compose_public"];
+  const completedThrough = stages.indexOf(current.pipeline.lastSuccessfulStage || "");
+  const completed = (stage: string) => completedThrough >= stages.indexOf(stage);
   try {
+    await requireDiscoveryCreationAccess(history, discovery.source, actorUserId);
     let startedAt = Date.now();
-    assertActive(options?.signal);
+    await assertActive(eventId, options?.signal, actorUserId);
+    if (!completed("extract") || !current.document) {
     current = await enterStage(current, "extract");
     const extracted = await runDiscoveryExtractStage(current, { signal: options?.signal });
-    assertActive(options?.signal);
+    await assertActive(eventId, options?.signal, actorUserId);
     current = await persistDiscoveryRow({
       discovery: current,
       patch: {
@@ -124,12 +151,14 @@ export async function runDiscoveryPipeline(eventId: string, options?: { signal?:
         pipeline: completeDiscoveryStage(current.pipeline, "extract", Date.now() - startedAt),
       },
     });
+    }
 
     startedAt = Date.now();
-    assertActive(options?.signal);
+    await assertActive(eventId, options?.signal, actorUserId);
+    if (!completed("parse") || !current.canonicalParse) {
     current = await enterStage(current, "parse");
     const parsed = await runDiscoveryParseStage(current, { signal: options?.signal });
-    assertActive(options?.signal);
+    await assertActive(eventId, options?.signal, actorUserId);
     current = await persistDiscoveryRow({
       discovery: current,
       patch: {
@@ -141,26 +170,18 @@ export async function runDiscoveryPipeline(eventId: string, options?: { signal?:
         pipeline: completeDiscoveryStage(current.pipeline, "parse", Date.now() - startedAt),
       },
     });
+    }
 
     startedAt = Date.now();
-    assertActive(options?.signal);
+    await assertActive(eventId, options?.signal, actorUserId);
+    if (!completed("map") || !current.debug?.mappedData) {
     current = await enterStage(current, "map");
     const mapped = await runDiscoveryMapStage(current, { signal: options?.signal });
-    assertActive(options?.signal);
+    await assertActive(eventId, options?.signal, actorUserId);
     const mappedPipeline = {
       ...completeDiscoveryStage(current.pipeline, "map", Date.now() - startedAt),
       reviewFlags: mapped.builderDraft.reviewFlags || [],
     };
-    current = await persistDiscoveryRow({
-      discovery: current,
-      patch: {
-        debug: {
-          ...((current.debug || {}) as Record<string, unknown>),
-          mappedData: mapped.mappedData,
-        },
-        pipeline: mappedPipeline,
-      },
-    });
     await persistDiscoveryEventSnapshot({
       workflow: current.workflow,
       eventId: current.eventId,
@@ -179,13 +200,37 @@ export async function runDiscoveryPipeline(eventId: string, options?: { signal?:
       pageTemplateId: safeString(mapped.mappedData.pageTemplateId),
       status: "processing",
     });
-    assertActive(options?.signal);
+    current = await persistDiscoveryRow({
+      discovery: current,
+      patch: {
+        debug: {
+          ...((current.debug || {}) as Record<string, unknown>),
+          mappedData: mapped.mappedData,
+        },
+        pipeline: mappedPipeline,
+      },
+    });
+    await assertActive(eventId, options?.signal, actorUserId);
+    }
 
     startedAt = Date.now();
-    assertActive(options?.signal);
+    await assertActive(eventId, options?.signal, actorUserId);
+    if (!completed("enrich") || !current.enrichment) {
     current = await enterStage(current, "enrich");
     const enriched = await runDiscoveryEnrichStage(current, { signal: options?.signal });
-    assertActive(options?.signal);
+    await assertActive(eventId, options?.signal, actorUserId);
+
+    const travelAccommodationState =
+      enriched.enrichment && typeof enriched.enrichment === "object"
+        ? (enriched.enrichment as any).travelAccommodation
+        : null;
+    if (travelAccommodationState && typeof travelAccommodationState === "object") {
+      const saved = await updateEventTravelAccommodation(current.eventId, travelAccommodationState);
+      if (saved?.user_id) {
+        invalidateUserHistory(saved.user_id);
+        invalidateUserDashboard(saved.user_id);
+      }
+    }
     current = await persistDiscoveryRow({
       discovery: current,
       patch: {
@@ -199,24 +244,14 @@ export async function runDiscoveryPipeline(eventId: string, options?: { signal?:
       },
     });
 
-    const travelAccommodationState =
-      enriched.enrichment && typeof enriched.enrichment === "object"
-        ? (enriched.enrichment as any).travelAccommodation
-        : null;
-    if (travelAccommodationState && typeof travelAccommodationState === "object") {
-      const saved = await updateEventTravelAccommodation(current.eventId, travelAccommodationState);
-      if (saved?.user_id) {
-        invalidateUserHistory(saved.user_id);
-        invalidateUserDashboard(saved.user_id);
-      }
+    await assertActive(eventId, options?.signal, actorUserId);
     }
-    assertActive(options?.signal);
 
     startedAt = Date.now();
-    assertActive(options?.signal);
+    await assertActive(eventId, options?.signal, actorUserId);
     current = await enterStage(current, "compose_public");
     const composed = await runDiscoveryComposePublicStage(current, { signal: options?.signal });
-    assertActive(options?.signal);
+    await assertActive(eventId, options?.signal, actorUserId);
     const publishReady =
       safeString(composed.publicArtifacts.publishAssessment.state) === "auto_publish" ||
       (composed.publicArtifacts.publishAssessment.reasons || []).length === 0;
@@ -235,16 +270,6 @@ export async function runDiscoveryPipeline(eventId: string, options?: { signal?:
       reviewFlags,
       lease: null,
     };
-    current = await persistDiscoveryRow({
-      discovery: current,
-      patch: {
-        debug: {
-          ...((current.debug || {}) as Record<string, unknown>),
-          mappedData: composed.mappedData,
-        },
-        pipeline: finalPipeline,
-      },
-    });
     await persistDiscoveryEventSnapshot({
       workflow: current.workflow,
       eventId: current.eventId,
@@ -264,7 +289,17 @@ export async function runDiscoveryPipeline(eventId: string, options?: { signal?:
       status: "review_ready",
       eventDataPatch: composed.eventDataPatch,
     });
-    assertActive(options?.signal);
+    current = await persistDiscoveryRow({
+      discovery: current,
+      patch: {
+        debug: {
+          ...((current.debug || {}) as Record<string, unknown>),
+          mappedData: composed.mappedData,
+        },
+        pipeline: finalPipeline,
+      },
+    });
+    await assertActive(eventId, options?.signal, actorUserId);
     return buildDiscoveryStatusResponse(current);
   } catch (error) {
     const stageAtFailure = safeString(current.pipeline.processingStage) || "extract";
@@ -296,11 +331,11 @@ export async function runDiscoveryPipeline(eventId: string, options?: { signal?:
   }
 }
 
-export function dispatchDiscoveryPipeline(eventId: string) {
+export async function dispatchDiscoveryPipeline(eventId: string, actorUserId?: string) {
+  if (hasActiveDiscoveryPipeline(eventId)) return;
   const controller = beginDiscoveryPipelineCancellationScope(eventId);
-  setTimeout(() => {
-    void runDiscoveryPipeline(eventId, { signal: controller.signal }).finally(() => {
-      finishDiscoveryPipelineCancellationScope(eventId, controller);
-    });
-  }, 0);
+  try { await runDiscoveryPipeline(eventId, { signal: controller.signal, actorUserId }); }
+  catch (error) {
+    console.error("[discovery] retained import could not start", { eventId, code: typeof (error as { code?: unknown })?.code === "string" ? (error as { code: string }).code : "discovery_start_failed" });
+  } finally { finishDiscoveryPipelineCancellationScope(eventId, controller); }
 }

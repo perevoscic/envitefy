@@ -1,7 +1,8 @@
 import { normalizeEventSectionLayout, type EventSectionLayout } from "./event-section-layout";
 import { EVENT_DESIGN_LAYOUTS, type EventCustomDesign } from "./event-custom-design";
+import { normalizeArrivalMap, type EventArrivalMap } from "./event-arrival-map";
 
-export type EventInformationSection = { id: string; title: string; body: string };
+export type EventInformationSection = { id: string; title: string; body: string; map?: EventArrivalMap };
 export type EventPageComposition = {
   version: 1;
   layout?: EventCustomDesign["layout"];
@@ -29,6 +30,7 @@ export function normalizeEventPageComposition(value: unknown): EventPageComposit
         id: section.id,
         title: typeof section.title === "string" ? section.title.slice(0, 240) : "",
         body: typeof section.body === "string" ? section.body.slice(0, 12000) : "",
+        ...(normalizeArrivalMap(section.map) ? { map: normalizeArrivalMap(section.map)! } : {}),
       });
     }
   const layout = EVENT_DESIGN_LAYOUTS.includes(raw.layout as EventCustomDesign["layout"])

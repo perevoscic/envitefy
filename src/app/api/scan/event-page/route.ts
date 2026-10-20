@@ -1,3 +1,4 @@
+import { checkCreationAccess, checkEventCreationAccess } from "@/lib/creation-access-server";
 import { after, NextResponse } from "next/server";
 import { prepareSavedScanDisplay } from "@/lib/ocr/original-display-state";
 import { adoptEarlyScanArtwork, generateSavedScanArtwork, prepareSavedScanArtwork } from "@/lib/ocr/scan-artwork";
@@ -113,6 +114,7 @@ export async function POST(request: Request) {
       return jsonError("Unable to resolve signed-in account", 409);
     }
 
+    if (userId) { const denied = await checkCreationAccess(userId, { product: "snap" }); if (denied) return denied; }
     const formData = await request.formData();
     const file = formData.get("file");
     scanAttemptId = normalizeScanAttemptId(formData.get("scanAttemptId"));
@@ -157,6 +159,7 @@ export async function POST(request: Request) {
       source,
       locationEnrichment,
     });
+    if (userId && payload.ownership !== "invited") { const denied = await checkEventCreationAccess(userId, payload.data); if (denied) return denied; }
     const needsScanArtwork = userId ? prepareSavedScanArtwork(payload.data) : false;
     const earlyEventId = needsScanArtwork && userId
       ? adoptEarlyScanArtwork(payload.data, userId, ocr.payload.scanArtworkTicket) : undefined;

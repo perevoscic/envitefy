@@ -739,6 +739,7 @@ test("the generation endpoint requires auth, bounds media, throttles work, and n
     "next/server": { NextResponse: { json: (body, options) => ({ body, ...options }) } },
     "next-auth": { getServerSession: async () => session },
     "@/lib/auth": { authOptions: {}, resolveSessionUserId: async () => userId },
+    "@/lib/creation-access-server": { checkCreationAccess: async () => null },
     "@/lib/event-theme-generation": {
       ...generation,
       generateEventTheme: async (input) => {

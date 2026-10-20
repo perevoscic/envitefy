@@ -1,4 +1,6 @@
 import type { PrimarySignupSource } from "@/lib/product-scopes";
+import { useCreationAccess } from "@/hooks/useCreationAccess";
+import { UNIFIED_CREATION_ENABLED } from "@/lib/create/release";
 import { writeLocalCalendarDefault } from "@/lib/calendar-preference";
 import {
   type Dispatch,
@@ -16,6 +18,9 @@ import {
   getCreateEventSections,
   getTemplateLinks,
   isCreateEventRoute,
+  isSignupFormCreateHref,
+  matchesCreateEventHrefPath,
+  SIGNUP_FORM_CREATE_HREF,
 } from "@/config/navigation-config";
 import { getEventStartIso, isInvitedEventLikeRecord } from "@/lib/dashboard-data";
 import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
@@ -80,6 +85,7 @@ type LeftSidebarControllerArgs = {
       visibleTemplateKeys: TemplateKey[];
       sportPreferences: SportPreferences;
       hasLoadedPreferences: boolean;
+      quickAccess?: string[];
     };
     primarySignupSource: PrimarySignupSource | null;
     productScopes: string[] | undefined;
@@ -131,6 +137,7 @@ export type LeftSidebarControllerViewModel = {
   menuOpen: boolean;
   setMenuOpen: Dispatch<SetStateAction<boolean>>;
   hasCreateEventAccess: boolean;
+  hasSignupFormAccess: boolean;
   createEntryLabel: string;
   isSignupFormsDefault: boolean;
   createMenuOptionCount: number;
@@ -173,6 +180,8 @@ export type LeftSidebarControllerViewModel = {
   goStudioFromSidebar: () => void;
   handleRootSnapNavigate: () => void;
   handleRootLiveCardNavigate: () => void;
+  handleRootSignupFormNavigate: () => void;
+  isSignupFormCreateActive: boolean;
   openCreateEventPage: () => void;
   openMyEventsPage: () => void;
   openSchedulesPage: () => void;
@@ -302,6 +311,7 @@ export function useLeftSidebarController({
   pathname,
   searchParams,
 }: LeftSidebarControllerArgs): LeftSidebarControllerViewModel {
+  const creationAccess = useCreationAccess();
   const {
     connectedCalendars,
     calendarConnectionsLoaded,
@@ -399,7 +409,7 @@ export function useLeftSidebarController({
   );
 
   const effectivePrimarySignupSource = profilePrimarySignupSource ?? primarySignupSource;
-  const createEntryLabel = "Create Event";
+  const createEntryLabel = "Create event";
   const preferredCreateIntent = defaultCreateIntent || effectivePrimarySignupSource;
   const isSignupFormsDefault = normalizeSignupIntent(defaultCreateIntent) === "signup_forms" ||
     effectivePrimarySignupSource === "signup_forms";
@@ -890,7 +900,7 @@ export function useLeftSidebarController({
   const triggerCreateEvent = useCallback(() => {
     collapseSidebarOnTouch();
     try {
-      router.push("/event/gymnastics");
+      router.push(UNIFIED_CREATION_ENABLED ? "/create" : "/event/gymnastics");
     } catch {}
   }, [collapseSidebarOnTouch, router]);
 
@@ -956,7 +966,7 @@ export function useLeftSidebarController({
     return map;
   }, [visibleTemplateLinks]);
 
-  const createMenuItems = useMemo(
+  const createMenuEntries = useMemo(
     () =>
       canRenderCreateEventNavigation
         ? getCreateEventSections(
@@ -977,19 +987,29 @@ export function useLeftSidebarController({
       visibleTemplateKeys,
     ],
   );
+  // Sign-up Form has its own root entry, so the category panel lists events only.
+  const createMenuItems = useMemo(
+    () => createMenuEntries.filter((item) => !isSignupFormCreateHref(item.href)),
+    [createMenuEntries],
+  );
   const otherCreateMenuItems = useMemo(() => [], []);
   const activeCreateItem = useMemo(
     () => findActiveCreateEventItem(pathname, createMenuItems),
     [createMenuItems, pathname],
   );
   const isOtherEventsActive = sidebarPage === "createEventOther";
-  const createMenuOptionCount = createMenuItems.length;
+  const createMenuOptionCount = createMenuEntries.length;
   const hasCreateEventAccess = useMemo(
     () =>
       canRenderCreateEventNavigation &&
-      createMenuOptionCount > 0,
-    [canRenderCreateEventNavigation, createMenuOptionCount],
+      (UNIFIED_CREATION_ENABLED
+        ? creationAccess.access?.allowedProducts.includes("event_page") === true
+        : createMenuOptionCount > 0),
+    [canRenderCreateEventNavigation, createMenuOptionCount, creationAccess.access],
   );
+  const hasSignupFormAccess = canRenderCreateEventNavigation && (UNIFIED_CREATION_ENABLED
+    ? creationAccess.access?.allowedProducts.includes("signup_form") === true && featureVisibility.hasLoadedPreferences && (featureVisibility.quickAccess || []).includes("smart_signup")
+    : hasCreateEventAccess);
 
   useEffect(() => {
     if (activeCreateItem) {
@@ -1059,15 +1079,26 @@ export function useLeftSidebarController({
       setSidebarPage("root");
       return;
     }
+    // Create Event opens the Create page; its category list appears there as tiles.
     clearEventContext();
-    setIsCollapsed(false);
-    setSidebarPage("createEvent");
+    setForcedCreateActiveLabel(null);
+    setSidebarPage("root");
+    collapseSidebarOnTouch();
+    router.push("/create");
   }, [
     clearEventContext,
+    collapseSidebarOnTouch,
     hasCreateEventAccess,
-    setIsCollapsed,
+    router,
     setSidebarPage,
   ]);
+
+  const handleRootSignupFormNavigate = useCallback(() => {
+    clearEventContext();
+    setSidebarPage("root");
+    collapseSidebarOnTouch();
+    router.push("/signup-forms/templates");
+  }, [clearEventContext, collapseSidebarOnTouch, router, setSidebarPage]);
 
   const openMyEventsPage = useCallback(
     () => openCompactEventsPage("myEvents"),
@@ -1310,8 +1341,13 @@ export function useLeftSidebarController({
       findEventListItemFromPath(currentPath)?.source || null,
     [findEventListItemFromPath],
   );
+  const isSignupFormCreateActive = Boolean(
+    pathname && matchesCreateEventHrefPath(pathname, SIGNUP_FORM_CREATE_HREF),
+  );
   const isCreateEntryActive =
-    isCreateRouteActive || sidebarPage === "createEvent" || sidebarPage === "createEventOther";
+    (isCreateRouteActive && !isSignupFormCreateActive) ||
+    sidebarPage === "createEvent" ||
+    sidebarPage === "createEventOther";
 
   useEffect(() => {
     const isEventListRoute =
@@ -1770,6 +1806,7 @@ export function useLeftSidebarController({
     menuOpen,
     setMenuOpen,
     hasCreateEventAccess,
+    hasSignupFormAccess,
     createEntryLabel,
     isSignupFormsDefault,
     createMenuOptionCount,
@@ -1808,6 +1845,8 @@ export function useLeftSidebarController({
     handleRootSnapNavigate,
     handleRootLiveCardNavigate,
     openCreateEventPage,
+    handleRootSignupFormNavigate,
+    isSignupFormCreateActive,
     openMyEventsPage,
     openSchedulesPage,
     openSignupFormsPage,

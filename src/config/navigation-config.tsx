@@ -6,6 +6,7 @@ import {
 } from "@/config/feature-visibility";
 import { hasProductScope } from "@/lib/product-scopes";
 import { getCreateActionForSignupIntent } from "@/lib/signup-intent";
+import { UNIFIED_CREATION_ENABLED } from "@/lib/create/release";
 import {
   buildSportCreationHref,
   getSportCreationLabel,
@@ -61,6 +62,12 @@ const CREATE_EVENT_SECTION_TITLES: Record<TemplateDef["section"], string> = {
   sports: "Sports",
   appointments_general: "General",
 };
+
+export const SIGNUP_FORM_CREATE_HREF = "/signup-forms/templates";
+
+export function isSignupFormCreateHref(href: string): boolean {
+  return getCreateEventRouteBase(href) === SIGNUP_FORM_CREATE_HREF;
+}
 
 function normalizeNavigationPath(value: string): string {
   const path = value.split(/[?#]/, 1)[0]?.replace(/\/+$/, "") || "";
@@ -118,6 +125,7 @@ function isTemplateAvailableForScopes(
   key: TemplateKey,
   productScopes?: string[],
 ): boolean {
+  if (UNIFIED_CREATION_ENABLED) return true;
   if (!Array.isArray(productScopes)) return true;
   return hasProductScope(productScopes, "snap");
 }
@@ -189,12 +197,6 @@ export function getCreateEventSections(
       .filter((link) => link.section === section && link.key !== "general")
       .map(({ label, href, icon }) => ({ label, href, icon })),
   })).filter((section) => section.items.length > 0);
-  if (generalEvent) {
-    const firstSection = sections[0];
-    const item = { label: generalEvent.label, href: generalEvent.href, icon: generalEvent.icon };
-    if (firstSection) firstSection.items.unshift(item);
-    else sections.push({ title: "General", items: [item] });
-  }
   sections.push({
     title: "Sign-ups",
     items: [{
@@ -207,18 +209,15 @@ export function getCreateEventSections(
         </svg>
       ),
       description: "Coordinate volunteers, food, supplies, and shifts",
-    }],
+    }, ...(generalEvent ? [{ label: generalEvent.label, href: generalEvent.href, icon: generalEvent.icon }] : [])],
   });
   // Put the saved preference first without adding a disabled event category.
   const preferredHref = getCreateActionForSignupIntent(options.defaultCreateIntent)?.href;
   for (const section of sections) {
-    section.items.sort((a, b) =>
-      Number(b.href === generalEvent?.href) - Number(a.href === generalEvent?.href) ||
-      Number(b.href === preferredHref) - Number(a.href === preferredHref));
+    // Sign-up Form and General Events remain adjacent; category preferences rank other rows.
+    if (section.title !== "Sign-ups") section.items.sort((a, b) => Number(b.href === preferredHref) - Number(a.href === preferredHref));
   }
   return sections.sort((a, b) =>
-    Number(b.items.some((item) => item.href === generalEvent?.href)) -
-    Number(a.items.some((item) => item.href === generalEvent?.href)) ||
     Number(b.items.some((item) => item.href === preferredHref)) -
     Number(a.items.some((item) => item.href === preferredHref)),
   );
@@ -227,6 +226,7 @@ export function getCreateEventSections(
 export function isCreateEventRoute(path: string | null | undefined): boolean {
   if (!path) return false;
   const pathname = normalizeNavigationPath(path);
+  if (pathname === "/create") return true;
   if (pathname === "/event/new" || pathname.startsWith("/event/new/")) return true;
   if (pathname === "/event/design/customize") return true;
   if (matchesCreateEventHrefPath(pathname, "/signup-forms/templates")) return true;
@@ -260,8 +260,8 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    label: "Create Event",
-    href: "/event/gymnastics",
+    label: UNIFIED_CREATION_ENABLED ? "Event Page" : "Create Event",
+    href: UNIFIED_CREATION_ENABLED ? "/create" : "/event/gymnastics",
     isAction: true,
     match: (path) => isCreateEventRoute(path),
     icon: (

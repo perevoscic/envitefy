@@ -68,7 +68,7 @@ test("middleware leaves local font assets available to every page", () => {
   assert.match(middleware, /woff\|woff2\|ttf\|otf/);
 });
 
-test("middleware redirects disabled event builders to gymnastics", () => {
+test("middleware routes new disabled builders to Create while retaining saved edit links", () => {
   const middleware = readSource("src/middleware.ts");
   const featureVisibility = readSource("src/config/feature-visibility.ts");
 
@@ -79,7 +79,8 @@ test("middleware redirects disabled event builders to gymnastics", () => {
     middleware,
     /DISABLED_EVENT_ROUTE_PREFIXES\.some\(\(prefix\) =>\s*matchesPathPrefix\(normalizedPathname, prefix\)\s*\)/s,
   );
-  assert.match(middleware, /url\.pathname = "\/event\/gymnastics";/);
+  assert.match(middleware, /!req\.nextUrl\.searchParams\.get\("edit"\)/);
+  assert.match(middleware, /: "\/create"/);
   assert.match(featureVisibility, /href: "\/event\/weddings"/);
   assert.match(featureVisibility, /href: "\/event\/birthdays"/);
 });

@@ -36,7 +36,7 @@ export {
   summarizeDiscoveryPerformanceForLog,
 } from "@/lib/meet-discovery/runtime";
 
-export { buildDiscoveryEvidence, extractDiscoveryText } from "@/lib/meet-discovery/extract";
+export { buildDiscoveryEvidence, enrichDiscoveryFileLayout, needsDiscoveryFileLayout, extractDiscoveryText } from "@/lib/meet-discovery/extract";
 
 export { finalizeMeetParseResult, parseMeetFromExtractedText } from "@/lib/meet-discovery/parse";
 

@@ -300,6 +300,13 @@
   .design[data-attendance="invitation"] .attendance .panel { border-top: 4px double var(--program-line); border-radius: 2.5rem 2.5rem 0.5rem 0.5rem; padding-top: 2rem; }
   .design[data-attendance="sidebar"] .attendance { max-width: 100%; }
 }
+/* An explicit body layout takes precedence over this design's original chapter grid. */
+.design .chapters[data-event-body-layout] { grid-template-columns: minmax(0, 1fr); }
+.design .chapters[data-event-body-layout="split"],
+.design .chapters[data-event-body-layout="cards"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.design[data-layout="trail"] .chapters:not([data-event-body-layout]) { width: auto; }
+.design[data-layout="trail"] .chapters[data-event-body-layout] { margin-inline: auto; }
+
 @media (prefers-reduced-motion: reduce) {
   .navLinks a { transition: none; }
 }

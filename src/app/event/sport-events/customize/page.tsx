@@ -464,7 +464,9 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
             setAdvancedState((prev) => ({ ...prev, ...incomingAdvanced }));
           }
 
-          if (existing.themeId && config.themes.find((t) => t.id === existing.themeId)) {
+          if (search?.get("intake") && style) {
+            setThemeId(config.themes[0]?.id ?? "default-theme");
+          } else if (existing.themeId && config.themes.find((t) => t.id === existing.themeId)) {
             setThemeId(existing.themeId);
           } else if (existing.theme?.id && config.themes.find((t) => t.id === existing.theme.id)) {
             setThemeId(existing.theme.id);

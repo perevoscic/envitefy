@@ -5,7 +5,7 @@ import GymnasticsDesignGallery from "@/components/gym-meet-templates/GymnasticsD
 import SportCreationGate from "@/components/event-create/SportCreationGate";
 
 export default function GymnasticsCreationPageClient({
-  forwardQueryString: _forwardQueryString,
+  forwardQueryString,
 }: {
   forwardQueryString?: string;
 }) {

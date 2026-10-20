@@ -1,6 +1,6 @@
 import { throwIfDiscoveryCancelled } from "@/lib/discovery/cancel";
 import { getEventHistoryById } from "@/lib/db";
-import { runDiscoveryExtractStageWithMode } from "@/lib/discovery/extract";
+import { enrichDiscoveryFileDocument, runDiscoveryExtractStageWithMode } from "@/lib/discovery/extract";
 import { safeString } from "@/lib/discovery/shared";
 import type { EventDiscoveryRow } from "@/lib/discovery/types";
 import {
@@ -13,6 +13,14 @@ import {
   buildTravelAccommodationState,
   enrichTravelAccommodation,
 } from "@/lib/travel-accommodation-enrichment";
+
+export const discoveryEnrichmentDeps = {
+  enrichDiscoveryFileDocument,
+  runDiscoveryExtractStageWithMode,
+  finalizeMeetParseResult,
+  enrichTravelAccommodation,
+  getEventHistoryById,
+};
 
 export async function runDiscoveryEnrichStage(
   discovery: EventDiscoveryRow,
@@ -41,22 +49,21 @@ export async function runDiscoveryEnrichStage(
 
   const performance = createDiscoveryPerformance();
   const enrichBudgetMs = resolveDiscoveryBudget("enrich", discovery.source.type);
-  const refreshedExtraction = await runDiscoveryExtractStageWithMode(
-    {
-      ...discovery,
-      document: existingDocument,
-    },
-    "enrich",
-    { signal: options?.signal },
-  );
+  const refreshedDocument = discovery.source.type === "file"
+    ? await discoveryEnrichmentDeps.enrichDiscoveryFileDocument(discovery, { signal: options?.signal })
+    : (await discoveryEnrichmentDeps.runDiscoveryExtractStageWithMode(
+        { ...discovery, document: existingDocument },
+        "enrich",
+        { signal: options?.signal },
+      )).document;
   throwIfDiscoveryCancelled(options?.signal);
   const extractedText =
-    safeString((refreshedExtraction.document.extractionMeta as any)?.extractedText) ||
+    safeString(refreshedDocument.extractionMeta.extractedText) ||
     safeString((existingDocument.extractionMeta as any)?.extractedText);
-  const enrichedParseResult = await finalizeMeetParseResult(
+  const enrichedParseResult = await discoveryEnrichmentDeps.finalizeMeetParseResult(
     baseParseResult,
     extractedText,
-    refreshedExtraction.document.extractionMeta as any,
+    refreshedDocument.extractionMeta as any,
     {
       traceId: discovery.eventId,
       mode: "enrich",
@@ -67,7 +74,7 @@ export async function runDiscoveryEnrichStage(
   );
   throwIfDiscoveryCancelled(options?.signal);
 
-  const travelAccommodation = await enrichTravelAccommodation({
+  const travelAccommodation = await discoveryEnrichmentDeps.enrichTravelAccommodation({
     sourceType: discovery.source.type,
     sourceUrl: discovery.source.url,
     sourceId: discovery.id,
@@ -75,14 +82,14 @@ export async function runDiscoveryEnrichStage(
     signal: options?.signal,
     budgetMs: Math.min(25000, enrichBudgetMs),
     extractedText,
-    extractionMeta: refreshedExtraction.document.extractionMeta as any,
+    extractionMeta: refreshedDocument.extractionMeta as any,
   });
   throwIfDiscoveryCancelled(options?.signal);
 
-  const previousEvent = await getEventHistoryById(discovery.eventId);
+  const previousEvent = await discoveryEnrichmentDeps.getEventHistoryById(discovery.eventId);
 
   return {
-    document: refreshedExtraction.document,
+    document: refreshedDocument,
     enrichment: {
       parseResult: enrichedParseResult,
       travelAccommodation: buildTravelAccommodationState(travelAccommodation, previousEvent?.data?.discoverySource?.travelAccommodation),

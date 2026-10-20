@@ -20,6 +20,8 @@ export type PdfTextExtractionPage = {
 export type PdfTextExtractionResult = {
   text: string;
   pages: PdfTextExtractionPage[];
+  pageCount?: number;
+  links?: PdfAnnotationLink[];
 };
 
 let pdfJsPromise: Promise<any | null> | null = null;
@@ -359,6 +361,25 @@ function normalizePdfJsPageText(items: unknown): string {
     .trim();
 }
 
+function pageAnnotationLinks(annotations: unknown, textItems: unknown, pageNumber: number): PdfAnnotationLink[] {
+  const links: PdfAnnotationLink[] = [];
+  const seen = new Set<string>();
+  for (const annotation of Array.isArray(annotations) ? annotations : []) {
+    const url = normalizeHttpUrl(annotation?.url || annotation?.unsafeUrl || annotation?.action?.url || annotation?.action?.unsafeUrl);
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    const nearby = pdfLinkContext(Array.isArray(annotation?.rect) ? annotation.rect : [], Array.isArray(textItems) ? textItems : []);
+    links.push({
+      url,
+      label: nearby.label || safeString(annotation?.title) || safeString(annotation?.contents) || safeString(annotation?.fieldName) || null,
+      contextText: nearby.contextText,
+      pageNumber,
+      source: "pdf_annotation",
+    });
+  }
+  return links;
+}
+
 async function getPdfRenderDeps() {
   if (!pdfRenderDepsPromise) {
     pdfRenderDepsPromise = Promise.all([getPdfJs(), import("@napi-rs/canvas")])
@@ -375,38 +396,75 @@ async function getPdfRenderDeps() {
   return pdfRenderDepsPromise;
 }
 
-async function renderPdfPageToPngWithPdfJs(
+export type PdfPageRasterizer = {
+  rasterize: (pageIndex: number) => Promise<Buffer | null>;
+  dispose: () => Promise<void>;
+};
+
+/** Keep one fallback document open while an import reads all of its pages. */
+export function createPdfPageRasterizer(
   pdfBuffer: Buffer,
-  pageIndex: number,
-  scale = 1.75,
-): Promise<Buffer | null> {
-  const deps = await getPdfRenderDeps();
-  if (!deps) return null;
-  try {
-    const loadingTask = getServerPdfDocument(deps.pdfjs, pdfBuffer);
-    const doc = await loadingTask.promise;
-    const pageCount = Number(doc?.numPages) || 0;
-    if (pageIndex < 0 || pageIndex >= pageCount) {
-      if (typeof doc.cleanup === "function") doc.cleanup();
-      if (typeof doc.destroy === "function") await doc.destroy();
-      return null;
-    }
-    const page = await doc.getPage(pageIndex + 1);
-    const viewport = page.getViewport({ scale });
-    const width = Math.max(1, Math.ceil(viewport.width));
-    const height = Math.max(1, Math.ceil(viewport.height));
-    const canvas = deps.createCanvas(width, height);
-    const context = canvas.getContext("2d");
-    await page.render({ canvasContext: context, viewport }).promise;
-    const png = canvas.toBuffer("image/png");
-    if (typeof page.cleanup === "function") page.cleanup();
-    if (typeof doc.cleanup === "function") doc.cleanup();
-    if (typeof doc.destroy === "function") await doc.destroy();
-    return Buffer.isBuffer(png) ? png : Buffer.from(png);
-  } catch (error) {
-    logPdfWarning(`pdfjs raster fallback failed for page ${pageIndex + 1}`, error);
-    return null;
-  }
+  signal?: AbortSignal,
+): PdfPageRasterizer {
+  let document: Promise<any | null> | null = null;
+  let disposed = false;
+  let sharpSupported: boolean | undefined;
+  return {
+    async rasterize(pageIndex) {
+      signal?.throwIfAborted();
+      if (disposed) throw new Error("PDF reader is closed");
+      if (sharpSupported !== false) {
+        const image = await sharp(pdfBuffer, { density: 220, page: pageIndex })
+          .png().toBuffer().catch(() => null);
+        signal?.throwIfAborted();
+        if (image) {
+          sharpSupported = true;
+          return image;
+        }
+        // Platforms without libvips PDF support need only one failed attempt.
+        sharpSupported = false;
+      }
+      let page: any = null;
+      try {
+        const deps = await getPdfRenderDeps();
+        if (!deps) return null;
+        document ||= getServerPdfDocument(deps.pdfjs, pdfBuffer).promise;
+        const doc = await document;
+        signal?.throwIfAborted();
+        const pageCount = Number(doc?.numPages) || 0;
+        if (pageIndex < 0 || pageIndex >= pageCount) return null;
+        page = await doc.getPage(pageIndex + 1);
+        const viewport = page.getViewport({ scale: 1.75 });
+        const canvas = deps.createCanvas(Math.max(1, Math.ceil(viewport.width)), Math.max(1, Math.ceil(viewport.height)));
+        await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+        signal?.throwIfAborted();
+        const png = canvas.toBuffer("image/png");
+        return Buffer.isBuffer(png) ? png : Buffer.from(png);
+      } catch (error) {
+        signal?.throwIfAborted();
+        logPdfWarning(`pdfjs raster fallback failed for page ${pageIndex + 1}`, error);
+        return null;
+      } finally {
+        if (typeof page?.cleanup === "function") page.cleanup();
+      }
+    },
+    async dispose() {
+      if (disposed) return;
+      disposed = true;
+      const doc = await document?.catch(() => null);
+      try {
+        if (typeof doc?.cleanup === "function") doc.cleanup();
+      } catch (error) {
+        logPdfWarning("pdfjs raster cleanup failed", error);
+      } finally {
+        try {
+          if (typeof doc?.destroy === "function") await doc.destroy();
+        } catch (error) {
+          logPdfWarning("pdfjs raster destroy failed", error);
+        }
+      }
+    },
+  };
 }
 
 /**
@@ -416,11 +474,12 @@ export async function rasterizePdfPageToPng(
   pdfBuffer: Buffer,
   pageIndex: number,
 ): Promise<Buffer | null> {
-  const sharpPageImage = await sharp(pdfBuffer, { density: 220, page: pageIndex })
-    .png()
-    .toBuffer()
-    .catch(() => null);
-  return sharpPageImage || (await renderPdfPageToPngWithPdfJs(pdfBuffer, pageIndex));
+  const reader = createPdfPageRasterizer(pdfBuffer);
+  try {
+    return await reader.rasterize(pageIndex);
+  } finally {
+    await reader.dispose();
+  }
 }
 
 export async function extractPdfAnnotationLinks(pdfBuffer: Buffer): Promise<PdfAnnotationLink[]> {
@@ -432,42 +491,13 @@ export async function extractPdfAnnotationLinks(pdfBuffer: Buffer): Promise<PdfA
     const loadingTask = getServerPdfDocument(pdfjs, pdfBuffer);
     doc = await loadingTask.promise;
     const links: PdfAnnotationLink[] = [];
-    const seen = new Set<string>();
     const pageCount = Number(doc.numPages) || 0;
     for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
       const page = await doc.getPage(pageNumber);
       try {
         const annotations = await page.getAnnotations();
         const textContent = await page.getTextContent();
-        for (const annotation of Array.isArray(annotations) ? annotations : []) {
-          const url = normalizeHttpUrl(
-            annotation?.url ||
-              annotation?.unsafeUrl ||
-              annotation?.action?.url ||
-              annotation?.action?.unsafeUrl,
-          );
-          if (!url) continue;
-          const key = `${pageNumber}|${url}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          const nearby = pdfLinkContext(
-            Array.isArray(annotation?.rect) ? annotation.rect : [],
-            textContent.items || [],
-          );
-          const label =
-            nearby.label ||
-            safeString(annotation?.title) ||
-            safeString(annotation?.contents) ||
-            safeString(annotation?.fieldName) ||
-            null;
-          links.push({
-            url,
-            label,
-            contextText: nearby.contextText,
-            pageNumber,
-            source: "pdf_annotation",
-          });
-        }
+        links.push(...pageAnnotationLinks(annotations, textContent.items, pageNumber));
       } finally {
         if (typeof page.cleanup === "function") page.cleanup();
       }
@@ -484,7 +514,7 @@ export async function extractPdfAnnotationLinks(pdfBuffer: Buffer): Promise<PdfA
   }
 }
 
-export async function extractPdfTextWithPdfJs(pdfBuffer: Buffer): Promise<PdfTextExtractionResult> {
+export async function extractPdfTextWithPdfJs(pdfBuffer: Buffer, options: { includeAnnotations?: boolean } = {}): Promise<PdfTextExtractionResult> {
   const pdfjs = await getPdfJs();
   if (!pdfjs) return { text: "", pages: [] };
 
@@ -493,14 +523,21 @@ export async function extractPdfTextWithPdfJs(pdfBuffer: Buffer): Promise<PdfTex
     const loadingTask = getServerPdfDocument(pdfjs, pdfBuffer);
     doc = await loadingTask.promise;
     const pages: PdfTextExtractionPage[] = [];
+    const links: PdfAnnotationLink[] = [];
     const pageCount = Number(doc.numPages) || 0;
     for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
       const page = await doc.getPage(pageNumber);
       try {
         const textContent = await page.getTextContent();
         const text = normalizePdfJsPageText(textContent?.items);
-        if (!text) continue;
-        pages.push({ num: pageNumber, text });
+        if (text) pages.push({ num: pageNumber, text });
+        if (options.includeAnnotations) {
+          try {
+            links.push(...pageAnnotationLinks(await page.getAnnotations(), textContent?.items, pageNumber));
+          } catch (error) {
+            logPdfWarning(`pdf annotations failed for page ${pageNumber}`, error);
+          }
+        }
       } finally {
         if (typeof page.cleanup === "function") page.cleanup();
       }
@@ -508,6 +545,8 @@ export async function extractPdfTextWithPdfJs(pdfBuffer: Buffer): Promise<PdfTex
     return {
       text: pages.map((page) => page.text).join("\n\n"),
       pages,
+      pageCount,
+      ...(options.includeAnnotations ? { links } : {}),
     };
   } catch (error) {
     logPdfWarning("pdf text extraction failed", error);

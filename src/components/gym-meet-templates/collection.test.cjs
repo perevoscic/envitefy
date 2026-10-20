@@ -32,6 +32,10 @@ const Renderer = require('./GymMeetTemplateRenderer.tsx').default;
 const Preview = require('./GymnasticsPreview.tsx').default;
 const { normalizeHeroImageSettings } = require('../../lib/hero-image-settings.ts');
 const { buildTemplateDraftPayload } = require('../../lib/template-draft-payload.ts');
+const { saveTemplateDraftToAccount } = require('../../lib/template-draft-handoff.ts');
+const {
+  GYMNASTICS_TITLE_FONTS, normalizeGymnasticsTitleFont, gymnasticsTitleFontFamily,
+} = require('../../lib/gymnastics-title-font.ts');
 const noAction = () => {};
 const escaped = value => value.replaceAll('&', '&amp;').replaceAll("'", '&#x27;');
 const rsvpProps = {
@@ -46,6 +50,156 @@ test('image appearance normalizes fit and position while discarding the old manu
   assert.deepEqual(normalizeHeroImageSettings(undefined), { positionY: 50, fit: 'cover' });
   assert.deepEqual(normalizeHeroImageSettings({ positionY: -30, fit: 'invalid', tint: 90 }), { positionY: 0, fit: 'cover' });
   assert.deepEqual(normalizeHeroImageSettings({ positionY: NaN, fit: 'contain', tint: '50' }), { positionY: 50, fit: 'contain' });
+});
+
+test('title font choices are limited to bundled collection fonts and preserve design defaults', () => {
+  const css = fs.readFileSync(path.join(__dirname, 'collection-fonts.css'), 'utf8');
+  for (const font of GYMNASTICS_TITLE_FONTS) {
+    assert.equal(normalizeGymnasticsTitleFont(font.id), font.id);
+    assert.equal(gymnasticsTitleFontFamily(font.id), font.fontFamily);
+    const family = font.fontFamily.match(/^"([^"]+)"/)[1];
+    assert.ok(css.includes(`font-family: "${family}"`), `${font.id}: collection font is loaded`);
+  }
+  for (const value of [undefined, null, '', 'unknown', '"Injected Font"', {}, 1]) {
+    assert.equal(normalizeGymnasticsTitleFont(value), '');
+    assert.equal(gymnasticsTitleFontFamily(value), undefined);
+  }
+  for (const design of designs) {
+    const p = props(design);
+    assert.equal(p.model.gymnasticsTitleFont, '', design.id);
+    const native = renderToStaticMarkup(React.createElement(Renderer, p)).match(/<h1\b[^>]*>/)[0];
+    assert.ok(!native.includes('font-family:'), `${design.id}: default retains the design font`);
+  }
+  for (const [selected, expected] of [['', ''], ['unknown', ''], ['orbitron', 'orbitron']]) {
+    const model = normalizeGymMeetEventData({ eventTitle: 'Meet', navItems: [], rosterAthletes: [], eventData: {
+      createdVia: 'meet-discovery-v2', gymnasticsTitleFont: selected, fontId: 'inter',
+      builderDraft: { event: { gymnasticsTitleFont: 'anton' } },
+    } });
+    assert.equal(model.gymnasticsTitleFont, expected, 'the top-level selection overrides a stale discovery font');
+  }
+});
+
+test('selected title fonts survive explicit account saves and reloads across all designs', async () => {
+  for (const [index, design] of designs.entries()) {
+    const font = GYMNASTICS_TITLE_FONTS[index % GYMNASTICS_TITLE_FONTS.length];
+    const snapshot = { data: {
+      title: 'Spring club meet', pageTemplateId: design.id,
+      gymnasticsTitleFont: font.id, fontId: 'inter',
+      createdVia: 'meet-discovery-v2',
+      builderDraft: { event: { gymnasticsTitleFont: 'anton' } },
+    } };
+    const payload = buildTemplateDraftPayload(snapshot, 'gymnastics', 'America/Chicago');
+    assert.equal(payload.data.gymnasticsTitleFont, font.id, `${design.id}: draft payload`);
+    let saved;
+    const draft = {
+      version: 1, id: `font-${design.id}`, category: 'gymnastics', templateId: design.id,
+      updatedAt: Date.now(), snapshot, assets: {}, eventId: `saved-${design.id}`, eventRevision: 'v1',
+    };
+    await saveTemplateDraftToAccount({
+      draft, payload, category: 'gymnastics', templateId: design.id,
+      status: 'published', authenticated: true, remoteMedia: {},
+      request: async (url, options) => {
+        assert.equal(url, `/api/history/saved-${design.id}`);
+        assert.equal(options.method, 'PATCH');
+        saved = JSON.parse(options.body);
+        return Response.json({ id: draft.eventId, revision: 'v2', title: saved.title, data: saved.data });
+      },
+    });
+    assert.equal(saved.data.gymnasticsTitleFont, font.id, `${design.id}: top-level account value`);
+    assert.equal(saved.data.templateEditor.snapshot.data.gymnasticsTitleFont, font.id, `${design.id}: recovery snapshot`);
+    const restored = JSON.parse(JSON.stringify(saved));
+    const p = props(design);
+    p.model = normalizeGymMeetEventData({ eventTitle: restored.title, eventData: restored.data, navItems: [], rosterAthletes: [] });
+    assert.equal(p.model.gymnasticsTitleFont, font.id, `${design.id}: reloaded selection`);
+    const heading = renderToStaticMarkup(React.createElement(Renderer, p)).match(/<h1\b[^>]*>/)[0];
+    assert.ok(heading.includes(`font-family:${font.fontFamily.replaceAll('"', '&quot;')}`), `${design.id}: rendered font override`);
+    const defaultSnapshot = { data: { ...restored.data, gymnasticsTitleFont: '' } };
+    const defaults = JSON.parse(JSON.stringify(buildTemplateDraftPayload(defaultSnapshot, 'gymnastics', 'America/Chicago')));
+    assert.equal(defaults.data.gymnasticsTitleFont, '', `${design.id}: explicit default survives saving`);
+    p.model = normalizeGymMeetEventData({ eventTitle: defaults.title, eventData: defaults.data, navItems: [], rosterAthletes: [] });
+    assert.equal(p.model.gymnasticsTitleFont, '', `${design.id}: saved default wins over stale V2 font`);
+    const defaultHeading = renderToStaticMarkup(React.createElement(Renderer, p)).match(/<h1\b[^>]*>/)[0];
+    assert.ok(!defaultHeading.includes('font-family:'), `${design.id}: resetting restores native typography`);
+  }
+});
+
+test('hero fact values preserve canonical clears, missing-field fallbacks and latest discovery edits', () => {
+  const normalize = (eventData, mapAddress) => normalizeGymMeetEventData({
+    eventTitle: 'Meet', eventData, mapAddress, navItems: [], rosterAthletes: [],
+  });
+  const stale = {
+    createdVia: 'meet-discovery-v2', date: '2026-03-06', time: '09:00',
+    builderDraft: {
+      event: { venue: 'Old arena', address: '100 Old Street', customFields: { meetDateRangeLabel: 'March 6-8, 2026' } },
+      venue: { venue: 'Old arena', address: '100 Old Street' },
+    },
+    discoverySource: { parseResult: { address: '200 Parsed Street' } },
+  };
+  const latest = normalize({
+    ...stale, venue: 'New arena', address: '300 New Street',
+    customFields: { meetDateRangeLabel: 'March 7-9, 2027' },
+  }, '400 Map Street');
+  assert.equal(latest.authoredVenue, 'New arena');
+  assert.equal(latest.venue, 'New arena');
+  assert.equal(latest.authoredAddress, '300 New Street');
+  assert.equal(latest.address, '300 New Street');
+  assert.equal(latest.authoredDateLabel, 'March 7-9, 2027');
+  assert.equal(latest.dateLabel, 'March 7-9, 2027');
+  const cleared = normalize({ ...stale, venue: '', address: '', customFields: { meetDateRangeLabel: '' } }, '400 Map Street');
+  assert.equal(cleared.authoredVenue, '');
+  assert.equal(cleared.venue, '');
+  assert.equal(cleared.authoredAddress, '');
+  assert.equal(cleared.address, '');
+  assert.equal(cleared.mapAddress, '');
+  assert.equal(cleared.authoredDateLabel, '');
+  assert.match(cleared.dateLabel, /Mar 6, 2026/, 'clearing Display Date restores the calendar date');
+  const missing = normalize({ date: '2026-03-06', discoverySource: { parseResult: { address: '200 Parsed Street' } } }, '400 Map Street');
+  assert.equal(missing.authoredAddress, undefined);
+  assert.equal(missing.address, '200 Parsed Street');
+  assert.equal(normalize({}, '400 Map Street').address, '400 Map Street');
+  assert.equal(normalize({ extra: { meetDateRangeLabel: 'March 7-9, 2027' } }).authoredDateLabel, 'March 7-9, 2027', 'browser drafts retain the existing extra field');
+  assert.equal(stale.builderDraft.venue.address, '100 Old Street', 'normalization does not mutate saved discovery snapshots');
+  const p = props(designs[0]);
+  p.model = normalize({ venue: 'Main Arena Main Arena', address: '333 Franklin St, 333 Franklin St' });
+  assert.equal(p.model.authoredVenue, 'Main Arena Main Arena', 'editing retains the canonical input');
+  assert.equal(p.model.venue, 'Main Arena');
+  assert.equal(p.model.address, '333 Franklin St');
+  const guestFacts = renderToStaticMarkup(React.createElement(Renderer, p)).match(/<dl class="facts">[\s\S]*?<\/dl>/)[0];
+  assert.ok(!guestFacts.includes('Main Arena Main Arena'), 'guest facts retain duplicate-venue cleanup');
+  assert.ok(!guestFacts.includes('333 Franklin St, 333 Franklin St'), 'guest facts retain duplicate-address cleanup');
+  const editorFacts = renderToStaticMarkup(React.createElement(Renderer, { ...p, onPageTextChange: noAction }));
+  for (const label of ['display date', 'venue', 'address']) {
+    assert.ok(editorFacts.includes(`aria-label="Edit ${label}"`), `${label} has its own value editor`);
+  }
+  assert.ok(!guestFacts.includes('aria-label="Edit '), 'guests never receive fact editors');
+});
+
+test('hero fact edits survive explicit saves across all designs without moving calendar dates', () => {
+  for (const design of designs) {
+    const source = {
+      title: 'Spring club meet', pageTemplateId: design.id, createdVia: 'meet-discovery-v2',
+      date: '2026-03-06', time: '09:00', timezone: 'America/New_York',
+      venue: 'Tampa Convention Center, Hall B', address: '333 S Franklin St, Tampa, FL 33602',
+      customFields: { meetDateRangeLabel: 'March 7-9, 2027' },
+      builderDraft: {
+        event: { date: '2026-03-06', time: '09:00', customFields: { meetDateRangeLabel: 'March 6-8, 2026' } },
+        venue: { venue: 'Old arena', address: '100 Old Street' },
+      },
+    };
+    const before = JSON.parse(JSON.stringify(source));
+    const restored = JSON.parse(JSON.stringify(buildTemplateDraftPayload({ data: source }, 'gymnastics', source.timezone)));
+    assert.equal(restored.data.date, '2026-03-06', design.id);
+    assert.equal(restored.data.time, '09:00', design.id);
+    assert.equal(restored.data.startISO, '2026-03-06T14:00:00.000Z', `${design.id}: Display Date does not change calendar dates`);
+    const p = props(design);
+    p.model = normalizeGymMeetEventData({ eventTitle: restored.title, eventData: restored.data, navItems: [], rosterAthletes: [] });
+    assert.equal(p.model.authoredDateLabel, source.customFields.meetDateRangeLabel, design.id);
+    assert.equal(p.model.authoredVenue, source.venue, design.id);
+    assert.equal(p.model.authoredAddress, source.address, design.id);
+    const html = renderToStaticMarkup(React.createElement(Renderer, p));
+    for (const value of [source.customFields.meetDateRangeLabel, source.venue, source.address]) assert.ok(html.includes(value), `${design.id}: ${value}`);
+    assert.deepEqual(source, before, `${design.id}: rendering retains explicit calendar values`);
+  }
 });
 
 test('explicit draft snapshots retain image adjustments through public rendering for all designs', () => {

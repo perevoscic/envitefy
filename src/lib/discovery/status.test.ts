@@ -146,3 +146,19 @@ test("draft is not available while the packet is still being parsed", () => {
   assert.equal(status.draftReady, false);
   assert.equal(status.builderReady, false);
 });
+
+test("an optional enrichment failure retains the mapped draft for editing", () => {
+  const status = buildDiscoveryStatusResponse(buildDiscoveryRow({
+    pipeline: createDiscoveryPipelineState({ processingStage: "failed_enrich", lastSuccessfulStage: "map", errorCode: "failed_enrich", errorMessage: "Optional lookup unavailable" }),
+  }));
+  assert.equal(status.draftReady, true);
+  assert.equal(status.builderReady, false);
+  assert.equal(status.errorCode, "failed_enrich");
+});
+
+test("cancellation never exposes a mapped draft as ready", () => {
+  const status = buildDiscoveryStatusResponse(buildDiscoveryRow({
+    pipeline: createDiscoveryPipelineState({ processingStage: "failed_enrich", lastSuccessfulStage: "map", errorCode: "cancelled" }),
+  }));
+  assert.equal(status.draftReady, false);
+});

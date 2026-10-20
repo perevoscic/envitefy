@@ -58,6 +58,12 @@
   outline: 2px solid #7052a1;
   outline-offset: 3px;
 }
+.views .closeSettings {
+  width: 44px;
+  min-width: 44px;
+  flex-shrink: 0;
+  padding: 0;
+}
 .actions button:disabled {
   opacity: 0.5;
   cursor: default;
@@ -125,6 +131,16 @@
   border-top: 1px solid #e3dced;
   background: #faf8ffed;
   backdrop-filter: blur(12px);
+}
+.footer[data-bottom-settings="true"] {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.footer[data-bottom-settings="true"] .views {
+  margin-left: 0;
+}
+.workspace[data-bottom-settings="true"] .preview {
+  padding-bottom: calc(128px + env(safe-area-inset-bottom, 0px));
 }
 .error,
 .message {
@@ -222,6 +238,18 @@
     border-top: 0;
     background: transparent;
     backdrop-filter: none;
+  }
+  .workspace[data-mobile-editing="false"] .footer[data-bottom-settings="true"] {
+    justify-self: stretch;
+    border-top: 1px solid #e3dced;
+    background: #faf8ffed;
+    backdrop-filter: blur(12px);
+  }
+  .footer[data-bottom-settings="true"] .views {
+    flex-basis: 100%;
+  }
+  .footer[data-bottom-settings="true"] .views button {
+    width: 100%;
   }
   .actions {
     width: 100%;

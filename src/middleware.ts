@@ -309,14 +309,14 @@ export async function middleware(req: NextRequest) {
 
   if (
     normalizedPathname === "/event/new" ||
-    DISABLED_EVENT_ROUTE_PREFIXES.some((prefix) =>
+    (!req.nextUrl.searchParams.get("edit") && DISABLED_EVENT_ROUTE_PREFIXES.some((prefix) =>
       matchesPathPrefix(normalizedPathname, prefix)
-    )
+    ))
   ) {
     const url = req.nextUrl.clone();
-    url.pathname = "/event/gymnastics";
-    url.search = "";
-    return redirectWithMarker(url, 308);
+    const savedEdit = normalizedPathname === "/event/new" ? req.nextUrl.searchParams.get("edit") : null;
+    url.pathname = savedEdit ? `/event/${encodeURIComponent(savedEdit)}` : "/create";
+    return redirectWithMarker(url, 307);
   }
 
   if (pathname === "/signup") {
@@ -360,7 +360,7 @@ export async function middleware(req: NextRequest) {
 
   if (isAdminOnlyCreateEventPath(normalizedPathname)) {
     const authState = await resolveAuthState();
-    const enabledEditor = isEnabledTemplateEditorPath(normalizedPathname) ||
+    const enabledEditor = Boolean(req.nextUrl.searchParams.get("edit")) || isEnabledTemplateEditorPath(normalizedPathname) ||
       normalizedPathname === "/event/football/customize" ||
       normalizedPathname === "/event/football-season/customize";
     if (!authState.hasSession || (!enabledEditor && !isAdminToken(authState.token))) {

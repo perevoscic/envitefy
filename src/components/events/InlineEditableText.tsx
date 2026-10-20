@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Pencil, RotateCcw, X } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import styles from "./inline-editable-text.module.css";
 
 /** Edits update parent memory immediately; saving the event remains a separate action. */
@@ -13,6 +13,7 @@ export default function InlineEditableText({
   multiline = false,
   onChange,
   renderText,
+  description,
 }: {
   label: string;
   value?: string;
@@ -21,12 +22,14 @@ export default function InlineEditableText({
   multiline?: boolean;
   onChange?: (value: string | undefined) => void;
   renderText?: (text: string) => ReactNode;
+  description?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const previousValue = useRef<string | undefined>(undefined);
   const input = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const pencil = useRef<HTMLButtonElement>(null);
+  const descriptionId = useId();
   useEffect(() => {
     if (editing) {
       input.current?.focus();
@@ -59,6 +62,7 @@ export default function InlineEditableText({
           input.current = element;
         }}
         aria-label={label}
+        aria-describedby={description ? descriptionId : undefined}
         className={styles.input}
         value={draft}
         maxLength={maxLength}
@@ -79,6 +83,7 @@ export default function InlineEditableText({
           }
         }}
       />
+      {description && <span id={descriptionId} className={styles.description}>{description}</span>}
       <span className={styles.actions}>
         <button
           type="button"

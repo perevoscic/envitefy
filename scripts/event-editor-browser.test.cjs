@@ -54,7 +54,7 @@ test("one Event Page editor protects saves and navigation across creation modes 
   });
   const css = (
     await require("postcss")([require("@tailwindcss/postcss")()]).process(
-      '@import "tailwindcss" source(none); @source "../src/components/UnsavedProgressProvider.tsx"; @source "../src/app/event/birthdays/customize/page.tsx"; @source "../src/components/templates/TemplateEditorContext.tsx";',
+      '@import "tailwindcss" source(none); @source "../src/components/UnsavedProgressProvider.tsx"; @source "../src/app/event/birthdays/customize/page.tsx"; @source "../src/app/event/gymnastics/customize/page.tsx"; @source "../src/components/gym-meet-templates"; @source "../src/components/events/HeroImageEditor.tsx"; @source "../src/components/templates/TemplateEditorContext.tsx";',
       { from: path.resolve("scripts/event-editor-fixture.css") },
     )
   ).css;
@@ -72,6 +72,8 @@ test("one Event Page editor protects saves and navigation across creation modes 
     writes = [],
     records = new Map();
   let failSave = false;
+  let gymCoreCompleted = false;
+  let gymCoreStatusReads = 0;
   const base = "http://localhost:43128";
   const saved = {
     id: "saved-event",
@@ -96,6 +98,16 @@ test("one Event Page editor protects saves and navigation across creation modes 
       url = new URL(req.url());
     if (url.pathname === "/fixture.js")
       return route.fulfill({ contentType: "text/javascript", body: script });
+    if (url.pathname === "/api/discovery/gym-core/run")
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ accepted: true }) });
+    if (url.pathname === "/api/discovery/gym-core/status") {
+      gymCoreStatusReads += 1;
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({
+        draftReady: true,
+        builderReady: gymCoreCompleted,
+        processingStage: gymCoreCompleted ? "review_ready" : "enrich",
+      }) });
+    }
     if (/^\/api\/events\/[^/]+\/public-slug$/.test(url.pathname)) {
       const id = url.pathname.split("/")[3];
       const previous = records.get(id);
@@ -589,6 +601,183 @@ test("one Event Page editor protects saves and navigation across creation modes 
     await page.getByRole("button", { name: "Save changes", exact: true }).waitFor({state:"hidden"});
     assert.equal(errors.length, 0, errors.join("\n"));
     await page.screenshot({ path: path.join(output, "birthday-editor-desktop.png") });
+
+    // Gymnastics has one authoring surface: wording stays editable beside its settings.
+    records.set("gym-event", {
+      id: "gym-event", title: "Gasparilla Classic", revision: "gym-v1",
+      data: {
+        title: "Gasparilla Classic", status: "draft", createdVia: "simple-template",
+        category: "Gymnastics", templateId: "gymnastics", pageTemplateId: "airborne-atlas",
+        date: "2026-11-06", time: "09:00", timezone: "America/New_York",
+        venue: "Tampa Convention Center", address: "333 S Franklin St, Tampa, FL 33602",
+        details: "Doors open at 8 AM.", rsvpEnabled: false,
+      },
+    });
+    const gymUrl = `${base}/event/gymnastics/customize?mode=gymnastics&edit=gym-event`;
+    const gymControls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
+    const wording = {
+      "Top-left label": "Our championship",
+      "Top-right label": "A weekend to remember",
+      "Welcome message": "Ready to soar",
+      "Encouragement": "Together, we shine.",
+      "Bottom-left label": "Our gymnasts",
+      "Bottom-right label": "See you in Tampa",
+    };
+    const editWording = async (label, value) => {
+      await preview.getByRole("button", { name: `Edit ${label.toLowerCase()}`, exact: true }).click();
+      await preview.getByLabel(label, { exact: true }).fill(value);
+      await preview.getByRole("button", { name: `Done editing ${label.toLowerCase()}`, exact: true }).click();
+    };
+    if (process.env.EVENT_EDITOR_SKIP_GYM_WORDING !== "1") for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 760 });
+      await page.goto(gymUrl);
+      await gymControls.getByRole("button", { name: /^Event basics/ }).click();
+      await page.getByLabel("Event Title", { exact: true }).waitFor();
+      const beforeGym = writes.length;
+      if (width === 390) await viewActions.getByRole("button", { name: "Close settings", exact: true }).click();
+      for (const [label, value] of Object.entries(wording)) await editWording(label, value);
+      await editWording("Event title", `Gasparilla Classic ${width}`);
+      await editWording("Display date", "March 6–8, 2027");
+      await editWording("Venue", "Tampa Convention Center — East Hall");
+      await editWording("Address", "");
+      await preview.getByRole("button", { name: "Edit address", exact: true }).click();
+      await preview.getByLabel("Address", { exact: true }).fill("333 S Franklin St, Tampa, FL 33602");
+      await preview.getByRole("button", { name: "Done editing address", exact: true }).click();
+      if (width === 390) await viewActions.getByRole("button", { name: "Page settings", exact: true }).click();
+      assert.equal(await page.getByLabel("Event Title", { exact: true }).inputValue(), `Gasparilla Classic ${width}`, "inline wording and settings share canonical event data");
+      assert.equal(await page.getByLabel("Display Date", { exact: true }).inputValue(), "March 6–8, 2027");
+      assert.equal(await page.getByLabel("Venue", { exact: true }).inputValue(), "Tampa Convention Center — East Hall");
+      assert.equal(await page.getByLabel("Date", { exact: true }).inputValue(), "2026-11-06", "inline display wording keeps the explicit calendar date");
+
+      // Wheel from inside the form must reach the final input above the save overlay.
+      await gymControls.evaluate((element) => { element.scrollTop = 0; });
+      const controlsBox = await gymControls.boundingBox();
+      await page.mouse.move(controlsBox.x + controlsBox.width / 2, controlsBox.y + controlsBox.height / 2);
+      await page.mouse.wheel(0, 10000);
+      await page.waitForFunction(() => {
+        const panel = document.querySelector('aside[aria-label="Event editing controls"]');
+        return panel.scrollTop > 0 && panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 2;
+      });
+      const addressInput = page.getByLabel("Address", { exact: true });
+      const addressBox = await addressInput.boundingBox();
+      const saveTop = await page.getByRole("group", { name: "Save event", exact: true }).evaluate((element) => element.parentElement.getBoundingClientRect().top);
+      assert.ok(addressBox.y + addressBox.height <= saveTop + 1, `address clears save controls at ${width}px`);
+      await addressInput.click();
+      await addressInput.fill(`333 S Franklin St, Tampa, FL 33602, Hall ${width}`);
+      await page.screenshot({ path: path.join(output, `gymnastics-address-${width}.png`) });
+      await click("Back to details");
+      await gymControls.getByRole("button", { name: /^Image position/ }).click();
+      await page.getByRole("combobox", { name: "Image fit", exact: true }).selectOption("contain");
+      assert.equal(await page.getByRole("slider", { name: "Vertical position", exact: true }).isDisabled(), true);
+      await page.getByRole("combobox", { name: "Image fit", exact: true }).selectOption("cover");
+      const position = page.getByRole("slider", { name: "Vertical position", exact: true });
+      await position.focus();
+      await page.keyboard.press("Home");
+      await page.keyboard.press("ArrowRight");
+      await click("Back to details");
+      await gymControls.getByRole("button", { name: /^Design/ }).click();
+      await page.getByLabel("Title font", { exact: true }).selectOption("montserrat");
+      assert.equal(writes.length, beforeGym, "wording and settings remain unsaved until an explicit save");
+      if (width === 390) await viewActions.getByRole("button", { name: "Close settings", exact: true }).click();
+      assert.match(await preview.locator("h1").evaluate((element) => element.style.fontFamily), /Gym Montserrat/);
+      await preview.getByRole("button", { name: "Preview event", exact: true }).click();
+      const fullscreen = page.getByRole("dialog", { name: "Event preview", exact: true });
+      await fullscreen.waitFor();
+      assert.equal(await fullscreen.locator('button[aria-label^="Edit "]').count(), 0, "fullscreen preview has no wording editors");
+      assert.equal(await fullscreen.getByRole("button", { name: "Change hero image", exact: true }).count(), 0);
+      await click("Close preview");
+      if (width === 390) await viewActions.getByRole("button", { name: "Page settings", exact: true }).click();
+      assert.equal(await page.getByLabel("Title font", { exact: true }).inputValue(), "montserrat");
+      await click("Save draft");
+      await page.getByText("Draft saved.", { exact: true }).waitFor();
+      const gymSaved = writes.at(-1).body.data;
+      assert.equal(gymSaved.gymnasticsTitleFont, "montserrat");
+      assert.equal(gymSaved.heroImageSettings.positionY, 1);
+      assert.equal(gymSaved.address, `333 S Franklin St, Tampa, FL 33602, Hall ${width}`);
+      assert.equal(gymSaved.venue, "Tampa Convention Center — East Hall");
+      assert.equal(gymSaved.customFields?.meetDateRangeLabel ?? gymSaved.extra?.meetDateRangeLabel, "March 6–8, 2027");
+      assert.deepEqual(gymSaved.gymnasticsPageText, Object.fromEntries(Object.entries(wording).map(([label, value]) => [{ "Top-left label": "mastheadLeft", "Top-right label": "mastheadRight", "Welcome message": "invitation", Encouragement: "tagline", "Bottom-left label": "signoffLeft", "Bottom-right label": "signoffRight" }[label], value])));
+      await page.goto(gymUrl);
+      await page.waitForURL("**/gymnastics/templates/airborne-atlas/customize?edit=gym-event");
+      await gymControls.waitFor();
+      // Browser recovery may restore the Design panel that was open when saved.
+      if (!(await page.getByLabel("Title font", { exact: true }).isVisible())) {
+        await gymControls.getByRole("button", { name: /^Design/ }).click();
+      }
+      assert.equal(await page.getByLabel("Title font", { exact: true }).inputValue(), "montserrat", "saved font reloads in the actual editor");
+      await viewActions.getByRole("button", { name: "Close settings", exact: true }).click();
+      const settingsButton = viewActions.getByRole("button", { name: "Page settings", exact: true });
+      assert.equal(await settingsButton.evaluate((element) => Boolean(element.closest("footer")?.querySelector('[aria-label="Save event"]'))), true, "Page settings shares the bottom bar with save actions");
+      const settingsToggle = await settingsButton.boundingBox();
+      const saveButtons = await page.getByRole("group", { name: "Save event", exact: true }).boundingBox();
+      assert.ok(settingsToggle.y + settingsToggle.height <= 760, "Page settings stays inside the viewport");
+      if (width === 390) assert.ok(settingsToggle.y + settingsToggle.height <= saveButtons.y, "phone settings sit above the save row without overlapping");
+      for (const value of Object.values(wording)) assert.ok((await preview.textContent()).includes(value), `saved wording reloads: ${value}`);
+      assert.match(await preview.locator("h1").evaluate((element) => element.style.fontFamily), /Gym Montserrat/);
+      await page.screenshot({ path: path.join(output, `gymnastics-wording-${width}.png`) });
+    }
+
+    // A usable imported draft stays editable while optional details finish on the server.
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const coreEvent = {
+      title: "Core meet draft", date: "2026-11-06", time: "09:00", timezone: "America/New_York",
+      venue: "Source arena", address: "Source street address", details: "Initial meet details.",
+      pageTemplateId: "airborne-atlas", extra: { meetDateRangeLabel: "November 6, 2026" },
+    };
+    const coreRow = {
+      id: "gym-core", title: coreEvent.title, revision: "core-v1",
+      data: {
+        ...coreEvent, status: "draft", createdVia: "meet-discovery-v2", category: "gymnastics",
+        templateId: "gymnastics-schedule",
+        builderDraft: { event: coreEvent, venue: { venue: coreEvent.venue, address: coreEvent.address }, advancedSections: { meet: { judgingNotes: "" } }, reviewFlags: [] },
+        publicArtifacts: { pipelineVersion: "gym-public-v3", hero: { title: coreEvent.title, dateLabel: "", venue: "", badges: [] }, sections: {}, quickAccess: [], publishAssessment: { state: "needs_review", reasons: [] } },
+        pipelineSummary: { discoveryId: "discovery-core", processingStage: "enrich", workflow: "gymnastics" },
+      },
+    };
+    records.set(coreRow.id, coreRow);
+    await page.goto(`${base}/event/gymnastics/customize?mode=gymnastics&edit=gym-core`);
+    await gymControls.getByRole("button", { name: /^Event basics/ }).click();
+    const coreTitle = page.getByLabel("Event Title", { exact: true });
+    await coreTitle.waitFor();
+    await page.getByText("Finishing venue, parking, and attendee details in the background.", { exact: true }).waitFor();
+    await page.evaluate(() => {
+      window.__gymCoreLoadingFlash = false;
+      new MutationObserver(() => {
+        if (/Loading event(?:…| preview\.\.\.)/.test(document.body.innerText)) window.__gymCoreLoadingFlash = true;
+      }).observe(document.body, { childList: true, subtree: true, characterData: true });
+    });
+    const beforeCoreWrites = writes.length;
+    await coreTitle.fill("Host's corrected meet");
+    await page.getByLabel("Venue", { exact: true }).fill("");
+    await page.getByLabel("Address", { exact: true }).fill("");
+    assert.ok(gymCoreStatusReads > 0, "the editor polls optional enrichment after opening the core draft");
+    const completedEvent = { ...coreEvent, title: "Provider's later title", venue: "Enriched arena", address: "Verified address", extra: { meetDateRangeLabel: "November 6–8, 2026" } };
+    records.set(coreRow.id, {
+      ...coreRow, title: completedEvent.title, revision: "core-v2",
+      data: {
+        ...coreRow.data, ...completedEvent,
+        builderDraft: { ...coreRow.data.builderDraft, event: completedEvent, venue: { venue: completedEvent.venue, address: completedEvent.address }, advancedSections: { meet: { judgingNotes: "New judging details from enrichment." } } },
+        pipelineSummary: { ...coreRow.data.pipelineSummary, processingStage: "review_ready" },
+      },
+    });
+    gymCoreCompleted = true;
+    const coreDisplayDateId = await page.getByLabel("Display Date", { exact: true }).getAttribute("id");
+    await page.waitForFunction((id) => document.getElementById(id)?.value === "November 6–8, 2026", coreDisplayDateId);
+    assert.equal(await coreTitle.inputValue(), "Host's corrected meet", "completion keeps the host's current title");
+    assert.equal(await page.getByLabel("Venue", { exact: true }).inputValue(), "", "completion preserves an intentional venue clear");
+    assert.equal(await page.getByLabel("Address", { exact: true }).inputValue(), "", "completion preserves an intentional address clear");
+    assert.equal(await page.evaluate(() => window.__gymCoreLoadingFlash), false, "background refresh never replaces the mounted editor with a loading screen");
+    assert.equal(writes.length, beforeCoreWrites, "background completion does not save the editor");
+    await click("Save draft");
+    await page.getByText("Draft saved.", { exact: true }).waitFor();
+    const coreSaved = writes.at(-1).body.data.templateEditor.snapshot;
+    assert.equal(coreSaved.data.title, "Host's corrected meet");
+    assert.equal(coreSaved.data.venue, "");
+    assert.equal(coreSaved.data.address, "");
+    assert.equal(coreSaved.data.extra.meetDateRangeLabel, "November 6–8, 2026");
+    assert.equal(coreSaved.advancedState.meet.judgingNotes, "New judging details from enrichment.");
+    assert.equal(errors.length, 0, errors.join("\n"));
+    await page.setViewportSize({ width: 1440, height: 900 });
     const savedWriteCount = writes.length;
     await page.goto(`${base}/birthdays/templates/candy-dreams/customize?mode=template&signedOut=1`);
     await workspace.waitFor();

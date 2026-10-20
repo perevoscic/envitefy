@@ -1,0 +1,53 @@
+bun test v1.4.0 (34cbb9a40)
+
+src/lib/meet-discovery.test.ts:
+(pass) meet discovery classifier contract no longer includes session-heavy routing [1.43ms]
+(pass) meet discovery targeted parse routing only uses overview and parent-public prompts [0.88ms]
+(pass) meet discovery public artifact filtering no longer treats session_ops as a special audience [0.40ms]
+(pass) public artifacts preserve dedicated parent-packet fields without keyword reclassification [0.68ms]
+(pass) mapParseResultToGymData stops emitting schedule and session-derived fields [0.57ms]
+(pass) __testUtils no longer exports schedule-session helpers [0.93ms]
+(pass) meet discovery targeted parse calls run concurrently with deterministic merge order [0.37ms]
+(pass) gymnastics PDF vision handoff persists raster images before OpenAI calls [0.53ms]
+
+src/lib/ocr/gymnastics-schedule.test.ts:
+(pass) gymnastics schedule module keeps schedule detection heuristic [0.32ms]
+(pass) gymnastics schedule heuristic still emits all-day sport events [0.12ms]
+
+src/lib/create/read-source.test.ts:
+(pass) rejects private, loopback, metadata and IPv4-mapped addresses [0.38ms]
+(pass) revalidates redirect destinations and never connects to a private redirect [0.29ms]
+(pass) rejects hosts with any nonpublic DNS answer and credentials before transport [0.06ms]
+(pass) mixed PDFs retain text-layer pages and OCR every missing page in order [2.31ms]
+(pass) native PDF text keeps graphics and hidden links without an OCR request [0.45ms]
+(pass) PDF page failures release the shared reader and preserve the page error [0.20ms]
+(pass) links from multiple source files keep their combined page numbers [0.71ms]
+(pass) rejects over-budget PDF instead of dropping later pages [0.04ms]
+(pass) public HTML uses actual readable content and preserves destination links [0.22ms]
+(pass) URL recognition reads page content instead of classifying misleading path words [1.36ms]
+(pass) a login page with HTTP 200 is not converted into invented event details [0.05ms]
+
+src/lib/create/run-sport-discovery.test.ts:
+(pass) specialty editor links retain the exact selected sport style and existing gym/football parameters [0.14ms]
+(pass) a recovered completed sport import opens its chosen style instead of the editor default [0.47ms]
+(pass) resumes recovered identity, persists it before starting, and avoids another intake [0.09ms]
+(pass) all selected photos, host notes and idempotency key go through specialty intake [0.09ms]
+(pass) pasted sports details use the specialty intake without fetching a retained reference URL [0.08ms]
+(pass) a failed status read retains the event and never sends cancellation [0.26ms]
+(pass) explicit cancellation uses the persistent intake key even before an event ID exists [0.06ms]
+(pass) a stored core draft opens the editor before optional enrichment finishes [0.08ms]
+(pass) optional enrichment failure retains access to a ready draft [0.06ms]
+(pass) retained check and source storage report their real stage [0.07ms]
+(pass) the client timeout covers a stalled initial intake without cancelling the retained server import [5.75ms]
+
+src/lib/create/extract-information.test.ts:
+(pass) classifies the source independently, retains host corrections and never requests artwork [0.54ms]
+(pass) denied recognized categories return recognition without paid information planning [0.05ms]
+(pass) medical sources remain in Snap without entering the public Event Page planner [0.03ms]
+(pass) the authorized sports handoff reuses the single server read and skips generic page planning [0.08ms]
+(pass) restricted sports never prepare a durable import [0.04ms]
+
+ 37 pass
+ 0 fail
+ 97 expect() calls
+Ran 37 tests across 5 files. [152.00ms]

@@ -3,6 +3,7 @@ import { getTemplateCategory, type TemplateCategory } from "./template-categorie
 import type { TemplateHistoryPayload } from "./template-draft-handoff";
 import type { EditorSnapshot } from "./template-draft-storage";
 import { normalizeEventPageComposition } from "./event-page-composition";
+import { buildGymnasticsEventDateTimes } from "./gymnastics-event-dates";
 
 /** Incomplete drafts retain their fields without inventing missing event times. */
 export function buildTemplateDraftPayload(
@@ -20,7 +21,7 @@ export function buildTemplateDraftPayload(
       (data.partner1 ? `${data.partner1} & ${data.partner2 || ""}` : "") ||
       `${info.name} draft`,
   );
-  const timezone = String(data.timezone || data.tz || browserTimezone);
+  const timezone = String(data.timezone || data.tz || (category === "gymnastics" ? "" : browserTimezone));
   const text = (value: (typeof data)[string]) => (typeof value === "string" ? value : "");
   const localStart = data.date
     ? `${text(data.date)}${data.time ? `T${text(data.time)}` : ""}`
@@ -29,8 +30,11 @@ export function buildTemplateDraftPayload(
     data.endDate || data.endTime
       ? `${text(data.endDate || data.date)}${data.endTime ? `T${text(data.endTime)}` : ""}`
       : text(data.endAt || data.endISO || data.end);
-  const start = parseCalendarDateTimeToIso(localStart, timezone);
-  const end = parseCalendarDateTimeToIso(localEnd, timezone);
+  const gymnasticsDates = category === "gymnastics"
+    ? buildGymnasticsEventDateTimes({ ...data, timezone })
+    : null;
+  const start = gymnasticsDates ? gymnasticsDates.startISO : parseCalendarDateTimeToIso(localStart, timezone);
+  const end = gymnasticsDates ? gymnasticsDates.endISO : parseCalendarDateTimeToIso(localEnd, timezone);
   return {
     title,
     data: {
@@ -44,6 +48,7 @@ export function buildTemplateDraftPayload(
           }
         : data),
       title,
+      ...(gymnasticsDates ? { allDay: gymnasticsDates.allDay, gymnasticsDateVersion: 1 } : {}),
       ...(category !== "signup-forms" && snapshot.pageComposition ? { eventPageComposition: normalizeEventPageComposition(snapshot.pageComposition) } : {}),
       category: info.historyCategory,
       primaryOutput: category === "signup-forms" ? "signup_form" : "event_page",

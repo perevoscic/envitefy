@@ -1,6 +1,10 @@
 "use client";
 import { useEventHistoryClient } from "@/lib/event-history-client";
 import EventAccessDialog from "@/components/EventAccessDialog";
+import { getSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
+import { attachCreationIntakeEvent, creationIntakeOwner, readCreationIntake } from "@/lib/create/creation-intake";
+import { creationLiveCardForm } from "@/lib/create/editor-handoff";
 
 import {
   ArrowLeft,
@@ -190,6 +194,7 @@ type BuilderStep = 1 | 2 | 3;
 type DetailTab = (typeof DETAIL_TABS)[number];
 type PreparationIssue = { stage: "locations" | "wording" | "lettering"; message: string; retryable: boolean; code?: string };
 export default function LiveCardBuilder({ initialEventId }: { initialEventId: string | null }) {
+  const intakeId = useSearchParams()?.get("intake");
   const eventHistoryClient = useEventHistoryClient();
   const [canManageAccess, setCanManageAccess] = useState(!initialEventId);
   const [saveConflict, setSaveConflict] = useState(false);
@@ -280,7 +285,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     setReady(false);
     setLoadError("");
     recoveryDiscarded.current = false;
-    const recoveryKey = `envitefy:live-card-recovery:${initialEventId || "new"}`;
+    const recoveryKey = `envitefy:live-card-recovery:${initialEventId || (intakeId ? `intake:${intakeId}` : "new")}`;
     recoveryId.current = sessionStorage.getItem(recoveryKey) || crypto.randomUUID();
     sessionStorage.setItem(recoveryKey, recoveryId.current);
     draftId.current ||= recoveryId.current;
@@ -288,6 +293,12 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     async function load() {
       let nextForm = createLiveCardForm(timezone);
       let nextArtwork: LiveCardArtwork | null = null;
+      if (intakeId && !initialEventId) {
+        const session = await getSession();
+        const intake = await readCreationIntake(creationIntakeOwner(session?.user), intakeId);
+        if (!intake) throw new Error("This creation belongs to another account or has expired. Return to Create to start again.");
+        nextForm = creationLiveCardForm(intake.information);
+      }
       if (initialEventId) {
         const response = await eventHistoryClient.fetch(`/api/history/${encodeURIComponent(initialEventId)}`, {
           signal: controller.signal,
@@ -364,7 +375,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       active = false;
       controller.abort();
     };
-  }, [initialEventId, reload]);
+  }, [initialEventId, intakeId, reload]);
 
   useEffect(
     () => () => {
@@ -524,6 +535,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
               signal,
               body: JSON.stringify({
                 ...location,
+                eventId: savedId.current,
                 query,
                 date: before.date,
                 timezone: before.timezone,
@@ -704,7 +716,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
             method: "POST",
             headers: { "Content-Type": "application/json" },
             signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]),
-            body: JSON.stringify({ mode: "wording", form: before }),
+            body: JSON.stringify({ eventId: savedId.current, mode: "wording", form: before }),
           }); } catch {
             if (!isCurrentPreparation(controller.signal)) return false;
             checkedWording.current = liveCardWordingKey(before);
@@ -935,6 +947,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
           throw new Error("Your latest changes could not be saved. Please retry.");
       }
       savedId.current = String(row.id);
+      if (intakeId) void getSession().then(session => attachCreationIntakeEvent(creationIntakeOwner(session?.user), intakeId, String(row.id))).catch(() => {});
       sessionStorage.setItem(`envitefy:live-card-recovery:${savedId.current}`, recoveryId.current);
       if (sessionStorage.getItem("envitefy:live-card-recovery:new") === recoveryId.current) sessionStorage.removeItem("envitefy:live-card-recovery:new");
       setOwnerUrl(buildEventPath(

@@ -878,7 +878,9 @@ export default function SimpleTemplateView({
     getEventEndLocal(date, time, currentData?.endTime || "", currentData?.endDate || "");
   const guestPlanning = normalizeEventGuestPlanning(currentData?.guestPlanning);
   const calendarAllDay = currentData?.allDay === true;
-  const calendarStart = parseCalendarDateTimeToIso(guestStart, calendarAllDay ? "UTC" : eventTimeZone);
+  const calendarStart = !calendarAllDay && currentData?.gymnasticsDateVersion === 1 && !eventTimeZone
+    ? null
+    : parseCalendarDateTimeToIso(guestStart, calendarAllDay ? "UTC" : eventTimeZone);
   const calendarEnd = parseCalendarDateTimeToIso(guestEnd, calendarAllDay ? "UTC" : eventTimeZone);
   const calendarLinks = calendarStart ? buildCalendarLinks({
     title: eventTitle,

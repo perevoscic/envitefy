@@ -75,6 +75,8 @@ test("choosing a template opens the real editor with its artwork, theme, and emp
       "@/components/EventCanvas": Container,
       "@/components/events/TemplateImageTone": Container,
       "@/components/events/HeroImageEditor": Empty,
+      "@/components/event-create/CreationTemplateGallery": Empty,
+      "@/components/events/useCreationEditorHydration": { useCreationEditorHydration: () => true },
       "@/components/ScrollHandoffContainer": Container,
       "@/components/branding/EnvitefyEventBranding": Empty,
       "@/components/event-templates/EventGuestActions": Empty,
@@ -97,4 +99,75 @@ test("choosing a template opens the real editor with its artwork, theme, and emp
     assert.ok(markup.includes(design.theme.bg));
     assert.doesNotMatch(markup, /Invalid Date|Chicago|Community Guild|organizer@email/);
   }
+});
+
+test("General editor design changes and recovery retain imported facts and custom artwork", () => {
+  const [first, second, third] = GENERAL_EVENT_DESIGNS;
+  const states = [];
+  let stateIndex = 0, hydration, progress;
+  const Gallery = () => null;
+  const Editor = load("src/app/event/general/customize/page.tsx", {
+    react: {
+      ...React,
+      useState: (initial) => {
+        const index = stateIndex++;
+        if (!(index in states)) states[index] = typeof initial === "function" ? initial() : initial;
+        return [states[index], (next) => { states[index] = typeof next === "function" ? next(states[index]) : next; }];
+      },
+      useCallback: (callback) => callback,
+      useMemo: (factory) => factory(),
+      useEffect() {},
+      useRef: (current) => ({ current }),
+    },
+    "next/navigation": { useRouter: () => ({}), useSearchParams: () => new URLSearchParams({ templateId: first.id, intake: "imported-general" }) },
+    "next/image": Empty,
+    "@/components/EventCanvas": Container,
+    "@/components/events/TemplateImageTone": Container,
+    "@/components/events/HeroImageEditor": Empty,
+    "@/components/event-create/CreationTemplateGallery": Gallery,
+    "@/components/events/useCreationEditorHydration": { useCreationEditorHydration: (options) => { hydration = options; return true; } },
+    "@/components/ScrollHandoffContainer": Container,
+    "@/components/branding/EnvitefyEventBranding": Empty,
+    "@/components/event-templates/EventGuestActions": Empty,
+    "@/components/event-templates/EventGuestPlanningEditor": Empty,
+    "@/components/event-templates/EventGuestPlanningNotes": Empty,
+    "@/components/events/useEventPageEditor": { useEventPageEditor: (options) => { progress = options; return { ready: true, authenticated: true }; } },
+    "@/lib/event-history-client": { useEventHistoryClient: () => ({}) },
+    "@/components/UnsavedProgressProvider": { useProgressNavigation: () => ({ allowNavigation() {} }) },
+    "@/hooks/useMobileDrawer": { useMobileDrawer: () => ({ mobileMenuOpen: true, previewTouchHandlers: {}, drawerTouchHandlers: {} }) },
+  }).default;
+  const render = () => { stateIndex = 0; return Editor(); };
+  const findGallery = (element) => {
+    if (!React.isValidElement(element)) return null;
+    if (element.type === Gallery) return element;
+    return React.Children.toArray(element.props.children).map(findGallery).find(Boolean);
+  };
+  const select = (page, design) => {
+    const gallery = findGallery(page.props.sectionEditors.design());
+    assert.equal(gallery.props.compact, true);
+    gallery.props.onSelect(gallery.props.templates.find((template) => template.id === design.id));
+  };
+
+  render();
+  const imported = {
+    ...progress.snapshot,
+    data: { ...progress.snapshot.data, title: "Neighborhood picnic", date: "2027-06-04", venue: "Riverside Park", details: "Bring lunch and games", extra: { host: "Community Guild", parking: "North gate" } },
+    advancedState: { arrival: "Use the north entrance" },
+  };
+  hydration.restore(imported);
+  select(render(), second);
+  let page = render();
+  assert.equal(progress.snapshot.themeId, second.id);
+  assert.deepEqual(progress.snapshot.data, { ...imported.data, hero: second.artwork });
+  assert.deepEqual(progress.snapshot.advancedState, imported.advancedState);
+  assert.equal(findGallery(page.props.sectionEditors.design()).props.selectedTemplateId, second.id);
+
+  const recovered = { ...progress.snapshot, data: { ...progress.snapshot.data, hero: "https://media.envitefy.com/hosts/approved-artwork.webp" }, themeId: third.id };
+  hydration.restore(recovered);
+  page = render();
+  assert.equal(progress.snapshot.themeId, third.id, "the recovered design is restored alongside its facts");
+  select(page, first);
+  render();
+  assert.equal(progress.snapshot.themeId, first.id);
+  assert.deepEqual(progress.snapshot.data, recovered.data, "switching a design retains the host's uploaded artwork and facts");
 });

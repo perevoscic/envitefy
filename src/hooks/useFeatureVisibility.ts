@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import {
   type DashboardLayout,
   resolveVisibility,
-  TEMPLATE_KEYS,
   type TemplateKey,
   type UserPersona,
+  type QuickAccessKey,
 } from "@/config/feature-visibility";
 import {
   EMPTY_SPORT_PREFERENCES,
@@ -23,6 +24,7 @@ type FeatureVisibilityState = {
   defaultCreateIntent: string | null;
   sportPreferences: SportPreferences;
   sportPreferenceSuggestion: SportPreferenceSuggestion | null;
+  quickAccess: QuickAccessKey[];
 };
 
 type FeatureVisibilityApiPayload = {
@@ -33,20 +35,23 @@ type FeatureVisibilityApiPayload = {
   defaultCreateIntent?: unknown;
   sportPreferences?: unknown;
   sportPreferenceSuggestion?: unknown;
+  quickAccess?: unknown;
 };
 
 const DEFAULT_STATE: FeatureVisibilityState = {
   persona: null,
   personas: [],
-  visibleTemplateKeys: [...TEMPLATE_KEYS],
+  visibleTemplateKeys: [],
   dashboardLayout: "default",
   defaultCreateIntent: null,
   sportPreferences: { ...EMPTY_SPORT_PREFERENCES },
   sportPreferenceSuggestion: null,
+  quickAccess: ["snap", "upload", "smart_signup"],
 };
 
 const FEATURE_VISIBILITY_UPDATED_EVENT = "envitefy:feature-visibility-updated";
 let featureVisibilityRequest: Promise<FeatureVisibilityApiPayload> | null = null;
+let featureVisibilityIdentity = "";
 let featureVisibilityGeneration = 0;
 
 async function loadFeatureVisibility(): Promise<FeatureVisibilityApiPayload> {
@@ -76,14 +81,20 @@ export function notifyFeatureVisibilityChanged() {
 }
 
 export function useFeatureVisibility() {
+  const { data: session, status } = useSession();
+  const identity = session?.user?.email || "";
   const [loading, setLoading] = useState(true);
   const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
   const [state, setState] = useState<FeatureVisibilityState>(DEFAULT_STATE);
+  const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
+    if (status !== "authenticated") { setLoading(status === "loading"); return; }
     setLoading(true);
+    setError("");
     try {
       const json = await loadFeatureVisibility();
+      if (identity !== featureVisibilityIdentity) return;
       const resolved = resolveVisibility({
         persona: json?.persona,
         personas: json?.personas,
@@ -98,6 +109,7 @@ export function useFeatureVisibility() {
         dashboardLayout: resolved.dashboardLayout,
         defaultCreateIntent: resolved.defaultCreateIntent,
         sportPreferences: normalizeSportPreferences(json?.sportPreferences),
+        quickAccess: Array.isArray(json.quickAccess) ? json.quickAccess.filter((key): key is QuickAccessKey => key === "snap" || key === "upload" || key === "smart_signup") : ["snap", "upload", "smart_signup"],
         sportPreferenceSuggestion:
           json?.sportPreferenceSuggestion &&
           typeof json.sportPreferenceSuggestion === "object"
@@ -107,12 +119,20 @@ export function useFeatureVisibility() {
       setHasLoadedPreferences(true);
     } catch {
       // Retain the last successful preferences rather than revealing every category.
+      if (identity === featureVisibilityIdentity) setError("Could not load your workspace preferences. Please retry.");
     } finally {
-      setLoading(false);
+      if (identity === featureVisibilityIdentity) setLoading(false);
     }
-  }, []);
+  }, [status, identity]);
 
   useEffect(() => {
+    if (featureVisibilityIdentity !== identity) {
+      featureVisibilityIdentity = identity;
+      featureVisibilityGeneration += 1;
+      featureVisibilityRequest = null;
+    }
+    setState(DEFAULT_STATE);
+    setHasLoadedPreferences(false);
     void refresh();
   }, [refresh]);
 
@@ -125,6 +145,7 @@ export function useFeatureVisibility() {
   return {
     loading,
     hasLoadedPreferences,
+    error,
     ...state,
     refresh,
   };

@@ -897,18 +897,18 @@ export default function Dashboard({
   );
 
   const ingest = useCallback(
-    async (incoming: File, scanAttemptId: string, additionalFiles: File[] = []) => {
+    async (incoming: File | null, scanAttemptId: string, additionalFiles: File[] = [], sourceText = "") => {
       setLoading(true);
       setError(null);
       cancelledByUserRef.current = false;
 
-      const validationError = validateClientUploadFile(incoming, "attachment");
+      const validationError = incoming ? validateClientUploadFile(incoming, "attachment") : (!sourceText.trim() || sourceText.length > 120_000 ? "Paste event details under 120,000 characters." : null);
       if (validationError) {
         setError(validationError);
         logUploadIssue(new Error(validationError), "client-validation", {
-          fileName: incoming.name,
-          fileSize: incoming.size,
-          fileType: incoming.type,
+          fileName: incoming?.name,
+          fileSize: incoming?.size,
+          fileType: incoming?.type,
           scanAttemptId,
         });
         resetScanUi();
@@ -917,6 +917,8 @@ export default function Dashboard({
       }
 
       try {
+        const form = new FormData();
+        if (incoming) {
         const preparedUpload = await prepareOcrUploadFile(incoming);
         let fileToUpload: File = preparedUpload;
         try {
@@ -930,9 +932,10 @@ export default function Dashboard({
           console.warn("Failed to clone OCR upload file, using prepared file object:", readErr);
         }
 
-        const form = new FormData();
         form.append("file", fileToUpload);
         for (const extra of additionalFiles) form.append("file", await prepareOcrUploadFile(extra));
+        }
+        if (sourceText.trim()) form.append("text", sourceText);
         form.append("scanAttemptId", scanAttemptId);
 
         // Add timeout handling for mobile/network issues
@@ -960,9 +963,9 @@ export default function Dashboard({
             throw new Error("Upload timed out. Please check your connection and try again.");
           }
           logUploadIssue(fetchErr, "fetch", {
-            fileName: incoming.name,
-            fileSize: incoming.size,
-            fileType: incoming.type,
+            fileName: incoming?.name,
+            fileSize: incoming?.size,
+            fileType: incoming?.type,
             scanAttemptId,
           });
           // Network errors, CORS issues, etc.
@@ -987,9 +990,9 @@ export default function Dashboard({
             code: errorPayload.code,
             detail: errorPayload.detail,
             ocrSource: errorPayload.ocrSource,
-            fileName: incoming.name,
-            fileSize: incoming.size,
-            fileType: incoming.type,
+            fileName: incoming?.name,
+            fileSize: incoming?.size,
+            fileType: incoming?.type,
             scanAttemptId,
           });
           throw new Error(errorMsg || "Failed to scan file");
@@ -1309,9 +1312,9 @@ export default function Dashboard({
           Boolean((err as Error & { __snapUploadLogged?: boolean }).__snapUploadLogged);
         if (!alreadyLogged) {
           logUploadIssue(err, "ingest-final", {
-            fileName: incoming.name,
-            fileSize: incoming.size,
-            fileType: incoming.type,
+            fileName: incoming?.name,
+            fileSize: incoming?.size,
+            fileType: incoming?.type,
             scanAttemptId,
           });
         }
@@ -1334,6 +1337,7 @@ export default function Dashboard({
       selected: File | File[] | null,
       previewOverride?: string | null,
       pendingScanAttemptId?: string | null,
+      sourceText = "",
     ) => {
       if (!selected) {
         // User cancelled file selection - silently return
@@ -1364,10 +1368,20 @@ export default function Dashboard({
       activeScanAttemptIdRef.current = scanAttemptId;
       setScanFiles(files);
       startScanUi(files[0], previewOverride);
-      void ingest(files[0], scanAttemptId, files.slice(1));
+      void ingest(files[0], scanAttemptId, files.slice(1), sourceText);
     },
     [ingest, logUploadIssue, startScanUi],
   );
+
+  const onText = useCallback((text: string, pendingScanAttemptId?: string | null) => {
+    if (!text.trim() || text.length > 120_000) { setError("Paste event details under 120,000 characters."); return; }
+    const scanAttemptId = pendingScanAttemptId || createClientAttemptId("scan");
+    activeScanAttemptIdRef.current = scanAttemptId;
+    setScanFiles([]);
+    // This local label is only a progress preview; no artificial attachment is uploaded or saved.
+    startScanUi(new File([], "Pasted event details", { type: "text/plain" }));
+    void ingest(null, scanAttemptId, [], text);
+  }, [ingest, startScanUi]);
 
   const openCamera = useCallback(() => {
     resetForm();
@@ -1438,11 +1452,14 @@ export default function Dashboard({
         if (action === "upload") {
           const pendingUpload = await takePendingSnapUpload();
           if (cancelled) return;
-          if (pendingUpload) {
+          if (pendingUpload?.text && !pendingUpload.file && !pendingUpload.files?.length) {
+            onText(pendingUpload.text, pendingUpload.scanAttemptId);
+          } else if (pendingUpload) {
             onFile(
-              pendingUpload.files || pendingUpload.file,
+              pendingUpload.files?.length ? pendingUpload.files : pendingUpload.file || null,
               pendingUpload.previewUrl ?? null,
               pendingUpload.scanAttemptId,
+              pendingUpload.text,
             );
           } else {
             reportClientLog({
@@ -1462,7 +1479,7 @@ export default function Dashboard({
     return () => {
       cancelled = true;
     };
-  }, [onFile, openCamera, openUpload]);
+  }, [onFile, onText, openCamera, openUpload]);
 
   const saveToEnvitefyHistory = useCallback(
     async ({

@@ -1,3 +1,5 @@
+import { checkCreationAccess } from "@/lib/creation-access-server";
+import { liveCardCreationCategories } from "@/lib/creation-access";
 import { after, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
@@ -44,7 +46,9 @@ export async function POST(request: Request) {
     if (!event || !(await getEventPermissions(event, userId)).canEdit) return NextResponse.json({ error: "You do not have artwork access to this event." }, { status: 403 });
     jobOwner = event.user_id || userId;
   }
-  const job = await createArtworkJob(jobOwner, raw.key, form, design, mode, eventId);
+  const creationDenied = await checkCreationAccess(userId, { product: "live_card", ...(eventId ? { eventId } : { categories: liveCardCreationCategories(form) }) });
+  if (creationDenied) return creationDenied;
+  const job = await createArtworkJob(jobOwner, raw.key, form, design, mode, eventId, userId);
   if (job.state === "queued") after(() => runArtworkJob(jobOwner, job.id));
   return NextResponse.json({ job }, { status: 202, headers: { "Cache-Control": "no-store" } });
 }

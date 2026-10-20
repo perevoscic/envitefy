@@ -2,14 +2,15 @@
 
 import { Check, Settings2, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCreationAccess } from "@/hooks/useCreationAccess";
+import { normalizeCreationCategory } from "@/lib/creation-access";
+import { type ReactNode, useEffect, useState } from "react";
 import { notifyFeatureVisibilityChanged, useFeatureVisibility } from "@/hooks/useFeatureVisibility";
 import { normalizeSportActivityKey } from "@/lib/sports-discovery/profiles";
 import {
   buildSportCreationHref,
   getSportCreationLabel,
-  isSportsCreationEnabled,
   SPORT_PREFERENCE_OPTIONS,
   type SportPreferences,
   syncSportsVisibilityKeys,
@@ -29,9 +30,11 @@ export default function SportCreationGate({
   children,
 }: SportCreationGateProps) {
   const router = useRouter();
+  const search = useSearchParams();
+  const queryString = search?.toString() || "";
+  const creation = useCreationAccess();
   const visibility = useFeatureVisibility();
   const explicitSport = normalizeSportActivityKey(requestedSport);
-  const unavailableSportKey = normalizeSportActivityKey(unavailableSport);
   const suggestion = explicitSport
     ? { sport: explicitSport, source: "url" as const }
     : visibility.sportPreferenceSuggestion;
@@ -40,46 +43,29 @@ export default function SportCreationGate({
   const [saveError, setSaveError] = useState("");
   const [optimisticPreferences, setOptimisticPreferences] = useState<SportPreferences | null>(null);
   const preferences = optimisticPreferences || visibility.sportPreferences;
-  const sportsEnabled = isSportsCreationEnabled(visibility.visibleTemplateKeys);
+  const allowedSport = (sport: string) => Boolean(creation.access?.allowedProducts.includes("event_page") && creation.access.allowedCategories.includes(normalizeCreationCategory(sport) || "sport-events"));
+  const sportsEnabled = Boolean(creation.access?.allowedProducts.includes("event_page") && creation.access.allowedCategories.some((category) => ["gymnastics", "football", "sport-events", "soccer", "cheerleading", "dance-ballet"].includes(category)));
 
   useEffect(() => {
-    if (preferences.setupCompleted || selection || !suggestion?.sport) return;
+    if (preferences.setupCompleted || selection || !suggestion?.sport || !allowedSport(suggestion.sport)) return;
     setSelection(suggestion.sport);
-  }, [preferences.setupCompleted, selection, suggestion?.sport]);
+  }, [preferences.setupCompleted, selection, suggestion?.sport, creation.access]);
 
-  const activeSport = useMemo(() => {
-    if (!preferences.setupCompleted) return null;
-    if (explicitSport && preferences.enabledSports.includes(explicitSport)) return explicitSport;
-    return preferences.primarySport;
-  }, [explicitSport, preferences]);
-
+  const activeSport = explicitSport || (preferences.setupCompleted ? preferences.primarySport : null);
   useEffect(() => {
-    if (!activeSport) return;
-    if (surface === "sports" && activeSport === "football") {
-      router.replace(buildSportCreationHref(activeSport));
-      return;
+    if (!activeSport || !creation.access || !allowedSport(activeSport)) return;
+    if ((surface === "sports" && ["gymnastics", "football"].includes(activeSport)) || (surface === "gymnastics" && activeSport !== "gymnastics")) {
+      const target = new URL(buildSportCreationHref(activeSport), "https://envitefy.local");
+      const params = new URLSearchParams(queryString);
+      params.delete("unavailableSport");
+      for (const [key, value] of target.searchParams) params.set(key, value);
+      router.replace(`${target.pathname}${params.size ? `?${params}` : ""}`);
     }
-    if (surface === "gymnastics" && activeSport !== "gymnastics") {
-      const href = buildSportCreationHref(activeSport);
-      const separator = href.includes("?") ? "&" : "?";
-      router.replace(
-        `${href}${separator}unavailableSport=${encodeURIComponent(
-          explicitSport || unavailableSportKey || "gymnastics",
-        )}`,
-      );
-    } else if (surface === "sports" && activeSport === "gymnastics") {
-      const unavailable = explicitSport || unavailableSportKey;
-      router.replace(
-        unavailable
-          ? `/event/gymnastics?unavailableSport=${encodeURIComponent(unavailable)}`
-          : "/event/gymnastics",
-      );
-    }
-  }, [activeSport, explicitSport, router, surface, unavailableSportKey]);
+  }, [activeSport, creation.access, queryString, router, surface]);
 
   const confirmSetup = async () => {
     const sport = normalizeSportActivityKey(selection);
-    if (!sport) return;
+    if (!sport || !allowedSport(sport) || !visibility.hasLoadedPreferences) return;
     setSaving(true);
     setSaveError("");
     const nextPreferences: SportPreferences = {
@@ -115,7 +101,7 @@ export default function SportCreationGate({
     }
   };
 
-  if (visibility.loading && !optimisticPreferences) {
+  if (((visibility.loading && !visibility.hasLoadedPreferences) || (creation.loading && !creation.access)) && !optimisticPreferences) {
     return (
       <main className="min-h-screen bg-[#f8f8fb] px-4 pb-12 pt-24 sm:px-6 lg:pt-12">
         <div className="mx-auto h-72 max-w-5xl animate-pulse rounded-[2rem] bg-white/80" />
@@ -123,15 +109,17 @@ export default function SportCreationGate({
     );
   }
 
-  if (!sportsEnabled) {
+  if (!creation.access || !visibility.hasLoadedPreferences) {
+    return <main className="mx-auto max-w-xl space-y-4 px-5 py-24"><p role="alert">{creation.error || visibility.error || "Could not load your event preferences."}</p><button type="button" onClick={() => { void creation.reload(); void visibility.refresh(); }} className="min-h-11 rounded-xl border bg-white px-5 font-semibold">Retry</button></main>;
+  }
+  if (!sportsEnabled || (activeSport && !allowedSport(activeSport))) {
     return (
       <main className="min-h-screen bg-[#f8f8fb] px-4 pb-12 pt-24 text-[#20172b] sm:px-6 lg:pt-12">
         <section className="mx-auto max-w-xl rounded-[2rem] border border-[#e4dff0] bg-white p-8 text-center shadow-[0_24px_80px_rgba(44,35,76,0.1)]">
           <Settings2 className="mx-auto h-9 w-9 text-[#6658ed]" />
-          <h1 className="mt-4 text-3xl font-black">Sports creation is turned off</h1>
+          <h1 className="mt-4 text-3xl font-black">Access to this sport is required</h1>
           <p className="mt-3 text-sm leading-6 text-[#6b6376]">
-            Your saved sports are still here. Turn Sports back on in Profile Settings whenever you
-            want to create another sports event.
+            Your source and saved events are kept. Request access to this sport in Settings to create a new event.
           </p>
           <Link
             href="/settings#your-sports"
@@ -144,7 +132,7 @@ export default function SportCreationGate({
     );
   }
 
-  if (!preferences.setupCompleted) {
+  if (!activeSport) {
     return (
       <main className="min-h-screen bg-[radial-gradient(circle_at_15%_10%,#eeeaff_0,transparent_34%),radial-gradient(circle_at_88%_12%,#e9f7ff_0,transparent_30%),#f8f8fb] px-3 pb-9 pt-24 text-[#1f1729] sm:px-6 lg:pt-9">
         <section className="mx-auto max-w-5xl rounded-[1.5rem] border border-white/80 bg-white/90 p-4 shadow-[0_26px_90px_rgba(44,35,76,0.12)] sm:rounded-[2rem] sm:p-9">
@@ -162,7 +150,7 @@ export default function SportCreationGate({
               Pick your main sport. We’ll keep event creation focused, and you can add more sports
               later in Profile Settings.
             </p>
-            {suggestion?.sport ? (
+            {suggestion?.sport && allowedSport(suggestion.sport) ? (
               <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#f2f0ff] px-4 py-2 text-xs font-bold text-[#5046b5]">
                 <Sparkles className="h-3.5 w-3.5" />
                 {suggestion.source === "url"
@@ -173,7 +161,7 @@ export default function SportCreationGate({
           </div>
 
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {SPORT_PREFERENCE_OPTIONS.map((sport) => {
+            {SPORT_PREFERENCE_OPTIONS.filter((sport) => allowedSport(sport.key)).map((sport) => {
               const selected = selection === sport.key;
               return (
                 <button
@@ -201,7 +189,7 @@ export default function SportCreationGate({
           <div className="mt-7 flex flex-col items-center gap-3">
             <button
               type="button"
-              disabled={!selection || saving}
+              disabled={!selection || !allowedSport(selection) || saving}
               onClick={() => void confirmSetup()}
               className="min-h-11 w-full rounded-2xl bg-[#17111e] px-7 py-3.5 text-sm font-black text-white transition hover:bg-[#302639] disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:min-w-52"
             >
@@ -222,9 +210,7 @@ export default function SportCreationGate({
     );
   }
 
-  const rejectedSport =
-    unavailableSportKey ||
-    (explicitSport && !preferences.enabledSports.includes(explicitSport) ? explicitSport : null);
+  const rejectedSport: string | null = null;
   const requestedWasDisabled = Boolean(rejectedSport);
 
   return (
@@ -252,7 +238,7 @@ export default function SportCreationGate({
                     onChange={(event) => router.push(buildSportCreationHref(event.target.value))}
                     className="min-h-10 min-w-0 rounded-lg border border-[#dcd5e7] bg-white px-3 py-1.5 text-base font-semibold text-[#30283a] sm:text-sm"
                   >
-                    {preferences.enabledSports.map((sport) => (
+                    {preferences.enabledSports.filter(allowedSport).map((sport) => (
                       <option key={sport} value={sport}>
                         {getSportCreationLabel(sport)}
                         {sport === preferences.primarySport ? " (Primary)" : ""}

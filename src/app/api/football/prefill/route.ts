@@ -1,3 +1,4 @@
+import { checkCreationAccess } from "@/lib/creation-access-server";
 import { NextResponse } from "next/server";
 import { getAuthenticatedRequestUser } from "@/lib/auth";
 import { prepareDiscoverySourceFile } from "@/lib/media-upload";
@@ -18,6 +19,8 @@ export async function POST(request: Request) {
   try {
     const user = await getAuthenticatedRequestUser(request);
     if (!user.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const creationDenied = await checkCreationAccess(user.userId, { product: "event_page", category: "football", eventId: new URL(request.url).searchParams.get("edit") });
+    if (creationDenied) return creationDenied;
     let source: DiscoverySourceInput;
     if (request.headers.get("content-type")?.includes("multipart/form-data")) {
       const form = await request.formData();
