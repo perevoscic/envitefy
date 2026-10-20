@@ -324,7 +324,7 @@ async function resolveSharedCard(value: string) {
   const data = isRecord(row.data) ? row.data : {};
   const studioCard = isRecord(data.studioCard) ? data.studioCard : null;
   const title = sanitizeGuestTitle(row.title) || sanitizeGuestTitle(data.title) || "Invitation";
-  const eventShareImage = resolveEventShareImage(data);
+  const eventShareImage = resolveEventShareImage(data, { eventId: row.id, media: row.media });
   const imageUrl = await normalizeSharedCardImageUrl(
     eventShareImage?.url || resolveConciergeLiveCardImagePath(data),
   );

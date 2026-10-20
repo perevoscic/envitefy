@@ -21,13 +21,23 @@ const fixture = {
 };
 test("generated artwork survives local blob and HTTPS storage while invalid image URLs are rejected", () => {
   const theme = themes.createImportedEventTheme(fixture);
-  for (const artworkUrl of ["/api/blob/event-media/event/theme.webp", "https://assets.test/theme.webp"]) {
+  for (const artworkUrl of ["/api/blob/event-media/event/theme.webp", "/media/event-media/event/theme.webp", "https://assets.test/theme.webp"]) {
     const saved = themes.readImportedEventTheme({ ...theme, artworkUrl });
     assert.equal(saved.artworkUrl, artworkUrl);
-    assert.equal(design.importedArtworkSrc(saved), artworkUrl);
+    assert.equal(design.importedArtworkSrc(saved), artworkUrl.replace(/^\/api\/blob\/event-media\//, "/media/event-media/"));
   }
   for (const artworkUrl of ["//outside.test/image", "javascript:alert(1)", "/api/blob/../../private", "/api/blob/%2e%2e/private"])
     assert.equal(themes.readImportedEventTheme({ ...theme, artworkUrl }).artworkUrl, undefined);
+});
+
+test("generated artwork uses public storage delivery without changing the saved URL or uploaded hero", () => {
+  const artworkUrl = "/api/blob/event-media/meet/theme-original.webp";
+  const theme = { ...themes.createImportedEventTheme(fixture), artworkUrl };
+  assert.equal(design.importedArtworkSrc(theme, "/templates/default.webp", "/templates/default.webp"), "/media/event-media/meet/theme-original.webp");
+  assert.equal(theme.artworkUrl, artworkUrl);
+  assert.equal(design.importedArtworkSrc(theme, "/uploads/host.webp", "/templates/default.webp"), "/uploads/host.webp");
+  assert.equal(themes.importedArtworkDisplayUrl("/api/blob/profile-media/avatar.webp"), "/api/blob/profile-media/avatar.webp");
+  assert.equal(themes.importedArtworkDisplayUrl("/media/event-media/../source.webp"), undefined);
 });
 
 test("source branding and confirmed geography create stable event-specific identity", () => {

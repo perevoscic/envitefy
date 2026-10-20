@@ -42,6 +42,9 @@ if (ogImage.index > 256 * 1024) {
 }
 
 const imageUrl = new URL(ogImage.content, pageResponse.url);
+if (imageUrl.pathname === "/og-default.jpg") {
+  throw new Error("Event share preview uses the marketing banner instead of event artwork");
+}
 if (imageUrl.origin === pageUrl.origin && imageUrl.pathname.startsWith("/api/")) {
   throw new Error(`og:image uses robots-blocked API path: ${imageUrl.pathname}`);
 }

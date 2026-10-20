@@ -33,7 +33,7 @@ import {
   eventPreviewReturnHref,
 } from "@/lib/event-preview-viewport";
 import { combineVenueAndLocation } from "@/lib/mappers";
-import { toPublicShareMediaUrl } from "@/lib/share-image";
+import { resolveEventShareImage } from "@/lib/share-image";
 import { allowsPublicSignup } from "@/lib/signup-access";
 import { signupGuestCookieName, signupGuestId } from "@/lib/signup-guest-cookie";
 import { ownSignupResponseId } from "@/lib/signup-identity";
@@ -138,19 +138,11 @@ async function resolveSignupHeaderImageUrl(
   row: EventHistoryPublicRow,
   signupForm: SignupForm,
 ): Promise<string | null> {
-  const image = signupForm.header?.backgroundImage;
-  if (!image?.dataUrl) return null;
-  if (row.media.signupHeaderInline) {
-    const params = new URLSearchParams();
-    params.set("variant", "signup-header");
-    if (row.media.signupHeaderSig) params.set("v", row.media.signupHeaderSig);
-    return absoluteUrl(`/media/events/${row.id}/thumbnail?${params.toString()}`);
-  }
-  if (/^https?:\/\//i.test(image.dataUrl) || image.dataUrl.startsWith("/")) {
-    const publicImageUrl = toPublicShareMediaUrl(image.dataUrl);
-    return publicImageUrl ? absoluteUrl(publicImageUrl) : null;
-  }
-  return null;
+  const image = resolveEventShareImage(
+    { ...row.data, signupForm },
+    { eventId: row.id, media: row.media },
+  );
+  return image ? absoluteUrl(image.url) : null;
 }
 
 function compactJsonLd(record: Record<string, unknown>): Record<string, unknown> {
@@ -310,14 +302,14 @@ export async function generateMetadata({
       description,
       url,
       siteName: "Envitefy",
-      images: imageUrl ? [{ url: imageUrl, alt: `${title} smart sign-up form` }] : undefined,
+      images: imageUrl ? [{ url: imageUrl, alt: `${title} smart sign-up form` }] : [],
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
       title: `${title} — Envitefy`,
       description,
-      images: imageUrl ? [imageUrl] : undefined,
+      images: imageUrl ? [imageUrl] : [],
     },
   };
 }

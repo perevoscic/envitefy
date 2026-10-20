@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   describeDatabaseError,
+  isDatabaseCapacityError,
   isDatabaseUnavailableError,
   normalizeDatabaseError,
 } from "./database-errors.ts";
@@ -42,4 +43,16 @@ test("recognizes connection errors nested through cause", () => {
 test("does not hide application or query errors", () => {
   assert.equal(isDatabaseUnavailableError(new Error("column does not exist")), false);
   assert.equal(isDatabaseUnavailableError({ code: "42703", message: "undefined column" }), false);
+});
+
+test("Supavisor session exhaustion is temporary database capacity failure", () => {
+  const error = Object.assign(new Error("(EMAXCONNSESSION) max clients reached in session mode - max clients are limited to pool_size: 15"), { code: "XX000" });
+  for (const failure of [error, new Error("Connection failed", { cause: error }), new AggregateError([error])]) {
+    assert.equal(isDatabaseUnavailableError(failure), true);
+    assert.equal(isDatabaseCapacityError(failure), true);
+  }
+  assert.equal(isDatabaseCapacityError({ code: "53300", message: "remaining connection slots are reserved" }), true);
+  assert.equal(isDatabaseCapacityError({ code: "XX000", message: "unrelated internal query error" }), false);
+  assert.equal(isDatabaseUnavailableError({ code: "XX000", message: "unrelated internal query error" }), false);
+  assert.equal(isDatabaseCapacityError(new Error("connect ECONNRESET")), false);
 });

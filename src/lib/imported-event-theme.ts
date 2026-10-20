@@ -50,8 +50,16 @@ const clean = (value: unknown, max = 160) =>
     : "";
 export function importedArtworkUrl(value: unknown): string | undefined {
   if (typeof value !== "string" || value.length > 2000) return undefined;
-  if (/^\/api\/blob\/[\w./-]+$/.test(value) && !value.split("/").includes("..")) return value;
+  if (/^\/(?:api\/blob\/|media\/event-media\/)[\w./-]+$/.test(value) && !value.split("/").includes("..")) return value;
   try { const url = new URL(value); return url.protocol === "https:" && !url.username && !url.password ? url.href : undefined; } catch { return undefined; }
+}
+
+/** Generated sports artwork is public; its display must not depend on a database lookup. */
+export function importedArtworkDisplayUrl(value: unknown): string | undefined {
+  const url = importedArtworkUrl(value);
+  return url?.startsWith("/api/blob/event-media/")
+    ? `/media/event-media/${url.slice("/api/blob/event-media/".length)}`
+    : url;
 }
 export function themeHash(value: string): number {
   let hash = 2166136261;

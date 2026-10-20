@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import {
   IMPORTED_THEME_FONTS,
+  importedArtworkDisplayUrl,
   readImportedEventTheme,
   themeHash,
   type ImportedEventTheme,
@@ -88,7 +89,7 @@ export function importedArtworkSrc(
   const theme = activeImportedTheme(value);
   if (!theme || (customImage && customImage !== templateImage))
     return customImage || templateImage || undefined;
-  if (theme.artworkUrl) return theme.artworkUrl;
+  if (theme.artworkUrl) return importedArtworkDisplayUrl(theme.artworkUrl);
   // Keep the actual template photo while original generation is pending/failed.
   if (templateImage) return templateImage;
   const { accent, secondary, page, ink } = theme.colors;

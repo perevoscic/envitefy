@@ -19,6 +19,7 @@ import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { promisify } from "node:util";
 import { Pool, PoolClient, QueryResult, type QueryResultRow } from "pg";
+import { attachDatabasePool } from "@vercel/functions";
 import {
   assertEventPageBlueprint,
   type EventPageBlueprint,
@@ -35,6 +36,7 @@ import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { normalizeCanonicalStartFields } from "@/lib/dashboard-data";
 import {
   describeDatabaseError,
+  isDatabaseCapacityError,
   isDatabaseUnavailableError,
   normalizeDatabaseError,
 } from "@/lib/database-errors";
@@ -170,12 +172,12 @@ async function createPgPool(): Promise<Pool> {
   }
 
   const resolved = await resolvePoolConnection(databaseUrl, ssl);
-  const parsedPoolMax = Number.parseInt(process.env.PG_POOL_MAX || "8", 10);
-  const poolMax = Number.isFinite(parsedPoolMax) && parsedPoolMax > 0 ? parsedPoolMax : 8;
+  const serverless = process.env.VERCEL === "1";
+  const poolMax = parsePositiveInt(process.env.PG_POOL_MAX, serverless ? 2 : 8);
   const poolConfig: any = { connectionString: resolved.connectionString, max: poolMax };
   // Timeouts to prevent hanging requests causing upstream 504s
   const connectTimeoutMs = Number.parseInt(process.env.PG_CONNECT_TIMEOUT_MS || "5000", 10);
-  const idleTimeoutMs = Number.parseInt(process.env.PG_IDLE_TIMEOUT_MS || "30000", 10);
+  const idleTimeoutMs = parsePositiveInt(process.env.PG_IDLE_TIMEOUT_MS, serverless ? 5000 : 30000);
   const statementTimeoutMs = Number.parseInt(process.env.PG_STATEMENT_TIMEOUT_MS || "15000", 10);
   if (Number.isFinite(connectTimeoutMs)) poolConfig.connectionTimeoutMillis = connectTimeoutMs;
   if (Number.isFinite(idleTimeoutMs)) poolConfig.idleTimeoutMillis = idleTimeoutMs;
@@ -183,6 +185,9 @@ async function createPgPool(): Promise<Pool> {
   poolConfig.allowExitOnIdle = false;
   if (resolved.ssl) poolConfig.ssl = resolved.ssl;
   const pool = new Pool(poolConfig);
+  // Idle timers cannot run after a Vercel instance suspends. Keep it alive until
+  // released clients close, so each warm instance does not pin Supavisor sessions.
+  attachDatabasePool(pool);
   pool.on("error", (err: Error) => {
     const severity = (err as any).severity;
     const code = (err as any).code;
@@ -248,6 +253,7 @@ async function getPool(): Promise<Pool> {
 }
 
 function shouldRetryPoolConnect(err: unknown): boolean {
+  if (isDatabaseCapacityError(err)) return false;
   if (!isTransientPgError(err)) return false;
   const message = describeDatabaseError(err);
   return !/timeout exceeded when trying to connect|PG_AUTH_BACKOFF/i.test(message);
@@ -287,7 +293,7 @@ export async function withClient<T>(callback: (client: PoolClient) => Promise<T>
         );
       }
     }
-    if (isTransientPgError(err) && global.__pgPool === pool) {
+    if (!isDatabaseCapacityError(err) && isTransientPgError(err) && global.__pgPool === pool) {
       console.warn("[db] Recreating Postgres pool after connect failure", describeDatabaseError(err));
       global.__pgPool = undefined;
       pool.end().catch(() => {});

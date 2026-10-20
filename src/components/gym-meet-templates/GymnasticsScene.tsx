@@ -12,6 +12,7 @@ import { getGymMeetTitleTypography } from "./titleTypography";
 import styles from "./gymnastics-collection.module.css";
 import "./collection-fonts.css";
 import { importedArtworkSrc } from "@/lib/imported-event-design";
+import { importedArtworkDisplayUrl } from "@/lib/imported-event-theme";
 
 export function gymnasticsDesignStyle(design: GymMeetPageTemplateMeta): CSSProperties {
   return {
@@ -72,7 +73,7 @@ export default function GymnasticsScene({
             ref={imageRef}
             draggable={onHeroImagePositionChange ? false : undefined}
             src={artworkSrc}
-            alt={artworkSrc?.startsWith("data:image/svg+xml") ? "Gymnastics event illustration" : model.importedTheme?.artworkUrl === artworkSrc ? "Original gymnastics event artwork" : model.heroImage ? "Meet artwork" : design.artworkAlt}
+            alt={artworkSrc?.startsWith("data:image/svg+xml") ? "Gymnastics event illustration" : importedArtworkDisplayUrl(model.importedTheme?.artworkUrl) === artworkSrc ? "Original gymnastics event artwork" : model.heroImage ? "Meet artwork" : design.artworkAlt}
             width={1536}
             height={1024}
             loading="lazy"

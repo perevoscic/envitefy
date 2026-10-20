@@ -26,6 +26,8 @@ const DATABASE_UNAVAILABLE_CODES = new Set([
 
 const DATABASE_UNAVAILABLE_MESSAGE =
   /authentication failed|circuit breaker open|connection terminated|connection timeout|connect timeout|database connection unavailable|getaddrinfo|invalid auth|invalid password|network is unreachable|not known|password authentication failed|permission denied|refused|terminated unexpectedly|timeout|too many (?:authentication errors|clients|connections)/i;
+const DATABASE_CAPACITY_MESSAGE =
+  /EMAXCONNSESSION|EMAXCLIENTS|max clients reached|max client connections reached|too many (?:clients|connections)/i;
 
 function readStringField(value: Record<string, unknown>, field: string): string {
   return typeof value[field] === "string" ? value[field] : "";
@@ -105,11 +107,11 @@ export function normalizeDatabaseError(error: unknown): Error {
   return wrapped;
 }
 
-/**
- * Recognizes database connectivity failures, including the nested errors emitted
- * by Node when a hostname resolves to several unreachable addresses.
- */
-export function isDatabaseUnavailableError(error: unknown): boolean {
+function matchesDatabaseError(
+  error: unknown,
+  matches: (code: string, message: string) => boolean,
+  includeEmptyAggregate = false,
+): boolean {
   const visited = new Set<object>();
 
   const visit = (value: unknown): boolean => {
@@ -121,7 +123,7 @@ export function isDatabaseUnavailableError(error: unknown): boolean {
     const code = readStringField(record, "code");
     const message = readStringField(record, "message");
 
-    if (DATABASE_UNAVAILABLE_CODES.has(code) || DATABASE_UNAVAILABLE_MESSAGE.test(message)) {
+    if (matches(code, message)) {
       return true;
     }
 
@@ -130,8 +132,27 @@ export function isDatabaseUnavailableError(error: unknown): boolean {
     const nestedErrors = record.errors;
     if (Array.isArray(nestedErrors) && nestedErrors.some(visit)) return true;
 
-    return isEmptyAggregateError(value);
+    return includeEmptyAggregate && isEmptyAggregateError(value);
   };
 
   return visit(error);
+}
+
+export function isDatabaseCapacityError(error: unknown): boolean {
+  return matchesDatabaseError(
+    error,
+    (code, message) => code === "53300" || DATABASE_CAPACITY_MESSAGE.test(message),
+  );
+}
+
+/** Recognizes connectivity failures, including nested TCP and pool-capacity errors. */
+export function isDatabaseUnavailableError(error: unknown): boolean {
+  return matchesDatabaseError(
+    error,
+    (code, message) =>
+      DATABASE_UNAVAILABLE_CODES.has(code) ||
+      DATABASE_UNAVAILABLE_MESSAGE.test(message) ||
+      DATABASE_CAPACITY_MESSAGE.test(message),
+    true,
+  );
 }

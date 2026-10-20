@@ -85,7 +85,9 @@ test('a fresh unsaved import renders completed canonical artwork instead of its 
   const model = normalizeGymMeetEventData({ eventTitle: eventData.title, eventData, navItems: [], rosterAthletes: [] });
   assert.equal(model.importedTheme.artworkUrl, ready.artworkUrl);
   const html = renderToStaticMarkup(React.createElement(Renderer, { ...props(designs[0]), model }));
-  assert.ok(html.includes(ready.artworkUrl));
+  assert.ok(html.includes('/media/event-media/meet/verified.webp'));
+  assert.ok(!html.includes(`src="${ready.artworkUrl}"`));
+  assert.ok(html.includes('alt="Original gymnastics event artwork"'));
   assert.ok(!html.includes('data:image/svg+xml'));
   const disabled = normalizeGymMeetEventData({ eventTitle: eventData.title, eventData: { ...eventData, importedTheme: null }, navItems: [], rosterAthletes: [] });
   assert.equal(disabled.importedTheme, null);

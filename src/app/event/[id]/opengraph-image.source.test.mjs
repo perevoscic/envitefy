@@ -13,8 +13,8 @@ test("event OG metadata shares saved artwork at its natural aspect ratio", () =>
 
   assert.match(pageSource, /resolveEventShareImage/);
   assert.match(pageSource, /async function resolveAbsoluteEventShareImage/);
-  assert.match(pageSource, /await resolveAbsoluteEventShareImage\(data\)/);
-  assert.match(pageSource, /await absoluteUrl\("\/og-default\.jpg"\)/);
+  assert.match(pageSource, /await resolveAbsoluteEventShareImage\(data, \{ eventId: row\.id, media: row\.media \}\)/);
+  assert.doesNotMatch(pageSource, /\/og-default\.jpg/);
   assert.match(resolverSource, /toPublicShareMediaUrl/);
   assert.match(resolverSource, /attachmentThumbnail && selectedRepresentsAttachmentArtwork/);
 
@@ -22,8 +22,8 @@ test("event OG metadata shares saved artwork at its natural aspect ratio", () =>
     /export async function generateMetadata[\s\S]*?(?=\nexport async function generateViewport)/,
   )?.[0];
   assert.ok(metadataBlock, "expected event metadata generator");
-  assert.match(metadataBlock, /images: \[openGraphImage\]/);
-  assert.match(metadataBlock, /images: \[\{ url: img, alt: title \}\]/);
+  assert.match(metadataBlock, /images: openGraphImage \? \[openGraphImage\] : \[\]/);
+  assert.match(metadataBlock, /images: img \? \[\{ url: img, alt: title \}\] : \[\]/);
   assert.doesNotMatch(metadataBlock, /width: 1200/);
   assert.doesNotMatch(metadataBlock, /height: 630/);
 });

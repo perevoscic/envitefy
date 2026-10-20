@@ -82,7 +82,7 @@ import {
   isScannedOrUploadedEventData,
 } from "@/lib/owner-rsvp-dashboard";
 import { createServerTimingTracker } from "@/lib/server-timing";
-import { resolveEventShareImage, type EventShareImage } from "@/lib/share-image";
+import { resolveEventShareImage, type EventShareImage, type EventShareImageContext } from "@/lib/share-image";
 import { resolveEventPageBackgroundColor, resolveEventThemeColor } from "@/lib/theme-color";
 import { EventPageCompositionProvider } from "@/components/events/EventPageCompositionContext";
 import { normalizeEventPageComposition } from "@/lib/event-page-composition";
@@ -220,8 +220,9 @@ const getCachedEventHistoryBySlugOrId = cache(async (value: string, userId?: str
 
 async function resolveAbsoluteEventShareImage(
   data: Record<string, unknown>,
+  context: EventShareImageContext = {},
 ): Promise<EventShareImage | null> {
-  const image = resolveEventShareImage(data);
+  const image = resolveEventShareImage(data, context);
   return image ? { ...image, url: await absoluteUrl(image.url) } : null;
 }
 
@@ -364,7 +365,7 @@ function buildPublicEventJsonLd(params: {
   title: string;
   data: Record<string, unknown>;
   url: string;
-  imageUrl: string;
+  imageUrl?: string;
   createdAt?: string | null;
 }): Record<string, unknown> | null {
   if (!isPublicEventIndexable(params.data)) return null;
@@ -407,7 +408,7 @@ function buildPublicEventJsonLd(params: {
         name: params.title,
         url: params.url,
         description,
-        image: [params.imageUrl],
+        image: params.imageUrl ? [params.imageUrl] : undefined,
         startDate,
         endDate,
         eventStatus: resolvePublicEventSchemaStatus(params.data),
@@ -445,15 +446,15 @@ export async function generateMetadata(props: {
   const description = buildPublicEventMetaDescription(title, data, indexable);
 
   // Share the optimized, uncropped flyer/invite through a crawler-accessible public media route.
-  const shareImage = row ? await resolveAbsoluteEventShareImage(data) : null;
-  const img = shareImage?.url || (await absoluteUrl("/og-default.jpg"));
-  const openGraphImage = {
+  const shareImage = row ? await resolveAbsoluteEventShareImage(data, { eventId: row.id, media: row.media }) : null;
+  const img = shareImage?.url;
+  const openGraphImage = img ? {
     url: img,
     alt: title,
     ...(shareImage?.width ? { width: shareImage.width } : {}),
     ...(shareImage?.height ? { height: shareImage.height } : {}),
     ...(shareImage?.type ? { type: shareImage.type } : {}),
-  };
+  } : null;
 
   // Generate canonical URL
   const canonicalPath = row
@@ -477,14 +478,14 @@ export async function generateMetadata(props: {
       description,
       url,
       siteName: "Envitefy",
-      images: [openGraphImage],
+      images: openGraphImage ? [openGraphImage] : [],
       type: "article",
     },
     twitter: {
       card: "summary_large_image",
       title: `${title} — Envitefy`,
       description,
-      images: [{ url: img, alt: title }],
+      images: img ? [{ url: img, alt: title }] : [],
     },
     alternates: {
       canonical: url,
@@ -1911,7 +1912,7 @@ export default async function EventPage({
     );
   }
   const publicEventOgImageUrl =
-    (await resolveAbsoluteEventShareImage(data))?.url || (await absoluteUrl("/og-default.jpg"));
+    (await resolveAbsoluteEventShareImage(data, { eventId: row.id, media: row.media }))?.url;
   publicEventStructuredData = buildPublicEventJsonLd({
     title,
     data,
