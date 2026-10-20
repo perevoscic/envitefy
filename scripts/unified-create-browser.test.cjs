@@ -248,11 +248,16 @@ test("unified creation retains sources, recommends native templates and protects
   const assertTwoColumnChoices = async (locator, context) => {
     const cards = await locator.evaluateAll(elements => elements.map(element => {
       const { x, y, width, height } = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      const contentX = x + parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft);
+      const contentWidth = width - parseFloat(style.borderLeftWidth) - parseFloat(style.borderRightWidth) - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      const artwork = element.firstElementChild?.getBoundingClientRect().toJSON();
+      const arrow = element.querySelector(":scope > svg")?.getBoundingClientRect().toJSON();
       const text = Array.from(element.querySelectorAll("span")).filter(span => !span.children.length && span.textContent.trim()).map(span => {
         const { x, y, width, height } = span.getBoundingClientRect();
-        return { label: span.textContent, x, y, width, height, clipped: span.scrollWidth > span.clientWidth + 1 || span.scrollHeight > span.clientHeight + 1 };
+        return { label: span.textContent, x, y, width, height, lineHeight: parseFloat(getComputedStyle(span).lineHeight), clipped: span.scrollWidth > span.clientWidth + 1 || span.scrollHeight > span.clientHeight + 1 };
       });
-      return { x, y, width, height, text };
+      return { x, y, width, height, contentX, contentWidth, artwork, arrow, text };
     }));
     assert.ok(cards.length > 1, `${context}: multiple event types are available`);
     for (const [index, card] of cards.entries()) {
@@ -266,6 +271,10 @@ test("unified creation retains sources, recommends native templates and protects
         assert.ok(Math.abs(card.x - previous.x) <= 1 && card.y >= previous.y + previous.height, `${context}: choice ${index + 1} begins the next row: ${JSON.stringify(cards)}`);
       }
       assert.ok(card.text.length, `${context}: choice ${index + 1} has a visible event label`);
+      assert.ok(card.artwork && Math.abs(card.artwork.x - card.contentX) <= 1 && Math.abs(card.artwork.width - card.contentWidth) <= 1, `${context}: choice ${index + 1} artwork spans the card's inner width: ${JSON.stringify(card)}`);
+      const title = card.text[0];
+      assert.ok(card.arrow && card.arrow.x >= title.x + title.width - 1 && card.arrow.y + card.arrow.height / 2 >= title.y && card.arrow.y + card.arrow.height / 2 <= title.y + title.lineHeight, `${context}: choice ${index + 1} chevron sits beside the first title line: ${JSON.stringify(card)}`);
+      assert.ok(title.y >= card.artwork.y + card.artwork.height, `${context}: choice ${index + 1} title sits below its artwork`);
       for (const text of card.text) {
         assert.ok(!text.clipped && text.x >= card.x - 1 && text.y >= card.y - 1 && text.x + text.width <= card.x + card.width + 1 && text.y + text.height <= card.y + card.height + 1, `${context}: ${text.label} fits inside its card: ${JSON.stringify({ card, text })}`);
       }

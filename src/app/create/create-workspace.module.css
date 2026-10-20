@@ -1425,8 +1425,10 @@
   }
 
   .typeThumb {
-    width: 56px;
-    height: 58px;
+    width: 100%;
+    height: auto;
+    grid-column: 1 / -1;
+    aspect-ratio: 4 / 3;
   }
 
   .typeLabel {
@@ -1434,13 +1436,15 @@
   }
 
   .typeCopy {
-    grid-column: 1 / -1;
+    grid-column: 1;
+    grid-row: 2;
   }
 
   .typeArrow {
     grid-column: 2;
-    grid-row: 1;
-    align-self: center;
+    grid-row: 2;
+    align-self: start;
+    margin-top: 1px;
     margin-right: 0;
   }
 
