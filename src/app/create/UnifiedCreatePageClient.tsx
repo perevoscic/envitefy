@@ -67,9 +67,9 @@ const EventCustomThemeDialog = dynamic(
 type Mode = "files" | "url" | "scratch";
 type Phase = "source" | "recognizing" | "templates" | "opening";
 const control =
-  "min-h-11 rounded-[10px] border border-[#ded6e5] bg-white px-4 py-2.5 text-sm font-semibold text-[#5b3d80] transition hover:border-[#a98abb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5b3d80] disabled:cursor-wait disabled:opacity-50";
+  "min-h-11 rounded-full border border-[#e2ddef] bg-white px-5 py-2.5 text-sm font-semibold text-[#5b3fd1] shadow-[0_1px_2px_rgb(34_28_53/4%)] transition hover:border-[#cbc0f5] hover:bg-[#f2efff] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5b3fd1] disabled:cursor-wait disabled:opacity-50";
 const primary =
-  "min-h-12 rounded-[10px] border border-[#5b3d80] bg-[#5b3d80] px-5 py-3 text-sm font-semibold text-white transition hover:border-[#483065] hover:bg-[#483065] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5b3d80] disabled:cursor-not-allowed disabled:opacity-50";
+  "min-h-12 rounded-full border border-[#5b3fd1] bg-[#5b3fd1] px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_22px_-12px_rgb(74_47_191/70%)] transition hover:border-[#4a2fbf] hover:bg-[#4a2fbf] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5b3fd1] disabled:cursor-not-allowed disabled:opacity-50";
 
 export function allowedCreationGuess(guess: CreateGuess, allowed: string[]) {
   return allowed.includes(customCategoryForGuess(guess));
@@ -866,6 +866,9 @@ export default function UnifiedCreatePageClient() {
       <div className={styles.container}>
         <header className={styles.header}>
           <div>
+            <p className={styles.eyebrow}>
+              {phase === "templates" && manualCreation ? "Design" : "Event Page"}
+            </p>
             <h1 className={styles.title}>
               {phase === "templates"
                 ? manualCreation
@@ -1273,7 +1276,7 @@ export default function UnifiedCreatePageClient() {
             <div className={styles.workspaceGrid}>
               <div className={styles.progress}>
                 <LoaderCircle
-                  className="mb-5 size-8 animate-spin text-[#5b3d80] motion-reduce:animate-none"
+                  className="mb-5 size-8 animate-spin text-[#5b3fd1] motion-reduce:animate-none"
                   aria-hidden="true"
                 />
                 <h2 className={styles.taskHeading}>
@@ -1526,7 +1529,12 @@ export default function UnifiedCreatePageClient() {
         {!busy && phase === "source" && mode !== "scratch" && ready && canCreatePage ? (
           <section className={styles.shortcuts} aria-label="Your event templates">
             <div className={styles.shortcutsHeader}>
-              <h2 className={styles.shortcutsTitle}>Your event templates</h2>
+              <div>
+                <h2 className={styles.shortcutsTitle}>Your event templates</h2>
+                <p className={styles.shortcutsIntro}>
+                  Start from a design made for the events you host.
+                </p>
+              </div>
               <button
                 type="button"
                 className={styles.shortcutButton}
