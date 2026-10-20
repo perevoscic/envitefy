@@ -74,7 +74,12 @@ test("hydrated Gender Reveal RSVP sends required answers, preserves rejected inp
     assert.equal(requests.length, 2, "preview sends no response, even with a published event id");
     await page.keyboard.press("Escape");
     await page.getByRole("dialog").waitFor({ state: "hidden" });
-    assert.equal(await page.getByRole("button", { name: "Yes", exact: true }).evaluate((button) => button === document.activeElement), true, "modal returns keyboard focus to the response control");
+    // Radix restores focus asynchronously after the dialog unmounts.
+    await page.waitForFunction(
+      (button) => button === document.activeElement,
+      await page.getByRole("button", { name: "Yes", exact: true }).elementHandle(),
+      { timeout: 5000 },
+    );
     assert.deepEqual(failures, []);
     fs.writeFileSync(path.join(output, "result.json"), JSON.stringify({ actualComponent: "EventRsvpPrompt", requests, rejectedFormRetained: true, retrySucceeded: true, previewWrites: 0, focusRestored: true, realBackendCalls: 0, realEmailCalls: 0 }, null, 2));
   } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }

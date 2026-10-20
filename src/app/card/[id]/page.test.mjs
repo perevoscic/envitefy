@@ -23,7 +23,7 @@ test("shared card route prefers the public-safe cover image url", () => {
   );
   assert.match(
     pageSource,
-    /const eventShareImage = resolveEventShareImage\(data\);\s*const imageUrl = await normalizeSharedCardImageUrl\(\s*eventShareImage\?\.url \|\| resolveConciergeLiveCardImagePath\(data\)/,
+    /const eventShareImage = resolveEventShareImage\(\s*data,\s*\{\s*eventId: row\.id,\s*media: row\.media,?\s*\},?\s*\);\s*const imageUrl = await normalizeSharedCardImageUrl\(\s*eventShareImage\?\.url \|\| resolveConciergeLiveCardImagePath\(data\)/,
   );
   assert.match(shareImageSource, /data\.coverImageUrl,\s*studioCard\?\.imageUrl,/);
   assert.match(

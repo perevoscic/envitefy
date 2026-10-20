@@ -20,6 +20,7 @@ const files = [
   "src/lib/query-egress.test.mjs",
   "src/lib/history-cache.test.mjs",
   "src/lib/event-media.test.ts",
+  "src/lib/share-image.test.ts",
   "src/lib/event-page-composition.test.cjs",
   "src/lib/event-section-layout.test.cjs",
   "src/lib/event-information-tabs.test.cjs",
