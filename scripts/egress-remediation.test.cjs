@@ -110,7 +110,8 @@ test("card pages bind cursors and return a bounded page without fetching event J
   const cursor = api.decodeHistoryCursor(page.nextCursor);
   assert.deepEqual(cursor, { id: ids[1], createdAt: created_at });
   await api.listHistoryCardPage("owner", 2, cursor);
-  assert.deepEqual(calls[1].args.slice(2), [created_at, ids[1], true]);
+  assert.deepEqual(calls[1].args.slice(2, 5), [created_at, ids[1], true]);
+  assert.deepEqual(calls[1].args.slice(5), ["all", "all", ""]);
   assert.match(calls[0].sql, /c\.revoked_at IS NULL/);
   assert.match(calls[0].sql, /s\.revoked_at IS NULL/);
   assert.match(calls[0].sql, /jsonb_build_object/);

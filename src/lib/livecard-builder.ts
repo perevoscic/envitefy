@@ -1,5 +1,5 @@
 import { localClockToIso } from "./creation/calendar-validation.ts";
-import { normalizeCreationCategory } from "./creation-access";
+import { normalizeCreationCategory } from "./creation-access.ts";
 
 export const LIVE_CARD_BUILDER_PATH = "/live-cards";
 export const LIVE_CARD_BUILDER_SOURCE = "livecard-builder";
