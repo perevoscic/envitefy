@@ -1413,10 +1413,14 @@
     margin-top: 18px;
   }
 
-  .typeButton {
-    min-height: 79px;
-    gap: 13px;
-    padding: 9px 12px 9px 9px;
+  .typeButton,
+  .shortcutTile {
+    display: grid;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-content: start;
+    gap: 10px 6px;
+    padding: 10px;
     border-radius: 16px;
   }
 
@@ -1427,6 +1431,17 @@
 
   .typeLabel {
     font-size: 13px;
+  }
+
+  .typeCopy {
+    grid-column: 1 / -1;
+  }
+
+  .typeArrow {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+    margin-right: 0;
   }
 
   .typeMeta {
@@ -1447,15 +1462,7 @@
   }
 
   .shortcutGrid {
-    grid-template-columns: minmax(0, 1fr);
     gap: 9px;
-  }
-
-  .shortcutTile {
-    min-height: 80px;
-    gap: 14px;
-    padding: 9px;
-    border-radius: 16px;
   }
 
   .summary {
@@ -1491,12 +1498,6 @@
 
   .progress {
     padding: 24px 20px;
-  }
-}
-
-@container creation (max-width: 480px) {
-  .typeGrid {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 

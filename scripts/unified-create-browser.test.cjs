@@ -245,6 +245,32 @@ test("unified creation retains sources, recommends native templates and protects
     const bounds = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth, body: document.body.scrollWidth }));
     assert.ok(bounds.document <= bounds.viewport + 1 && bounds.body <= bounds.viewport + 1, `${context}: ${JSON.stringify(bounds)}`);
   };
+  const assertTwoColumnChoices = async (locator, context) => {
+    const cards = await locator.evaluateAll(elements => elements.map(element => {
+      const { x, y, width, height } = element.getBoundingClientRect();
+      const text = Array.from(element.querySelectorAll("span")).filter(span => !span.children.length && span.textContent.trim()).map(span => {
+        const { x, y, width, height } = span.getBoundingClientRect();
+        return { label: span.textContent, x, y, width, height, clipped: span.scrollWidth > span.clientWidth + 1 || span.scrollHeight > span.clientHeight + 1 };
+      });
+      return { x, y, width, height, text };
+    }));
+    assert.ok(cards.length > 1, `${context}: multiple event types are available`);
+    for (const [index, card] of cards.entries()) {
+      assert.ok(card.width >= 44 && card.height >= 44, `${context}: choice ${index + 1} retains a usable touch target`);
+      assert.ok(Math.abs(card.width - cards[0].width) <= 1, `${context}: choices have equal column widths`);
+      if (index % 2) {
+        const previous = cards[index - 1];
+        assert.ok(Math.abs(card.y - previous.y) <= 1 && card.x >= previous.x + previous.width, `${context}: choices ${index} and ${index + 1} share a row: ${JSON.stringify(cards)}`);
+      } else if (index > 0) {
+        const previous = cards[index - 2];
+        assert.ok(Math.abs(card.x - previous.x) <= 1 && card.y >= previous.y + previous.height, `${context}: choice ${index + 1} begins the next row: ${JSON.stringify(cards)}`);
+      }
+      assert.ok(card.text.length, `${context}: choice ${index + 1} has a visible event label`);
+      for (const text of card.text) {
+        assert.ok(!text.clipped && text.x >= card.x - 1 && text.y >= card.y - 1 && text.x + text.width <= card.x + card.width + 1 && text.y + text.height <= card.y + card.height + 1, `${context}: ${text.label} fits inside its card: ${JSON.stringify({ card, text })}`);
+      }
+    }
+  };
   const assertPrimaryContrast = async (locator, context) => {
     await locator.evaluate(element => new Promise(resolve => {
       const check = () => { if (!element.matches(":disabled") && Number(getComputedStyle(element).opacity) === 1) resolve(undefined); else setTimeout(check, 20); }; check();
@@ -299,12 +325,7 @@ test("unified creation retains sources, recommends native templates and protects
       assert.ok(nextAction && nextAction.height >= 44, `${width}px file picker retains a usable touch target`);
       assert.ok(nextAction && nextAction.y + nextAction.height <= 800, `${width}px upload primary action appears in the first phone viewport: ${JSON.stringify(nextAction)}`);
       assert.equal(await inspiration.isVisible(), false, `${width}px keeps inspiration artwork out of the phone task flow`);
-      const suggestionBoxes = await suggestions.getByRole("button", { name: /^(Birthdays|Baby Showers|Bridal Showers|General Events)$/ }).evaluateAll(elements => elements.map(element => {
-        const { x, y, width, height } = element.getBoundingClientRect(); return { x, y, width, height };
-      }));
-      assert.ok(suggestionBoxes.length > 1, "the phone fixture has multiple enabled event templates");
-      assert.ok(suggestionBoxes.every(box => box.height >= 44), `${width}px template choices retain usable touch targets`);
-      assert.ok(suggestionBoxes.every((box, index) => index === 0 || box.y >= suggestionBoxes[index - 1].y + suggestionBoxes[index - 1].height - 1), `${width}px event templates stack vertically: ${JSON.stringify(suggestionBoxes)}`);
+      await assertTwoColumnChoices(suggestions.getByRole("button", { name: /^(Birthdays|Baby Showers|Bridal Showers|General Events)$/ }), `Source event templates at ${width}px`);
       assert.equal(await page.getByRole("button", { name: "Read event information", exact: true }).count(), 0, "uploads need no separate matching-designs submission");
       t.diagnostic(`${width}px initial upload action ends at ${Math.round(nextAction.y + nextAction.height)}px`);
       await capture(`source-initial-${width}.png`);
@@ -313,8 +334,12 @@ test("unified creation retains sources, recommends native templates and protects
     await mode("Start from scratch").focus(); await page.keyboard.press("Enter");
     const manualTypes = page.getByRole("region", { name: "Choose an event type", exact: true });
     await manualTypes.waitFor();
-    await assertNoOverflow("Manual categories at 390px"); await capture("source-manual-390.png");
-    await page.setViewportSize({ width: 320, height: 900 }); await assertNoOverflow("Manual categories at 320px"); await capture("source-manual-320.png");
+    for (const width of [390, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      await assertNoOverflow(`Manual categories at ${width}px`);
+      await assertTwoColumnChoices(manualTypes.locator("button[aria-label]"), `Manual event types at ${width}px`);
+      await capture(`source-manual-${width}.png`);
+    }
     await page.setViewportSize({ width: 1440, height: 1000 }); await capture("source-manual-desktop.png");
     await page.locator("#root").evaluate(parent => { parent.style.paddingLeft = "320px"; parent.style.boxSizing = "border-box"; });
     for (const width of [1024, 1280, 1440]) {
