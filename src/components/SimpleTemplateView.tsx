@@ -1,6 +1,9 @@
 // @ts-nocheck
 "use client";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
+import { activeImportedTheme, importedSportsTheme, importedThemeStyle, importedArtworkSrc } from "@/lib/imported-event-design";
+import { IMPORTED_THEME_FONTS } from "@/lib/imported-event-theme";
+import "@/components/event-create/imported-event-theme.css";
 
 import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
 import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
@@ -493,7 +496,10 @@ export default function SimpleTemplateView({
   };
 
   // Extract theme directly from event data - it should have the full theme object
+  const importedTheme = activeImportedTheme(currentData?.importedTheme);
   const theme: ThemeSpec = (() => {
+    const imported = importedSportsTheme(importedTheme);
+    if (imported) return imported;
     // The theme object should be stored directly in currentData.theme
     const storedTheme = currentData?.theme;
 
@@ -564,11 +570,11 @@ export default function SimpleTemplateView({
 
   // Event data extraction - use state data if available, fallback to prop
   // Check ALL possible locations for the hero image
-  const heroImage =
+  const heroImage = importedArtworkSrc(importedTheme,
     currentData?.heroImage ||
     currentData?.customHeroImage ||
     (currentData as any)?.images?.hero ||
-    "";
+    "");
 
   // Debug logging for gender reveal
   if (
@@ -824,6 +830,7 @@ export default function SimpleTemplateView({
           backgroundImage: "linear-gradient(115deg, #1f3a8a 0%, #0b1220 52%, #7f1d1d 100%)",
         });
   const headingFontFamily =
+    (importedTheme && !currentData?.themeFontOverride ? IMPORTED_THEME_FONTS[importedTheme.font] : null) ||
     simpleDesignTokens?.titleFont ||
     currentData?.fontFamily ||
     currentData?.theme?.fontFamily ||
@@ -4679,7 +4686,7 @@ export default function SimpleTemplateView({
   }
 
   return (
-    <div className="event-modern-page w-full">
+    <div className="event-modern-page w-full" data-imported-theme={importedTheme?.id} style={importedThemeStyle(importedTheme)}>
       <div
         ref={templateRootRef}
         className="event-modern-container flex justify-center py-3 md:py-8"

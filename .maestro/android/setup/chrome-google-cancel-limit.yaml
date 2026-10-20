@@ -1,0 +1,9 @@
+appId: com.android.chrome
+name: Decline Google's broad account sign-out prompt
+---
+- assertVisible: 'accounts\.google\.com'
+- assertVisible: ".*максимальное число аккаунтов.*|.*maximum number of accounts.*"
+- tapOn: "^Нет, спасибо$|^No thanks$"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: google-account-limit-declined

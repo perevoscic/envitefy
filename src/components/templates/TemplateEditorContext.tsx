@@ -536,8 +536,8 @@ export default function TemplateEditorProvider({
             ? "Draft saved. Only you and accepted co-hosts can view it until you publish."
             : "Published.",
         );
-        if (category === "signup-forms" && nextStatus === "draft") {
-          // Reload must reopen this saved form, including a previously temporary theme preview.
+        if (nextStatus === "draft") {
+          // Reload reopens this exact saved event; a plain gallery entry remains a new event.
           savedEventId.current = eventId;
           themeHandoff.current = null;
           window.history.replaceState(

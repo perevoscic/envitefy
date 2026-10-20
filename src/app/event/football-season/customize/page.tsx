@@ -23,6 +23,10 @@ import EventCanvas from "@/components/EventCanvas";
 
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 
+import ImportedThemeControls from "@/components/event-create/ImportedThemeControls";
+import ImportedThemeArtwork from "@/components/event-create/ImportedThemeArtwork";
+import { readImportedEventTheme } from "@/lib/imported-event-theme";
+import { importedThemeStyle, importedFootballChrome, activeImportedTheme } from "@/lib/imported-event-design";
 import FootballHero from "@/components/football-season-templates/FootballHero";
 import FootballPageContent from "@/components/football-season-templates/FootballPageContent";
 import { FootballPageTextProvider } from "@/components/football-season-templates/FootballPageText";
@@ -234,6 +238,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       state: "",
       venue: "",
       details: "",
+      importedTheme: null,
       heroImageFilterEnabled: false,
       hero: "",
       rsvpEnabled: false,
@@ -422,6 +427,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             venue: existing.venue || "",
             details: existing.details || existing.description || "",
             heroImageFilterEnabled: false,
+            importedTheme: readImportedEventTheme(existing.importedTheme),
             hero: existing.heroImage || existing.hero || prev.hero,
             rsvpEnabled:
               existing.rsvpEnabled === true,
@@ -474,8 +480,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     });
     const currentTemplate = useMemo(() => getGymMeetTemplateMeta(pageTemplateId), [pageTemplateId]);
     const templateTheme = useMemo(
-      () => resolveFootballSeasonTemplateChrome(pageTemplateId),
-      [pageTemplateId],
+      () => importedFootballChrome(resolveFootballSeasonTemplateChrome(pageTemplateId), data.importedTheme),
+      [pageTemplateId, data.importedTheme],
     );
     const templateTypography = templateTheme.titleTypography;
     const selectedSize =
@@ -546,6 +552,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.extra,
       data.fontSize,
       resolvedHero,
+      data.importedTheme,
       resolvedTitle,
       data.rsvpDeadline,
       data.rsvpEnabled,
@@ -729,6 +736,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           },
           advancedSections: normalizedAdvancedSections,
           heroImageFilterEnabled: false,
+          importedTheme: data.importedTheme,
           heroImage: heroToSave,
           extra: { ...data.extra, team: resolveFootballTeamName(data.extra?.team, data.title) },
           address: addressToSave,
@@ -770,6 +778,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.city,
       data.state,
       resolvedHero,
+      data.importedTheme,
       data.rsvpEnabled,
       data.rsvpDeadline,
       data.extra,
@@ -966,7 +975,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const renderDesignEditor = () => (
       <EditorLayout title="Design" onBack={() => setActiveView("main")} showBack>
         <div className="space-y-4">
-          <TemplateSelector value={pageTemplateId} onChange={setPageTemplateId} />
+          <ImportedThemeControls eventId={editEventId || editor.eventId} value={data.importedTheme} context={{ title: resolvedTitle, sport: "football", city: data.city, seed: editEventId || resolvedTitle }} onChange={(importedTheme) => setData(prev => ({ ...prev, importedTheme }))} />
+          <TemplateSelector value={pageTemplateId} onChange={(id) => { setPageTemplateId(id); setData(prev => ({ ...prev, importedTheme: prev.importedTheme ? { ...prev.importedTheme, enabled: false } : null })); }} />
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -1057,7 +1067,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         });
         const result = await readFootballResponse(response, "The import service did not respond. Try the file or URL again; your current details are kept.");
         if (!result.data) throw new Error(result.error || "Unable to read this source.");
-        setData((previous) => ({ ...previous, ...footballEditorFields(result.data), guestPlanning: {}, passcode: result.passcode || "" }));
+        setData((previous) => ({ ...previous, ...footballEditorFields(result.data), importedTheme: previous.importedTheme || readImportedEventTheme(result.data.importedTheme), guestPlanning: {}, passcode: result.passcode || "" }));
         setAdvancedState((previous) => ({
           ...(result.data.advancedSections || {}),
           scores: previous.scores || { scorestreamWidgetUrl: "" },
@@ -1284,9 +1294,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       );
     }
 
-    const renderFootballPage = (readOnly: boolean) => (<FootballSeasonPreviewFrame theme={templateTheme}>
+    const renderFootballPage = (readOnly: boolean) => (<div data-imported-theme={activeImportedTheme(data.importedTheme)?.id} style={importedThemeStyle(data.importedTheme)}><FootballSeasonPreviewFrame theme={templateTheme}>
                   <FootballPageTextProvider text={data.footballPageText} title={resolvedTitle} details={data.details} onChange={readOnly || mobileMenuOpen ? undefined : handlePageTextChange}>
                   <FootballHero
+                    importedTheme={data.importedTheme}
                     templateId={pageTemplateId}
                     title={!editEventId && (!data.title?.trim() || data.title === config.displayName) ? "Your team. Your season." : resolvedTitle || config.displayName}
                     subtitle={footballModel.subtitle || "Football season"}
@@ -1337,7 +1348,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     <EnvitefyEventBranding category="Football" inheritColor />
                   </footer>
                   </FootballPageTextProvider>
-                </FootballSeasonPreviewFrame>);
+                </FootballSeasonPreviewFrame></div>);
 
     const renderSectionEditor = (id: string) => {
       if (id === "details") return renderDetailsEditor();
@@ -1364,7 +1375,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               </div>
             </div>
           </EventCanvas>}
- controls={<><ScrollHandoffContainer className="min-h-full">
+ controls={<><ImportedThemeArtwork syncOnly eventId={editEventId || editor.eventId} value={data.importedTheme} onChange={(importedTheme) => setData(prev => ({ ...prev, importedTheme }))} /><ScrollHandoffContainer className="min-h-full">
 
 
             <div className="p-6 pt-4 md:pt-6">

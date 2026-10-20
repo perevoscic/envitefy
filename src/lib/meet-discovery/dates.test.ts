@@ -5,7 +5,7 @@ import { GET as calendarIcs } from "../../app/api/ics/route";
 import { buildCalendarLinks } from "../../utils/calendar-links";
 import { buildGymnasticsEventDateTimes, gymnasticsDateParts, hydrateGymnasticsEventDates } from "../gymnastics-event-dates";
 import { extractPdfTextWithPdfJs } from "../pdf-raster";
-import { __testUtils, mapParseResultToGymData } from "./core";
+import { __testUtils, extractDiscoveryText, mapParseResultToGymData } from "./core";
 import { resolveDiscoveryVenueTimezone } from "./venue-timezone";
 
 const fetchBefore = globalThis.fetch;
@@ -19,11 +19,43 @@ beforeEach(() => {
   globalThis.fetch = (async () => { throw new Error("Unexpected provider call in offline test"); }) as typeof fetch;
 });
 afterEach(() => {
+  __testUtils.resetUrlDiscoveryTestHooks();
   globalThis.fetch = fetchBefore;
   if (tokenBefore === undefined) delete process.env.MAPBOX_ACCESS_TOKEN;
   else process.env.MAPBOX_ACCESS_TOKEN = tokenBefore;
   if (browserZoneBefore === undefined) delete process.env.TZ;
   else process.env.TZ = browserZoneBefore;
+});
+
+test("visible event dates override a stale SEO description throughout URL extraction", async () => {
+  const html = `<html><title>Riverside Invitational</title><meta name="description" content="The 2019 Riverside Invitational takes place January 24-26, 2019."><main><h1>2031 Riverside Invitational</h1><p>The 2031 Riverside Invitational takes place January 24-26, 2031 at Riverside Sports Centre.</p></main></html>`;
+  __testUtils.setUrlDiscoveryTestHooks({
+    fetchWithLimit: async () => ({ text: html, buffer: Buffer.from(html), contentType: "text/html" }),
+    collectBrowserData: async () => ({ pages: [], candidates: [] }) as any,
+  });
+  const extracted = await extractDiscoveryText({ type: "url", url: "https://riverside.example.org/overview" }, {
+    workflow: "gymnastics", mode: "core", budgetMs: 1000,
+  });
+  assert.match(extracted.extractedText, /January 24-26, 2031/);
+  assert.doesNotMatch(extracted.extractedText, /January 24-26, 2019/);
+  assert.equal(__testUtils.classifyMeetDateCandidates(extracted.extractedText).primary?.startDate, "2031-01-24");
+  assert.equal(extracted.extractionMeta.websiteImport?.eventYear, 2031);
+});
+
+test("abbreviated visible dates override conflicting metadata without choosing the newest year blindly", async () => {
+  for (const [date, start, end] of [["Jan. 29-31, 2031", "2031-01-29", "2031-01-31"], ["Sept. 12–14, 2018", "2018-09-12", "2018-09-14"]]) {
+    const html = `<html><title>Riverside Invitational</title><meta name="description" content="Riverside Invitational takes place January 24-26, 2020."><main><h1>Riverside Invitational</h1><h2>${date}</h2><p>Join the competition at Riverside Sports Centre.</p></main></html>`;
+    __testUtils.setUrlDiscoveryTestHooks({
+      fetchWithLimit: async () => ({ text: html, buffer: Buffer.from(html), contentType: "text/html" }),
+      collectBrowserData: async () => ({ pages: [], candidates: [] }) as any,
+    });
+    const extracted = await extractDiscoveryText({ type: "url", url: "https://riverside.example.org/" }, {
+      workflow: "gymnastics", mode: "core", budgetMs: 1000,
+    });
+    assert.doesNotMatch(extracted.extractedText, /January 24-26, 2020/);
+    assert.equal(__testUtils.classifyMeetDateCandidates(extracted.extractedText).primary?.startDate, start);
+    assert.equal(__testUtils.classifyMeetDateCandidates(extracted.extractedText).primary?.endDate, end);
+  }
 });
 
 const packets = [

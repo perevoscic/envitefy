@@ -284,6 +284,7 @@ export async function persistDiscoveryEventSnapshot(params: {
       : provided ?? parsed ?? previous ?? null;
   const nextData = {
     ...current,
+    ...(Object.hasOwn(current, "importedTheme") ? { importedTheme: current.importedTheme } : builderEvent.importedTheme ? { importedTheme: builderEvent.importedTheme } : {}),
     title: nextTitle,
     startISO: snapshotDate(params.startISO, builderEvent.startISO, current.startISO),
     startAt: snapshotDate(params.startISO, builderEvent.startISO, current.startAt),

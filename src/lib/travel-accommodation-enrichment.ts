@@ -20,6 +20,7 @@ import { extractHotelsWithFirecrawlScrape } from "./travel-accommodation-provide
 import { extractHotelsWithPlaywright } from "./travel-accommodation-providers/playwright";
 import { extractHotelsWithBrowserUse } from "./travel-accommodation-providers/browser-use";
 import { extractHotelEvidenceWithAstra } from "./travel-accommodation-providers/astra";
+import { websitePhotoUrl, type WebsitePlaceImage } from "./discovery/event-website";
 import {
   withinTravelBudget,
   type TravelProviderOptions,
@@ -31,6 +32,7 @@ type ExtractionMeta = {
   discoveredLinks?: HotelLink[];
   annotationLinks?: HotelLink[];
   accommodationPageTexts?: Array<{ pageNumber: number; text: string }>;
+  websiteHotelSources?: Array<{ url: string; text: string; images?: WebsitePlaceImage[] }>;
   sourceUrl?: string;
   extractedText?: string;
 };
@@ -104,7 +106,15 @@ export async function enrichTravelAccommodation(
       ? pages.flatMap((page) =>
           parseHotelEvidence(page.text, { ...context, pageNumber: page.pageNumber }),
         )
-      : parseHotelEvidence(params.extractedText, context);
+      : meta?.websiteHotelSources?.length
+        ? meta.websiteHotelSources.flatMap((page) => parseHotelEvidence(page.text, {
+            ...context, sourceUrl: page.url, sourceId: page.url,
+          }).map((hotel) => {
+            const image = page.images?.find((image) => image.name.toLowerCase() === hotel.name.toLowerCase());
+            const imageUrl = websitePhotoUrl(image?.imageUrl || "");
+            return imageUrl ? { ...hotel, imageUrl, evidence: { ...hotel.evidence, imageUrl: [{ value: imageUrl, quote: imageUrl, sourceId: page.url, sourceUrl: page.url, pageNumber: null, method: "link" as const }] } } : hotel;
+          }))
+        : parseHotelEvidence(params.extractedText, context);
   let pdfHotels = params.sourceType === "file" ? inline : [];
   let webHotels = params.sourceType === "url" ? inline : [];
   const checkedAt = new Date().toISOString();
@@ -116,11 +126,15 @@ export async function enrichTravelAccommodation(
     type: context.sourceType,
     checkedAt,
   }));
+  for (const page of meta?.websiteHotelSources || []) sources.push({
+    id: page.url, url: page.url, parentUrl: sourceUrl, parentId: context.sourceId,
+    pageNumber: null, type: "web", checkedAt,
+  });
   let fallbackLink = selectFallbackTravelLink(candidates) || (inline.length ? sourceUrl : null);
   const attempts: TravelAccommodationAttempt[] = [];
   let resolution: TravelAccommodationResult["resolution"] = {
     provider: "none",
-    resolvedUrl: sourceUrl,
+    resolvedUrl: meta?.websiteHotelSources?.[0]?.url || sourceUrl,
     resolutionType: inline.length
       ? params.sourceType === "file"
         ? "pdf_only"
@@ -152,7 +166,7 @@ export async function enrichTravelAccommodation(
   const signal = params.signal
     ? AbortSignal.any([params.signal, controller.signal])
     : controller.signal;
-  const visited = new Set<string>();
+  const visited = new Set<string>(inline.length ? meta?.websiteHotelSources?.map((page) => page.url) : []);
   const rejectedUrls = new Set<string>();
   const providers: Array<
     [

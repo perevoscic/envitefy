@@ -23,14 +23,16 @@ export type TemplateDraft = {
   pendingSave?: boolean;
 };
 
-/** A gallery choice starts a new signup; only an explicit browser resume restores one. */
+/** A new gallery entry must never inherit a previously saved event's identity. */
 export function readTemplateEditorDraft(
   category: string,
   draftId?: string | null,
   eventId?: string | null,
 ): Promise<TemplateDraft | null> {
   if (category === "signup-forms" && (eventId || !draftId)) return Promise.resolve(null);
-  return readTemplateDraft(category, draftId || undefined);
+  return readTemplateDraft(category, draftId || undefined).then(draft =>
+    !draftId && !eventId && draft?.eventId ? null : draft,
+  );
 }
 
 function openDatabase(): Promise<IDBDatabase> {

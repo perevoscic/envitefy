@@ -12,6 +12,14 @@ import type {
 } from "@/lib/discovery/types";
 import { getSportEventPreset } from "@/lib/sport-event-presets";
 import { getDiscoveryAdapter } from "@/lib/sports-discovery";
+import { attachImportedEventTheme } from "@/lib/imported-event-theme";
+
+export function themeDiscoveryData(discovery: EventDiscoveryRow, currentData: Record<string, any>, mappedData: Record<string, any>) {
+  return attachImportedEventTheme({ currentData, mappedData, workflow: discovery.workflow,
+    activityProfile: discovery.canonicalParse?.activityProfile || discovery.source.activityProfile,
+    sourceUrl: discovery.source.url, sourceText: discovery.document?.extractionMeta.extractedText as string,
+    hostNotes: discovery.source.text, branding: discovery.document?.extractionMeta.sourceBranding });
+}
 
 export function buildGymBuilderDraft(params: {
   mappedData: Record<string, any>;
@@ -128,14 +136,14 @@ export async function runDiscoveryMapStage(
     throw new Error("Core parse result missing");
   }
   const adapter = getDiscoveryAdapter(discovery.workflow);
-  const mappedData = await adapter.map({
+  const mappedData = themeDiscoveryData(discovery, currentData, await adapter.map({
     parseResult: baseParseResult as Record<string, any>,
     currentData,
     extractionMeta: discovery.document?.extractionMeta as Record<string, any>,
     activityProfile: discovery.canonicalParse?.activityProfile || discovery.source.activityProfile,
     eventArchetype: discovery.canonicalParse?.eventArchetype || discovery.source.eventArchetype,
     detectionConfidence: discovery.canonicalParse?.detection?.confidence,
-  });
+  }));
   throwIfDiscoveryCancelled(options?.signal);
   const reviewFlags = uniqueStrings(
     [

@@ -6,6 +6,7 @@ import {
   hotelId,
   hotelEvidenceContent,
   hotelUrl,
+  hotelBookingUrl,
   type HotelContext,
   type HotelField,
 } from "../travel-accommodation-evidence";
@@ -63,7 +64,7 @@ export function validateModelHotels(
       )
         continue;
       const value = field.endsWith("Url")
-        ? hotelUrl(fact.value, context.sourceUrl)
+        ? (field === "bookingUrl" ? hotelBookingUrl : hotelUrl)(fact.value, context.sourceUrl)
         : fact.value.trim();
       if (!value) continue;
       hotel[field] = value;

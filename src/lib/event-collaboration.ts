@@ -127,7 +127,10 @@ export async function saveCollaborativeEvent(params: {
           409,
           "event_changed",
         );
-      const data = prepareEventHistoryData({ ...row.data, ...params.patch });
+      const patch = { ...params.patch };
+      // Generated image claims/results are server-owned, not part of an editor snapshot.
+      delete patch.importedThemeArtwork;
+      const data = prepareEventHistoryData({ ...row.data, ...patch });
       delete data.collaborationRole;
       if (
         !owner &&

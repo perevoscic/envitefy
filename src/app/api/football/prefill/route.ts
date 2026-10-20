@@ -4,6 +4,9 @@ import { getAuthenticatedRequestUser } from "@/lib/auth";
 import { prepareDiscoverySourceFile } from "@/lib/media-upload";
 import { fetchFootballSource, footballWebsiteText } from "@/lib/football-source";
 import { extractDiscoveryText, type DiscoverySourceInput } from "@/lib/meet-discovery";
+import { brandingFromWebsite } from "@/lib/source-branding-server";
+import { readPublicCreateUrl } from "@/lib/create/read-source";
+import { attachImportedEventTheme, type SourceBranding } from "@/lib/imported-event-theme";
 import {
   buildDefaultFootballDiscoveryData,
   mapParseResultToFootballData,
@@ -55,6 +58,7 @@ export async function POST(request: Request) {
       source = { type: "url", url: url.toString() };
     }
     let websiteText: string | null = null;
+    let sourceBranding: SourceBranding | undefined;
     let extractionSource = source;
     if (source.type === "url") {
       const page = await fetchFootballSource(source.url, request.signal);
@@ -68,13 +72,14 @@ export async function POST(request: Request) {
         };
       } else if (/text\/|application\/(?:ld\+)?json/i.test(page.contentType)) {
         websiteText = footballWebsiteText(page.buffer.toString("utf8"), page.url);
+        sourceBranding = await brandingFromWebsite(page.buffer.toString("utf8"), page.url, request.signal, readPublicCreateUrl);
       } else {
         throw new Error("This URL does not contain a readable page or document.");
       }
     }
     const extraction =
       websiteText !== null
-        ? { extractedText: websiteText, extractionMeta: { textQuality: "good" as const } }
+        ? { extractedText: websiteText, extractionMeta: { textQuality: "good" as const, sourceBranding } }
         : await extractDiscoveryText(extractionSource, {
             workflow: "football",
             mode: "core",
@@ -104,10 +109,11 @@ export async function POST(request: Request) {
         { status: 422 },
       );
     }
-    const data = await mapParseResultToFootballData(
+    const mappedData = await mapParseResultToFootballData(
       parseResult,
       buildDefaultFootballDiscoveryData(),
     );
+    const data = attachImportedEventTheme({ currentData: {}, mappedData, workflow: "football", sourceUrl: source.type === "url" ? source.url : undefined, sourceText: extraction.extractedText, branding: extraction.extractionMeta.sourceBranding });
     return NextResponse.json(
       {
         data,

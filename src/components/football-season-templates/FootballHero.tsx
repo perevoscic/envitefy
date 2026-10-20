@@ -5,8 +5,12 @@ import { getFootballDesign, resolveFootballHero } from "./footballDesigns";
 import { getGymMeetTitleTypography } from "./titleTypography";
 import type { GymMeetTemplateId } from "./types";
 import FootballText from "./FootballPageText";
+import { activeImportedTheme, importedArtworkSrc } from "@/lib/imported-event-design";
+import { IMPORTED_THEME_FONTS } from "@/lib/imported-event-theme";
+import "@/components/event-create/imported-event-theme.css";
 
 type Props = {
+  importedTheme?: unknown;
   templateId?: string | null;
   title: string;
   teamName?: string;
@@ -22,6 +26,7 @@ type Props = {
 
 /** The editor and published event share the same art direction and crop. */
 export default function FootballHero({
+  importedTheme,
   templateId,
   title,
   teamName,
@@ -35,9 +40,10 @@ export default function FootballHero({
   artworkAction,
 }: Props) {
   const design = getFootballDesign(templateId);
+  const theme = activeImportedTheme(importedTheme);
   const typography = getGymMeetTitleTypography(templateId as GymMeetTemplateId);
-  const src = resolveFootballHero(templateId, heroSrc);
-  const cinematic = design.layout === "cinematic";
+  const src = importedArtworkSrc(importedTheme, heroSrc, design.hero) || resolveFootballHero(templateId, heroSrc);
+  const cinematic = !theme && design.layout === "cinematic";
   const poster = design.layout === "poster";
   const editorial = design.layout === "editorial";
   const customImage = src !== design.hero;
@@ -55,7 +61,8 @@ export default function FootballHero({
         style={{
           ...typography.fontStyle,
           ...headingStyle,
-          color: cinematic ? "#ffffff" : design.ink,
+          color: theme?.colors.ink || (cinematic ? "#ffffff" : design.ink),
+          ...(theme ? { fontFamily: IMPORTED_THEME_FONTS[theme.font] } : {}),
         }}
       >
         <FootballText
@@ -86,7 +93,7 @@ export default function FootballHero({
     >
       <Image
         src={src}
-        alt={customImage ? "Team event artwork" : design.alt}
+        alt={src.startsWith("data:image/svg+xml") ? "Football event illustration" : customImage ? "Team event artwork" : design.alt}
         fill
         priority
         sizes="(max-width: 1023px) 100vw, 1100px"
@@ -110,7 +117,7 @@ export default function FootballHero({
   return (
     <header
       className={`relative isolate overflow-hidden ${design.headerClass}`}
-      style={{ color: cinematic ? "#ffffff" : design.ink }}
+      style={{ color: theme?.colors.ink || (cinematic ? "#ffffff" : design.ink), ...(theme ? { background: theme.colors.page } : {}) }}
       data-football-hero-layout={design.layout}
     >
       {actions || artworkAction ? (

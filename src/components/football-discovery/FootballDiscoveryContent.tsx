@@ -7,6 +7,7 @@ import { CalendarDays, ChevronRight, Shield, WandSparkles } from "lucide-react";
 import Link from "next/link";
 import FootballSchedule from "@/components/football-season-templates/FootballSchedule";
 import ScoreStreamScoreboard from "@/components/football-season-templates/ScoreStreamScoreboard";
+import { importedThemeStyle, importedFootballChrome, activeImportedTheme } from "@/lib/imported-event-design";
 import FootballHero from "@/components/football-season-templates/FootballHero";
 import FootballPageContent from "@/components/football-season-templates/FootballPageContent";
 import FootballText, { FootballPageTextProvider } from "@/components/football-season-templates/FootballPageText";
@@ -146,7 +147,7 @@ function FootballDiscoveryBody({
     model.timeLabel,
     model.locationLabel,
   ].filter(Boolean);
-  const templateChrome = chrome;
+  const templateChrome = chrome ? importedFootballChrome(chrome, eventData.importedTheme) : chrome;
   const scheduleProps = {
     games: eventData.advancedSections?.games?.games || eventData.customFields?.advancedSections?.games?.games || eventData.discoverySource?.parseResult?.games || [],
     teamName: model.teamName,
@@ -170,12 +171,15 @@ function FootballDiscoveryBody({
   if (showTemplateView) {
     return (
       <main
+        data-imported-theme={activeImportedTheme(eventData.importedTheme)?.id}
+        style={importedThemeStyle(eventData.importedTheme)}
         className={templateChrome.pageClass}
         data-page-template-id={pageTemplateId || templateChrome.id}
       >
         <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
           <div className={templateChrome.shellClass}>
             <FootballHero
+              importedTheme={eventData.importedTheme}
               templateId={pageTemplateId || eventData.pageTemplateId || templateChrome.id}
               title={model.title}
               teamName={model.teamName}

@@ -1,5 +1,11 @@
 import { expect, test } from "bun:test";
 import { mergeDiscoveryEditorRefresh } from "./merge-discovery-editor-refresh";
+test("an image from an earlier import design never merges into a host's redesigned theme", () => {
+  const previous = { importedTheme: { id: "original", colors: "blue" } };
+  const current = { importedTheme: { id: "redesign", colors: "gold" } };
+  const incoming = { importedTheme: { id: "original", colors: "blue", artworkUrl: "https://assets.test/original.webp" } };
+  expect(mergeDiscoveryEditorRefresh(current, previous, incoming)).toEqual(current);
+});
 
 test("background enrichment preserves wording edits and intentional clears while adding untouched details", () => {
   const previous = { title: "Meet", venue: "Arena", address: "Old address", extra: { admission: "", team: "Team A" } };

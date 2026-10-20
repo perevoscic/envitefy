@@ -1,0 +1,32 @@
+@font-face {
+  font-family: "Event Athletic";
+  src: url("/fonts/birthday/bebasneue.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Event Editorial";
+  src: url("/fonts/birthday/playfairdisplay.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Event Modern";
+  src: url("/fonts/birthday/inter.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Event Technical";
+  src: url("/fonts/birthday/spacegrotesk.ttf") format("truetype");
+  font-display: swap;
+}
+/* Scope overrides to the shared football canvas; uploaded images retain their pixels. */
+[data-imported-theme] [class*="football-page-content_"] {
+  --ft-ink: var(--event-ink);
+  --ft-accent: var(--event-accent);
+  --ft-paper: var(--event-surface);
+  --ft-ground: var(--event-paper);
+  --ft-font: var(--event-font);
+}
+[data-imported-theme] [data-football-hero-layout] {
+  background: var(--event-paper);
+  color: var(--event-ink);
+}

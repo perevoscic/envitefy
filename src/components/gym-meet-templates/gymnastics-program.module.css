@@ -13,6 +13,13 @@
 .bodyColumns, .information, .program, .chapters, .chapter, .blocks, .block, .attendance, .teamSupport { min-width: 0; }
 .bodyColumns { display: grid; gap: var(--program-gap); align-items: start; }
 .program { display: grid; gap: var(--program-gap); align-items: start; }
+.tabPanel { min-width: 0; }
+.tabPanel:focus-visible { outline: 2px solid var(--gym-ink); outline-offset: 4px; }
+.tabs { display: flex; gap: 0.4rem; min-width: 0; overflow-x: auto; padding: 0.4rem; border: 1px solid var(--program-line); border-radius: 1rem; background: var(--gym-paper); }
+.tabs button { flex: 1; min-height: 48px; padding: 0.65rem 0.8rem; border-radius: 0.65rem; color: var(--gym-ink); font-size: 0.875rem; font-weight: 600; white-space: nowrap; }
+.tabs button[aria-selected="true"] { background: var(--gym-ink); color: var(--gym-paper); }
+.tabs button:hover { text-decoration: underline; text-underline-offset: 4px; }
+.tabs button:focus-visible { outline: 2px solid var(--gym-ink); outline-offset: 2px; }
 .chapters { display: grid; gap: var(--program-gap); align-items: start; }
 .sectionColumn { container: gym / inline-size; }
 .chapter {
@@ -49,6 +56,10 @@
 .detailCard > p:nth-child(2) { line-height: 1.25; }
 .design [data-program-cards] { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 1rem; }
 .design [data-program-cards="hotels"] { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+.design :is([data-program-cards="hotels"], [data-program-cards="attractions"]) { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 24px; }
+/* Place photography gets a quiet surface across designs, without nested tinted panels. */
+.design[data-gym-design] .chapter:is([data-section-kind="hotels"], [data-section-kind="attractions"]) { border: 0; border-radius: 0; background: transparent; box-shadow: none; padding: 0; }
+.design[data-gym-design] .chapter:is([data-section-kind="hotels"], [data-section-kind="attractions"]) .chapterHeading { border: 0; padding: 0; margin-bottom: 24px; }
 .teamSupport { display: grid; gap: var(--program-gap); }
 .teamSupport > div { min-width: 0; }
 .attendance .panel { padding: clamp(1.5rem, 3cqi, 3rem); }
@@ -159,6 +170,7 @@
 
 /* Twelve underlying page structures. Per-design overrides below finish each composition. */
 @container gym (min-width: 880px) {
+  .design[data-gym-design] .chapter[data-section-kind="venue"] .blocks { grid-template-columns: minmax(0, 1fr) minmax(0, 600px); gap: 2rem; align-items: start; }
   .design[data-navigation="index"] .program { grid-template-columns: minmax(130px, 0.22fr) minmax(0, 1fr); }
   .design[data-navigation="index"] .program:not(:has(.navigation)) { grid-template-columns: minmax(0, 1fr); }
   .design[data-navigation="index"] .navigation { border: 0; border-right: 1px solid var(--program-line); padding: 1rem 1.25rem 1rem 0; }
@@ -310,3 +322,6 @@
 @media (prefers-reduced-motion: reduce) {
   .navLinks a { transition: none; }
 }
+
+/* Grouped information uses the same sections and saved layouts inside each tab. */
+.design .program[data-tabbed] { grid-template-columns: minmax(0, 1fr); }

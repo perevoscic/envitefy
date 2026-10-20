@@ -1,4 +1,6 @@
 "use client";
+import { importedThemeStyle, activeImportedTheme } from "@/lib/imported-event-design";
+import "@/components/event-create/imported-event-theme.css";
 
 import GymnasticsScene, { gymnasticsDesignStyle } from "./GymnasticsScene";
 import { getGymMeetTemplateMeta, resolveGymMeetTemplateId } from "./registry";
@@ -37,7 +39,8 @@ export default function GymMeetTemplateRenderer(props: GymMeetTemplateRendererPr
 
   return (
     <div
-      style={gymnasticsDesignStyle(design)}
+      style={{ ...gymnasticsDesignStyle(design), ...importedThemeStyle(props.model.importedTheme) }}
+      data-imported-theme={activeImportedTheme(props.model.importedTheme)?.id}
       className={programStyles.design}
       data-gym-body={design.bodyStyle}
       data-gym-design={design.id}

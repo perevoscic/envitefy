@@ -49,6 +49,18 @@ function fixture() {
   return { persist, snapshot, writes, read: () => row, save: value => { row = value; }, blockMedia: callback => { beforeMedia = callback; } };
 }
 
+test("new snapshots persist theme metadata and later workers retain the host's theme choice", async () => {
+  const state = fixture();
+  const generated = { version: 1, id: "event-theme-fixture", enabled: true, revision: 0 };
+  state.snapshot.builderDraft.event.importedTheme = generated;
+  await state.persist(state.snapshot);
+  assert.deepEqual(state.read().data.importedTheme, generated);
+  const hostTheme = { ...generated, enabled: false, revision: 1 };
+  state.save({ ...state.read(), data: { ...state.read().data, importedTheme: hostTheme } });
+  await state.persist(state.snapshot);
+  assert.deepEqual(state.read().data.importedTheme, hostTheme);
+});
+
 test("an explicit host save while background completion is preparing media wins atomically", async () => {
   const state = fixture();
   let entered;

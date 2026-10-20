@@ -722,12 +722,15 @@ export function EventSectionCanvas({
   className = "",
   cellClassName = "",
   rowProps,
+  visibleSectionIds,
 }: {
   sections: EventSectionEntry[];
   layout?: EventSectionLayout;
   className?: string;
   cellClassName?: string;
   rowProps?: (section: EventSectionEntry) => HTMLAttributes<HTMLDivElement>;
+  /** Presentation-only filtering; retain all entries for editing, ordering and Undo. */
+  visibleSectionIds?: readonly string[];
 }) {
   const builder = useEventSectionBuilder();
   const composition = useEventPageComposition();
@@ -771,6 +774,7 @@ export function EventSectionCanvas({
     !currentLayout?.widths &&
     !currentLayout?.pairs?.length &&
     !rowProps &&
+    !visibleSectionIds &&
     !composition?.value?.layout
   )
     return (
@@ -783,10 +787,13 @@ export function EventSectionCanvas({
   const content = rows.map((row) => {
     const index = ordered.findIndex((section) => section.id === row[0].id);
     const attributes = !builder ? rowProps?.(row[0]) : undefined;
+    const visible = !visibleSectionIds || row.some((section) => visibleSectionIds.includes(section.id));
     const rowContent = (
       <div
         key={row[0].id}
         {...attributes}
+        hidden={!visible || attributes?.hidden}
+        style={{ ...attributes?.style, ...(!visible ? { display: "none" } : {}) }}
         className={`${styles.row} ${attributes?.className || ""}`}
         data-section-row={row.map((section) => section.id).join(" ")}
       >
@@ -807,7 +814,7 @@ export function EventSectionCanvas({
       </div>
     );
     return builder ? (
-      <div key={row[0].id} className={styles.rowGroup} data-section-group>
+      <div key={row[0].id} className={styles.rowGroup} data-section-group hidden={!visible} style={!visible ? { display: "none" } : undefined}>
         <InsertionPoint index={index} />
         {rowContent}
       </div>

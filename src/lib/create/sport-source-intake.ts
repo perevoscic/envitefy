@@ -27,6 +27,7 @@ export function discoveryDocumentFromCreateSource(source: ReadCreateSourceResult
     tables: [], links: links.map(link => ({ label: link.label || "Source link", url: link.url })), resources: [], evidence: [],
     extractionMeta: {
       sourceReadVersion: 1, reusedCreateSource: true, extractedText: source.text,
+      sourceBranding: source.sourceBranding,
       pages, accommodationPageTexts: pages, usedOcr: !!source.usedOcr,
       annotationLinks: links, discoveredLinks: links,
     },

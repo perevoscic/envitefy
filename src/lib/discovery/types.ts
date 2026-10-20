@@ -182,6 +182,7 @@ export type PublicHero = {
 };
 
 export type PublicSectionProvenance =
+  | "website_grounded"
   | "pdf_grounded"
   | "derived_summary"
   | "location_enriched"

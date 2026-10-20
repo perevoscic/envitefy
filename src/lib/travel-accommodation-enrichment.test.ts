@@ -17,6 +17,7 @@ import { mergePdfAndWebHotels } from "./travel-accommodation-discovery";
 import { validateModelHotels } from "./travel-accommodation-providers/astra";
 import { pdfLinkContext } from "./pdf-link-context";
 import { buildGymMeetDiscoveryContent } from "../components/gym-meet-templates/buildGymMeetDiscoveryContent";
+import { websiteHotelText, websiteImagesForNames } from "./discovery/event-website";
 
 const eventUrl = "https://usacompetitions.com/south-florida-fright-invite/";
 const bookingUrl =
@@ -76,6 +77,39 @@ Lot A opens at 6:30 AM.`);
   assert.equal(hotels[0].groupRate, "$189 King | $199 Double Queen");
   assert.equal(hotels[1].bookingUrl, "https://book.example.com/indigo");
   assert.equal(hotels[1].notes.length, 0);
+});
+
+test("collected hotel HTML preserves every hotel and CTA without refetching the official list", async () => {
+  const listUrl = "https://riverside.example.org/stay";
+  const html = `<main><h1>Where to stay</h1><article><img src="https://cdn.example.org/a.jpg"><p>Riverside Marriott</p><p>2020 Riverside Concourse</p><p>Room Rates: £194</p><a href="${bookingUrl.replaceAll("&", "&amp;")}">Hotel link</a></article><article><img src="https://cdn.example.org/b.jpg"><p>Spring Hill Suites Riverside</p><p>2091 Riverside Concourse</p><p>Room Rates: £194</p><a href="${bookingUrl.replaceAll("&", "&amp;")}">Hotel link</a></article><article><p>Renaissance Riverside Gateway</p><p>2081 Riverside Concourse</p><p>Room Rates: £194</p><a href="${bookingUrl.replaceAll("&", "&amp;")}">Hotel link</a></article></main>`;
+  const result = await enrichTravelAccommodation({ sourceType: "url", sourceUrl: "https://riverside.example.org/about",
+    extractedText: "Event details and host hotels.", extractionMeta: {
+      websiteHotelSources: [{ url: listUrl, text: websiteHotelText({ html, url: listUrl }), images: websiteImagesForNames({ html, url: listUrl }, ["Riverside Marriott", "Spring Hill Suites Riverside", "Renaissance Riverside Gateway"]) }],
+      resourceLinks: [{ label: "Host hotels", url: listUrl }],
+    },
+  });
+  assert.equal(result.hotels.length, 3);
+  assert.equal(result.attempts.length, 0, "the already collected list does not require provider work");
+  assert.ok(result.hotels.every((hotel) => hotel.bookingUrl === bookingUrl && hotel.groupRate === "£194"));
+  assert.equal(result.hotels.find((hotel) => hotel.name === "Riverside Marriott")?.imageUrl, "https://cdn.example.org/a.jpg");
+  assert.equal(result.hotels.find((hotel) => hotel.name === "Spring Hill Suites Riverside")?.imageUrl, "https://cdn.example.org/b.jpg");
+  const renaissance = result.hotels.find((hotel) => hotel.name === "Renaissance Riverside Gateway");
+  assert.equal(renaissance?.address, "2081 Riverside Concourse");
+  assert.equal(renaissance?.evidence?.name?.[0].sourceUrl, listUrl);
+  assert.ok(result.sources?.some((source) => source.url === listUrl));
+});
+
+test("hotel images cannot become booking CTAs from markdown, context links or model fields", () => {
+  const imageUrl = "https://cdn.example.org/hotel.jpg?size=large";
+  const content = `Host Hotels\nRiverside Hotel\n![Hotel photo](${imageUrl})\n[Book hotel](${imageUrl})`;
+  const parsed = parseHotelEvidence(content, { links: [{ url: imageUrl, contextText: "Riverside Hotel Book here" }] });
+  assert.equal(parsed[0].bookingUrl, null);
+  const block = `Riverside Hotel\nBook hotel: ${imageUrl}`;
+  const model = validateModelHotels({ hotels: [{ sourceBlock: block, fields: {
+    name: { value: "Riverside Hotel", quote: "Riverside Hotel" },
+    bookingUrl: { value: imageUrl, quote: `Book hotel: ${imageUrl}` },
+  } }] }, `Host Hotels\n${block}`, {});
+  assert.equal(model[0].bookingUrl, null);
 });
 
 test("PDF hidden hyperlinks keep page context and resolve a generic booking label", async () => {

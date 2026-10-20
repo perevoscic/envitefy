@@ -49,6 +49,10 @@ import {
   resolveGymMeetTemplateId,
 } from "@/components/gym-meet-templates/registry";
 import GymnasticsLauncher from "@/components/event-create/GymnasticsLauncher";
+import ImportedThemeControls from "@/components/event-create/ImportedThemeControls";
+import ImportedThemeArtwork from "@/components/event-create/ImportedThemeArtwork";
+import { readImportedEventTheme } from "@/lib/imported-event-theme";
+import WebsiteImportCoverage from "@/components/event-create/WebsiteImportCoverage";
 import GymnasticsDesignGallery from "@/components/gym-meet-templates/GymnasticsDesignGallery";
 import TemplateSelector from "@/components/gym-meet-templates/TemplateSelector";
 import SimpleTemplateView from "@/components/SimpleTemplateView";
@@ -689,6 +693,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       heroImageFilterEnabled: true,
       heroImageSettings: { ...DEFAULT_HERO_IMAGE_SETTINGS },
       gymnasticsPageText: normalizeGymnasticsPageText(undefined),
+      importedTheme: null,
       gymnasticsTitleFont: "",
       sectionLayout: normalizeEventSectionLayout({ version: 1 }),
       rsvpEnabled: false,
@@ -1243,6 +1248,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 ...existing,
                 ...builderEvent,
                 ...builderVenue,
+                ...(Object.hasOwn(existing, "importedTheme") ? { importedTheme: existing.importedTheme } : {}),
                 advancedSections:
                   existingBuilderDraft?.advancedSections &&
                   typeof existingBuilderDraft.advancedSections === "object"
@@ -1361,6 +1367,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               venue: typeof existing.venue === "string" ? existing.venue :
                 effectiveExisting.venue ?? effectiveExisting.location ?? base.venue,
               details: editableDetails,
+              importedTheme: readImportedEventTheme(effectiveExisting.importedTheme),
               hero: effectiveExisting.heroImage || effectiveExisting.hero || base.hero,
               heroImageFilterEnabled: effectiveExisting.heroImageFilterEnabled !== false,
               heroImageSettings: normalizeHeroImageSettings(effectiveExisting.heroImageSettings),
@@ -1685,7 +1692,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }, []);
 
     const handleTemplateSelection = useCallback((pageTemplateId: string) => {
-      setData((prev) => ({ ...prev, pageTemplateId }));
+      setData((prev) => ({ ...prev, pageTemplateId, importedTheme: prev.importedTheme ? { ...prev.importedTheme, enabled: false } : null }));
     }, []);
 
     const buildEventPayload = useCallback(async () => {
@@ -1750,6 +1757,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
           heroImageSettings: normalizeHeroImageSettings(data.heroImageSettings),
           gymnasticsPageText: normalizeGymnasticsPageText(data.gymnasticsPageText),
+          importedTheme: data.importedTheme,
           gymnasticsTitleFont: normalizeGymnasticsTitleFont(data.gymnasticsTitleFont),
           sectionLayout: data.sectionLayout,
           time: data.time,
@@ -1881,6 +1889,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
           heroImageSettings: normalizeHeroImageSettings(data.heroImageSettings),
           gymnasticsPageText: normalizeGymnasticsPageText(data.gymnasticsPageText),
+          importedTheme: data.importedTheme,
           gymnasticsTitleFont: normalizeGymnasticsTitleFont(data.gymnasticsTitleFont),
           sectionLayout: data.sectionLayout,
           time: data.time,
@@ -1927,6 +1936,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     data.heroImageSettings,
     data.gymnasticsPageText,
     data.gymnasticsTitleFont,
+      data.importedTheme,
     data.sectionLayout,
     data.pageTemplateId,
     data.fontId,
@@ -2011,6 +2021,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const renderMainMenu = () => (
       <div className="flex flex-col gap-6 pb-8 animate-fade-in">
+        <WebsiteImportCoverage value={loadedDiscoverySource?.websiteImport} />
         {!useParseDrivenSections && (
           templateEditor && !templateEditor.authenticated ? (
             <section aria-label="Import meet details" className="rounded-2xl bg-[linear-gradient(140deg,#2b2150_0%,#4a3a8a_100%)] p-4 text-white shadow-[0_12px_30px_rgba(43,33,80,0.22)]">
@@ -2037,7 +2048,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           />
           <EditorMenuRow
             title="Design"
-            value={getGymMeetTemplateMeta(resolveGymMeetTemplateId(data)).name}
+            value={data.importedTheme?.enabled ? "Your event theme" : getGymMeetTemplateMeta(resolveGymMeetTemplateId(data)).name}
             icon={<Palette size={18} />}
             onClick={() => setActiveView("design")}
           />
@@ -2259,6 +2270,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         showBack
       >
         <div className="space-y-4">
+          <ImportedThemeControls eventId={editEventId || templateEditor?.eventId || editor.eventId} value={data.importedTheme} context={{ title: data.title, sport: "gymnastics", city: data.city, seed: editEventId || data.title }} onChange={(importedTheme) => setData(prev => ({ ...prev, importedTheme }))} />
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <label className="block text-sm font-semibold text-slate-700" htmlFor="gymnastics-title-font">Title font</label>
             <select
@@ -2796,7 +2808,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
         heroImageSettings: normalizeHeroImageSettings(data.heroImageSettings),
         gymnasticsPageText: normalizeGymnasticsPageText(data.gymnasticsPageText),
-        gymnasticsTitleFont: normalizeGymnasticsTitleFont(data.gymnasticsTitleFont),
+        importedTheme: data.importedTheme,
+          gymnasticsTitleFont: normalizeGymnasticsTitleFont(data.gymnasticsTitleFont),
             sectionLayout: data.sectionLayout || { version: 1, order: [], hidden: [], added: [] },
         time: data.time,
         date: data.date,
@@ -2847,6 +2860,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.heroImageSettings,
       data.gymnasticsPageText,
       data.gymnasticsTitleFont,
+      data.importedTheme,
       data.sectionLayout,
       data.pageTemplateId,
       data.passcode,
@@ -2940,6 +2954,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           const section = config.advancedSections?.find((item) => item.id === id);
           return <>{id === "meet" ? renderDetailsEditor() : null}{section ? renderAdvancedEditor(section) : null}</>;
         }}>
+        <ImportedThemeArtwork syncOnly eventId={editEventId || templateEditor?.eventId || editor.eventId} value={data.importedTheme} onChange={(importedTheme) => setData(prev => ({ ...prev, importedTheme }))} />
         {children}
       </EventSectionBuilderProvider>
     );

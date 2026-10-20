@@ -3,22 +3,21 @@
 "use client";
 
 import {
-  Building2,
-  CalendarDays,
   Car,
   ClipboardList,
-  Coffee,
   ExternalLink,
   Info,
-  Phone,
   ShieldAlert,
   TriangleAlert,
 } from "lucide-react";
 import Image from "next/image";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import StaticMap from "@/components/StaticMap";
+import EventPlaceCard from "@/components/event-create/EventPlaceCard";
+import placeStyles from "@/components/event-create/event-place-card.module.css";
 import { splitGuidanceSentences } from "./displayText";
 import GymnasticsProgram from "./GymnasticsProgram";
+import ParticipatingClubs from "./ParticipatingClubs";
 import type { EventSectionEntry } from "@/components/events/EventSectionBuilder";
 import type { GymnasticsPresentation } from "./gymnasticsPresentations";
 import type { GymnasticsPageTextChange } from "@/lib/gymnastics-page-text";
@@ -74,7 +73,6 @@ const gridClassForColumns = (columns?: number) => {
   }
 };
 
-const hotelCardGridClass = "grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(340px,1fr))]";
 
 const getCollectionItemKey = (
   parentId: string | undefined,
@@ -297,6 +295,8 @@ export default function GymMeetDiscoveryContent({
         pageText(`block:${blockKey}:text`, block.text, `${block.title || "Meet details"} text`)
       );
     switch (block.type) {
+      case "club-list":
+        return <ParticipatingClubs clubs={block.clubs} year={block.year} cardClass={cardClass} linkClass={secondaryButtonClass} />;
       case "line-list":
         return (
           <div className={panelClass}>
@@ -335,9 +335,9 @@ export default function GymMeetDiscoveryContent({
               </h4>
             ) : null}
             <div
-              data-program-cards={block.id === "hotel-cards" ? "hotels" : "details"}
+              data-program-cards={block.id === "hotel-cards" ? "hotels" : block.id === "attraction-cards" ? "attractions" : "details"}
               className={
-                block.id === "hotel-cards" ? hotelCardGridClass : gridClassForColumns(block.columns)
+                (block.id === "hotel-cards" || block.id === "attraction-cards") ? placeStyles.grid : gridClassForColumns(block.columns)
               }
             >
               {(block.cards || []).map((card: any, index: number) => {
@@ -381,116 +381,34 @@ export default function GymMeetDiscoveryContent({
                         : card.icon === "info"
                           ? Info
                           : ClipboardList;
-                if (isHotelCard) {
+                if (isHotelCard || block.id === "attraction-cards") {
                   const highlights = Array.isArray(card.highlights) ? card.highlights : [];
                   const details = Array.isArray(card.details) ? card.details : [];
                   return (
-                    <article
+                    <EventPlaceCard
                       key={cardReactKey}
-                      className={`${cardClass} flex h-full flex-col overflow-hidden border-l-[3px] border-l-violet-500`}
-                    >
-                      <div className="flex items-start gap-3 sm:gap-4">
-                        <span
-                          aria-hidden="true"
-                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600"
-                        >
-                          <Building2 size={20} strokeWidth={2.2} />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[9px] font-black uppercase tracking-[0.18em] opacity-50">
-                            {pageText("hostHotel", "Host hotel")}
-                          </p>
-                          <h4 className="mt-1 text-base font-black leading-tight tracking-tight sm:text-lg">
-                            {cardLabel()}
-                          </h4>
+                      name={card.label}
+                      imageUrl={card.imageUrl}
+                      title={cardLabel()}
+                      eyebrow={isHotelCard ? pageText("hostHotel", "Host hotel") : undefined}
+                      body={(!highlights.length && card.meta) || (card.body && (!isHotelCard || !details.length)) ? <>
+                        {!highlights.length && card.meta ? <p>{pageText(`card:${cardTextKey}:meta`, card.meta, `${card.label || "Card"} caption`)}</p> : null}
+                        {card.body && (!isHotelCard || !details.length) ? <p>{cardBody()}</p> : null}
+                      </> : undefined}
+                      highlights={highlights.length ? highlights.map((highlight: any, highlightIndex: number) => (
+                        <div key={highlightIndex}>
+                          <dt>{pageText(`card:${cardTextKey}-highlight-${highlightIndex}:label`, highlight.label, `${highlight.label} label`)}</dt>
+                          <dd>{highlight.value}</dd>
                         </div>
-                      </div>
-
-                      {highlights.length > 0 ? (
-                        <dl className="mt-4 grid gap-2 sm:grid-cols-2">
-                          {highlights.map((highlight: any, highlightIndex: number) => (
-                            <div
-                              key={`${cardReactKey}-highlight-${highlightIndex}`}
-                              className="rounded-xl bg-violet-500/[0.07] px-3 py-2.5"
-                            >
-                              <dt className="text-[9px] font-black uppercase tracking-[0.15em] opacity-55">
-                                {pageText(
-                                  `card:${cardTextKey}-highlight-${highlightIndex}:label`,
-                                  highlight.label,
-                                  `${highlight.label} label`,
-                                )}
-                              </dt>
-                              <dd className="mt-1 text-sm font-black leading-snug">
-                                {highlight.value}
-                              </dd>
-                            </div>
-                          ))}
-                        </dl>
-                      ) : card.meta ? (
-                        <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] opacity-60">
-                          {pageText(
-                            `card:${cardTextKey}:meta`,
-                            card.meta,
-                            `${card.label || "Card"} caption`,
-                          )}
-                        </p>
-                      ) : null}
-
-                      {details.length > 0 ? (
-                        <dl className="mt-4 grid gap-x-4 gap-y-3 sm:grid-cols-2">
-                          {details.map((detail: any, detailIndex: number) => {
-                            const DetailIcon =
-                              detail.icon === "parking"
-                                ? Car
-                                : detail.icon === "breakfast"
-                                  ? Coffee
-                                  : detail.icon === "deadline"
-                                    ? CalendarDays
-                                    : Phone;
-                            return (
-                              <div
-                                key={`${cardReactKey}-detail-${detailIndex}`}
-                                className="flex items-start gap-2.5"
-                              >
-                                <DetailIcon
-                                  aria-hidden="true"
-                                  className="mt-0.5 shrink-0 opacity-45"
-                                  size={15}
-                                  strokeWidth={2.1}
-                                />
-                                <div className="min-w-0">
-                                  <dt className="text-[9px] font-black uppercase tracking-[0.14em] opacity-50">
-                                    {pageText(
-                                      `card:${cardTextKey}-detail-${detailIndex}:label`,
-                                      detail.label,
-                                      `${detail.label} label`,
-                                    )}
-                                  </dt>
-                                  <dd className="mt-0.5 break-words text-sm font-semibold leading-snug opacity-90">
-                                    {detail.value}
-                                  </dd>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </dl>
-                      ) : card.body ? (
-                        <p className="mt-4 whitespace-pre-line text-sm leading-relaxed opacity-85">
-                          {cardBody()}
-                        </p>
-                      ) : null}
-
-                      {card.action?.url ? (
-                        <div className="mt-auto pt-5">
-                          {actionLink(
-                            cardReactKey,
-                            card.action.label || "Book Hotel",
-                            card.action.url,
-                            secondaryButtonClass,
-                          )}
+                      )) : undefined}
+                      details={details.length ? details.map((detail: any, detailIndex: number) => (
+                        <div key={detailIndex}>
+                          <dt>{pageText(`card:${cardTextKey}-detail-${detailIndex}:label`, detail.label, `${detail.label} label`)}</dt>
+                          <dd>{detail.value}</dd>
                         </div>
-                      ) : null}
-                    </article>
+                      )) : undefined}
+                      action={card.action?.url ? actionLink(cardReactKey, card.action.label || (isHotelCard ? "Book Hotel" : "Learn more"), card.action.url, secondaryButtonClass) : undefined}
+                    />
                   );
                 }
                 if (isGuidanceCard) {
@@ -701,8 +619,8 @@ export default function GymMeetDiscoveryContent({
             {block.text ? (
               <p className="mb-4 text-sm leading-relaxed opacity-85">{blockText()}</p>
             ) : null}
-            <div className="overflow-hidden rounded-[24px] border border-black/10">
-              <StaticMap address={block.address} height={360} />
+            <div className={placeStyles.map} data-arrival-map>
+              <StaticMap address={block.address} width={600} height={260} />
             </div>
           </div>
         );

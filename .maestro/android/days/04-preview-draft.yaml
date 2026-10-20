@@ -6,11 +6,17 @@ name: Day 4 reopen the saved draft and inspect its guest preview
 - extendedWaitUntil:
     visible: "^Preview$|^Edit$"
     timeout: 60000
-- runFlow:
-    when:
-      visible: "^Preview$"
+- retry:
+    maxRetries: 2
     commands:
-      - tapOn: "^Preview$"
+      - runFlow:
+          when:
+            visible: "^Preview$"
+          commands:
+            - tapOn: "^Preview$"
+      - extendedWaitUntil:
+          visible: "^Edit$"
+          timeout: 5000
 - extendedWaitUntil:
     visible: '.*${MAESTRO_ACCOUNT}.*Day 4.*Preview.*'
     timeout: 30000

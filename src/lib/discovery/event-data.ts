@@ -68,6 +68,8 @@ export function inflateGymDiscoveryV2EventData(data: any) {
     ...data,
     ...builderEvent,
     ...builderVenue,
+    // Completed artwork and host choices supersede the earlier mapping snapshot.
+    ...(Object.hasOwn(data, "importedTheme") ? { importedTheme: data.importedTheme } : {}),
     advancedSections:
       builderDraft?.advancedSections && typeof builderDraft.advancedSections === "object"
         ? builderDraft.advancedSections

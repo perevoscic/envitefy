@@ -101,6 +101,11 @@ export function hotelUrl(value: unknown, base?: string | null): string | null {
   }
 }
 
+export function hotelBookingUrl(value: unknown, base?: string | null): string | null {
+  const url = hotelUrl(value, base);
+  return url && !/\.(?:png|jpe?g|webp|gif|svg)(?:$|\?)/i.test(url) ? url : null;
+}
+
 export function hotelLine(value: string): string {
   return value
     .replace(/^\s*(?:#{1,6}\s*|[-*•]\s+)/, "")
@@ -113,7 +118,7 @@ export const HOTEL_SECTION =
 const BOUNDARY =
   /^(?:local attractions|things to do|parking(?: information)?|traffic(?: & arrival)?|quick access|documents|results|admission(?: & sales)?|spectator(?: information)?|venue details|event info|photo(?:\/video| gallery)?|vendors?|sponsors?|meet our sponsors)\s*:??$/i;
 const NAME =
-  /\b(?:hotel|hilton|hampton|hyatt|indigo|aloft|homewood|springhill|fairfield|courtyard|doubletree|embassy|holiday inn|marriott|suites|inn|resort|lodge|westin|sheraton)\b/i;
+  /\b(?:hotel|hilton|hampton|hyatt|indigo|aloft|homewood|springhill|fairfield|courtyard|doubletree|embassy|holiday inn|marriott|renaissance|suites|inn|resort|lodge|westin|sheraton)\b/i;
 const BOOK = /\b(?:book|reserve|reservation)\b/i;
 export function hotelEvidenceContent(content: string): string {
   const lines = content.split(/\n/);
@@ -140,8 +145,10 @@ export function markdownHotelLinks(text: string, base?: string | null): HotelLin
   return [
     ...text.matchAll(/\[([^\]]+)\]\((https?:\/\/[^\s]+?|\/[^\s]*?)(?:\s+"[^"]*")?\)(?=\s|$)/g),
   ].flatMap((match) => {
-    const url = hotelUrl(match[2], base);
-    return url ? [{ url, label: match[1], contextText: text, sourceUrl: base }] : [];
+    const url = hotelBookingUrl(match[2], base);
+    return url &&
+      text[match.index! - 1] !== "!"
+      ? [{ url, label: match[1], contextText: text, sourceUrl: base }] : [];
   });
 }
 
@@ -228,7 +235,7 @@ export function parseHotelEvidence(
       let consumed = false;
       const definitions: Array<[HotelField, RegExp]> = [
         ["distanceFromVenue", /^(?:distance from venue|distance)\s*:\s*(.+)/i],
-        ["groupRate", /^(?:group rates?|rates?)\s*:\s*(.+)/i],
+        ["groupRate", /^(?:(?:group|room) rates?|rates?)\s*:\s*(.+)/i],
         ["parking", /^parking\s*:\s*(.+)/i],
         ["breakfast", /^breakfast\s*:\s*(.+)/i],
         [
@@ -256,7 +263,7 @@ export function parseHotelEvidence(
       }
       if (
         !consumed &&
-        /^\d{1,6}\s+.+\b(?:st(?:reet)?|ave(?:nue)?|road|rd|drive|dr|blvd|boulevard|way|place|lane)\b/i.test(
+        /^\d{1,6}\s+.+\b(?:st(?:reet)?|ave(?:nue)?|road|rd|drive|dr|blvd|boulevard|way|place|lane|concourse)\b/i.test(
           row.text,
         )
       ) {
@@ -271,7 +278,7 @@ export function parseHotelEvidence(
         set("bookingUrl", booking.url, row.raw, "link");
         consumed = true;
       }
-      const plainUrl = /^https?:\/\/\S+$/.test(row.text) ? hotelUrl(row.text) : null;
+      const plainUrl = /^https?:\/\/\S+$/.test(row.text) ? hotelBookingUrl(row.text) : null;
       if (
         plainUrl &&
         (BOOK.test(card.map((item) => item.text).join(" ")) ||
@@ -292,7 +299,7 @@ export function parseHotelEvidence(
             .includes(name.toLowerCase()),
       );
       const urls = [
-        ...new Set(links.map((link) => hotelUrl(link.url, context.sourceUrl)).filter(Boolean)),
+        ...new Set(links.map((link) => hotelBookingUrl(link.url, context.sourceUrl)).filter(Boolean)),
       ];
       if (urls.length === 1 && urls[0])
         set("bookingUrl", urls[0], links[0].contextText || links[0].label || urls[0], "link");

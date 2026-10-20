@@ -17,6 +17,7 @@ import { runDiscoveryExtractStage } from "@/lib/discovery/extract";
 import { buildDiscoveryFailureSummary } from "@/lib/discovery/failure-summary";
 import { acquireDiscoveryLease } from "@/lib/discovery/lease";
 import { runDiscoveryMapStage } from "@/lib/discovery/map";
+import { generateImportedEventArtwork } from "@/lib/imported-event-artwork";
 import { runDiscoveryParseStage } from "@/lib/discovery/parse";
 import { persistDiscoveryEventSnapshot } from "@/lib/discovery/persist";
 import {
@@ -216,6 +217,11 @@ export async function runDiscoveryPipeline(eventId: string, options?: { signal?:
     startedAt = Date.now();
     await assertActive(eventId, options?.signal, actorUserId);
     if (!completed("enrich") || !current.enrichment) {
+    // Prepare the original hero once while the mapped private draft is already editable.
+    const themeRow = await getEventHistoryById(eventId);
+    if (!themeRow?.data?.templateEditor && !themeRow?.data?.manualEditor)
+      await generateImportedEventArtwork(eventId, themeRow?.data?.importedTheme, { applyToImport: true });
+    await assertActive(eventId, options?.signal, actorUserId);
     current = await enterStage(current, "enrich");
     const enriched = await runDiscoveryEnrichStage(current, { signal: options?.signal });
     await assertActive(eventId, options?.signal, actorUserId);

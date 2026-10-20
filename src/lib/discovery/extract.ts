@@ -36,7 +36,8 @@ export async function runDiscoveryExtractStage(
   // This document is written by intake only after verifying the server's source
   // read. Browser-authored extracted text never selects this path.
   const document = discovery.document;
-  if (document?.extractionMeta.sourceReadVersion === 1 &&
+  if (!(discovery.workflow === "gymnastics" && discovery.source.type === "url") &&
+      document?.extractionMeta.sourceReadVersion === 1 &&
       document.extractionMeta.reusedCreateSource === true &&
       safeString(document.extractionMeta.extractedText).length >= 20) {
     const hostNotes = safeString(discovery.source.text);

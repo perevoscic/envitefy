@@ -174,6 +174,9 @@ export function changeEventSectionLayout(
 export const GYMNASTICS_SECTION_CATALOG = [
   { id: "meet-details", label: "Meet details", editorId: "meet" },
   { id: "schedule", label: "Schedule", editorId: "schedule" },
+  { id: "schedule-availability", label: "Official schedule", editorId: "meet" },
+  { id: "participating-clubs", label: "Participating clubs", editorId: "meet" },
+  { id: "attractions", label: "Things to do", editorId: "meet" },
   { id: "admission", label: "Admission", editorId: "admission" },
   { id: "venue-details", label: "Venue", editorId: "venue" },
   { id: "traffic-parking", label: "Travel & parking", editorId: "travel" },

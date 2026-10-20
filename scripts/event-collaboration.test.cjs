@@ -255,6 +255,50 @@ test("concurrent saves accept one revision and reject the stale writer without o
   await assert.rejects(api.saveCollaborativeEvent({ eventId: "event", userId: "owner", expectedRevision: null, patch: {} }), e => e.status === 428);
 });
 
+test("saved editor snapshots cannot replace newer server artwork-job results", async () => {
+  const { api, event } = fixture();
+  event.data.importedThemeArtwork = { themeId: "new", status: "ready", imageUrl: "https://assets.test/new.webp" };
+  const saved = await api.saveCollaborativeEvent({ eventId: "event", userId: "owner", expectedRevision: api.eventRevision(event),
+    patch: { importedThemeArtwork: { themeId: "old", status: "generating" }, description: "Updated description" } });
+  assert.equal(saved.data.importedThemeArtwork.themeId, "new");
+  assert.equal(saved.data.description, "Updated description");
+});
+
+test("an editor rebases only server artwork bookkeeping and preserves real content conflicts", async () => {
+  const { createEventHistoryClient } = compile("src/lib/event-history-client.ts", { react: { useMemo: fn => fn() } });
+  const original = global.fetch;
+  const before = { id: "event", title: "Meet", revision: "before", data: { title: "Meet", importedThemeArtwork: { status: "generating" } } };
+  let latest = { ...before, revision: "after", data: { ...before.data, importedThemeArtwork: { status: "ready" } } };
+  let writes = [];
+  global.fetch = async (_url, options = {}) => {
+    if (options.method !== "PATCH") return Response.json(writes.length ? latest : before);
+    const payload = JSON.parse(options.body); writes.push(payload);
+    return payload.expectedRevision === latest.revision
+      ? Response.json({ ...latest, revision: "saved", data: { ...latest.data, ...payload.data } })
+      : Response.json({ error: "changed", code: "event_changed" }, { status: 409 });
+  };
+  try {
+    let client = createEventHistoryClient();
+    await client.fetch("/api/history/event");
+    let result = await client.fetch("/api/history/event", { method: "PATCH", body: JSON.stringify({ data: { title: "My title", importedThemeArtwork: { status: "old" } } }) });
+    assert.equal(result.status, 200);
+    assert.equal(writes.length, 2);
+    assert.equal(writes[1].data.importedThemeArtwork, undefined);
+    assert.equal((await result.json()).data.title, "My title");
+    writes = []; client = createEventHistoryClient();
+    await client.fetch("/api/history/event");
+    latest = { ...latest, data: { ...latest.data, title: "Another editor's title" } };
+    result = await client.fetch("/api/history/event", { method: "PATCH", body: JSON.stringify({ data: { title: "My title" } }) });
+    assert.equal(result.status, 409);
+    assert.equal(writes.length, 1);
+    writes = []; client = createEventHistoryClient();
+    await client.fetch("/api/history/event");
+    result = await client.fetch("/api/history/event", { method: "PATCH", body: JSON.stringify({ expectedRevision: "older-browser-draft", data: { title: "My title" } }) });
+    assert.equal(result.status, 409);
+    assert.equal(writes.length, 1);
+  } finally { global.fetch = original; }
+});
+
 test("co-host access does not include private scans or unpublishing", async () => {
   const { api, event, state } = fixture();
   state.members.push({ event_id: "event", user_id: "friend", revoked_at: null });

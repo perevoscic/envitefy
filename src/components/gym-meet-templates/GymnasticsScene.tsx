@@ -11,6 +11,7 @@ import type { GymMeetPageTemplateMeta, GymMeetRenderModel } from "./types";
 import { getGymMeetTitleTypography } from "./titleTypography";
 import styles from "./gymnastics-collection.module.css";
 import "./collection-fonts.css";
+import { importedArtworkSrc } from "@/lib/imported-event-design";
 
 export function gymnasticsDesignStyle(design: GymMeetPageTemplateMeta): CSSProperties {
   return {
@@ -43,6 +44,7 @@ export default function GymnasticsScene({
   const typography = getGymMeetTitleTypography(design.id);
   const imageSettings = normalizeHeroImageSettings(model.heroImageSettings);
   const imageRef = useRef<HTMLImageElement>(null);
+  const artworkSrc = importedArtworkSrc(model.importedTheme, model.heroImage, design.artwork);
   const pageText = useGymnasticsPageText(model.gymnasticsPageText, onPageTextChange);
   return (
     <TemplateImageTone color={design.accent} enabled={model.heroImageFilterEnabled !== false}>
@@ -69,8 +71,8 @@ export default function GymnasticsScene({
             className="template-hero-image"
             ref={imageRef}
             draggable={onHeroImagePositionChange ? false : undefined}
-            src={model.heroImage || design.artwork}
-            alt={model.heroImage ? "Meet artwork" : design.artworkAlt}
+            src={artworkSrc}
+            alt={artworkSrc?.startsWith("data:image/svg+xml") ? "Gymnastics event illustration" : model.importedTheme?.artworkUrl === artworkSrc ? "Original gymnastics event artwork" : model.heroImage ? "Meet artwork" : design.artworkAlt}
             width={1536}
             height={1024}
             loading="lazy"
@@ -89,7 +91,7 @@ export default function GymnasticsScene({
           {onHeroImagePositionChange && imageSettings.fit === "cover" ? (
             <HeroImageDragOverlay
               imageRef={imageRef}
-              imageSrc={model.heroImage || design.artwork}
+              imageSrc={artworkSrc || design.artwork}
               positionY={imageSettings.positionY}
               onChange={onHeroImagePositionChange}
             />

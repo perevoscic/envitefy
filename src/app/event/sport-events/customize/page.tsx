@@ -1,6 +1,11 @@
 // @ts-nocheck
 "use client";
 import { EventEditorInput as InputGroup, EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout } from "@/components/events/EventEditorFields";
+import ImportedThemeControls from "@/components/event-create/ImportedThemeControls";
+import ImportedThemeArtwork from "@/components/event-create/ImportedThemeArtwork";
+import { readImportedEventTheme } from "@/lib/imported-event-theme";
+import { importedThemeStyle, importedSportsTheme, importedArtworkSrc, activeImportedTheme } from "@/lib/imported-event-design";
+import { IMPORTED_THEME_FONTS } from "@/lib/imported-event-theme";
 import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
 import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import { useEventHistoryClient } from "@/lib/event-history-client";
@@ -320,6 +325,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       state: config.prefill?.state || "IL",
       venue: config.prefill?.venue || "",
       details: config.prefill?.details || "Tell guests what to expect.",
+      importedTheme: null,
+      themeFontOverride: false,
       heroImageFilterEnabled: true,
       hero: config.prefill?.hero || "",
       rsvpEnabled: config.prefill?.rsvpEnabled ?? true,
@@ -436,6 +443,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
             venue: existing.venue || existing.location || prev.venue,
             details: existing.details || existing.description || prev.details,
             heroImageFilterEnabled: existing.heroImageFilterEnabled !== false,
+            importedTheme: readImportedEventTheme(existing.importedTheme),
+            themeFontOverride: existing.themeFontOverride === true,
             hero: existing.heroImage || existing.hero || prev.hero,
             rsvpEnabled:
               typeof existing.rsvpEnabled === "boolean" ? existing.rsvpEnabled : prev.rsvpEnabled,
@@ -496,7 +505,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       });
     }, []);
 
-    const currentTheme = config.themes.find((t) => t.id === themeId) || config.themes[0];
+    const importedTheme = activeImportedTheme(data.importedTheme);
+    const currentTheme = importedSportsTheme(data.importedTheme) || config.themes.find((t) => t.id === themeId) || config.themes[0];
 
     const selectedFont = SPORT_FONTS.find((f) => f.id === data.fontId) || SPORT_FONTS[0];
     const selectedSize =
@@ -540,7 +550,7 @@ const rawTextClass = currentTheme?.text || "";
       ? { color: "#f5e6d3" } // Light beige/gold
       : undefined;
     const headingFontStyle = {
-      fontFamily: selectedFont?.css,
+      fontFamily: importedTheme && !data.themeFontOverride ? IMPORTED_THEME_FONTS[importedTheme.font] : selectedFont?.css,
       ...(headingShadow || {}),
       ...(titleColor || {}),
     };
@@ -634,13 +644,13 @@ const rawTextClass = currentTheme?.text || "";
           value: data.hero,
           eventId: editEventId || undefined,
           fileName: `${config.slug}-hero.png`,
-          fallbackValue: config.defaultHero,
-        })) || config.defaultHero;
+          fallbackValue: activeImportedTheme(data.importedTheme) ? "" : config.defaultHero,
+        })) || (activeImportedTheme(data.importedTheme) ? "" : config.defaultHero);
       const validThemeId =
         themeId && config.themes.find((t) => t.id === themeId)
           ? themeId
           : config.themes[0]?.id || "default-theme";
-      const themeToSave = config.themes.find((t) => t.id === validThemeId) || config.themes[0];
+      const themeToSave = importedSportsTheme(data.importedTheme) || config.themes.find((t) => t.id === validThemeId) || config.themes[0];
       const validFontId =
         data.fontId && SPORT_FONTS.find((f) => f.id === data.fontId)
           ? data.fontId
@@ -693,19 +703,21 @@ const rawTextClass = currentTheme?.text || "";
           },
           advancedSections: advancedState,
           heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
+          importedTheme: data.importedTheme,
+          themeFontOverride: data.themeFontOverride,
           heroImage: heroToSave,
           themeId: validThemeId,
           theme: themeToSave,
           fontId: validFontId,
           fontSize: validFontSize,
-          fontFamily: currentSelectedFont?.css,
+          fontFamily: activeImportedTheme(data.importedTheme) && !data.themeFontOverride ? IMPORTED_THEME_FONTS[data.importedTheme.font] : currentSelectedFont?.css,
           fontSizeClass: currentSelectedSize?.className,
           time: data.time,
           date: data.date,
         },
       };
       return payload;
-    }, [data.heroImageFilterEnabled, templateEditor,
+    }, [data.importedTheme, data.themeFontOverride, data.heroImageFilterEnabled, templateEditor,
       submitting,
     data.date,
     data.time,
@@ -888,6 +900,7 @@ const rawTextClass = currentTheme?.text || "";
     const renderDesignEditor = () => (
       <EditorLayout title="Design" onBack={() => setActiveView("main")} showBack>
         <div className="space-y-3">
+          <ImportedThemeControls eventId={editEventId || templateEditor?.eventId || editor.eventId} value={data.importedTheme} context={{ title: data.title, sport: sportPreset.key, city: data.city, seed: editEventId || data.title }} onChange={(importedTheme) => setData(prev => ({ ...prev, importedTheme, themeFontOverride: false }))} />
           <button
             onClick={() => setThemesExpanded(!themesExpanded)}
             className="w-full flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-700 transition-colors"
@@ -904,7 +917,7 @@ const rawTextClass = currentTheme?.text || "";
                   key={theme.id}
                   theme={theme}
                   active={themeId === theme.id}
-                  onClick={() => setThemeId(theme.id)}
+                  onClick={() => { setThemeId(theme.id); setData(prev => ({ ...prev, importedTheme: prev.importedTheme ? { ...prev.importedTheme, enabled: false } : null })); }}
                 />
               ))}
             </div>
@@ -935,7 +948,7 @@ const rawTextClass = currentTheme?.text || "";
                   key={f.id}
                   onClick={() => {
                     setFontScrollTop(fontListRef.current?.scrollTop || 0);
-                    setData((p) => ({ ...p, fontId: f.id }));
+                    setData((p) => ({ ...p, fontId: f.id, themeFontOverride: true }));
                   }}
                   className={`border rounded-lg p-3 text-left transition-colors ${
                     data.fontId === f.id
@@ -1104,12 +1117,14 @@ const rawTextClass = currentTheme?.text || "";
         >
           <div className="w-full min-w-0 mb-12 md:mb-16 transition-all duration-500 ease-in-out">
             <div
+              data-imported-theme={importedTheme?.id}
+              style={importedThemeStyle(data.importedTheme)}
               className={`min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${textClass} transition-all duration-500 relative z-0`}
             >
               <div className="relative z-10">
                 <TemplateImageTone enabled={data.heroImageFilterEnabled !== false} color={currentTheme.accent || currentTheme.bg}>
 <div className="relative w-full aspect-video">
-                  {data.hero ? (
+                  {importedTheme ? <img src={importedArtworkSrc(data.importedTheme, data.hero, config.defaultHero)} alt="Event artwork" className="template-hero-image w-full h-full object-cover" /> : data.hero ? (
                     <img src={data.hero} alt="Hero" className="template-hero-image w-full h-full object-cover" />
                   ) : (
                     <Image
@@ -1373,7 +1388,7 @@ const rawTextClass = currentTheme?.text || "";
             </div>
           </div>
         </EventCanvas>}
- controls={<><ScrollHandoffContainer className="min-h-full">
+ controls={<><ImportedThemeArtwork syncOnly eventId={editEventId || templateEditor?.eventId || editor.eventId} value={data.importedTheme} onChange={(importedTheme) => setData(prev => ({ ...prev, importedTheme }))} /><ScrollHandoffContainer className="min-h-full">
 
 
             <div className="p-6 pt-4 md:pt-6">

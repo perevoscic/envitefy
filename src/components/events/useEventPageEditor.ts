@@ -29,6 +29,7 @@ import { attachCreationIntakeEvent, creationIntakeOwner, readCreationIntake, wri
 import { creationComposition, creationNativePayload } from "@/lib/create/editor-handoff";
 
 export type EventPageEditorSession = {
+  eventId?: string;
   published: boolean;
   dirty: boolean;
   busy: boolean;
@@ -365,6 +366,7 @@ export function useEventPageEditor({
     });
   };
   return {
+    eventId: id.current,
     published,
     dirty: progress.dirty,
     busy: busy || externalBusy,

@@ -3,6 +3,16 @@ import { useMemo } from "react";
 import type { EventEditorRecord } from "./event-editor";
 import { readEventResponse } from "./event-response";
 
+/** Only generated-image job bookkeeping may advance without an authored edit. */
+function sameAuthoredEvent(before: EventEditorRecord, after: EventEditorRecord): boolean {
+  if (JSON.stringify(before.data.importedThemeArtwork) === JSON.stringify(after.data.importedThemeArtwork)) return false;
+  const content = (row: EventEditorRecord) => JSON.stringify({
+    title: row.title,
+    data: Object.fromEntries(Object.entries(row.data).filter(([key]) => key !== "importedThemeArtwork")),
+  });
+  return before.id === after.id && content(before) === content(after);
+}
+
 /** A revision map per editor keeps background reads from replacing its saved baseline. */
 export function createEventHistoryClient() {
   const revisions = new Map<string, string>();
@@ -26,8 +36,29 @@ export function createEventHistoryClient() {
         }
         headers.delete("If-Match");
       }
-      const response = await fetch(input, { ...options, body, headers });
-      const row = await readEventResponse(response.clone());
+      let response = await fetch(input, { ...options, body, headers });
+      let row = await readEventResponse(response.clone());
+      const baseline = records.get(key);
+      if (method === "PATCH" && response.status === 409 && row?.code === "event_changed" && baseline?.revision && typeof body === "string") {
+        const payload = JSON.parse(body);
+        // A recovered draft can carry an older revision than the loaded record.
+        // Never reinterpret that older authored baseline as current content.
+        if (payload.expectedRevision === baseline.revision) {
+          try {
+            const latestResponse = await fetch(key, { credentials: options.credentials, cache: "no-store" });
+            const latest = await readEventResponse(latestResponse);
+            if (latestResponse.ok && typeof latest?.revision === "string" && latest.data && sameAuthoredEvent(baseline, latest as EventEditorRecord)) {
+              // Keep server job state; the editor's image URL remains an explicit change.
+              if (payload.data && typeof payload.data === "object") delete payload.data.importedThemeArtwork;
+              body = JSON.stringify({ ...payload, expectedRevision: latest.revision });
+              response = await fetch(input, { ...options, body, headers });
+              row = await readEventResponse(response.clone());
+            }
+          } catch {
+            // Retain the original conflict and editor baseline if refresh fails.
+          }
+        }
+      }
       if (response.ok) {
         if (typeof row?.revision === "string" && typeof row.id === "string") {
           const eventKey = `/api/history/${encodeURIComponent(row.id)}`;

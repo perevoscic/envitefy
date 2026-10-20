@@ -37,6 +37,74 @@ const {
   GYMNASTICS_TITLE_FONTS, normalizeGymnasticsTitleFont, gymnasticsTitleFontFamily,
 } = require('../../lib/gymnastics-title-font.ts');
 const noAction = () => {};
+
+test('travel presentation retains source photos, booking parameters and a compact attributed map', () => {
+  const Content = require('./GymMeetDiscoveryContent.tsx').default;
+  const url = 'https://booking.example.org/rooms?group=MEET&key=AbC#reserve';
+  const model = { discovery: { sections: [{ id: 'hotels', label: 'Visit', hasContent: true, blocks: [
+    { id: 'hotel-cards', type: 'card-grid', cards: [
+      { key: 'one', label: 'River Hotel', imageUrl: 'https://cdn.example.org/river.webp', presentation: 'hotel', highlights: [{ label: 'Nightly rate', value: '$194' }], details: [{ label: 'Address', value: '100 River Road' }], action: { label: 'Book Hotel', url } },
+      { key: 'two', label: 'No Photo Inn', presentation: 'hotel', body: 'Breakfast is included.', meta: 'Five minutes from the venue', action: { label: 'Book Hotel', url } },
+    ] },
+    { id: 'attraction-cards', type: 'card-grid', cards: [{ key: 'park', label: 'River Park', imageUrl: 'javascript:alert(1)', body: 'Walk beside the river.', action: { label: 'Learn more', url: 'https://park.example.org/' } }] },
+    { id: 'arrival', type: 'map', title: 'Arrival Map', address: '100 River Road' },
+  ] }] } };
+  const html = renderToStaticMarkup(React.createElement(Content, { model, variant: { sectionClass: 'panel', summaryCardClass: 'detailCard', secondaryButtonClass: 'button' } }));
+  assert.ok(html.includes('https://cdn.example.org/river.webp'));
+  assert.ok(html.includes('loading="lazy"'));
+  assert.ok(html.includes(escaped(url)));
+  assert.ok(html.includes('No Photo Inn') && html.includes('100 River Road') && html.includes('$194'));
+  assert.ok(html.includes('Breakfast is included.') && html.includes('Five minutes from the venue'));
+  assert.ok(html.includes('River Park') && html.includes('Walk beside the river.'));
+  assert.ok(!html.includes('javascript:'));
+  assert.equal((html.match(/data-place-card="true"/g) || []).length, 3);
+  assert.ok(html.includes('width=600&amp;height=260'));
+  assert.ok(html.includes('Directions'));
+});
+test('imported identity retains the template photo and source palette while original artwork is pending', () => {
+  const { createImportedEventTheme } = require('../../lib/imported-event-theme.ts');
+  const importedTheme = createImportedEventTheme({ title: 'Coastal Invitational', sport: 'gymnastics', city: 'Savannah', seed: 'coastal/2027', branding: { version: 1, origin: 'pdf', colors: ['#0c6478', '#e29327'] } });
+  const eventData = JSON.parse(JSON.stringify({ title: 'Coastal Invitational', pageTemplateId: designs[0].id, importedTheme }));
+  const model = normalizeGymMeetEventData({ eventTitle: eventData.title, eventData, navItems: [], rosterAthletes: [] });
+  const html = renderToStaticMarkup(React.createElement(Renderer, { ...props(designs[0]), model }));
+  assert.ok(html.includes(`data-imported-theme="${importedTheme.id}"`));
+  assert.ok(html.includes('--gym-accent:#0c6478'));
+  assert.ok(html.includes(designs[0].artwork));
+  assert.ok(!html.includes('data:image/svg+xml'));
+});
+
+test('a fresh unsaved import renders completed canonical artwork instead of its stale builder theme', () => {
+  const { createImportedEventTheme } = require('../../lib/imported-event-theme.ts');
+  const importedTheme = createImportedEventTheme({ title: 'Riverside Meet', sport: 'gymnastics', seed: 'riverside/2031' });
+  const ready = { ...importedTheme, artworkUrl: '/api/blob/event-media/meet/verified.webp' };
+  const eventData = JSON.parse(JSON.stringify({ title: 'Riverside Meet', createdVia: 'meet-discovery-v2',
+    pageTemplateId: designs[0].id, importedTheme: ready,
+    builderDraft: { event: { title: 'Riverside Meet', importedTheme }, venue: {} },
+    publicArtifacts: { sections: {}, quickAccess: [] }, pipelineSummary: { discoveryId: 'import' },
+  }));
+  const model = normalizeGymMeetEventData({ eventTitle: eventData.title, eventData, navItems: [], rosterAthletes: [] });
+  assert.equal(model.importedTheme.artworkUrl, ready.artworkUrl);
+  const html = renderToStaticMarkup(React.createElement(Renderer, { ...props(designs[0]), model }));
+  assert.ok(html.includes(ready.artworkUrl));
+  assert.ok(!html.includes('data:image/svg+xml'));
+  const disabled = normalizeGymMeetEventData({ eventTitle: eventData.title, eventData: { ...eventData, importedTheme: null }, navItems: [], rosterAthletes: [] });
+  assert.equal(disabled.importedTheme, null);
+});
+test('football hero and imported theme controls render the shared sport design without provider calls', () => {
+  const { createImportedEventTheme } = require('../../lib/imported-event-theme.ts');
+  const Hero = require('../football-season-templates/FootballHero.tsx').default;
+  const Controls = require('../event-create/ImportedThemeControls.tsx').default;
+  const importedTheme = createImportedEventTheme({ title: 'Coastal Lions', sport: 'football', city: 'Tampa', seed: 'lions/2027' });
+  const html = renderToStaticMarkup(React.createElement(Hero, { title: 'Coastal Lions', importedTheme }));
+  assert.ok(!html.includes('data:image/svg+xml'));
+  assert.ok(html.includes('Event Athletic'));
+  const controls = renderToStaticMarkup(React.createElement(Controls, { value: importedTheme, onChange: noAction }));
+  assert.ok(controls.includes('Redesign'));
+  assert.ok(controls.includes('Use template style'));
+  const original = renderToStaticMarkup(React.createElement(Hero, { title: 'Coastal Lions', importedTheme, heroSrc: '/uploads/original.webp' }));
+  assert.ok(original.includes('/uploads/original.webp'));
+  assert.ok(!original.includes('data:image/svg+xml'));
+});
 const escaped = value => value.replaceAll('&', '&amp;').replaceAll("'", '&#x27;');
 const rsvpProps = {
   enabled: true, submitted: false, attending: 'yes', setAttending: noAction,
@@ -45,6 +113,81 @@ const rsvpProps = {
   guestPhoneInput: '', setGuestPhoneInput: noAction, isSignedIn: true,
   allowGuestAttendanceRsvp: false, submitting: false, onSubmit: noAction, onReset: noAction,
 };
+
+function websiteImportFixture() {
+  return {
+    version: 1, eventYear: 2027, sources: [],
+    coverage: [
+      { section: 'participatingClubs', status: 'collected', sourceUrls: ['https://meet.test/competing-teams'], reason: 'Collected from the event website.' },
+      { section: 'schedule', status: 'unavailable', sourceUrls: ['https://meet.test/schedule'], reason: 'The official schedule is not yet published.' },
+    ],
+    participatingClubs: [{ name: 'Coastal Gym', location: 'Atlanta, GA', year: 2027, sourceUrl: 'https://meet.test/competing-teams' }],
+    attractions: [{ name: 'City Aquarium', description: 'Explore the exhibits.', url: 'https://aquarium.test/tickets?offer=meet', sourceUrl: 'https://meet.test/plan-your-visit' }],
+    schedule: { status: 'not_posted', notice: '2027 schedule not yet published.', links: [{ label: 'Official schedule', url: 'https://meet.test/schedule' }] },
+  };
+}
+
+test('website import sections survive explicit JSON reload and render in the guest page without changing the venue', () => {
+  const eventData = JSON.parse(JSON.stringify({
+    title: '2027 club meet', createdVia: 'meet-discovery-v2', pageTemplateId: designs[0].id,
+    venue: 'Competition Center', address: '2000 Convention Center Concourse',
+    discoverySource: { websiteImport: websiteImportFixture() },
+  }));
+  const model = normalizeGymMeetEventData({ eventTitle: eventData.title, eventData, navItems: [], rosterAthletes: [] });
+  assert.equal(model.venue, 'Competition Center');
+  for (const [id, expected] of [
+    ['participating-clubs', ['Search participating clubs', 'Coastal Gym', 'Atlanta, GA', 'https://meet.test/competing-teams']],
+    ['attractions', ['City Aquarium', 'Explore the exhibits.', 'https://aquarium.test/tickets?offer=meet']],
+    ['schedule-availability', ['2027 schedule not yet published.', 'https://meet.test/schedule']],
+  ]) {
+    assert.ok(model.discovery.sections.some(section => section.id === id), id);
+    const html = renderToStaticMarkup(React.createElement(Renderer, { ...props(designs[0]), model: { ...model, discovery: { sections: model.discovery.sections.filter(section => section.id === id) } } }));
+    for (const text of expected) assert.ok(html.includes(text), `${id}: ${text}`);
+    assert.ok(!html.includes('Edit event'), `${id}: clean guest view`);
+  }
+});
+
+test('website import coverage distinguishes not published from failed without claiming all sources succeeded', () => {
+  const Coverage = require('../event-create/WebsiteImportCoverage.tsx').default;
+  const website = websiteImportFixture();
+  website.coverage.push({ section: 'hotels', status: 'failed', sourceUrls: ['https://meet.test/host-hotels'], reason: 'Fetch failed (503)' });
+  const html = renderToStaticMarkup(React.createElement(Coverage, { value: website }));
+  for (const text of ['1 collected', '1 not published', 'Not published', 'Could not load', 'Fetch failed (503)', 'https://meet.test/host-hotels']) assert.ok(html.includes(text), text);
+  assert.equal(renderToStaticMarkup(React.createElement(Coverage, { value: null })), '');
+});
+
+test('website import pages share grouped tabs across every gymnastics design', () => {
+  for (const design of designs) {
+    const eventData = { title: 'Community club meet', createdVia: 'meet-discovery-v2', pageTemplateId: design.id,
+      venue: 'Riverside Sports Centre', date: '2027-05-14', discoverySource: { websiteImport: websiteImportFixture() } };
+    const model = normalizeGymMeetEventData({ eventTitle: eventData.title, eventData, navItems: [], rosterAthletes: [] });
+    const html = renderToStaticMarkup(React.createElement(Renderer, { ...props(design), model }));
+    assert.ok(html.includes('role="tablist"'), design.id);
+    for (const label of ['Overview', 'Schedule', 'Teams', 'Visit'])
+      assert.ok(html.includes(`>${label}</button>`), `${design.id}: ${label}`);
+    assert.ok(html.includes('role="tabpanel"'), design.id);
+    assert.ok(html.includes('hidden="" style="display:none"'), `${design.id}: inactive content is hidden`);
+    assert.ok(!html.includes('>All sections</button>'), `${design.id}: editing-only control stays private`);
+  }
+});
+
+test('website import admission keeps daily and weekend prices separate for each audience', () => {
+  const eventData = { title: 'Community club meet', createdVia: 'meet-discovery-v2',
+    discoverySource: { websiteImport: websiteImportFixture(), parseResult: { admission: [
+      { label: 'Adult daily admission', price: '$20 per day', note: 'Cash only.' },
+      { label: 'Children ages 6–12 daily admission', price: '$15 per day', note: 'Cash only.' },
+      { label: 'Adult weekend pass', price: '$30', note: 'Cash only.' },
+      { label: 'Children ages 6–12 weekend pass', price: '$20', note: 'Cash only.' },
+    ] } } };
+  const model = normalizeGymMeetEventData({ eventTitle: eventData.title, eventData, navItems: [], rosterAthletes: [] });
+  const cards = model.discovery.sections.find(section => section.id === 'admission').blocks.find(block => block.id === 'admission-cards').cards;
+  assert.deepEqual(cards.map(({ label, value }) => ({ label, value })), [
+    { label: 'Adults · Daily admission', value: 'Cash $20' },
+    { label: 'Children (6-12) · Daily admission', value: 'Cash $15' },
+    { label: 'Adults · Weekend pass', value: 'Cash $30' },
+    { label: 'Children (6-12) · Weekend pass', value: 'Cash $20' },
+  ]);
+});
 
 test('image appearance normalizes fit and position while discarding the old manual tint', () => {
   assert.deepEqual(normalizeHeroImageSettings(undefined), { positionY: 50, fit: 'cover' });

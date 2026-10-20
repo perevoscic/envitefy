@@ -5,10 +5,13 @@ import { inflateRawSync, inflateSync } from "node:zlib";
 import * as chrono from "chrono-node";
 import OpenAI from "openai";
 import sharp from "sharp";
+import { brandingFromWebsite, brandingFromImages } from "../source-branding-server";
+import { readPublicCreateUrl } from "../create/read-source";
+import type { SourceBranding } from "../imported-event-theme";
 import { buildGymnasticsEventDateTimes, gymnasticsDateParts } from "../gymnastics-event-dates";
 import { resolveDiscoveryVenueTimezone } from "./venue-timezone";
 import { parseCalendarDateTimeToIso } from "../calendar-date-time";
-import { hotelUrl, projectTravelHotels } from "../travel-accommodation-evidence";
+import { hotelUrl, parseHotelEvidence, projectTravelHotels } from "../travel-accommodation-evidence";
 import { isHotelResourceLink, selectHotelResourceFallback } from "../hotel-resource-links";
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
@@ -48,6 +51,7 @@ import {
 } from "./cache";
 import { GYM_DISCOVERY_PUBLIC_PAGE_V2 } from "./constants";
 import { computeGymBuilderStatuses } from "./status";
+import { collectEventWebsite, isEventCorePage, websiteContent, websiteHotelText, websiteImagesForNames, websiteSections, type WebsiteImport, type WebsitePage, type WebsitePlaceImage } from "../discovery/event-website";
 
 export { computeGymBuilderStatuses, GYM_DISCOVERY_PUBLIC_PAGE_V2 };
 
@@ -469,6 +473,7 @@ export type GymDiscoveryPublishAssessment = {
 type ExtractionResult = {
   extractedText: string;
   extractionMeta: {
+    sourceBranding?: SourceBranding;
     sourceType: "file" | "url";
     annotationLinks?: import("../travel-accommodation-evidence").HotelLink[];
     accommodationPageTexts?: Array<{ pageNumber: number; text: string }>;
@@ -477,6 +482,9 @@ type ExtractionResult = {
     discoveredLinks?: DiscoveredLink[];
     resourceLinks?: DiscoveryResourceLink[];
     crawledPages?: CrawledPage[];
+    websiteImport?: WebsiteImport;
+    websiteHotelSources?: Array<{ url: string; text: string; images?: WebsitePlaceImage[] }>;
+    websiteHotels?: TravelAccommodationHotel[];
     pageTitle?: string | null;
     gymLayoutImageDataUrl?: string | null;
     gymLayoutFacts?: string[];
@@ -632,7 +640,7 @@ type UrlDiscoveryTestHooks = {
   fetchWithLimit?: (
     url: string,
     options?: { timeoutMs?: number; signal?: AbortSignal },
-  ) => Promise<{ contentType: string; buffer: Buffer; text: string }>;
+  ) => Promise<{ contentType: string; buffer: Buffer; text: string; finalUrl?: string }>;
   collectBrowserData?: (
     url: string,
     options?: { timeoutMs?: number; maxChildPages?: number; maxActionablesPerPage?: number },
@@ -1268,6 +1276,7 @@ function isLikelySectionHeading(line: string): boolean {
 function normalizeDiscoveryDateArtifacts(value: string): string {
   return safeString(value)
     .replace(/\u2013|\u2014/g, "-")
+    .replace(/\b(jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\.(?=\s+\d{1,2}\b)/gi, "$1")
     .replace(
       /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2})\s*-\s*(\d{1,2})(\s*,\s*\d{4})/gi,
       "$1 $2-$3$4",
@@ -1588,7 +1597,7 @@ function monthNameToIndex(value: string): number {
 }
 
 function deriveDateRangeFromText(value: string): DateRangeInfo {
-  const text = safeString(value);
+  const text = normalizeDiscoveryDateArtifacts(value);
   if (!text) return { label: null, startDate: null, endDate: null };
 
   const monthRange =
@@ -3265,7 +3274,14 @@ function extractMetadataText(html: string): string {
     match = metaRegex.exec(html);
   }
   snippets.push(...extractJsonLdMetadataText(html));
-  return uniqueLines(snippets.filter(Boolean), 12).join("\n\n");
+  // Organizer-visible dates take precedence over stale SEO or JSON-LD descriptions.
+  const visibleDate = classifyMeetDateCandidates(stripHtml(websiteContent(html))).primary;
+  return uniqueLines(snippets.filter((snippet) => {
+    if (!snippet) return false;
+    const metadataDate = classifyMeetDateCandidates(snippet).primary;
+    return !visibleDate || visibleDate.score < 4 || !metadataDate ||
+      (metadataDate.startDate === visibleDate.startDate && metadataDate.endDate === visibleDate.endDate);
+  }), 12).join("\n\n");
 }
 
 function decodeHtmlEntities(input: string): string {
@@ -4766,7 +4782,7 @@ function resolveDiscoveryEventTitle(parsedTitle: string, fallbackTitle: string):
 async function fetchWithLimit(
   url: string,
   options?: { timeoutMs?: number; signal?: AbortSignal },
-): Promise<{ contentType: string; buffer: Buffer; text: string }> {
+): Promise<{ contentType: string; buffer: Buffer; text: string; finalUrl?: string }> {
   const controller = new AbortController();
   const abortFromSignal = () => controller.abort(options?.signal?.reason);
   const timeoutMs =
@@ -4794,7 +4810,7 @@ async function fetchWithLimit(
       text = buffer.toString("utf8");
     }
     throwIfExtractionAborted(options?.signal);
-    return { contentType, buffer, text };
+    return { contentType, buffer, text, finalUrl: remote.url };
   } finally {
     clearTimeout(timeout);
     options?.signal?.removeEventListener("abort", abortFromSignal);
@@ -5603,6 +5619,7 @@ export async function extractDiscoveryText(
       return {
         extractedText: text,
         extractionMeta: {
+          sourceBranding: await brandingFromImages(await getPdfPageImage(parsed.buffer, 0, requestCache).then(image => image ? [`data:image/png;base64,${image.toString("base64")}`] : []).catch(() => []), "pdf"),
           sourceType: "file",
           annotationLinks: annotationLinks.map(link => ({ ...link, label: derivePdfAnnotationLabel(link, pages), contextText: link.contextText || link.label })),
           accommodationPageTexts: pages.map(page => ({ pageNumber: page.num, text: page.text })),
@@ -5657,6 +5674,7 @@ export async function extractDiscoveryText(
       return {
         extractedText: quality.cleanedText,
         extractionMeta: {
+          sourceBranding: await brandingFromImages([input.dataUrl || ""], "image"),
           sourceType: "file",
           usedOcr: true,
           linkedAssets: [],
@@ -5676,7 +5694,7 @@ export async function extractDiscoveryText(
     throw new Error("Unsupported file type for discovery");
   }
 
-  const url = new URL(input.url);
+  let url = new URL(input.url);
   const hooks = getUrlDiscoveryHooks();
   logDiscoveryDebug("[meet-discovery] url root fetch started", {
     url: url.toString(),
@@ -5685,6 +5703,7 @@ export async function extractDiscoveryText(
     mode: resolvedOptions.mode,
   });
   const page = await hooks.fetchWithLimit(url.toString(), { signal: resolvedOptions.signal });
+  if (page.finalUrl) url = new URL(page.finalUrl);
   throwIfExtractionAborted(resolvedOptions.signal);
   logDiscoveryDebug("[meet-discovery] url root fetch finished", {
     url: url.toString(),
@@ -5693,6 +5712,7 @@ export async function extractDiscoveryText(
     bytes: page.buffer.length,
   });
   const html = page.text || page.buffer.toString("utf8");
+  const sourceBranding = brandingFromWebsite(html, url.toString(), resolvedOptions.signal, readPublicCreateUrl);
   const readable = stripHtml(html);
   const metadata = extractMetadataText(html);
   const pageTitle = getPageTitle(html);
@@ -5774,6 +5794,44 @@ export async function extractDiscoveryText(
     gymLayoutSelection,
     coachPageHints,
   };
+  let websiteImport: WebsiteImport | undefined;
+  const websiteHotelSources: Array<{ url: string; text: string; images?: WebsitePlaceImage[] }> = [];
+  if (resolvedOptions.workflow === "gymnastics") {
+    const seedRoles = websiteSections("", url.toString());
+    const seed: WebsitePage = { url: url.toString(), html, title: pageTitle || "", text: readable, sections: seedRoles.length ? seedRoles : ["overview"] };
+    // Separate these HTML sections from the primary overview input. The existing
+    // resource pipeline retains hotel evidence under its accommodation context.
+    if (!isEventCorePage(seed)) htmlChunks.splice(0);
+    const collectWebsitePage = (source: WebsitePage) => {
+      if (source.sections.includes("hotels")) {
+        const text = websiteHotelText(source);
+        const names = parseHotelEvidence(text, { sourceUrl: source.url, sourceId: source.url, sourceType: "web" }).map((hotel) => hotel.name);
+        websiteHotelSources.push({ url: source.url, text, images: websiteImagesForNames(source, names) });
+      }
+      if (source.url !== url.toString()) {
+        const key = `${source.url}|1`;
+        if (!crawledPageKeys.has(key)) {
+          crawledPages.push({ url: source.url, title: source.title, depth: 1 });
+          crawledPageKeys.add(key);
+        }
+        if (isEventCorePage(source)) htmlChunks.push(buildHtmlTextChunk(source.url, extractMetadataText(source.html), source.text));
+      }
+      const candidates = collectDiscoveryCandidates(source.html, new URL(source.url), 1);
+      if (source.sections.includes("hotels")) candidates.push({ url: source.url, label: "Host hotels", sourceUrl: url.toString(), depth: 1, kind: "html", sameHost: true, followed: true, score: 5, contentType: "text/html" });
+      for (const candidate of candidates) {
+        upsertDiscoveredLink(discoveredLinkMap, candidate);
+        const resource = buildResourceLinkFromCandidate(candidate, "child_page", candidate.contentType || null, { referenceYear: fingerprint.year, discoveryMethod: "http" });
+        if (resource) upsertResourceLink(resourceLinkMap, resource);
+      }
+    };
+    collectWebsitePage(seed);
+    websiteImport = await collectEventWebsite(url.toString(), html, {
+      fetchPage: hooks.fetchWithLimit,
+      signal: resolvedOptions.signal,
+      budgetMs: Math.min(20_000, getRemainingFollowUpBudgetMs("event_website")),
+      onPage: collectWebsitePage,
+    });
+  }
   const resolveDiscoveryMethodForUrl = (targetUrl: string): "http" | "playwright" =>
     [...resourceLinkMap.values()].find(
       (item) => normalizeCanonicalUrl(item.url) === normalizeCanonicalUrl(targetUrl),
@@ -5829,7 +5887,7 @@ export async function extractDiscoveryText(
           });
           crawledPageKeys.add(pageKey);
         }
-        if (browserPage.depth > 0) {
+        if (browserPage.depth > 0 && (!websiteImport || isEventCorePage({ url: browserPage.url, html: "", title: browserPage.title || "", text: browserPage.text, sections: websiteSections(browserPage.title || "", browserPage.url) }))) {
           htmlChunks.push(
             buildHtmlTextChunk(browserPage.url, browserPage.title || "", browserPage.text),
           );
@@ -6018,16 +6076,19 @@ export async function extractDiscoveryText(
     }
   }
 
+  let followedLegacyChildPages = 0;
   for (const childPage of [...discoveredLinkMap.values()]
-    .filter((candidate) => shouldFollowDiscoveryChildPage(candidate, fingerprint))
+    .filter((candidate) => shouldFollowDiscoveryChildPage(candidate, fingerprint) &&
+      (!websiteImport || websiteSections(candidate.label, candidate.url).length === 0))
     .sort(compareDiscoveryCandidates)) {
     throwIfExtractionAborted(resolvedOptions.signal);
     if (!hasFollowUpBudget("child_page_fetch")) break;
-    if (crawledPages.length - 1 >= MAX_FOLLOWED_CHILD_PAGES) break;
+    if ((websiteImport ? followedLegacyChildPages : crawledPages.length - 1) >= MAX_FOLLOWED_CHILD_PAGES) break;
     const childPageKey = `${childPage.url}|1`;
     if (crawledPageKeys.has(childPageKey)) continue;
     const childPageBudgetMs = getRemainingFollowUpBudgetMs(`child_page_fetch:${childPage.url}`);
     if (childPageBudgetMs <= 0) break;
+    followedLegacyChildPages += 1;
     try {
       const fetched = await hooks.fetchWithLimit(childPage.url, {
         timeoutMs: childPageBudgetMs,
@@ -6144,6 +6205,16 @@ export async function extractDiscoveryText(
     })
     .slice(0, MAX_DISCOVERED_LINKS);
   const fullText = [...htmlChunks, ...linkedChunks].filter(Boolean).join("\n\n---\n\n").trim();
+  const websiteHotels = websiteHotelSources.flatMap((source) => parseHotelEvidence(source.text, {
+    sourceUrl: source.url, sourceId: source.url, sourceType: "web",
+  }));
+  if (websiteImport && !websiteHotels.length) {
+    const hotelCoverage = websiteImport.coverage.find((item) => item.section === "hotels");
+    if (hotelCoverage?.status === "collected") {
+      hotelCoverage.status = "pending";
+      hotelCoverage.reason = "The hotel source was read; accommodation details still need review.";
+    }
+  }
   const quality = analyzeTextQuality(fullText);
   const travelAccommodationCandidates = detectTravelAccommodationCandidates({
     source: "url",
@@ -6178,11 +6249,15 @@ export async function extractDiscoveryText(
     extractedText: quality.cleanedText,
     extractionMeta: {
       sourceType: "url",
+      sourceBranding: await sourceBranding,
       usedOcr,
       linkedAssets: linkedMeta,
       discoveredLinks,
       resourceLinks,
       crawledPages,
+      websiteImport,
+      websiteHotelSources,
+      websiteHotels,
       pageTitle: pageTitle || "",
       gymLayoutImageDataUrl: gymLayoutImageDataUrl || null,
       gymLayoutFacts: mergedLayoutFacts,
@@ -8835,7 +8910,7 @@ function buildGymPublicPageSections(params: {
       ? baseData.discoverySource.travelAccommodation
       : null;
   const travelHotels = projectTravelHotels(
-    normalizeTravelAccommodationHotels(travelAccommodationState?.hotels || extractionMeta?.travelAccommodationSummary?.pdfHotels),
+    normalizeTravelAccommodationHotels(travelAccommodationState?.hotels || extractionMeta?.websiteHotels || extractionMeta?.travelAccommodationSummary?.pdfHotels),
     normalizeTravelAccommodationHotels(baseData?.advancedSections?.logistics?.hotels),
     baseData?.advancedSections?.logistics?.discoveredHotelIds || [],
   ).hotels;
@@ -9290,7 +9365,7 @@ export async function mapParseResultToGymData(
       ? baseData.discoverySource.travelAccommodation
       : null;
   const hotelProjection = projectTravelHotels(
-    normalizeTravelAccommodationHotels(travelAccommodationState?.hotels || effectiveExtractionMeta?.travelAccommodationSummary?.pdfHotels),
+    normalizeTravelAccommodationHotels(travelAccommodationState?.hotels || effectiveExtractionMeta?.websiteHotels || effectiveExtractionMeta?.travelAccommodationSummary?.pdfHotels),
     normalizeTravelAccommodationHotels(existingAdvanced.logistics?.hotels),
     existingAdvanced.logistics?.discoveredHotelIds || [],
   );
@@ -9317,7 +9392,7 @@ export async function mapParseResultToGymData(
     })),
     travelAccommodationFallbackLink,
   );
-  const hotelNarrative = travelAccommodationState ? derivedTravelNarrative :
+  const hotelNarrative = travelAccommodationState || effectiveExtractionMeta?.websiteHotels?.length ? derivedTravelNarrative :
     safeString(parseResult.logistics.hotel) || derivedTravelNarrative || safeString(existingAdvanced.logistics?.hotelInfo) || "";
   const inferredResultsLink = buildTextDerivedLink(
     "Official Results",

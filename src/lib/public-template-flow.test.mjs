@@ -393,6 +393,23 @@ test("storage errors are surfaced, never reported as successful retention", asyn
   }
 });
 
+test("new sports gallery entries do not reuse saved event IDs while explicit resume retains them", async () => {
+  const original = globalThis.indexedDB;
+  try {
+    globalThis.indexedDB = memoryIndexedDb();
+    for (const category of ["gymnastics", "football", "sport-events"]) {
+      const saved = { version: 1, id: crypto.randomUUID(), category, templateId: "fixture", eventId: crypto.randomUUID(), updatedAt: Date.now(), assets: {}, snapshot: { data: { title: "Existing event" } } };
+      await storage.writeTemplateDraft(saved);
+      assert.equal(await storage.readTemplateEditorDraft(category), null);
+      assert.deepEqual(await storage.readTemplateEditorDraft(category, saved.id), saved);
+      assert.deepEqual(await storage.readTemplateEditorDraft(category, null, saved.eventId), saved);
+    }
+    const unsaved = { version: 1, id: crypto.randomUUID(), category: "gymnastics", templateId: "fixture", updatedAt: Date.now(), assets: {}, snapshot: { data: { title: "Unsaved progress" } } };
+    await storage.writeTemplateDraft(unsaved);
+    assert.deepEqual(await storage.readTemplateEditorDraft("gymnastics"), unsaved);
+  } finally { globalThis.indexedDB = original; }
+});
+
 test("photo remapping changes nested media only, preserves other event content", () => {
   const source = draft().snapshot;
   const replaced = storage.replaceDraftMedia(source, { "blob:photo": "blob:restored" });

@@ -467,6 +467,7 @@ export const normalizeGymMeetEventData = ({
 
   return {
     sectionLayout: normalizeEventSectionLayout(eventData?.sectionLayout),
+    importedTheme: eventData?.importedTheme,
     schedule: advancedSections?.schedule,
     guestPlanning: normalizeEventGuestPlanning(eventData?.guestPlanning),
     pageTemplateId: resolveGymMeetTemplateId(eventData),

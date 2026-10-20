@@ -16,6 +16,7 @@ import {
   stripLinkedDomainMentions,
 } from "./displayText";
 import type { GymMeetDiscoveryContent, GymMeetDiscoverySection, GymMeetLinkAction } from "./types";
+import { readWebsiteImport } from "@/lib/discovery/event-website";
 import { isHotelResourceLink, selectHotelResourceFallback } from "@/lib/hotel-resource-links";
 
 const safeString = (value: unknown): string =>
@@ -216,6 +217,7 @@ const buildStructuredHotelCards = (items: any[]) =>
     return {
       key: `hotel-structured-${index + 1}`,
       label: item.name,
+      imageUrl: item.imageUrl,
       meta,
       body: details.join("\n"),
       presentation: "hotel" as const,
@@ -679,7 +681,10 @@ const mergeAdmissionVariants = (items: any[]) => {
       .filter(Boolean)
       .join(" ");
     if (classifyPublicAudience(combined) !== "public_attendee") continue;
-    const label = normalizeAdmissionAudience(item?.label);
+    const audience = normalizeAdmissionAudience(item?.label);
+    const pass = /\bweekend\b/i.test(combined) ? "Weekend pass"
+      : /\b(daily|per day)\b/i.test(combined) ? "Daily admission" : "";
+    const label = pass ? `${audience} · ${pass}` : audience;
     const current = merged.get(label) || { label };
     const variants = extractAdmissionVariantAmounts(item);
     if (variants.isFree) current.free = true;
@@ -1167,6 +1172,8 @@ const shouldKeepAnnouncementCard = (item: any) => {
 const getBlockContentScore = (block: any) => {
   if (!block) return 0;
   switch (block.type) {
+    case "club-list":
+      return Math.min(Array.isArray(block.clubs) ? block.clubs.length : 0, 4);
     case "line-list":
       return 2;
     case "text":
@@ -2148,6 +2155,23 @@ export function buildGymMeetDiscoveryContent({
       },
     ].filter((section) => section.hasContent);
 
+    const website = readWebsiteImport(eventData?.discoverySource?.websiteImport);
+    if (website?.schedule.links.length) sections.push({
+      id: "schedule-availability", label: "Schedule", kind: "schedule", priority: 15, hasContent: true,
+      blocks: [
+        { id: "official-schedule-status", type: "text", text: website.schedule.notice },
+        { id: "official-schedule-links", type: "link-list", links: website.schedule.links },
+      ],
+    });
+    if (website?.participatingClubs.length) sections.push({
+      id: "participating-clubs", label: "Participating clubs", kind: "participating_clubs", priority: 45, hasContent: true,
+      blocks: [{ id: "participating-clubs-list", type: "club-list", clubs: website.participatingClubs, year: website.eventYear }],
+    });
+    if (website?.attractions.length) sections.push({
+      id: "attractions", label: "Things to do", kind: "attractions", priority: 55, hasContent: true,
+      blocks: [{ id: "attraction-cards", type: "card-grid", columns: 2, cards: website.attractions.map((item, index) => ({ key: `attraction-${index}`, presentation: "attraction", imageUrl: item.imageUrl, label: item.name, body: item.description, action: { label: "Learn more", url: item.url } })) }],
+    });
+    sections.sort((a, b) => a.priority - b.priority);
     return { sections: composeSections(sections) };
   }
 

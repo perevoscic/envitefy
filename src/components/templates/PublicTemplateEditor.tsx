@@ -1,10 +1,17 @@
 "use client";
-// Keep signup CSS in the route stylesheet, including when the editor is loaded on the client.
+// Keep editor CSS in the route stylesheet when native editors are loaded on the client.
 import "@/components/smart-signup-form/signup-editor.module.css";
 import "@/components/smart-signup-form/signup-composer.module.css";
 import "@/components/events/inline-editable-text.module.css";
 import "@/components/smart-signup-form/signup-theme.module.css";
 import "@/components/smart-signup-form/signup-custom-theme.module.css";
+import "@/components/gym-meet-templates/gymnastics-collection.module.css";
+import "@/components/gym-meet-templates/gymnastics-program.module.css";
+import "@/components/gym-meet-templates/collection-fonts.css";
+import "@/components/event-create/imported-event-theme.css";
+import "./template-body-layout.module.css";
+import "./celebration-materials.module.css";
+import "@/components/EventCanvas.module.css";
 import dynamic from "next/dynamic";
 import type { TemplateCategory } from "@/lib/template-categories";
 import TemplateEditorProvider from "./TemplateEditorContext";

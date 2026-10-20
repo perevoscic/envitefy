@@ -1,0 +1,18 @@
+appId: com.android.chrome
+name: Inspect ordinary Google sign-in entry without signing out other accounts
+---
+- assertVisible: 'accounts\.google\.com'
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+- assertVisible: "Choose an account|Выберите аккаунт"
+- scrollUntilVisible:
+    element: "Use another account|Использовать другой аккаунт"
+    direction: DOWN
+    timeout: 15000
+    centerElement: true
+- tapOn: "Use another account|Использовать другой аккаунт"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: ordinary-existing-account-entry

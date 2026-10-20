@@ -284,12 +284,19 @@ export type GymMeetDiscoveryCard = {
     icon?: "parking" | "breakfast" | "deadline" | "phone";
   }>;
   action?: GymMeetLinkAction;
-  presentation?: "default" | "guidance" | "hotel";
+  presentation?: "default" | "guidance" | "hotel" | "attraction";
+  imageUrl?: string | null;
   icon?: "parking" | "traffic" | "info" | "policy";
   tone?: "default" | "warning";
 };
 
 export type GymMeetDiscoveryBlock =
+  | {
+      id: string;
+      type: "club-list";
+      year: number | null;
+      clubs: import("@/lib/discovery/event-website").WebsiteClub[];
+    }
   | {
       id: string;
       type: "line-list";
@@ -356,6 +363,7 @@ export type GymMeetDiscoveryContent = {
 export type GymMeetTitleSize = "small" | "medium" | "large";
 
 export type GymMeetRenderModel = {
+  importedTheme?: import("@/lib/imported-event-theme").ImportedEventTheme | null;
   schedule?: GymMeetScheduleInfo;
   sectionLayout?: import("@/lib/event-section-layout").EventSectionLayout;
   guestPlanning?: EventGuestPlanning;

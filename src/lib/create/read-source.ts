@@ -8,6 +8,8 @@ import { createPdfPageRasterizer, extractPdfTextWithPdfJs } from "@/lib/pdf-rast
 import { validateUploadFileMeta, UPLOAD_LIMITS } from "@/lib/upload-config";
 import { resolveConciergeOpenAiPlannerModel } from "@/lib/concierge/openai-config";
 import { creationModelBudget } from "@/lib/creation/openai-workloads";
+import { brandingFromWebsite, brandingFromImages } from "@/lib/source-branding-server";
+import type { SourceBranding } from "@/lib/imported-event-theme";
 
 export class CreateSourceError extends Error {
   constructor(message: string, public status = 400) { super(message); }
@@ -133,6 +135,7 @@ export async function normalizeCreateImage(bytes: Buffer): Promise<string> {
 }
 
 export type ReadCreateSourceResult = {
+  sourceBranding?: SourceBranding;
   text: string;
   images: string[];
   url?: string;
@@ -152,12 +155,14 @@ export async function readCreateSource(input: { files?: File[]; url?: string; te
   if (input.url && files.length) throw new CreateSourceError("Choose files or a public link, then add optional notes.");
   let url: string | undefined;
   let remoteText = "";
+  let sourceBranding: SourceBranding | undefined;
   if (input.url) {
     const remote = await readPublicCreateUrl(input.url, AbortSignal.any([signal, AbortSignal.timeout(20_000)]));
     url = remote.url;
     if (/^(text\/html|text\/plain|application\/xhtml\+xml)$/.test(remote.mimeType)) {
       if (remote.mimeType !== "text/plain" && /<input\b[^>]*\btype\s*=\s*["']?password\b/i.test(remote.bytes.toString("utf8"))) throw new CreateSourceError("That page requires a login or passcode. Upload a screenshot or paste its event details instead.", 422);
       remoteText = remote.mimeType === "text/plain" ? remote.bytes.toString("utf8") : htmlText(remote.bytes.toString("utf8"), remote.url);
+      if (remote.mimeType !== "text/plain") sourceBranding = await brandingFromWebsite(remote.bytes.toString("utf8"), remote.url, signal, readPublicCreateUrl);
       if (remoteText.length < 20) throw new CreateSourceError("That page has no readable event details. Upload a screenshot or paste the details instead.", 422);
     } else if (/^(application\/pdf|image\/(?:jpeg|png|webp))$/.test(remote.mimeType)) {
       files.push(new File([new Uint8Array(remote.bytes)], new URL(remote.url).pathname.split("/").pop() || "event-source", { type: remote.mimeType }));
@@ -206,6 +211,7 @@ export async function readCreateSource(input: { files?: File[]; url?: string; te
   if (text.length > MAX_SOURCE_TEXT) throw new CreateSourceError("This source has too much text to read in one import. Split it into smaller files.", 413);
   if (!text && !input.text?.trim()) throw new CreateSourceError("Add a document, public link or event details first.");
   return {
+    sourceBranding: sourceBranding || (pages.length ? await brandingFromImages(pages.flatMap(page => page.image ? [page.image] : []), files.some(file => /pdf/i.test(file.type)) ? "pdf" : "image", url) : undefined),
     text,
     images: pages.flatMap((page) => page.image ? [page.image] : []),
     url,

@@ -4,6 +4,7 @@ import {
   buildFootballBuilderDraft,
   buildGymBuilderDraft,
   buildSportsBuilderDraft,
+  themeDiscoveryData,
 } from "@/lib/discovery/map";
 import {
   buildEmptyDiscoveryPublicArtifacts,
@@ -23,6 +24,7 @@ import {
   mapParseResultToGymData,
 } from "@/lib/meet-discovery";
 import { getDiscoveryAdapter, getSportActivityProfile } from "@/lib/sports-discovery";
+import { readWebsiteImport, websitePublicSections } from "@/lib/discovery/event-website";
 
 function mapSectionProvenance(section: Record<string, any>): PublicSectionProvenance {
   const body = safeString(section.body);
@@ -105,7 +107,7 @@ export async function runDiscoveryComposePublicStage(
     throw new Error("No parse result available for public composition.");
   }
   if (discovery.workflow === "football") {
-    const mappedData = await mapParseResultToFootballData(parseResult as any, currentData);
+    const mappedData = themeDiscoveryData(discovery, currentData, await mapParseResultToFootballData(parseResult as any, currentData));
     throwIfDiscoveryCancelled(options?.signal);
     const publicArtifacts: DiscoveryPublicArtifacts = {
       ...buildEmptyDiscoveryPublicArtifacts(safeString(mappedData.title)),
@@ -142,14 +144,14 @@ export async function runDiscoveryComposePublicStage(
       discovery.canonicalParse?.activityProfile || discovery.source.activityProfile;
     const activity = getSportActivityProfile(activityProfile);
     const adapter = getDiscoveryAdapter("sports");
-    const mappedData = await adapter.map({
+    const mappedData = themeDiscoveryData(discovery, currentData, await adapter.map({
       parseResult: parseResult as Record<string, any>,
       currentData,
       extractionMeta: discovery.document?.extractionMeta as Record<string, any>,
       activityProfile,
       eventArchetype: discovery.canonicalParse?.eventArchetype || discovery.source.eventArchetype,
       detectionConfidence: discovery.canonicalParse?.detection?.confidence,
-    });
+    }));
     throwIfDiscoveryCancelled(options?.signal);
     const reviewReasons = uniqueStrings(
       [
@@ -201,16 +203,19 @@ export async function runDiscoveryComposePublicStage(
     };
   }
   const enrichment = (discovery.enrichment || {}) as Record<string, any>;
+  const websiteImport = readWebsiteImport(discovery.document?.extractionMeta.websiteImport);
   const hasTravelAccommodation = Object.hasOwn(enrichment, "travelAccommodation");
+  if (websiteImport && hasTravelAccommodation && enrichment.travelAccommodation?.hotels?.length) {
+    websiteImport.coverage = websiteImport.coverage.map((entry) => entry.section === "hotels"
+      ? { ...entry, status: "collected", reason: "Collected hotel details from the event's accommodation sources." }
+      : entry);
+  }
   const discoverySourceWithTravel =
-    hasTravelAccommodation &&
-    currentData?.discoverySource &&
-    typeof currentData.discoverySource === "object"
-      ? {
-          ...((currentData.discoverySource || {}) as Record<string, any>),
-          travelAccommodation: enrichment.travelAccommodation ?? null,
-        }
-      : ((currentData.discoverySource || {}) as Record<string, any>);
+    {
+      ...((currentData.discoverySource || {}) as Record<string, any>),
+      ...(hasTravelAccommodation ? { travelAccommodation: enrichment.travelAccommodation ?? null } : {}),
+      ...(websiteImport ? { websiteImport } : {}),
+    };
   const travelAccommodationState =
     (hasTravelAccommodation ? enrichment.travelAccommodation : undefined) ||
     (currentData?.discoverySource &&
@@ -227,11 +232,12 @@ export async function runDiscoveryComposePublicStage(
           },
         }
       : currentData;
-  const mappedData = await mapParseResultToGymData(
+  const dataWithWebsite = websiteImport ? { ...currentDataWithTravel, discoverySource: discoverySourceWithTravel } : currentDataWithTravel;
+  const mappedData = themeDiscoveryData(discovery, currentData, await mapParseResultToGymData(
     parseResult,
-    currentDataWithTravel,
+    dataWithWebsite,
     discovery.document?.extractionMeta as any,
-  );
+  ));
   throwIfDiscoveryCancelled(options?.signal);
   const mappedDataWithTravel =
     travelAccommodationState && typeof travelAccommodationState === "object"
@@ -264,6 +270,7 @@ export async function runDiscoveryComposePublicStage(
       toPublicSection((value || {}) as Record<string, any>, sectionTitles[key] || key),
     ]),
   );
+  Object.assign(sections, websitePublicSections(websiteImport));
   const quickAccess = (() => {
     const out: Array<{ label: string; url: string }> = [];
     const seenUrls = new Set<string>();
@@ -322,7 +329,7 @@ export async function runDiscoveryComposePublicStage(
     mappedData,
     builderDraft: buildGymBuilderDraft({ mappedData, reviewFlags }),
     publicArtifacts,
-    eventDataPatch: hasTravelAccommodation
+    eventDataPatch: hasTravelAccommodation || websiteImport
       ? {
           discoverySource: discoverySourceWithTravel,
         }

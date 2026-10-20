@@ -18,6 +18,7 @@ export function mergeDiscoveryEditorRefresh<T>(current: T, previousServer: T, ne
   if (!isRecord(current) || !isRecord(previousServer) || !isRecord(nextServer)) return current;
   const merged: Record<string, unknown> = { ...current };
   for (const key of Object.keys(nextServer)) {
+    if (key === "importedTheme" && isRecord(current[key]) && isRecord(previousServer[key]) && current[key].id !== previousServer[key].id) continue;
     merged[key] = mergeDiscoveryEditorRefresh(current[key], previousServer[key], nextServer[key]);
   }
   return merged as T;
