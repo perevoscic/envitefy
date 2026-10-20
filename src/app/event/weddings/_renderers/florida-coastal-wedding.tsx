@@ -1,3 +1,4 @@
+import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
@@ -243,35 +244,37 @@ export default function FloridaCoastalWedding({ theme, event }: Props) {
       <div className="h-3 w-full bg-gradient-to-r from-emerald-600 via-teal-400 to-emerald-600"></div>
 
       {/* Nav */}
-      <nav className="flex justify-between items-center px-6 py-4 sticky top-0 bg-white/90 backdrop-blur-md z-50 border-b border-pink-100 shadow-sm">
-        <div className="flex items-center gap-2">
-          <Palmtree className="text-pink-400" size={24} />
-          <span className="text-xl font-bold tracking-tight uppercase text-emerald-800">
-            {location.split(",")[0] || "The Colony"}
-          </span>
-        </div>
-        <div className="hidden md:flex gap-8 text-xs font-bold uppercase tracking-widest text-emerald-600/70">
-          <a href="#events" className="hover:text-pink-500 transition-colors">
-            Events
-          </a>
-          <a href="#stay" className="hover:text-pink-500 transition-colors">
-            Stay
-          </a>
-          {event.rsvpEnabled && (
-            <a href="#rsvp" className="hover:text-pink-500 transition-colors">
-              RSVP
+      <ResponsiveEventNavigation items={[{ id: "events", label: "Events", href: "#events" }, { id: "stay", label: "Stay", href: "#stay" }, ...(event.rsvpEnabled ? [{ id: "rsvp", label: "RSVP", href: "#rsvp" }] : []), ...(event.locationUrl ? [{ id: "location", label: "Book", href: event.locationUrl }] : [])]} background="#ffffff" foreground="#065f46">
+        <nav className="flex justify-between items-center px-6 py-4 sticky top-0 bg-white/90 backdrop-blur-md z-50 border-b border-pink-100 shadow-sm">
+          <div className="flex items-center gap-2">
+            <Palmtree className="text-pink-400" size={24} />
+            <span className="text-xl font-bold tracking-tight uppercase text-emerald-800">
+              {location.split(",")[0] || "The Colony"}
+            </span>
+          </div>
+          <div className="hidden md:flex gap-8 text-xs font-bold uppercase tracking-widest text-emerald-600/70">
+            <a href="#events" className="hover:text-pink-500 transition-colors">
+              Events
+            </a>
+            <a href="#stay" className="hover:text-pink-500 transition-colors">
+              Stay
+            </a>
+            {event.rsvpEnabled && (
+              <a href="#rsvp" className="hover:text-pink-500 transition-colors">
+                RSVP
+              </a>
+            )}
+          </div>
+          {event.locationUrl && (
+            <a
+              href={event.locationUrl}
+              className="bg-pink-400 text-white px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-pink-500 transition-colors shadow-lg shadow-pink-200"
+            >
+              Book
             </a>
           )}
-        </div>
-        {event.locationUrl && (
-          <a
-            href={event.locationUrl}
-            className="bg-pink-400 text-white px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-pink-500 transition-colors shadow-lg shadow-pink-200"
-          >
-            Book
-          </a>
-        )}
-      </nav>
+        </nav>
+      </ResponsiveEventNavigation>
 
       {/* Hero */}
       <header className="relative flex min-h-[90svh] flex-col overflow-hidden bg-white md:min-h-[90vh] md:flex-row md:items-center md:justify-start md:px-[6vw] md:py-12">

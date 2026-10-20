@@ -398,7 +398,7 @@ test("public link API returns its committed revision and retains owner and confl
     "@/lib/history-cache": { invalidateUserHistory: () => {} },
     "@/lib/event-collaboration": api,
     "@/lib/event-collaboration-types": errors,
-    "@/utils/event-public-slug": { makeEventPublicSlugRoutable: value => value },
+    "@/utils/event-public-slug": { validateCustomEventPublicSlug: value => ({ slug: value, error: null }) },
     "@/utils/event-url": { buildEventPath: () => "/event/field-trip", buildStudioCardPath: () => "/card/field-trip", buildEventSlugSegment: () => "field-trip" },
     "@/lib/db": {
       getEventHistoryById: async () => event,

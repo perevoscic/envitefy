@@ -9,6 +9,8 @@ import type { EventPreviewEntryContext } from "@/lib/event-preview-viewport";
 import { trackEventInteraction } from "@/utils/event-tracking-client";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventAccessDialog from "@/components/EventAccessDialog";
+import EventUrlDialog from "@/components/events/EventUrlEditor";
+import { useRouter } from "next/navigation";
 import EventPreviewViewport from "./EventPreviewViewport";
 
 type Props = {
@@ -34,6 +36,7 @@ export default function EventOwnerView({
   mobileEditInEvent = false,
   entryContext,
 }: Props) {
+  const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [background, setBackground] = useState<EventPreviewBackground>({ backgroundColor });
   const editUrl = buildOwnerEventEditHref(editHref, publicHref, String(background.backgroundColor || ""));
@@ -84,6 +87,10 @@ export default function EventOwnerView({
         <span>{copied ? "Copied" : "Share"}</span>
       </button>
       {canManageAccess && <EventAccessDialog eventId={eventId} eventTitle={title} className={`inline-flex ${actionClassName}`} />}
+      {canDelete && <EventUrlDialog eventId={eventId} className={`inline-flex ${actionClassName}`} onUpdated={update => {
+        router.replace(`${update.publicPath}?tab=event`);
+        router.refresh();
+      }} />}
       {canDelete && <EventDeleteModal
         eventId={eventId}
         eventTitle={title}

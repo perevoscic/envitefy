@@ -1,3 +1,4 @@
+import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
 import { Music, Sun, Heart, MapPin } from "lucide-react";
@@ -78,22 +79,28 @@ export default function Retro70s({ theme, event }: Props) {
       ></div>
 
       <nav className="fixed top-4 left-0 w-full z-50 flex justify-center px-4">
-        <div className="bg-[#FEFAE0]/90 backdrop-blur-md border-2 border-[#386641] rounded-full px-6 py-3 flex gap-4 md:gap-8 shadow-[4px_4px_0px_0px_#386641]">
-          {[
-            ...(event.story ? ["Story"] : []),
-            "The Scoop",
-            "The Digs",
-            "RSVP",
-          ].map((item) => (
-            <a
-              key={item}
-              href={`#${item.toLowerCase().replace(" ", "-")}`}
-              className="font-black uppercase text-xs md:text-sm tracking-wide text-[#386641] hover:text-[#BC4749] transition-colors"
-            >
-              {item}
-            </a>
-          ))}
-        </div>
+        <ResponsiveEventNavigation
+          items={[...(event.story ? ["Story"] : []), "The Scoop", "The Digs", "RSVP"].map(label => ({ id: label.toLowerCase().replace(" ", "-"), label, href: `#${label.toLowerCase().replace(" ", "-")}` }))}
+          background="#FEFAE0"
+          foreground="#386641"
+        >
+          <div className="bg-[#FEFAE0]/90 backdrop-blur-md border-2 border-[#386641] rounded-full px-6 py-3 flex gap-4 md:gap-8 shadow-[4px_4px_0px_0px_#386641]">
+            {[
+              ...(event.story ? ["Story"] : []),
+              "The Scoop",
+              "The Digs",
+              "RSVP",
+            ].map((item) => (
+              <a
+                key={item}
+                href={`#${item.toLowerCase().replace(" ", "-")}`}
+                className="font-black uppercase text-xs md:text-sm tracking-wide text-[#386641] hover:text-[#BC4749] transition-colors"
+              >
+                {item}
+              </a>
+            ))}
+          </div>
+        </ResponsiveEventNavigation>
       </nav>
 
       <header className="min-h-screen flex flex-col items-center justify-center p-4 relative pt-24">

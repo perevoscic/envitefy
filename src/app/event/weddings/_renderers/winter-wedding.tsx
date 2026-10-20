@@ -1,3 +1,4 @@
+import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import { useState, useEffect } from "react";
@@ -221,25 +222,31 @@ export default function WinterWedding({ theme, event }: Props) {
         <div className="text-xl font-bold tracking-widest uppercase">
           {initials}
         </div>
-        <div className="hidden md:flex gap-8 text-xs font-bold uppercase tracking-widest text-gray-300">
-          <a href="#story" className="hover:text-white transition-colors">
-            Our Story
-          </a>
-          <a href="#weekend" className="hover:text-white transition-colors">
-            The Weekend
-          </a>
-          <a href="#details" className="hover:text-white transition-colors">
-            Details
-          </a>
-          {event.rsvpEnabled && (
-            <a
-              href="#rsvp"
-              className="border border-white/30 px-4 py-2 hover:bg-[#B7410E] hover:border-[#B7410E] transition-all"
-            >
-              RSVP
+        <ResponsiveEventNavigation
+          items={[{ id: "story", label: "Our story", href: "#story" }, { id: "weekend", label: "The weekend", href: "#weekend" }, { id: "details", label: "Details", href: "#details" }, ...(event.rsvpEnabled ? [{ id: "rsvp", label: "RSVP", href: "#rsvp" }] : [])]}
+          background="#1A2F25"
+          foreground="#ffffff"
+        >
+          <div className="hidden md:flex gap-8 text-xs font-bold uppercase tracking-widest text-gray-300">
+            <a href="#story" className="hover:text-white transition-colors">
+              Our Story
             </a>
-          )}
-        </div>
+            <a href="#weekend" className="hover:text-white transition-colors">
+              The Weekend
+            </a>
+            <a href="#details" className="hover:text-white transition-colors">
+              Details
+            </a>
+            {event.rsvpEnabled && (
+              <a
+                href="#rsvp"
+                className="border border-white/30 px-4 py-2 hover:bg-[#B7410E] hover:border-[#B7410E] transition-all"
+              >
+                RSVP
+              </a>
+            )}
+          </div>
+        </ResponsiveEventNavigation>
       </nav>
 
       {/* Hero */}

@@ -1,3 +1,4 @@
+import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import { useEffect, useState } from "react";
 import {
@@ -67,7 +68,7 @@ export default function EtherealClassic({ theme, event }: Props) {
             : "bg-transparent py-6"
         }`}
       >
-        <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
+        <div className="max-w-6xl mx-auto px-6 flex flex-wrap justify-between items-center gap-3 sm:flex-nowrap">
           <button
             className="text-2xl tracking-widest uppercase"
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
@@ -79,25 +80,30 @@ export default function EtherealClassic({ theme, event }: Props) {
               .slice(0, 2)
               .join(" & ")}
           </button>
-          <div className="hidden md:flex space-x-8 text-sm tracking-widest uppercase">
-            {["story", "details", "registry"].map((item) => (
+          <ResponsiveEventNavigation
+            items={[{ id: "story", label: "Story" }, { id: "details", label: "Details" }, { id: "registry", label: "Registry" }, { id: "rsvp", label: "RSVP" }]}
+            onSelect={id => id === "rsvp" ? setRsvpOpen(true) : scrollToSection(id)}
+          >
+            <div className="hidden md:flex space-x-8 text-sm tracking-widest uppercase">
+              {["story", "details", "registry"].map((item) => (
+                <button
+                  key={item}
+                  onClick={() => scrollToSection(item)}
+                  className="hover:text-rose-400 transition-colors"
+                >
+                  {item}
+                </button>
+              ))}
               <button
-                key={item}
-                onClick={() => scrollToSection(item)}
-                className="hover:text-rose-400 transition-colors"
+                onClick={() => setRsvpOpen(true)}
+                className="border border-slate-800 px-6 py-2 hover:bg-slate-800 hover:text-white transition-all"
               >
-                {item}
+                RSVP
               </button>
-            ))}
-            <button
-              onClick={() => setRsvpOpen(true)}
-              className="border border-slate-800 px-6 py-2 hover:bg-slate-800 hover:text-white transition-all"
-            >
-              RSVP
-            </button>
-          </div>
+            </div>
+          </ResponsiveEventNavigation>
           <button
-            className="md:hidden"
+            className="hidden sm:block md:hidden"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? <X /> : <Menu />}

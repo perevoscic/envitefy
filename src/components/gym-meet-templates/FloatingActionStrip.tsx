@@ -68,6 +68,7 @@ export default function FloatingActionStrip({
           </a>
         </span>
       ) : null}
+      {mobileEditHref ? <span data-event-owner-actions-slot className="shrink-0 empty:hidden lg:hidden" /> : null}
       {onPreview ? (
         <span>
           <button

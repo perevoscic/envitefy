@@ -57,7 +57,7 @@
 .design [data-program-cards] { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 1rem; }
 .design [data-program-cards="hotels"] { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
 .design :is([data-program-cards="hotels"], [data-program-cards="attractions"]) { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 24px; }
-/* Place photography gets a quiet surface across designs, without nested tinted panels. */
+/* Place details get a quiet surface across designs, without nested tinted panels. */
 .design[data-gym-design] .chapter:is([data-section-kind="hotels"], [data-section-kind="attractions"]) { border: 0; border-radius: 0; background: transparent; box-shadow: none; padding: 0; }
 .design[data-gym-design] .chapter:is([data-section-kind="hotels"], [data-section-kind="attractions"]) .chapterHeading { border: 0; padding: 0; margin-bottom: 24px; }
 .teamSupport { display: grid; gap: var(--program-gap); }

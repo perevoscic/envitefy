@@ -1,3 +1,4 @@
+import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
@@ -232,23 +233,29 @@ export default function IndustrialWedding({ theme, event }: Props) {
           </p>
         </div>
 
-        <nav className="flex flex-col gap-4 mt-8 md:mt-0">
-          {[
-            "Manifesto",
-            "Logistics",
-            ...(event.registry?.length ? ["Registry"] : []),
-            ...(event.rsvpEnabled ? ["RSVP"] : []),
-          ].map((item) => (
-            <a
-              key={item}
-              href={`#${item.toLowerCase()}`}
-              className="text-sm uppercase hover:text-[#cd7f32] transition-colors flex items-center gap-2 group"
-            >
-              <span className="w-2 h-2 bg-[#404040] group-hover:bg-[#cd7f32]"></span>
-              {item}
-            </a>
-          ))}
-        </nav>
+        <ResponsiveEventNavigation
+          items={["Manifesto", "Logistics", ...(event.registry?.length ? ["Registry"] : []), ...(event.rsvpEnabled ? ["RSVP"] : [])].map(label => ({ id: label.toLowerCase(), label, href: `#${label.toLowerCase()}` }))}
+          background="#151515"
+          foreground="#eeeeee"
+        >
+          <nav className="flex flex-col gap-4 mt-8 md:mt-0">
+            {[
+              "Manifesto",
+              "Logistics",
+              ...(event.registry?.length ? ["Registry"] : []),
+              ...(event.rsvpEnabled ? ["RSVP"] : []),
+            ].map((item) => (
+              <a
+                key={item}
+                href={`#${item.toLowerCase()}`}
+                className="text-sm uppercase hover:text-[#cd7f32] transition-colors flex items-center gap-2 group"
+              >
+                <span className="w-2 h-2 bg-[#404040] group-hover:bg-[#cd7f32]"></span>
+                {item}
+              </a>
+            ))}
+          </nav>
+        </ResponsiveEventNavigation>
 
         <div className="hidden md:block text-[10px] text-[#505050]">
           <p>{locationParts.city}</p>

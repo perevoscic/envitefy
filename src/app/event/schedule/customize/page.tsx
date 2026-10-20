@@ -4,6 +4,7 @@ import { useEventHistoryClient } from "@/lib/event-history-client";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ScheduleReviewDialog from "@/components/ScheduleReviewDialog";
+import EventUrlDialog from "@/components/events/EventUrlEditor";
 import { normalizeScanSchedule, type ScanSchedule } from "@/lib/scan-schedule";
 import { isEventDraft } from "@/lib/event-draft-access";
 import { buildEventPath } from "@/utils/event-url";
@@ -17,6 +18,7 @@ function ScheduleEditor() {
   const [error, setError] = useState("");
   const [savedStatus, setSavedStatus] = useState<"draft" | "published">("draft");
   const [eventHref, setEventHref] = useState("/");
+  const [isOwner, setIsOwner] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
     setSchedule(null);
@@ -34,6 +36,7 @@ function ScheduleEditor() {
         const next = normalizeScanSchedule(row.data?.scanSchedule);
         if (!next) throw new Error("This event does not have an editable schedule.");
         setSchedule(next);
+        setIsOwner(row.permissions?.role === "owner");
         setSavedStatus(isEventDraft(row.data) ? "draft" : "published");
         setEventHref(
           buildEventPath(id, row.title || next.title, { tab: "event" }, row.public_slug),
@@ -58,6 +61,7 @@ function ScheduleEditor() {
       initialSchedule={schedule}
       saved
       savedStatus={savedStatus}
+      urlControl={isOwner ? <EventUrlDialog eventId={id} historyClient={eventHistoryClient} onUpdated={update => setEventHref(`${update.publicPath}?tab=event`)} /> : undefined}
       onDiscard={() => router.push(eventHref)}
       onSave={async (next, status) => {
         const response = await eventHistoryClient.fetch(`/api/history/${encodeURIComponent(id)}`, {

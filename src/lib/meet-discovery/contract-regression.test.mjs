@@ -63,6 +63,36 @@ test("attendee-first parse profiles keep their deterministic order and parent-on
     assert.deepEqual(select({ documentProfile, contentMix: { registrationHeavy: true } }), ["overview_core", "parent_public"]);
 });
 
+test("all meet extraction prompts keep arrival, accommodation and attractions separate", () => {
+  const buildVisitorInformationPrompt = loadFunction("buildVisitorInformationPrompt", {});
+  const targeted = loadFunction("buildTargetedParsePrompt", {
+    OPENAI_SCHEMA_INSTRUCTIONS: "Return the existing extraction schema.",
+    buildVisitorInformationPrompt,
+  });
+  const professional = loadFunction("buildProfessionalParsePrompt", {
+    OPENAI_SCHEMA_INSTRUCTIONS: "Return the existing extraction schema.",
+    buildVisitorInformationPrompt,
+    cleanExtractedText: (text) => text,
+    buildParsePromptEvidence: (evidence) => JSON.stringify(evidence),
+  });
+  const selected = { evidence: {}, excerpts: [] };
+  const classification = { documentProfile: "meet_overview", confidence: 1 };
+  const prompts = [
+    targeted("overview_core", classification, selected),
+    targeted("parent_public", classification, selected),
+    professional({}, "Source event details."),
+  ];
+  for (const prompt of prompts) {
+    assert.ok(prompt.includes("Venue & Parking, Hotels and Explore as three separate public information groups"));
+    assert.ok(prompt.includes("Never combine them into one Visit summary"));
+    assert.ok(prompt.includes("`meetDetails.arrivalGuidance`"));
+    assert.ok(prompt.includes("`logistics.hotel`, separate from venue/parking text"));
+    assert.ok(prompt.includes("including query parameters and fragments"));
+    assert.ok(prompt.includes("`unmappedFacts` with category `attractions`"));
+    assert.ok(prompt.includes("never invent hotels, rates, booking deadlines, attractions or travel guidance"));
+  }
+});
+
 test("image helpers preserve optional artifact provenance and perform no implicit debug write", async () => {
   for (const name of ["openAiOcrTextFromImage", "openAiAnalyzeGymLayoutPage", "openAiExtractGymLayoutZones"]) {
     const calls = [];

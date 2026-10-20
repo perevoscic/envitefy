@@ -2,6 +2,7 @@
 // @ts-nocheck
 "use client";
 
+import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import {
   Car,
   ClipboardList,
@@ -388,7 +389,6 @@ export default function GymMeetDiscoveryContent({
                     <EventPlaceCard
                       key={cardReactKey}
                       name={card.label}
-                      imageUrl={card.imageUrl}
                       title={cardLabel()}
                       eyebrow={isHotelCard ? pageText("hostHotel", "Host hotel") : undefined}
                       body={(!highlights.length && card.meta) || (card.body && (!isHotelCard || !details.length)) ? <>
@@ -661,39 +661,47 @@ export default function GymMeetDiscoveryContent({
             className="transition-transform duration-200 ease-out will-change-transform"
             style={{ transform: `translateX(${bounceOffset}px)` }}
           >
-            <div
-              ref={railRef}
-              className={navRailClass}
-              role="tablist"
-              aria-label="Meet information sections"
-              tabIndex={0}
-              data-mobile-horizontal-scroll
+            <ResponsiveEventNavigation
+              items={sections.map(section => ({ id: section.id, label: model.gymnasticsPageText?.[`section:${encodeURIComponent(section.id)}:label`] ?? section.navLabel ?? section.label }))}
+              activeId={activeSection?.id}
+              onSelect={setActiveSectionId}
+              tabbed
+              ariaLabel="Meet information sections"
             >
-              {sections.map((section: any) => {
-                const isActive = activeSection?.id === section.id;
-                const navLabel =
-                  model.gymnasticsPageText?.[`section:${encodeURIComponent(section.id)}:label`] ??
-                  (section.navLabel || section.label);
-                return (
-                  <button
-                    key={section.id}
-                    ref={(node) => {
-                      tabButtonRefs.current[section.id] = node;
-                    }}
-                    onClick={() => setActiveSectionId(section.id)}
-                    className={`${focusRing} min-h-11 ${resolvedNavButtonClass} ${
-                      isActive ? activeTabClass : idleTabClass
-                    }`}
-                    role="tab"
-                    aria-selected={isActive}
-                    aria-label={navLabel}
-                    title={navLabel}
-                  >
-                    <span className="truncate">{navLabel}</span>
-                  </button>
-                );
-              })}
-            </div>
+              <div
+                ref={railRef}
+                className={navRailClass}
+                role="tablist"
+                aria-label="Meet information sections"
+                tabIndex={0}
+                data-mobile-horizontal-scroll
+              >
+                {sections.map((section: any) => {
+                  const isActive = activeSection?.id === section.id;
+                  const navLabel =
+                    model.gymnasticsPageText?.[`section:${encodeURIComponent(section.id)}:label`] ??
+                    (section.navLabel || section.label);
+                  return (
+                    <button
+                      key={section.id}
+                      ref={(node) => {
+                        tabButtonRefs.current[section.id] = node;
+                      }}
+                      onClick={() => setActiveSectionId(section.id)}
+                      className={`${focusRing} min-h-11 ${resolvedNavButtonClass} ${
+                        isActive ? activeTabClass : idleTabClass
+                      }`}
+                      role="tab"
+                      aria-selected={isActive}
+                      aria-label={navLabel}
+                      title={navLabel}
+                    >
+                      <span className="truncate">{navLabel}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </ResponsiveEventNavigation>
           </div>
         </div>
         <div

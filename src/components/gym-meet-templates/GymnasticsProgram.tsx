@@ -1,5 +1,6 @@
 "use client";
 
+import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import { useId, useRef, useState, type ReactNode } from "react";
 import type { GymMeetDiscoveryBlock, GymMeetDiscoverySection } from "./types";
 import { orderGymnasticsSections, type GymnasticsPresentation } from "./gymnasticsPresentations";
@@ -82,15 +83,12 @@ export default function GymnasticsProgram({
     ],
     sectionLayout,
   );
-  const tabs = eventInformationTabs(navigation, sectionLayout);
+  const availableTabs = eventInformationTabs(navigation, sectionLayout);
   const tabbed =
-    tabs.length > 1 &&
+    availableTabs.length > 1 &&
     sections.some((section) =>
       ["schedule-availability", "participating-clubs", "attractions"].includes(section.id),
     );
-  const availableTabs = builder
-    ? [...tabs, { id: "all", label: "All sections", sectionIds: navigation.map(({ id }) => id) }]
-    : tabs;
   const activeTab = availableTabs.find((tab) => tab.id === selectedTab) || availableTabs[0];
   // useId keeps links local even when multiple previews are mounted together.
   const sectionId = (id: string) => `${instanceId}-program-${id}`;
@@ -99,64 +97,89 @@ export default function GymnasticsProgram({
   return (
     <div className={styles.program} data-tabbed={tabbed || undefined}>
       {tabbed ? (
-        <div className={styles.tabs} role="tablist" aria-label="Event information">
-          {availableTabs.map((tab, index) => (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              id={`${instanceId}-tab-${tab.id}`}
-              aria-controls={`${instanceId}-tab-panel`}
-              aria-selected={activeTab?.id === tab.id}
-              tabIndex={activeTab?.id === tab.id ? 0 : -1}
-              ref={(node) => {
-                tabRefs.current[tab.id] = node;
-              }}
-              onClick={() => setSelectedTab(tab.id)}
-              onKeyDown={(event) => {
-                const next =
-                  event.key === "ArrowRight"
-                    ? (index + 1) % availableTabs.length
-                    : event.key === "ArrowLeft"
-                      ? (index + availableTabs.length - 1) % availableTabs.length
-                      : event.key === "Home"
-                        ? 0
-                        : event.key === "End"
-                          ? availableTabs.length - 1
-                          : -1;
-                if (next < 0) return;
-                event.preventDefault();
-                setSelectedTab(availableTabs[next].id);
-                tabRefs.current[availableTabs[next].id]?.focus();
-                tabRefs.current[availableTabs[next].id]?.scrollIntoView({
-                  block: "nearest",
-                  inline: "nearest",
-                });
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      ) : navigation.length > 1 && !builder ? (
-        <nav className={styles.navigation} aria-label="Meet information sections">
-          <span className={styles.indexLabel}>{pageText("programIndex", "Inside the meet")}</span>
-          <div className={styles.navLinks}>
-            {navigation.map((section, index) =>
-              pageText(
-                `section:${encodeURIComponent(section.id)}:label`,
-                section.navLabel || section.label,
-                `${section.label} navigation label`,
-                (text) => (
-                  <a href={`#${sectionId(section.id)}`} aria-label={text || section.label}>
-                    <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-                    {text || section.navLabel || section.label}
-                  </a>
-                ),
-              ),
-            )}
+        <ResponsiveEventNavigation
+          items={availableTabs.map(tab => ({ ...tab, panelId: `${instanceId}-tab-panel` }))}
+          activeId={activeTab?.id}
+          onSelect={setSelectedTab}
+          tabbed
+          ariaLabel="Event information"
+          background="var(--gym-paper)"
+          foreground="var(--gym-ink)"
+        >
+          <div className={styles.tabs} role="tablist" aria-label="Event information">
+            {availableTabs.map((tab, index) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                id={`${instanceId}-tab-${tab.id}`}
+                aria-controls={`${instanceId}-tab-panel`}
+                aria-label={tab.label}
+                aria-selected={activeTab?.id === tab.id}
+                tabIndex={activeTab?.id === tab.id ? 0 : -1}
+                ref={(node) => {
+                  tabRefs.current[tab.id] = node;
+                }}
+                onClick={() => setSelectedTab(tab.id)}
+                onKeyDown={(event) => {
+                  const next =
+                    event.key === "ArrowRight"
+                      ? (index + 1) % availableTabs.length
+                      : event.key === "ArrowLeft"
+                        ? (index + availableTabs.length - 1) % availableTabs.length
+                        : event.key === "Home"
+                          ? 0
+                          : event.key === "End"
+                            ? availableTabs.length - 1
+                            : -1;
+                  if (next < 0) return;
+                  event.preventDefault();
+                  setSelectedTab(availableTabs[next].id);
+                  tabRefs.current[availableTabs[next].id]?.focus();
+                  tabRefs.current[availableTabs[next].id]?.scrollIntoView({
+                    block: "nearest",
+                    inline: "nearest",
+                  });
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
-        </nav>
+        </ResponsiveEventNavigation>
+      ) : navigation.length > 1 && !builder ? (
+        <ResponsiveEventNavigation
+          items={navigation.map(section => ({ id: section.id, label: pageTextOverrides?.[`section:${encodeURIComponent(section.id)}:label`] ?? section.navLabel ?? section.label, href: `#${sectionId(section.id)}` }))}
+          ariaLabel="Meet information sections"
+          background="var(--gym-paper)"
+          foreground="var(--gym-ink)"
+          renderItem={(item, control) => {
+            const source = navigation.find(section => section.id === item.id);
+            return pageText(
+              `section:${encodeURIComponent(item.id)}:label`, source?.navLabel || source?.label || item.label,
+              `${source?.label || item.label} navigation label`, () => control,
+            );
+          }}
+        >
+          <nav className={styles.navigation} aria-label="Meet information sections">
+            <span className={styles.indexLabel}>{pageText("programIndex", "Inside the meet")}</span>
+            <div className={styles.navLinks}>
+              {navigation.map((section, index) =>
+                pageText(
+                  `section:${encodeURIComponent(section.id)}:label`,
+                  section.navLabel || section.label,
+                  `${section.label} navigation label`,
+                  (text) => (
+                    <a href={`#${sectionId(section.id)}`} aria-label={text || section.label}>
+                      <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                      {text || section.navLabel || section.label}
+                    </a>
+                  ),
+                ),
+              )}
+            </div>
+          </nav>
+        </ResponsiveEventNavigation>
       ) : null}
       <ProgramPanel
         tabbed={tabbed}
@@ -167,7 +190,7 @@ export default function GymnasticsProgram({
           className={styles.chapters}
           cellClassName={styles.sectionColumn}
           layout={sectionLayout}
-          visibleSectionIds={tabbed && activeTab?.id !== "all" ? activeTab?.sectionIds : undefined}
+          visibleSectionIds={tabbed ? activeTab?.sectionIds : undefined}
           sections={[
             ...ordered.map((section, index) => ({
               id: section.id,

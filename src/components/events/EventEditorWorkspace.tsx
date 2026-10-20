@@ -1,6 +1,7 @@
 "use client";
 
-import { Eye, Pencil, PanelsTopLeft, ListPlus, X } from "lucide-react";
+import { Eye, Pencil, PanelsTopLeft, ListPlus, Link2, X } from "lucide-react";
+import { EventUrlEditor } from "./EventUrlEditor";
 import { EventEditorMenuCard, EventEditorSection } from "./EventEditorFields";
 import { EventPageCompositionProvider } from "./EventPageCompositionContext";
 import {
@@ -56,14 +57,15 @@ export function EventEditorActions({ editor }: { editor: EventPageEditorSession 
   );
 }
 
-type EventEditorTool = "sections" | "layout";
+type EventEditorTool = "sections" | "layout" | "url";
 type EventEditorTools = {
   openTool: (tool: EventEditorTool) => void;
   layout?: string;
+  canEditUrl?: boolean;
 };
 const EventEditorToolsContext = createContext<EventEditorTools | null>(null);
 
-/** Lets an editor place Page sections and Layout inside its own menu instead of the default cards. */
+/** Lets an editor place the shared settings tools inside its own menu instead of the default cards. */
 export function EventEditorToolsConsumer({
   children,
 }: {
@@ -87,6 +89,7 @@ export default function EventEditorWorkspace({
   artwork,
   title,
   compositionMenu = "cards",
+  customUrlMenu = true,
   pageEditing = false,
   viewLabels,
 }: {
@@ -104,6 +107,8 @@ export default function EventEditorWorkspace({
   title?: string;
   /** "inline" hides the default cards; the controls render them through EventEditorToolsConsumer. */
   compositionMenu?: "cards" | "inline";
+  /** Editors with an existing URL entry keep that entry instead of the shared card. */
+  customUrlMenu?: boolean;
   /** The canvas stays editable when its settings panel is hidden. */
   pageEditing?: boolean;
   viewLabels?: { page: string; controls: string };
@@ -242,15 +247,20 @@ export default function EventEditorWorkspace({
                 />
               </div>
             )}
-            {tool && editor.setComposition && (
+            {customUrlMenu && editor.urlEditor && !tool && compositionMenu === "cards" && (
+              <EventEditorMenuCard title="Custom URL" icon={<Link2 size={20} />} desc="Choose your shareable web address." onClick={() => setTool("url")} />
+            )}
+            {tool && (tool === "url" || editor.setComposition) && (
               <EventEditorSection
-                title={tool === "layout" ? "Layout" : "Page sections"}
+                title={tool === "url" ? "Custom URL" : tool === "layout" ? "Layout" : "Page sections"}
                 onBack={() => setTool(null)}
               >
-                {tool === "layout" ? (
+                {tool === "url" ? (
+                  <EventUrlEditor eventId={editor.eventId} historyClient={editor.urlEditor?.historyClient} onUpdated={editor.urlEditor?.onUpdated} onBusyChange={editor.urlEditor?.onBusyChange} disabled={editor.busy} />
+                ) : tool === "layout" ? (
                   <EventPageLayoutPicker
                     value={editor.composition}
-                    onChange={editor.setComposition}
+                    onChange={editor.setComposition!}
                     artwork={artwork}
                     title={title}
                   />
@@ -263,7 +273,7 @@ export default function EventEditorWorkspace({
               <EventEditorToolsContext.Provider
                 value={
                   editor.setComposition && sectionEditors
-                    ? { openTool: setTool, layout: editor.composition?.layout }
+                    ? { openTool: setTool, layout: editor.composition?.layout, canEditUrl: Boolean(editor.urlEditor) }
                     : null
                 }
               >

@@ -1,3 +1,4 @@
+import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import { useEffect, useState } from "react";
@@ -85,32 +86,34 @@ export default function CinematicWedding({ theme, event }: Props) {
       style={{ fontFamily: theme.fonts.body }}
     >
       {/* Sticky Nav */}
-      <nav className="sticky top-0 w-full z-50 px-8 py-6 flex justify-between items-center bg-black/60 backdrop-blur">
-        <div className="text-xs font-bold tracking-[0.3em] uppercase text-gray-200">
-          The Premiere
-        </div>
-        <div className="hidden md:flex gap-8 text-xs font-bold tracking-[0.2em] uppercase text-gray-200">
-          <a href="#plot" className="hover:opacity-80 transition-opacity">
-            The Plot
-          </a>
-          <a href="#set" className="hover:opacity-80 transition-opacity">
-            The Set
-          </a>
-          {event.party && event.party.length > 0 && (
-            <a href="#cast" className="hover:opacity-80 transition-opacity">
-              The Cast
+      <ResponsiveEventNavigation items={[{ id: "story", label: "The Plot", href: "#plot" }, { id: "location", label: "The Set", href: "#set" }, ...(event.party?.length ? [{ id: "party", label: "The Cast", href: "#cast" }] : []), ...(event.rsvpEnabled ? [{ id: "rsvp", label: "Ticket Info", href: rsvpUrl }] : [])]} background="#161616" foreground="#ffffff">
+        <nav className="sticky top-0 w-full z-50 px-8 py-6 flex justify-between items-center bg-black/60 backdrop-blur">
+          <div className="text-xs font-bold tracking-[0.3em] uppercase text-gray-200">
+            The Premiere
+          </div>
+          <div className="hidden md:flex gap-8 text-xs font-bold tracking-[0.2em] uppercase text-gray-200">
+            <a href="#plot" className="hover:opacity-80 transition-opacity">
+              The Plot
+            </a>
+            <a href="#set" className="hover:opacity-80 transition-opacity">
+              The Set
+            </a>
+            {event.party && event.party.length > 0 && (
+              <a href="#cast" className="hover:opacity-80 transition-opacity">
+                The Cast
+              </a>
+            )}
+          </div>
+          {event.rsvpEnabled && (
+            <a
+              href={rsvpUrl}
+              className="border border-white/70 px-6 py-2 text-xs font-bold tracking-[0.2em] uppercase hover:bg-white hover:text-black transition-all text-gray-100"
+            >
+              Ticket Info
             </a>
           )}
-        </div>
-        {event.rsvpEnabled && (
-          <a
-            href={rsvpUrl}
-            className="border border-white/70 px-6 py-2 text-xs font-bold tracking-[0.2em] uppercase hover:bg-white hover:text-black transition-all text-gray-100"
-          >
-            Ticket Info
-          </a>
-        )}
-      </nav>
+        </nav>
+      </ResponsiveEventNavigation>
 
       {/* Hero */}
       <header className="h-screen relative flex flex-col justify-between p-8 md:p-12 overflow-hidden">

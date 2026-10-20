@@ -13,6 +13,7 @@ export type EventEditorRecord = {
   title?: string;
   public_slug?: string | null;
   revision?: string;
+  permissions?: { role?: "owner" | "cohost" | null; canManageCollaborators?: boolean };
   data: Record<string, unknown>;
 };
 export type EventEditorHistoryFetch = (input: string, options?: RequestInit) => Promise<Response>;

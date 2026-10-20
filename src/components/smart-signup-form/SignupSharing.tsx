@@ -3,6 +3,8 @@ import { Check, Copy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 import EventAccessDialog from "@/components/EventAccessDialog";
+import EventUrlDialog from "@/components/events/EventUrlEditor";
+import { useTemplateEditor } from "@/components/templates/TemplateEditorContext";
 import { signupAccessInstructions } from "@/lib/signup-access";
 
 type Recipient = { id: string; name: string; email: string; status: "pending" | "accepted" };
@@ -24,6 +26,7 @@ export default function SignupSharing({
   canManageCollaborators?: boolean;
   eventTitle?: string;
 }) {
+  const editor = useTemplateEditor();
   const linkId = useId();
   const [link, setLink] = useState("");
   const [copied, setCopied] = useState(false);
@@ -34,6 +37,8 @@ export default function SignupSharing({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [open, setOpen] = useState(false);
+  const [updatedPublicPath, setUpdatedPublicPath] = useState("");
+  const resolvedPublicPath = updatedPublicPath || publicPath || `/smart-signup-form/${encodeURIComponent(eventId || "")}`;
   const load = async () => {
     if (!eventId || !published) return;
     setLoading(true);
@@ -56,8 +61,8 @@ export default function SignupSharing({
     }
   };
   useEffect(() => {
-    setLink(published && eventId ? window.location.origin + (publicPath || `/smart-signup-form/${encodeURIComponent(eventId)}`) : "");
-  }, [eventId, publicPath, published]);
+    setLink(published && eventId ? window.location.origin + resolvedPublicPath : "");
+  }, [eventId, resolvedPublicPath, published]);
   useEffect(() => {
     if (open) void load();
   }, [open, eventId]);
@@ -67,6 +72,11 @@ export default function SignupSharing({
       className="rounded-xl border border-[var(--signup-border)] bg-[var(--signup-surface)] p-4 space-y-3"
     >
       <h3 className="font-semibold">Share your signup</h3>
+      {canManageCollaborators && <EventUrlDialog eventId={eventId} historyClient={editor?.historyClient} onBusyChange={editor?.publicUrlBusyChanged} onUpdated={update => {
+        editor?.publicUrlUpdated?.(update);
+        setUpdatedPublicPath(update.publicPath);
+        setCopied(false);
+      }} />}
       {canManageCollaborators && (eventId ? (
         <EventAccessDialog eventId={eventId} eventTitle={eventTitle} resourceType="signup" className={`${actionClass} inline-flex items-center gap-2`} />
       ) : <p className="text-sm">Save a draft or publish to invite co-hosts.</p>)}
@@ -112,7 +122,7 @@ export default function SignupSharing({
         </div>
       </div>
       <div className="flex flex-wrap gap-3">
-        <a href={`${publicPath || `/smart-signup-form/${encodeURIComponent(eventId)}`}#signup-host-dashboard`} className={`${actionClass} inline-flex items-center`}>
+        <a href={`${resolvedPublicPath}#signup-host-dashboard`} className={`${actionClass} inline-flex items-center`}>
           View signups
         </a>
         {requiresInvitation && canManageCollaborators && (

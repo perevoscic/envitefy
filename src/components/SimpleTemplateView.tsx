@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
 import { activeImportedTheme, importedSportsTheme, importedThemeStyle, importedArtworkSrc } from "@/lib/imported-event-design";
 import { IMPORTED_THEME_FONTS } from "@/lib/imported-event-theme";
@@ -4824,40 +4825,46 @@ export default function SimpleTemplateView({
                     </div>
                   )}
                   {navItems.length > 1 && !isLocked && (
-                    <nav className="mt-4 flex flex-wrap items-center gap-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {navItems.map((item) => {
-                          const isActive = activeSection === item.id;
-                          return (
-                            <a
-                              key={item.id}
-                              href={`#${item.id}`}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                const el = document.getElementById(item.id);
-                                if (el) {
-                                  el.scrollIntoView({ behavior: "smooth" });
-                                  window.history.replaceState(null, "", `#${item.id}`);
-                                  setActiveSection(item.id);
-                                }
-                              }}
-                              className={`rounded-full border px-3 py-1 text-sm font-semibold transition ${
-                                isActive
-                                  ? neutralUsesPalette
-                                    ? "bg-[color:var(--color-nav-active-bg,#F8FAFC)] text-[color:var(--color-nav-active,#2D1B4E)] border-[color:var(--accent,#D4AF37)] shadow"
-                                    : "bg-white/85 text-slate-900 border-white shadow"
-                                  : neutralUsesPalette
-                                    ? "bg-white/70 text-[color:var(--color-nav-text,#334155)] border-[color:var(--border,#E2E8F0)] hover:bg-white hover:border-[color:var(--color-border-hover,#D4AF37)]"
-                                    : "bg-white/10 text-inherit border-white/20 hover:bg-white/20"
-                              }`}
-                              style={headingStyle}
-                            >
-                              {item.label}
-                            </a>
-                          );
-                        })}
-                      </div>
-                    </nav>
+                    <ResponsiveEventNavigation
+                      items={navItems.map(item => ({ ...item, href: `#${item.id}` }))}
+                      activeId={activeSection}
+                      onSelect={setActiveSection}
+                    >
+                      <nav className="mt-4 flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {navItems.map((item) => {
+                            const isActive = activeSection === item.id;
+                            return (
+                              <a
+                                key={item.id}
+                                href={`#${item.id}`}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  const el = document.getElementById(item.id);
+                                  if (el) {
+                                    el.scrollIntoView({ behavior: "smooth" });
+                                    window.history.replaceState(null, "", `#${item.id}`);
+                                    setActiveSection(item.id);
+                                  }
+                                }}
+                                className={`rounded-full border px-3 py-1 text-sm font-semibold transition ${
+                                  isActive
+                                    ? neutralUsesPalette
+                                      ? "bg-[color:var(--color-nav-active-bg,#F8FAFC)] text-[color:var(--color-nav-active,#2D1B4E)] border-[color:var(--accent,#D4AF37)] shadow"
+                                      : "bg-white/85 text-slate-900 border-white shadow"
+                                    : neutralUsesPalette
+                                      ? "bg-white/70 text-[color:var(--color-nav-text,#334155)] border-[color:var(--border,#E2E8F0)] hover:bg-white hover:border-[color:var(--color-border-hover,#D4AF37)]"
+                                      : "bg-white/10 text-inherit border-white/20 hover:bg-white/20"
+                                }`}
+                                style={headingStyle}
+                              >
+                                {item.label}
+                              </a>
+                            );
+                          })}
+                        </div>
+                      </nav>
+                    </ResponsiveEventNavigation>
                   )}
                   {renderHeaderWidget()}
                 </div>

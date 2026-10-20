@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import { EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout, EventEditorInput as InputGroup } from "@/components/events/EventEditorFields";
 import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
 import { useEventPageEditor } from "@/components/events/useEventPageEditor";
@@ -3048,29 +3049,34 @@ const renderDesignEditor = () => (
                   NAV_VISIBILITY_CHECKS[item](data)
                 );
                 return (
-                  <nav
-                    className={`px-6 md:px-8 py-4 flex flex-wrap gap-x-6 gap-y-2 ${currentSize.nav} uppercase tracking-widest font-semibold border-b border-white/5 ${currentTheme.accent}`}
+                  <ResponsiveEventNavigation
+                    items={items.map(label => ({ id: label, label, href: `#${NAV_SCROLL_TARGETS[label]}` }))}
+                    onSelect={label => setActiveView(NAV_EDIT_TARGETS[label as (typeof NAV_ITEMS)[number]])}
                   >
-                    {items.map((item) => (
-                      <span
-                        key={item}
-                        className="cursor-pointer hover:underline decoration-2 underline-offset-4 opacity-90 hover:opacity-100"
-                        onClick={() => {
-                          const editTarget = NAV_EDIT_TARGETS[item];
-                          if (editTarget) setActiveView(editTarget);
-                          const anchor = NAV_SCROLL_TARGETS[item];
-                          if (anchor && typeof document !== "undefined") {
-                            document.getElementById(anchor)?.scrollIntoView({
-                              behavior: "smooth",
-                              block: "start",
-                            });
-                          }
-                        }}
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </nav>
+                    <nav
+                      className={`px-6 md:px-8 py-4 flex flex-wrap gap-x-6 gap-y-2 ${currentSize.nav} uppercase tracking-widest font-semibold border-b border-white/5 ${currentTheme.accent}`}
+                    >
+                      {items.map((item) => (
+                        <span
+                          key={item}
+                          className="cursor-pointer hover:underline decoration-2 underline-offset-4 opacity-90 hover:opacity-100"
+                          onClick={() => {
+                            const editTarget = NAV_EDIT_TARGETS[item];
+                            if (editTarget) setActiveView(editTarget);
+                            const anchor = NAV_SCROLL_TARGETS[item];
+                            if (anchor && typeof document !== "undefined") {
+                              document.getElementById(anchor)?.scrollIntoView({
+                                behavior: "smooth",
+                                block: "start",
+                              });
+                            }
+                          }}
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </nav>
+                  </ResponsiveEventNavigation>
                 );
               })()}
 

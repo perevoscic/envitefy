@@ -6965,6 +6965,17 @@ function buildSelectedParseEvidenceCache(
   );
 }
 
+function buildVisitorInformationPrompt(): string {
+  return [
+    "## Visitor information organization",
+    "Keep Venue & Parking, Hotels and Explore as three separate public information groups. Never combine them into one Visit summary.",
+    "- Venue & Parking: use `venue` and `address` for the event location; `meetDetails.doorsOpen`, `meetDetails.arrivalGuidance` and `meetDetails.facilityLayout` for arrival/facility facts; and the dedicated `logistics` parking, trafficAlerts, rideShare, accessibility, parkingLinks and parkingPricingLinks fields for arrival logistics.",
+    "- Hotels: put accommodation names, published rates, room blocks, booking deadlines and reservation instructions in `logistics.hotel`, separate from venue/parking text. Preserve complete source reservation URLs, including query parameters and fragments, in the existing link fields.",
+    "- Explore: keep source-listed local attractions and things to do separate from hotels and arrival logistics. Preserve their links in `links` and otherwise unmatched attraction details in `unmappedFacts` with category `attractions`; do not put them in `logistics.hotel` or parking fields.",
+    "- Extract only source-supported information. Leave absent fields empty; never invent hotels, rates, booking deadlines, attractions or travel guidance to fill a group. The renderer shows only populated, visible groups.",
+  ].join("\n");
+}
+
 function buildTargetedParsePrompt(
   profile: ParsePromptProfile,
   classification: ParseClassification,
@@ -7009,6 +7020,8 @@ function buildTargetedParsePrompt(
     "- Keep parking maps/rates in parking link fields, not generic notes.",
     "- Use `unmappedFacts` only for grounded leftovers that clearly do not fit elsewhere.",
     "- Leave unrelated fields empty instead of stretching evidence.",
+    "",
+    buildVisitorInformationPrompt(),
     "",
     ...focusByProfile[profile],
     "",
@@ -7254,6 +7267,8 @@ function buildProfessionalParsePrompt(
     "- Do not prefix leftover facts with category labels inside announcement text (examples to avoid: `venue_contact ...`, `marketing ...`, `document_version ...`).",
     "- For `communications.announcements`, use a short `title` when obvious and keep the `body` as the explanatory sentence only.",
     "- Never repeat the title words at the beginning of `communications.announcements[].body`.",
+    "",
+    buildVisitorInformationPrompt(),
     "",
     "## No Fact Left Behind",
     "Any fact that does not map to a primary field must be placed in one of:",

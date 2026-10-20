@@ -211,3 +211,52 @@ test("explicit draft saves retain a chosen URL without changing the published ad
     global.window = originalWindow;
   }
 });
+
+test("the shared URL save validates exact names and returns each product's canonical path and current content", async () => {
+  let authenticated = true;
+  let owner = true;
+  let output = "event_page";
+  const writes = [];
+  const id = randomUUID();
+  const endpoint = loadSource("src/app/api/events/[id]/public-slug/route.ts", {
+    "next-auth": { getServerSession: async () => ({}) },
+    "@/lib/auth": { authOptions: {}, resolveSessionUserId: async () => authenticated ? "owner" : null },
+    "@/lib/event-collaboration": { eventRevision: () => "committed-revision" },
+    "@/lib/history-cache": { invalidateUserHistory() {} },
+    "@/lib/dashboard-cache": { invalidateUserDashboard() {} },
+    "@/lib/db": {
+      getEventHistoryById: async () => ({ id, user_id: owner ? "owner" : "other", data: { primaryOutput: output } }),
+      listShareRecipientUserIdsForEvent: async () => [],
+      updateEventHistoryPublicSlug: async params => {
+        writes.push(params);
+        return { id, title: "Saved title", public_slug: params.publicSlug, data: { primaryOutput: output, publicSlug: params.publicSlug, status: "draft", preserved: "current content" } };
+      },
+    },
+  });
+  const save = slug => endpoint.PATCH(new Request("https://envitefy.com/api/events/fixture/public-slug", {
+    method: "PATCH", body: JSON.stringify({ publicSlug: slug, expectedRevision: "loaded-revision" }),
+  }), { params: Promise.resolve({ id }) });
+  authenticated = false;
+  assert.equal((await save("chosen-name")).status, 401);
+  authenticated = true;
+  owner = false;
+  assert.equal((await save("chosen-name")).status, 403);
+  owner = true;
+  for (const invalid of ["football", "a".repeat(97), "https://example.com/name", "name?x=1", ""]) {
+    assert.equal((await save(invalid)).status, 400, invalid);
+  }
+  assert.equal(writes.length, 0);
+  for (const [product, prefix] of [["event_page", "event"], ["live_card", "card"], ["digital_flyer", "card"], ["signup_form", "smart-signup-form"]]) {
+    output = product;
+    const response = await save("My Chosen Name");
+    const result = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(result.publicSlug, "my-chosen-name");
+    assert.equal(result.publicPath, `/${prefix}/my-chosen-name`);
+    assert.equal(result.revision, "committed-revision");
+    assert.equal(result.data.preserved, "current content", "the editor cache receives the committed record for subsequent saves");
+    assert.equal(result.data.status, "draft");
+    assert.equal(writes.at(-1).data, undefined, "URL saves never submit another definition or event content");
+    assert.equal(writes.at(-1).expectedRevision, "loaded-revision");
+  }
+});

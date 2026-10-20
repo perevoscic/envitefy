@@ -38,7 +38,7 @@ const {
 } = require('../../lib/gymnastics-title-font.ts');
 const noAction = () => {};
 
-test('travel presentation retains source photos, booking parameters and a compact attributed map', () => {
+test('travel presentation omits source photos and retains place names, booking parameters and a compact attributed map', () => {
   const Content = require('./GymMeetDiscoveryContent.tsx').default;
   const url = 'https://booking.example.org/rooms?group=MEET&key=AbC#reserve';
   const model = { discovery: { sections: [{ id: 'hotels', label: 'Visit', hasContent: true, blocks: [
@@ -46,17 +46,17 @@ test('travel presentation retains source photos, booking parameters and a compac
       { key: 'one', label: 'River Hotel', imageUrl: 'https://cdn.example.org/river.webp', presentation: 'hotel', highlights: [{ label: 'Nightly rate', value: '$194' }], details: [{ label: 'Address', value: '100 River Road' }], action: { label: 'Book Hotel', url } },
       { key: 'two', label: 'No Photo Inn', presentation: 'hotel', body: 'Breakfast is included.', meta: 'Five minutes from the venue', action: { label: 'Book Hotel', url } },
     ] },
-    { id: 'attraction-cards', type: 'card-grid', cards: [{ key: 'park', label: 'River Park', imageUrl: 'javascript:alert(1)', body: 'Walk beside the river.', action: { label: 'Learn more', url: 'https://park.example.org/' } }] },
+    { id: 'attraction-cards', type: 'card-grid', cards: [{ key: 'park', label: 'River Park', imageUrl: 'https://cdn.example.org/park.webp', body: 'Walk beside the river.', action: { label: 'Learn more', url: 'https://park.example.org/' } }] },
     { id: 'arrival', type: 'map', title: 'Arrival Map', address: '100 River Road' },
   ] }] } };
   const html = renderToStaticMarkup(React.createElement(Content, { model, variant: { sectionClass: 'panel', summaryCardClass: 'detailCard', secondaryButtonClass: 'button' } }));
-  assert.ok(html.includes('https://cdn.example.org/river.webp'));
-  assert.ok(html.includes('loading="lazy"'));
+  assert.ok(!html.includes('https://cdn.example.org/river.webp'));
+  assert.ok(!html.includes('https://cdn.example.org/park.webp'));
   assert.ok(html.includes(escaped(url)));
-  assert.ok(html.includes('No Photo Inn') && html.includes('100 River Road') && html.includes('$194'));
+  assert.ok(html.includes('River Hotel') && html.includes('No Photo Inn') && html.includes('100 River Road') && html.includes('$194'));
   assert.ok(html.includes('Breakfast is included.') && html.includes('Five minutes from the venue'));
   assert.ok(html.includes('River Park') && html.includes('Walk beside the river.'));
-  assert.ok(!html.includes('javascript:'));
+  assert.ok(html.includes('https://park.example.org/'));
   assert.equal((html.match(/data-place-card="true"/g) || []).length, 3);
   assert.ok(html.includes('width=600&amp;height=260'));
   assert.ok(html.includes('Directions'));
@@ -161,15 +161,18 @@ test('website import coverage distinguishes not published from failed without cl
 test('website import pages share grouped tabs across every gymnastics design', () => {
   for (const design of designs) {
     const eventData = { title: 'Community club meet', createdVia: 'meet-discovery-v2', pageTemplateId: design.id,
-      venue: 'Riverside Sports Centre', date: '2027-05-14', discoverySource: { websiteImport: websiteImportFixture() } };
+      venue: 'Riverside Sports Centre', date: '2027-05-14',
+      advancedSections: { logistics: { hotelInfo: 'River Hotel offers a $150 group rate. Reserve by April 20.', hotels: [{ name: 'River Hotel', bookingUrl: 'https://hotel.test/book?group=MEET#reserve' }] } },
+      discoverySource: { websiteImport: websiteImportFixture() } };
     const model = normalizeGymMeetEventData({ eventTitle: eventData.title, eventData, navItems: [], rosterAthletes: [] });
     const html = renderToStaticMarkup(React.createElement(Renderer, { ...props(design), model }));
     assert.ok(html.includes('role="tablist"'), design.id);
-    for (const label of ['Overview', 'Schedule', 'Teams', 'Visit'])
-      assert.ok(html.includes(`>${label}</button>`), `${design.id}: ${label}`);
+    for (const label of ['Overview', 'Schedule', 'Teams', 'Venue & Parking', 'Hotels', 'Explore'])
+      assert.ok(html.includes(`aria-label="${escaped(label)}"`), `${design.id}: ${label}`);
+    assert.ok(!html.includes('aria-label="Visit"'), `${design.id}: no combined Visit tab`);
     assert.ok(html.includes('role="tabpanel"'), design.id);
     assert.ok(html.includes('hidden="" style="display:none"'), `${design.id}: inactive content is hidden`);
-    assert.ok(!html.includes('>All sections</button>'), `${design.id}: editing-only control stays private`);
+    assert.ok(!html.includes('aria-label="All sections"'), `${design.id}: editing-only control stays private`);
   }
 });
 

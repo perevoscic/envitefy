@@ -1,3 +1,4 @@
+import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import type { CSSProperties, ReactNode } from "react";
 import EventPageSections from "@/components/events/EventPageSections";
 import styles from "./atelier-wedding-layouts.module.css";
@@ -523,14 +524,20 @@ export default function AtelierWeddingLayout({ layout, theme, event }: Props) {
   } as CSSProperties;
   return (
     <div className={styles.website} data-atelier-layout={layout} style={themeStyle}>
-      <nav className={styles.nav} aria-label="Wedding website">
-        <span className={styles.navLabel}>Our wedding</span>
-        {event.story && <a href="#atelier-story">Our story</a>}
-        {!!event.schedule?.length && <a href="#atelier-schedule">The day</a>}
-        {!!(event.photos?.length || event.gallery?.length) && <a href="#atelier-photos">Photos</a>}
-        {(event.travel || buildWeddingLocationHref(event)) && <a href="#atelier-travel">Travel</a>}
-        {event.rsvpEnabled && <a href="#rsvp">RSVP</a>}
-      </nav>
+      <ResponsiveEventNavigation
+        items={[...(event.story ? [{ id: "story", label: "Our story", href: "#atelier-story" }] : []), ...(event.schedule?.length ? [{ id: "schedule", label: "The day", href: "#atelier-schedule" }] : []), ...(event.photos?.length || event.gallery?.length ? [{ id: "photos", label: "Photos", href: "#atelier-photos" }] : []), ...(event.travel || buildWeddingLocationHref(event) ? [{ id: "travel", label: "Travel", href: "#atelier-travel" }] : []), ...(event.rsvpEnabled ? [{ id: "rsvp", label: "RSVP", href: "#rsvp" }] : [])]}
+        background={theme.colors.primary}
+        foreground={theme.colors.secondary}
+      >
+        <nav className={styles.nav} aria-label="Wedding website">
+          <span className={styles.navLabel}>Our wedding</span>
+          {event.story && <a href="#atelier-story">Our story</a>}
+          {!!event.schedule?.length && <a href="#atelier-schedule">The day</a>}
+          {!!(event.photos?.length || event.gallery?.length) && <a href="#atelier-photos">Photos</a>}
+          {(event.travel || buildWeddingLocationHref(event)) && <a href="#atelier-travel">Travel</a>}
+          {event.rsvpEnabled && <a href="#rsvp">RSVP</a>}
+        </nav>
+      </ResponsiveEventNavigation>
       <Hero layout={layout} event={event} image={image} />
       <Details layout={layout} event={event} />
       <Footer theme={theme} event={event} backgroundColor={theme.colors.primary} />

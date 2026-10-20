@@ -18,6 +18,7 @@ import AuthModal from "@/components/auth/AuthModal";
 import SignupEditorToolbar from "@/components/smart-signup-form/SignupEditorToolbar";
 import { useUnsavedProgress } from "@/components/UnsavedProgressProvider";
 import { useEventHistoryClient } from "@/lib/event-history-client";
+import type { EventUrlUpdate } from "@/components/events/EventUrlEditor";
 import { isEventDraft } from "@/lib/event-draft-access";
 import { buildOwnerEventEditHref, ownerEventEditorReturnHref } from "@/lib/event-preview-viewport";
 import { getFamilyTemplateDesign } from "@/lib/family-template-designs";
@@ -73,6 +74,9 @@ export type TemplateEditorRuntime = {
   eventId?: string;
   /** Saved import metadata supplements the snapshot without replacing editable fields. */
   eventData?: Record<string, unknown>;
+  historyClient?: ReturnType<typeof useEventHistoryClient>;
+  publicUrlUpdated?: (update: EventUrlUpdate) => void;
+  publicUrlBusyChanged?: (busy: boolean) => void;
   leave?: () => void;
   duplicateSignup?: (form: SignupForm) => void;
   record: (key: string, value: DraftValue) => void;
@@ -644,6 +648,16 @@ export default function TemplateEditorProvider({
       canManageCollaborators,
       eventId: currentEventId,
       eventData,
+      historyClient: eventHistoryClient,
+      publicUrlBusyChanged(nextBusy) {
+        busyRef.current = nextBusy;
+        setBusy(nextBusy);
+      },
+      publicUrlUpdated(update) {
+        if (draft.current?.eventId !== update.id) return;
+        draft.current.eventRevision = update.revision;
+        setEventData(previous => ({ ...previous, publicSlug: update.publicSlug }));
+      },
       leave,
       duplicateSignup(form) {
         progress.requestLeave(() => {
@@ -668,7 +682,7 @@ export default function TemplateEditorProvider({
         return url;
       },
     }),
-    [category, templateId, initial, eventData, authenticated, published, dirty, canManageCollaborators, currentEventId, record, requestSave, persist, leave, progress, router],
+    [category, templateId, initial, eventData, eventHistoryClient, authenticated, published, dirty, canManageCollaborators, currentEventId, record, requestSave, persist, leave, progress, router],
   );
 
   const returnUrl = `${templateEditorHref(category, templateId)}?${editId && !draft.current ? `edit=${encodeURIComponent(editId)}` : `draft=${draft.current?.id || ""}`}`;

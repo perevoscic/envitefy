@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import EventPageSections from "@/components/events/EventPageSections";
 
 import { EventEditorInput as InputGroup, EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout } from "@/components/events/EventEditorFields";
@@ -1278,40 +1279,46 @@ const rawTextClass = currentTheme?.text || "";
                       </div>
                     )}
                     {navItems.length > 1 && (
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {navItems.map((item) => {
-                          const isActive = activeSection === item.id;
-                          return (
-                            <a
-                              key={item.id}
-                              href={`#${item.id}`}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                const el = document.getElementById(item.id);
-                                if (el) {
-                                  el.scrollIntoView({
-                                    behavior: "smooth",
-                                    block: "start",
-                                  });
-                                  setActiveSection(item.id);
-                                  window.history.replaceState(
-                                    null,
-                                    "",
-                                    `#${item.id}`
-                                  );
-                                }
-                              }}
-                              className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold transition border ${
-                                isActive
-                                  ? "bg-white/85 text-slate-900 border-white shadow"
-                                  : "bg-white/10 text-inherit border-white/20 hover:bg-white/20"
-                              }`}
-                            >
-                              {item.label}
-                            </a>
-                          );
-                        })}
-                      </div>
+                      <ResponsiveEventNavigation
+                        items={navItems.map(item => ({ ...item, href: `#${item.id}` }))}
+                        activeId={activeSection}
+                        onSelect={setActiveSection}
+                      >
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {navItems.map((item) => {
+                            const isActive = activeSection === item.id;
+                            return (
+                              <a
+                                key={item.id}
+                                href={`#${item.id}`}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  const el = document.getElementById(item.id);
+                                  if (el) {
+                                    el.scrollIntoView({
+                                      behavior: "smooth",
+                                      block: "start",
+                                    });
+                                    setActiveSection(item.id);
+                                    window.history.replaceState(
+                                      null,
+                                      "",
+                                      `#${item.id}`
+                                    );
+                                  }
+                                }}
+                                className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold transition border ${
+                                  isActive
+                                    ? "bg-white/85 text-slate-900 border-white shadow"
+                                    : "bg-white/10 text-inherit border-white/20 hover:bg-white/20"
+                                }`}
+                              >
+                                {item.label}
+                              </a>
+                            );
+                          })}
+                        </div>
+                      </ResponsiveEventNavigation>
                     )}
                   </div>
                 </div>

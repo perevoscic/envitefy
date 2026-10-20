@@ -1,5 +1,6 @@
 "use client";
 
+import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import {
   CalendarDays,
   ExternalLink,
@@ -210,7 +211,7 @@ export default function ConciergeEventWebsite({
             <button
               type="button"
               onClick={() => setMenuOpen((value) => !value)}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-800 md:hidden"
+              className={`${navItems.length > 3 ? "hidden sm:inline-flex" : "inline-flex"} h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-800 md:hidden`}
               aria-label="Toggle menu"
               aria-expanded={menuOpen}
             >
@@ -218,15 +219,19 @@ export default function ConciergeEventWebsite({
             </button>
           </div>
         </div>
-        {menuOpen ? (
-          <nav className="grid gap-1 border-t border-slate-200 bg-white px-4 py-3 md:hidden">
-            {navItems.map((item) => (
-              <NavLink key={item.href} href={item.href} onClick={() => setMenuOpen(false)}>
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
-        ) : null}
+        <ResponsiveEventNavigation
+          items={navItems.map(item => ({ ...item, id: item.href.slice(1) }))}
+        >
+          {menuOpen ? (
+            <nav className="grid gap-1 border-t border-slate-200 bg-white px-4 py-3 md:hidden">
+              {navItems.map((item) => (
+                <NavLink key={item.href} href={item.href} onClick={() => setMenuOpen(false)}>
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
+          ) : null}
+        </ResponsiveEventNavigation>
       </header>
 
       <section id="top" data-event-page-hero className="relative overflow-hidden bg-slate-950">

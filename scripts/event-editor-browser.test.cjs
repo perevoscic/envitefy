@@ -108,6 +108,8 @@ test("one Event Page editor protects saves and navigation across creation modes 
         processingStage: gymCoreCompleted ? "review_ready" : "enrich",
       }) });
     }
+    if (url.pathname === "/api/events/public-slug")
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ available: true, slug: url.searchParams.get("slug") }) });
     if (/^\/api\/events\/[^/]+\/public-slug$/.test(url.pathname)) {
       const id = url.pathname.split("/")[3];
       const previous = records.get(id);
@@ -118,14 +120,14 @@ test("one Event Page editor protects saves and navigation across creation modes 
       previous.public_slug = body.publicSlug;
       previous.data.publicSlug = body.publicSlug;
       previous.revision = "custom-link-saved";
-      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ id, revision: previous.revision, publicSlug: body.publicSlug }) });
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ ...previous, revision: previous.revision, publicSlug: body.publicSlug, publicPath: `/event/${body.publicSlug}` }) });
     }
     if (url.pathname.startsWith("/api/history")) {
       const id = url.pathname.split("/")[3];
       if (req.method() === "GET")
         return route.fulfill({
           contentType: "application/json",
-          body: JSON.stringify(records.get(id)),
+          body: JSON.stringify({ ...records.get(id), permissions: { role: "owner", canManageCollaborators: true } }),
         });
       const body = req.postDataJSON();
       writes.push({
@@ -418,7 +420,7 @@ test("one Event Page editor protects saves and navigation across creation modes 
           const panel = document.querySelector('aside[aria-label="Event editing controls"]');
           return panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 2;
         });
-        const lastMenu = await controls.getByRole("button", { name: /^Public link/ }).boundingBox();
+        const lastMenu = await controls.getByRole("button", { name: /^Custom URL/ }).boundingBox();
         const footerTop = await page.getByRole("group", { name: "Save event", exact: true }).evaluate((element) => element.parentElement.getBoundingClientRect().top);
         assert.ok(lastMenu.y + lastMenu.height <= footerTop + 1, "the last editor menu item scrolls above the floating save actions");
         await page.screenshot({ path: path.join(output, `actions-overlay-${mode}-${width}.png`) });
@@ -440,8 +442,8 @@ test("one Event Page editor protects saves and navigation across creation modes 
           assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).count(), 0);
           await page.getByLabel("Date", { exact: true }).fill("2026-11-02");
           await click("Back to details");
-          await controls.getByRole("button", { name: /^Public link/ }).click();
-          await page.getByLabel("Custom link", { exact: true }).fill("gateway-field-trip-2nd-grade-2026");
+          await controls.getByRole("button", { name: /^Custom URL/ }).click();
+          await page.getByLabel("Custom URL", { exact: true }).fill("gateway-field-trip-2nd-grade-2026");
           await click("Save link");
           await page.getByText("Link updated. Previous links still work.", { exact: true }).waitFor();
           await click("Back to details");
@@ -631,6 +633,9 @@ test("one Event Page editor protects saves and navigation across creation modes 
     if (process.env.EVENT_EDITOR_SKIP_GYM_WORDING !== "1") for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 760 });
       await page.goto(gymUrl);
+      await gymControls.getByRole("button", { name: /^Custom URL/ }).click();
+      await page.getByLabel("Custom URL", { exact: true }).waitFor();
+      await page.getByRole("button", { name: "Back to details", exact: true }).click();
       await gymControls.getByRole("button", { name: /^Event basics/ }).click();
       await page.getByLabel("Event Title", { exact: true }).waitFor();
       const beforeGym = writes.length;

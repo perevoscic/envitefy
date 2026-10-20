@@ -2,6 +2,7 @@
 
 import { MoreVertical } from "lucide-react";
 import { type CSSProperties, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 /** A mobile disclosure keeps the desktop actions and their dialogs mounted. */
 export default function EventPreviewActions({
@@ -14,9 +15,32 @@ export default function EventPreviewActions({
   previewDocument: Document | null;
 }) {
   const [open, setOpen] = useState(false);
+  const [mobileSlot, setMobileSlot] = useState<HTMLElement | null>(null);
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!previewDocument) {
+      setMobileSlot(null);
+      return;
+    }
+    const mobile = window.matchMedia("(max-width: 1023px)");
+    const connectSlot = () => {
+      setMobileSlot(mobile.matches
+        ? previewDocument.querySelector<HTMLElement>("[data-event-owner-actions-slot]")
+        : null);
+    };
+    connectSlot();
+    // The template can hydrate after the preview document connects.
+    const observer = new MutationObserver(connectSlot);
+    observer.observe(previewDocument.body, { childList: true, subtree: true });
+    mobile.addEventListener("change", connectSlot);
+    return () => {
+      observer.disconnect();
+      mobile.removeEventListener("change", connectSlot);
+    };
+  }, [previewDocument]);
 
   useEffect(() => {
     if (!open) return;
@@ -40,7 +64,7 @@ export default function EventPreviewActions({
     };
   }, [open, previewDocument]);
 
-  return (
+  const content = (
     <div
       ref={root}
       className="pointer-events-auto relative col-start-3 row-start-1 justify-self-end lg:justify-self-start"
@@ -82,4 +106,7 @@ export default function EventPreviewActions({
       </div>
     </div>
   );
+
+  // Let the template's flex row place the mobile disclosure beside its actions.
+  return mobileSlot ? createPortal(content, mobileSlot) : content;
 }

@@ -1,0 +1,120 @@
+.mobile {
+  display: none;
+}
+.desktop {
+  display: contents;
+}
+.editableItem {
+  flex: 0 0 auto;
+}
+@media (max-width: 639px) {
+  .desktop {
+    display: none;
+  }
+  .mobile {
+    display: block;
+    flex-shrink: 1;
+    width: min(94vw, 100%);
+    min-width: 0;
+    max-width: 100%;
+    margin-inline: auto;
+    color: var(--event-nav-ink);
+  }
+  :has(> .mobile) {
+    flex-wrap: wrap;
+  }
+  .rail {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    width: 100%;
+    max-width: 100%;
+    margin-inline: auto;
+    padding: 6px;
+    overflow-x: auto;
+    border: 1px solid color-mix(in srgb, var(--event-nav-ink) 25%, transparent);
+    border-radius: 9999px;
+    background: var(--event-nav-paper);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--event-nav-ink) 12%, transparent);
+    animation: eventNavEnter 240ms ease-out;
+    scrollbar-width: none;
+  }
+  .rail::-webkit-scrollbar {
+    display: none;
+  }
+  .rail .item {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px 11px;
+    border: 0;
+    border-radius: 9999px;
+    background: transparent;
+    color: var(--event-nav-ink);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.5;
+    font-family: inherit;
+    letter-spacing: normal;
+    text-transform: none;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition:
+      background-color 190ms ease,
+      color 190ms ease;
+  }
+  .rail .item[data-active="true"] {
+    background: var(--event-nav-ink);
+    color: var(--event-nav-paper);
+  }
+  .rail .item:focus-visible {
+    outline: 2px solid var(--event-nav-ink);
+    outline-offset: 2px;
+  }
+  .rail .item:active {
+    transform: scale(0.97);
+  }
+  .item > svg {
+    flex-shrink: 0;
+  }
+  .label {
+    display: block;
+    width: 0;
+    margin-left: 0;
+    opacity: 0;
+    overflow: hidden;
+    text-align: left;
+  }
+  .label > span {
+    display: block;
+    width: max-content;
+  }
+}
+@keyframes eventNavEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rail {
+    animation: none;
+  }
+  .rail .item {
+    transition: none;
+  }
+  .rail .item:active {
+    transform: none;
+  }
+}

@@ -1,3 +1,4 @@
+import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import React from "react";
 import { ArrowRight, Calendar, MapPin, Heart } from "lucide-react";
@@ -68,34 +69,38 @@ export default function ModernEditorial({ theme, event }: Props) {
             .map((s) => s.trim()[0])
             .join(" & ")}
         </span>
-        <div className="hidden md:flex gap-8 text-sm font-medium">
-          {event.story && (
+        <ResponsiveEventNavigation
+          items={[...(event.story ? [{ id: "story", label: "Story", href: "#story" }] : []), { id: "schedule", label: "Schedule", href: "#schedule" }, { id: "location", label: "Location", href: "#location" }, { id: "rsvp", label: "RSVP", href: "#rsvp" }]}
+        >
+          <div className="hidden md:flex gap-8 text-sm font-medium">
+            {event.story && (
+              <a
+                href="#story"
+                className="hover:underline decoration-2 underline-offset-4"
+              >
+                STORY
+              </a>
+            )}
             <a
-              href="#story"
+              href="#schedule"
               className="hover:underline decoration-2 underline-offset-4"
             >
-              STORY
+              SCHEDULE
             </a>
-          )}
-          <a
-            href="#schedule"
-            className="hover:underline decoration-2 underline-offset-4"
-          >
-            SCHEDULE
-          </a>
-          <a
-            href="#location"
-            className="hover:underline decoration-2 underline-offset-4"
-          >
-            LOCATION
-          </a>
-          <a
-            href="#rsvp"
-            className="hover:underline decoration-2 underline-offset-4"
-          >
-            RSVP
-          </a>
-        </div>
+            <a
+              href="#location"
+              className="hover:underline decoration-2 underline-offset-4"
+            >
+              LOCATION
+            </a>
+            <a
+              href="#rsvp"
+              className="hover:underline decoration-2 underline-offset-4"
+            >
+              RSVP
+            </a>
+          </div>
+        </ResponsiveEventNavigation>
         <span className="text-sm font-mono border border-white px-2 py-0.5 rounded-full">
           {dateLabel}
         </span>

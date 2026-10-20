@@ -11,16 +11,11 @@ import {
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { eventRevision } from "@/lib/event-collaboration";
 import { EventCollaborationError, supportsEventCollaboration } from "@/lib/event-collaboration-types";
-import { makeEventPublicSlugRoutable } from "@/utils/event-public-slug";
+import { validateCustomEventPublicSlug } from "@/utils/event-public-slug";
 import { buildEventPath, buildEventSlugSegment, buildStudioCardPath } from "@/utils/event-url";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-function readPublicSlug(value: unknown): string {
-  if (typeof value !== "string") return "";
-  return makeEventPublicSlugRoutable(value);
-}
 
 async function invalidateEventViewers(eventId: string, ownerUserId: string) {
   invalidateUserHistory(ownerUserId);
@@ -46,12 +41,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body = await req.json().catch(() => ({}));
-    const requestedSlug = readPublicSlug(
+    const validation = validateCustomEventPublicSlug(
       (body as Record<string, unknown>)?.publicSlug ?? (body as Record<string, unknown>)?.slug,
     );
-    if (!requestedSlug || requestedSlug === "event") {
-      return NextResponse.json({ error: "Enter a more specific event link." }, { status: 400 });
+    if (validation.error) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
+    const requestedSlug = validation.slug;
 
     const updated = await updateEventHistoryPublicSlug({
       id,
@@ -67,6 +63,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const publicSlug = updated.public_slug || requestedSlug;
     return NextResponse.json({
+      ...updated,
       ok: true,
       id: updated.id,
       revision: eventRevision(updated),

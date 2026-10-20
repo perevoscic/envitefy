@@ -27,6 +27,7 @@ import { isEventDraft } from "@/lib/event-draft-access";
 import { getSession } from "next-auth/react";
 import { attachCreationIntakeEvent, creationIntakeOwner, readCreationIntake, writeCreationIntake } from "@/lib/create/creation-intake";
 import { creationComposition, creationNativePayload } from "@/lib/create/editor-handoff";
+import type { EventUrlUpdate } from "./EventUrlEditor";
 
 export type EventPageEditorSession = {
   eventId?: string;
@@ -44,6 +45,11 @@ export type EventPageEditorSession = {
   requestLeave: (navigate: () => void) => void;
   composition?: EventPageComposition;
   setComposition?: Dispatch<SetStateAction<EventPageComposition | undefined>>;
+  urlEditor?: {
+    historyClient: ReturnType<typeof createEventHistoryClient>;
+    onUpdated?: (update: EventUrlUpdate) => void;
+    onBusyChange: (busy: boolean) => void;
+  };
 };
 
 /** Creation supplies content; every page module shares this editing lifecycle. */
@@ -91,11 +97,14 @@ export function useEventPageEditor({
   const savedEventId = eventId || template?.eventId;
   if (savedEventId && savedEventId !== id.current) id.current = savedEventId;
   const [busy, setBusy] = useState(false);
+  const [urlBusy, setUrlBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const loaded = id.current
     ? historyClient.read(`/api/history/${encodeURIComponent(id.current)}`)
     : null;
+  const canEditUrl = useRef<boolean | null>(null);
+  if (loaded?.permissions?.role) canEditUrl.current = loaded.permissions.role === "owner";
   const published =
     suppliedPublished ?? template?.published ?? (loaded ? !isEventDraft(loaded.data) : false);
   const [composition, setComposition] = useState<EventPageComposition | undefined>(() =>
@@ -174,7 +183,7 @@ export function useEventPageEditor({
   }, [template, composition, savePage]);
 
   const perform = async (publish: boolean, navigate: boolean) => {
-    if (!editorReady || externalBusy || saving.current)
+    if (!editorReady || externalBusy || urlBusy || saving.current)
       throw new Error("Wait for the current work to finish, then save your event.");
     if (template && !template.authenticated) {
       await template.requestSave();
@@ -334,7 +343,7 @@ export function useEventPageEditor({
     snapshot: content,
     ready: editorReady,
     initialDirty,
-    busy: busy || externalBusy,
+    busy: busy || externalBusy || urlBusy,
     save: async () => {
       if (template && !template.authenticated) {
         throw new Error(
@@ -369,7 +378,7 @@ export function useEventPageEditor({
     eventId: id.current,
     published,
     dirty: progress.dirty,
-    busy: busy || externalBusy,
+    busy: busy || externalBusy || urlBusy,
     ready: editorReady,
     authenticated: template?.authenticated ?? true,
     error,
@@ -379,6 +388,9 @@ export function useEventPageEditor({
     cancel,
     allowNavigation: progress.allowNavigation,
     requestLeave: progress.requestLeave,
+    ...(template?.canManageCollaborators !== false && canEditUrl.current !== false
+      ? { urlEditor: { historyClient: template?.historyClient || historyClient, onUpdated: template?.publicUrlUpdated, onBusyChange: setUrlBusy } }
+      : {}),
     ...(!savePage ? { composition: normalizedComposition, setComposition } : {}),
   };
 }

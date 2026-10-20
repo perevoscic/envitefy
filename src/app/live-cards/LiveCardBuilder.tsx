@@ -33,6 +33,7 @@ import { LiveCardIcon } from "@/components/icons/LiveCardIcon";
 import StudioShowcaseLiveCard from "@/components/studio/StudioShowcaseLiveCard";
 import chromeStyles from "@/components/studio/LiveCardChromeButton.module.css";
 import { useUnsavedProgress } from "@/components/UnsavedProgressProvider";
+import EventUrlDialog from "@/components/events/EventUrlEditor";
 import { useArtworkAspectRatio } from "@/hooks/use-artwork-aspect-ratio";
 import {
   createLiveCardForm,
@@ -1582,6 +1583,10 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
           <h1>{savedId.current ? "Edit your Live Card" : "Create your Live Card"}</h1>
         </div>
         {savedId.current && canManageAccess && <EventAccessDialog eventId={savedId.current} eventTitle={form.title || "this Live Card"} />}
+        {canManageAccess && <EventUrlDialog eventId={savedId.current} historyClient={eventHistoryClient} disabled={working || preparingWording} onBusyChange={setWorking} onUpdated={update => {
+          if (published) setPublicUrl(new URL(update.publicPath, window.location.origin).href);
+          setOwnerUrl(buildEventPath(update.id, form.title, { tab: "dashboard" }, update.publicSlug));
+        }} />}
       </header>
       <nav aria-label="Card creation steps" className={styles.steps}>
         {STEPS.map((label, index) => (

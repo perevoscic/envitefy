@@ -2,7 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useUnsavedProgress } from "@/components/UnsavedProgressProvider";
 import {
   normalizeScanSchedule,
@@ -20,10 +20,12 @@ export default function ScheduleReviewDialog({
   onDiscard,
   saved = false,
   savedStatus = "draft",
+  urlControl,
 }: {
   initialSchedule: ScanSchedule;
   saved?: boolean;
   savedStatus?: "draft" | "published";
+  urlControl?: ReactNode;
   onSave: (schedule: ScanSchedule, status: "draft" | "published") => Promise<string>;
   onDiscard: () => void;
 }) {
@@ -105,6 +107,7 @@ export default function ScheduleReviewDialog({
             </p>
           </header>
           <div className="min-h-0 overflow-y-auto px-5 py-5 sm:px-7">
+            {urlControl && <div className="mb-4">{urlControl}</div>}
             <fieldset disabled={busy} className="min-w-0">
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="text-sm font-medium sm:col-span-2">

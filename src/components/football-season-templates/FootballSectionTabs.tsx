@@ -1,5 +1,6 @@
 "use client";
 
+import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import FootballText, { useFootballPageText } from "./FootballPageText";
 
@@ -73,71 +74,87 @@ export default function FootballSectionTabs({
   if (!tabs.items.length) return null;
   return (
     <div className={shellClassName}>
-      <div
-        role="tablist"
-        aria-label={ariaLabel}
-        className="no-scrollbar flex gap-2 overflow-x-auto p-1"
-      >
-        {tabs.items.map((item, index) => {
-          const active = tabs.activeId === item.id;
+      <ResponsiveEventNavigation
+        items={tabs.items.map(item => ({ id: item.id, count: item.count, label: item.members?.length ? item.members.map(member => text?.[`nav:${member.id}`] || text?.[`section:${member.id}:title`] || member.label).join(" + ") : text?.[`nav:${item.id}`] || text?.[`section:${item.id}:title`] || item.label, panelId: tabs.panelId(item.id) }))}
+        activeId={tabs.activeId}
+        onSelect={tabs.select}
+        tabbed
+        ariaLabel={ariaLabel}
+        renderItem={(item, control) => {
+          const source = tabs.items.find(section => section.id === item.id);
           return (
-            <FootballText
-              key={item.id}
-              textKey={`nav:${item.id}`}
-              fallback={text?.[`section:${item.id}:title`] ?? item.label}
-              label={`${item.label} navigation label`}
-              renderText={(caption) => (
-                <button
-                  ref={(node) => {
-                    buttons.current[index] = node;
-                  }}
-                  type="button"
-                  role="tab"
-                  id={tabs.tabId(item.id)}
-                  aria-controls={tabs.panelId(item.id)}
-                  aria-selected={active}
-                  tabIndex={active ? 0 : -1}
-                  onClick={() => tabs.select(item.id)}
-                  onKeyDown={(event) => {
-                    let next = index;
-                    if (event.key === "ArrowRight") next = (index + 1) % tabs.items.length;
-                    else if (event.key === "ArrowLeft")
-                      next = (index - 1 + tabs.items.length) % tabs.items.length;
-                    else if (event.key === "Home") next = 0;
-                    else if (event.key === "End") next = tabs.items.length - 1;
-                    else return;
-                    event.preventDefault();
-                    buttons.current[next]?.focus();
-                    buttons.current[next]?.scrollIntoView({
-                      block: "nearest",
-                      inline: "nearest",
-                      behavior: "instant",
-                    });
-                    tabs.select(tabs.items[next].id);
-                  }}
-                  className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 ${active ? activeClassName : idleClassName}`}
-                >
-                  <span
-                    className={`size-1.5 rounded-full bg-current ${active ? "" : "opacity-40"}`}
-                    aria-hidden="true"
-                  />
-                  {item.members?.length
-                    ? item.members
-                        .map(
-                          (member) =>
-                            text?.[`nav:${member.id}`] ||
-                            text?.[`section:${member.id}:title`] ||
-                            member.label,
-                        )
-                        .join(" + ")
-                    : caption || item.label}
-                  {item.count == null ? null : ` (${item.count})`}
-                </button>
-              )}
-            />
+            <FootballText textKey={`nav:${item.id}`}
+              fallback={text?.[`section:${item.id}:title`] ?? source?.label ?? item.label}
+              label={`${source?.label ?? item.label} navigation label`} renderText={() => control} />
           );
-        })}
-      </div>
+        }}
+      >
+        <div
+          role="tablist"
+          aria-label={ariaLabel}
+          className="no-scrollbar flex gap-2 overflow-x-auto p-1"
+        >
+          {tabs.items.map((item, index) => {
+            const active = tabs.activeId === item.id;
+            return (
+              <FootballText
+                key={item.id}
+                textKey={`nav:${item.id}`}
+                fallback={text?.[`section:${item.id}:title`] ?? item.label}
+                label={`${item.label} navigation label`}
+                renderText={(caption) => (
+                  <button
+                    ref={(node) => {
+                      buttons.current[index] = node;
+                    }}
+                    type="button"
+                    role="tab"
+                    id={tabs.tabId(item.id)}
+                    aria-controls={tabs.panelId(item.id)}
+                    aria-selected={active}
+                    tabIndex={active ? 0 : -1}
+                    onClick={() => tabs.select(item.id)}
+                    onKeyDown={(event) => {
+                      let next = index;
+                      if (event.key === "ArrowRight") next = (index + 1) % tabs.items.length;
+                      else if (event.key === "ArrowLeft")
+                        next = (index - 1 + tabs.items.length) % tabs.items.length;
+                      else if (event.key === "Home") next = 0;
+                      else if (event.key === "End") next = tabs.items.length - 1;
+                      else return;
+                      event.preventDefault();
+                      buttons.current[next]?.focus();
+                      buttons.current[next]?.scrollIntoView({
+                        block: "nearest",
+                        inline: "nearest",
+                        behavior: "instant",
+                      });
+                      tabs.select(tabs.items[next].id);
+                    }}
+                    className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 ${active ? activeClassName : idleClassName}`}
+                  >
+                    <span
+                      className={`size-1.5 rounded-full bg-current ${active ? "" : "opacity-40"}`}
+                      aria-hidden="true"
+                    />
+                    {item.members?.length
+                      ? item.members
+                          .map(
+                            (member) =>
+                              text?.[`nav:${member.id}`] ||
+                              text?.[`section:${member.id}:title`] ||
+                              member.label,
+                          )
+                          .join(" + ")
+                      : caption || item.label}
+                    {item.count == null ? null : ` (${item.count})`}
+                  </button>
+                )}
+              />
+            );
+          })}
+        </div>
+      </ResponsiveEventNavigation>
     </div>
   );
 }

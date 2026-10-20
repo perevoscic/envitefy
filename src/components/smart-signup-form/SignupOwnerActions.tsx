@@ -1,10 +1,11 @@
 "use client";
 
-import { Copy, Pencil, Trash2, UsersRound } from "lucide-react";
+import { Copy, Link2, Pencil, Trash2, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import EventAccessDialog from "@/components/EventAccessDialog";
+import EventUrlDialog from "@/components/events/EventUrlEditor";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import type { SignupForm } from "@/types/signup";
 import { resolveEditHref } from "@/utils/event-edit-route";
@@ -60,6 +61,13 @@ export default function SignupOwnerActions({
           <span className={styles.ownerLabel}>Edit</span>
         </Link>
         {isOwner && <EventAccessDialog eventId={eventId} eventTitle={eventTitle} resourceType="signup" className={styles.ownerButton} labelClassName={styles.ownerLabel} />}
+        {isOwner && <EventUrlDialog eventId={eventId} className={styles.ownerButton} onUpdated={update => {
+          router.replace(update.publicPath);
+          router.refresh();
+        }}>
+          <Link2 className="size-4" aria-hidden="true" />
+          <span className={styles.ownerLabel}>Custom URL</span>
+        </EventUrlDialog>}
         {isOwner && <><button
           type="button"
           onClick={duplicate}

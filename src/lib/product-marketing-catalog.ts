@@ -73,6 +73,18 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
       name: "Create from what the customer already has",
       features: [
         {
+          id: "custom-product-urls",
+          name: "Custom URLs for every created product",
+          availability: "core",
+          customerPromise: "Choose a memorable shareable address for your Event Page, Live Card, Sign-up Form or saved schedule.",
+          proofPoints: [
+            "Custom URL is available in Event Page settings, the Live Card builder, Sign-up Form sharing tools and saved schedule editing, as well as owner page controls.",
+            "Save a draft first, then check availability and explicitly choose Save link. URL changes leave other pending details and design edits untouched, and do not publish a draft.",
+            "Only the owner can change the URL. Taken or reserved addresses are rejected, and previous links continue to reach the same product after a rename.",
+          ],
+          sellWhen: ["A host wants an easy-to-remember link for invitations, printed material, a team, a volunteer signup or an event website."],
+        },
+        {
           id: "event-cohosts",
           name: "Invite a co-host",
           availability: "event-dependent",
@@ -302,6 +314,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Give guests one polished, mobile-friendly event home instead of a static flyer or a chain of follow-up messages.",
           proofPoints: [
             "Public event pages open in phone and desktop browsers.",
+            "Event pages with more than three section tabs or links use compact icon navigation on phones, with the selected label expanding beside its icon. A one-time hint reveals each label when the navigation first enters view, without changing the selected tab or page content; interaction stops the hint, and reduced-motion preferences skip it. This applies across event categories, including sports, showers, weddings and generated pages; short navigation and desktop designs retain their existing layouts. Section links, keyboard controls and editing controls are preserved.",
             "Displayed phone numbers, emails, and addresses in scanned event facts and shared detail sections link directly to calling, email, and maps.",
             "Guests do not need to install an app or create an account just to use a shared event page.",
             "The page keeps the latest event details and available actions together.",
@@ -648,7 +661,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           customerPromise:
             "Turn dense meet flyers, screenshots, schedules, and PDF packets into a parent-friendly meet information hub.",
           proofPoints: [
-            "A public meet link can collect related overview, venue, admission, hotel, competing-team, attraction and schedule pages through the event website's links and menus. The page separates current-edition participating clubs from athletes, shows organizer-listed attractions with their destinations, and retains official schedule links and publication status. Imported website sections are grouped into Overview, Schedule, Teams and Visit tabs, with only populated tabs shown; hosts also have All sections for editing. Owners can review each section's source and whether it was collected, not published, failed, awaiting review or not found. Collection is bounded and depends on accessible source pages; session times are never invented from an unpublished schedule.",
+            "A public meet link can collect related overview, venue, admission, hotel, competing-team, attraction and schedule pages through the event website's links and menus. The page separates current-edition participating clubs from athletes, shows organizer-listed attractions with their destinations, and retains official schedule links and publication status. Imported website sections are grouped into Overview, Schedule, Teams, Venue & Parking, Hotels and Explore tabs, with only populated, visible tabs shown in both editor and guest views. Arrival maps and parking guidance stay in Venue & Parking, accommodation and reservation links in Hotels, and local attractions in Explore. Owners can review each section's source and whether it was collected, not published, failed, awaiting review or not found. Collection is bounded and depends on accessible source pages; session times are never invented from an unpublished schedule.",
             "New sports URL, PDF and image imports create an event-specific theme from accessible source colors, the detected sport and supplied city. Gymnastics, football and other sports share coordinated colors, bundled fonts and an original OpenAI hero. A local sports illustration stays visible while the image is prepared. Durable generation status prevents reloads from issuing another image request; image failures retain imported facts and offer an explicit retry. Hosts can Redesign or use a template style, and uploaded artwork and saved host choices are preserved.",
             "Gymnastics hosts can resize page sections to full, two-thirds, half, or one-third width and place another existing or new section beside them. Paired sections stack on small screens. Own row and Undo make rearranging reversible, while explicit saves carry the layout into reloads, previews, and guest pages.",
             "Hosts can edit gymnastics page wording in place using pencils beside the title, welcome copy, captions, section headings, navigation labels, detail labels and description. Link captions, RSVP field prompts, response choices, submit captions and confirmation messages are editable too, with pencils beside controls so editing wording does not activate their actions. Done, Cancel and Reset to template wording controls support changes across all 60 designs. Edits stay in memory until explicit save, survive design changes and reloads, and appear without editing controls on guest pages and fullscreen previews.",

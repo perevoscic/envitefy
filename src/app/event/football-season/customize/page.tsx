@@ -630,7 +630,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const buildEventPayload = useCallback(async () => {
       let publicSlug: string | undefined;
-      if (data.publicSlugInput?.trim()) {
+      if (data.publicSlugInput?.trim() && validateCustomEventPublicSlug(data.publicSlugInput).slug !== eventHistoryClient.read(`/api/history/${encodeURIComponent(editEventId || "")}`)?.public_slug) {
         const validation = validateCustomEventPublicSlug(data.publicSlugInput);
         try {
           if (validation.error) throw new Error(validation.error);
@@ -768,6 +768,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.time,
       data.title,
       data.publicSlugInput,
+      eventHistoryClient,
       data.details,
       data.guestPlanning,
       data.sectionLayout,
@@ -884,7 +885,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             onClick={() => setActiveView("headline")}
           />
           <MenuCard title="Design" desc="Page style, typography, and colors." icon={<Type size={18} />} onClick={() => setActiveView("design")} />
-          <MenuCard title="Custom URL" desc="Choose your page's shareable web address." icon={<LinkIcon size={18} />} onClick={() => setActiveView("url")} />
+          {editor.urlEditor && <MenuCard title="Custom URL" desc="Choose your page's shareable web address." icon={<LinkIcon size={18} />} onClick={() => setActiveView("url")} />}
 
           <MenuCard
             title="Passcode"
@@ -1362,6 +1363,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       <EventSectionBuilderProvider composition={{ value: editor.composition, onChange: editor.setComposition }} layout={sectionLayout} catalog={sectionCatalog} renderEditor={renderSectionEditor}
         onChange={(next) => setData((previous) => ({ ...previous, sectionLayout: next }))}>
       <EventEditorWorkspace notices={creationError ? <p role="alert">{creationError}</p> : undefined} sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "discover": renderDiscoverEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, "section": renderSectionEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/football-season"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed}
+ customUrlMenu={false}
  preview={<EventCanvas
             className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
             style={{

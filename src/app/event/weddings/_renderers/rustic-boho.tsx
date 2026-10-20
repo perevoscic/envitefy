@@ -1,3 +1,4 @@
+import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import { useState } from "react";
 import {
@@ -253,28 +254,36 @@ export default function RusticBoho({ theme, event }: Props) {
       )}
 
       <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
-        <div className="flex bg-white/90 backdrop-blur-md p-2 rounded-full shadow-xl border border-[#EBE3D9] gap-2">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => scrollToSection(item.id)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-full transition-all duration-300 ${
-                activeTab === item.id
-                  ? "bg-[#4A4036] text-[#FDF8F3]"
-                  : "text-[#8C7A63] hover:bg-[#F3EBE0]"
-              }`}
-            >
-              <item.icon size={18} />
-              <span
-                className={`text-sm font-medium ${
-                  activeTab === item.id ? "block" : "hidden md:block"
+        <ResponsiveEventNavigation
+          items={navItems}
+          activeId={activeTab}
+          onSelect={scrollToSection}
+          background="#FDF8F3"
+          foreground="#4A4036"
+        >
+          <div className="flex bg-white/90 backdrop-blur-md p-2 rounded-full shadow-xl border border-[#EBE3D9] gap-2">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => scrollToSection(item.id)}
+                className={`flex items-center gap-2 px-6 py-3 rounded-full transition-all duration-300 ${
+                  activeTab === item.id
+                    ? "bg-[#4A4036] text-[#FDF8F3]"
+                    : "text-[#8C7A63] hover:bg-[#F3EBE0]"
                 }`}
               >
-                {item.label}
-              </span>
-            </button>
-          ))}
-        </div>
+                <item.icon size={18} />
+                <span
+                  className={`text-sm font-medium ${
+                    activeTab === item.id ? "block" : "hidden md:block"
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </ResponsiveEventNavigation>
       </div>
       {event.guestTools}
       <footer className="relative z-10 py-8 text-center pb-28">

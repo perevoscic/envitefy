@@ -67,6 +67,7 @@ const baseMocks = {
     Navigation: (props) => React.createElement("svg", props),
     Share2: (props) => React.createElement("svg", props),
     Link: (props) => React.createElement("svg", props),
+    Link2: (props) => React.createElement("svg", props),
     AlertCircle: (props) => React.createElement("svg", props),
     CheckCircle2: (props) => React.createElement("svg", props),
     Clock: (props) => React.createElement("svg", props),

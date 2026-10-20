@@ -32,6 +32,7 @@ import {
   ChevronRight,
   Eye,
   ListPlus,
+  Link2,
   MoveVertical,
   Lock,
   Palette,
@@ -2073,6 +2074,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   icon={<PanelsTopLeft size={18} />}
                   onClick={() => tools.openTool("layout")}
                 />
+                {tools.canEditUrl && <EditorMenuRow
+                  title="Custom URL"
+                  value="Choose your shareable web address"
+                  icon={<Link2 size={18} />}
+                  onClick={() => tools.openTool("url")}
+                />}
               </>
             )}
           </EventEditorToolsConsumer>

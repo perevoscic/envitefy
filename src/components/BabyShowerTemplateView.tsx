@@ -1,4 +1,5 @@
 "use client";
+import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import { Check, X as XIcon } from "lucide-react";
 import Link from "next/link";
 import type { CSSProperties } from "react";
@@ -431,30 +432,36 @@ export default function BabyShowerTemplateView({
             <div className={design ? babyStyles.body : undefined} data-style={design?.style}>
               {/* Navigation */}
               {!thumbnail && navItems.length > 0 && (
-                <nav
-                  className={
-                    design
-                      ? undefined
-                      : "border-t border-white/10 bg-white/80 px-4 py-3 backdrop-blur-lg"
-                  }
+                <ResponsiveEventNavigation
+                  items={navItems.map(item => ({ ...item, href: `#${item.id}` }))}
+                  background={inverse ? "#15232e" : "#ffffff"}
+                  foreground={inverse ? "#ffffff" : "#17212f"}
                 >
-                  <div className="flex flex-wrap items-center justify-center gap-3">
-                    {navItems.map((item) => (
-                      <a
-                        key={item.id}
-                        href={`#${item.id}`}
-                        className={
-                          design
-                            ? "underline underline-offset-4"
-                            : "rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.4em] text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
-                        }
-                        style={{ fontFamily: headingFont }}
-                      >
-                        {item.label}
-                      </a>
-                    ))}
-                  </div>
-                </nav>
+                  <nav
+                    className={
+                      design
+                        ? undefined
+                        : "border-t border-white/10 bg-white/80 px-4 py-3 backdrop-blur-lg"
+                    }
+                  >
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                      {navItems.map((item) => (
+                        <a
+                          key={item.id}
+                          href={`#${item.id}`}
+                          className={
+                            design
+                              ? "underline underline-offset-4"
+                              : "rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.4em] text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+                          }
+                          style={{ fontFamily: headingFont }}
+                        >
+                          {item.label}
+                        </a>
+                      ))}
+                    </div>
+                  </nav>
+                </ResponsiveEventNavigation>
               )}
 
               {isBridal && (
