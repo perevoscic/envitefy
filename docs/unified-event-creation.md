@@ -25,6 +25,8 @@ Medical and personal appointments continue through Snap's private document/calen
 
 ## Access and preferences
 
+Account permissions refresh in the background, including when the tab regains focus. Upload and Paste URL accept local input before the first permission response; no event search, upload or extraction runs merely from opening Create. A selected file or explicit read request waits for verified Event Page access and then starts once. Editing the source, switching methods, cancelling, changing accounts or a failed/denied access check clears that pending read. Reopening an unfinished event still waits for its account-scoped source restoration before accepting edits.
+
 `creation_account_access` is the authorization source. Missing policy rows resolve to Standard, which includes released products and categories. Administrators can explicitly apply Restricted policy and grants. Signup origin, old product scopes and hidden interests do not establish restrictions.
 
 Settings distinguishes allowed categories selected for the workspace from unavailable capabilities. Restricted accounts can submit persisted requests; one pending request per account/capability is enforced in the database. Admin approval grants access and selects the capability atomically; decline does not grant access. Signup tool visibility is independent of Event Page visibility. Preference failures expose retry and prevent writing fallback defaults.

@@ -109,13 +109,17 @@ export default function UnifiedCreatePageClient() {
     [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
   const [showTypes, setShowTypes] = useState(false);
-  const [restoring, setRestoring] = useState(false),
+  const [restoring, setRestoring] = useState(!!search?.get("intake")),
     [customDialog, setCustomDialog] = useState(false);
-  const ready =
-    status === "authenticated" && !!ownerId && workspaceOwner === ownerId && !!access.access;
+  const [waitingToRead, setWaitingToRead] = useState(false);
+  const accountReady = status === "authenticated" && !!ownerId && workspaceOwner === ownerId;
+  const ready = accountReady && !!access.access;
   const busy = phase === "recognizing" || phase === "opening";
   const allowedCategories = access.access?.allowedCategories || [];
   const canCreatePage = access.access?.allowedProducts.includes("event_page") === true;
+  // Local source entry can start while grants load. Processing still waits for
+  // this account's verified access, and saved-source restoration stays exclusive.
+  const sourceAvailable = accountReady && (!access.access || canCreatePage) && !restoring;
   const guess = intake?.guess || intake?.classification;
   const personalCapture =
     guess?.category === "medical-appointments" || guess?.category === "appointments";
@@ -214,6 +218,7 @@ export default function UnifiedCreatePageClient() {
     request.current?.abort();
     submitting.current = false;
     pendingUploadRead.current = null;
+    setWaitingToRead(false);
     current.current = null;
     setIntake(null);
     setMode("files");
@@ -225,6 +230,7 @@ export default function UnifiedCreatePageClient() {
     setPhase("source");
     setError("");
     setCustomDialog(false);
+    setRestoring(false);
     setWorkspaceOwner(ownerId);
   }, [ownerId, workspaceOwner]);
   const setLocation = (id: string, step: "source" | "templates", push = false) => {
@@ -244,6 +250,7 @@ export default function UnifiedCreatePageClient() {
       request.current?.abort();
       submitting.current = false;
       pendingUploadRead.current = null;
+      setWaitingToRead(false);
       setRestoring(true);
       setError("");
       try {
@@ -300,6 +307,8 @@ export default function UnifiedCreatePageClient() {
       else {
         request.current?.abort();
         epoch.current++;
+        setWaitingToRead(false);
+        setRestoring(false);
         setPhase("source");
       }
     };
@@ -316,6 +325,7 @@ export default function UnifiedCreatePageClient() {
 
   const invalidate = () => {
     pendingUploadRead.current = null;
+    setWaitingToRead(false);
     epoch.current++;
     request.current?.abort();
     request.current = null;
@@ -415,8 +425,7 @@ export default function UnifiedCreatePageClient() {
   ) => {
     event?.preventDefault();
     if (
-      !ready ||
-      !canCreatePage ||
+      !sourceAvailable ||
       changingMode.current ||
       restoring ||
       submitting.current ||
@@ -443,6 +452,12 @@ export default function UnifiedCreatePageClient() {
       return;
     }
     if (source.kind === "scratch" && !confirmedGuess) return;
+    if (!ready) {
+      if (!access.error) setWaitingToRead(true);
+      return;
+    }
+    if (!canCreatePage) return;
+    setWaitingToRead(false);
     submitting.current = true;
     request.current?.abort();
     const controller = new AbortController(),
@@ -538,6 +553,18 @@ export default function UnifiedCreatePageClient() {
       }
     }
   };
+  useEffect(() => {
+    if (!waitingToRead) return;
+    if (!accountReady || access.error || (ready && !canCreatePage)) {
+      setWaitingToRead(false);
+      return;
+    }
+    if (!ready || restoring || changingMode.current || phase !== "source") return;
+    // Consume this explicit request once; failed or cancelled parsing keeps the
+    // existing manual retry behavior instead of restarting on an access refresh.
+    setWaitingToRead(false);
+    void readSource();
+  }, [waitingToRead, accountReady, access.error, ready, canCreatePage, restoring, phase]);
   useEffect(() => {
     const id = pendingUploadRead.current;
     if (!id || id !== intake?.id || !ready || !canCreatePage || restoring || phase !== "source")
@@ -759,6 +786,7 @@ export default function UnifiedCreatePageClient() {
   const switchMode = async (target: Mode) => {
     if (changingMode.current) return false;
     if (target === mode) return true;
+    setWaitingToRead(false);
     changingMode.current = true;
     setSwitchingMode(true);
     const version = ++epoch.current;
@@ -866,9 +894,9 @@ export default function UnifiedCreatePageClient() {
       <div className={styles.container}>
         <header className={styles.header}>
           <div>
-            <p className={styles.eyebrow}>
-              {phase === "templates" && manualCreation ? "Design" : "Event Page"}
-            </p>
+            {phase === "templates" && manualCreation ? (
+              <p className={styles.eyebrow}>Design</p>
+            ) : null}
             <h1 className={styles.title}>
               {phase === "templates"
                 ? manualCreation
@@ -914,13 +942,13 @@ export default function UnifiedCreatePageClient() {
             </button>
           </div>
         ) : null}
-        {access.loading || restoring ? (
+        {restoring ? (
           <p role="status" className="mb-4 flex items-center gap-2 text-sm text-[#786b80]">
             <LoaderCircle
               className="size-4 animate-spin motion-reduce:animate-none"
               aria-hidden="true"
             />
-            {restoring ? "Restoring your unfinished event…" : "Loading your workspace…"}
+            Restoring your unfinished event…
           </p>
         ) : null}
         {ready && !canCreatePage ? (
@@ -955,7 +983,7 @@ export default function UnifiedCreatePageClient() {
                       type="button"
                       aria-label={option.title}
                       aria-pressed={mode === option.id}
-                      disabled={busy || switchingMode || restoring || !ready || !canCreatePage}
+                      disabled={busy || switchingMode || !sourceAvailable}
                       onClick={() => void switchMode(option.id)}
                       className={`${styles.modeButton} ${mode === option.id ? styles.modeActive : ""}`}
                     >
@@ -967,7 +995,7 @@ export default function UnifiedCreatePageClient() {
                     </button>
                   ))}
                 </div>
-                {ready && canCreatePage && !restoring ? (
+                {sourceAvailable ? (
                   <section
                     className={styles.sourcePane}
                     aria-label={
@@ -1058,11 +1086,13 @@ export default function UnifiedCreatePageClient() {
                           </div>
                           {!visibleTypes.length ? (
                             <p className={styles.taskIntro}>
-                              {typeQuery.trim()
-                                ? "No matching event types. Try another search."
-                                : menu?.featureVisibility.hasLoadedPreferences
-                                  ? "Choose the event types you use, or browse available event types below."
-                                  : "Loading your event types…"}
+                              {!ready
+                                ? "Checking available event types…"
+                                : typeQuery.trim()
+                                  ? "No matching event types. Try another search."
+                                  : menu?.featureVisibility.hasLoadedPreferences
+                                    ? "Choose the event types you use, or browse available event types below."
+                                    : "Loading your event types…"}
                             </p>
                           ) : null}
                           {!showTypes && choices.length > manualChoices.length ? (
@@ -1224,10 +1254,26 @@ export default function UnifiedCreatePageClient() {
                           ) : null}
                           {mode !== "files" || files.length ? (
                             <div className={styles.sourceFooter}>
+                              {waitingToRead ? (
+                                <p
+                                  role="status"
+                                  className="mb-3 flex items-center justify-between gap-3 text-sm text-[#786b80]"
+                                >
+                                  Checking event access before reading…
+                                  <button
+                                    type="button"
+                                    className="min-h-11 px-2 font-semibold text-[#5b3fd1]"
+                                    onClick={() => setWaitingToRead(false)}
+                                  >
+                                    Cancel
+                                  </button>
+                                </p>
+                              ) : null}
                               <button
                                 type="submit"
                                 disabled={
                                   switchingMode ||
+                                  waitingToRead ||
                                   (mode === "files"
                                     ? !files.length
                                     : usePastedText
@@ -1260,14 +1306,14 @@ export default function UnifiedCreatePageClient() {
                     <p className={styles.taskIntro}>
                       {restoring
                         ? "Restoring your source…"
-                        : !canCreatePage && !access.loading
+                        : ready && !canCreatePage
                           ? "Choose an available creation tool or request access above."
-                          : "Loading your workspace…"}
+                          : "Checking your sign-in…"}
                     </p>
                   </div>
                 )}
               </div>
-              {ready && canCreatePage && !restoring && mode !== "scratch" ? preview : null}
+              {sourceAvailable && mode !== "scratch" ? preview : null}
             </div>
           </div>
         ) : null}
@@ -1528,25 +1574,6 @@ export default function UnifiedCreatePageClient() {
         ) : null}
         {!busy && phase === "source" && mode !== "scratch" && ready && canCreatePage ? (
           <section className={styles.shortcuts} aria-label="Your event templates">
-            <div className={styles.shortcutsHeader}>
-              <div>
-                <h2 className={styles.shortcutsTitle}>Your event templates</h2>
-                <p className={styles.shortcutsIntro}>
-                  Start from a design made for the events you host.
-                </p>
-              </div>
-              <button
-                type="button"
-                className={styles.shortcutButton}
-                disabled={switchingMode || restoring}
-                onClick={async () => {
-                  if (await switchMode("scratch")) setShowTypes(true);
-                }}
-              >
-                Browse available event types
-                <ArrowRight className="size-4" aria-hidden="true" />
-              </button>
-            </div>
             {preferred.length ? (
               <div className={styles.shortcutGrid}>
                 {preferred.slice(0, 4).map((item) => {
@@ -1587,6 +1614,19 @@ export default function UnifiedCreatePageClient() {
                   : "Loading your event templates…"}
               </p>
             )}
+            <div className={styles.shortcutsFooter}>
+              <button
+                type="button"
+                className={styles.shortcutButton}
+                disabled={switchingMode || restoring}
+                onClick={async () => {
+                  if (await switchMode("scratch")) setShowTypes(true);
+                }}
+              >
+                Browse available event types
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </button>
+            </div>
           </section>
         ) : null}
       </div>

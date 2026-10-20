@@ -39,6 +39,7 @@ test("unified creation retains sources, recommends native templates and protects
   let allowedProducts = ["snap", "live_card", "event_page", "signup_form"];
   let accessResponseDelay = 0;
   let delayedAccessStarted = false, delayedAccessFinished = false;
+  let accessResponseGate = null, accessResponseError = "";
   let explicitCustomDesign = false;
   const generatedDesigns = [];
   let workspaceMode = false, staleFinished = false;
@@ -70,12 +71,14 @@ test("unified creation retains sources, recommends native templates and protects
     }
     if (url.pathname === "/api/user/creation-access") {
       const body = JSON.stringify({ access: { policy: restricted ? "restricted" : "standard", allowedProducts, allowedCategories: restricted ? restrictedCategories : ["birthdays", "general", "weddings", "anniversaries", "baby-showers", "bridal-showers", "gender-reveal", "gymnastics", "football", "sport-events"] } });
+      const failure = accessResponseError, gate = accessResponseGate;
+      if (gate) { gate.started = true; await gate.promise; gate.finished = true; }
       if (accessResponseDelay) {
         delayedAccessStarted = true;
         await new Promise(resolve => setTimeout(resolve, accessResponseDelay));
         delayedAccessFinished = true;
       }
-      return route.fulfill({ contentType: "application/json", body });
+      return route.fulfill({ status: failure ? 503 : 200, contentType: "application/json", body: failure ? JSON.stringify({ error: failure }) : body });
     }
     if (url.pathname === "/api/create/extract") {
       const json = req.headers()["content-type"]?.includes("application/json") ? req.postDataJSON() : null;
@@ -221,7 +224,8 @@ test("unified creation retains sources, recommends native templates and protects
     await page.locator("[data-unified-create]").waitFor();
     await page.waitForFunction(() => {
       const mode = document.querySelector('[aria-label="How would you like to start?"] button');
-      return mode ? !mode.disabled : !!document.querySelector('[aria-label="Matching event designs"]');
+      if (!mode) return !!document.querySelector('[aria-label="Matching event designs"]');
+      return !mode.disabled && !!document.querySelector('[aria-label="Your event templates"], [aria-label="Choose an event type"] button');
     });
   };
   const waitForImportedEditor = async () => {
@@ -257,6 +261,11 @@ test("unified creation retains sources, recommends native templates and protects
     const deadline = Date.now() + 10000;
     while (Date.now() < deadline) { if (await read()) return; await new Promise(resolve => setTimeout(resolve, 30)); }
     throw new Error(`Timed out waiting for ${description}`);
+  };
+  const holdAccessResponse = () => {
+    let release;
+    const promise = new Promise(resolve => { release = resolve; });
+    return accessResponseGate = { promise, release, started: false, finished: false };
   };
   try {
     await openCreate();
@@ -359,6 +368,126 @@ test("unified creation retains sources, recommends native templates and protects
       assert.equal(extracts.length, beforeScratchReads, "manual design browsing starts no source parsing");
       assert.equal(discoveryRequests.length, 0, "manual gymnastics browsing starts no schedule import");
       await page.setViewportSize({ width: 1440, height: 1000 });
+    });
+
+    await t.test("account checks run behind usable source controls and selected files parse once access arrives", async () => {
+      const before = extracts.length, gate = holdAccessResponse();
+      try {
+        await page.goto(`${base}/create`);
+        await page.locator("[data-unified-create]").waitFor();
+        await waitForStored(() => gate.started, "initial account access request");
+        for (const button of await modes.getByRole("button").all()) assert.equal(await button.isEnabled(), true, "source modes remain usable during account checks");
+        assert.equal(await page.getByText("Loading your workspace…", { exact: true }).count(), 0);
+        assert.equal(await page.getByRole("button", { name: "Choose files", exact: true }).isEnabled(), true);
+        await mode("Paste URL").click();
+        const publicUrl = page.getByLabel("Public event URL", { exact: true });
+        await publicUrl.fill("https://school.test/ready-while-access-loads");
+        assert.equal(await publicUrl.inputValue(), "https://school.test/ready-while-access-loads");
+        await mode("Upload").click();
+        await page.locator('input[type="file"][aria-label="Upload event information"]').setInputFiles(file("background-access-flyer.png"));
+        await page.getByRole("list", { name: "Selected files" }).getByText("background-access-flyer.png", { exact: true }).waitFor();
+        assert.equal(extracts.length, before, "files remain local while account access is unknown");
+        assert.equal(gate.finished, false);
+        accessResponseGate = null; gate.release();
+        await waitForImportedEditor();
+        assert.equal(extracts.length, before + 1, "the selected file starts one automatic read after approval");
+        assert.match(extracts.at(-1).raw, /background-access-flyer\.png/);
+      } finally { accessResponseGate = null; gate.release(); }
+    });
+
+    await t.test("denied or failed account checks never process a waiting upload", async () => {
+      const products = allowedProducts;
+      try {
+        for (const failure of [false, true]) {
+          allowedProducts = failure ? products : ["snap", "live_card", "signup_form"];
+          accessResponseError = failure ? "Account access is temporarily unavailable. Please retry." : "";
+          const before = extracts.length, gate = holdAccessResponse();
+          try {
+            await page.goto(`${base}/create`);
+            await page.locator("[data-unified-create]").waitFor();
+            await waitForStored(() => gate.started, "held account access request");
+            await page.locator('input[type="file"][aria-label="Upload event information"]').setInputFiles(file(failure ? "failed-access-flyer.png" : "denied-access-flyer.png"));
+            await page.getByRole("list", { name: "Selected files" }).waitFor();
+            assert.equal(extracts.length, before);
+            accessResponseGate = null; gate.release();
+            if (failure) await page.getByRole("alert").getByText(accessResponseError, { exact: true }).waitFor();
+            else await page.getByRole("heading", { name: "Event Pages aren’t enabled for this account.", exact: true }).waitFor();
+            assert.equal(extracts.length, before, "an unverified or denied account never uploads or parses its waiting source");
+            assert.equal(new URL(page.url()).pathname, "/create");
+          } finally { accessResponseGate = null; gate.release(); }
+        }
+      } finally { allowedProducts = products; accessResponseError = ""; await openCreate(); }
+    });
+
+    await t.test("waiting reads respect Cancel and use only the latest accepted source", async () => {
+      const before = extracts.length;
+      let gate = holdAccessResponse();
+      try {
+        await page.goto(`${base}/create`);
+        await waitForStored(() => gate.started, "account check before cancellation");
+        await page.locator('input[type="file"][aria-label="Upload event information"]').setInputFiles(file("cancelled-before-access.png"));
+        await page.getByRole("status").filter({ hasText: "Checking event access before reading…" }).waitFor();
+        await click("Cancel");
+        accessResponseGate = null; gate.release();
+        await suggestions.waitFor();
+        await page.getByRole("list", { name: "Selected files" }).getByText("cancelled-before-access.png", { exact: true }).waitFor();
+        assert.equal(extracts.length, before, "Cancel retains the source without starting it after access arrives");
+
+        gate = holdAccessResponse();
+        await page.goto(`${base}/create`);
+        await waitForStored(() => gate.started, "account check before source replacement");
+        await page.locator('input[type="file"][aria-label="Upload event information"]').setInputFiles(file("replaced-before-access.png"));
+        await click("Remove replaced-before-access.png");
+        await page.locator('input[type="file"][aria-label="Upload event information"]').setInputFiles(file("latest-before-access.png"));
+        await page.getByRole("list", { name: "Selected files" }).getByText("latest-before-access.png", { exact: true }).waitFor();
+        assert.equal(extracts.length, before);
+        accessResponseGate = null; gate.release();
+        await waitForImportedEditor();
+        assert.equal(extracts.length, before + 1);
+        assert.match(extracts.at(-1).raw, /latest-before-access\.png/);
+        assert.doesNotMatch(extracts.at(-1).raw, /replaced-before-access|cancelled-before-access/);
+      } finally { accessResponseGate = null; gate.release(); }
+    });
+
+    await t.test("switching accounts clears a waiting upload before either account access response can read it", async () => {
+      const before = extracts.length, gate = holdAccessResponse();
+      try {
+        await page.goto(`${base}/create`);
+        await waitForStored(() => gate.started, "first account check");
+        await page.locator('input[type="file"][aria-label="Upload event information"]').setInputFiles(file("private-waiting-first-account.png"));
+        await page.getByRole("list", { name: "Selected files" }).waitFor();
+        accessResponseGate = null;
+        await page.evaluate(() => window.__creationBrowser.setFixtureOwner("waiting-second-host"));
+        await suggestions.waitFor();
+        assert.equal(await page.getByRole("list", { name: "Selected files" }).count(), 0, "the second account never sees the first account's waiting source");
+        gate.release();
+        await waitForStored(() => gate.finished, "late first account access response");
+        assert.equal(extracts.length, before, "neither the new grant nor the old late grant consumes the prior account's waiting file");
+        await page.locator('input[type="file"][aria-label="Upload event information"]').setInputFiles(file("current-waiting-second-account.png"));
+        await waitForImportedEditor();
+        assert.equal(extracts.length, before + 1);
+        assert.match(extracts.at(-1).raw, /current-waiting-second-account\.png/);
+        assert.doesNotMatch(extracts.at(-1).raw, /private-waiting-first-account/);
+      } finally { accessResponseGate = null; gate.release(); await openCreate(); }
+    });
+
+    await t.test("refocusing refreshes account access without hiding the form or resetting edits", async () => {
+      await openCreate(); await mode("Paste URL").click();
+      const publicUrl = page.getByLabel("Public event URL", { exact: true });
+      await publicUrl.fill("https://school.test/first-event");
+      const before = extracts.length, gate = holdAccessResponse();
+      try {
+        await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+        await waitForStored(() => gate.started, "background focus refresh");
+        assert.equal(await publicUrl.isEnabled(), true);
+        assert.equal(await publicUrl.inputValue(), "https://school.test/first-event");
+        assert.equal(await page.getByText("Loading your workspace…", { exact: true }).count(), 0);
+        await publicUrl.fill("https://school.test/edited-during-refresh");
+        accessResponseGate = null; gate.release();
+        await waitForStored(() => gate.finished, "completed account refresh");
+        assert.equal(await publicUrl.inputValue(), "https://school.test/edited-during-refresh");
+        assert.equal(extracts.length, before, "account refresh alone never reads event sources");
+      } finally { accessResponseGate = null; gate.release(); }
     });
 
     await t.test("enabled templates and inspiration intersect server category grants without fallback", async () => {
