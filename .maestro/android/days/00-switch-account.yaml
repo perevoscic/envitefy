@@ -1,0 +1,16 @@
+appId: com.envitefy.app
+androidWebViewHierarchy: devtools
+name: Switch only the Envitefy account through ordinary logout
+---
+- openLink: https://envitefy.com/
+- extendedWaitUntil:
+    visible: "Open navigation"
+    timeout: 60000
+- tapOn: "Open navigation"
+- tapOn: "Account menu for.*"
+- tapOn: "(?i)log out"
+- extendedWaitUntil:
+    visible: "Open menu"
+    timeout: 60000
+- takeScreenshot: envitefy-account-logged-out
+- runFlow: 00-existing-signin.yaml

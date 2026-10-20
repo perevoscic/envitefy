@@ -1,0 +1,56 @@
+appId: com.envitefy.app
+androidWebViewHierarchy: devtools
+name: Select an existing Google account and inspect sign-in result
+---
+- openLink: https://envitefy.com/
+- extendedWaitUntil:
+    visible: "Open menu"
+    timeout: 60000
+- tapOn: "Open menu"
+- tapOn: "(?i)^(login|sign in)$"
+- extendedWaitUntil:
+    visible: "Sign in with Google"
+    timeout: 30000
+- tapOn: "Sign in with Google"
+- extendedWaitUntil:
+    visible: "Choose an account|Выберите аккаунт"
+    timeout: 60000
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+- scrollUntilVisible:
+    element: '.*${MAESTRO_EMAIL_PATTERN}.*'
+    direction: DOWN
+    timeout: 15000
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: existing-google-account-choice
+- tapOn: '.*${MAESTRO_EMAIL_PATTERN}.*'
+- extendedWaitUntil:
+    visible: "Continue|Продолжить|Welcome.*|Open navigation|Access Denied|Verify.*|Enter.*code.*"
+    timeout: 60000
+- runFlow:
+    when:
+      visible: "Continue|Продолжить"
+    commands:
+      - assertVisible: 'accounts\.google\.com'
+      - assertVisible: '.*${MAESTRO_EMAIL_PATTERN}.*'
+      - assertVisible: ".*Envitefy.*"
+      - tapOn: "Continue|Продолжить"
+- runFlow:
+    when:
+      notVisible: "Verify.*|Enter.*code.*"
+    commands:
+      - extendedWaitUntil:
+          visible: "Open navigation"
+          timeout: 60000
+      - takeScreenshot: existing-account-signed-in
+- runFlow:
+    when:
+      visible: "Verify.*|Enter.*code.*"
+    commands:
+      - assertVisible: 'accounts\.google\.com'
+      - assertVisible: '.*${MAESTRO_EMAIL_PATTERN}.*'
+      - takeScreenshot: google-owner-verification-required

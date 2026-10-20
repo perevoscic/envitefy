@@ -33,6 +33,8 @@ const stepFiles = {
   "chrome-email-retry": "chrome-google-email-retry",
   "chrome-password": "chrome-google-password",
   "chrome-code": "chrome-google-code",
+  "chrome-request-code": "chrome-google-request-code",
+  "chrome-continue": "chrome-google-continue",
   "device-email": "device-google-email",
   "device-password": "device-google-password",
 };

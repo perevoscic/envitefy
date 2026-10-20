@@ -1,12 +1,97 @@
 # Maestro account testing
 
-This suite has twelve active account flows: QA01–QA12. The owner restored QA11 on October 17, 2026. Its calendar flow is enabled for both Android and website profiles; its live account activity has not started.
+This suite has twelve prepared account flows: QA01–QA12. The owner restored QA11 and then deferred its live run until later. Default selections use QA01–QA10 and QA12. QA11's profile remains available for explicit selection after the owner adds it; its live account activity has not started.
 
 The requested target is the Google Play Android app `com.envitefy.app`. Twelve **Google tester** credential pairs have been supplied in ignored `.env.maestro.local`; these have not been verified as Envitefy password accounts. `MAESTRO_AUTH_PROVIDER=google` identifies them, and the runner refuses to submit these credentials to Envitefy's password endpoint. The twelve specialized business workflows remain Android drafts. The separate account-activity runner exercises Google signup, real file upload, publication, dashboard persistence and reopening on the inspected Play build; consult the activity index for each account's evidence. A desktop browser test does not verify the Play build.
 
 The default command loads `.env.maestro.local`, or the same variables from the process environment in CI. It stops before app requests when required values are missing. Android preflight runs before any account login and rejects missing devices, missing packages, and packages not identified as Play installed.
 
 An optional website fixture mode creates twelve synthetic non-admin accounts and a disposable PostgreSQL cluster. These are separate from the supplied accounts and do not verify the Play build.
+
+## Revised closed-test plan — October 17, 2026
+
+The plan has two workstreams: human closed testing with enrollment evidence, and Maestro engineering checks. Continue useful engineering QA with the eleven existing app accounts while QA11 is deferred. A tester's human participation, Play enrollment, installation and app activity each need their own evidence.
+
+For personal developer accounts created after November 13, 2023, Google's production-access rule is at least twelve testers continuously opted in to a closed test for the preceding fourteen days. Our suggested session tasks and durations are our test design. [Official requirements](https://support.google.com/googleplay/android-developer/answer/14151465?hl=en).
+
+### Current evidence and open checks
+
+- One emulator has a verified Google Play installation of `com.envitefy.app`. Eleven separate Envitefy accounts created public test workshops with matching owners and anonymous guest checks. Ten explicit reopening routes are verified; QA01's additional route audit is incomplete.
+- QA01 has saved early-access Play UI evidence. The current evidence does not identify its qualifying closed-track enrollment or prove fourteen-day continuity. Individual closed-track enrollment and continuity remain unverified for the cohort. Confirm the track in Play Console and collect dated participant opt-in evidence.
+- Twelve credential pairs are configured. The number of participating humans is unverified; credentials and emulator sessions do not establish that number.
+- The September 19 closed-track draft report is historical. Verify today's release availability, countries, tester access and track before using it as the baseline.
+- The last recorded defects are a five-hour saved-time shift on eleven workshops and the altered QA05 title. Reproduce them on the current app, verify fixes, and preserve the original evidence. Native selector timeouts and Google's account limit remain separate tool/access observations.
+- Camera capture stays out of this round. Use Upload file. The specialized business flows remain Android drafts until calibrated on the Play-installed release.
+
+### Preparation and enrollment
+
+1. Confirm the developer account type and the applicable Play Console requirements. Complete any outstanding developer/device verification and verify the intended closed track is available. Use the current Console state rather than the dated draft report.
+2. Confirm actual human participants. Each participant uses their own Google account to join the closed test and install the offered build through Google Play. Record their separate Envitefy identity for reproducing issues; share no Google passwords. Device variety is our coverage recommendation.
+3. Maintain a private enrollment register with a participant reference, closed-track confirmation, dated opt-in evidence, Google Play installation evidence, device/Android/app version, and any opt-out/rejoin reports. Obtain participant confirmations and check the Console's aggregate test progress; do not assume it exposes an individual enrollment timestamp.
+4. Keep QA11 deferred until the owner adds it. With eleven verified participants, continue useful testing while adding the twelfth or another eligible participant. A small buffer above twelve is recommended for dropouts.
+5. Establish the qualifying cohort from actual enrollment evidence. For a selected twelve, the latest continuous opt-in start plus fourteen days is a planning estimate; verify eligibility in Play Console before applying. Earlier participants stay opted in through the application. Update the estimate after an opt-out or replacement. The current start and end dates are unknown.
+
+The private register and templates are under `output/maestro/closed-test/`. Unassigned slots and unknown dates are placeholders, not claims of enrollment. Its initial start dates remain null. The existing opt-in link is `https://play.google.com/apps/testing/com.envitefy.app`; confirm closed-track availability before recruitment.
+
+### Human testing journey
+
+Use one clearly named test event as the main thread. Pair hosts and guests, with some pairs using Live Cards, some Event Pages, and some Sign-up Forms. Rotate roles during the second week. Participants can keep their usual account signed in and return for an event-related purpose. The following are suggested focus days, not a required daily-open quota. Record actual sessions and allow ordinary gaps between them.
+
+| Day | Participant focus | Evidence or feedback |
+| --- | --- | --- |
+| 1 | Confirm opt-in and Play installation; sign in and explore. | Enrollment evidence; device/build; onboarding confusion. |
+| 2 | Upload a flyer and compare extracted facts with the original. | Exact title/date/time/location comparison; prioritize the recorded time/title defects. |
+| 3 | Edit details, explicitly save, close and reopen. | Same event ID; persisted changes; any lost work. |
+| 4 | Finish a draft and review its guest preview. | Clear wording, readable layout and required-field guidance. |
+| 5 | Publish the test event and share with a participating guest. | Public link; anonymous guest access; sharing clarity. |
+| 6 | Open a partner's event and RSVP. Try an enabled location or calendar action. | Guest experience; correct calendar date/time; external-app result when actually observed. |
+| 7 | As host, review responses and save a logistics update. | Response accuracy; updated information on the same public link. |
+| 8 | Return to the saved event after a break and find it again. | Discoverability, persistence and any unexpected sign-in requirement. |
+| 9 | Selected pairs use a Sign-up Form as host and participant. | Slot reservation, capacity, confirmation and host participant list. |
+| 10 | Change an RSVP or cancel a test reservation. Selected co-host pairs check access. | Updated counts, cancellation audit and relevant permissions. |
+| 11 | Background/reopen the app and try a brief network interruption. | Recovery behavior, clear failures and retained edits. |
+| 12 | Install an available test update and retest actual fixes. | Version or deployment reference, original bug ID and before/after result. |
+| 13 | Repeat the participant's main journey without detailed instructions. | Remaining confusion; reproduction of unresolved issues. |
+| 14 | Complete a final walkthrough and feedback summary. | What worked, what blocked completion and whether planning an event needed help. |
+
+A short focused visit can take about three to ten minutes; task complexity determines the time. An optional feature need not be exercised by every participant. Cover each important feature across the cohort and record which paths were actually tried.
+
+### Maestro and engineering work
+
+- Preserve the eleven existing workshops as reproductions. Resume by run ID and event ID. Check identity/history before any new upload; create another event only for a deliberate new case. Repeated daily creation is unnecessary for this plan.
+- Calibrate one representative host-to-guest journey first: Upload, fact review, explicit edits/save, reopen, public link and RSVP. After a fix, run the affected regression and broaden to the relevant account roles when evidence supports it.
+- Reproduce and address the last recorded time/title mismatches before treating those facts as reliable. Retest source text, saved fields, the guest page and actual calendar output where available. A local patch or passing UI command alone does not verify a deployed fix.
+- Use the prepared specialist flows for staged coverage of Live Card editing, Event Pages, Sign-up Forms, co-host permissions and account isolation. Mark each as prepared, calibrated, executed or verified according to its evidence.
+- Keep automated screenshots, console/JUnit output, Android errors and observed browser/API results linked to the exact run and event. Label sessions as automated. Human feedback is recorded from participant reports.
+- The current emulator's Google account-limit prompt affects its account switching. Broad Google web-session sign-out still needs the pending explicit authorization. Human testing on participants' own sessions can proceed independently; no Chrome reset, account removal or MFA bypass is part of this plan.
+
+### Review, logs and completion
+
+Review enrollment/Console progress and incoming feedback regularly throughout the window. For each actual session, record the participant or QA alias, human/automated source, timestamp, device/Android/app version, scenario, event ID, expected and observed result, and evidence references. Empty templates are not completed sessions.
+
+Triage feedback as a confirmed defect, usability feedback, incomplete verification, tool/access failure or missing authorization. Give defects a stable ID, severity, reproduction steps, cause status, fix/build reference and retest evidence. A screenshot alone does not establish a root cause. Preserve successful checks when another check fails.
+
+Use private Play feedback or the established Envitefy contact channel after confirming it reaches the team; retain feedback in the private tracker. Contact participants only through an owner-authorized channel. Do not commit private Google emails, credentials or participant details.
+
+Complete the technical review when core host/guest journeys have supporting evidence and release-blocking failures have been resolved and retested. Disclose remaining feature gaps. Separately, verify the qualifying closed-test milestone in Play Console. Prepare the production-access answers from actual engagement, feedback and shipped changes. Submission and approval remain separate steps. No eligibility date or approval is claimed by this plan.
+
+## Running Days 1–4
+
+Prepare the eleven existing accounts with `npm run maestro:days`. This reads their saved upload evidence and writes private task manifests to `output/maestro/closed-test/days-1-3/`; it performs no app actions. QA11 is rejected while deferred. Human enrollment, opt-in dates and feedback remain separate from automated sessions.
+
+Run a pilot with `npm run maestro:days -- --execute --accounts QA12 --days 1,2,3`. Day 1 uses normal existing-account Google login if needed, verifies Profile identity and explores the dashboard. Day 2 reuses the existing uploaded event, compares its source facts with a fresh owner read and checks original-document access; it does not generate duplicate events. Day 3 preserves a baseline, opens the actual editor, appends a clearly named test description marker only when Description/Save controls are present, saves explicitly, closes and reopens the same event, then verifies persisted text, identity, public link and preserved title/dates. If the deployed editor lacks those controls, save verification remains incomplete and its observed controls are saved for inspection.
+
+Each execution has a private HTML report, `session.json`, timestamped journal, source flow, Maestro console/JUnit/screenshots and bounded Android errors. Browser diagnostics only observe requests and read session/event fields. They never create or edit app records. Resume with the command stored in `session.json`, optionally selecting only the unfinished day. Passing Save evidence is required before a resumed run can claim persistence; an unexplained existing marker stops another write.
+
+Account switching is deliberately explicit: a session belonging to another Envitefy account stops that account's run. Sign in normally to the intended existing account, then resume. This runner never provisions users, accepts signup consent, signs out all Google sessions, captures camera media or invents human feedback. Do not mark three calendar days elapsed merely because these three engineering stages run in one session.
+
+Day 4 is selected explicitly with `node scripts/maestro-days.mjs --execute --accounts QA12 --days 4 --resume <saved-run-id>`. It checks healthy owner history before opening the coffee-conversation Event Page template, reuses a matching private Day 4 draft, enters approved test wording through Maestro, chooses Save draft, reopens the same draft and inspects Preview. Read-only diagnostics verify the saved owner/status/wording and anonymous access denial. It does not publish or send invitations. Required-field publication validation remains unverified when it cannot be exercised without publication; record visible guidance separately. A Day 3 blocker does not prevent this independent Day 4 run.
+
+For an authorized cohort run, `--switch-account` permits ordinary Envitefy logout followed by Login and selection of an existing Google session. The runner verifies the resulting Envitefy email before event actions. It does not add a Google account, sign out Google's other sessions, accept signup consent or bypass verification. An unavailable account or verification challenge stops that account's actions and retains its evidence. Run one UI helper at a time. The sign-in helper is copied with the main flow and digested in each switch attempt.
+
+October 17 implementation checkpoint: all eleven non-deferred accounts have task manifests and human checklists. QA12 passed Day 1 sign-in/Profile/dashboard checks and its first Day 2 upload review; the saved event still shifts both times by five hours. A subsequent read-only comparison verified its title, timezone, online location and URL. A later UI retry showed Android's “Chrome isn't responding” dialog and remains an environment interruption, with the earlier passing evidence retained. Day 3 could not find an Edit entry on the owned scanned-event page after dismissing calendar setup; no event edit occurred and save/reopen verification remains incomplete. The other ten accounts' new Day 1–3 executions remain unperformed. Native hierarchy omission and the DevTools hierarchy workaround are recorded with the pilot attempts; the new flows use Maestro's [documented WebView mode](https://docs.maestro.dev/extra-materials/troubleshooting/known-issues).
+
+October 20 manual Day 3–4 checkpoint: the owner authorized running the expired scheduled stages now, using actual October 20 timestamps. QA12 and QA02 still exposed no Edit entry on their owned scans; their Day 3 save/reopen checks remain incomplete. QA12 saved and reopened the same private Day 4 draft with the expected title/description and matching owner; its preview note was visible and the anonymous link withheld that wording. The anonymous route incorrectly described this saved draft as deleted (`DRAFT-GUEST-DELETED-NOTICE-001`, low severity). Required-field publication validation remains unverified. QA02 completed normal existing-account Google sign-in and entered the Day 4 wording, but `emulator-5556` disappeared during the Save draft tap. Its save result is unknown. Background and persistent AVD recovery attempts exited, so the remaining nine accounts were not run. Restore the existing AVD in Android Studio without wiping data, then inspect QA02 identity/history before resuming. The private report, source snapshots, JUnit/stdout, screenshots, diagnostics, classification and exact resume commands are under `output/maestro/closed-test/manual-1792504641939/`; the account index is `output/maestro/closed-test/days-1-3/index.html`. The expired automation is paused. Earlier workshops, flyers, confirmed time mismatches and successful checks are preserved.
 
 ## Real account activity and resumable logs
 
@@ -57,6 +142,8 @@ node scripts/maestro-run.mjs --flow QA01
 ```
 
 The dedicated AVD is `Envitefy_Maestro_Play` at `.tools/android/avd/`, using `emulator-5556` and the installed Android 36.1 Google Play image. Hardware acceleration is required. Its local AVD metadata corrects the old SDK tool's `target=android-0` output to the actual Android 36.1 image. It uses automatic graphics selection. No existing Android Studio AVD is overwritten. Android Studio's Running Devices panel can control the running emulator. To start it with its own interactive window after stopping the running instance, use `powershell -NoProfile -File scripts/maestro-android-emulator.ps1 -Wait -Visible`.
+
+If automatic graphics leaves this saved AVD offline, gracefully stop that instance before restarting with the optional `-SoftwareGraphics` switch. It uses `-gpu software -feature -Vulkan` and retains the AVD's data. This is an [Android-documented graphics troubleshooting option](https://developer.android.com/studio/run/emulator-troubleshooting). On October 20 the automatic retry did not finish booting within 180 seconds; the software/Vulkan-disabled retry completed boot in approximately 105 seconds and retained the Play app and QA02 session. This successful recovery does not establish the cause of the earlier device disappearance. Foreground and background launches now share one argument array. PowerShell syntax validation passed; the updated foreground wrapper has not been rerun while this AVD is active. Leave the launcher terminal running during testing when using `-Wait`.
 
 During setup this dedicated device needed a 540×1200 display override at 210 dpi and disabled Android transition animations after System UI/Pixel Launcher stalls. This preserves its approximate logical viewport while reducing software rendering load. It is not full-resolution visual verification. Google setup skips the optional Sign in with ease phone-number discovery and uses the explicit email form.
 
@@ -111,7 +198,7 @@ Installation coverage: the saved device evidence confirms one Google Play instal
 | QA08 | `08-signup-waitlist.yaml` | Join full-slot waitlist; API companion cancels the seeded reservation and verifies promotion |
 | QA09 | `09-event-cohost.yaml` | Explicit acceptance, wording edit, limited controls, server permissions and revocation |
 | QA10 | `10-signup-cohost.yaml` | Form acceptance, title edit, host dashboard and server permission boundaries |
-| QA11 | `11-dashboard-calendar.yaml` | Dashboard filters and calendar choices; requires an owned published Live Card; Android calibration pending |
+| QA11 | `11-dashboard-calendar.yaml` | Prepared and deferred by owner; requires an owned published Live Card; Android calibration pending |
 | QA12 | `12-account-isolation.yaml` | Unrelated private history access, participant projection, original denial with positive owner control |
 
 The filenames `auth-onboarding` and `snap-upload` identify coverage families. QA01 uses an existing account; it does not certify new-account registration/onboarding. QA05 uses an existing scan; it does not certify the file picker or provider OCR. These limits are also recorded in run reports. Each flow requires its documented records before it runs.
@@ -167,4 +254,4 @@ Passwords are passed through the CLI's `MAESTRO_` environment mechanism, never c
 
 Official references: [installation](https://docs.maestro.dev/maestro-cli/how-to-install-maestro-cli), [web support](https://docs.maestro.dev/get-started/supported-platform/web-browser), [test artifacts](https://docs.maestro.dev/maestro-flows/workspace-management/test-reports-and-artifacts).
 
-Latest live checkpoint: QA11 was restored on October 17, bringing the configured cohort to twelve accounts. The eleven previously tested accounts (QA01–QA10 and QA12) retain distinct matching-owner Snap events and anonymous guest HTTP 200 checks. QA11 has supplied credentials but no verified live activity yet. Ten explicit reopening routes are verified; QA01's route audit remains incomplete because Google reached its signed-in-account limit and broad Google web-session sign-out still awaits explicit approval. Every saved workshop repeats the five-hour time mismatch; QA05 also has the confirmed title mismatch. Camera capture is unavailable and unverified. The specialized business feature flows remain separate drafts.
+Latest live checkpoint: twelve QA profiles are prepared; QA11 is deferred and omitted from default selection. QA01–QA10 and QA12 retain eleven matching-owner public workshops and ten explicit reopening checks. QA01's additional route audit remains incomplete at the Google account limit; broad Google web-session sign-out still awaits explicit authorization. The last recorded time mismatch affects eleven workshops and QA05 has the additional title mismatch. Saved Play early-access evidence and app account activity do not establish the qualifying closed-track enrollment or continuity. The revised plan begins with those checks; dates remain unknown. Camera capture remains unavailable.

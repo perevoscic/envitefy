@@ -1,0 +1,12 @@
+appId: com.android.chrome
+name: Request verification for the selected existing Google tester
+---
+- assertVisible: 'accounts\.google\.com'
+- assertVisible: '.*${MAESTRO_EMAIL_PATTERN}.*'
+- assertVisible: "Verify it.s you"
+- assertVisible: ".*39.*"
+- tapOn: "^Get code$"
+- extendedWaitUntil:
+    visible: "Enter the 6-digit code.*"
+    timeout: 30000
+- takeScreenshot: google-code-requested

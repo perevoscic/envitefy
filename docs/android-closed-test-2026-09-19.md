@@ -1,5 +1,10 @@
 # Envitefy closed-test preparation — September 19, 2026
 
+Historical snapshot: the status below describes September 19 only. The current
+operational plan is in [Maestro account testing](maestro-qa.md#revised-closed-test-plan--october-17-2026).
+Later Play installation and app-account activity do not establish the current
+closed-track participant count or fourteen-day continuity.
+
 Status: **Alpha release saved as a draft; closed testing is not live.**
 No tester invitations were sent, no new tester addresses were supplied, and the
 14-day qualification period has not started. The Play dashboard showed zero

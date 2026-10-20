@@ -1,0 +1,6 @@
+appId: com.android.chrome
+name: Keep the existing Chrome session after an Android not-responding prompt
+---
+- assertVisible: "Chrome isn't responding"
+- tapOn: "Wait"
+- takeScreenshot: chrome-wait-selected

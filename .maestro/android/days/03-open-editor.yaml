@@ -1,0 +1,20 @@
+appId: com.envitefy.app
+androidWebViewHierarchy: devtools
+name: Day 3 inspect the existing event editor
+---
+- openLink: ${MAESTRO_SAVED_EVENT_URL}
+- extendedWaitUntil:
+    visible: '(?s).*${MAESTRO_ACCOUNT}.*Test.*Workshop.*'
+    timeout: 60000
+- runFlow:
+    when:
+      visible: "Keep scanned events.*"
+    commands:
+      - tapOn: "(?i)not now"
+- scrollUntilVisible:
+    element:
+      text: "(?i)^edit$|edit event|edit event details"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "(?i)^edit$|edit event|edit event details"
+- takeScreenshot: day-three-editor

@@ -1,0 +1,17 @@
+appId: com.envitefy.app
+androidWebViewHierarchy: devtools
+name: Day 4 open the private Event Page draft editor
+---
+- openLink: ${MAESTRO_DAY4_EDITOR_URL}
+- extendedWaitUntil:
+    visible: "Add your details|Headline.*|Edit|Save draft"
+    timeout: 60000
+- runFlow:
+    when:
+      visible: "^Edit$"
+    commands:
+      - tapOn: "^Edit$"
+- extendedWaitUntil:
+    visible: "Headline.*"
+    timeout: 30000
+- takeScreenshot: day-four-editor

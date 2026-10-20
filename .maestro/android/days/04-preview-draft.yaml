@@ -1,0 +1,27 @@
+appId: com.envitefy.app
+androidWebViewHierarchy: devtools
+name: Day 4 reopen the saved draft and inspect its guest preview
+---
+- openLink: ${MAESTRO_DAY4_EDITOR_URL}
+- extendedWaitUntil:
+    visible: "^Preview$|^Edit$"
+    timeout: 60000
+- runFlow:
+    when:
+      visible: "^Preview$"
+    commands:
+      - tapOn: "^Preview$"
+- extendedWaitUntil:
+    visible: '.*${MAESTRO_ACCOUNT}.*Day 4.*Preview.*'
+    timeout: 30000
+- assertVisible: "^Edit$"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: day-four-guest-preview
+- scrollUntilVisible:
+    element: ${MAESTRO_DAY4_DESCRIPTION}
+    direction: DOWN
+    centerElement: true
+    timeout: 15000
+- assertVisible: ${MAESTRO_DAY4_DESCRIPTION}
+- takeScreenshot: day-four-preview-details

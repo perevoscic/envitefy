@@ -1,0 +1,14 @@
+appId: com.envitefy.app
+androidWebViewHierarchy: devtools
+name: Day 3 explicitly save an edited test description
+---
+# Run only after the runner observes a real editable Description field and Save control.
+- tapOn: "(?i)^description$"
+- eraseText: 100
+- inputText: ${MAESTRO_DAY3_DESCRIPTION}
+- hideKeyboard
+- takeScreenshot: day-three-before-save
+- tapOn: "(?i)^save changes$|^save event$|^save$"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: day-three-after-save

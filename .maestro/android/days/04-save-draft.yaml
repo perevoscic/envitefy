@@ -1,0 +1,34 @@
+appId: com.envitefy.app
+androidWebViewHierarchy: devtools
+name: Day 4 edit details and explicitly save a private draft
+---
+- runFlow:
+    when:
+      true: ${MAESTRO_DAY4_NEW === 'true'}
+    commands:
+      - tapOn: "^Headline.*"
+      - tapOn:
+          text: "^Headline$"
+          index: 1
+      - inputText: ${MAESTRO_DAY4_TITLE}
+      - assertVisible: ${MAESTRO_DAY4_TITLE}
+      - tapOn: "Back to details"
+      - tapOn: "^Details.*"
+      - scrollUntilVisible:
+          element: "^Description$"
+          direction: DOWN
+          centerElement: true
+          timeout: 15000
+      - tapOn: "^Description$"
+      - inputText: ${MAESTRO_DAY4_DESCRIPTION}
+      - assertVisible: ${MAESTRO_DAY4_DESCRIPTION}
+      - hideKeyboard
+- scrollUntilVisible:
+    element: "Save draft"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "Save draft"
+- extendedWaitUntil:
+    visible: "Draft saved.*"
+    timeout: 60000
+- takeScreenshot: day-four-draft-saved

@@ -1,0 +1,55 @@
+appId: com.envitefy.app
+androidWebViewHierarchy: devtools
+name: Day 1 existing tester sign-in and exploration
+---
+- openLink: https://envitefy.com/
+- extendedWaitUntil:
+    visible: "Open navigation|Open menu|Welcome.*"
+    timeout: 60000
+- runFlow:
+    when:
+      visible: "Open menu"
+    commands:
+      - tapOn: "Open menu"
+      - tapOn: "(?i)^(login|sign in)$"
+      - extendedWaitUntil:
+          visible: "Sign in with Google"
+          timeout: 30000
+      - tapOn: "Sign in with Google"
+      - extendedWaitUntil:
+          visible: "Choose an account|Выберите аккаунт"
+          timeout: 60000
+      - scrollUntilVisible:
+          element: '.*${MAESTRO_EMAIL_PATTERN}.*'
+          direction: DOWN
+          timeout: 15000
+      - tapOn: '.*${MAESTRO_EMAIL_PATTERN}.*'
+      - extendedWaitUntil:
+          visible: "Continue|Продолжить|Open navigation|Welcome.*|Access Denied|Error 400.*"
+          timeout: 60000
+      - runFlow:
+          when:
+            visible: "Continue|Продолжить"
+          commands:
+            - assertVisible: '.*${MAESTRO_EMAIL_PATTERN}.*'
+            - tapOn: "Continue|Продолжить"
+- extendedWaitUntil:
+    visible: "Open navigation"
+    timeout: 60000
+- tapOn: "Open navigation"
+- extendedWaitUntil:
+    visible: "Account menu for.*"
+    timeout: 15000
+- tapOn: "Account menu for.*"
+- tapOn: "Profile"
+- scrollUntilVisible:
+    element: '.*${MAESTRO_EMAIL_PATTERN}.*'
+    direction: DOWN
+    timeout: 20000
+- assertVisible: '.*${MAESTRO_EMAIL_PATTERN}.*'
+- takeScreenshot: day-one-profile
+- openLink: https://envitefy.com/
+- extendedWaitUntil:
+    visible: "Refresh dashboard"
+    timeout: 60000
+- takeScreenshot: day-one-dashboard

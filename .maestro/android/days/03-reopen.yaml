@@ -1,0 +1,13 @@
+appId: com.envitefy.app
+androidWebViewHierarchy: devtools
+name: Day 3 close the app and reopen the same saved event
+---
+- pressKey: Home
+- stopApp
+- launchApp:
+    clearState: false
+- openLink: ${MAESTRO_SAVED_EVENT_URL}
+- extendedWaitUntil:
+    visible: '(?s).*${MAESTRO_ACCOUNT}.*Test.*Workshop.*'
+    timeout: 60000
+- takeScreenshot: day-three-reopened-event

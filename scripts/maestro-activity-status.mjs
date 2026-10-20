@@ -1,6 +1,11 @@
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { ACTIVE_SCENARIOS, DEFERRED_ACCOUNTS, DISABLED_ACCOUNTS, ROOT } from "./lib/maestro-core.mjs";
+import {
+  ACTIVE_SCENARIOS,
+  DEFERRED_ACCOUNTS,
+  DISABLED_ACCOUNTS,
+  ROOT,
+} from "./lib/maestro-core.mjs";
 
 const root = path.join(ROOT, "output/maestro");
 const optional = async (file, fallback) => {
@@ -32,7 +37,9 @@ for (const scenario of ACTIVE_SCENARIOS) {
   if (!state) {
     accounts.push({
       account: scenario.account,
-      status: DEFERRED_ACCOUNTS.has(scenario.account) ? "Deferred by owner; not started" : "Not started",
+      status: DEFERRED_ACCOUNTS.has(scenario.account)
+        ? "Deferred by owner; not started"
+        : "Not started",
     });
     continue;
   }

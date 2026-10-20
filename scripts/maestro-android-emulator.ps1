@@ -1,4 +1,4 @@
-param([switch]$Wait, [switch]$Visible)
+param([switch]$Wait, [switch]$Visible, [switch]$SoftwareGraphics)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 $sdk = if ($env:ANDROID_HOME) { $env:ANDROID_HOME } else { Join-Path $env:USERPROFILE 'AppData/Local/Android/Sdk' }
@@ -35,12 +35,20 @@ if ($connected -match '^emulator-5556\s+') {
 }
 $logs = Join-Path $repo 'qa-artifacts/maestro/android-emulator'
 New-Item -ItemType Directory -Force -Path $logs | Out-Null
+$emulatorArgs = @('-avd', $avdName, '-port', '5556')
+if (-not $Visible) { $emulatorArgs += '-no-window' }
+$emulatorArgs += @('-no-audio', '-no-snapshot', '-no-boot-anim')
+if ($SoftwareGraphics) {
+  $emulatorArgs += @('-gpu', 'software', '-feature', '-Vulkan')
+} else {
+  $emulatorArgs += @('-gpu', 'auto')
+}
 if ($Wait) {
   Write-Output 'Starting dedicated Google Play emulator emulator-5556. Keep this terminal running while using Maestro.'
-  $windowArgs = if ($Visible) { @() } else { @('-no-window') }
-  & (Join-Path $sdk 'emulator/emulator.exe') -avd $avdName -port 5556 @windowArgs -no-audio -no-snapshot -no-boot-anim -gpu auto
+  & (Join-Path $sdk 'emulator/emulator.exe') @emulatorArgs
   exit $LASTEXITCODE
 }
-$process = Start-Process -FilePath (Join-Path $sdk 'emulator/emulator.exe') -ArgumentList @('-avd', $avdName, '-port', '5556', '-no-window', '-no-audio', '-no-snapshot', '-no-boot-anim', '-gpu', 'auto') -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logs 'stdout.log') -RedirectStandardError (Join-Path $logs 'stderr.log')
+$windowStyle = if ($Visible) { 'Normal' } else { 'Hidden' }
+$process = Start-Process -FilePath (Join-Path $sdk 'emulator/emulator.exe') -ArgumentList $emulatorArgs -WindowStyle $windowStyle -PassThru -RedirectStandardOutput (Join-Path $logs 'stdout.log') -RedirectStandardError (Join-Path $logs 'stderr.log')
 Set-Content -LiteralPath (Join-Path $logs 'process-id.txt') -Value $process.Id
 Write-Output "Started dedicated Google Play emulator emulator-5556 (PID $($process.Id)). Boot may take a minute. Maestro will use this device; no Google account login or app installation was performed."

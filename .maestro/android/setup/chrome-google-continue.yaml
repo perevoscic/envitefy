@@ -1,0 +1,11 @@
+appId: com.android.chrome
+name: Continue the selected existing Google account into Envitefy
+---
+- assertVisible: 'accounts\.google\.com'
+- assertVisible: '.*${MAESTRO_EMAIL_PATTERN}.*'
+- assertVisible: ".*Envitefy.*"
+- tapOn: "^Continue$|^Продолжить$"
+- extendedWaitUntil:
+    visible: "Open navigation"
+    timeout: 60000
+- takeScreenshot: existing-account-continuation-result

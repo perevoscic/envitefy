@@ -26,6 +26,8 @@
     "maestro:check": "node scripts/maestro-run.mjs --check",
     "test:maestro:local": "node scripts/maestro-run.mjs --local-fixtures",
     "test:maestro:runner": "node --test scripts/maestro-runner.test.mjs",
+    "maestro:days": "node scripts/maestro-days.mjs",
+    "test:maestro:days": "node --test scripts/maestro-days.test.mjs",
     "maestro:triage": "node scripts/maestro-triage.mjs",
     "test:concierge": "node --import ./scripts/lib/create-offline-network.mjs --test --test-concurrency=1 src/app/landing/page.test.mjs src/lib/guest-chat/respond.test.mjs scripts/concierge-scroll-browser.test.cjs",
     "test:cohosts": "node --test --test-concurrency=1 scripts/event-collaboration.test.cjs src/components/dashboard/HomeOverviewDashboard.render.test.mjs scripts/cohost-notifications-browser.test.cjs scripts/event-collaboration-browser.test.cjs",

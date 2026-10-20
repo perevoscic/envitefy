@@ -1,0 +1,17 @@
+appId: com.envitefy.app
+androidWebViewHierarchy: devtools
+name: Day 2 review an existing uploaded event without another scan
+---
+- openLink: ${MAESTRO_SAVED_EVENT_URL}
+- extendedWaitUntil:
+    visible: '(?s).*${MAESTRO_ACCOUNT}.*Test.*Workshop.*'
+    timeout: 60000
+- runFlow:
+    when:
+      visible: "Keep scanned events.*"
+    commands:
+      - tapOn: "(?i)not now"
+- takeScreenshot: day-two-saved-upload
+- swipe:
+    direction: UP
+- takeScreenshot: day-two-event-details
