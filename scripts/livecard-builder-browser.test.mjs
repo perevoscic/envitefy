@@ -411,6 +411,10 @@ test("Live Card: location retries, explicit saves, invitation download and respo
       await page.setViewportSize({ width, height: 844 });
       await checkMobileEditor();
       assert.equal(await page.getByRole("group", { name: "Save and publish", exact: true }).count(), 0, "mobile Your card has no detached save/publish row");
+      assert.equal(await page.getByRole("button", { name: "Preview card", exact: true }).count(), 0, "Your card omits Preview card before artwork exists");
+      await page.getByRole("button", { name: "2 Event details", exact: true }).click();
+      assert.equal(await page.getByRole("button", { name: "Preview card", exact: true }).count(), 0, "Event details omits Preview card before artwork exists");
+      await page.getByRole("button", { name: "1 Your card", exact: true }).click();
       await startingIdeas.getByRole("list").getByRole("button").nth(3).waitFor();
       assert.equal(await startingIdeas.isVisible(), true, "mobile shows starting ideas before choosing an event type");
       assert.equal(await page.getByLabel("Occasion (optional)", { exact: true }).inputValue(), "General event");
@@ -489,6 +493,8 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     await page.getByLabel("Occasion (optional)", { exact: true }).selectOption("Birthday");
     await page.getByLabel("Describe the look").fill("Pink movie night with popcorn and stars");
     await page.getByLabel("Event title", { exact: true }).fill("Livia's Movie Night");
+    await page.getByRole("button", { name: "Add an opening line (optional)", exact: true }).click();
+    await page.getByLabel("Opening line (optional)", { exact: true }).fill("Join us for movie magic");
     assert.equal(await page.getByRole("button", { name: "Generate & continue", exact: true }).isEnabled(), true);
     assert.equal(saves.length, 0, "typing stays in memory");
     assert.equal(generations.length, 0, "generation needs an explicit action");
@@ -503,6 +509,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     await page.screenshot({ path: path.join(out, "desktop-details-summary.png"), fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal(await page.getByRole("button", { name: "Preview card", exact: true }).count(), 0, "an initial generation placeholder does not expose Preview card");
     await page.screenshot({ path: path.join(out, "mobile-details-summary.png"), fullPage: true, animations: "disabled" });
     await page.setViewportSize({ width: 1440, height: 1080 });
     assert.equal(await page.getByRole("button", { name: "2 Event details", exact: true }).getAttribute("aria-current"), "step", "generation opens Event details immediately");
@@ -595,6 +602,8 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.equal(locationRequests.length, 0, "typing a venue never starts lookup or shows provider failures");
     await page.getByRole("button", { name: "Add another location" }).click();
     await page.getByLabel("What happens here?").fill("Dinner");
+    await page.getByLabel("Local time (optional)", { exact: true }).fill("20:15");
+    await page.getByLabel("Extra directions (optional)", { exact: true }).fill("Meet by the garden entrance.");
     await page.getByLabel("Venue name", { exact: true }).fill("456 Lake St, Chicago");
     assert.equal(await page.getByLabel("Local time zone", { exact: true }).count(), 0);
     await openSection("RSVP");
@@ -607,6 +616,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
       phone.compareDocumentPosition(document.getElementById("livecard-hostEmail")) & Node.DOCUMENT_POSITION_FOLLOWING
     )), "host phone appears before optional email");
     await page.getByLabel("Host email (optional)").fill("mia@example.com");
+    await page.getByLabel("Reply by (optional)", { exact: true }).fill("2026-10-01");
     await openSection("Registry");
     await page.getByRole("switch", { name: /registry or gift list/ }).click();
     await page.getByLabel("Registry or gift-list link").fill("https://example.com/gifts");
@@ -843,7 +853,25 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.equal(await page.getByRole("button", { name: "Use reviewed wording", exact: true }).count(), 0);
     assert.equal(await page.getByRole("region", { name: "Review Overview wording", exact: true }).count(), 0);
     assert.equal(saves.length, savedBeforeProofreading, "automatic proofreading never saves or publishes");
-    assert.match(await page.locator("dl").textContent(), /Oct 4, 2026, 6:00 PM–9:00 PM/, "Review includes both times in Chicago despite a Tokyo browser");
+    const reviewDetails = page.getByRole("region", { name: "Review details", exact: true });
+    const allEnteredDetails = await reviewDetails.innerText();
+    for (const value of ["Oct 4, 2026", "6:00 PM", "9:00 PM", "America/Chicago"]) {
+      assert.ok(allEnteredDetails.includes(value), `Review shows the event-local schedule despite a Tokyo browser: ${value}`);
+    }
+    for (const value of [
+      "Livia's Movie Night", "Join us for movie magic", "A movie and dinner with freinds.",
+      "Bring a jacket.", "Dinner", "456 Lake St", "Meet by the garden entrance.",
+      "Mia", "850-555-0199", "mia@example.com", "https://example.com/gifts",
+      "Your presence is our present.",
+    ]) {
+      assert.ok(allEnteredDetails.includes(value), `Review includes the entered value: ${value}`);
+    }
+    assert.equal(await page.getByRole("button", { name: "Preview card", exact: true }).count(), 0, "Review omits its Preview card button");
+    assert.equal(await reviewDetails.getByRole("region", { name: "Card design", exact: true }).count(), 0, "Review omits design prompts, occasion and reference inputs");
+    assert.equal(await reviewDetails.getByRole("region", { name: "Published card address", exact: true }).count(), 0, "Review omits the public card address");
+    assert.doesNotMatch(allEnteredDetails, /Pink movie night with popcorn and stars|Describe the look|Card address/, "Review keeps design configuration and card address out of its summary");
+    assert.match(allEnteredDetails, /8:15 PM/, "Review includes each additional location's entered local time");
+    assert.match(allEnteredDetails, /Oct 1, 2026|October 1, 2026/, "Review includes the RSVP reply deadline");
     assert.equal(await page.getByText("Card text needs updating", { exact: true }).count(), 0, "finished lettering has no temporary-font notice");
     assert.equal(await page.getByLabel("Live card share link").count(), 0);
     await page.waitForFunction(() => document.activeElement?.textContent === "Review your invitation");
@@ -873,37 +901,46 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     const savesBeforeDraftMobileReview = saves.length;
     const generationsBeforeDraftMobileReview = generations.length;
     await page.setViewportSize({ width: 390, height: 844 });
-    const draftMobileReview = page.getByRole("dialog", { name: "Review your Live Card", exact: true });
-    await draftMobileReview.waitFor();
-    assert.equal(await draftMobileReview.getByRole("button", { name: "Publish invitation", exact: true }).isEnabled(), true, "a prepared draft publishes directly from mobile Review");
-    assert.equal(await draftMobileReview.getByRole("button", { name: "Review invitation", exact: true }).count(), 0, "mobile Review never loops a draft back to Review");
-    await draftMobileReview.getByRole("button", { name: "Close review", exact: true }).click();
-    await draftMobileReview.waitFor({ state: "hidden" });
+    const draftMobileReview = page.getByRole("dialog", { name: "Preview your Live Card", exact: true });
+    assert.equal(await draftMobileReview.count(), 0, "resizing Review does not automatically open the card");
+    await reviewDetails.waitFor();
+    assert.equal(await page.getByRole("region", { name: "Live Card output", exact: true }).isVisible(), false, "mobile Review hides the inline artwork instead of stacking it above the summary");
+    assert.equal(await reviewDetails.innerText(), allEnteredDetails, "mobile Review shows the same entered details as desktop");
+    assert.equal(await page.getByRole("button", { name: "Preview card", exact: true }).count(), 0, "mobile Review omits its Preview card button");
+    const draftReviewActions = page.locator("form").getByRole("group", { name: "Save and publish", exact: true });
+    assert.equal(await draftReviewActions.getByRole("button", { name: "Publish invitation", exact: true }).isEnabled(), true, "a prepared draft publishes directly from the mobile Review summary");
+    assert.equal(await draftReviewActions.getByRole("button", { name: "Save draft", exact: true }).isEnabled(), true, "mobile Review retains explicit draft saving");
+    assert.equal(await draftReviewActions.getByRole("button", { name: "Review invitation", exact: true }).count(), 0, "mobile Review never loops a draft back to Review");
+    await draftReviewActions.scrollIntoViewIfNeeded();
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, "Review's mobile publication actions fit the form width");
     assert.equal(saves.length, savesBeforeDraftMobileReview, "reviewing a draft on mobile does not save or publish");
     assert.equal(generations.length, generationsBeforeDraftMobileReview, "reviewing a draft on mobile reuses its artwork");
     await page.setViewportSize({ width: 1440, height: 1080 });
     await page.getByRole("button", { name: "3 Review", exact: true }).click();
     await page.getByRole("button", { name: "Gift List", exact: true }).click();
-    await page.getByText("Your presence is our present.", { exact: true }).waitFor();
+    await page.locator('[data-live-card-panel-kind="registry"]').getByText("Your presence is our present.", { exact: true }).waitFor();
     await page.getByRole("button", { name: "Visit Gift List", exact: true }).click();
     assert.equal(await page.evaluate(() => window.__opened.at(-1)), "https://example.com/gifts");
     await page.getByRole("button", { name: "Close card details", exact: true }).click();
     await page.setViewportSize({ width: 390, height: 844 });
-    await draftMobileReview.waitFor();
+    await draftReviewActions.waitFor();
     failSave = true;
     holdSave = true;
     const publishing = new Promise((resolve) => { saveStarted = resolve; });
-    await page.getByRole("button", { name: "Publish invitation", exact: true }).click();
+    await draftReviewActions.getByRole("button", { name: "Publish invitation", exact: true }).click();
     await publishing;
     await page.locator('[data-publish-progress="publishing"]').waitFor();
     assert.equal(await page.getByRole("button", { name: "Cancel and keep editing", exact: true }).count(), 0, "persistence cannot be canceled halfway through");
     releaseSave();
-    await draftMobileReview.getByText("Test save failed. Please retry.").waitFor();
+    await draftMobileReview.waitFor({ state: "hidden" });
+    await page.getByText("Test save failed. Please retry.").waitFor();
     assert.equal(await page.locator("[data-publish-progress]").count(), 0, "failed saves close progress");
     assert.equal(stored.data.status, "draft");
     failSave = false;
-    await page.getByRole("button", { name: "Publish invitation", exact: true }).click();
+    await draftReviewActions.getByRole("button", { name: "Publish invitation", exact: true }).click();
     await page.getByText("Your Live Card is published. It's ready to share.", { exact: true }).waitFor();
+    assert.equal(await draftMobileReview.count(), 0, "publishing from the summary does not open the card preview");
+    assert.equal(await page.getByRole("region", { name: "Published card address", exact: true }).count(), 0, "publishing does not add a Card address section to Review");
     assert.equal(await page.getByRole("status").filter({ hasText: "No changes to save." }).isVisible(), true, "successful publication explains why Save changes is disabled");
     assert.equal(await page.getByRole("button", { name: /^(Invite co-host|Manage access)$/ }).count(), 0, "publication keeps co-host access in the owner workspace rather than the builder");
     assert.equal(await page.getByRole("button", { name: "Custom URL", exact: true }).count(), 0, "Review keeps URL settings in Event details");
@@ -914,11 +951,10 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.equal(stored.data.studioCard.invitationData.eventDetails.actionVisibility.rsvp, true);
     assert.equal(generations.length, 1, "editing guest details and publishing reuse the artwork");
     assert.equal(stored.data.status, "published", "the mobile Review primary action publishes the existing draft");
-    await draftMobileReview.getByRole("button", { name: "Close review", exact: true }).click();
-    await draftMobileReview.waitFor({ state: "hidden" });
     await page.setViewportSize({ width: 1440, height: 1080 });
     await page.goto(`${origin}/live-cards?edit=${stored.id}`);
     await shareButton.waitFor();
+    await page.getByRole("button", { name: "2 Event details", exact: true }).click();
     assert.equal(await shareButton.isEnabled(), true, "published saved cards can be shared");
     assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).count(), 1, "published cards use one Save changes action");
     assert.equal(await page.getByRole("button", { name: "Publish", exact: true }).count(), 0, "published cards do not offer Publish again");
@@ -1163,7 +1199,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     await page.getByRole("button", { name: "Preview Live Card", exact: true }).click();
     await page.getByRole("button", { name: "Close preview", exact: true }).click();
     assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).isDisabled(), true, "preview choice is not unsaved progress");
-    const mobileReview = page.getByRole("dialog", { name: "Review your Live Card", exact: true });
+    const mobileReview = page.getByRole("dialog", { name: "Preview your Live Card", exact: true });
     const readEditorScroll = () => page.locator("form").evaluate((form) => {
       const positions = [window.scrollY];
       for (let node = form; node; node = node.parentElement) positions.push(node.scrollTop);
@@ -1176,15 +1212,24 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     ]) {
       await page.setViewportSize(viewport);
       await page.emulateMedia({ reducedMotion: viewport.width === 390 ? "no-preference" : "reduce" });
-      if (viewport.width === 390) {
-        await mobileReview.waitFor();
-        assert.equal(await mobileReview.getAttribute("data-mobile-swipe"), "true", "resizing desktop Review opens the separate mobile card surface");
-        await mobileReview.getByRole("button", { name: "Close review", exact: true }).click();
-        await mobileReview.waitFor({ state: "hidden" });
+      assert.equal(await mobileReview.count(), 0, "resizing Review keeps the summary visible without opening the card");
+      await reviewDetails.waitFor();
+      assert.equal(await page.getByRole("region", { name: "Live Card output", exact: true }).isVisible(), false, "mobile Review has no inline card stacked above its summary");
+      const summaryBeforeReview = await reviewDetails.innerText();
+      for (const value of ["Updated title", "Join us for movie magic", "Updated welcome", "Bring a jacket.", "Dinner", "Meet by the garden entrance.", "Mia", "850-555-0199", "mia@example.com", "https://example.com/gifts", "Your presence is our present."]) {
+        assert.ok(summaryBeforeReview.includes(value), "mobile Review includes the entered value: " + value);
       }
-      await openSection("Message");
+      assert.equal(await page.getByRole("button", { name: "Preview card", exact: true }).count(), 0, "mobile Review omits its Preview card button");
+      assert.equal(await reviewDetails.getByRole("region", { name: "Card design", exact: true }).count(), 0, "mobile Review omits Design");
+      assert.equal(await reviewDetails.getByRole("region", { name: "Published card address", exact: true }).count(), 0, "mobile Review omits Card address");
+      const mobileSummarySave = page.locator("form").getByRole("group", { name: "Save changes", exact: true });
+      assert.equal(await mobileSummarySave.isVisible(), true, "published mobile Review exposes Save changes without a preview detour");
+      assert.equal(await mobileSummarySave.getByRole("button", { name: "Save changes", exact: true }).isDisabled(), true, "a clean mobile Review keeps Save changes disabled");
+      await page.screenshot({ path: path.join(out, `review-${viewport.width}.png`), fullPage: true });
+      await page.getByRole("button", { name: "Back to edit", exact: true }).click();
+      assert.equal(await page.getByRole("tab", { name: "Message", exact: true }).getAttribute("aria-selected"), "true", "Back to edit restores the active details tab");
       const messageBeforeReview = await page.getByLabel("Message to guests (optional)").inputValue();
-      const reviewTrigger = page.getByRole("button", { name: "Review Live Card", exact: true });
+      const reviewTrigger = page.getByRole("button", { name: "Preview card", exact: true });
       await reviewTrigger.scrollIntoViewIfNeeded();
       await reviewTrigger.focus();
       const scrollBeforeReview = await readEditorScroll();
@@ -1207,10 +1252,10 @@ test("Live Card: location retries, explicit saves, invitation download and respo
       await reviewTrigger.click();
       await mobileReview.waitFor();
       assert.equal(await mobileReview.getAttribute("data-mobile-swipe"), "true");
-      assert.equal(await mobileReview.getByRole("button", { name: "Close preview", exact: true }).count(), 0, "mobile Review has one circular close action");
+      assert.equal(await mobileReview.getByRole("button", { name: "Close review", exact: true }).count(), 0, "card Preview uses a circular Close preview action");
       assert.equal(await mobileReview.getByRole("button", { name: "Back to edit", exact: true }).count(), 0, "mobile Review returns through its top-right X instead of a separate toolbar button");
       assert.equal(await mobileReview.getByRole("button", { name: "Cancel", exact: true }).count(), 0, "mobile Review omits the footer Cancel action");
-      assert.equal(await page.getByRole("region", { name: "Live Card output", exact: true }).count(), 0, "mobile Review never stacks a second card above the editor");
+      assert.equal(await page.getByRole("region", { name: "Live Card output", exact: true }).isVisible(), false, "mobile Review never stacks a second card above its summary");
       assert.equal(await mobileReview.getByRole("heading", { name: "Review your invitation", exact: true }).count(), 0, "the card surface has no summary to scroll down to");
       const motion = await page.evaluate(() => window.__mobileReviewMotion);
       if (viewport.width === 390) {
@@ -1237,7 +1282,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
       }
       const reviewActions = await checkSaveActionGeometry(mobileReview, "Save changes", `mobile Review ${viewport.width}x${viewport.height}`);
       assert.equal(await mobileReview.getByRole("group", { name: "Save changes", exact: true }).getByRole("button").count(), 1, "a published mobile card has only Save changes beneath the artwork");
-      const backBounds = await mobileReview.getByRole("button", { name: "Close review", exact: true }).boundingBox();
+      const backBounds = await mobileReview.getByRole("button", { name: "Close preview", exact: true }).boundingBox();
       assert.ok(backBounds && backBounds.x >= 0 && backBounds.y >= 0 && backBounds.x + backBounds.width <= viewport.width + 1 && backBounds.y + backBounds.height <= viewport.height + 1, "Close review stays on screen");
       assert.ok(backBounds.x > art.x + art.width / 2 && backBounds.y < art.y + art.height / 2, "the Review X sits at the top-right of the artwork");
       assert.ok(reviewActions.y + reviewActions.height <= viewport.height + 1, "Save changes stays on screen without scrolling, including landscape");
@@ -1248,18 +1293,18 @@ test("Live Card: location retries, explicit saves, invitation download and respo
       await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       assert.deepEqual(await readEditorScroll(), lockedScroll, "Review locks the mounted editor's scroll position");
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-      await page.screenshot({ path: path.join(out, `review-${viewport.width}.png`) });
-      await mobileReview.getByRole("button", { name: "Close review", exact: true }).click();
+      await page.screenshot({ path: path.join(out, `preview-${viewport.width}.png`) });
+      await mobileReview.getByRole("button", { name: "Close preview", exact: true }).click();
       await mobileReview.waitFor({ state: "hidden" });
-      assert.equal(await page.getByRole("tab", { name: "Message", exact: true }).getAttribute("aria-selected"), "true", "closing Review restores the same details tab");
-      assert.equal(await page.getByLabel("Message to guests (optional)").inputValue(), messageBeforeReview, "closing Review retains entered wording");
+      assert.equal(await page.getByRole("button", { name: "2 Event details", exact: true }).getAttribute("aria-current"), "step", "closing Preview restores Event details");
+      assert.equal(await page.getByLabel("Message to guests (optional)").inputValue(), messageBeforeReview, "closing Preview retains entered wording");
       assert.deepEqual(await readEditorScroll(), scrollBeforeReview, "closing Review restores the editor's scroll position");
       assert.equal(await reviewTrigger.evaluate((button) => document.activeElement === button), true, "closing Review returns focus to its trigger without moving the editor");
       await reviewTrigger.click();
       await mobileReview.waitFor();
       await page.keyboard.press("Escape");
       await mobileReview.waitFor({ state: "hidden" });
-      assert.equal(await page.getByRole("tab", { name: "Message", exact: true }).getAttribute("aria-selected"), "true", "Escape returns to the same details tab");
+      assert.equal(await page.getByRole("button", { name: "2 Event details", exact: true }).getAttribute("aria-current"), "step", "Escape returns to Event details");
       assert.deepEqual(await readEditorScroll(), scrollBeforeReview, "Escape preserves the editor's scroll position");
       if (viewport.width === 390) {
         await reviewTrigger.click();
@@ -1273,7 +1318,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
           }
         });
         await mobileReview.waitFor({ state: "hidden" });
-        assert.equal(await page.getByLabel("Message to guests (optional)").inputValue(), messageBeforeReview, "swiping right returns without changing entered wording");
+        assert.equal(await page.getByLabel("Message to guests (optional)").inputValue(), messageBeforeReview, "swiping right returns to unchanged Event details");
         assert.deepEqual(await readEditorScroll(), scrollBeforeReview, "swiping right preserves the editor's scroll position");
       }
       assert.equal(saves.length, savesBeforeReview, "Review and returning to edit never save or publish");
@@ -1299,7 +1344,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
         });
       }
       await openSection("Message");
-      assert.equal(await page.getByRole("group", { name: "Save changes", exact: true }).count(), 0, "mobile Event details keeps save/publish actions with the preview card");
+      assert.equal(await page.getByRole("group", { name: "Save changes", exact: true }).isVisible(), false, "mobile Event details keeps save/publish actions with the preview card");
       assert.equal(
         await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
         false,
@@ -1308,56 +1353,48 @@ test("Live Card: location retries, explicit saves, invitation download and respo
         path: path.join(out, `details-${viewport.width}.png`),
         fullPage: true,
       });
-      const titleBeforePreview = (await readCardText()).title;
-      const previewButton = page.getByRole("button", { name: "Preview Live Card", exact: true });
-      const savesBeforeMobilePreview = saves.length;
-      const generationsBeforeMobilePreview = generations.length;
-      await previewButton.click();
-      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-      await dialog.evaluate((surface) => Promise.allSettled(surface.getAnimations().map((animation) => animation.finished)));
-      const bounds = await dialog.locator("[data-live-card-artwork]").boundingBox();
-      assert.ok(bounds && bounds.width > 100 && bounds.height > 100);
-      assert.ok(Math.abs(bounds.width / bounds.height - 2 / 3) < 0.01, "shared artwork and text maintain their proportions");
-      assert.ok(
-        bounds.x >= 0 &&
-          bounds.y >= 0 &&
-          bounds.x + bounds.width <= viewport.width + 1 &&
-          bounds.y + bounds.height <= viewport.height + 1,
-        JSON.stringify(bounds),
-      );
-      await checkActionChrome(dialog);
-      const previewActions = await checkSaveActionGeometry(dialog, "Save changes", `mobile fullscreen ${viewport.width}x${viewport.height}`);
-      assert.ok(previewActions.y + previewActions.height <= viewport.height, "preview actions remain on screen, including landscape");
-      for (const button of await dialog.locator("[data-live-card-trigger]").all()) {
-        const buttonBounds = await button.boundingBox();
-        assert.ok(buttonBounds.y > bounds.y + bounds.height * 0.5, `buttons stay in the bottom of the card: ${JSON.stringify({viewport, bounds, buttonBounds})}`);
-        assert.ok(buttonBounds.height >= 44, "buttons have comfortable tap targets");
-        assert.ok(buttonBounds.y + buttonBounds.height <= bounds.y + bounds.height + 1, "buttons remain inside the artwork");
-      }
-      assert.equal(await dialog.getByRole("group", { name: "Preview view", exact: true }).count(), 0);
-      await page.screenshot({ path: path.join(out, `preview-${viewport.width}.png`) });
-      const settledBounds = await dialog.locator("[data-live-card-artwork]").boundingBox();
-      assert.ok(settledBounds.y >= 0 && settledBounds.y + settledBounds.height <= viewport.height, "the artwork stays on screen after the preview settles");
-      await page.getByRole("button", { name: "Close preview", exact: true }).click();
-      assert.equal(await previewButton.evaluate((button) => document.activeElement === button), true, "closing returns focus to Preview");
-      assert.equal((await readCardText()).title, titleBeforePreview, "closing the mobile preview preserves form edits");
+      const openGeneratedCardPreview = async (stepName) => {
+        const previewTrigger = page.getByRole("button", { name: "Preview card", exact: true });
+        assert.equal(await previewTrigger.isVisible(), true, `${stepName} offers Preview card once generated artwork exists`);
+        await previewTrigger.scrollIntoViewIfNeeded();
+        await previewTrigger.focus();
+        const scrollBeforePreview = await readEditorScroll();
+        await previewTrigger.click();
+        await mobileReview.waitFor();
+        await mobileReview.getByRole("button", { name: "Close preview", exact: true }).click();
+        await mobileReview.waitFor({ state: "hidden" });
+        assert.equal(await page.getByRole("button", { name: stepName, exact: true }).getAttribute("aria-current"), "step", "closing the generated preview restores its editor step");
+        assert.deepEqual(await readEditorScroll(), scrollBeforePreview, "closing the generated preview restores the editor's scroll position");
+        assert.equal(await previewTrigger.evaluate((button) => document.activeElement === button), true, "closing the generated preview restores its trigger focus");
+      };
+      await openGeneratedCardPreview("2 Event details");
+      assert.equal(await page.getByRole("tab", { name: "Message", exact: true }).getAttribute("aria-selected"), "true", "preview preserves the active Details tab");
+      assert.equal(await page.getByLabel("Message to guests (optional)").inputValue(), messageBeforeReview, "preview preserves entered guest wording");
       await page.getByRole("button", { name: "1 Your card", exact: true }).click();
       await checkMobileEditor();
-      await previewButton.click();
-      await dialog.waitFor();
-      await page.keyboard.press("Escape");
-      assert.equal(await page.getByRole("button", { name: "1 Your card", exact: true }).getAttribute("aria-current"), "step");
-      assert.equal(saves.length, savesBeforeMobilePreview, "opening and closing mobile previews never saves");
-      assert.equal(generations.length, generationsBeforeMobilePreview, "mobile previews reuse existing artwork");
+      const designBeforePreview = await page.getByLabel("Describe the look").inputValue();
+      await openGeneratedCardPreview("1 Your card");
+      assert.equal(await page.getByLabel("Describe the look").inputValue(), designBeforePreview, "preview preserves the design description");
       await page.getByRole("button", { name: "2 Event details", exact: true }).click();
+      await page.getByRole("button", { name: "Review details", exact: true }).click();
+      await reviewDetails.waitFor();
+      assert.equal(await page.getByRole("button", { name: "3 Review", exact: true }).getAttribute("aria-current"), "step", "Review details opens the summary instead of the card");
+      assert.equal(await mobileReview.count(), 0);
+      assert.equal(await reviewDetails.innerText(), summaryBeforeReview, "returning to Review preserves every guest-facing detail");
+      assert.equal(saves.length, savesBeforeReview, "the mobile review flow never saves automatically");
+      assert.equal(generations.length, generationsBeforeReview, "the mobile review flow never starts another image request");
     }
-    await page.setViewportSize({ width: 1440, height: 1080 });
-    await page.getByLabel("Message to guests (optional)").fill("Saved from the mobile preview.");
-    await page.getByRole("button", { name: "Preview Live Card", exact: true }).click();
-    await dialog.getByRole("button", { name: "Save changes", exact: true }).click();
-    await dialog.waitFor({ state: "hidden" });
+    await page.getByRole("button", { name: "Back to edit", exact: true }).click();
+    await page.getByLabel("Message to guests (optional)").fill("Saved from the mobile Review summary.");
+    await page.getByRole("button", { name: "Review details", exact: true }).click();
+    const publishedReviewActions = page.locator("form").getByRole("group", { name: "Save changes", exact: true });
+    assert.equal(await publishedReviewActions.getByRole("button", { name: "Save changes", exact: true }).isEnabled(), true, "changed published cards can save directly from mobile Review");
+    await publishedReviewActions.getByRole("button", { name: "Save changes", exact: true }).click();
     await page.getByText("Changes saved.", { exact: true }).waitFor();
-    assert.equal(stored.data.liveCardBuilder.form.overview, "Saved from the mobile preview.");
+    assert.equal(await mobileReview.count(), 0, "saving the Review summary does not open Preview");
+    assert.equal(stored.data.liveCardBuilder.form.overview, "Saved from the mobile Review summary.");
+    await page.getByRole("button", { name: "Back to edit", exact: true }).click();
+    await page.setViewportSize({ width: 1440, height: 1080 });
     await page.getByLabel("Message to guests (optional)").fill("Updated welcome for our guests");
     await page.locator("#leave").click();
     await page.getByRole("button", { name: "Keep editing", exact: true }).click();

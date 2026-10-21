@@ -331,11 +331,6 @@
   aspect-ratio: var(--builder-artwork-ratio);
   margin-inline: auto;
 }
-.workspace[data-step="3"] .review dl {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0;
-}
 .editor {
   min-width: 0;
   background: #fffcf9;
@@ -1240,38 +1235,13 @@
 .review {
   margin-top: 24px;
 }
-.review h3 {
-  font-family: var(--font-playfair), Georgia, serif;
-  font-size: 28px;
-  overflow-wrap: anywhere;
+.mobileReviewSaveActions {
+  margin-top: 16px;
 }
 .review > p {
   margin-top: 7px;
   color: var(--muted);
   font-size: 14px;
-}
-.review dl {
-  margin-top: 24px;
-}
-.review dl > div {
-  padding: 16px 0;
-  border-top: 1px solid var(--line);
-}
-.review dt {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-.review dd {
-  font-size: 14px;
-  line-height: 1.6;
-  overflow-wrap: anywhere;
-}
-.review dd small {
-  display: block;
-  font-size: 12px;
-  color: var(--muted);
 }
 .shareBox {
   margin-top: 22px;
@@ -1313,10 +1283,7 @@
   .formActions .mobileReviewAction {
     display: inline-flex;
   }
-  .workspace[data-step="3"] {
-    display: none;
-  }
-  .workspace:not([data-step="3"]) .cardSaveActions {
+  .workspace .cardSaveActions {
     display: none;
   }
   .page {
@@ -1340,8 +1307,12 @@
     position: static;
     grid-row: 1;
     width: 100%;
-    display: block;
+    display: none;
     border: 0;
+  }
+  .previewPane[data-mobile-progress="true"],
+  .previewPane[data-mobile-preview="true"] {
+    display: block;
   }
   .workspace:not([data-step="3"]) .previewPane[data-has-content="false"] {
     display: none;
@@ -1392,12 +1363,8 @@
     gap: 8px;
     padding: 12px 10px;
   }
-  .outputGrid,
-  .workspace[data-step="3"] .review dl {
+  .outputGrid {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .workspace[data-step="3"] .review dl {
-    gap: 0;
   }
   .outputCard {
     --builder-artwork-height: clamp(330px, 125vw, 570px);
@@ -1492,7 +1459,7 @@
   }
 }
 @container (min-width: 120px) and (max-width: 150px) {
-  .mobileReviewSaveActions .saveActions {
+  .reviewPreviewSaveActions .saveActions {
     flex-direction: row;
   }
 }

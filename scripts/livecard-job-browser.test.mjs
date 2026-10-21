@@ -84,6 +84,11 @@ test("durable generation reconnects; Review never generates or publishes; publis
       await target.waitForFunction((name) => [...document.querySelectorAll('nav[aria-label="Card creation steps"] button')].some((button) => button.textContent?.replace(/\s+/g, "") === name.replace(/\s+/g, "") && button.getAttribute("aria-current") === "step" && !button.disabled), stepName);
       await assertNoLetteringDiagnostics(target, `${context}, ${stepName}`);
       if (stepName === "3 Review") {
+        const summary = target.getByRole("region", { name: "Review details", exact: true });
+        assert.equal(await summary.isVisible(), true, `${context}: Review presents the entered details`);
+        assert.equal(await target.getByRole("button", { name: "Preview card", exact: true }).count(), 0, `${context}: Review omits its Preview card button`);
+        assert.equal(await summary.getByRole("region", { name: "Card design", exact: true }).count(), 0, `${context}: Review omits Design`);
+        assert.equal(await summary.getByRole("region", { name: "Published card address", exact: true }).count(), 0, `${context}: Review omits Card address`);
         for (const name of ["Edit your card", "Edit card text", "Edit event details"]) {
           assert.equal(await target.getByRole("button", { name, exact: true }).count(), 0, `${context}: Review omits ${name}`);
         }
@@ -309,6 +314,10 @@ test("durable generation reconnects; Review never generates or publishes; publis
     await page.getByRole("button", { name: "2 Event details", exact: true }).click();
     await page.getByRole("button", { name: "Review invitation", exact: true }).click();
     await page.getByRole("button", { name: "Publish invitation", exact: true }).waitFor();
+    const enteredDetails = await page.getByRole("region", { name: "Review details", exact: true }).innerText();
+    for (const value of ["Movie Under the Stars", "You’re invited", "Online Event", "QA Host", "3125550100", "https://example.com/gifts?list=qa", "Your presence is our present."]) {
+      assert.ok(enteredDetails.includes(value), `Review retains entered data after job recovery: ${value}`);
+    }
     await page.getByRole("button", { name: "Back to edit", exact: true }).click();
     assert.equal(await page.getByRole("button", { name: "2 Event details", exact: true }).getAttribute("aria-current"), "step", "Back to edit opens Event details without generating or saving");
     await waitForDetails(page);
@@ -320,7 +329,7 @@ test("durable generation reconnects; Review never generates or publishes; publis
     assert.equal(dispatches, 2); assert.equal(saves.length, 0);
     assert.equal(await page.getByText("Share a link", { exact: true }).count(), 0);
     await page.getByRole("button", { name: "Registry", exact: true }).click();
-    await page.getByText("Your presence is our present.", { exact: true }).waitFor();
+    await page.locator('[data-live-card-panel-kind="registry"]').getByText("Your presence is our present.", { exact: true }).waitFor();
     await page.getByRole("button", { name: "Visit Registry", exact: true }).click();
     assert.equal(await page.evaluate(() => window.__opened.at(-1)), "https://example.com/gifts?list=qa");
     await page.getByRole("button", { name: "Close card details", exact: true }).click();

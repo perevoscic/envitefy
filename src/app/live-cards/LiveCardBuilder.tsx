@@ -45,7 +45,6 @@ import {
   LIVE_CARD_HOLIDAY_OCCASIONS,
   type LiveCardErrors,
   type LiveCardForm,
-  liveCardScheduleSummary,
   liveCardDesignKey,
   readLiveCardForm,
   sharedCardDesignKey,
@@ -74,6 +73,7 @@ import { readTemplateDraft, writeTemplateDraft, deleteTemplateDraft, type Editor
 import DesignGenerationProgress from "./DesignGenerationProgress";
 import DesignSuggestions from "./DesignSuggestions";
 import CardTextDialog from "./CardTextDialog";
+import LiveCardReviewSummary from "./LiveCardReviewSummary";
 import LocationField from "./LocationField";
 import PublishProgress, { PUBLISH_STAGES, type PublishStage } from "./PublishProgress";
 import {
@@ -194,6 +194,25 @@ const FIELD_LABELS: Partial<Record<keyof LiveCardForm, string>> = {
 };
 type BuilderStep = 1 | 2 | 3;
 type DetailTab = (typeof DETAIL_TABS)[number];
+type EditorPosition = {
+  trigger: HTMLElement | null;
+  x: number;
+  y: number;
+  ancestors: Array<{ element: HTMLElement; top: number; left: number }>;
+};
+function captureEditorPosition(): EditorPosition {
+  const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  const ancestors: EditorPosition["ancestors"] = [];
+  for (let element = trigger?.parentElement; element; element = element.parentElement)
+    ancestors.push({ element, top: element.scrollTop, left: element.scrollLeft });
+  return { trigger, x: window.scrollX, y: window.scrollY, ancestors };
+}
+function restoreEditorPosition(position: EditorPosition, trigger = position.trigger) {
+  if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+  for (const { element, top, left } of position.ancestors)
+    if (element.isConnected) element.scrollTo({ top, left, behavior: "instant" });
+  window.scrollTo({ left: position.x, top: position.y, behavior: "instant" });
+}
 type PreparationIssue = { stage: "locations" | "wording" | "lettering"; message: string; retryable: boolean; code?: string };
 export default function LiveCardBuilder({ initialEventId }: { initialEventId: string | null }) {
   const intakeId = useSearchParams()?.get("intake");
@@ -253,16 +272,11 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
   const [errors, setErrors] = useState<LiveCardErrors>({});
   const [previewOpen, setPreviewOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [mobileReviewOpen, setMobileReviewOpen] = useState(false);
-  const mobileReviewReturn = useRef<{
-    trigger: HTMLElement | null;
-    x: number;
-    y: number;
-    ancestors: Array<{ element: HTMLElement; top: number; left: number }>;
-  } | null>(null);
+  const previewReturn = useRef<EditorPosition | null>(null);
+  const detailsReturn = useRef<EditorPosition | null>(null);
+  const reviewDetailsTriggerRef = useRef<HTMLButtonElement>(null);
   const [sharing, setSharing] = useState(false);
   const [shareFeedback, setShareFeedback] = useState("");
-  const previewTriggerRef = useRef<HTMLElement | null>(null);
   const savedId = useRef(initialEventId);
   const draftId = useRef("");
   const generationController = useRef<AbortController | null>(null);
@@ -302,18 +316,6 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
     media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
   }, []);
-
-  // Review is a separate mobile surface; keep the editing screen mounted beneath it.
-  useEffect(() => {
-    if (!ready) return;
-    if (isMobile && step === 3) {
-      setStep(2);
-      if (canReview) setMobileReviewOpen(true);
-    } else if (!isMobile && mobileReviewOpen) {
-      setMobileReviewOpen(false);
-      setStep(3);
-    }
-  }, [isMobile, mobileReviewOpen, ready, step, canReview]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1108,7 +1110,6 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
 
   function cancelEditing() {
     setPreviewOpen(false);
-    setMobileReviewOpen(false);
     navigation.requestLeave(() => window.location.assign(ownerUrl));
   }
 
@@ -1140,14 +1141,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
 
   async function goToStep(next: BuilderStep) {
     if (next === 3) {
-      const mobile = window.matchMedia("(max-width: 850px)").matches;
-      if (mobile && !mobileReviewOpen) {
-        const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-        const ancestors: Array<{ element: HTMLElement; top: number; left: number }> = [];
-        for (let element = trigger?.parentElement; element; element = element.parentElement)
-          ancestors.push({ element, top: element.scrollTop, left: element.scrollLeft });
-        mobileReviewReturn.current = { trigger, x: window.scrollX, y: window.scrollY, ancestors };
-      }
+      if (step === 2) detailsReturn.current = captureEditorPosition();
       if (!canReview || !(await prepareWording())) return;
       // The host can still edit fields while wording is being prepared.
       const latest = snapshotRef.current;
@@ -1158,11 +1152,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
         return;
       }
       if (!latest.artwork || !isArtworkCurrent(latest.form, latest.artwork)) return;
-      if (mobile) {
-        setPreviewOpen(false);
-        setMobileReviewOpen(true);
-        return;
-      }
+      setPreviewOpen(false);
     }
     if (next !== step) setMessage("");
     setStep(next);
@@ -1171,26 +1161,25 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
   const previousStep = useRef(step);
   useEffect(() => {
     if (previousStep.current === step) return;
+    const previous = previousStep.current;
     previousStep.current = step;
+    if (isMobile && previous === 3 && step === 2 && detailsReturn.current) {
+      const position = detailsReturn.current;
+      restoreEditorPosition(position, position.trigger?.isConnected ? position.trigger : reviewDetailsTriggerRef.current);
+      return;
+    }
     const heading =
       step === 3 ? reviewHeadingRef.current || headingRef.current : headingRef.current;
     heading?.focus();
-  }, [step]);
+  }, [step, isMobile]);
 
-  function returnFromMobileReview() {
-    if (!window.matchMedia("(max-width: 850px)").matches) {
-      reviewHeadingRef.current?.focus({ preventScroll: true });
-      return;
-    }
-    const position = mobileReviewReturn.current;
+  function returnFromPreview() {
+    const position = previewReturn.current;
     if (!position?.trigger?.isConnected) {
-      headingRef.current?.focus({ preventScroll: true });
+      (step === 3 ? reviewHeadingRef.current : headingRef.current)?.focus({ preventScroll: true });
       return;
     }
-    position.trigger?.focus({ preventScroll: true });
-    for (const { element, top, left } of position.ancestors)
-      if (element.isConnected) element.scrollTo({ top, left, behavior: "instant" });
-    window.scrollTo({ left: position.x, top: position.y, behavior: "instant" });
+    restoreEditorPosition(position);
   }
 
   useEffect(() => {
@@ -1233,8 +1222,6 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
   }, [ready, step, Boolean(artwork)]);
 
   function focusFirstError(validation: LiveCardErrors) {
-    mobileReviewReturn.current = null;
-    setMobileReviewOpen(false);
     const key = Object.keys(validation)[0];
     setStep(["design", "eventType", "title", "headlineIntro"].includes(key) ? 1 : 2);
     if (key === "headlineIntro") setOpeningLineExpanded(true);
@@ -1381,7 +1368,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
   );
   const previewRatio = preview?.invitationData.sharedDesign ? 2 / 3 : measuredPreviewRatio;
   async function openPreview() {
-    previewTriggerRef.current = document.activeElement as HTMLElement | null;
+    previewReturn.current = captureEditorPosition();
     // Viewing existing artwork does not require complete logistics or new lettering.
     if (!(await prepareWording(false))) return;
     setPreviewOpen(true);
@@ -1462,7 +1449,6 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       </span>
     </>
   );
-  const dateSummary = liveCardScheduleSummary(form);
   const editCardTextAction = (
     <button type="button" className={`${styles.textButton} ${styles.editCardTextAction}`} disabled={working} onClick={openCardTextEditor}>
       Edit card text
@@ -1582,9 +1568,9 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
 
   const artworkFeedback = (
     <div className={styles.editorFeedback}>
-      {!previewOpen && !mobileReviewOpen && letteringNotice}
+      {!previewOpen && letteringNotice}
       {letteringNotice && !preparingHeadline && !generation && <button type="button" className={styles.secondary} onClick={() => void retryHeadline("repair")}>Update card text</button>}
-      {!previewOpen && !mobileReviewOpen && preparationFeedback}
+      {!previewOpen && preparationFeedback}
       {jobState && !["failed", "stopped"].includes(jobState.state) && <section className={styles.preparation} aria-label="Artwork job status">
         {jobState.state === "cancel_requested" && <p role="status">Cancellation requested. Provider execution status unknown.</p>}
         {jobState.state !== "cancel_requested" && <>
@@ -1613,7 +1599,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
         <p role="status">{wordingStatus}</p>
         <button type="button" className={styles.textButton} disabled={preparingWording} onClick={() => { checkedWording.current = ""; void prepareWording(); }}>Retry wording verification</button>
       </section>}
-      {!previewOpen && !mobileReviewOpen && saveFeedback}
+      {!previewOpen && saveFeedback}
       {artwork && generation && <DesignGenerationProgress stage={generation} compact />}
       {generationError && (
         <div role="alert" className={styles.generationError}>
@@ -1644,19 +1630,15 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
       aria-label="Artwork preview"
       data-has-content={Boolean(artwork || generation || generationError)}
       data-has-artwork={Boolean(preview)}
+      data-mobile-progress={Boolean(!artwork && generation)}
+      data-mobile-preview={Boolean(step !== 3 && preview)}
       style={{ "--builder-artwork-ratio": previewRatio } as CSSProperties}
     >
       {step !== 3 && (
         <div className={styles.mobilePreviewControls}>
           {preview && (
-            <button
-              type="button"
-              className={styles.secondary}
-              disabled={working || preparingWording}
-              onClick={() => void openPreview()}
-            >
-              <Eye size={17} /> Preview{" "}
-              {activePreviewFormat === "live_card" ? "Live Card" : "invitation"}
+            <button type="button" className={styles.secondary} disabled={working || preparingWording} onClick={() => void openPreview()}>
+              <Eye size={18} aria-hidden="true" /> Preview card
             </button>
           )}
           {!artwork && generation && <DesignGenerationProgress stage={generation} compact mockTitle={form.title} mockOpeningLine={form.headlineIntro} />}
@@ -2182,54 +2164,7 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                       ))}
                     </section>
                   )}
-                  <h3>{form.title || "Your Live Card"}</h3>
-                  {form.eventType && form.eventType !== "General event" && <p>{form.eventType}</p>}
-                  <dl>
-                    <div>
-                      <dt>When</dt>
-                      <dd>
-                        {form.date ? dateSummary : "Add a date and time"}
-                        <small>
-                          {form.locations[0]?.city
-                            ? `Local time in ${form.locations[0].city}`
-                            : "Event local time"}
-                        </small>
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Where</dt>
-                      <dd>
-                        {form.locations
-                          .map((location) =>
-                            [location.label, location.venue, location.address]
-                              .filter(Boolean)
-                              .join(" · "),
-                          )
-                          .filter(Boolean)
-                          .join("; ") || "Add your location"}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>
-                        {form.format === "live_card" || hasSharedDesign
-                          ? "Live Card guest buttons"
-                          : "Format"}
-                      </dt>
-                      <dd>
-                        {form.format === "digital_flyer" && !hasSharedDesign
-                          ? "Classic invitation · ready to download"
-                          : [
-                              "Overview",
-                              "Location",
-                              "Calendar",
-                              form.rsvpEnabled && "RSVP",
-                              form.registryEnabled && "Registry",
-                            ]
-                              .filter(Boolean)
-                              .join(" · ")}
-                      </dd>
-                    </div>
-                  </dl>
+                  <LiveCardReviewSummary form={form} />
                   {designChanged && (
                     <p className={styles.note}>
                       Your design direction has changed. Create the updated artwork before
@@ -2304,16 +2239,22 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
                 )}
                 {step === 2 && artwork && !designChanged && (
                   <button
+                    ref={reviewDetailsTriggerRef}
                     type="button"
                     className={`${styles.primary} ${styles.mobileReviewAction}`}
                     disabled={working || preparingWording || !canReview}
                     aria-describedby={detailIssues.length ? "livecard-required-details" : undefined}
                     onClick={() => void goToStep(3)}
                   >
-                    Review Live Card <ArrowRight size={17} />
+                    Review details <ArrowRight size={17} />
                   </button>
                 )}
               </div>
+              {step === 3 && isMobile && (
+                <div className={styles.mobileReviewSaveActions}>
+                  {saveActions()}
+                </div>
+              )}
               {step === 2 && generation && detailIssues.length === 0 && (
                 <p className={styles.hint} role="status">Your card is still being created. You can keep editing; Review will be available when it is ready.</p>
               )}
@@ -2348,38 +2289,10 @@ export default function LiveCardBuilder({ initialEventId }: { initialEventId: st
         }
         imageUrl={preview?.imageUrl}
         footer={
-          preview ? <div className={styles.previewSaveActions}>{letteringNotice}{saveActions()}{saveFeedback}</div> : undefined
+          preview ? <div className={`${styles.previewSaveActions} ${step === 3 ? styles.reviewPreviewSaveActions : ""}`}>{letteringNotice}{saveActions()}{saveFeedback}</div> : undefined
         }
         onClose={() => setPreviewOpen(false)}
-        onReturnFocus={() => previewTriggerRef.current?.focus({ preventScroll: true })}
-      >
-        {preview && (
-          <StudioShowcaseLiveCard
-            preview={preview}
-            actionsPlacement="overlay"
-            previewMode
-            imageLoading="eager"
-            artworkToolbar={cardToolbar(true)}
-          />
-        )}
-      </ArtworkPreviewDialog>
-      <ArtworkPreviewDialog
-        open={isMobile && mobileReviewOpen}
-        title="Review your Live Card"
-        imageUrl={preview?.imageUrl}
-        mobileSwipeNavigation
-        closeLabel="Close review"
-        footer={preview ? (
-          <div className={`${styles.previewSaveActions} ${styles.mobileReviewSaveActions}`}>
-            {letteringNotice}
-            {preparationFeedback}
-            {error && !preparationIssue && <p role="alert" className={styles.error}>{error}</p>}
-            {saveActions(true)}
-            {saveFeedback}
-          </div>
-        ) : undefined}
-        onClose={() => setMobileReviewOpen(false)}
-        onReturnFocus={returnFromMobileReview}
+        onReturnFocus={returnFromPreview}
       >
         {preview && (
           <StudioShowcaseLiveCard
