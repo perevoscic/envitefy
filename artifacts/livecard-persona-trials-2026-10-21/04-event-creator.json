@@ -1,0 +1,140 @@
+{
+  "trialId": "04-event-creator",
+  "reviewType": "Clearly labelled AI persona trial; not human participant research",
+  "persona": {
+    "role": "Professional event creator",
+    "scenario": "Create a polished neighborhood supper-club launch Live Card while preparing guest logistics during generation",
+    "goal": "Produce a distinctive hospitality invitation efficiently without losing control of wording or design"
+  },
+  "status": "published and verified in authenticated public-route guest preview",
+  "plannedInputs": {
+    "eventTitle": "The Long Table | AI Demo",
+    "openingLine": "A seat at something new",
+    "occasion": "Leave unspecified unless the normal UI requires a choice",
+    "exactDesignPrompt": "A cinematic neighborhood supper-club launch in an intimate brick courtyard at blue hour. One long oak table is the focal subject, set with richly textured terracotta plates, amber glass, embroidered ivory linen, figs, rosemary, olive branches and small candle flames. Warm overhead cafe lights sweep into deep indigo evening; a softly glowing open kitchen and leafy brick walls create layered depth. Sophisticated hospitality editorial photography, warm copper, burgundy and deep ink blue, tactile materials, inviting and celebratory. Expressive coordinated lettering for the exact title The Long Table | AI Demo and opening line A seat at something new, with bold elegant serif title lettering and a lighter restrained opening line, arranged in a naturally readable pocket of the real scene. Keep the courtyard immersive and detailed; do not clear a large blank center or lower half. No logos, other words, real people or branded products.",
+    "date": "2026-10-26",
+    "weekday": "Monday",
+    "startTime": "18:30",
+    "endTime": "20:30",
+    "timeZone": "America/Chicago",
+    "venueMode": "online",
+    "venueName": "AI demo online venue",
+    "venueUrl": "https://envitefy.com",
+    "messageToGuests": "AI demo — not a real event. This supper-club launch invitation was created for an AI persona usability review of Envitefy Live Card creation. Please do not attend, book, pay or submit an RSVP.",
+    "additionalGuestNotes": "Fictional hospitality concept only. Monday, October 26, 2026, 6:30–8:30 PM Central. The online venue is a demo link to Envitefy; no actual gathering is scheduled.",
+    "collectRsvps": false,
+    "registry": "none",
+    "referenceImage": "none"
+  },
+  "uiEvidence": {
+    "steps": [
+      "Opened own Chrome tab 1960064638 at http://localhost:3000/live-cards.",
+      "Entered event title once, expanded optional opening line, entered exact design prompt; left Occasion unspecified and reference empty.",
+      "Clicked Generate & continue once; Event details opened directly on When & Where while artwork job ran.",
+      "Entered date, start/end times, online venue, both guest disclosure messages; retained RSVP off.",
+      "Verified date 2026-10-26 and times 18:30/20:30 after native field commit.",
+      "Opened Preview Live Card while lettering ran; UI entered Checking invitation wording.",
+      "Initial job completed without a repair request; Preview displayed the cinematic courtyard and readable title/opening.",
+      "Clicked Review invitation from Preview; place confirmation completed and Publish invitation became available.",
+      "Clicked Publish invitation once; actual UI stage Saving artwork, keeping page open.",
+      "Publication completed; edit URL http://localhost:3000/live-cards?edit=4bad0498-58c3-4389-b4e6-c704a6b99bc1 showed Your Live Card is published and Copy guest link.",
+      "Copied the actual guest link through Copy guest link and browser clipboard read.",
+      "Opened full-screen eye Preview and saved screenshot with whole card fitted.",
+      "Navigated to copied https://envitefy.com/card/the-long-table-ai-demo-at-online-event; authenticated owner redirected to owner workspace /event/the-long-table-ai-demo-at-online-event?tab=design.",
+      "Opened production Current card preview and Overview: Monday, October 26 at 6:30 PM–8:30 PM, both AI-demo messages and Join Online event were visible."
+    ],
+    "observedFriction": [
+      "Detailed attempt number, elapsed seconds and exact start time compete with the plain generation stage.",
+      "All planned logistics were complete before the initial job was ready at 82 seconds, so the host still has an actual wait before Review.",
+      "After publication an Optional wording corrections are available panel remained above the published card, with Apply wording suggestion and Keep my wording. The suggestion itself was not displayed in that collapsed panel; wording was not changed.",
+      "Full-screen preview omits the logistics summary shown on the main Review screen; checking dates there requires opening Overview or closing Preview."
+    ],
+    "positiveObservations": [
+      "Your card clearly separates card wording from Look & feel.",
+      "No duplicated title/opening-line inputs in Event details; compact wording summary and Edit card text remained visible.",
+      "Generation continued while tabs and guest information were edited.",
+      "Guest message helper states that the message appears in Overview, not on artwork or download.",
+      "Rendered result closely followed the detailed hospitality brief: deep blue evening, brick courtyard, warm lights, candlelit long table and expressive serif lettering; no large blank center.",
+      "No duplicate title entry, generation restart, lettering repair or RSVP contact request occurred.",
+      "Final Review main screen included date/time and online venue, and publication was one explicit Publish invitation action."
+    ],
+    "screenshotPaths": [
+      "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/04-event-creator-preview.jpg",
+      "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/04-event-creator-details.jpg",
+      "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/04-event-creator-public-preview.jpg"
+    ],
+    "publicUrl": "https://envitefy.com/card/the-long-table-ai-demo-at-online-event",
+    "publicationResult": "Published. Confirmed by explicit UI success state and rendered saved card on envitefy.com.",
+    "automationIssues": [
+      "Playwright fill on date/time inputs initially appeared to accept input but values were blank on tab return; native setValue using ISO date and 24-hour times committed. The native setValue rejected a US-formatted date. This is tool input behavior, not an established manual-user product defect."
+    ],
+    "generationAttempts": {
+      "backgroundRegenerations": 0,
+      "explicitLetteringRepairs": 0,
+      "initialGeneration": 1
+    },
+    "readyToReviewElapsedSeconds": 82,
+    "browserTabId": "1960064638",
+    "actualSubmittedInputs": {
+      "eventTitle": "The Long Table | AI Demo",
+      "openingLine": "A seat at something new",
+      "occasion": "Leave unspecified unless the normal UI requires a choice",
+      "exactDesignPrompt": "A cinematic neighborhood supper-club launch in an intimate brick courtyard at blue hour. One long oak table is the focal subject, set with richly textured terracotta plates, amber glass, embroidered ivory linen, figs, rosemary, olive branches and small candle flames. Warm overhead cafe lights sweep into deep indigo evening; a softly glowing open kitchen and leafy brick walls create layered depth. Sophisticated hospitality editorial photography, warm copper, burgundy and deep ink blue, tactile materials, inviting and celebratory. Expressive coordinated lettering for the exact title The Long Table | AI Demo and opening line A seat at something new, with bold elegant serif title lettering and a lighter restrained opening line, arranged in a naturally readable pocket of the real scene. Keep the courtyard immersive and detailed; do not clear a large blank center or lower half. No logos, other words, real people or branded products.",
+      "date": "2026-10-26",
+      "weekday": "Monday",
+      "startTime": "18:30",
+      "endTime": "20:30",
+      "timeZone": "America/Chicago",
+      "venueMode": "online",
+      "venueName": "AI demo online venue",
+      "venueUrl": "https://envitefy.com",
+      "messageToGuests": "AI demo — not a real event. This supper-club launch invitation was created for an AI persona usability review of Envitefy Live Card creation. Please do not attend, book, pay or submit an RSVP.",
+      "additionalGuestNotes": "Fictional hospitality concept only. Monday, October 26, 2026, 6:30–8:30 PM Central. The online venue is a demo link to Envitefy; no actual gathering is scheduled.",
+      "collectRsvps": false,
+      "registry": "none",
+      "referenceImage": "none"
+    },
+    "confirmedGuestDisplay": {
+      "venue": "Join Online event",
+      "date": "Monday, October 26",
+      "demoDisclosureVisible": true,
+      "time": "6:30 PM–8:30 PM"
+    }
+  },
+  "reviewQuestions": [
+    "Can I enter a distinct title, opening line and art direction once, then move to logistics while generation continues?",
+    "Is it obvious which fields print on the artwork and which appear only in guest information?",
+    "Does optional Occasion avoid a category decision without weakening the final artwork?",
+    "Are time, timezone and online venue straightforward to enter?",
+    "Does Review make it clear that publishing is the next explicit action?"
+  ],
+  "simplificationSuggestions": [
+    {
+      "suggestion": "Put a compact When and Where summary directly below full-screen card preview.",
+      "priority": "P1",
+      "reason": "Keep final validation beside the visual result without returning to the form; preserve the main Review summary."
+    },
+    {
+      "suggestion": "Make optional wording advice show the actual proposed difference, with a clear defer or dismiss action, before publication.",
+      "priority": "P1",
+      "reason": "The advice panel remained visible after a successful publish and did not show what would change."
+    },
+    {
+      "suggestion": "Use one calm stage such as Creating artwork or Adding card text, with attempt diagnostics in a disclosure.",
+      "priority": "P2",
+      "reason": "Stage, attempt count, elapsed seconds and start time added reading burden while details remained editable."
+    },
+    {
+      "suggestion": "Offer optional art-direction controls for mood, palette, setting and typography while retaining a free-text prompt.",
+      "priority": "P2",
+      "reason": "Professional art direction required a long exact prompt; optional structure could reduce typing without reducing control."
+    }
+  ],
+  "limitations": [
+    "This is an AI persona execution and evaluation, not human focus-group evidence.",
+    "Desktop Chrome only; mobile layout and real human task time were not tested.",
+    "The production /card link was checked while authenticated as its owner, which redirected to owner workspace; a signed-out public session was not tested.",
+    "The app showed Event local time and no IANA timezone selector or named zone in the reviewed UI. Central was explicitly stated in guest notes; actual stored IANA timezone was not inspected.",
+    "Playwright date/time fill required a native setValue retry; recorded separately as an automation input issue."
+  ]
+}

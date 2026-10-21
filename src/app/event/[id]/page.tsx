@@ -1408,6 +1408,9 @@ export default async function EventPage({
     redirect(editUrl);
   }
 
+  const showOwnerAccessControls = isOwner && supportsEventCollaboration(data) &&
+    (data.createdVia !== "livecard-builder" || data.status === "published");
+
   if (showOwnerEventView && !editParam) {
     if (cardFirstCanonical) {
       redirect(`${ownerEventHref}?tab=design`);
@@ -1416,7 +1419,7 @@ export default async function EventPage({
       <EventOwnerView
         eventId={row.id}
         canDelete={isOwner}
-        canManageAccess={isOwner && supportsEventCollaboration(data)}
+        canManageAccess={showOwnerAccessControls}
         title={title}
         publicHref={publicEventHref}
         editHref={resolveOwnerEditHref(row.id, data, title, ownerEventHref)}
@@ -1451,7 +1454,7 @@ export default async function EventPage({
       <EventOwnerTools
         eventId={row.id}
         isOwner={isOwner}
-        canManageAccess={isOwner && supportsEventCollaboration(data)}
+        canManageAccess={showOwnerAccessControls}
         eventTitle={title}
         eventData={data}
         eventHref={publicEventHref}

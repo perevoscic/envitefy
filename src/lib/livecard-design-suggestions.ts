@@ -1,4 +1,9 @@
-import type { LiveCardEventType } from "./livecard-builder.ts";
+import { HOLIDAY_COLLECTIONS } from "./holiday-collections.ts";
+import {
+  LIVE_CARD_HOLIDAY_OCCASIONS,
+  type LiveCardEventType,
+  type LiveCardHolidayOccasion,
+} from "./livecard-builder.ts";
 
 export type LiveCardDesignSuggestion = {
   id: string;
@@ -9,9 +14,10 @@ export type LiveCardDesignSuggestion = {
   audience: "girl" | "boy" | "everyone";
 };
 
-// Each category has 25 authored scenes and two complete art directions per scene.
+// Celebrations have 25 authored scenes and two complete art directions per scene.
 // These are visual starting points only: never add event names, ages or logistics.
 type Scene = readonly [title: string, description: string];
+type CelebrationOccasion = Exclude<LiveCardEventType, LiveCardHolidayOccasion>;
 const SCENES = {
   Birthday: [
     [
@@ -1048,7 +1054,7 @@ const SCENES = {
       "a garden path lined with glowing lanterns leading to a beautifully decorated pavilion",
     ],
   ],
-} as const satisfies Record<LiveCardEventType, readonly Scene[]>;
+} as const satisfies Record<CelebrationOccasion, readonly Scene[]>;
 
 type Finish = readonly [label: string, palette: string, medium: string, style: string];
 const FINISHES: readonly Finish[] = [
@@ -1134,7 +1140,7 @@ const BALANCED_CATEGORIES = new Set<LiveCardEventType>([
   "Graduation",
 ]);
 
-function buildBank(category: LiveCardEventType): readonly LiveCardDesignSuggestion[] {
+function buildBank(category: CelebrationOccasion): readonly LiveCardDesignSuggestion[] {
   return SCENES[category].flatMap(([title, scene], index) =>
     [0, 1].map((variant) => {
       const audience = BALANCED_CATEGORIES.has(category)
@@ -1166,8 +1172,50 @@ function buildBank(category: LiveCardEventType): readonly LiveCardDesignSuggesti
   );
 }
 
+const HOLIDAY_COLORS: Record<string, string> = {
+  sage: "sage green",
+  marine: "marine blue",
+  ochre: "warm golden ochre",
+  cobalt: "cobalt blue",
+  cherry: "cherry red",
+  evergreen: "evergreen",
+  terracotta: "terracotta orange",
+  olive: "olive green",
+  cocoa: "cocoa brown",
+  cider: "warm cider amber",
+  midnight: "midnight blue",
+  plum: "deep plum",
+  rose: "rose pink",
+  moss: "moss green",
+  lavender: "lavender",
+  apricot: "apricot",
+  teal: "teal",
+};
+
+function buildHolidayBank(category: LiveCardHolidayOccasion): readonly LiveCardDesignSuggestion[] {
+  const collectionName = category === "Fourth of July" ? "July Fourth" : category;
+  const collection = HOLIDAY_COLLECTIONS.find((holiday) => holiday.name === collectionName);
+  if (!collection) throw new Error(`Missing Live Card holiday scenes for ${category}`);
+  // Reuse only the curated visual scenes and colors, never the discovery dates.
+  const palette = collection.palettes.map((color) => HOLIDAY_COLORS[color] || color).join(", ");
+  const paletteLabel = collection.palettes.join(" & ");
+  return collection.designs.flatMap(({ name, scene }, index) =>
+    FINISHES.slice(0, 5).map(([, , medium, style], variant) => ({
+      id: `${category}-${index}-${variant}`,
+      theme: `${category}-${index}`,
+      title: name,
+      summary: `${paletteLabel} · ${style}`,
+      audience: "everyone" as const,
+      prompt: `Design ${/^[aeiou]/i.test(category) ? "an" : "a"} ${category} Live Card featuring ${scene}. Use ${palette}, rendered as ${medium}. Keep a clear focal subject, layered surroundings and intentional lighting, with a naturally readable title pocket.`,
+    })),
+  );
+}
+
 export const LIVE_CARD_DESIGN_SUGGESTIONS = Object.fromEntries(
-  (Object.keys(SCENES) as LiveCardEventType[]).map((category) => [category, buildBank(category)]),
+  [
+    ...(Object.keys(SCENES) as CelebrationOccasion[]).map((category) => [category, buildBank(category)]),
+    ...LIVE_CARD_HOLIDAY_OCCASIONS.map((category) => [category, buildHolidayBank(category)]),
+  ],
 ) as Record<LiveCardEventType, readonly LiveCardDesignSuggestion[]>;
 
 /** Four different scenes, evenly balanced where relevant, with no immediate repeats. */

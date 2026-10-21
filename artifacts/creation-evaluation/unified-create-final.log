@@ -1,0 +1,422 @@
+✔ one multipart request streams real stages and returns its retained sports identity (27.3899ms)
+✔ legacy JSON readers keep their response shape and do not create sports shells (1.2167ms)
+✔ stream failures retain retry guidance and never expose internal errors (0.6858ms)
+✔ lazy alternate outputs accept full retained source text without granting it trusted-document status (1.1159ms)
+✔ existing extracted information opens its Live Card without another read (0.7993ms)
+✔ sports alternate extracts facts only on click and retains the original source and shell (17.1879ms)
+✔ a failed alternate read leaves the sports source available for retry (0.4627ms)
+✔ cancelling alternate preparation never applies a late response (0.3565ms)
+✔ changing the source while alternate facts load rejects the stale result (0.2978ms)
+✔ left sidebar renders personalized create navigation for signed-in accounts (2.4716ms)
+✔ left sidebar controller resets create panel state when create access disappears (1.2603ms)
+✔ event creation routes open Create Event and do not activate My Events (1.7676ms)
+✔ left sidebar view still gates both root and compact create entries behind create access (0.789ms)
+✔ left sidebar omits Studio and Snap Event from the always-open navigation (0.8399ms)
+✔ left sidebar uses current builders without legacy chat requests or navigation (2.1765ms)
+✔ left sidebar gives event titles the row width without inline action controls (0.968ms)
+✔ left sidebar keeps My Events visible on owner event tab routes (3.3558ms)
+(node:47076) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/app/left-sidebar.model.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ My Events opens its sidebar list without navigating away with either creation rollout setting (68.7421ms)
+✔ My Events renders all categories in event-date order and reveals selectable past events (124.3359ms)
+✔ an account with only past events can still expand its event list (18.2004ms)
+✔ Sign-up Forms appears for published forms, forms-focused accounts and admins (8.8694ms)
+✔ unified navigation keeps creation products independent and saved-work sidebar lists accessible (2.7104ms)
+✔ native hydration keeps structural design state and replaces sample facts without inventing missing details (12.6636ms)
+✔ gymnastics shared saves keep the nested builder event on the same venue-local dates (1.597ms)
+✔ each recommended native design resolves to the matching actual catalog and sport (3.5813ms)
+✔ gallery intake preserves each sport context and keeps an unspecified sport unresolved (0.1489ms)
+✔ explicit product adapters preserve source facts while importing no participants or generated artwork (5.232ms)
+✔ legacy import processing and review stages remain private until explicit publication (12.1225ms)
+✔ standard availability is independent of acquisition, hidden preferences and old product scopes (0.382ms)
+✔ preferences select only granted categories and keep baby and bridal showers independent (0.5839ms)
+✔ combined legacy shower visibility migrates once without overriding an independent remove choice (40.268ms)
+✔ host structures outrank forged scan and received-invite flags (0.379ms)
+✔ Live Card imports retain their source category and explicit changed types without coarse legacy labels (0.2646ms)
+✔ approval selects the requested category while preserving other interests and attribution (0.1243ms)
+✔ restricted direct creation fails without provider work, while verified existing edits survive restrictions (32.1573ms)
+✔ new Live Card saves and provider operations enforce all imported and explicitly changed categories (21.7774ms)
+✔ an arbitrary event identity or revoked co-host cannot be used as a new-create exemption (14.2452ms)
+✔ server-stamped unsaved discovery shells keep fresh grants despite forged client saved flags (30.36ms)
+✔ authorized shell saves check incoming categories and only protected savedAt restores existing-edit access (36.1248ms)
+✔ legacy history sources cannot forge discovery authorization records (28.7871ms)
+✔ account grants and access requests remain server-only in runtime schema and deployment migration (13.0807ms)
+✔ approval and preference selection commit atomically, while stale review rolls back (17.1448ms)
+✔ admin creation access endpoints reject non-admins before reading or changing grants (4.9957ms)
+✔ generation endpoint denies restricted categories before provider work and verifies saved edit context (16.3523ms)
+✔ the legacy source classifier checks current product access before reading sources or paid work (13.5789ms)
+✔ self-service settings and Reset cannot grant categories, products or account policy (30.2491ms)
+✔ public template previews stay available but saved editor data never survives sign-out or a different account (27.8447ms)
+✔ a previous account's cached grant snapshot is unavailable on the first render after account change (11.5496ms)
+✔ intake stamps only the authenticated server-authorized category and ignores forged request authorization (93.2513ms)
+✔ each worker stage reloads authoritative source authorization before further paid work (13.0748ms)
+✔ run endpoint returns an actionable denial without dispatching a revoked new import (10.5851ms)
+✔ the response lifecycle waits for the actual background worker Promise (7.6562ms)
+✔ run registers paid background processing with the server response lifecycle (7.4857ms)
+✔ new snapshots persist theme metadata and later workers retain the host's theme choice (65.303ms)
+✔ an explicit host save while background completion is preparing media wins atomically (21.0137ms)
+✔ a host save already present before background completion retains authored data and publication (15.358ms)
+✔ gymnastics snapshots persist inclusive date-only ranges and clear stale inferred clocks/zones (13.2703ms)
+✔ a gymnastics discovery shell starts without an assumed timezone (5.6871ms)
+✔ workspace filter normalization accepts only supported views and bounds search input (0.8656ms)
+✔ history pagination carries a bounded stable cursor including null creation dates (33.7366ms)
+✔ malformed and oversized cursors cannot alter SQL or restart a partial page silently (12.8448ms)
+✔ workspace filters remain parameterized within owner, accepted co-host and shared-event authorization (11.3103ms)
+ℹ tests 62
+ℹ suites 0
+ℹ pass 62
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 877.0912
+bun test v1.3.11 (af24e281)
+
+src\lib\event-draft-access.test.ts:
+(pass) legacy processing and review-ready import shells stay private before explicit publication
+(pass) cancelled unsaved import shells remain private and compact SQL checks match legacy stages
+
+src\lib\hotel-resource-links.test.ts:
+(pass) PDF page hotel headings cannot relabel an unrelated annotation as Host Hotels
+(pass) a section heading cannot promote a generic HTML sponsor action to a hotel link
+(pass) real booking URLs and explicitly labeled organizer hotel hubs retain their actions
+(pass) destination evidence excludes query parameters, fragments and unrelated URL substrings
+(pass) hotel candidate detection rejects the awards vendor in page context and keeps good links
+(pass) saved discovery page suppresses stale awards hotel actions and preserves real hotels
+(pass) saved manual page suppresses stale awards hotel actions and preserves real hotels [15.00ms]
+(pass) persisted fallback validation skips an awards supplier and uses a grounded organizer hub
+
+src\lib\create\create-intent.test.ts:
+(pass) Create page routing > recognizes clear occasions in a description
+(pass) Create page routing > routes named sports, including links, to the sport
+(pass) Create page routing > asks when the description is unclear or mixed
+(pass) Create page routing > retains private and specialized source types without relabeling them general
+(pass) Create page routing > maps guesses to editors and import pipelines
+(pass) Create page routing > accepts only web links as links
+(pass) Create page routing > model answers are validated before routing
+
+src\lib\create\creation-navigation.test.ts:
+(pass) Baby and Bridal Shower preferences resolve to distinct event types through legacy routes
+(pass) route aliases cannot duplicate manual choices or replace preferred order
+(pass) sports aliases retain their actual sport while product and unrelated links are excluded
+
+src\lib\create\extract-information.test.ts:
+(pass) classifies the source independently, retains host corrections and never requests artwork
+(pass) denied recognized categories return recognition without paid information planning [16.00ms]
+(pass) medical sources remain in Snap without entering the public Event Page planner
+(pass) the authorized sports handoff reuses the single server read and skips generic page planning
+(pass) restricted sports never prepare a durable import
+
+src\lib\create\extraction-progress.test.ts:
+(pass) server stages appear before the result even across split response chunks
+(pass) failed or interrupted streams never report a completed import
+(pass) legacy JSON responses and actionable HTTP failures remain supported
+
+src\lib\create\merge-discovery-editor-refresh.test.ts:
+(pass) an image from an earlier import design never merges into a host's redesigned theme
+(pass) background enrichment preserves wording edits and intentional clears while adding untouched details
+(pass) nested section edits and reordered arrays survive successive server snapshots
+
+src\lib\create\read-source.test.ts:
+(pass) rejects private, loopback, metadata and IPv4-mapped addresses
+(pass) revalidates redirect destinations and never connects to a private redirect
+(pass) rejects hosts with any nonpublic DNS answer and credentials before transport
+(pass) mixed PDFs retain text-layer pages and OCR every missing page in order [15.00ms]
+(pass) native PDF text keeps graphics and hidden links without an OCR request [16.00ms]
+(pass) PDF page failures release the shared reader and preserve the page error
+(pass) links from multiple source files keep their combined page numbers [16.00ms]
+(pass) rejects over-budget PDF instead of dropping later pages
+(pass) public HTML uses actual readable content and preserves destination links
+(pass) URL recognition reads page content instead of classifying misleading path words
+(pass) a login page with HTTP 200 is not converted into invented event details
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 1,
+  outcome: "success",
+(pass) transcription sends strict schemas, page-aware budgets and ordered images
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 0,
+  outcome: "incomplete",
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 0,
+  outcome: "success",
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 0,
+  outcome: "success",
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+(pass) truncated batches split once into single pages using the same deadline
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 0,
+  outcome: "incomplete",
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 0,
+  outcome: "refused",
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 0,
+  outcome: "invalid_output",
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 0,
+  outcome: "invalid_output",
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 0,
+  outcome: "invalid_output",
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+(pass) single-page truncation, refusal and missing-page results fail without automatic retries
+(pass) cancellation after a truncated batch prevents child submissions
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 0,
+  outcome: "incomplete",
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+(pass) five unread pages are transcribed in bounded groups without dropping later pages [15.00ms]
+
+src\lib\create\run-sport-discovery.test.ts:
+(pass) specialty editor links retain the exact selected sport style and existing gym/football parameters
+(pass) a recovered completed sport import opens its chosen style instead of the editor default
+(pass) resumes recovered identity, persists it before starting, and avoids another intake
+(pass) all selected photos, host notes and idempotency key go through specialty intake
+(pass) pasted sports details use the specialty intake without fetching a retained reference URL
+(pass) a failed status read retains the event and never sends cancellation
+(pass) explicit cancellation uses the persistent intake key even before an event ID exists
+(pass) a stored core draft opens the editor before optional enrichment finishes
+(pass) optional enrichment failure retains access to a ready draft
+(pass) retained check and source storage report their real stage
+(pass) the client timeout covers a stalled initial intake without cancelling the retained server import [16.00ms]
+
+src\lib\create\sport-source-intake.test.ts:
+(pass) confident sports prepare directly while ambiguous and non-sports corrections retain review
+(pass) ordered schedule text and hidden link destinations survive the trusted handoff
+(pass) the first upload is handed to durable storage on the server with the same intake identity
+(pass) URL handoffs retain the validated URL and leave deeper specialty crawling enabled
+(pass) aborting before intake never creates a late shell
+
+src\lib\discovery\browser-network.test.ts:
+(pass) browser scripts and linked resources are fulfilled through the pinned public transport
+(pass) private browser subresources and mutating requests are aborted without a connection
+
+src\lib\discovery\extraction-reuse.test.ts:
+(pass) verified Create source reads enter sports parsing without another file download or OCR
+(pass) unmarked documents cannot bypass the normal specialty source reader
+(pass) ordinary file enrichment retains every schedule and metadata field without reading bytes again
+(pass) PDF layout enrichment receives existing page text and retains document evidence
+(pass) gymnastics file enrichment uses its completed document while preserving the parsed schedule
+(pass) URL enrichment still performs the deeper specialty crawl
+
+src\lib\discovery\intake-recovery.test.ts:
+(pass) concurrent retries use one server identity under the database intake lock
+(pass) an intake key cannot recover another account's event
+(pass) cancelling before upload completion durably prevents late creation
+(pass) a crash after shell insertion but before identity mapping recovers that exact shell
+(pass) an interrupted source upload is repaired on the same identity rather than resumed without its file
+
+src\lib\discovery\status.test.ts:
+(pass) buildDiscoveryStatusResponse exposes structured failed-state diagnostics
+(pass) buildDiscoveryStatusResponse omits error details for non-failed states
+(pass) draft becomes available after mapping while enrichment continues
+(pass) draft is not available while the packet is still being parsed
+(pass) an optional enrichment failure retains the mapped draft for editing
+(pass) cancellation never exposes a mapped draft as ready
+
+src\lib\meet-discovery\dates.test.ts:
+(pass) visible event dates override a stale SEO description throughout URL extraction [16.00ms]
+(pass) abbreviated visible dates override conflicting metadata without choosing the newest year blindly
+Warning: TT: undefined function: 32
+Warning: TT: undefined function: 32
+(pass) Gasparilla Classic: actual packet date range survives map, preview, save/reload and guest calendars [2265.00ms]
+(pass) Florida Xcel State Championships: actual packet date range survives map, preview, save/reload and guest calendars [94.00ms]
+(pass) timed multi-day events and explicit midnight retain the chosen venue zone across DST [31.00ms]
+(pass) missing, ambiguous, failed venue lookup cannot inherit the parent's zone
+(pass) hydration honors manual fields and only reverses versioned exclusive date ends
+(pass) parser keeps local clocks independent of the browser and rejects invalid local dates
+
+ 90 pass
+ 0 fail
+ 258 expect() calls
+Ran 90 tests across 15 files. [13.12s]
+bun test v1.3.11 (af24e281)
+
+src\lib\pending-snap-upload.test.ts:
+(pass) the same-tab fallback retains personal text without inventing an upload
+(pass) real source files and host corrections survive transfer together and can be cleared
+
+src\lib\ocr\text-intake.test.ts:
+>>> OCR timing (ms) {
+  totalMs: 19,
+  locationMs: 0,
+  sessionMs: 0,
+  accountingMs: 0,
+  otherProcessingMs: 19,
+  preprocessMs: 0,
+  primaryOcrMs: 0,
+  fallbackOcrMs: 0,
+  rewriteMs: 0,
+  scheduleMs: 0,
+  skinMs: 0,
+  fastMode: true,
+  enableRewrites: false,
+  enableSkinInference: false,
+  earlyArtworkStarted: false,
+  skinInferenceTimedOut: false,
+  skinTimeoutMs: 3500,
+  turboMode: false,
+  model: "gpt-5.6-luna",
+  ocrSource: "provided-text",
+}
+[ocr] complete {
+  scanAttemptId: "scan-3b577195-43f0-4cf7-816d-492b7fe0c239",
+  fileName: null,
+  fileSize: null,
+  mimeType: "text/plain",
+  category: "Medical Appointments",
+  timings: {
+    totalMs: 19,
+    locationMs: 0,
+    sessionMs: 0,
+    accountingMs: 0,
+    otherProcessingMs: 19,
+    preprocessMs: 0,
+    primaryOcrMs: 0,
+    fallbackOcrMs: 0,
+    rewriteMs: 0,
+    scheduleMs: 0,
+    skinMs: 0,
+    fastMode: true,
+    enableRewrites: false,
+    enableSkinInference: false,
+    earlyArtworkStarted: false,
+    skinInferenceTimedOut: false,
+    skinTimeoutMs: 3500,
+    turboMode: false,
+    model: "gpt-5.6-luna",
+    ocrSource: "provided-text",
+  },
+}
+(pass) signed-in personal text uses the existing factual/private personalization path without media or artwork calls [31.00ms]
+(pass) text intake denies anonymous or restricted accounts before processing and rejects oversized sources
+
+ 4 pass
+ 0 fail
+ 23 expect() calls
+Ran 4 tests across 2 files. [2.70s]
+✔ signup and login remain scrollable with a reachable Close on short screens (3713.4677ms)
+▶ unified creation retains sources, recommends native templates and protects facts across browser journeys
+  ✔ scratch creation keeps the original responsive gymnastics mosaic and loads designs while scrolling (825.7259ms)
+  ✔ account checks run behind usable source controls and selected files parse once access arrives (473.4814ms)
+  ✔ denied or failed account checks never process a waiting upload (676.9688ms)
+  ✔ waiting reads respect Cancel and use only the latest accepted source (618.2448ms)
+  ✔ switching accounts clears a waiting upload before either account access response can read it (536.3159ms)
+  ✔ refocusing refreshes account access without hiding the form or resetting edits (327.7139ms)
+  ✔ enabled templates and inspiration intersect server category grants without fallback (676.1125ms)
+  ✔ live preference, grant and account changes remove stale recommendations and artwork (1275.2792ms)
+  ✔ unfinished creation resumes from Drafts while Create omits the recovery banner and footer (770.8806ms)
+  ✔ Bridal-only accounts keep the Bridal shortcut and one manual choice through the legacy Baby route (309.692ms)
+  ✔ switching input methods retains recognized upload and unsubmitted URL sources without reading again (1032.4416ms)
+  ✔ uploads parse immediately, retain retry control, and ignore cancelled responses (1931.7682ms)
+  ✔ uncertain recognition asks for confirmation before opening its default editor (397.4313ms)
+  ✔ URL imports enter the General editor and changing designs preserves facts, notes and uploaded artwork (3474.0446ms)
+  ✔ sports uploads open their editors directly and retain durable import identity for retry and cancellation (3130.6631ms)
+  ✔ gallery PDF uploads parse immediately and explicit custom designs survive refresh (2078.7714ms)
+  ✔ calendar-selected dates reach manual native editors without provider work and never replace imported explicit dates (937.511ms)
+  ✔ My Events filters, query recovery, pagination, stale responses and cohost editing work on phones (2705.0833ms)
+  ✔ mounted My Events account switches hide prior cards and ignore an old account's delayed edit navigation (1083.3935ms)
+  ✔ slow IndexedDB saves retain the newest pasted source across concurrent debounces and refresh (3327.3745ms)
+  ✔ changing accounts in the mounted Create screen clears prior source and pending browser writes (821.0793ms)
+✔ unified creation retains sources, recommends native templates and protects facts across browser journeys (39212.4871ms)
+ℹ 320px initial upload action ends at 555px
+ℹ 390px initial upload action ends at 533px
+✔ browser recovery keeps source blobs across reload, isolates accounts, rejects stale writes and expires old work (1255.4665ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 45186.9443

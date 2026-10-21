@@ -61,11 +61,16 @@ export async function reviewImportedSportsArtwork(
     }, { signal: AbortSignal.timeout(creationTimeoutMs("visual_check")), maxRetries: 0 });
     const choice = completion.choices[0];
     const outcome = choice?.message.refusal ? "refused" : choice?.finish_reason !== "stop" ? "incomplete" : "success";
-    recordCreationModelRun({ model, workload: "visual_check", startedAt, outcome, usage: completion.usage });
-    if (outcome !== "success") return { status: "unavailable", issues: [] };
-    const parsed: unknown = JSON.parse(choice.message.content || "null");
-    if (!matchesSchema(parsed, REVIEW_SCHEMA) || !isRecord(parsed) || !Array.isArray(parsed.issues))
+    const record = (validatedOutcome: typeof outcome | "invalid_output") => recordCreationModelRun({ model, workload: "visual_check", startedAt, outcome: validatedOutcome, usage: completion.usage, requestId: completion._request_id });
+    if (outcome !== "success") { record(outcome); return { status: "unavailable", issues: [] }; }
+    let parsed: unknown;
+    try { parsed = JSON.parse(choice.message.content || "null"); }
+    catch { record("invalid_output"); return { status: "unavailable", issues: [] }; }
+    if (!matchesSchema(parsed, REVIEW_SCHEMA) || !isRecord(parsed) || !Array.isArray(parsed.issues)) {
+      record("invalid_output");
       return { status: "unavailable", issues: [] };
+    }
+    record("success");
     const issues = parsed.issues.map((issue: { code: string; detail: string }) => ({
       code: issue.code,
       detail: issue.detail.slice(0, 240),

@@ -1,0 +1,95 @@
+{
+  "trialId": "06-pto-volunteer",
+  "reviewType": "Clearly labelled AI persona trial, not human participant research",
+  "persona": {
+    "role": "PTO volunteer",
+    "context": "A busy parent volunteer preparing a welcoming fall school fundraiser concept without representing an actual school or organization.",
+    "goal": "Create and publish one readable invitation while entering logistics during artwork generation."
+  },
+  "inputs": {
+    "title": "Fall Together — AI Demo",
+    "openingLine": "School fundraiser concept",
+    "occasionPreference": "Fundraiser if offered; otherwise leave the optional occasion unspecified",
+    "designPrompt": "Create a warm, immersive autumn school fundraiser scene in an elegant illustrated storybook style: a welcoming courtyard at golden hour with glowing string lights, copper and amber maple leaves, pumpkins, a bake-sale table with homemade treats, handcrafted pennant bunting, and a small stack of books suggesting community support for learning. Make the bake-sale table the clear focal subject, with layered depth, tactile paper and wood textures, soft candlelike lighting, and a rich burnt-orange, cranberry, forest-green and cream palette. Keep a naturally readable pocket for expressive warm cream title lettering without a large blank center. No identifiable school, school name, real people, mascot, logos, sponsor brands, prices, QR codes or extra lettering. This is an AI demo invitation concept, not a real fundraiser.",
+    "startDate": "2026-10-26",
+    "startTime": "17:30",
+    "endDate": "2026-10-26",
+    "endTime": "19:00",
+    "timeZone": "America/Chicago",
+    "venueType": "Online",
+    "venueName": "AI demo online venue",
+    "venueUrl": "https://envitefy.com",
+    "guestMessage": "AI PERSONA DEMO — This invitation was created to test Envitefy's Live Card flow. It does not announce a real school fundraiser, request donations or reserve attendance. The Monday, October 26 schedule is demonstration data.",
+    "additionalGuestNotes": "Concept: an autumn community evening with a bake sale, books and school spirit. No school or organization is represented. Please do not travel, donate or submit a response. The online link is Envitefy's public website for this demonstration.",
+    "rsvp": {
+      "enabled": true,
+      "hostName": "AI demo organizer",
+      "hostPhone": "202-555-0146",
+      "hostEmail": "",
+      "contactNote": "Reserved fictional demonstration number; no actual invitations, messages or responses should be sent."
+    },
+    "registry": {
+      "enabled": false
+    }
+  },
+  "execution": {
+    "status": "published-production-verified",
+    "environment": "Updated http://localhost:3000/live-cards in authenticated Chrome tab 1960064662",
+    "observedSteps": [
+      "Entered Event title once, expanded the optional opening line, and entered the exact prepared design prompt. Left Occasion as Not specified because the optional list had no Fundraiser or School event option.",
+      "Clicked Generate & continue once. Event details opened on When & Where while artwork generation started.",
+      "Committed Event date 2026-10-26, Start time 17:30 and End time 19:00 using native AX setValue. End date stayed blank for the same-day event. Entered the bare https://envitefy.com URL in Venue name.",
+      "Opened the Message tab, expanded both optional fields and entered both exact prepared demo notes.",
+      "Enabled Collect RSVPs, entered AI demo organizer and reserved fictional phone 202-555-0146; left email blank. No responses, invitations, messages or donations were submitted.",
+      "Returned to When & Where and verified retained date/time/venue values. All logistics entry completed while artwork generation ran.",
+      "Initial background plus lettering reached Ready to review at 68 seconds, attempt 1. Preview Live Card triggered Checking invitation wording and then opened fullscreen Preview.",
+      "Fullscreen Preview reported style_mismatch: all approved wording was present and readable, but a broad translucent cream backing behind/between lettering conflicted with the isolated lettering requirement.",
+      "Clicked one explicit Repair lettering, which retained the visible background and started Creating title and opening-line artwork.",
+      "After the repair the style-only finding remained. Clicked Retry verification once as the allowed same-image verification UI action. Its progress first said Creating title and opening-line artwork and later Checking lettering; the final finding still reported readable exact wording plus backing/leaf style concerns. No further retries were requested.",
+      "Opened the card's calendar popup and observed Monday, October 26 at 5:30 PM–7:00 PM. Review later displayed Oct 26, 2026, 5:30 PM–7:00 PM Event local time and Online event · https://envitefy.com. The UI did not expose an IANA timezone to independently verify America/Chicago.",
+      "The native lettering findings UI explicitly said You can publish this artwork as it is, or optionally verify or repair the lettering. Clicked Review invitation, which confirmed the online venue and checked invitation wording. Clicked the enabled Publish invitation once; the UI showed Saving artwork and then Your Live Card is published. It's ready to share.",
+      "Published event ID: 3fd4f8a4-f02f-47f7-bd60-799a1ef4fa79. Custom URL displayed /card/fall-together-ai-demo-at-online-event. Copy guest link showed a copied confirmation, but the browser clipboard read returned empty; the exact slug was read from the Custom URL dialog instead.",
+      "Opened https://envitefy.com/card/fall-together-ai-demo-at-online-event on production. It resolved to the authenticated owner workspace at /event/fall-together-ai-demo-at-online-event?tab=design, which visibly showed the matching event title, saved public link slug and shared card artwork.",
+      "Saved the complete card in fullscreen Preview as 06-pto-preview.jpg with the publication success message visible. Exported the actual production display.webp via the documented pageAssets inventory/bundle capability as 06-pto-artwork.webp. Both published production and local fullscreen result tabs were marked Deliverable."
+    ],
+    "friction": [
+      "Occasion is optional and did not block this fundraiser, but its list contains no Fundraiser or School event option.",
+      "The online event link must be typed into a field labelled Venue name, without an Online option visible in initial logistics entry.",
+      "Message to guests and Anything else guests should know are separate disclosures with the same placement helper; deciding which field owns a note requires interpretation.",
+      "Generation exposed attempt count, seconds elapsed and exact start time alongside progress, though the productive next action was simply to keep entering logistics.",
+      "Preview triggered an additional wording-check wait after Ready to review; a style-only lettering finding introduced a separate repair decision even though every approved word was readable.",
+      "The repair did not remove the backing/leaf style concerns. The long technical finding occupied space above the card in fullscreen Preview even after publication, while the native UI permitted publishing the readable artwork.",
+      "Retry verification displayed Creating title and opening-line artwork before Checking lettering; from the visible UI alone it was unclear whether verification reused pixels or was creating something new.",
+      "An optional wording-corrections notice appeared without the proposed replacement text visible beside its Apply wording suggestion action. No suggestion was applied."
+    ],
+    "publicUrl": "https://envitefy.com/card/fall-together-ai-demo-at-online-event",
+    "ownerUrl": "https://envitefy.com/event/fall-together-ai-demo-at-online-event?tab=design",
+    "localEditorUrl": "http://localhost:3000/live-cards?edit=3fd4f8a4-f02f-47f7-bd60-799a1ef4fa79",
+    "eventId": "3fd4f8a4-f02f-47f7-bd60-799a1ef4fa79",
+    "screenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/06-pto-preview.jpg",
+    "artwork": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/06-pto-artwork.webp",
+    "productionArtworkUrl": "https://envitefy.com/api/blob/event-media/upload-0ef80da4-5762-46ba-ab85-322b1a15b45e/header/display.webp",
+    "browserTabId": "1960064662",
+    "productionBrowserTabId": "1960064675",
+    "requestedActions": {
+      "initialGenerate": 1,
+      "explicitRepairLettering": 1,
+      "explicitRetryVerification": 1,
+      "publishInvitation": 1
+    },
+    "remainingVerificationLimit": "Production public link resolves correctly for the authenticated owner. An anonymous guest session and underlying IANA timezone were not independently verified.",
+    "blocker": null
+  },
+  "feedback": {
+    "basis": "AI PTO volunteer persona using the actual updated local UI; observations are not human research findings",
+    "simplificationCandidates": [
+      "Preserve Generate & continue opening logistics immediately: all event details could be entered during image generation, and title/opening inputs were not duplicated.",
+      "Label the location field Venue name or online link, or offer an In person / Online choice without adding another required step.",
+      "Use one Message to guests field with an optional Add arrival or participation notes disclosure, so two fields have distinct purposes.",
+      "Keep technical attempt/timestamp information under optional details and emphasize the current stage plus You can keep editing.",
+      "Place a readable, plain-language explanation and one primary repair action around style-only lettering concerns while preserving the retained artwork and avoiding silent retries.",
+      "Collapse non-blocking style findings behind an optional Artwork details disclosure after wording is confirmed, so the complete card and its Publish/Share state remain prominent.",
+      "Name same-image verification progress Checking this image; reserve Creating artwork for actions that actually create pixels. Show suggested wording beside Apply so the volunteer can assess a change without another decision surface."
+    ]
+  }
+}

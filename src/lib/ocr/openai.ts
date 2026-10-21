@@ -1,8 +1,10 @@
-import { EVENT_EXTRACTION_RESPONSE_SCHEMA, parseEventExtraction } from "./extraction-contract.ts";
+import { EVENT_EXTRACTION_SCHEMA, EVENT_EXTRACTION_RESPONSE_SCHEMA, parseEventExtraction } from "./extraction-contract.ts";
 import { classifyOpenAiHttpFailure } from "./failure.ts";
 import { creationModelBudget, recordCreationModelRun } from "../creation/openai-workloads.ts";
 import { OPENAI_TIMEOUT_MS, resolveOcrModel } from "./constants";
 import { openAiChatCompatibilityParams } from "../openai-chat-params.ts";
+import { matchesSchema, strictObject } from "../creation/source-evidence.ts";
+import { GYMNASTICS_SCHEDULE_SCHEMA, PRACTICE_SCHEDULE_SCHEMA, normalizeGymnasticsScheduleEvent } from "./schedule-contract.ts";
 import {
   buildBirthdayRewritePrompt,
   buildEventExtractionPrompt,
@@ -183,6 +185,22 @@ function buildChatPayload({
   };
 }
 
+function parseOcrOutput<T>(completion: any, schema: object, normalize: (value: any) => T | null): {
+  outcome: "success" | "invalid_output" | "refused" | "incomplete";
+  value: T | null;
+} {
+  const choice = completion?.choices?.[0];
+  if (choice?.message?.refusal) return { outcome: "refused", value: null };
+  if (choice?.finish_reason !== "stop") return { outcome: "incomplete", value: null };
+  try {
+    const parsed: unknown = JSON.parse(choice.message.content || "null");
+    const value = matchesSchema(parsed, schema) ? normalize(parsed) : null;
+    return { outcome: value === null ? "invalid_output" : "success", value };
+  } catch {
+    return { outcome: "invalid_output", value: null };
+  }
+}
+
 export async function llmExtractEventFromImage(
   imageBytes: Buffer,
   mime: string,
@@ -239,18 +257,10 @@ export async function llmExtractEventFromImage(
     }
     const j: any = await res.json();
     log(">>> OpenAI API response received");
-    const choice = j?.choices?.[0];
-    const outcome = choice?.message?.refusal ? "refused" : choice?.finish_reason !== "stop" ? "incomplete" : "success";
-    recordCreationModelRun({ workload: "extraction", model, startedAt, outcome, usage: j?.usage });
-    if (outcome !== "success") return null;
-    const text = choice?.message?.content || "";
-    if (!text) {
-      console.warn(">>> OpenAI returned no content");
-      return null;
-    }
-    try {
-      const parsed = parseEventExtraction(JSON.parse(text));
-      if (!parsed) return null;
+    const result = parseOcrOutput(j, EVENT_EXTRACTION_SCHEMA, parseEventExtraction);
+    recordCreationModelRun({ workload: "extraction", model, startedAt, outcome: result.outcome, usage: j?.usage, requestId: res.headers.get("x-request-id") });
+    const parsed = result.value;
+    if (parsed) {
       if (
         parsed.title &&
         parsed.birthdayAge != null &&
@@ -260,11 +270,10 @@ export async function llmExtractEventFromImage(
         log(">>> ⚠️ WARNING: Birthday title is missing age ordinal:", parsed.title);
       }
       return parsed;
-    } catch {
-      console.error(">>> Invalid structured OCR response");
-      return null;
     }
+    return null;
   } catch (err) {
+    recordCreationModelRun({ workload: "extraction", model, startedAt, outcome: "error" });
     console.error(">>> OpenAI Vision API exception:", err);
     if (err instanceof OpenAiOcrError || isAbortLikeError(err)) {
       throw err;
@@ -290,6 +299,8 @@ export async function llmExtractVisibleTextFromImage(
     if (debug) console.log(...args);
   };
   const base64 = imageBytes.toString("base64");
+  const startedAt = Date.now();
+  const schema = strictObject({ text: { type: "string" } });
 
   try {
     log(">>> Making OpenAI visible-text OCR call...");
@@ -302,7 +313,7 @@ export async function llmExtractVisibleTextFromImage(
           buildChatPayload({
             model,
             temperature: 0,
-            responseFormat: { type: "json_object" },
+            responseFormat: { type: "json_schema", json_schema: { name: "visible_source_text", strict: true, schema } },
             messages: [
               {
                 role: "system",
@@ -330,17 +341,11 @@ export async function llmExtractVisibleTextFromImage(
       throw await openAiHttpError(res);
     }
     const j: any = await res.json();
-    const text = j?.choices?.[0]?.message?.content || "";
-    if (!text) return null;
-    try {
-      const parsed = JSON.parse(text);
-      const visibleText = typeof parsed?.text === "string" ? parsed.text.trim() : "";
-      return visibleText || null;
-    } catch (parseErr) {
-      console.error(">>> Failed to parse OpenAI visible-text OCR JSON:", parseErr, "Raw:", text);
-      return null;
-    }
+    const result = parseOcrOutput(j, schema, (parsed) => parsed.text.trim() || null);
+    recordCreationModelRun({ workload: "extraction", model, startedAt, outcome: result.outcome, usage: j?.usage, requestId: res.headers.get("x-request-id") });
+    return result.value;
   } catch (err) {
+    recordCreationModelRun({ workload: "extraction", model, startedAt, outcome: "error" });
     console.error(">>> OpenAI visible-text OCR exception:", err);
     if (err instanceof OpenAiOcrError || isAbortLikeError(err)) {
       throw err;
@@ -360,6 +365,7 @@ export async function llmExtractGymnasticsScheduleFromImage(
   const model = resolveOcrModel();
   const base64 = imageBytes.toString("base64");
   const prompt = buildGymnasticsSchedulePrompt(timezone);
+  const startedAt = Date.now();
 
   try {
     const res = await fetchWithTimeout(
@@ -371,14 +377,14 @@ export async function llmExtractGymnasticsScheduleFromImage(
           buildChatPayload({
             model,
             temperature: 0.1,
-            responseFormat: { type: "json_object" },
+            responseFormat: { type: "json_schema", json_schema: { name: "gymnastics_schedule", strict: true, schema: GYMNASTICS_SCHEDULE_SCHEMA } },
             messages: [
               { role: "system", content: prompt.system },
               {
                 role: "user",
                 content: [
                   { type: "text", text: prompt.user },
-                  { type: "input_image", image_url: { url: `data:${mime};base64,${base64}` } },
+                  { type: "image_url", image_url: { url: `data:${mime};base64,${base64}`, detail: "high" } },
                 ],
               },
             ],
@@ -387,49 +393,16 @@ export async function llmExtractGymnasticsScheduleFromImage(
       },
       timeoutMs,
     );
-    if (!res.ok) return null;
+    if (!res.ok) throw await openAiHttpError(res);
     const j: any = await res.json();
-    const text = j?.choices?.[0]?.message?.content || "";
-    if (!text) return null;
-    try {
-      const parsed = JSON.parse(text) as GymnasticsScheduleLlmResult;
-      const events = Array.isArray(parsed?.events) ? parsed.events : [];
-      const normalize = (ev: any) => {
-        const title = String(ev?.title || "Meet").slice(0, 120);
-        const loc = typeof ev?.location === "string" ? ev.location : "";
-        const startIso = typeof ev?.start === "string" ? ev.start : null;
-        const endIso = typeof ev?.end === "string" ? ev.end : null;
-        let s = startIso;
-        let e = endIso;
-        try {
-          if (s && /^\d{4}-\d{2}-\d{2}$/.test(s)) {
-            s = new Date(`${s}T00:00:00.000Z`).toISOString();
-            const d = new Date(s);
-            e = new Date(
-              Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1),
-            ).toISOString();
-          }
-        } catch {}
-        return {
-          title,
-          start: s || new Date().toISOString(),
-          end: e || new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-          allDay: Boolean(ev?.allDay ?? true),
-          timezone,
-          location: loc,
-          description: typeof ev?.description === "string" ? ev.description.slice(0, 600) : "",
-        };
-      };
-      return {
-        season: parsed?.season ?? null,
-        homeTeam: parsed?.homeTeam ?? null,
-        homeAddress: parsed?.homeAddress ?? null,
-        events: events.map(normalize),
-      };
-    } catch {
-      return null;
-    }
+    const result = parseOcrOutput<GymnasticsScheduleLlmResult>(j, GYMNASTICS_SCHEDULE_SCHEMA, (parsed) => ({
+      season: parsed.season, homeTeam: parsed.homeTeam, homeAddress: parsed.homeAddress,
+      events: parsed.events.map((event: unknown) => normalizeGymnasticsScheduleEvent(event, timezone)),
+    }));
+    recordCreationModelRun({ workload: "extraction", model, startedAt, outcome: result.outcome, usage: j?.usage, requestId: res.headers.get("x-request-id") });
+    return result.value;
   } catch {
+    recordCreationModelRun({ workload: "extraction", model, startedAt, outcome: "error" });
     return null;
   }
 }
@@ -445,6 +418,7 @@ export async function llmExtractPracticeScheduleFromImage(
   const model = resolveOcrModel();
   const base64 = imageBytes.toString("base64");
   const prompt = buildPracticeSchedulePrompt(timezone);
+  const startedAt = Date.now();
 
   try {
     const res = await fetchWithTimeout(
@@ -456,14 +430,14 @@ export async function llmExtractPracticeScheduleFromImage(
           buildChatPayload({
             model,
             temperature: 0.1,
-            responseFormat: { type: "json_object" },
+            responseFormat: { type: "json_schema", json_schema: { name: "practice_schedule", strict: true, schema: PRACTICE_SCHEDULE_SCHEMA } },
             messages: [
               { role: "system", content: prompt.system },
               {
                 role: "user",
                 content: [
                   { type: "text", text: prompt.user },
-                  { type: "input_image", image_url: { url: `data:${mime};base64,${base64}` } },
+                  { type: "image_url", image_url: { url: `data:${mime};base64,${base64}`, detail: "high" } },
                 ],
               },
             ],
@@ -472,16 +446,13 @@ export async function llmExtractPracticeScheduleFromImage(
       },
       timeoutMs,
     );
-    if (!res.ok) return null;
+    if (!res.ok) throw await openAiHttpError(res);
     const j: any = await res.json();
-    const text = j?.choices?.[0]?.message?.content || "";
-    if (!text) return null;
-    try {
-      return JSON.parse(text) as PracticeScheduleLLMResponse;
-    } catch {
-      return null;
-    }
+    const result = parseOcrOutput<PracticeScheduleLLMResponse>(j, PRACTICE_SCHEDULE_SCHEMA, (parsed) => parsed);
+    recordCreationModelRun({ workload: "extraction", model, startedAt, outcome: result.outcome, usage: j?.usage, requestId: res.headers.get("x-request-id") });
+    return result.value;
   } catch {
+    recordCreationModelRun({ workload: "extraction", model, startedAt, outcome: "error" });
     return null;
   }
 }

@@ -1,0 +1,20 @@
+npm notice run envitefy@0.1.0 test:create-browser
+npm notice run node --import ./scripts/lib/create-offline-network.mjs --test --test-concurrency=1 scripts/create-guest-preview-offline.test.cjs scripts/create-guest-rsvp-offline.test.cjs scripts/event-messages-browser.test.cjs scripts/owner-card-preview-browser.test.cjs scripts/template-single-section-browser.test.cjs scripts/event-collaboration-browser.test.cjs scripts/event-editor-browser.test.cjs scripts/product-urls-browser.test.cjs
+✔ artwork fits the viewport with guest actions and Share/Close overlaid on the card (19941.682ms)
+✔ hydrated Gender Reveal RSVP sends required answers, preserves rejected input, retries, and preview never writes (3028.9312ms)
+✔ owner access controls and invited signup/login preserve the event and explicit acceptance on mobile (5441.6484ms)
+✔ one Event Page editor protects saves and navigation across creation modes and screen sizes (33407.0337ms)
+✔ Messages requires preview and explicit Send, retains drafts, recovers interrupted sends, and fits mobile (4200.6415ms)
+✔ mobile owners discover and swipe card previews without losing progress; preview RSVPs stay local (27230.9505ms)
+✔ custom URLs work across Event Pages, Live Cards and Sign-up Forms without saving pending content (8961.3249ms)
+✔ native Event Page layout choices respect saved section order and narrow containers (1536.3286ms)
+✔ all template bodies and signup designs fill a single section without a reserved column (2577.1695ms)
+ℹ Verified 1158 template renderings across 12 layouts at phone, tablet and desktop widths.
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 111782.4583

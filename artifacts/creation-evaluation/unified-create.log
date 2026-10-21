@@ -1,0 +1,77 @@
+npm notice run envitefy@0.1.0 test:unified-create
+npm notice run node scripts/run-unified-create-tests.mjs
+✔ one multipart request streams real stages and returns its retained sports identity (33.6922ms)
+✔ legacy JSON readers keep their response shape and do not create sports shells (1.3482ms)
+✔ stream failures retain retry guidance and never expose internal errors (1.0394ms)
+✔ lazy alternate outputs accept full retained source text without granting it trusted-document status (1.428ms)
+✔ existing extracted information opens its Live Card without another read (1.4026ms)
+✔ sports alternate extracts facts only on click and retains the original source and shell (21.9801ms)
+✔ a failed alternate read leaves the sports source available for retry (0.7512ms)
+✔ cancelling alternate preparation never applies a late response (0.8627ms)
+✔ changing the source while alternate facts load rejects the stale result (0.681ms)
+✔ left sidebar renders personalized create navigation for signed-in accounts (2.8399ms)
+✔ left sidebar controller resets create panel state when create access disappears (1.3762ms)
+✔ event creation routes open Create Event and do not activate My Events (2.2494ms)
+✔ left sidebar view still gates both root and compact create entries behind create access (1.0097ms)
+✔ left sidebar omits Studio and Snap Event from the always-open navigation (1.3222ms)
+✔ left sidebar uses current builders without legacy chat requests or navigation (3.2067ms)
+✔ left sidebar gives event titles the row width without inline action controls (1.3772ms)
+✔ left sidebar keeps My Events visible on owner event tab routes (3.0093ms)
+(node:32640) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/app/left-sidebar.model.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ My Events opens its sidebar list without navigating away with either creation rollout setting (92.7631ms)
+✔ My Events renders all categories in event-date order and reveals selectable past events (155.4646ms)
+✔ an account with only past events can still expand its event list (25.1548ms)
+✔ Sign-up Forms appears for published forms, forms-focused accounts and admins (12.796ms)
+✔ unified navigation keeps creation products independent and saved-work sidebar lists accessible (4.062ms)
+✔ native hydration keeps structural design state and replaces sample facts without inventing missing details (13.735ms)
+✔ gymnastics shared saves keep the nested builder event on the same venue-local dates (1.8802ms)
+✔ each recommended native design resolves to the matching actual catalog and sport (3.9215ms)
+✔ gallery intake preserves each sport context and keeps an unspecified sport unresolved (0.18ms)
+✔ explicit product adapters preserve source facts while importing no participants or generated artwork (6.0932ms)
+✔ legacy import processing and review stages remain private until explicit publication (13.161ms)
+✔ standard availability is independent of acquisition, hidden preferences and old product scopes (0.4036ms)
+✔ preferences select only granted categories and keep baby and bridal showers independent (0.9459ms)
+✔ combined legacy shower visibility migrates once without overriding an independent remove choice (52.1309ms)
+✔ host structures outrank forged scan and received-invite flags (0.4435ms)
+✔ Live Card imports retain their source category and explicit changed types without coarse legacy labels (0.3342ms)
+✔ approval selects the requested category while preserving other interests and attribution (0.1854ms)
+✔ restricted direct creation fails without provider work, while verified existing edits survive restrictions (37.3787ms)
+✔ new Live Card saves and provider operations enforce all imported and explicitly changed categories (31.2385ms)
+✔ an arbitrary event identity or revoked co-host cannot be used as a new-create exemption (18.7698ms)
+✔ server-stamped unsaved discovery shells keep fresh grants despite forged client saved flags (37.1692ms)
+✔ authorized shell saves check incoming categories and only protected savedAt restores existing-edit access (45.5924ms)
+✔ legacy history sources cannot forge discovery authorization records (30.8349ms)
+✔ account grants and access requests remain server-only in runtime schema and deployment migration (34.9491ms)
+✔ approval and preference selection commit atomically, while stale review rolls back (18.2379ms)
+✔ admin creation access endpoints reject non-admins before reading or changing grants (4.7574ms)
+✔ generation endpoint denies restricted categories before provider work and verifies saved edit context (19.6834ms)
+✔ the legacy source classifier checks current product access before reading sources or paid work (15.6927ms)
+✔ self-service settings and Reset cannot grant categories, products or account policy (34.6322ms)
+✔ public template previews stay available but saved editor data never survives sign-out or a different account (30.723ms)
+✔ a previous account's cached grant snapshot is unavailable on the first render after account change (12.5783ms)
+✔ intake stamps only the authenticated server-authorized category and ignores forged request authorization (117.729ms)
+✔ each worker stage reloads authoritative source authorization before further paid work (13.0176ms)
+✔ run endpoint returns an actionable denial without dispatching a revoked new import (11.3793ms)
+✔ the response lifecycle waits for the actual background worker Promise (7.9519ms)
+✔ run registers paid background processing with the server response lifecycle (7.2995ms)
+✔ new snapshots persist theme metadata and later workers retain the host's theme choice (89.8106ms)
+✔ an explicit host save while background completion is preparing media wins atomically (24.5303ms)
+✔ a host save already present before background completion retains authored data and publication (18.5902ms)
+✔ gymnastics snapshots persist inclusive date-only ranges and clear stale inferred clocks/zones (14.7255ms)
+✔ a gymnastics discovery shell starts without an assumed timezone (7.7232ms)
+✔ workspace filter normalization accepts only supported views and bounds search input (1.0141ms)
+✔ history pagination carries a bounded stable cursor including null creation dates (37.6419ms)
+✔ malformed and oversized cursors cannot alter SQL or restart a partial page silently (15.9839ms)
+✔ workspace filters remain parameterized within owner, accepted co-host and shared-event authorization (13.9869ms)
+ℹ tests 62
+ℹ suites 0
+ℹ pass 62
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1052.1865
+This fixture suite requires Bun on PATH. Install the project's Bun test runtime and rerun.

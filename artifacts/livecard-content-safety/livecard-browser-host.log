@@ -1,0 +1,15 @@
+✔ Live Card: location retries, explicit saves, invitation download and responsive preview (36917.3745ms)
+✔ design streams real stage boundaries and only returns a final design on completion (76.4329ms)
+✔ streamed design failure preserves its specific error code (17.6224ms)
+✔ checking status precedes the finished headline, while JSON callers remain compatible (59.2717ms)
+✔ failed verification streams a specific failure without a fabricated correction stage (10.6566ms)
+✔ cancelling the response aborts the pending image work and cannot start a repair (7.3421ms)
+✔ durable generation reconnects; Review never generates or publishes; published guest actions keep their destinations (29997.9084ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 37294.6374

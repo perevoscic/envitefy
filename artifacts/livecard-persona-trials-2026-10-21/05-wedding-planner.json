@@ -1,0 +1,186 @@
+{
+  "trialId": "05-wedding-planner",
+  "researchType": "AI persona roleplay; not a real participant or human focus group",
+  "persona": {
+    "role": "Wedding planner",
+    "scenario": "A professional planner creating a garden-themed welcome evening card while coordinating event logistics.",
+    "priorities": [
+      "A polished, distinctive card with exact wording",
+      "Enter logistics while artwork generates",
+      "Clearly distinguish printed card text from the guest message",
+      "Publish one complete link without repeating information"
+    ]
+  },
+  "status": "published-and-verified",
+  "executionEnvironment": "Authenticated Chrome; updated builder at http://localhost:3000/live-cards; published output verified on https://envitefy.com through the same signed-in owner's normal Preview UI.",
+  "event": {
+    "title": "Garden Welcome Evening — AI Demo",
+    "openingLine": "A little garden magic before the big day",
+    "occasion": "Wedding",
+    "date": "2026-10-26",
+    "day": "Monday",
+    "startTime": "18:30",
+    "endTime": "20:00",
+    "timeZone": "America/Chicago",
+    "locationType": "Online",
+    "venueLabel": "AI demo online venue — no real event",
+    "venueUrl": "https://envitefy.com",
+    "guestMessage": "This is an AI-created usability demonstration, not a real wedding or invitation. The fictional welcome evening is Monday, October 26, 2026, 6:30–8:00 PM Central. Imagine a relaxed garden gathering before a wedding, with conversation, soft lighting, and a warm welcome. The Envitefy link is a demo venue reference only; there is no gathering to attend.",
+    "additionalGuestInformation": "Fictional attire suggestion: garden cocktail. No gifts or purchases are requested. Do not travel, book accommodation, or submit an RSVP for this demonstration.",
+    "collectRsvps": false,
+    "registryUrl": null,
+    "giftNote": "No gifts — this is a fictional AI demo.",
+    "privateContacts": null
+  },
+  "exactDesignPrompt": "Create a romantic editorial garden welcome-evening invitation at blue hour. An immersive candlelit orangery opens onto a lush walled garden, with climbing ivory roses, soft sage foliage, pale apricot sweet peas, linen-draped cocktail tables, crystal glassware, aged limestone, and warm brass lanterns. Use layered photographic depth, rich material detail, and intentional warm light against the dusky blue sky. The focal subject is a beautifully arranged entrance framed by flowers, with a naturally readable lettering pocket integrated above it, not a giant blank center. Palette: sage, cream, apricot, antique brass, and twilight blue. Elegant high-contrast editorial serif lettering with restrained fine-line flourishes; no purple script, no generic wedding rings, no stock-photo collage. Preserve the lush scene behind the exact supplied event title and opening line. Include only the supplied wording; this is explicitly an AI demo, not a real event.",
+  "quality": "high-default",
+  "referenceImage": null,
+  "testTasks": [
+    "Enter the title, optional opening line, occasion, and exact design prompt.",
+    "Select Generate & continue once and enter Monday logistics while the same generation job runs.",
+    "Add the fictional-demo guest message, keep RSVP disabled, and omit registry links.",
+    "Inspect Review for exact title, opening line, demo disclosure, Monday date, and Central time.",
+    "Publish explicitly once if the normal UI permits and record the actual public URL and screenshot.",
+    "Record observed friction and simplifications that preserve design quality, concurrency, and explicit publication."
+  ],
+  "observations": [
+    {
+      "type": "confirmed-success",
+      "finding": "Generate & continue immediately opened Event details on When & Where while the initial background and lettering job ran. Guest messages, RSVP, Registry, and location remained editable.",
+      "evidence": "Creating background, Checking background, Creating title and opening-line artwork, Checking lettering, then Ready to review were visible in the job status. Ready to review reported attempt 1, 66 seconds elapsed. No repair or retry was required."
+    },
+    {
+      "type": "confirmed-success",
+      "finding": "Title and opening line were entered only once. Details and Review retained the compact Words on your card summary instead of duplicate inputs.",
+      "evidence": "The same exact title and opening line appeared in Your card, the Event details summary, the Review summary, and published image alternative text."
+    },
+    {
+      "type": "confirmed-success",
+      "finding": "Publication completed once, and the public card retained Monday logistics and the explicit fictional AI-demo guest disclosure.",
+      "evidence": "Builder displayed Your Live Card is published. It's ready to share. Copy guest link returned the recorded /card/ URL. Production owner Preview and Overview showed Monday, October 26 at 6:30 PM–8:00 PM and both exact guest-message paragraphs."
+    },
+    {
+      "type": "observed-friction",
+      "finding": "Occasion sits below the starting ideas and design description. Selecting Wedding replaces the examples above the control, after the host has already passed them.",
+      "evidence": "The initial General event design ideas changed to Wedding design ideas only after Wedding was selected below the completed look description."
+    },
+    {
+      "type": "observed-friction",
+      "finding": "Review offered Apply wording suggestion and Keep my wording without showing the proposed correction in the visible suggestion region.",
+      "evidence": "The region contained only Optional wording corrections are available. Applying them confirms a new wording revision. Exact wording was preserved using Keep my wording."
+    },
+    {
+      "type": "observed-visual-quality",
+      "finding": "The garden image matched the requested blue-hour orangery, warm lanterns, dense flowers, and editorial title style. The optional opening line was much smaller and lower contrast than the title.",
+      "evidence": "Both saved fullscreen previews show the rich garden scene, large readable title, and a small muted opening line crossing textured foliage/sky. No claim of a human readability-test result is made."
+    },
+    {
+      "type": "observed-friction",
+      "finding": "The initial online location field is labelled Venue name, so entering a URL successfully relies on knowing the field also accepts online events.",
+      "evidence": "Entering bare https://envitefy.com was resolved during Review to Online event · https://envitefy.com. No Online event option was visible in initial entry."
+    },
+    {
+      "type": "verification-limit",
+      "finding": "The saved UI displayed the intended local clock times, and the guest message explicitly says Central. The builder and guest popup did not display an IANA timezone name, so the stored America/Chicago value was not independently verified through UI.",
+      "evidence": "Review used Event local time; published Overview and Calendar used Monday, October 26 at 6:30 PM–8:00 PM. No calendar was added or exported."
+    },
+    {
+      "type": "tool-input-failure-resolved",
+      "finding": "Playwright locator fill plus Tab did not persist native date/time fields after a details-tab change. Native tab.setValue on the current accessibility indices succeeded.",
+      "evidence": "Read-only DOM checks after the first tab round trip showed empty date/time values. After native setValue, another Message → When & Where round trip showed 2026-10-26, 18:30, and 20:00. This is an automation-input observation, not evidence that ordinary human entry is defective."
+    },
+    {
+      "type": "loading-completed",
+      "finding": "The production fullscreen card initially showed a blurred placeholder and later rendered the complete sharp artwork during ordinary UI use.",
+      "evidence": "The final public-preview screenshot contains the sharp saved artwork. No reload, API call, media download, or source modification was used."
+    },
+    {
+      "type": "environment-copy-difference",
+      "finding": "The production owner workspace still uses Live Card and invitation / Edit card & invitation wording, while the updated local builder uses Your card → Event details → Review.",
+      "evidence": "Production owner Design displayed Your Live Card and invitation share one artwork and Edit card & invitation. This is a production/local UI copy difference, not a failure of this local creation trial."
+    }
+  ],
+  "uiActions": [
+    "Opened a dedicated Chrome tab at the updated local /live-cards builder.",
+    "Filled Event title, expanded Add an opening line, and filled the exact opening line.",
+    "Filled the exactDesignPrompt, selected Wedding, and clicked Generate & continue once.",
+    "Entered the bare demo venue URL and attempted native date/time locator fill while generation ran.",
+    "Opened Message, expanded both optional message disclosures, and filled the exact two demo-disclosure paragraphs.",
+    "Opened RSVP and confirmed Collect RSVPs was off; opened Registry and confirmed it was off.",
+    "Returned to When & Where, found date/time values absent, and used native accessibility setValue for 2026-10-26, 18:30, and 20:00.",
+    "Switched Message → When & Where again and verified all date/time values persisted.",
+    "Clicked Review invitation after the initial job reached Ready to review, attempt 1 at 66 seconds.",
+    "Selected Keep my wording when Review presented an optional wording correction without the proposed replacement text.",
+    "Opened Preview Live Card and saved the full card screenshot; opened Overview and verified Monday logistics and both guest paragraphs.",
+    "Closed card details and clicked Publish invitation once from fullscreen Preview.",
+    "Observed Saving artwork, then the explicit published-success message and enabled Copy guest link / Share invitation controls.",
+    "Clicked Copy guest link and recorded the clipboard URL; saved the published confirmation screenshot.",
+    "Opened the published /card/ URL in a second Chrome tab; the signed-in owner was routed to the saved owner workspace.",
+    "Opened production Preview, inspected Overview and Calendar without joining or adding anything, then reopened Preview after the artwork loaded and saved the final sharp public screenshot.",
+    "Marked both the local saved-card editor and the published fullscreen preview as deliverables."
+  ],
+  "screenshots": [
+    "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/05-wedding-planner-preview.jpg",
+    "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/05-wedding-planner-overview.jpg",
+    "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/05-wedding-planner-published.jpg",
+    "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/05-wedding-planner-public-preview.jpg"
+  ],
+  "publicUrl": "https://envitefy.com/card/garden-welcome-evening-ai-demo-at-online-event",
+  "eventId": "37df3732-7f55-4e27-9238-fb3bd98f8329",
+  "browserTabs": {
+    "savedLocalEditor": "1960064653",
+    "publishedFullscreenPreview": "1960064659"
+  },
+  "generationOutcome": {
+    "initialAttempts": 1,
+    "backgroundRetries": 0,
+    "explicitLetteringRepairs": 0,
+    "visibleReadyElapsedSeconds": 66,
+    "published": true
+  },
+  "blockers": [],
+  "simplificationFeedback": [
+    {
+      "priority": 1,
+      "recommendation": "Show the exact before-and-after wording in the correction prompt before Apply wording suggestion.",
+      "productivityPreserved": "Keeps optional proofreading and explicit confirmation while removing the need to guess what an action changes."
+    },
+    {
+      "priority": 1,
+      "recommendation": "Label the location input Venue, address or online link, or provide a simple Online option beside the initial field.",
+      "productivityPreserved": "Retains background location resolution and the same single-field workflow while making online events discoverable."
+    },
+    {
+      "priority": 2,
+      "recommendation": "Place optional Occasion beside the Look & feel heading or above starting ideas, without making it required.",
+      "productivityPreserved": "Keeps category-specific creative suggestions and optionality while avoiding a scroll back to examples that just changed."
+    },
+    {
+      "priority": 2,
+      "recommendation": "Consolidate guest wording under Message to guests with an optional Additional instructions expansion in the same area.",
+      "productivityPreserved": "Retains both independent saved values and guest display while reducing ambiguity about which disclosure should hold attire and gift guidance."
+    },
+    {
+      "priority": 2,
+      "recommendation": "Show a compact stage label such as Creating card text; put attempt counts, elapsed seconds, and start timestamps inside a details disclosure.",
+      "productivityPreserved": "Preserves real status and diagnostics while reducing visual competition with the logistics form."
+    },
+    {
+      "priority": 2,
+      "recommendation": "Include the resolved timezone name in Review, especially for online events, and keep any correction close to the displayed time.",
+      "productivityPreserved": "Adds confidence in calendar correctness without returning a manual timezone field to initial entry."
+    },
+    {
+      "priority": 2,
+      "recommendation": "Check the opening line at normal phone size and improve its minimum contrast/size before treating the lettering as ready.",
+      "productivityPreserved": "Protects the supplied optional wording without requiring a second background generation or duplicate title entry."
+    }
+  ],
+  "guardrails": {
+    "normalUiOnly": true,
+    "generationAttempts": 1,
+    "noInvitesOrRsvpSubmissions": true,
+    "noRealPrivateContactsOrBookings": true,
+    "noSourceEdits": true
+  }
+}

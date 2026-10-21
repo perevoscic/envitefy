@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   createLiveCardForm,
+  LIVE_CARD_EVENT_PLACEHOLDERS,
+  LIVE_CARD_HOLIDAY_OCCASIONS,
   liveCardDateTime,
   liveCardDesignKey,
   liveCardRegistryUrl,
@@ -9,8 +11,13 @@ import {
   readLiveCardForm,
   validateLiveCard,
 } from "./livecard-builder.ts";
+import {
+  creationAllowed,
+  liveCardCreationCategories,
+  resolveCreationAccess,
+} from "./creation-access.ts";
 
-test("artwork needs event type and design direction but not title or logistics", () => {
+test("artwork needs design direction while the occasion remains optional", () => {
   const form = {
     ...createLiveCardForm("America/Chicago"),
     eventType: "Birthday" as const,
@@ -19,13 +26,67 @@ test("artwork needs event type and design direction but not title or logistics",
   assert.deepEqual(validateLiveCard(form, "design"), {});
   assert.ok(validateLiveCard(form, "publish").date);
   assert.ok(validateLiveCard(form, "publish").title);
-  assert.ok(validateLiveCard({ ...form, eventType: "" }, "design").eventType);
+  assert.deepEqual(validateLiveCard({ ...form, eventType: "" }, "design"), {});
+  assert.equal(validateLiveCard({ ...form, eventType: "" }, "prepare").eventType, undefined);
+  assert.equal(validateLiveCard({ ...form, eventType: "" }, "publish").eventType, undefined);
   assert.deepEqual(Object.keys(validateLiveCard(createLiveCardForm(), "design")), [
-    "eventType",
     "design",
   ]);
   assert.equal(form.rsvpEnabled, false);
   assert.equal(form.registryEnabled, false);
+});
+
+test("new cards omit an opening line and use a general occasion without inferring one", () => {
+  const form = createLiveCardForm();
+  assert.equal(form.headlineIntro, "");
+  assert.equal(form.eventType, "General event");
+  for (const eventType of [undefined, "", "Unrecognized occasion"]) {
+    const restored = readLiveCardForm({ title: "Mia's birthday", design: "Birthday balloons", eventType });
+    assert.equal(restored?.eventType, "General event");
+    assert.equal(restored?.headlineIntro, "");
+  }
+});
+
+test("restoring optional wording and occasion preserves saved values and category authorization", () => {
+  const saved = readLiveCardForm({ headlineIntro: "You're invited", eventType: "Birthday" });
+  assert.equal(saved?.headlineIntro, "You're invited");
+  assert.equal(saved?.eventType, "Birthday");
+  assert.equal(readLiveCardForm({ headlineIntro: "" })?.headlineIntro, "");
+
+  const imported = readLiveCardForm({ eventType: "", creationCategory: "gymnastics" });
+  assert.equal(imported?.eventType, "General event");
+  assert.equal(imported?.creationCategory, "gymnastics");
+  assert.deepEqual(liveCardCreationCategories(imported), ["gymnastics"]);
+  const restricted = resolveCreationAccess({ policy: "restricted", categories: ["general"], products: ["live_card"] });
+  assert.equal(creationAllowed(restricted, "live_card", liveCardCreationCategories(imported)[0]), false);
+});
+
+test("holiday occasions survive restore without inferring dates or changing category access", () => {
+  for (const eventType of LIVE_CARD_HOLIDAY_OCCASIONS) {
+    const original = { ...createLiveCardForm("America/Chicago"), eventType, title: "Our gathering", headlineIntro: "Come together", date: "2030-09-24", design: "Keep my chosen colors" };
+    const restored = readLiveCardForm(JSON.parse(JSON.stringify(original)));
+    assert.ok(restored, eventType);
+    assert.equal(restored.eventType, eventType);
+    assert.equal(restored.title, original.title);
+    assert.equal(restored.headlineIntro, original.headlineIntro);
+    assert.equal(restored.date, original.date);
+    assert.equal(restored.design, original.design);
+    assert.equal(readLiveCardForm({ eventType })?.date, "", "occasion names never supply calendar dates");
+    assert.deepEqual(liveCardCreationCategories(restored), ["general"]);
+    assert.deepEqual(liveCardCreationCategories({ ...restored, creationCategory: "gymnastics" }), ["gymnastics"]);
+    assert.ok(LIVE_CARD_EVENT_PLACEHOLDERS[eventType].title.includes(eventType));
+    assert.deepEqual(validateLiveCard(original, "design"), {});
+  }
+});
+
+test("generation quality stays high by default and preserves an explicit medium selection", () => {
+  const form = createLiveCardForm();
+  assert.equal(form.generationQuality, "high");
+  const saved = JSON.parse(JSON.stringify({ ...form, generationQuality: "medium" }));
+  assert.equal(readLiveCardForm(saved)?.generationQuality, "medium");
+  for (const generationQuality of [undefined, null, "", "low", "high", "MEDIUM", 1]) {
+    assert.equal(readLiveCardForm({ generationQuality })?.generationQuality, "high");
+  }
 });
 
 test("reviewed proposals preserve concurrent edits, selected format and location timezone together", () => {

@@ -1,0 +1,509 @@
+{
+  "method": "Task-specific factual checks plus schema validity; serial repeated calls with a fixed reference date. Synthetic fixtures establish regression coverage, not production accuracy. Cost covers text model requests only; missing pricing/usage remains null. Visual quality needs separate human review.",
+  "plannedCalls": 50,
+  "attemptedCalls": 0,
+  "complete": false,
+  "summary": [],
+  "results": [
+    {
+      "fixture": "birthday-no-logistics",
+      "workload": "creative_plan",
+      "model": "gpt-5.6-terra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 7372,
+      "live": false
+    },
+    {
+      "fixture": "birthday-no-logistics",
+      "workload": "creative_plan",
+      "model": "gpt-5.6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 7372,
+      "live": false
+    },
+    {
+      "fixture": "birthday-no-logistics",
+      "workload": "creative_plan",
+      "model": "gpt-6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 7372,
+      "live": false
+    },
+    {
+      "fixture": "birthday-no-logistics",
+      "workload": "creative_plan",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 7372,
+      "live": false
+    },
+    {
+      "fixture": "birthday-no-logistics",
+      "workload": "creative_plan",
+      "model": "gpt-6-astra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 7372,
+      "live": false
+    },
+    {
+      "fixture": "wedding-multilingual",
+      "workload": "creative_plan",
+      "model": "gpt-5.6-terra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 7654,
+      "live": false
+    },
+    {
+      "fixture": "wedding-multilingual",
+      "workload": "creative_plan",
+      "model": "gpt-5.6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 7654,
+      "live": false
+    },
+    {
+      "fixture": "wedding-multilingual",
+      "workload": "creative_plan",
+      "model": "gpt-6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 7654,
+      "live": false
+    },
+    {
+      "fixture": "wedding-multilingual",
+      "workload": "creative_plan",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 7654,
+      "live": false
+    },
+    {
+      "fixture": "wedding-multilingual",
+      "workload": "creative_plan",
+      "model": "gpt-6-astra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 7654,
+      "live": false
+    },
+    {
+      "fixture": "no-missing-date-invention",
+      "workload": "extraction",
+      "model": "gpt-5.6-terra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 277,
+      "live": false
+    },
+    {
+      "fixture": "no-missing-date-invention",
+      "workload": "extraction",
+      "model": "gpt-5.6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 277,
+      "live": false
+    },
+    {
+      "fixture": "no-missing-date-invention",
+      "workload": "extraction",
+      "model": "gpt-6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 277,
+      "live": false
+    },
+    {
+      "fixture": "no-missing-date-invention",
+      "workload": "extraction",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 277,
+      "live": false
+    },
+    {
+      "fixture": "no-missing-date-invention",
+      "workload": "extraction",
+      "model": "gpt-6-astra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 277,
+      "live": false
+    },
+    {
+      "fixture": "ambiguous-age",
+      "workload": "extraction",
+      "model": "gpt-5.6-terra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 280,
+      "live": false
+    },
+    {
+      "fixture": "ambiguous-age",
+      "workload": "extraction",
+      "model": "gpt-5.6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 280,
+      "live": false
+    },
+    {
+      "fixture": "ambiguous-age",
+      "workload": "extraction",
+      "model": "gpt-6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 280,
+      "live": false
+    },
+    {
+      "fixture": "ambiguous-age",
+      "workload": "extraction",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 280,
+      "live": false
+    },
+    {
+      "fixture": "ambiguous-age",
+      "workload": "extraction",
+      "model": "gpt-6-astra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 280,
+      "live": false
+    },
+    {
+      "fixture": "medical-provider-roles",
+      "workload": "extraction",
+      "model": "gpt-5.6-terra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 319,
+      "live": false
+    },
+    {
+      "fixture": "medical-provider-roles",
+      "workload": "extraction",
+      "model": "gpt-5.6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 319,
+      "live": false
+    },
+    {
+      "fixture": "medical-provider-roles",
+      "workload": "extraction",
+      "model": "gpt-6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 319,
+      "live": false
+    },
+    {
+      "fixture": "medical-provider-roles",
+      "workload": "extraction",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 319,
+      "live": false
+    },
+    {
+      "fixture": "medical-provider-roles",
+      "workload": "extraction",
+      "model": "gpt-6-astra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 319,
+      "live": false
+    },
+    {
+      "fixture": "organizer-is-not-venue",
+      "workload": "extraction",
+      "model": "gpt-5.6-terra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 313,
+      "live": false
+    },
+    {
+      "fixture": "organizer-is-not-venue",
+      "workload": "extraction",
+      "model": "gpt-5.6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 313,
+      "live": false
+    },
+    {
+      "fixture": "organizer-is-not-venue",
+      "workload": "extraction",
+      "model": "gpt-6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 313,
+      "live": false
+    },
+    {
+      "fixture": "organizer-is-not-venue",
+      "workload": "extraction",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 313,
+      "live": false
+    },
+    {
+      "fixture": "organizer-is-not-venue",
+      "workload": "extraction",
+      "model": "gpt-6-astra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 313,
+      "live": false
+    },
+    {
+      "fixture": "complete-links",
+      "workload": "extraction",
+      "model": "gpt-5.6-terra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 339,
+      "live": false
+    },
+    {
+      "fixture": "complete-links",
+      "workload": "extraction",
+      "model": "gpt-5.6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 339,
+      "live": false
+    },
+    {
+      "fixture": "complete-links",
+      "workload": "extraction",
+      "model": "gpt-6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 339,
+      "live": false
+    },
+    {
+      "fixture": "complete-links",
+      "workload": "extraction",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 339,
+      "live": false
+    },
+    {
+      "fixture": "complete-links",
+      "workload": "extraction",
+      "model": "gpt-6-astra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 339,
+      "live": false
+    },
+    {
+      "fixture": "negation-and-language",
+      "workload": "extraction",
+      "model": "gpt-5.6-terra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 282,
+      "live": false
+    },
+    {
+      "fixture": "negation-and-language",
+      "workload": "extraction",
+      "model": "gpt-5.6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 282,
+      "live": false
+    },
+    {
+      "fixture": "negation-and-language",
+      "workload": "extraction",
+      "model": "gpt-6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 282,
+      "live": false
+    },
+    {
+      "fixture": "negation-and-language",
+      "workload": "extraction",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 282,
+      "live": false
+    },
+    {
+      "fixture": "negation-and-language",
+      "workload": "extraction",
+      "model": "gpt-6-astra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 282,
+      "live": false
+    },
+    {
+      "fixture": "invalid-calendar-date",
+      "workload": "extraction",
+      "model": "gpt-5.6-terra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 245,
+      "live": false
+    },
+    {
+      "fixture": "invalid-calendar-date",
+      "workload": "extraction",
+      "model": "gpt-5.6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 245,
+      "live": false
+    },
+    {
+      "fixture": "invalid-calendar-date",
+      "workload": "extraction",
+      "model": "gpt-6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 245,
+      "live": false
+    },
+    {
+      "fixture": "invalid-calendar-date",
+      "workload": "extraction",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 245,
+      "live": false
+    },
+    {
+      "fixture": "invalid-calendar-date",
+      "workload": "extraction",
+      "model": "gpt-6-astra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 245,
+      "live": false
+    },
+    {
+      "fixture": "document-instruction-injection",
+      "workload": "extraction",
+      "model": "gpt-5.6-terra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 404,
+      "live": false
+    },
+    {
+      "fixture": "document-instruction-injection",
+      "workload": "extraction",
+      "model": "gpt-5.6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 404,
+      "live": false
+    },
+    {
+      "fixture": "document-instruction-injection",
+      "workload": "extraction",
+      "model": "gpt-6-luna",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 404,
+      "live": false
+    },
+    {
+      "fixture": "document-instruction-injection",
+      "workload": "extraction",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 404,
+      "live": false
+    },
+    {
+      "fixture": "document-instruction-injection",
+      "workload": "extraction",
+      "model": "gpt-6-astra",
+      "promptVersion": "v2",
+      "policyVersion": "openai-workloads-2026-10-21",
+      "repeat": 1,
+      "promptCharacters": 404,
+      "live": false
+    }
+  ]
+}

@@ -128,9 +128,15 @@ export async function generateCardHeadline(
       await onStage?.("checking");
       const check = await checkCandidate(`data:image/webp;base64,${webp.toString("base64")}`);
       signal?.throwIfAborted();
+      if (check.issues.includes("safety_mismatch")) {
+        throw new LiveCardGenerationFailure(
+          "The card was flagged for sexual content, nudity, violence or profanity. Your event details are still here. Change the card wording or design and try again.",
+          "lettering", "safety_refused", check.issues,
+        );
+      }
       recordLiveCardGeneration({
         stage: "lettering", startedAt, attempt,
-        outcome: check.status === "passed" ? "success" : check.status === "failed" ? "quality_rejected" : "verification_unavailable",
+        outcome: check.status === "unavailable" ? "verification_unavailable" : "success",
         issues: check.issues,
       });
       return { webp, check, composition };

@@ -1,0 +1,129 @@
+npm notice run envitefy@0.1.0 test:ai-models
+npm notice run node --import ./scripts/lib/create-offline-network.mjs --test src/lib/openai-chat-params.test.ts src/lib/creation/openai-workloads.test.mjs src/lib/creation/creation-v2.test.mjs src/lib/ocr/openai-schedules.test.mjs src/lib/concierge/openai-config.test.mjs src/lib/studio/openai.model-defaults.test.mjs scripts/lib/creation-evaluation.test.mjs
+✔ built-in dataset covers missing facts, roles, complete URLs, negation, languages and injection (0.9058ms)
+✔ factual scoring fails fabricated dates and shortened URLs despite valid JSON (0.2646ms)
+✔ invalid fixture definitions and unbounded repeat/call values fail before provider access (0.4397ms)
+✔ cost estimation separates cached tokens and never invents missing rates or usage (0.1655ms)
+✔ summary includes request failures, tail latency and all known costs per passing result (0.3181ms)
+(node:600) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/concierge/openai-config.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ concierge extraction/planning base model defaults to GPT-5.6 Terra (0.9003ms)
+✔ concierge fast model flag uses GPT-5.6 Luna (0.2824ms)
+✔ explicit concierge model wins over fast model flag (0.2462ms)
+✔ configured fast model wins when fast model flag is enabled (0.2137ms)
+✔ concierge chat model defaults to GPT-5.6 Luna and supports a separate override (0.3103ms)
+✔ concierge premium model defaults to Astra and supports a separate override (0.2989ms)
+✔ concierge extraction routes normal work to Terra and premium work to Astra (0.9267ms)
+✔ concierge planner routes simple work to Luna, base work to Terra, and premium work to Astra (0.4267ms)
+✔ concierge timeout defaults to 10000ms and accepts bounded overrides (0.3623ms)
+✔ chat requests preserve role-specific reasoning and omit unsupported temperature (1.0287ms)
+✔ concierge persona model defaults to base reasoning model (0.3478ms)
+✔ concierge persona streaming timeouts leave room for reasoning and accept overrides (0.3016ms)
+(node:67616) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/creation/openai-workloads.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ OCR preserves verbatim transcript separately from normalized facts and rejects unsupported evidence (1.2382ms)
+✔ conflicting or missing birthday age remains null despite a decorative numeral (0.2584ms)
+✔ OCR description keeps cited source wording instead of model-written invitation prose (0.2162ms)
+✔ OCR normalized dates cannot roll impossible calendar dates into another month (0.301ms)
+✔ Astra budgets preserve reasoning headroom and never send unsupported temperature (0.3566ms)
+✔ calendar conversion uses event timezone and rejects missing or repeated DST times (32.7556ms)
+(node:90952) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/creation/openai-workloads.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ transcription budgets scale by page count with a two-page bound (1.7211ms)
+✔ guest chat preserves the fast-model cap and leaves reasoning headroom for a Sol override (0.2214ms)
+✔ usage normalization supports Chat and Responses without treating unavailable usage as zero (0.9359ms)
+✔ telemetry includes provider request ID and usage but never arbitrary extra source data (0.6589ms)
+(node:55244) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/ocr/openai.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ gymnastics sends valid Chat image parts and validates a complete structured response (3.9356ms)
+✔ practice sends valid Chat image parts and validates a complete structured response (0.8036ms)
+✔ missing and impossible meet dates remain unresolved through the schedule adapter (14.1301ms)
+✔ valid all-day dates use an exclusive calendar boundary and timed meets get no guessed end (0.5228ms)
+✔ refused, truncated, malformed and schema-invalid schedule outputs never log success (1.2866ms)
+(node:40788) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/openai-chat-params.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ GPT-5.6 Terra and Luna preserve non-reasoning request behavior (1.1432ms)
+✔ GPT-5.6 Sol keeps its medium reasoning default (0.1284ms)
+✔ Astra preserves premium reasoning and omits unsupported sampling parameters (0.1156ms)
+✔ older models retain supported temperature settings (0.1012ms)
+✔ GPT-6 model aliases and snapshots use explicit supported reasoning without temperature (1.0319ms)
+✔ reasoning overrides reject unsupported none and support deliberate Luna reasoning (0.5215ms)
+✔ unrecognized reasoning model families do not inherit sampling parameters (0.1651ms)
+✔ model registry retains production defaults and honors explicit overrides (0.1436ms)
+livecard_image_request {
+  endpoint: 'images.generate',
+  model: 'gpt-image-2.5-flare',
+  quality: 'high',
+  requestId: undefined,
+  usage: undefined,
+  transportRetries: 0
+}
+livecard_image_request {
+  endpoint: 'images.generate',
+  model: 'gpt-image-2.5-flare',
+  quality: 'medium',
+  requestId: undefined,
+  usage: undefined,
+  transportRetries: 0
+}
+livecard_image_request {
+  endpoint: 'images.generate',
+  model: 'gpt-image-2.5-flare',
+  quality: 'high',
+  requestId: undefined,
+  usage: undefined,
+  transportRetries: 0
+}
+livecard_image_request {
+  endpoint: 'images.generate',
+  model: 'gpt-image-2.5-flare',
+  quality: 'high',
+  requestId: undefined,
+  usage: undefined,
+  transportRetries: 0
+}
+livecard_image_request {
+  endpoint: 'images.generate',
+  model: 'gpt-image-2.5-flare',
+  quality: 'high',
+  requestId: undefined,
+  usage: undefined,
+  transportRetries: 0
+}
+livecard_image_request {
+  endpoint: 'images.edit',
+  model: 'gpt-image-2.5-flare',
+  quality: 'high',
+  requestId: undefined,
+  usage: undefined,
+  transportRetries: 0
+}
+(node:31100) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/openai.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ OpenAI studio image generation defaults to gpt-image-2.5-flare (1.6271ms)
+✔ OpenAI studio image edits default independently to gpt-image-2.5-flare (0.4677ms)
+✔ explicit image quality override remains available (0.3778ms)
+✔ scan heroes request portrait dimensions without changing landscape page defaults (0.849ms)
+✔ edited Event Page heroes forward explicit landscape dimensions to the actual provider request (0.3428ms)
+✔ tall Live Card dimensions reach generation, reference generation and edit requests (0.6306ms)
+✔ streamed Live Card generation forwards the same tall dimensions (0.556ms)
+ℹ tests 47
+ℹ suites 0
+ℹ pass 47
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 630.9938

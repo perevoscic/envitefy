@@ -28,7 +28,7 @@ export default function DesignSuggestions({
   return (
     <section className={styles.designSuggestions} aria-label={`${category} design ideas`}>
       <div className={styles.suggestionHeading}>
-        <h3>Try a starting idea</h3>
+        <h3>Or choose a look &amp; feel</h3>
         <button
           type="button"
           className={styles.shuffleSuggestions}

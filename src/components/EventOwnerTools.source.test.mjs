@@ -67,6 +67,10 @@ test("owner workspace keeps public actions in the header and not duplicated unde
     /function OwnerWorkspaceHeader[\s\S]*?(?=\nfunction OwnerTabContent)/,
   );
   assert.ok(headerBlock, "expected OwnerWorkspaceHeader block");
+  assert.match(headerBlock[0], /canManageAccess && <EventAccessDialog eventId=\{eventId\} eventTitle=\{title\}/);
+  const route = readSource("src/app/event/[id]/page.tsx");
+  assert.match(route, /const showOwnerAccessControls = isOwner && supportsEventCollaboration\(data\) &&\s*\(data\.createdVia !== "livecard-builder" \|\| data\.status === "published"\);/);
+  assert.equal([...route.matchAll(/canManageAccess=\{showOwnerAccessControls\}/g)].length, 2, "both owner surfaces hide Live Card draft invitations and retain published owner access");
   assert.match(
     headerBlock[0],
     /href=\{editHref\}[\s\S]*onClick=\{onViewCurrent\}[\s\S]*<EventDeleteModal[\s\S]*onClick=\{onShare\}/,

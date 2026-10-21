@@ -1,8 +1,9 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const loadTs = require("./lib/event-messages-test-loader.cjs");
+const { LiveCardGenerationFailure } = loadTs("src/lib/livecard-generation-failure.ts");
 
-function harness(mode = "generate", initialState = "queued") {
+function harness(mode = "generate", initialState = "queued", safetyStage = null) {
   const row = { id: "job-1", owner_id: "owner", revision: "qa-revision", attempt: mode === "repair" ? 2 : 1, created_at: new Date().toISOString(), state: initialState, stage: "queued", form: { title: "Movie", headlineIntro: "You're invited" }, design: null, mode };
   let backgrounds = 0, lettering = 0, verification = 0;
   const query = async (sql, args) => {
@@ -14,15 +15,16 @@ function harness(mode = "generate", initialState = "queued") {
     if (sql.includes("SET stage=")) { if (row.state === "running") row.stage = args[2]; }
     else if (sql.includes("SET design=")) { if (row.state === "running") row.design = JSON.parse(args[2]); }
     else if (sql.includes("SET state='ready'")) { if (row.state === "running") { row.state = "ready"; row.design = JSON.parse(args[2]); } }
-    else if (sql.includes("state=CASE")) { row.state = row.state === "cancel_requested" ? "stopped" : "failed"; row.error = args[2]; }
+    else if (sql.includes("state=CASE")) { row.state = row.state === "cancel_requested" ? "stopped" : "failed"; row.error = args[2]; row.error_code = args[3]; }
     return { rows: [] };
   };
   const api = loadTs("src/lib/livecard-artwork-jobs.ts", {
     "./db": { query },
     "./creation-access-server": { requireCreationAccess: async () => {} },
     "./livecard-builder": { sharedCardDesignKey: () => "design" },
-    "./shared-card-generation": { generateSharedCard: async (_form, signal, stage) => { await stage("generating"); signal.throwIfAborted(); backgrounds++; return { backgroundUrl: "original" }; } },
-    "./shared-card-headline": { generateCardHeadline: async (_form, _design, signal, stage, verify) => { await stage(verify ? "checking" : "lettering"); signal.throwIfAborted(); if (verify) verification++; else lettering++; return { imageUrl: "candidate", validation: { status: "failed", issues: ["missing_copy"] } }; } },
+    "./livecard-generation-failure": { LiveCardGenerationFailure },
+    "./shared-card-generation": { generateSharedCard: async (_form, signal, stage) => { await stage("generating"); signal.throwIfAborted(); backgrounds++; if (safetyStage === "design") throw new LiveCardGenerationFailure("The background contains prohibited content.", "design", "safety_refused", ["safety_mismatch"], false); return { backgroundUrl: "original" }; } },
+    "./shared-card-headline": { generateCardHeadline: async (_form, _design, signal, stage, verify) => { await stage(verify ? "checking" : "lettering"); signal.throwIfAborted(); if (verify) verification++; else lettering++; if (safetyStage === "lettering") throw new LiveCardGenerationFailure("The lettering contains prohibited content.", "lettering", "safety_refused", ["safety_mismatch"], false); return { imageUrl: "candidate", validation: { status: "failed", issues: ["missing_copy"] } }; } },
   });
   return { api, row, counts: () => ({ backgrounds, lettering, verification }) };
 }
@@ -34,6 +36,31 @@ test("durable claim prevents duplicate dispatch from reconnect and checker rejec
   assert.deepEqual(h.counts(), { backgrounds: 1, lettering: 1, verification: 0 });
   assert.equal(h.row.state, "ready");
   assert.equal(h.row.design.headline.validation.status, "failed");
+});
+
+test("background safety rejection fails the durable job before lettering and reconnect does not replay it", async () => {
+  const h = harness("generate", "queued", "design");
+  await h.api.runArtworkJob("owner", "job-1");
+  assert.equal(h.row.state, "failed");
+  assert.equal(h.row.error_code, "safety_refused");
+  assert.equal(h.row.design, null);
+  assert.deepEqual(h.counts(), { backgrounds: 1, lettering: 0, verification: 0 });
+  await h.api.runArtworkJob("owner", "job-1");
+  assert.deepEqual(h.counts(), { backgrounds: 1, lettering: 0, verification: 0 });
+  assert.equal(h.row.state, "failed");
+});
+
+test("lettering safety rejection keeps the background without committing a headline or replaying on reconnect", async () => {
+  const h = harness("generate", "queued", "lettering");
+  await h.api.runArtworkJob("owner", "job-1");
+  assert.equal(h.row.state, "failed");
+  assert.equal(h.row.error_code, "safety_refused");
+  assert.equal(h.row.design.backgroundUrl, "original");
+  assert.equal(h.row.design.headline, undefined);
+  assert.deepEqual(h.counts(), { backgrounds: 1, lettering: 1, verification: 0 });
+  await h.api.runArtworkJob("owner", "job-1");
+  assert.deepEqual(h.counts(), { backgrounds: 1, lettering: 1, verification: 0 });
+  assert.equal(h.row.state, "failed");
 });
 
 test("verification and explicit wording repair reuse the saved background", async () => {

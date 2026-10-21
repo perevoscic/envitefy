@@ -1,7 +1,8 @@
 import OpenAI from "openai";
 import sharp from "sharp";
 import { resolveConciergeOpenAiPlannerModel } from "@/lib/concierge/openai-config";
-import { creationModelBudget } from "@/lib/creation/openai-workloads";
+import { creationModelBudget, recordCreationModelRun } from "@/lib/creation/openai-workloads";
+import { matchesSchema } from "@/lib/creation/source-evidence";
 import { readCreateSource } from "./read-source";
 import {
   CREATE_CATEGORIES,
@@ -161,10 +162,11 @@ export async function classifyCreateSource(
     return { category: "general", sport: null, confidence: "low", alternatives: [] };
   }
   const model = resolveConciergeOpenAiPlannerModel({ simple: true });
+  const startedAt = Date.now();
   const response = await createClassifyDeps.client().chat.completions.create(
     {
       model,
-      ...creationModelBudget(model, "extraction"),
+      ...creationModelBudget(model, "classification"),
       response_format: responseFormat,
       messages: [
         {
@@ -185,9 +187,14 @@ export async function classifyCreateSource(
       ],
     },
     { signal, timeout: 30_000, maxRetries: 0 },
-  );
+  ).catch((error: unknown) => {
+    recordCreationModelRun({ model, workload: "classification", startedAt, outcome: "error",
+      requestId: (error as { request_id?: string } | null)?.request_id });
+    throw error;
+  });
   const choice = response.choices[0];
   if (choice?.finish_reason !== "stop" || choice.message.refusal || !choice.message.content) {
+    recordCreationModelRun({ model, workload: "classification", startedAt, outcome: choice?.message.refusal ? "refused" : "incomplete", usage: response.usage, requestId: response._request_id });
     return local || { category: "general", sport: null, confidence: "low", alternatives: [] };
   }
   let parsed: unknown = null;
@@ -196,8 +203,10 @@ export async function classifyCreateSource(
   } catch {
     parsed = null;
   }
+  const result = matchesSchema(parsed, responseFormat.json_schema.schema) ? normalizeCreateClassification(parsed) : null;
+  recordCreationModelRun({ model, workload: "classification", startedAt, outcome: result ? "success" : "invalid_output", usage: response.usage, requestId: response._request_id });
   return (
-    normalizeCreateClassification(parsed) ||
+    result ||
     local || { category: "general", sport: null, confidence: "low", alternatives: [] }
   );
 }

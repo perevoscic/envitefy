@@ -3,6 +3,10 @@ import { spawnSync } from "node:child_process";
 
 const scripts = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8")).scripts;
 const files = [
+  "src/lib/openai-chat-params.test.ts",
+  "src/lib/creation/openai-workloads.test.mjs",
+  "src/lib/ocr/openai-schedules.test.mjs",
+  "scripts/lib/creation-evaluation.test.mjs",
   ...scripts["test:create-facts"].replace(/^node --test /, "").split(" "),
   ...scripts["test:create-campaign"].replace(/^node --test /, "").split(" "),
   "src/lib/studio/*.test.mjs",

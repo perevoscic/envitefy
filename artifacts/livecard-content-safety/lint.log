@@ -1,0 +1,36 @@
+npm notice run envitefy@0.1.0 lint:vscode
+npm notice run node scripts/vscode-lint.mjs src/lib/shared-card-generation.ts src/lib/shared-card-headline.ts src/lib/studio/output-checks.ts src/app/live-cards/LiveCardBuilder.tsx src/lib/product-marketing-catalog.ts
+{
+  "files": {
+    "D:\\Develop_local\\envitefy\\src\\lib\\shared-card-generation.ts": {
+      "error": {
+        "code": "file_outside_workspace",
+        "message": "D:\\Develop_local\\envitefy\\src\\lib\\shared-card-generation.ts is outside the workspace."
+      }
+    },
+    "D:\\Develop_local\\envitefy\\src\\lib\\shared-card-headline.ts": {
+      "error": {
+        "code": "file_outside_workspace",
+        "message": "D:\\Develop_local\\envitefy\\src\\lib\\shared-card-headline.ts is outside the workspace."
+      }
+    },
+    "D:\\Develop_local\\envitefy\\src\\lib\\studio\\output-checks.ts": {
+      "error": {
+        "code": "file_outside_workspace",
+        "message": "D:\\Develop_local\\envitefy\\src\\lib\\studio\\output-checks.ts is outside the workspace."
+      }
+    },
+    "D:\\Develop_local\\envitefy\\src\\app\\live-cards\\LiveCardBuilder.tsx": {
+      "error": {
+        "code": "file_outside_workspace",
+        "message": "D:\\Develop_local\\envitefy\\src\\app\\live-cards\\LiveCardBuilder.tsx is outside the workspace."
+      }
+    },
+    "D:\\Develop_local\\envitefy\\src\\lib\\product-marketing-catalog.ts": {
+      "error": {
+        "code": "file_outside_workspace",
+        "message": "D:\\Develop_local\\envitefy\\src\\lib\\product-marketing-catalog.ts is outside the workspace."
+      }
+    }
+  }
+}

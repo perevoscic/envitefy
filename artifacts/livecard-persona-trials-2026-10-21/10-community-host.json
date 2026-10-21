@@ -1,0 +1,160 @@
+{
+  "personaId": 10,
+  "persona": "AI persona: retired neighborhood/community host",
+  "participantType": "AI demo usability review, not a human participant",
+  "startedAt": "2026-10-21T14:35:08.9379508Z",
+  "environment": "http://localhost:3000/live-cards",
+  "inputs": {
+    "title": "A Cup of Stories | AI Demo",
+    "openingLine": "Warm tea, good company",
+    "occasion": "General event",
+    "artBrief": "A welcoming autumn sunroom prepared for a neighborhood tea and story swap: a round oak table with a ceramic teapot, mismatched porcelain cups, a small plate of biscuits, folded linen napkins and a well-loved storybook. Honey-colored afternoon light, leafy garden beyond the windows, warm terracotta and sage accents, rich tactile watercolor illustration with layered depth. Expressive readable lettering that feels friendly and graceful. No people, no extra words or dates.",
+    "date": "2026-10-26",
+    "startTime": "15:00",
+    "endTime": "16:30",
+    "timezone": "America/Chicago",
+    "onlineVenue": "https://envitefy.com",
+    "messageToGuests": "AI demo—not a real event. This fictional community tea and story swap was created by an AI persona to evaluate the Live Card creation experience. No gathering will take place and no attendance or reply is requested.",
+    "rsvp": false,
+    "registry": false,
+    "referenceImage": null,
+    "occasionControl": "Not specified (left at default; General event context)",
+    "timezoneVerification": "America/Chicago planned. UI showed Event local time, not named timezone; named timezone not independently verified."
+  },
+  "actions": [
+    "Entered exact title and optional opening line in Your card.",
+    "Entered artwork brief; left Occasion as Not specified and generation quality at default.",
+    "Clicked Generate & continue once; Event details opened while background creation ran.",
+    "Entered 2026-10-26, 15:00, 16:30 and exact online venue https://envitefy.com.",
+    "Added AI demo disclosure in Message to guests.",
+    "Verified RSVP and Registry switches show 0/off.",
+    "Switched back to When & Where and verified all date/time/venue values persisted.",
+    "First generation completed in66seconds with correct readable wording but checker style_mismatch for extra teacup, leaf sprigs and pale backdrop in isolated lettering layer.",
+    "Review invitation prompted optional wording corrections without a visible before/after difference; kept exact wording.",
+    "Review showed Oct26,2026,3:00PM–4:30PM Event local time and Online event · https://envitefy.com.",
+    "Opened eye Preview fullscreen; inspected full card and Overview disclosure/date/link.",
+    "Clicked Publish invitation at14:37:53Z. Publication blocked with: Review the lettering findings and retry verification or repair lettering before publishing.",
+    "Clicked Repair lettering once at14:38:03Z; no background retry or verification retry.",
+    "One repair completed after86seconds. Checker still style_mismatch for painted leaves, berries and ornaments; all approved words present/readable without clipping.",
+    "A second Publish attempt confirmed the same checker guard. No bypass was attempted.",
+    "Clicked Save draft. UI confirmed Draft saved. Find it in Drafts anytime. URL included evente26a6ec9-ccf1-4790-8d37-b84473c5eed6.",
+    "Saved whole-card fullscreen eye Preview screenshot of repaired artwork.",
+    "Root then authorized ONE same-image Retry verification action. Clicked it once; attempt remains2 and no new artwork request intentionally submitted.",
+    "Same-image verification completed in67seconds, still attempt2, and removed all lettering findings.",
+    "Clicked Publish invitation normally; UI confirmed Your Live Card is published. It is ready to share.",
+    "Copy guest link first produced success toast but readText returned empty. A later Copy guest link plus clipboard.read() returned actual https://envitefy.com/card/a-cup-of-stories-ai-demo-at-online-event.",
+    "Custom URL dialog showed localorigin/card/same-slug; no URL edit or save performed.",
+    "Share invitation and Share Live Card each reported Sharing could not be opened. No invitations, messages or emails were sent.",
+    "Opened copied production/card/link in own new tab. Browser creation reported Detached, but tab had been created; rebound existing1960064665 without duplication.",
+    "Production link redirected signed-in owner to /event/a-cup-of-stories-ai-demo-at-online-event?tab=design. PUBLIC LINK showed expected production/card/slug. Preview showed saved artwork.",
+    "Captured final published fullscreen and production fullscreen JPEGs. Bundled only observed display.webp through pageAssets. Marked builder and production preview tabs as deliverables."
+  ],
+  "timing": {
+    "generationStartedAt": "2026-10-21T14:35:35.464Z",
+    "initialGenerationSeconds": 66,
+    "publishAttemptedAt": "2026-10-21T14:37:53.063Z",
+    "letteringRepairStartedAt": "2026-10-21T14:38:03.885Z",
+    "letteringRepairSeconds": 86,
+    "sameImageVerificationStartedAt": "2026-10-21T14:40:52.720Z",
+    "sameImageVerificationSeconds": 67,
+    "finalPublicationStartedAt": "2026-10-21T14:42:34.385Z",
+    "publicationObservedAt": "2026-10-21T14:43:03.692Z",
+    "generationToObservedPublicationSeconds": 448
+  },
+  "outcome": "Published successfully after one initial generation, one explicit lettering repair and one newly authorized same-image verification. Actual copied guest link and production owner-route preview verified.",
+  "publicUrl": "https://envitefy.com/card/a-cup-of-stories-ai-demo-at-online-event",
+  "friction": [
+    {
+      "kind": "confirmed product behavior",
+      "severity": "high",
+      "observation": "Publish invitation remained enabled with style_mismatch but the click closed Preview and returned to Review with a blocking message.",
+      "evidence": "14:37:53Z publish action and subsequent AX state",
+      "implication": "The host cannot know whether the ready state is actually publishable until attempting publication."
+    },
+    {
+      "kind": "usability friction",
+      "severity": "medium",
+      "observation": "Large technical Lettering findings panel discusses isolated assets, transparent layers and local shadows; it pushes the card below the fold in Review and is clipped at the top of fullscreen Preview.",
+      "evidence": "10-community-host-preview-before-publish.jpg and Review screenshot observation",
+      "implication": "A retired community host needs a plain-language decision and visible card, not rendering instructions."
+    },
+    {
+      "kind": "usability friction",
+      "severity": "medium",
+      "observation": "Optional wording corrections offered Apply wording suggestion and Keep my wording without displaying the proposed difference.",
+      "evidence": "Review AX state",
+      "implication": "The host cannot assess whether applying a suggestion changes intended guest wording."
+    },
+    {
+      "kind": "usability friction",
+      "severity": "medium",
+      "observation": "Retry verification displays Creating title and opening-line artwork and Drawing your artwork, with Cancel generation, despite choosing a same-image check.",
+      "evidence": "AX state after explicit Retry verification",
+      "implication": "The host cannot tell whether a verification-only action incurred another image attempt."
+    },
+    {
+      "kind": "confirmed verification inconsistency",
+      "severity": "high",
+      "observation": "The repaired artwork was blocked for decorative leaves/berries, then the same-image verification passed without a new generated image.",
+      "evidence": "Repair attempt2 checker output followed by Checking existing lettering again attempt2 and no findings after67seconds.",
+      "implication": "A host who trusts the initial finding could pay the time cost of repairs that do not solve the gate; whether the decorative finding itself was correct is not established."
+    },
+    {
+      "kind": "confirmed share tool failure",
+      "severity": "medium",
+      "observation": "Share invitation and Share Live Card reported Sharing could not be opened in this Chrome session.",
+      "evidence": "Published Review and fullscreen AX states",
+      "implication": "Copy guest link remained usable and supplied the real production URL."
+    },
+    {
+      "kind": "usability friction",
+      "severity": "low",
+      "observation": "An online URL is entered under Venue name, and Review shows Event local time without naming the timezone.",
+      "evidence": "When & Where and Review AX states",
+      "implication": "Online hosts would benefit from an explicit Online link field and named timezone without losing multi-location support."
+    }
+  ],
+  "recommendations": [
+    "Show a compact plain-language lettering status beside the card, with technical details in an expandable panel. Keep the whole card visible in Review and fullscreen Preview.",
+    "Resolve blocking artwork checks before presenting an enabled Publish invitation button. Explain the specific problem and the available next action at the point of the card.",
+    "Distinguish Check this image from Repair lettering in labels, progress and expected time. A verification-only action should never say Drawing your artwork.",
+    "Make lettering-only generation follow the layer constraint more reliably, and investigate why a same-image recheck changed a blocking style finding to pass.",
+    "Display proposed wording edits as before/after changes before Apply. Retain Keep my wording as an explicit choice.",
+    "Add an Online option with Meeting link label and a visible timezone. Retain venue search and extra locations for hosts who need them.",
+    "Provide a visible selectable guest URL after publication and a copy fallback when the native Share sheet fails.",
+    "Preserve the useful simple flow: title and optional opening line once, artwork while filling logistics, four details tabs with RSVP/Registry off by default, then Review. Keep the full custom art brief and advanced controls available."
+  ],
+  "automationIssues": [
+    "Inventory browser identifier differs from task handoff: Chrome is id2; id3 is in-app browser.",
+    "First browser clipboard.readText() immediately after Copy guest link returned empty despite success toast. A later clipboard.read() returned the correct text/plain production URL; do not classify initial empty read as an app clipboard defect.",
+    "createBrowserTab for production threw Detached after creating the tab. Recovered existing tab1960064665 from inventory; no duplicate tab opened.",
+    "Assignment following detached tab creation failed because the handle was undefined. Redeclared binding and continued with the observed existing tab.",
+    "PowerShell emitted InitializeDefaultDrives warnings but file writes and screenshot JPEG signature verification succeeded."
+  ],
+  "screenshots": [
+    "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/10-community-host-preview-before-publish.jpg",
+    "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/10-community-host-fullscreen-preview.jpg",
+    "D:\\Develop_local\\envitefy\\artifacts\\livecard-persona-trials-2026-10-21\\10-community-host-published-fullscreen.jpg",
+    "D:\\Develop_local\\envitefy\\artifacts\\livecard-persona-trials-2026-10-21\\10-community-host-production-preview.jpg"
+  ],
+  "browserTabId": "1960064656",
+  "browserId": "2",
+  "draftEventId": "e26a6ec9-ccf1-4790-8d37-b84473c5eed6",
+  "draftEditorUrl": "http://localhost:3000/live-cards?edit=e26a6ec9-ccf1-4790-8d37-b84473c5eed6",
+  "completedAt": "2026-10-21T14:45:50.5490009Z",
+  "publicVerificationTabId": "1960064665",
+  "actualPublicUrlEvidence": "Copy guest link -> browser clipboard read() text/plain; production owner workspace also displays https://envitefy.com/card/ + identical slug.",
+  "productionObservedUrl": "https://envitefy.com/event/a-cup-of-stories-ai-demo-at-online-event?tab=design",
+  "attempts": {
+    "initialGeneration": 1,
+    "letteringRepair": 1,
+    "sameImageVerification": 1,
+    "backgroundRetry": 0,
+    "publishAttempts": 3,
+    "blockedPublishAttempts": 2,
+    "explicitDraftSaves": 1,
+    "successfulPublication": 1
+  },
+  "artworkPath": "D:\\Develop_local\\envitefy\\artifacts\\livecard-persona-trials-2026-10-21\\10-community-host-artwork.webp",
+  "aiPersonaAssessment": "As a retired community host persona, I found the event fields and finished artwork welcoming and manageable. The technical checker and repeated wait created uncertainty about whether I had done something wrong; I would prefer one clear card status with a concise fix. This is an AI persona impression, not evidence from a human participant."
+}

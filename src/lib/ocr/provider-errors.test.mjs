@@ -15,7 +15,10 @@ import {
 // app session/storage boundaries so these tests cannot read or write user data.
 const boundaryModules = {
   "next-auth": "export const getServerSession = async () => null;",
-  "@/lib/auth": "export const authOptions = {};",
+  "@/lib/auth": "export const authOptions = {}; export const resolveSessionUserId = () => null;",
+  "@/lib/creation-access-server": "export const checkCreationAccess = async () => null;",
+  "next/server": "export const after = () => {};",
+  "@/lib/ocr/scan-artwork-early": "export const startEarlyScanArtwork = async () => null;",
   "@/lib/cors": "export const corsJson = (_request, body, init) => Response.json(body, init);",
   "@/lib/media-upload":
     "export const processBufferUpload = async () => { throw new Error('Unexpected media upload'); };",

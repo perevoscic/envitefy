@@ -1,0 +1,143 @@
+{
+  "trialId": "02-mom",
+  "reviewType": "AI persona task test; not a human participant",
+  "persona": {
+    "role": "Mother planning an eighth birthday",
+    "context": "Busy parent using a phone between other tasks; values fast setup, readable wording and simple corrections."
+  },
+  "state": "published",
+  "event": {
+    "title": "Nova's Galactic Eight",
+    "openingLine": "Mission: celebrate!",
+    "occasion": "Birthday",
+    "artBrief": "An immersive, joyful space adventure for an eighth birthday: a small silver rocket lifting off from a moon base, layered indigo and teal galaxies, glowing coral planets, tiny golden stars and a playful friendly robot. Rich painted textures and cinematic light, vivid but readable. Expressive chunky retro-space lettering in warm cream and coral for the exact title and opening line; keep the scene detailed with a natural readable title pocket. This is an AI demo, not a real event.",
+    "date": "2026-10-26",
+    "day": "Monday",
+    "startTime": "17:30",
+    "endTime": "18:30",
+    "timeZone": "America/Chicago",
+    "locationType": "online demo",
+    "venueName": "AI demo online venue — not a real event",
+    "onlineUrl": "https://envitefy.com",
+    "guestMessage": "AI demo — not a real event. Nova is a fictional child. This sample shows a playful eighth-birthday Live Card; there is no real gathering or booking.",
+    "additionalNotes": "AI demo — not a real event. No invitations are being sent, no guest responses are requested, and no gifts are needed.",
+    "collectRsvps": false,
+    "registry": null,
+    "hostPhone": null,
+    "hostEmail": null
+  },
+  "exactInputs": {
+    "title": "Nova's Galactic Eight",
+    "openingLine": "Mission: celebrate!",
+    "occasion": "Birthday",
+    "artBrief": "An immersive, joyful space adventure for an eighth birthday: a small silver rocket lifting off from a moon base, layered indigo and teal galaxies, glowing coral planets, tiny golden stars and a playful friendly robot. Rich painted textures and cinematic light, vivid but readable. Expressive chunky retro-space lettering in warm cream and coral for the exact title and opening line; keep the scene detailed with a natural readable title pocket. This is an AI demo, not a real event.",
+    "date": "2026-10-26",
+    "day": "Monday",
+    "startTime": "17:30",
+    "endTime": "18:30",
+    "timeZone": "America/Chicago",
+    "locationType": "online demo",
+    "venueName": "AI demo online venue — not a real event",
+    "onlineUrl": "https://envitefy.com",
+    "guestMessage": "AI demo — not a real event. Nova is a fictional child. This sample shows a playful eighth-birthday Live Card; there is no real gathering or booking.",
+    "additionalNotes": "AI demo — not a real event. No invitations are being sent, no guest responses are requested, and no gifts are needed.",
+    "collectRsvps": false,
+    "registry": null,
+    "hostPhone": null,
+    "hostEmail": null
+  },
+  "observations": [
+    {
+      "kind": "positive",
+      "text": "Words are entered once. Event details starts directly on When & Where; a summary keeps the title and opening visible without duplicate inputs."
+    },
+    {
+      "kind": "positive",
+      "text": "Artwork generation ran while schedule, guest notes, RSVP and registry were completed."
+    },
+    {
+      "kind": "friction",
+      "text": "The only initial venue field is labelled Venue name. A parent testing an online event has no visible Online choice and must guess whether to paste a URL."
+    },
+    {
+      "kind": "friction",
+      "text": "End date (if different) is always visible even for a simple one-hour birthday; collapsing it behind an overnight/multiple-day option would shorten the form."
+    },
+    {
+      "kind": "friction",
+      "text": "Two guest-text disclosures have near-overlapping purposes: Message to guests and Anything else guests should know. A short example would clarify when to use each."
+    },
+    {
+      "kind": "tool limitation",
+      "text": "Playwright fill returned success for date/time but values were absent after tab navigation; native setValue persisted date and both times. This does not establish a product defect."
+    },
+    {
+      "kind": "friction",
+      "text": "UI says Your card is ready and Publish invitation appears enabled, but clicking Publish is blocked by a style_mismatch in isolated lettering. The checker says every approved word is correct/readable/unclipped. This mismatch in readiness messaging makes it unclear what the parent must do next."
+    },
+    {
+      "kind": "friction",
+      "text": "Lettering findings expose internal asset/composition jargon and a long diagnosis. A parent-friendly summary with one repair action and optional technical details would preserve capability."
+    },
+    {
+      "kind": "friction",
+      "text": "Optional wording corrections appear with Apply wording suggestion and Keep my wording but no visible proposed correction in the inspected UI. Kept exact approved wording to avoid an unclear revision."
+    },
+    {
+      "kind": "tool/access failure",
+      "text": "Download event/path retrieval hung for 314 seconds and reset CUA. Later UI confirms Download started. The actual local file path is unknown; this is not evidence that the product download failed."
+    }
+  ],
+  "screenshots": [
+    "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/02-mom-generation.jpg",
+    "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/02-mom-original-review.jpg"
+  ],
+  "publication": {
+    "requested": true,
+    "status": "Published after one explicit lettering repair",
+    "publicUrl": "https://envitefy.com/card/nova-s-galactic-eight-at-online-event",
+    "exactBlocker": null
+  },
+  "outcome": "Published; production URL resolves to the correct owner workspace",
+  "tabId": "1960064629",
+  "generation": {
+    "attempts": 1,
+    "startedAt": "2026-10-21T14:19:41.818Z",
+    "backgroundVisibleAfterSeconds": 32,
+    "lastObservedStage": "Initial result ready to review with style_mismatch concern",
+    "lastObservedElapsedSeconds": 78,
+    "repairs": [
+      {
+        "startedAt": "2026-10-21T14:27:47.246Z",
+        "action": "Repair lettering",
+        "count": 1,
+        "reason": "Publish guard requires clearing style_mismatch: isolated lettering asset includes rocket and planets, while all expected words are correct/readable",
+        "state": "Passed; attempt 2 ready to review in 72 seconds"
+      }
+    ]
+  },
+  "review": {
+    "dateVerified": "Oct 26, 2026, 5:30 PM–6:30 PM Event local time",
+    "locationVerified": "Online event · https://envitefy.com",
+    "wordingAction": "Keep my wording",
+    "initialChecker": "style_mismatch",
+    "approvedWordsCorrect": true
+  },
+  "download": {
+    "action": "Download invitation",
+    "uiResult": "Download started",
+    "path": null,
+    "toolResult": "CUA download event/path workflow timed out after 314 seconds despite 30 second wait parameter; kernel reset. UI later confirms Download started; file path remains unknown."
+  },
+  "rootFollowup": {
+    "publication": "Published through normal UI; success message verified",
+    "publicUrl": "https://envitefy.com/card/nova-s-galactic-eight-at-online-event",
+    "addressEvidence": "Custom URL dialog displayed nova-s-galactic-eight-at-online-event",
+    "dateEvidence": "Oct 26, 2026, 5:30 PM–6:30 PM Event local time",
+    "repairOutcome": "One explicit Repair lettering passed. Attempt 2 ready to review in 72 seconds. No checker findings remained in Review.",
+    "screenshot": "02-mom-published.jpg",
+    "copyGuestLink": "UI displayed Guest link copied; tool clipboard read returned empty text. Custom URL used to obtain actual address."
+  },
+  "status": "published and verified on production owner route",
+  "publicUrl": "https://envitefy.com/card/nova-s-galactic-eight-at-online-event"
+}

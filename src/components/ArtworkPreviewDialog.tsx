@@ -36,6 +36,7 @@ export default function ArtworkPreviewDialog({
   toolbar,
   footer,
   downloadAction,
+  closeLabel = "Close preview",
   mobileSwipeNavigation = false,
   children,
 }: {
@@ -49,6 +50,7 @@ export default function ArtworkPreviewDialog({
   toolbar?: ReactNode;
   footer?: ReactNode;
   downloadAction?: ReactNode;
+  closeLabel?: string;
   mobileSwipeNavigation?: boolean;
   children: ReactNode;
 }) {
@@ -109,7 +111,7 @@ export default function ArtworkPreviewDialog({
           <div className={styles.close}>
             {downloadAction}
             <Dialog.Close asChild>
-              <button type="button" aria-label="Close preview" className={chromeButtonClassName}>
+              <button type="button" aria-label={closeLabel} title={closeLabel} className={chromeButtonClassName}>
                 <X size={21} aria-hidden="true" />
               </button>
             </Dialog.Close>

@@ -39,21 +39,20 @@
   max-width: min(19rem, 80cqw);
 }
 
-/* Dock Location at the right of the card without changing the action rail. */
+/* Center Location above the action rail while keeping the card-edge inset. */
 .panelSlot[data-live-card-panel-slot-kind="location"] {
   padding-inline: 16px;
   padding-bottom: clamp(12px, 3cqw, 16px);
 }
 
 .panel[data-live-card-panel-kind="location"] {
-  align-self: flex-end;
+  align-self: center;
   width: min(360px, 65cqw);
   max-width: 100%;
 }
 
 @container (max-width: 360px) {
   .panel[data-live-card-panel-kind="location"] {
-    align-self: center;
     width: 100%;
   }
 }
@@ -361,7 +360,11 @@ button.rsvpChoice {
   overflow: visible;
 }
 
-.sharedRail [data-live-card-trigger]:focus-visible {
+.surface .sharedRail [data-live-card-trigger]:focus-visible {
+  outline: none;
+}
+
+.sharedRail [data-live-card-trigger]:focus-visible > div {
   outline: 2px solid white;
   outline-offset: 3px;
 }

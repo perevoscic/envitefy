@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   const raw = await request.json().catch(() => null);
   const form = readLiveCardForm(raw?.form);
   if (!form?.title.trim() || Object.keys(validateLiveCard(form, "design")).length || typeof raw?.key !== "string" || raw.key.length > 200)
-    return NextResponse.json({ error: "Add your title, event type and design first." }, { status: 400 });
+    return NextResponse.json({ error: "Add your title and design first." }, { status: 400 });
   const mode = raw.mode === "verify" ? "verify" : raw.mode === "repair" ? "repair" : raw.mode === "background" ? "background" : "generate";
   const design = readSharedCardDesign(raw.design) || null;
   if (mode !== "generate" && !design) return NextResponse.json({ error: "Create a background first." }, { status: 400 });

@@ -1,0 +1,1744 @@
+{
+  "reviewType": "AI persona task testing; not a human focus group",
+  "eventDate": "2026-10-26",
+  "summary": {
+    "conclusion": "The revised flow removes duplicate wording and preserves parallel work. Initial trials exposed difficult artwork recovery; all ten cards are now published, including the nonprofit card after its approved brief revision.",
+    "method": "Ten distinct AI agents used normal signed-in browser UI and actual generated artwork. Creation used the updated local builder and production backend. All cards are fictional online demos for Monday, October 26, 2026; no invitations or responses were sent. This is AI task testing, not human research or a completion-rate study. UI timings measure provider jobs. The implementation evolved during testing: the revised nonprofit attempt used advisory non-safety checks, and desktop preview placement was subsequently fixed. Intended timezone was Central; most screens displayed Event local time. Public URLs were verified as the signed-in owner with owner-workspace redirects; signed-out access was not tested.",
+    "priorities": [
+      [
+        "1. Make artwork readiness and recovery consistent",
+        "State one clear result: Ready, Needs a wording fix, or Optional style concern. Explain the issue in one sentence; keep detailed diagnostics collapsed. Preserve the existing background and exact words during an explicit lettering repair. Show checking when re-verifying an existing image."
+      ],
+      [
+        "2. Make online logistics explicit",
+        "Offer In person / Online with the relevant venue or event-link field and a visible timezone summary. Keep provider-backed venue resolution in final preparation. Put date, time and location beside Publish in full-screen Preview."
+      ],
+      [
+        "3. Show the actual wording edit before Apply",
+        "Present the current and suggested wording together, then offer Apply suggestion or Keep my wording. Retain one canonical title/opening editor and preserve unsaved logistics."
+      ],
+      [
+        "4. Keep Occasion optional and useful",
+        "Do not require a taxonomy choice to generate. Put Occasion above the examples it changes, or make an inferred occasion visible and editable. School, team and fundraiser creators could already proceed with General event."
+      ],
+      [
+        "5. Shorten the ordinary path; preserve advanced controls",
+        "Hide a different end date behind an option; make one guest message primary with clearly named additional notes. Keep optional RSVP, registry, reference and generation quality controls. Show a selectable public link when native Copy or Share is unavailable."
+      ]
+    ],
+    "trials": [
+      {
+        "id": 1,
+        "role": "Teacher",
+        "personaContext": "An elementary teacher planning a welcoming family literacy night.",
+        "source": "01-teacher.json",
+        "title": "Books & Blankets Family Night",
+        "opening": "AI demo — not a real event",
+        "prompt": "Create a warm, welcoming family literacy-night illustration inside a cozy elementary-school reading nook. A small blanket fort, open picture books with no readable book titles, soft amber string lights, floor cushions, and a friendly paper-cut owl form a clear central scene. Use rich teal, mustard, warm cream, and coral accents, layered paper textures, gentle depth, and soft evening lighting. Make it inviting for children ages 5–10 and their grown-ups, with no school logos, no recognizable children, and no implied real venue. Give the exact event title an expressive, easy-to-read storybook lettering treatment that fits the scene. Keep the supplied AI-demo opening line legible. Preserve the richness of the illustration rather than leaving a large blank center.",
+        "time": "6:00-7:00 PM",
+        "initial": "65 s",
+        "extra": "Repair + check",
+        "feedback": [
+          "Wording was entered once; logistics stayed editable during generation. One lettering repair took 83 s, followed by a 45 s same-image check. A remaining style concern became an advisory and publication succeeded.",
+          "A prefixed online URL was treated as a physical venue; the bare URL worked. The public slug retained the earlier venue wording. Show an explicit online link field and a concise style advisory."
+        ],
+        "image": "01-teacher-artwork.webp",
+        "cropScreenshot": false,
+        "published": true,
+        "revisedPrompt": null,
+        "url": "https://envitefy.com/card/books-and-blankets-family-night-at-online-demo-https-envitefy-com",
+        "blocker": null
+      },
+      {
+        "id": 2,
+        "role": "Mom",
+        "personaContext": "A busy mother planning a fictional eighth birthday.",
+        "source": "02-mom.json",
+        "title": "Nova's Galactic Eight",
+        "opening": "Mission: celebrate!",
+        "prompt": "An immersive, joyful space adventure for an eighth birthday: a small silver rocket lifting off from a moon base, layered indigo and teal galaxies, glowing coral planets, tiny golden stars and a playful friendly robot. Rich painted textures and cinematic light, vivid but readable. Expressive chunky retro-space lettering in warm cream and coral for the exact title and opening line; keep the scene detailed with a natural readable title pocket. This is an AI demo, not a real event.",
+        "time": "5:30-6:30 PM",
+        "initial": "78 s",
+        "extra": "1 repair",
+        "feedback": [
+          "Initial wording was correct and readable, but decorative objects in the isolated lettering layer blocked Publish. One repair passed in 72 s and the card was published.",
+          "The form could be shortened for a one-hour party by hiding a different end date. Explain the distinction between the two guest-message fields."
+        ],
+        "image": "02-mom-artwork.webp",
+        "cropScreenshot": false,
+        "published": true,
+        "revisedPrompt": null,
+        "url": "https://envitefy.com/card/nova-s-galactic-eight-at-online-event",
+        "blocker": null
+      },
+      {
+        "id": 3,
+        "role": "Dad / team parent",
+        "personaContext": "A father coordinating a youth soccer team celebration.",
+        "source": "03-dad.json",
+        "title": "Comets Team Celebration",
+        "opening": "One team. A season to remember.",
+        "prompt": "An immersive youth soccer celebration at golden hour on a beautiful community soccer field: a scuffed soccer ball and a pair of cleats in the foreground, a goal and lush green pitch receding into the distance, warm stadium lights starting to glow, navy and bright orange pennants, a few tasteful ribbons and confetti catching the sunset. Rich natural textures, cinematic depth and joyful end-of-season atmosphere. No identifiable people, no team logos or brand marks. Leave a naturally readable area in the upper sky for the exact title and opening line; keep the field and soccer scene richly detailed.",
+        "time": "6:30-8:00 PM",
+        "initial": "64 s",
+        "extra": "None",
+        "feedback": [
+          "One generation produced a publishable card with the requested soccer scene; no repair was needed. The updated wording summary removed repeated entry.",
+          "Online entry was hidden under Venue name. Share failed in this browser; a visible selectable public URL would provide a useful fallback."
+        ],
+        "image": "03-dad-artwork.webp",
+        "cropScreenshot": false,
+        "published": true,
+        "revisedPrompt": null,
+        "url": "https://envitefy.com/card/comets-team-celebration-at-online-event",
+        "blocker": null
+      },
+      {
+        "id": 4,
+        "role": "Event creator",
+        "personaContext": "A professional creator launching a neighborhood supper club.",
+        "source": "04-event-creator.json",
+        "title": "The Long Table | AI Demo",
+        "opening": "A seat at something new",
+        "prompt": "A cinematic neighborhood supper-club launch in an intimate brick courtyard at blue hour. One long oak table is the focal subject, set with richly textured terracotta plates, amber glass, embroidered ivory linen, figs, rosemary, olive branches and small candle flames. Warm overhead cafe lights sweep into deep indigo evening; a softly glowing open kitchen and leafy brick walls create layered depth. Sophisticated hospitality editorial photography, warm copper, burgundy and deep ink blue, tactile materials, inviting and celebratory. Expressive coordinated lettering for the exact title The Long Table | AI Demo and opening line A seat at something new, with bold elegant serif title lettering and a lighter restrained opening line, arranged in a naturally readable pocket of the real scene. Keep the courtyard immersive and detailed; do not clear a large blank center or lower half. No logos, other words, real people or branded products.",
+        "time": "6:30-8:30 PM",
+        "initial": "82 s",
+        "extra": "None",
+        "feedback": [
+          "One generation produced the detailed supper-club scene and passed without repair. All logistics could be entered while artwork ran; the initial job took 82 s.",
+          "Full-screen Preview omits the nearby logistics summary. Optional wording advice did not display a proposed difference. Keep exact wording and professional art-direction control."
+        ],
+        "image": "04-event-creator-artwork.webp",
+        "cropScreenshot": false,
+        "published": true,
+        "revisedPrompt": null,
+        "url": "https://envitefy.com/card/the-long-table-ai-demo-at-online-event",
+        "blocker": null
+      },
+      {
+        "id": 5,
+        "role": "Wedding planner",
+        "personaContext": "A wedding planner coordinating a garden welcome evening.",
+        "source": "05-wedding-planner.json",
+        "title": "Garden Welcome Evening — AI Demo",
+        "opening": "A little garden magic before the big day",
+        "prompt": "Create a romantic editorial garden welcome-evening invitation at blue hour. An immersive candlelit orangery opens onto a lush walled garden, with climbing ivory roses, soft sage foliage, pale apricot sweet peas, linen-draped cocktail tables, crystal glassware, aged limestone, and warm brass lanterns. Use layered photographic depth, rich material detail, and intentional warm light against the dusky blue sky. The focal subject is a beautifully arranged entrance framed by flowers, with a naturally readable lettering pocket integrated above it, not a giant blank center. Palette: sage, cream, apricot, antique brass, and twilight blue. Elegant high-contrast editorial serif lettering with restrained fine-line flourishes; no purple script, no generic wedding rings, no stock-photo collage. Preserve the lush scene behind the exact supplied event title and opening line. Include only the supplied wording; this is explicitly an AI demo, not a real event.",
+        "time": "6:30-8:00 PM",
+        "initial": "66 s",
+        "extra": "None",
+        "feedback": [
+          "One generation passed in 66 s; the saved production card was verified. The opening line was small and low contrast in the inspected preview.",
+          "Occasion changes starting ideas positioned above it. Move the optional control above those ideas, and show the actual proposed wording change before Apply."
+        ],
+        "image": "05-wedding-planner-artwork.webp",
+        "cropScreenshot": false,
+        "published": true,
+        "revisedPrompt": null,
+        "url": "https://envitefy.com/card/garden-welcome-evening-ai-demo-at-online-event",
+        "blocker": null
+      },
+      {
+        "id": 6,
+        "role": "PTO volunteer",
+        "personaContext": "A parent volunteer creating a school fundraiser concept.",
+        "source": "06-pto-volunteer.json",
+        "title": "Fall Together — AI Demo",
+        "opening": "School fundraiser concept",
+        "prompt": "Create a warm, immersive autumn school fundraiser scene in an elegant illustrated storybook style: a welcoming courtyard at golden hour with glowing string lights, copper and amber maple leaves, pumpkins, a bake-sale table with homemade treats, handcrafted pennant bunting, and a small stack of books suggesting community support for learning. Make the bake-sale table the clear focal subject, with layered depth, tactile paper and wood textures, soft candlelike lighting, and a rich burnt-orange, cranberry, forest-green and cream palette. Keep a naturally readable pocket for expressive warm cream title lettering without a large blank center. No identifiable school, school name, real people, mascot, logos, sponsor brands, prices, QR codes or extra lettering. This is an AI demo invitation concept, not a real fundraiser.",
+        "time": "5:30-7:00 PM",
+        "initial": "68 s",
+        "extra": "Repair + check",
+        "feedback": [
+          "Logistics and a fictional RSVP host phone were entered during generation. Initial lettering had correct, readable words but raised a style-only concern. One repair and one same-image check were performed.",
+          "School fundraiser was absent from optional Occasion. The two guest-message disclosures had overlapping helper text. Keep RSVP optional and reveal only the contact fields it needs."
+        ],
+        "image": "06-pto-artwork.webp",
+        "cropScreenshot": false,
+        "published": true,
+        "revisedPrompt": null,
+        "url": "https://envitefy.com/card/fall-together-ai-demo-at-online-event",
+        "blocker": null
+      },
+      {
+        "id": 7,
+        "role": "Office administrator",
+        "personaContext": "An office administrator organizing an innovation workshop.",
+        "source": "07-corporate.json",
+        "title": "Innovation After Hours",
+        "opening": "Make room for bright ideas",
+        "prompt": "Create an immersive editorial architectural photograph of a modern innovation studio at blue hour, with a sculptural oak collaboration table as the focal subject, translucent glass partitions, brushed aluminum prototypes, warm pendant lights and deep cobalt city reflections. Layer foreground sketchbooks, tactile paper models and a subtle amber glow for rich depth. Use a refined navy, copper and warm ivory palette, confident contemporary typography and a naturally readable title pocket integrated into the architecture. Sophisticated, welcoming and inventive; no corporate logos, no people and no flat stationery border.",
+        "time": "6:00-7:00 PM",
+        "initial": "91 s",
+        "extra": "1 repair",
+        "feedback": [
+          "The first opening line had insufficient contrast against dark glass. One explicit repair passed in 69 s and the published production card was verified.",
+          "An online event had no visible named-timezone confirmation. Add an event-link label and a concise timezone summary while retaining venue resolution in final preparation."
+        ],
+        "image": "07-corporate-artwork.webp",
+        "cropScreenshot": false,
+        "published": true,
+        "revisedPrompt": null,
+        "url": "https://envitefy.com/card/innovation-after-hours-at-online-event",
+        "blocker": null
+      },
+      {
+        "id": 8,
+        "role": "Nonprofit coordinator",
+        "personaContext": "A volunteer coordinator preparing a community kindness evening.",
+        "source": "08-nonprofit.json",
+        "title": "Lanterns of Kindness",
+        "opening": "Small acts. Brighter nights.",
+        "prompt": "Create an immersive dimensional paper sculpture of a welcoming community workshop at blue hour. A glowing amber paper lantern is the clear focal subject on a long walnut table, surrounded by carefully folded care packages, colorful fabric scraps, simple heart-shaped paper tags without writing, and small jars of autumn flowers. Layer an open doorway, softly lit shelves, warm window squares and navy evening sky behind the table for depth. Use rich indigo, burnt orange, warm cream and touches of sage, tactile deckled paper edges, sculpted folds, soft shadows and cinematic lamplight. Make the scene abundant, hopeful and neighborly with a naturally readable title pocket above the lantern. Expressive warm cream cut-paper lettering should suit this handmade scene. No logos, real organizations or extra printed words.",
+        "time": "6:00-7:30 PM",
+        "initial": "Failed: 34 s",
+        "extra": "Retry + new brief",
+        "feedback": [
+          "The original background and one retry failed (34 s and 27 s). The user then approved one revised lantern-garden brief. That attempt was ready in 79 s and published without repair or rechecking.",
+          "The revised run used the updated advisory-check policy: correct readable wording with decorative findings could proceed. The earlier conflicting failure/progress display and approval rejection remain recorded as historical evidence."
+        ],
+        "image": "08-nonprofit-artwork.webp",
+        "cropScreenshot": false,
+        "published": true,
+        "revisedPrompt": "Design a general event Live Card featuring a garden path lined with glowing lanterns leading to a beautifully decorated pavilion. Use peach, emerald and soft gold, rendered as a dimensional paper sculpture with tactile layers and gentle shadows. Keep a clear focal subject, layered surroundings and intentional lighting, with a naturally readable title pocket.",
+        "url": "https://envitefy.com/card/lanterns-of-kindness-at-online-event",
+        "blocker": null
+      },
+      {
+        "id": 9,
+        "role": "Small-business owner",
+        "personaContext": "A shop owner promoting a creative printing workshop.",
+        "source": "09-small-business.json",
+        "title": "Ink & Imagination Studio",
+        "opening": "A creative shop workshop",
+        "prompt": "A richly detailed screen-printing studio at golden hour, with a central carved botanical printing block, ink rollers, handmade paper and a small fern. Warm terracotta, deep forest green and cream; tactile gouache illustration, artisan shop atmosphere, dimensional materials and welcoming light. Expressive legible lettering suited to a creative business workshop, with a naturally readable title area.",
+        "time": "5:00-6:00 PM",
+        "initial": "56 s",
+        "extra": "None",
+        "feedback": [
+          "The card published after one 56 s generation with no repair. Exact requested wording and the printing-studio scene were preserved.",
+          "Apply wording suggestion offered no visible before/after text. Native Share failed. Show the proposed edit, an online-link cue and a selectable guest-link fallback."
+        ],
+        "image": "09-small-business-artwork.webp",
+        "cropScreenshot": false,
+        "published": true,
+        "revisedPrompt": null,
+        "url": "https://envitefy.com/card/ink-and-imagination-studio-at-online-event",
+        "blocker": null
+      },
+      {
+        "id": 10,
+        "role": "Community host",
+        "personaContext": "A retired neighborhood host planning a tea and story swap.",
+        "source": "10-community-host.json",
+        "title": "A Cup of Stories | AI Demo",
+        "opening": "Warm tea, good company",
+        "prompt": "A welcoming autumn sunroom prepared for a neighborhood tea and story swap: a round oak table with a ceramic teapot, mismatched porcelain cups, a small plate of biscuits, folded linen napkins and a well-loved storybook. Honey-colored afternoon light, leafy garden beyond the windows, warm terracotta and sage accents, rich tactile watercolor illustration with layered depth. Expressive readable lettering that feels friendly and graceful. No people, no extra words or dates.",
+        "time": "3:00-4:30 PM",
+        "initial": "66 s",
+        "extra": "Repair + check",
+        "feedback": [
+          "The initial card and one repair both raised decorative-layer style findings despite correct readable words. A 67 s same-image check then passed unchanged artwork; publication succeeded.",
+          "Generation to observed publication took 7 min 28 s in this automated trial, including recovery/navigation. Verification initially displayed Creating title artwork. Make check status and the next action accurate."
+        ],
+        "image": "10-community-host-artwork.webp",
+        "cropScreenshot": false,
+        "published": true,
+        "revisedPrompt": null,
+        "url": "https://envitefy.com/card/a-cup-of-stories-ai-demo-at-online-event",
+        "blocker": null
+      }
+    ]
+  },
+  "originalRecords": [
+    {
+      "trialId": "01-teacher",
+      "researchType": "AI persona task trial; not real-human research",
+      "persona": {
+        "role": "Elementary-school teacher",
+        "scenario": "A teacher invites families to a relaxed literacy evening and wants warm artwork while entering the practical details.",
+        "successCriteria": "Create one attractive Live Card, enter Monday's timing and clear family instructions, review and publish without duplicating wording or restarting artwork."
+      },
+      "environment": {
+        "origin": "http://localhost:3000",
+        "status": "Authenticated local updated UI tested through ordinary Chrome session",
+        "tabId": "1960064626"
+      },
+      "intendedInputs": {
+        "eventTitle": "Books & Blankets Family Night",
+        "openingLine": "AI demo — not a real event",
+        "occasion": "Unspecified; choose a school/family category only if it clearly helps",
+        "designPrompt": "Create a warm, welcoming family literacy-night illustration inside a cozy elementary-school reading nook. A small blanket fort, open picture books with no readable book titles, soft amber string lights, floor cushions, and a friendly paper-cut owl form a clear central scene. Use rich teal, mustard, warm cream, and coral accents, layered paper textures, gentle depth, and soft evening lighting. Make it inviting for children ages 5–10 and their grown-ups, with no school logos, no recognizable children, and no implied real venue. Give the exact event title an expressive, easy-to-read storybook lettering treatment that fits the scene. Keep the supplied AI-demo opening line legible. Preserve the richness of the illustration rather than leaving a large blank center.",
+        "date": "2026-10-26",
+        "startTime": "18:00",
+        "endTime": "19:00",
+        "timezone": "America/Chicago",
+        "venue": "Online demo — https://envitefy.com",
+        "guestMessage": "AI demo — not a real event. This sample invitation shows a family literacy evening for children and their grown-ups. No school, venue, or participant is associated with this demonstration.",
+        "additionalNotes": "For the imagined activity: bring a favorite book and a blanket; grown-ups stay with children. The link is a demonstration destination only. No booking or live session exists.",
+        "collectRsvps": false,
+        "registry": null,
+        "referenceImage": null,
+        "quality": "Default standard/high"
+      },
+      "execution": {
+        "status": "published; production owner route verified",
+        "eventId": "291d5244-8437-4b74-918e-f869d028ab34",
+        "startedAt": "2026-10-21T14:19:15.061Z",
+        "initialGenerationClickedAt": "2026-10-21T14:19:34.637Z",
+        "initialGenerationReportedSeconds": 65,
+        "repairClickedAt": "2026-10-21T14:41:05.439Z",
+        "repairReportedSeconds": 83,
+        "sameImageVerificationRequests": 1,
+        "sameImageVerificationReportedSeconds": 45,
+        "observedCustomUrl": "http://localhost:3000/card/books-and-blankets-family-night-at-online-demo-https-envitefy-com",
+        "publishClickedAt": "2026-10-21T14:44:17.378Z",
+        "publishedSuccessObservedBy": "2026-10-21T14:44:55.805Z",
+        "elapsedWallSecondsThroughPublishedEvidence": 1540.744,
+        "timingCaveat": "Elapsed wall time includes orchestration pauses, tool setup, one 257-second download tool failure and suspended/resumed agent work. It is not an estimate of human task time. Initial provider job reported 65 seconds, explicit repair 83 seconds and same-image verification 45 seconds.",
+        "publicationEvidence": "Your Live Card is published. It's ready to share.; Save changes disabled; Copy guest link and Share invitation controls visible",
+        "guestRouteExternallyVerified": false,
+        "generationAttempts": 2,
+        "attemptScope": "One initial background plus lettering job; one explicit lettering-only repair after Publish rejected style findings. No background regeneration.",
+        "visibleInputs": [
+          {
+            "label": "Event title",
+            "value": "Books & Blankets Family Night"
+          },
+          {
+            "label": "Opening line (optional)",
+            "value": "AI demo — not a real event"
+          },
+          {
+            "label": "Describe the look",
+            "valueRef": "intendedInputs.designPrompt",
+            "exactPreparedPromptUsed": true
+          },
+          {
+            "label": "Occasion (optional)",
+            "value": "Not specified"
+          },
+          {
+            "label": "Event date",
+            "value": "2026-10-26",
+            "verifiedInReview": "Oct 26, 2026"
+          },
+          {
+            "label": "Start time",
+            "value": "18:00"
+          },
+          {
+            "label": "End time (optional)",
+            "value": "19:00"
+          },
+          {
+            "label": "Venue name",
+            "initialValue": "Online demo — https://envitefy.com",
+            "correctedValue": "https://envitefy.com",
+            "verifiedInReview": "Online event · https://envitefy.com"
+          },
+          {
+            "label": "Message to guests (optional)",
+            "valueRef": "intendedInputs.guestMessage"
+          },
+          {
+            "label": "Anything else guests should know? (optional)",
+            "valueRef": "intendedInputs.additionalNotes"
+          },
+          {
+            "label": "Collect RSVPs",
+            "value": false,
+            "evidence": "Visible switch value 0"
+          }
+        ],
+        "actions": [
+          "Opened a separate blank Chrome tab and confirmed 1 Your card, 2 Event details, 3 Review.",
+          "Filled title, expanded optional opening, filled opening and prepared look prompt; left Occasion Not specified.",
+          "Clicked Generate & continue once and immediately entered When & Where while Drawing your artwork was visible.",
+          "Expanded both Message disclosures, entered guest message/notes, inspected RSVP off.",
+          "Verified date/time did not retain through CUA fill; entered with native segmented keyboard and verified actual values.",
+          "Review invitation initially failed venue identification for a prefixed online URL.",
+          "Explicitly saved private draft; UI confirmed Draft saved. Find it in Drafts anytime and edit event ID in URL.",
+          "Replaced Venue name with exact bare https://envitefy.com; Review recognized Online event.",
+          "Chose Keep my wording when optional wording corrections were offered without a visible before/after proposal.",
+          "Clicked Download invitation once; UI reported Download started, but no local path was returned by download tooling.",
+          "Clicked Publish invitation; UI required verification or repair of lettering findings.",
+          "Clicked Repair lettering explicitly once, retaining original background.",
+          "Repair completed in displayed 83 seconds with repeated style_mismatch; clicked Retry verification exactly once against the same image.",
+          "Opened eye Preview Live Card and saved a whole-card JPEG screenshot, then closed preview with existing Review state retained.",
+          "Same-image verification completed in displayed 45 seconds with style_mismatch, but current UI explicitly allowed publishing this artwork as-is.",
+          "Opened Custom URL and read existing slug without changing it, then clicked Publish invitation normally; UI entered Saving artwork.",
+          "Confirmed Your Live Card is published. It's ready to share. and owner Cancel / Save changes controls.",
+          "Clicked Copy guest link once; browser reported it could not copy, clipboard returned empty. Read the actual route from Custom URL instead.",
+          "Saved final whole-card fullscreen JPEG and publication-success screenshot; marked own tab Deliverable."
+        ],
+        "observations": [
+          "Initial completed card displayed the exact title and opening. Scene included warm reading fort, open books, teal/coral cushions, string lights and an owl.",
+          "Initial UI status: Ready to review · attempt 1 · 65 seconds elapsed.",
+          "Checker observed both approved lines complete/readable, but reported style_mismatch due to broad cream faded panel, ribbon backplates and illustrated objects in isolated lettering.",
+          "Review showed correct Monday date, 6:00 PM–7:00 PM Event local time, Online event · https://envitefy.com and Overview · Location · Calendar guest buttons.",
+          "Repair progress exposed two cancel controls and raw attempt/elapsed/start-time status while retaining original visible card.",
+          "Repair checker: filled cream/coral banners, broad pale backing and separate star/moon/ray decorations remain; all approved wording present/readable.",
+          "Same-image Retry verification initially displayed Creating title and opening-line artwork and Drawing your title and opening line, later Checking existing lettering again · attempt 2.",
+          "After same-image verification the UI displayed You can publish this artwork as it is, or optionally verify or repair the lettering. Publication was then initiated without bypassing the UI."
+        ],
+        "errors": [
+          {
+            "type": "confirmed UX issue",
+            "action": "Review invitation with prefixed online venue",
+            "message": "We couldn’t identify this venue. Add its city or full address.",
+            "resolution": "Bare https://envitefy.com recognized as Online event"
+          },
+          {
+            "type": "tool interaction failure",
+            "action": "CUA locator fill on native date/time",
+            "result": "ISO date and 24-hour time fill did not retain; native segmented typing succeeded",
+            "notAConfirmedAppDefect": true
+          },
+          {
+            "type": "tool access limitation",
+            "action": "Download artwork via image locator",
+            "result": "Matched element is canvas and does not expose downloadable URL"
+          },
+          {
+            "type": "incomplete verification",
+            "action": "Wait for invitation download",
+            "timeoutMs": 20000,
+            "toolWallSeconds": 257.2031,
+            "result": "UI said Download started; CUA returned timeout and no file path",
+            "notAConfirmedDownloadDefect": true
+          },
+          {
+            "type": "publication validation block",
+            "action": "Initial Publish invitation",
+            "message": "Review the lettering findings and retry verification or repair lettering before publishing.",
+            "resolution": "After one repair and same-image verification, current UI explicitly treated style mismatch as optional; normal Publish succeeded"
+          },
+          {
+            "type": "browser interaction failure",
+            "action": "Copy guest link after publication",
+            "message": "Your browser couldn't copy the guest link. Use Share invitation to share it.",
+            "result": "Clipboard read returned empty; actual URL obtained from Custom URL dialog"
+          }
+        ],
+        "publishedUrl": "http://localhost:3000/card/books-and-blankets-family-night-at-online-demo-https-envitefy-com",
+        "screenshots": [
+          "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/01-teacher-repair-progress.jpg",
+          "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/01-teacher-card.jpg",
+          "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/01-teacher-published.jpg"
+        ],
+        "blocker": null
+      },
+      "feedback": {
+        "observedFriction": [
+          "Venue name label suggests a physical place and rejects an explanatory online URL prefix; no online/in-person choice was visible.",
+          "A readable card was called Your design is ready and Your card is ready, yet Publish then blocked because of style_mismatch.",
+          "Lettering findings exposed long internal asset instructions and developer terminology before the visual Review card.",
+          "Optional wording correction prompt offered Apply wording suggestion without showing a concrete proposed edit."
+        ],
+        "simplificationSuggestions": [
+          "Offer In person / Online before the location input; label the online field Event link and show detected link immediately.",
+          "Present one concise review issue such as Text decoration needs adjustment, keep the detailed explanation collapsed, and say clearly whether Publish is blocked.",
+          "Show exact before/after wording beside Apply suggestion.",
+          "Keep one coherent generation status and one Cancel generation control; move attempt number and timestamps to optional details."
+        ],
+        "productivityPreserved": [
+          "Generate & continue opened logistics immediately, allowing Message and RSVP inspection during the real initial 65-second job.",
+          "No duplicate title/opening fields in Event details; summary retained wording clearly.",
+          "School family night could proceed with Occasion Not specified despite no school category.",
+          "Private draft saved successfully despite unresolved venue; no need to discard generated artwork.",
+          "One lettering repair preserves the existing reading-nook background and entered logistics."
+        ]
+      },
+      "rootFollowup": {
+        "productionOwnerRouteVerified": true,
+        "note": "Root opened the actual published /card/ address; signed-in owner redirected to the matching owner workspace with saved title and artwork. Anonymous guest access was not tested."
+      }
+    },
+    {
+      "trialId": "02-mom",
+      "reviewType": "AI persona task test; not a human participant",
+      "persona": {
+        "role": "Mother planning an eighth birthday",
+        "context": "Busy parent using a phone between other tasks; values fast setup, readable wording and simple corrections."
+      },
+      "state": "published",
+      "event": {
+        "title": "Nova's Galactic Eight",
+        "openingLine": "Mission: celebrate!",
+        "occasion": "Birthday",
+        "artBrief": "An immersive, joyful space adventure for an eighth birthday: a small silver rocket lifting off from a moon base, layered indigo and teal galaxies, glowing coral planets, tiny golden stars and a playful friendly robot. Rich painted textures and cinematic light, vivid but readable. Expressive chunky retro-space lettering in warm cream and coral for the exact title and opening line; keep the scene detailed with a natural readable title pocket. This is an AI demo, not a real event.",
+        "date": "2026-10-26",
+        "day": "Monday",
+        "startTime": "17:30",
+        "endTime": "18:30",
+        "timeZone": "America/Chicago",
+        "locationType": "online demo",
+        "venueName": "AI demo online venue — not a real event",
+        "onlineUrl": "https://envitefy.com",
+        "guestMessage": "AI demo — not a real event. Nova is a fictional child. This sample shows a playful eighth-birthday Live Card; there is no real gathering or booking.",
+        "additionalNotes": "AI demo — not a real event. No invitations are being sent, no guest responses are requested, and no gifts are needed.",
+        "collectRsvps": false,
+        "registry": null,
+        "hostPhone": null,
+        "hostEmail": null
+      },
+      "exactInputs": {
+        "title": "Nova's Galactic Eight",
+        "openingLine": "Mission: celebrate!",
+        "occasion": "Birthday",
+        "artBrief": "An immersive, joyful space adventure for an eighth birthday: a small silver rocket lifting off from a moon base, layered indigo and teal galaxies, glowing coral planets, tiny golden stars and a playful friendly robot. Rich painted textures and cinematic light, vivid but readable. Expressive chunky retro-space lettering in warm cream and coral for the exact title and opening line; keep the scene detailed with a natural readable title pocket. This is an AI demo, not a real event.",
+        "date": "2026-10-26",
+        "day": "Monday",
+        "startTime": "17:30",
+        "endTime": "18:30",
+        "timeZone": "America/Chicago",
+        "locationType": "online demo",
+        "venueName": "AI demo online venue — not a real event",
+        "onlineUrl": "https://envitefy.com",
+        "guestMessage": "AI demo — not a real event. Nova is a fictional child. This sample shows a playful eighth-birthday Live Card; there is no real gathering or booking.",
+        "additionalNotes": "AI demo — not a real event. No invitations are being sent, no guest responses are requested, and no gifts are needed.",
+        "collectRsvps": false,
+        "registry": null,
+        "hostPhone": null,
+        "hostEmail": null
+      },
+      "observations": [
+        {
+          "kind": "positive",
+          "text": "Words are entered once. Event details starts directly on When & Where; a summary keeps the title and opening visible without duplicate inputs."
+        },
+        {
+          "kind": "positive",
+          "text": "Artwork generation ran while schedule, guest notes, RSVP and registry were completed."
+        },
+        {
+          "kind": "friction",
+          "text": "The only initial venue field is labelled Venue name. A parent testing an online event has no visible Online choice and must guess whether to paste a URL."
+        },
+        {
+          "kind": "friction",
+          "text": "End date (if different) is always visible even for a simple one-hour birthday; collapsing it behind an overnight/multiple-day option would shorten the form."
+        },
+        {
+          "kind": "friction",
+          "text": "Two guest-text disclosures have near-overlapping purposes: Message to guests and Anything else guests should know. A short example would clarify when to use each."
+        },
+        {
+          "kind": "tool limitation",
+          "text": "Playwright fill returned success for date/time but values were absent after tab navigation; native setValue persisted date and both times. This does not establish a product defect."
+        },
+        {
+          "kind": "friction",
+          "text": "UI says Your card is ready and Publish invitation appears enabled, but clicking Publish is blocked by a style_mismatch in isolated lettering. The checker says every approved word is correct/readable/unclipped. This mismatch in readiness messaging makes it unclear what the parent must do next."
+        },
+        {
+          "kind": "friction",
+          "text": "Lettering findings expose internal asset/composition jargon and a long diagnosis. A parent-friendly summary with one repair action and optional technical details would preserve capability."
+        },
+        {
+          "kind": "friction",
+          "text": "Optional wording corrections appear with Apply wording suggestion and Keep my wording but no visible proposed correction in the inspected UI. Kept exact approved wording to avoid an unclear revision."
+        },
+        {
+          "kind": "tool/access failure",
+          "text": "Download event/path retrieval hung for 314 seconds and reset CUA. Later UI confirms Download started. The actual local file path is unknown; this is not evidence that the product download failed."
+        }
+      ],
+      "screenshots": [
+        "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/02-mom-generation.jpg",
+        "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/02-mom-original-review.jpg"
+      ],
+      "publication": {
+        "requested": true,
+        "status": "Published after one explicit lettering repair",
+        "publicUrl": "https://envitefy.com/card/nova-s-galactic-eight-at-online-event",
+        "exactBlocker": null
+      },
+      "outcome": "Published; production URL resolves to the correct owner workspace",
+      "tabId": "1960064629",
+      "generation": {
+        "attempts": 1,
+        "startedAt": "2026-10-21T14:19:41.818Z",
+        "backgroundVisibleAfterSeconds": 32,
+        "lastObservedStage": "Initial result ready to review with style_mismatch concern",
+        "lastObservedElapsedSeconds": 78,
+        "repairs": [
+          {
+            "startedAt": "2026-10-21T14:27:47.246Z",
+            "action": "Repair lettering",
+            "count": 1,
+            "reason": "Publish guard requires clearing style_mismatch: isolated lettering asset includes rocket and planets, while all expected words are correct/readable",
+            "state": "Passed; attempt 2 ready to review in 72 seconds"
+          }
+        ]
+      },
+      "review": {
+        "dateVerified": "Oct 26, 2026, 5:30 PM–6:30 PM Event local time",
+        "locationVerified": "Online event · https://envitefy.com",
+        "wordingAction": "Keep my wording",
+        "initialChecker": "style_mismatch",
+        "approvedWordsCorrect": true
+      },
+      "download": {
+        "action": "Download invitation",
+        "uiResult": "Download started",
+        "path": null,
+        "toolResult": "CUA download event/path workflow timed out after 314 seconds despite 30 second wait parameter; kernel reset. UI later confirms Download started; file path remains unknown."
+      },
+      "rootFollowup": {
+        "publication": "Published through normal UI; success message verified",
+        "publicUrl": "https://envitefy.com/card/nova-s-galactic-eight-at-online-event",
+        "addressEvidence": "Custom URL dialog displayed nova-s-galactic-eight-at-online-event",
+        "dateEvidence": "Oct 26, 2026, 5:30 PM–6:30 PM Event local time",
+        "repairOutcome": "One explicit Repair lettering passed. Attempt 2 ready to review in 72 seconds. No checker findings remained in Review.",
+        "screenshot": "02-mom-published.jpg",
+        "copyGuestLink": "UI displayed Guest link copied; tool clipboard read returned empty text. Custom URL used to obtain actual address."
+      },
+      "status": "published and verified on production owner route",
+      "publicUrl": "https://envitefy.com/card/nova-s-galactic-eight-at-online-event"
+    },
+    {
+      "trialId": "03-dad",
+      "reviewType": "AI persona trial; not real participant research",
+      "persona": {
+        "role": "Father coordinating a youth soccer team end-of-season celebration",
+        "experience": "Comfortable sending team messages; first-time Live Card creator",
+        "goal": "Create a cheerful invitation quickly while entering logistics during artwork generation"
+      },
+      "event": {
+        "title": "Comets Team Celebration",
+        "openingLine": "One team. A season to remember.",
+        "occasionPreference": "Sports if available; otherwise leave optional Occasion unspecified",
+        "designPrompt": "An immersive youth soccer celebration at golden hour on a beautiful community soccer field: a scuffed soccer ball and a pair of cleats in the foreground, a goal and lush green pitch receding into the distance, warm stadium lights starting to glow, navy and bright orange pennants, a few tasteful ribbons and confetti catching the sunset. Rich natural textures, cinematic depth and joyful end-of-season atmosphere. No identifiable people, no team logos or brand marks. Leave a naturally readable area in the upper sky for the exact title and opening line; keep the field and soccer scene richly detailed.",
+        "date": "2026-10-26",
+        "weekday": "Monday",
+        "startTime": "18:30",
+        "endTime": "20:00",
+        "timeZone": "America/Chicago",
+        "locationMode": "online demo",
+        "venueName": "AI demo online gathering",
+        "onlineUrl": "https://envitefy.com",
+        "messageToGuests": "AI demo — not a real event. This fictional Comets team celebration was created for a Live Card usability review. No team gathering is scheduled and no invitation is being sent. Imagine an end-of-season evening celebrating teamwork, effort and a memorable soccer season.",
+        "additionalGuestNotes": "AI demo — not a real event. The online link points to Envitefy for demonstration only. In a real team invitation, I would ask families to bring a water bottle, a camp chair and a favorite season photo, and note any food allergies separately.",
+        "collectRsvps": false,
+        "registryEnabled": false,
+        "actualVenueInput": "https://envitefy.com",
+        "actualOccasionInput": "Not specified",
+        "timezoneVerification": "Review showed Oct 26, 2026, 6:30 PM–8:00 PM Event local time. No timezone field was shown for this online event; America/Chicago was the intended test specification but its stored IANA value was not independently verified."
+      },
+      "execution": {
+        "status": "published; production owner route verified",
+        "generationAttempts": 1,
+        "publicationAuthorized": true,
+        "actualSteps": [
+          "Opened own blank localhost Live Card tab1960064632 and confirmed Your card step.",
+          "Entered exact title, expanded optional opening line and entered exact opening, entered exact soccer art prompt. Retained Not specified Occasion, no reference, default generation quality.",
+          "Clicked Generate & continue once at UI started time9:20:09 AM, then filled logistics during generation.",
+          "Entered Monday2026-10-26,6:30 PM start and8:00 PM end, Venue name=https://envitefy.com.",
+          "Entered exact AI-demo disclosure and practical notes in Message; inspected RSVP and retained default off; no registry.",
+          "Observed background checking after25seconds, title/opening artwork stage after29seconds, Ready to review after64seconds, attempt1.",
+          "Opened Review invitation; online venue resolved as Online event · https://envitefy.com. Review showed Monday date and6:30 PM–8:00 PM.",
+          "Optional wording correction notice offered Apply wording suggestion or Keep my wording without a visible proposed diff; chose Keep my wording.",
+          "Clicked Publish invitation once. Observed Saving artwork stage, then editor success: Your Live Card is published. It is ready to share.",
+          "Clicked Copy guest link; browser clipboard read was empty, then UI reported browser could not copy link. Share invitation reported sharing could not be opened.",
+          "Clicked Download invitation once. App reported Download started, but CUA download-event/path capture timed out after257.2394seconds and reset the browser kernel. No second download or generation was requested.",
+          "Opened Custom URL read-only dialog and read actual current URL http://localhost:3000/card/comets-team-celebration-at-online-event.",
+          "Saved published editor screenshot and marked own tab deliverable.",
+          "Navigated own tab to confirmed guest URL; navigation command timed out after10000ms, next state check reported Chrome automation blocked by another extension UI. Guest-page rendering remains unverified."
+        ],
+        "observedFriction": [
+          "Optional Occasion lacked a broad Sports/team celebration choice; Game day did not precisely match the event, so leaving it unspecified preserved momentum.",
+          "Generation status displayed attempt number, elapsed seconds and exact start time above the card after ready; these details did not help complete logistics.",
+          "Review offered optional wording corrections without showing the proposed wording in the visible notice, requiring Keep my wording to preserve exact approved text.",
+          "Online attendance was entered in a field labelled Venue name; the online result was only explicit after Review.",
+          "Copy guest link failed in this browser and its suggested Share invitation fallback also failed. Custom URL remained a successful way to read the address."
+        ],
+        "screenshots": [
+          "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/03-dad-published.png"
+        ],
+        "publishedUrl": "http://localhost:3000/card/comets-team-celebration-at-online-event",
+        "blocker": null,
+        "tabId": "1960064632",
+        "editorUrl": "http://localhost:3000/live-cards?edit=106eb277-396b-4833-9c3a-e72e5ceba68b",
+        "generationDurationUiSeconds": 64,
+        "downloadVerification": "App showed Download started; tool capture timed out after257.2394seconds. No file path recovered. This is incomplete download verification, not evidence that JPEG generation failed.",
+        "automationIssues": [
+          "Initial tab create returned a detachment response, but own new tab existed and was rebound successfully.",
+          "Browser typeText dropped characters in long design textarea; corrected with fill and verified exact prompt before the single generation.",
+          "Date/time fill alone changed DOM values but did not retain React state after another action. fill plus native ArrowUp/ArrowDown change committed each desired value. Automation-specific behavior; not treated as a human usability finding.",
+          "Post-download kernel reset and later extension UI block limited remaining browser verification."
+        ]
+      },
+      "review": {
+        "observedFindings": [
+          "The revised flow avoided duplicate title/opening inputs and allowed real artwork generation to run during logistics entry.",
+          "The generated sports scene matched the requested ball, cleats, soccer field, sunset and navy/orange celebration with expressive title lettering.",
+          "No generation retry, lettering repair or title revision was needed; one artwork attempt became publishable.",
+          "Publication completed through the normal UI and produced the current card URL read from owner controls."
+        ],
+        "simplificationIdeas": [
+          "Offer an Online option beside Venue name so virtual events do not need to be entered as if they were physical venues.",
+          "Replace the ready job metadata with a compact Your card is ready status; put attempt/time diagnostics behind details.",
+          "Show the exact proposed wording and what changes before requesting Apply or Keep wording.",
+          "Keep a visible selectable guest URL beside Copy guest link as a fallback when clipboard and native sharing are unavailable.",
+          "Retain the current single wording editor and concurrent generation; they reduced repeated entry without removing controls."
+        ],
+        "note": "AI father persona executed the real localhost app with actual provider artwork and publication. This is not feedback from a real parent. Public production-origin reachability and guest-page rendering were not independently verified."
+      },
+      "rootFollowup": {
+        "productionOwnerRouteVerified": true,
+        "note": "Root opened the actual published /card/ address; signed-in owner redirected to the matching owner workspace with saved title and artwork. Anonymous guest access was not tested."
+      }
+    },
+    {
+      "trialId": "04-event-creator",
+      "reviewType": "Clearly labelled AI persona trial; not human participant research",
+      "persona": {
+        "role": "Professional event creator",
+        "scenario": "Create a polished neighborhood supper-club launch Live Card while preparing guest logistics during generation",
+        "goal": "Produce a distinctive hospitality invitation efficiently without losing control of wording or design"
+      },
+      "status": "published and verified in authenticated public-route guest preview",
+      "plannedInputs": {
+        "eventTitle": "The Long Table | AI Demo",
+        "openingLine": "A seat at something new",
+        "occasion": "Leave unspecified unless the normal UI requires a choice",
+        "exactDesignPrompt": "A cinematic neighborhood supper-club launch in an intimate brick courtyard at blue hour. One long oak table is the focal subject, set with richly textured terracotta plates, amber glass, embroidered ivory linen, figs, rosemary, olive branches and small candle flames. Warm overhead cafe lights sweep into deep indigo evening; a softly glowing open kitchen and leafy brick walls create layered depth. Sophisticated hospitality editorial photography, warm copper, burgundy and deep ink blue, tactile materials, inviting and celebratory. Expressive coordinated lettering for the exact title The Long Table | AI Demo and opening line A seat at something new, with bold elegant serif title lettering and a lighter restrained opening line, arranged in a naturally readable pocket of the real scene. Keep the courtyard immersive and detailed; do not clear a large blank center or lower half. No logos, other words, real people or branded products.",
+        "date": "2026-10-26",
+        "weekday": "Monday",
+        "startTime": "18:30",
+        "endTime": "20:30",
+        "timeZone": "America/Chicago",
+        "venueMode": "online",
+        "venueName": "AI demo online venue",
+        "venueUrl": "https://envitefy.com",
+        "messageToGuests": "AI demo — not a real event. This supper-club launch invitation was created for an AI persona usability review of Envitefy Live Card creation. Please do not attend, book, pay or submit an RSVP.",
+        "additionalGuestNotes": "Fictional hospitality concept only. Monday, October 26, 2026, 6:30–8:30 PM Central. The online venue is a demo link to Envitefy; no actual gathering is scheduled.",
+        "collectRsvps": false,
+        "registry": "none",
+        "referenceImage": "none"
+      },
+      "uiEvidence": {
+        "steps": [
+          "Opened own Chrome tab 1960064638 at http://localhost:3000/live-cards.",
+          "Entered event title once, expanded optional opening line, entered exact design prompt; left Occasion unspecified and reference empty.",
+          "Clicked Generate & continue once; Event details opened directly on When & Where while artwork job ran.",
+          "Entered date, start/end times, online venue, both guest disclosure messages; retained RSVP off.",
+          "Verified date 2026-10-26 and times 18:30/20:30 after native field commit.",
+          "Opened Preview Live Card while lettering ran; UI entered Checking invitation wording.",
+          "Initial job completed without a repair request; Preview displayed the cinematic courtyard and readable title/opening.",
+          "Clicked Review invitation from Preview; place confirmation completed and Publish invitation became available.",
+          "Clicked Publish invitation once; actual UI stage Saving artwork, keeping page open.",
+          "Publication completed; edit URL http://localhost:3000/live-cards?edit=4bad0498-58c3-4389-b4e6-c704a6b99bc1 showed Your Live Card is published and Copy guest link.",
+          "Copied the actual guest link through Copy guest link and browser clipboard read.",
+          "Opened full-screen eye Preview and saved screenshot with whole card fitted.",
+          "Navigated to copied https://envitefy.com/card/the-long-table-ai-demo-at-online-event; authenticated owner redirected to owner workspace /event/the-long-table-ai-demo-at-online-event?tab=design.",
+          "Opened production Current card preview and Overview: Monday, October 26 at 6:30 PM–8:30 PM, both AI-demo messages and Join Online event were visible."
+        ],
+        "observedFriction": [
+          "Detailed attempt number, elapsed seconds and exact start time compete with the plain generation stage.",
+          "All planned logistics were complete before the initial job was ready at 82 seconds, so the host still has an actual wait before Review.",
+          "After publication an Optional wording corrections are available panel remained above the published card, with Apply wording suggestion and Keep my wording. The suggestion itself was not displayed in that collapsed panel; wording was not changed.",
+          "Full-screen preview omits the logistics summary shown on the main Review screen; checking dates there requires opening Overview or closing Preview."
+        ],
+        "positiveObservations": [
+          "Your card clearly separates card wording from Look & feel.",
+          "No duplicated title/opening-line inputs in Event details; compact wording summary and Edit card text remained visible.",
+          "Generation continued while tabs and guest information were edited.",
+          "Guest message helper states that the message appears in Overview, not on artwork or download.",
+          "Rendered result closely followed the detailed hospitality brief: deep blue evening, brick courtyard, warm lights, candlelit long table and expressive serif lettering; no large blank center.",
+          "No duplicate title entry, generation restart, lettering repair or RSVP contact request occurred.",
+          "Final Review main screen included date/time and online venue, and publication was one explicit Publish invitation action."
+        ],
+        "screenshotPaths": [
+          "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/04-event-creator-preview.jpg",
+          "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/04-event-creator-details.jpg",
+          "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/04-event-creator-public-preview.jpg"
+        ],
+        "publicUrl": "https://envitefy.com/card/the-long-table-ai-demo-at-online-event",
+        "publicationResult": "Published. Confirmed by explicit UI success state and rendered saved card on envitefy.com.",
+        "automationIssues": [
+          "Playwright fill on date/time inputs initially appeared to accept input but values were blank on tab return; native setValue using ISO date and 24-hour times committed. The native setValue rejected a US-formatted date. This is tool input behavior, not an established manual-user product defect."
+        ],
+        "generationAttempts": {
+          "backgroundRegenerations": 0,
+          "explicitLetteringRepairs": 0,
+          "initialGeneration": 1
+        },
+        "readyToReviewElapsedSeconds": 82,
+        "browserTabId": "1960064638",
+        "actualSubmittedInputs": {
+          "eventTitle": "The Long Table | AI Demo",
+          "openingLine": "A seat at something new",
+          "occasion": "Leave unspecified unless the normal UI requires a choice",
+          "exactDesignPrompt": "A cinematic neighborhood supper-club launch in an intimate brick courtyard at blue hour. One long oak table is the focal subject, set with richly textured terracotta plates, amber glass, embroidered ivory linen, figs, rosemary, olive branches and small candle flames. Warm overhead cafe lights sweep into deep indigo evening; a softly glowing open kitchen and leafy brick walls create layered depth. Sophisticated hospitality editorial photography, warm copper, burgundy and deep ink blue, tactile materials, inviting and celebratory. Expressive coordinated lettering for the exact title The Long Table | AI Demo and opening line A seat at something new, with bold elegant serif title lettering and a lighter restrained opening line, arranged in a naturally readable pocket of the real scene. Keep the courtyard immersive and detailed; do not clear a large blank center or lower half. No logos, other words, real people or branded products.",
+          "date": "2026-10-26",
+          "weekday": "Monday",
+          "startTime": "18:30",
+          "endTime": "20:30",
+          "timeZone": "America/Chicago",
+          "venueMode": "online",
+          "venueName": "AI demo online venue",
+          "venueUrl": "https://envitefy.com",
+          "messageToGuests": "AI demo — not a real event. This supper-club launch invitation was created for an AI persona usability review of Envitefy Live Card creation. Please do not attend, book, pay or submit an RSVP.",
+          "additionalGuestNotes": "Fictional hospitality concept only. Monday, October 26, 2026, 6:30–8:30 PM Central. The online venue is a demo link to Envitefy; no actual gathering is scheduled.",
+          "collectRsvps": false,
+          "registry": "none",
+          "referenceImage": "none"
+        },
+        "confirmedGuestDisplay": {
+          "venue": "Join Online event",
+          "date": "Monday, October 26",
+          "demoDisclosureVisible": true,
+          "time": "6:30 PM–8:30 PM"
+        }
+      },
+      "reviewQuestions": [
+        "Can I enter a distinct title, opening line and art direction once, then move to logistics while generation continues?",
+        "Is it obvious which fields print on the artwork and which appear only in guest information?",
+        "Does optional Occasion avoid a category decision without weakening the final artwork?",
+        "Are time, timezone and online venue straightforward to enter?",
+        "Does Review make it clear that publishing is the next explicit action?"
+      ],
+      "simplificationSuggestions": [
+        {
+          "suggestion": "Put a compact When and Where summary directly below full-screen card preview.",
+          "priority": "P1",
+          "reason": "Keep final validation beside the visual result without returning to the form; preserve the main Review summary."
+        },
+        {
+          "suggestion": "Make optional wording advice show the actual proposed difference, with a clear defer or dismiss action, before publication.",
+          "priority": "P1",
+          "reason": "The advice panel remained visible after a successful publish and did not show what would change."
+        },
+        {
+          "suggestion": "Use one calm stage such as Creating artwork or Adding card text, with attempt diagnostics in a disclosure.",
+          "priority": "P2",
+          "reason": "Stage, attempt count, elapsed seconds and start time added reading burden while details remained editable."
+        },
+        {
+          "suggestion": "Offer optional art-direction controls for mood, palette, setting and typography while retaining a free-text prompt.",
+          "priority": "P2",
+          "reason": "Professional art direction required a long exact prompt; optional structure could reduce typing without reducing control."
+        }
+      ],
+      "limitations": [
+        "This is an AI persona execution and evaluation, not human focus-group evidence.",
+        "Desktop Chrome only; mobile layout and real human task time were not tested.",
+        "The production /card link was checked while authenticated as its owner, which redirected to owner workspace; a signed-out public session was not tested.",
+        "The app showed Event local time and no IANA timezone selector or named zone in the reviewed UI. Central was explicitly stated in guest notes; actual stored IANA timezone was not inspected.",
+        "Playwright date/time fill required a native setValue retry; recorded separately as an automation input issue."
+      ]
+    },
+    {
+      "trialId": "05-wedding-planner",
+      "researchType": "AI persona roleplay; not a real participant or human focus group",
+      "persona": {
+        "role": "Wedding planner",
+        "scenario": "A professional planner creating a garden-themed welcome evening card while coordinating event logistics.",
+        "priorities": [
+          "A polished, distinctive card with exact wording",
+          "Enter logistics while artwork generates",
+          "Clearly distinguish printed card text from the guest message",
+          "Publish one complete link without repeating information"
+        ]
+      },
+      "status": "published-and-verified",
+      "executionEnvironment": "Authenticated Chrome; updated builder at http://localhost:3000/live-cards; published output verified on https://envitefy.com through the same signed-in owner's normal Preview UI.",
+      "event": {
+        "title": "Garden Welcome Evening — AI Demo",
+        "openingLine": "A little garden magic before the big day",
+        "occasion": "Wedding",
+        "date": "2026-10-26",
+        "day": "Monday",
+        "startTime": "18:30",
+        "endTime": "20:00",
+        "timeZone": "America/Chicago",
+        "locationType": "Online",
+        "venueLabel": "AI demo online venue — no real event",
+        "venueUrl": "https://envitefy.com",
+        "guestMessage": "This is an AI-created usability demonstration, not a real wedding or invitation. The fictional welcome evening is Monday, October 26, 2026, 6:30–8:00 PM Central. Imagine a relaxed garden gathering before a wedding, with conversation, soft lighting, and a warm welcome. The Envitefy link is a demo venue reference only; there is no gathering to attend.",
+        "additionalGuestInformation": "Fictional attire suggestion: garden cocktail. No gifts or purchases are requested. Do not travel, book accommodation, or submit an RSVP for this demonstration.",
+        "collectRsvps": false,
+        "registryUrl": null,
+        "giftNote": "No gifts — this is a fictional AI demo.",
+        "privateContacts": null
+      },
+      "exactDesignPrompt": "Create a romantic editorial garden welcome-evening invitation at blue hour. An immersive candlelit orangery opens onto a lush walled garden, with climbing ivory roses, soft sage foliage, pale apricot sweet peas, linen-draped cocktail tables, crystal glassware, aged limestone, and warm brass lanterns. Use layered photographic depth, rich material detail, and intentional warm light against the dusky blue sky. The focal subject is a beautifully arranged entrance framed by flowers, with a naturally readable lettering pocket integrated above it, not a giant blank center. Palette: sage, cream, apricot, antique brass, and twilight blue. Elegant high-contrast editorial serif lettering with restrained fine-line flourishes; no purple script, no generic wedding rings, no stock-photo collage. Preserve the lush scene behind the exact supplied event title and opening line. Include only the supplied wording; this is explicitly an AI demo, not a real event.",
+      "quality": "high-default",
+      "referenceImage": null,
+      "testTasks": [
+        "Enter the title, optional opening line, occasion, and exact design prompt.",
+        "Select Generate & continue once and enter Monday logistics while the same generation job runs.",
+        "Add the fictional-demo guest message, keep RSVP disabled, and omit registry links.",
+        "Inspect Review for exact title, opening line, demo disclosure, Monday date, and Central time.",
+        "Publish explicitly once if the normal UI permits and record the actual public URL and screenshot.",
+        "Record observed friction and simplifications that preserve design quality, concurrency, and explicit publication."
+      ],
+      "observations": [
+        {
+          "type": "confirmed-success",
+          "finding": "Generate & continue immediately opened Event details on When & Where while the initial background and lettering job ran. Guest messages, RSVP, Registry, and location remained editable.",
+          "evidence": "Creating background, Checking background, Creating title and opening-line artwork, Checking lettering, then Ready to review were visible in the job status. Ready to review reported attempt 1, 66 seconds elapsed. No repair or retry was required."
+        },
+        {
+          "type": "confirmed-success",
+          "finding": "Title and opening line were entered only once. Details and Review retained the compact Words on your card summary instead of duplicate inputs.",
+          "evidence": "The same exact title and opening line appeared in Your card, the Event details summary, the Review summary, and published image alternative text."
+        },
+        {
+          "type": "confirmed-success",
+          "finding": "Publication completed once, and the public card retained Monday logistics and the explicit fictional AI-demo guest disclosure.",
+          "evidence": "Builder displayed Your Live Card is published. It's ready to share. Copy guest link returned the recorded /card/ URL. Production owner Preview and Overview showed Monday, October 26 at 6:30 PM–8:00 PM and both exact guest-message paragraphs."
+        },
+        {
+          "type": "observed-friction",
+          "finding": "Occasion sits below the starting ideas and design description. Selecting Wedding replaces the examples above the control, after the host has already passed them.",
+          "evidence": "The initial General event design ideas changed to Wedding design ideas only after Wedding was selected below the completed look description."
+        },
+        {
+          "type": "observed-friction",
+          "finding": "Review offered Apply wording suggestion and Keep my wording without showing the proposed correction in the visible suggestion region.",
+          "evidence": "The region contained only Optional wording corrections are available. Applying them confirms a new wording revision. Exact wording was preserved using Keep my wording."
+        },
+        {
+          "type": "observed-visual-quality",
+          "finding": "The garden image matched the requested blue-hour orangery, warm lanterns, dense flowers, and editorial title style. The optional opening line was much smaller and lower contrast than the title.",
+          "evidence": "Both saved fullscreen previews show the rich garden scene, large readable title, and a small muted opening line crossing textured foliage/sky. No claim of a human readability-test result is made."
+        },
+        {
+          "type": "observed-friction",
+          "finding": "The initial online location field is labelled Venue name, so entering a URL successfully relies on knowing the field also accepts online events.",
+          "evidence": "Entering bare https://envitefy.com was resolved during Review to Online event · https://envitefy.com. No Online event option was visible in initial entry."
+        },
+        {
+          "type": "verification-limit",
+          "finding": "The saved UI displayed the intended local clock times, and the guest message explicitly says Central. The builder and guest popup did not display an IANA timezone name, so the stored America/Chicago value was not independently verified through UI.",
+          "evidence": "Review used Event local time; published Overview and Calendar used Monday, October 26 at 6:30 PM–8:00 PM. No calendar was added or exported."
+        },
+        {
+          "type": "tool-input-failure-resolved",
+          "finding": "Playwright locator fill plus Tab did not persist native date/time fields after a details-tab change. Native tab.setValue on the current accessibility indices succeeded.",
+          "evidence": "Read-only DOM checks after the first tab round trip showed empty date/time values. After native setValue, another Message → When & Where round trip showed 2026-10-26, 18:30, and 20:00. This is an automation-input observation, not evidence that ordinary human entry is defective."
+        },
+        {
+          "type": "loading-completed",
+          "finding": "The production fullscreen card initially showed a blurred placeholder and later rendered the complete sharp artwork during ordinary UI use.",
+          "evidence": "The final public-preview screenshot contains the sharp saved artwork. No reload, API call, media download, or source modification was used."
+        },
+        {
+          "type": "environment-copy-difference",
+          "finding": "The production owner workspace still uses Live Card and invitation / Edit card & invitation wording, while the updated local builder uses Your card → Event details → Review.",
+          "evidence": "Production owner Design displayed Your Live Card and invitation share one artwork and Edit card & invitation. This is a production/local UI copy difference, not a failure of this local creation trial."
+        }
+      ],
+      "uiActions": [
+        "Opened a dedicated Chrome tab at the updated local /live-cards builder.",
+        "Filled Event title, expanded Add an opening line, and filled the exact opening line.",
+        "Filled the exactDesignPrompt, selected Wedding, and clicked Generate & continue once.",
+        "Entered the bare demo venue URL and attempted native date/time locator fill while generation ran.",
+        "Opened Message, expanded both optional message disclosures, and filled the exact two demo-disclosure paragraphs.",
+        "Opened RSVP and confirmed Collect RSVPs was off; opened Registry and confirmed it was off.",
+        "Returned to When & Where, found date/time values absent, and used native accessibility setValue for 2026-10-26, 18:30, and 20:00.",
+        "Switched Message → When & Where again and verified all date/time values persisted.",
+        "Clicked Review invitation after the initial job reached Ready to review, attempt 1 at 66 seconds.",
+        "Selected Keep my wording when Review presented an optional wording correction without the proposed replacement text.",
+        "Opened Preview Live Card and saved the full card screenshot; opened Overview and verified Monday logistics and both guest paragraphs.",
+        "Closed card details and clicked Publish invitation once from fullscreen Preview.",
+        "Observed Saving artwork, then the explicit published-success message and enabled Copy guest link / Share invitation controls.",
+        "Clicked Copy guest link and recorded the clipboard URL; saved the published confirmation screenshot.",
+        "Opened the published /card/ URL in a second Chrome tab; the signed-in owner was routed to the saved owner workspace.",
+        "Opened production Preview, inspected Overview and Calendar without joining or adding anything, then reopened Preview after the artwork loaded and saved the final sharp public screenshot.",
+        "Marked both the local saved-card editor and the published fullscreen preview as deliverables."
+      ],
+      "screenshots": [
+        "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/05-wedding-planner-preview.jpg",
+        "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/05-wedding-planner-overview.jpg",
+        "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/05-wedding-planner-published.jpg",
+        "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/05-wedding-planner-public-preview.jpg"
+      ],
+      "publicUrl": "https://envitefy.com/card/garden-welcome-evening-ai-demo-at-online-event",
+      "eventId": "37df3732-7f55-4e27-9238-fb3bd98f8329",
+      "browserTabs": {
+        "savedLocalEditor": "1960064653",
+        "publishedFullscreenPreview": "1960064659"
+      },
+      "generationOutcome": {
+        "initialAttempts": 1,
+        "backgroundRetries": 0,
+        "explicitLetteringRepairs": 0,
+        "visibleReadyElapsedSeconds": 66,
+        "published": true
+      },
+      "blockers": [],
+      "simplificationFeedback": [
+        {
+          "priority": 1,
+          "recommendation": "Show the exact before-and-after wording in the correction prompt before Apply wording suggestion.",
+          "productivityPreserved": "Keeps optional proofreading and explicit confirmation while removing the need to guess what an action changes."
+        },
+        {
+          "priority": 1,
+          "recommendation": "Label the location input Venue, address or online link, or provide a simple Online option beside the initial field.",
+          "productivityPreserved": "Retains background location resolution and the same single-field workflow while making online events discoverable."
+        },
+        {
+          "priority": 2,
+          "recommendation": "Place optional Occasion beside the Look & feel heading or above starting ideas, without making it required.",
+          "productivityPreserved": "Keeps category-specific creative suggestions and optionality while avoiding a scroll back to examples that just changed."
+        },
+        {
+          "priority": 2,
+          "recommendation": "Consolidate guest wording under Message to guests with an optional Additional instructions expansion in the same area.",
+          "productivityPreserved": "Retains both independent saved values and guest display while reducing ambiguity about which disclosure should hold attire and gift guidance."
+        },
+        {
+          "priority": 2,
+          "recommendation": "Show a compact stage label such as Creating card text; put attempt counts, elapsed seconds, and start timestamps inside a details disclosure.",
+          "productivityPreserved": "Preserves real status and diagnostics while reducing visual competition with the logistics form."
+        },
+        {
+          "priority": 2,
+          "recommendation": "Include the resolved timezone name in Review, especially for online events, and keep any correction close to the displayed time.",
+          "productivityPreserved": "Adds confidence in calendar correctness without returning a manual timezone field to initial entry."
+        },
+        {
+          "priority": 2,
+          "recommendation": "Check the opening line at normal phone size and improve its minimum contrast/size before treating the lettering as ready.",
+          "productivityPreserved": "Protects the supplied optional wording without requiring a second background generation or duplicate title entry."
+        }
+      ],
+      "guardrails": {
+        "normalUiOnly": true,
+        "generationAttempts": 1,
+        "noInvitesOrRsvpSubmissions": true,
+        "noRealPrivateContactsOrBookings": true,
+        "noSourceEdits": true
+      }
+    },
+    {
+      "trialId": "06-pto-volunteer",
+      "reviewType": "Clearly labelled AI persona trial, not human participant research",
+      "persona": {
+        "role": "PTO volunteer",
+        "context": "A busy parent volunteer preparing a welcoming fall school fundraiser concept without representing an actual school or organization.",
+        "goal": "Create and publish one readable invitation while entering logistics during artwork generation."
+      },
+      "inputs": {
+        "title": "Fall Together — AI Demo",
+        "openingLine": "School fundraiser concept",
+        "occasionPreference": "Fundraiser if offered; otherwise leave the optional occasion unspecified",
+        "designPrompt": "Create a warm, immersive autumn school fundraiser scene in an elegant illustrated storybook style: a welcoming courtyard at golden hour with glowing string lights, copper and amber maple leaves, pumpkins, a bake-sale table with homemade treats, handcrafted pennant bunting, and a small stack of books suggesting community support for learning. Make the bake-sale table the clear focal subject, with layered depth, tactile paper and wood textures, soft candlelike lighting, and a rich burnt-orange, cranberry, forest-green and cream palette. Keep a naturally readable pocket for expressive warm cream title lettering without a large blank center. No identifiable school, school name, real people, mascot, logos, sponsor brands, prices, QR codes or extra lettering. This is an AI demo invitation concept, not a real fundraiser.",
+        "startDate": "2026-10-26",
+        "startTime": "17:30",
+        "endDate": "2026-10-26",
+        "endTime": "19:00",
+        "timeZone": "America/Chicago",
+        "venueType": "Online",
+        "venueName": "AI demo online venue",
+        "venueUrl": "https://envitefy.com",
+        "guestMessage": "AI PERSONA DEMO — This invitation was created to test Envitefy's Live Card flow. It does not announce a real school fundraiser, request donations or reserve attendance. The Monday, October 26 schedule is demonstration data.",
+        "additionalGuestNotes": "Concept: an autumn community evening with a bake sale, books and school spirit. No school or organization is represented. Please do not travel, donate or submit a response. The online link is Envitefy's public website for this demonstration.",
+        "rsvp": {
+          "enabled": true,
+          "hostName": "AI demo organizer",
+          "hostPhone": "202-555-0146",
+          "hostEmail": "",
+          "contactNote": "Reserved fictional demonstration number; no actual invitations, messages or responses should be sent."
+        },
+        "registry": {
+          "enabled": false
+        }
+      },
+      "execution": {
+        "status": "published-production-verified",
+        "environment": "Updated http://localhost:3000/live-cards in authenticated Chrome tab 1960064662",
+        "observedSteps": [
+          "Entered Event title once, expanded the optional opening line, and entered the exact prepared design prompt. Left Occasion as Not specified because the optional list had no Fundraiser or School event option.",
+          "Clicked Generate & continue once. Event details opened on When & Where while artwork generation started.",
+          "Committed Event date 2026-10-26, Start time 17:30 and End time 19:00 using native AX setValue. End date stayed blank for the same-day event. Entered the bare https://envitefy.com URL in Venue name.",
+          "Opened the Message tab, expanded both optional fields and entered both exact prepared demo notes.",
+          "Enabled Collect RSVPs, entered AI demo organizer and reserved fictional phone 202-555-0146; left email blank. No responses, invitations, messages or donations were submitted.",
+          "Returned to When & Where and verified retained date/time/venue values. All logistics entry completed while artwork generation ran.",
+          "Initial background plus lettering reached Ready to review at 68 seconds, attempt 1. Preview Live Card triggered Checking invitation wording and then opened fullscreen Preview.",
+          "Fullscreen Preview reported style_mismatch: all approved wording was present and readable, but a broad translucent cream backing behind/between lettering conflicted with the isolated lettering requirement.",
+          "Clicked one explicit Repair lettering, which retained the visible background and started Creating title and opening-line artwork.",
+          "After the repair the style-only finding remained. Clicked Retry verification once as the allowed same-image verification UI action. Its progress first said Creating title and opening-line artwork and later Checking lettering; the final finding still reported readable exact wording plus backing/leaf style concerns. No further retries were requested.",
+          "Opened the card's calendar popup and observed Monday, October 26 at 5:30 PM–7:00 PM. Review later displayed Oct 26, 2026, 5:30 PM–7:00 PM Event local time and Online event · https://envitefy.com. The UI did not expose an IANA timezone to independently verify America/Chicago.",
+          "The native lettering findings UI explicitly said You can publish this artwork as it is, or optionally verify or repair the lettering. Clicked Review invitation, which confirmed the online venue and checked invitation wording. Clicked the enabled Publish invitation once; the UI showed Saving artwork and then Your Live Card is published. It's ready to share.",
+          "Published event ID: 3fd4f8a4-f02f-47f7-bd60-799a1ef4fa79. Custom URL displayed /card/fall-together-ai-demo-at-online-event. Copy guest link showed a copied confirmation, but the browser clipboard read returned empty; the exact slug was read from the Custom URL dialog instead.",
+          "Opened https://envitefy.com/card/fall-together-ai-demo-at-online-event on production. It resolved to the authenticated owner workspace at /event/fall-together-ai-demo-at-online-event?tab=design, which visibly showed the matching event title, saved public link slug and shared card artwork.",
+          "Saved the complete card in fullscreen Preview as 06-pto-preview.jpg with the publication success message visible. Exported the actual production display.webp via the documented pageAssets inventory/bundle capability as 06-pto-artwork.webp. Both published production and local fullscreen result tabs were marked Deliverable."
+        ],
+        "friction": [
+          "Occasion is optional and did not block this fundraiser, but its list contains no Fundraiser or School event option.",
+          "The online event link must be typed into a field labelled Venue name, without an Online option visible in initial logistics entry.",
+          "Message to guests and Anything else guests should know are separate disclosures with the same placement helper; deciding which field owns a note requires interpretation.",
+          "Generation exposed attempt count, seconds elapsed and exact start time alongside progress, though the productive next action was simply to keep entering logistics.",
+          "Preview triggered an additional wording-check wait after Ready to review; a style-only lettering finding introduced a separate repair decision even though every approved word was readable.",
+          "The repair did not remove the backing/leaf style concerns. The long technical finding occupied space above the card in fullscreen Preview even after publication, while the native UI permitted publishing the readable artwork.",
+          "Retry verification displayed Creating title and opening-line artwork before Checking lettering; from the visible UI alone it was unclear whether verification reused pixels or was creating something new.",
+          "An optional wording-corrections notice appeared without the proposed replacement text visible beside its Apply wording suggestion action. No suggestion was applied."
+        ],
+        "publicUrl": "https://envitefy.com/card/fall-together-ai-demo-at-online-event",
+        "ownerUrl": "https://envitefy.com/event/fall-together-ai-demo-at-online-event?tab=design",
+        "localEditorUrl": "http://localhost:3000/live-cards?edit=3fd4f8a4-f02f-47f7-bd60-799a1ef4fa79",
+        "eventId": "3fd4f8a4-f02f-47f7-bd60-799a1ef4fa79",
+        "screenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/06-pto-preview.jpg",
+        "artwork": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/06-pto-artwork.webp",
+        "productionArtworkUrl": "https://envitefy.com/api/blob/event-media/upload-0ef80da4-5762-46ba-ab85-322b1a15b45e/header/display.webp",
+        "browserTabId": "1960064662",
+        "productionBrowserTabId": "1960064675",
+        "requestedActions": {
+          "initialGenerate": 1,
+          "explicitRepairLettering": 1,
+          "explicitRetryVerification": 1,
+          "publishInvitation": 1
+        },
+        "remainingVerificationLimit": "Production public link resolves correctly for the authenticated owner. An anonymous guest session and underlying IANA timezone were not independently verified.",
+        "blocker": null
+      },
+      "feedback": {
+        "basis": "AI PTO volunteer persona using the actual updated local UI; observations are not human research findings",
+        "simplificationCandidates": [
+          "Preserve Generate & continue opening logistics immediately: all event details could be entered during image generation, and title/opening inputs were not duplicated.",
+          "Label the location field Venue name or online link, or offer an In person / Online choice without adding another required step.",
+          "Use one Message to guests field with an optional Add arrival or participation notes disclosure, so two fields have distinct purposes.",
+          "Keep technical attempt/timestamp information under optional details and emphasize the current stage plus You can keep editing.",
+          "Place a readable, plain-language explanation and one primary repair action around style-only lettering concerns while preserving the retained artwork and avoiding silent retries.",
+          "Collapse non-blocking style findings behind an optional Artwork details disclosure after wording is confirmed, so the complete card and its Publish/Share state remain prominent.",
+          "Name same-image verification progress Checking this image; reserve Creating artwork for actions that actually create pixels. Show suggested wording beside Apply so the volunteer can assess a change without another decision surface."
+        ]
+      }
+    },
+    {
+      "personaId": "07",
+      "persona": "Office administrator planning a team innovation workshop",
+      "researchType": "AI simulated-role testing, not human research",
+      "environment": "http://localhost:3000/live-cards",
+      "browser": "Chrome 3",
+      "tabId": "1960064635",
+      "status": "published and verified on production owner route",
+      "title": "Innovation After Hours",
+      "openingLine": "Make room for bright ideas",
+      "artBrief": "Create an immersive editorial architectural photograph of a modern innovation studio at blue hour, with a sculptural oak collaboration table as the focal subject, translucent glass partitions, brushed aluminum prototypes, warm pendant lights and deep cobalt city reflections. Layer foreground sketchbooks, tactile paper models and a subtle amber glow for rich depth. Use a refined navy, copper and warm ivory palette, confident contemporary typography and a naturally readable title pocket integrated into the architecture. Sophisticated, welcoming and inventive; no corporate logos, no people and no flat stationery border.",
+      "occasion": "Not specified (General event default)",
+      "referenceImage": null,
+      "date": "2026-10-26",
+      "day": "Monday",
+      "startTime": "18:00",
+      "endTime": "19:00",
+      "requestedTimeZone": "America/Chicago (Central Time)",
+      "venueName": "https://envitefy.com",
+      "messageToGuests": "Bring one bold idea and a curious mind for a relaxed team innovation workshop. We will sketch possibilities, share quick prototypes and imagine what comes next.",
+      "guestNotes": "AI demo—not a real event. This fictional workshop was created for simulated-role testing. Monday, October 26, 2026, 6–7 pm Central Time. No attendance or RSVP is requested.",
+      "rsvpEnabled": false,
+      "registry": null,
+      "generation": {
+        "initialGenerateClicks": 1,
+        "attempts": 1,
+        "uiStartedAt": "9:28:55 AM",
+        "dateTimeEnteredDuringGeneration": true,
+        "lastObservedStage": "Ready to review; repair passed",
+        "lastObservedElapsedSeconds": 91,
+        "repairClicks": 1
+      },
+      "actions": [
+        "Opened a new Chrome tab; createBrowserTab returned Detached while handling command, but the tab existed and was recovered by its exact ID.",
+        "Confirmed the updated first stage is 1 Your card.",
+        "Entered title, expanded optional opening line, entered original architectural art brief; left Occasion unspecified.",
+        "Clicked Generate & continue once; Event details opened on When & Where while background generation ran.",
+        "Used native setValue to enter date 2026-10-26, start 18:00, end 19:00 and plain URL venue; all four values were verified in the subsequent accessibility tree.",
+        "Expanded both Message disclosures and entered workshop message plus explicit AI demo notes.",
+        "Verified Collect RSVPs is off.",
+        "Initial generation finished after91seconds; checker found exact title/opening wording and flagged unreadable_text on the dark opening line. Clicked Review invitation once; Checking invitation wording appeared.",
+        "Review completed and showed Monday Oct 26, 2026, 6:00 PM–7:00 PM Event local time and Online event https://envitefy.com. Optional wording suggestion was declined using Keep my wording.",
+        "Opened the actual full-screen eye Preview, then saved original artwork and checker evidence.",
+        "A Publish invitation click was submitted for tool approval; automatic approval review rejected it before browser execution due to the known opening-line contrast concern.",
+        "Clicked Repair lettering exactly once. Fullscreen preview showed Creating title and opening-line artwork. Marked the tab for handoff so the parent can resume provider work."
+      ],
+      "errors": [
+        {
+          "type": "tool_failure",
+          "action": "createBrowserTab",
+          "detail": "Detached while handling command",
+          "resolution": "The newly created tab1960064635 was found in cua.getState and successfully rebound. No duplicate tab was opened."
+        },
+        {
+          "type": "automatic_approval_rejection",
+          "action": "Publish invitation",
+          "detail": "Publishing while checker reports unreadable opening-line contrast was rejected; use explicitly authorized Repair lettering first and re-verify.",
+          "resolution": "One Repair lettering action started. Publication remains unexecuted."
+        }
+      ],
+      "screenshots": [
+        "artifacts/livecard-persona-trials-2026-10-21/07-corporate-generation.jpg",
+        "artifacts/livecard-persona-trials-2026-10-21/07-corporate-original-preparation.jpg",
+        "artifacts/livecard-persona-trials-2026-10-21/07-corporate-original-fullscreen.jpg"
+      ],
+      "publicUrl": "https://envitefy.com/card/innovation-after-hours-at-online-event",
+      "feedback": {
+        "helpful": [
+          "The title and optional opening line are clearly owned by Your card; Event details shows a compact wording summary instead of asking for duplicate entry.",
+          "Event details stays editable while generation runs and opens directly on When & Where.",
+          "Native date/time controls accepted setValue and visibly retained the exact requested values."
+        ],
+        "simplificationIdeas": [
+          "A workshop organizer using an online URL has no visible timezone selector in initial logistics. Show a concise timezone summary for online events so the host can confirm Central Time without hiding it in guest notes.",
+          "The Venue name label does not advertise that a URL is accepted. An Online event option or an example URL would reduce discovery work."
+        ],
+        "confirmedDefects": [
+          "Initial generated opening-line artwork was present with correct wording but lacked contrast against dark glass; the lettering checker identified unreadable_text and one explicit repair was requested."
+        ]
+      },
+      "letteringFinding": {
+        "code": "unreadable_text",
+        "expectedTitle": "Innovation After Hours",
+        "expectedOpeningLine": "Make room for bright ideas",
+        "observed": "Make room for bright ideas · Innovation After Hours",
+        "detail": "The dark navy opening line blends into the dark glass and vertical window mullions, substantially reducing legibility across the sentence. The wording is present and correct in the isolated lettering asset, but lacks readable contrast on the composed background.",
+        "suggestedRepair": "For opening_line, replace the dark navy lettering fill with warm ivory or add a sufficiently light outline. Preserve exact wording and saved background."
+      },
+      "rootFollowup": {
+        "publication": "Published through normal UI after repair; success message verified",
+        "publicUrl": "https://envitefy.com/card/innovation-after-hours-at-online-event",
+        "addressEvidence": "Custom URL dialog displayed innovation-after-hours-at-online-event",
+        "dateEvidence": "Oct 26, 2026, 6:00 PM–7:00 PM Event local time",
+        "repairOutcome": "One explicit Repair lettering passed. Attempt 2 ready to review in 69 seconds. No checker findings remained in Review.",
+        "screenshot": "07-corporate-published.jpg",
+        "automaticApprovalRejectionResolved": true,
+        "productionOwnerRouteVerified": true
+      },
+      "state": "published"
+    },
+    {
+      "personaId": 8,
+      "persona": "Fictional nonprofit volunteer coordinator",
+      "eventConcept": "Fictional community kindness evening",
+      "status": "published_revised_attempt",
+      "startedAt": "2026-10-21T14:31:26.532Z",
+      "generateClickedAt": "2026-10-21T14:31:32.533Z",
+      "observedAt": "2026-10-21T14:33:02.101Z",
+      "environment": "http://localhost:3000/live-cards",
+      "tabId": "1960064643",
+      "title": "Lanterns of Kindness",
+      "openingLine": "Small acts. Brighter nights.",
+      "occasion": "Not specified (General event default)",
+      "exactArtworkPrompt": "Create an immersive dimensional paper sculpture of a welcoming community workshop at blue hour. A glowing amber paper lantern is the clear focal subject on a long walnut table, surrounded by carefully folded care packages, colorful fabric scraps, simple heart-shaped paper tags without writing, and small jars of autumn flowers. Layer an open doorway, softly lit shelves, warm window squares and navy evening sky behind the table for depth. Use rich indigo, burnt orange, warm cream and touches of sage, tactile deckled paper edges, sculpted folds, soft shadows and cinematic lamplight. Make the scene abundant, hopeful and neighborly with a naturally readable title pocket above the lantern. Expressive warm cream cut-paper lettering should suit this handmade scene. No logos, real organizations or extra printed words.",
+      "inputs": {
+        "date": "2026-10-26",
+        "startTime": "18:00",
+        "endTime": "19:30",
+        "timezoneIntent": "America/Chicago (Central); no timezone control was exposed before generation failed",
+        "venueName": "https://envitefy.com",
+        "messageToGuests": "AI demo—not a real event. A fictional community kindness evening for testing this Live Card: imagine neighbors making care packages and writing encouraging notes together.",
+        "anythingElseGuestsShouldKnow": "AI demo—not a real event. Monday, October 26, 2026, 6:00–7:30 PM Central. No organization, booking, attendance, donation or invitation is associated with this demonstration. Please do not submit guest responses.",
+        "rsvpEnabled": false,
+        "registry": ""
+      },
+      "actions": [
+        {
+          "action": "Opened own Chrome tab; confirmed 1 Your card"
+        },
+        {
+          "action": "Entered title, optional opening line and custom look description; left Occasion unspecified"
+        },
+        {
+          "action": "Clicked Generate & continue once",
+          "at": "2026-10-21T14:31:32.533Z"
+        },
+        {
+          "action": "Entered Event date using native setValue after localized date value rejected",
+          "detail": "10/26/2026 was rejected by automation input;2026-10-26 succeeded. This is an automation format issue, not a product defect."
+        },
+        {
+          "action": "Committed18:00 and19:30 with native setValue; entered demo URL venue"
+        },
+        {
+          "action": "Added AI-demo disclosure in Message and Anything else guests should know; kept RSVP off"
+        },
+        {
+          "action": "Returned to When & Where and verified all values retained"
+        },
+        {
+          "action": "Observed background design check failure; did not click Retry design"
+        },
+        {
+          "action": "Marked handoff to preserve editor"
+        }
+      ],
+      "generation": {
+        "initialAttemptCount": 1,
+        "retries": 1,
+        "letteringRepairs": 0,
+        "visibleStatus": "Checking background · attempt 1 ·34 seconds elapsed · started9:31:41 AM",
+        "failureMessage": "The background did not pass the design check. Your event details are still here. Retry design to try again."
+      },
+      "observedFeedback": [
+        {
+          "kind": "positive",
+          "detail": "Generate & continue immediately opened editable When & Where while artwork ran."
+        },
+        {
+          "kind": "positive",
+          "detail": "Title and opening appeared once under Words on your card; Message tab had distinct optional fields; date and time persisted across tabs."
+        },
+        {
+          "kind": "confirmed_creation_failure",
+          "detail": "App reported background design check failed on attempt1; card artwork was not shown."
+        },
+        {
+          "kind": "incomplete_verification",
+          "detail": "Review, publish, public guest rendering, final artwork quality, and timezone resolution could not be verified because initial background failed."
+        },
+        {
+          "kind": "automation_issue",
+          "detail": "Native setValue required ISO date and24-hour time syntax; corrected immediately."
+        }
+      ],
+      "screenshots": [
+        "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-generating.jpg",
+        "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-background-check-failure.jpg"
+      ],
+      "output": {
+        "published": true,
+        "resultUrl": "https://envitefy.com/card/lanterns-of-kindness-at-online-event",
+        "authenticatedOwnerUrl": "https://envitefy.com/event/lanterns-of-kindness-at-online-event?tab=design",
+        "eventId": "76e72bd7-4e3f-47a2-997a-f1f56374b03a",
+        "artworkPath": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-nonprofit-artwork.webp",
+        "artworkBytes": 1953032,
+        "artworkSource": "https://envitefy.com/api/blob/event-media/upload-5e1f80af-bfc4-4297-ba36-d82478a002d5/header/display.webp",
+        "artworkExport": "pageAssets.bundle observed display.webp;1requested,1downloaded,0failed",
+        "wholeCardScreenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-nonprofit-fullscreen.jpg",
+        "publishedConfirmationScreenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-revised-published-editor.jpg",
+        "overviewScreenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-nonprofit-overview.jpg",
+        "tabId": "1960064696",
+        "markedDeliverable": true
+      },
+      "feedbackAsPersona": "The wording and logistics layout felt clear and I could keep preparing the evening during generation. I could not obtain a card to review because the first background failed its check. The error retained my details and offered Retry design, but gave no design-specific explanation.",
+      "rootFollowup": {
+        "designRetryCount": 1,
+        "retryResult": "The background did not pass the design check; 27 seconds elapsed on the second job.",
+        "reconnectResult": "Reconnect retained both Checking background and the background-check failure message. No artwork was shown.",
+        "approvalRejection": "Automatic approval review rejected selecting the Lantern festival idea because the UI still reported a running check and the trial protocol allowed only one retry.",
+        "proposedPrompt": "Design a general event Live Card featuring a garden path lined with glowing lanterns leading to a beautifully decorated pavilion. Use peach, emerald and soft gold, rendered as a dimensional paper sculpture with tactile layers and gentle shadows. Keep a clear focal subject, layered surroundings and intentional lighting, with a naturally readable title pocket.",
+        "approvalRejectionResolved": true,
+        "userAnswer": "Approve one revised attempt",
+        "completion": "The single approved revised attempt published successfully; original failed tab no longer existed, so no cancellation was claimed."
+      },
+      "revisedAttempt": {
+        "authorization": "User explicitly approved one revised generation with the exact Lantern festival prompt.",
+        "startedAt": "2026-10-21T15:06:40.056Z",
+        "generateClickedAt": "2026-10-21T15:06:53.255Z",
+        "tabId": "1960064696",
+        "prompt": "Design a general event Live Card featuring a garden path lined with glowing lanterns leading to a beautifully decorated pavilion. Use peach, emerald and soft gold, rendered as a dimensional paper sculpture with tactile layers and gentle shadows. Keep a clear focal subject, layered surroundings and intentional lighting, with a naturally readable title pocket.",
+        "title": "Lanterns of Kindness",
+        "openingLine": "Small acts. Brighter nights.",
+        "inputs": {
+          "date": "2026-10-26",
+          "startTime": "18:00",
+          "endTime": "19:30",
+          "timezoneIntent": "America/Chicago (Central); no timezone control was exposed before generation failed",
+          "venueName": "https://envitefy.com",
+          "messageToGuests": "AI demo—not a real event. A fictional community kindness evening for testing this Live Card: imagine neighbors making care packages and writing encouraging notes together.",
+          "anythingElseGuestsShouldKnow": "AI demo—not a real event. Monday, October 26, 2026, 6:00–7:30 PM Central. No organization, booking, attendance, donation or invitation is associated with this demonstration. Please do not submit guest responses.",
+          "rsvpEnabled": false,
+          "registry": ""
+        },
+        "generationAttempts": 1,
+        "repairs": 0,
+        "verificationRetries": 0,
+        "status": "published",
+        "actions": [
+          {
+            "action": "Created own fresh Chrome tab; original tab no longer existed. No old job cancellation was claimed or attempted."
+          },
+          {
+            "action": "Entered saved title and opening, exact approved garden lantern prompt, Occasion unspecified."
+          },
+          {
+            "action": "Clicked Generate & continue once",
+            "at": "2026-10-21T15:06:53.255Z"
+          },
+          {
+            "action": "Set2026-10-26,18:00,19:30 via native setValue and entered barehttps://envitefy.com venue."
+          },
+          {
+            "action": "Development refresh returned to Your card; retained prompt and durable artwork job. Continued to Event details without generating again."
+          },
+          {
+            "action": "Restored both AI-demo guest disclosures. Verified RSVP and Registry switches off."
+          },
+          {
+            "action": "Returned to When & Where and verified date,time,venue retained."
+          },
+          {
+            "action": "Clicked Review invitation, kept approved wording at optional suggestion."
+          },
+          {
+            "action": "Opened full-screen eye Preview and captured whole card.",
+            "screenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-revised-fullscreen.jpg"
+          },
+          {
+            "action": "Clicked Publish invitation once.",
+            "at": "2026-10-21T15:09:03.010Z"
+          },
+          {
+            "action": "Copied actual guest link from published editor."
+          },
+          {
+            "action": "Opened production guest URL. Authenticated owner redirected to owner workspace; opened normal Preview."
+          },
+          {
+            "action": "Bundled current rendered display.webp via pageAssets and copied to requested artwork output."
+          },
+          {
+            "action": "Opened saved Overview and verified demo disclosure, MondayOct26,date/time and Central text; closed details and reopened whole card."
+          },
+          {
+            "action": "Marked production card preview tabDeliverable."
+          }
+        ],
+        "observations": [
+          "Revised background advanced through Checking background to Preparing background image, then Creating title and opening-line artwork.",
+          "First popup-open action timed out after live development refresh changed the mounted step; recovered using visible Continue to event details, with no extra generation.",
+          "At79 seconds the job was Ready to review. Advisory style_mismatch reported decorative foliage/lanterns and pale backing in isolated lettering, while both exact strings were complete and readable. No repair or retry verification was requested.",
+          "Review offered optional wording corrections; clicked Keep my wording to retain approved wording.",
+          "Review showed Oct26,2026,6:00 PM–7:30 PM Event local time and Online event · https://envitefy.com. An explicit America/Chicago timezone was not shown in the UI; Central remains stated in guest disclosure.",
+          "Full-screen eye Preview displayed the whole card and explicit Publish invitation control.",
+          "Editor confirmed: Your Live Card is published. It is ready to share. Copy guest link returned the production /card/ URL.",
+          "Production saved Overview shows Monday,October26 at6:00 PM–7:30 PM, AI demo—not a real event, fictional care-package event description, and the explicit Central/no booking/no responses instructions.",
+          "The public /card/ URL redirects this authenticated owner to /event/... ?tab=design; clean owner Preview shows the saved whole card. Signed-out public access was not separately tested.",
+          "Published card visually retains expressive exact title/opening and layered lantern garden, with Overview,Location,Calendar controls; no RSVP or Registry controls."
+        ],
+        "output": {
+          "published": true,
+          "resultUrl": "https://envitefy.com/card/lanterns-of-kindness-at-online-event",
+          "authenticatedOwnerUrl": "https://envitefy.com/event/lanterns-of-kindness-at-online-event?tab=design",
+          "eventId": "76e72bd7-4e3f-47a2-997a-f1f56374b03a",
+          "artworkPath": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-nonprofit-artwork.webp",
+          "artworkBytes": 1953032,
+          "artworkSource": "https://envitefy.com/api/blob/event-media/upload-5e1f80af-bfc4-4297-ba36-d82478a002d5/header/display.webp",
+          "artworkExport": "pageAssets.bundle observed display.webp;1requested,1downloaded,0failed",
+          "wholeCardScreenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-nonprofit-fullscreen.jpg",
+          "publishedConfirmationScreenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-revised-published-editor.jpg",
+          "overviewScreenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-nonprofit-overview.jpg",
+          "tabId": "1960064696",
+          "markedDeliverable": true
+        },
+        "readyAt": "2026-10-21T15:08:24.300Z",
+        "publishClickedAt": "2026-10-21T15:09:03.010Z",
+        "publishedConfirmedAt": "2026-10-21T15:09:52.606Z",
+        "completedAt": "2026-10-21T15:11:15.967Z",
+        "feedbackAsPersona": "The revised lantern garden feels welcoming and the handmade lettering is readable and distinctive. I could add logistics while it generated. The style finding was detailed and advisory, so publication stayed available without another image request. The optional wording-correction prompt did not display its proposed change in the visible state; Keep my wording preserved my copy. The review called online-event time Event local time, while my guest instructions explicitly state Central. Publication completed and the saved Overview retained the fictional-event disclosure."
+      },
+      "currentStatus": "published_revised_attempt",
+      "currentOutput": {
+        "published": true,
+        "resultUrl": "https://envitefy.com/card/lanterns-of-kindness-at-online-event",
+        "authenticatedOwnerUrl": "https://envitefy.com/event/lanterns-of-kindness-at-online-event?tab=design",
+        "eventId": "76e72bd7-4e3f-47a2-997a-f1f56374b03a",
+        "artworkPath": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-nonprofit-artwork.webp",
+        "artworkBytes": 1953032,
+        "artworkSource": "https://envitefy.com/api/blob/event-media/upload-5e1f80af-bfc4-4297-ba36-d82478a002d5/header/display.webp",
+        "artworkExport": "pageAssets.bundle observed display.webp;1requested,1downloaded,0failed",
+        "wholeCardScreenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-nonprofit-fullscreen.jpg",
+        "publishedConfirmationScreenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-revised-published-editor.jpg",
+        "overviewScreenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-nonprofit-overview.jpg",
+        "tabId": "1960064696",
+        "markedDeliverable": true
+      },
+      "initialOutput": {
+        "published": false,
+        "resultUrl": null,
+        "artworkScreenshot": null,
+        "exactBlocker": "Background check failed on initial job and one explicit retry. New design revision awaits user approval after automatic review rejection."
+      }
+    },
+    {
+      "startedAt": "2026-10-21T14:35:03.464Z",
+      "tabId": "1960064650",
+      "inputs": {
+        "persona": "AI persona09 — small-business owner",
+        "title": "Ink & Imagination Studio",
+        "openingLine": "A creative shop workshop",
+        "look": "A richly detailed screen-printing studio at golden hour, with a central carved botanical printing block, ink rollers, handmade paper and a small fern. Warm terracotta, deep forest green and cream; tactile gouache illustration, artisan shop atmosphere, dimensional materials and welcoming light. Expressive legible lettering suited to a creative business workshop, with a naturally readable title area.",
+        "occasion": "Not specified",
+        "date": "2026-10-26",
+        "startTime": "17:00",
+        "endTime": "18:00",
+        "venue": "https://envitefy.com",
+        "message": "AI demo—not a real event. This fictional creative-shop workshop was created by an AI persona for a Live Card usability trial. No attendance, purchase, registration, or response is expected.",
+        "rsvp": false,
+        "registry": false
+      },
+      "actions": [
+        {
+          "at": "2026-10-21T14:35:12.975Z",
+          "action": "Generate & continue clicked once",
+          "result": "Moved immediately to editable Event details while background generation ran"
+        },
+        {
+          "at": "2026-10-21T14:35:46.564Z",
+          "action": "Filled date/time/venue and message, visited RSVP and Registry, returned to When & Where",
+          "result": "Native setValue retained 2026-10-26, 17:00, 18:00 and exact venue URL across tabs; RSVP/Registry off"
+        },
+        {
+          "at": "2026-10-21T14:36:36.654Z",
+          "action": "Review invitation",
+          "result": "Ready after one generation. Review ran wording check and showed optional correction controls without a visible proposed correction; chose Keep my wording."
+        },
+        {
+          "at": "2026-10-21T14:37:25.177Z",
+          "action": "Published from fullscreen eye Preview",
+          "result": "Saving artwork progress, then explicit published success and saved edit URL"
+        },
+        {
+          "at": "2026-10-21T14:37:42.957Z",
+          "action": "Copy guest link and Share invitation",
+          "result": "Copy success toast; clipboard API returned empty. Share returned Sharing could not be opened. Please try again."
+        },
+        {
+          "at": "2026-10-21T14:39:33.833Z",
+          "action": "Opened production /card/ route using observed saved slug",
+          "result": "Owner redirect verified with correct saved product"
+        }
+      ],
+      "outcome": "published",
+      "automationIssues": [
+        "createBrowserTab returned detached after successfully creating tab; recovered from tab inventory without duplicate.",
+        "getTab assignment to an undeclared variable reported variable error after binding; redeclared var and resumed existing tab.",
+        "Copy guest link UI reported success, but tab.clipboard.readText returned empty; exact URL recovered from rendered saved-address dialog.",
+        "Production navigation returned detached after successfully loading owner route; recovered same tab ID and verified saved content."
+      ],
+      "generationAttempts": 1,
+      "eventId": "088a7ffe-9993-4f11-91ae-831fdea44621",
+      "publicURL": "https://envitefy.com/card/ink-and-imagination-studio-at-online-event",
+      "localShareURL": "http://localhost:3000/card/ink-and-imagination-studio-at-online-event",
+      "publicURLSource": "Exact saved slug and /card/ prefix observed in Custom URL dialog and production owner workspace. Copy guest link displayed Guest link copied, but CUA clipboard reader returned empty.",
+      "productionVerification": {
+        "requestedURL": "https://envitefy.com/card/ink-and-imagination-studio-at-online-event",
+        "observedURL": "https://envitefy.com/event/ink-and-imagination-studio-at-online-event?tab=design",
+        "result": "Production card route owner-redirected to saved event workspace, showing correct title, artwork, public /card/ address and editor link for event ID."
+      },
+      "timings": {
+        "generationStart": "2026-10-21T14:35:12.975Z",
+        "generationReadyObservedAt": "2026-10-21T14:36:36.654Z",
+        "generationJobReportedSeconds": 56,
+        "publishClickedAt": "2026-10-21T14:37:25.177Z",
+        "publishedObservedAt": "2026-10-21T14:37:42.957Z",
+        "productionVerifiedAt": "2026-10-21T14:39:33.833Z",
+        "trialElapsedSeconds": 270
+      },
+      "repairAttempts": 0,
+      "backgroundRetries": 0,
+      "observedFriction": [
+        {
+          "type": "product UX",
+          "object": "Review wording suggestion",
+          "evidence": "Optional wording corrections are available, Apply wording suggestion and Keep my wording; no proposed changed text was displayed.",
+          "impact": "A shop owner cannot assess whether applying the suggestion is desirable.",
+          "recommendation": "Show the exact proposed wording and highlight changed words before Apply."
+        },
+        {
+          "type": "product UX",
+          "object": "Online location entry",
+          "evidence": "Only Venue name field appears in initial details; entering exact https://envitefy.com was recognized as Online event only in Review.",
+          "impact": "A business owner hosting a remote workshop must infer where a meeting URL belongs.",
+          "recommendation": "Offer an In person / Online choice and a clearly labelled meeting-link input while preserving one simple initial location row."
+        },
+        {
+          "type": "product/tool interaction",
+          "object": "Share invitation",
+          "evidence": "Visible Sharing could not be opened. Please try again. after click on published local builder.",
+          "impact": "Native share did not open in this browser session; no message was sent.",
+          "recommendation": "Provide a visible selectable guest URL and a Copy link fallback within the share panel."
+        },
+        {
+          "type": "product UX",
+          "object": "Review layout",
+          "evidence": "Actual screenshot shows card preview with save/publish directly below; logistics summary is further down the page.",
+          "impact": "The main final decision shows artwork prominently but details need additional scrolling.",
+          "recommendation": "Keep a compact date, time and online-location summary adjacent to Publish."
+        }
+      ],
+      "positiveFindings": [
+        "Your card clearly owns title and optional opening line; Event details repeats wording with Edit card text rather than duplicate fields.",
+        "Generation immediately opened editable logistics; all logistics and disclosure were entered while the background and lettering ran.",
+        "Native date/time inputs retained values after tab navigation.",
+        "Message helper clearly explained it appears in Overview and is not printed.",
+        "RSVP and Registry defaulted off.",
+        "Review accurately recognized online URL, date and time; publication needed one action and then offered Copy guest link.",
+        "Generated illustration and expressive title matched the creative-shop brief without needing repair."
+      ],
+      "screenshots": [
+        "09-small-business-card-preview.jpg",
+        "09-small-business-published.jpg",
+        "09-small-business-production-verified.jpg"
+      ],
+      "feedbackScope": "AI persona usability trial, not evidence from a human small-business owner. No real attendees, invitations, email or private contact data entered.",
+      "currentTabId": "1960064650",
+      "currentState": "Production saved owner workspace, Design tab, marked deliverable"
+    },
+    {
+      "personaId": 10,
+      "persona": "AI persona: retired neighborhood/community host",
+      "participantType": "AI demo usability review, not a human participant",
+      "startedAt": "2026-10-21T14:35:08.9379508Z",
+      "environment": "http://localhost:3000/live-cards",
+      "inputs": {
+        "title": "A Cup of Stories | AI Demo",
+        "openingLine": "Warm tea, good company",
+        "occasion": "General event",
+        "artBrief": "A welcoming autumn sunroom prepared for a neighborhood tea and story swap: a round oak table with a ceramic teapot, mismatched porcelain cups, a small plate of biscuits, folded linen napkins and a well-loved storybook. Honey-colored afternoon light, leafy garden beyond the windows, warm terracotta and sage accents, rich tactile watercolor illustration with layered depth. Expressive readable lettering that feels friendly and graceful. No people, no extra words or dates.",
+        "date": "2026-10-26",
+        "startTime": "15:00",
+        "endTime": "16:30",
+        "timezone": "America/Chicago",
+        "onlineVenue": "https://envitefy.com",
+        "messageToGuests": "AI demo—not a real event. This fictional community tea and story swap was created by an AI persona to evaluate the Live Card creation experience. No gathering will take place and no attendance or reply is requested.",
+        "rsvp": false,
+        "registry": false,
+        "referenceImage": null,
+        "occasionControl": "Not specified (left at default; General event context)",
+        "timezoneVerification": "America/Chicago planned. UI showed Event local time, not named timezone; named timezone not independently verified."
+      },
+      "actions": [
+        "Entered exact title and optional opening line in Your card.",
+        "Entered artwork brief; left Occasion as Not specified and generation quality at default.",
+        "Clicked Generate & continue once; Event details opened while background creation ran.",
+        "Entered 2026-10-26, 15:00, 16:30 and exact online venue https://envitefy.com.",
+        "Added AI demo disclosure in Message to guests.",
+        "Verified RSVP and Registry switches show 0/off.",
+        "Switched back to When & Where and verified all date/time/venue values persisted.",
+        "First generation completed in66seconds with correct readable wording but checker style_mismatch for extra teacup, leaf sprigs and pale backdrop in isolated lettering layer.",
+        "Review invitation prompted optional wording corrections without a visible before/after difference; kept exact wording.",
+        "Review showed Oct26,2026,3:00PM–4:30PM Event local time and Online event · https://envitefy.com.",
+        "Opened eye Preview fullscreen; inspected full card and Overview disclosure/date/link.",
+        "Clicked Publish invitation at14:37:53Z. Publication blocked with: Review the lettering findings and retry verification or repair lettering before publishing.",
+        "Clicked Repair lettering once at14:38:03Z; no background retry or verification retry.",
+        "One repair completed after86seconds. Checker still style_mismatch for painted leaves, berries and ornaments; all approved words present/readable without clipping.",
+        "A second Publish attempt confirmed the same checker guard. No bypass was attempted.",
+        "Clicked Save draft. UI confirmed Draft saved. Find it in Drafts anytime. URL included evente26a6ec9-ccf1-4790-8d37-b84473c5eed6.",
+        "Saved whole-card fullscreen eye Preview screenshot of repaired artwork.",
+        "Root then authorized ONE same-image Retry verification action. Clicked it once; attempt remains2 and no new artwork request intentionally submitted.",
+        "Same-image verification completed in67seconds, still attempt2, and removed all lettering findings.",
+        "Clicked Publish invitation normally; UI confirmed Your Live Card is published. It is ready to share.",
+        "Copy guest link first produced success toast but readText returned empty. A later Copy guest link plus clipboard.read() returned actual https://envitefy.com/card/a-cup-of-stories-ai-demo-at-online-event.",
+        "Custom URL dialog showed localorigin/card/same-slug; no URL edit or save performed.",
+        "Share invitation and Share Live Card each reported Sharing could not be opened. No invitations, messages or emails were sent.",
+        "Opened copied production/card/link in own new tab. Browser creation reported Detached, but tab had been created; rebound existing1960064665 without duplication.",
+        "Production link redirected signed-in owner to /event/a-cup-of-stories-ai-demo-at-online-event?tab=design. PUBLIC LINK showed expected production/card/slug. Preview showed saved artwork.",
+        "Captured final published fullscreen and production fullscreen JPEGs. Bundled only observed display.webp through pageAssets. Marked builder and production preview tabs as deliverables."
+      ],
+      "timing": {
+        "generationStartedAt": "2026-10-21T14:35:35.464Z",
+        "initialGenerationSeconds": 66,
+        "publishAttemptedAt": "2026-10-21T14:37:53.063Z",
+        "letteringRepairStartedAt": "2026-10-21T14:38:03.885Z",
+        "letteringRepairSeconds": 86,
+        "sameImageVerificationStartedAt": "2026-10-21T14:40:52.720Z",
+        "sameImageVerificationSeconds": 67,
+        "finalPublicationStartedAt": "2026-10-21T14:42:34.385Z",
+        "publicationObservedAt": "2026-10-21T14:43:03.692Z",
+        "generationToObservedPublicationSeconds": 448
+      },
+      "outcome": "Published successfully after one initial generation, one explicit lettering repair and one newly authorized same-image verification. Actual copied guest link and production owner-route preview verified.",
+      "publicUrl": "https://envitefy.com/card/a-cup-of-stories-ai-demo-at-online-event",
+      "friction": [
+        {
+          "kind": "confirmed product behavior",
+          "severity": "high",
+          "observation": "Publish invitation remained enabled with style_mismatch but the click closed Preview and returned to Review with a blocking message.",
+          "evidence": "14:37:53Z publish action and subsequent AX state",
+          "implication": "The host cannot know whether the ready state is actually publishable until attempting publication."
+        },
+        {
+          "kind": "usability friction",
+          "severity": "medium",
+          "observation": "Large technical Lettering findings panel discusses isolated assets, transparent layers and local shadows; it pushes the card below the fold in Review and is clipped at the top of fullscreen Preview.",
+          "evidence": "10-community-host-preview-before-publish.jpg and Review screenshot observation",
+          "implication": "A retired community host needs a plain-language decision and visible card, not rendering instructions."
+        },
+        {
+          "kind": "usability friction",
+          "severity": "medium",
+          "observation": "Optional wording corrections offered Apply wording suggestion and Keep my wording without displaying the proposed difference.",
+          "evidence": "Review AX state",
+          "implication": "The host cannot assess whether applying a suggestion changes intended guest wording."
+        },
+        {
+          "kind": "usability friction",
+          "severity": "medium",
+          "observation": "Retry verification displays Creating title and opening-line artwork and Drawing your artwork, with Cancel generation, despite choosing a same-image check.",
+          "evidence": "AX state after explicit Retry verification",
+          "implication": "The host cannot tell whether a verification-only action incurred another image attempt."
+        },
+        {
+          "kind": "confirmed verification inconsistency",
+          "severity": "high",
+          "observation": "The repaired artwork was blocked for decorative leaves/berries, then the same-image verification passed without a new generated image.",
+          "evidence": "Repair attempt2 checker output followed by Checking existing lettering again attempt2 and no findings after67seconds.",
+          "implication": "A host who trusts the initial finding could pay the time cost of repairs that do not solve the gate; whether the decorative finding itself was correct is not established."
+        },
+        {
+          "kind": "confirmed share tool failure",
+          "severity": "medium",
+          "observation": "Share invitation and Share Live Card reported Sharing could not be opened in this Chrome session.",
+          "evidence": "Published Review and fullscreen AX states",
+          "implication": "Copy guest link remained usable and supplied the real production URL."
+        },
+        {
+          "kind": "usability friction",
+          "severity": "low",
+          "observation": "An online URL is entered under Venue name, and Review shows Event local time without naming the timezone.",
+          "evidence": "When & Where and Review AX states",
+          "implication": "Online hosts would benefit from an explicit Online link field and named timezone without losing multi-location support."
+        }
+      ],
+      "recommendations": [
+        "Show a compact plain-language lettering status beside the card, with technical details in an expandable panel. Keep the whole card visible in Review and fullscreen Preview.",
+        "Resolve blocking artwork checks before presenting an enabled Publish invitation button. Explain the specific problem and the available next action at the point of the card.",
+        "Distinguish Check this image from Repair lettering in labels, progress and expected time. A verification-only action should never say Drawing your artwork.",
+        "Make lettering-only generation follow the layer constraint more reliably, and investigate why a same-image recheck changed a blocking style finding to pass.",
+        "Display proposed wording edits as before/after changes before Apply. Retain Keep my wording as an explicit choice.",
+        "Add an Online option with Meeting link label and a visible timezone. Retain venue search and extra locations for hosts who need them.",
+        "Provide a visible selectable guest URL after publication and a copy fallback when the native Share sheet fails.",
+        "Preserve the useful simple flow: title and optional opening line once, artwork while filling logistics, four details tabs with RSVP/Registry off by default, then Review. Keep the full custom art brief and advanced controls available."
+      ],
+      "automationIssues": [
+        "Inventory browser identifier differs from task handoff: Chrome is id2; id3 is in-app browser.",
+        "First browser clipboard.readText() immediately after Copy guest link returned empty despite success toast. A later clipboard.read() returned the correct text/plain production URL; do not classify initial empty read as an app clipboard defect.",
+        "createBrowserTab for production threw Detached after creating the tab. Recovered existing tab1960064665 from inventory; no duplicate tab opened.",
+        "Assignment following detached tab creation failed because the handle was undefined. Redeclared binding and continued with the observed existing tab.",
+        "PowerShell emitted InitializeDefaultDrives warnings but file writes and screenshot JPEG signature verification succeeded."
+      ],
+      "screenshots": [
+        "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/10-community-host-preview-before-publish.jpg",
+        "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/10-community-host-fullscreen-preview.jpg",
+        "D:\\Develop_local\\envitefy\\artifacts\\livecard-persona-trials-2026-10-21\\10-community-host-published-fullscreen.jpg",
+        "D:\\Develop_local\\envitefy\\artifacts\\livecard-persona-trials-2026-10-21\\10-community-host-production-preview.jpg"
+      ],
+      "browserTabId": "1960064656",
+      "browserId": "2",
+      "draftEventId": "e26a6ec9-ccf1-4790-8d37-b84473c5eed6",
+      "draftEditorUrl": "http://localhost:3000/live-cards?edit=e26a6ec9-ccf1-4790-8d37-b84473c5eed6",
+      "completedAt": "2026-10-21T14:45:50.5490009Z",
+      "publicVerificationTabId": "1960064665",
+      "actualPublicUrlEvidence": "Copy guest link -> browser clipboard read() text/plain; production owner workspace also displays https://envitefy.com/card/ + identical slug.",
+      "productionObservedUrl": "https://envitefy.com/event/a-cup-of-stories-ai-demo-at-online-event?tab=design",
+      "attempts": {
+        "initialGeneration": 1,
+        "letteringRepair": 1,
+        "sameImageVerification": 1,
+        "backgroundRetry": 0,
+        "publishAttempts": 3,
+        "blockedPublishAttempts": 2,
+        "explicitDraftSaves": 1,
+        "successfulPublication": 1
+      },
+      "artworkPath": "D:\\Develop_local\\envitefy\\artifacts\\livecard-persona-trials-2026-10-21\\10-community-host-artwork.webp",
+      "aiPersonaAssessment": "As a retired community host persona, I found the event fields and finished artwork welcoming and manageable. The technical checker and repeated wait created uncertainty about whether I had done something wrong; I would prefer one clear card status with a concise fix. This is an AI persona impression, not evidence from a human participant."
+    }
+  ]
+}

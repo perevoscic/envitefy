@@ -1,0 +1,168 @@
+bun test v1.3.11 (af24e281)
+
+src\lib\create\read-source.test.ts:
+(pass) rejects private, loopback, metadata and IPv4-mapped addresses
+(pass) revalidates redirect destinations and never connects to a private redirect
+(pass) rejects hosts with any nonpublic DNS answer and credentials before transport
+(pass) mixed PDFs retain text-layer pages and OCR every missing page in order [16.00ms]
+(pass) native PDF text keeps graphics and hidden links without an OCR request [15.00ms]
+(pass) PDF page failures release the shared reader and preserve the page error
+(pass) links from multiple source files keep their combined page numbers [16.00ms]
+(pass) rejects over-budget PDF instead of dropping later pages
+(pass) public HTML uses actual readable content and preserves destination links
+(pass) URL recognition reads page content instead of classifying misleading path words
+(pass) a login page with HTTP 200 is not converted into invented event details
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  policyVersion: "openai-workloads-2026-10-21",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 1,
+  outcome: "success",
+  requestId: null,
+  inputTokens: null,
+(pass) transcription sends strict schemas, page-aware budgets and ordered images
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  policyVersion: "openai-workloads-2026-10-21",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 0,
+  outcome: "incomplete",
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  policyVersion: "openai-workloads-2026-10-21",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 0,
+  outcome: "success",
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+(pass) truncated batches split once into single pages using the same deadline
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  policyVersion: "openai-workloads-2026-10-21",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 0,
+  outcome: "success",
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  policyVersion: "openai-workloads-2026-10-21",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 1,
+  outcome: "incomplete",
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  policyVersion: "openai-workloads-2026-10-21",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 0,
+  outcome: "refused",
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  policyVersion: "openai-workloads-2026-10-21",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 0,
+  outcome: "invalid_output",
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  policyVersion: "openai-workloads-2026-10-21",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 0,
+  outcome: "invalid_output",
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  policyVersion: "openai-workloads-2026-10-21",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 0,
+  outcome: "invalid_output",
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+(pass) single-page truncation, refusal and missing-page results fail without automatic retries
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  policyVersion: "openai-workloads-2026-10-21",
+  workload: "transcription",
+  model: "gpt-5.6-luna",
+  durationMs: 0,
+  outcome: "incomplete",
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+(pass) cancellation after a truncated batch prevents child submissions
+(pass) five unread pages are transcribed in bounded groups without dropping later pages [31.00ms]
+creation_model_run {
+  version: "creation-v2-2026-09-05",
+  policyVersion: "openai-workloads-2026-10-21",
+  workload: "classification",
+  model: "gpt-5.6-luna",
+  durationMs: 0,
+  outcome: "invalid_output",
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
+}
+(pass) classification rejects malformed model fields instead of trusting a partial valid guess
+
+ 17 pass
+ 0 fail
+ 67 expect() calls
+Ran 17 tests across 1 file. [811.00ms]

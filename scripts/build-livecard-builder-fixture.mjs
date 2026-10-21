@@ -75,7 +75,7 @@ await fs.writeFile(
 );
 const globals = (await fs.readFile("src/app/globals.css", "utf8")).replace(
   '@import "tailwindcss";',
-  '@import "tailwindcss" source(none);\n@source "./live-cards/LiveCardBuilder.tsx";\n@source "../components/UnsavedProgressProvider.tsx";\n@source "../components/ArtworkPreviewDialog.tsx";\n@source "../components/studio/StudioShowcaseLiveCard.tsx";\n@source "../components/studio/StudioLiveCardActionSurface.tsx";',
+  '@import "tailwindcss" source(none);\n@source "./live-cards/LiveCardBuilder.tsx";\n@source "../components/UnsavedProgressProvider.tsx";\n@source "../components/ArtworkPreviewDialog.tsx";\n@source "../components/ArtworkDownloadButton.tsx";\n@source "../components/events/EventUrlEditor.tsx";\n@source "../components/EventAccessDialog.tsx";\n@source "../components/studio/StudioShowcaseLiveCard.tsx";\n@source "../components/studio/StudioLiveCardActionSurface.tsx";',
 );
 const css = await postcss([tailwind()]).process(globals, {
   from: path.resolve("src/app/globals.css"),

@@ -21,6 +21,22 @@ test("every selectable category has 50 distinct design prompts, with balanced gi
   }
 });
 
+test("holiday ideas keep their occasion's visual context instead of generic party directions", () => {
+  const cases = [
+    ["Halloween", /carved pumpkins/i, /terracotta orange, deep plum, midnight blue/],
+    ["Christmas", /Christmas tree/i, /evergreen, cherry red, cocoa brown/],
+    ["Hanukkah", /nine-branched hanukkiah/i, /marine blue, cobalt blue, warm golden ochre/],
+    ["Fourth of July", /red white and blue bunting/i, /cobalt blue, cherry red, marine blue/],
+  ] as const;
+  for (const [occasion, scene, palette] of cases) {
+    const bank = LIVE_CARD_DESIGN_SUGGESTIONS[occasion];
+    assert.ok(bank.some((idea) => scene.test(idea.prompt)), occasion);
+    assert.ok(bank.every((idea) => palette.test(idea.prompt)), occasion);
+    assert.ok(bank.every((idea) => idea.prompt.includes(`${occasion} Live Card`)), occasion);
+    assert.ok(bank.every((idea) => idea.audience === "everyone"), occasion);
+  }
+});
+
 test("repeated draws stay category-specific, varied, balanced and never repeat the preceding scenes", () => {
   let seed = 57;
   const random = () => {

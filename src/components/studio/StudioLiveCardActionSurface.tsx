@@ -1283,7 +1283,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                       data-live-card-trigger
                       className={`group flex min-h-11 min-w-11 flex-col items-center justify-start ${
                         useCompactActionButtons ? "gap-0.5 py-0 md:gap-0.5" : "gap-1 py-1 md:gap-2"
-                      } h-full w-full px-0.5 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${
+                      } h-full w-full px-0.5 transition-colors duration-150 focus:outline-none ${sharedDesign ? "" : "focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"} ${
                         props.isDesignMode ? "cursor-move" : ""
                       }`}
                     >

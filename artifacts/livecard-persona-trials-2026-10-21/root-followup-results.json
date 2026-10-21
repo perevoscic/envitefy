@@ -1,0 +1,23 @@
+{
+  "02-mom": {
+    "publication": "Published through normal UI; success message verified",
+    "publicUrl": "https://envitefy.com/card/nova-s-galactic-eight-at-online-event",
+    "addressEvidence": "Custom URL dialog displayed nova-s-galactic-eight-at-online-event",
+    "dateEvidence": "Oct 26, 2026, 5:30 PM–6:30 PM Event local time",
+    "repairOutcome": "One explicit Repair lettering passed. Attempt 2 ready to review in 72 seconds. No checker findings remained in Review.",
+    "screenshot": "02-mom-published.jpg",
+    "copyGuestLink": "UI displayed Guest link copied; tool clipboard read returned empty text. Custom URL used to obtain actual address."
+  },
+  "07-corporate": {
+    "publication": "Published through normal UI after repair; success message verified",
+    "publicUrl": "https://envitefy.com/card/innovation-after-hours-at-online-event",
+    "addressEvidence": "Custom URL dialog displayed innovation-after-hours-at-online-event",
+    "dateEvidence": "Oct 26, 2026, 6:00 PM–7:00 PM Event local time",
+    "repairOutcome": "One explicit Repair lettering passed. Attempt 2 ready to review in 69 seconds. No checker findings remained in Review.",
+    "screenshot": "07-corporate-published.jpg",
+    "automaticApprovalRejectionResolved": true
+  },
+  "08-nonprofit": {
+    "backgroundRetry": "Root clicked Retry design once after confirmed background check failure. Details remained mounted. Additional attempt must be counted separately."
+  }
+}

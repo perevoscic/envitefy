@@ -9,7 +9,7 @@ import {
   validateProofreadText,
 } from "./livecard-wording";
 import { creationModelBudget, recordCreationModelRun } from "./creation/openai-workloads";
-import { nullableString, strictObject } from "./creation/source-evidence";
+import { nullableString, strictObject, matchesSchema } from "./creation/source-evidence";
 import { resolveConciergeOpenAiExtractionModel } from "./concierge/openai-config";
 import {
   LIVE_CARD_EVENT_TYPES,
@@ -89,6 +89,15 @@ export async function proofreadLiveCardWording(before: LiveCardForm, overviewOnl
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: deadline, maxRetries: 0 });
   const model = resolveConciergeOpenAiExtractionModel();
   const startedAt = Date.now();
+  const responseSchema = overviewOnly
+    ? strictObject({ overview: { type: "string" } })
+    : strictObject({
+      ...Object.fromEntries(LIVE_CARD_WORDING_FIELDS.map((field) => [field, { type: "string" }])),
+      locations: { type: "array", items: strictObject({
+        id: { type: "string" },
+        ...Object.fromEntries(LIVE_CARD_LOCATION_WORDING_FIELDS.map((field) => [field, { type: "string" }])),
+      }) },
+    });
   let response: OpenAI.Chat.Completions.ChatCompletion;
   try { response = await client.chat.completions.create({
     model,
@@ -98,22 +107,7 @@ export async function proofreadLiveCardWording(before: LiveCardForm, overviewOnl
       json_schema: {
         name: "invitation_proofread",
         strict: true,
-        schema: overviewOnly
-          ? strictObject({ overview: { type: "string" } })
-          : strictObject({
-              ...Object.fromEntries(
-                LIVE_CARD_WORDING_FIELDS.map((field) => [field, { type: "string" }]),
-              ),
-              locations: {
-                type: "array",
-                items: strictObject({
-                  id: { type: "string" },
-                  ...Object.fromEntries(
-                    LIVE_CARD_LOCATION_WORDING_FIELDS.map((field) => [field, { type: "string" }]),
-                  ),
-                }),
-              },
-            }),
+        schema: responseSchema,
       },
     },
     messages: [
@@ -136,28 +130,27 @@ export async function proofreadLiveCardWording(before: LiveCardForm, overviewOnl
     ],
   }, { signal: AbortSignal.timeout(deadline), maxRetries: 0 }); } catch (error) {
     const provider = error as { status?: number; request_id?: string; name?: string; message?: string };
+    recordCreationModelRun({ workload: "correction", model, startedAt, outcome: "error", requestId: provider.request_id });
     console.error("livecard_proofread_failure", { model, attempt: 1, deadlineMs: deadline, elapsedMs: Date.now() - startedAt,
       status: provider.status, requestId: provider.request_id, name: provider.name, error: provider.message?.slice(0, 1000),
       timingScope: "client elapsed; provider queue and processing times unavailable" });
     throw error;
   }
   const choice = response.choices[0];
-  const valid =
-    choice?.finish_reason === "stop" && !choice.message.refusal && choice.message.content;
-  recordCreationModelRun({
-    workload: "correction",
-    model,
-    startedAt,
-    outcome: valid ? "success" : "invalid_output",
-    usage: response.usage,
-  });
-  if (!valid) throw new Error("The wording check could not be completed.");
-  return {
-    form: overviewOnly
-      ? applyOverviewProofread(before, JSON.parse(choice.message.content || "{}"))
-      : applyLiveCardProofread(before, JSON.parse(choice.message.content || "{}")),
-    questions: [],
-  };
+  let outcome: "refused" | "incomplete" | "invalid_output" | "success" = choice?.message.refusal ? "refused" : choice?.finish_reason !== "stop" ? "incomplete" : "invalid_output";
+  let parsed: unknown = null;
+  if (outcome === "invalid_output") {
+    try { parsed = JSON.parse(choice.message.content || "null"); } catch { /* Recorded as invalid output. */ }
+  }
+  try {
+    if (!matchesSchema(parsed, responseSchema)) throw new Error("The wording check could not be completed.");
+    const form = overviewOnly ? applyOverviewProofread(before, parsed) : applyLiveCardProofread(before, parsed);
+    outcome = "success";
+    return { form, questions: [] };
+  } finally {
+    recordCreationModelRun({ workload: "correction", model, startedAt, outcome, usage: response.usage,
+      requestId: (response as { _request_id?: string })._request_id });
+  }
 }
 
 export function applyBuilderExtraction(
@@ -296,23 +289,22 @@ export async function assistLiveCard(before: LiveCardForm, message: string, stag
   const choice = response.choices[0];
   const valid =
     choice?.finish_reason === "stop" && !choice.message.refusal && choice.message.content;
-  recordCreationModelRun({
-    workload: "extraction",
-    model,
-    startedAt,
-    outcome: valid ? "success" : "invalid_output",
-    usage: response.usage,
+  const record = (outcome: "success" | "invalid_output" | "refused" | "incomplete") => recordCreationModelRun({
+    workload: "extraction", model, startedAt, outcome, usage: response.usage, requestId: response._request_id,
   });
-  if (!valid)
+  if (!valid) {
+    record(choice?.message.refusal ? "refused" : "incomplete");
     throw new Error(
       "We couldn't finish your suggestions. Please try again or edit the details manually.",
     );
-  const result = applyBuilderExtraction(
-    before,
-    JSON.parse(choice.message.content || "{}"),
-    message,
-    Boolean(image),
-  );
+  }
+  let result: ReturnType<typeof applyBuilderExtraction>;
+  try {
+    const parsed: unknown = JSON.parse(choice.message.content || "null");
+    if (!matchesSchema(parsed, schema)) throw new Error("Invalid invitation suggestions.");
+    result = applyBuilderExtraction(before, parsed, message, Boolean(image));
+  } catch (error) { record("invalid_output"); throw error; }
+  record("success");
   // Only changed, unresolved locations need lookup. Provider results, never model guesses, set time zones.
   const locations = await Promise.all(
     result.form.locations.map(async (location) => {

@@ -1,0 +1,100 @@
+{
+  "personaId": "07",
+  "persona": "Office administrator planning a team innovation workshop",
+  "researchType": "AI simulated-role testing, not human research",
+  "environment": "http://localhost:3000/live-cards",
+  "browser": "Chrome 3",
+  "tabId": "1960064635",
+  "status": "published and verified on production owner route",
+  "title": "Innovation After Hours",
+  "openingLine": "Make room for bright ideas",
+  "artBrief": "Create an immersive editorial architectural photograph of a modern innovation studio at blue hour, with a sculptural oak collaboration table as the focal subject, translucent glass partitions, brushed aluminum prototypes, warm pendant lights and deep cobalt city reflections. Layer foreground sketchbooks, tactile paper models and a subtle amber glow for rich depth. Use a refined navy, copper and warm ivory palette, confident contemporary typography and a naturally readable title pocket integrated into the architecture. Sophisticated, welcoming and inventive; no corporate logos, no people and no flat stationery border.",
+  "occasion": "Not specified (General event default)",
+  "referenceImage": null,
+  "date": "2026-10-26",
+  "day": "Monday",
+  "startTime": "18:00",
+  "endTime": "19:00",
+  "requestedTimeZone": "America/Chicago (Central Time)",
+  "venueName": "https://envitefy.com",
+  "messageToGuests": "Bring one bold idea and a curious mind for a relaxed team innovation workshop. We will sketch possibilities, share quick prototypes and imagine what comes next.",
+  "guestNotes": "AI demo—not a real event. This fictional workshop was created for simulated-role testing. Monday, October 26, 2026, 6–7 pm Central Time. No attendance or RSVP is requested.",
+  "rsvpEnabled": false,
+  "registry": null,
+  "generation": {
+    "initialGenerateClicks": 1,
+    "attempts": 1,
+    "uiStartedAt": "9:28:55 AM",
+    "dateTimeEnteredDuringGeneration": true,
+    "lastObservedStage": "Ready to review; repair passed",
+    "lastObservedElapsedSeconds": 91,
+    "repairClicks": 1
+  },
+  "actions": [
+    "Opened a new Chrome tab; createBrowserTab returned Detached while handling command, but the tab existed and was recovered by its exact ID.",
+    "Confirmed the updated first stage is 1 Your card.",
+    "Entered title, expanded optional opening line, entered original architectural art brief; left Occasion unspecified.",
+    "Clicked Generate & continue once; Event details opened on When & Where while background generation ran.",
+    "Used native setValue to enter date 2026-10-26, start 18:00, end 19:00 and plain URL venue; all four values were verified in the subsequent accessibility tree.",
+    "Expanded both Message disclosures and entered workshop message plus explicit AI demo notes.",
+    "Verified Collect RSVPs is off.",
+    "Initial generation finished after91seconds; checker found exact title/opening wording and flagged unreadable_text on the dark opening line. Clicked Review invitation once; Checking invitation wording appeared.",
+    "Review completed and showed Monday Oct 26, 2026, 6:00 PM–7:00 PM Event local time and Online event https://envitefy.com. Optional wording suggestion was declined using Keep my wording.",
+    "Opened the actual full-screen eye Preview, then saved original artwork and checker evidence.",
+    "A Publish invitation click was submitted for tool approval; automatic approval review rejected it before browser execution due to the known opening-line contrast concern.",
+    "Clicked Repair lettering exactly once. Fullscreen preview showed Creating title and opening-line artwork. Marked the tab for handoff so the parent can resume provider work."
+  ],
+  "errors": [
+    {
+      "type": "tool_failure",
+      "action": "createBrowserTab",
+      "detail": "Detached while handling command",
+      "resolution": "The newly created tab1960064635 was found in cua.getState and successfully rebound. No duplicate tab was opened."
+    },
+    {
+      "type": "automatic_approval_rejection",
+      "action": "Publish invitation",
+      "detail": "Publishing while checker reports unreadable opening-line contrast was rejected; use explicitly authorized Repair lettering first and re-verify.",
+      "resolution": "One Repair lettering action started. Publication remains unexecuted."
+    }
+  ],
+  "screenshots": [
+    "artifacts/livecard-persona-trials-2026-10-21/07-corporate-generation.jpg",
+    "artifacts/livecard-persona-trials-2026-10-21/07-corporate-original-preparation.jpg",
+    "artifacts/livecard-persona-trials-2026-10-21/07-corporate-original-fullscreen.jpg"
+  ],
+  "publicUrl": "https://envitefy.com/card/innovation-after-hours-at-online-event",
+  "feedback": {
+    "helpful": [
+      "The title and optional opening line are clearly owned by Your card; Event details shows a compact wording summary instead of asking for duplicate entry.",
+      "Event details stays editable while generation runs and opens directly on When & Where.",
+      "Native date/time controls accepted setValue and visibly retained the exact requested values."
+    ],
+    "simplificationIdeas": [
+      "A workshop organizer using an online URL has no visible timezone selector in initial logistics. Show a concise timezone summary for online events so the host can confirm Central Time without hiding it in guest notes.",
+      "The Venue name label does not advertise that a URL is accepted. An Online event option or an example URL would reduce discovery work."
+    ],
+    "confirmedDefects": [
+      "Initial generated opening-line artwork was present with correct wording but lacked contrast against dark glass; the lettering checker identified unreadable_text and one explicit repair was requested."
+    ]
+  },
+  "letteringFinding": {
+    "code": "unreadable_text",
+    "expectedTitle": "Innovation After Hours",
+    "expectedOpeningLine": "Make room for bright ideas",
+    "observed": "Make room for bright ideas · Innovation After Hours",
+    "detail": "The dark navy opening line blends into the dark glass and vertical window mullions, substantially reducing legibility across the sentence. The wording is present and correct in the isolated lettering asset, but lacks readable contrast on the composed background.",
+    "suggestedRepair": "For opening_line, replace the dark navy lettering fill with warm ivory or add a sufficiently light outline. Preserve exact wording and saved background."
+  },
+  "rootFollowup": {
+    "publication": "Published through normal UI after repair; success message verified",
+    "publicUrl": "https://envitefy.com/card/innovation-after-hours-at-online-event",
+    "addressEvidence": "Custom URL dialog displayed innovation-after-hours-at-online-event",
+    "dateEvidence": "Oct 26, 2026, 6:00 PM–7:00 PM Event local time",
+    "repairOutcome": "One explicit Repair lettering passed. Attempt 2 ready to review in 69 seconds. No checker findings remained in Review.",
+    "screenshot": "07-corporate-published.jpg",
+    "automaticApprovalRejectionResolved": true,
+    "productionOwnerRouteVerified": true
+  },
+  "state": "published"
+}

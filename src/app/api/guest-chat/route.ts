@@ -2,9 +2,9 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import {
-  openAiChatTemperatureParam,
   resolveConciergeOpenAiChatModel,
 } from "@/lib/concierge/openai-config";
+import { creationModelBudget } from "@/lib/creation/openai-workloads";
 import {
   buildGuestChatKnowledgeContext,
   guestChatKnowledgeItems,
@@ -161,8 +161,7 @@ async function streamAiAnswer(params: {
     const stream = await client.chat.completions.create(
       {
         model,
-        ...openAiChatTemperatureParam(model, 0.2),
-        max_completion_tokens: 320,
+        ...creationModelBudget(model, "guest_chat"),
         stream: true,
         messages: buildAiMessages(params),
       } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming,

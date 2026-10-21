@@ -1,10 +1,11 @@
 import { afterEach, expect, test } from "bun:test";
 import { createSourceDeps, isPublicSourceAddress, readCreateSource, readPublicCreateUrl } from "./read-source";
 import sharp from "sharp";
-import { classifyCreateSource } from "./classify-source";
+import { classifyCreateSource, createClassifyDeps } from "./classify-source";
 
 const original = { ...createSourceDeps };
-afterEach(() => Object.assign(createSourceDeps, original));
+const originalClassifyClient = createClassifyDeps.client;
+afterEach(() => { Object.assign(createSourceDeps, original); createClassifyDeps.client = originalClassifyClient; });
 const signal = () => new AbortController().signal;
 const png = await sharp({ create: { width: 8, height: 8, channels: 3, background: "white" } }).png().toBuffer();
 
@@ -118,4 +119,84 @@ test("a login page with HTTP 200 is not converted into invented event details", 
   createSourceDeps.lookup = async () => [{ address: "8.8.8.8", family: 4 }];
   createSourceDeps.request = async () => ({ status: 200, mimeType: "text/html", bytes: Buffer.from('<h1>Sign in to see this invitation</h1><input type="password" name="password">') });
   await expect(readCreateSource({ url: "https://public.example/private" }, signal())).rejects.toThrow("login or passcode");
+});
+
+test("transcription sends strict schemas, page-aware budgets and ordered images", async () => {
+  createSourceDeps.client = (() => ({ chat: { completions: { create: async (request: any, options: any) => {
+    expect(request.response_format.type).toBe("json_schema");
+    expect(request.response_format.json_schema.strict).toBe(true);
+    expect(request.max_completion_tokens).toBeGreaterThanOrEqual(12000);
+    expect(request.messages[1].content.map((part: any) => part.image_url.url)).toEqual(["page-one", "page-two"]);
+    expect(options.maxRetries).toBe(0);
+    return { choices: [{ finish_reason: "stop", message: { content: JSON.stringify({ pages: ["first", "second"] }) } }] };
+  } } } })) as any;
+  expect(await createSourceDeps.transcribe(["page-one", "page-two"], signal())).toEqual(["first", "second"]);
+});
+
+test("truncated batches split once into single pages using the same deadline", async () => {
+  const calls: string[][] = [];
+  const signals: AbortSignal[] = [];
+  createSourceDeps.client = (() => ({ chat: { completions: { create: async (request: any, options: any) => {
+    const pages = request.messages[1].content.map((part: any) => part.image_url.url);
+    calls.push(pages); signals.push(options.signal);
+    return { choices: [{ finish_reason: pages.length > 1 ? "length" : "stop", message: { content: JSON.stringify({ pages }) } }] };
+  } } } })) as any;
+  expect(await createSourceDeps.transcribe(["one", "two"], signal())).toEqual(["one", "two"]);
+  expect(calls).toEqual([["one", "two"], ["one"], ["two"]]);
+  expect(signals.every((item) => item === signals[0])).toBe(true);
+});
+
+test("single-page truncation, refusal and missing-page results fail without automatic retries", async () => {
+  for (const choice of [
+    { finish_reason: "length", message: { content: '{"pages":[]}' } },
+    { finish_reason: "stop", message: { refusal: "declined", content: null } },
+    { finish_reason: "stop", message: { content: '{"pages":[]}' } },
+    { finish_reason: "stop", message: { content: '{"pages":[12]}' } },
+    { finish_reason: "stop", message: { content: '{"pages":["one"],"extra":true}' } },
+  ]) {
+    let calls = 0;
+    createSourceDeps.client = (() => ({ chat: { completions: { create: async () => { calls++; return { choices: [choice] }; } } } })) as any;
+    await expect(createSourceDeps.transcribe(["one"], signal())).rejects.toThrow("Please retry");
+    expect(calls).toBe(1);
+  }
+});
+
+test("cancellation after a truncated batch prevents child submissions", async () => {
+  const controller = new AbortController();
+  let calls = 0;
+  createSourceDeps.client = (() => ({ chat: { completions: { create: async () => {
+    calls++; controller.abort();
+    return { choices: [{ finish_reason: "length", message: { content: "" } }] };
+  } } } })) as any;
+  await expect(createSourceDeps.transcribe(["one", "two"], controller.signal)).rejects.toThrow();
+  expect(calls).toBe(1);
+});
+
+test("five unread pages are transcribed in bounded groups without dropping later pages", async () => {
+  createSourceDeps.pdfText = async () => ({ text: "", pageCount: 5, pages: [] });
+  createSourceDeps.rasterizer = () => ({ rasterize: async () => png, dispose: async () => {} });
+  const sizes: number[] = [];
+  let page = 0;
+  createSourceDeps.transcribe = async (images) => {
+    sizes.push(images.length);
+    return images.map(() => `Verbatim source page ${++page}`);
+  };
+  const result = await readCreateSource({ files: [new File(["PDF"], "packet.pdf", { type: "application/pdf" })] }, signal());
+  expect(sizes).toEqual([2, 2, 1]);
+  expect(result.text).toContain("Page 5\nVerbatim source page 5");
+});
+
+test("classification rejects malformed model fields instead of trusting a partial valid guess", async () => {
+  const savedKey = process.env.OPENAI_API_KEY;
+  process.env.OPENAI_API_KEY = "offline-classification-key";
+  createClassifyDeps.client = (() => ({ chat: { completions: { create: async () => ({
+    choices: [{ finish_reason: "stop", message: { content: JSON.stringify({ category: "birthdays", sport: "none", confident: true, alternatives: "invalid" }) } }],
+  }) } } })) as any;
+  try {
+    const result = await classifyCreateSource({ text: "Unclear gathering" }, signal());
+    expect(result.confidence).toBe("low");
+  } finally {
+    if (savedKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = savedKey;
+  }
 });

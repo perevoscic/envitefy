@@ -1,0 +1,49 @@
+✖ Live Card: location retries, explicit saves, invitation download and responsive preview (1015.3045ms)
+✔ design streams real stage boundaries and only returns a final design on completion (91.4343ms)
+✔ streamed design failure preserves its specific error code (17.618ms)
+✔ checking status precedes the finished headline, while JSON callers remain compatible (67.465ms)
+✔ failed verification streams a specific failure without a fabricated correction stage (13.7997ms)
+✔ cancelling the response aborts the pending image work and cannot start a repair (8.5839ms)
+✖ durable generation reconnects; Review never generates or publishes; published guest actions keep their destinations (1209.1699ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 5
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1845.0322
+
+✖ failing tests:
+
+test at scripts\livecard-builder-browser.test.mjs:11:1
+✖ Live Card: location retries, explicit saves, invitation download and responsive preview (1015.3045ms)
+  browserType.launch: Executable doesn't exist at C:\Users\rjosan\AppData\Local\Packages\sandbox.{9baced02-705c-4003-abf6-62800e1c3bd8}\AC\ms-playwright\chromium_headless_shell-1243\chrome-headless-shell-win64\chrome-headless-shell.exe
+  ╔════════════════════════════════════════════════════════════╗
+  ║ Looks like Playwright was just installed or updated.       ║
+  ║ Please run the following command to download new browsers: ║
+  ║                                                            ║
+  ║     npx playwright install                                 ║
+  ║                                                            ║
+  ║ <3 Playwright Team                                         ║
+  ╚════════════════════════════════════════════════════════════╝
+      at TestContext.<anonymous> (D:\Develop_local\envitefy\scripts\livecard-builder-browser.test.mjs:64:34) {
+    name: 'Error',
+    log: []
+  }
+
+test at scripts\livecard-job-browser.test.mjs:13:1
+✖ durable generation reconnects; Review never generates or publishes; published guest actions keep their destinations (1209.1699ms)
+  browserType.launch: Executable doesn't exist at C:\Users\rjosan\AppData\Local\Packages\sandbox.{9baced02-705c-4003-abf6-62800e1c3bd8}\AC\ms-playwright\chromium_headless_shell-1243\chrome-headless-shell-win64\chrome-headless-shell.exe
+  ╔════════════════════════════════════════════════════════════╗
+  ║ Looks like Playwright was just installed or updated.       ║
+  ║ Please run the following command to download new browsers: ║
+  ║                                                            ║
+  ║     npx playwright install                                 ║
+  ║                                                            ║
+  ║ <3 Playwright Team                                         ║
+  ╚════════════════════════════════════════════════════════════╝
+      at TestContext.<anonymous> (D:\Develop_local\envitefy\scripts\livecard-job-browser.test.mjs:28:34) {
+    name: 'Error',
+    log: []
+  }

@@ -1,0 +1,27 @@
+{
+  "method": "Task-specific factual checks plus schema validity; serial repeated calls with a fixed reference date. Synthetic fixtures establish regression coverage, not production accuracy. Cost covers text model requests only; missing pricing/usage remains null. Visual quality needs separate human review.",
+  "plannedCalls": 2,
+  "attemptedCalls": 0,
+  "complete": false,
+  "summary": [],
+  "results": [
+    {
+      "fixture": "birthday-no-logistics",
+      "workload": "creative_plan",
+      "model": "gpt-6-luna",
+      "promptVersion": "v2",
+      "repeat": 1,
+      "promptCharacters": 7372,
+      "live": false
+    },
+    {
+      "fixture": "birthday-no-logistics",
+      "workload": "creative_plan",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "v2",
+      "repeat": 1,
+      "promptCharacters": 7372,
+      "live": false
+    }
+  ]
+}

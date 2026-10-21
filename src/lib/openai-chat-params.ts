@@ -1,30 +1,27 @@
+import { openAiChatCapabilities, type OpenAiReasoningEffort } from "./openai-model-policy.ts";
+
 type OpenAiChatCompatibilityOptions = {
   temperature?: number;
+  reasoningEffort?: OpenAiReasoningEffort;
 };
 
 /**
- * Preserve reasoning by workload: Terra/Luna run without reasoning, while
- * Astra keeps the medium effort used by the premium Sol routes it replaces.
- * Astra does not accept custom temperature or non-reasoning effort levels.
+ * Preserve explicit family defaults and omit sampling when reasoning is used.
+ * Workload budgets may select a supported effort without changing the model.
  */
 export function openAiChatCompatibilityParams(
   model: unknown,
   options: OpenAiChatCompatibilityOptions = {},
 ): Record<string, string | number> {
-  const normalized = typeof model === "string" ? model.trim().toLowerCase() : "";
-
-  if (/^gpt-6-astra(?:-|$)/.test(normalized)) {
-    return { reasoning_effort: "medium" };
+  const capabilities = openAiChatCapabilities(model);
+  const effort = options.reasoningEffort ?? capabilities.defaultEffort;
+  if (effort) {
+    if (effort === "none" && !capabilities.supportsNone) {
+      throw new Error(`Model ${String(model)} does not support reasoning_effort none.`);
+    }
+    return { reasoning_effort: effort };
   }
-
-  if (/^gpt-5\.6-(?:terra|luna)(?:-|$)/.test(normalized)) {
-    return { reasoning_effort: "none" };
-  }
-
-  if (/^gpt-5(?:[.-]|$)/.test(normalized)) {
-    return {};
-  }
-
+  if (!capabilities.sampling) return {};
   const temperature = options.temperature;
   return typeof temperature === "number" && Number.isFinite(temperature) ? { temperature } : {};
 }

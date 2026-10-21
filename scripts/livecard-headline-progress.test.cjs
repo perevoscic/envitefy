@@ -6,6 +6,14 @@ function route(generate) {
   return loadTs("src/app/api/livecard-builder/headline/route.ts", {
     "next/server": { NextResponse: { json: (body, options) => Response.json(body, options) } },
     "@/lib/livecard-api-access": { builderApiAccess: async () => null },
+    "@/lib/auth": { getAuthenticatedRequestUser: async () => ({ ok: true, userId: "fixture-owner" }) },
+    "@/lib/creation-access": { liveCardCreationCategories: () => ["general"] },
+    "@/lib/creation-access-server": { checkCreationAccess: async (userId, requirement) => {
+      assert.equal(userId, "fixture-owner");
+      assert.equal(requirement.product, "live_card");
+      assert.deepEqual(requirement.categories, ["general"]);
+      return null;
+    } },
     "@/lib/livecard-builder": { readLiveCardForm: () => ({ title: "Graduation" }), validateLiveCard: () => ({}) },
     "@/lib/shared-card-design": { readSharedCardDesign: () => ({ backgroundUrl: "background" }) },
     "@/lib/shared-card-headline": { generateCardHeadline: generate },

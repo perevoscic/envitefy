@@ -3,7 +3,7 @@ import { normalizeCreationCategory } from "./creation-access.ts";
 
 export const LIVE_CARD_BUILDER_PATH = "/live-cards";
 export const LIVE_CARD_BUILDER_SOURCE = "livecard-builder";
-export const LIVE_CARD_EVENT_TYPES = [
+export const LIVE_CARD_CELEBRATION_OCCASIONS = [
   "Birthday",
   "Wedding",
   "Anniversary",
@@ -14,12 +14,48 @@ export const LIVE_CARD_EVENT_TYPES = [
   "Housewarming",
   "Game day",
   "Open house",
+] as const;
+export const LIVE_CARD_HOLIDAY_OCCASIONS = [
+  "Christmas",
+  "Diwali",
+  "Easter",
+  "Eid al-Adha",
+  "Eid al-Fitr",
+  "Father’s Day",
+  "Fourth of July",
+  "Friendsgiving",
+  "Halloween",
+  "Hanukkah",
+  "Holi",
+  "Juneteenth",
+  "Kwanzaa",
+  "Lunar New Year",
+  "Mother’s Day",
+  "New Year’s Day",
+  "New Year’s Eve",
+  "Passover",
+  "Ramadan",
+  "St. Patrick’s Day",
+  "Thanksgiving",
+  "Valentine’s Day",
+] as const;
+export type LiveCardHolidayOccasion = (typeof LIVE_CARD_HOLIDAY_OCCASIONS)[number];
+export const LIVE_CARD_EVENT_TYPES = [
+  ...LIVE_CARD_CELEBRATION_OCCASIONS,
+  ...LIVE_CARD_HOLIDAY_OCCASIONS,
   "General event",
 ] as const;
 export type LiveCardEventType = (typeof LIVE_CARD_EVENT_TYPES)[number];
 
 // Examples are placeholders only; they never become saved event wording.
+const HOLIDAY_EVENT_PLACEHOLDERS = Object.fromEntries(
+  LIVE_CARD_HOLIDAY_OCCASIONS.map((occasion) => [occasion, {
+    title: `${occasion} Gathering`,
+    overview: `Join us for our ${occasion} gathering. We look forward to spending time with you.`,
+  }]),
+) as Record<LiveCardHolidayOccasion, { title: string; overview: string }>;
 export const LIVE_CARD_EVENT_PLACEHOLDERS = {
+  ...HOLIDAY_EVENT_PLACEHOLDERS,
   Birthday: {
     title: "Birthday Celebration",
     overview: "Join us for a birthday celebration! We can't wait to celebrate with you.",
@@ -123,8 +159,8 @@ export function createLiveCardForm(timezone = "UTC"): LiveCardForm {
     brief: "",
     sourceEvidence: [],
     title: "",
-    headlineIntro: "You're invited",
-    eventType: "",
+    headlineIntro: "",
+    eventType: "General event",
     creationCategory: "",
     design: "",
     referenceUrl: "",
@@ -263,12 +299,10 @@ export function validateLiveCard(
 ): LiveCardErrors {
   const errors: LiveCardErrors = {};
   if (phase === "design") {
-    if (!form.eventType) errors.eventType = "Choose an event type.";
     if (!form.design.trim()) errors.design = "Describe how you would like the card to look.";
     return errors;
   }
   if (!form.title.trim()) errors.title = "Add the title or name you want on the card.";
-  if (!form.eventType) errors.eventType = "Choose an event type.";
   if (!form.design.trim()) errors.design = "Describe how you would like the card to look.";
   if (!form.date) errors.date = "Choose your event date.";
   if (!form.startTime) errors.startTime = "Add a start time.";
@@ -331,7 +365,7 @@ function record(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
-/** Narrow saved JSON before it enters the editable form. Missing facts stay blank. */
+/** Narrow saved JSON before editing. An unspecified occasion uses the general category. */
 export function readLiveCardForm(value: unknown): LiveCardForm | null {
   const source = record(value);
   if (!source) return null;
@@ -345,9 +379,10 @@ export function readLiveCardForm(value: unknown): LiveCardForm | null {
         ? /^data:image\/(?:webp|png|jpeg);base64,/.test(source[key]) ? 16 * 1024 * 1024 + 32 : 4096
         : 12000);
   }
-  form.eventType = LIVE_CARD_EVENT_TYPES.find((type) => type === source.eventType) || "";
+  form.eventType = LIVE_CARD_EVENT_TYPES.find((type) => type === source.eventType) || "General event";
   form.creationCategory = normalizeCreationCategory(source.creationCategory) || "";
   form.format = source.format === "digital_flyer" ? "digital_flyer" : "live_card";
+  form.generationQuality = source.generationQuality === "medium" ? "medium" : "high";
   if (Array.isArray(source.sourceEvidence))
     form.sourceEvidence = source.sourceEvidence.slice(0, 60).flatMap((item) => {
       const evidence = record(item);

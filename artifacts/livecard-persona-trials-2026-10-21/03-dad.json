@@ -1,0 +1,93 @@
+{
+  "trialId": "03-dad",
+  "reviewType": "AI persona trial; not real participant research",
+  "persona": {
+    "role": "Father coordinating a youth soccer team end-of-season celebration",
+    "experience": "Comfortable sending team messages; first-time Live Card creator",
+    "goal": "Create a cheerful invitation quickly while entering logistics during artwork generation"
+  },
+  "event": {
+    "title": "Comets Team Celebration",
+    "openingLine": "One team. A season to remember.",
+    "occasionPreference": "Sports if available; otherwise leave optional Occasion unspecified",
+    "designPrompt": "An immersive youth soccer celebration at golden hour on a beautiful community soccer field: a scuffed soccer ball and a pair of cleats in the foreground, a goal and lush green pitch receding into the distance, warm stadium lights starting to glow, navy and bright orange pennants, a few tasteful ribbons and confetti catching the sunset. Rich natural textures, cinematic depth and joyful end-of-season atmosphere. No identifiable people, no team logos or brand marks. Leave a naturally readable area in the upper sky for the exact title and opening line; keep the field and soccer scene richly detailed.",
+    "date": "2026-10-26",
+    "weekday": "Monday",
+    "startTime": "18:30",
+    "endTime": "20:00",
+    "timeZone": "America/Chicago",
+    "locationMode": "online demo",
+    "venueName": "AI demo online gathering",
+    "onlineUrl": "https://envitefy.com",
+    "messageToGuests": "AI demo — not a real event. This fictional Comets team celebration was created for a Live Card usability review. No team gathering is scheduled and no invitation is being sent. Imagine an end-of-season evening celebrating teamwork, effort and a memorable soccer season.",
+    "additionalGuestNotes": "AI demo — not a real event. The online link points to Envitefy for demonstration only. In a real team invitation, I would ask families to bring a water bottle, a camp chair and a favorite season photo, and note any food allergies separately.",
+    "collectRsvps": false,
+    "registryEnabled": false,
+    "actualVenueInput": "https://envitefy.com",
+    "actualOccasionInput": "Not specified",
+    "timezoneVerification": "Review showed Oct 26, 2026, 6:30 PM–8:00 PM Event local time. No timezone field was shown for this online event; America/Chicago was the intended test specification but its stored IANA value was not independently verified."
+  },
+  "execution": {
+    "status": "published; production owner route verified",
+    "generationAttempts": 1,
+    "publicationAuthorized": true,
+    "actualSteps": [
+      "Opened own blank localhost Live Card tab1960064632 and confirmed Your card step.",
+      "Entered exact title, expanded optional opening line and entered exact opening, entered exact soccer art prompt. Retained Not specified Occasion, no reference, default generation quality.",
+      "Clicked Generate & continue once at UI started time9:20:09 AM, then filled logistics during generation.",
+      "Entered Monday2026-10-26,6:30 PM start and8:00 PM end, Venue name=https://envitefy.com.",
+      "Entered exact AI-demo disclosure and practical notes in Message; inspected RSVP and retained default off; no registry.",
+      "Observed background checking after25seconds, title/opening artwork stage after29seconds, Ready to review after64seconds, attempt1.",
+      "Opened Review invitation; online venue resolved as Online event · https://envitefy.com. Review showed Monday date and6:30 PM–8:00 PM.",
+      "Optional wording correction notice offered Apply wording suggestion or Keep my wording without a visible proposed diff; chose Keep my wording.",
+      "Clicked Publish invitation once. Observed Saving artwork stage, then editor success: Your Live Card is published. It is ready to share.",
+      "Clicked Copy guest link; browser clipboard read was empty, then UI reported browser could not copy link. Share invitation reported sharing could not be opened.",
+      "Clicked Download invitation once. App reported Download started, but CUA download-event/path capture timed out after257.2394seconds and reset the browser kernel. No second download or generation was requested.",
+      "Opened Custom URL read-only dialog and read actual current URL http://localhost:3000/card/comets-team-celebration-at-online-event.",
+      "Saved published editor screenshot and marked own tab deliverable.",
+      "Navigated own tab to confirmed guest URL; navigation command timed out after10000ms, next state check reported Chrome automation blocked by another extension UI. Guest-page rendering remains unverified."
+    ],
+    "observedFriction": [
+      "Optional Occasion lacked a broad Sports/team celebration choice; Game day did not precisely match the event, so leaving it unspecified preserved momentum.",
+      "Generation status displayed attempt number, elapsed seconds and exact start time above the card after ready; these details did not help complete logistics.",
+      "Review offered optional wording corrections without showing the proposed wording in the visible notice, requiring Keep my wording to preserve exact approved text.",
+      "Online attendance was entered in a field labelled Venue name; the online result was only explicit after Review.",
+      "Copy guest link failed in this browser and its suggested Share invitation fallback also failed. Custom URL remained a successful way to read the address."
+    ],
+    "screenshots": [
+      "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/03-dad-published.png"
+    ],
+    "publishedUrl": "http://localhost:3000/card/comets-team-celebration-at-online-event",
+    "blocker": null,
+    "tabId": "1960064632",
+    "editorUrl": "http://localhost:3000/live-cards?edit=106eb277-396b-4833-9c3a-e72e5ceba68b",
+    "generationDurationUiSeconds": 64,
+    "downloadVerification": "App showed Download started; tool capture timed out after257.2394seconds. No file path recovered. This is incomplete download verification, not evidence that JPEG generation failed.",
+    "automationIssues": [
+      "Initial tab create returned a detachment response, but own new tab existed and was rebound successfully.",
+      "Browser typeText dropped characters in long design textarea; corrected with fill and verified exact prompt before the single generation.",
+      "Date/time fill alone changed DOM values but did not retain React state after another action. fill plus native ArrowUp/ArrowDown change committed each desired value. Automation-specific behavior; not treated as a human usability finding.",
+      "Post-download kernel reset and later extension UI block limited remaining browser verification."
+    ]
+  },
+  "review": {
+    "observedFindings": [
+      "The revised flow avoided duplicate title/opening inputs and allowed real artwork generation to run during logistics entry.",
+      "The generated sports scene matched the requested ball, cleats, soccer field, sunset and navy/orange celebration with expressive title lettering.",
+      "No generation retry, lettering repair or title revision was needed; one artwork attempt became publishable.",
+      "Publication completed through the normal UI and produced the current card URL read from owner controls."
+    ],
+    "simplificationIdeas": [
+      "Offer an Online option beside Venue name so virtual events do not need to be entered as if they were physical venues.",
+      "Replace the ready job metadata with a compact Your card is ready status; put attempt/time diagnostics behind details.",
+      "Show the exact proposed wording and what changes before requesting Apply or Keep wording.",
+      "Keep a visible selectable guest URL beside Copy guest link as a fallback when clipboard and native sharing are unavailable.",
+      "Retain the current single wording editor and concurrent generation; they reduced repeated entry without removing controls."
+    ],
+    "note": "AI father persona executed the real localhost app with actual provider artwork and publication. This is not feedback from a real parent. Public production-origin reachability and guest-page rendering were not independently verified."
+  },
+  "rootFollowup": {
+    "productionOwnerRouteVerified": true,
+    "note": "Root opened the actual published /card/ address; signed-in owner redirected to the matching owner workspace with saved title and artwork. Anonymous guest access was not tested."
+  }
+}

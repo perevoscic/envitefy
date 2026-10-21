@@ -97,8 +97,8 @@ export type OpenHouseOcrPayload = {
 
 export type GymnasticsScheduleEvent = {
   title: string;
-  start: string;
-  end: string;
+  start: string | null;
+  end: string | null;
   allDay?: boolean;
   timezone?: string;
   location?: string | null;

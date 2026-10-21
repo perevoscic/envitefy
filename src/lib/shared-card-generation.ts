@@ -88,21 +88,22 @@ export async function generateSharedCard(
       { signal },
     );
     const choice = response.choices[0];
-    recordCreationModelRun({
-      model,
-      workload: "extraction",
-      startedAt,
-      outcome:
-        choice?.finish_reason === "stop" && !choice.message.refusal ? "success" : "invalid_output",
-      usage: response.usage,
+    const record = (outcome: "success" | "invalid_output" | "refused" | "incomplete") => recordCreationModelRun({
+      model, workload: "extraction", startedAt, outcome, usage: response.usage, requestId: response._request_id,
     });
-    if (choice?.finish_reason !== "stop" || choice.message.refusal || !choice.message.content)
+    if (choice?.finish_reason !== "stop" || choice.message.refusal || !choice.message.content) {
+      record(choice?.message.refusal ? "refused" : "incomplete");
       throw new Error("The design could not be prepared. Please retry.");
-    const raw: unknown = JSON.parse(choice.message.content);
-    if (!raw || typeof raw !== "object" || Array.isArray(raw))
-      throw new Error("The design could not be read.");
+    }
+    let raw: unknown;
+    try { raw = JSON.parse(choice.message.content); }
+    catch (error) { record("invalid_output"); throw error; }
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+      record("invalid_output"); throw new Error("The design could not be read.");
+    }
     const design = readSharedCardDesign({ ...raw, version: 1, backgroundUrl: "/pending.webp" });
-    if (!design) throw new Error("The design could not be read.");
+    if (!design) { record("invalid_output"); throw new Error("The design could not be read."); }
+    record("success");
     // Enforce readable ink even if the planner chooses colors with insufficient contrast.
     const luminance = (hex: string) => {
       const channels = [1, 3, 5]
@@ -132,7 +133,7 @@ export async function generateSharedCard(
     );
     if (!result.ok) throw new LiveCardGenerationFailure(result.error.message, "design", result.error.code === "safety_refused" ? "safety_refused" : "generation_failed", [], result.error.retryable);
     signal?.throwIfAborted();
-    // Use the existing text-free artwork contract. No automatic second image job.
+    // Only prohibited content can stop a usable background. No automatic second image job.
     await onStage?.("checking");
     const check = await sharedCardGenerationDeps.verify(
       result.imageDataUrl,
@@ -142,21 +143,17 @@ export async function generateSharedCard(
         userIdea: sharedBackgroundPrompt(form, design),
       },
       "event_page",
-      { references, signal },
+      { safetyOnly: true, signal },
     );
     signal?.throwIfAborted();
     issues = check.issues;
-    if (check.status === "failed") {
-      const textIssues = ["unexpected_text", "incorrect_title", "missing_copy", "unreadable_text"];
-      const reason = check.issues.some((issue) => textIssues.includes(issue))
-        ? "The background included lettering, but this step needs artwork without words."
-        : "The background did not pass the design check.";
+    if (check.issues.includes("safety_mismatch")) {
       throw new LiveCardGenerationFailure(
-        `${reason} Your event details are still here. Retry design to try again.`,
-        "design", "quality_rejected", check.issues,
+        "The background was flagged for sexual content, nudity, violence or profanity. Your event details are still here. Change the design description and try again.",
+        "design", "safety_refused", check.issues,
       );
     }
-    // Preserve the existing background-check policy; record checker outages separately.
+    // Visual/copy findings never discard the image or stop lettering. Record outages separately.
     if (check.status === "unavailable") outcome = "verification_unavailable";
     await onStage?.("encoding");
     const original = Buffer.from(
@@ -176,7 +173,7 @@ export async function generateSharedCard(
       throw new LiveCardGenerationFailure("The artwork could not be prepared. Please retry.", "design", "invalid_artwork");
     });
     signal?.throwIfAborted();
-    // Originals stay in memory and are released; only the verified WebP is returned.
+    // Originals stay in memory and are released; return only the usable, encoded WebP.
     return { ...design, ...(form.generationQuality ? { quality: form.generationQuality } : {}), backgroundUrl: `data:image/webp;base64,${webp.toString("base64")}` };
   } catch (error) {
     outcome = signal?.aborted ? "cancelled" : error instanceof LiveCardGenerationFailure ? error.code : "generation_failed";

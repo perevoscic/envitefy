@@ -1,6 +1,8 @@
 import type { StudioProduct } from "./product-contract.ts";
 import { LIVE_CARD_ARTWORK } from "../live-card-artwork-layout.ts";
 import { creationModelBudget, creationTimeoutMs, recordCreationModelRun } from "../creation/openai-workloads.ts";
+import { openAiModelForRole } from "../openai-model-policy.ts";
+import { matchesSchema } from "../creation/source-evidence.ts";
 import OpenAI from "openai";
 import { toFile } from "openai/uploads";
 import { streamOpenAiImage, type ImageGenerationOptions } from "./openai-image-stream.ts";
@@ -65,15 +67,15 @@ function getOpenAiApiKey(): string {
 }
 
 function resolveTextModel(): string {
-  return process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-6-astra";
+  return openAiModelForRole("creative", process.env.STUDIO_OPENAI_TEXT_MODEL);
 }
 
 function resolveImageModel(): string {
-  return process.env.STUDIO_OPENAI_IMAGE_MODEL || "gpt-image-2.5-flare";
+  return openAiModelForRole("image", process.env.STUDIO_OPENAI_IMAGE_MODEL);
 }
 
 function resolveImageEditModel(): string {
-  return process.env.STUDIO_OPENAI_IMAGE_EDIT_MODEL || "gpt-image-2.5-flare";
+  return openAiModelForRole("image_edit", process.env.STUDIO_OPENAI_IMAGE_EDIT_MODEL);
 }
 
 function resolveImageSize(): "1024x1024" | "1536x1024" | "1024x1536" | "auto" {
@@ -177,9 +179,9 @@ async function postStructuredOpenAiContent(
   | { ok: true; raw: string; warnings: string[] }
   | { ok: false; error: StudioGenerationError; warnings: string[] }
 > {
+  const startedAt = Date.now();
   try {
     const client = getOpenAiClient();
-    const startedAt = Date.now();
     const completion = await client.chat.completions.create({
       model,
       ...creationModelBudget(model, "creative_plan"),
@@ -197,12 +199,17 @@ async function postStructuredOpenAiContent(
       ],
     }, { signal: AbortSignal.timeout(creationTimeoutMs("creative_plan")), maxRetries: 0 });
     const choice = completion.choices?.[0];
-    const outcome = choice?.message?.refusal ? "refused" : choice?.finish_reason !== "stop" ? "incomplete" : "success";
-    recordCreationModelRun({ model, workload: "creative_plan", startedAt, outcome, usage: completion.usage });
-    if (outcome !== "success") return { ok: false, error: buildError(outcome, "Invitation planning did not complete. Please try again."), warnings: [] };
+    let outcome: "refused" | "incomplete" | "invalid_output" | "success" = choice?.message?.refusal ? "refused" : choice?.finish_reason !== "stop" ? "incomplete" : "success";
     const raw = choice?.message?.content || "";
+    if (outcome === "success") {
+      const parsed = extractJsonObject(raw);
+      if (!matchesSchema(parsed, STUDIO_LIVE_CARD_RESPONSE_SCHEMA) || !normalizeLiveCardMetadata(parsed)) outcome = "invalid_output";
+    }
+    recordCreationModelRun({ model, workload: "creative_plan", startedAt, outcome, usage: completion.usage, requestId: completion._request_id });
+    if (outcome !== "success") return { ok: false, error: buildError(outcome, "Invitation planning did not complete. Please try again."), warnings: [] };
     return { ok: true, raw, warnings: [] };
   } catch (error: any) {
+    recordCreationModelRun({ model, workload: "creative_plan", startedAt, outcome: "error", requestId: error?.request_id });
     const message = error instanceof Error ? error.message : "OpenAI request failed";
     return {
       ok: false,

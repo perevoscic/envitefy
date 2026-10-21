@@ -1,0 +1,248 @@
+{
+  "conclusion": "The revised flow removes duplicate wording and preserves parallel work. Initial trials exposed difficult artwork recovery; all ten cards are now published, including the nonprofit card after its approved brief revision.",
+  "method": "Ten distinct AI agents used normal signed-in browser UI and actual generated artwork. Creation used the updated local builder and production backend. All cards are fictional online demos for Monday, October 26, 2026; no invitations or responses were sent. This is AI task testing, not human research or a completion-rate study. UI timings measure provider jobs. The implementation evolved during testing: the revised nonprofit attempt used advisory non-safety checks, and desktop preview placement was subsequently fixed. Intended timezone was Central; most screens displayed Event local time. Public URLs were verified as the signed-in owner with owner-workspace redirects; signed-out access was not tested.",
+  "priorities": [
+    [
+      "1. Make artwork readiness and recovery consistent",
+      "State one clear result: Ready, Needs a wording fix, or Optional style concern. Explain the issue in one sentence; keep detailed diagnostics collapsed. Preserve the existing background and exact words during an explicit lettering repair. Show checking when re-verifying an existing image."
+    ],
+    [
+      "2. Make online logistics explicit",
+      "Offer In person / Online with the relevant venue or event-link field and a visible timezone summary. Keep provider-backed venue resolution in final preparation. Put date, time and location beside Publish in full-screen Preview."
+    ],
+    [
+      "3. Show the actual wording edit before Apply",
+      "Present the current and suggested wording together, then offer Apply suggestion or Keep my wording. Retain one canonical title/opening editor and preserve unsaved logistics."
+    ],
+    [
+      "4. Keep Occasion optional and useful",
+      "Do not require a taxonomy choice to generate. Put Occasion above the examples it changes, or make an inferred occasion visible and editable. School, team and fundraiser creators could already proceed with General event."
+    ],
+    [
+      "5. Shorten the ordinary path; preserve advanced controls",
+      "Hide a different end date behind an option; make one guest message primary with clearly named additional notes. Keep optional RSVP, registry, reference and generation quality controls. Show a selectable public link when native Copy or Share is unavailable."
+    ]
+  ],
+  "trials": [
+    {
+      "id": 1,
+      "role": "Teacher",
+      "personaContext": "An elementary teacher planning a welcoming family literacy night.",
+      "source": "01-teacher.json",
+      "title": "Books & Blankets Family Night",
+      "opening": "AI demo — not a real event",
+      "prompt": "Create a warm, welcoming family literacy-night illustration inside a cozy elementary-school reading nook. A small blanket fort, open picture books with no readable book titles, soft amber string lights, floor cushions, and a friendly paper-cut owl form a clear central scene. Use rich teal, mustard, warm cream, and coral accents, layered paper textures, gentle depth, and soft evening lighting. Make it inviting for children ages 5–10 and their grown-ups, with no school logos, no recognizable children, and no implied real venue. Give the exact event title an expressive, easy-to-read storybook lettering treatment that fits the scene. Keep the supplied AI-demo opening line legible. Preserve the richness of the illustration rather than leaving a large blank center.",
+      "time": "6:00-7:00 PM",
+      "initial": "65 s",
+      "extra": "Repair + check",
+      "feedback": [
+        "Wording was entered once; logistics stayed editable during generation. One lettering repair took 83 s, followed by a 45 s same-image check. A remaining style concern became an advisory and publication succeeded.",
+        "A prefixed online URL was treated as a physical venue; the bare URL worked. The public slug retained the earlier venue wording. Show an explicit online link field and a concise style advisory."
+      ],
+      "image": "01-teacher-artwork.webp",
+      "cropScreenshot": false,
+      "published": true,
+      "revisedPrompt": null,
+      "url": "https://envitefy.com/card/books-and-blankets-family-night-at-online-demo-https-envitefy-com",
+      "blocker": null
+    },
+    {
+      "id": 2,
+      "role": "Mom",
+      "personaContext": "A busy mother planning a fictional eighth birthday.",
+      "source": "02-mom.json",
+      "title": "Nova's Galactic Eight",
+      "opening": "Mission: celebrate!",
+      "prompt": "An immersive, joyful space adventure for an eighth birthday: a small silver rocket lifting off from a moon base, layered indigo and teal galaxies, glowing coral planets, tiny golden stars and a playful friendly robot. Rich painted textures and cinematic light, vivid but readable. Expressive chunky retro-space lettering in warm cream and coral for the exact title and opening line; keep the scene detailed with a natural readable title pocket. This is an AI demo, not a real event.",
+      "time": "5:30-6:30 PM",
+      "initial": "78 s",
+      "extra": "1 repair",
+      "feedback": [
+        "Initial wording was correct and readable, but decorative objects in the isolated lettering layer blocked Publish. One repair passed in 72 s and the card was published.",
+        "The form could be shortened for a one-hour party by hiding a different end date. Explain the distinction between the two guest-message fields."
+      ],
+      "image": "02-mom-artwork.webp",
+      "cropScreenshot": false,
+      "published": true,
+      "revisedPrompt": null,
+      "url": "https://envitefy.com/card/nova-s-galactic-eight-at-online-event",
+      "blocker": null
+    },
+    {
+      "id": 3,
+      "role": "Dad / team parent",
+      "personaContext": "A father coordinating a youth soccer team celebration.",
+      "source": "03-dad.json",
+      "title": "Comets Team Celebration",
+      "opening": "One team. A season to remember.",
+      "prompt": "An immersive youth soccer celebration at golden hour on a beautiful community soccer field: a scuffed soccer ball and a pair of cleats in the foreground, a goal and lush green pitch receding into the distance, warm stadium lights starting to glow, navy and bright orange pennants, a few tasteful ribbons and confetti catching the sunset. Rich natural textures, cinematic depth and joyful end-of-season atmosphere. No identifiable people, no team logos or brand marks. Leave a naturally readable area in the upper sky for the exact title and opening line; keep the field and soccer scene richly detailed.",
+      "time": "6:30-8:00 PM",
+      "initial": "64 s",
+      "extra": "None",
+      "feedback": [
+        "One generation produced a publishable card with the requested soccer scene; no repair was needed. The updated wording summary removed repeated entry.",
+        "Online entry was hidden under Venue name. Share failed in this browser; a visible selectable public URL would provide a useful fallback."
+      ],
+      "image": "03-dad-artwork.webp",
+      "cropScreenshot": false,
+      "published": true,
+      "revisedPrompt": null,
+      "url": "https://envitefy.com/card/comets-team-celebration-at-online-event",
+      "blocker": null
+    },
+    {
+      "id": 4,
+      "role": "Event creator",
+      "personaContext": "A professional creator launching a neighborhood supper club.",
+      "source": "04-event-creator.json",
+      "title": "The Long Table | AI Demo",
+      "opening": "A seat at something new",
+      "prompt": "A cinematic neighborhood supper-club launch in an intimate brick courtyard at blue hour. One long oak table is the focal subject, set with richly textured terracotta plates, amber glass, embroidered ivory linen, figs, rosemary, olive branches and small candle flames. Warm overhead cafe lights sweep into deep indigo evening; a softly glowing open kitchen and leafy brick walls create layered depth. Sophisticated hospitality editorial photography, warm copper, burgundy and deep ink blue, tactile materials, inviting and celebratory. Expressive coordinated lettering for the exact title The Long Table | AI Demo and opening line A seat at something new, with bold elegant serif title lettering and a lighter restrained opening line, arranged in a naturally readable pocket of the real scene. Keep the courtyard immersive and detailed; do not clear a large blank center or lower half. No logos, other words, real people or branded products.",
+      "time": "6:30-8:30 PM",
+      "initial": "82 s",
+      "extra": "None",
+      "feedback": [
+        "One generation produced the detailed supper-club scene and passed without repair. All logistics could be entered while artwork ran; the initial job took 82 s.",
+        "Full-screen Preview omits the nearby logistics summary. Optional wording advice did not display a proposed difference. Keep exact wording and professional art-direction control."
+      ],
+      "image": "04-event-creator-artwork.webp",
+      "cropScreenshot": false,
+      "published": true,
+      "revisedPrompt": null,
+      "url": "https://envitefy.com/card/the-long-table-ai-demo-at-online-event",
+      "blocker": null
+    },
+    {
+      "id": 5,
+      "role": "Wedding planner",
+      "personaContext": "A wedding planner coordinating a garden welcome evening.",
+      "source": "05-wedding-planner.json",
+      "title": "Garden Welcome Evening — AI Demo",
+      "opening": "A little garden magic before the big day",
+      "prompt": "Create a romantic editorial garden welcome-evening invitation at blue hour. An immersive candlelit orangery opens onto a lush walled garden, with climbing ivory roses, soft sage foliage, pale apricot sweet peas, linen-draped cocktail tables, crystal glassware, aged limestone, and warm brass lanterns. Use layered photographic depth, rich material detail, and intentional warm light against the dusky blue sky. The focal subject is a beautifully arranged entrance framed by flowers, with a naturally readable lettering pocket integrated above it, not a giant blank center. Palette: sage, cream, apricot, antique brass, and twilight blue. Elegant high-contrast editorial serif lettering with restrained fine-line flourishes; no purple script, no generic wedding rings, no stock-photo collage. Preserve the lush scene behind the exact supplied event title and opening line. Include only the supplied wording; this is explicitly an AI demo, not a real event.",
+      "time": "6:30-8:00 PM",
+      "initial": "66 s",
+      "extra": "None",
+      "feedback": [
+        "One generation passed in 66 s; the saved production card was verified. The opening line was small and low contrast in the inspected preview.",
+        "Occasion changes starting ideas positioned above it. Move the optional control above those ideas, and show the actual proposed wording change before Apply."
+      ],
+      "image": "05-wedding-planner-artwork.webp",
+      "cropScreenshot": false,
+      "published": true,
+      "revisedPrompt": null,
+      "url": "https://envitefy.com/card/garden-welcome-evening-ai-demo-at-online-event",
+      "blocker": null
+    },
+    {
+      "id": 6,
+      "role": "PTO volunteer",
+      "personaContext": "A parent volunteer creating a school fundraiser concept.",
+      "source": "06-pto-volunteer.json",
+      "title": "Fall Together — AI Demo",
+      "opening": "School fundraiser concept",
+      "prompt": "Create a warm, immersive autumn school fundraiser scene in an elegant illustrated storybook style: a welcoming courtyard at golden hour with glowing string lights, copper and amber maple leaves, pumpkins, a bake-sale table with homemade treats, handcrafted pennant bunting, and a small stack of books suggesting community support for learning. Make the bake-sale table the clear focal subject, with layered depth, tactile paper and wood textures, soft candlelike lighting, and a rich burnt-orange, cranberry, forest-green and cream palette. Keep a naturally readable pocket for expressive warm cream title lettering without a large blank center. No identifiable school, school name, real people, mascot, logos, sponsor brands, prices, QR codes or extra lettering. This is an AI demo invitation concept, not a real fundraiser.",
+      "time": "5:30-7:00 PM",
+      "initial": "68 s",
+      "extra": "Repair + check",
+      "feedback": [
+        "Logistics and a fictional RSVP host phone were entered during generation. Initial lettering had correct, readable words but raised a style-only concern. One repair and one same-image check were performed.",
+        "School fundraiser was absent from optional Occasion. The two guest-message disclosures had overlapping helper text. Keep RSVP optional and reveal only the contact fields it needs."
+      ],
+      "image": "06-pto-artwork.webp",
+      "cropScreenshot": false,
+      "published": true,
+      "revisedPrompt": null,
+      "url": "https://envitefy.com/card/fall-together-ai-demo-at-online-event",
+      "blocker": null
+    },
+    {
+      "id": 7,
+      "role": "Office administrator",
+      "personaContext": "An office administrator organizing an innovation workshop.",
+      "source": "07-corporate.json",
+      "title": "Innovation After Hours",
+      "opening": "Make room for bright ideas",
+      "prompt": "Create an immersive editorial architectural photograph of a modern innovation studio at blue hour, with a sculptural oak collaboration table as the focal subject, translucent glass partitions, brushed aluminum prototypes, warm pendant lights and deep cobalt city reflections. Layer foreground sketchbooks, tactile paper models and a subtle amber glow for rich depth. Use a refined navy, copper and warm ivory palette, confident contemporary typography and a naturally readable title pocket integrated into the architecture. Sophisticated, welcoming and inventive; no corporate logos, no people and no flat stationery border.",
+      "time": "6:00-7:00 PM",
+      "initial": "91 s",
+      "extra": "1 repair",
+      "feedback": [
+        "The first opening line had insufficient contrast against dark glass. One explicit repair passed in 69 s and the published production card was verified.",
+        "An online event had no visible named-timezone confirmation. Add an event-link label and a concise timezone summary while retaining venue resolution in final preparation."
+      ],
+      "image": "07-corporate-artwork.webp",
+      "cropScreenshot": false,
+      "published": true,
+      "revisedPrompt": null,
+      "url": "https://envitefy.com/card/innovation-after-hours-at-online-event",
+      "blocker": null
+    },
+    {
+      "id": 8,
+      "role": "Nonprofit coordinator",
+      "personaContext": "A volunteer coordinator preparing a community kindness evening.",
+      "source": "08-nonprofit.json",
+      "title": "Lanterns of Kindness",
+      "opening": "Small acts. Brighter nights.",
+      "prompt": "Create an immersive dimensional paper sculpture of a welcoming community workshop at blue hour. A glowing amber paper lantern is the clear focal subject on a long walnut table, surrounded by carefully folded care packages, colorful fabric scraps, simple heart-shaped paper tags without writing, and small jars of autumn flowers. Layer an open doorway, softly lit shelves, warm window squares and navy evening sky behind the table for depth. Use rich indigo, burnt orange, warm cream and touches of sage, tactile deckled paper edges, sculpted folds, soft shadows and cinematic lamplight. Make the scene abundant, hopeful and neighborly with a naturally readable title pocket above the lantern. Expressive warm cream cut-paper lettering should suit this handmade scene. No logos, real organizations or extra printed words.",
+      "time": "6:00-7:30 PM",
+      "initial": "Failed: 34 s",
+      "extra": "Retry + new brief",
+      "feedback": [
+        "The original background and one retry failed (34 s and 27 s). The user then approved one revised lantern-garden brief. That attempt was ready in 79 s and published without repair or rechecking.",
+        "The revised run used the updated advisory-check policy: correct readable wording with decorative findings could proceed. The earlier conflicting failure/progress display and approval rejection remain recorded as historical evidence."
+      ],
+      "image": "08-nonprofit-artwork.webp",
+      "cropScreenshot": false,
+      "published": true,
+      "revisedPrompt": "Design a general event Live Card featuring a garden path lined with glowing lanterns leading to a beautifully decorated pavilion. Use peach, emerald and soft gold, rendered as a dimensional paper sculpture with tactile layers and gentle shadows. Keep a clear focal subject, layered surroundings and intentional lighting, with a naturally readable title pocket.",
+      "url": "https://envitefy.com/card/lanterns-of-kindness-at-online-event",
+      "blocker": null
+    },
+    {
+      "id": 9,
+      "role": "Small-business owner",
+      "personaContext": "A shop owner promoting a creative printing workshop.",
+      "source": "09-small-business.json",
+      "title": "Ink & Imagination Studio",
+      "opening": "A creative shop workshop",
+      "prompt": "A richly detailed screen-printing studio at golden hour, with a central carved botanical printing block, ink rollers, handmade paper and a small fern. Warm terracotta, deep forest green and cream; tactile gouache illustration, artisan shop atmosphere, dimensional materials and welcoming light. Expressive legible lettering suited to a creative business workshop, with a naturally readable title area.",
+      "time": "5:00-6:00 PM",
+      "initial": "56 s",
+      "extra": "None",
+      "feedback": [
+        "The card published after one 56 s generation with no repair. Exact requested wording and the printing-studio scene were preserved.",
+        "Apply wording suggestion offered no visible before/after text. Native Share failed. Show the proposed edit, an online-link cue and a selectable guest-link fallback."
+      ],
+      "image": "09-small-business-artwork.webp",
+      "cropScreenshot": false,
+      "published": true,
+      "revisedPrompt": null,
+      "url": "https://envitefy.com/card/ink-and-imagination-studio-at-online-event",
+      "blocker": null
+    },
+    {
+      "id": 10,
+      "role": "Community host",
+      "personaContext": "A retired neighborhood host planning a tea and story swap.",
+      "source": "10-community-host.json",
+      "title": "A Cup of Stories | AI Demo",
+      "opening": "Warm tea, good company",
+      "prompt": "A welcoming autumn sunroom prepared for a neighborhood tea and story swap: a round oak table with a ceramic teapot, mismatched porcelain cups, a small plate of biscuits, folded linen napkins and a well-loved storybook. Honey-colored afternoon light, leafy garden beyond the windows, warm terracotta and sage accents, rich tactile watercolor illustration with layered depth. Expressive readable lettering that feels friendly and graceful. No people, no extra words or dates.",
+      "time": "3:00-4:30 PM",
+      "initial": "66 s",
+      "extra": "Repair + check",
+      "feedback": [
+        "The initial card and one repair both raised decorative-layer style findings despite correct readable words. A 67 s same-image check then passed unchanged artwork; publication succeeded.",
+        "Generation to observed publication took 7 min 28 s in this automated trial, including recovery/navigation. Verification initially displayed Creating title artwork. Make check status and the next action accurate."
+      ],
+      "image": "10-community-host-artwork.webp",
+      "cropScreenshot": false,
+      "published": true,
+      "revisedPrompt": null,
+      "url": "https://envitefy.com/card/a-cup-of-stories-ai-demo-at-online-event",
+      "blocker": null
+    }
+  ]
+}

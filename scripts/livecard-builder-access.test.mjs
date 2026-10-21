@@ -3,6 +3,8 @@ import fs from "node:fs";
 import vm from "node:vm";
 import test from "node:test";
 import ts from "typescript";
+import { readLiveCardForm, validateLiveCard } from "../src/lib/livecard-builder.ts";
+import { liveCardCreationCategories } from "../src/lib/creation-access.ts";
 
 function load(file, imports) {
   const module = { exports: {} };
@@ -199,6 +201,37 @@ test("title lettering requires sign-in, validates input and never persists gener
   assert.equal(response.body.headline.title, valid.form.title);
   assert.equal(generated, 1);
   assert.equal(context.writes(), 0);
+});
+
+test("artwork jobs accept an unspecified occasion and retain imported category authorization", async () => {
+  const context = setup();
+  const categories = [];
+  const jobs = [];
+  context.imports["@/lib/livecard-api-access"] = { builderApiAccess: async () => null };
+  context.imports["@/lib/livecard-builder"] = { readLiveCardForm, validateLiveCard };
+  context.imports["@/lib/creation-access"] = { liveCardCreationCategories };
+  context.imports["@/lib/creation-access-server"] = {
+    checkCreationAccess: async (_userId, requirement) => {
+      categories.push(requirement.categories);
+      return requirement.categories.includes("gymnastics") ? { status: 403 } : null;
+    },
+  };
+  context.imports["@/lib/shared-card-design"] = { readSharedCardDesign: () => null };
+  context.imports["next/server"].after = () => {};
+  context.imports["@/lib/livecard-artwork-jobs"] = {
+    createArtworkJob: async (_owner, _key, form) => { jobs.push(form); return { id: "job", state: "queued" }; },
+  };
+  const { POST } = load("src/app/api/livecard-builder/jobs/route.ts", context.imports);
+  const request = (form) => ({ headers: { get: () => "same-origin" }, json: async () => ({ form, key: "draft" }) });
+  const form = { title: "Science night", design: "Stars and planets", eventType: "" };
+  assert.equal((await POST(request(form))).status, 202);
+  assert.equal(jobs[0].eventType, "General event");
+  assert.equal(jobs[0].headlineIntro, "");
+  assert.deepEqual(categories[0], ["general"]);
+
+  assert.equal((await POST(request({ ...form, creationCategory: "gymnastics" }))).status, 403);
+  assert.deepEqual(categories[1], ["gymnastics"]);
+  assert.equal(jobs.length, 1, "a general occasion cannot bypass the imported category grant");
 });
 
 test("selected venue IDs use the shared fallback resolver, including earlier ID-only requests", async () => {

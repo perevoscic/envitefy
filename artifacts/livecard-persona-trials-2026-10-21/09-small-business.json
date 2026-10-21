@@ -1,0 +1,125 @@
+{
+  "startedAt": "2026-10-21T14:35:03.464Z",
+  "tabId": "1960064650",
+  "inputs": {
+    "persona": "AI persona09 — small-business owner",
+    "title": "Ink & Imagination Studio",
+    "openingLine": "A creative shop workshop",
+    "look": "A richly detailed screen-printing studio at golden hour, with a central carved botanical printing block, ink rollers, handmade paper and a small fern. Warm terracotta, deep forest green and cream; tactile gouache illustration, artisan shop atmosphere, dimensional materials and welcoming light. Expressive legible lettering suited to a creative business workshop, with a naturally readable title area.",
+    "occasion": "Not specified",
+    "date": "2026-10-26",
+    "startTime": "17:00",
+    "endTime": "18:00",
+    "venue": "https://envitefy.com",
+    "message": "AI demo—not a real event. This fictional creative-shop workshop was created by an AI persona for a Live Card usability trial. No attendance, purchase, registration, or response is expected.",
+    "rsvp": false,
+    "registry": false
+  },
+  "actions": [
+    {
+      "at": "2026-10-21T14:35:12.975Z",
+      "action": "Generate & continue clicked once",
+      "result": "Moved immediately to editable Event details while background generation ran"
+    },
+    {
+      "at": "2026-10-21T14:35:46.564Z",
+      "action": "Filled date/time/venue and message, visited RSVP and Registry, returned to When & Where",
+      "result": "Native setValue retained 2026-10-26, 17:00, 18:00 and exact venue URL across tabs; RSVP/Registry off"
+    },
+    {
+      "at": "2026-10-21T14:36:36.654Z",
+      "action": "Review invitation",
+      "result": "Ready after one generation. Review ran wording check and showed optional correction controls without a visible proposed correction; chose Keep my wording."
+    },
+    {
+      "at": "2026-10-21T14:37:25.177Z",
+      "action": "Published from fullscreen eye Preview",
+      "result": "Saving artwork progress, then explicit published success and saved edit URL"
+    },
+    {
+      "at": "2026-10-21T14:37:42.957Z",
+      "action": "Copy guest link and Share invitation",
+      "result": "Copy success toast; clipboard API returned empty. Share returned Sharing could not be opened. Please try again."
+    },
+    {
+      "at": "2026-10-21T14:39:33.833Z",
+      "action": "Opened production /card/ route using observed saved slug",
+      "result": "Owner redirect verified with correct saved product"
+    }
+  ],
+  "outcome": "published",
+  "automationIssues": [
+    "createBrowserTab returned detached after successfully creating tab; recovered from tab inventory without duplicate.",
+    "getTab assignment to an undeclared variable reported variable error after binding; redeclared var and resumed existing tab.",
+    "Copy guest link UI reported success, but tab.clipboard.readText returned empty; exact URL recovered from rendered saved-address dialog.",
+    "Production navigation returned detached after successfully loading owner route; recovered same tab ID and verified saved content."
+  ],
+  "generationAttempts": 1,
+  "eventId": "088a7ffe-9993-4f11-91ae-831fdea44621",
+  "publicURL": "https://envitefy.com/card/ink-and-imagination-studio-at-online-event",
+  "localShareURL": "http://localhost:3000/card/ink-and-imagination-studio-at-online-event",
+  "publicURLSource": "Exact saved slug and /card/ prefix observed in Custom URL dialog and production owner workspace. Copy guest link displayed Guest link copied, but CUA clipboard reader returned empty.",
+  "productionVerification": {
+    "requestedURL": "https://envitefy.com/card/ink-and-imagination-studio-at-online-event",
+    "observedURL": "https://envitefy.com/event/ink-and-imagination-studio-at-online-event?tab=design",
+    "result": "Production card route owner-redirected to saved event workspace, showing correct title, artwork, public /card/ address and editor link for event ID."
+  },
+  "timings": {
+    "generationStart": "2026-10-21T14:35:12.975Z",
+    "generationReadyObservedAt": "2026-10-21T14:36:36.654Z",
+    "generationJobReportedSeconds": 56,
+    "publishClickedAt": "2026-10-21T14:37:25.177Z",
+    "publishedObservedAt": "2026-10-21T14:37:42.957Z",
+    "productionVerifiedAt": "2026-10-21T14:39:33.833Z",
+    "trialElapsedSeconds": 270
+  },
+  "repairAttempts": 0,
+  "backgroundRetries": 0,
+  "observedFriction": [
+    {
+      "type": "product UX",
+      "object": "Review wording suggestion",
+      "evidence": "Optional wording corrections are available, Apply wording suggestion and Keep my wording; no proposed changed text was displayed.",
+      "impact": "A shop owner cannot assess whether applying the suggestion is desirable.",
+      "recommendation": "Show the exact proposed wording and highlight changed words before Apply."
+    },
+    {
+      "type": "product UX",
+      "object": "Online location entry",
+      "evidence": "Only Venue name field appears in initial details; entering exact https://envitefy.com was recognized as Online event only in Review.",
+      "impact": "A business owner hosting a remote workshop must infer where a meeting URL belongs.",
+      "recommendation": "Offer an In person / Online choice and a clearly labelled meeting-link input while preserving one simple initial location row."
+    },
+    {
+      "type": "product/tool interaction",
+      "object": "Share invitation",
+      "evidence": "Visible Sharing could not be opened. Please try again. after click on published local builder.",
+      "impact": "Native share did not open in this browser session; no message was sent.",
+      "recommendation": "Provide a visible selectable guest URL and a Copy link fallback within the share panel."
+    },
+    {
+      "type": "product UX",
+      "object": "Review layout",
+      "evidence": "Actual screenshot shows card preview with save/publish directly below; logistics summary is further down the page.",
+      "impact": "The main final decision shows artwork prominently but details need additional scrolling.",
+      "recommendation": "Keep a compact date, time and online-location summary adjacent to Publish."
+    }
+  ],
+  "positiveFindings": [
+    "Your card clearly owns title and optional opening line; Event details repeats wording with Edit card text rather than duplicate fields.",
+    "Generation immediately opened editable logistics; all logistics and disclosure were entered while the background and lettering ran.",
+    "Native date/time inputs retained values after tab navigation.",
+    "Message helper clearly explained it appears in Overview and is not printed.",
+    "RSVP and Registry defaulted off.",
+    "Review accurately recognized online URL, date and time; publication needed one action and then offered Copy guest link.",
+    "Generated illustration and expressive title matched the creative-shop brief without needing repair."
+  ],
+  "screenshots": [
+    "09-small-business-card-preview.jpg",
+    "09-small-business-published.jpg",
+    "09-small-business-production-verified.jpg"
+  ],
+  "feedbackScope": "AI persona usability trial, not evidence from a human small-business owner. No real attendees, invitations, email or private contact data entered.",
+  "currentTabId": "1960064650",
+  "currentState": "Production saved owner workspace, Design tab, marked deliverable"
+}

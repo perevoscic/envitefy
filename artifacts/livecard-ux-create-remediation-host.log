@@ -1,0 +1,1451 @@
+npm notice run envitefy@0.1.0 test:create-remediation
+npm notice run node scripts/run-create-remediation-tests.mjs
+✔ slug matching downloads only the selected event after a metadata query (83.1525ms)
+✔ new nested embedded images are rejected before a database write (107.168ms)
+✔ card pages bind cursors and return a bounded page without fetching event JSON (15.6407ms)
+✔ private media checks the current owner before reading encrypted Blob bytes (8.4033ms)
+✔ migration dry-run is read-only and never loads the upload pipeline (9.8674ms)
+✔ public discovery persistence uploads copied nested images once and refuses private media (45.9234ms)
+✔ medical migration verifies the deployed encryption key before uploading (41.1124ms)
+✔ migration refuses a concurrent edit instead of replacing the changed event (9.7492ms)
+✔ nested migration deduplicates verified uploads and retains input on verification failure (406.9727ms)
+✔ attachment migration preserves exact original bytes and filename beside a verified public WebP (62.4879ms)
+✔ email invitations support a recipient without an account and store only a token hash (546.8875ms)
+✔ acceptance rejects wrong accounts, expired, cancelled and previously used invitations (1297.598ms)
+✔ pending notifications follow the invited account, including signup after the invitation, without exposing tokens or event data (326.8384ms)
+✔ pending notifications exclude expired, revoked, replaced, deleted, unsupported and already joined events (2659.915ms)
+✔ dashboard decline is bound to the invited account and closes only a pending invitation (418.2077ms)
+✔ dashboard acceptance rechecks account binding, expiry, revocation and eligibility under the existing lock (2148.8957ms)
+✔ recipient API lists only signed-in invitations and requires explicit same-site acceptance by ID (363.3106ms)
+✔ resending invalidates the old link and only the owner can grant or remove access (354.1963ms)
+✔ a co-host edits the existing event, keeps ownership, and revocation blocks a subsequent save (391.5009ms)
+✔ concurrent saves accept one revision and reject the stale writer without overwriting (422.3373ms)
+✔ saved editor snapshots cannot replace newer server artwork-job results (444.9072ms)
+✔ an editor rebases only server artwork bookkeeping and preserves real content conflicts (12.3021ms)
+✔ co-host access does not include private scans or unpublishing (413.9035ms)
+✔ editor revision tracking is isolated and keeps the baseline after a rejected save (5.1235ms)
+✔ a custom link save advances the editor revision before a date save, while other edits still conflict (4.2391ms)
+✔ platform text errors preserve the revision and produce a usable editor message (5.7228ms)
+✔ public link API returns its committed revision and retains owner and conflict checks (485.6248ms)
+✔ collaboration schema commits table creation and client access revocation together (470.381ms)
+✔ a migrated secure collaboration schema is checked once without DDL or table locks (456.0776ms)
+✔ access management reads ownership without running public-link setup or returning artwork (429.7168ms)
+✔ invitation APIs require owner management and explicit authenticated acceptance (23.5812ms)
+✔ signup co-host invitations use the same recipient binding and open the form host dashboard (1030.0953ms)
+✔ signup co-host saves retain reservations, update both stores and the title, and reject stale or revoked writes (1017.3164ms)
+✔ published signup co-hosts can publish edits but cannot unpublish, remove the form or change its public URL (990.1515ms)
+✔ simultaneous signup definition saves accept only one baseline and a co-host cannot save without one (972.0774ms)
+✔ draft rendering rechecks co-host membership in its database read and keeps anonymous drafts private (25.1465ms)
+✔ a resumed browser template draft keeps its earlier revision until a successful explicit save (10.2619ms)
+✔ view changes stay clean and saved pages expose only conditional Save changes (1.0705ms)
+✔ published saves update the same record with the original revision and guest activity (3.8995ms)
+✔ template publication saves the latest editor snapshot without losing RSVP counts (15.0851ms)
+✔ a recovered create applies current edits to its existing identity (0.4273ms)
+✔ save failures surface the server conflict without recording a new baseline (0.5116ms)
+✔ approved fifteen-to-thirty transition preserves metered spend and resumes durably (38.6739ms)
+✔ fresh additional thirty-dollar allowance keeps prior charges and gives exactly thirty remaining (31.8382ms)
+✔ authorized ten-to-fifteen transition preserves spend and phase allocations without resetting history (69.6332ms)
+✔ approved increase clears only a reached-target halt and retains measured overrun (29.7884ms)
+✔ budget increase cannot clear quota or uncertain-charge halts (42.6111ms)
+✔ gateway forwards explicit budget authorization into the existing ledger (38.6894ms)
+✔ studio visual QA inline images keep Astra and real multimodal payload unchanged (474.9088ms)
+✔ metered vision rejects remote or unreadable references without provider calls (22.1938ms)
+✔ named image completion SSE events work when payload omits redundant type (24.4564ms)
+✔ metered overrun settlement and exact stopping request survive journal restart (19.6757ms)
+✔ incomplete image SSE retains its estimate and refuses subsequent paid work (24.7595ms)
+✔ SSE account quota errors are identified even after HTTP success headers (25.3745ms)
+✔ explicit metered transition preserves legacy spend and pools phases durably (43.5474ms)
+✔ metered resume halts on unfinished prior charges and cannot discard reservations (15.7029ms)
+✔ metered text estimate preserves Astra and labels its input count as an estimate (0.3433ms)
+✔ Flare estimate uses its own official quality formula and preserves all request bytes (0.273ms)
+✔ image usage reconciliation prices modalities, validates sums, and counts partial allowance (0.1211ms)
+✔ metered image generation reconciles usage and records an estimate without changing quality (19.2431ms)
+✔ metered image SSE settles on completed event without Chat Completions DONE (17.4494ms)
+✔ metered multipart edits preserve binary payload and reconcile streamed edit completion (22.7351ms)
+✔ metered missing usage halts queued retries before another paid request (29.6644ms)
+✔ metered actual overrun is fully recorded and stops concurrent requests at total target (24.8167ms)
+✔ provider quota and ordinary 429 failures are distinct durable stop reasons (54.4987ms)
+✔ metered requests whose estimate exceeds remaining target never reach upstream (15.2006ms)
+✔ ledger caps configured budget at $60 and cannot silently change resume limits (22.177ms)
+✔ concurrent reservations cannot exceed a phase allocation (11.5574ms)
+✔ uncertain charges survive restart, and a second live owner is refused (20.3342ms)
+✔ partial journal writes fail closed instead of discarding reservations (6.0794ms)
+✔ usage exceeding a reservation halts future calls (13.4463ms)
+✔ text bound uses documented model limits, all candidates, longest context and highest possible tier (0.6236ms)
+✔ both JSON image generation and multipart image editing have explicit unbounded-cost blockers (1.9127ms)
+✔ usage prices cache writes and does not infer missing cache metadata is free (0.2051ms)
+✔ gateway forwards unchanged prompts/models and serializes concurrent paid requests (153.0675ms)
+✔ SSE is forwarded while final usage settles the reservation (46.5471ms)
+✔ missing usage, HTTP errors and incomplete SSE retain their full maximum (30.3435ms)
+✔ retries consume fresh reservations and stop before a call that exceeds remaining budget (23.5586ms)
+✔ unauthorized, unknown, image and over-budget requests never reach upstream (22.8301ms)
+✔ mock destinations cannot receive real credentials or target external hosts (0.4688ms)
+✔ tiny Astra input does not turn an undocumented token estimate into a hard cost bound (0.188ms)
+✔ Standard tier does not bypass Astra or explicit high-quality Flare blockers (16.604ms)
+✔ event-date override validates real ISO calendar dates (1.6563ms)
+✔ all 93 date overrides preserve the frozen brief, facts, clocks and scenario identity (35.6081ms)
+✔ field-trip departure and corrected return survive the date policy (5.6818ms)
+✔ report expectations use attempt-bound effective brief and retain prior attempt dates (5.38ms)
+✔ guest guard allows only one matching synthetic RSVP and local reads (1.2419ms)
+✔ map and calendar probes validate destinations without opening providers (0.4706ms)
+✔ guest journey exercises the local fixture UI and archives attempt evidence (2018.4164ms)
+✔ EventRsvpPrompt fixtures use split names, direct/contact submit labels, and inline confirmation (2220.5427ms)
+✔ captured body times out if loadingFinished never arrives or CDP body retrieval hangs (72.3514ms)
+✔ capture close and spontaneous CDP/page close reject pending bodies promptly (0.9299ms)
+✔ detach rejection does not strand body consumers and repeated close is stable (0.3298ms)
+✔ fallback response text also has a bounded wait (335.7367ms)
+✔ dedicated Chromium capture retains large streamed generation bodies and serial replies (1678.8815ms)
+✔ campaign operation deadline bounds a response that never finishes (23.4778ms)
+✔ campaign operation preserves resolution and rejection and removes abort listeners (0.3626ms)
+✔ campaign cancellation rejects pending and already-aborted waits without orphaning late errors (1.379ms)
+✔ the offline runner blocks real external fetch and HTTP transports before sending (0.8961ms)
+✔ isolated loopback fixtures remain usable with the offline network guard (29.4089ms)
+✔ built-in dataset covers missing facts, roles, complete URLs, negation, languages and injection (0.9206ms)
+✔ factual scoring fails fabricated dates and shortened URLs despite valid JSON (0.2804ms)
+✔ invalid fixture definitions and unbounded repeat/call values fail before provider access (0.4406ms)
+✔ cost estimation separates cached tokens and never invents missing rates or usage (0.1668ms)
+✔ summary includes request failures, tail latency and all known costs per passing result (0.3511ms)
+✔ background failures expose a specific reason, never auto-retry, and keep diagnostics bounded (24.3194ms)
+livecard_generation {
+  stage: 'lettering',
+  durationMs: 1,
+  attempt: 1,
+  outcome: 'success',
+  issues: []
+}
+✔ editing a saved title loads the relative background through the real reference resolver (16.9588ms)
+✔ unsaved WebP backgrounds reach lettering directly without a fetch or upload (32.4493ms)
+✔ headline generation receives only approved title, opening line and visual direction (0.6244ms)
+✔ lettering receives this event's category and palette without a fixed birthday treatment (0.3284ms)
+livecard_generation {
+  stage: 'lettering',
+  durationMs: 3,
+  attempt: 1,
+  outcome: 'success',
+  issues: []
+}
+livecard_generation {
+  stage: 'lettering',
+  durationMs: 2,
+  attempt: 1,
+  outcome: 'success',
+  issues: []
+}
+livecard_generation {
+  stage: 'lettering',
+  durationMs: 2,
+  attempt: 1,
+  outcome: 'quality_rejected',
+  issues: []
+}
+livecard_generation {
+  stage: 'lettering',
+  durationMs: 5,
+  attempt: 1,
+  outcome: 'quality_rejected',
+  issues: []
+}
+livecard_generation {
+  stage: 'lettering',
+  durationMs: 2,
+  attempt: 1,
+  outcome: 'verification_unavailable',
+  issues: []
+}
+livecard_generation {
+  stage: 'lettering',
+  durationMs: 4,
+  attempt: 1,
+  outcome: 'verification_unavailable',
+  issues: []
+}
+✔ generated lettering requires verification, preserves exact text, and returns only WebP in memory (24.5066ms)
+livecard_generation {
+  stage: 'lettering',
+  durationMs: 2,
+  attempt: 1,
+  outcome: 'quality_rejected',
+  issues: [ 'missing_copy' ]
+}
+livecard_generation {
+  stage: 'lettering',
+  durationMs: 2,
+  attempt: 1,
+  outcome: 'quality_rejected',
+  issues: [ 'missing_copy' ]
+}
+livecard_generation {
+  stage: 'lettering',
+  durationMs: 2,
+  attempt: 1,
+  outcome: 'verification_unavailable',
+  issues: []
+}
+livecard_generation {
+  stage: 'lettering',
+  durationMs: 2,
+  attempt: 1,
+  outcome: 'cancelled',
+  issues: []
+}
+✔ checker rejection retains the candidate and never requests an automatic repair (13.0931ms)
+✔ specific beach access names tolerate repeated words and provider descriptors (1.3835ms)
+✔ venue selection needs a unique geographical match and honors supplied address conflicts (0.2413ms)
+✔ specific venue names resolve without requiring a city; ambiguous branches remain choices (0.2141ms)
+✔ venue queries match provider names plus street context without guessing a branch (0.1758ms)
+✔ place resolution uses provider coordinates and IANA timezone; a timezone API failure uses geographic boundaries (18.0241ms)
+✔ online meetings retain their link and organizer-selected local timezone (0.1692ms)
+✔ selected branches use source-backed fallback when Maps details fail (0.8313ms)
+✔ deferred results preserve newer queries, unrelated edits, and removed locations (0.3348ms)
+✔ researched addresses and timezones require cited pages that actually support both facts (0.9579ms)
+✔ geocoder corroboration requires the exact supplied street number, street and city (0.7616ms)
+✔ a unique geocoded street address resolves without a city, Google key, or venue website (1.5717ms)
+✔ provider-backed spelling and suffix corrections retain the exact house number and supplied city (1.6959ms)
+✔ multiple matching addresses remain choices; selecting one rechecks its provider identity (0.743ms)
+✔ lower-confidence corrections ask for a choice and cannot automatically publish (0.3577ms)
+✔ an outage is distinct from no matching address and never launches venue research (0.6661ms)
+✔ coordinate timezones handle split-timezone states and invalid points (0.2364ms)
+✔ ICS exports the approved clock, room and Unicode public instructions (21.6819ms)
+✔ ICS preserves absolute timestamps across offsets and daylight-saving transitions (1.5137ms)
+✔ all-day dates and explicitly floating times keep their requested representation (1.0742ms)
+✔ unknown end remains absent in ICS and invalid timestamps return 400 (0.8793ms)
+✔ shared card route prefers the public-safe cover image url (2.3252ms)
+✔ shared card route can render concierge live-card events (0.5587ms)
+✔ shared card route carries direct RSVP metadata into live-card actions (1.5167ms)
+✔ shared card page keeps public shares in a centered live-card frame (2.1773ms)
+✔ shared card route and page preserve overlay hero text mode for live cards (1.4606ms)
+✔ poster guest controls overlay artwork while creator attribution stays outside (0.8777ms)
+(node:42720) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/discovery-public-redact.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ unsupported public events end at notFound without a retired renderer or server actions after it (0.9049ms)
+✔ recognized templates retain dedicated dispatch before the unknown-renderer fallback (0.2167ms)
+✔ legacy event links open standalone signup forms instead of the unsupported-renderer 404 (22.0413ms)
+✔ reachable sharing checks retain owner, anonymous, accepted, pending and missing-share-table behavior (31.013ms)
+✔ public renderer retains discovery media and private signup-response redaction (1.6593ms)
+✔ newly saved events offer accurate calendar setup choices (2.8369ms)
+✔ generic OCR event pages expose owner share and delete actions (1.6316ms)
+✔ event route branches football discovery/template events into the football renderer (3.947ms)
+✔ event route renders gender reveal templates as a guess scoreboard page (1.346ms)
+✔ event route disconnects the retired legacy event page fallback (0.9799ms)
+✔ event route shows deleted event copy for missing event rows (0.7013ms)
+✔ event previews share device controls and keep embedded content free of owner tools (1.1643ms)
+✔ the owner event menu is separate from public and embedded previews (1.5095ms)
+✔ event route sanitizes stored RSVP names before host fallback (0.7969ms)
+✔ event route renders concierge live cards with public details and direct RSVP (1.374ms)
+✔ event route renders concierge event pages as full website products (1.2403ms)
+✔ direct Envitefy RSVP prompt does not require an outbound composer (0.4761ms)
+✔ event customize previews fill the responsive workspace (2.5546ms)
+✔ native category pages share section and layout controls with generated and uploaded pages (1.5571ms)
+✔ the common workspace reserves one desktop column and switches mounted views on mobile (1.1214ms)
+✔ legacy wedding edit route verifies ownership before opening the current editor (0.831ms)
+✔ every General Event template has real artwork and the matching editor palette (9.967ms)
+✔ General Events renders template links directly to the editor and preserves the chosen date (270.3203ms)
+✔ choosing a template opens the real editor with its artwork, theme, and empty event facts (17100.2479ms)
+✔ General editor design changes and recovery retain imported facts and custom artwork (322.5193ms)
+(node:87660) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/event-preview-viewport.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ gymnastics saves persist an event-page product route (1.5391ms)
+✔ Cancel returns a saved event to its original public URL and owner controls (0.8302ms)
+✔ Cancel from older editor links falls back to the saved event, never the gymnastics landing page (0.2269ms)
+✔ embedded Cancel waits for unsaved-change resolution and retains the event if parent navigation fails (0.2283ms)
+✔ studio marketing page uses the shared guest hero nav ordering (2.1267ms)
+✔ studio marketing showcase uses a centered active-card carousel (2.4097ms)
+✔ studio category upload accepts attachments and opens a poster-first live card preview (1.6744ms)
+✔ studio request preparation persists and strictly validates attached reference photos (1.1275ms)
+✔ studio existing-image edits require an updated image result (0.5481ms)
+(node:92260) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/app/studio/studio-workspace-builders.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ birthday artwork receives the host's exact headline and complete visual brief (13.143ms)
+✔ studio builders make birthday name and age the default title anchor (0.9182ms)
+(node:89980) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/app/studio/studio-workspace-builders.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ live_card appearance edits retain the product's address contract (13.5909ms)
+✔ live_card venue corrections do not inherit another product's address-removal rule (0.567ms)
+✔ digital_flyer appearance edits retain the product's address contract (2.5207ms)
+✔ digital_flyer venue corrections do not inherit another product's address-removal rule (0.3341ms)
+✔ printable_flyer appearance edits retain the product's address contract (0.4463ms)
+✔ printable_flyer venue corrections do not inherit another product's address-removal rule (0.2994ms)
+✔ event_page appearance edits retain the product's address contract (0.6058ms)
+✔ event_page venue corrections do not inherit another product's address-removal rule (0.2254ms)
+✔ studio builders format visible schedule lines with weekday ordinal copy and no year (1.0363ms)
+✔ studio invitation sanitizing reuses deterministic visible-card schedule line fallback (0.296ms)
+(node:50592) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/app/studio/studio-workspace-builders.theme-framing.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ studio builders frame birthday themes as birthday-party concepts (0.8353ms)
+✔ studio builders keep custom invites celebration-oriented instead of literal scenery (0.3057ms)
+✔ studio builders frame game day themes as sports invitation concepts (0.8002ms)
+✔ studio prompt date logic only includes event year for weddings (0.9103ms)
+✔ studio field controls switch non-wedding dates to month/day entry (0.7782ms)
+✔ studio workspace only requires a full year for wedding event dates (0.7199ms)
+✔ studio field config makes Game Day a no-RSVP compact form with sports-first fields (0.8021ms)
+✔ studio builders preserve Game Day RSVP opt-in while retaining compact form defaults (1.813ms)
+✔ studio workspace request and form source wire image finish presets through state and prompt guidance (2.706ms)
+✔ studio library normalizes persisted image urls and falls back when images fail to load (1.8756ms)
+✔ studio live-card builders preserve local invitation data and default generated live-card imagery to baked poster text (1.451ms)
+✔ studio live-card sanitizer and publish payload preserve heroTextMode (0.48ms)
+✔ studio preview preserves full poster artwork with guest controls overlaid inside it (2.7957ms)
+✔ open house uses property and realtor fields without the shared address field (2.2826ms)
+✔ open house company logo is persisted as live-card UI metadata, not generation reference art (2.0513ms)
+(node:50292) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/app/studio/studio-workspace-sanitize.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ explicit RSVP and public instructions survive the Game Day builder without invented gifts or a default gold palette (1.1936ms)
+✔ canonical title, corrected schedule and copy replace previous invitation facts without replacing its design (0.6019ms)
+✔ public wording preserves distinct non-Latin blocks and longer specific instructions (0.5451ms)
+✔ saved creation metadata retains the exact content contract, QA evidence, typography and canonical instants (1.9866ms)
+✔ a failed response retains typed diagnostics and useful reason through the actual client API throw path (2.6257ms)
+✔ publishing projects canonical timezone and instants rather than the viewing browser's timezone (0.4056ms)
+✔ studio sanitize preserves provider on generation errors instead of forcing gemini (0.8491ms)
+(node:75236) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/app/studio/studio-workspace-utils.guest-images.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ sanitizeGuestImageUrls dedupes trims caps and skips non-strings (0.6972ms)
+✔ sanitizeGuestImageUrls returns empty for non-array (0.2669ms)
+✔ studio category step uses editorial tiles and forwards tile clicks through the workspace handler (2.114ms)
+✔ studio category tiles are image-backed and layout-driven (1.605ms)
+(node:62656) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/calendar-preference.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ native Outlook attempt keeps recovery links available without claiming the event was saved (5.4677ms)
+✔ a saved native default still exposes fallback controls in the embedded card chooser (1.0118ms)
+✔ web provider flows close normally and do not show native recovery (0.7702ms)
+✔ legacy callbacks cannot bypass the standard native handoff (1.1221ms)
+(node:17308) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/utils/calendar-links.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ shared event actions keep start-only events available and preserve supplied ends (16.1032ms)
+✔ configured maps render without crashing and label the supplied location (4.9393ms)
+✔ coordinate-only maps have a usable accessible title and destination (1.2304ms)
+✔ maps without an API key keep the external search link fallback (0.3823ms)
+✔ the full saved event renders Share and the shared calendar above the hero (47.3016ms)
+✔ meet calendar keeps the host timezone and supplied end (4.9705ms)
+✔ a date-only March 6–8 meet keeps the inclusive final day in guest calendar links (4.6277ms)
+✔ a timed imported meet requires the venue timezone before offering guest calendar links (3.6877ms)
+✔ undated meet hides calendar without hiding Share (2.9857ms)
+✔ Share sends the saved public event to the native chooser (6.3958ms)
+✔ editor Preview reaches the full gymnastics renderer without leaking into guest pages (11.3684ms)
+✔ inline text changes pass through the full editor renderer and guest pages remain clean (14.3535ms)
+✔ dismissing native Share does not copy or prompt (5.7721ms)
+✔ Share falls back to copying the public link (5.881ms)
+✔ Share offers a manual copy when the clipboard is unavailable (5.5859ms)
+✔ an unsaved preview cannot share a fabricated event URL (5.3922ms)
+✔ actual guest renderer exposes full logistics and physical directions without duplicated venue (9.7554ms)
+✔ preview shares real RSVP/content renderer but inhibits server writes (1.114ms)
+✔ approved page lettering changes are rendered as HTML typography with scoped hero contrast (0.7776ms)
+✔ signup email notice distinguishes delivery failure from a saved reservation (9.9984ms)
+✔ signup templates remove guest actions independently and keep editor controls out of previews (548.8749ms)
+✔ guest preview and sharing describe actual public or invitation access (361.6016ms)
+✔ saved signup drafts allow owner invitations and co-host controls omit owner actions (131.3091ms)
+✔ public guests can find their signup without exposing recovery inside owner tools or previews (193.0199ms)
+✔ device preview hides signup editing tools while preserving the sign-up board (171.1774ms)
+✔ signup owner actions render above the hero, separate from the response board (321.7749ms)
+✔ all available templates retain a distinct curated design through saving and rendering (1843.3263ms)
+✔ designed headers retain empty-image and legacy-layout choices (521.3273ms)
+✔ every signup catalog item renders an inert artwork thumbnail without form controls (744.4084ms)
+✔ design editor retains customization controls without repeating template selection (442.7355ms)
+✔ direct photo selection changes only the selected signup gallery image (85.3681ms)
+✔ composer replaces the four-step wizard and keeps guest preview separate from editing (2062.0302ms)
+✔ custom recipes render the saved composition and board without exposing editing controls to guests (505.0322ms)
+✔ starters switch immediately for every untouched template and protect edited slot definitions (581.2205ms)
+✔ new signup templates keep every available design without introducing fictional event data (421.6621ms)
+✔ section placement, copying and persistence retain IDs, instructions and existing responses (479.6706ms)
+✔ empty questions are surfaced before publish and text alone cannot publish a signup (301.7744ms)
+✔ optional form headings preserve hidden, custom and inherited wording through saving (463.4712ms)
+✔ section editor removes and restores content, protects signed-up slots and supports drop ordering (526.1469ms)
+✔ header pencils update canonical details and are omitted from guest pages (171.2646ms)
+✔ cancelling inline date edits restores dates without reverting other edits (37.9866ms)
+✔ saved waitlisted signups expose working edit and cancel actions (333.9728ms)
+✔ interactive preview submits locally and never calls a reservation API (314.576ms)
+✔ theme dialog isolates generated options, supports refinement and only accepts on Use this theme (447.7978ms)
+✔ cancel aborts generation and a late response cannot apply a theme (428.4555ms)
+✔ new theme previews use display placeholders without putting demo content into the accepted form (678.6064ms)
+✔ new signup briefs survive preview, refinement, undo and acceptance without fabricated content (681.5483ms)
+✔ ordinary signup gallery entry initializes empty even when another browser draft exists (624.8684ms)
+✔ theme handoff bypasses unrelated browser drafts, survives Strict Mode and remains dirty until saved (691.4792ms)
+✔ a missing theme preview returns to the dialog without reopening or overwriting browser drafts (397.4093ms)
+✔ studio live-card RSVP email actions use current-context mailto launch (1.6892ms)
+✔ studio open house uses realtor contact tile instead of RSVP choices (1.0449ms)
+✔ the dated audit still covers every body override with a distinct arrangement and shape in its category (5.792ms)
+✔ preserved designs retain their markup and the existing signup spacing wrapper (5.0124ms)
+✔ reordered sections keep their content, anchors and action handlers, with no empty panels (1.3069ms)
+✔ fitted chat follows keyboard size and viewport panning, then restores full height (0.8344ms)
+✔ pinch zoom magnifies without shrinking and reflowing the chat (0.3296ms)
+✔ desktop and browsers without VisualViewport still follow window resizing (0.1395ms)
+✔ existing inset mode keeps layout height and exposes keyboard padding (0.1148ms)
+✔ calendar labels identify the action and the exact chosen provider (0.5147ms)
+✔ only verified connected defaults bypass the chooser for a signed-in person (0.125ms)
+✔ provider selection preserves the event links and rejects unrecognized preferences (0.124ms)
+(node:94428) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/concierge/artwork-redesign-intent.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ regeneration intent survives the exact corrections and typos from chat (1.2405ms)
+✔ metadata changes and explicit preservation do not force a new design (0.1486ms)
+(node:70284) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/concierge/host-brief.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Elena's stated priorities persist independently of a short chat history (17.981ms)
+✔ the saved-priorities review does not repeat superseded facts from source citations (0.7135ms)
+✔ explicit privacy and manual reply requests stay attached to the host brief (2.0442ms)
+✔ a wedding host's access and food needs can be individually corrected (0.4233ms)
+✔ an English-only correction removes Spanish and survives unrelated edits (0.4398ms)
+✔ budget revisions preserve scope while line items cannot replace the whole budget (0.3783ms)
+✔ questions, possibilities and assistant suggestions never become confirmed requirements (0.4478ms)
+✔ model normalization cannot introduce unsupported facts or strip a source's negation (0.4081ms)
+✔ negated hazards remain needs and an explicit change can end a privacy or manual plan (0.486ms)
+(node:72928) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/concierge/openai-config.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ concierge extraction/planning base model defaults to GPT-5.6 Terra (0.785ms)
+✔ concierge fast model flag uses GPT-5.6 Luna (0.2524ms)
+✔ explicit concierge model wins over fast model flag (0.2231ms)
+✔ configured fast model wins when fast model flag is enabled (0.1885ms)
+✔ concierge chat model defaults to GPT-5.6 Luna and supports a separate override (0.2596ms)
+✔ concierge premium model defaults to Astra and supports a separate override (0.2663ms)
+✔ concierge extraction routes normal work to Terra and premium work to Astra (0.82ms)
+✔ concierge planner routes simple work to Luna, base work to Terra, and premium work to Astra (0.3376ms)
+✔ concierge timeout defaults to 10000ms and accepts bounded overrides (0.3177ms)
+✔ chat requests preserve role-specific reasoning and omit unsupported temperature (0.7776ms)
+✔ concierge persona model defaults to base reasoning model (0.338ms)
+✔ concierge persona streaming timeouts leave room for reasoning and accept overrides (0.2823ms)
+(node:87508) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/creation/openai-workloads.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ OCR preserves verbatim transcript separately from normalized facts and rejects unsupported evidence (1.1588ms)
+✔ conflicting or missing birthday age remains null despite a decorative numeral (0.2376ms)
+✔ OCR description keeps cited source wording instead of model-written invitation prose (0.2122ms)
+✔ OCR normalized dates cannot roll impossible calendar dates into another month (0.2986ms)
+✔ Astra budgets preserve reasoning headroom and never send unsupported temperature (0.366ms)
+✔ calendar conversion uses event timezone and rejects missing or repeated DST times (32.6765ms)
+(node:43780) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/creation/openai-workloads.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ transcription budgets scale by page count with a two-page bound (0.7746ms)
+✔ guest chat preserves the fast-model cap and leaves reasoning headroom for a Sol override (0.1167ms)
+✔ usage normalization supports Chat and Responses without treating unavailable usage as zero (0.6575ms)
+✔ telemetry includes provider request ID and usage but never arbitrary extra source data (0.472ms)
+✔ place photos stay with their named source cards, including lazy images and reordered hotels (2.9725ms)
+✔ place photos support separated CMS columns without assigning a shared page image (0.3435ms)
+✔ an organizer's parent folder does not classify every linked page as a club list (0.7245ms)
+✔ one pasted / discovers and maps the same current event sections (13.0606ms)
+✔ one pasted /overview discovers and maps the same current event sections (1.8847ms)
+✔ one pasted /host-hotels discovers and maps the same current event sections (1.2718ms)
+✔ one pasted /plan-your-visit discovers and maps the same current event sections (1.0763ms)
+✔ one pasted /schedule discovers and maps the same current event sections (1.6912ms)
+✔ one pasted /competing-teams discovers and maps the same current event sections (0.889ms)
+✔ source failures preserve other sections and differ from an unpublished schedule (1.0861ms)
+✔ page/time limits report pending sources; absent links remain not_found (0.5882ms)
+✔ shared-host event scope excludes other events and external booking sites (0.2492ms)
+✔ a redirect to a different event is recorded as a failed source (0.1846ms)
+✔ menu discovery retains useful query parameters and rejects non-HTTP links (0.1315ms)
+✔ mixed schedule availability preserves a published PDF and a pending group (0.8259ms)
+✔ an unknown event edition cannot silently merge historical club lists (0.2528ms)
+✔ cancellation propagates without turning it into source failures (0.4882ms)
+✔ malformed saved metadata cannot introduce executable source links (0.8075ms)
+✔ discovered sources beyond the link-depth limit remain pending (0.2893ms)
+✔ a UK meet uses arbitrary sibling document names, club tables, semantic attraction cards and a 24-hour programme (2.3795ms)
+✔ a Canadian event landing without a trailing slash discovers its children and retains a partial schedule (0.725ms)
+✔ a root event site discovers descriptive links even when page URLs have no section keywords (0.6568ms)
+✔ website mappings and coverage persist with the builder and travel state, rather than stale source data (110.5054ms)
+✔ reused gymnastics URL text still runs website discovery, while file reads remain reusable (27.1943ms)
+(node:87176) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/download-artwork.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Download keeps accepted JPEG bytes without recompressing and uses the real media extension (3.8412ms)
+✔ Download does not claim success for an API error or HTML response (0.6315ms)
+✔ arrival-map validation preserves source evidence and rejects unsafe or inconsistent maps (1.9724ms)
+✔ only host-confirmed pixels become geographic directions, with a correct Mercator center (0.2915ms)
+✔ local map framing magnifies nearby pins without changing saved geography (0.6711ms)
+✔ document map matching uses real provider pixels, retains annotations, and never confirms AI pins (79.6404ms)
+✔ explicit saves persist both map images and confirmed markers; upload failure never writes the event (62.8977ms)
+✔ General Events and custom page editors use the signed-in category access path (3.2747ms)
+✔ custom designs hand off once in memory, retain their category, and expire without a save (0.7154ms)
+✔ every category preserves the design and canonical event-local times through serialization (53.6375ms)
+✔ custom templates retain removable guest actions through save and guest rendering (320.5079ms)
+✔ design boundaries reject executable content, unsupported media, impossible dates, and invalid zones (2.947ms)
+✔ font pairings survive event serialization and reach both guest text roles (262.5504ms)
+✔ shared gallery callout is available in every supported category without a chat link (112.126ms)
+✔ every creation category has distinct copy, icons and accessible gallery colors (0.7057ms)
+✔ section order survives normalization, proofreading, removal, new sections and guest rendering (62.8751ms)
+✔ the shared guest renderer keeps every layout, facts, artwork, and safe links (92.3999ms)
+✔ automatic proofreading preserves logistics and rejects changed facts without generating artwork (1.4537ms)
+✔ generation validates category, reference mode, and bounded requests before provider work (0.6918ms)
+✔ information uploads accept five images and reject a sixth (0.1148ms)
+✔ optional Weather settings survive saves and proofreading while old pages stay unchanged (35.5064ms)
+✔ information upload extracts event fields without generating artwork (28.6206ms)
+✔ information imports prepare a provider screenshot with locations while retaining their source (252.4471ms)
+✔ every event category turns uploaded information into a themed page without losing facts or sections (47.4504ms)
+✔ OpenAI design generation preserves category and supplied facts during visual refinement (28.6092ms)
+✔ Use this image keeps its full dimensions and transparency and returns only verified WebP (1023.442ms)
+✔ saving is explicit, uploads verified artwork, and published-page drafts remain private (65.9249ms)
+✔ save failures keep the editor state and incomplete publication never uploads (62.2074ms)
+✔ custom field validation identifies dates, times, links and missing publication fields (59.5738ms)
+✔ the generation endpoint requires auth, bounds media, throttles work, and never writes a draft (47.651ms)
+✔ stored same-origin hero paths remain valid when saving or publishing again (45.9681ms)
+✔ save failures identify design and artwork validation without uploading (55.6936ms)
+(node:78332) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/event-date-parser.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ all twelve months follow the month-only year rule (55.6574ms)
+✔ explicit years and relative years are authoritative (3.5687ms)
+✔ month/year boundaries use the event's local date (0.4899ms)
+✔ cross-year ranges keep their end year and invalid dates are rejected (0.6547ms)
+✔ AI date normalization corrects an inferred year and preserves the supplied year (0.6834ms)
+✔ event date intake and corrections use the same year rule for every category (3.045ms)
+✔ information tabs group source sections and retain custom information without event-specific names (1.3045ms)
+✔ tab grouping honors saved hiding, order and pairs, and omits empty tabs (0.244ms)
+(node:76076) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/event-media.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ findTransientEventMedia inspects nested fields and gallery items (1.5591ms)
+✔ findInlineEventMedia reports inline paths and setValueAtPath updates them (0.202ms)
+✔ legacy builder snapshots cannot hide inline images and validation never echoes their bytes (0.6747ms)
+✔ encrypted private media is included in Blob cleanup (0.2975ms)
+✔ explicit media persistence deduplicates nested copies and keeps unsaved state on failure (0.4513ms)
+✔ findTransientEventMedia and collectAppOwnedBlobUrls include sponsor logos (0.1866ms)
+✔ collectAppOwnedBlobUrls normalizes app blob proxy urls to blob pathnames (0.1202ms)
+✔ message tables become visible only after RLS and client revocations commit; migration matches (56.1045ms)
+✔ failed RLS setup rolls back and can be retried (14.577ms)
+✔ confirmation emails exclude No; updates escape content, preserve paragraphs and use the host Reply-To (60.8251ms)
+✔ message validation permits partial drafts but requires subject and body to send (2.7232ms)
+✔ owner and co-host API rejects guests, other owners, drafts and forged recipient lists; GET never sends (75.3365ms)
+✔ atomic delivery claims prevent duplicate sends; current No and removed responses are excluded; retries only reset failures (7.3835ms)
+✔ sent content and deliveries survive repeated Send requests without creating another announcement (6.8373ms)
+✔ SMTP disconnect after DATA stays unconfirmed rather than becoming retryable (6.5202ms)
+✔ latest response is selected before eligibility filtering; edit routes never send announcements (2.5603ms)
+✔ imported native information retains provider maps, attribution and unconfirmed markers (7.01ms)
+✔ composition validation bounds uploaded content and keeps only supported identities and layouts (0.3863ms)
+✔ guest rendering keeps saved order, hidden data, links and safe text in every layout (3.32ms)
+✔ old pages retain original markup and template drafts retain composition separately from category fields (0.8556ms)
+✔ signature wedding bodies retain the hero and expose native sections with stable editable identities (98.7168ms)
+✔ weddings explicitly saves its public renderer on draft and publish (17.3987ms)
+✔ birthdays explicitly saves its public renderer on draft and publish (1.7083ms)
+✔ anniversaries explicitly saves its public renderer on draft and publish (1.4583ms)
+✔ baby-showers explicitly saves its public renderer on draft and publish (1.4377ms)
+✔ bridal-showers explicitly saves its public renderer on draft and publish (1.5765ms)
+✔ gender-reveal explicitly saves its public renderer on draft and publish (1.4702ms)
+✔ gymnastics explicitly saves its public renderer on draft and publish (1.5858ms)
+✔ sport-events explicitly saves its public renderer on draft and publish (1.1924ms)
+✔ signup-forms explicitly saves its public renderer on draft and publish (1.5478ms)
+✔ both admin event lists retain legacy routing evidence without loading event content (41.5373ms)
+✔ changing a public slug returns the product URL and a separate owner workspace URL (447.9646ms)
+✔ public addresses cannot collide with any static event route, including future categories (4.6814ms)
+✔ custom URLs normalize readable names and reject unusable or reserved addresses (0.8717ms)
+✔ URL suggestions use short matchup names for one game and season names for schedules (0.7063ms)
+✔ publishing reserves the exact chosen URL and rejects duplicates without inserting an event (10.7946ms)
+✔ renaming saves content and URL together and preserves old links as reserved aliases (12.4029ms)
+✔ failed updates roll back both the URL and its alias, and concurrent claims have one winner (17.4431ms)
+✔ availability checks require authentication and ownership, and never save a draft (36.0145ms)
+✔ explicit draft saves retain a chosen URL without changing the published address (91.1811ms)
+✔ the shared URL save validates exact names and returns each product's canonical path and current content (47.1327ms)
+(node:78284) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/event-section-layout.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ legacy layouts retain their default order; untrusted layout values are bounded (1.3049ms)
+✔ move, remove, restore and add preserve content and resolve insertion positions (0.3808ms)
+✔ resize and pair sections with complementary widths without changing their contents (0.3693ms)
+✔ pairing can add, restore, replace a neighbor and move sections into their own rows (0.5211ms)
+✔ untrusted column settings reject invalid sizes and duplicate or malformed pairs (0.1981ms)
+✔ gymnastics explicit drafts preserve composition and every design respects saved order (64.8455ms)
+✔ editor empty sections are configurable and disappear from clean previews (8.1293ms)
+✔ football publishes saved tab order and restores previously hidden attendance without touching responses (53.4936ms)
+✔ authored gymnastics sections render from the actual editor fields for both manual and imported meets (5.923ms)
+✔ saved imported meets enter the full section editor instead of a disconnected sidebar (27.0574ms)
+✔ complete gymnastics guest pages render saved extra sections in order with hidden attendance (428.7183ms)
+✔ football saves column widths and renders a paired row as one accessible tab panel (87.286ms)
+(node:88068) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/guest-event-details.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ one guest projection retains venue, room, instructions and event zone for every calendar (21.6982ms)
+✔ canonical instants work before hydration and do not require a display clock (0.5161ms)
+✔ guest summaries preserve supplied end times and exact public copy without duplicates (0.974ms)
+✔ school open houses never receive property/realtor actions from the category alone (0.2329ms)
+(node:57652) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/guest-rsvp.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ accepted generated Baby Shower visual keeps Gender Reveal validation through eventKind (1.4799ms)
+✔ guest submission sends the answer shape required by gender-reveal API (0.2372ms)
+✔ disabled or locked guesses are not requested or sent by guest clients (0.1459ms)
+(node:33664) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/history-cache.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ deleting an event invalidates every history view and rejects an older query's cache write (0.9687ms)
+✔ concurrent history requests share work only within the same user, filter and mutation revision (0.2445ms)
+✔ failed coalesced reads can be retried (0.3758ms)
+✔ history invalidation respects user boundaries and global resets invalidate pending reads (0.0952ms)
+✔ deletion clears the owner's dashboard response and pending refresh without affecting other accounts (0.1303ms)
+✔ sports visual review validates output and checks physical contact without classifying demographics (112.5693ms)
+✔ image generation authorizes canonical saved sports categories and rejects non-owners (42.0059ms)
+✔ concurrent workers and refreshes reuse one original image request and its stored result (73.0097ms)
+✔ explicit replacements retain earlier assets even when a recovered theme identity is reused (32.3379ms)
+✔ a physically invalid image is rejected before upload/application without a second generation (23.857ms)
+✔ checker unavailability is reported separately from a confirmed image defect (22.201ms)
+✔ sports briefs specify apparatus contact and never derive demographics from geography or titles (17.5395ms)
+✔ image failures stay separate from event facts and require an explicit retry (17.9177ms)
+✔ automatic image application is restricted to an untouched private import with the same theme (18.6027ms)
+✔ the image brief includes verified context and prevents lettering and invented venues (16.9505ms)
+✔ generated artwork survives local blob and HTTPS storage while invalid image URLs are rejected (2.0653ms)
+✔ generated artwork uses public storage delivery without changing the saved URL or uploaded hero (0.3682ms)
+✔ source branding and confirmed geography create stable event-specific identity (0.6951ms)
+✔ sports profiles work across organizers and sports without inventing a city (0.8768ms)
+✔ every palette keeps readable body and button text, including light source colors (49.5443ms)
+✔ redesign is explicit, changes identity and retains source colors and event facts (0.3679ms)
+✔ pipeline refresh preserves disabled themes, explicit opt-outs, saved designs and source facts (0.3593ms)
+✔ the shared map stage carries URL/PDF branding into every sports builder (32.5528ms)
+✔ untrusted source values cannot become executable CSS or SVG (0.5345ms)
+✔ custom and uploaded artwork stays intact while template artwork can adopt event art (0.2681ms)
+✔ website branding reads inline styles and prioritizes two brand stylesheets through guarded reads (1.8918ms)
+✔ unavailable stylesheet does not fail an otherwise readable source (0.2355ms)
+✔ PDF and image colors are sampled from existing page rasters without OCR or image generation (15.8829ms)
+✔ labeled public brand images provide a bounded palette fallback when CSS is unavailable (7.2964ms)
+✔ grayscale documents do not invent a colorful source palette (6.5168ms)
+(node:92168) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/live-card-artwork-layout.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ tall masters fill common phone frames with only decorative-edge cropping (0.6781ms)
+✔ extreme proportions and old artwork show the entire composition (0.1199ms)
+(node:72512) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/live-card-calendar.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ the reported Saturday 3 PM card exports the same instant to every calendar (32.1888ms)
+✔ unzoned card times use the viewer's zone and the offset on the event date (16.6397ms)
+✔ noon and midnight are distinct and do not move to the previous local day (9.6369ms)
+✔ a saved start with no end exports only the start, but a provided end clock is preserved (0.9198ms)
+✔ explicit end times and natural clock ranges preserve duration, including overnight (19.0002ms)
+✔ invalid, missing, or nonexistent local times cannot become midnight calendar events (0.5578ms)
+✔ an explicitly zoned preview keeps its actual instants when viewed from another zone (0.2278ms)
+(node:94732) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/live-card-event-details.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ overview explains the meeting time, named movie, and dinner afterward (1.5638ms)
+✔ overview leaves missing movie titles and times unspecified (0.1809ms)
+✔ overview uses labeled movie details and retains pickup and preparation notes (0.53ms)
+✔ overview does not interpret a greeting as a movie title (0.1747ms)
+✔ overview preserves non-movie activities and custom location labels (0.3099ms)
+✔ overview removes repeated birthday introductions while preserving the actual plan (0.1541ms)
+✔ overview preserves meaningful custom wording and additional timing (0.134ms)
+✔ birthday welcome includes ordinal age without repeating venue and time (0.2072ms)
+✔ birthday welcome ignores inline venue because overview renders location separately (0.1396ms)
+✔ birthday welcome does not include address fallback (0.1301ms)
+✔ birthday welcome parses honoree from card title when name missing (0.1196ms)
+✔ birthday without honoree returns null (0.0579ms)
+✔ non-birthday uses headline without repeating venue and time (0.0584ms)
+(node:59624) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/live-card-locations.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ online locations preserve joining tokens and never become physical directions (1.7134ms)
+✔ buildLiveCardLocationActions extracts a primary venue and a lunch destination (2.9845ms)
+✔ getLiveCardPrimaryLocationLabel falls back to an address-only location (0.096ms)
+✔ buildLiveCardLocationActions displays venue label while directions use address (0.1764ms)
+✔ buildLiveCardLocationActions dedupes detail destinations that repeat the primary venue (0.2976ms)
+✔ buildLiveCardLocationActions ignores generic detail destinations (0.1187ms)
+✔ buildLiveCardLocationActions titles a movie venue and a dinner stop (0.3146ms)
+✔ buildLiveCardDirectionsHref builds a preferred directions URL (0.0944ms)
+✔ location panels show saved street addresses without repeating the place heading (0.316ms)
+(node:85320) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/live-card-overlay-actions.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ guided Live Cards honor explicit RSVP switches without removing default buttons (0.8438ms)
+✔ birthday Live Cards keep RSVP, Overview, Location, and Calendar on the artwork overlay (0.1032ms)
+✔ chat no-rsvp and missing calendar links do not strip RSVP or Calendar chrome (0.0801ms)
+✔ Registry appears only when a gift link exists (0.0651ms)
+✔ Game Day omits RSVP but still shows Calendar (0.0766ms)
+✔ Open House uses Property, Realtor, Location, and Calendar (0.0587ms)
+(node:55764) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/live-card-rail-layout.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ showcase rail uses a centered cluster for six visible actions (0.486ms)
+✔ showcase rail uses spread layout for five visible actions (0.0781ms)
+✔ showcase rail uses spread layout for four visible actions (0.0616ms)
+✔ showcase rail falls back to default outside the closed showcase state (0.0678ms)
+✔ guest action panels sit above the button that opened them (0.0858ms)
+(node:40444) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/live-card-rsvp.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ parseLiveCardRsvpContact prefers email when present (1.2645ms)
+✔ parseLiveCardRsvpContact detects sms-capable phone strings (0.2327ms)
+✔ formatLiveCardRsvpDraftBody includes response title and live card URL (0.4676ms)
+✔ formatLiveCardRsvpDraftBody uses direct RSVP host, sender, and date copy (0.2121ms)
+✔ formatLiveCardRsvpDraftBody includes anonymous guest email in direct RSVP copy (0.1375ms)
+✔ formatLiveCardRsvpDraftBody uses category-specific birthday replies (0.1416ms)
+✔ formatLiveCardRsvpDraftBody uses category-specific wedding replies (0.0826ms)
+✔ buildLiveCardRsvpOutboundHref returns mailto with encoded subject and body (0.1896ms)
+✔ buildLiveCardRsvpOutboundHref returns sms with body query (0.7105ms)
+✔ buildLiveCardRsvpOutboundHref returns empty string for unusable contact (0.2809ms)
+✔ shouldShowLiveCardDescriptionSection is true only when host message is non-empty (0.0807ms)
+(node:95904) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/livecard-workflow.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Review includes event-local end times, overnight dates, and never invents an end (14.4628ms)
+✔ structured failures preserve legacy messages and filter untrusted diagnostic fields (1.041ms)
+✔ meet discovery no longer exposes schedule or session fields in the active parse contract (2.8572ms)
+✔ meet discovery removes schedule-session prompt profiles and schedule-grid compatibility branches (1.7563ms)
+✔ meet discovery removes schedule-grid compatibility surfaces from the active source file (1.6639ms)
+✔ meet discovery classifier and schema only model the surviving attendee-first flow (1.118ms)
+✔ meet discovery routes staged parsing to Astra and vision extraction to Luna (1.4617ms)
+✔ meet discovery uses supported OpenAI parameters without a hidden full-document provider fallback (1.4225ms)
+(node:34892) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/meet-discovery.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ meet discovery classifier contract no longer includes session-heavy routing (1.7772ms)
+✔ meet discovery targeted parse routing only uses overview and parent-public prompts (1.6887ms)
+✔ meet discovery public artifact filtering no longer treats session_ops as a special audience (2.4227ms)
+✔ public artifacts preserve dedicated parent-packet fields without keyword reclassification (1.5905ms)
+✔ mapParseResultToGymData stops emitting schedule and session-derived fields (2.0122ms)
+✔ __testUtils no longer exports schedule-session helpers (1.4681ms)
+✔ meet discovery targeted parse calls run concurrently with deterministic merge order (1.2233ms)
+✔ gymnastics PDF vision handoff persists raster images before OpenAI calls (1.2206ms)
+✔ pasted specialty details enter the existing parser without invoking media or network extraction (58.455ms)
+✔ retired schedule extraction is absent without restoring its public parse contract (0.5475ms)
+✔ resolved discovery hooks include the browser collector and preserve an injected offline collector (7.5433ms)
+✔ attendee-first parse profiles keep their deterministic order and parent-only shortcut (1.9468ms)
+✔ all meet extraction prompts keep arrival, accommodation and attractions separate (5.2633ms)
+✔ image helpers preserve optional artifact provenance and perform no implicit debug write (8.9144ms)
+✔ browser resource candidates retain only the defined discovery kinds (1.9217ms)
+✔ April party still ahead this year stays in current year (even if model used next year) (1.8026ms)
+✔ December anchor + January event uses following year (0.12ms)
+✔ Same calendar day with a passed time stays in the current year (0.0713ms)
+✔ Earlier day in the current month stays in the current year (0.0818ms)
+✔ A missing-year leap date never silently becomes March 1 (0.078ms)
+(node:95120) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/ocr/openai.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ gymnastics sends valid Chat image parts and validates a complete structured response (3.4166ms)
+✔ practice sends valid Chat image parts and validates a complete structured response (0.6449ms)
+✔ missing and impossible meet dates remain unresolved through the schedule adapter (13.7922ms)
+✔ valid all-day dates use an exclusive calendar boundary and timed meets get no guessed end (0.4454ms)
+✔ refused, truncated, malformed and schema-invalid schedule outputs never log success (1.2333ms)
+(node:31672) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/openai-chat-params.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ GPT-5.6 Terra and Luna preserve non-reasoning request behavior (1.1186ms)
+✔ GPT-5.6 Sol keeps its medium reasoning default (0.1142ms)
+✔ Astra preserves premium reasoning and omits unsupported sampling parameters (0.1221ms)
+✔ older models retain supported temperature settings (0.1003ms)
+✔ GPT-6 model aliases and snapshots use explicit supported reasoning without temperature (0.7903ms)
+✔ reasoning overrides reject unsupported none and support deliberate Luna reasoning (0.3491ms)
+✔ unrecognized reasoning model families do not inherit sampling parameters (0.0939ms)
+✔ model registry retains production defaults and honors explicit overrides (0.0745ms)
+(node:38740) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/query-egress.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ egress diagnostics count bytes without recording contents and keep concurrent routes separate (1.1159ms)
+[rsvp] confirmation email failed {
+  to: 'gu***@example.test',
+  eventId: 'event-id',
+  error: 'Synthetic guest mail failure'
+}
+[rsvp] POST error: Error: Synthetic database failure
+    at query (D:\Develop_local\envitefy\src\lib\rsvp-host-notification.test.cjs:32:34)
+    at eval (eval at loadTs (D:\Develop_local\envitefy\scripts\lib\event-messages-test-loader.cjs:22:3), <anonymous>:463:82)
+    at ServerTimingTracker.time (eval at loadTs (D:\Develop_local\envitefy\scripts\lib\event-messages-test-loader.cjs:22:3), <anonymous>:33:20)
+    at Object.POST (eval at loadTs (D:\Develop_local\envitefy\scripts\lib\event-messages-test-loader.cjs:22:3), <anonymous>:463:40)
+    at async Object.submit (D:\Develop_local\envitefy\src\lib\rsvp-host-notification.test.cjs:45:20)
+    at async TestContext.<anonymous> (D:\Develop_local\envitefy\src\lib\rsvp-host-notification.test.cjs:105:17)
+    at async Test.run (node:internal/test_runner/test:1409:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+✔ guest confirmation uses the public renderer while host mail keeps the workspace URL (283.5329ms)
+✔ host receives Yes, Maybe and No; declined guest receives no email (154.7027ms)
+✔ host notifications use owner account fallback only when no valid saved host email exists (82.5665ms)
+✔ identical resubmissions and self RSVPs do not send duplicate host alerts (165.6297ms)
+✔ host alerts survive guest-mail failure; failed RSVP saves send no emails (81.3339ms)
+✔ host email includes the saved response, escaped details, signature and guest reply address (33.4945ms)
+(node:63360) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/scan-event-page.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ anniversary scan keeps its occasion instead of using birthday or wedding semantics (46.5475ms)
+✔ scan event page payload publishes invite scans without requiring a date (23.5683ms)
+✔ scan event page payload keeps schedule-like scans as owned events (6.7135ms)
+✔ scan event page payload rescues obvious invite details from raw OCR text (4.1666ms)
+✔ scan event page payload keeps Kona menu details out of location and RSVP (8.6097ms)
+✔ scan event page payload can rescue Kona title date and venue from OCR text (2.7899ms)
+✔ scan event page payload keeps Kona visit sentence out of venue and where (2.5649ms)
+✔ scan event page payload handles similar vendor school flyers without Kona-specific wording (2.4541ms)
+✔ scan event page payload applies provider-enriched addresses without hardcoding (1.7911ms)
+✔ scan event page payload preserves after-movie pizza details (2.4831ms)
+✔ scan event page payload rejects model-invented RSVP and venue sentences (2.3609ms)
+(node:53744) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/share-image.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ toPublicShareMediaUrl moves event blobs outside the robots-blocked API namespace (0.9134ms)
+✔ resolveEventShareImage substitutes the uncropped lightweight variant of uploaded artwork (1.2789ms)
+✔ resolveEventShareImage preserves an explicitly designed cover (0.3389ms)
+✔ resolveEventShareImage rejects inline data and malformed media URLs (0.1251ms)
+✔ gymnastics share previews use the artwork rendered by every selected template (1.5689ms)
+✔ gymnastics share previews follow the renderer's default for retired designs (0.23ms)
+✔ gymnastics previews prefer current uploaded or imported artwork over the template (1.0231ms)
+✔ gymnastics previews retain the public media URL for legacy inline heroes (0.2092ms)
+✔ discovery share previews use saved builder artwork and preserve explicit theme choices (0.3856ms)
+✔ share previews read custom Event Page artwork and nested hero images (0.3937ms)
+✔ Live Cards retain finished card artwork when an Event Page design is also saved (0.1399ms)
+✔ every public category and template shares its selected artwork ahead of stale covers (12.5267ms)
+✔ all football, general event and seasonal designs share their rendered artwork (36.4195ms)
+✔ host artwork replaces stale covers and category defaults for every event category (0.496ms)
+✔ legacy inline event heroes use the public media route across categories (0.3517ms)
+✔ sign-up previews share gallery artwork, saved header images and inline headers (2.5278ms)
+✔ dynamic Event Pages share the hero media from their saved blueprint (0.1579ms)
+✔ scanned invites retain their artwork and private medical sources remain private (3.3604ms)
+✔ event previews never reuse the marketing banner as saved artwork (0.1435ms)
+[email] Zoho accepted message { messageId: null }
+[email] Zoho accepted message { messageId: null }
+[email] Zoho accepted message { messageId: null }
+✔ private form flags survive normalization and explicit saves (30.3576ms)
+✔ ordinary and unlisted published signup links accept guests without becoming indexable (0.163ms)
+✔ anonymous guests can reserve, reload, edit and cancel using their private browser cookie (189.3451ms)
+✔ a failed confirmation is reported without losing the signup or creating a duplicate (138.4797ms)
+✔ signup email is attempted only when an address is saved (123.0543ms)
+✔ signup response waits until its confirmation email attempt finishes (121.1466ms)
+✔ response IDs and matching email addresses cannot reveal or change another guest's signup (120.3175ms)
+✔ accepted form co-hosts manage participants and restricted forms; revocation removes those privileges (126.4248ms)
+✔ capacity, private forms, drafts and cross-origin writes remain protected (225.8175ms)
+✔ guest tokens are random and invalid cookies cannot become an identity (0.3419ms)
+✔ confirmation links restore only the matching signup in a new browser and permit editing and cancellation (127.8741ms)
+✔ recovery uses saved email, accepts normalized phone lookup, and keeps matches private (118.1932ms)
+✔ recovery groups multiple signups per email and limits repeated sends across email and phone (117.7318ms)
+✔ management tokens reject tampering, expiry, wrong events, contact changes, cancellation and missing secrets (110.6947ms)
+✔ private forms and drafts do not gain anonymous access through recovery links (105.5964ms)
+✔ origin checks accept the public proxy hostname but reject unrelated or missing origins (1.5091ms)
+✔ confirmation and recovery emails contain private management links in HTML and plain text (166.299ms)
+✔ emailed signup links always use the public site, even when generated on localhost (0.501ms)
+✔ Zoho requires credentials and encrypted SMTP; rejected mail remains a failure (3.828ms)
+✔ account, sharing and RSVP emails use the same transactional transport (27.6385ms)
+[signup] Confirmation delivery failed { eventId: 'event', error: 'Participant mail unavailable' }
+[signup-host-alerts] Attempt failed { status: 'pending', attempt: 1 }
+[signup-host-alerts] Attempt failed { status: 'pending', attempt: 1 }
+[signup-host-alerts] Attempt failed { status: 'failed', attempt: 1 }
+[signup-host-alerts] Attempt failed { status: 'unknown', attempt: 1 }
+✔ activity distinguishes new, changed, cancelled, waitlisted and automatically promoted signups (1.495ms)
+✔ timestamp-only changes, reordered selections and repeat cancellations do not enqueue duplicate activity (6.3172ms)
+✔ owners and accepted co-hosts receive alerts without opening settings or saving preferences (353.8964ms)
+✔ saved full and individual opt-outs remain effective for owners and co-hosts (458.1131ms)
+✔ accepted sends are not sent again and link to the authenticated host dashboard (114.8573ms)
+✔ concurrent workers atomically claim each pending alert once (102.3157ms)
+✔ signup route commits alerts with the reservation and host delivery is independent of participant confirmation (580.5031ms)
+✔ temporary SMTP failures are deferred with backoff, permanent failures stop and uncertain sends are held (417.6063ms)
+✔ lost accepted-send acknowledgement is kept in sending and cannot be automatically resent (100.7552ms)
+✔ revoked membership, opt-out and unpublished forms skip already queued alerts (308.4726ms)
+✔ schema setup protects tables atomically and matches the checked-in SQL migration (113.9332ms)
+✔ preferences cannot be saved after membership is revoked (101.5862ms)
+✔ alert API refuses anonymous guests, pending invitees, foreign origins and forged recipients (118.5917ms)
+✔ host email escapes guest content, uses Zoho sender and preserves selections without guest management tokens (41.5254ms)
+(node:93812) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/event-media.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ all six themes roundtrip, preserve signup content, and keep readable accent contrast (8.9174ms)
+✔ public and participant projections remove other contacts while retaining accurate quantities (1.5576ms)
+✔ reservation ownership, signed identities, windows, quantity and slot limits are enforced (13.5191ms)
+✔ waitlist promotion preserves confirmed places and only promotes when space becomes available (0.3661ms)
+✔ definition edits retain newer responses, reject stale revisions and protect claimed slots (0.8996ms)
+✔ publishing checks missing details, date ordering and nonexistent local DST times (3.2412ms)
+✔ transaction serializes competing last-place claims and commits both stores together (6.5582ms)
+✔ a normalized-store failure rolls back the event change (3.5054ms)
+✔ every header layout uses the same saved photo sources and has decorative images (69.4557ms)
+✔ CSV quotes guest text and prevents spreadsheet formulas; only organizers close forms (8.1164ms)
+✔ draft sanitization retains opening intent, closed definitions stay closed, reminders can be empty (0.2708ms)
+✔ the signup API returns guest-safe data and rejects editing another participant (19.7651ms)
+✔ repeated account draft saves use the server revision without resetting editor fields (11.784ms)
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  policyVersion: 'openai-workloads-2026-10-21',
+  workload: 'visual_check',
+  model: 'gpt-6-astra',
+  durationMs: 1,
+  outcome: 'success',
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null
+}
+(node:84316) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/artwork-copy.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ birthday/live_card: required copy has an allowed surface and identical generator/verifier contract (4.4895ms)
+✔ birthday/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (17.9468ms)
+✔ birthday/event_page: required copy has an allowed surface and identical generator/verifier contract (0.2962ms)
+✔ wedding/live_card: required copy has an allowed surface and identical generator/verifier contract (0.4228ms)
+✔ wedding/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.6851ms)
+✔ wedding/event_page: required copy has an allowed surface and identical generator/verifier contract (0.2094ms)
+✔ anniversary/live_card: required copy has an allowed surface and identical generator/verifier contract (0.2388ms)
+✔ anniversary/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.677ms)
+✔ anniversary/event_page: required copy has an allowed surface and identical generator/verifier contract (0.3184ms)
+✔ baby_shower/live_card: required copy has an allowed surface and identical generator/verifier contract (0.3125ms)
+✔ baby_shower/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.5459ms)
+✔ baby_shower/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1664ms)
+✔ gender_reveal/live_card: required copy has an allowed surface and identical generator/verifier contract (0.155ms)
+✔ gender_reveal/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.4241ms)
+✔ gender_reveal/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1477ms)
+✔ bridal_shower/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1359ms)
+✔ bridal_shower/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.4532ms)
+✔ bridal_shower/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1264ms)
+✔ graduation/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1234ms)
+✔ graduation/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (1.7686ms)
+✔ graduation/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1019ms)
+✔ gymnastics/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1709ms)
+✔ gymnastics/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.4343ms)
+✔ gymnastics/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1295ms)
+✔ game_day/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1323ms)
+✔ game_day/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.3899ms)
+✔ game_day/event_page: required copy has an allowed surface and identical generator/verifier contract (0.0943ms)
+✔ football/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1138ms)
+✔ football/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.3356ms)
+✔ football/event_page: required copy has an allowed surface and identical generator/verifier contract (0.0929ms)
+✔ sport_event/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1088ms)
+✔ sport_event/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.3579ms)
+✔ sport_event/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1071ms)
+✔ field_trip/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1098ms)
+✔ field_trip/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.3664ms)
+✔ field_trip/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1145ms)
+✔ open_house/live_card: required copy has an allowed surface and identical generator/verifier contract (0.136ms)
+✔ open_house/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.3918ms)
+✔ open_house/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1045ms)
+✔ housewarming/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1871ms)
+✔ housewarming/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.3573ms)
+✔ housewarming/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1029ms)
+✔ appointment/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1974ms)
+✔ appointment/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.5437ms)
+✔ appointment/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1197ms)
+✔ workshop/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1672ms)
+✔ workshop/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.4358ms)
+✔ workshop/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1177ms)
+✔ special_event/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1872ms)
+✔ special_event/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.5043ms)
+✔ special_event/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1509ms)
+✔ general/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1702ms)
+✔ general/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.4712ms)
+✔ general/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1906ms)
+✔ dance/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1796ms)
+✔ dance/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.4448ms)
+✔ dance/event_page: required copy has an allowed surface and identical generator/verifier contract (0.282ms)
+✔ cheerleading/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1959ms)
+✔ cheerleading/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.4151ms)
+✔ cheerleading/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1524ms)
+✔ basketball/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1624ms)
+✔ basketball/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.5077ms)
+✔ basketball/event_page: required copy has an allowed surface and identical generator/verifier contract (0.157ms)
+✔ baseball/live_card: required copy has an allowed surface and identical generator/verifier contract (0.2667ms)
+✔ baseball/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.559ms)
+✔ baseball/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1508ms)
+✔ softball/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1617ms)
+✔ softball/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.456ms)
+✔ softball/event_page: required copy has an allowed surface and identical generator/verifier contract (0.278ms)
+✔ soccer/live_card: required copy has an allowed surface and identical generator/verifier contract (0.2067ms)
+✔ soccer/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.6089ms)
+✔ soccer/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1796ms)
+✔ volleyball/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1783ms)
+✔ volleyball/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.4652ms)
+✔ volleyball/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1574ms)
+✔ hockey/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1727ms)
+✔ hockey/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.3998ms)
+✔ hockey/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1793ms)
+✔ lacrosse/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1799ms)
+✔ lacrosse/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.5626ms)
+✔ lacrosse/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1551ms)
+✔ tennis/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1597ms)
+✔ tennis/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.4432ms)
+✔ tennis/event_page: required copy has an allowed surface and identical generator/verifier contract (0.2494ms)
+✔ track_field/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1776ms)
+✔ track_field/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.4939ms)
+✔ track_field/event_page: required copy has an allowed surface and identical generator/verifier contract (2.2338ms)
+✔ swimming/live_card: required copy has an allowed surface and identical generator/verifier contract (0.304ms)
+✔ swimming/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.592ms)
+✔ swimming/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1455ms)
+✔ wrestling/live_card: required copy has an allowed surface and identical generator/verifier contract (0.1468ms)
+✔ wrestling/digital_flyer: required copy has an allowed surface and identical generator/verifier contract (0.4164ms)
+✔ wrestling/event_page: required copy has an allowed surface and identical generator/verifier contract (0.1503ms)
+✔ bilingual exact lines, contact punctuation and required safety survive whole-block deduplication (0.5536ms)
+✔ model text placement cannot contradict approved copy or promise text on a text-free hero (0.3349ms)
+✔ explicit sports cannot acquire unsupported stations in the model creative plan (0.201ms)
+✔ explicit user palette replaces generated gold defaults and honors exclusions (0.333ms)
+✔ Event Page typography stays out of image operations: Keep this same event and artwork. Make all lettering larger. (2.5842ms)
+✔ Event Page typography stays out of image operations: Make the font larger and more readable. (0.6386ms)
+✔ Event Page typography stays out of image operations: Increase font size. (0.1534ms)
+✔ Event Page typography stays out of image operations: Make the text darker. (0.1294ms)
+✔ mixed Event Page edit only sends the requested background to image generation (0.2517ms)
+✔ mixed raster and unsupported font edits are rejected before any provider call (0.8274ms)
+✔ coordinated public copy operations and quoted words never become raster changes (0.4287ms)
+✔ unsupported HTML change never reaches the raster: Make the headline cursive (0.3073ms)
+✔ unsupported HTML change never reaches the raster: Use a serif font (0.2133ms)
+✔ unsupported HTML change never reaches the raster: Make the text smaller (0.1861ms)
+✔ unsupported HTML change never reaches the raster: Change the page layout to two columns (0.4636ms)
+✔ unsupported HTML change never reaches the raster: Move the title to the bottom (0.2131ms)
+✔ unsupported HTML change never reaches the raster: Reorder the sections (0.2237ms)
+✔ Event Page factual wording changes remain metadata changes: Change the title to Rivera Workshop (0.2327ms)
+✔ Event Page factual wording changes remain metadata changes: Change the title to Blue River Workshop (0.1322ms)
+✔ Event Page factual wording changes remain metadata changes: Change the title to Maya and Jordan's Wedding (0.1235ms)
+✔ Event Page factual wording changes remain metadata changes: Change the date to September 23 (0.124ms)
+✔ Event Page factual wording changes remain metadata changes: Change the venue to Maple Center (0.1194ms)
+✔ Event Page factual wording changes remain metadata changes: Add the exact line 'Welcome everyone' (0.1262ms)
+✔ Event Page factual wording changes remain metadata changes: Replace the wording 'Welcome' with 'Hello' (0.1229ms)
+✔ Event Page factual wording changes remain metadata changes: Add the title School Open House (0.2054ms)
+✔ Event Page factual wording changes remain metadata changes: Add the title Community Center Celebration (0.1315ms)
+✔ Event Page factual wording changes remain metadata changes: Remove the wording No gifts please (0.1264ms)
+✔ Event Page factual wording changes remain metadata changes: Please include the date and time on the page (0.1252ms)
+✔ an incidental text reference cannot change the typography target: Make the background darker behind the title (0.1794ms)
+✔ an incidental text reference cannot change the typography target: Darken the background behind the heading (0.159ms)
+✔ an incidental text reference cannot change the typography target: Remove the blue balloon behind the title (0.1362ms)
+✔ mixed background and type changes retain independent targets (0.2227ms)
+✔ oversized required wording is preserved and rejected locally instead of shortened (5.7108ms)
+✔ combined artwork instructions exceeding the installed SDK prompt limit fail before any model call (2.0194ms)
+✔ invalid contract and HTML-only edit make zero model calls (0.5108ms)
+✔ faux_controls is blocking, repairs once and retains both failure reasons (1.1549ms)
+✔ essential_clipping is blocking, repairs once and retains both failure reasons (0.5335ms)
+✔ safety_mismatch is blocking, repairs once and retains both failure reasons (0.4286ms)
+✔ missing_copy is blocking, repairs once and retains both failure reasons (0.3898ms)
+✔ Event Page image edit and repair retain landscape dimensions and exclude HTML typography (0.5347ms)
+✔ cancellation after a provider resolves cannot commit or preview a late image (0.7034ms)
+✔ Live Card edit cannot retain an omitted exact line from its source (1.8716ms)
+(node:3892) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/card-edit-fields.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ theme-only edits omit unchanged picker values and preserve event metadata (0.8787ms)
+✔ explicit time changes and cleared fields are still submitted (0.0944ms)
+(node:92584) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/card-edit-preview.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ large generated PNGs fit in both preview responses and save requests (1375.8191ms)
+✔ invalid image data is rejected before it becomes a preview (0.4253ms)
+✔ preview sends immediate and periodic keep-alives then valid JSON (10.7868ms)
+✔ provider failures remain readable in a response whose headers are already sent (0.9886ms)
+✔ hung generation ends with an actionable timeout before the runtime deadline (11.2263ms)
+✔ a disconnected preview does not write into a closed stream when generation finishes (15.7548ms)
+(node:53208) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/utils/data-url.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ the screenshot's theme prompt previews existing artwork and saves only the selected result (78.0508ms)
+✔ failed theme generation returns a readable streamed error and never changes the event (1.6313ms)
+✔ authorization is checked before starting generation or opening a stream (1.6231ms)
+✔ registry edits preview and save the guest link without generating, uploading or republishing artwork (1.8592ms)
+✔ clearing the registry removes its button and saved aliases without removing other links (0.9652ms)
+✔ invalid registry links and non-owner saves are rejected before any writes (4.5777ms)
+(node:48460) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/card-registry.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ saved links hydrate from supported event shapes and explicit clears win (0.6323ms)
+✔ editing one registry preserves additional registries and other guest links (0.5318ms)
+✔ only registry changes can bypass artwork preview (0.2479ms)
+(node:88412) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/gemini.edit-source.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ gemini edit mode accepts app-owned blob proxy urls without self-fetching the site (3.367ms)
+✔ gemini fresh invitation images request the 2:3 live-card frame (0.2683ms)
+✔ studio gemini image prep accepts same-origin relative asset urls for edits (1.2849ms)
+(node:67460) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/generate.edit-mode.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ generateStudioInvitation uses edit mode when imageEdit carries an app-owned blob proxy url (2.835ms)
+✔ generateStudioInvitation dispatches live-card text and fresh images through OpenAI (17.1372ms)
+✔ generateStudioInvitation dispatches existing-image edits through OpenAI (1.2375ms)
+✔ generateStudioInvitation strips Design Idea-only terms before approving visible image copy (2.5407ms)
+✔ studio generation fails image creation when any attached reference photo cannot be resolved (1.2301ms)
+✔ studio image generation passes background-only image prompt options without poster text flags (0.5335ms)
+✔ studio generation normalizes risky themes before prompt building and returns metadata (0.576ms)
+(node:62772) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/generation-progress.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ NDJSON tolerates fragmented UTF-8, emits previews, and waits for completion (2.0732ms)
+✔ a partial image never turns a truncated or failed stream into success (0.8703ms)
+✔ tracker records real stages, preview time, and repair attempts (0.287ms)
+✔ generation streams partials using the installed SDK transport and returns only completed art (4.0509ms)
+✔ image edits send multipart references and accept edit streaming events (5.0373ms)
+✔ image streaming fails on missing final frames and does not silently retry provider failures (2.493ms)
+studio_generation_run {
+  requestId: '124c83fa-90b4-4324-9cc1-5aca15474191',
+  product: 'live_card',
+  ok: true,
+  qualityCheck: 'passed',
+  contractId: undefined,
+  contractVersion: undefined,
+  operation: undefined,
+  outcome: undefined,
+  checkCount: 0,
+  issueCodes: [],
+  totalMs: 1,
+  stagesMs: { generating: 4, checking: 1, saving: 1 },
+  imageAttempts: 1,
+  firstPreviewMs: 2
+}
+(node:78576) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/generate.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ the completed image is previewed before QA, but completion waits for QA (4.2936ms)
+✔ failed artwork gets one visible repair and never becomes the saved result (1.0707ms)
+✔ an unapplied no-members/cursive edit gets at most two image attempts and reports the actual failure (0.8702ms)
+✔ persistence follows generation checks and publishes a final durable URL with timings (2.9434ms)
+✔ stream cancellation aborts in-flight generation (0.5664ms)
+✔ transport failures after a preview remain errors (0.6029ms)
+✔ artwork contract and QA notice survive saving, reopening, and detail refreshes (2.1688ms)
+✔ failure telemetry correlates content versions and outcomes without logging private copy or repair text (0.3627ms)
+✔ unexpected provider failure is counted without leaking its message (0.3108ms)
+✔ studio image finish preset registry covers every category with expanded premium presets (1.01ms)
+(node:47444) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/image-geometry.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ metadata-only success cannot accept truncated or undecodable image bytes (32.3736ms)
+✔ new Live Cards generate at the tall mobile ratio and edits retain it (28.9135ms)
+✔ source shape wins over a new-card default and unsupported ratios use auto without cropping (28.6119ms)
+✔ source geometry uses displayed EXIF orientation instead of raw JPEG header dimensions (44.1246ms)
+✔ damaged source is rejected before normalization or any provider call (0.8904ms)
+✔ initial wrong-orientation candidate repairs once and reaches QA only after shape is corrected (16.6465ms)
+✔ an edited valid source retains its source geometry despite product defaults (12.5457ms)
+✔ a repair that changes geometry cannot replace accepted artwork or reach export (22.5459ms)
+✔ an undecodable generated candidate is never previewed as complete, verified or exported (8.7321ms)
+✔ accepted generated reveal card uses the server's authoritative guest category and guess settings (1.692ms)
+✔ saved disabled/revealed settings override stale generated guess settings (0.2905ms)
+✔ legacy reveal payload classification follows the same configuration marker as the RSVP API (0.1748ms)
+(node:25900) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/artwork-copy.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Live Card artwork contract is the celebration title, not the event recap (1.2109ms)
+✔ Live Card masters have real top and bottom artwork and crop-safe decoration (0.113ms)
+✔ Live Card prompts keep venue, time, movie, and dinner in button dialogs (0.8287ms)
+livecard_image_request {
+  endpoint: 'images.generate',
+  model: 'gpt-image-2.5-flare',
+  quality: 'high',
+  requestId: undefined,
+  usage: undefined,
+  transportRetries: 0
+}
+livecard_image_request {
+  endpoint: 'images.generate',
+  model: 'gpt-image-2.5-flare',
+  quality: 'medium',
+  requestId: undefined,
+  usage: undefined,
+  transportRetries: 0
+}
+livecard_image_request {
+  endpoint: 'images.generate',
+  model: 'gpt-image-2.5-flare',
+  quality: 'high',
+  requestId: undefined,
+  usage: undefined,
+  transportRetries: 0
+}
+livecard_image_request {
+  endpoint: 'images.generate',
+  model: 'gpt-image-2.5-flare',
+  quality: 'high',
+  requestId: undefined,
+  usage: undefined,
+  transportRetries: 0
+}
+livecard_image_request {
+  endpoint: 'images.generate',
+  model: 'gpt-image-2.5-flare',
+  quality: 'high',
+  requestId: undefined,
+  usage: undefined,
+  transportRetries: 0
+}
+livecard_image_request {
+  endpoint: 'images.edit',
+  model: 'gpt-image-2.5-flare',
+  quality: 'high',
+  requestId: undefined,
+  usage: undefined,
+  transportRetries: 0
+}
+(node:70680) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/openai.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ OpenAI studio image generation defaults to gpt-image-2.5-flare (1.9464ms)
+✔ OpenAI studio image edits default independently to gpt-image-2.5-flare (0.4731ms)
+✔ explicit image quality override remains available (0.4485ms)
+✔ scan heroes request portrait dimensions without changing landscape page defaults (0.9507ms)
+✔ edited Event Page heroes forward explicit landscape dimensions to the actual provider request (0.3786ms)
+✔ tall Live Card dimensions reach generation, reference generation and edit requests (1.1539ms)
+✔ streamed Live Card generation forwards the same tall dimensions (0.9814ms)
+✔ studio openai adapter uses structured text generation and image generate/edit endpoints (1.2885ms)
+✔ studio openai image prep accepts same-origin relative asset urls and forwards reference images (0.6734ms)
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  policyVersion: 'openai-workloads-2026-10-21',
+  workload: 'visual_check',
+  model: 'gpt-6-astra',
+  durationMs: 1,
+  outcome: 'success',
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null
+}
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  policyVersion: 'openai-workloads-2026-10-21',
+  workload: 'visual_check',
+  model: 'gpt-6-astra',
+  durationMs: 0,
+  outcome: 'success',
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null
+}
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  policyVersion: 'openai-workloads-2026-10-21',
+  workload: 'visual_check',
+  model: 'gpt-6-astra',
+  durationMs: 0,
+  outcome: 'success',
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null
+}
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  policyVersion: 'openai-workloads-2026-10-21',
+  workload: 'visual_check',
+  model: 'gpt-6-astra',
+  durationMs: 1,
+  outcome: 'success',
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null
+}
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  policyVersion: 'openai-workloads-2026-10-21',
+  workload: 'visual_check',
+  model: 'gpt-6-astra',
+  durationMs: 0,
+  outcome: 'invalid_output',
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null
+}
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  policyVersion: 'openai-workloads-2026-10-21',
+  workload: 'visual_check',
+  model: 'gpt-6-astra',
+  durationMs: 0,
+  outcome: 'incomplete',
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null
+}
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  policyVersion: 'openai-workloads-2026-10-21',
+  workload: 'visual_check',
+  model: 'gpt-6-astra',
+  durationMs: 0,
+  outcome: 'refused',
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null
+}
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  policyVersion: 'openai-workloads-2026-10-21',
+  workload: 'visual_check',
+  model: 'gpt-6-astra',
+  durationMs: 0,
+  outcome: 'error',
+  requestId: null,
+  inputTokens: null,
+  outputTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null
+}
+(node:26552) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/output-checks.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ readable artwork still fails when the requested subject removal or cursive change was not applied (3.9095ms)
+✔ an edit with every requested visual change applied can pass (0.6932ms)
+✔ lettering checks require concrete obstruction evidence and preserve approved background objects (0.6748ms)
+✔ layered findings distinguish concrete missing wording, refusal and unavailable checks (1.3159ms)
+(node:34132) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/product-prompts.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ product routes remain distinct with backwards compatible page/image defaults (1.5643ms)
+✔ Astra plans and writes once with fact/private/output/wording boundaries (0.9432ms)
+✔ artwork contract selects exactly one composition and correct text policy (15.1177ms)
+✔ standalone flyer includes exact facts and multiple stops in the generation contract and preserves print density (62.37ms)
+✔ flyer export preserves the complete composition without cropping or painting a footer (90.0082ms)
+✔ approved copy protects names, milestone, all stops and wording across typography layouts (1.1149ms)
+✔ one targeted repair is verified, then the complete flyer is returned (67.6057ms)
+✔ repeated image failure cannot return success from the text-only half (1.6514ms)
+✔ unavailable quality check is reported honestly without claiming a passed image (0.8455ms)
+✔ movie theme edits allow visual redesign while preserving event wording (0.5327ms)
+✔ card repair uses original artwork and concrete corrections instead of editing damaged text (0.5995ms)
+✔ existing card verification protects words and faces without rejecting decorative overflow (0.5214ms)
+✔ live-card layout concerns return a reviewable preview without regeneration (0.7313ms)
+✔ layout warnings do not override corrupted event text (0.3798ms)
+✔ style failures get one targeted repair with the original design brief (0.9446ms)
+(node:93188) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/prompts.theme-framing.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ studio live-card prompt keeps birthday themes tied to the celebration type (3.8731ms)
+✔ studio invitation image prompt keeps custom themes invitation-ready (1.218ms)
+✔ studio prompts treat raw design-idea fragments as visual direction instead of printed copy (3.0382ms)
+✔ studio image prompts drop malformed generated opening lines before approving raster text (0.4408ms)
+✔ studio baked-text invitation prompts give every non-birthday-wedding category explicit invitation guidance (1.9182ms)
+✔ studio open house image prompts describe premium property collage and keep realtor photos in the app tab (0.3668ms)
+✔ studio prompts keep game day themes tied to the sports invitation type (0.209ms)
+✔ studio invitation image prompt keeps the bottom action zone safe without forcing a footer strip (0.2805ms)
+✔ studio invitation image prompt applies selected image finish presets to standalone images (0.2408ms)
+✔ studio invitation image prompt applies selected image finish presets to live-card rasters only when present (0.3422ms)
+✔ studio invitation image prompt keeps game day imagery grounded in provided sports context (0.2204ms)
+✔ page live-card prompts require baked-in raster text and preserve a clear bottom action zone (0.1755ms)
+✔ page live-card image edit prompts preserve baked-in text and logos (0.1322ms)
+✔ birthday image prompts keep only the subject title while protecting the button zone (0.7485ms)
+✔ live-card generation excludes logistics hidden in titles in both generation surfaces (1.3016ms)
+✔ poster-first live-card text prompts omit visible year and require poster-like copy (0.2675ms)
+✔ studio live-card prompts keep birthday copy centered on honoree name and age before theme (0.2008ms)
+✔ studio invitation image prompts use subject-photo makeover rules instead of cutout behavior (0.1949ms)
+✔ studio prompts keep visible non-open-house location copy on the venue name (0.6445ms)
+(node:11480) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/provider.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ studio provider resolution defaults production to openai and non-production to gemini (1.597ms)
+✔ resolveStudioProvider honors explicit providers (0.2415ms)
+✔ resolveStudioProvider defaults by runtime environment (0.205ms)
+✔ resolveStudioProvider rejects invalid explicit provider (0.3102ms)
+✔ studio generation dispatches text and image calls through the resolved provider (0.8372ms)
+(node:97148) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/reference-image-url.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ allows Vercel Blob public host and same app host (0.8263ms)
+✔ saved media paths resolve against the app and load through its media proxy (3.4191ms)
+✔ media failures remain retryable and non-images cannot become artwork (0.618ms)
+✔ trusted image redirects work while untrusted redirects and loops stop (1.2924ms)
+✔ rejects unknown hosts and non-http(s) (0.0957ms)
+(node:82640) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/source-image.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ resolveStudioSourceImage returns inline image bytes from a data url (1.2091ms)
+✔ resolveStudioSourceImage loads relative app blob proxy urls directly from Vercel Blob (2.5398ms)
+✔ resolveStudioSourceImage loads absolute same-site blob proxy urls directly from Vercel Blob (0.4512ms)
+✔ resolveStudioSourceImage fetches remote public image urls (0.6147ms)
+✔ resolveStudioSourceImage rejects blob proxy content when the blob is not an image (0.3883ms)
+▶ resolveStudioSourceImage returns null for missing blobs and failed remote fetches
+  ✔ missing blob (0.2679ms)
+  ✔ failed remote fetch (0.3344ms)
+✔ resolveStudioSourceImage returns null for missing blobs and failed remote fetches (1.0035ms)
+▶ resolveStudioSourceImage returns null for unsupported values
+  ✔ browser blob url (0.2131ms)
+  ✔ empty value (0.1677ms)
+✔ resolveStudioSourceImage returns null for unsupported values (0.6643ms)
+✔ studio theme normalization classifies branded and fuzzy requests for rewrite while leaving generic themes safe (2.3979ms)
+✔ studio theme normalization rebuilds prompt guidance from normalized themes instead of raw branded input (0.9218ms)
+✔ studio theme normalization prompt asks the model for strict JSON rewrites instead of blocking branded requests (0.7086ms)
+(node:35500) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/utils/calendar-handoff.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ email links preserve complete event data for every provider without inventing an end (42.2508ms)
+✔ provided ends and all-day dates survive handoff (7.3566ms)
+✔ untrusted URLs cannot redirect or inject calendar fields (5.3352ms)
+(node:84112) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/utils/calendar-links.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ an unknown end is omitted from every provider without changing the start instant (19.9186ms)
+✔ start-only Google links preserve instants without a zone and during repeated DST clocks (1.8122ms)
+✔ an all-day event without an end exports only its supplied date (0.2735ms)
+✔ calendar links retain offsets regardless of the server's local timezone (3.9801ms)
+✔ all-day links carry dates and the all-day flag without timezone shifts (0.2419ms)
+✔ Google, Outlook, and Apple links omit repeated fields while preserving useful notes (1.7716ms)
+(node:84652) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/utils/calendar-links.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ device routing recognizes iPad desktop mode without mistaking a Mac for an iPad (1.3573ms)
+✔ Android Outlook intent targets its installed handler with a complete web fallback (17.4954ms)
+✔ iPhone and iPad try Outlook synchronously, preserving an explicit end and never scheduling a duplicate web open (8.4722ms)
+✔ all-day events and unrecognized compose links avoid an unsupported mobile conversion (2.1696ms)
+✔ Apple devices request an inline single-event import rather than a calendar subscription (8.9896ms)
+✔ Google mobile navigation keeps the existing app-capable HTTPS link and its start time (2.6446ms)
+✔ desktop web links and non-Apple ICS downloads open only once even if noopener returns null (2.9408ms)
+✔ all manual provider URL building and native launches stay in shared utilities (470.2052ms)
+✔ email handoff is public, requires a tap and retains shared fallback controls (2.141ms)
+(node:67188) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/utils/rsvp-mailto.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ isRsvpMailtoHref accepts only mailto links (0.5802ms)
+✔ opening missing or non-mail RSVP links is a no-op in a browser (0.4505ms)
+✔ getRsvpMailPlatform distinguishes macOS from touch iPadOS (0.1931ms)
+✔ buildRsvpMailAppChoices creates iOS app compose links with mailto fallback (0.2553ms)
+ℹ tests 927
+ℹ suites 0
+ℹ pass 927
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 31202.6105

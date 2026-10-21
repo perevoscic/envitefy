@@ -238,6 +238,23 @@ test("checker rejection retains the candidate and never requests an automatic re
       assert.equal(generated, 1);
       assert.equal(checked, 1);
     }
+    generated = checked = 0;
+    headlineGenerationDeps.verify = async () => {
+      checked++;
+      return { status: "failed", issues: ["safety_mismatch"], repairInstructions: [] };
+    };
+    await assert.rejects(generateCardHeadline(form, design), (error: any) => {
+      assert.equal(error.code, "safety_refused");
+      assert.equal(error.stage, "lettering");
+      assert.deepEqual(error.issues, ["safety_mismatch"]);
+      assert.match(error.message, /sexual content, nudity, violence or profanity/);
+      return true;
+    });
+    assert.equal(generated, 1, "unsafe lettering never triggers another image request");
+    assert.equal(checked, 1);
+    await assert.rejects(generateCardHeadline(form, { ...design, headline: result }, undefined, undefined, true),
+      (error: any) => error.code === "safety_refused");
+    assert.equal(generated, 1, "same-image safety verification makes zero new image requests");
     generated = encoded = 0;
     const controller = new AbortController();
     headlineGenerationDeps.verify = async () => {

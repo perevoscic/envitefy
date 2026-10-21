@@ -4,7 +4,7 @@ import { prepareArrivalMap, prepareArrivalMapSnapshot, type ArrivalMapSource } f
 import OpenAI from "openai";
 import sharp from "sharp";
 import { resolveConciergeOpenAiPlannerModel } from "@/lib/concierge/openai-config";
-import { creationModelBudget } from "@/lib/creation/openai-workloads";
+import { creationModelBudget, creationTimeoutMs } from "@/lib/creation/openai-workloads";
 import { encodeScanArtworkWebp } from "@/lib/ocr/artwork-webp";
 import { generateInvitationImageWithOpenAi } from "@/lib/studio/openai";
 import type { StudioResolvedSourceImage } from "@/lib/studio/source-image";
@@ -167,7 +167,7 @@ export async function prepareEventThemeWording(input: EventThemeRequest, signal:
   const response = await eventThemeGenerationDeps.client().chat.completions.create(
     {
       model,
-      ...creationModelBudget(model, "creative_plan"),
+      ...creationModelBudget(model, "correction"),
       response_format: {
         type: "json_schema",
         json_schema: {
@@ -185,7 +185,7 @@ export async function prepareEventThemeWording(input: EventThemeRequest, signal:
         { role: "user", content: JSON.stringify(customEventWording(input.currentDetails)) },
       ],
     },
-    { signal, timeout: 60_000, maxRetries: 0 },
+    { signal, timeout: creationTimeoutMs("correction"), maxRetries: 0 },
   );
   const choice = response.choices[0];
   if (choice?.finish_reason !== "stop" || choice.message.refusal || !choice.message.content)

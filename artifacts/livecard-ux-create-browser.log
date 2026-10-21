@@ -1,0 +1,62 @@
+npm notice run envitefy@0.1.0 test:create-browser
+npm notice run node --import ./scripts/lib/create-offline-network.mjs --test --test-concurrency=1 scripts/create-guest-preview-offline.test.cjs scripts/create-guest-rsvp-offline.test.cjs scripts/event-messages-browser.test.cjs scripts/owner-card-preview-browser.test.cjs scripts/template-single-section-browser.test.cjs scripts/event-collaboration-browser.test.cjs scripts/event-editor-browser.test.cjs scripts/product-urls-browser.test.cjs
+✔ artwork fits the viewport with guest actions and Share/Close overlaid on the card (22546.0982ms)
+✖ hydrated Gender Reveal RSVP sends required answers, preserves rejected input, retries, and preview never writes (2581.4409ms)
+✖ owner access controls and invited signup/login preserve the event and explicit acceptance on mobile (4348.2365ms)
+✔ one Event Page editor protects saves and navigation across creation modes and screen sizes (41038.8413ms)
+{
+  "actions": [],
+  "failures": [],
+  "text": ""
+}
+✖ Messages requires preview and explicit Send, retains drafts, recovers interrupted sends, and fits mobile (3665.6907ms)
+✔ mobile owners discover and swipe card previews without losing progress; preview RSVPs stay local (29461.0969ms)
+✔ custom URLs work across Event Pages, Live Cards and Sign-up Forms without saving pending content (8107.1772ms)
+✔ native Event Page layout choices respect saved section order and narrow containers (1383.3663ms)
+✔ all template bodies and signup designs fill a single section without a reserved column (3244.9606ms)
+ℹ Verified 1158 template renderings across 12 layouts at phone, tablet and desktop widths.
+ℹ tests 9
+ℹ suites 0
+ℹ pass 6
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 122388.2714
+
+✖ failing tests:
+
+test at scripts\create-guest-rsvp-offline.test.cjs:10:1
+✖ hydrated Gender Reveal RSVP sends required answers, preserves rejected input, retries, and preview never writes (2581.4409ms)
+  page.goto: net::ERR_NETWORK_ACCESS_DENIED at http://127.0.0.1:29463/
+  Call log:
+  [2m  - navigating to "http://127.0.0.1:29463/", waiting until "load"[22m
+  
+      at TestContext.<anonymous> (D:\Develop_local\envitefy\scripts\create-guest-rsvp-offline.test.cjs:51:16) {
+    name: 'Error',
+    log: [ '  - navigating to "http://127.0.0.1:29463/", waiting until "load"' ]
+  }
+
+test at scripts\event-collaboration-browser.test.cjs:10:1
+✖ owner access controls and invited signup/login preserve the event and explicit acceptance on mobile (4348.2365ms)
+  Error: page.goto: net::ERR_NETWORK_ACCESS_DENIED at http://127.0.0.1:25391/
+  Call log:
+  [2m  - navigating to "http://127.0.0.1:25391/", waiting until "load"[22m
+  
+      at TestContext.<anonymous> (D:\Develop_local\envitefy\scripts\event-collaboration-browser.test.cjs:64:16)
+  Browser errors: []
+  Page text: 
+      at TestContext.<anonymous> (D:\Develop_local\envitefy\scripts\event-collaboration-browser.test.cjs:146:27)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+
+test at scripts\event-messages-browser.test.cjs:10:1
+✖ Messages requires preview and explicit Send, retains drafts, recovers interrupted sends, and fits mobile (3665.6907ms)
+  page.goto: net::ERR_NETWORK_ACCESS_DENIED at http://127.0.0.1:20706/
+  Call log:
+  [2m  - navigating to "http://127.0.0.1:20706/", waiting until "load"[22m
+  
+      at TestContext.<anonymous> (D:\Develop_local\envitefy\scripts\event-messages-browser.test.cjs:72:16) {
+    name: 'Error',
+    log: [ '  - navigating to "http://127.0.0.1:20706/", waiting until "load"' ]
+  }

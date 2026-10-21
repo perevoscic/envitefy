@@ -30,6 +30,10 @@ const mocks = {
     __esModule: true,
     default: (props) => React.createElement("button", { "aria-label": props.ariaLabel }, "Delete"),
   },
+  "@/components/EventAccessDialog": {
+    __esModule: true,
+    default: () => React.createElement("button", { "aria-label": "Invite co-host" }, "Invite co-host"),
+  },
   "@/components/EventResponseDashboard": { __esModule: true, default: () => "Guest responses" },
   "@/components/OwnerPreviewMobileTopbarSuppressor": {
     __esModule: true,
@@ -88,7 +92,7 @@ const PreviewViewport = load("src/components/EventPreviewViewport.tsx").default;
 const { withDirectRsvpInvitationData } = load("src/lib/studio/live-card-rsvp.ts");
 const { useMobileDrawer } = load("src/hooks/useMobileDrawer.ts");
 const MobileNavHeader = load("src/components/navigation/MobileNavHeader.tsx").default;
-const render = (data, initialTab = "design") =>
+const render = (data, initialTab = "design", permissions = {}) =>
   renderToStaticMarkup(
     React.createElement(OwnerTools, {
       eventId: "meet",
@@ -98,6 +102,7 @@ const render = (data, initialTab = "design") =>
       eventOwnerHref: "/event/meet",
       initialTab,
       numberOfGuests: 0,
+      ...permissions,
     }),
   );
 
@@ -113,6 +118,18 @@ test("guided cards without RSVP open Dashboard with URL editing and keep Design 
     assert.match(html, /Public link/);
     assert.doesNotMatch(html, /Guest responses|tab=rsvps|tab=messages/);
   }
+});
+
+test("published Live Card owners retain co-host access in their owner workspace", () => {
+  const data = {
+    createdVia: "livecard-builder", status: "published", primaryOutput: "live_card", rsvpEnabled: false,
+    studioCard: { imageUrl: "/artwork.webp", invitationData: { title: "Fright Invite", heroTextMode: "image", eventDetails: { product: "live_card" } } },
+  };
+  const owner = render(data, "dashboard", { isOwner: true, canManageAccess: true });
+  assert.match(owner, /Owner workspace/);
+  assert.match(owner, /aria-label="Invite co-host"/);
+  const cohost = render(data, "dashboard", { isOwner: false, canManageAccess: false });
+  assert.doesNotMatch(cohost, /aria-label="Invite co-host"|aria-label="Manage access"/);
 });
 
 test("event pages open directly with owner actions and responsive device controls", () => {

@@ -1,0 +1,6 @@
+npm notice run envitefy@0.1.0 pretypecheck
+npm notice run next typegen
+Generating route types...
+✓ Route types generated successfully
+npm notice run envitefy@0.1.0 typecheck
+npm notice run node --max-old-space-size=8192 node_modules/typescript/bin/tsc --noEmit --pretty false -p tsconfig.application.json

@@ -1,0 +1,244 @@
+{
+  "personaId": 8,
+  "persona": "Fictional nonprofit volunteer coordinator",
+  "eventConcept": "Fictional community kindness evening",
+  "status": "published_revised_attempt",
+  "startedAt": "2026-10-21T14:31:26.532Z",
+  "generateClickedAt": "2026-10-21T14:31:32.533Z",
+  "observedAt": "2026-10-21T14:33:02.101Z",
+  "environment": "http://localhost:3000/live-cards",
+  "tabId": "1960064643",
+  "title": "Lanterns of Kindness",
+  "openingLine": "Small acts. Brighter nights.",
+  "occasion": "Not specified (General event default)",
+  "exactArtworkPrompt": "Create an immersive dimensional paper sculpture of a welcoming community workshop at blue hour. A glowing amber paper lantern is the clear focal subject on a long walnut table, surrounded by carefully folded care packages, colorful fabric scraps, simple heart-shaped paper tags without writing, and small jars of autumn flowers. Layer an open doorway, softly lit shelves, warm window squares and navy evening sky behind the table for depth. Use rich indigo, burnt orange, warm cream and touches of sage, tactile deckled paper edges, sculpted folds, soft shadows and cinematic lamplight. Make the scene abundant, hopeful and neighborly with a naturally readable title pocket above the lantern. Expressive warm cream cut-paper lettering should suit this handmade scene. No logos, real organizations or extra printed words.",
+  "inputs": {
+    "date": "2026-10-26",
+    "startTime": "18:00",
+    "endTime": "19:30",
+    "timezoneIntent": "America/Chicago (Central); no timezone control was exposed before generation failed",
+    "venueName": "https://envitefy.com",
+    "messageToGuests": "AI demo—not a real event. A fictional community kindness evening for testing this Live Card: imagine neighbors making care packages and writing encouraging notes together.",
+    "anythingElseGuestsShouldKnow": "AI demo—not a real event. Monday, October 26, 2026, 6:00–7:30 PM Central. No organization, booking, attendance, donation or invitation is associated with this demonstration. Please do not submit guest responses.",
+    "rsvpEnabled": false,
+    "registry": ""
+  },
+  "actions": [
+    {
+      "action": "Opened own Chrome tab; confirmed 1 Your card"
+    },
+    {
+      "action": "Entered title, optional opening line and custom look description; left Occasion unspecified"
+    },
+    {
+      "action": "Clicked Generate & continue once",
+      "at": "2026-10-21T14:31:32.533Z"
+    },
+    {
+      "action": "Entered Event date using native setValue after localized date value rejected",
+      "detail": "10/26/2026 was rejected by automation input;2026-10-26 succeeded. This is an automation format issue, not a product defect."
+    },
+    {
+      "action": "Committed18:00 and19:30 with native setValue; entered demo URL venue"
+    },
+    {
+      "action": "Added AI-demo disclosure in Message and Anything else guests should know; kept RSVP off"
+    },
+    {
+      "action": "Returned to When & Where and verified all values retained"
+    },
+    {
+      "action": "Observed background design check failure; did not click Retry design"
+    },
+    {
+      "action": "Marked handoff to preserve editor"
+    }
+  ],
+  "generation": {
+    "initialAttemptCount": 1,
+    "retries": 1,
+    "letteringRepairs": 0,
+    "visibleStatus": "Checking background · attempt 1 ·34 seconds elapsed · started9:31:41 AM",
+    "failureMessage": "The background did not pass the design check. Your event details are still here. Retry design to try again."
+  },
+  "observedFeedback": [
+    {
+      "kind": "positive",
+      "detail": "Generate & continue immediately opened editable When & Where while artwork ran."
+    },
+    {
+      "kind": "positive",
+      "detail": "Title and opening appeared once under Words on your card; Message tab had distinct optional fields; date and time persisted across tabs."
+    },
+    {
+      "kind": "confirmed_creation_failure",
+      "detail": "App reported background design check failed on attempt1; card artwork was not shown."
+    },
+    {
+      "kind": "incomplete_verification",
+      "detail": "Review, publish, public guest rendering, final artwork quality, and timezone resolution could not be verified because initial background failed."
+    },
+    {
+      "kind": "automation_issue",
+      "detail": "Native setValue required ISO date and24-hour time syntax; corrected immediately."
+    }
+  ],
+  "screenshots": [
+    "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-generating.jpg",
+    "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-background-check-failure.jpg"
+  ],
+  "output": {
+    "published": true,
+    "resultUrl": "https://envitefy.com/card/lanterns-of-kindness-at-online-event",
+    "authenticatedOwnerUrl": "https://envitefy.com/event/lanterns-of-kindness-at-online-event?tab=design",
+    "eventId": "76e72bd7-4e3f-47a2-997a-f1f56374b03a",
+    "artworkPath": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-nonprofit-artwork.webp",
+    "artworkBytes": 1953032,
+    "artworkSource": "https://envitefy.com/api/blob/event-media/upload-5e1f80af-bfc4-4297-ba36-d82478a002d5/header/display.webp",
+    "artworkExport": "pageAssets.bundle observed display.webp;1requested,1downloaded,0failed",
+    "wholeCardScreenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-nonprofit-fullscreen.jpg",
+    "publishedConfirmationScreenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-revised-published-editor.jpg",
+    "overviewScreenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-nonprofit-overview.jpg",
+    "tabId": "1960064696",
+    "markedDeliverable": true
+  },
+  "feedbackAsPersona": "The wording and logistics layout felt clear and I could keep preparing the evening during generation. I could not obtain a card to review because the first background failed its check. The error retained my details and offered Retry design, but gave no design-specific explanation.",
+  "rootFollowup": {
+    "designRetryCount": 1,
+    "retryResult": "The background did not pass the design check; 27 seconds elapsed on the second job.",
+    "reconnectResult": "Reconnect retained both Checking background and the background-check failure message. No artwork was shown.",
+    "approvalRejection": "Automatic approval review rejected selecting the Lantern festival idea because the UI still reported a running check and the trial protocol allowed only one retry.",
+    "proposedPrompt": "Design a general event Live Card featuring a garden path lined with glowing lanterns leading to a beautifully decorated pavilion. Use peach, emerald and soft gold, rendered as a dimensional paper sculpture with tactile layers and gentle shadows. Keep a clear focal subject, layered surroundings and intentional lighting, with a naturally readable title pocket.",
+    "approvalRejectionResolved": true,
+    "userAnswer": "Approve one revised attempt",
+    "completion": "The single approved revised attempt published successfully; original failed tab no longer existed, so no cancellation was claimed."
+  },
+  "revisedAttempt": {
+    "authorization": "User explicitly approved one revised generation with the exact Lantern festival prompt.",
+    "startedAt": "2026-10-21T15:06:40.056Z",
+    "generateClickedAt": "2026-10-21T15:06:53.255Z",
+    "tabId": "1960064696",
+    "prompt": "Design a general event Live Card featuring a garden path lined with glowing lanterns leading to a beautifully decorated pavilion. Use peach, emerald and soft gold, rendered as a dimensional paper sculpture with tactile layers and gentle shadows. Keep a clear focal subject, layered surroundings and intentional lighting, with a naturally readable title pocket.",
+    "title": "Lanterns of Kindness",
+    "openingLine": "Small acts. Brighter nights.",
+    "inputs": {
+      "date": "2026-10-26",
+      "startTime": "18:00",
+      "endTime": "19:30",
+      "timezoneIntent": "America/Chicago (Central); no timezone control was exposed before generation failed",
+      "venueName": "https://envitefy.com",
+      "messageToGuests": "AI demo—not a real event. A fictional community kindness evening for testing this Live Card: imagine neighbors making care packages and writing encouraging notes together.",
+      "anythingElseGuestsShouldKnow": "AI demo—not a real event. Monday, October 26, 2026, 6:00–7:30 PM Central. No organization, booking, attendance, donation or invitation is associated with this demonstration. Please do not submit guest responses.",
+      "rsvpEnabled": false,
+      "registry": ""
+    },
+    "generationAttempts": 1,
+    "repairs": 0,
+    "verificationRetries": 0,
+    "status": "published",
+    "actions": [
+      {
+        "action": "Created own fresh Chrome tab; original tab no longer existed. No old job cancellation was claimed or attempted."
+      },
+      {
+        "action": "Entered saved title and opening, exact approved garden lantern prompt, Occasion unspecified."
+      },
+      {
+        "action": "Clicked Generate & continue once",
+        "at": "2026-10-21T15:06:53.255Z"
+      },
+      {
+        "action": "Set2026-10-26,18:00,19:30 via native setValue and entered barehttps://envitefy.com venue."
+      },
+      {
+        "action": "Development refresh returned to Your card; retained prompt and durable artwork job. Continued to Event details without generating again."
+      },
+      {
+        "action": "Restored both AI-demo guest disclosures. Verified RSVP and Registry switches off."
+      },
+      {
+        "action": "Returned to When & Where and verified date,time,venue retained."
+      },
+      {
+        "action": "Clicked Review invitation, kept approved wording at optional suggestion."
+      },
+      {
+        "action": "Opened full-screen eye Preview and captured whole card.",
+        "screenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-revised-fullscreen.jpg"
+      },
+      {
+        "action": "Clicked Publish invitation once.",
+        "at": "2026-10-21T15:09:03.010Z"
+      },
+      {
+        "action": "Copied actual guest link from published editor."
+      },
+      {
+        "action": "Opened production guest URL. Authenticated owner redirected to owner workspace; opened normal Preview."
+      },
+      {
+        "action": "Bundled current rendered display.webp via pageAssets and copied to requested artwork output."
+      },
+      {
+        "action": "Opened saved Overview and verified demo disclosure, MondayOct26,date/time and Central text; closed details and reopened whole card."
+      },
+      {
+        "action": "Marked production card preview tabDeliverable."
+      }
+    ],
+    "observations": [
+      "Revised background advanced through Checking background to Preparing background image, then Creating title and opening-line artwork.",
+      "First popup-open action timed out after live development refresh changed the mounted step; recovered using visible Continue to event details, with no extra generation.",
+      "At79 seconds the job was Ready to review. Advisory style_mismatch reported decorative foliage/lanterns and pale backing in isolated lettering, while both exact strings were complete and readable. No repair or retry verification was requested.",
+      "Review offered optional wording corrections; clicked Keep my wording to retain approved wording.",
+      "Review showed Oct26,2026,6:00 PM–7:30 PM Event local time and Online event · https://envitefy.com. An explicit America/Chicago timezone was not shown in the UI; Central remains stated in guest disclosure.",
+      "Full-screen eye Preview displayed the whole card and explicit Publish invitation control.",
+      "Editor confirmed: Your Live Card is published. It is ready to share. Copy guest link returned the production /card/ URL.",
+      "Production saved Overview shows Monday,October26 at6:00 PM–7:30 PM, AI demo—not a real event, fictional care-package event description, and the explicit Central/no booking/no responses instructions.",
+      "The public /card/ URL redirects this authenticated owner to /event/... ?tab=design; clean owner Preview shows the saved whole card. Signed-out public access was not separately tested.",
+      "Published card visually retains expressive exact title/opening and layered lantern garden, with Overview,Location,Calendar controls; no RSVP or Registry controls."
+    ],
+    "output": {
+      "published": true,
+      "resultUrl": "https://envitefy.com/card/lanterns-of-kindness-at-online-event",
+      "authenticatedOwnerUrl": "https://envitefy.com/event/lanterns-of-kindness-at-online-event?tab=design",
+      "eventId": "76e72bd7-4e3f-47a2-997a-f1f56374b03a",
+      "artworkPath": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-nonprofit-artwork.webp",
+      "artworkBytes": 1953032,
+      "artworkSource": "https://envitefy.com/api/blob/event-media/upload-5e1f80af-bfc4-4297-ba36-d82478a002d5/header/display.webp",
+      "artworkExport": "pageAssets.bundle observed display.webp;1requested,1downloaded,0failed",
+      "wholeCardScreenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-nonprofit-fullscreen.jpg",
+      "publishedConfirmationScreenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-revised-published-editor.jpg",
+      "overviewScreenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-nonprofit-overview.jpg",
+      "tabId": "1960064696",
+      "markedDeliverable": true
+    },
+    "readyAt": "2026-10-21T15:08:24.300Z",
+    "publishClickedAt": "2026-10-21T15:09:03.010Z",
+    "publishedConfirmedAt": "2026-10-21T15:09:52.606Z",
+    "completedAt": "2026-10-21T15:11:15.967Z",
+    "feedbackAsPersona": "The revised lantern garden feels welcoming and the handmade lettering is readable and distinctive. I could add logistics while it generated. The style finding was detailed and advisory, so publication stayed available without another image request. The optional wording-correction prompt did not display its proposed change in the visible state; Keep my wording preserved my copy. The review called online-event time Event local time, while my guest instructions explicitly state Central. Publication completed and the saved Overview retained the fictional-event disclosure."
+  },
+  "currentStatus": "published_revised_attempt",
+  "currentOutput": {
+    "published": true,
+    "resultUrl": "https://envitefy.com/card/lanterns-of-kindness-at-online-event",
+    "authenticatedOwnerUrl": "https://envitefy.com/event/lanterns-of-kindness-at-online-event?tab=design",
+    "eventId": "76e72bd7-4e3f-47a2-997a-f1f56374b03a",
+    "artworkPath": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-nonprofit-artwork.webp",
+    "artworkBytes": 1953032,
+    "artworkSource": "https://envitefy.com/api/blob/event-media/upload-5e1f80af-bfc4-4297-ba36-d82478a002d5/header/display.webp",
+    "artworkExport": "pageAssets.bundle observed display.webp;1requested,1downloaded,0failed",
+    "wholeCardScreenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-nonprofit-fullscreen.jpg",
+    "publishedConfirmationScreenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-revised-published-editor.jpg",
+    "overviewScreenshot": "D:/Develop_local/envitefy/artifacts/livecard-persona-trials-2026-10-21/08-nonprofit-overview.jpg",
+    "tabId": "1960064696",
+    "markedDeliverable": true
+  },
+  "initialOutput": {
+    "published": false,
+    "resultUrl": null,
+    "artworkScreenshot": null,
+    "exactBlocker": "Background check failed on initial job and one explicit retry. New design revision awaits user approval after automatic review rejection."
+  }
+}
