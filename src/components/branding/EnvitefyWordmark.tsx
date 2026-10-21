@@ -1,8 +1,11 @@
+import styles from "./brand-appearance.module.css";
+
 type EnvitefyWordmarkProps = {
   className?: string;
   scaled?: boolean;
   shine?: boolean;
   tone?: "gradient" | "light";
+  appearance?: "app" | "fixed";
 };
 
 // Locked Envitefy brand asset. Do not change the canonical typography, scale, spacing,
@@ -17,6 +20,7 @@ export default function EnvitefyWordmark({
   scaled = true,
   shine = false,
   tone = "gradient",
+  appearance = "app",
 }: EnvitefyWordmarkProps) {
   return (
     <span
@@ -28,7 +32,7 @@ export default function EnvitefyWordmark({
         aria-hidden
         className={`josefin-slab-variable inline-block shrink-0 whitespace-nowrap align-middle overflow-visible leading-[1.16] pl-[0.02em] pr-[0.14em] pt-[0.04em] pb-[0.16em] ${
           shine ? "envitefy-wordmark-shine" : ""
-        } ${className}`.trim()}
+        } ${appearance === "app" && tone === "gradient" ? styles.adaptiveWordmark : ""} ${className}`.trim()}
         style={{
           fontFamily: 'var(--font-josefin-slab), "Josefin Slab", serif',
           fontWeight: 700,

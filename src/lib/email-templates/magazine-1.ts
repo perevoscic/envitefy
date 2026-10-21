@@ -1,3 +1,4 @@
+import { adaptiveEmailDocument, type EmailDesignVersion } from "../email-design.ts";
 import { ENVITEFY_SOCIAL_LINKS } from "@/lib/envitefy-social-links";
 import { buildLandingShowcasePath } from "@/lib/landing-showcase";
 import { buildPublicAssetUrl, resolvePublicAssetOrigin } from "@/lib/public-asset-url";
@@ -189,7 +190,7 @@ export const MAGAZINE_1_HTML = `<!DOCTYPE html>
                       style="display:block; width:100%; max-width:320px; height:auto; margin:0 auto;"
                     >
                     <br>
-                    <span style="display:inline-block; margin-top:12px; line-height:1.08; white-space:nowrap;">
+                    <span class="email-legacy-brand" style="display:inline-block; margin-top:12px; line-height:1.08; white-space:nowrap;">
                       <span
                         class="legacy-note"
                         style="
@@ -333,6 +334,7 @@ export const MAGAZINE_1_HTML = `<!DOCTYPE html>
 
 export interface MagazineRenderOptions {
   baseUrl: string;
+  emailDesignVersion?: EmailDesignVersion;
 }
 
 function renderMagazineSocialFooter(options: MagazineRenderOptions): string {
@@ -385,7 +387,7 @@ function renderMagazineShowcaseCards(options: MagazineRenderOptions): string {
     const imageSrc = `${base}${card.imagePath}`;
 
     return `
-                        <td width="${width}" valign="top" style="padding:0 8px;">
+                        <td class="email-showcase-column" width="${width}" valign="top" style="padding:0 8px;">
                           <a
                             href="${href}"
                             target="_blank"
@@ -429,10 +431,11 @@ export function renderMagazineEmail(options: MagazineRenderOptions): string {
   const heroUrl = buildPublicAssetUrl(MAGAZINE_1_HERO_IMAGE_PATH, options.baseUrl);
   const wordmarkUrl = buildPublicAssetUrl(MAGAZINE_1_WORDMARK_IMAGE_PATH, options.baseUrl);
   const conciergeUrl = buildPublicAssetUrl("/live-cards", options.baseUrl);
-  return MAGAZINE_1_HTML
+  const html = MAGAZINE_1_HTML
     .replace(/\{\{HERO_IMAGE_URL\}\}/g, heroUrl)
     .replace(/\{\{WORDMARK_IMAGE_URL\}\}/g, wordmarkUrl)
     .replace(/\{\{CONCIERGE_URL\}\}/g, conciergeUrl)
     .replace(/\{\{SOCIAL_FOOTER_HTML\}\}/g, renderMagazineSocialFooter(options))
     .replace(/\{\{SHOWCASE_CARDS_HTML\}\}/g, renderMagazineShowcaseCards(options));
+  return options.emailDesignVersion === "legacy" ? html : adaptiveEmailDocument(html);
 }

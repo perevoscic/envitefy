@@ -18,7 +18,7 @@ test("owner access controls and invited signup/login preserve the event and expl
       entry: path.resolve("scripts/fixtures/event-collaboration/entry.tsx"), output: { path: output, filename: "fixture.js" },
       plugins: [new compiled.webpack.DefinePlugin({ "process.env": JSON.stringify({ NODE_ENV: "development" }) })],
       resolve: { extensions: [".tsx", ".ts", ".js"], alias: { "next-auth/react": authMock, "@/app/sidebar-context": sidebarMock, "@/hooks/useRecaptcha": recaptchaMock, "@": path.resolve("src") } },
-      module: { rules: [{ test: /\.[jt]sx?$/, exclude: /node_modules/, use: path.resolve("scripts/lib/create-guest-ts-loader.cjs") }, { test: /\.(png|jpg|webp|svg)$/, type: "asset/inline" }] },
+      module: { rules: [{ test: /\.[jt]sx?$/, exclude: /node_modules/, use: path.resolve("scripts/lib/create-guest-ts-loader.cjs") }, { test: /\.css$/, use: path.resolve("scripts/lib/event-editor-css-loader.cjs") }, { test: /\.(png|jpg|webp|svg)$/, type: "asset/inline" }] },
     });
     compiler.run((error, stats) => compiler.close(() => error || stats?.hasErrors() ? reject(error || new Error(stats.toString({ all: false, errors: true }))) : resolve()));
   });

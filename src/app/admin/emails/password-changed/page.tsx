@@ -1,4 +1,6 @@
 "use client";
+
+import EmailPreviewFrame from "@/components/admin/EmailPreviewFrame";
 import { useAdminAccess } from "@/components/admin/AdminAccessProvider";
 import Link from "next/link";
 import { createEmailTemplate, escapeHtml } from "@/lib/email-template";
@@ -121,7 +123,7 @@ export default function PasswordChangedPreviewPage() {
               </h2>
             </div>
             <div className="p-6">
-              <iframe
+              <EmailPreviewFrame
                 srcDoc={html}
                 className="w-full border border-[#ddd5f6] rounded-lg"
                 style={{ height: "650px" }}

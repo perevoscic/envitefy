@@ -53,6 +53,8 @@ export default function RsvpIdentityModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="rsvp-identity-title"
+        data-appearance-scope="app"
+        data-app-dialog
         className="relative w-full max-w-md rounded-[1.75rem] border border-black/10 bg-white p-6 text-[#1f1633] shadow-2xl"
       >
         <button

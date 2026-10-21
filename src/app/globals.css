@@ -3,6 +3,9 @@
 @import "../components/birthdays/redesign/birthday-fonts.css";
 @import "./gallery-fonts.css";
 @import "../styles/holiday-palettes.css";
+@import "../styles/app-appearance.css";
+
+@custom-variant dark (&:where(.dark, .dark *):not(:where([data-appearance-scope="authored"], [data-appearance-scope="authored"] *)));
 
 @font-face {
   font-family: "Josefin Sans";
@@ -129,6 +132,10 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
+  --color-field-background: var(--field-background);
+  --color-surface-raised: var(--surface-raised);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-ring: var(--ring);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
@@ -467,7 +474,7 @@
 }
 
 /* The existing event-color registration switches frost only over dark event paper. */
-html[data-event-page-tone="dark"] [data-app-navigation="sidebar"] {
+html:not(.dark)[data-event-page-tone="dark"] [data-app-navigation="sidebar"] {
   --nav-sidebar-frost-start: rgba(250, 249, 255, 0.94);
   --nav-sidebar-frost-end: rgba(247, 245, 255, 0.94);
   --nav-sidebar-mobile-frost: rgba(255, 255, 255, 0.94);
@@ -1062,9 +1069,9 @@ textarea::placeholder,
 textarea::-webkit-input-placeholder,
 textarea::-moz-placeholder,
 textarea:-ms-input-placeholder {
-  color: #9ca3af !important; /* gray-400 */
+  color: var(--placeholder, #9ca3af) !important;
   opacity: 1 !important;
-  -webkit-text-fill-color: #9ca3af !important;
+  -webkit-text-fill-color: var(--placeholder, #9ca3af) !important;
 }
 
 html {
@@ -1072,7 +1079,7 @@ html {
   min-height: 100vh;
   min-height: 100dvh;
   background-color: var(--background);
-  color-scheme: only light;
+  color-scheme: inherit;
   /* Ensure html extends edge-to-edge */
   margin: 0;
   padding: 0;
@@ -1097,7 +1104,7 @@ html:has([data-artwork-preview]) {
 }
 
 body {
-  color-scheme: only light;
+  color-scheme: inherit;
   background-color: var(--background);
   color: var(--foreground);
   font-family:
@@ -1697,16 +1704,16 @@ h5 {
   .auth-modal input[type="email"],
   .auth-modal input[type="password"],
   .auth-modal input[type="text"] {
-    background: #fbf7f2 !important;
-    border-color: rgba(217, 197, 184, 0.6) !important;
-    color: #2b1b16 !important;
+    background: var(--app-field-background, #fbf7f2) !important;
+    border-color: var(--app-input, rgba(217, 197, 184, 0.6)) !important;
+    color: var(--app-foreground, #2b1b16) !important;
   }
   .auth-modal input[type="email"]:focus,
   .auth-modal input[type="password"]:focus,
   .auth-modal input[type="text"]:focus {
-    background: #ffffff !important;
-    border-color: rgba(201, 143, 107, 0.6) !important;
-    box-shadow: 0 0 0 2px rgba(201, 143, 107, 0.15) !important;
+    background: var(--app-field-background, #ffffff) !important;
+    border-color: var(--app-primary, rgba(201, 143, 107, 0.6)) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--app-primary, #c98f6b) 20%, transparent) !important;
   }
 
   /* Gradient sheen inside auth modal card */
@@ -1761,89 +1768,15 @@ h5 {
   color: var(--event-text-light);
 }
 
-.dark .event-theme-header {
-  background-image: var(--event-header-gradient-dark);
-  color: var(--event-text-dark);
-}
-
 .event-theme-card {
   background: var(--event-card-bg-light);
   border-color: var(--event-border-light);
   color: var(--foreground);
 }
 
-.dark .event-theme-card {
-  background: var(--event-card-bg-dark);
-  border-color: var(--event-border-dark);
-  color: var(--foreground);
-}
-
-/* Ensure all text in event-theme-card is visible - override any inline styles */
-:root[data-theme$="-light"] .event-theme-card,
-:root[data-theme$="-light"] .event-theme-card *,
-:root[data-theme$="-light"] .event-theme-scope .event-theme-card,
-:root[data-theme$="-light"] .event-theme-scope .event-theme-card * {
-  color: var(--foreground) !important;
-}
-
-/* Dark theme: use black text for event page */
-:root[data-theme$="-dark"] .event-theme-card,
-:root[data-theme$="-dark"] .event-theme-card *,
-:root[data-theme$="-dark"] .event-theme-scope .event-theme-card,
-:root[data-theme$="-dark"] .event-theme-scope .event-theme-card * {
-  color: #000000 !important;
-}
-
-/* Exempt fixed overlays/modals rendered inside event page from the black-text rule */
-:root[data-theme$="-dark"] .event-theme-card .fixed,
-:root[data-theme$="-dark"] .event-theme-card .fixed * {
-  color: var(--foreground) !important;
-}
-
-/* RSVP modal titles: always white in dark theme */
-:root[data-theme$="-dark"] .event-theme-card .rsvp-heading {
-  color: #ffffff !important;
-}
-
-/* Cancel buttons in modals: white text in dark theme for contrast */
-:root[data-theme$="-dark"] .event-theme-card .btn-cancel-white {
-  color: #ffffff !important;
-}
-
-/* Force event text variables */
-:root[data-theme$="-light"] .event-theme-scope {
-  --event-text-light: var(--foreground) !important;
-}
-
-:root[data-theme$="-dark"] .event-theme-scope {
-  --event-text-dark: #000000 !important;
-}
-
 .event-theme-chip {
   background: var(--event-chip-light);
   color: var(--event-text-light);
-}
-
-.dark .event-theme-chip {
-  background: var(--event-chip-dark);
-  color: var(--event-text-dark);
-}
-
-/* Editor: force a light palette within the editor body even if global theme is dark */
-:root[data-theme$="-dark"] .editor-force-light {
-  --background: #fffbf7;
-  --surface: #ffffff;
-  --foreground: #4e4e50;
-  --muted-foreground: #737373;
-  --border: #e0e0e0;
-}
-.dark .editor-force-light .event-theme-card {
-  background: var(--event-card-bg-light);
-  border-color: var(--event-border-light);
-}
-:root[data-theme$="-dark"] .editor-force-light .event-theme-card,
-:root[data-theme$="-dark"] .editor-force-light .event-theme-card * {
-  color: var(--foreground) !important;
 }
 
 /* Header buttons styling when image background is used */
@@ -2005,89 +1938,9 @@ h5 {
   display: none !important;
 }
 
-/* Attribute-based theme override: wins over prefers-color-scheme */
-:root[data-theme$="-light"] {
-  --background: #fffbf7;
-  --surface: #ffffff;
-  --foreground: #4e4e50;
-  --muted-foreground: #737373;
-  --border: #e0e0e0;
-
-  --primary: #2dd4bf;
-  --secondary: #6366f1;
-  --accent: #a855f7;
-
-  --success: #10b981;
-  --info: #60a5fa;
-  --warning: #f59e0b;
-  --error: #ef4444;
-}
-
-/* Ensure high contrast over dark scan overlay in light theme */
-:root[data-theme$="-light"] .scan-title {
-  color: #ffffff;
-}
-:root[data-theme$="-light"] .login-hero-heading {
-  color: #ffffff;
-}
-
-:root[data-theme$="-dark"] {
-  --background: #1c1b1a;
-  --surface: #2e2c2d;
-  --foreground: #e5e5e7;
-  --muted-foreground: #b3b3b3;
-  --border: #3a3a3a;
-
-  --primary: #2dd4bf;
-  --secondary: #6366f1;
-  --accent: #a855f7;
-
-  --success: #22c55e;
-  --info: #60a5fa;
-  --warning: #f59e0b;
-  --error: #f43f5e;
-}
-
-/* Event page: use dark text in dark theme */
-:root[data-theme$="-dark"] .event-theme-scope {
-  --event-text-light: #000000;
-  --event-text-dark: #000000;
-}
-
-/* Ensure good contrast in dark theme modals */
-:root[data-theme$="-dark"] .bg-background,
-:root[data-theme$="-dark"] .bg-surface {
-  color: var(--foreground);
-}
-
-/* Ensure buttons and text are visible in light theme */
-:root[data-theme$="-light"] button.text-foreground,
-:root[data-theme$="-light"] .text-foreground {
-  color: var(--foreground) !important;
-}
-
-/* Ensure buttons and text are visible in dark theme */
-:root[data-theme$="-dark"] button.text-foreground,
-:root[data-theme$="-dark"] .text-foreground {
-  color: var(--foreground) !important;
-}
-
-/* Event page override: force black text inside event cards in dark theme */
-:root[data-theme$="-dark"] .event-theme-card .text-foreground,
-:root[data-theme$="-dark"] .event-theme-scope .event-theme-card .text-foreground {
-  color: #000000 !important;
-}
-
-/* Support Tailwind opacity utilities like text-foreground/60 and /80 */
-:root[data-theme$="-dark"] .event-theme-card .text-foreground\/60,
-:root[data-theme$="-dark"] .event-theme-scope .event-theme-card .text-foreground\/60 {
-  color: rgba(0, 0, 0, 0.6) !important;
-}
-
-:root[data-theme$="-dark"] .event-theme-card .text-foreground\/80,
-:root[data-theme$="-dark"] .event-theme-scope .event-theme-card .text-foreground\/80 {
-  color: rgba(0, 0, 0, 0.8) !important;
-}
+/* Application colors come from the authoritative theme registry. */
+:root[data-theme$="-light"] .scan-title,
+:root[data-theme$="-light"] .login-hero-heading { color: #ffffff; }
 
 /* Scan overlay animation */
 @layer utilities {

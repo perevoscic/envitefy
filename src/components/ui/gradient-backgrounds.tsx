@@ -14,7 +14,7 @@ const backgroundClassByKey: Record<AppBackground, string> = {
 };
 
 const appBackgroundTokens = {
-  "--background": "#fbfdff",
+  "--background": "var(--app-background, #fbfdff)",
   "--brand": "#c65de9",
   "--brand-glow": "#08aeea",
 } as CSSProperties;

@@ -67,6 +67,7 @@ export default function CustomEventPageContent({
   } as CSSProperties;
   return (
     <article
+      data-appearance-scope="authored"
       className={styles.page}
       style={vars}
       data-layout={design.layout}

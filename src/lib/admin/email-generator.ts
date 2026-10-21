@@ -1,3 +1,4 @@
+import { hasEmailCta } from "../email-design.ts";
 import OpenAI from "openai";
 import { resolveEmailEmbedAssetUrl, uploadPublicBinaryAsset } from "../media-upload-image.ts";
 import { openAiChatCompatibilityParams } from "../openai-chat-params.ts";
@@ -1447,7 +1448,7 @@ export function buildCtaButtonHtml(params: {
   const label = params.label || "Open Envitefy";
   const margin = params.margin || "28px 0 20px 0";
   return `<div style="text-align:center; margin:${margin};">
-  <a href="${href}" target="_blank" style="background-color:#7F67D3; color:#FFFFFF; border-radius:12px; padding:14px 28px; font-weight:700; display:inline-block; text-decoration:none;">${label}</a>
+  <a data-email-cta="primary" class="email-cta" href="${href}" target="_blank" style="background-color:#C5A7FF; color:#25103E; border-radius:12px; padding:14px 28px; font-weight:700; display:inline-block; text-decoration:none;">${label}</a>
 </div>`;
 }
 
@@ -1552,21 +1553,21 @@ export function polishAdminEmailBodyHtml(html: string): string {
   // Remove filler text links under/near CTAs (never keep these).
   out = out.replace(
     new RegExp(
-      `<p[^>]*>\\s*<a\\b(?![^>]*background-color\\s*:\\s*#7F67D3)[^>]*>\\s*(?:${banned})[^<]*<\\/a>\\s*<\\/p>`,
+      `<p[^>]*>\\s*<a\\b(?![^>]*background-color\\s*:\\s*(?:#7F67D3|#C5A7FF))[^>]*>\\s*(?:${banned})[^<]*<\\/a>\\s*<\\/p>`,
       "gi",
     ),
     "",
   );
   out = out.replace(
     new RegExp(
-      `(<div[^>]*>\\s*<a[^>]*background-color\\s*:\\s*#7F67D3[\\s\\S]*?<\\/div>)\\s*<a\\b(?![^>]*background-color\\s*:\\s*#7F67D3)[^>]*>\\s*(?:${banned})[^<]*<\\/a>`,
+      `(<div[^>]*>\\s*<a[^>]*background-color\\s*:\\s*(?:#7F67D3|#C5A7FF)[\\s\\S]*?<\\/div>)\\s*<a\\b(?![^>]*background-color\\s*:\\s*(?:#7F67D3|#C5A7FF))[^>]*>\\s*(?:${banned})[^<]*<\\/a>`,
       "gi",
     ),
     "$1",
   );
   out = out.replace(
     new RegExp(
-      `<a\\b(?![^>]*background-color\\s*:\\s*#7F67D3)[^>]*>\\s*(?:${banned})\\s*<\\/a>`,
+      `<a\\b(?![^>]*background-color\\s*:\\s*(?:#7F67D3|#C5A7FF))[^>]*>\\s*(?:${banned})\\s*<\\/a>`,
       "gi",
     ),
     "",
@@ -1574,7 +1575,7 @@ export function polishAdminEmailBodyHtml(html: string): string {
 
   // Collapse consecutive duplicate purple CTA blocks.
   out = out.replace(
-    /(<div[^>]*>\s*<a[^>]*background-color\s*:\s*#7F67D3[^>]*>[\s\S]*?<\/a>\s*<\/div>)(?:\s*\1)+/gi,
+    /(<div[^>]*>\s*<a[^>]*background-color\s*:\s*(?:#7F67D3|#C5A7FF)[^>]*>[\s\S]*?<\/a>\s*<\/div>)(?:\s*\1)+/gi,
     "$1",
   );
 
@@ -1596,7 +1597,7 @@ export function extractCampaignIntroHtml(bodyHtml: string): string {
   }
 
   // Drop any leftover purple buttons from the intro — scenarios + wrapper own CTAs.
-  intro = intro.replace(/<div[^>]*>\s*<a[^>]*background-color\s*:\s*#7F67D3[\s\S]*?<\/div>/gi, "");
+  intro = intro.replace(/<div[^>]*>\s*<a[^>]*background-color\s*:\s*(?:#7F67D3|#C5A7FF)[\s\S]*?<\/div>/gi, "");
   intro = normalizeCampaignIntroMarkup(polishAdminEmailBodyHtml(intro));
 
   if (!/<p\b|<h1\b/i.test(intro)) return DEFAULT_CAMPAIGN_INTRO;
@@ -1630,7 +1631,7 @@ export function buildStructuredScenarioEmail(
 }
 
 export function ensureDraftIncludesPrimaryCta(draft: AdminEmailDraft): AdminEmailDraft {
-  const hasScenarioCtas = /background-color\s*:\s*#7F67D3/i.test(draft.bodyHtml);
+  const hasScenarioCtas = hasEmailCta(draft.bodyHtml);
   const buttonText = hasScenarioCtas
     ? ""
     : draft.buttonText.trim() || ADMIN_EMAIL_GENERATION_GUIDE.ctaDefaults.buttonText;

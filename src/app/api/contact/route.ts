@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { createEmailTemplate } from "@/lib/email-template";
 import { verifyRecaptchaToken } from "@/lib/recaptcha";
 
 export const runtime = "nodejs";
@@ -183,7 +184,7 @@ export async function POST(req: NextRequest) {
     const res = await sendEmail({
       subject,
       text,
-      html,
+      html: createEmailTemplate({ title, body: html }),
       replyToEmail: email || undefined,
     });
 

@@ -56,10 +56,11 @@ import AppleCalendarConnection, { type AppleCalendarStatus } from "@/components/
 import ProfileAccountDeletion from "@/components/account/ProfileAccountDeletion";
 import CreationAccessSettings from "@/components/account/CreationAccessSettings";
 import { UNIFIED_CREATION_ENABLED } from "@/lib/create/release";
+import AppearanceSelector from "@/components/AppearanceSelector";
 
 type CalendarProvider = "google" | "microsoft" | "apple";
 type ConnectedCalendarProvider = Exclude<CalendarProvider, "apple">;
-type SettingsSectionKey = "profile" | "calendars" | "security" | "creation";
+type SettingsSectionKey = "profile" | "calendars" | "security" | "creation" | "appearance";
 
 const SETTINGS_SECTIONS: Array<{
   id: SettingsSectionKey;
@@ -68,6 +69,7 @@ const SETTINGS_SECTIONS: Array<{
   icon: LucideIcon;
 }> = [
   { id: "profile", label: "Profile", description: "Name and account email", icon: UserRound },
+  { id: "appearance", label: "Appearance", description: "Light, dark or system", icon: Settings2 },
   {
     id: "calendars",
     label: "Calendars",
@@ -274,7 +276,7 @@ export default function SettingsPage() {
       const hash = window.location.hash.replace(/^#/, "") || settingsSectionQuery;
       if (hash === "your-sports" || hash === "creation") {
         setActiveSettingsSection("creation");
-      } else if (hash === "calendars" || hash === "security" || hash === "profile") {
+      } else if (hash === "calendars" || hash === "security" || hash === "profile" || hash === "appearance") {
         setActiveSettingsSection(hash);
       }
     };
@@ -714,6 +716,7 @@ export default function SettingsPage() {
   return (
     <main
       data-mobile-form-surface
+      data-settings-canvas
       className="min-h-screen w-full bg-[radial-gradient(circle_at_12%_0%,rgba(235,228,255,0.9),transparent_31%),radial-gradient(circle_at_92%_6%,rgba(224,246,255,0.8),transparent_28%)] px-3 py-4 text-foreground sm:px-6 sm:py-7 lg:px-8"
     >
       <section className="mx-auto w-full max-w-6xl pt-[var(--app-content-top-inset,0px)]">
@@ -838,6 +841,10 @@ export default function SettingsPage() {
           </aside>
 
           <div className="min-w-0">
+          <section className={`${activeSettingsSection === "appearance" ? "block" : "hidden"} space-y-6 rounded-[1.75rem] border border-border bg-card p-5 text-card-foreground sm:p-7`}>
+            <h2 className="text-2xl font-bold">Appearance</h2>
+            <AppearanceSelector />
+          </section>
           {/* Profile (names) */}
           <section
             className={`${activeSettingsSection === "profile" ? "block" : "hidden"} space-y-6 rounded-[1.75rem] border border-[#e3dcf0] bg-white/95 p-5 shadow-[0_18px_55px_rgba(65,51,92,0.08)] sm:p-7`}
@@ -851,7 +858,7 @@ export default function SettingsPage() {
                 Keep the name shown across your Envitefy workspace up to date.
               </p>
             </div>
-            <div className="flex min-w-0 flex-col gap-4 rounded-2xl border border-[#e2d9f2] bg-[linear-gradient(145deg,#fbf9ff,#fff)] p-4 sm:flex-row sm:items-center sm:p-5">
+            <div data-settings-surface className="flex min-w-0 flex-col gap-4 rounded-2xl border border-[#e2d9f2] bg-[linear-gradient(145deg,#fbf9ff,#fff)] p-4 sm:flex-row sm:items-center sm:p-5">
               <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[1.6rem] border-4 border-white bg-[linear-gradient(135deg,#6f59b1,#527d98)] shadow-[0_12px_30px_rgba(70,52,111,0.18)]">
                 {displayedAvatarUrl && displayedAvatarUrl !== failedAvatarUrl ? (
                   <Image
@@ -1032,6 +1039,7 @@ export default function SettingsPage() {
                 return (
                   <div
                     key={item.key}
+                    data-settings-surface
                     className="min-w-0 space-y-3 rounded-2xl border border-[#e5dcff] bg-[linear-gradient(145deg,#fff,#fbf9ff)] p-4 shadow-[0_8px_24px_rgba(80,61,121,0.05)]"
                   >
                     <div className="flex items-center justify-between">
@@ -1188,6 +1196,7 @@ export default function SettingsPage() {
           </section>
 
           <section
+            data-settings-surface
             className={`${activeSettingsSection === "creation" ? "block" : "hidden"} space-y-6 rounded-[1.75rem] border border-[#dcd3ee] bg-gradient-to-br from-white via-[#fcfaff] to-[#f4efff] p-5 shadow-[0_18px_55px_rgba(65,51,92,0.08)] sm:p-7`}
           >
             {UNIFIED_CREATION_ENABLED ? <CreationAccessSettings /> : <>
@@ -1424,7 +1433,7 @@ export default function SettingsPage() {
             }}
             className="fixed inset-x-4 bottom-4 z-[13000] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-[2rem] border border-[#ddd2f5] bg-white px-5 pb-5 pt-7 text-[#2f1d47] shadow-[0_28px_90px_rgba(36,21,58,0.34)] focus:outline-none data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out data-[state=open]:fade-in motion-reduce:animate-none sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-[calc(100%-2rem)] sm:max-w-[26rem] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:px-7 sm:pb-7 sm:pt-8"
           >
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.35rem] bg-[linear-gradient(145deg,#eee8ff,#e4efff)] text-[#6f5cc4] shadow-[inset_0_0_0_1px_rgba(124,103,190,0.08)]">
+            <div data-settings-accent-surface className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.35rem] bg-[linear-gradient(145deg,#eee8ff,#e4efff)] text-[#6f5cc4] shadow-[inset_0_0_0_1px_rgba(124,103,190,0.08)]">
               <Unplug className="h-7 w-7" aria-hidden="true" />
             </div>
 

@@ -42,6 +42,7 @@ export const viewport: Viewport = {
 function AuthenticatedSnapUploadStart() {
   return (
     <main
+      data-snap-upload-intro
       className="min-h-[100dvh] bg-transparent px-4 py-10 sm:px-6 lg:px-10"
       data-theme-color={themeColorPalette.eventFallback}
     >

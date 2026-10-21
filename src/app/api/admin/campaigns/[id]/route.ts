@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+import { persistedEmailDesignVersion } from "@/lib/email-design";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -74,6 +75,7 @@ export async function PATCH(
 
     const result = await upsertCampaignDraft({
       adminUserId: user.id,
+      emailDesignVersion: body.emailDesignVersion === undefined ? undefined : persistedEmailDesignVersion(body.emailDesignVersion),
       campaignId: id,
       subject: body.subject,
       bodyHtml: body.body,

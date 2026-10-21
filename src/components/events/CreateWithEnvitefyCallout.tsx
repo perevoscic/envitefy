@@ -104,7 +104,7 @@ export default function CreateWithEnvitefyCallout({
           type="button"
           onClick={onClick}
           disabled={!canCreate}
-          className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[var(--create-accent)] px-6 py-3 text-sm font-semibold text-white transition-colors enabled:hover:bg-[var(--create-hover)] disabled:cursor-not-allowed disabled:bg-[#e5e7eb] disabled:text-[#6b7280] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--create-accent)]"
+          className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[var(--create-accent)] px-6 py-3 text-sm font-semibold text-[var(--create-on-accent)] transition-colors enabled:hover:bg-[var(--create-hover)] disabled:cursor-not-allowed disabled:bg-[#e5e7eb] disabled:text-[#6b7280] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--create-accent)]"
         >
           Create with Envitefy{" "}
           <span aria-hidden="true" className="ml-2">

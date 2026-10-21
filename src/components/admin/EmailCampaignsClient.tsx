@@ -1,5 +1,7 @@
 "use client";
 
+import EmailPreviewFrame from "@/components/admin/EmailPreviewFrame";
+
 import { useSession } from "next-auth/react";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -7,7 +9,8 @@ import {
   ADMIN_EMAIL_CAMPAIGN_DRAFT_KEY,
   type AdminEmailCampaignDraft,
 } from "@/lib/admin/email-campaign-draft";
-import { parseStoredCampaignAudienceFilter } from "@/lib/admin/email-campaigns";
+import { campaignComposerEmailDesignVersion, parseStoredCampaignAudienceFilter } from "@/lib/admin/email-campaigns";
+import { adaptiveEmailDocument, CURRENT_EMAIL_DESIGN_VERSION, persistedEmailDesignVersion, type EmailDesignVersion } from "@/lib/email-design";
 import { createEmailTemplate } from "@/lib/email-template";
 
 interface Campaign {
@@ -75,6 +78,7 @@ export default function CampaignsPage({
   const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
 
   // Form state
+  const [emailDesignVersion, setEmailDesignVersion] = useState<EmailDesignVersion>(CURRENT_EMAIL_DESIGN_VERSION);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [buttonText, setButtonText] = useState("");
@@ -98,6 +102,7 @@ export default function CampaignsPage({
       if (!raw) return;
 
       const handoff = JSON.parse(raw) as Partial<AdminEmailCampaignDraft>;
+      setEmailDesignVersion(persistedEmailDesignVersion(handoff.emailDesignVersion));
       if (typeof handoff.subject === "string") setSubject(handoff.subject);
       if (typeof handoff.bodyHtml === "string") setBody(handoff.bodyHtml);
       if (typeof handoff.buttonText === "string") setButtonText(handoff.buttonText);
@@ -146,7 +151,7 @@ export default function CampaignsPage({
     const url = prompt("Enter URL:");
     if (url)
       insertFormatting(
-        `<a href="${url}" style="color: #2DD4BF; text-decoration: underline;">`,
+        `<a href="${url}" class="email-link" style="color: #67459E; text-decoration: underline;">`,
         "</a>",
       );
   };
@@ -242,6 +247,7 @@ export default function CampaignsPage({
 
   const resetComposer = () => {
     setEditingCampaignId(null);
+    setEmailDesignVersion(CURRENT_EMAIL_DESIGN_VERSION);
     setSubject("");
     setBody("");
     setButtonText("");
@@ -281,6 +287,7 @@ export default function CampaignsPage({
 
   const loadCampaignIntoComposer = (campaign: Campaign, mode: "edit" | "reuse") => {
     const parsed = parseStoredCampaignAudienceFilter(campaign.audienceFilter);
+    setEmailDesignVersion(campaignComposerEmailDesignVersion(mode, parsed.emailDesignVersion));
     setSubject(campaign.subject);
     setBody(campaign.bodyHtml);
     setButtonText(parsed.buttonText);
@@ -325,6 +332,7 @@ export default function CampaignsPage({
           body: JSON.stringify({
             action: "save",
             subject,
+            emailDesignVersion,
             body,
             buttonText: buttonText || undefined,
             buttonUrl: buttonUrl || undefined,
@@ -368,6 +376,7 @@ export default function CampaignsPage({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             subject,
+            emailDesignVersion,
             body,
             buttonText: buttonText || undefined,
             buttonUrl: buttonUrl || undefined,
@@ -390,6 +399,7 @@ export default function CampaignsPage({
           action: "schedule",
           scheduledAt: scheduledAt.toISOString(),
           subject,
+          emailDesignVersion,
           body,
           buttonText: buttonText || undefined,
           buttonUrl: buttonUrl || undefined,
@@ -446,6 +456,7 @@ export default function CampaignsPage({
         body: JSON.stringify({
           campaignId: editingCampaignId || undefined,
           subject,
+          emailDesignVersion,
           body,
           buttonText: buttonText || undefined,
           buttonUrl: buttonUrl || undefined,
@@ -501,10 +512,11 @@ export default function CampaignsPage({
       .replace(/\{\{lastName\}\}/g, lastName);
 
     if (isFullHtmlDocument(previewBody)) {
-      return previewBody;
+      return emailDesignVersion === CURRENT_EMAIL_DESIGN_VERSION ? adaptiveEmailDocument(previewBody) : previewBody;
     }
 
     return createEmailTemplate({
+      emailDesignVersion,
       title: subject || "Campaign Preview",
       body: previewBody || "<p>Your email body will appear here...</p>",
       buttonText: buttonText || undefined,
@@ -957,7 +969,7 @@ export default function CampaignsPage({
               {/* Preview Content */}
               <div className="flex-1 overflow-auto p-6 bg-[#f8f4ff]">
                 <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                  <iframe
+                  <EmailPreviewFrame
                     srcDoc={generatePreviewHtml()}
                     className="w-full border-0"
                     style={{ height: "600px" }}

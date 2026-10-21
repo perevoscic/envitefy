@@ -1,0 +1,40 @@
+.imageSwitch {
+  display: inline-grid;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+
+.imageSwitch > img {
+  grid-area: 1 / 1;
+}
+
+.whiteImage {
+  display: none;
+}
+
+:global(html.dark) .colorImage:not(:global([data-appearance-scope="authored"] *)) {
+  display: none;
+}
+
+:global(html.dark) .whiteImage:not(:global([data-appearance-scope="authored"] *)) {
+  display: block;
+}
+
+:global(html.dark) .adaptiveWordmark:not(:global([data-appearance-scope="authored"] *)) {
+  background-image: none !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  animation: none !important;
+}
+
+:global(html.dark) .appSocialLinks:not(:global([data-appearance-scope="authored"] *)) {
+  color: #ffffff;
+}
+
+:global(html.dark) .appSocialLink:not(:global([data-appearance-scope="authored"] *)) {
+  opacity: 1;
+}
+
+:global(html.dark) .appSocialLink:not(:global([data-appearance-scope="authored"] *)):hover {
+  opacity: 0.75;
+}

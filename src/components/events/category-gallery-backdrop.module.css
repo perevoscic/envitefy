@@ -8,6 +8,12 @@
   background: var(--gallery-base);
   color: var(--gallery-ink);
 }
+:global(html.dark) .backdrop {
+  --gallery-base: var(--category-gallery-background, #251e2c) !important;
+  --gallery-fade: var(--category-gallery-background, #251e2c) !important;
+}
+:global(html.dark) .wash { opacity: 0.12; }
+:global(html.dark) .artwork { opacity: 0.42; }
 
 .wash {
   position: absolute;

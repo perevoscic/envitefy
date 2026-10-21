@@ -8,6 +8,8 @@ import { type MouseEventHandler, useEffect, useMemo, useRef, useState } from "re
 import { createPortal } from "react-dom";
 import LoginForm from "@/components/auth/LoginForm";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
+import AppearanceSelector from "@/components/AppearanceSelector";
+import appearanceStyles from "./navigation-appearance.module.css";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 
 export type HeroTopNavLink = {
@@ -418,6 +420,7 @@ export default function HeroTopNav({
     <header
       data-scrolled-past-hero={hasScrolledPastHero ? "true" : "false"}
       className={cx(
+        appearanceStyles.chrome,
         "fixed inset-x-0 top-0 z-50 px-4 pt-[max(0.9rem,env(safe-area-inset-top))] sm:px-6 lg:px-8",
       )}
     >
@@ -491,7 +494,7 @@ export default function HeroTopNav({
                         link.href.startsWith("#") ? handleHashLinkClick(link.href) : undefined
                       }
                       className={cx(
-                        "nav-chrome-motion relative whitespace-nowrap font-semibold transition",
+                        "nav-chrome-menu-entry nav-chrome-motion relative whitespace-nowrap font-semibold transition",
                         hasWideNavigation ? "text-[13px]" : "text-sm",
                         isTransparentOverHero
                           ? cx(
@@ -540,6 +543,7 @@ export default function HeroTopNav({
                 hasWideNavigation ? "2xl:flex" : "xl:flex",
               )}
             >
+              <AppearanceSelector compact />
               {status === "authenticated" ? (
                 <Link
                   href={dashboardHref}
@@ -656,6 +660,8 @@ export default function HeroTopNav({
                   }
                 }}
                 className={cx(
+                  appearanceStyles.chrome,
+                  appearanceStyles.mobileMenu,
                   "!fixed inset-0 z-[1000] h-dvh w-screen touch-pan-y !overflow-y-auto overscroll-y-contain px-4 pb-6 pt-[max(0.9rem,env(safe-area-inset-top))] transition-[transform,opacity] duration-300 ease-out will-change-transform [-webkit-overflow-scrolling:touch]",
                   hasWideNavigation ? "2xl:hidden" : "xl:hidden",
                   mobileMenuOpen
@@ -724,7 +730,7 @@ export default function HeroTopNav({
                                 : undefined
                             }
                             className={cx(
-                              "nav-chrome-motion relative flex min-h-11 w-full items-center justify-end rounded-2xl px-4 py-1.5 text-right text-base font-semibold transition",
+                              "nav-chrome-menu-entry nav-chrome-motion relative flex min-h-11 w-full items-center justify-end rounded-2xl px-4 py-1.5 text-right text-base font-semibold transition",
                               isActive
                                 ? useDarkMobileMenu
                                   ? "text-white"
@@ -751,6 +757,11 @@ export default function HeroTopNav({
                         </span>
                       );
                     })}
+
+                    <div className="mt-3 flex min-h-11 w-full items-center justify-between gap-3 px-4 py-2 text-sm">
+                      <span>Appearance</span>
+                      <AppearanceSelector compact />
+                    </div>
 
                     {showMobileMenuAuthActions ? (
                       <>

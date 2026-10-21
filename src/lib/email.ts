@@ -452,7 +452,7 @@ export async function sendSignupConfirmationEmail(params: {
   const squareSrc = emailImageUrl(header?.backgroundImage?.dataUrl || header?.images?.[1]?.dataUrl);
 
   const headerPreview = `
-    <div style="border:1px solid #E5E7EB; border-radius: 14px; overflow: hidden; background:${escapeHtml(headerBg)};">
+    <div data-email-authored="true" style="border:1px solid #E5E7EB; border-radius: 14px; overflow: hidden; background:${escapeHtml(headerBg)};">
       <div style="padding:18px;">
         ${bannerSrc ? `<img src="${escapeHtml(bannerSrc)}" alt="${escapeHtml(params.eventTitle)}" style="width:100%; height:180px; object-fit:cover; border-radius: 12px; border:1px solid #E5E7EB;" />` : ""}
         <div style="display:flex; gap:16px; align-items:flex-start; margin-top:${bannerSrc ? "12px" : "0"};">
@@ -474,7 +474,7 @@ export async function sendSignupConfirmationEmail(params: {
       ${locationLabel ? `<p style="margin:0 0 4px 0; font-size:14px;"><strong>Location:</strong> ${escapeHtml(locationLabel)}</p>` : ""}
       ${slotSummaries.length ? `<p style="margin:8px 0 0 0; font-size:14px;"><strong>Your signup — roles, items or shifts:</strong><br/> ${slotSummaries.map((s) => `• ${escapeHtml(s)}`).join("<br/>")}</p>` : ""}
     </div>
-    ${headerPreview}
+    <!-- email-authored:start -->${headerPreview}<!-- email-authored:end -->
     ${params.eventUrl && params.manageUrl ? `<p style="font-size:14px;line-height:1.6;"><a href="${escapeHtml(params.eventUrl)}" style="color:#59439e;text-decoration:underline;">View signup form</a></p>` : ""}
   `;
 

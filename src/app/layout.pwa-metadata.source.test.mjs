@@ -42,20 +42,23 @@ test("web app manifest names the installed app Envitefy", () => {
   assert.equal(manifest.short_name, "Envitefy");
 });
 
-test("mobile chrome pairs blue-violet clouds with a matching native tint", () => {
+test("mobile chrome preserves light clouds and supports resolved dark appearance", () => {
   assert.equal(manifest.theme_color, "#8998ED");
   assert.equal(manifest.background_color, "#F3EEFF");
-  assert.match(layoutSource, /colorScheme:\s*"only light"/);
+  assert.match(layoutSource, /colorScheme:\s*"light dark"/);
   assert.match(
     layoutSource,
     /\{\s*media:\s*"\(prefers-color-scheme:\s*light\)",\s*color:\s*themeColorPalette\.brand\s*\}/,
   );
   assert.match(
     layoutSource,
-    /\{\s*media:\s*"\(prefers-color-scheme:\s*dark\)",\s*color:\s*themeColorPalette\.brand\s*\}/,
+    /\{\s*media:\s*"\(prefers-color-scheme:\s*dark\)",\s*color:\s*themeColorPalette\.dark\s*\}/,
   );
   assert.match(layoutSource, /\{\s*color:\s*themeColorPalette\.brand\s*\}/);
-  assert.match(globalsSource, /color-scheme:\s*only light/);
+  assert.doesNotMatch(globalsSource, /color-scheme:\s*only light/);
+  assert.match(layoutSource, /buildAppearanceBootstrap/);
+  assert.match(themeColorSyncSource, /setColorSchemeMeta\(variant\)/);
+  assert.match(themeColorSource, /const DARK_THEME_COLOR = "#181818"/);
   assert.match(
     layoutSource,
     /backgroundColor:\s*themeColorPalette\.background/,

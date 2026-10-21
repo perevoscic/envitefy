@@ -1,0 +1,297 @@
+/* Keep navigation chrome independent of event-owned colors and artwork. */
+:global(html.dark) .chrome {
+  --nav-chrome-ink: var(--navigation-foreground, #f2c6de);
+  --nav-chrome-muted: var(--navigation-muted, #cdb5c8);
+  --nav-sidebar-label-muted: var(--nav-chrome-ink);
+  --nav-sidebar-icon-muted: var(--nav-chrome-ink);
+  --nav-sidebar-detail-muted: var(--nav-chrome-muted);
+  --nav-chrome-selected-surface: var(--app-surface-raised, #382d42);
+  --nav-chrome-selected-border: var(--app-input, #857294);
+  --nav-chrome-selected-shadow: 0 12px 28px rgb(0 0 0 / 18%);
+  --nav-chrome-press-surface: var(--app-surface-alt, #302738);
+  --nav-chrome-press-shadow: inset 0 2px 7px rgb(0 0 0 / 28%);
+  --nav-chrome-border: var(--app-border, #51435f);
+  --nav-chrome-border-strong: var(--app-input, #857294);
+  --nav-chrome-surface-soft: var(--app-surface-alt, #302738);
+  --nav-chrome-shadow: 0 18px 44px rgb(0 0 0 / 20%);
+  --nav-chrome-shadow-strong: 0 28px 60px rgb(0 0 0 / 30%);
+  --nav-chrome-active-start: var(--app-primary, #c5a7ff);
+  --nav-chrome-active-end: var(--app-primary, #c5a7ff);
+  --nav-chrome-active-shadow: 0 12px 28px rgb(0 0 0 / 18%);
+  --nav-chrome-backdrop: rgb(16 12 22 / 66%);
+  color: var(--nav-chrome-ink);
+}
+
+:global(html.dark) .chrome :global(.nav-chrome-glass-header),
+:global(html.dark) .chrome :global(.nav-chrome-menu-card),
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-card),
+:global(html.dark) .chrome :global(.nav-chrome-mobile-drawer),
+:global(html.dark) .chrome :global(.nav-chrome-footer-trigger),
+:global(html.dark) .chrome :global(.nav-chrome-account-trigger),
+:global(html.dark) .chrome:global(.nav-chrome-menu-card),
+:global(html.dark) .chrome:global(.nav-chrome-sidebar-surface) {
+  background: var(--app-surface, #251f2d);
+  border-color: var(--nav-chrome-border);
+  color: var(--nav-chrome-ink);
+  box-shadow: var(--nav-chrome-shadow);
+}
+
+:global(html.dark) .chrome :global(.nav-chrome-glass-header)::before,
+:global(html.dark) .chrome :global(.nav-chrome-menu-card)::before,
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-card)::before,
+:global(html.dark) .chrome :global(.nav-chrome-mobile-drawer)::before,
+:global(html.dark) .chrome :global(.nav-chrome-footer-trigger)::before,
+:global(html.dark) .chrome:global(.nav-chrome-menu-card)::before {
+  background: linear-gradient(110deg, rgb(197 167 255 / 8%), rgb(35 58 78 / 9%));
+}
+
+:global(html.dark) .chrome :global(.hero-top-nav-brand-light) {
+  filter: none;
+}
+
+:global(html.dark) .chrome :global(.hero-top-nav-pill-light),
+:global(html.dark) .chrome :global(.nav-chrome-pill),
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-row),
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-link) {
+  color: var(--nav-chrome-ink);
+}
+
+:global(html.dark) .chrome :global(.hero-top-nav-pill-light):hover,
+:global(html.dark) .chrome :global(.nav-chrome-pill):hover,
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-row):hover,
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-link):hover,
+:global(html.dark) .chrome :global(.nav-chrome-menu-entry):hover {
+  background: var(--app-surface-raised, #382d42);
+  color: var(--nav-chrome-ink);
+}
+
+:global(html.dark) .chrome :global(.nav-chrome-pill-primary) {
+  background: var(--app-primary, #c5a7ff);
+  border-color: transparent;
+  color: var(--app-primary-foreground, #25103e);
+  box-shadow: var(--nav-chrome-active-shadow);
+}
+
+:global(html.dark) .chrome :global(.nav-chrome-pill-active),
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-row-active),
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-link-active),
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-link[aria-current="page"]) {
+  background: var(--nav-chrome-selected-surface);
+  border-color: var(--nav-chrome-selected-border);
+  color: var(--nav-chrome-ink);
+  box-shadow: var(--nav-chrome-active-shadow);
+  --tw-ring-color: var(--nav-chrome-selected-border);
+}
+
+/* All sidebar panels share one opaque surface, including over dark event pages. */
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-surface) {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-label),
+:global(html.dark) .chrome :global(.nav-chrome-menu-label),
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-heading),
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-icon),
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-link) > svg,
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-control),
+:global(html.dark) .chrome :global(.nav-chrome-account-name),
+:global(html.dark) .chrome :global(.nav-chrome-menu-entry),
+:global(html.dark) .chrome :global(.nav-chrome-menu-copy),
+:global(html.dark) .chrome :global(.nav-chrome-menu-icon) {
+  color: var(--nav-chrome-ink);
+}
+
+/* Menu copy owns its color even when older utility classes set a text color. */
+:global(html.dark) .chrome :global(.nav-chrome-menu-card) :is(a, button, h3),
+:global(html.dark) .chrome:global(.nav-chrome-menu-card) :is(a, button, h3),
+:global(html.dark) .chrome :global(.nav-chrome-menu-entry) :global(.nav-chrome-menu-label) {
+  color: var(--nav-chrome-ink);
+}
+
+:global(html.dark) .chrome :global(.nav-chrome-menu-card) :is(a, button):hover,
+:global(html.dark) .chrome:global(.nav-chrome-menu-card) :is(a, button):hover {
+  background: var(--app-surface-raised, #382d42);
+}
+
+:global(html.dark) .chrome :global(.nav-chrome-menu-danger) {
+  color: var(--app-error, #ffa7b5);
+}
+
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-caption),
+:global(html.dark) .chrome :global(.nav-chrome-account-detail),
+:global(html.dark) .chrome :global(.nav-chrome-menu-detail) {
+  color: var(--nav-chrome-muted);
+}
+
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-icon) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-control):hover,
+:global(html.dark) .chrome :global(.nav-chrome-menu-icon),
+:global(html.dark) .chrome :global(.nav-chrome-account-avatar) {
+  background: var(--app-surface-raised, #382d42);
+  border-color: var(--nav-chrome-border);
+  color: var(--nav-chrome-ink);
+  box-shadow: none;
+}
+
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-surface) :is(button, a[href]):active {
+  background-color: var(--nav-chrome-press-surface);
+  box-shadow: var(--nav-chrome-press-shadow) !important;
+}
+
+:global(html.dark) .chrome :is(button, a[href]):focus-visible {
+  outline: 2px solid var(--app-focus-ring, #c5a7ff);
+  outline-offset: 2px;
+}
+
+:global(html.dark) .chrome :global(.nav-chrome-divider) {
+  background: var(--nav-chrome-border);
+}
+
+/* Legacy color compatibility includes hover selectors. These explicit component
+   roles must win regardless of the order Next loads global and module CSS. */
+:global(html.dark) .chrome :global(.nav-chrome-menu-card) :is(a, button):global(.nav-chrome-menu-entry),
+:global(html.dark) .chrome:global(.nav-chrome-menu-card) :is(a, button):global(.nav-chrome-menu-entry),
+:global(html.dark) .chrome :global(.nav-chrome-menu-card) :is(span, h3):global(.nav-chrome-menu-copy),
+:global(html.dark) .chrome:global(.nav-chrome-menu-card) :is(span, h3):global(.nav-chrome-menu-copy) {
+  color: var(--nav-chrome-ink);
+}
+
+:global(html.dark) .chrome :global(.nav-chrome-menu-card) :is(span, p, div):global(.nav-chrome-menu-detail),
+:global(html.dark) .chrome:global(.nav-chrome-menu-card) :is(span, p, div):global(.nav-chrome-menu-detail) {
+  color: var(--nav-chrome-muted);
+}
+
+:global(html.dark) .chrome :global(.nav-chrome-menu-card) button:global(.nav-chrome-menu-danger),
+:global(html.dark) .chrome:global(.nav-chrome-menu-card) button:global(.nav-chrome-menu-danger) {
+  color: var(--app-error, #ffa7b5);
+}
+
+:global(html.dark) .chrome:global([data-app-navigation="sidebar"]) :is(a, button, span, div, p, svg):is(
+  :global(.nav-chrome-sidebar-link),
+  :global(.nav-chrome-sidebar-label),
+  :global(.nav-chrome-menu-label),
+  :global(.nav-chrome-sidebar-heading),
+  :global(.nav-chrome-sidebar-icon),
+  :global(.nav-chrome-sidebar-control),
+  :global(.nav-chrome-account-name),
+  :global(.nav-chrome-sidebar-count),
+  :global(.nav-chrome-menu-icon)
+) {
+  color: var(--nav-chrome-ink);
+}
+
+:global(html.dark) .chrome:global([data-app-navigation="sidebar"]) :is(p, div, span):is(
+  :global(.nav-chrome-sidebar-caption),
+  :global(.nav-chrome-account-detail)
+) {
+  color: var(--nav-chrome-muted);
+}
+
+:global(html.dark) .chrome:global([data-app-navigation="sidebar"]) :is(a, button):global(.nav-chrome-sidebar-link):hover,
+:global(html.dark) .chrome:global([data-app-navigation="sidebar"]) :is(a, button):global(.nav-chrome-sidebar-link-active),
+:global(html.dark) .chrome:global([data-app-navigation="sidebar"]) :is(a, button):global(.nav-chrome-sidebar-link[aria-current="page"]) {
+  background: var(--nav-chrome-selected-surface);
+  color: var(--nav-chrome-ink);
+}
+
+:global(html.dark) .chrome :global(.nav-chrome-pill-secondary),
+:global(html.dark) .chrome :global(.nav-chrome-avatar),
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-badge),
+:global(html.dark) .chrome :global(.nav-chrome-sidebar-count),
+:global(html.dark) .chrome :global(.nav-chrome-mobile-drawer-back-button) {
+  background: var(--app-surface-alt, #302738);
+  border-color: var(--nav-chrome-border);
+  color: var(--nav-chrome-ink);
+}
+
+:global(html.dark) .chrome :global(.nav-chrome-mobile-drawer-header) {
+  background: var(--app-surface, #251f2d);
+}
+
+:global(html.dark) .mobileMenu {
+  background: var(--app-surface, #251f2d);
+  color: var(--navigation-foreground, #f2c6de);
+}
+
+:global(html.dark) .mobileMenu :global(.nav-chrome-menu-entry) {
+  color: var(--navigation-foreground, #f2c6de);
+}
+
+:global(html.dark) .mobileMenu :global(.nav-chrome-menu-entry):hover {
+  background: var(--app-surface-raised, #382d42);
+}
+
+:global(html.dark) .backdrop {
+  background: rgb(16 12 22 / 66%);
+}
+
+:global(html.dark) .bottomNav {
+  background: var(--app-surface, #251f2d);
+  border-color: var(--app-border, #51435f);
+  color: var(--app-foreground, #f2eafa);
+  box-shadow: 0 16px 42px rgb(0 0 0 / 35%), inset 0 1px 0 rgb(197 167 255 / 8%);
+}
+
+:global(html.dark) .bottomNavIcon {
+  background: var(--app-surface-alt, #302738);
+  border-color: var(--app-border, #51435f);
+  color: var(--navigation-foreground, #f2c6de);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
+}
+
+:global(html.dark) .bottomNavIconActive,
+:global(html.dark) .bottomNavIconFeatured {
+  background: var(--app-surface-raised, #382d42);
+  border-color: var(--app-primary, #c5a7ff);
+  color: var(--navigation-foreground, #f2c6de);
+}
+
+:global(html.dark) .bottomNavLabel {
+  color: var(--navigation-muted, #cdb5c8);
+}
+
+:global(html.dark) .bottomNavLabelActive {
+  background: var(--app-surface-alt, #302738);
+  color: var(--navigation-foreground, #f2c6de);
+  box-shadow: none;
+}
+
+:global(html.dark) .chrome.bottomNav span.bottomNavIcon,
+:global(html.dark) .chrome.bottomNav span.bottomNavLabelActive {
+  color: var(--navigation-foreground, #f2c6de);
+}
+
+:global(html.dark) .chrome.bottomNav span.bottomNavLabel:not(.bottomNavLabelActive) {
+  color: var(--navigation-muted, #cdb5c8);
+}
+
+:global(html.dark) .conciergeSymbol {
+  background-color: #ffffff !important;
+}
+
+:global(html.dark) .createOptions {
+  background: var(--app-surface, #251f2d);
+  border-color: var(--app-border, #51435f);
+  color: var(--app-foreground, #f2eafa);
+  box-shadow: 0 26px 80px rgb(0 0 0 / 35%);
+}
+
+:global(html.dark) .createOptions :global([data-create-option-title]) {
+  color: var(--app-foreground, #f2eafa);
+}
+
+:global(html.dark) .createOptions :global([data-create-option-description]) {
+  color: var(--app-muted-foreground, #c0b3d0);
+}
+
+:global(html.dark) .createOptions :global([data-create-option-icon]) {
+  background: var(--app-surface-alt, #302738);
+  color: var(--app-primary, #c5a7ff);
+}

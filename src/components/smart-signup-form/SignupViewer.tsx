@@ -1113,7 +1113,7 @@ const SignupViewer: React.FC<Props> = ({
           aria-modal="true"
         >
           <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmOpen(false)} />
-          <div className="relative z-10 w-full max-w-md rounded-2xl border border-[var(--signup-border)] bg-[var(--signup-surface)] shadow-2xl">
+          <div data-appearance-scope="app" data-app-dialog className="relative z-10 w-full max-w-md rounded-2xl border border-[var(--signup-border)] bg-[var(--signup-surface)] shadow-2xl">
             <div className="p-5 sm:p-6 space-y-4">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-0.5">
@@ -1173,7 +1173,7 @@ const SignupViewer: React.FC<Props> = ({
           aria-modal="true"
         >
           <div className="absolute inset-0 bg-black/40" onClick={() => setErrorOpen(false)} />
-          <div className="relative z-10 w-full max-w-md rounded-2xl border border-red-300 bg-[var(--signup-surface)] shadow-2xl">
+          <div data-appearance-scope="app" data-app-dialog className="relative z-10 w-full max-w-md rounded-2xl border border-red-300 bg-[var(--signup-surface)] shadow-2xl">
             <div className="p-5 sm:p-6 space-y-4">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-0.5">

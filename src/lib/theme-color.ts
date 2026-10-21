@@ -3,6 +3,7 @@ import { getGymMeetTemplateMeta, isGymMeetTemplateId } from "../components/gym-m
 // Native browser bars accept a solid color; CSS adds the wordmark's color clouds
 // to the mobile page surface and the safe areas that the browser exposes.
 const BRAND_THEME_COLOR = "#8998ED";
+const DARK_THEME_COLOR = "#181818";
 const BRAND_BACKGROUND_COLOR = "#F3EEFF";
 const BRAND_NAVIGATION_BAR_COLOR = BRAND_THEME_COLOR;
 const IOS_BROWSER_CHROME_COLOR = BRAND_THEME_COLOR;
@@ -194,16 +195,17 @@ export function isIosBrowserChrome() {
   return !isStandalone;
 }
 
-export function setIosBrowserChromeColors() {
+export function setIosBrowserChromeColors(variant: "light" | "dark" = "light") {
   if (typeof document === "undefined") return;
-  setThemeColorMeta(IOS_BROWSER_CHROME_COLOR);
+  const color = variant === "dark" ? DARK_THEME_COLOR : IOS_BROWSER_CHROME_COLOR;
+  setThemeColorMeta(color);
   document.documentElement.dataset.iosBrowserChrome = "true";
   document.documentElement.style.setProperty(
     "--ios-browser-chrome-background",
-    IOS_BROWSER_CHROME_COLOR,
+    color,
   );
-  document.documentElement.style.setProperty("--mobile-chrome-top", IOS_BROWSER_CHROME_COLOR);
-  document.documentElement.style.setProperty("--mobile-chrome-bottom", IOS_BROWSER_CHROME_COLOR);
+  document.documentElement.style.setProperty("--mobile-chrome-top", color);
+  document.documentElement.style.setProperty("--mobile-chrome-bottom", color);
 }
 
 export function clearIosBrowserChromeColors() {
@@ -212,6 +214,10 @@ export function clearIosBrowserChromeColors() {
 }
 
 export function setLightColorSchemeMeta() {
+  setColorSchemeMeta("light");
+}
+
+export function setColorSchemeMeta(scheme: "light" | "dark") {
   if (typeof document === "undefined") return;
 
   const metas = Array.from(document.querySelectorAll<HTMLMetaElement>(COLOR_SCHEME_SELECTOR));
@@ -223,8 +229,8 @@ export function setLightColorSchemeMeta() {
   }
 
   for (const meta of metas) {
-    if (meta.content !== "only light") {
-      meta.content = "only light";
+    if (meta.content !== scheme) {
+      meta.content = scheme;
     }
   }
 }
@@ -236,11 +242,13 @@ export function getHeroThemeColor(): string | null {
 }
 
 export function getPreferredThemeColor(pathname?: string | null): string {
+  if (typeof document !== "undefined" && document.documentElement.dataset.theme === "general-dark") return DARK_THEME_COLOR;
   return getHeroThemeColor() || getThemeColorForPath(pathname);
 }
 
 export const themeColorPalette = {
   brand: BRAND_THEME_COLOR,
+  dark: DARK_THEME_COLOR,
   background: BRAND_BACKGROUND_COLOR,
   navigationBar: BRAND_NAVIGATION_BAR_COLOR,
   iosBrowserChrome: IOS_BROWSER_CHROME_COLOR,

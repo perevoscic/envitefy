@@ -5,6 +5,7 @@ export function TemplateThumbnailFrame({ children }: { children: ReactNode }) {
   return (
     <div
       data-template-thumbnail-frame
+      data-appearance-scope="authored"
       className="relative w-full overflow-hidden rounded-[1.35rem] border border-[#ddd4ca] bg-white p-2 shadow-[0_18px_50px_rgba(59,45,33,0.08)] transition duration-500 group-hover:-translate-y-1 group-hover:shadow-[0_28px_70px_rgba(59,45,33,0.16)] motion-reduce:transform-none motion-reduce:transition-none"
     >
       {children}
@@ -30,6 +31,7 @@ export function TemplateThumbnailPreview({
       aria-hidden="true"
       inert
       data-template-thumbnail-preview
+      data-appearance-scope="authored"
       className={`relative isolate ${compact ? "aspect-[16/10]" : "aspect-square"} w-full overflow-hidden rounded-[1rem] bg-white ${className}`}
     >
       <div

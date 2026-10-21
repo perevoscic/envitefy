@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useSidebar } from "@/app/sidebar-context";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
+import AppearanceSelector from "@/components/AppearanceSelector";
+import appearanceStyles from "./navigation-appearance.module.css";
 import { secureSignOut } from "@/utils/secureSignOut";
 import {
   CalendarIconGoogle,
@@ -118,9 +120,9 @@ export function MyEventsDropdown({
                   key={category.name}
                   className="flex flex-col min-w-[160px]"
                 >
-                  <h3 className="font-serif text-xl font-bold text-[#1b1540] mb-3 flex items-center gap-2 whitespace-nowrap">
+                  <h3 className="nav-chrome-menu-copy font-serif text-xl font-bold text-[#1b1540] mb-3 flex items-center gap-2 whitespace-nowrap">
                     {category.name}
-                    <span className="text-xs font-normal bg-[#ece9ff] text-[#6b5b95] px-2 py-0.5 rounded-full">
+                    <span className="nav-chrome-menu-copy text-xs font-normal bg-[#ece9ff] text-[#6b5b95] px-2 py-0.5 rounded-full">
                       {category.items.length}
                     </span>
                   </h3>
@@ -129,14 +131,14 @@ export function MyEventsDropdown({
                       <Link
                         key={item.id}
                         href={`/event/${item.id}`}
-                        className="text-sm text-[#564d7a] hover:text-[#2f1d47] hover:bg-[#f3f0ff] px-2 py-1 -mx-2 rounded-lg transition-colors truncate max-w-[200px]"
+                        className="nav-chrome-menu-entry text-sm text-[#564d7a] hover:text-[#2f1d47] hover:bg-[#f3f0ff] px-2 py-1 -mx-2 rounded-lg transition-colors truncate max-w-[200px]"
                         onClick={onClose}
                       >
                         {item.title}
                       </Link>
                     ))}
                     {category.items.length > 5 && (
-                      <span className="text-xs text-[#9ca3af] px-2 py-1">
+                      <span className="nav-chrome-menu-detail text-xs text-[#9ca3af] px-2 py-1">
                         +{category.items.length - 5} more
                       </span>
                     )}
@@ -144,7 +146,7 @@ export function MyEventsDropdown({
                 </div>
               ))}
             {categories.filter((cat) => cat.items.length > 0).length === 0 && (
-              <div className="px-4 py-2 text-[#9ca3af]">No events yet</div>
+              <div className="nav-chrome-menu-detail px-4 py-2 text-[#9ca3af]">No events yet</div>
             )}
           </div>
         </div>
@@ -185,10 +187,10 @@ export function CreateEventMenu({
           className="flex min-w-[215px] max-w-[255px] flex-col gap-3"
         >
           <div className="flex items-center gap-2">
-            <h3 className="whitespace-nowrap font-sans text-[13px] font-semibold uppercase tracking-[0.14em] text-[#1b1540]/85">
+            <h3 className="nav-chrome-menu-copy whitespace-nowrap font-sans text-[13px] font-semibold uppercase tracking-[0.14em] text-[#1b1540]/85">
               {section.title}
             </h3>
-            <span className="rounded-full bg-[#ece9ff] px-2 py-0.5 text-xs font-medium text-[#6b5b95]">
+            <span className="nav-chrome-menu-copy rounded-full bg-[#ece9ff] px-2 py-0.5 text-xs font-medium text-[#6b5b95]">
               {section.items.length}
             </span>
           </div>
@@ -197,14 +199,14 @@ export function CreateEventMenu({
               <Link
                 key={item.label}
                 href={item.href}
-                className="flex items-start gap-3 rounded-xl px-3 py-2 font-medium text-[#2f1d47] transition hover:bg-[#f6f4ff]"
+                className="nav-chrome-menu-entry flex items-start gap-3 rounded-xl px-3 py-2 font-medium text-[#2f1d47] transition hover:bg-[#f6f4ff]"
                 onClick={onSelect}
               >
                 <span className="text-lg leading-none">{item.icon ?? "•"}</span>
                 <div className="flex flex-col leading-tight">
                   <span>{item.label}</span>
                   {item.description && (
-                    <span className="text-xs text-[#7a7595]">
+                    <span className="nav-chrome-menu-detail text-xs text-[#7a7595]">
                       {item.description}
                     </span>
                   )}
@@ -266,7 +268,7 @@ export function ProfileMenu({
       ref={profileRef}
       className={`${
         variant === "topnav"
-          ? "nav-chrome-menu-card absolute left-1/2 z-50 mt-2 w-64 -translate-x-1/2 rounded-[1.65rem] p-2 text-sm"
+          ? `${appearanceStyles.chrome} nav-chrome-menu-card absolute left-1/2 z-50 mt-2 w-64 -translate-x-1/2 rounded-[1.65rem] p-2 text-sm`
           : "p-2"
       }`}
     >
@@ -274,7 +276,7 @@ export function ProfileMenu({
         <Link
           href="/settings"
           onClick={onClose}
-          className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#f6f4ff] transition text-[#2f1d47] font-medium"
+          className="nav-chrome-menu-entry flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#f6f4ff] transition text-[#2f1d47] font-medium"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -294,7 +296,7 @@ export function ProfileMenu({
         <Link
           href="/about"
           onClick={onClose}
-          className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#f6f4ff] transition text-[#2f1d47] font-medium"
+          className="nav-chrome-menu-entry flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#f6f4ff] transition text-[#2f1d47] font-medium"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -315,7 +317,7 @@ export function ProfileMenu({
         <Link
           href="/contact"
           onClick={onClose}
-          className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#f6f4ff] transition text-[#2f1d47] font-medium"
+          className="nav-chrome-menu-entry flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#f6f4ff] transition text-[#2f1d47] font-medium"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -341,7 +343,7 @@ export function ProfileMenu({
                 e.stopPropagation();
                 setAdminOpen(!adminOpen);
               }}
-              className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl hover:bg-[#f6f4ff] transition text-[#2f1d47] font-medium"
+              className="nav-chrome-menu-entry w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl hover:bg-[#f6f4ff] transition text-[#2f1d47] font-medium"
             >
               <div className="flex items-center gap-3">
                 <svg
@@ -379,28 +381,28 @@ export function ProfileMenu({
                   <Link
                     href="/admin"
                     onClick={onClose}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f6f4ff] transition text-[#2f1d47] text-sm"
+                    className="nav-chrome-menu-entry flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f6f4ff] transition text-[#2f1d47] text-sm"
                   >
                     <span>Dashboard</span>
                   </Link>
                   <Link
                     href="/admin/emails"
                     onClick={onClose}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f6f4ff] transition text-[#2f1d47] text-sm"
+                    className="nav-chrome-menu-entry flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f6f4ff] transition text-[#2f1d47] text-sm"
                   >
                     <span>Emails</span>
                   </Link>
                   <Link
                     href="/admin/campaigns"
                     onClick={onClose}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f6f4ff] transition text-[#2f1d47] text-sm"
+                    className="nav-chrome-menu-entry flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f6f4ff] transition text-[#2f1d47] text-sm"
                   >
                     <span>Campaigns</span>
                   </Link>
                   <Link
                     href="/admin/ad-studio"
                     onClick={onClose}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f6f4ff] transition text-[#2f1d47] text-sm"
+                    className="nav-chrome-menu-entry flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f6f4ff] transition text-[#2f1d47] text-sm"
                   >
                     <span>Ad Studio</span>
                   </Link>
@@ -412,11 +414,16 @@ export function ProfileMenu({
 
         <div className="h-px w-full bg-gradient-to-r from-transparent via-[#ece9ff] to-transparent my-1"></div>
 
+        <div className="flex items-center justify-between gap-3 px-3 py-2 text-sm text-[var(--nav-chrome-ink)]">
+          <span>Appearance</span>
+          <AppearanceSelector compact />
+        </div>
+
         <button
           onClick={() => {
             void secureSignOut("/");
           }}
-          className="flex items-center gap-3 px-3 py-2 rounded-xl text-red-600 hover:bg-red-50 transition font-medium"
+          className="nav-chrome-menu-danger flex items-center gap-3 px-3 py-2 rounded-xl text-red-600 hover:bg-red-50 transition font-medium"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -587,7 +594,7 @@ export default function TopNav() {
     <>
       {/* Mobile/Tablet Header with Hamburger */}
       {showMobileFloatingMenu && (
-        <div className="fixed top-3 left-3 z-40 transform transition-all duration-500 lg:hidden scale-100 opacity-100">
+        <div className={`${appearanceStyles.chrome} fixed top-3 left-3 z-40 transform transition-all duration-500 lg:hidden scale-100 opacity-100`}>
           <button
             type="button"
             aria-label="Open sidebar"
@@ -607,7 +614,7 @@ export default function TopNav() {
         </div>
       )}
       <header
-        className={`fixed inset-x-0 top-0 z-40 px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] transition-all duration-300 ease-in-out lg:hidden ${
+        className={`${appearanceStyles.chrome} fixed inset-x-0 top-0 z-40 px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] transition-all duration-300 ease-in-out lg:hidden ${
           showMobileStickyBar
             ? "translate-y-0 opacity-100 pointer-events-auto"
             : "-translate-y-full opacity-0 pointer-events-none"
@@ -646,7 +653,7 @@ export default function TopNav() {
 
       {/* Desktop TopNav */}
       <div
-        className={`fixed inset-x-0 top-0 z-40 hidden w-full text-[#1b1540] lg:block ${
+        className={`${appearanceStyles.chrome} fixed inset-x-0 top-0 z-40 hidden w-full text-[#1b1540] lg:block ${
           !isInitialMount ? "transition-all duration-300" : ""
         }`}
         suppressHydrationWarning
@@ -766,20 +773,20 @@ export default function TopNav() {
               {openRecent && (
                 <div className="nav-chrome-menu-card absolute right-0 z-50 mt-2 w-80 rounded-[1.75rem] p-4 text-sm">
                   {history.length === 0 ? (
-                    <p className="text-[#7a7595]">No history yet.</p>
+                    <p className="nav-chrome-menu-detail text-[#7a7595]">No history yet.</p>
                   ) : (
                     <ul className="space-y-2">
                       {history.slice(0, 5).map((item) => (
                         <li key={item.id}>
                           <Link
                             href={`/event/${item.id}`}
-                            className="flex flex-col rounded-2xl border border-transparent px-3 py-2 transition hover:border-[#ded8ff] hover:bg-[#f6f4ff]"
+                            className="nav-chrome-menu-entry flex flex-col rounded-2xl border border-transparent px-3 py-2 transition hover:border-[#ded8ff] hover:bg-[#f6f4ff]"
                             onClick={() => setOpenRecent(false)}
                           >
-                            <span className="font-semibold text-[#291f52]">
+                            <span className="nav-chrome-menu-copy font-semibold text-[#291f52]">
                               {item.title}
                             </span>
-                            <span className="text-xs text-[#8078a3]">
+                            <span className="nav-chrome-menu-detail text-xs text-[#8078a3]">
                               {formatRelative(item.created_at)}
                             </span>
                           </Link>

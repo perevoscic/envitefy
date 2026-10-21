@@ -2,7 +2,8 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import Image from "next/image";
+import EnvitefyBrandImage from "@/components/branding/EnvitefyBrandImage";
+import { ENVITEFY_BRAND_ASSETS } from "@/lib/brand-assets";
 import Link from "next/link";
 
 export default function ResetPasswordPageClient() {
@@ -77,8 +78,9 @@ export default function ResetPasswordPageClient() {
     <main className="min-h-[100dvh] flex items-center justify-center p-6 bg-[#F8F5FF]">
       <section className="w-full max-w-md rounded-2xl bg-white/80 backdrop-blur-lg border border-white/60 p-8 shadow-xl">
         <Link href="/" className="mb-6 block text-center">
-          <Image
+          <EnvitefyBrandImage
             src="/logo.png"
+            whiteSrc={ENVITEFY_BRAND_ASSETS.wordmark.white}
             alt="Envitefy logo"
             width={156}
             height={64}

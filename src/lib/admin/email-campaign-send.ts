@@ -1,3 +1,4 @@
+import { CURRENT_EMAIL_DESIGN_VERSION, type EmailDesignVersion } from "../email-design.ts";
 import { ensureUsersHasLegalPrivacyColumns, query } from "../db.ts";
 import { sendBulkEmail } from "../resend.ts";
 import { ensureEmailCampaignsSchema } from "./email-campaign-schema.ts";
@@ -137,6 +138,7 @@ export async function executeCampaignSend(params: {
   buttonText?: string | null;
   buttonUrl?: string | null;
   rawHtml?: boolean;
+  emailDesignVersion?: EmailDesignVersion;
   logPrefix?: string;
 }): Promise<{
   sent: number;
@@ -171,6 +173,7 @@ export async function executeCampaignSend(params: {
       JSON.stringify(
         buildStoredCampaignAudienceFilter(params.audienceFilter, recipients.length, {
           rawHtml,
+          emailDesignVersion: params.emailDesignVersion ?? "legacy",
           buttonText: params.buttonText,
           buttonUrl: params.buttonUrl,
           persistTestEmail: isTest,
@@ -194,6 +197,7 @@ export async function executeCampaignSend(params: {
       buttonText: params.buttonText || undefined,
       buttonUrl: params.buttonUrl || undefined,
       rawHtml,
+      emailDesignVersion: params.emailDesignVersion ?? "legacy",
     });
 
     const finalStatus: CampaignStatus =
@@ -245,6 +249,7 @@ export async function createSendingCampaign(params: {
   buttonText?: string | null;
   buttonUrl?: string | null;
   rawHtml?: boolean;
+  emailDesignVersion?: EmailDesignVersion;
 }): Promise<{ campaignId: string; recipients: CampaignEmailRecipient[]; isTest: boolean }> {
   await ensureEmailCampaignsSchema();
   const recipients = await resolveCampaignRecipients(params.audienceFilter);
@@ -272,6 +277,7 @@ export async function createSendingCampaign(params: {
       JSON.stringify(
         buildStoredCampaignAudienceFilter(params.audienceFilter, recipients.length, {
           rawHtml,
+          emailDesignVersion: params.emailDesignVersion ?? CURRENT_EMAIL_DESIGN_VERSION,
           buttonText: params.buttonText,
           buttonUrl: params.buttonUrl,
           persistTestEmail: isTest,
@@ -301,6 +307,7 @@ export async function sendCampaignNow(params: {
   buttonText?: string | null;
   buttonUrl?: string | null;
   rawHtml?: boolean;
+  emailDesignVersion?: EmailDesignVersion;
   logPrefix?: string;
 }): Promise<{
   campaignId: string;
@@ -316,9 +323,11 @@ export async function sendCampaignNow(params: {
   }
 
   let campaignId = params.campaignId || null;
+  let emailDesignVersion = params.emailDesignVersion ?? CURRENT_EMAIL_DESIGN_VERSION;
   if (campaignId) {
     const existing = await getEditableCampaign(campaignId);
     if (!existing) throw new CampaignSendError(404, "Campaign not found");
+    emailDesignVersion = parseStoredCampaignAudienceFilter(existing.audience_filter).emailDesignVersion;
     if (!["draft", "queued", "cancelled"].includes(existing.status)) {
       throw new CampaignSendError(400, "Only draft, queued, or cancelled campaigns can be sent");
     }
@@ -332,6 +341,7 @@ export async function sendCampaignNow(params: {
       buttonText: params.buttonText,
       buttonUrl: params.buttonUrl,
       rawHtml: params.rawHtml,
+      emailDesignVersion,
     });
     campaignId = created.campaignId;
   }
@@ -345,6 +355,7 @@ export async function sendCampaignNow(params: {
     buttonText: params.buttonText,
     buttonUrl: params.buttonUrl,
     rawHtml: params.rawHtml,
+    emailDesignVersion,
     logPrefix: params.logPrefix,
   });
   return { campaignId, ...result };
@@ -360,6 +371,7 @@ export async function upsertCampaignDraft(params: {
   buttonText?: string | null;
   buttonUrl?: string | null;
   rawHtml?: boolean;
+  emailDesignVersion?: EmailDesignVersion;
   recipientCount?: number;
 }): Promise<{ id: string; status: "draft" }> {
   await ensureEmailCampaignsSchema();
@@ -370,11 +382,16 @@ export async function upsertCampaignDraft(params: {
   }
 
   const rawHtml = params.rawHtml === true || isFullHtmlDocument(bodyHtml);
+  const existingDesignRow = params.campaignId ? await getEditableCampaign(params.campaignId) : null;
+  const emailDesignVersion = params.campaignId
+    ? parseStoredCampaignAudienceFilter(existingDesignRow?.audience_filter).emailDesignVersion
+    : params.emailDesignVersion ?? CURRENT_EMAIL_DESIGN_VERSION;
   const storedFilter = buildStoredCampaignAudienceFilter(
     params.audienceFilter,
     params.recipientCount ?? 0,
     {
       rawHtml,
+      emailDesignVersion,
       buttonText: params.buttonText,
       buttonUrl: params.buttonUrl,
       persistTestEmail: true,
@@ -449,6 +466,7 @@ export async function scheduleCampaign(params: {
   buttonText?: string | null;
   buttonUrl?: string | null;
   rawHtml?: boolean;
+  emailDesignVersion?: EmailDesignVersion;
 }): Promise<{ id: string; scheduledAt: string }> {
   await ensureEmailCampaignsSchema();
   if (!(params.scheduledAt instanceof Date) || Number.isNaN(params.scheduledAt.getTime())) {
@@ -507,6 +525,7 @@ export async function scheduleCampaign(params: {
       JSON.stringify(
         buildStoredCampaignAudienceFilter(audienceFilter, row.recipient_count || 0, {
           rawHtml,
+          emailDesignVersion: parsedStored.emailDesignVersion,
           buttonText,
           buttonUrl,
           persistTestEmail: true,
@@ -614,6 +633,7 @@ export async function processDueCampaigns(params: {
         buttonText: parsed.buttonText,
         buttonUrl: parsed.buttonUrl,
         rawHtml: parsed.rawHtml,
+        emailDesignVersion: parsed.emailDesignVersion,
         logPrefix,
       });
       sent += result.sent;

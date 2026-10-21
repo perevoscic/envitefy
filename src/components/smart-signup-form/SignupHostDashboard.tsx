@@ -190,6 +190,8 @@ export default function SignupHostDashboard(props: Props) {
   return (
     <section
       id="signup-host-dashboard"
+      data-appearance-scope="app"
+      data-app-surface="true"
       tabIndex={-1}
       aria-labelledby="signup-host-heading"
       className={`${styles.dashboard} scroll-mt-6 space-y-4 rounded-2xl border border-[var(--signup-border)] bg-[var(--signup-surface)] p-4 shadow-sm sm:p-5`}

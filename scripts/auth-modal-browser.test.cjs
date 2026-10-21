@@ -25,7 +25,7 @@ test("signup and login remain scrollable with a reachable Close on short screens
         extensions: [".tsx", ".ts", ".js"],
         alias: { "@/app/sidebar-context": mocks, "next-auth/react": mocks, "next/link": mocks, "@": path.resolve("src") },
       },
-      module: { rules: [{ test: /\.[jt]sx?$/, exclude: /node_modules/, use: path.resolve("scripts/lib/create-guest-ts-loader.cjs") }] },
+      module: { rules: [{ test: /\.[jt]sx?$/, exclude: /node_modules/, use: path.resolve("scripts/lib/create-guest-ts-loader.cjs") }, { test: /\.css$/, use: path.resolve("scripts/lib/event-editor-css-loader.cjs") }] },
     });
     compiler.run((error, stats) => compiler.close(() => error || stats?.hasErrors()
       ? reject(error || new Error(stats.toString({ all: false, errors: true }))) : resolve()));

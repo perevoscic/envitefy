@@ -44,7 +44,9 @@ test("opened previews hide navigation and remove its spacing; inline previews do
   const sidebar = read("src/app/left-sidebar.tsx");
   const styles = read("src/app/globals.css");
   assert.match(viewport, /!preserveNavigation && \(fullscreen \|\| onClose\) \? <OwnerPreviewMobileTopbarSuppressor/);
-  for (const surface of ["sidebar", "topbar", "reveal", "drawer-backdrop"]) {
+  // Mobile navigation now lives in the persistent topbar; the separate reveal
+  // trigger was retired before appearance switching was introduced.
+  for (const surface of ["sidebar", "topbar", "drawer-backdrop"]) {
     const mobileHeader = readFileSync(new URL("../components/navigation/MobileNavHeader.tsx", import.meta.url), "utf8");
     assert.ok((sidebar + mobileHeader).includes(`data-app-navigation="${surface}"`));
   }

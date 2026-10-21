@@ -1,5 +1,7 @@
 "use client";
 
+import EmailPreviewFrame from "@/components/admin/EmailPreviewFrame";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -40,7 +42,7 @@ export default function FeaturesEmailPreviewPage() {
     try {
       sessionStorage.setItem(
         EDITOR_HANDOFF_KEY,
-        JSON.stringify({ subject: FEATURES_OCT26_SUBJECT, html }),
+        JSON.stringify({ emailDesignVersion: "adaptive-v1", subject: FEATURES_OCT26_SUBJECT, html }),
       );
     } catch {}
     router.push("/admin/emails/editor?from=features");
@@ -131,7 +133,7 @@ export default function FeaturesEmailPreviewPage() {
               </div>
             </div>
             <div className="p-6">
-              <iframe
+              <EmailPreviewFrame
                 srcDoc={html}
                 className="w-full border border-[#ddd5f6] rounded-lg bg-white"
                 style={{ height: "900px" }}

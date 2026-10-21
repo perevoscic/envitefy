@@ -1,4 +1,5 @@
 export type ThemeVariant = "light" | "dark";
+export type ThemePreference = "system" | ThemeVariant;
 
 export type ThemeKey = "general";
 

@@ -569,8 +569,8 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(menuBottomSheet, /overflow-y-auto/);
   assert.match(menuBottomSheet, /rounded-t-\[1\.75rem\]/);
   assert.match(menuBottomSheet, /initial=\{\{ y: "100%", opacity: 0 \}\}/);
-  assert.match(menuBottomSheet, /\/logo\.png/);
-  assert.match(menuBottomSheet, /brightness-0 invert/);
+  assert.match(menuBottomSheet, /src=\{ENVITEFY_BRAND_ASSETS\.wordmark\.white\}/);
+  assert.doesNotMatch(menuBottomSheet, /brightness-0 invert/);
   assert.doesNotMatch(menuBottomSheet, /envitefy-wordmark-white\.svg/);
   assert.match(menuBottomSheet, /navLinks = signedOutMobileMenuLinks/);
   assert.match(menuBottomSheet, /navLinks\.map/);

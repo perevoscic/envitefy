@@ -1,5 +1,7 @@
 "use client";
 
+import EmailPreviewFrame from "@/components/admin/EmailPreviewFrame";
+
 import { useAdminAccess } from "@/components/admin/AdminAccessProvider";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -44,7 +46,7 @@ export default function MagazineEmailPreviewPage() {
     try {
       sessionStorage.setItem(
         EDITOR_HANDOFF_KEY,
-        JSON.stringify({ subject: MAGAZINE_1_SUBJECT, html }),
+        JSON.stringify({ emailDesignVersion: "adaptive-v1", subject: MAGAZINE_1_SUBJECT, html }),
       );
     } catch {}
     router.push("/admin/emails/editor?from=magazine");
@@ -148,7 +150,7 @@ export default function MagazineEmailPreviewPage() {
               </div>
             </div>
             <div className="p-6">
-              <iframe
+              <EmailPreviewFrame
                 srcDoc={html}
                 className="w-full border border-[#ddd5f6] rounded-lg bg-white"
                 style={{ height: "900px" }}

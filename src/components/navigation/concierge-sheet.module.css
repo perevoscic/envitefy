@@ -1,3 +1,44 @@
+:global(html.dark) .panel {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+:global(html.dark) .panel > header {
+  background: var(--surface-raised);
+  border-color: var(--border);
+}
+
+:global(html.dark) .panel > header :is(h2, p) {
+  color: var(--foreground);
+}
+
+:global(html.dark) .messages {
+  background: var(--surface);
+}
+
+:global(html.dark) .starter {
+  background: var(--surface-alt);
+  border-color: var(--border);
+  color: var(--foreground);
+  box-shadow: none;
+}
+
+:global(html.dark) .starter:hover {
+  background: var(--surface-raised);
+  color: var(--foreground);
+}
+
+:global(html.dark) .composer {
+  background: var(--surface-raised);
+  border-color: var(--border);
+}
+
+:global(html.dark) .composer > div {
+  background: var(--field-background);
+  border-color: var(--input);
+}
+
 @media (min-width: 768px) {
   .panel {
     inset: auto 1.5rem 5rem auto;

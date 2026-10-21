@@ -1,6 +1,8 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useInstalledAppState } from "@/lib/pwa/install-state";
+import { ENVITEFY_BRAND_ASSETS } from "@/lib/brand-assets";
+import styles from "./pwa-install-appearance.module.css";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -189,7 +191,7 @@ export default function PwaInstallToast() {
     >
       <div className="mx-auto max-w-6xl">
         <div
-          className="relative overflow-hidden rounded-[22px] border border-[#e7e1ff] bg-white/95 px-3.5 py-2.5 shadow-[0_18px_48px_rgba(103,87,255,0.14)] backdrop-blur-xl transition-all duration-300 ease-out"
+          className={`${styles.toast} relative overflow-hidden rounded-[22px] border border-[#e7e1ff] bg-white/95 px-3.5 py-2.5 shadow-[0_18px_48px_rgba(103,87,255,0.14)] backdrop-blur-xl transition-all duration-300 ease-out`}
           style={{
             opacity: isAnimating ? 1 : 0,
             transform: isAnimating ? "translateY(0)" : "translateY(-20px)",
@@ -199,11 +201,11 @@ export default function PwaInstallToast() {
           <div className="relative flex items-center gap-3">
             {/* App Icon */}
             <div className="flex-shrink-0">
-              <div className="flex h-11 w-11 items-center justify-center rounded-[16px] border border-[#ebe6ff] bg-[linear-gradient(135deg,#f8f5ff_0%,#eef2ff_100%)] shadow-[0_10px_24px_rgba(103,87,255,0.1)]">
+              <div className={`${styles.iconWrapper} flex h-11 w-11 items-center justify-center rounded-[16px] border border-[#ebe6ff] bg-[linear-gradient(135deg,#f8f5ff_0%,#eef2ff_100%)] shadow-[0_10px_24px_rgba(103,87,255,0.1)]`}>
                 <img
                   src={APP_ICON_SRC}
                   alt="Envitefy"
-                  className="h-8 w-8 rounded-md"
+                  className={`${styles.colorIcon} h-8 w-8 rounded-md`}
                   onError={(e) => {
                     // Fallback to SVG if image fails
                     const target = e.target as HTMLImageElement;
@@ -217,7 +219,7 @@ export default function PwaInstallToast() {
                   height="22"
                   viewBox="0 0 24 24"
                   fill="none"
-                  className="hidden text-[#6b3cff]"
+                  className={`${styles.fallback} hidden text-[#6b3cff]`}
                   style={{ display: "none" }}
                 >
                   <path
@@ -242,15 +244,16 @@ export default function PwaInstallToast() {
                     strokeLinejoin="round"
                   />
                 </svg>
+                <img src={ENVITEFY_BRAND_ASSETS.symbol.white} alt="Envitefy" width={32} height={32} className={`${styles.whiteIcon} h-8 w-8 object-contain`} />
               </div>
             </div>
 
             {/* Text Content */}
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold leading-tight text-[#1f2340] sm:text-[15px]">
+              <div className={`${styles.heading} text-sm font-semibold leading-tight text-[#1f2340] sm:text-[15px]`}>
                 Install Envitefy
               </div>
-              <div className="mt-0.5 text-[11px] leading-none text-[#6b7390] sm:text-xs">
+              <div className={`${styles.description} mt-0.5 text-[11px] leading-none text-[#6b7390] sm:text-xs`}>
                 envitefy.com
               </div>
             </div>
@@ -259,13 +262,13 @@ export default function PwaInstallToast() {
             <div className="flex flex-shrink-0 items-center gap-2">
               <button
                 onClick={handleInstall}
-                className="rounded-full bg-[linear-gradient(96deg,#6b3cff_0%,#6757ff_42%,#5a7dff_100%)] px-4 py-2 text-xs font-semibold text-white shadow-[0_14px_26px_rgba(103,87,255,0.28)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_30px_rgba(103,87,255,0.32)] active:scale-95 sm:text-sm"
+                className={`${styles.install} rounded-full bg-[linear-gradient(96deg,#6b3cff_0%,#6757ff_42%,#5a7dff_100%)] px-4 py-2 text-xs font-semibold text-white shadow-[0_14px_26px_rgba(103,87,255,0.28)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_30px_rgba(103,87,255,0.32)] active:scale-95 sm:text-sm`}
               >
                 Install
               </button>
               <button
                 onClick={handleDismiss}
-                className="rounded-full border border-[#ece8ff] bg-white/85 p-1.5 text-[#7a8098] shadow-sm transition-all hover:bg-[#f6f3ff] hover:text-[#4d3bca]"
+                className={`${styles.dismiss} rounded-full border border-[#ece8ff] bg-white/85 p-1.5 text-[#7a8098] shadow-sm transition-all hover:bg-[#f6f3ff] hover:text-[#4d3bca]`}
                 aria-label="Dismiss"
               >
                 <svg

@@ -1,3 +1,5 @@
+import { ENVITEFY_SOCIAL_LINKS } from "../envitefy-social-links.ts";
+import { adaptiveEmailDocument, type EmailDesignVersion } from "../email-design.ts";
 import { resolvePublicAssetOrigin } from "@/lib/public-asset-url";
 
 /**
@@ -53,7 +55,7 @@ export const FEATURES_OCT26_HTML = `<!doctype html>
 
             <!-- Brand -->
             <tr>
-              <td class="white" align="center" style="padding:28px 28px 8px; background-color:#FFFFFF;">
+              <td class="white email-brand-band" align="center" style="padding:28px 28px 8px; background-color:#FFFFFF;">
                 <a href="{{ORIGIN}}/?utm_source=email&amp;utm_medium=campaign&amp;utm_campaign=features_oct26" target="_blank" style="display:inline-block;">
                   <img src="{{ORIGIN}}/email/envitefy-wordmark-email.png" width="164" height="53" alt="Envitefy" style="display:block; width:164px; height:auto;" />
                 </a>
@@ -69,7 +71,7 @@ export const FEATURES_OCT26_HTML = `<!doctype html>
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td align="center" bgcolor="#7F67D3" style="border-radius:12px; background-color:#7F67D3;">
-                      <a href="{{ORIGIN}}/?utm_source=email&amp;utm_medium=campaign&amp;utm_campaign=features_oct26&amp;utm_content=hero" target="_blank" style="display:inline-block; padding:14px 28px; font-family:'Montserrat',Arial,sans-serif; font-size:15px; font-weight:700; color:#FFFFFF; border-radius:12px;">Create an event</a>
+                      <a href="{{ORIGIN}}/?utm_source=email&amp;utm_medium=campaign&amp;utm_campaign=features_oct26&amp;utm_content=hero" target="_blank" style="display:inline-block; padding:14px 28px; font-family:'Montserrat',Arial,sans-serif; font-size:15px; font-weight:700; color:#FFFFFF; border-radius:12px;" data-email-cta="primary">Create an event</a>
                     </td>
                   </tr>
                 </table>
@@ -222,7 +224,7 @@ export const FEATURES_OCT26_HTML = `<!doctype html>
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
                   <tr>
                     <td align="center" bgcolor="#7F67D3" style="border-radius:12px; background-color:#7F67D3;">
-                      <a href="{{ORIGIN}}/?utm_source=email&amp;utm_medium=campaign&amp;utm_campaign=features_oct26&amp;utm_content=footer_cta" target="_blank" style="display:inline-block; padding:14px 28px; font-family:'Montserrat',Arial,sans-serif; font-size:15px; font-weight:700; color:#FFFFFF; border-radius:12px;">Create an event</a>
+                      <a href="{{ORIGIN}}/?utm_source=email&amp;utm_medium=campaign&amp;utm_campaign=features_oct26&amp;utm_content=footer_cta" target="_blank" style="display:inline-block; padding:14px 28px; font-family:'Montserrat',Arial,sans-serif; font-size:15px; font-weight:700; color:#FFFFFF; border-radius:12px;" data-email-cta="primary">Create an event</a>
                     </td>
                   </tr>
                 </table>
@@ -239,7 +241,7 @@ export const FEATURES_OCT26_HTML = `<!doctype html>
 
             <!-- Footer -->
             <tr>
-              <td class="white" align="center" style="padding:24px 28px 28px; border-top:1px solid #EEEAF8; font-family:'Montserrat',Arial,sans-serif;">
+              <td class="white email-footer-band" align="center" style="padding:24px 28px 28px; border-top:1px solid #EEEAF8; font-family:'Montserrat',Arial,sans-serif;">
                 <p style="margin:0 0 16px; font-size:14px; color:#737373;">Connect with us</p>
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
                   <tr>
@@ -263,11 +265,14 @@ export const FEATURES_OCT26_HTML = `<!doctype html>
 </html>`;
 
 export interface FeaturesEmailRenderOptions {
-  baseUrl: string;
+  baseUrl: string; emailDesignVersion?: EmailDesignVersion;
 }
 
 /** Resolve hosted image and link URLs against a public origin (never localhost). */
 export function renderFeaturesEmail(options: FeaturesEmailRenderOptions): string {
   const origin = resolvePublicAssetOrigin(options.baseUrl);
-  return FEATURES_OCT26_HTML.replace(/\{\{ORIGIN\}\}/g, origin);
+  const socials = ENVITEFY_SOCIAL_LINKS.map(({ name, href, iconSrc }) => `<td class="social-icon-cell" style="padding:0 12px;"><a href="${href}" target="_blank" rel="noopener noreferrer" title="${name}"><img src="${origin}${iconSrc}" width="36" height="36" alt="${name}" /></a></td>`).join("");
+  const html = FEATURES_OCT26_HTML.replace(/\{\{ORIGIN\}\}/g, origin)
+    .replace(/<td class="social-icon-cell"[\s\S]*?<\/td>(?:\s*<td class="social-icon-cell"[\s\S]*?<\/td>)*/g, socials);
+  return options.emailDesignVersion === "legacy" ? html : adaptiveEmailDocument(html);
 }

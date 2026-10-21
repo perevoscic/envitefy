@@ -11,7 +11,7 @@ test("renderMagazineEmail rewrites loopback origins to envitefy.com", () => {
     html,
     /https:\/\/envitefy\.com\/api\/blob\/event-media\/system\/email-assets\/envitefy-magazine-1\.webp/i,
   );
-  assert.match(html, /https:\/\/envitefy\.com\/email\/envitefy-wordmark-email\.png/i);
+  assert.match(html, /https:\/\/envitefy\.com\/email\/white-v1\/matte\/envitefy-wordmark-email\.png/i);
   assert.match(
     html,
     /https:\/\/envitefy\.com\/api\/blob\/event-media\/system\/email-assets\/ava-james-garden-vows\.webp/i,
@@ -34,7 +34,7 @@ test("magazine creation CTA opens the Live Card builder and leaves showcase link
   for (const baseUrl of ["http://localhost:3000", "https://envitefy.com", "https://preview.envitefy.com"]) {
     const html = renderMagazineEmail({ baseUrl });
     const origin = baseUrl.includes("localhost") ? "https://envitefy.com" : baseUrl;
-    assert.ok(html.includes(`<a href="${origin}/live-cards" class="btn">Try Envitefy Create</a>`));
+    assert.ok(html.includes(`<a href="${origin}/live-cards" class="btn email-cta" data-email-cta="primary">Try Envitefy Create</a>`));
     assert.doesNotMatch(html, /href=["'][^"']*\/studio(?:[/?#"'])|Envitefy Studio|\{\{(?:STUDIO|CONCIERGE)_URL\}\}/i);
     assert.ok(html.includes(`${origin}/showcase/garden-vows`));
   }

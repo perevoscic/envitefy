@@ -1,6 +1,10 @@
 "use client";
 
+import EmailPreviewFrame from "@/components/admin/EmailPreviewFrame";
+
 import Link from "next/link";
+import { createEmailTemplate } from "@/lib/email-template";
+import { adaptiveEmailDocument, CURRENT_EMAIL_DESIGN_VERSION, persistedEmailDesignVersion, type EmailDesignVersion } from "@/lib/email-design";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAdminAccess } from "@/components/admin/AdminAccessProvider";
 import {
@@ -15,38 +19,7 @@ import {
 const EDITOR_HANDOFF_KEY = "envitefy:admin:email-editor:handoff";
 const EDITOR_DRAFT_KEY = "envitefy:admin:email-editor:draft";
 
-const STARTER_HTML = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>New Envitefy Email</title>
-</head>
-<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#f6f3ff;color:#1f1a37;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:32px 16px;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 12px 40px rgba(77,56,160,0.12);">
-          <tr>
-            <td style="padding:40px 32px;">
-              <h1 style="margin:0 0 16px 0;font-size:28px;line-height:34px;color:#17112d;">Hi {{firstName}},</h1>
-              <p style="margin:0 0 16px 0;font-size:16px;line-height:26px;color:#3a3552;">
-                This is a starter HTML email. Paste your own full HTML here, or keep
-                iterating — the preview on the right updates as you type.
-              </p>
-              <p style="margin:24px 0 0 0;">
-                <a href="https://envitefy.com" style="display:inline-block;padding:14px 24px;border-radius:999px;background:linear-gradient(90deg,#6f45ff 0%,#169dff 100%);color:#ffffff;font-weight:700;text-decoration:none;">
-                  Open Envitefy
-                </a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+const STARTER_HTML = createEmailTemplate({ title: "New Envitefy Email", body: `<h1>Hi {{firstName}},</h1><p>This is a starter HTML email. Paste your own full HTML here, or keep iterating — the preview updates as you type.</p>`, buttonText: "Open Envitefy", buttonUrl: "https://envitefy.com" });
 
 type DeviceMode = "desktop" | "mobile";
 type AudienceMode = "test" | "all";
@@ -62,6 +35,7 @@ function personalize(html: string) {
 export default function EmailEditorPage() {
   const { status, isAdmin } = useAdminAccess();
 
+  const [emailDesignVersion, setEmailDesignVersion] = useState<EmailDesignVersion>(CURRENT_EMAIL_DESIGN_VERSION);
   const [subject, setSubject] = useState("");
   const [html, setHtml] = useState("");
   const [audience, setAudience] = useState<AudienceMode>("test");
@@ -84,6 +58,7 @@ export default function EmailEditorPage() {
       const handoffRaw = sessionStorage.getItem(EDITOR_HANDOFF_KEY);
       if (handoffRaw) {
         const handoff = JSON.parse(handoffRaw);
+        setEmailDesignVersion(persistedEmailDesignVersion(handoff.emailDesignVersion));
         if (handoff?.html) setHtml(String(handoff.html));
         if (handoff?.subject) setSubject(String(handoff.subject));
         sessionStorage.removeItem(EDITOR_HANDOFF_KEY);
@@ -96,6 +71,7 @@ export default function EmailEditorPage() {
       const draftRaw = localStorage.getItem(EDITOR_DRAFT_KEY);
       if (draftRaw) {
         const draft = JSON.parse(draftRaw);
+        setEmailDesignVersion(persistedEmailDesignVersion(draft.emailDesignVersion));
         if (draft?.html) setHtml(String(draft.html));
         if (draft?.subject) setSubject(String(draft.subject));
         hydratedRef.current = true;
@@ -112,12 +88,15 @@ export default function EmailEditorPage() {
     try {
       localStorage.setItem(
         EDITOR_DRAFT_KEY,
-        JSON.stringify({ subject, html }),
+        JSON.stringify({ subject, html, emailDesignVersion }),
       );
     } catch {}
-  }, [subject, html]);
+  }, [subject, html, emailDesignVersion]);
 
-  const previewHtml = useMemo(() => personalize(html || ""), [html]);
+  const previewHtml = useMemo(() => {
+    const personalized = personalize(html || "");
+    return emailDesignVersion === CURRENT_EMAIL_DESIGN_VERSION ? adaptiveEmailDocument(personalized) : personalized;
+  }, [html, emailDesignVersion]);
 
   async function handleCopy() {
     try {
@@ -130,6 +109,7 @@ export default function EmailEditorPage() {
   }
 
   function insertMagazineTemplate() {
+    setEmailDesignVersion(CURRENT_EMAIL_DESIGN_VERSION);
     setSubject(MAGAZINE_1_SUBJECT);
     setHtml(
       renderMagazineEmail({
@@ -141,6 +121,7 @@ export default function EmailEditorPage() {
   }
 
   function insertFeaturesTemplate() {
+    setEmailDesignVersion(CURRENT_EMAIL_DESIGN_VERSION);
     setSubject(FEATURES_OCT26_SUBJECT);
     setHtml(
       renderFeaturesEmail({
@@ -153,6 +134,7 @@ export default function EmailEditorPage() {
 
   function clearEditor() {
     if (!confirm("Clear the editor? Your current draft will be lost.")) return;
+    setEmailDesignVersion(CURRENT_EMAIL_DESIGN_VERSION);
     setSubject("");
     setHtml(STARTER_HTML);
     setMessage(null);
@@ -191,6 +173,7 @@ export default function EmailEditorPage() {
     setBusy(true);
     try {
       const payload = {
+        emailDesignVersion,
         subject,
         html,
         fromEmail: fromEmail.trim() || undefined,
@@ -506,7 +489,7 @@ export default function EmailEditorPage() {
               </span>
             </div>
             <div className="flex-1 overflow-auto bg-[#f1ecfb] p-4 flex items-start justify-center">
-              <iframe
+              <EmailPreviewFrame
                 title="Live email preview"
                 srcDoc={previewHtml}
                 sandbox="allow-same-origin"

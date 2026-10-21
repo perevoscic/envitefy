@@ -49,7 +49,7 @@ const EventSidebar = forwardRef<HTMLDivElement, EventSidebarProps>(
             type="button"
             onClick={onBack}
             aria-label={`Back to ${backLabel}`}
-            className="flex items-center gap-3 rounded-full bg-white px-4 py-3 text-left text-[0.86rem] font-semibold uppercase tracking-[0.12em] text-[#6c60db] shadow-[0_16px_34px_rgba(120,105,214,0.16)]"
+            className="nav-chrome-sidebar-link flex items-center gap-3 rounded-full bg-white px-4 py-3 text-left text-[0.86rem] font-semibold uppercase tracking-[0.12em] text-[#6c60db] shadow-[0_16px_34px_rgba(120,105,214,0.16)]"
           >
             <span className="inline-flex h-7 w-7 items-center justify-center rounded-full">
               <ArrowLeft size={16} strokeWidth={1.9} />
@@ -75,7 +75,7 @@ const EventSidebar = forwardRef<HTMLDivElement, EventSidebarProps>(
                       : "nav-chrome-sidebar-row text-[#c1bcf0]"
                   }`}
                 >
-                  <span className={`${isActive ? "text-[#6c60db]" : "text-[#c1bcf0]"}`}>
+                  <span className={`nav-chrome-sidebar-icon ${isActive ? "text-[#6c60db]" : "text-[#c1bcf0]"}`}>
                     <Icon size={16} strokeWidth={1.9} />
                   </span>
                   <span className="truncate">{item.label}</span>

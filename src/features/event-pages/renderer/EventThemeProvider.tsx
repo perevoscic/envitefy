@@ -11,6 +11,7 @@ export function EventThemeProvider({
 }) {
   return (
     <div
+      data-appearance-scope="authored"
       style={buildEventThemeStyle(theme)}
       className="min-h-screen bg-[var(--event-page-bg)] text-[var(--event-page-text)]"
     >

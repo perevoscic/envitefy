@@ -15,8 +15,8 @@ import styles from "./EventCanvas.module.css";
 /** The event's own paper fills the preview gutter, navigation and safe areas. */
 const EventCanvas = forwardRef<
   HTMLDivElement,
-  ComponentPropsWithoutRef<"div"> & { initialColor?: string }
->(function EventCanvas({ initialColor, children, className = "", style, ...props }, forwardedRef) {
+  ComponentPropsWithoutRef<"div"> & { initialColor?: string; appearanceScope?: "app" | "authored" }
+>(function EventCanvas({ initialColor, appearanceScope = "authored", children, className = "", style, ...props }, forwardedRef) {
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const [color, setColor] = useState(() => normalizeEventPageColor(initialColor));
   useLayoutEffect(() => {
@@ -57,6 +57,7 @@ const EventCanvas = forwardRef<
   return (
     <div
       {...props}
+      data-appearance-scope={appearanceScope}
       ref={(element) => {
         canvasRef.current = element;
         if (typeof forwardedRef === "function") forwardedRef(element);

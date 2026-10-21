@@ -105,7 +105,7 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
     }
   };
   return (
-    <EventCanvas style={resolveSignupThemeStyle(form)}>
+    <EventCanvas appearanceScope="app" style={resolveSignupThemeStyle(form)}>
       <div className={`${styles.editor} ${composer.composer}`}>
         <div className={composer.topbar}>
           <div>

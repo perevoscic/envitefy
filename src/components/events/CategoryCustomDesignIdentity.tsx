@@ -60,12 +60,13 @@ export function CategoryCustomDesignIcon({
 export function categoryCustomDesignStyle(category: CustomDesignCategory): CSSProperties {
   const { tokens } = getCategoryCustomDesignProfile(category);
   return {
-    "--create-background": tokens.background,
-    "--create-border": tokens.border,
-    "--create-soft": tokens.soft,
-    "--create-accent": tokens.accent,
-    "--create-hover": tokens.hover,
-    "--create-ink": tokens.ink,
-    "--create-muted": tokens.muted,
+    "--create-background": `var(--app-surface, ${tokens.background})`,
+    "--create-border": `var(--app-border, ${tokens.border})`,
+    "--create-soft": `var(--app-surface-alt, ${tokens.soft})`,
+    "--create-accent": `var(--app-primary, ${tokens.accent})`,
+    "--create-hover": `var(--app-primary, ${tokens.hover})`,
+    "--create-ink": `var(--app-foreground, ${tokens.ink})`,
+    "--create-muted": `var(--app-muted-foreground, ${tokens.muted})`,
+    "--create-on-accent": "var(--app-primary-foreground, #ffffff)",
   } as CSSProperties;
 }

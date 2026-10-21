@@ -61,7 +61,7 @@ function Preview({ title, src }: { title: string; src: string | null }) {
   return (
     <div className="min-w-0">
       <p className="mb-2 text-xs font-semibold text-slate-600">{title}</p>
-      <div className="flex aspect-[9/12] items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-100">
+      <div data-appearance-scope={src ? "authored" : undefined} className="flex aspect-[9/12] items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-100">
         {src ? (
           <img src={src} alt={title} className="h-full w-full object-cover" />
         ) : (

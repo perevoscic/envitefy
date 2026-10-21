@@ -68,7 +68,7 @@ export function MainContentWrapper({
   const shellBgClass = isStudioCardShare
     ? "bg-neutral-950"
     : isAdminRoute
-      ? "bg-slate-50"
+      ? "bg-slate-50 dark:bg-background"
       : "bg-transparent";
 
   const showProjectGradientBackground =

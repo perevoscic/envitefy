@@ -6,6 +6,7 @@ import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { guestChatStarterQuestions } from "@/lib/guest-chat/starters";
 import styles from "./concierge-sheet.module.css";
+import appearanceStyles from "./navigation-appearance.module.css";
 
 type ChatRole = "assistant" | "user";
 
@@ -294,7 +295,7 @@ export default function ConciergeSheet({
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
                   <span
-                    className="h-9 w-28 shrink-0 bg-[#f6d477] drop-shadow-[0_8px_18px_rgba(246,212,119,0.18)]"
+                    className={`${appearanceStyles.conciergeSymbol} h-9 w-28 shrink-0 bg-[#f6d477] drop-shadow-[0_8px_18px_rgba(246,212,119,0.18)]`}
                     style={conciergeLogoMaskStyle}
                     aria-hidden="true"
                   />
@@ -324,7 +325,7 @@ export default function ConciergeSheet({
 
             <div
               ref={scrollRef}
-              className="min-h-0 flex-1 overflow-y-auto bg-[linear-gradient(180deg,#fbf8ff_0%,#fffaf7_100%)] px-4 py-4"
+              className={`${styles.messages} min-h-0 flex-1 overflow-y-auto bg-[linear-gradient(180deg,#fbf8ff_0%,#fffaf7_100%)] px-4 py-4`}
               aria-live="polite"
             >
               <div className="space-y-3">
@@ -368,7 +369,7 @@ export default function ConciergeSheet({
                         key={prompt}
                         type="button"
                         onClick={() => sendMessage(prompt)}
-                        className="rounded-2xl border border-[#e5d9f4] bg-white/86 px-3.5 py-3 text-left text-xs font-semibold leading-5 text-[#51465b] shadow-[0_1px_0_rgba(255,255,255,0.76)_inset] transition hover:border-[#bda6ed] hover:bg-[#faf7ff] hover:text-[#211821]"
+                        className={`${styles.starter} rounded-2xl border border-[#e5d9f4] bg-white/86 px-3.5 py-3 text-left text-xs font-semibold leading-5 text-[#51465b] shadow-[0_1px_0_rgba(255,255,255,0.76)_inset] transition hover:border-[#bda6ed] hover:bg-[#faf7ff] hover:text-[#211821]`}
                       >
                         {prompt}
                       </button>
@@ -388,7 +389,7 @@ export default function ConciergeSheet({
             </div>
 
             <form
-              className="shrink-0 border-t border-[#e8ddf4] bg-white/96 px-3 pb-[calc(0.85rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-18px_42px_rgba(64,44,92,0.08)]"
+              className={`${styles.composer} shrink-0 border-t border-[#e8ddf4] bg-white/96 px-3 pb-[calc(0.85rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-18px_42px_rgba(64,44,92,0.08)]`}
               onSubmit={handleSubmit}
             >
               <div className="flex items-end gap-2 rounded-2xl border border-[#e1d3f2] bg-[#fbf8ff] p-2 focus-within:border-[#9b7beb]">

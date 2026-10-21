@@ -16,6 +16,16 @@
   color: var(--bridal-ink);
   font-family: var(--bridal-sans);
 }
+:global(html.dark) .page {
+  --bridal-champagne: var(--background);
+  --bridal-pearl: var(--surface);
+  --bridal-ink: var(--foreground);
+  --bridal-muted: var(--muted-foreground);
+  --bridal-gold: #e5c19e;
+  --bridal-gold-deep: #e5c19e;
+  --bridal-gold-soft: var(--border);
+  --bridal-blush: var(--surface-alt);
+}
 
 .page * {
   box-sizing: border-box;

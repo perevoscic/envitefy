@@ -10,6 +10,69 @@
   padding: 40px clamp(18px, 3.4vw, 56px) 72px;
   color: var(--ink);
 }
+
+/* Application controls use appearance tokens; the artwork has its own scope. */
+:global(html.dark) :is(.page, .cardTextDialog) {
+  --ink: var(--foreground);
+  --muted: var(--muted-foreground);
+  --accent: var(--primary);
+  --line: var(--border);
+}
+:global(html.dark) :is(.editor, .assistance, .cardTextDialog) {
+  color: var(--foreground);
+  background: var(--surface);
+  border-color: var(--border);
+}
+:global(html.dark) :is(.suggestion, .secondary, .optionalSection, .placeResults button, .referenceThumb button) {
+  background: var(--field-background);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+:global(html.dark) :is(.suggestion, .secondary, .placeResults button):hover,
+:global(html.dark) .suggestion[aria-pressed="true"] {
+  background: var(--surface-raised);
+  border-color: var(--primary);
+}
+:global(html.dark) :is(.reference, .location, .collapsibleField, .detailTabs, .shareBox, .sectionIcon, .note, .letteringNotice, .letteringRetry) {
+  background: var(--surface-alt);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+:global(html.dark) :is(.field :is(input, textarea, select), .locationLookup :is(input, select), .shareBox input) {
+  background: var(--field-background);
+  color: var(--foreground);
+  border-color: var(--input);
+}
+:global(html.dark) :is(.page, .cardTextDialog) :is(input, textarea)::placeholder {
+  color: var(--placeholder);
+  -webkit-text-fill-color: var(--placeholder);
+}
+:global(html.dark) .primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+:global(html.dark) .primary:hover { background: color-mix(in srgb, var(--primary) 85%, white); }
+:global(html.dark) .primary:disabled,
+:global(html.dark) .secondary:disabled {
+  background: var(--surface-raised);
+  color: var(--muted-foreground);
+}
+:global(html.dark) .steps button > span { background: var(--surface-alt); }
+:global(html.dark) .steps button[aria-current] { color: var(--primary); border-color: var(--primary); }
+:global(html.dark) .steps button[aria-current] > span { background: var(--primary); color: var(--primary-foreground); }
+:global(html.dark) .detailTabs button[aria-selected="true"] { color: var(--primary); background: var(--surface-raised); }
+:global(html.dark) .textButton { color: var(--primary); }
+:global(html.dark) .iconButton:hover { background: var(--surface-raised); }
+:global(html.dark) .switch { background: var(--input); }
+:global(html.dark) .switch[data-on="true"] { background: var(--primary); }
+:global(html.dark) :is(.included, .tabDot) { color: var(--success); }
+:global(html.dark) :is(.resolvedLocation, .success) { background: color-mix(in srgb, var(--success) 12%, var(--surface)); color: var(--success); }
+:global(html.dark) :is(.error, .generationError) { background: color-mix(in srgb, var(--error) 12%, var(--surface)); color: var(--error); border-color: var(--error); }
+:global(html.dark) .fieldError { color: var(--error); }
+:global(html.dark) .field [aria-invalid="true"],
+:global(html.dark) .locationLookup input[aria-invalid="true"] { border-color: var(--error); background: var(--field-background); box-shadow: 0 0 0 2px color-mix(in srgb, var(--error) 20%, transparent); }
+:global(html.dark) :is(.preparation, .letteringNotice strong) { color: var(--foreground); }
+:global(html.dark) .reference input::file-selector-button { background: var(--surface-raised); border-color: var(--input); color: var(--foreground); }
 /* The builder scrolls with the document; a second body scroll root defeats sticky actions. */
 :global(body):has(.page):not([data-scroll-locked]) {
   overflow: visible;
@@ -1113,6 +1176,9 @@
   text-align: center;
   overflow: hidden;
 }
+:global(html.dark) .previewEmpty { background: radial-gradient(ellipse at 40% 15%, #49304e66, transparent 70%), var(--surface); border-color: var(--border); color: var(--foreground); }
+:global(html.dark) .emptyIcon { background: var(--surface-raised); color: var(--primary); }
+:global(html.dark) .previewEmpty > span:last-child { color: var(--muted-foreground); }
 .emptyIcon {
   width: 76px;
   height: 76px;
@@ -1491,6 +1557,7 @@
   font-size: 13px;
   line-height: 1.55;
 }
+:global(html.dark) .readiness { background: color-mix(in srgb, var(--error) 12%, var(--surface)); color: var(--error); border-color: var(--error); }
 .review .readiness h3 {
   font-family: inherit;
   font-size: 15px;

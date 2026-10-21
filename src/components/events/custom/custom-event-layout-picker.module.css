@@ -4,6 +4,9 @@
   margin: 0;
   border: 0;
 }
+:global(html.dark) .picker legend { color: var(--muted-foreground); }
+:global(html.dark) .choice { background: var(--surface); color: var(--foreground); border-color: var(--border); }
+:global(html.dark) .choice[aria-pressed="true"] { background: var(--surface-alt); border-color: var(--primary); }
 .picker legend {
   margin-bottom: 10px;
   font-size: 14px;

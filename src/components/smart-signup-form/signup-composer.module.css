@@ -1,6 +1,7 @@
 .composer {
   max-width: none;
 }
+:global(html.dark) .composer .toolTabs button[aria-pressed="true"] { color: var(--primary-foreground); }
 .closeTools {
   display: none;
 }

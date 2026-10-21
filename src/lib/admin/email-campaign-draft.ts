@@ -1,8 +1,10 @@
+import type { EmailDesignVersion } from "../email-design";
 export const ADMIN_EMAIL_CAMPAIGN_DRAFT_KEY = "envitefy:admin:email-campaign:draft";
 
 export type AdminEmailCampaignAudienceMode = "individual" | "broadcast";
 
 export type AdminEmailCampaignDraft = {
+  emailDesignVersion?: EmailDesignVersion;
   subject: string;
   bodyHtml: string;
   preheader?: string;

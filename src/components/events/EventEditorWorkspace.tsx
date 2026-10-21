@@ -212,6 +212,7 @@ export default function EventEditorWorkspace({
         )}
         <div
           className={styles.preview}
+          data-appearance-scope="authored"
           role="region"
           aria-label="Event page preview panel"
           // biome-ignore lint/a11y/noNoninteractiveTabindex: Keyboard users must be able to scroll the page preview.

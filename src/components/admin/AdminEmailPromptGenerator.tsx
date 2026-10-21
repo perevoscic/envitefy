@@ -1,5 +1,7 @@
 "use client";
 
+import EmailPreviewFrame from "@/components/admin/EmailPreviewFrame";
+
 import { Check, Copy, ExternalLink, Monitor, Smartphone, Sparkles, Wand2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
@@ -7,6 +9,7 @@ import {
   type AdminEmailCampaignDraft,
 } from "@/lib/admin/email-campaign-draft";
 import type { AdminEmailScenarioId } from "@/lib/admin/email-scenarios";
+import { CURRENT_EMAIL_DESIGN_VERSION, hasEmailCta } from "@/lib/email-design";
 import { createEmailTemplate } from "@/lib/email-template";
 
 type AudienceMode = "individual" | "broadcast";
@@ -72,7 +75,7 @@ function rewriteBlobUrlsForPreview(html: string): string {
 }
 
 function bodyHasPurpleCta(html: string): boolean {
-  return /background-color\s*:\s*#7F67D3/i.test(html);
+  return hasEmailCta(html);
 }
 
 function buildPreviewHtml(draft: GeneratedDraft | null): string {
@@ -179,6 +182,7 @@ export default function AdminEmailPromptGenerator() {
   function handleUseInCampaign() {
     if (!draft) return;
     const handoff: AdminEmailCampaignDraft = {
+      emailDesignVersion: CURRENT_EMAIL_DESIGN_VERSION,
       subject: draft.subject,
       bodyHtml: draft.bodyHtml,
       preheader: draft.preheader || undefined,
@@ -479,7 +483,7 @@ export default function AdminEmailPromptGenerator() {
             </div>
           ) : draft ? (
             <div className="flex h-[620px] justify-center overflow-auto bg-slate-100 p-3">
-              <iframe
+              <EmailPreviewFrame
                 title="Generated email preview"
                 srcDoc={previewHtml}
                 sandbox="allow-same-origin"

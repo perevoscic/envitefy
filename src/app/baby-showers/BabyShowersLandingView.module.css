@@ -10,6 +10,15 @@
   color: #334155;
   font-family: var(--font-poppins), var(--font-sans), system-ui, sans-serif;
 }
+:global(html.dark) .page {
+  --baby-navy: var(--foreground);
+  --baby-blue: var(--primary);
+  --baby-cream: var(--background);
+  color: var(--foreground);
+}
+:global(html.dark) :is(.secondaryCta, .heroVisual, .floatingNote, .collectionCard, .registryPreview, .stepCard, .quoteCard, .faqCard) { background: var(--surface); border-color: var(--border); }
+:global(html.dark) .textLink { background: var(--surface-alt); color: var(--primary); }
+:global(html.dark) .secondaryCta:hover { background: var(--surface-raised); }
 
 .page ::selection {
   background: #fed7aa;

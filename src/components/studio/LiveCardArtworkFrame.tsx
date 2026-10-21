@@ -43,7 +43,7 @@ export default function LiveCardArtworkFrame({
   } as CSSProperties;
 
   return (
-    <div ref={frameRef} data-live-card-artwork data-shared-card-artwork={sharedDesign || undefined} className={`${styles.frame} ${className}`} style={style}>
+    <div ref={frameRef} data-appearance-scope="authored" data-live-card-artwork data-shared-card-artwork={sharedDesign || undefined} className={`${styles.frame} ${className}`} style={style}>
       <span aria-hidden="true" className={styles.glow} />
       <span aria-hidden="true" className={styles.border}>
         <span className={styles.borderColors} />

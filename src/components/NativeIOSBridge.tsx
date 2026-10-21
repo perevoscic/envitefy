@@ -5,7 +5,8 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useProgressNavigation } from "./UnsavedProgressProvider";
 import { mobileReturnPath } from "@/lib/mobile-auth-contract";
-import { guardNativeIOSSignIn } from "@/lib/native-ios";
+import { guardNativeIOSSignIn, postNativeIOSAppearance } from "@/lib/native-ios";
+import { APPEARANCE_CHANGE_EVENT, normalizeAppearance } from "@/lib/appearance";
 import { normalizeSignupIntent } from "@/lib/signup-intent";
 
 /** Native controls use the same explicit-save guard as links in the website. */
@@ -15,6 +16,9 @@ export default function NativeIOSBridge() {
   const router = useRouter();
   useEffect(() => {
     if (!/EnvitefyIOS\//.test(navigator.userAgent)) return;
+    const syncAppearance = () => postNativeIOSAppearance(normalizeAppearance(document.documentElement.dataset.appearancePreference));
+    syncAppearance();
+    window.addEventListener(APPEARANCE_CHANGE_EVENT, syncAppearance);
     const onNavigation = (event: Event) => {
       const detail: unknown = (event as CustomEvent).detail;
       if (!detail || typeof detail !== "object" || !("action" in detail)) return;
@@ -61,6 +65,7 @@ export default function NativeIOSBridge() {
     document.documentElement.dataset.envitefyNativeReady = "true";
     return () => {
       window.removeEventListener("envitefy-native-navigation", onNavigation);
+      window.removeEventListener(APPEARANCE_CHANGE_EVENT, syncAppearance);
       delete document.documentElement.dataset.envitefyNativeReady;
     };
   }, [requestLeave, router, update]);

@@ -361,6 +361,8 @@ export function EventSectionBuilderProvider({
         </div>
       ) : null}
       <dialog
+        data-appearance-scope="app"
+        data-app-dialog
         ref={dialog}
         className={styles.dialog}
         aria-labelledby={titleId}

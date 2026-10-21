@@ -14,6 +14,9 @@ import {
 } from "react";
 import LoginForm from "@/components/auth/LoginForm";
 import SignupForm from "@/components/auth/SignupForm";
+import AppearanceSelector from "@/components/AppearanceSelector";
+import { ENVITEFY_BRAND_ASSETS } from "@/lib/brand-assets";
+import appearanceStyles from "./navigation-appearance.module.css";
 import { signedOutMobileMenuLinks, type SignedOutMobileMenuLink } from "@/config/navigation";
 import type { SignupIntent, SignupSource } from "@/lib/signup-intent";
 import { useModalDialog } from "@/hooks/useModalDialog";
@@ -110,7 +113,7 @@ export default function MenuBottomSheet({
             aria-modal="true"
             tabIndex={-1}
             aria-label={authActive ? (authMode === "signup" ? "Sign up" : "Sign in") : "Menu"}
-            className="absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-t-[1.75rem] border border-white/12 bg-[#150c29] px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 text-white shadow-[0_-28px_90px_rgba(20,11,34,0.38)]"
+            className={`${appearanceStyles.mobileMenu} absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-t-[1.75rem] border border-white/12 bg-[#150c29] px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 text-white shadow-[0_-28px_90px_rgba(20,11,34,0.38)]`}
             style={{
               height: authActive ? "auto" : sheetHeight,
               maxHeight: sheetHeight,
@@ -142,17 +145,17 @@ export default function MenuBottomSheet({
                 onClick={closeSheet}
               >
                 <Image
-                  src="/logo.png"
+                  src={ENVITEFY_BRAND_ASSETS.wordmark.white}
                   alt="Envitefy"
-                  width={600}
-                  height={160}
-                  className="h-auto w-[118px] brightness-0 invert transition-transform duration-300 group-hover:scale-[1.02]"
+                  width={1103}
+                  height={354}
+                  className="h-auto w-[118px] transition-transform duration-300 group-hover:scale-[1.02]"
                 />
               </Link>
 
               <button
                 type="button"
-                className="nav-chrome-motion inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/16 bg-white/[0.08] text-white shadow-sm transition hover:bg-white/[0.12] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f]"
+                className="nav-chrome-menu-entry nav-chrome-motion inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/16 bg-white/[0.08] text-white shadow-sm transition hover:bg-white/[0.12] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f]"
                 onClick={closeSheet}
                 aria-label="Close menu"
               >
@@ -181,7 +184,7 @@ export default function MenuBottomSheet({
                     <div className="grid gap-0">
                       <button
                         type="button"
-                        className="nav-chrome-motion flex min-h-11 w-full items-center justify-end gap-2 rounded-2xl px-4 py-1.5 text-right text-base font-semibold text-white transition hover:bg-white/[0.08] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f]"
+                        className="nav-chrome-menu-entry nav-chrome-motion flex min-h-11 w-full items-center justify-end gap-2 rounded-2xl px-4 py-1.5 text-right text-base font-semibold text-white transition hover:bg-white/[0.08] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f]"
                         onClick={() => setAuthMode("signup")}
                       >
                         Start Creating
@@ -190,7 +193,7 @@ export default function MenuBottomSheet({
 
                       <button
                         type="button"
-                        className="nav-chrome-motion flex min-h-11 w-full items-center justify-end gap-2 rounded-2xl px-4 py-1.5 text-right text-base font-semibold text-white/74 transition hover:bg-white/[0.08] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f]"
+                        className="nav-chrome-menu-entry nav-chrome-motion flex min-h-11 w-full items-center justify-end gap-2 rounded-2xl px-4 py-1.5 text-right text-base font-semibold text-white/74 transition hover:bg-white/[0.08] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f]"
                         onClick={() => setAuthMode("login")}
                       >
                         Sign In
@@ -201,7 +204,7 @@ export default function MenuBottomSheet({
                         <Link
                           key={`${link.label}:${link.href}`}
                           href={link.href}
-                          className="nav-chrome-motion flex min-h-11 w-full items-center justify-end rounded-2xl px-4 py-1.5 text-right text-base font-semibold text-white/74 transition hover:bg-white/[0.08] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f]"
+                          className="nav-chrome-menu-entry nav-chrome-motion flex min-h-11 w-full items-center justify-end rounded-2xl px-4 py-1.5 text-right text-base font-semibold text-white/74 transition hover:bg-white/[0.08] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f]"
                           onClick={(event) => {
                             if (link.href.startsWith("#")) {
                               event.preventDefault();
@@ -213,6 +216,10 @@ export default function MenuBottomSheet({
                           {link.label}
                         </Link>
                       ))}
+                      <div className="mt-3 flex min-h-11 items-center justify-between gap-3 rounded-2xl px-4 py-2 text-left text-sm">
+                        <span>Appearance</span>
+                        <AppearanceSelector compact />
+                      </div>
                     </div>
                   </motion.nav>
                 ) : null}

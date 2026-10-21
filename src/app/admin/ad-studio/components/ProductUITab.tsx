@@ -8,7 +8,7 @@ export function ProductUITab({ campaign }: { campaign: AdStudioCampaign }) {
     <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
       <div className="rounded-lg border border-slate-200 bg-white p-4">
         <h2 className="text-sm font-semibold text-slate-950">Deterministic Phone UI</h2>
-        <div className="mt-4 overflow-hidden rounded-[28px] border border-slate-200 bg-slate-100">
+        <div data-appearance-scope={asset ? "authored" : undefined} className="mt-4 overflow-hidden rounded-[28px] border border-slate-200 bg-slate-100">
           {asset ? (
             <img src={asset.url} alt="Deterministic phone UI asset" className="w-full" />
           ) : (

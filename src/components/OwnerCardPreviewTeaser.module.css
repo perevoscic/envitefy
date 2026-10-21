@@ -13,6 +13,11 @@
   cursor: pointer;
   touch-action: pan-y pinch-zoom;
 }
+:global(html.dark) .teaser { background: var(--surface); border-color: var(--border); }
+:global(html.dark) .teaser:hover { background: var(--surface-raised); }
+:global(html.dark) .title { color: var(--foreground); }
+:global(html.dark) .hint { color: var(--muted-foreground); }
+:global(html.dark) .arrow { color: var(--primary); }
 
 .teaser:hover {
   background: rgb(245 243 255 / 90%);

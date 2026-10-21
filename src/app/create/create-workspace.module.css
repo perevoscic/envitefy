@@ -26,6 +26,28 @@
   letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
 }
+:global(html.dark) .page {
+  --creation-ink: var(--foreground);
+  --creation-muted: var(--muted-foreground);
+  --creation-subtle: var(--muted-foreground);
+  --creation-plum: var(--primary);
+  --creation-plum-deep: #ddc8ff;
+  --creation-violet-soft: var(--surface-alt);
+  --creation-line: var(--border);
+  --creation-tint: var(--field-background);
+  background: radial-gradient(60rem 26rem at 8% -6rem, #49304e80, transparent 70%), radial-gradient(50rem 24rem at 96% -4rem, #203f5080, transparent 70%), var(--background);
+}
+:global(html.dark) :is(.workspace, .steps, .stepNumber, .modeActive, .fileRow, .typeButton, .shortcutTile, .shortcutButton, .emptySuggestions, .summary) {
+  background: var(--surface);
+  border-color: var(--border);
+}
+:global(html.dark) :is(.textarea, .urlInput, .typeSearch) { background: var(--field-background); color: var(--foreground); border-color: var(--input); }
+:global(html.dark) .dropZone { background: var(--surface); }
+:global(html.dark) .fieldLabel { color: var(--foreground); }
+:global(html.dark) :is(.alert, .sourceError) { background: color-mix(in srgb, var(--error) 12%, var(--surface)); color: var(--error); }
+:global(html.dark) .page .uploadButton { background: var(--primary); color: var(--primary-foreground); }
+:global(html.dark) .modeActive { border-color: var(--primary); }
+:global(html.dark) .previewPane { background: radial-gradient(ellipse at 50% 20%, #49304e66, transparent 70%), var(--surface-alt); }
 
 .container {
   width: 100%;

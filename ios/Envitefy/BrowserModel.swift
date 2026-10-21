@@ -12,6 +12,7 @@ final class BrowserModel: NSObject, ObservableObject, WKNavigationDelegate, WKUI
     @Published var message: String?
     @Published var publicShareURL: URL?
     @Published var sharedFile: SharedFile?
+    @Published var appearance: ColorScheme?
     let webView: WKWebView
     private let authentication = AuthenticationCoordinator()
     private var observations: [NSKeyValueObservation] = []
@@ -93,7 +94,20 @@ final class BrowserModel: NSObject, ObservableObject, WKNavigationDelegate, WKUI
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.frameInfo.isMainFrame, let url = message.frameInfo.request.url,
               AppConfiguration.isFirstParty(url), let body = message.body as? [String: String] else { return }
-        if body["action"] == "request-authenticate" {
+        if body["action"] == "appearance" {
+            switch body["scheme"] {
+            case "dark":
+                appearance = .dark
+                webView.overrideUserInterfaceStyle = .dark
+            case "light":
+                appearance = .light
+                webView.overrideUserInterfaceStyle = .light
+            case "system":
+                appearance = nil
+                webView.overrideUserInterfaceStyle = .unspecified
+            default: break
+            }
+        } else if body["action"] == "request-authenticate" {
             authenticate(returnTo: body["returnTo"], mode: body["mode"] ?? "login", intent: body["intent"], calendar: body["calendar"])
         } else if body["action"] == "authenticate" {
             beginAuthentication(returnTo: body["returnTo"] ?? "/", mode: body["mode"] ?? "login", intent: body["intent"], calendar: body["calendar"])

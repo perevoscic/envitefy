@@ -35,9 +35,11 @@ const calendarsRouteSource = readFileSync(
 test("settings uses a sectioned workspace instead of one continuous form", () => {
   assert.match(
     source,
-    /type SettingsSectionKey = "profile" \| "calendars" \| "security" \| "creation"/,
+    /type SettingsSectionKey = "profile" \| "calendars" \| "security" \| "creation" \| "appearance"/,
   );
   assert.match(source, /SETTINGS_SECTIONS\.map/);
+  assert.match(source, /<AppearanceSelector/);
+  assert.match(source, /activeSettingsSection === "appearance"/);
   assert.match(source, /aria-label="Settings sections"/);
   assert.match(source, /activeSettingsSection === "profile" \? "block" : "hidden"/);
   assert.match(source, /activeSettingsSection === "calendars" \? "block" : "hidden"/);

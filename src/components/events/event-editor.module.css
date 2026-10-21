@@ -8,6 +8,25 @@
   background: #f8f5ff;
   color: #302a3a;
 }
+:global(html.dark) .workspace { background: var(--background); color: var(--foreground); }
+:global(html.dark) .panel { background: var(--surface); border-color: var(--border); }
+:global(html.dark) .workspace .footer { background: color-mix(in srgb, var(--surface) 94%, transparent); border-color: var(--border); }
+:global(html.dark) :is(.views button, .actions button, .menuCard, .sectionHeader button, .toggleRow) {
+  color: var(--foreground); background: var(--surface); border-color: var(--border);
+}
+:global(html.dark) .actions .primary { background: var(--primary); border-color: var(--primary); color: var(--primary-foreground); }
+:global(html.dark) .menuIcon { background: var(--surface-alt); color: var(--primary); }
+:global(html.dark) :is(.menuText strong, .sectionHeader h2) { color: var(--foreground); }
+:global(html.dark) :is(.field label, .menuText > span, .sectionMenu > p) { color: var(--muted-foreground); }
+:global(html.dark) .sectionHeader { border-color: var(--border); }
+:global(html.dark) .field :is(input, textarea) { background: var(--field-background); color: var(--foreground); border-color: var(--input); }
+:global(html.dark) .field[data-muted="true"] input { color: var(--muted-foreground); }
+:global(html.dark) :is(.field input, .field textarea, .views button, .actions button, .menuCard, .sectionHeader button):focus-visible { outline-color: var(--focus-ring); }
+:global(html.dark) .toggleTrack { background: var(--input); }
+:global(html.dark) .toggleSwitch input:checked + .toggleTrack { background: var(--primary); }
+:global(html.dark) .error { background: color-mix(in srgb, var(--error) 12%, var(--surface)); color: var(--error); }
+:global(html.dark) .fieldError { color: var(--error); }
+:global(html.dark) .message { background: color-mix(in srgb, var(--success) 12%, var(--surface)); color: var(--success); }
 .header {
   position: absolute;
   top: 12px;
@@ -487,6 +506,12 @@
 }
 .toggleSwitch input:disabled {
   cursor: default;
+}
+:global(html.dark) .workspace[data-embedded="true"] .footer,
+:global(html.dark) .workspace[data-mobile-editing="true"] .footer,
+:global(html.dark) .workspace .footer[data-bottom-settings="true"] {
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  border-color: var(--border);
 }
 @media (prefers-reduced-motion: reduce) {
   .toggleTrack > span {

@@ -7,7 +7,8 @@ type NativeSignIn = {
   intent?: SignupIntent;
   calendar?: "google" | "outlook";
 };
-type NativeMessage = NativeSignIn & { action: "request-authenticate" | "authenticate" };
+type NativeSignInMessage = NativeSignIn & { action: "request-authenticate" | "authenticate" };
+type NativeMessage = NativeSignInMessage | { action: "appearance"; scheme: "system" | "light" | "dark" };
 type NativeWindow = Window & {
   webkit?: { messageHandlers?: { envitefy?: { postMessage(message: NativeMessage): void } } };
 };
@@ -27,11 +28,16 @@ export function guardNativeIOSSignIn(
   });
 }
 
-function postNativeSignIn(action: NativeMessage["action"], input: NativeSignIn): boolean {
+export function postNativeIOSAppearance(scheme: "system" | "light" | "dark"): void {
+  if (typeof window === "undefined" || !/EnvitefyIOS\//.test(navigator.userAgent)) return;
+  (window as NativeWindow).webkit?.messageHandlers?.envitefy?.postMessage({ action: "appearance", scheme });
+}
+
+function postNativeSignIn(action: NativeSignInMessage["action"], input: NativeSignIn): boolean {
   if (typeof window === "undefined") return false;
   const handler = (window as NativeWindow).webkit?.messageHandlers?.envitefy;
   if (!handler || !/EnvitefyIOS\//.test(navigator.userAgent)) return false;
-  const message: NativeMessage = {
+  const message: NativeSignInMessage = {
     action,
     mode: input.mode,
     returnTo: mobileReturnPath(input.returnTo),

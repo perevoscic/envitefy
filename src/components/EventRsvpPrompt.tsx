@@ -355,6 +355,8 @@ export default function EventRsvpPrompt({
             role="dialog"
             aria-modal="true"
             aria-labelledby="rsvp-decline-title"
+            data-appearance-scope="app"
+            data-app-dialog
             className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-xl border border-border bg-surface p-6 shadow-2xl"
             style={{ colorScheme: theme }}
           >
@@ -478,6 +480,8 @@ export default function EventRsvpPrompt({
             role="dialog"
             aria-modal="true"
             aria-labelledby="rsvp-introduce-title"
+            data-appearance-scope="app"
+            data-app-dialog
             className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-xl border border-border bg-surface p-6 shadow-2xl"
             style={{ colorScheme: theme }}
           >

@@ -1,0 +1,42 @@
+.whiteIcon {
+  display: none;
+}
+
+:global(html.dark) .toast {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+:global(html.dark) .iconWrapper {
+  background: var(--surface-alt);
+  border-color: var(--border);
+}
+
+:global(html.dark) .colorIcon,
+:global(html.dark) .fallback {
+  display: none !important;
+}
+
+:global(html.dark) .whiteIcon {
+  display: block;
+}
+
+:global(html.dark) .heading {
+  color: var(--foreground);
+}
+
+:global(html.dark) .description {
+  color: var(--muted-foreground);
+}
+
+:global(html.dark) .install {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 12px 26px rgb(0 0 0 / 18%);
+}
+
+:global(html.dark) .dismiss {
+  background: var(--surface-alt);
+  border-color: var(--border);
+  color: var(--foreground);
+}

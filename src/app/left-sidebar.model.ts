@@ -166,7 +166,7 @@ export const CREATE_ACTIVE_STORAGE_KEY = "sidebar:create-event:last-selection";
 export const SIDEBAR_CARD_CLASS = "rounded-[24px]";
 export const SIDEBAR_ITEM_CARD_CLASS = "nav-chrome-motion rounded-full";
 export const SIDEBAR_BADGE_CLASS =
-  "inline-flex min-w-[20px] items-center justify-center rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-[#7269dd] shadow-[0_8px_18px_rgba(126,111,233,0.14)]";
+  "nav-chrome-sidebar-count inline-flex min-w-[20px] items-center justify-center rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-[#7269dd] shadow-[0_8px_18px_rgba(126,111,233,0.14)]";
 export const SIDEBAR_WIDTH_REM = "20rem";
 export const SIDEBAR_COLLAPSED_REM = "5rem";
 export const SIDEBAR_DIVIDER_CLASS = "h-px w-full bg-transparent";
@@ -183,7 +183,7 @@ export const SIDEBAR_LIST_PANEL_CLASS = "absolute inset-0 overflow-hidden";
 export const SIDEBAR_EVENT_PANEL_CLASS =
   "absolute inset-0 overflow-hidden nav-chrome-sidebar-surface";
 export const SIDEBAR_FOOTER_TRIGGER_CLASS =
-  "nav-chrome-motion w-full inline-flex items-center justify-between gap-3 rounded-[18px] border border-[#ece8ff] bg-white px-3 py-3 shadow-[0_16px_32px_rgba(123,112,206,0.12)] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[rgba(110,94,181,0.18)]";
+  "nav-chrome-account-trigger nav-chrome-motion w-full inline-flex items-center justify-between gap-3 rounded-[18px] border border-[#ece8ff] bg-white px-3 py-3 shadow-[0_16px_32px_rgba(123,112,206,0.12)] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[rgba(110,94,181,0.18)]";
 
 export const CATEGORY_DEFAULT_COLOR_MAP: Record<string, string> = {
   Birthdays: "pink",
@@ -246,9 +246,9 @@ export const CREATE_SECTION_COLORS = [
 const SIDEBAR_PRIMARY_ACTIVE_ACCENT = {
   buttonClass: "nav-chrome-sidebar-row-active",
   buttonStyle: {
-    background: "#ffffff",
-    borderColor: "rgba(232, 228, 255, 0.9)",
-    boxShadow: "0 16px 34px rgba(120, 105, 214, 0.16)",
+    background: "var(--nav-chrome-selected-surface, #ffffff)",
+    borderColor: "var(--nav-chrome-selected-border, rgba(232, 228, 255, 0.9))",
+    boxShadow: "var(--nav-chrome-selected-shadow, 0 16px 34px rgba(120, 105, 214, 0.16))",
   } as InlineStyle,
   chipClass: "text-[#6b5fd6]",
   chevronClass: "text-[#b4acef]",
@@ -257,9 +257,9 @@ const SIDEBAR_PRIMARY_ACTIVE_ACCENT = {
 const SIDEBAR_FOOTBALL_ACTIVE_ACCENT = {
   buttonClass: "nav-chrome-sidebar-row-active",
   buttonStyle: {
-    background: "#ffffff",
-    borderColor: "rgba(232, 228, 255, 0.9)",
-    boxShadow: "0 16px 34px rgba(120, 105, 214, 0.16)",
+    background: "var(--nav-chrome-selected-surface, #ffffff)",
+    borderColor: "var(--nav-chrome-selected-border, rgba(232, 228, 255, 0.9))",
+    boxShadow: "var(--nav-chrome-selected-shadow, 0 16px 34px rgba(120, 105, 214, 0.16))",
   } as InlineStyle,
   chipClass: "text-[#6b5fd6]",
   chevronClass: "text-[#b4acef]",

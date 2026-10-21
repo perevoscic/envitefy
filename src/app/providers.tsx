@@ -2,14 +2,7 @@
 
 import { SessionProvider, useSession } from "next-auth/react";
 import type { ReactNode } from "react";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useMemo,
-} from "react";
+import { useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { SidebarProvider } from "./sidebar-context";
 import GlobalEventCreate from "./GlobalEventCreate";
@@ -21,68 +14,10 @@ import UnsavedProgressProvider from "@/components/UnsavedProgressProvider";
 import NativeIOSBridge from "@/components/NativeIOSBridge";
 import ThemeColorSync from "@/components/ThemeColorSync";
 import CreationIntakeCleanup from "@/components/events/CreationIntakeCleanup";
-import { ThemeKey, ThemeVariant, resolveThemeCssVariables } from "@/themes";
+import ThemeProvider from "@/components/AppearanceProvider";
+export { useTheme } from "@/components/AppearanceProvider";
 
-type ThemeContextValue = {
-  theme: ThemeVariant;
-  themeKey: ThemeKey;
-  setTheme: (variant: ThemeVariant) => void;
-  toggleTheme: () => void;
-};
-
-const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
-const GYMNASTICS_DEMO_DRAFT_STORAGE_KEY =
-  "envitefy:gymnastics-demo-draft:v1";
-
-type ThemeProviderProps = {
-  children: ReactNode;
-};
-
-function applyCssVariables(themeKey: ThemeKey, variant: ThemeVariant) {
-  if (typeof document === "undefined") return;
-  const root = document.documentElement;
-  const tokens = resolveThemeCssVariables(themeKey, variant);
-  for (const [cssVar, value] of Object.entries(tokens)) {
-    root.style.setProperty(cssVar, value);
-  }
-  root.setAttribute("data-theme", `${themeKey}-${variant}`);
-  root.setAttribute("data-theme-key", themeKey);
-  root.classList.remove("dark");
-  root.style.colorScheme = "light";
-}
-
-function ThemeProvider({ children }: ThemeProviderProps) {
-  const themeKey: ThemeKey = "general";
-  const theme: ThemeVariant = "light";
-
-  useEffect(() => {
-    applyCssVariables(themeKey, theme);
-  }, [themeKey, theme]);
-
-  const setTheme = useCallback((_variant: ThemeVariant) => {}, []);
-
-  const toggleTheme = useCallback(() => {}, []);
-
-  const value = useMemo<ThemeContextValue>(
-    () => ({
-      theme,
-      themeKey,
-      setTheme,
-      toggleTheme,
-    }),
-    [themeKey, setTheme, toggleTheme]
-  );
-
-  return (
-    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
-  );
-}
-
-export function useTheme() {
-  const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
-  return ctx;
-}
+const GYMNASTICS_DEMO_DRAFT_STORAGE_KEY = "envitefy:gymnastics-demo-draft:v1";
 
 export default function Providers({
   children,

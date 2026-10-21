@@ -237,6 +237,9 @@ export function DeterministicAdPlayer({
     return (
       <div className="space-y-3">
         <div
+          data-appearance-scope="authored"
+          data-ad-creative
+          style={{ color: "#2B1B16" }}
           className={`relative overflow-hidden rounded-lg bg-slate-950 shadow-2xl ${FRAME_CLASS[format]}`}
         >
           {backgroundItems.length ? (
@@ -348,7 +351,7 @@ export function DeterministicAdPlayer({
   return (
     <>
       {isRecordMode ? (
-        <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-slate-950 p-4">
+        <div data-appearance-scope="authored" data-ad-recording-stage className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-slate-950 p-4">
           {!isRecording ? (
             <div className="mb-4 rounded-full border border-white/10 bg-slate-900 px-4 py-2 text-xs font-semibold text-slate-200">
               {recordStatus || "Preparing video export."}

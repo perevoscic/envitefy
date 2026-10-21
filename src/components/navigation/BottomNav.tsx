@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import CreateActionSheet from "@/components/navigation/CreateActionSheet";
+import appearanceStyles from "./navigation-appearance.module.css";
 import {
   signedOutBottomNav,
   type SignedOutBottomNavItem,
@@ -91,7 +92,7 @@ export default function BottomNav({
     <>
       <nav
         aria-label="Signed-out mobile navigation"
-        className="mx-auto mb-[max(0.45rem,env(safe-area-inset-bottom))] w-[calc(100%_-_1.5rem)] max-w-[27rem] select-none rounded-[1.65rem] border border-white/90 bg-[radial-gradient(circle_at_50%_-45%,rgba(139,92,246,0.2),transparent_52%),linear-gradient(145deg,rgba(255,255,255,0.98),rgba(244,241,250,0.96))] px-2.5 pb-2 pt-2 text-[#352742] shadow-[0_16px_42px_rgba(54,39,84,0.2),inset_0_1px_0_rgba(255,255,255,0.96)] backdrop-blur-2xl"
+        className={`${appearanceStyles.chrome} ${appearanceStyles.bottomNav} mx-auto mb-[max(0.45rem,env(safe-area-inset-bottom))] w-[calc(100%_-_1.5rem)] max-w-[27rem] select-none rounded-[1.65rem] border border-white/90 bg-[radial-gradient(circle_at_50%_-45%,rgba(139,92,246,0.2),transparent_52%),linear-gradient(145deg,rgba(255,255,255,0.98),rgba(244,241,250,0.96))] px-2.5 pb-2 pt-2 text-[#352742] shadow-[0_16px_42px_rgba(54,39,84,0.2),inset_0_1px_0_rgba(255,255,255,0.96)] backdrop-blur-2xl`}
       >
         <div className="grid auto-cols-fr grid-flow-col items-end gap-0.5">
           {items.map((item) => {
@@ -102,6 +103,9 @@ export default function BottomNav({
               <>
                 <span
                   className={cx(
+                    appearanceStyles.bottomNavIcon,
+                    isFeatured && appearanceStyles.bottomNavIconFeatured,
+                    isActive && appearanceStyles.bottomNavIconActive,
                     "relative flex shrink-0 items-center justify-center transition-all duration-300 ease-out",
                     isFeatured
                       ? "-mt-7 h-14 w-14 rounded-full border-[3px] border-white/90 bg-[linear-gradient(145deg,#a56cff,#7138f5_54%,#4d8cff)] text-white shadow-[0_12px_24px_rgba(91,52,190,0.34),0_3px_8px_rgba(91,52,190,0.2),inset_0_1px_1px_rgba(255,255,255,0.42)] group-hover:-translate-y-0.5 group-hover:scale-[1.03] group-active:translate-y-0 group-active:scale-95"
@@ -121,7 +125,7 @@ export default function BottomNav({
                   ) : null}
                   {isFeatured && item.action === "concierge" ? (
                     <span
-                      className="relative h-7 w-7 bg-white drop-shadow-[0_2px_7px_rgba(255,255,255,0.5)]"
+                      className={`${appearanceStyles.conciergeSymbol} relative h-7 w-7 bg-white drop-shadow-[0_2px_7px_rgba(255,255,255,0.5)]`}
                       style={conciergeNavLogoMaskStyle}
                       aria-hidden="true"
                     />
@@ -131,6 +135,8 @@ export default function BottomNav({
                 </span>
                 <span
                   className={cx(
+                    appearanceStyles.bottomNavLabel,
+                    isActive && appearanceStyles.bottomNavLabelActive,
                     "mt-1 max-w-full truncate rounded-full px-0.5 py-0.5 text-[8px] font-semibold leading-tight tracking-[-0.01em] transition-all duration-200 min-[360px]:px-1.5 min-[360px]:text-[9px]",
                     isActive
                       ? "bg-white/75 text-[#5b359d] shadow-[0_3px_8px_rgba(67,45,104,0.1),inset_0_1px_0_rgba(255,255,255,0.9)]"

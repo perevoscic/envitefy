@@ -20,6 +20,7 @@ import EventPreviewActions from "./EventPreviewActions";
 import { useEventPageColor } from "@/hooks/useEventPageChrome";
 import type { EventPreviewBackground } from "@/lib/event-preview-background";
 import { isDarkEventPageColor } from "@/lib/event-page-chrome";
+import { resolveThemeCssVariables } from "@/themes/registry";
 
 const deviceIcons = { desktop: Monitor, tablet: Tablet, mobile: Smartphone };
 const deviceOrder: EventPreviewDevice[] = ["desktop", "tablet", "mobile"];
@@ -134,8 +135,30 @@ export default function EventPreviewViewport({
   // In-memory artwork stays in React; only its rendering moves into a device-sized document.
   useEffect(() => {
     if (!frameDocument || src) return;
+    const syncAppearance = () => {
+      const source = document.documentElement;
+      const target = frameDocument.documentElement;
+      if (target.className !== source.className) target.className = source.className;
+      for (const attribute of ["data-theme", "data-theme-key", "data-appearance-preference"]) {
+        const value = source.getAttribute(attribute);
+        if (value === null) target.removeAttribute(attribute);
+        else if (target.getAttribute(attribute) !== value) target.setAttribute(attribute, value);
+      }
+      const variant = source.classList.contains("dark") ? "dark" : "light";
+      const computed = getComputedStyle(source);
+      const properties = new Set([
+        ...Object.keys(resolveThemeCssVariables("general", "light")),
+        ...Object.keys(resolveThemeCssVariables("general", "dark")),
+      ]);
+      for (const property of properties) {
+        const value = computed.getPropertyValue(property);
+        if (!value) target.style.removeProperty(property);
+        else if (target.style.getPropertyValue(property) !== value) target.style.setProperty(property, value);
+      }
+      if (target.style.colorScheme !== variant) target.style.colorScheme = variant;
+    };
     const copyStyles = () => {
-      frameDocument.documentElement.className = document.documentElement.className;
+      syncAppearance();
       frameDocument.body.className = document.body.className;
       frameDocument.querySelectorAll("[data-event-preview-style]").forEach((node) => {
         node.remove();
@@ -149,7 +172,15 @@ export default function EventPreviewViewport({
     copyStyles();
     const observer = new MutationObserver(copyStyles);
     observer.observe(document.head, { childList: true, subtree: true, characterData: true });
-    return () => observer.disconnect();
+    const appearanceObserver = new MutationObserver(syncAppearance);
+    appearanceObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class", "style", "data-theme", "data-theme-key", "data-appearance-preference"],
+    });
+    return () => {
+      observer.disconnect();
+      appearanceObserver.disconnect();
+    };
   }, [frameDocument, src]);
 
   useEffect(() => {

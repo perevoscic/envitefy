@@ -1,0 +1,1026 @@
+/* Application appearance is separate from the colors chosen for an event.
+   Authored scopes include the original gallery artwork, public event designs,
+   signup themes and Live Card artwork. Never recolor their descendants. */
+html.dark {
+  --app-background: var(--background);
+  --app-surface: var(--surface);
+  --app-surface-alt: var(--surface-alt);
+  --app-surface-raised: var(--surface-raised);
+  --app-field-background: var(--field-background);
+  --app-foreground: var(--foreground);
+  --app-muted-foreground: var(--muted-foreground);
+  --app-border: var(--border);
+  --app-input: var(--input);
+  --app-primary: var(--primary);
+  --app-primary-foreground: var(--primary-foreground);
+  --app-success: var(--success);
+  --app-error: var(--error);
+  --app-warning: var(--warning);
+  --app-focus-ring: var(--focus-ring);
+}
+[data-appearance-scope="authored"] {
+  color-scheme: light;
+  --background: #f6ece1;
+  --surface: #fbf7f2;
+  --surface-alt: #f0e2d7;
+  --foreground: #2b1b16;
+  --muted-foreground: #6a5549;
+  --border: #d9c5b8;
+  --card: #ffffff;
+  --card-foreground: #2b1b16;
+  --popover: #ffffff;
+  --popover-foreground: #2b1b16;
+  --field-background: #ffffff;
+  --surface-raised: #ffffff;
+  --placeholder: #737083;
+  --focus-ring: #7052c1;
+  --accent-soft: #f4edf8;
+  --muted: #f4edf8;
+  --primary: #c98f6b;
+  --primary-foreground: #ffffff;
+  --primary-hover: #b47b58;
+  --primary-active: #9f6948;
+  --secondary: #6b4c3f;
+  --secondary-foreground: #fdfaf7;
+  --accent: #e5c2a7;
+  --accent-foreground: #2b1b16;
+  --input: #d9c5b8;
+  --ring: #7052c1;
+  --on-primary: #ffffff;
+  --on-secondary: #fdf6f0;
+  --on-accent: #2b1b16;
+  --success: #3f8a7a;
+  --success-background: #edf9f0;
+  --info: #5f7cb5;
+  --info-background: #eff6ff;
+  --warning: #d17a45;
+  --warning-background: #fff7ed;
+  --error: #c15f5a;
+  --error-background: #fff1f4;
+  --destructive: #c15f5a;
+  --destructive-foreground: #ffffff;
+  --theme-overlay: rgba(201, 143, 107, 0.12);
+  --theme-overlay-secondary: rgba(107, 76, 63, 0.12);
+  --theme-card-glow: rgba(191, 135, 103, 0.3);
+  --theme-hero-gradient: radial-gradient(90% 90% at 20% -10%, rgba(255, 200, 120, 0.95), transparent 60%), radial-gradient(100% 110% at 80% 0%, rgba(255, 125, 85, 0.75), transparent 65%), radial-gradient(120% 140% at 50% 120%, rgba(50, 130, 170, 0.6), transparent 65%), radial-gradient(120% 140% at 0% 90%, rgba(15, 84, 132, 0.55), transparent 65%), linear-gradient(180deg, rgba(248, 190, 108, 0.4), rgba(112, 171, 211, 0.85));
+}
+
+/* Compatibility for existing application utilities. These deliberately name
+   semantic light surfaces and exclude authored boundaries, rather than
+   reversing images or matching arbitrary white/color declarations. */
+html.dark :is(.bg-white, .bg-slate-50, .bg-gray-50, .bg-zinc-50, .bg-neutral-50):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+  background-color: var(--surface);
+}
+html.dark :is(.bg-slate-100, .bg-gray-100, .bg-zinc-100, .bg-neutral-100, .bg-purple-50, .bg-violet-50, .bg-indigo-50):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+  background-color: var(--surface-alt);
+}
+html.dark :is(.bg-white\/50, .bg-white\/60, .bg-white\/70, .bg-white\/80, .bg-white\/90, .bg-white\/95):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+  background-color: color-mix(in srgb, var(--surface) 92%, transparent);
+}
+html.dark :is(.text-black, .text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700, .text-gray-950, .text-gray-900, .text-gray-800, .text-gray-700, .text-zinc-900, .text-zinc-800, .text-neutral-900, .text-neutral-800):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+  color: var(--foreground);
+}
+html.dark :is(.text-slate-600, .text-slate-500, .text-slate-400, .text-gray-600, .text-gray-500, .text-gray-400, .text-zinc-600, .text-zinc-500, .text-neutral-600, .text-neutral-500):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+  color: var(--muted-foreground);
+}
+html.dark :is(.border-white, .border-slate-100, .border-slate-200, .border-slate-300, .border-gray-100, .border-gray-200, .border-gray-300, .border-zinc-200, .border-neutral-200, .border-indigo-100, .border-indigo-200, .border-violet-100, .border-purple-200):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+  border-color: var(--border);
+}
+html.dark :is(.divide-slate-100, .divide-slate-200, .divide-gray-100, .divide-gray-200):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) > :not(:last-child) {
+  border-color: var(--border);
+}
+html.dark :is(.text-secondary, .text-accent, [class~="text-[#5c438e]"], .text-indigo-600, .text-indigo-700, .text-violet-600, .text-violet-700, .text-purple-600, .text-purple-700, .text-blue-600, .text-blue-700):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+  color: var(--primary);
+}
+html.dark :is(.bg-indigo-600, .bg-violet-600, .bg-purple-600, .bg-blue-600):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+html.dark :is(.bg-slate-900, .bg-slate-950, .bg-gray-900):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+  background-color: var(--surface-raised);
+}
+html.dark :is(.hover\:bg-white, .hover\:bg-slate-50, .hover\:bg-slate-100, .hover\:bg-gray-50, .hover\:bg-gray-100, .hover\:bg-indigo-50, .hover\:bg-purple-50, .hover\:bg-violet-50):hover:is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+  background-color: var(--surface-raised);
+}
+html.dark :is(.hover\:text-indigo-700, .hover\:text-purple-700, .hover\:text-violet-700):hover:is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+  color: var(--primary);
+}
+
+/* Validation and operational status keep their meaning in every app surface. */
+html.dark :is(.bg-red-50, .bg-rose-50, .bg-red-100, .bg-rose-100):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { background-color: color-mix(in srgb, var(--error) 13%, var(--surface)); }
+html.dark :is(.text-red-600, .text-red-700, .text-red-800, .text-red-900, .text-rose-600, .text-rose-700, .text-rose-800):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { color: var(--error); }
+html.dark :is(.bg-emerald-50, .bg-green-50, .bg-emerald-100, .bg-green-100):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { background-color: color-mix(in srgb, var(--success) 13%, var(--surface)); }
+html.dark :is(.text-emerald-600, .text-emerald-700, .text-emerald-800, .text-emerald-900, .text-green-700, .text-green-800):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { color: var(--success); }
+html.dark :is(.bg-amber-50, .bg-yellow-50, .bg-amber-100, .bg-yellow-100):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { background-color: color-mix(in srgb, var(--warning) 13%, var(--surface)); }
+html.dark :is(.text-amber-700, .text-amber-800, .text-amber-900, .text-yellow-700, .text-yellow-800):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { color: var(--warning); }
+html.dark :is(.bg-sky-50, .bg-blue-50):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { background-color: color-mix(in srgb, var(--info) 12%, var(--surface)); }
+html.dark :is(.text-sky-700, .text-sky-800, .text-blue-800, .text-blue-900):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { color: var(--info); }
+
+html.dark :is(input, textarea, select):not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [data-appearance-scope="authored"] *):not([data-preserve-control-colors]) {
+  background-color: var(--field-background);
+  border-color: var(--input);
+  color: var(--foreground);
+  caret-color: var(--foreground);
+}
+html.dark :is(input, textarea):not([data-appearance-scope="authored"] *)::placeholder {
+  color: var(--placeholder);
+  -webkit-text-fill-color: var(--placeholder);
+  opacity: 1;
+}
+html.dark :is(input, textarea, select):not([data-appearance-scope="authored"] *):focus-visible {
+  outline-color: var(--focus-ring);
+}
+html.dark :is(input, textarea, select):not([data-appearance-scope="authored"] *)[aria-invalid="true"] {
+  border-color: var(--error);
+}
+html.dark input:not([data-appearance-scope="authored"] *):is(:-webkit-autofill, :autofill) {
+  -webkit-text-fill-color: var(--foreground);
+  box-shadow: 0 0 0 1000px var(--field-background) inset;
+  caret-color: var(--foreground);
+}
+html.dark :is([role="dialog"], dialog):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+  color-scheme: dark;
+}
+html.dark .auth-transition-overlay {
+  background-color: color-mix(in srgb, var(--background) 94%, transparent);
+  color: var(--foreground);
+}
+html.dark .auth-transition-overlay p { color: var(--muted-foreground); }
+html.dark [data-settings-canvas] { background-image: none; }
+html.dark [data-settings-surface] { background: var(--surface); border-color: var(--border); }
+html.dark [data-settings-accent-surface] { background: var(--surface-raised); color: var(--primary); }
+html.dark [data-snap-upload-intro] > div > p { color: var(--muted-foreground); }
+html.dark [data-snap-upload-intro] > div > section > p { color: var(--primary); }
+html.dark .studio-shell:not([data-appearance-scope="authored"] *) {
+  --studio-paper: var(--surface);
+  --studio-paper-soft: var(--surface-alt);
+  --studio-ink: var(--foreground);
+  --studio-ink-soft: var(--muted-foreground);
+  --studio-brand: var(--primary);
+  --studio-brand-soft: var(--accent-soft);
+  --studio-card-border: var(--border);
+  --studio-card-shadow: 0 24px 60px #00000033;
+  color: var(--foreground);
+}
+html.dark .studio-shell :is(.studio-form-card, .studio-suggestion-chip):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) { background: var(--surface); border-color: var(--border); color: var(--foreground); }
+html.dark .studio-shell .studio-suggestion-chip:hover:not([data-appearance-scope="authored"] *) { background: var(--surface-raised); }
+html.dark .studio-shell .studio-finish-chip[aria-pressed="true"]:not([data-appearance-scope="authored"] *) { background: var(--primary); border-color: var(--primary); color: var(--primary-foreground); }
+html.dark .auth-modal .wedding-glow-card {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: 0 24px 80px #00000055;
+}
+html.dark .auth-modal .wedding-kicker { color: var(--muted-foreground); }
+html.dark .auth-modal .wedding-icon-button { background: var(--surface-alt); border-color: var(--border); }
+html.dark .auth-card-gradient::before { background-image: radial-gradient(100% 80% at 10% 0%, #49304e55, transparent 75%); }
+html.dark .auth-card-gradient::after { opacity: 0.08; }
+html.dark .auth-modal .text-secondary { color: var(--primary); }
+html.dark .btn-primary:not([data-appearance-scope="authored"] *),
+html.dark button[class~="bg-gradient-to-r"][class~="from-brand"]:not([data-appearance-scope="authored"] *) {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+html.dark .btn-primary:not([data-appearance-scope="authored"] *):hover { background: var(--primary-hover); }
+html.dark .btn-outline:not([data-appearance-scope="authored"] *) { background: var(--surface); border-color: var(--border); color: var(--foreground); }
+html.dark .btn-outline:not([data-appearance-scope="authored"] *):hover { background: var(--surface-raised); color: var(--foreground); }
+html.dark [data-app-footer="marketing"],
+html.dark [data-app-footer="marketing"] > div {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--foreground);
+}
+html.dark [data-app-footer="marketing"] [class~="border-[#d7c5a5]"] { border-color: var(--border); }
+html.dark [data-project-gradient-background="true"] {
+  background: radial-gradient(ellipse at 4% 0%, #49304e 0%, transparent 52%), radial-gradient(ellipse at 96% 0%, #203f50 0%, transparent 52%), var(--background);
+}
+html.dark [data-project-gradient-background="true"] .app-background-orb {
+  opacity: 0.12;
+}
+html.dark [data-project-gradient-background="true"]::before,
+html.dark [data-project-gradient-background="true"]::after {
+  opacity: 0.08;
+}
+
+/* Shared owner/application controls may be rendered beside an authored page. */
+html.dark [data-app-surface="true"] {
+  color-scheme: dark;
+  color: var(--foreground);
+  border-color: var(--border);
+  background-color: var(--surface);
+}
+
+/* Guest utility panels can open inside a design without changing that design.
+   Re-enter the app palette locally, including signup's dialog-only tokens. */
+html.dark :is([data-app-dialog], [data-app-surface="true"]) {
+  color-scheme: dark;
+  --background: var(--app-background);
+  --surface: var(--app-surface);
+  --surface-alt: var(--app-surface-alt);
+  --field-background: var(--app-field-background);
+  --foreground: var(--app-foreground);
+  --muted-foreground: var(--app-muted-foreground);
+  --border: var(--app-border);
+  --input: var(--app-input);
+  --primary: var(--app-primary);
+  --primary-foreground: var(--app-primary-foreground);
+  --on-primary: var(--app-primary-foreground);
+  --success: var(--app-success);
+  --error: var(--app-error);
+  --warning: var(--app-warning);
+  --signup-surface: var(--app-surface);
+  --signup-page: var(--app-surface-alt);
+  --signup-soft: var(--app-surface-alt);
+  --signup-text: var(--app-foreground);
+  --signup-muted: var(--app-muted-foreground);
+  --signup-border: var(--app-border);
+  background-color: var(--app-surface);
+  border-color: var(--app-border);
+  color: var(--app-foreground);
+}
+html.dark :is(.bg-white\/62, .bg-white\/65, .bg-white\/68, .bg-white\/75, .bg-white\/85, .bg-white\/88, .bg-white\/92, .bg-white\/98):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) {
+  background-color: color-mix(in srgb, var(--surface) 94%, transparent);
+}
+html.dark :is(.owner-workspace-glass, .owner-workspace-glass-panel, .owner-workspace-glass-chip):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) {
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  border-color: var(--border);
+  box-shadow: inset 0 1px 0 #ffffff08, 0 20px 60px #0000002e;
+}
+html.dark :is(.owner-workspace-glass, .owner-workspace-glass-panel)::before { background: radial-gradient(circle at top left, #49304e44, transparent 56%); }
+html.dark :is([data-app-dialog], [data-app-surface="true"]) :is(.text-neutral-900, .text-neutral-800, .text-neutral-700, .text-gray-900, .text-gray-800, .text-gray-700, .text-slate-900, .text-slate-800, .text-slate-700, label) { color: var(--app-foreground); }
+html.dark :is([data-app-dialog], [data-app-surface="true"]) :is(.text-neutral-600, .text-neutral-500, .text-gray-600, .text-gray-500, .text-slate-600, .text-slate-500) { color: var(--app-muted-foreground); }
+html.dark :is([data-app-dialog], [data-app-surface="true"]) :is(.bg-white, .bg-neutral-50, .bg-gray-50, .bg-slate-50) { background-color: var(--app-surface-alt); }
+html.dark :is([data-app-dialog], [data-app-surface="true"]) :is(.border-neutral-200, .border-gray-200, .border-gray-300, .border-slate-200, .border-slate-300) { border-color: var(--app-border); }
+html.dark :is([data-app-dialog], [data-app-surface="true"]) :is(input, textarea, select):not([type="checkbox"], [type="radio"]) {
+  background-color: var(--app-field-background);
+  border-color: var(--app-input);
+  color: var(--app-foreground);
+}
+html.dark :is([data-app-dialog], [data-app-surface="true"]) :is(input, textarea)::placeholder { color: var(--placeholder, var(--app-muted-foreground)); -webkit-text-fill-color: var(--placeholder, var(--app-muted-foreground)); }
+html.dark :is([data-app-dialog], [data-app-surface="true"]) :is(input, textarea, select, button, a):focus-visible {
+  outline: 2px solid var(--app-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Keep input edges stronger than decorative surface borders. */
+html.dark :is(input, textarea, select):not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [data-appearance-scope="authored"] *):not([data-preserve-control-colors]):not(:focus-visible):not([aria-invalid="true"]) { border-color: var(--input); }
+html.dark :is(input, textarea, select):not([data-appearance-scope="authored"] *):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  html.dark :is(button, input, textarea, select):focus-visible {
+    outline: 2px solid Highlight;
+  }
+}
+
+/* Finite legacy color utilities used by application, auth, admin, gallery,
+   Snap, Studio and marketing surfaces. Authored artwork remains excluded. */
+html.dark :is(
+  [class~="border-[#7f67d3]"],
+  [class~="border-[#D9C5B8]"],
+  [class~="border-[#E8E0EF]"],
+  [class~="border-[#a4dece]"],
+  [class~="border-[#a9dce1]"],
+  [class~="border-[#b5d3d8]"],
+  [class~="border-[#b7caf4]"],
+  [class~="border-[#b7d8ce]"],
+  [class~="border-[#b8d2d0]"],
+  [class~="border-[#b8e3c6]"],
+  [class~="border-[#bca9ea]"],
+  [class~="border-[#bdd7dc]"],
+  [class~="border-[#bfb1e8]"],
+  [class~="border-[#bfc9bd]"],
+  [class~="border-[#c1eadb]"],
+  [class~="border-[#c7bdff]"],
+  [class~="border-[#c8dbda]"],
+  [class~="border-[#c8ddaa]"],
+  [class~="border-[#cbbbf1]"],
+  [class~="border-[#cdbba8]"],
+  [class~="border-[#cfc3b6]"],
+  [class~="border-[#d6dde8]"],
+  [class~="border-[#d6df9d]"],
+  [class~="border-[#d6dfd0]"],
+  [class~="border-[#d7c5a5]"],
+  [class~="border-[#d7c6dc]"],
+  [class~="border-[#d8caff]"],
+  [class~="border-[#d8cdf0]"],
+  [class~="border-[#d8d0f3]"],
+  [class~="border-[#d8d2ee]"],
+  [class~="border-[#d9c7ab]"],
+  [class~="border-[#d9c9ff]"],
+  [class~="border-[#d9cdfa]"],
+  [class~="border-[#d9d0c6]"],
+  [class~="border-[#d9d3ff]"],
+  [class~="border-[#d9ded3]"],
+  [class~="border-[#dcd0dc]"],
+  [class~="border-[#dcd3ee]"],
+  [class~="border-[#ddd2f5]"],
+  [class~="border-[#ddd4e8]"],
+  [class~="border-[#ddd4f5]"],
+  [class~="border-[#ddd4f8]"],
+  [class~="border-[#ddd4ff]"],
+  [class~="border-[#ddd5f6]"],
+  [class~="border-[#ddd5ff]"],
+  [class~="border-[#ddd6fe]"],
+  [class~="border-[#ddd6ff]"],
+  [class~="border-[#dde5d9]"],
+  [class~="border-[#dde5f1]"],
+  [class~="border-[#ded1ff]"],
+  [class~="border-[#ded2bd]"],
+  [class~="border-[#ded4e8]"],
+  [class~="border-[#ded5ca]"],
+  [class~="border-[#ded5ea]"],
+  [class~="border-[#ded7f4]"],
+  [class~="border-[#ded8ff]"],
+  [class~="border-[#dfc3aa]"],
+  [class~="border-[#dfcfb5]"],
+  [class~="border-[#dfe4d4]"],
+  [class~="border-[#dfe5f2]"],
+  [class~="border-[#e0d8ed]"],
+  [class~="border-[#e1d3f2]"],
+  [class~="border-[#e1d6c2]"],
+  [class~="border-[#e1d6e9]"],
+  [class~="border-[#e1dafb]"],
+  [class~="border-[#e1dcf3]"],
+  [class~="border-[#e1dcff]"],
+  [class~="border-[#e1e7f1]"],
+  [class~="border-[#e2d7c1]"],
+  [class~="border-[#e2d9eb]"],
+  [class~="border-[#e2d9f2]"],
+  [class~="border-[#e2ddef]"],
+  [class~="border-[#e2e5d7]"],
+  [class~="border-[#e2e8f4]"],
+  [class~="border-[#e3d5ff]"],
+  [class~="border-[#e3d7ff]"],
+  [class~="border-[#e3dafd]"],
+  [class~="border-[#e3dcf0]"],
+  [class~="border-[#e3ddff]"],
+  [class~="border-[#e4c8b7]"],
+  [class~="border-[#e4cdb6]"],
+  [class~="border-[#e4d9ff]"],
+  [class~="border-[#e4ddea]"],
+  [class~="border-[#e4def9]"],
+  [class~="border-[#e5d7bd]"],
+  [class~="border-[#e5d9eb]"],
+  [class~="border-[#e5d9f4]"],
+  [class~="border-[#e5dcf7]"],
+  [class~="border-[#e5dcff]"],
+  [class~="border-[#e5defa]"],
+  [class~="border-[#e5e1ee]"],
+  [class~="border-[#e6c9d0]"],
+  [class~="border-[#e6dcff]"],
+  [class~="border-[#e6ddeb]"],
+  [class~="border-[#e6e0ff]"],
+  [class~="border-[#e6ebf2]"],
+  [class~="border-[#e7caca]"],
+  [class~="border-[#e7dcff]"],
+  [class~="border-[#e7ddff]"],
+  [class~="border-[#e7dffc]"],
+  [class~="border-[#e7e1d4]"],
+  [class~="border-[#e7e1fb]"],
+  [class~="border-[#e7e1ff]"],
+  [class~="border-[#e7edf6]"],
+  [class~="border-[#e7edf7]"],
+  [class~="border-[#e8dcc8]"],
+  [class~="border-[#e8ddf4]"],
+  [class~="border-[#e8ddff]"],
+  [class~="border-[#e8dfe5]"],
+  [class~="border-[#e8e1fb]"],
+  [class~="border-[#e8e2f1]"],
+  [class~="border-[#e8e2ff]"],
+  [class~="border-[#e8edf4]"],
+  [class~="border-[#e9defe]"],
+  [class~="border-[#e9dfd4]"],
+  [class~="border-[#e9dfff]"],
+  [class~="border-[#eadbce]"],
+  [class~="border-[#eadbd9]"],
+  [class~="border-[#eadcf5]"],
+  [class~="border-[#eadfce]"],
+  [class~="border-[#eadff6]"],
+  [class~="border-[#eadfff]"],
+  [class~="border-[#ebe2ff]"],
+  [class~="border-[#ebe3ff]"],
+  [class~="border-[#ebe6ff]"],
+  [class~="border-[#ece3ff]"],
+  [class~="border-[#ece4ff]"],
+  [class~="border-[#ece7ff]"],
+  [class~="border-[#ece8ff]"],
+  [class~="border-[#ece9ff]"],
+  [class~="border-[#edb9d4]"],
+  [class~="border-[#edc9b8]"],
+  [class~="border-[#ede6ff]"],
+  [class~="border-[#edf1f7]"],
+  [class~="border-[#eee5ff]"],
+  [class~="border-[#eef2f7]"],
+  [class~="border-[#efbbbb]"],
+  [class~="border-[#efc1a5]"],
+  [class~="border-[#efd8c2]"],
+  [class~="border-[#efe4d7]"],
+  [class~="border-[#efe6ff]"],
+  [class~="border-[#efe7ff]"],
+  [class~="border-[#efe8ff]"],
+  [class~="border-[#eff3f8]"],
+  [class~="border-[#f0b8c7]"],
+  [class~="border-[#f0c2d4]"],
+  [class~="border-[#f0d6c8]"],
+  [class~="border-[#f0eaff]"],
+  [class~="border-[#f0ecff]"],
+  [class~="border-[#f1ebff]"],
+  [class~="border-[#f2c9c9]"],
+  [class~="border-[#f3c3be]"],
+  [class~="border-[#f3cade]"],
+  [class~="border-[#f3d58b]"],
+  [class~="border-[#f4b7c4]"],
+  [class~="border-[#f4cf8d]"],
+  [class~="border-[#f4d6a7]"],
+  [class~="border-[#f5eee7]"],
+  [class~="hover:border-[#aebbac]"]:hover,
+  [class~="hover:border-[#bda6ed]"]:hover,
+  [class~="hover:border-[#bdb5f5]"]:hover,
+  [class~="hover:border-[#c7baf4]"]:hover,
+  [class~="hover:border-[#c8beff]"]:hover,
+  [class~="hover:border-[#cabcf0]"]:hover,
+  [class~="hover:border-[#cbbdff]"]:hover,
+  [class~="hover:border-[#cbc0f5]"]:hover,
+  [class~="hover:border-[#cec1ed]"]:hover,
+  [class~="hover:border-[#d3c8e4]"]:hover,
+  [class~="hover:border-[#d4dce8]"]:hover,
+  [class~="hover:border-[#d87338]"]:hover,
+  [class~="hover:border-[#d9cbff]"]:hover,
+  [class~="hover:border-[#dbe2ec]"]:hover,
+  [class~="hover:border-[#ded8ff]"]:hover,
+  [class~="hover:border-[#e1e8f1]"]:hover
+):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { border-color: var(--border); }
+html.dark :is(
+  [class~="bg-[#F3F0FA]"],
+  [class~="bg-[#F8F5FF]"],
+  [class~="bg-[#FBF7F2]"],
+  [class~="bg-[#d5f2e9]"],
+  [class~="bg-[#d8f4f6]"],
+  [class~="bg-[#e3f0ff]"],
+  [class~="bg-[#e6f6ef]"],
+  [class~="bg-[#e8ece3]"],
+  [class~="bg-[#e8f0ff]"],
+  [class~="bg-[#e9f5d8]"],
+  [class~="bg-[#eaf4ee]"],
+  [class~="bg-[#eaf7f0]"],
+  [class~="bg-[#ebfff1]"],
+  [class~="bg-[#ece2ff]"],
+  [class~="bg-[#ece4ff]"],
+  [class~="bg-[#ece9ff]"],
+  [class~="bg-[#ede4ff]"],
+  [class~="bg-[#ede9fe]"],
+  [class~="bg-[#edeaff]"],
+  [class~="bg-[#edf1f5]"],
+  [class~="bg-[#edf9f0]"],
+  [class~="bg-[#edf9f5]"],
+  [class~="bg-[#eee6f4]"],
+  [class~="bg-[#eee6f6]"],
+  [class~="bg-[#eee9fb]"],
+  [class~="bg-[#eeeaff]"],
+  [class~="bg-[#eef1e9]"],
+  [class~="bg-[#eef3ff]"],
+  [class~="bg-[#eefbfc]"],
+  [class~="bg-[#efe6ff]"],
+  [class~="bg-[#efe7dc]"],
+  [class~="bg-[#efe8d9]"],
+  [class~="bg-[#efe8ff]"],
+  [class~="bg-[#efe9ff]"],
+  [class~="bg-[#efeaff]"],
+  [class~="bg-[#eff1f8]"],
+  [class~="bg-[#f0eef5]"],
+  [class~="bg-[#f0f5ff]"],
+  [class~="bg-[#f0f6c7]"],
+  [class~="bg-[#f1ebff]"],
+  [class~="bg-[#f1ecfb]"],
+  [class~="bg-[#f1edff]"],
+  [class~="bg-[#f2edff]"],
+  [class~="bg-[#f2eef9]"],
+  [class~="bg-[#f2f5fa]"],
+  [class~="bg-[#f3e8ff]"],
+  [class~="bg-[#f3ecff]"],
+  [class~="bg-[#f3eeff]"],
+  [class~="bg-[#f3efff]"],
+  [class~="bg-[#f3f0ff]"],
+  [class~="bg-[#f3f1ff]"],
+  [class~="bg-[#f4eeff]"],
+  [class~="bg-[#f4efff]"],
+  [class~="bg-[#f4f0ff]"],
+  [class~="bg-[#f4f1ff]"],
+  [class~="bg-[#f5eadc]"],
+  [class~="bg-[#f5eddf]"],
+  [class~="bg-[#f5f0ff]"],
+  [class~="bg-[#f5f2ff]"],
+  [class~="bg-[#f5f3ff]"],
+  [class~="bg-[#f6efff]"],
+  [class~="bg-[#f6f2ff]"],
+  [class~="bg-[#f6f4ff]"],
+  [class~="bg-[#f6fbef]"],
+  [class~="bg-[#f7edff]"],
+  [class~="bg-[#f7f2ff]"],
+  [class~="bg-[#f7f3ff]"],
+  [class~="bg-[#f7f4fb]"],
+  [class~="bg-[#f7f5fb]"],
+  [class~="bg-[#f7f5fc]"],
+  [class~="bg-[#f7f8f3]"],
+  [class~="bg-[#f7f8fb]"],
+  [class~="bg-[#f7faff]"],
+  [class~="bg-[#f8f3ea]"],
+  [class~="bg-[#f8f3ed]"],
+  [class~="bg-[#f8f4ed]"],
+  [class~="bg-[#f8f4ff]"],
+  [class~="bg-[#f8f6fb]"],
+  [class~="bg-[#f8faff]"],
+  [class~="bg-[#f8feff]"],
+  [class~="bg-[#faf7f3]"],
+  [class~="bg-[#faf7ff]"],
+  [class~="bg-[#faf8ff]"],
+  [class~="bg-[#faf9ff]"],
+  [class~="bg-[#fbf8f1]"],
+  [class~="bg-[#fbf8f4]"],
+  [class~="bg-[#fbf8f5]"],
+  [class~="bg-[#fbf8ff]"],
+  [class~="bg-[#fbf9ff]"],
+  [class~="bg-[#fbfaf4]"],
+  [class~="bg-[#fbfaf7]"],
+  [class~="bg-[#fbfaff]"],
+  [class~="bg-[#fbfcf8]"],
+  [class~="bg-[#fbfcfe]"],
+  [class~="bg-[#fbfee8]"],
+  [class~="bg-[#fbffff]"],
+  [class~="bg-[#fcfaff]"],
+  [class~="bg-[#fcfbf7]"],
+  [class~="bg-[#fcfbff]"],
+  [class~="bg-[#fcfdff]"],
+  [class~="bg-[#fde6e4]"],
+  [class~="bg-[#fefcf7]"],
+  [class~="bg-[#ffe0e7]"],
+  [class~="bg-[#ffe0ef]"],
+  [class~="bg-[#ffe3d1]"],
+  [class~="bg-[#fff0cf]"],
+  [class~="bg-[#fff0f2]"],
+  [class~="bg-[#fff1da]"],
+  [class~="bg-[#fff2d8]"],
+  [class~="bg-[#fff2f5]"],
+  [class~="bg-[#fff2f8]"],
+  [class~="bg-[#fff4df]"],
+  [class~="bg-[#fff4ec]"],
+  [class~="bg-[#fff4f4]"],
+  [class~="bg-[#fff6f6]"],
+  [class~="bg-[#fff6fb]"],
+  [class~="bg-[#fff7e8]"],
+  [class~="bg-[#fff8f5]"],
+  [class~="bg-[#fffaf7]"],
+  [class~="bg-[#fffafd]"],
+  [class~="bg-[#fffcf7]"],
+  [class~="bg-[#fffcfa]"],
+  [class~="bg-[#fffdf7]"],
+  [class~="bg-[#fffdf8]"],
+  [class~="bg-[#fffdf9]"],
+  [class~="hover:bg-[#ebe8ff]"]:hover,
+  [class~="hover:bg-[#edf9f5]"]:hover,
+  [class~="hover:bg-[#eee7ff]"]:hover,
+  [class~="hover:bg-[#f1edff]"]:hover,
+  [class~="hover:bg-[#f2efff]"]:hover,
+  [class~="hover:bg-[#f3ecff]"]:hover,
+  [class~="hover:bg-[#f3edff]"]:hover,
+  [class~="hover:bg-[#f3eefc]"]:hover,
+  [class~="hover:bg-[#f3f0ff]"]:hover,
+  [class~="hover:bg-[#f4ebe4]"]:hover,
+  [class~="hover:bg-[#f4efff]"]:hover,
+  [class~="hover:bg-[#f5ede7]"]:hover,
+  [class~="hover:bg-[#f5eeff]"]:hover,
+  [class~="hover:bg-[#f5f1fb]"]:hover,
+  [class~="hover:bg-[#f5f3ff]"]:hover,
+  [class~="hover:bg-[#f6f2ff]"]:hover,
+  [class~="hover:bg-[#f6f3ff]"]:hover,
+  [class~="hover:bg-[#f6f4ff]"]:hover,
+  [class~="hover:bg-[#f7f2ff]"]:hover,
+  [class~="hover:bg-[#f7f3ff]"]:hover,
+  [class~="hover:bg-[#f7f8f3]"]:hover,
+  [class~="hover:bg-[#f7faff]"]:hover,
+  [class~="hover:bg-[#f8f4ff]"]:hover,
+  [class~="hover:bg-[#f8f5fd]"]:hover,
+  [class~="hover:bg-[#faf7ff]"]:hover,
+  [class~="hover:bg-[#faf8ff]"]:hover,
+  [class~="hover:bg-[#fafbfc]"]:hover,
+  [class~="hover:bg-[#fbf5f5]"]:hover,
+  [class~="hover:bg-[#fbf7f1]"]:hover,
+  [class~="hover:bg-[#fbf9ff]"]:hover,
+  [class~="hover:bg-[#fcfaff]"]:hover,
+  [class~="hover:bg-[#fcfbf7]"]:hover,
+  [class~="hover:bg-[#ffe7ee]"]:hover,
+  [class~="hover:bg-[#ffe8b0]"]:hover,
+  [class~="hover:bg-[#fff1f5]"]:hover,
+  [class~="hover:bg-[#fffdf9]"]:hover
+):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { background-color: var(--surface); }
+html.dark :is(
+  [class~="hover:text-[#7f8290]"]:hover,
+  [class~="hover:text-[#a74920]"]:hover,
+  [class~="text-[#007AFF]"],
+  [class~="text-[#16705d]"],
+  [class~="text-[#1f6269]"],
+  [class~="text-[#236c73]"],
+  [class~="text-[#2854a3]"],
+  [class~="text-[#2bbf6a]"],
+  [class~="text-[#2f60b8]"],
+  [class~="text-[#2f6f64]"],
+  [class~="text-[#2f7a54]"],
+  [class~="text-[#315f52]"],
+  [class~="text-[#317652]"],
+  [class~="text-[#395fba]"],
+  [class~="text-[#3d5f25]"],
+  [class~="text-[#466c2c]"],
+  [class~="text-[#4b5563]"],
+  [class~="text-[#4b9cf5]"],
+  [class~="text-[#4d5565]"],
+  [class~="text-[#4d563b]"],
+  [class~="text-[#4d5d43]"],
+  [class~="text-[#4d9f76]"],
+  [class~="text-[#4e4acf]"],
+  [class~="text-[#4f5c5a]"],
+  [class~="text-[#505979]"],
+  [class~="text-[#50605e]"],
+  [class~="text-[#525866]"],
+  [class~="text-[#52605c]"],
+  [class~="text-[#526b52]"],
+  [class~="text-[#53621f]"],
+  [class~="text-[#544f6b]"],
+  [class~="text-[#56516c]"],
+  [class~="text-[#58536e]"],
+  [class~="text-[#59546c]"],
+  [class~="text-[#59546e]"],
+  [class~="text-[#5F5345]"],
+  [class~="text-[#5b556f]"],
+  [class~="text-[#5b5570]"],
+  [class~="text-[#5b6d27]"],
+  [class~="text-[#5c5be5]"],
+  [class~="text-[#5d6863]"],
+  [class~="text-[#5d687a]"],
+  [class~="text-[#5f5875]"],
+  [class~="text-[#5f5974]"],
+  [class~="text-[#5f63e6]"],
+  [class~="text-[#62706b]"],
+  [class~="text-[#63534A]"],
+  [class~="text-[#635d78]"],
+  [class~="text-[#647453]"],
+  [class~="text-[#655f7c]"],
+  [class~="text-[#665d68]"],
+  [class~="text-[#68627d]"],
+  [class~="text-[#68708d]"],
+  [class~="text-[#68736d]"],
+  [class~="text-[#6A5549]"],
+  [class~="text-[#6a5b51]"],
+  [class~="text-[#6a657f]"],
+  [class~="text-[#6b7280]"],
+  [class~="text-[#6b7390]"],
+  [class~="text-[#6b746d]"],
+  [class~="text-[#6d6787]"],
+  [class~="text-[#6d80a4]"],
+  [class~="text-[#6f7b75]"],
+  [class~="text-[#6f7c93]"],
+  [class~="text-[#706358]"],
+  [class~="text-[#707b8e]"],
+  [class~="text-[#70819f]"],
+  [class~="text-[#725744]"],
+  [class~="text-[#725b4e]"],
+  [class~="text-[#746775]"],
+  [class~="text-[#746a7d]"],
+  [class~="text-[#756657]"],
+  [class~="text-[#75665e]"],
+  [class~="text-[#756a61]"],
+  [class~="text-[#756b66]"],
+  [class~="text-[#765524]"],
+  [class~="text-[#767287]"],
+  [class~="text-[#7F8CFF]"],
+  [class~="text-[#7a4d58]"],
+  [class~="text-[#7a695d]"],
+  [class~="text-[#7a7595]"],
+  [class~="text-[#7a8098]"],
+  [class~="text-[#7a8f76]"],
+  [class~="text-[#7b6f52]"],
+  [class~="text-[#7b847d]"],
+  [class~="text-[#7d7387]"],
+  [class~="text-[#7f7897]"],
+  [class~="text-[#7f8cff]"],
+  [class~="text-[#7f8dab]"],
+  [class~="text-[#80613b]"],
+  [class~="text-[#80695c]"],
+  [class~="text-[#8078a3]"],
+  [class~="text-[#843b19]"],
+  [class~="text-[#86674f]"],
+  [class~="text-[#87562d]"],
+  [class~="text-[#8C7B65]"],
+  [class~="text-[#8a450c]"],
+  [class~="text-[#8a938c]"],
+  [class~="text-[#8b5c1f]"],
+  [class~="text-[#8b8292]"],
+  [class~="text-[#8d87a6]"],
+  [class~="text-[#8e4141]"],
+  [class~="text-[#8ea0c4]"],
+  [class~="text-[#8f86ba]"],
+  [class~="text-[#8f879b]"],
+  [class~="text-[#90869b]"],
+  [class~="text-[#938c9e]"],
+  [class~="text-[#93a2c0]"],
+  [class~="text-[#96a6c5]"],
+  [class~="text-[#998fc0]"],
+  [class~="text-[#9B4F2B]"],
+  [class~="text-[#9a4d24]"],
+  [class~="text-[#9a4f10]"],
+  [class~="text-[#9a5b18]"],
+  [class~="text-[#9a8fc0]"],
+  [class~="text-[#9a9daa]"],
+  [class~="text-[#9b2c2c]"],
+  [class~="text-[#9bb792]"],
+  [class~="text-[#9ca3af]"],
+  [class~="text-[#9d7d51]"],
+  [class~="text-[#9d7d54]"],
+  [class~="text-[#a16b32]"],
+  [class~="text-[#a2836d]"],
+  [class~="text-[#a4564f]"],
+  [class~="text-[#a73e3e]"],
+  [class~="text-[#a88b58]"],
+  [class~="text-[#b55a2a]"],
+  [class~="text-[#b8c2d4]"],
+  [class~="text-[#c1bcf0]"],
+  [class~="text-[#c4bbc9]"],
+  [class~="text-[#d87338]"],
+  [class~="text-[#ef4444]"],
+  [class~="text-[#fca5a5]"]
+):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { color: var(--muted-foreground); }
+html.dark :is(
+  [class~="hover:text-[#171019]"]:hover,
+  [class~="hover:text-[#1A1A1A]"]:hover,
+  [class~="hover:text-[#202124]"]:hover,
+  [class~="hover:text-[#203137]"]:hover,
+  [class~="hover:text-[#211821]"]:hover,
+  [class~="hover:text-[#262b36]"]:hover,
+  [class~="hover:text-[#2b1b16]"]:hover,
+  [class~="hover:text-[#2d1b36]"]:hover,
+  [class~="hover:text-[#2d211b]"]:hover,
+  [class~="hover:text-[#2d2723]"]:hover,
+  [class~="hover:text-[#2f1d47]"]:hover,
+  [class~="hover:text-[#2f1f45]"]:hover,
+  [class~="hover:text-[#2f2440]"]:hover,
+  [class~="hover:text-[#2f2550]"]:hover,
+  [class~="hover:text-[#33264c]"]:hover,
+  [class~="hover:text-[#382a32]"]:hover,
+  [class~="hover:text-[#43366f]"]:hover,
+  [class~="hover:text-[#4A4036]"]:hover,
+  [class~="hover:text-[#4e38a2]"]:hover,
+  [class~="hover:text-[#6F351D]"]:hover,
+  [class~="text-[#10243b]"],
+  [class~="text-[#111111]"],
+  [class~="text-[#126250]"],
+  [class~="text-[#140a27]"],
+  [class~="text-[#151229]"],
+  [class~="text-[#161129]"],
+  [class~="text-[#17132b]"],
+  [class~="text-[#1A1A1A]"],
+  [class~="text-[#1a1a1a]"],
+  [class~="text-[#1b1530]"],
+  [class~="text-[#1b1540]"],
+  [class~="text-[#1b2740]"],
+  [class~="text-[#1c1435]"],
+  [class~="text-[#1d1224]"],
+  [class~="text-[#1d1734]"],
+  [class~="text-[#1f1633]"],
+  [class~="text-[#1f1635]"],
+  [class~="text-[#1f1837]"],
+  [class~="text-[#1f1844]"],
+  [class~="text-[#1f1a17]"],
+  [class~="text-[#1f2340]"],
+  [class~="text-[#1f3b32]"],
+  [class~="text-[#1f498a]"],
+  [class~="text-[#201942]"],
+  [class~="text-[#201a23]"],
+  [class~="text-[#202124]"],
+  [class~="text-[#203137]"],
+  [class~="text-[#21170e]"],
+  [class~="text-[#211821]"],
+  [class~="text-[#22183f]"],
+  [class~="text-[#221b45]"],
+  [class~="text-[#23345a]"],
+  [class~="text-[#241914]"],
+  [class~="text-[#241c2b]"],
+  [class~="text-[#241c44]"],
+  [class~="text-[#25172d]"],
+  [class~="text-[#251b32]"],
+  [class~="text-[#251b3b]"],
+  [class~="text-[#251f3d]"],
+  [class~="text-[#261d47]"],
+  [class~="text-[#262b36]"],
+  [class~="text-[#281c38]"],
+  [class~="text-[#284c54]"],
+  [class~="text-[#285a63]"],
+  [class~="text-[#29170e]"],
+  [class~="text-[#291f52]"],
+  [class~="text-[#2B1B16]"],
+  [class~="text-[#2C1F19]"],
+  [class~="text-[#2a2148]"],
+  [class~="text-[#2b2037]"],
+  [class~="text-[#2b2350]"],
+  [class~="text-[#2b303b]"],
+  [class~="text-[#2b3150]"],
+  [class~="text-[#2d1b36]"],
+  [class~="text-[#2d211b]"],
+  [class~="text-[#2d244c]"],
+  [class~="text-[#2d2723]"],
+  [class~="text-[#2e4034]"],
+  [class~="text-[#2f1d47]"],
+  [class~="text-[#2f2440]"],
+  [class~="text-[#2f2550]"],
+  [class~="text-[#2f261e]"],
+  [class~="text-[#2f2850]"],
+  [class~="text-[#30253d]"],
+  [class~="text-[#303735]"],
+  [class~="text-[#31264f]"],
+  [class~="text-[#31415f]"],
+  [class~="text-[#332c27]"],
+  [class~="text-[#342d38]"],
+  [class~="text-[#342d4f]"],
+  [class~="text-[#35251d]"],
+  [class~="text-[#352742]"],
+  [class~="text-[#352c3b]"],
+  [class~="text-[#382a32]"],
+  [class~="text-[#38334b]"],
+  [class~="text-[#392d61]"],
+  [class~="text-[#3a31a8]"],
+  [class~="text-[#3e2b20]"],
+  [class~="text-[#3f3269]"],
+  [class~="text-[#40324f]"],
+  [class~="text-[#403744]"],
+  [class~="text-[#4238b4]"],
+  [class~="text-[#43366f]"],
+  [class~="text-[#433b66]"],
+  [class~="text-[#454e3d]"],
+  [class~="text-[#482f23]"],
+  [class~="text-[#483a74]"],
+  [class~="text-[#493a76]"],
+  [class~="text-[#4a4170]"],
+  [class~="text-[#4b3c79]"],
+  [class~="text-[#4b3f72]"],
+  [class~="text-[#4c1d95]"],
+  [class~="text-[#4f3f7a]"],
+  [class~="text-[#50475d]"],
+  [class~="text-[#51465b]"],
+  [class~="text-[#54336f]"],
+  [class~="text-[#55415e]"],
+  [class~="text-[#591c1c]"],
+  [class~="text-[#5D4736]"],
+  [class~="text-[#5a3a11]"],
+  [class~="text-[#5b359d]"]
+):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { color: var(--foreground); }
+html.dark :is(
+  [class~="bg-[#b2a5d6]"],
+  [class~="bg-[#c4b5fd]"],
+  [class~="bg-[#d9e0ec]"],
+  [class~="bg-[#dcd4ed]"],
+  [class~="bg-[#dce8ff]"],
+  [class~="bg-[#ddd5f6]"],
+  [class~="bg-[#ddd6fe]"],
+  [class~="bg-[#ded2ff]"],
+  [class~="bg-[#dfc39a]"],
+  [class~="bg-[#e4dfff]"],
+  [class~="bg-[#eadcff]"],
+  [class~="bg-[#eadfff]"],
+  [class~="bg-[#f0d58f]"],
+  [class~="bg-[#f3d58b]"],
+  [class~="bg-[#f5c65a]"],
+  [class~="bg-[#f6d477]"],
+  [class~="hover:bg-[#e7ddff]"]:hover,
+  [class~="hover:bg-[#eae2ff]"]:hover
+):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { background-color: var(--surface-alt); }
+html.dark :is(
+  [class~="hover:text-[#4d3bca]"]:hover,
+  [class~="hover:text-[#5a42b7]"]:hover,
+  [class~="hover:text-[#6d35f5]"]:hover,
+  [class~="hover:text-[#786bd6]"]:hover,
+  [class~="text-[#4f39dd]"],
+  [class~="text-[#4f457a]"],
+  [class~="text-[#50476f]"],
+  [class~="text-[#524a6d]"],
+  [class~="text-[#5441b1]"],
+  [class~="text-[#564d7a]"],
+  [class~="text-[#574967]"],
+  [class~="text-[#574d79]"],
+  [class~="text-[#59466f]"],
+  [class~="text-[#5a33d6]"],
+  [class~="text-[#5a5377]"],
+  [class~="text-[#5b3fd1]"],
+  [class~="text-[#5b4a72]"],
+  [class~="text-[#5b4d86]"],
+  [class~="text-[#5d4f6b]"],
+  [class~="text-[#5d5677]"],
+  [class~="text-[#5e46c1]"],
+  [class~="text-[#5f49a8]"],
+  [class~="text-[#5f49bb]"],
+  [class~="text-[#5f4cc4]"],
+  [class~="text-[#5f5289]"],
+  [class~="text-[#5f55ff]"],
+  [class~="text-[#6047b8]"],
+  [class~="text-[#6148c3]"],
+  [class~="text-[#61587c]"],
+  [class~="text-[#62586a]"],
+  [class~="text-[#62586d]"],
+  [class~="text-[#635284]"],
+  [class~="text-[#64457f]"],
+  [class~="text-[#644bc7]"],
+  [class~="text-[#6558a5]"],
+  [class~="text-[#655b70]"],
+  [class~="text-[#665a72]"],
+  [class~="text-[#684675]"],
+  [class~="text-[#6847d8]"],
+  [class~="text-[#6940b0]"],
+  [class~="text-[#6a5b78]"],
+  [class~="text-[#6a6074]"],
+  [class~="text-[#6b3cff]"],
+  [class~="text-[#6b5b95]"],
+  [class~="text-[#6b5ee8]"],
+  [class~="text-[#6b617d]"],
+  [class~="text-[#6c5a96]"],
+  [class~="text-[#6c5f76]"],
+  [class~="text-[#6c60db]"],
+  [class~="text-[#6d28d9]"],
+  [class~="text-[#6d35f5]"],
+  [class~="text-[#6d52cc]"],
+  [class~="text-[#6d54ca]"],
+  [class~="text-[#6d5eea]"],
+  [class~="text-[#6e55c8]"],
+  [class~="text-[#6e629f]"],
+  [class~="text-[#6f55c9]"],
+  [class~="text-[#6f57c8]"],
+  [class~="text-[#6f5b86]"],
+  [class~="text-[#6f5ba3]"],
+  [class~="text-[#6f5cc4]"],
+  [class~="text-[#6f6286]"],
+  [class~="text-[#6f6479]"],
+  [class~="text-[#705b7c]"],
+  [class~="text-[#7151d8]"],
+  [class~="text-[#7254ae]"],
+  [class~="text-[#744df5]"],
+  [class~="text-[#746783]"],
+  [class~="text-[#74697c]"],
+  [class~="text-[#755565]"],
+  [class~="text-[#75677e]"],
+  [class~="text-[#7650a2]"],
+  [class~="text-[#7663a5]"],
+  [class~="text-[#766b9d]"],
+  [class~="text-[#785779]"],
+  [class~="text-[#786b80]"],
+  [class~="text-[#786bd6]"],
+  [class~="text-[#796189]"],
+  [class~="text-[#7964ad]"],
+  [class~="text-[#7a6c99]"],
+  [class~="text-[#7b5de4]"],
+  [class~="text-[#7b5fb8]"],
+  [class~="text-[#7b63cf]"],
+  [class~="text-[#7b65c8]"],
+  [class~="text-[#7c3aed]"],
+  [class~="text-[#7c4dff]"],
+  [class~="text-[#7c5cff]"],
+  [class~="text-[#7c67be]"],
+  [class~="text-[#7c6f85]"],
+  [class~="text-[#7f69c8]"],
+  [class~="text-[#8257e6]"],
+  [class~="text-[#82689e]"],
+  [class~="text-[#854067]"],
+  [class~="text-[#856486]"],
+  [class~="text-[#856ed1]"],
+  [class~="text-[#866fd1]"],
+  [class~="text-[#886488]"],
+  [class~="text-[#8a6ccf]"],
+  [class~="text-[#8a6d9b]"],
+  [class~="text-[#8a74c8]"],
+  [class~="text-[#8b748b]"],
+  [class~="text-[#8b74de]"],
+  [class~="text-[#8b76ca]"],
+  [class~="text-[#8b7aaa]"],
+  [class~="text-[#8b7fb6]"],
+  [class~="text-[#8c769b]"],
+  [class~="text-[#8c7ea0]"],
+  [class~="text-[#8c80b6]"],
+  [class~="text-[#8d74e8]"],
+  [class~="text-[#8e7c9e]"],
+  [class~="text-[#8f74eb]"],
+  [class~="text-[#9186bb]"],
+  [class~="text-[#9b4d76]"],
+  [class~="text-[#9b5268]"],
+  [class~="text-[#9b85d6]"],
+  [class~="text-[#9c86d6]"],
+  [class~="text-[#9f2d5d]"],
+  [class~="text-[#9f3952]"],
+  [class~="text-[#a04f62]"],
+  [class~="text-[#a072ff]"],
+  [class~="text-[#a14a67]"],
+  [class~="text-[#b44d73]"],
+  [class~="text-[#b84367]"],
+  [class~="text-[#b94763]"],
+  [class~="text-[#bca8ff]"],
+  [class~="text-[#c4b5fd]"],
+  [class~="text-[#d94764]"],
+  [class~="text-[#e86b9a]"]
+):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { color: var(--primary); }

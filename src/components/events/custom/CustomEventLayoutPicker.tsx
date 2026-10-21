@@ -41,6 +41,7 @@ export default function CustomEventLayoutPicker({
             >
               <span
                 className={styles.thumbnail}
+                data-appearance-scope="authored"
                 data-layout={id}
                 data-mode={mode}
                 style={palette}

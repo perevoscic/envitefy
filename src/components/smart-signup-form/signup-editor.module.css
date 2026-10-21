@@ -1,4 +1,8 @@
 .editor { --editor-ink: var(--signup-text, #352f2a); --editor-muted: var(--signup-muted, #736b62); --editor-line: var(--signup-border, #dfd8ce); --editor-paper: var(--signup-surface, #fffdf9); --editor-accent: var(--signup-accent, #352f2a); --editor-soft: var(--signup-soft, #f1ede6); color: var(--editor-ink); background: var(--signup-page, transparent); font-family: var(--signup-body-font, system-ui, sans-serif); max-width: 1120px; margin-inline: auto; }
+:global(html.dark) .editor { --editor-ink: var(--foreground); --editor-muted: var(--muted-foreground); --editor-line: var(--border); --editor-paper: var(--surface); --editor-accent: var(--primary); --editor-soft: var(--surface-alt); background: var(--background); }
+:global(html.dark) .editor :is(.primary, .segmented button[aria-pressed=true]) { color: var(--primary-foreground); }
+:global(html.dark) .editor .primary:disabled { background: var(--surface-raised); border-color: var(--border); color: var(--muted-foreground); }
+:global(html.dark) .editor .error { background: color-mix(in srgb, var(--error) 12%, var(--surface)); border-color: var(--error); color: var(--error); }
 .editor button, .editor input, .editor select, .editor textarea { font: inherit; }
 .editor button { cursor: pointer; }
 .editor button:disabled { cursor: not-allowed; opacity: .5; }

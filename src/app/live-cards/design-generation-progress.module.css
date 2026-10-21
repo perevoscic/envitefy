@@ -14,6 +14,14 @@
   background: radial-gradient(ellipse at 50% 34%, #ece4f5, transparent 68%), #faf7fc;
   text-align: center;
 }
+:global(html.dark) .panel {
+  background: radial-gradient(ellipse at 50% 34%, var(--surface-raised), transparent 68%), var(--surface);
+  border-color: var(--border);
+}
+:global(html.dark) .copy h3 { color: var(--foreground); }
+:global(html.dark) :is(.copy p, .stage) { color: var(--muted-foreground); }
+:global(html.dark) .track { background: var(--surface-raised); }
+:global(html.dark) .sweep { background: linear-gradient(90deg, var(--surface-raised), var(--primary), var(--surface-raised)); }
 .cardStack {
   position: relative;
   flex-shrink: 0;

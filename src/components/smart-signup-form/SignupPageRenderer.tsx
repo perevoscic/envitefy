@@ -44,6 +44,7 @@ export default function SignupPageRenderer({
   return (
     <div
       className={`${styles.page} ${className}`}
+      data-appearance-scope="authored"
       style={themeStyle}
       data-signup-theme={form.appearance?.themeId || "legacy"}
       data-signup-design={design?.id}

@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import { useCallback, useRef } from "react";
 import { useModalDialog } from "@/hooks/useModalDialog";
+import appearanceStyles from "./navigation-appearance.module.css";
 
 type CreateAction = {
   label: string;
@@ -95,7 +96,7 @@ export default function CreateActionSheet({
         aria-modal="true"
         aria-label="Create options"
         tabIndex={-1}
-        className="absolute inset-x-3 bottom-[calc(6.1rem+env(safe-area-inset-bottom))] mx-auto max-w-[27rem] overflow-hidden rounded-[1.5rem] border border-white/90 bg-[radial-gradient(circle_at_86%_6%,rgba(156,113,255,0.2),transparent_29%),radial-gradient(circle_at_4%_96%,rgba(77,140,255,0.12),transparent_34%),linear-gradient(145deg,rgba(255,255,255,0.98),rgba(247,243,255,0.98))] p-3 text-[#2b2037] shadow-[0_26px_80px_rgba(41,22,63,0.26),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-xl"
+        className={`${appearanceStyles.createOptions} absolute inset-x-3 bottom-[calc(6.1rem+env(safe-area-inset-bottom))] mx-auto max-w-[27rem] overflow-hidden rounded-[1.5rem] border border-white/90 bg-[radial-gradient(circle_at_86%_6%,rgba(156,113,255,0.2),transparent_29%),radial-gradient(circle_at_4%_96%,rgba(77,140,255,0.12),transparent_34%),linear-gradient(145deg,rgba(255,255,255,0.98),rgba(247,243,255,0.98))] p-3 text-[#2b2037] shadow-[0_26px_80px_rgba(41,22,63,0.26),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-xl`}
       >
         <span
           aria-hidden="true"
@@ -122,12 +123,12 @@ export default function CreateActionSheet({
             const Icon = item.icon;
             const row = (
               <>
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f4efff] text-[#6847d8]">
+                <span data-create-option-icon className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f4efff] text-[#6847d8]">
                   <Icon className="h-5 w-5" />
                 </span>
                 <span className="min-w-0 flex-1 text-left">
-                  <span className="block text-sm font-semibold text-[#2b2037]">{item.label}</span>
-                  <span className="mt-0.5 block text-xs leading-5 text-[#74697c]">
+                  <span data-create-option-title className="block text-sm font-semibold text-[#2b2037]">{item.label}</span>
+                  <span data-create-option-description className="mt-0.5 block text-xs leading-5 text-[#74697c]">
                     {item.description}
                   </span>
                 </span>

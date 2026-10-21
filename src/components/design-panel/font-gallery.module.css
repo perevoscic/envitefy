@@ -4,6 +4,12 @@
   gap: 8px;
   color: #273044;
 }
+:global(html.dark) .gallery { color: var(--app-foreground); }
+:global(html.dark) :is(.collections button, .more, .option, .search) { background: var(--app-field-background); color: var(--app-foreground); border-color: var(--app-input); }
+:global(html.dark) :is(.collections button, .option)[aria-pressed="true"],
+:global(html.dark) .option:hover { background: var(--app-surface-alt); border-color: var(--app-primary); box-shadow: inset 0 0 0 1px var(--app-primary); }
+:global(html.dark) :is(.help, .name, .families) { color: var(--app-muted-foreground); }
+:global(html.dark) :is(.option, .search, .collections button, .more):focus-visible { outline-color: var(--app-focus-ring); }
 .collections {
   display: flex;
   flex-wrap: wrap;

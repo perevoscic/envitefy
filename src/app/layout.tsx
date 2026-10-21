@@ -9,6 +9,7 @@ import { ENVITEFY_SOCIAL_LINKS } from "@/lib/envitefy-social-links";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import { resolveThemeCssVariables, ThemeKey, ThemeVariant } from "@/themes";
 import { themeColorPalette } from "@/lib/theme-color";
+import { buildAppearanceBootstrap } from "@/lib/appearance";
 import { Suspense } from "react";
 import type { CSSProperties } from "react";
 
@@ -111,10 +112,10 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  colorScheme: "only light",
+  colorScheme: "light dark",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: themeColorPalette.brand },
-    { media: "(prefers-color-scheme: dark)", color: themeColorPalette.brand },
+    { media: "(prefers-color-scheme: dark)", color: themeColorPalette.dark },
     { color: themeColorPalette.brand },
   ],
 };
@@ -184,6 +185,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body className={`${fontVarsClass} antialiased`}>
+        <script id="appearance-bootstrap" dangerouslySetInnerHTML={{ __html: buildAppearanceBootstrap() }} />
         <Script
           id="ld-website"
           type="application/ld+json"

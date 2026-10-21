@@ -79,6 +79,7 @@ export default function EnvitefyEventBranding({
           scaled={false}
           className="text-3xl"
           tone={inverse ? "light" : "gradient"}
+          appearance="fixed"
         />
       </a>
       <p className="text-[10px] font-medium tracking-[0.16em]">CREATE | SHARE | ENJOY</p>

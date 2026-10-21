@@ -42,6 +42,7 @@ struct ContentView: View {
                     .accessibilityLabel("App actions")
             }.padding(.horizontal, 12).background(.regularMaterial)
         }
+        .preferredColorScheme(browser.appearance)
         .sheet(item: $browser.sharedFile) { file in
             ActivitySheet(items: [file.url]).onDisappear { browser.removeTemporaryFile(file.url) }
         }

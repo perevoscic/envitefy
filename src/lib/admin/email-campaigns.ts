@@ -1,3 +1,9 @@
+import { CURRENT_EMAIL_DESIGN_VERSION, persistedEmailDesignVersion, type EmailDesignVersion } from "../email-design.ts";
+
+/** Reuse creates a new composition; editing an existing id keeps its stored appearance. */
+export function campaignComposerEmailDesignVersion(mode: "edit" | "reuse", storedVersion: EmailDesignVersion): EmailDesignVersion {
+  return mode === "reuse" ? CURRENT_EMAIL_DESIGN_VERSION : storedVersion;
+}
 export interface CampaignAudienceFilter {
   minScans?: number | null;
   maxScans?: number | null;
@@ -38,9 +44,11 @@ export interface StoredCampaignAudienceFilter {
   buttonText?: string;
   buttonUrl?: string;
   rawHtml?: boolean;
+  emailDesignVersion?: EmailDesignVersion;
 }
 
 interface StoredAudienceFilterOptions {
+  emailDesignVersion?: EmailDesignVersion;
   rawHtml?: boolean;
   buttonText?: string | null;
   buttonUrl?: string | null;
@@ -136,6 +144,7 @@ export function buildStoredCampaignAudienceFilter(
   if (options.rawHtml) {
     stored.rawHtml = true;
   }
+  if (options.emailDesignVersion) stored.emailDesignVersion = options.emailDesignVersion;
   const buttonText = cleanOptionalString(options.buttonText, 120);
   if (buttonText) stored.buttonText = buttonText;
   const buttonUrl = cleanOptionalString(options.buttonUrl, 500);
@@ -151,6 +160,7 @@ export function parseStoredCampaignAudienceFilter(
   buttonText: string;
   buttonUrl: string;
   rawHtml: boolean;
+  emailDesignVersion: EmailDesignVersion;
 } {
   const record =
     value && typeof value === "object" && !Array.isArray(value)
@@ -173,6 +183,7 @@ export function parseStoredCampaignAudienceFilter(
     buttonText: asString(record.buttonText) || "",
     buttonUrl: asString(record.buttonUrl) || "",
     rawHtml: record.rawHtml === true,
+    emailDesignVersion: persistedEmailDesignVersion(record.emailDesignVersion),
   };
 }
 

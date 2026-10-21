@@ -117,7 +117,7 @@ export default function AppleCalendarConnection({ accountKey, status, onStatusCh
   }
 
   return (
-    <div className="min-w-0 space-y-3 rounded-2xl border border-[#e5dcff] bg-[linear-gradient(145deg,#fff,#fbf9ff)] p-4 shadow-[0_8px_24px_rgba(80,61,121,0.05)]">
+    <div data-settings-surface className="min-w-0 space-y-3 rounded-2xl border border-[#e5dcff] bg-[linear-gradient(145deg,#fff,#fbf9ff)] p-4 shadow-[0_8px_24px_rgba(80,61,121,0.05)]">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-medium text-[#2f1d47]">Apple</p>
         <span className={`rounded-full px-2 py-0.5 text-xs ${status.connected ? "bg-emerald-100 text-emerald-700" : "bg-[#f1edff] text-[#6f5ba3]"}`}>

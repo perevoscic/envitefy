@@ -90,7 +90,7 @@ test("complete product catalog is embedded in the email-team prompt", () => {
   const featureIds = new Set(listEnvitefyMarketingFeatures().map((feature) => feature.id));
   for (const requiredId of [
     "snap-source-import",
-    "envitefy-concierge",
+    "envitefy-create",
     "templates-manual-studio",
     "saved-event-workspace",
     "hosted-live-pages",

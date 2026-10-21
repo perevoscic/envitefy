@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+import { persistedEmailDesignVersion, type EmailDesignVersion } from "@/lib/email-design";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -157,6 +158,7 @@ export async function POST(req: NextRequest) {
     }: {
       id?: string;
       subject: string;
+      emailDesignVersion?: EmailDesignVersion;
       body: string;
       fromEmail?: string;
       audienceFilter?: CampaignAudienceFilter;
@@ -166,6 +168,7 @@ export async function POST(req: NextRequest) {
 
     const result = await upsertCampaignDraft({
       adminUserId: user.id,
+      emailDesignVersion: body.emailDesignVersion === undefined ? undefined : persistedEmailDesignVersion(body.emailDesignVersion),
       campaignId: id || null,
       subject,
       bodyHtml: emailBody,

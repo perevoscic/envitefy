@@ -25,6 +25,21 @@
   font-size: 14px;
   line-height: 1.5;
 }
+:global(html.dark) .dialog {
+  --create-background: var(--surface);
+  --create-soft: var(--surface-alt);
+  --create-accent: var(--primary);
+  --create-hover: #ddc8ff;
+  --create-border: var(--border);
+  background: var(--surface);
+  color: var(--foreground);
+}
+:global(html.dark) :is(.description, .help, .optional, .imageChoices small, .footerNote, .loading p, .loadingType span) { color: var(--muted-foreground); }
+:global(html.dark) :is(.prompt, .secondary, .imageChoices label, .upload, .redesign) { background: var(--field-background); color: var(--foreground); border-color: var(--input); }
+:global(html.dark) .prompt::placeholder { color: var(--placeholder); }
+:global(html.dark) .primary { color: var(--primary-foreground); }
+:global(html.dark) :is(.close, .secondary):hover { background: var(--surface-raised); }
+:global(html.dark) .error { background: color-mix(in srgb, var(--error) 12%, var(--surface)); color: var(--error); }
 .previewDialog {
   width: min(1180px, calc(100vw - 64px));
   height: calc(100dvh - 64px);

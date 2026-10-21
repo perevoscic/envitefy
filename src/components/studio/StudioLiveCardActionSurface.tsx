@@ -798,6 +798,8 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.96 }}
               data-live-card-panel
+              data-appearance-scope="app"
+              data-app-dialog
               data-live-card-panel-kind={props.activeTab}
               data-live-card-panel-align={panelAlignment}
               role="region"

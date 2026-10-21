@@ -75,3 +75,24 @@
   :global([data-app-main-content="true"] > [data-project-gradient-background="true"]) {
   display: none;
 }
+
+/* Category identity remains a quiet tint around the original artwork. */
+:global(html.dark):has(.football) { --category-gallery-background: #202a24; }
+:global(html.dark):has(.soccer) { --category-gallery-background: #1f2b27; }
+:global(html.dark):has(.gymnastics) { --category-gallery-background: #282133; }
+:global(html.dark):has(.cheerleading) { --category-gallery-background: #30242e; }
+:global(html.dark):has(.dance-ballet) { --category-gallery-background: #2e2430; }
+:global(html.dark):has(.birthdays) { --category-gallery-background: #2c2430; }
+:global(html.dark):has(.weddings) { --category-gallery-background: #29291f; }
+:global(html.dark):has(.anniversaries) { --category-gallery-background: #30242a; }
+:global(html.dark):has(.bridal-showers) { --category-gallery-background: #30252f; }
+:global(html.dark):has(.baby-showers) { --category-gallery-background: #282b23; }
+:global(html.dark):has(.gender-reveal) { --category-gallery-background: #25283a; }
+:global(html.dark):has(.sport-events) { --category-gallery-background: #202b36; }
+:global(html.dark):has(.appointments) { --category-gallery-background: #202c2d; }
+:global(html.dark):has(.open-house) { --category-gallery-background: #2c2823; }
+:global(html.dark):has(.workshops) { --category-gallery-background: #2e2822; }
+:global(html.dark):has(.signup-forms) { --category-gallery-background: #28263b; }
+:global(html.dark):has(.general) { --category-gallery-background: #292337; }
+:global(html.dark):has(.special-events) { --category-gallery-background: #252a38; }
+:global(html.dark) .page { color: var(--foreground); }

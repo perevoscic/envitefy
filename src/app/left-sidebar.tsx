@@ -59,6 +59,11 @@ import {
 import { useEventCache } from "@/app/event-cache-context";
 import sidebarBrandIcon from "../../public/brand/e-only.png";
 import sidebarBrandWordmark from "../../public/brand/envitefy-wordmark.png";
+import whiteSidebarBrandIcon from "../../public/brand/white-v1/e-only.png";
+import whiteSidebarBrandWordmark from "../../public/brand/white-v1/envitefy-wordmark.png";
+import AppearanceSelector from "@/components/AppearanceSelector";
+import EnvitefyBrandImage from "@/components/branding/EnvitefyBrandImage";
+import appearanceStyles from "@/components/navigation/navigation-appearance.module.css";
 import { adminNavItems, type AdminNavItemId } from "@/components/admin/nav";
 import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
 import { LiveCardIcon } from "@/components/icons/LiveCardIcon";
@@ -270,23 +275,23 @@ const footerItemIcons: Record<string, ComponentType<{ size?: number }>> = {
 const SIDEBAR_SUBMENU_CARD_CLASS =
   "nav-chrome-menu-card nav-chrome-motion rounded-[24px] border border-[rgba(235,231,255,0.94)] bg-white/84 shadow-[0_16px_32px_rgba(103,88,160,0.12)]";
 const SIDEBAR_SUBMENU_ENTRY_CLASS =
-  "nav-chrome-motion group flex w-full items-center gap-3.5 rounded-[18px] border border-transparent px-2.5 py-2.5 text-left transition-[transform,background-color,box-shadow,border-color] hover:border-[rgba(226,220,255,0.98)] hover:bg-white/82 hover:shadow-[0_14px_28px_rgba(103,88,160,0.1)]";
+  "nav-chrome-menu-entry nav-chrome-motion group flex w-full items-center gap-3.5 rounded-[18px] border border-transparent px-2.5 py-2.5 text-left transition-[transform,background-color,box-shadow,border-color] hover:border-[rgba(226,220,255,0.98)] hover:bg-white/82 hover:shadow-[0_14px_28px_rgba(103,88,160,0.1)]";
 const SIDEBAR_SUBMENU_ROW_CLASS =
-  "nav-chrome-motion group flex w-full items-center gap-3 rounded-[20px] border border-transparent px-2 py-2.5 text-left transition-[background-color,border-color,box-shadow,color,transform]";
+  "nav-chrome-sidebar-link nav-chrome-motion group flex w-full items-center gap-3 rounded-[20px] border border-transparent px-2 py-2.5 text-left transition-[background-color,border-color,box-shadow,color,transform]";
 const SIDEBAR_SUBMENU_ICON_CLASS =
-  "flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-[background-color,color,border-color,box-shadow]";
+  "nav-chrome-sidebar-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-[background-color,color,border-color,box-shadow]";
 const SIDEBAR_SUBMENU_LABEL_CLASS =
   "nav-chrome-menu-label flex-1 truncate transition-colors";
 const SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS =
-  "bg-white/92 border-[rgba(236,231,255,0.98)] shadow-[0_16px_32px_rgba(103,88,160,0.12)]";
+  "nav-chrome-sidebar-link-active bg-white/92 border-[rgba(236,231,255,0.98)] shadow-[0_16px_32px_rgba(103,88,160,0.12)]";
 const SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS = "text-[color:var(--nav-sidebar-icon-muted,#beb9e8)] hover:bg-white/28";
-const SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS = "text-[#6b5fc2]";
+const SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS = "nav-chrome-sidebar-label text-[#6b5fc2]";
 const SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS =
-  "text-[color:var(--nav-sidebar-label-muted,rgba(107,95,194,0.64))] group-hover:text-[#6b5fc2]";
+  "nav-chrome-sidebar-label text-[color:var(--nav-sidebar-label-muted,rgba(107,95,194,0.64))] group-hover:text-[#6b5fc2]";
 const SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS =
   "border-[rgba(236,231,255,0.98)] bg-white text-[#6e59db] shadow-[0_10px_20px_rgba(103,88,160,0.1)]";
 const SIDEBAR_SUBPAGE_TITLE_CLASS =
-  "font-[var(--font-josefin-sans)] text-[1.25rem] font-bold uppercase tracking-[0.13em] leading-none text-[#6b5fc2]";
+  "nav-chrome-sidebar-heading font-[var(--font-josefin-sans)] text-[1.25rem] font-bold uppercase tracking-[0.13em] leading-none text-[#6b5fc2]";
 const SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS =
   "border-transparent bg-transparent text-[color:var(--nav-sidebar-icon-muted,#beb9e8)] group-hover:text-[color:var(--nav-sidebar-icon-muted,#aba4e3)]";
 
@@ -295,12 +300,12 @@ function PanelBackButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="nav-chrome-motion flex w-full items-center gap-3 rounded-[22px] px-2 py-2 text-left hover:bg-white/24"
+      className="nav-chrome-sidebar-link nav-chrome-motion flex w-full items-center gap-3 rounded-[22px] px-2 py-2 text-left hover:bg-white/24"
     >
-      <span className={`${SIDEBAR_ICON_CHIP_CLASS} text-[#7c76c7]`}>
+      <span className={`${SIDEBAR_ICON_CHIP_CLASS} nav-chrome-sidebar-icon text-[#7c76c7]`}>
         <ChevronLeft size={16} />
       </span>
-      <span className="font-[var(--font-josefin-sans)] min-w-0 block text-[0.82rem] font-bold uppercase tracking-[0.13em] leading-none text-[#6b5fc2]">
+      <span className="nav-chrome-sidebar-label font-[var(--font-josefin-sans)] min-w-0 block text-[0.82rem] font-bold uppercase tracking-[0.13em] leading-none text-[#6b5fc2]">
         Back
       </span>
     </button>
@@ -326,8 +331,8 @@ function animateSidebarPress(event: MouseEvent<HTMLDivElement>) {
     [
       {
         transform: "translateY(2px) scale(0.95)",
-        backgroundColor: "rgba(224, 215, 255, 0.78)",
-        boxShadow: "inset 0 2px 7px rgba(90, 71, 160, 0.24)",
+        backgroundColor: getComputedStyle(control).getPropertyValue("--nav-chrome-press-surface").trim() || "rgba(224, 215, 255, 0.78)",
+        boxShadow: getComputedStyle(control).getPropertyValue("--nav-chrome-press-shadow").trim() || "inset 0 2px 7px rgba(90, 71, 160, 0.24)",
         offset: 0,
       },
       { transform: "translateY(0) scale(1.01)", offset: 0.65 },
@@ -490,7 +495,7 @@ function RootNavigationPanel({
     <nav aria-label="Main navigation" className="space-y-5 pt-2">
       <div className="space-y-1.5">
         <SidebarLink link={{ label: "Home", href: "/", icon: <Home />, onClick: onHome, active: isHomeActive }} />
-        {unifiedCreation ? <p className="px-3 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8f7aa5]">Create</p> : null}
+        {unifiedCreation ? <p className="nav-chrome-sidebar-caption px-3 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8f7aa5]">Create</p> : null}
         <SidebarLink link={{ label: unifiedCreation ? "Snap a Flyer" : "Snap / Upload", icon: <Upload />, onClick: onSnapUpload, active: isSnapUploadActive }} />
         <SidebarLink link={{ label: "Live Card", icon: <LiveCardIcon />, onClick: onLiveCard, active: pathname === "/live-cards" }} />
         {hasCreateEventAccess ? (
@@ -501,7 +506,7 @@ function RootNavigationPanel({
         ) : null}
       </div>
       <div className="space-y-1.5 border-t border-violet-200/40 pt-4">
-        {unifiedCreation ? <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8f7aa5]">Manage</p> : null}
+        {unifiedCreation ? <p className="nav-chrome-sidebar-caption px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8f7aa5]">Manage</p> : null}
         <SidebarLink link={{ label: "My Events", icon: <SidebarMyEventsMenuIcon size={20} active={isMyEventsActive} />, onClick: onMyEvents, active: isMyEventsActive, badge: createdEventsCount }} />
         <SidebarLink link={{ label: "Schedules", icon: <Trophy />, onClick: onSchedules, active: isSchedulesActive, badge: schedulesCount }} />
         {isAdmin || isSignupFormsDefault || signupFormsCount > 0 ? (
@@ -1043,7 +1048,7 @@ function FooterProfileMenu({
           }`}
         >
           <div className="min-w-0 flex-1 inline-flex items-center gap-3.5">
-            <span className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[14px] bg-[linear-gradient(135deg,#7f67ff_0%,#6f7aff_100%)] text-[15px] font-bold text-white shadow-[0_12px_22px_rgba(102,93,219,0.22)]">
+            <span className="nav-chrome-account-avatar relative inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[14px] bg-[linear-gradient(135deg,#7f67ff_0%,#6f7aff_100%)] text-[15px] font-bold text-white shadow-[0_12px_22px_rgba(102,93,219,0.22)]">
               {profileAvatarUrl && profileAvatarUrl !== failedAvatarUrl ? (
                 <Image
                   key={profileAvatarUrl}
@@ -1060,15 +1065,15 @@ function FooterProfileMenu({
               )}
             </span>
             <div className={isCompact ? "hidden" : "min-w-0 flex-1 text-left"}>
-              <div className="truncate text-[13px] font-bold leading-tight text-[#5e54b7]">
+              <div className="nav-chrome-account-name truncate text-[13px] font-bold leading-tight text-[#5e54b7]">
                 {userTitleLabel}
               </div>
               {userEmail ? (
-                <div className="truncate text-[11px] text-[#77718f]">{userEmail}</div>
+                <div className="nav-chrome-account-detail truncate text-[11px] text-[#77718f]">{userEmail}</div>
               ) : null}
             </div>
           </div>
-          <span className={isCompact ? "hidden" : "pr-1 text-[#8a80df]"} aria-hidden="true">
+          <span className={isCompact ? "hidden" : "nav-chrome-sidebar-icon pr-1 text-[#8a80df]"} aria-hidden="true">
             <ChevronRight size={16} />
           </span>
         </button>
@@ -1103,7 +1108,7 @@ function FooterProfileMenu({
                     className={SIDEBAR_SUBMENU_ENTRY_CLASS}
                   >
                     <span
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/70 ${bgClass} ${colorClass} shadow-[0_10px_20px_rgba(103,88,160,0.08)] transition-transform group-hover:scale-105`}
+                      className={`nav-chrome-menu-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/70 ${bgClass} ${colorClass} shadow-[0_10px_20px_rgba(103,88,160,0.08)] transition-transform group-hover:scale-105`}
                     >
                       <Icon size={16} />
                     </span>
@@ -1115,6 +1120,11 @@ function FooterProfileMenu({
               })}
 
               <div className="nav-chrome-divider mx-2 my-1 h-px" />
+
+              <div className="flex items-center justify-between gap-3 px-3 py-2 text-sm text-[var(--nav-chrome-ink)]">
+                <span>Appearance</span>
+                <AppearanceSelector compact />
+              </div>
 
               <div className="px-1.5 pb-3 pt-3">
                 <EnvitefySocialLinks placement="menu" />
@@ -1247,7 +1257,7 @@ export default function LeftSidebar() {
 
       <div
         data-app-navigation="drawer-backdrop"
-        className={`nav-chrome-mobile-drawer-backdrop nav-chrome-sidebar-backdrop fixed inset-0 z-[5999] transition-opacity duration-200 lg:hidden ${
+        className={`${appearanceStyles.backdrop} nav-chrome-mobile-drawer-backdrop nav-chrome-sidebar-backdrop fixed inset-0 z-[5999] transition-opacity duration-200 lg:hidden ${
           viewModel.isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         onClick={() => {
@@ -1311,7 +1321,7 @@ export default function LeftSidebar() {
         aria-hidden={!viewModel.isDesktop && !viewModel.isOpen ? true : undefined}
         inert={!viewModel.isDesktop && !viewModel.isOpen}
         tabIndex={-1}
-        className={`nav-chrome-sidebar-surface fixed left-0 top-0 z-[6000] flex h-full max-w-[100vw] flex-col border-r border-[rgba(112,97,168,0.14)] ${viewModel.overflowClass} transition-[transform,opacity] duration-200 motion-reduce:transition-none ${viewModel.pointerClass} lg:flex`}
+        className={`${appearanceStyles.chrome} nav-chrome-sidebar-surface fixed left-0 top-0 z-[6000] flex h-full max-w-[100vw] flex-col border-r border-[rgba(112,97,168,0.14)] ${viewModel.overflowClass} transition-[transform,opacity] duration-200 motion-reduce:transition-none ${viewModel.pointerClass} lg:flex`}
         style={{
           height: viewModel.isDesktop ? "100%" : "100dvh",
           transform: viewModel.sidebarTransform,
@@ -1335,9 +1345,9 @@ export default function LeftSidebar() {
                   aria-label="Envitefy home"
                 >
                   {viewModel.isCompact ? (
-                    <Image src={sidebarBrandIcon} alt="" className="h-11 w-11 shrink-0 object-contain" priority />
+                    <EnvitefyBrandImage src={sidebarBrandIcon} whiteSrc={whiteSidebarBrandIcon} alt="" className="h-11 w-11 shrink-0 object-contain" priority />
                   ) : (
-                    <Image src={sidebarBrandWordmark} alt="" className="h-auto w-[196px] object-contain" priority />
+                    <EnvitefyBrandImage src={sidebarBrandWordmark} whiteSrc={whiteSidebarBrandWordmark} alt="" className="h-auto w-[196px] object-contain" priority />
                   )}
                 </Link>
                 {viewModel.isDesktop ? (
@@ -1353,12 +1363,12 @@ export default function LeftSidebar() {
                         sidebar.setDesktopPeek(false);
                       }
                     }}
-                    className={`absolute inline-flex h-11 w-11 items-center justify-center rounded-xl transition-colors hover:bg-white hover:text-[#6b5fc2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${sidebar.desktopPinned ? "bg-white/70 text-[#6b5fc2]" : "text-[rgba(107,95,194,0.64)]"} ${viewModel.isCompact ? "bottom-0 left-[17px]" : "right-4 top-7"}`}
+                    className={`nav-chrome-sidebar-control absolute inline-flex h-11 w-11 items-center justify-center rounded-xl transition-colors hover:bg-white hover:text-[#6b5fc2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${sidebar.desktopPinned ? "bg-white/70 text-[#6b5fc2]" : "text-[rgba(107,95,194,0.64)]"} ${viewModel.isCompact ? "bottom-0 left-[17px]" : "right-4 top-7"}`}
                   >
                     {viewModel.isCompact ? <PanelLeftOpen size={18} aria-hidden="true" /> : <Pin size={18} aria-hidden="true" className={sidebar.desktopPinned ? "fill-current" : undefined} />}
                   </button>
                 ) : (
-                  <button type="button" aria-label="Close navigation" onClick={() => sidebar.setIsCollapsed(true)} className="absolute right-3 top-7 flex h-11 w-11 items-center justify-center rounded-xl text-[#77718f] hover:bg-white focus-visible:ring-2 focus-visible:ring-violet-500">
+                  <button type="button" aria-label="Close navigation" onClick={() => sidebar.setIsCollapsed(true)} className="nav-chrome-sidebar-control absolute right-3 top-7 flex h-11 w-11 items-center justify-center rounded-xl text-[#77718f] hover:bg-white focus-visible:ring-2 focus-visible:ring-violet-500">
                     <X size={20} aria-hidden="true" />
                   </button>
                 )}
