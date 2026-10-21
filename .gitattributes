@@ -1,0 +1,2 @@
+# Git for Windows must execute repository hooks with Unix line endings.
+.githooks/* text eol=lf

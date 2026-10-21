@@ -1,6 +1,6 @@
 # Custom product URLs
 
-Every created Event Page, Live Card, Sign-up Form and saved schedule exposes **Custom URL**. Event Pages use the shared workspace control; gymnastics places it inside its grouped Page settings menu. Custom/generated Event Pages use their existing menu entry. Live Cards expose the dialog beside their editor heading, Sign-up Forms in Share your signup, and saved schedules in their editor. Owner page toolbars also expose the dialog.
+Every created Event Page, Live Card, Sign-up Form and saved schedule exposes **Custom URL**. Event Pages use the shared workspace control; gymnastics places it inside its grouped Page settings menu. Custom/generated Event Pages use their existing menu entry. Live Cards expose the dialog in Event details beside Edit card text, Sign-up Forms in Share your signup, and saved schedules in their editor. Owner page toolbars also expose the dialog.
 
 New creations receive a URL on explicit draft save. **Save link** changes only the address; pending content and artwork edits still use the existing save actions, and drafts stay private. Football retains its existing pre-publication URL selection and suggestions.
 

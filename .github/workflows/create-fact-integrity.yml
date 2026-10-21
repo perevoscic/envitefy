@@ -18,6 +18,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Check push completeness safeguards
+        run: npm run test:git-hooks
       - name: Check application TypeScript before running regressions
         run: npm run typecheck
       - name: Install Chromium for isolated campaign checks

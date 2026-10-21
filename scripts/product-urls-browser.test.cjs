@@ -109,17 +109,22 @@ test("custom URLs work across Event Pages, Live Cards and Sign-up Forms without 
     records.set(id, record("live_card", { status: "draft", createdVia: "livecard-builder", liveCardBuilder: { form: forms.card } }));
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${base}/live-cards?mode=livecard&edit=${id}`);
+    await page.getByLabel("Event title", { exact: true }).fill("Pending card title");
+    await page.getByRole("button", { name: "2 Event details", exact: true }).click();
     await page.getByRole("button", { name: "Custom URL", exact: true }).click();
     await input.fill("family-celebration");
     await page.getByText(`${base}/card/family-celebration`, { exact: true }).waitFor();
     await page.getByRole("button", { name: "Save link", exact: true }).click();
     await page.getByRole("status").filter({ hasText: "Link updated" }).waitFor();
     assert.equal(records.get(id).data.status, "draft", "customizing a card URL never publishes it");
+    assert.equal(records.get(id).data.liveCardBuilder.form.title, "A family celebration", "Save link does not save pending card wording");
     const dialog = page.getByRole("dialog", { name: "Custom URL", exact: true });
     const bounds = await dialog.boundingBox();
     assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= 391, "mobile URL dialog fits the viewport");
     await page.screenshot({ path: path.join(output, "livecard-mobile.png") });
     await page.getByRole("button", { name: "Close custom URL" }).click();
+    await page.getByRole("button", { name: "1 Your card", exact: true }).click();
+    assert.equal(await page.getByLabel("Event title", { exact: true }).inputValue(), "Pending card title", "URL editing preserves mounted card wording");
 
     forms.signup.title = "Parent conferences";
     records.set(id, record("signup_form", { category: "Sign-up Forms", status: "draft", signupForm: forms.signup,

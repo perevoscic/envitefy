@@ -20,6 +20,13 @@ Create hosted event pages from uploads, snaps, event packets, flyers, schedules,
 npm install
 ```
 
+This also installs the repository's pre-push check. It stops a push if source,
+documentation, tests or other non-ignored files remain uncommitted, and lists the
+files to resolve. Commit intended changes or keep unfinished work in a separate
+worktree; the check never deletes or stashes files. To install it after using
+`npm install --ignore-scripts`, run `npm run prepare`. Generated Chromium
+`debug.log` files stay local and are ignored.
+
 2. Configure environment
 
 Create `.env` with the following (fill values):
