@@ -4,13 +4,10 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  ChevronDown,
-  ChevronRight,
   FileText,
   ImageIcon,
   Link2,
   LoaderCircle,
-  LockKeyhole,
   PencilLine,
   Sparkles,
   Upload,
@@ -25,6 +22,7 @@ import CreationTemplateGallery from "@/components/event-create/CreationTemplateG
 import { getCreateEventSections } from "@/config/navigation-config";
 import { useMenuOptional } from "@/contexts/MenuContext";
 import { useCreationAccess } from "@/hooks/useCreationAccess";
+import type { InitialCreationAccess } from "@/lib/create/creation-access-client";
 import {
   CREATE_CATEGORIES,
   CREATE_SPORT_KEYS,
@@ -42,8 +40,9 @@ import {
   writeCreationIntake,
 } from "@/lib/create/creation-intake";
 import { creationChoicesFromLinks } from "@/lib/create/creation-navigation";
-import { getCreationPresentation } from "@/lib/create/creation-presentation";
+import { availableEventTypeGroups, eventTypeChoiceSearchText, eventTypeGroup, expandEventTypeChoices } from "@/lib/create/event-type-groups";
 import { HOLIDAY_COLLECTIONS } from "@/lib/holiday-collections";
+import { localGalleryDay } from "@/lib/seasonal-template-order";
 import { getThemedEventDesign } from "@/lib/event-page-themed-designs";
 import {
   informationForCreation,
@@ -60,7 +59,9 @@ import { normalizeCustomEventInformation, type CustomEventInformation, type Cust
 import { savePendingSnapUpload } from "@/lib/pending-snap-upload";
 import { getUploadAcceptAttribute } from "@/lib/upload-config";
 import { validateClientUploadFile } from "@/utils/media-upload-client";
-import CreationInspiration from "./CreationInspiration";
+import CategoryScrollPicker from "./CategoryScrollPicker";
+import EventTypeFilter from "./EventTypeFilter";
+import EventTypeSearch from "./EventTypeSearch";
 import styles from "./create-workspace.module.css";
 
 const EventCustomThemeDialog = dynamic(
@@ -74,14 +75,12 @@ const control =
 const primary =
   "min-h-12 rounded-full border border-[#5b3fd1] bg-[#5b3fd1] px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_22px_-12px_rgb(74_47_191/70%)] transition hover:border-[#4a2fbf] hover:bg-[#4a2fbf] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5b3fd1] disabled:cursor-not-allowed disabled:opacity-50";
 const typeChoiceKey = (choice: CreateGuess) => `${choice.category}:${choice.sport || ""}`;
-const typeFilterLabel = (choice: CreateGuess) =>
-  choice.category === "general" ? "Thematic" : choice.category === "weddings" ? "Weddings" : createGuessLabel(choice);
 
 export function allowedCreationGuess(guess: CreateGuess, allowed: string[]) {
   return allowed.includes(customCategoryForGuess(guess));
 }
 
-export default function UnifiedCreatePageClient() {
+export default function UnifiedCreatePageClient({ initialCreationAccess }: { initialCreationAccess?: InitialCreationAccess }) {
   const router = useRouter(),
     search = useSearchParams();
   const { data: session, status } = useSession();
@@ -90,13 +89,16 @@ export default function UnifiedCreatePageClient() {
   activeOwner.current = ownerId;
   const [workspaceOwner, setWorkspaceOwner] = useState(ownerId);
   const menu = useMenuOptional(),
-    access = useCreationAccess();
-  const [mode, setMode] = useState<Mode>("files");
+    access = useCreationAccess(initialCreationAccess);
+  const [mode, setMode] = useState<Mode>("scratch");
   const modeIntakes = useRef<Partial<Record<Mode, CreationIntake>>>({});
   const changingMode = useRef(false);
   const [switchingMode, setSwitchingMode] = useState(false);
   const [typeQuery, setTypeQuery] = useState("");
+  const categoryIntroPlayed = useRef(false);
   const [typeFilter, setTypeFilter] = useState("all");
+  const [holidayDay, setHolidayDay] = useState<string | null>(null);
+  useEffect(() => setHolidayDay(localGalleryDay()), []);
   const [designThemeFilter, setDesignThemeFilter] = useState("all");
   const [files, setFiles] = useState<File[]>([]);
   const [text, setText] = useState(""),
@@ -111,7 +113,8 @@ export default function UnifiedCreatePageClient() {
     submitting = useRef(false);
   const preparingLiveCard = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null),
-    headingRef = useRef<HTMLHeadingElement>(null);
+    headingRef = useRef<HTMLHeadingElement>(null),
+    pageTitleRef = useRef<HTMLHeadingElement>(null);
   const [phase, setPhase] = useState<Phase>("source");
   const [workingLabel, setWorkingLabel] = useState(""),
     [error, setError] = useState("");
@@ -122,6 +125,52 @@ export default function UnifiedCreatePageClient() {
   const accountReady = status === "authenticated" && !!ownerId && workspaceOwner === ownerId;
   const ready = accountReady && !!access.access;
   const busy = phase === "recognizing" || phase === "opening";
+
+  useEffect(() => {
+    if (phase !== "source") return;
+    const mobile = window.matchMedia("(max-width: 1023px)");
+    const previousRestoration = window.history.scrollRestoration;
+    let ownsRestoration = false;
+    const revealMobileTitle = () => {
+      if (!mobile.matches) return;
+      const title = pageTitleRef.current;
+      const topbar = document.querySelector<HTMLElement>('[data-app-mobile-topbar="app"]');
+      if (!title) return;
+      const shell = title.closest<HTMLElement>('[data-app-main-content="true"]');
+      if (!topbar && !shell) return;
+      const topbarBottom = topbar?.getClientRects().length
+        ? topbar.getBoundingClientRect().bottom
+        : Number.parseFloat(shell ? getComputedStyle(shell).paddingTop : "0");
+      // A restored page position or a method change can leave the title behind
+      // the fixed navbar even though the shared shell reserves enough space.
+      if (title.getBoundingClientRect().top < topbarBottom + 12) {
+        window.scrollTo({ top: 0, behavior: "instant" });
+      }
+    };
+    const syncMobileRestoration = () => {
+      if (mobile.matches) {
+        // Native reload restoration can run after pageshow and hide the title
+        // again. This source view owns its initial mobile position instead.
+        window.history.scrollRestoration = "manual";
+        ownsRestoration = true;
+        revealMobileTitle();
+      } else if (ownsRestoration) {
+        window.history.scrollRestoration = previousRestoration;
+        ownsRestoration = false;
+      }
+    };
+    syncMobileRestoration();
+    const frame = requestAnimationFrame(revealMobileTitle);
+    window.addEventListener("pageshow", revealMobileTitle);
+    mobile.addEventListener("change", syncMobileRestoration);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("pageshow", revealMobileTitle);
+      mobile.removeEventListener("change", syncMobileRestoration);
+      if (ownsRestoration) window.history.scrollRestoration = previousRestoration;
+    };
+  }, [mode, phase]);
+
   const allowedCategories = access.access?.allowedCategories || [];
   const canCreatePage = access.access?.allowedProducts.includes("event_page") === true;
   // Local source entry can start while grants load. Processing still waits for
@@ -214,7 +263,7 @@ export default function UnifiedCreatePageClient() {
   const manualChoices = [...preferredChoices, ...choices].filter(
     (choice, index, all) => all.findIndex((item) => typeChoiceKey(item) === typeChoiceKey(choice)) === index,
   );
-  const activeTypeFilter = manualChoices.some((choice) => typeChoiceKey(choice) === typeFilter)
+  const activeTypeFilter = availableEventTypeGroups(manualChoices).some((group) => group.id === typeFilter)
     ? typeFilter
     : "all";
   useEffect(() => {
@@ -245,14 +294,14 @@ export default function UnifiedCreatePageClient() {
     setWaitingToRead(false);
     current.current = null;
     setIntake(null);
-    setMode("files");
+    setMode("scratch");
     modeIntakes.current = {};
     setFiles([]);
     setText("");
     setUrl("");
     setUsePastedText(false);
-    setTypeFilter("all");
     setTypeQuery("");
+    setTypeFilter("all");
     setPhase("source");
     setError("");
     setCustomDialog(false);
@@ -862,8 +911,8 @@ export default function UnifiedCreatePageClient() {
           `/create${params.size ? `?${params}` : ""}`,
         );
       }
-      setTypeFilter("all");
       setTypeQuery("");
+      setTypeFilter("all");
       return true;
     } catch (failure) {
       setError(
@@ -878,43 +927,13 @@ export default function UnifiedCreatePageClient() {
     }
   };
 
-  const selectShortcut = async (selected: CreateGuess) => {
-    if (!allowedCreationGuess(selected, allowedCategories) || !(await switchMode("scratch")))
-      return;
-    invalidate();
-    const version = epoch.current;
-    setFiles([]);
-    setText("");
-    setUrl("");
-    if (selected.category === "sports" && !selected.sport) {
-      current.current = null;
-      setIntake(null);
-      return;
-    }
-    const next = createCreationIntake(ownerId, { kind: "scratch", files: [], text: "" });
-    try {
-      const saved = await persist({
-        ...next,
-        guess: selected,
-        information: withCalendarDate({ ...next, guess: selected }),
-        phase: "templates",
-      });
-      if (version !== epoch.current || saved.ownerId !== activeOwner.current) return;
-      setPhase("templates");
-      setLocation(saved.id, "templates", true);
-    } catch (failure) {
-      if (version === epoch.current) setError(String(failure));
-    }
-  };
-
-  const visibleTypes = manualChoices.filter((choice) =>
-    (activeTypeFilter === "all" || typeChoiceKey(choice) === activeTypeFilter) &&
-    `${createGuessLabel(choice)} ${typeFilterLabel(choice)}`.toLowerCase().includes(typeQuery.trim().toLowerCase()),
+  const visibleTypes = expandEventTypeChoices(manualChoices, holidayDay).filter((choice) =>
+    (activeTypeFilter === "all" || eventTypeGroup(choice) === activeTypeFilter) &&
+    eventTypeChoiceSearchText(choice).toLowerCase().includes(typeQuery.trim().toLowerCase()),
   );
   const manualCreation = mode === "scratch";
   const progressSteps = manualCreation ? ["Start", "Design", "Details"] : ["Start", "Details"];
   const activeStep = phase === "opening" ? progressSteps.length - 1 : phase === "templates" ? 1 : 0;
-  const preview = <CreationInspiration guess={preferredChoices[0]} />;
 
   return (
     <main className={styles.page} data-unified-create>
@@ -924,7 +943,7 @@ export default function UnifiedCreatePageClient() {
             {phase === "templates" && manualCreation ? (
               <p className={styles.eyebrow}>Design</p>
             ) : null}
-            <h1 className={styles.title}>
+            <h1 ref={pageTitleRef} className={styles.title}>
               {phase === "templates"
                 ? manualCreation
                   ? "Choose your design"
@@ -1000,9 +1019,9 @@ export default function UnifiedCreatePageClient() {
                 >
                   {(
                     [
+                      { id: "scratch", title: "Start from scratch", icon: PencilLine },
                       { id: "files", title: "Upload", icon: Upload },
                       { id: "url", title: "Paste URL", icon: Link2 },
-                      { id: "scratch", title: "Start from scratch", icon: PencilLine },
                     ] as const
                   ).map((option) => (
                     <button
@@ -1034,7 +1053,9 @@ export default function UnifiedCreatePageClient() {
                 </div>
                 {sourceAvailable ? (
                   <section
+                    key={mode}
                     className={styles.sourcePane}
+                    data-source-panel={mode}
                     aria-label={
                       mode === "files"
                         ? "Upload event information"
@@ -1050,100 +1071,42 @@ export default function UnifiedCreatePageClient() {
                     >
                       <legend className="sr-only">Event information</legend>
                       {mode === "scratch" ? (
-                        <>
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                              <h2 className={styles.taskHeading}>What are you creating?</h2>
-                              <p className={styles.taskIntro}>
-                                Pick an event type to explore its designs.
-                              </p>
-                            </div>
-                            <label className={styles.typeFilter}>
-                              <span className="sr-only">Filter event types</span>
-                              <select
-                                value={activeTypeFilter}
-                                onChange={(event) => {
-                                  setTypeFilter(event.target.value);
-                                  setTypeQuery("");
-                                }}
-                                className={styles.typeFilterSelect}
-                              >
-                                <option value="all">All</option>
-                                {manualChoices.map((choice) => (
-                                  <option key={typeChoiceKey(choice)} value={typeChoiceKey(choice)}>
-                                    {typeFilterLabel(choice)}
-                                  </option>
-                                ))}
-                              </select>
-                              <ChevronDown aria-hidden="true" />
-                            </label>
-                          </div>
-                          <div className={styles.pickerTools}>
-                            <label className="sr-only" htmlFor="creation-type-search">
-                              Search event types
-                            </label>
-                            <input
-                              id="creation-type-search"
-                              type="search"
-                              value={typeQuery}
-                              onChange={(event) => setTypeQuery(event.target.value)}
-                              placeholder="Search event types"
-                              className={styles.typeSearch}
+                        <div className={styles.categoryPanel}>
+                          <EventTypeFilter
+                            compact
+                            choices={manualChoices}
+                            value={activeTypeFilter}
+                            onChange={(value) => {
+                              categoryIntroPlayed.current = true;
+                              setHolidayDay(localGalleryDay());
+                              setTypeFilter(value);
+                              setTypeQuery("");
+                            }}
+                            search={<EventTypeSearch value={typeQuery} onChange={(value) => {
+                              categoryIntroPlayed.current = true;
+                              setTypeQuery(value);
+                            }} />}
+                          />
+                          {visibleTypes.length ? (
+                            <CategoryScrollPicker
+                              choices={visibleTypes}
+                              query={typeQuery}
+                              introPlayed={categoryIntroPlayed}
+                              onSelect={(choice) => void chooseCategory(choice)}
                             />
-                          </div>
-                          <div className={styles.typeGrid}>
-                            {visibleTypes.map((choice) => {
-                              const designs = getCreationTemplates(choice);
-                              return (
-                                <button
-                                  key={`${choice.category}:${choice.sport}`}
-                                  type="button"
-                                  aria-label={createGuessLabel(choice)}
-                                  className={styles.typeButton}
-                                  onClick={() => void chooseCategory(choice)}
-                                >
-                                  {designs[0]?.imageUrl ? (
-                                    <img
-                                      src={designs[0].imageUrl}
-                                      alt=""
-                                      className={styles.typeThumb}
-                                      loading="lazy"
-                                    />
-                                  ) : (
-                                    <span
-                                      className={`${styles.typeThumb} flex items-center justify-center`}
-                                    >
-                                      <FileText
-                                        className="m-auto size-5 text-[#8c769b]"
-                                        aria-hidden="true"
-                                      />
-                                    </span>
-                                  )}
-                                  <span className={styles.typeCopy}>
-                                    <span className={styles.typeLabel}>
-                                      {createGuessLabel(choice)}
-                                    </span>
-                                    <span className={styles.typeMeta}>
-                                      {designs.length
-                                        ? `${designs.length} designs`
-                                        : "Choose a design"}
-                                    </span>
-                                  </span>
-                                  <ChevronRight className={styles.typeArrow} aria-hidden="true" />
-                                </button>
-                              );
-                            })}
-                          </div>
+                          ) : null}
                           {!visibleTypes.length ? (
-                            <p className={styles.taskIntro}>
+                            <p className={styles.taskIntro} role="status">
                               {!ready
-                                ? "Checking available event types…"
+                                ? access.error
+                                  ? "Event types could not be loaded. Try again above."
+                                  : "Checking available event types…"
                                 : typeQuery.trim()
                                   ? "No matching event types. Try another search."
                                   : "No event types are available for this account."}
                             </p>
                           ) : null}
-                        </>
+                        </div>
                       ) : (
                         <form onSubmit={(event) => void readSource(event)}>
                           {mode === "files" ? (
@@ -1329,12 +1292,6 @@ export default function UnifiedCreatePageClient() {
                           ) : null}
                         </form>
                       )}
-                      {mode !== "scratch" ? (
-                        <p className={styles.privacyNote}>
-                          <LockKeyhole aria-hidden="true" />
-                          Your page stays private until you publish.
-                        </p>
-                      ) : null}
                     </fieldset>
                   </section>
                 ) : (
@@ -1349,7 +1306,6 @@ export default function UnifiedCreatePageClient() {
                   </div>
                 )}
               </div>
-              {sourceAvailable && mode !== "scratch" ? preview : null}
             </div>
           </div>
         ) : null}
@@ -1384,7 +1340,6 @@ export default function UnifiedCreatePageClient() {
                   Cancel {phase === "opening" ? "import" : "reading"}
                 </button>
               </div>
-              {preview}
             </div>
           </section>
         ) : null}
@@ -1640,61 +1595,6 @@ export default function UnifiedCreatePageClient() {
                 </div>
               </>
             )}
-          </section>
-        ) : null}
-        {!busy && phase === "source" && mode !== "scratch" && ready && canCreatePage ? (
-          <section className={styles.shortcuts} aria-label="Your event templates">
-            {preferred.length ? (
-              <div className={styles.shortcutGrid}>
-                {preferred.slice(0, 4).map((item) => {
-                  const presentation = getCreationPresentation(item.guess);
-                  return (
-                    <button
-                      key={item.href}
-                      type="button"
-                      aria-label={item.label}
-                      className={styles.shortcutTile}
-                      disabled={switchingMode || restoring}
-                      onClick={() => void selectShortcut(item.guess)}
-                    >
-                      {presentation.artwork ? (
-                        <img
-                          src={presentation.artwork}
-                          alt=""
-                          className={styles.typeThumb}
-                          loading="lazy"
-                        />
-                      ) : (
-                        <span className={styles.typeThumb}>
-                          <FileText aria-hidden="true" />
-                        </span>
-                      )}
-                      <span className={styles.typeCopy}>
-                        <span className={styles.typeLabel}>{item.label}</span>
-                      </span>
-                      <ChevronRight className={styles.typeArrow} aria-hidden="true" />
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className={styles.emptySuggestions} role="status">
-                {menu?.featureVisibility.hasLoadedPreferences
-                  ? "Browse available event types to choose a starting point."
-                  : "Loading your event templates…"}
-              </p>
-            )}
-            <div className={styles.shortcutsFooter}>
-              <button
-                type="button"
-                className={styles.shortcutButton}
-                disabled={switchingMode || restoring}
-                onClick={() => void switchMode("scratch")}
-              >
-                Browse available event types
-                <ArrowRight className="size-4" aria-hidden="true" />
-              </button>
-            </div>
           </section>
         ) : null}
       </div>

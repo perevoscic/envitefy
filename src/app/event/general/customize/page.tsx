@@ -14,7 +14,7 @@ import HeroImageEditor from "@/components/events/HeroImageEditor";
 import CreationTemplateGallery from "@/components/event-create/CreationTemplateGallery";
 import EventCanvas from "@/components/EventCanvas";
 import { GENERAL_EVENT_DESIGNS } from "@/lib/general-event-designs";
-import { getGeneralCreationDesigns, resolveGeneralCreationDesign } from "@/lib/create/event-page-collections";
+import { getGeneralCreationDesigns, resolveGeneralCreationDesign, generalCreationCollectionLabel } from "@/lib/create/event-page-collections";
 import { getThemedEventBodyPresentation, getThemedEventDesign, getThemedEventTheme, isThemedEventDesignDark } from "@/lib/event-page-themed-designs";
 import type { CreationTemplate } from "@/lib/create/template-selection";
 import "@/components/birthdays/redesign/birthday-fonts.css";
@@ -230,6 +230,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         ]) || [];
       return Object.fromEntries(entries);
     });
+    const collectionLabel = generalCreationCollectionLabel(data.creationCollection || initialCollection);
+    const displayName = collectionLabel || config.displayName;
+    const templatesHref = collectionLabel ? `/event/general?${new URLSearchParams({ collection: data.creationCollection || initialCollection, ...(data.holidayOccasion ? { occasion: data.holidayOccasion } : {}) }).toString()}` : "/event/general";
     const [themeId, setThemeId] = useState(
       initialDesign?.id ?? config.themes[0]?.id ?? "default-theme"
     );
@@ -445,7 +448,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         endISO = end?.toISOString() || null;
       }
       const payload: any = {
-        title: data.title || config.displayName,
+        title: data.title || displayName,
         data: {
           ...savedEventData,
           category: config.category,
@@ -536,7 +539,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       advancedState,
       locationParts,
     config.category,
-    config.displayName,
+    displayName,
     config.slug,
     config.defaultHero,
       router,
@@ -556,7 +559,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     };
 
     const buildEventDetails = () => {
-      const title = data.title || config.displayName;
+      const title = data.title || displayName;
       let start: Date | null = null;
       if (data.date) {
         const tentative = new Date(`${data.date}T${data.time || "14:00"}`);
@@ -602,7 +605,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             Add your details
           </h2>
           <p className="text-slate-500 text-sm">
-            Customize every aspect of your {config.displayName.toLowerCase()}{" "}
+            Customize every aspect of your {displayName.toLowerCase()}{" "}
             site.
           </p>
         </div>
@@ -660,7 +663,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               label="Headline"
               value={data.title}
               onChange={(v) => updateData("title", v)}
-              placeholder={`${config.displayName} title`}
+              placeholder={`${displayName} title`}
             />
 
             <div className="grid grid-cols-2 gap-4">
@@ -699,7 +702,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         data.state,
         updateData,
         handleBackToMain,
-        config.displayName,
+        displayName,
       ]
     );
 
@@ -715,7 +718,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             <p className="mt-1 text-xs text-slate-500">Your event details stay in place.</p>
           </div>
           {/* biome-ignore lint/a11y/noNoninteractiveTabindex: This scrollable design region needs keyboard focus for scrolling. */}
-          <div ref={designGalleryScrollRef} className="max-h-[65vh] overflow-y-auto overscroll-contain pr-1" role="region" aria-label="General event designs" tabIndex={0}>
+          <div ref={designGalleryScrollRef} className="max-h-[65vh] overflow-y-auto overscroll-contain pr-1" role="region" aria-label={collectionLabel ? `${collectionLabel} designs` : "General event designs"} tabIndex={0}>
             <CreationTemplateGallery templates={designTemplates} onSelect={selectDesign} selectedTemplateId={themeId} scrollRoot={designGalleryScrollRef} compact />
           </div>
           <button
@@ -810,7 +813,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
           <InputGroup
             label="Category"
-            value={config.categoryLabel || config.displayName}
+            value={collectionLabel || config.categoryLabel || config.displayName}
             onChange={() => {}}
             readOnly
           />
@@ -968,7 +971,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     return (
-      <EventEditorWorkspace sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/general"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
+      <EventEditorWorkspace sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={templatesHref} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
  preview={<EventCanvas
           className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
           style={{
@@ -1017,7 +1020,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                         ...(titleColor || {}),
                       }}
                     >
-                      {data.title || config.displayName}
+                      {data.title || displayName}
                     </h1>
                     {infoLine}
                   </div>

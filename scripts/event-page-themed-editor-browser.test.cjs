@@ -7,7 +7,7 @@ const { createJiti } = require("jiti");
 const compiled = require("next/dist/compiled/webpack/webpack");
 compiled.init();
 
-test("themed sports and bridal designs retain artwork, typography, palette and body through draft saves, reloads and guest rendering", { timeout: 180000 }, async () => {
+test("themed sports, bridal and General-backed occasions retain artwork, typography, palette and body through draft saves, reloads and guest rendering", { timeout: 180000 }, async () => {
   const output = path.resolve(".qa/themed-event-editor-browser");
   await new Promise((resolve, reject) => {
     const compiler = compiled.webpack({
@@ -50,7 +50,7 @@ test("themed sports and bridal designs retain artwork, typography, palette and b
     if (url.pathname === "/fixture.js") return route.fulfill({ contentType: "text/javascript; charset=utf-8", body: script });
     if (url.pathname.startsWith("/api/history")) {
       const id = url.pathname.split("/")[3];
-      if (request.method() === "GET") return route.fulfill({ contentType: "application/json", body: JSON.stringify({ ...records.get(id), permissions: { role: "owner", canManageCollaborators: true } }) });
+      if (request.method() === "GET") return route.fulfill({ contentType: "application/json", body: JSON.stringify({ ...records.get(id), permissions: { role: "owner", canEdit: true, canManageCollaborators: true } }) });
       const body = request.postDataJSON();
       const row = { id: id || `saved-${writes.length}`, title: body.title, data: body.data, revision: `v${writes.length}`, public_slug: id || `saved-${writes.length}` };
       records.set(row.id, row); writes.push(row);
@@ -62,25 +62,41 @@ test("themed sports and bridal designs retain artwork, typography, palette and b
     return route.abort();
   });
   try {
-    for (const collection of ["bridal-showers", "dance"]) {
+    for (const collection of ["bridal-showers", "dance", "graduations"]) {
       const design = EVENT_PAGE_THEMED_DESIGNS.find((item) => item.collection === collection);
       assert.ok(design, `authored ${collection} definition exists`);
-      const url = `http://localhost:43139/${collection === "bridal-showers" ? "bridal-showers" : "sport-events"}/templates/${design.id}/customize?collection=${collection}&templateId=${design.id}`;
+      const general = collection === "graduations";
+      const pathname = general ? "/event/general/customize" : `/${collection === "bridal-showers" ? "bridal-showers" : "sport-events"}/templates/${design.id}/customize`;
+      const url = `http://localhost:43139${pathname}?collection=${collection}&templateId=${design.id}`;
       await page.goto(url);
       const header = page.locator(`[data-themed-event-header="${design.id}"]`);
       await header.waitFor();
       assert.equal(await header.locator("img").first().getAttribute("src"), design.artwork);
       await page.getByRole("button", { name: "Save draft", exact: true }).click();
       await page.waitForFunction(() => new URLSearchParams(location.search).has("edit"));
-      const row = writes.at(-1);
-      assert.equal(row.data.bodyDesignId, design.id);
-      assert.equal(row.data.heroImage, design.artwork);
-      assert.equal(row.data.themeId, design.id);
-      assert.equal(row.data.fontFamily, design.font);
+      let row = writes.at(-1);
+      if (general) {
+        assert.equal(row.data.manualEditor.snapshot.data.bodyDesignId, design.id, "manual draft retains selected design in its editor snapshot");
+        assert.equal(row.data.manualEditor.snapshot.themeId, design.id);
+        await page.reload();
+        await page.locator(`[data-themed-event-header="${design.id}"]`).waitFor();
+        await page.getByRole("button", { name: "Publish", exact: true }).click();
+        await page.waitForFunction(() => !location.pathname.endsWith("/customize"));
+        row = writes.at(-1);
+      }
+      assert.equal(row.data.bodyDesignId, design.id, `${collection}: saved body design`);
+      assert.equal(row.data.heroImage, design.artwork, `${collection}: saved artwork`);
+      assert.equal(row.data.themeId, design.id, `${collection}: saved theme`);
+      assert.equal(row.data.fontFamily || row.data.theme.fontFamily, design.font);
       assert.equal(row.data.theme.bgStyle.backgroundColor, design.background);
-      assert.equal(row.data.templateEditor.templateId, design.id);
-      await page.reload();
-      await page.locator(`[data-themed-event-header="${design.id}"]`).waitFor();
+      if (general) {
+        assert.equal(row.data.templateId, "general-event");
+        assert.equal(row.data.creationCollection, collection);
+      } else assert.equal(row.data.templateEditor.templateId, design.id);
+      if (!general) {
+        await page.reload();
+        await page.locator(`[data-themed-event-header="${design.id}"]`).waitFor();
+      }
       await page.goto(`http://localhost:43139/event/guest?guest=1&id=${row.id}&collection=${collection}`);
       await page.locator(`[data-themed-event-header="${design.id}"]`).waitFor();
       assert.equal(await page.locator(`[data-themed-event-header="${design.id}"] img`).first().getAttribute("src"), design.artwork);
@@ -88,6 +104,7 @@ test("themed sports and bridal designs retain artwork, typography, palette and b
     }
     assert.deepEqual(errors, []);
   } catch (error) {
+    fs.writeFileSync(path.join(output, "failed-writes.json"), JSON.stringify(writes, null, 2));
     await page.screenshot({ path: path.join(output, "failure.png"), fullPage: true });
     throw new Error(`${error.message}\nPage errors: ${JSON.stringify(errors)}\nError locations: ${JSON.stringify(await page.evaluate(() => window.__fixtureErrors))}\nRendered page: ${(await page.locator("body").innerText()).slice(0, 1400)}`);
   } finally { await browser.close(); }

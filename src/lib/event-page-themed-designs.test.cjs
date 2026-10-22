@@ -20,15 +20,47 @@ const registrySource = ts.transpileModule(fs.readFileSync(path.resolve("src/lib/
 function registry(ids) {
   const output = { exports: {} };
   new Function("require", "module", "exports", registrySource)((name) => {
-    if (name.includes("artwork-availability")) return { version: 1, readyDesignIds: ids };
+    if (name.includes("artwork-availability")) return { version: 2, readyDesignIds: ids };
+    if (name.includes("event-page-themed-legacy")) return require("../data/event-page-themed-legacy.json");
     if (name.includes("event-page-themed-designs")) return manifest;
     throw new Error(`Unexpected registry dependency: ${name}`);
   }, output, output.exports);
   return output.exports;
 }
 
+function loadRuntimeSource(file, mocks) {
+  const output = { exports: {} };
+  const requireFromFile = Module.createRequire(path.resolve(file));
+  const source = ts.transpileModule(fs.readFileSync(file, "utf8"), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
+  }).outputText;
+  new Function("require", "module", "exports", source)((name) =>
+    Object.hasOwn(mocks, name) ? mocks[name] : requireFromFile(name), output, output.exports);
+  return output.exports;
+}
+
+test("General-backed collections never fall back to unrelated General designs before all 60 are delivered", () => {
+  for (const collection of manifest.EVENT_PAGE_THEMED_COLLECTIONS.filter((item) => item.category === "general")) {
+    const designs = manifest.EVENT_PAGE_THEMED_DESIGNS.filter((design) => design.collection === collection.id);
+    for (const count of [0, 59, 60]) {
+      const collections = loadRuntimeSource("src/lib/create/event-page-collections.ts", {
+        "../event-page-themed-designs": registry(designs.slice(0, count).map((design) => design.id)),
+      });
+      const selection = loadRuntimeSource("src/lib/create/template-selection.ts", {
+        "./event-page-collections": collections,
+      });
+      const expected = count === 60 ? designs.map((design) => design.id) : [];
+      assert.deepEqual(collections.getGeneralCreationDesigns(collection.id).map((design) => design.id), expected, `${collection.id}: ${count} ready in gallery`);
+      assert.deepEqual(selection.getCreationTemplates({ category: collection.id, sport: null }).map((design) => design.id), expected, `${collection.id}: ${count} ready in creation`);
+      assert.equal(collections.getGeneralCreationDesigns().length, 452, "the unscoped General catalog stays available");
+      assert.equal(collections.getGeneralCreationDesigns("general").length, 452, "explicit General retains its full catalog");
+      assert.equal(collections.getGeneralCreationDesigns("holidays-seasonal").length, 440, "the holiday catalog keeps its existing designs");
+    }
+  }
+});
+
 test("replacement selectors wait for all 60 delivered designs and keep persisted IDs resolvable", () => {
-  const collectionId = manifest.EVENT_PAGE_THEMED_COLLECTIONS[0].id;
+  const collectionId = "graduations";
   const designs = manifest.EVENT_PAGE_THEMED_DESIGNS.filter((design) => design.collection === collectionId);
   assert.equal(designs.length, 60);
   const incomplete = registry(designs.slice(0, 59).map((design) => design.id));
@@ -43,6 +75,22 @@ test("replacement selectors wait for all 60 delivered designs and keep persisted
   assert.equal(complete.getCompleteThemedEventCollection(collectionId).id, collectionId);
   assert.deepEqual(complete.getActiveThemedEventDesigns("softball"), []);
   assert.equal(complete.getThemedEventDesign("not-a-real-id"), undefined);
+});
+
+test("delivered Bridal v1 IDs keep their frozen metadata and selection until all v2 artwork is reviewed", () => {
+  const legacy = require("../data/event-page-themed-legacy.json");
+  const modern = manifest.EVENT_PAGE_THEMED_DESIGNS.filter((design) => design.collection === "bridal-showers");
+  assert.equal(legacy.designs.length, 60);
+  const incomplete = registry(modern.slice(0, 59).map((design) => design.id));
+  assert.deepEqual(incomplete.getActiveThemedEventDesigns("bridal-showers").map((design) => design.id), legacy.readyDesignIds);
+  for (const frozen of legacy.designs) {
+    assert.deepEqual(incomplete.getDeliveredThemedEventDesign(frozen.id), frozen);
+    assert.deepEqual(incomplete.getThemedEventTheme(frozen).bgStyle, { backgroundColor: frozen.background, color: frozen.ink });
+    assert.ok(incomplete.getThemedEventBodyPresentation(frozen.id));
+  }
+  const complete = registry(modern.map((design) => design.id));
+  assert.deepEqual(complete.getActiveThemedEventDesigns("bridal-showers").map((design) => design.id), modern.map((design) => design.id));
+  assert.deepEqual(complete.getDeliveredThemedEventDesign(legacy.designs[0].id), legacy.designs[0]);
 });
 
 test("authored colors, typography and body structure are independent of gallery ordering", () => {

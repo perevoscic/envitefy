@@ -52,12 +52,14 @@
 }
 .panel :is(h2, [data-template-section-title]) {
   margin-block: 0 1.4rem;
-  font-family: var(--body-heading-font, inherit);
   line-height: 1.12;
   text-wrap: balance;
 }
 .panel :is(img, video, iframe, input, select, textarea) {
   max-width: 100%;
+}
+.body[data-body-heading-font] .panel :is(h2, [data-template-section-title]) {
+  font-family: var(--body-heading-font);
 }
 .panel :is(input, textarea, select) {
   min-width: 0;

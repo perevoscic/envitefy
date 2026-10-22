@@ -1,0 +1,2408 @@
+{
+  "version": 1,
+  "frozenOn": "2026-10-22",
+  "readyDesignIds": [
+    "bridal-showers--garden-tea-rose-arbor",
+    "bridal-showers--garden-tea-greenhouse-tea",
+    "bridal-showers--garden-tea-camellia-courtyard",
+    "bridal-showers--garden-tea-orchard-place-setting",
+    "bridal-showers--garden-tea-wisteria-veranda",
+    "bridal-showers--garden-tea-twilight-tea-lights",
+    "bridal-showers--coastal-brunch-blue-stripe-terrace",
+    "bridal-showers--coastal-brunch-dune-picnic",
+    "bridal-showers--coastal-brunch-harbor-breakfast",
+    "bridal-showers--coastal-brunch-sea-glass-table",
+    "bridal-showers--coastal-brunch-whitewashed-balcony",
+    "bridal-showers--coastal-brunch-coastal-citrus",
+    "bridal-showers--citrus-shower-lemon-grove-lunch",
+    "bridal-showers--citrus-shower-orange-blossom-arch",
+    "bridal-showers--citrus-shower-amalfi-tiles",
+    "bridal-showers--citrus-shower-grapefruit-morning",
+    "bridal-showers--citrus-shower-citrus-cake-stand",
+    "bridal-showers--citrus-shower-sunlit-market-basket",
+    "bridal-showers--patisserie-shower-macaron-salon",
+    "bridal-showers--patisserie-shower-cafe-window",
+    "bridal-showers--patisserie-shower-pastel-pastry-cart",
+    "bridal-showers--patisserie-shower-courtyard-boulangerie",
+    "bridal-showers--patisserie-shower-silk-sugar",
+    "bridal-showers--patisserie-shower-candlelit-dessert",
+    "bridal-showers--wildflower-picnic-meadow-blanket",
+    "bridal-showers--wildflower-picnic-barn-door-bouquets",
+    "bridal-showers--wildflower-picnic-creekside-lunch",
+    "bridal-showers--wildflower-picnic-flower-crown-workshop",
+    "bridal-showers--wildflower-picnic-poppy-hill",
+    "bridal-showers--wildflower-picnic-golden-field-supper",
+    "bridal-showers--champagne-shower-velvet-toast",
+    "bridal-showers--champagne-shower-pearl-bar-cart",
+    "bridal-showers--champagne-shower-city-skyline-toast",
+    "bridal-showers--champagne-shower-golden-salon",
+    "bridal-showers--champagne-shower-midnight-bubbles",
+    "bridal-showers--champagne-shower-marble-reception",
+    "bridal-showers--kitchen-shower-flour-flowers",
+    "bridal-showers--kitchen-shower-copper-kitchen",
+    "bridal-showers--kitchen-shower-recipe-card-table",
+    "bridal-showers--kitchen-shower-garden-herb-lunch",
+    "bridal-showers--kitchen-shower-pasta-workshop",
+    "bridal-showers--kitchen-shower-sunday-baking",
+    "bridal-showers--vintage-shower-heirloom-vanity",
+    "bridal-showers--vintage-shower-rose-china",
+    "bridal-showers--vintage-shower-antique-conservatory",
+    "bridal-showers--vintage-shower-ribbon-keepsakes",
+    "bridal-showers--vintage-shower-rose-garden-gate",
+    "bridal-showers--vintage-shower-candle-lace",
+    "bridal-showers--modern-disco-shower-mirror-ball-brunch",
+    "bridal-showers--modern-disco-shower-silver-bow-lounge",
+    "bridal-showers--modern-disco-shower-pearl-cake-party",
+    "bridal-showers--modern-disco-shower-neonless-dance-floor",
+    "bridal-showers--modern-disco-shower-lilac-cocktail-hour",
+    "bridal-showers--modern-disco-shower-sparkling-favor-wall",
+    "bridal-showers--terracotta-shower-desert-courtyard",
+    "bridal-showers--terracotta-shower-pampas-arch",
+    "bridal-showers--terracotta-shower-canyon-picnic",
+    "bridal-showers--terracotta-shower-clay-silk",
+    "bridal-showers--terracotta-shower-adobe-terrace",
+    "bridal-showers--terracotta-shower-sunset-bougainvillea"
+  ],
+  "designs": [
+    {
+      "id": "bridal-showers--garden-tea-rose-arbor",
+      "collection": "bridal-showers",
+      "slug": "garden-tea-rose-arbor",
+      "name": "Garden Tea · Rose Arbor",
+      "coverTitle": "Rose Arbor",
+      "label": "Garden Tea",
+      "description": "Garden Tea: A bridal tea table beneath an old climbing-rose arbor, porcelain cups and linen napkins.",
+      "style": "Botanical romance",
+      "artwork": "/templates/event-pages/bridal-showers/garden-tea-rose-arbor.webp",
+      "composition": "editorial",
+      "background": "#edf2e8",
+      "ink": "#233b2c",
+      "accent": "#4d7350",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#edf2e8]",
+        "text": "text-[#233b2c]",
+        "accent": "text-[#4d7350]",
+        "preview": "bg-[#edf2e8]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "garden-tea",
+      "tags": [
+        "bridal-showers",
+        "garden-tea",
+        "Botanical romance",
+        "Rose Arbor"
+      ],
+      "scene": "A bridal tea table beneath an old climbing-rose arbor, porcelain cups and linen napkins",
+      "editorLayout": "split",
+      "bodyPresentation": {
+        "surface": "paper",
+        "sectionStyle": "cards",
+        "alignment": "center",
+        "borderRadius": "0.25rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--garden-tea-greenhouse-tea",
+      "collection": "bridal-showers",
+      "slug": "garden-tea-greenhouse-tea",
+      "name": "Garden Tea · Greenhouse Tea",
+      "coverTitle": "Greenhouse Tea",
+      "label": "Garden Tea",
+      "description": "Garden Tea: A glass greenhouse with a long tea table, fern pots and pale garden roses.",
+      "style": "Botanical romance",
+      "artwork": "/templates/event-pages/bridal-showers/garden-tea-greenhouse-tea.webp",
+      "composition": "arch",
+      "background": "#edf2e8",
+      "ink": "#233b2c",
+      "accent": "#4d7350",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#edf2e8]",
+        "text": "text-[#233b2c]",
+        "accent": "text-[#4d7350]",
+        "preview": "bg-[#edf2e8]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "garden-tea",
+      "tags": [
+        "bridal-showers",
+        "garden-tea",
+        "Botanical romance",
+        "Greenhouse Tea"
+      ],
+      "scene": "A glass greenhouse with a long tea table, fern pots and pale garden roses",
+      "editorLayout": "banner",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "ruled",
+        "alignment": "left",
+        "borderRadius": "1.25rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--garden-tea-camellia-courtyard",
+      "collection": "bridal-showers",
+      "slug": "garden-tea-camellia-courtyard",
+      "name": "Garden Tea · Camellia Courtyard",
+      "coverTitle": "Camellia Courtyard",
+      "label": "Garden Tea",
+      "description": "Garden Tea: Camellia blossoms beside a stone courtyard bistro table with tiered tea cakes.",
+      "style": "Botanical romance",
+      "artwork": "/templates/event-pages/bridal-showers/garden-tea-camellia-courtyard.webp",
+      "composition": "panorama",
+      "background": "#edf2e8",
+      "ink": "#233b2c",
+      "accent": "#4d7350",
+      "font": "\"Libre Baskerville\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#edf2e8]",
+        "text": "text-[#233b2c]",
+        "accent": "text-[#4d7350]",
+        "preview": "bg-[#edf2e8]",
+        "fontFamily": "\"Libre Baskerville\", Georgia, serif"
+      },
+      "subtype": "garden-tea",
+      "tags": [
+        "bridal-showers",
+        "garden-tea",
+        "Botanical romance",
+        "Camellia Courtyard"
+      ],
+      "scene": "Camellia blossoms beside a stone courtyard bistro table with tiered tea cakes",
+      "editorLayout": "poster",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "open",
+        "alignment": "left",
+        "borderRadius": "0.75rem",
+        "spacing": "compact"
+      }
+    },
+    {
+      "id": "bridal-showers--garden-tea-orchard-place-setting",
+      "collection": "bridal-showers",
+      "slug": "garden-tea-orchard-place-setting",
+      "name": "Garden Tea · Orchard Place Setting",
+      "coverTitle": "Orchard Place Setting",
+      "label": "Garden Tea",
+      "description": "Garden Tea: A close orchard-table place setting with apple blossom sprigs and delicate porcelain.",
+      "style": "Botanical romance",
+      "artwork": "/templates/event-pages/bridal-showers/garden-tea-orchard-place-setting.webp",
+      "composition": "poster",
+      "background": "#edf2e8",
+      "ink": "#233b2c",
+      "accent": "#4d7350",
+      "font": "\"Bebas Neue\", Impact, sans-serif",
+      "theme": {
+        "bg": "bg-[#edf2e8]",
+        "text": "text-[#233b2c]",
+        "accent": "text-[#4d7350]",
+        "preview": "bg-[#edf2e8]",
+        "fontFamily": "\"Bebas Neue\", Impact, sans-serif"
+      },
+      "subtype": "garden-tea",
+      "tags": [
+        "bridal-showers",
+        "garden-tea",
+        "Botanical romance",
+        "Orchard Place Setting"
+      ],
+      "scene": "A close orchard-table place setting with apple blossom sprigs and delicate porcelain",
+      "editorLayout": "editorial",
+      "bodyPresentation": {
+        "surface": "paper",
+        "sectionStyle": "panels",
+        "alignment": "center",
+        "borderRadius": "0rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--garden-tea-wisteria-veranda",
+      "collection": "bridal-showers",
+      "slug": "garden-tea-wisteria-veranda",
+      "name": "Garden Tea · Wisteria Veranda",
+      "coverTitle": "Wisteria Veranda",
+      "label": "Garden Tea",
+      "description": "Garden Tea: An airy veranda draped in wisteria with a tea trolley and ribbon-tied favors.",
+      "style": "Botanical romance",
+      "artwork": "/templates/event-pages/bridal-showers/garden-tea-wisteria-veranda.webp",
+      "composition": "framed",
+      "background": "#edf2e8",
+      "ink": "#233b2c",
+      "accent": "#4d7350",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#edf2e8]",
+        "text": "text-[#233b2c]",
+        "accent": "text-[#4d7350]",
+        "preview": "bg-[#edf2e8]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "garden-tea",
+      "tags": [
+        "bridal-showers",
+        "garden-tea",
+        "Botanical romance",
+        "Wisteria Veranda"
+      ],
+      "scene": "An airy veranda draped in wisteria with a tea trolley and ribbon-tied favors",
+      "editorLayout": "spotlight",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "timeline",
+        "alignment": "left",
+        "borderRadius": "1.5rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--garden-tea-twilight-tea-lights",
+      "collection": "bridal-showers",
+      "slug": "garden-tea-twilight-tea-lights",
+      "name": "Garden Tea · Twilight Tea Lights",
+      "coverTitle": "Twilight Tea Lights",
+      "label": "Garden Tea",
+      "description": "Garden Tea: A garden tea terrace at blue hour with small lanterns and a flower-ringed teapot.",
+      "style": "Botanical romance",
+      "artwork": "/templates/event-pages/bridal-showers/garden-tea-twilight-tea-lights.webp",
+      "composition": "postcard",
+      "background": "#edf2e8",
+      "ink": "#233b2c",
+      "accent": "#4d7350",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#edf2e8]",
+        "text": "text-[#233b2c]",
+        "accent": "text-[#4d7350]",
+        "preview": "bg-[#edf2e8]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "garden-tea",
+      "tags": [
+        "bridal-showers",
+        "garden-tea",
+        "Botanical romance",
+        "Twilight Tea Lights"
+      ],
+      "scene": "A garden tea terrace at blue hour with small lanterns and a flower-ringed teapot",
+      "editorLayout": "minimal",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "cards",
+        "alignment": "left",
+        "borderRadius": "0.5rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--coastal-brunch-blue-stripe-terrace",
+      "collection": "bridal-showers",
+      "slug": "coastal-brunch-blue-stripe-terrace",
+      "name": "Seaside Brunch · Blue Stripe Terrace",
+      "coverTitle": "Blue Stripe Terrace",
+      "label": "Seaside Brunch",
+      "description": "Seaside Brunch: A striped parasol over a seaside bridal brunch table with oyster-shell place dishes.",
+      "style": "Coastal elegance",
+      "artwork": "/templates/event-pages/bridal-showers/coastal-brunch-blue-stripe-terrace.webp",
+      "composition": "panorama",
+      "background": "#e7f1f2",
+      "ink": "#163c47",
+      "accent": "#327786",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#e7f1f2]",
+        "text": "text-[#163c47]",
+        "accent": "text-[#327786]",
+        "preview": "bg-[#e7f1f2]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "coastal-brunch",
+      "tags": [
+        "bridal-showers",
+        "coastal-brunch",
+        "Coastal elegance",
+        "Blue Stripe Terrace"
+      ],
+      "scene": "A striped parasol over a seaside bridal brunch table with oyster-shell place dishes",
+      "editorLayout": "banner",
+      "bodyPresentation": {
+        "surface": "paper",
+        "sectionStyle": "ruled",
+        "alignment": "center",
+        "borderRadius": "0.25rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--coastal-brunch-dune-picnic",
+      "collection": "bridal-showers",
+      "slug": "coastal-brunch-dune-picnic",
+      "name": "Seaside Brunch · Dune Picnic",
+      "coverTitle": "Dune Picnic",
+      "label": "Seaside Brunch",
+      "description": "Seaside Brunch: A woven picnic spread among beach dunes, linen cushions and white hydrangeas.",
+      "style": "Coastal elegance",
+      "artwork": "/templates/event-pages/bridal-showers/coastal-brunch-dune-picnic.webp",
+      "composition": "poster",
+      "background": "#e7f1f2",
+      "ink": "#163c47",
+      "accent": "#327786",
+      "font": "\"Libre Baskerville\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#e7f1f2]",
+        "text": "text-[#163c47]",
+        "accent": "text-[#327786]",
+        "preview": "bg-[#e7f1f2]",
+        "fontFamily": "\"Libre Baskerville\", Georgia, serif"
+      },
+      "subtype": "coastal-brunch",
+      "tags": [
+        "bridal-showers",
+        "coastal-brunch",
+        "Coastal elegance",
+        "Dune Picnic"
+      ],
+      "scene": "A woven picnic spread among beach dunes, linen cushions and white hydrangeas",
+      "editorLayout": "poster",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "open",
+        "alignment": "left",
+        "borderRadius": "1.25rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--coastal-brunch-harbor-breakfast",
+      "collection": "bridal-showers",
+      "slug": "coastal-brunch-harbor-breakfast",
+      "name": "Seaside Brunch · Harbor Breakfast",
+      "coverTitle": "Harbor Breakfast",
+      "label": "Seaside Brunch",
+      "description": "Seaside Brunch: A sheltered harbor-side breakfast table with blue glassware and fresh pastries.",
+      "style": "Coastal elegance",
+      "artwork": "/templates/event-pages/bridal-showers/coastal-brunch-harbor-breakfast.webp",
+      "composition": "framed",
+      "background": "#e7f1f2",
+      "ink": "#163c47",
+      "accent": "#327786",
+      "font": "\"Bebas Neue\", Impact, sans-serif",
+      "theme": {
+        "bg": "bg-[#e7f1f2]",
+        "text": "text-[#163c47]",
+        "accent": "text-[#327786]",
+        "preview": "bg-[#e7f1f2]",
+        "fontFamily": "\"Bebas Neue\", Impact, sans-serif"
+      },
+      "subtype": "coastal-brunch",
+      "tags": [
+        "bridal-showers",
+        "coastal-brunch",
+        "Coastal elegance",
+        "Harbor Breakfast"
+      ],
+      "scene": "A sheltered harbor-side breakfast table with blue glassware and fresh pastries",
+      "editorLayout": "editorial",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "panels",
+        "alignment": "left",
+        "borderRadius": "0.75rem",
+        "spacing": "compact"
+      }
+    },
+    {
+      "id": "bridal-showers--coastal-brunch-sea-glass-table",
+      "collection": "bridal-showers",
+      "slug": "coastal-brunch-sea-glass-table",
+      "name": "Seaside Brunch · Sea Glass Table",
+      "coverTitle": "Sea Glass Table",
+      "label": "Seaside Brunch",
+      "description": "Seaside Brunch: A close tabletop arrangement of sea-glass vases, ivory flowers and brushed-silver cutlery.",
+      "style": "Coastal elegance",
+      "artwork": "/templates/event-pages/bridal-showers/coastal-brunch-sea-glass-table.webp",
+      "composition": "postcard",
+      "background": "#e7f1f2",
+      "ink": "#163c47",
+      "accent": "#327786",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#e7f1f2]",
+        "text": "text-[#163c47]",
+        "accent": "text-[#327786]",
+        "preview": "bg-[#e7f1f2]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "coastal-brunch",
+      "tags": [
+        "bridal-showers",
+        "coastal-brunch",
+        "Coastal elegance",
+        "Sea Glass Table"
+      ],
+      "scene": "A close tabletop arrangement of sea-glass vases, ivory flowers and brushed-silver cutlery",
+      "editorLayout": "spotlight",
+      "bodyPresentation": {
+        "surface": "paper",
+        "sectionStyle": "timeline",
+        "alignment": "center",
+        "borderRadius": "0rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--coastal-brunch-whitewashed-balcony",
+      "collection": "bridal-showers",
+      "slug": "coastal-brunch-whitewashed-balcony",
+      "name": "Seaside Brunch · Whitewashed Balcony",
+      "coverTitle": "Whitewashed Balcony",
+      "label": "Seaside Brunch",
+      "description": "Seaside Brunch: A whitewashed coastal balcony with a small brunch table and billowing linen curtains.",
+      "style": "Coastal elegance",
+      "artwork": "/templates/event-pages/bridal-showers/coastal-brunch-whitewashed-balcony.webp",
+      "composition": "journal",
+      "background": "#e7f1f2",
+      "ink": "#163c47",
+      "accent": "#327786",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#e7f1f2]",
+        "text": "text-[#163c47]",
+        "accent": "text-[#327786]",
+        "preview": "bg-[#e7f1f2]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "coastal-brunch",
+      "tags": [
+        "bridal-showers",
+        "coastal-brunch",
+        "Coastal elegance",
+        "Whitewashed Balcony"
+      ],
+      "scene": "A whitewashed coastal balcony with a small brunch table and billowing linen curtains",
+      "editorLayout": "minimal",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "cards",
+        "alignment": "left",
+        "borderRadius": "1.5rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--coastal-brunch-coastal-citrus",
+      "collection": "bridal-showers",
+      "slug": "coastal-brunch-coastal-citrus",
+      "name": "Seaside Brunch · Coastal Citrus",
+      "coverTitle": "Coastal Citrus",
+      "label": "Seaside Brunch",
+      "description": "Seaside Brunch: A deck brunch with lemons, sparkling water and ceramic plates above a turquoise cove.",
+      "style": "Coastal elegance",
+      "artwork": "/templates/event-pages/bridal-showers/coastal-brunch-coastal-citrus.webp",
+      "composition": "organic",
+      "background": "#e7f1f2",
+      "ink": "#163c47",
+      "accent": "#327786",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#e7f1f2]",
+        "text": "text-[#163c47]",
+        "accent": "text-[#327786]",
+        "preview": "bg-[#e7f1f2]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "coastal-brunch",
+      "tags": [
+        "bridal-showers",
+        "coastal-brunch",
+        "Coastal elegance",
+        "Coastal Citrus"
+      ],
+      "scene": "A deck brunch with lemons, sparkling water and ceramic plates above a turquoise cove",
+      "editorLayout": "cards",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "ruled",
+        "alignment": "left",
+        "borderRadius": "0.5rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--citrus-shower-lemon-grove-lunch",
+      "collection": "bridal-showers",
+      "slug": "citrus-shower-lemon-grove-lunch",
+      "name": "Citrus & Sunshine · Lemon Grove Lunch",
+      "coverTitle": "Lemon Grove Lunch",
+      "label": "Citrus & Sunshine",
+      "description": "Citrus & Sunshine: A bridal lunch table beneath lemon trees, yellow linen and lemon-leaf garlands.",
+      "style": "Sunny Mediterranean",
+      "artwork": "/templates/event-pages/bridal-showers/citrus-shower-lemon-grove-lunch.webp",
+      "composition": "framed",
+      "background": "#fbefd4",
+      "ink": "#4c3c24",
+      "accent": "#a97823",
+      "font": "\"Libre Baskerville\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#fbefd4]",
+        "text": "text-[#4c3c24]",
+        "accent": "text-[#a97823]",
+        "preview": "bg-[#fbefd4]",
+        "fontFamily": "\"Libre Baskerville\", Georgia, serif"
+      },
+      "subtype": "citrus-shower",
+      "tags": [
+        "bridal-showers",
+        "citrus-shower",
+        "Sunny Mediterranean",
+        "Lemon Grove Lunch"
+      ],
+      "scene": "A bridal lunch table beneath lemon trees, yellow linen and lemon-leaf garlands",
+      "editorLayout": "poster",
+      "bodyPresentation": {
+        "surface": "paper",
+        "sectionStyle": "open",
+        "alignment": "center",
+        "borderRadius": "0.25rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--citrus-shower-orange-blossom-arch",
+      "collection": "bridal-showers",
+      "slug": "citrus-shower-orange-blossom-arch",
+      "name": "Citrus & Sunshine · Orange Blossom Arch",
+      "coverTitle": "Orange Blossom Arch",
+      "label": "Citrus & Sunshine",
+      "description": "Citrus & Sunshine: A terracotta courtyard with a floral arch of orange blossom and citrus baskets.",
+      "style": "Sunny Mediterranean",
+      "artwork": "/templates/event-pages/bridal-showers/citrus-shower-orange-blossom-arch.webp",
+      "composition": "postcard",
+      "background": "#fbefd4",
+      "ink": "#4c3c24",
+      "accent": "#a97823",
+      "font": "\"Bebas Neue\", Impact, sans-serif",
+      "theme": {
+        "bg": "bg-[#fbefd4]",
+        "text": "text-[#4c3c24]",
+        "accent": "text-[#a97823]",
+        "preview": "bg-[#fbefd4]",
+        "fontFamily": "\"Bebas Neue\", Impact, sans-serif"
+      },
+      "subtype": "citrus-shower",
+      "tags": [
+        "bridal-showers",
+        "citrus-shower",
+        "Sunny Mediterranean",
+        "Orange Blossom Arch"
+      ],
+      "scene": "A terracotta courtyard with a floral arch of orange blossom and citrus baskets",
+      "editorLayout": "editorial",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "panels",
+        "alignment": "left",
+        "borderRadius": "1.25rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--citrus-shower-amalfi-tiles",
+      "collection": "bridal-showers",
+      "slug": "citrus-shower-amalfi-tiles",
+      "name": "Citrus & Sunshine · Amalfi Tiles",
+      "coverTitle": "Amalfi Tiles",
+      "label": "Citrus & Sunshine",
+      "description": "Citrus & Sunshine: A ceramic-tiled table with limoncello-colored drinks, lemons and white ranunculus.",
+      "style": "Sunny Mediterranean",
+      "artwork": "/templates/event-pages/bridal-showers/citrus-shower-amalfi-tiles.webp",
+      "composition": "journal",
+      "background": "#fbefd4",
+      "ink": "#4c3c24",
+      "accent": "#a97823",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#fbefd4]",
+        "text": "text-[#4c3c24]",
+        "accent": "text-[#a97823]",
+        "preview": "bg-[#fbefd4]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "citrus-shower",
+      "tags": [
+        "bridal-showers",
+        "citrus-shower",
+        "Sunny Mediterranean",
+        "Amalfi Tiles"
+      ],
+      "scene": "A ceramic-tiled table with limoncello-colored drinks, lemons and white ranunculus",
+      "editorLayout": "spotlight",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "timeline",
+        "alignment": "left",
+        "borderRadius": "0.75rem",
+        "spacing": "compact"
+      }
+    },
+    {
+      "id": "bridal-showers--citrus-shower-grapefruit-morning",
+      "collection": "bridal-showers",
+      "slug": "citrus-shower-grapefruit-morning",
+      "name": "Citrus & Sunshine · Grapefruit Morning",
+      "coverTitle": "Grapefruit Morning",
+      "label": "Citrus & Sunshine",
+      "description": "Citrus & Sunshine: A bright breakfast spread with pink grapefruit halves and coral napkins.",
+      "style": "Sunny Mediterranean",
+      "artwork": "/templates/event-pages/bridal-showers/citrus-shower-grapefruit-morning.webp",
+      "composition": "organic",
+      "background": "#fbefd4",
+      "ink": "#4c3c24",
+      "accent": "#a97823",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#fbefd4]",
+        "text": "text-[#4c3c24]",
+        "accent": "text-[#a97823]",
+        "preview": "bg-[#fbefd4]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "citrus-shower",
+      "tags": [
+        "bridal-showers",
+        "citrus-shower",
+        "Sunny Mediterranean",
+        "Grapefruit Morning"
+      ],
+      "scene": "A bright breakfast spread with pink grapefruit halves and coral napkins",
+      "editorLayout": "minimal",
+      "bodyPresentation": {
+        "surface": "paper",
+        "sectionStyle": "cards",
+        "alignment": "center",
+        "borderRadius": "0rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--citrus-shower-citrus-cake-stand",
+      "collection": "bridal-showers",
+      "slug": "citrus-shower-citrus-cake-stand",
+      "name": "Citrus & Sunshine · Citrus Cake Stand",
+      "coverTitle": "Citrus Cake Stand",
+      "label": "Citrus & Sunshine",
+      "description": "Citrus & Sunshine: A small lemon layer cake on a pedestal surrounded by kumquats and bridal flowers.",
+      "style": "Sunny Mediterranean",
+      "artwork": "/templates/event-pages/bridal-showers/citrus-shower-citrus-cake-stand.webp",
+      "composition": "oval",
+      "background": "#fbefd4",
+      "ink": "#4c3c24",
+      "accent": "#a97823",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#fbefd4]",
+        "text": "text-[#4c3c24]",
+        "accent": "text-[#a97823]",
+        "preview": "bg-[#fbefd4]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "citrus-shower",
+      "tags": [
+        "bridal-showers",
+        "citrus-shower",
+        "Sunny Mediterranean",
+        "Citrus Cake Stand"
+      ],
+      "scene": "A small lemon layer cake on a pedestal surrounded by kumquats and bridal flowers",
+      "editorLayout": "cards",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "ruled",
+        "alignment": "left",
+        "borderRadius": "1.5rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--citrus-shower-sunlit-market-basket",
+      "collection": "bridal-showers",
+      "slug": "citrus-shower-sunlit-market-basket",
+      "name": "Citrus & Sunshine · Sunlit Market Basket",
+      "coverTitle": "Sunlit Market Basket",
+      "label": "Citrus & Sunshine",
+      "description": "Citrus & Sunshine: A basket of citrus, striped tea towels and ribbon favors on a sun-warmed bench.",
+      "style": "Sunny Mediterranean",
+      "artwork": "/templates/event-pages/bridal-showers/citrus-shower-sunlit-market-basket.webp",
+      "composition": "editorial",
+      "background": "#fbefd4",
+      "ink": "#4c3c24",
+      "accent": "#a97823",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#fbefd4]",
+        "text": "text-[#4c3c24]",
+        "accent": "text-[#a97823]",
+        "preview": "bg-[#fbefd4]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "citrus-shower",
+      "tags": [
+        "bridal-showers",
+        "citrus-shower",
+        "Sunny Mediterranean",
+        "Sunlit Market Basket"
+      ],
+      "scene": "A basket of citrus, striped tea towels and ribbon favors on a sun-warmed bench",
+      "editorLayout": "split",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "open",
+        "alignment": "left",
+        "borderRadius": "0.5rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--patisserie-shower-macaron-salon",
+      "collection": "bridal-showers",
+      "slug": "patisserie-shower-macaron-salon",
+      "name": "Paris Patisserie · Macaron Salon",
+      "coverTitle": "Macaron Salon",
+      "label": "Paris Patisserie",
+      "description": "Paris Patisserie: A blush bridal salon table with macarons, glass cake domes and pale garden roses.",
+      "style": "French patisserie",
+      "artwork": "/templates/event-pages/bridal-showers/patisserie-shower-macaron-salon.webp",
+      "composition": "journal",
+      "background": "#f7e8e6",
+      "ink": "#56323a",
+      "accent": "#a25d70",
+      "font": "\"Bebas Neue\", Impact, sans-serif",
+      "theme": {
+        "bg": "bg-[#f7e8e6]",
+        "text": "text-[#56323a]",
+        "accent": "text-[#a25d70]",
+        "preview": "bg-[#f7e8e6]",
+        "fontFamily": "\"Bebas Neue\", Impact, sans-serif"
+      },
+      "subtype": "patisserie-shower",
+      "tags": [
+        "bridal-showers",
+        "patisserie-shower",
+        "French patisserie",
+        "Macaron Salon"
+      ],
+      "scene": "A blush bridal salon table with macarons, glass cake domes and pale garden roses",
+      "editorLayout": "editorial",
+      "bodyPresentation": {
+        "surface": "paper",
+        "sectionStyle": "panels",
+        "alignment": "center",
+        "borderRadius": "0.25rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--patisserie-shower-cafe-window",
+      "collection": "bridal-showers",
+      "slug": "patisserie-shower-cafe-window",
+      "name": "Paris Patisserie · Cafe Window",
+      "coverTitle": "Cafe Window",
+      "label": "Paris Patisserie",
+      "description": "Paris Patisserie: A quiet Paris-style cafe window table with croissants and a small ribbon-wrapped bouquet.",
+      "style": "French patisserie",
+      "artwork": "/templates/event-pages/bridal-showers/patisserie-shower-cafe-window.webp",
+      "composition": "organic",
+      "background": "#f7e8e6",
+      "ink": "#56323a",
+      "accent": "#a25d70",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#f7e8e6]",
+        "text": "text-[#56323a]",
+        "accent": "text-[#a25d70]",
+        "preview": "bg-[#f7e8e6]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "patisserie-shower",
+      "tags": [
+        "bridal-showers",
+        "patisserie-shower",
+        "French patisserie",
+        "Cafe Window"
+      ],
+      "scene": "A quiet Paris-style cafe window table with croissants and a small ribbon-wrapped bouquet",
+      "editorLayout": "spotlight",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "timeline",
+        "alignment": "left",
+        "borderRadius": "1.25rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--patisserie-shower-pastel-pastry-cart",
+      "collection": "bridal-showers",
+      "slug": "patisserie-shower-pastel-pastry-cart",
+      "name": "Paris Patisserie · Pastel Pastry Cart",
+      "coverTitle": "Pastel Pastry Cart",
+      "label": "Paris Patisserie",
+      "description": "Paris Patisserie: An antique pastry trolley with pastel petits fours and pearl-toned porcelain.",
+      "style": "French patisserie",
+      "artwork": "/templates/event-pages/bridal-showers/patisserie-shower-pastel-pastry-cart.webp",
+      "composition": "oval",
+      "background": "#f7e8e6",
+      "ink": "#56323a",
+      "accent": "#a25d70",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#f7e8e6]",
+        "text": "text-[#56323a]",
+        "accent": "text-[#a25d70]",
+        "preview": "bg-[#f7e8e6]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "patisserie-shower",
+      "tags": [
+        "bridal-showers",
+        "patisserie-shower",
+        "French patisserie",
+        "Pastel Pastry Cart"
+      ],
+      "scene": "An antique pastry trolley with pastel petits fours and pearl-toned porcelain",
+      "editorLayout": "minimal",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "cards",
+        "alignment": "left",
+        "borderRadius": "0.75rem",
+        "spacing": "compact"
+      }
+    },
+    {
+      "id": "bridal-showers--patisserie-shower-courtyard-boulangerie",
+      "collection": "bridal-showers",
+      "slug": "patisserie-shower-courtyard-boulangerie",
+      "name": "Paris Patisserie · Courtyard Boulangerie",
+      "coverTitle": "Courtyard Boulangerie",
+      "label": "Paris Patisserie",
+      "description": "Paris Patisserie: A limestone courtyard breakfast with baguettes, berry tarts and an ivory tablecloth.",
+      "style": "French patisserie",
+      "artwork": "/templates/event-pages/bridal-showers/patisserie-shower-courtyard-boulangerie.webp",
+      "composition": "editorial",
+      "background": "#f7e8e6",
+      "ink": "#56323a",
+      "accent": "#a25d70",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#f7e8e6]",
+        "text": "text-[#56323a]",
+        "accent": "text-[#a25d70]",
+        "preview": "bg-[#f7e8e6]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "patisserie-shower",
+      "tags": [
+        "bridal-showers",
+        "patisserie-shower",
+        "French patisserie",
+        "Courtyard Boulangerie"
+      ],
+      "scene": "A limestone courtyard breakfast with baguettes, berry tarts and an ivory tablecloth",
+      "editorLayout": "cards",
+      "bodyPresentation": {
+        "surface": "paper",
+        "sectionStyle": "ruled",
+        "alignment": "center",
+        "borderRadius": "0rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--patisserie-shower-silk-sugar",
+      "collection": "bridal-showers",
+      "slug": "patisserie-shower-silk-sugar",
+      "name": "Paris Patisserie · Silk & Sugar",
+      "coverTitle": "Silk & Sugar",
+      "label": "Paris Patisserie",
+      "description": "Paris Patisserie: A close detail of spun-sugar pastries, silk ribbons and a vintage dessert fork.",
+      "style": "French patisserie",
+      "artwork": "/templates/event-pages/bridal-showers/patisserie-shower-silk-sugar.webp",
+      "composition": "arch",
+      "background": "#f7e8e6",
+      "ink": "#56323a",
+      "accent": "#a25d70",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#f7e8e6]",
+        "text": "text-[#56323a]",
+        "accent": "text-[#a25d70]",
+        "preview": "bg-[#f7e8e6]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "patisserie-shower",
+      "tags": [
+        "bridal-showers",
+        "patisserie-shower",
+        "French patisserie",
+        "Silk & Sugar"
+      ],
+      "scene": "A close detail of spun-sugar pastries, silk ribbons and a vintage dessert fork",
+      "editorLayout": "split",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "open",
+        "alignment": "left",
+        "borderRadius": "1.5rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--patisserie-shower-candlelit-dessert",
+      "collection": "bridal-showers",
+      "slug": "patisserie-shower-candlelit-dessert",
+      "name": "Paris Patisserie · Candlelit Dessert",
+      "coverTitle": "Candlelit Dessert",
+      "label": "Paris Patisserie",
+      "description": "Paris Patisserie: A tiny candlelit dessert table with mille-feuille, pink taper candles and velvet bows.",
+      "style": "French patisserie",
+      "artwork": "/templates/event-pages/bridal-showers/patisserie-shower-candlelit-dessert.webp",
+      "composition": "panorama",
+      "background": "#f7e8e6",
+      "ink": "#56323a",
+      "accent": "#a25d70",
+      "font": "\"Libre Baskerville\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#f7e8e6]",
+        "text": "text-[#56323a]",
+        "accent": "text-[#a25d70]",
+        "preview": "bg-[#f7e8e6]",
+        "fontFamily": "\"Libre Baskerville\", Georgia, serif"
+      },
+      "subtype": "patisserie-shower",
+      "tags": [
+        "bridal-showers",
+        "patisserie-shower",
+        "French patisserie",
+        "Candlelit Dessert"
+      ],
+      "scene": "A tiny candlelit dessert table with mille-feuille, pink taper candles and velvet bows",
+      "editorLayout": "banner",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "panels",
+        "alignment": "left",
+        "borderRadius": "0.5rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--wildflower-picnic-meadow-blanket",
+      "collection": "bridal-showers",
+      "slug": "wildflower-picnic-meadow-blanket",
+      "name": "Wildflower Picnic · Meadow Blanket",
+      "coverTitle": "Meadow Blanket",
+      "label": "Wildflower Picnic",
+      "description": "Wildflower Picnic: A bridal picnic blanket among daisies with a wicker hamper and wildflower jars.",
+      "style": "Meadow celebration",
+      "artwork": "/templates/event-pages/bridal-showers/wildflower-picnic-meadow-blanket.webp",
+      "composition": "oval",
+      "background": "#f4efdb",
+      "ink": "#4a4529",
+      "accent": "#7d7d42",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#f4efdb]",
+        "text": "text-[#4a4529]",
+        "accent": "text-[#7d7d42]",
+        "preview": "bg-[#f4efdb]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "wildflower-picnic",
+      "tags": [
+        "bridal-showers",
+        "wildflower-picnic",
+        "Meadow celebration",
+        "Meadow Blanket"
+      ],
+      "scene": "A bridal picnic blanket among daisies with a wicker hamper and wildflower jars",
+      "editorLayout": "spotlight",
+      "bodyPresentation": {
+        "surface": "paper",
+        "sectionStyle": "timeline",
+        "alignment": "center",
+        "borderRadius": "0.25rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--wildflower-picnic-barn-door-bouquets",
+      "collection": "bridal-showers",
+      "slug": "wildflower-picnic-barn-door-bouquets",
+      "name": "Wildflower Picnic · Barn Door Bouquets",
+      "coverTitle": "Barn Door Bouquets",
+      "label": "Wildflower Picnic",
+      "description": "Wildflower Picnic: Wildflower bouquets and picnic baskets arranged beside a weathered barn door.",
+      "style": "Meadow celebration",
+      "artwork": "/templates/event-pages/bridal-showers/wildflower-picnic-barn-door-bouquets.webp",
+      "composition": "editorial",
+      "background": "#f4efdb",
+      "ink": "#4a4529",
+      "accent": "#7d7d42",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#f4efdb]",
+        "text": "text-[#4a4529]",
+        "accent": "text-[#7d7d42]",
+        "preview": "bg-[#f4efdb]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "wildflower-picnic",
+      "tags": [
+        "bridal-showers",
+        "wildflower-picnic",
+        "Meadow celebration",
+        "Barn Door Bouquets"
+      ],
+      "scene": "Wildflower bouquets and picnic baskets arranged beside a weathered barn door",
+      "editorLayout": "minimal",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "cards",
+        "alignment": "left",
+        "borderRadius": "1.25rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--wildflower-picnic-creekside-lunch",
+      "collection": "bridal-showers",
+      "slug": "wildflower-picnic-creekside-lunch",
+      "name": "Wildflower Picnic · Creekside Lunch",
+      "coverTitle": "Creekside Lunch",
+      "label": "Wildflower Picnic",
+      "description": "Wildflower Picnic: A low picnic table beside a clear creek with pressed-flower napkins and woven cushions.",
+      "style": "Meadow celebration",
+      "artwork": "/templates/event-pages/bridal-showers/wildflower-picnic-creekside-lunch.webp",
+      "composition": "arch",
+      "background": "#f4efdb",
+      "ink": "#4a4529",
+      "accent": "#7d7d42",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#f4efdb]",
+        "text": "text-[#4a4529]",
+        "accent": "text-[#7d7d42]",
+        "preview": "bg-[#f4efdb]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "wildflower-picnic",
+      "tags": [
+        "bridal-showers",
+        "wildflower-picnic",
+        "Meadow celebration",
+        "Creekside Lunch"
+      ],
+      "scene": "A low picnic table beside a clear creek with pressed-flower napkins and woven cushions",
+      "editorLayout": "cards",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "ruled",
+        "alignment": "left",
+        "borderRadius": "0.75rem",
+        "spacing": "compact"
+      }
+    },
+    {
+      "id": "bridal-showers--wildflower-picnic-flower-crown-workshop",
+      "collection": "bridal-showers",
+      "slug": "wildflower-picnic-flower-crown-workshop",
+      "name": "Wildflower Picnic · Flower Crown Workshop",
+      "coverTitle": "Flower Crown Workshop",
+      "label": "Wildflower Picnic",
+      "description": "Wildflower Picnic: A shaded picnic table holding flower-crown supplies, ribbons and cups of tea.",
+      "style": "Meadow celebration",
+      "artwork": "/templates/event-pages/bridal-showers/wildflower-picnic-flower-crown-workshop.webp",
+      "composition": "panorama",
+      "background": "#f4efdb",
+      "ink": "#4a4529",
+      "accent": "#7d7d42",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#f4efdb]",
+        "text": "text-[#4a4529]",
+        "accent": "text-[#7d7d42]",
+        "preview": "bg-[#f4efdb]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "wildflower-picnic",
+      "tags": [
+        "bridal-showers",
+        "wildflower-picnic",
+        "Meadow celebration",
+        "Flower Crown Workshop"
+      ],
+      "scene": "A shaded picnic table holding flower-crown supplies, ribbons and cups of tea",
+      "editorLayout": "split",
+      "bodyPresentation": {
+        "surface": "paper",
+        "sectionStyle": "open",
+        "alignment": "center",
+        "borderRadius": "0rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--wildflower-picnic-poppy-hill",
+      "collection": "bridal-showers",
+      "slug": "wildflower-picnic-poppy-hill",
+      "name": "Wildflower Picnic · Poppy Hill",
+      "coverTitle": "Poppy Hill",
+      "label": "Wildflower Picnic",
+      "description": "Wildflower Picnic: A linen-covered picnic among red poppies on a rolling hillside.",
+      "style": "Meadow celebration",
+      "artwork": "/templates/event-pages/bridal-showers/wildflower-picnic-poppy-hill.webp",
+      "composition": "poster",
+      "background": "#f4efdb",
+      "ink": "#4a4529",
+      "accent": "#7d7d42",
+      "font": "\"Libre Baskerville\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#f4efdb]",
+        "text": "text-[#4a4529]",
+        "accent": "text-[#7d7d42]",
+        "preview": "bg-[#f4efdb]",
+        "fontFamily": "\"Libre Baskerville\", Georgia, serif"
+      },
+      "subtype": "wildflower-picnic",
+      "tags": [
+        "bridal-showers",
+        "wildflower-picnic",
+        "Meadow celebration",
+        "Poppy Hill"
+      ],
+      "scene": "A linen-covered picnic among red poppies on a rolling hillside",
+      "editorLayout": "banner",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "panels",
+        "alignment": "left",
+        "borderRadius": "1.5rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--wildflower-picnic-golden-field-supper",
+      "collection": "bridal-showers",
+      "slug": "wildflower-picnic-golden-field-supper",
+      "name": "Wildflower Picnic · Golden Field Supper",
+      "coverTitle": "Golden Field Supper",
+      "label": "Wildflower Picnic",
+      "description": "Wildflower Picnic: A small field supper with mismatched vases and wildflower bouquets at sunset.",
+      "style": "Meadow celebration",
+      "artwork": "/templates/event-pages/bridal-showers/wildflower-picnic-golden-field-supper.webp",
+      "composition": "framed",
+      "background": "#f4efdb",
+      "ink": "#4a4529",
+      "accent": "#7d7d42",
+      "font": "\"Bebas Neue\", Impact, sans-serif",
+      "theme": {
+        "bg": "bg-[#f4efdb]",
+        "text": "text-[#4a4529]",
+        "accent": "text-[#7d7d42]",
+        "preview": "bg-[#f4efdb]",
+        "fontFamily": "\"Bebas Neue\", Impact, sans-serif"
+      },
+      "subtype": "wildflower-picnic",
+      "tags": [
+        "bridal-showers",
+        "wildflower-picnic",
+        "Meadow celebration",
+        "Golden Field Supper"
+      ],
+      "scene": "A small field supper with mismatched vases and wildflower bouquets at sunset",
+      "editorLayout": "poster",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "timeline",
+        "alignment": "left",
+        "borderRadius": "0.5rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--champagne-shower-velvet-toast",
+      "collection": "bridal-showers",
+      "slug": "champagne-shower-velvet-toast",
+      "name": "Champagne Salon · Velvet Toast",
+      "coverTitle": "Velvet Toast",
+      "label": "Champagne Salon",
+      "description": "Champagne Salon: A plum velvet lounge with a bridal drinks tray, coupe glasses and pale peonies.",
+      "style": "Evening glamour",
+      "artwork": "/templates/event-pages/bridal-showers/champagne-shower-velvet-toast.webp",
+      "composition": "arch",
+      "background": "#341f3e",
+      "ink": "#fff5f3",
+      "accent": "#e9aec7",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#341f3e]",
+        "text": "text-[#fff5f3]",
+        "accent": "text-[#e9aec7]",
+        "preview": "bg-[#341f3e]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "champagne-shower",
+      "tags": [
+        "bridal-showers",
+        "champagne-shower",
+        "Evening glamour",
+        "Velvet Toast"
+      ],
+      "scene": "A plum velvet lounge with a bridal drinks tray, coupe glasses and pale peonies",
+      "editorLayout": "minimal",
+      "bodyPresentation": {
+        "surface": "dark",
+        "sectionStyle": "cards",
+        "alignment": "center",
+        "borderRadius": "0.25rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--champagne-shower-pearl-bar-cart",
+      "collection": "bridal-showers",
+      "slug": "champagne-shower-pearl-bar-cart",
+      "name": "Champagne Salon · Pearl Bar Cart",
+      "coverTitle": "Pearl Bar Cart",
+      "label": "Champagne Salon",
+      "description": "Champagne Salon: A brass bar cart with sparkling drinks, pearlescent ornaments and ivory flowers.",
+      "style": "Evening glamour",
+      "artwork": "/templates/event-pages/bridal-showers/champagne-shower-pearl-bar-cart.webp",
+      "composition": "panorama",
+      "background": "#341f3e",
+      "ink": "#fff5f3",
+      "accent": "#e9aec7",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#341f3e]",
+        "text": "text-[#fff5f3]",
+        "accent": "text-[#e9aec7]",
+        "preview": "bg-[#341f3e]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "champagne-shower",
+      "tags": [
+        "bridal-showers",
+        "champagne-shower",
+        "Evening glamour",
+        "Pearl Bar Cart"
+      ],
+      "scene": "A brass bar cart with sparkling drinks, pearlescent ornaments and ivory flowers",
+      "editorLayout": "cards",
+      "bodyPresentation": {
+        "surface": "dark",
+        "sectionStyle": "ruled",
+        "alignment": "left",
+        "borderRadius": "1.25rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--champagne-shower-city-skyline-toast",
+      "collection": "bridal-showers",
+      "slug": "champagne-shower-city-skyline-toast",
+      "name": "Champagne Salon · City Skyline Toast",
+      "coverTitle": "City Skyline Toast",
+      "label": "Champagne Salon",
+      "description": "Champagne Salon: A rooftop bridal toast table with sparkling glasses and a soft evening skyline.",
+      "style": "Evening glamour",
+      "artwork": "/templates/event-pages/bridal-showers/champagne-shower-city-skyline-toast.webp",
+      "composition": "poster",
+      "background": "#341f3e",
+      "ink": "#fff5f3",
+      "accent": "#e9aec7",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#341f3e]",
+        "text": "text-[#fff5f3]",
+        "accent": "text-[#e9aec7]",
+        "preview": "bg-[#341f3e]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "champagne-shower",
+      "tags": [
+        "bridal-showers",
+        "champagne-shower",
+        "Evening glamour",
+        "City Skyline Toast"
+      ],
+      "scene": "A rooftop bridal toast table with sparkling glasses and a soft evening skyline",
+      "editorLayout": "split",
+      "bodyPresentation": {
+        "surface": "dark",
+        "sectionStyle": "open",
+        "alignment": "left",
+        "borderRadius": "0.75rem",
+        "spacing": "compact"
+      }
+    },
+    {
+      "id": "bridal-showers--champagne-shower-golden-salon",
+      "collection": "bridal-showers",
+      "slug": "champagne-shower-golden-salon",
+      "name": "Champagne Salon · Golden Salon",
+      "coverTitle": "Golden Salon",
+      "label": "Champagne Salon",
+      "description": "Champagne Salon: An intimate gold-trimmed salon with a curved sofa and a low floral centerpiece.",
+      "style": "Evening glamour",
+      "artwork": "/templates/event-pages/bridal-showers/champagne-shower-golden-salon.webp",
+      "composition": "framed",
+      "background": "#341f3e",
+      "ink": "#fff5f3",
+      "accent": "#e9aec7",
+      "font": "\"Libre Baskerville\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#341f3e]",
+        "text": "text-[#fff5f3]",
+        "accent": "text-[#e9aec7]",
+        "preview": "bg-[#341f3e]",
+        "fontFamily": "\"Libre Baskerville\", Georgia, serif"
+      },
+      "subtype": "champagne-shower",
+      "tags": [
+        "bridal-showers",
+        "champagne-shower",
+        "Evening glamour",
+        "Golden Salon"
+      ],
+      "scene": "An intimate gold-trimmed salon with a curved sofa and a low floral centerpiece",
+      "editorLayout": "banner",
+      "bodyPresentation": {
+        "surface": "dark",
+        "sectionStyle": "panels",
+        "alignment": "center",
+        "borderRadius": "0rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--champagne-shower-midnight-bubbles",
+      "collection": "bridal-showers",
+      "slug": "champagne-shower-midnight-bubbles",
+      "name": "Champagne Salon · Midnight Bubbles",
+      "coverTitle": "Midnight Bubbles",
+      "label": "Champagne Salon",
+      "description": "Champagne Salon: A close detail of bubbling coupe glasses, dark satin and a white orchid stem.",
+      "style": "Evening glamour",
+      "artwork": "/templates/event-pages/bridal-showers/champagne-shower-midnight-bubbles.webp",
+      "composition": "postcard",
+      "background": "#341f3e",
+      "ink": "#fff5f3",
+      "accent": "#e9aec7",
+      "font": "\"Bebas Neue\", Impact, sans-serif",
+      "theme": {
+        "bg": "bg-[#341f3e]",
+        "text": "text-[#fff5f3]",
+        "accent": "text-[#e9aec7]",
+        "preview": "bg-[#341f3e]",
+        "fontFamily": "\"Bebas Neue\", Impact, sans-serif"
+      },
+      "subtype": "champagne-shower",
+      "tags": [
+        "bridal-showers",
+        "champagne-shower",
+        "Evening glamour",
+        "Midnight Bubbles"
+      ],
+      "scene": "A close detail of bubbling coupe glasses, dark satin and a white orchid stem",
+      "editorLayout": "poster",
+      "bodyPresentation": {
+        "surface": "dark",
+        "sectionStyle": "timeline",
+        "alignment": "left",
+        "borderRadius": "1.5rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--champagne-shower-marble-reception",
+      "collection": "bridal-showers",
+      "slug": "champagne-shower-marble-reception",
+      "name": "Champagne Salon · Marble Reception",
+      "coverTitle": "Marble Reception",
+      "label": "Champagne Salon",
+      "description": "Champagne Salon: A marble console with a champagne tower and softly lit bridal floral arrangements.",
+      "style": "Evening glamour",
+      "artwork": "/templates/event-pages/bridal-showers/champagne-shower-marble-reception.webp",
+      "composition": "journal",
+      "background": "#341f3e",
+      "ink": "#fff5f3",
+      "accent": "#e9aec7",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#341f3e]",
+        "text": "text-[#fff5f3]",
+        "accent": "text-[#e9aec7]",
+        "preview": "bg-[#341f3e]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "champagne-shower",
+      "tags": [
+        "bridal-showers",
+        "champagne-shower",
+        "Evening glamour",
+        "Marble Reception"
+      ],
+      "scene": "A marble console with a champagne tower and softly lit bridal floral arrangements",
+      "editorLayout": "editorial",
+      "bodyPresentation": {
+        "surface": "dark",
+        "sectionStyle": "cards",
+        "alignment": "left",
+        "borderRadius": "0.5rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--kitchen-shower-flour-flowers",
+      "collection": "bridal-showers",
+      "slug": "kitchen-shower-flour-flowers",
+      "name": "Recipe for Love · Flour & Flowers",
+      "coverTitle": "Flour & Flowers",
+      "label": "Recipe for Love",
+      "description": "Recipe for Love: A country kitchen island with a rolling pin, flour, bridal flowers and a fresh pie.",
+      "style": "Warm kitchen gathering",
+      "artwork": "/templates/event-pages/bridal-showers/kitchen-shower-flour-flowers.webp",
+      "composition": "poster",
+      "background": "#f8f2e8",
+      "ink": "#332b25",
+      "accent": "#936e43",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#f8f2e8]",
+        "text": "text-[#332b25]",
+        "accent": "text-[#936e43]",
+        "preview": "bg-[#f8f2e8]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "kitchen-shower",
+      "tags": [
+        "bridal-showers",
+        "kitchen-shower",
+        "Warm kitchen gathering",
+        "Flour & Flowers"
+      ],
+      "scene": "A country kitchen island with a rolling pin, flour, bridal flowers and a fresh pie",
+      "editorLayout": "cards",
+      "bodyPresentation": {
+        "surface": "paper",
+        "sectionStyle": "ruled",
+        "alignment": "center",
+        "borderRadius": "0.25rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--kitchen-shower-copper-kitchen",
+      "collection": "bridal-showers",
+      "slug": "kitchen-shower-copper-kitchen",
+      "name": "Recipe for Love · Copper Kitchen",
+      "coverTitle": "Copper Kitchen",
+      "label": "Recipe for Love",
+      "description": "Recipe for Love: Copper pans above a shower cooking table with herbs and ceramic mixing bowls.",
+      "style": "Warm kitchen gathering",
+      "artwork": "/templates/event-pages/bridal-showers/kitchen-shower-copper-kitchen.webp",
+      "composition": "framed",
+      "background": "#f8f2e8",
+      "ink": "#332b25",
+      "accent": "#936e43",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#f8f2e8]",
+        "text": "text-[#332b25]",
+        "accent": "text-[#936e43]",
+        "preview": "bg-[#f8f2e8]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "kitchen-shower",
+      "tags": [
+        "bridal-showers",
+        "kitchen-shower",
+        "Warm kitchen gathering",
+        "Copper Kitchen"
+      ],
+      "scene": "Copper pans above a shower cooking table with herbs and ceramic mixing bowls",
+      "editorLayout": "split",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "open",
+        "alignment": "left",
+        "borderRadius": "1.25rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--kitchen-shower-recipe-card-table",
+      "collection": "bridal-showers",
+      "slug": "kitchen-shower-recipe-card-table",
+      "name": "Recipe for Love · Recipe Card Table",
+      "coverTitle": "Recipe Card Table",
+      "label": "Recipe for Love",
+      "description": "Recipe for Love: Blank recipe cards tied with ribbon beside wooden spoons and rosemary favors.",
+      "style": "Warm kitchen gathering",
+      "artwork": "/templates/event-pages/bridal-showers/kitchen-shower-recipe-card-table.webp",
+      "composition": "postcard",
+      "background": "#f8f2e8",
+      "ink": "#332b25",
+      "accent": "#936e43",
+      "font": "\"Libre Baskerville\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#f8f2e8]",
+        "text": "text-[#332b25]",
+        "accent": "text-[#936e43]",
+        "preview": "bg-[#f8f2e8]",
+        "fontFamily": "\"Libre Baskerville\", Georgia, serif"
+      },
+      "subtype": "kitchen-shower",
+      "tags": [
+        "bridal-showers",
+        "kitchen-shower",
+        "Warm kitchen gathering",
+        "Recipe Card Table"
+      ],
+      "scene": "Blank recipe cards tied with ribbon beside wooden spoons and rosemary favors",
+      "editorLayout": "banner",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "panels",
+        "alignment": "left",
+        "borderRadius": "0.75rem",
+        "spacing": "compact"
+      }
+    },
+    {
+      "id": "bridal-showers--kitchen-shower-garden-herb-lunch",
+      "collection": "bridal-showers",
+      "slug": "kitchen-shower-garden-herb-lunch",
+      "name": "Recipe for Love · Garden Herb Lunch",
+      "coverTitle": "Garden Herb Lunch",
+      "label": "Recipe for Love",
+      "description": "Recipe for Love: A kitchen garden table with herb pots, fresh focaccia and linen aprons.",
+      "style": "Warm kitchen gathering",
+      "artwork": "/templates/event-pages/bridal-showers/kitchen-shower-garden-herb-lunch.webp",
+      "composition": "journal",
+      "background": "#f8f2e8",
+      "ink": "#332b25",
+      "accent": "#936e43",
+      "font": "\"Bebas Neue\", Impact, sans-serif",
+      "theme": {
+        "bg": "bg-[#f8f2e8]",
+        "text": "text-[#332b25]",
+        "accent": "text-[#936e43]",
+        "preview": "bg-[#f8f2e8]",
+        "fontFamily": "\"Bebas Neue\", Impact, sans-serif"
+      },
+      "subtype": "kitchen-shower",
+      "tags": [
+        "bridal-showers",
+        "kitchen-shower",
+        "Warm kitchen gathering",
+        "Garden Herb Lunch"
+      ],
+      "scene": "A kitchen garden table with herb pots, fresh focaccia and linen aprons",
+      "editorLayout": "poster",
+      "bodyPresentation": {
+        "surface": "paper",
+        "sectionStyle": "timeline",
+        "alignment": "center",
+        "borderRadius": "0rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--kitchen-shower-pasta-workshop",
+      "collection": "bridal-showers",
+      "slug": "kitchen-shower-pasta-workshop",
+      "name": "Recipe for Love · Pasta Workshop",
+      "coverTitle": "Pasta Workshop",
+      "label": "Recipe for Love",
+      "description": "Recipe for Love: A bridal pasta-making table with dough, wooden tools and bright tomatoes.",
+      "style": "Warm kitchen gathering",
+      "artwork": "/templates/event-pages/bridal-showers/kitchen-shower-pasta-workshop.webp",
+      "composition": "organic",
+      "background": "#f8f2e8",
+      "ink": "#332b25",
+      "accent": "#936e43",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#f8f2e8]",
+        "text": "text-[#332b25]",
+        "accent": "text-[#936e43]",
+        "preview": "bg-[#f8f2e8]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "kitchen-shower",
+      "tags": [
+        "bridal-showers",
+        "kitchen-shower",
+        "Warm kitchen gathering",
+        "Pasta Workshop"
+      ],
+      "scene": "A bridal pasta-making table with dough, wooden tools and bright tomatoes",
+      "editorLayout": "editorial",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "cards",
+        "alignment": "left",
+        "borderRadius": "1.5rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--kitchen-shower-sunday-baking",
+      "collection": "bridal-showers",
+      "slug": "kitchen-shower-sunday-baking",
+      "name": "Recipe for Love · Sunday Baking",
+      "coverTitle": "Sunday Baking",
+      "label": "Recipe for Love",
+      "description": "Recipe for Love: An airy kitchen with cooling cakes, embroidered towels and a bowl of strawberries.",
+      "style": "Warm kitchen gathering",
+      "artwork": "/templates/event-pages/bridal-showers/kitchen-shower-sunday-baking.webp",
+      "composition": "oval",
+      "background": "#f8f2e8",
+      "ink": "#332b25",
+      "accent": "#936e43",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#f8f2e8]",
+        "text": "text-[#332b25]",
+        "accent": "text-[#936e43]",
+        "preview": "bg-[#f8f2e8]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "kitchen-shower",
+      "tags": [
+        "bridal-showers",
+        "kitchen-shower",
+        "Warm kitchen gathering",
+        "Sunday Baking"
+      ],
+      "scene": "An airy kitchen with cooling cakes, embroidered towels and a bowl of strawberries",
+      "editorLayout": "spotlight",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "ruled",
+        "alignment": "left",
+        "borderRadius": "0.5rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--vintage-shower-heirloom-vanity",
+      "collection": "bridal-showers",
+      "slug": "vintage-shower-heirloom-vanity",
+      "name": "Vintage Rose · Heirloom Vanity",
+      "coverTitle": "Heirloom Vanity",
+      "label": "Vintage Rose",
+      "description": "Vintage Rose: A vintage vanity with a bridal bouquet, old perfume bottles and a folded lace cloth.",
+      "style": "Heirloom florals",
+      "artwork": "/templates/event-pages/bridal-showers/vintage-shower-heirloom-vanity.webp",
+      "composition": "postcard",
+      "background": "#f9edf2",
+      "ink": "#53233f",
+      "accent": "#b04d81",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#f9edf2]",
+        "text": "text-[#53233f]",
+        "accent": "text-[#b04d81]",
+        "preview": "bg-[#f9edf2]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "vintage-shower",
+      "tags": [
+        "bridal-showers",
+        "vintage-shower",
+        "Heirloom florals",
+        "Heirloom Vanity"
+      ],
+      "scene": "A vintage vanity with a bridal bouquet, old perfume bottles and a folded lace cloth",
+      "editorLayout": "split",
+      "bodyPresentation": {
+        "surface": "paper",
+        "sectionStyle": "open",
+        "alignment": "center",
+        "borderRadius": "0.25rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--vintage-shower-rose-china",
+      "collection": "bridal-showers",
+      "slug": "vintage-shower-rose-china",
+      "name": "Vintage Rose · Rose China",
+      "coverTitle": "Rose China",
+      "label": "Vintage Rose",
+      "description": "Vintage Rose: An overhead rose-patterned china setting with linen lace and pale pink flowers.",
+      "style": "Heirloom florals",
+      "artwork": "/templates/event-pages/bridal-showers/vintage-shower-rose-china.webp",
+      "composition": "journal",
+      "background": "#f9edf2",
+      "ink": "#53233f",
+      "accent": "#b04d81",
+      "font": "\"Libre Baskerville\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#f9edf2]",
+        "text": "text-[#53233f]",
+        "accent": "text-[#b04d81]",
+        "preview": "bg-[#f9edf2]",
+        "fontFamily": "\"Libre Baskerville\", Georgia, serif"
+      },
+      "subtype": "vintage-shower",
+      "tags": [
+        "bridal-showers",
+        "vintage-shower",
+        "Heirloom florals",
+        "Rose China"
+      ],
+      "scene": "An overhead rose-patterned china setting with linen lace and pale pink flowers",
+      "editorLayout": "banner",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "panels",
+        "alignment": "left",
+        "borderRadius": "1.25rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--vintage-shower-antique-conservatory",
+      "collection": "bridal-showers",
+      "slug": "vintage-shower-antique-conservatory",
+      "name": "Vintage Rose · Antique Conservatory",
+      "coverTitle": "Antique Conservatory",
+      "label": "Vintage Rose",
+      "description": "Vintage Rose: An antique cane sofa in a conservatory with roses and a bridal tea tray.",
+      "style": "Heirloom florals",
+      "artwork": "/templates/event-pages/bridal-showers/vintage-shower-antique-conservatory.webp",
+      "composition": "organic",
+      "background": "#f9edf2",
+      "ink": "#53233f",
+      "accent": "#b04d81",
+      "font": "\"Bebas Neue\", Impact, sans-serif",
+      "theme": {
+        "bg": "bg-[#f9edf2]",
+        "text": "text-[#53233f]",
+        "accent": "text-[#b04d81]",
+        "preview": "bg-[#f9edf2]",
+        "fontFamily": "\"Bebas Neue\", Impact, sans-serif"
+      },
+      "subtype": "vintage-shower",
+      "tags": [
+        "bridal-showers",
+        "vintage-shower",
+        "Heirloom florals",
+        "Antique Conservatory"
+      ],
+      "scene": "An antique cane sofa in a conservatory with roses and a bridal tea tray",
+      "editorLayout": "poster",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "timeline",
+        "alignment": "left",
+        "borderRadius": "0.75rem",
+        "spacing": "compact"
+      }
+    },
+    {
+      "id": "bridal-showers--vintage-shower-ribbon-keepsakes",
+      "collection": "bridal-showers",
+      "slug": "vintage-shower-ribbon-keepsakes",
+      "name": "Vintage Rose · Ribbon Keepsakes",
+      "coverTitle": "Ribbon Keepsakes",
+      "label": "Vintage Rose",
+      "description": "Vintage Rose: A delicate still life of velvet ribbons, a ring dish and a small rose posy.",
+      "style": "Heirloom florals",
+      "artwork": "/templates/event-pages/bridal-showers/vintage-shower-ribbon-keepsakes.webp",
+      "composition": "oval",
+      "background": "#f9edf2",
+      "ink": "#53233f",
+      "accent": "#b04d81",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#f9edf2]",
+        "text": "text-[#53233f]",
+        "accent": "text-[#b04d81]",
+        "preview": "bg-[#f9edf2]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "vintage-shower",
+      "tags": [
+        "bridal-showers",
+        "vintage-shower",
+        "Heirloom florals",
+        "Ribbon Keepsakes"
+      ],
+      "scene": "A delicate still life of velvet ribbons, a ring dish and a small rose posy",
+      "editorLayout": "editorial",
+      "bodyPresentation": {
+        "surface": "paper",
+        "sectionStyle": "cards",
+        "alignment": "center",
+        "borderRadius": "0rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--vintage-shower-rose-garden-gate",
+      "collection": "bridal-showers",
+      "slug": "vintage-shower-rose-garden-gate",
+      "name": "Vintage Rose · Rose Garden Gate",
+      "coverTitle": "Rose Garden Gate",
+      "label": "Vintage Rose",
+      "description": "Vintage Rose: A garden gate surrounded by old-fashioned roses with a tiny welcome table.",
+      "style": "Heirloom florals",
+      "artwork": "/templates/event-pages/bridal-showers/vintage-shower-rose-garden-gate.webp",
+      "composition": "editorial",
+      "background": "#f9edf2",
+      "ink": "#53233f",
+      "accent": "#b04d81",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#f9edf2]",
+        "text": "text-[#53233f]",
+        "accent": "text-[#b04d81]",
+        "preview": "bg-[#f9edf2]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "vintage-shower",
+      "tags": [
+        "bridal-showers",
+        "vintage-shower",
+        "Heirloom florals",
+        "Rose Garden Gate"
+      ],
+      "scene": "A garden gate surrounded by old-fashioned roses with a tiny welcome table",
+      "editorLayout": "spotlight",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "ruled",
+        "alignment": "left",
+        "borderRadius": "1.5rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--vintage-shower-candle-lace",
+      "collection": "bridal-showers",
+      "slug": "vintage-shower-candle-lace",
+      "name": "Vintage Rose · Candle & Lace",
+      "coverTitle": "Candle & Lace",
+      "label": "Vintage Rose",
+      "description": "Vintage Rose: A lace-covered dessert sideboard with ivory candles and overflowing rose bowls.",
+      "style": "Heirloom florals",
+      "artwork": "/templates/event-pages/bridal-showers/vintage-shower-candle-lace.webp",
+      "composition": "arch",
+      "background": "#f9edf2",
+      "ink": "#53233f",
+      "accent": "#b04d81",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#f9edf2]",
+        "text": "text-[#53233f]",
+        "accent": "text-[#b04d81]",
+        "preview": "bg-[#f9edf2]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "vintage-shower",
+      "tags": [
+        "bridal-showers",
+        "vintage-shower",
+        "Heirloom florals",
+        "Candle & Lace"
+      ],
+      "scene": "A lace-covered dessert sideboard with ivory candles and overflowing rose bowls",
+      "editorLayout": "minimal",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "open",
+        "alignment": "left",
+        "borderRadius": "0.5rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--modern-disco-shower-mirror-ball-brunch",
+      "collection": "bridal-showers",
+      "slug": "modern-disco-shower-mirror-ball-brunch",
+      "name": "Disco & Pearls · Mirror Ball Brunch",
+      "coverTitle": "Mirror Ball Brunch",
+      "label": "Disco & Pearls",
+      "description": "Disco & Pearls: Small mirror balls and pearl garlands above a lilac bridal brunch table.",
+      "style": "Playful modern glamour",
+      "artwork": "/templates/event-pages/bridal-showers/modern-disco-shower-mirror-ball-brunch.webp",
+      "composition": "organic",
+      "background": "#eee8f5",
+      "ink": "#38254e",
+      "accent": "#765194",
+      "font": "\"Libre Baskerville\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#eee8f5]",
+        "text": "text-[#38254e]",
+        "accent": "text-[#765194]",
+        "preview": "bg-[#eee8f5]",
+        "fontFamily": "\"Libre Baskerville\", Georgia, serif"
+      },
+      "subtype": "modern-disco-shower",
+      "tags": [
+        "bridal-showers",
+        "modern-disco-shower",
+        "Playful modern glamour",
+        "Mirror Ball Brunch"
+      ],
+      "scene": "Small mirror balls and pearl garlands above a lilac bridal brunch table",
+      "editorLayout": "banner",
+      "bodyPresentation": {
+        "surface": "paper",
+        "sectionStyle": "panels",
+        "alignment": "center",
+        "borderRadius": "0.25rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--modern-disco-shower-silver-bow-lounge",
+      "collection": "bridal-showers",
+      "slug": "modern-disco-shower-silver-bow-lounge",
+      "name": "Disco & Pearls · Silver Bow Lounge",
+      "coverTitle": "Silver Bow Lounge",
+      "label": "Disco & Pearls",
+      "description": "Disco & Pearls: A modern lounge with oversized silver bows, chrome stools and lilac flowers.",
+      "style": "Playful modern glamour",
+      "artwork": "/templates/event-pages/bridal-showers/modern-disco-shower-silver-bow-lounge.webp",
+      "composition": "oval",
+      "background": "#eee8f5",
+      "ink": "#38254e",
+      "accent": "#765194",
+      "font": "\"Bebas Neue\", Impact, sans-serif",
+      "theme": {
+        "bg": "bg-[#eee8f5]",
+        "text": "text-[#38254e]",
+        "accent": "text-[#765194]",
+        "preview": "bg-[#eee8f5]",
+        "fontFamily": "\"Bebas Neue\", Impact, sans-serif"
+      },
+      "subtype": "modern-disco-shower",
+      "tags": [
+        "bridal-showers",
+        "modern-disco-shower",
+        "Playful modern glamour",
+        "Silver Bow Lounge"
+      ],
+      "scene": "A modern lounge with oversized silver bows, chrome stools and lilac flowers",
+      "editorLayout": "poster",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "timeline",
+        "alignment": "left",
+        "borderRadius": "1.25rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--modern-disco-shower-pearl-cake-party",
+      "collection": "bridal-showers",
+      "slug": "modern-disco-shower-pearl-cake-party",
+      "name": "Disco & Pearls · Pearl Cake Party",
+      "coverTitle": "Pearl Cake Party",
+      "label": "Disco & Pearls",
+      "description": "Disco & Pearls: A pearl-detailed cake beside a mirror-ball cluster on a pale lavender plinth.",
+      "style": "Playful modern glamour",
+      "artwork": "/templates/event-pages/bridal-showers/modern-disco-shower-pearl-cake-party.webp",
+      "composition": "editorial",
+      "background": "#eee8f5",
+      "ink": "#38254e",
+      "accent": "#765194",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#eee8f5]",
+        "text": "text-[#38254e]",
+        "accent": "text-[#765194]",
+        "preview": "bg-[#eee8f5]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "modern-disco-shower",
+      "tags": [
+        "bridal-showers",
+        "modern-disco-shower",
+        "Playful modern glamour",
+        "Pearl Cake Party"
+      ],
+      "scene": "A pearl-detailed cake beside a mirror-ball cluster on a pale lavender plinth",
+      "editorLayout": "editorial",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "cards",
+        "alignment": "left",
+        "borderRadius": "0.75rem",
+        "spacing": "compact"
+      }
+    },
+    {
+      "id": "bridal-showers--modern-disco-shower-neonless-dance-floor",
+      "collection": "bridal-showers",
+      "slug": "modern-disco-shower-neonless-dance-floor",
+      "name": "Disco & Pearls · Neonless Dance Floor",
+      "coverTitle": "Neonless Dance Floor",
+      "label": "Disco & Pearls",
+      "description": "Disco & Pearls: A reflective dance floor with pink disco-ball light and soft white drapery.",
+      "style": "Playful modern glamour",
+      "artwork": "/templates/event-pages/bridal-showers/modern-disco-shower-neonless-dance-floor.webp",
+      "composition": "arch",
+      "background": "#eee8f5",
+      "ink": "#38254e",
+      "accent": "#765194",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#eee8f5]",
+        "text": "text-[#38254e]",
+        "accent": "text-[#765194]",
+        "preview": "bg-[#eee8f5]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "modern-disco-shower",
+      "tags": [
+        "bridal-showers",
+        "modern-disco-shower",
+        "Playful modern glamour",
+        "Neonless Dance Floor"
+      ],
+      "scene": "A reflective dance floor with pink disco-ball light and soft white drapery",
+      "editorLayout": "spotlight",
+      "bodyPresentation": {
+        "surface": "paper",
+        "sectionStyle": "ruled",
+        "alignment": "center",
+        "borderRadius": "0rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--modern-disco-shower-lilac-cocktail-hour",
+      "collection": "bridal-showers",
+      "slug": "modern-disco-shower-lilac-cocktail-hour",
+      "name": "Disco & Pearls · Lilac Cocktail Hour",
+      "coverTitle": "Lilac Cocktail Hour",
+      "label": "Disco & Pearls",
+      "description": "Disco & Pearls: A chrome cocktail table with lavender drinks and a sculptural bridal bouquet.",
+      "style": "Playful modern glamour",
+      "artwork": "/templates/event-pages/bridal-showers/modern-disco-shower-lilac-cocktail-hour.webp",
+      "composition": "panorama",
+      "background": "#eee8f5",
+      "ink": "#38254e",
+      "accent": "#765194",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#eee8f5]",
+        "text": "text-[#38254e]",
+        "accent": "text-[#765194]",
+        "preview": "bg-[#eee8f5]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "modern-disco-shower",
+      "tags": [
+        "bridal-showers",
+        "modern-disco-shower",
+        "Playful modern glamour",
+        "Lilac Cocktail Hour"
+      ],
+      "scene": "A chrome cocktail table with lavender drinks and a sculptural bridal bouquet",
+      "editorLayout": "minimal",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "open",
+        "alignment": "left",
+        "borderRadius": "1.5rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--modern-disco-shower-sparkling-favor-wall",
+      "collection": "bridal-showers",
+      "slug": "modern-disco-shower-sparkling-favor-wall",
+      "name": "Disco & Pearls · Sparkling Favor Wall",
+      "coverTitle": "Sparkling Favor Wall",
+      "label": "Disco & Pearls",
+      "description": "Disco & Pearls: Pearlescent favor boxes on a curved display with disco reflections and orchids.",
+      "style": "Playful modern glamour",
+      "artwork": "/templates/event-pages/bridal-showers/modern-disco-shower-sparkling-favor-wall.webp",
+      "composition": "poster",
+      "background": "#eee8f5",
+      "ink": "#38254e",
+      "accent": "#765194",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#eee8f5]",
+        "text": "text-[#38254e]",
+        "accent": "text-[#765194]",
+        "preview": "bg-[#eee8f5]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "modern-disco-shower",
+      "tags": [
+        "bridal-showers",
+        "modern-disco-shower",
+        "Playful modern glamour",
+        "Sparkling Favor Wall"
+      ],
+      "scene": "Pearlescent favor boxes on a curved display with disco reflections and orchids",
+      "editorLayout": "cards",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "panels",
+        "alignment": "left",
+        "borderRadius": "0.5rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--terracotta-shower-desert-courtyard",
+      "collection": "bridal-showers",
+      "slug": "terracotta-shower-desert-courtyard",
+      "name": "Terracotta Bridal · Desert Courtyard",
+      "coverTitle": "Desert Courtyard",
+      "label": "Terracotta Bridal",
+      "description": "Terracotta Bridal: A bridal luncheon in a terracotta courtyard with palms and sculptural cream flowers.",
+      "style": "Desert modern",
+      "artwork": "/templates/event-pages/bridal-showers/terracotta-shower-desert-courtyard.webp",
+      "composition": "editorial",
+      "background": "#fcdfca",
+      "ink": "#612f25",
+      "accent": "#ab4d31",
+      "font": "\"Bebas Neue\", Impact, sans-serif",
+      "theme": {
+        "bg": "bg-[#fcdfca]",
+        "text": "text-[#612f25]",
+        "accent": "text-[#ab4d31]",
+        "preview": "bg-[#fcdfca]",
+        "fontFamily": "\"Bebas Neue\", Impact, sans-serif"
+      },
+      "subtype": "terracotta-shower",
+      "tags": [
+        "bridal-showers",
+        "terracotta-shower",
+        "Desert modern",
+        "Desert Courtyard"
+      ],
+      "scene": "A bridal luncheon in a terracotta courtyard with palms and sculptural cream flowers",
+      "editorLayout": "poster",
+      "bodyPresentation": {
+        "surface": "paper",
+        "sectionStyle": "timeline",
+        "alignment": "center",
+        "borderRadius": "0.25rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--terracotta-shower-pampas-arch",
+      "collection": "bridal-showers",
+      "slug": "terracotta-shower-pampas-arch",
+      "name": "Terracotta Bridal · Pampas Arch",
+      "coverTitle": "Pampas Arch",
+      "label": "Terracotta Bridal",
+      "description": "Terracotta Bridal: A sand-colored arch with pampas grass, clay vessels and a linen-covered shower table.",
+      "style": "Desert modern",
+      "artwork": "/templates/event-pages/bridal-showers/terracotta-shower-pampas-arch.webp",
+      "composition": "arch",
+      "background": "#fcdfca",
+      "ink": "#612f25",
+      "accent": "#ab4d31",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#fcdfca]",
+        "text": "text-[#612f25]",
+        "accent": "text-[#ab4d31]",
+        "preview": "bg-[#fcdfca]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "terracotta-shower",
+      "tags": [
+        "bridal-showers",
+        "terracotta-shower",
+        "Desert modern",
+        "Pampas Arch"
+      ],
+      "scene": "A sand-colored arch with pampas grass, clay vessels and a linen-covered shower table",
+      "editorLayout": "editorial",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "cards",
+        "alignment": "left",
+        "borderRadius": "1.25rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--terracotta-shower-canyon-picnic",
+      "collection": "bridal-showers",
+      "slug": "terracotta-shower-canyon-picnic",
+      "name": "Terracotta Bridal · Canyon Picnic",
+      "coverTitle": "Canyon Picnic",
+      "label": "Terracotta Bridal",
+      "description": "Terracotta Bridal: A bridal picnic with rust cushions and pottery against distant desert canyon walls.",
+      "style": "Desert modern",
+      "artwork": "/templates/event-pages/bridal-showers/terracotta-shower-canyon-picnic.webp",
+      "composition": "panorama",
+      "background": "#fcdfca",
+      "ink": "#612f25",
+      "accent": "#ab4d31",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#fcdfca]",
+        "text": "text-[#612f25]",
+        "accent": "text-[#ab4d31]",
+        "preview": "bg-[#fcdfca]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "terracotta-shower",
+      "tags": [
+        "bridal-showers",
+        "terracotta-shower",
+        "Desert modern",
+        "Canyon Picnic"
+      ],
+      "scene": "A bridal picnic with rust cushions and pottery against distant desert canyon walls",
+      "editorLayout": "spotlight",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "ruled",
+        "alignment": "left",
+        "borderRadius": "0.75rem",
+        "spacing": "compact"
+      }
+    },
+    {
+      "id": "bridal-showers--terracotta-shower-clay-silk",
+      "collection": "bridal-showers",
+      "slug": "terracotta-shower-clay-silk",
+      "name": "Terracotta Bridal · Clay & Silk",
+      "coverTitle": "Clay & Silk",
+      "label": "Terracotta Bridal",
+      "description": "Terracotta Bridal: Handmade clay plates, silk ribbons and dried flowers on a peach linen tabletop.",
+      "style": "Desert modern",
+      "artwork": "/templates/event-pages/bridal-showers/terracotta-shower-clay-silk.webp",
+      "composition": "poster",
+      "background": "#fcdfca",
+      "ink": "#612f25",
+      "accent": "#ab4d31",
+      "font": "\"Playfair Display\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#fcdfca]",
+        "text": "text-[#612f25]",
+        "accent": "text-[#ab4d31]",
+        "preview": "bg-[#fcdfca]",
+        "fontFamily": "\"Playfair Display\", Georgia, serif"
+      },
+      "subtype": "terracotta-shower",
+      "tags": [
+        "bridal-showers",
+        "terracotta-shower",
+        "Desert modern",
+        "Clay & Silk"
+      ],
+      "scene": "Handmade clay plates, silk ribbons and dried flowers on a peach linen tabletop",
+      "editorLayout": "minimal",
+      "bodyPresentation": {
+        "surface": "paper",
+        "sectionStyle": "open",
+        "alignment": "center",
+        "borderRadius": "0rem",
+        "spacing": "airy"
+      }
+    },
+    {
+      "id": "bridal-showers--terracotta-shower-adobe-terrace",
+      "collection": "bridal-showers",
+      "slug": "terracotta-shower-adobe-terrace",
+      "name": "Terracotta Bridal · Adobe Terrace",
+      "coverTitle": "Adobe Terrace",
+      "label": "Terracotta Bridal",
+      "description": "Terracotta Bridal: A shaded adobe terrace with a low shower table and warm woven rugs.",
+      "style": "Desert modern",
+      "artwork": "/templates/event-pages/bridal-showers/terracotta-shower-adobe-terrace.webp",
+      "composition": "framed",
+      "background": "#fcdfca",
+      "ink": "#612f25",
+      "accent": "#ab4d31",
+      "font": "\"Space Grotesk\", Arial, sans-serif",
+      "theme": {
+        "bg": "bg-[#fcdfca]",
+        "text": "text-[#612f25]",
+        "accent": "text-[#ab4d31]",
+        "preview": "bg-[#fcdfca]",
+        "fontFamily": "\"Space Grotesk\", Arial, sans-serif"
+      },
+      "subtype": "terracotta-shower",
+      "tags": [
+        "bridal-showers",
+        "terracotta-shower",
+        "Desert modern",
+        "Adobe Terrace"
+      ],
+      "scene": "A shaded adobe terrace with a low shower table and warm woven rugs",
+      "editorLayout": "cards",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "panels",
+        "alignment": "left",
+        "borderRadius": "1.5rem",
+        "spacing": "balanced"
+      }
+    },
+    {
+      "id": "bridal-showers--terracotta-shower-sunset-bougainvillea",
+      "collection": "bridal-showers",
+      "slug": "terracotta-shower-sunset-bougainvillea",
+      "name": "Terracotta Bridal · Sunset Bougainvillea",
+      "coverTitle": "Sunset Bougainvillea",
+      "label": "Terracotta Bridal",
+      "description": "Terracotta Bridal: An intimate bridal table under bougainvillea against a peach wall at sunset.",
+      "style": "Desert modern",
+      "artwork": "/templates/event-pages/bridal-showers/terracotta-shower-sunset-bougainvillea.webp",
+      "composition": "postcard",
+      "background": "#fcdfca",
+      "ink": "#612f25",
+      "accent": "#ab4d31",
+      "font": "\"Libre Baskerville\", Georgia, serif",
+      "theme": {
+        "bg": "bg-[#fcdfca]",
+        "text": "text-[#612f25]",
+        "accent": "text-[#ab4d31]",
+        "preview": "bg-[#fcdfca]",
+        "fontFamily": "\"Libre Baskerville\", Georgia, serif"
+      },
+      "subtype": "terracotta-shower",
+      "tags": [
+        "bridal-showers",
+        "terracotta-shower",
+        "Desert modern",
+        "Sunset Bougainvillea"
+      ],
+      "scene": "An intimate bridal table under bougainvillea against a peach wall at sunset",
+      "editorLayout": "split",
+      "bodyPresentation": {
+        "surface": "tinted",
+        "sectionStyle": "timeline",
+        "alignment": "left",
+        "borderRadius": "0.5rem",
+        "spacing": "airy"
+      }
+    }
+  ]
+}

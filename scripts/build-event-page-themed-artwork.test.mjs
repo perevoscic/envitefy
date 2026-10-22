@@ -32,7 +32,8 @@ test("every design defines a complete page presentation and a unique stable artw
   for (const design of designs) {
     assert.equal(design.id, `${design.collection}--${design.slug}`);
     assert.match(design.slug, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
-    assert.equal(design.artwork, `/templates/event-pages/${design.collection}/${design.slug}.webp`);
+    assert.ok(design.slug.startsWith("v2-"));
+    assert.equal(design.artwork, `/templates/event-pages/v2/${design.collection}/${design.slug.slice(3)}.webp`);
     assert.ok(layouts.includes(design.editorLayout));
     assert.ok(compositions.includes(design.composition));
     for (const value of [design.background, design.ink, design.accent]) assert.match(value, /^#[a-f0-9]{6}$/);
@@ -61,7 +62,12 @@ test("artwork worklist has exact prompts and safe outputs, retaining generated p
   for (const asset of manifest.assets) {
     const design = designs.find((item) => item.id === asset.id);
     assert.equal(asset.output, `public${design.artwork}`);
-    assert.ok(asset.prompt.includes(`Subject and setting: ${design.scene}.`));
+    const pilot = JSON.parse(readFileSync(new URL("../docs/event-page-themed-pilot-prompts-v2.json", import.meta.url), "utf8")).find((item) => item.id === asset.id);
+    assert.ok(pilot ? asset.prompt === pilot.prompt : asset.prompt.includes(`Subject and setting: ${design.scene}.`));
+    assert.equal(asset.artDirection.version, 2);
+    assert.ok(asset.artDirection.camera.length > 10);
+    assert.ok(asset.artDirection.lighting.length > 10);
+    assert.ok(asset.artDirection.composition.length > 10);
     assert.equal(asset.tool, "image_gen.imagegen");
     assert.equal(asset.provider, "OpenAI built-in image_gen");
     assert.equal(asset.aspectRatio, "2:3");
@@ -74,6 +80,18 @@ test("artwork worklist has exact prompts and safe outputs, retaining generated p
   }
   const saved = JSON.parse(readFileSync(new URL("../docs/event-page-themed-artwork.json", import.meta.url), "utf8"));
   assert.deepEqual(manifest, saved);
+});
+
+test("every six-scene cohort varies viewpoint, lighting, focal placement and visual medium", () => {
+  for (const collection of collections) {
+    const scenes = briefs[collection.id].flatMap((direction) => direction.scenes);
+    assert.ok(new Set(scenes.map((scene) => scene.artDirection.medium)).size >= 4, collection.id);
+    assert.ok(scenes.filter((scene) => scene.artDirection.medium !== "photography").length >= 12, collection.id);
+    for (const direction of briefs[collection.id]) {
+      for (const field of ["camera", "lighting", "composition"]) assert.ok(new Set(direction.scenes.map((scene) => scene.artDirection[field])).size >= 3, `${collection.id}/${direction.subtype}/${field}`);
+      assert.ok(new Set(direction.scenes.map((scene) => scene.artDirection.medium)).size >= 3, `${collection.id}/${direction.subtype}/media`);
+    }
+  }
 });
 
 test("religious designs identify their tradition and occasion without assigning an event date", () => {

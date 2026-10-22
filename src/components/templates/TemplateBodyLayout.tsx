@@ -202,6 +202,7 @@ export default function TemplateBodyLayout({
       data-template-body-layout={templateLayout ? activePresentation.layout : "custom"}
       data-body-surface={activePresentation.surface}
       data-body-heading={activePresentation.heading}
+      data-body-heading-font={Boolean(style && "--body-heading-font" in style) || undefined}
       data-body-radius={activePresentation.borderRadius}
       data-body-spacing={activePresentation.spacing}
       data-body-tone={activePresentation.surfaceTone}

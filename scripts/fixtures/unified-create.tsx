@@ -7,12 +7,19 @@ import TemplateEditorProvider from "../../src/components/templates/TemplateEdito
 import UnsavedProgressProvider from "../../src/components/UnsavedProgressProvider";
 import { usePathname } from "./signup-editor/navigation";
 import { getCreationTemplates } from "../../src/lib/create/template-selection";
+import { HOLIDAY_COLLECTIONS } from "../../src/lib/holiday-collections";
 import { createCreationIntake, writeCreationIntake, readCreationIntake, listCreationIntakes, clearCreationIntakes } from "../../src/lib/create/creation-intake";
 import { readTemplateDraft } from "../../src/lib/template-draft-storage";
 import EventsWorkspaceClient from "../../src/app/events/EventsWorkspaceClient";
 import EventCustomThemeLauncher from "../../src/components/events/EventCustomThemeLauncher";
 import EventCustomEditor from "../../src/components/events/custom/EventCustomEditor";
 import CreationIntakeCleanup from "../../src/components/events/CreationIntakeCleanup";
+import ThemeProvider from "../../src/components/AppearanceProvider";
+import { SidebarProvider } from "../../src/app/sidebar-context";
+import { MainContentWrapper } from "../../src/components/MainContentWrapper";
+import MobileNavHeader from "../../src/components/navigation/MobileNavHeader";
+import { List } from "lucide-react";
+import Link from "./unified-create-link";
 import { fixtureOwner, setFixtureOwner } from "./unified-create-auth";
 import { setFixtureMenuPreferences } from "./unified-create-menu";
 
@@ -35,10 +42,13 @@ indexedDB.open = (name: string, version?: number) => {
     set(target, key, value) { return Reflect.set(target, key, key === "onsuccess" && typeof value === "function" ? (event: Event) => setTimeout(() => value.call(target, event), delay) : value, target); },
   });
 };
-(window as any).__creationBrowser = { getCreationTemplates, createCreationIntake, writeCreationIntake, readCreationIntake, listCreationIntakes, clearCreationIntakes, readTemplateDraft, setFixtureOwner, setFixtureMenuPreferences };
+(window as any).__creationBrowser = { getCreationTemplates, holidayCollections: HOLIDAY_COLLECTIONS, createCreationIntake, writeCreationIntake, readCreationIntake, listCreationIntakes, clearCreationIntakes, readTemplateDraft, setFixtureOwner, setFixtureMenuPreferences, navigate };
 function App() {
   const pathname = usePathname();
   const match = pathname.match(/^\/birthdays\/templates\/([^/]+)\/customize$/);
-  return <UnsavedProgressProvider>{pathname === "/create" ? <UnifiedCreatePageClient /> : pathname === "/gallery" ? <EventCustomThemeLauncher category="birthdays" /> : pathname === "/event/design/customize" && new URLSearchParams(location.search).has("intake") ? <div data-custom-editor><EventCustomEditor /></div> : pathname === "/event/general/customize" ? <div data-native-general><GeneralEvents /></div> : pathname === "/events" ? <EventsWorkspaceClient /> : match ? <div data-native-birthday><TemplateEditorProvider category="birthdays" templateId={decodeURIComponent(match[1])}><Birthdays /></TemplateEditorProvider></div> : <main data-destination>{pathname}<a href="/create">Create another event</a></main>}</UnsavedProgressProvider>;
+  const initialCreationAccess = JSON.parse(sessionStorage.getItem("fixture-initial-creation-access") || "null") || undefined;
+  const content = pathname === "/create" ? <UnifiedCreatePageClient initialCreationAccess={initialCreationAccess} /> : pathname === "/gallery" ? <EventCustomThemeLauncher category="birthdays" /> : pathname === "/event/design/customize" && new URLSearchParams(location.search).has("intake") ? <div data-custom-editor><EventCustomEditor /></div> : pathname === "/event/general/customize" ? <div data-native-general><GeneralEvents /></div> : pathname === "/events" ? <EventsWorkspaceClient /> : match ? <div data-native-birthday><TemplateEditorProvider category="birthdays" templateId={decodeURIComponent(match[1])}><Birthdays /></TemplateEditorProvider></div> : pathname === "/chrome-origin" ? <main data-fixture-navigation-origin style={{ minHeight: "180dvh", paddingTop: 180 }}><h1>Navigation starting page</h1><Link href="/create?chrome=1">Create an event page</Link></main> : <main data-destination>{pathname}<a href="/create">Create another event</a></main>;
+  const chrome = new URLSearchParams(location.search).get("chrome") === "1";
+  return <UnsavedProgressProvider>{chrome ? <><MobileNavHeader visible onOpenNavigation={() => {}} onHome={event => { event.preventDefault(); navigate("/chrome-origin?chrome=1"); }} menuIcon={<List size={18} aria-hidden="true" />} /><MainContentWrapper isAuthenticated><div className="min-h-0 flex-1 min-w-0">{content}</div></MainContentWrapper></> : content}</UnsavedProgressProvider>;
 }
-createRoot(document.getElementById("root")!).render(<AppRouterContext.Provider value={router}><CreationIntakeCleanup /><App /></AppRouterContext.Provider>);
+createRoot(document.getElementById("root")!).render(<ThemeProvider><SidebarProvider><AppRouterContext.Provider value={router}><CreationIntakeCleanup /><App /></AppRouterContext.Provider></SidebarProvider></ThemeProvider>);

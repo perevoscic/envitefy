@@ -7,6 +7,7 @@ import { useSidebar } from "@/app/sidebar-context";
 import { EVENT_SKIN_TOP_OFFSET_VAR } from "@/components/event-skin-layout";
 import { isCreateEventRoute } from "@/config/navigation-config";
 import { GradientBackgroundLayer } from "@/components/ui/gradient-backgrounds";
+import { UNIFIED_CREATION_ENABLED } from "@/lib/create/release";
 
 /** Clear the mobile navbar in left-sidebar.tsx and leave a 1rem content gap:
  *  safe-area top inset + 2.75rem controls + 1.25rem vertical padding
@@ -35,6 +36,7 @@ export function MainContentWrapper({
   const isStudioCardShare = pathSegments.length === 2 && pathSegments[0] === "card";
   const isEventSharePage = pathSegments.length === 2 && pathSegments[0] === "event" && !isCreateEventRoute(normalizedPath);
   const isSettingsRoute = normalizedPath === "/settings";
+  const isUnifiedCreateRoute = isAuthenticated && UNIFIED_CREATION_ENABLED && normalizedPath === "/create";
   const isAdminRoute = normalizedPath === "/admin" || normalizedPath.startsWith("/admin/");
   const usesOwnLandingBackground =
     normalizedPath === "/gymnastics" || (normalizedPath === "/snap" && !isAuthenticated);
@@ -86,8 +88,8 @@ export function MainContentWrapper({
         backgroundColor: isEventSharePage
           ? "var(--event-page-background-color, #F8F5FF)"
           : undefined,
-        // Settings applies the inset to its cards so its page gradient reaches the navbar.
-        paddingTop: isSettingsRoute ? "0px" : paddingTop,
+        // Let these pages paint behind navigation while their content keeps its inset.
+        paddingTop: isSettingsRoute || (isUnifiedCreateRoute && !isDesktop) ? "0px" : paddingTop,
         paddingBottom: isStudioCardShare ? "0px" : "max(0px, env(safe-area-inset-bottom))",
         paddingLeft,
         "--app-sidebar-width": paddingLeft,

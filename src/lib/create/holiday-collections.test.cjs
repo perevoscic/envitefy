@@ -13,6 +13,7 @@ const { HOLIDAY_COLLECTIONS } = require("../holiday-collections.ts");
 const { getCreationTemplates } = require("./template-selection.ts");
 const { customCategoryForGuess } = require("./create-intent.ts");
 const { getGeneralCreationDesigns } = require("./event-page-collections.ts");
+const { expandEventTypeChoices } = require("./event-type-groups.ts");
 
 test("Holidays & seasonal exposes only the 440 existing holiday designs", () => {
   const designs = getCreationTemplates({ category: "holidays-seasonal", sport: null });
@@ -35,4 +36,35 @@ test("each holiday choice stays within its ten real designs and carries the occa
   }
   assert.equal(getCreationTemplates({ category: "general", sport: null }).length, 452);
   assert.equal(getGeneralCreationDesigns("holidays-seasonal", "invalid-occasion").length, 0);
+});
+
+test("All and holiday choices start with the nearest named holiday while retaining all occasions and other category order", () => {
+  const base = [
+    { category: "birthdays", sport: null },
+    { category: "holidays-seasonal", sport: null },
+    { category: "weddings", sport: null },
+    { category: "sports", sport: "football" },
+  ];
+  const original = structuredClone(base), catalogOrder = HOLIDAY_COLLECTIONS.map(collection => collection.id);
+  for (const [day, first] of [["2026-10-22", "halloween"], ["2026-11-20", "thanksgiving"], ["2026-12-20", "christmas"], ["2026-12-31", "new-years-eve"], ["2027-01-01", "new-years-day"]]) {
+    const choices = expandEventTypeChoices(base, day);
+    assert.equal(choices[0].category, "holidays-seasonal", `${day}: the default All list starts with a timely holiday`);
+    assert.equal(choices[0].occasion, first, `${day}: the nearest named holiday comes before ordinary event types`);
+    const ids = choices.filter(choice => choice.category === "holidays-seasonal").map(choice => choice.occasion);
+    assert.equal(ids[0], first, day);
+    assert.equal(ids.length, 44, day);
+    assert.equal(new Set(ids).size, 44, day);
+    assert.deepEqual(new Set(ids), new Set(catalogOrder), day);
+    assert.deepEqual(choices.filter(choice => choice.category !== "holidays-seasonal"), base.filter(choice => choice.category !== "holidays-seasonal"), "seasonal ordering preserves other event types");
+  }
+  assert.deepEqual(expandEventTypeChoices(base, "2026-10-22").filter(choice => choice.category === "holidays-seasonal").slice(0, 4).map(choice => choice.occasion), ["halloween", "corn-maze", "trunk-or-treat", "fall-harvest"], "nearby seasonal activities follow Halloween");
+  const autumn = expandEventTypeChoices(base, "2026-10-22");
+  assert.deepEqual(autumn.slice(0, 4).map(choice => choice.occasion), ["halloween", "corn-maze", "trunk-or-treat", "fall-harvest"], "All opens with Halloween and the current seasonal activities");
+  assert.ok(autumn.findIndex(choice => choice.category === "birthdays") < autumn.findIndex(choice => choice.occasion === "july-fourth"), "out-of-season holidays stay below the ordinary event types that preceded them");
+  assert.deepEqual(expandEventTypeChoices(base).filter(choice => choice.category === "holidays-seasonal").map(choice => choice.occasion), catalogOrder, "the pre-hydration fallback retains catalog order");
+  assert.equal(expandEventTypeChoices(base)[0].category, "birthdays", "the server fallback waits for the visitor's civil day before reordering");
+  assert.equal(expandEventTypeChoices(base, "invalid")[0].category, "birthdays", "an invalid day never promotes unrelated holiday choices");
+  assert.deepEqual(expandEventTypeChoices([base[0], base[3]], "2026-10-22"), [base[0], base[3]], "ordering cannot add holidays to an account's approved subset");
+  assert.deepEqual(base, original, "ordering never mutates the caller's choices");
+  assert.deepEqual(HOLIDAY_COLLECTIONS.map(collection => collection.id), catalogOrder, "ordering never mutates the shared catalog");
 });

@@ -5,10 +5,15 @@ import {
   type ThemedEventDesign,
 } from "@/data/event-page-themed-designs";
 import availability from "@/data/event-page-themed-artwork-availability.json";
+import legacySnapshot from "@/data/event-page-themed-legacy.json";
 import type { BodyPresentation } from "@/components/templates/TemplateBodyLayout";
 
-const byId = new Map(EVENT_PAGE_THEMED_DESIGNS.map((design) => [design.id, design]));
-const ready = new Set<string>(availability.readyDesignIds);
+const legacyDesigns = legacySnapshot.designs as unknown as ThemedEventDesign[];
+// A published v1 ID always resolves its frozen authored metadata, even after a source rewrite.
+const byId = new Map([...EVENT_PAGE_THEMED_DESIGNS, ...legacyDesigns].map((design) => [design.id, design]));
+const ready = new Set<string>([...legacySnapshot.readyDesignIds, ...availability.readyDesignIds]);
+const modernDesigns = (collectionId: string) => EVENT_PAGE_THEMED_DESIGNS.filter((design) =>
+  design.collection === collectionId && design.id.startsWith(`${collectionId}--v2-`));
 
 /** Saved design IDs remain resolvable even when a collection is retired from new selections. */
 export function getThemedEventDesign(id?: string | null): ThemedEventDesign | undefined {
@@ -27,7 +32,7 @@ export function getDeliveredThemedEventDesign(id?: string | null): ThemedEventDe
 export function getCompleteThemedEventCollection(collectionId?: string | null) {
   const collection = EVENT_PAGE_THEMED_COLLECTIONS.find((item) => item.id === collectionId);
   if (!collection) return undefined;
-  const designs = EVENT_PAGE_THEMED_DESIGNS.filter((design) => design.collection === collection.id);
+  const designs = modernDesigns(collection.id);
   return designs.length === collection.expectedDesigns && designs.every((design) => ready.has(design.id))
     ? collection
     : undefined;
@@ -36,7 +41,10 @@ export function getCompleteThemedEventCollection(collectionId?: string | null) {
 /** Replace a legacy collection only after all 60 reviewed artwork assets have been delivered. */
 export function getActiveThemedEventDesigns(collectionId?: string | null): ThemedEventDesign[] {
   const collection = getCompleteThemedEventCollection(collectionId);
-  return collection ? EVENT_PAGE_THEMED_DESIGNS.filter((design) => design.collection === collection.id) : [];
+  if (collection) return modernDesigns(collection.id);
+  // Keep the already-delivered Bridal collection usable until its reviewed v2 replacement is complete.
+  const fallback = legacyDesigns.filter((design) => design.collection === collectionId && ready.has(design.id));
+  return fallback.length === 60 ? fallback : [];
 }
 
 export function getThemedEventBodyPresentation(id?: string | null): BodyPresentation | undefined {

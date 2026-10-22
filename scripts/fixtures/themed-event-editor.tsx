@@ -5,6 +5,7 @@ import UnsavedProgressProvider from "../../src/components/UnsavedProgressProvide
 import TemplateEditorProvider from "../../src/components/templates/TemplateEditorContext";
 import Sports from "../../src/app/event/sport-events/customize/page";
 import Bridal from "../../src/app/event/baby-showers/customize/page";
+import General from "../../src/app/event/general/customize/page";
 import SimpleTemplateView from "../../src/components/SimpleTemplateView";
 import BabyShowerTemplateView from "../../src/components/BabyShowerTemplateView";
 import { useSearchParams } from "./signup-editor/navigation";
@@ -24,10 +25,13 @@ function Guest({ id, bridal }: { id: string; bridal: boolean }) {
 }
 function App() {
   const search = useSearchParams();
+  // Publication leaves the editor route in Next; the isolated fixture stops rendering it too.
+  if (!search.get("collection")) return null;
   const bridal = search.get("collection") === "bridal-showers";
+  const general = ["graduations", "housewarming", "open-house", "religious-events"].includes(search.get("collection") || "");
   return <UnsavedProgressProvider>{search.has("guest")
     ? <Guest id={search.get("id")!} bridal={bridal} />
-    : <TemplateEditorProvider category={bridal ? "bridal-showers" : "sport-events"} templateId={search.get("templateId")!}>
+    : general ? <General /> : <TemplateEditorProvider category={bridal ? "bridal-showers" : "sport-events"} templateId={search.get("templateId")!}>
       {bridal ? <Bridal /> : <Sports />}
     </TemplateEditorProvider>}</UnsavedProgressProvider>;
 }

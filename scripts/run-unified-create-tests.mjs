@@ -6,6 +6,9 @@ const batches = [
     [
       "--test",
       "src/lib/creation-access.test.cjs",
+      "src/lib/create/creation-access-client.test.cjs",
+      "src/app/api/user/creation-access/route.test.cjs",
+      "src/app/create/page.test.cjs",
       "src/app/api/create/extract/route.test.mjs",
       "src/app/create/live-card-alternate.test.cjs",
       "src/lib/discovery/creation-authorization.test.mjs",
