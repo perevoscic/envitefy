@@ -21,10 +21,13 @@ jobs:
       - name: Check push completeness safeguards
         run: npm run test:git-hooks
       - name: Check application TypeScript before running regressions
+        id: typecheck
         run: npm run typecheck
       - name: Install Chromium for isolated campaign checks
+        id: chromium
         run: npx playwright install --with-deps chromium
       - name: Install and verify FFmpeg for artwork checks
+        id: ffmpeg
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends ffmpeg
@@ -33,4 +36,6 @@ jobs:
       - name: Check Create facts, prompts, output contracts and guest actions offline
         run: npm run test:create-remediation
       - name: Check rendered previews and RSVP recovery with external requests blocked
+        # Keep browser evidence when the offline suite fails; its failure still fails the job.
+        if: ${{ !cancelled() && steps.typecheck.outcome == 'success' && steps.chromium.outcome == 'success' && steps.ffmpeg.outcome == 'success' }}
         run: npm run test:create-browser

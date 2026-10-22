@@ -5,23 +5,10 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import test from "node:test";
 import ts from "typescript";
+import loadTs from "../../scripts/lib/event-messages-test-loader.cjs";
 const nativeRequire = createRequire(import.meta.url);
 const cache = new Map();
-function load(relative, mocks = {}) {
-  const file = path.resolve(relative);
-  if (cache.has(file)) return cache.get(file).exports;
-  const module = { exports: {} }; cache.set(file, module);
-  const code = ts.transpileModule(readFileSync(file, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true, jsx: ts.JsxEmit.ReactJSX } }).outputText;
-  const require = (name) => {
-    if (name in mocks) return mocks[name];
-    if (name.endsWith(".css")) return new Proxy({}, { get: (_, key) => String(key) });
-    if (!name.startsWith(".") && !name.startsWith("@/")) return nativeRequire(name);
-    const base = name.startsWith("@/") ? path.resolve("src", name.slice(2)) : path.resolve(path.dirname(file), name);
-    return load([base, base + ".ts", base + ".tsx"].find(existsSync), mocks);
-  };
-  new Function("require", "module", "exports", code)(require, module, module.exports);
-  return module.exports;
-}
+const load = (relative, mocks = {}) => loadTs(relative, mocks, cache);
 const utils = load("src/utils/signup.ts");
 const themes = load("src/lib/signup-themes.ts");
 const starters = load("src/lib/signup-starters.ts");

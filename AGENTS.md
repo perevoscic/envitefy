@@ -497,6 +497,7 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
 
 ## Testing And Validation
 
+- Test module loading (October 22, 2026): use `scripts/lib/event-messages-test-loader.cjs` for isolated TypeScript dependency graphs instead of copying a loader into each test. It parses imported JSON as data before transpilation and supports relative and `@/` imports. Transpiling JSON silently returned empty exports and broke the product-routing and signup-workflow tests when the themed design registry gained its frozen legacy catalog. Keep `scripts/lib/event-messages-test-loader.test.cjs` in the Create remediation runner. The CI browser step runs after an offline assertion failure when its prerequisites passed, so both suites report their results.
 - The Create event fact integrity workflow runs `npm run typecheck`, `npm run test:create-remediation`, and `npm run test:create-browser`. Run all three before pushing changes to shared Create/Live Card behavior. `test:create-facts` is only a subset: it misses the Studio source guards and rendered guest checks. When intentional behavior changes invalidate a source guard, update the guard to protect the new contract and keep the corresponding behavior tests in the CI runner.
 - There is no useful top-level `npm test` flow right now.
 - The targeted test command is usually `node --test path/to/file.test.mjs`.

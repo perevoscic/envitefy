@@ -30,6 +30,8 @@
 # Generated exports, screenshots, previews, and verification reports stay local.
 /output/
 /qa-artifacts/
+# Files attached to local Codex conversations are reference inputs.
+/.codex-remote-attachments/
 /.tools/
 /tmp/
 /.clawpatch/
