@@ -17,6 +17,7 @@ import Script from "next/script";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 
 import GuidesTopNav from "./GuidesTopNav";
+import publicStyles from "@/styles/public-appearance.module.css";
 import { guidePages } from "./guide-content";
 
 const SITE_URL = "https://envitefy.com";
@@ -176,7 +177,7 @@ export default function GuidesPage() {
 
   return (
     <main
-      className="min-h-screen overflow-hidden bg-[#f7f8f3] text-[#202124]"
+      className={`${publicStyles.page} min-h-screen overflow-hidden bg-[#f7f8f3] text-[#202124]`}
       style={{ fontFamily: pageFont }}
     >
       <GuidesTopNav />
@@ -188,8 +189,8 @@ export default function GuidesPage() {
           src="/images/about/hero/envitefy-about-hero-poster.webp"
           style={{ objectPosition: "64% center" }}
         />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(247,248,243,0.98)_0%,rgba(247,248,243,0.88)_55%,rgba(247,248,243,0.62)_100%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(247,248,243,0.18),rgba(247,248,243,0.96))]" />
+        <div className={`${publicStyles.heroScrim} absolute inset-0 bg-[linear-gradient(90deg,rgba(247,248,243,0.98)_0%,rgba(247,248,243,0.88)_55%,rgba(247,248,243,0.62)_100%)]`} />
+        <div className={`${publicStyles.heroFade} absolute inset-0 bg-[linear-gradient(180deg,rgba(247,248,243,0.18),rgba(247,248,243,0.96))]`} />
 
         <div className="relative mx-auto grid max-w-7xl gap-10 px-4 pb-12 pt-32 sm:px-6 lg:grid-cols-12 lg:px-8 lg:pb-16 lg:pt-36">
           <div className="lg:col-span-7">

@@ -235,7 +235,7 @@ export default function EmailEditorPage() {
 
   return (
     <div
-      className="min-h-[100dvh] bg-gradient-to-br from-[#ffffff] via-[#f6f3ff] to-[#f1ecff] text-[#3f3269]"
+      className="min-h-[100dvh] bg-gradient-to-br from-[#ffffff] via-[#f6f3ff] to-[#f1ecff] text-[#3f3269] dark:bg-none dark:bg-background"
       suppressHydrationWarning
     >
       <div className="max-w-[1600px] mx-auto p-4 sm:p-6 space-y-5">
@@ -259,7 +259,7 @@ export default function EmailEditorPage() {
                 />
               </svg>
             </Link>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-[#6f57c8] to-[#9278e3] bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-[#6f57c8] to-[#9278e3] bg-clip-text text-transparent dark:bg-none dark:text-foreground">
               HTML Email Editor
             </h1>
           </div>
@@ -325,7 +325,7 @@ export default function EmailEditorPage() {
                   onClick={() => setAudience("test")}
                   className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
                     audience === "test"
-                      ? "bg-[#7f67d3] text-white shadow"
+                      ? "bg-[#7f67d3] text-white shadow dark:bg-primary dark:text-primary-foreground"
                       : "text-[#4b3f72] hover:bg-white/60"
                   }`}
                 >

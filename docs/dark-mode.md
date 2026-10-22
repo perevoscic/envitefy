@@ -1,9 +1,12 @@
 # Application and email appearance
 
-The application offers **System**, **Light**, and **Dark**. System is the default.
+The application offers a segmented **Light**, **Dark**, and **Device** toggle in
+Settings, with compact icon controls in navigation menus and headers. Device is
+the default and uses the existing internal `system` preference. The toggle uses
+native radio controls for keyboard navigation and respects reduced motion.
 The browser preference is stored as `envitefy:appearance:v1`; it is not an account
 setting and does not modify event records. Explicit choices override device
-changes, and System responds to device changes. Other tabs synchronize through
+changes, and Device responds to device changes. Other tabs synchronize through
 the storage event. Restricted storage falls back to the current tab's memory.
 
 ## Palette and ownership

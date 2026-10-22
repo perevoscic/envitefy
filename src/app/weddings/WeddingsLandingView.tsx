@@ -1,4 +1,5 @@
 import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
+import publicStyles from "@/styles/public-appearance.module.css";
 import {
   ArrowRight,
   Calendar,
@@ -107,7 +108,7 @@ function SuiteStationeryPreview({
     .join("");
 
   return (
-    <div className={`relative h-56 overflow-hidden rounded-[1.75rem] ${shell.stage}`}>
+    <div data-appearance-scope="authored" className={`relative h-56 overflow-hidden rounded-[1.75rem] ${shell.stage}`}>
       <div
         className="absolute inset-0 opacity-[0.18] [background-image:radial-gradient(#ab8a5f_1px,transparent_1px)] [background-size:16px_16px]"
         aria-hidden="true"
@@ -235,7 +236,7 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
 
   return (
     <div
-      className="weddings-landing min-h-screen bg-[#fbf9f5] text-slate-800 antialiased selection:bg-[#e5d7c3] selection:text-[#523c2a]"
+      className={`${publicStyles.page} weddings-landing min-h-screen bg-[#fbf9f5] text-slate-800 antialiased selection:bg-[#e5d7c3] selection:text-[#523c2a]`}
       style={
         {
           "--font-wedding-serif": "'Cormorant Garamond', Georgia, serif",

@@ -18,6 +18,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
+import publicStyles from "@/styles/public-appearance.module.css";
 
 const TOTAL_BUILDERS = 19_423;
 const PARENT_BUILDERS = 12_160;
@@ -190,13 +191,13 @@ export default function HeroSection() {
       />
 
       <div
-        className="absolute inset-x-0 top-0 h-52 bg-gradient-to-b from-[#f7f8f3] via-[#f7f8f3]/92 to-transparent sm:h-60 lg:h-64"
+        className={`${publicStyles.heroTopFade} absolute inset-x-0 top-0 h-52 bg-gradient-to-b from-[#f7f8f3] via-[#f7f8f3]/92 to-transparent sm:h-60 lg:h-64`}
         aria-hidden="true"
       />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(247,248,243,0.96)_0%,rgba(247,248,243,0.78)_45%,rgba(247,248,243,0.44)_70%,rgba(247,248,243,0.2)_100%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(247,248,243,0.08),rgba(247,248,243,0.86))]" />
+      <div className={`${publicStyles.heroScrim} absolute inset-0 bg-[linear-gradient(90deg,rgba(247,248,243,0.96)_0%,rgba(247,248,243,0.78)_45%,rgba(247,248,243,0.44)_70%,rgba(247,248,243,0.2)_100%)]`} />
+      <div className={`${publicStyles.heroFade} absolute inset-0 bg-[linear-gradient(180deg,rgba(247,248,243,0.08),rgba(247,248,243,0.86))]`} />
       <div
-        className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-[#f7f8f3] to-transparent"
+        className={`${publicStyles.heroFade} absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-[#f7f8f3] to-transparent`}
         aria-hidden="true"
       />
 
@@ -221,7 +222,7 @@ export default function HeroSection() {
             <br />
             event pages
             <br />
-            <span className="bg-gradient-to-br from-[#203137] via-[#2f6f64] to-[#b8742b] bg-clip-text text-transparent">
+            <span className={`${publicStyles.heroGradientText} bg-gradient-to-br from-[#203137] via-[#2f6f64] to-[#b8742b] bg-clip-text text-transparent`}>
               that matter
             </span>
           </h1>

@@ -820,6 +820,10 @@
 }
 
 .previewBrowser {
+  /* The sample represents an authored event page, independently of app chrome. */
+  --creation-ink: #221c35;
+  --creation-subtle: #8a839c;
+  --creation-plum: #5b3fd1;
   position: relative;
   width: 100%;
   max-width: 400px;
@@ -832,6 +836,7 @@
     0 30px 50px -24px rgb(57 35 140 / 32%),
     0 4px 12px rgb(34 28 53 / 5%);
   text-align: left;
+  color: #221c35;
 }
 
 .previewBrowserBar {

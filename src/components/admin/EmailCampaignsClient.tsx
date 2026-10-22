@@ -534,11 +534,19 @@ export default function CampaignsPage({
       failed: "bg-[#e86b9a]",
       cancelled: "bg-[#b2a5d6]",
     };
+    const darkColors: Record<string, string> = {
+      draft: "dark:bg-surface-alt dark:text-muted-foreground",
+      queued: "dark:bg-[var(--accent-soft)] dark:text-primary",
+      sending: "dark:bg-[var(--accent-soft)] dark:text-primary",
+      sent: "dark:bg-[var(--success-background)] dark:text-success",
+      failed: "dark:bg-[var(--error-background)] dark:text-error",
+      cancelled: "dark:bg-surface-alt dark:text-muted-foreground",
+    };
     return (
       <span
         className={`px-2 py-1 rounded text-xs font-medium text-white ${
           colors[status] || "bg-gray-500"
-        }`}
+        } ${darkColors[status] || "dark:bg-surface-alt dark:text-muted-foreground"}`}
       >
         {status.toUpperCase()}
       </span>
@@ -573,7 +581,7 @@ export default function CampaignsPage({
             </div>
             <Link
               href="/admin/emails"
-              className="inline-flex min-h-9 items-center rounded-md border border-violet-200 bg-violet-50 px-3 text-xs font-semibold text-violet-800 transition hover:bg-violet-100"
+              className="inline-flex min-h-9 items-center rounded-md border border-violet-200 bg-violet-50 px-3 text-xs font-semibold text-violet-800 transition hover:bg-violet-100 dark:text-primary"
             >
               ← Back to AI Generator
             </Link>
@@ -592,7 +600,7 @@ export default function CampaignsPage({
                 setShowComposer(true);
               }
             }}
-            className="px-4 py-2 bg-[#7f67d3] text-white rounded-lg font-medium hover:bg-[#6f57c8] transition-all"
+            className="px-4 py-2 bg-[#7f67d3] text-white rounded-lg font-medium hover:bg-[#6f57c8] transition-all dark:bg-primary dark:text-primary-foreground dark:hover:bg-[var(--primary-hover)]"
           >
             {showComposer ? "✕ Cancel" : "✉️ New Campaign"}
           </button>
@@ -611,7 +619,7 @@ export default function CampaignsPage({
             {/* Subject */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-[#43366f] mb-2">
-                Subject <span className="text-red-500">*</span>
+                Subject <span className="text-red-500 dark:text-error">*</span>
               </label>
               <input
                 type="text"
@@ -626,7 +634,7 @@ export default function CampaignsPage({
             {/* Body */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-[#43366f] mb-2">
-                Email Body <span className="text-red-500">*</span>
+                Email Body <span className="text-red-500 dark:text-error">*</span>
               </label>
               <p className="text-xs text-[#8c80b6] mb-2">
                 Use{" "}
@@ -827,7 +835,7 @@ export default function CampaignsPage({
             {/* Audience Selection */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-[#43366f] mb-2">
-                Audience <span className="text-red-500">*</span>
+                Audience <span className="text-red-500 dark:text-error">*</span>
               </label>
               <div className="flex flex-wrap gap-2">
                 {["test", "all"].map((plan) => (
@@ -854,7 +862,7 @@ export default function CampaignsPage({
               {selectedPlans.includes("test") && (
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-[#43366f] mb-2">
-                    Recipient Email Addresses <span className="text-red-500">*</span>
+                    Recipient Email Addresses <span className="text-red-500 dark:text-error">*</span>
                   </label>
                   <textarea
                     value={testEmail}
@@ -895,7 +903,7 @@ export default function CampaignsPage({
                 type="button"
                 onClick={() => setShowPreview(true)}
                 disabled={!subject || !body || selectedPlans.length === 0}
-                className="px-6 py-2 bg-[#7f67d3] text-white rounded-lg font-medium hover:bg-[#6f57c8] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2 bg-[#7f67d3] text-white rounded-lg font-medium hover:bg-[#6f57c8] transition-all disabled:opacity-50 disabled:cursor-not-allowed dark:bg-primary dark:text-primary-foreground dark:hover:bg-[var(--primary-hover)]"
               >
                 Preview Email
               </button>
@@ -911,7 +919,7 @@ export default function CampaignsPage({
                 type="button"
                 onClick={() => void handleScheduleCampaign()}
                 disabled={scheduling || sending || savingDraft || !subject || !body || !scheduledAtLocal}
-                className="px-6 py-2 bg-[#8c74df] text-white rounded-lg font-medium hover:bg-[#7b63d0] transition-all disabled:opacity-50"
+                className="px-6 py-2 bg-[#8c74df] text-white rounded-lg font-medium hover:bg-[#7b63d0] transition-all disabled:opacity-50 dark:bg-primary dark:text-primary-foreground dark:hover:bg-[var(--primary-hover)]"
               >
                 {scheduling ? "Scheduling…" : "Schedule send"}
               </button>
@@ -1022,7 +1030,7 @@ export default function CampaignsPage({
                     onClick={() => setStatusFilter(value)}
                     className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                       statusFilter === value
-                        ? "bg-[#7f67d3] text-white border-[#7f67d3]"
+                        ? "bg-[#7f67d3] text-white border-[#7f67d3] dark:bg-primary dark:text-primary-foreground dark:border-primary"
                         : "bg-white text-[#4b3f72] border-[#d8d0f3] hover:bg-[#f6f2ff]"
                     }`}
                   >

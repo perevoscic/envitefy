@@ -57,7 +57,7 @@ export default function PasswordResetPreviewPage() {
 
   return (
     <div
-      className="min-h-[100dvh] bg-gradient-to-br from-[#ffffff] via-[#f6f3ff] to-[#f1ecff] text-[#3f3269] transition-colors"
+      className="min-h-[100dvh] bg-gradient-to-br from-[#ffffff] via-[#f6f3ff] to-[#f1ecff] text-[#3f3269] transition-colors dark:bg-none dark:bg-background"
       suppressHydrationWarning
     >
       <div
@@ -86,7 +86,7 @@ export default function PasswordResetPreviewPage() {
               </svg>
             </Link>
             <h1
-              className="text-2xl font-bold bg-gradient-to-r from-[#6f57c8] to-[#9278e3] bg-clip-text text-transparent"
+              className="text-2xl font-bold bg-gradient-to-r from-[#6f57c8] to-[#9278e3] bg-clip-text text-transparent dark:bg-none dark:text-foreground"
               suppressHydrationWarning
             >
               🔐 Password Reset Email

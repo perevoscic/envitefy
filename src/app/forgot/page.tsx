@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
+import publicStyles from "@/styles/public-appearance.module.css";
 
 type ForgotPasswordResult = {
   kind: "success" | "warning" | "error";
@@ -74,7 +75,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <main
-      className="font-vars flex min-h-[100dvh] items-center justify-center bg-[#F3F0FA] p-4 sm:p-6"
+      className={`${publicStyles.page} font-vars flex min-h-[100dvh] items-center justify-center bg-[#F3F0FA] p-4 sm:p-6`}
       data-mobile-form-surface
     >
       <section className="w-full max-w-md rounded-2xl border border-[#E8E0EF] bg-white p-5 shadow-[0_20px_50px_rgba(87,67,157,0.08)] sm:p-8">
@@ -112,6 +113,7 @@ export default function ForgotPasswordPage() {
           />
           <button
             type="submit"
+            data-public-primary
             disabled={loading}
             className="min-h-11 w-full rounded-full bg-[#6b3cff] px-6 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-[0_10px_28px_rgba(107,60,255,0.38)] transition hover:bg-[#5b32e0] hover:shadow-[0_12px_32px_rgba(107,60,255,0.42)] disabled:pointer-events-none disabled:opacity-60"
           >

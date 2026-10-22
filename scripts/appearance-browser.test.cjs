@@ -19,6 +19,23 @@ function loadTs(filename) {
 }
 const { buildAppearanceBootstrap, normalizeAppearance, resolveAppearance } = loadTs(path.resolve("src/lib/appearance.ts"));
 
+const appearanceRadio = (scope, name) => scope.getByRole("radio", { name, exact: true });
+
+async function assertAppearanceLayout(page) {
+  const group = page.getByRole("group", { name: "Appearance", exact: true });
+  assert.equal(await group.getByRole("radio").count(), 3);
+  const targets = await group.getByRole("radio").evaluateAll((inputs) => inputs.map((input) => {
+    const label = input.labels[0];
+    const rect = label.getBoundingClientRect();
+    return { name: label.textContent.trim(), width: rect.width, height: rect.height, left: rect.left, right: rect.right };
+  }));
+  for (const target of targets) {
+    assert.ok(target.width >= 44 && target.height >= 44, `${target.name} target must be at least 44px: ${JSON.stringify(target)}`);
+    assert.ok(target.left >= 0 && target.right <= page.viewportSize().width, `${target.name} target must remain inside the viewport`);
+  }
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, "appearance toggle must not create horizontal overflow");
+}
+
 test("appearance preference validates inputs and explicit choices override the device", () => {
   assert.equal(normalizeAppearance("invalid"), "system");
   assert.equal(normalizeAppearance(null), "system");
@@ -60,6 +77,8 @@ test("appearance applies before paint, persists, synchronizes tabs and preserves
     await page.goto("http://appearance.test/");
     assert.deepEqual(errors, []);
     await page.getByTestId("appearance-state").filter({ hasText: "system:dark" }).waitFor();
+    assert.equal(await appearanceRadio(page, "Device").isChecked(), true);
+    await assertAppearanceLayout(page);
     assert.equal(await page.evaluate(() => window.initialAppearance.theme), "general-dark");
     assert.equal(await page.evaluate(() => window.initialAppearance.background.trim()), "#181818");
     assert.deepEqual(await page.locator("#auth-email").evaluate((el) => ({ background: getComputedStyle(el).backgroundColor, border: getComputedStyle(el).borderColor, color: getComputedStyle(el).color })), { background: "rgb(48, 39, 56)", border: "rgb(133, 114, 148)", color: "rgb(242, 234, 250)" });
@@ -67,22 +86,36 @@ test("appearance applies before paint, persists, synchronizes tabs and preserves
     const authoredInput = await page.locator("#authored-input").evaluate((el) => ({ color: getComputedStyle(el).color, placeholder: getComputedStyle(el, "::placeholder").color }));
     await page.locator("#unsaved").fill("Unsaved host title");
     await page.evaluate(() => { window.originalField = document.getElementById("unsaved"); });
-    await page.getByLabel("Appearance", { exact: true }).selectOption("light");
+    await appearanceRadio(page, "Light").check();
+    assert.equal(await appearanceRadio(page, "Light").isChecked(), true);
+    assert.equal(await appearanceRadio(page, "Device").isChecked(), false);
     assert.equal(await page.locator("html").getAttribute("data-theme"), "general-light");
     assert.deepEqual(await page.locator("#authored-canvas p").evaluate((el) => ({ background: getComputedStyle(el).backgroundColor, color: getComputedStyle(el).color })), authored);
     assert.deepEqual(await page.locator("#authored-input").evaluate((el) => ({ color: getComputedStyle(el).color, placeholder: getComputedStyle(el, "::placeholder").color })), authoredInput);
     assert.equal(await page.locator("#unsaved").inputValue(), "Unsaved host title");
     assert.equal(await page.evaluate(() => document.getElementById("unsaved") === window.originalField), true);
+    const radios = page.getByRole("group", { name: "Appearance", exact: true }).getByRole("radio");
+    const values = await radios.evaluateAll((inputs) => inputs.map((input) => input.value));
+    const lightIndex = values.indexOf("light");
+    const nextIndex = (lightIndex + 1) % values.length;
+    await appearanceRadio(page, "Light").focus();
+    await page.keyboard.press("ArrowRight");
+    assert.equal(await radios.nth(nextIndex).isChecked(), true, "ArrowRight selects the next appearance");
+    assert.equal(await radios.nth(nextIndex).evaluate((input) => document.activeElement === input), true, "arrow navigation retains visible control focus");
+    await page.keyboard.press("ArrowLeft");
+    assert.equal(await appearanceRadio(page, "Light").isChecked(), true, "ArrowLeft returns to Light");
+    assert.equal(await page.locator("#unsaved").inputValue(), "Unsaved host title");
+    await page.screenshot({ path: path.join(output, "light-desktop.png") });
     await page.getByText("Open event preview", { exact: true }).click();
     const frame = page.frameLocator('iframe[title="Authored iframe — event content"]');
     await frame.locator("#iframe-input").waitFor().catch(async (error) => {
       throw new Error(`${error.message}\n${JSON.stringify({ errors, frames: await page.locator("iframe").evaluateAll((elements) => elements.map((el) => ({ title: el.title, html: el.contentDocument?.body.innerHTML.slice(0, 900), width: el.clientWidth, height: el.clientHeight }))) })}`);
     });
     const frameOriginal = await frame.locator("#iframe-input").evaluate((el) => ({ color: getComputedStyle(el).color, placeholder: getComputedStyle(el, "::placeholder").color }));
-    await page.getByLabel("Appearance", { exact: true }).selectOption("dark");
+    await appearanceRadio(page, "Dark").check();
     await frame.locator('html[data-theme="general-dark"]').waitFor();
     assert.deepEqual(await frame.locator("#iframe-input").evaluate((el) => ({ color: getComputedStyle(el).color, placeholder: getComputedStyle(el, "::placeholder").color })), frameOriginal);
-    await page.getByLabel("Appearance", { exact: true }).selectOption("light");
+    await appearanceRadio(page, "Light").check();
     await frame.locator('html[data-theme="general-light"]').waitFor();
     assert.equal(await frame.locator("html").evaluate((el) => el.style.getPropertyValue("--mobile-chrome-top-clouds").trim()), await page.locator("html").evaluate((el) => getComputedStyle(el).getPropertyValue("--mobile-chrome-top-clouds").trim()));
     await page.emulateMedia({ colorScheme: "light" });
@@ -92,19 +125,26 @@ test("appearance applies before paint, persists, synchronizes tabs and preserves
     await page.getByTestId("appearance-state").filter({ hasText: "light:light" }).waitFor();
     const second = await context.newPage();
     await second.goto("http://appearance.test/");
-    await second.getByLabel("Appearance", { exact: true }).selectOption("dark");
+    await appearanceRadio(second, "Dark").check();
     await page.getByTestId("appearance-state").filter({ hasText: "dark:dark" }).waitFor();
+    assert.equal(await appearanceRadio(page, "Dark").isChecked(), true, "the selected radio synchronizes from the other tab");
     await page.getByText("Open dialog", { exact: true }).click();
     assert.equal(await page.getByRole("dialog").evaluate((el) => getComputedStyle(el).backgroundColor), "rgb(37, 31, 45)");
     await page.getByText("Close dialog", { exact: true }).click();
-    await page.getByLabel("Appearance", { exact: true }).selectOption("system");
+    await appearanceRadio(page, "Device").check();
     await page.emulateMedia({ colorScheme: "light" });
     await page.getByTestId("appearance-state").filter({ hasText: "system:light" }).waitFor();
     await page.emulateMedia({ colorScheme: "dark" });
     await page.getByTestId("appearance-state").filter({ hasText: "system:dark" }).waitFor();
     await page.screenshot({ path: path.join(output, "dark-desktop.png") });
     await page.setViewportSize({ width: 375, height: 812 });
+    await assertAppearanceLayout(page);
     await page.screenshot({ path: path.join(output, "dark-mobile.png") });
+    await appearanceRadio(page, "Light").check();
+    await page.screenshot({ path: path.join(output, "light-mobile.png") });
+    await page.setViewportSize({ width: 320, height: 640 });
+    await assertAppearanceLayout(page);
+    await page.screenshot({ path: path.join(output, "light-mobile-320.png") });
     assert.deepEqual(errors, []);
     const restricted = await browser.newContext({ colorScheme: "dark" });
     await restricted.addInitScript(() => { Object.defineProperty(window, "localStorage", { get() { throw new DOMException("Blocked", "SecurityError"); } }); });
@@ -113,7 +153,7 @@ test("appearance applies before paint, persists, synchronizes tabs and preserves
     const blocked = await restricted.newPage();
     await blocked.goto("http://appearance.test/");
     await blocked.getByTestId("appearance-state").filter({ hasText: "system:dark" }).waitFor();
-    await blocked.getByLabel("Appearance", { exact: true }).selectOption("light");
+    await appearanceRadio(blocked, "Light").check();
     await blocked.getByTestId("appearance-state").filter({ hasText: "light:light" }).waitFor();
     await restricted.close();
     await context.close();

@@ -1,5 +1,6 @@
 "use client";
 import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
+import publicStyles from "@/styles/public-appearance.module.css";
 
 import {
   ArrowRight,
@@ -191,7 +192,7 @@ export default function SportsLandingPage() {
   const primaryHref = "#templates";
 
   return (
-    <div className="min-h-screen bg-[#f7f8f5] pb-24 text-[#121b2d] md:pb-0">
+    <div className={`${publicStyles.page} min-h-screen bg-[#f7f8f5] pb-24 text-[#121b2d] md:pb-0`}>
       <SignedOutPageChrome
         activeBottomNavLabel="Create"
         brandHref="/"

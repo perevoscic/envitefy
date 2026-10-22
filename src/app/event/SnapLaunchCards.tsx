@@ -7,6 +7,7 @@ import { savePendingSnapUpload } from "@/lib/pending-snap-upload";
 import { cn } from "@/lib/utils";
 import { createClientAttemptId, reportClientLog } from "@/utils/client-log";
 import { getUploadAcceptAttribute, validateClientUploadFile } from "@/utils/media-upload-client";
+import appearance from "./snap-launch-cards.module.css";
 
 const snapLaunchTileClass =
   "group relative flex h-28 w-28 flex-col items-center justify-center rounded-3xl bg-[#eff1f8] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a8b0bc] focus-visible:ring-offset-4 focus-visible:ring-offset-[#eff1f8] disabled:cursor-not-allowed disabled:opacity-55 sm:h-40 sm:w-40 sm:rounded-[2.5rem] max-md:h-[clamp(6rem,17dvh,8rem)] max-md:w-[clamp(6rem,17dvh,8rem)]";
@@ -171,6 +172,7 @@ export default function SnapLaunchCards({
           onClick={openCameraPicker}
           className={cn(
             snapLaunchTileClass,
+            appearance.tile,
             "text-[#9a9daa] shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] hover:text-[#7f8290] active:scale-95",
           )}
           aria-label="Snap flyer"
@@ -196,6 +198,7 @@ export default function SnapLaunchCards({
           onDragLeave={handleUploadDragLeave}
           className={cn(
             snapLaunchTileClass,
+            appearance.tile,
             isDragging
               ? "scale-95 text-[#5c5be5] shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff]"
               : "text-[#9a9daa] shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] hover:text-[#7f8290] active:scale-95",

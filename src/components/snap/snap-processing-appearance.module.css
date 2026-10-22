@@ -1,0 +1,43 @@
+:global(html.dark) .card {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--foreground);
+  box-shadow: 0 24px 60px #00000040;
+}
+
+:global(html.dark) .card .preview,
+:global(html.dark) .card .fileFallback,
+:global(html.dark) .card .uploadOverlay {
+  background: var(--surface-alt);
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+:global(html.dark) .card .mutedText,
+:global(html.dark) .card .fileMetadata {
+  color: var(--muted-foreground);
+}
+
+:global(html.dark) .card .accentText {
+  color: var(--primary);
+}
+
+:global(html.dark) .card .fileIcon {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 12px 30px #00000030;
+}
+
+:global(html.dark) .card .progressTrack {
+  stroke: var(--border);
+}
+
+:global(html.dark) .card .progressValue {
+  stroke: var(--primary);
+}
+
+:global(html.dark) .card .dataNode {
+  border-color: var(--border);
+  background: var(--surface-raised);
+  color: var(--foreground);
+}

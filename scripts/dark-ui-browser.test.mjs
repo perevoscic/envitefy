@@ -69,9 +69,9 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
         if(screen==="livecard") {
           const title=page.getByLabel("Event title",{exact:true});
           await title.fill("Movie Under the Stars");
-          await page.getByLabel("Appearance",{exact:true}).selectOption("light");
+          await page.getByRole("radio",{name:"Light",exact:true}).check();
           assert.equal(await title.inputValue(),"Movie Under the Stars");
-          await page.getByLabel("Appearance",{exact:true}).selectOption("dark");
+          await page.getByRole("radio",{name:"Dark",exact:true}).check();
           assert.equal(await title.inputValue(),"Movie Under the Stars");
         }
         if(screen==="gallery") {
@@ -84,7 +84,7 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
             // The app-owned favorite control overlays the authored thumbnail.
             const screenshotOptions={animations:"disabled",mask:[page.locator("[data-template-masonry-card]").first().getByRole("button")],maskColor:"#000000"};
             const before=await artwork.screenshot(screenshotOptions);
-            await page.getByLabel("Appearance",{exact:true}).filter({visible:true}).selectOption("light");
+            await page.getByRole("radio",{name:"Light",exact:true}).filter({visible:true}).check();
             const light=await artwork.screenshot(screenshotOptions);
             await fs.writeFile(path.join(out,"authored-artwork-dark.png"),before);
             await fs.writeFile(path.join(out,"authored-artwork-light.png"),light);
@@ -92,7 +92,7 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
             const contentPixels=async buffer=>{const image=sharp(buffer);const size=await image.metadata();return image.extract({left:1,top:1,width:size.width-2,height:size.height-2}).raw().toBuffer();};
             const authoredPixels=await contentPixels(before);
             assert.ok(authoredPixels.equals(await contentPixels(light)),"real gallery artwork must retain its authored pixels when app appearance changes");
-            await page.getByLabel("Appearance",{exact:true}).filter({visible:true}).selectOption("dark");
+            await page.getByRole("radio",{name:"Dark",exact:true}).filter({visible:true}).check();
             assert.ok(authoredPixels.equals(await contentPixels(await artwork.screenshot(screenshotOptions))),"restoring dark must retain authored artwork");
           }
           if(width===390) {
@@ -102,9 +102,9 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
             await page.waitForFunction(()=>getComputedStyle(document.getElementById("hero-top-nav-mobile")).opacity==="1");
             assert.equal(await page.locator("#hero-top-nav-mobile").evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(37, 31, 45)");
             await menu.screenshot({path:path.join(out,"gallery-mobile-navigation-dark.png")});
-            const selector=menu.getByLabel("Appearance",{exact:true});
-            await selector.selectOption("light");
-            await selector.selectOption("dark");
+            const selector=menu.getByRole("group",{name:"Appearance",exact:true});
+            await selector.getByRole("radio",{name:"Light",exact:true}).check();
+            await selector.getByRole("radio",{name:"Dark",exact:true}).check();
             await menu.getByRole("button",{name:"Close navigation",exact:true}).click();
           }
         }
@@ -126,7 +126,7 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
             const sheet=page.getByRole("dialog",{name:"Menu",exact:true});
             await sheet.waitFor();
             assert.equal(await sheet.evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(37, 31, 45)");
-            await sheet.getByLabel("Appearance",{exact:true}).selectOption("dark");
+            await sheet.getByRole("radio",{name:"Dark",exact:true}).check();
             assert.ok((await sheet.getByRole("img",{name:"Envitefy",exact:true}).getAttribute("src")).includes("/brand/white-v1/"));
             await sheet.screenshot({path:path.join(out,"signed-out-mobile-menu-dark.png")});
             await sheet.getByRole("button",{name:"Close menu",exact:true}).click();

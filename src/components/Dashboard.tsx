@@ -2156,7 +2156,7 @@ export default function Dashboard({
         />
       )}
       {scanStatus !== "idle" && (
-        <div className="fixed left-0 right-0 top-0 z-[7000] flex h-[100svh] items-start justify-center overflow-y-auto bg-[#f4eeff]/95 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-[calc(env(safe-area-inset-top)+5.75rem)] md:inset-y-0 md:h-auto md:items-center md:p-4 md:bg-[#f4eeff]/78 md:backdrop-blur-md lg:left-[var(--app-sidebar-width,20rem)]">
+        <div className="fixed left-0 right-0 top-0 z-[7000] flex h-[100svh] items-start justify-center overflow-y-auto bg-[#f4eeff]/95 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-[calc(env(safe-area-inset-top)+5.75rem)] dark:bg-background md:inset-y-0 md:h-auto md:items-center md:p-4 md:bg-[#f4eeff]/78 md:backdrop-blur-md lg:left-[var(--app-sidebar-width,20rem)] md:dark:bg-background">
           <div role="status" aria-live="polite" className="w-full max-w-md">
             <SnapProcessingCard
               status={scanStatus}
@@ -2234,7 +2234,7 @@ function EventOwnerDashboardPanel({ data }: { data: OwnerDashboardData }) {
   };
 
   return (
-    <section className="relative overflow-hidden rounded-[32px] border border-[#ddd5ff] bg-gradient-to-br from-[#f4f1ff] via-[#ffffff] to-[#eef9ff] p-4 shadow-[0_22px_60px_rgba(94,76,166,0.15)] sm:p-6">
+    <section className="relative overflow-hidden rounded-[32px] border border-[#ddd5ff] bg-gradient-to-br from-[#f4f1ff] via-[#ffffff] to-[#eef9ff] p-4 shadow-[0_22px_60px_rgba(94,76,166,0.15)] dark:bg-[var(--surface)] dark:bg-none sm:p-6">
       <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#b6a9ff]/20 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-20 -left-12 h-56 w-56 rounded-full bg-[#7ed7c8]/15 blur-3xl" />
       <div className="relative z-10 space-y-5">

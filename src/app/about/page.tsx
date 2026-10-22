@@ -21,6 +21,7 @@ import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 import HeroSection from "@/components/ui/glassmorphism-trust-hero";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import AboutTopNav from "./AboutTopNav";
+import publicStyles from "@/styles/public-appearance.module.css";
 
 const siteOgImageUrl = getRandomSiteOgImageUrl();
 
@@ -200,7 +201,7 @@ export default function AboutPage() {
 
   return (
     <>
-      <main className="min-h-screen overflow-hidden bg-[#f7f8f3] text-[#202124]">
+      <main className={`${publicStyles.page} min-h-screen overflow-hidden bg-[#f7f8f3] text-[#202124]`}>
         <AboutTopNav />
         <HeroSection />
 

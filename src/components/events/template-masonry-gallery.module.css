@@ -92,7 +92,7 @@
   border-radius: inherit;
   background: transparent;
   cursor: pointer;
-  /* This transparent hit area sits over the preserved white artwork frame. */
+  /* The hit area stays transparent above the frame and original artwork. */
   color: #2b1b16;
 }
 
@@ -194,4 +194,19 @@
   bottom: 0.5rem;
   width: 1.5rem;
   height: 1.5rem;
+}
+
+/* Change only the application frame; thumbnail artwork keeps its own palette. */
+:global(html.dark) .tile:not(:global([data-appearance-scope="authored"] *)) {
+  background: var(--app-surface);
+  border-color: var(--app-border);
+  box-shadow: 0 8px 22px #00000033;
+}
+
+:global(html.dark) .tile:not(:global([data-appearance-scope="authored"] *)):is(:hover, [data-selected]) {
+  border-color: var(--app-primary);
+}
+
+:global(html.dark) .action:not(:global([data-appearance-scope="authored"] *)) {
+  color: var(--app-foreground);
 }

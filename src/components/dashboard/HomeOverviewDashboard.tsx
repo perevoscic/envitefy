@@ -408,7 +408,7 @@ function InvitationEventCard({
             </div>
           </div>
 
-          <div className="flex flex-1 flex-col justify-between bg-slate-50/30 p-6 sm:p-8 md:p-12">
+          <div className="flex flex-1 flex-col justify-between bg-slate-50/30 p-6 dark:bg-[var(--surface)] sm:p-8 md:p-12">
             <div
               className={`flex flex-col gap-8 ${primary ? "md:flex-row md:justify-between" : ""}`}
             >
@@ -1011,7 +1011,7 @@ export default function HomeOverviewDashboard({
                   </p>
                 </div>
               </div>
-              <div className="flex flex-1 flex-col justify-between bg-slate-50/30 p-6 sm:p-8 md:p-12">
+              <div className="flex flex-1 flex-col justify-between bg-slate-50/30 p-6 dark:bg-[var(--surface)] sm:p-8 md:p-12">
                 <div className="space-y-6">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                     Countdown

@@ -1,4 +1,5 @@
 import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
+import publicStyles from "@/styles/public-appearance.module.css";
 import Script from "next/script";
 import type { CSSProperties } from "react";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
@@ -40,7 +41,7 @@ export default function BirthdaysLandingView({ page }: { page: UseCasePage }) {
   return (
     <div
       style={cssVars}
-      className="min-h-screen bg-[#fffaf6] text-[var(--birthday-ink)] selection:bg-[#ffd5bd]"
+      className={`${publicStyles.page} min-h-screen bg-[#fffaf6] text-[var(--birthday-ink)] selection:bg-[#ffd5bd]`}
     >
       <SignedOutPageChrome
         activeBottomNavLabel="Menu"

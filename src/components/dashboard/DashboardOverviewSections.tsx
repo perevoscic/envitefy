@@ -27,7 +27,7 @@ type AgendaEvent = {
 const panel =
   "min-w-0 scroll-mt-24 rounded-[28px] border border-slate-100 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.04)] sm:p-6";
 const action =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-[var(--surface-raised)]";
 
 function time(date: string | Date) {
   return new Date(date).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
@@ -84,7 +84,7 @@ export function NextEventPlanning({
   const locationPromptId = useId();
   const offerCurrentLocation = metrics?.travelOriginLabel !== "current location";
   const tileClassName =
-    "flex min-w-0 flex-col rounded-[22px] border border-slate-200/70 bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.025)]";
+    "flex min-w-0 flex-col rounded-[22px] border border-slate-200/70 bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.025)] dark:border-[var(--border)]";
   const tileHeadingClassName =
     "text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500";
   return (

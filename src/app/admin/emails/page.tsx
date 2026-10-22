@@ -119,7 +119,7 @@ export default async function EmailAdminPage({ searchParams }: EmailAdminPagePro
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center justify-between gap-3">
-                          <span className="text-base font-semibold text-slate-950 group-hover:text-violet-800">
+                          <span className="text-base font-semibold text-slate-950 group-hover:text-violet-800 dark:group-hover:text-primary">
                             {tool.title}
                           </span>
                           <AdminStatusBadge tone={tool.badge === "Workflow" ? "violet" : "neutral"}>

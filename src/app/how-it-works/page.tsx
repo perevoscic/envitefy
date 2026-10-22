@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import HowItWorks from "../landing/sections/HowItWorks";
+import publicStyles from "@/styles/public-appearance.module.css";
 
 const siteOgImageUrl = getRandomSiteOgImageUrl();
 
@@ -41,7 +42,7 @@ export default function HowItWorksPage() {
   };
 
   return (
-    <main className="min-h-screen w-full bg-transparent text-foreground">
+    <main className={`${publicStyles.page} min-h-screen w-full bg-transparent text-foreground`}>
       <section className="max-w-5xl mx-auto px-6 pt-10">
         <h1 className="text-3xl sm:text-4xl font-bold text-center text-[#2f2850]">
           How Envitefy works

@@ -69,7 +69,7 @@ const SETTINGS_SECTIONS: Array<{
   icon: LucideIcon;
 }> = [
   { id: "profile", label: "Profile", description: "Name and account email", icon: UserRound },
-  { id: "appearance", label: "Appearance", description: "Light, dark or system", icon: Settings2 },
+  { id: "appearance", label: "Appearance", description: "Light, dark or device", icon: Settings2 },
   {
     id: "calendars",
     label: "Calendars",

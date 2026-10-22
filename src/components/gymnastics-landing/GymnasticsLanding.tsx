@@ -1,5 +1,6 @@
 "use client";
 import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
+import publicStyles from "@/styles/public-appearance.module.css";
 
 import {
   ArrowRight,
@@ -333,7 +334,7 @@ export default function GymnasticsLanding() {
 
   return (
     <main
-      className={`${styles.root} relative z-[1] isolate min-h-screen overflow-x-clip bg-transparent text-white selection:bg-white/20 selection:text-white`}
+      className={`${publicStyles.page} ${styles.root} relative z-[1] isolate min-h-screen overflow-x-clip bg-transparent text-white selection:bg-white/20 selection:text-white`}
     >
       <ScenicBackground scene={activeScene} scenes={GYMNASTICS_SCENES} />
       <HeroTopNav

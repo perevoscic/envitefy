@@ -18,6 +18,7 @@ import Link from "next/link";
 import Script from "next/script";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import GuidesTopNav from "./GuidesTopNav";
+import publicStyles from "@/styles/public-appearance.module.css";
 
 const SITE_URL = "https://envitefy.com";
 const DEFAULT_IMAGE = getRandomSiteOgImageUrl(SITE_URL);
@@ -1344,7 +1345,7 @@ export function GuidePageView({ slug }: { slug: GuideSlug }) {
 
   return (
     <main
-      className="min-h-screen overflow-hidden bg-[#f7f8f3] text-[#202124]"
+      className={`${publicStyles.page} min-h-screen overflow-hidden bg-[#f7f8f3] text-[#202124]`}
       style={{ fontFamily: pageFont }}
     >
       <GuidesTopNav />
@@ -1357,7 +1358,7 @@ export function GuidePageView({ slug }: { slug: GuideSlug }) {
             src={guide.heroImage}
             style={{ objectPosition: guide.heroImagePosition ?? "center" }}
           />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(247,248,243,0.99)_0%,rgba(247,248,243,0.92)_58%,rgba(247,248,243,0.72)_100%)]" />
+          <div className={`${publicStyles.heroScrim} absolute inset-0 bg-[linear-gradient(90deg,rgba(247,248,243,0.99)_0%,rgba(247,248,243,0.92)_58%,rgba(247,248,243,0.72)_100%)]`} />
 
           <div className="relative mx-auto grid max-w-7xl gap-10 px-4 pb-12 pt-32 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.78fr)] lg:px-8 lg:pb-16 lg:pt-36">
             <div>

@@ -228,7 +228,7 @@ export default function AdminEmailPromptGenerator() {
 
   return (
     <section className="overflow-hidden rounded-lg border border-violet-200 bg-white shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-violet-100 bg-violet-50/70 px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-3 border-b border-violet-100 bg-violet-50/70 px-4 py-4 sm:flex-row sm:items-start sm:justify-between dark:bg-surface-alt">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-violet-700" strokeWidth={1.8} />
@@ -247,7 +247,7 @@ export default function AdminEmailPromptGenerator() {
           ) : null}
           <a
             href="/admin/emails?tab=campaigns"
-            className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 transition hover:border-violet-300 hover:text-violet-800"
+            className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 transition hover:border-violet-300 hover:text-violet-800 dark:hover:text-primary"
           >
             Campaigns
             <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.9} />
@@ -268,7 +268,7 @@ export default function AdminEmailPromptGenerator() {
                     key={starter.label}
                     type="button"
                     onClick={() => setPrompt(starter.prompt)}
-                    className="inline-flex min-h-8 items-center rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-800"
+                    className="inline-flex min-h-8 items-center rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-800 dark:hover:text-primary"
                   >
                     {starter.label}
                   </button>
@@ -364,7 +364,7 @@ export default function AdminEmailPromptGenerator() {
               type="button"
               onClick={handleUseInCampaign}
               disabled={!draft}
-              className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-4 text-sm font-semibold text-violet-800 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-4 text-sm font-semibold text-violet-800 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-primary"
             >
               <ExternalLink className="h-4 w-4" strokeWidth={1.9} />
               Use In Campaign

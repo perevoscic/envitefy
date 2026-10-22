@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import GuestChatWidget from "@/components/guest-chat/GuestChatWidget";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 import CompanyTopNav from "./CompanyTopNav";
+import publicStyles from "@/styles/public-appearance.module.css";
 
 type CompanyHighlight = {
   label: string;
@@ -38,7 +39,7 @@ export default function CompanyPageShell({
   return (
     <>
       <CompanyTopNav />
-      <main className="min-h-screen overflow-hidden bg-[#f7f8f3] text-[#202124]">
+      <main className={`${publicStyles.page} min-h-screen overflow-hidden bg-[#f7f8f3] text-[#202124]`}>
         <section className="relative min-h-[70svh] overflow-hidden bg-[#f7f8f3] px-4 pb-16 pt-[calc(8.5rem+env(safe-area-inset-top))] sm:px-6 lg:px-8">
           <img
             alt=""
@@ -48,15 +49,15 @@ export default function CompanyPageShell({
             style={{ objectPosition: "62% 58%" }}
           />
           <div
-            className="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-[#f7f8f3] via-[#f7f8f3]/92 to-transparent"
+            className={`${publicStyles.heroTopFade} absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-[#f7f8f3] via-[#f7f8f3]/92 to-transparent`}
             aria-hidden="true"
           />
           <div
-            className="absolute inset-0 bg-[linear-gradient(90deg,rgba(247,248,243,0.98)_0%,rgba(247,248,243,0.88)_48%,rgba(247,248,243,0.62)_78%,rgba(247,248,243,0.42)_100%)]"
+            className={`${publicStyles.heroScrim} absolute inset-0 bg-[linear-gradient(90deg,rgba(247,248,243,0.98)_0%,rgba(247,248,243,0.88)_48%,rgba(247,248,243,0.62)_78%,rgba(247,248,243,0.42)_100%)]`}
             aria-hidden="true"
           />
           <div
-            className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#f7f8f3] to-transparent"
+            className={`${publicStyles.heroFade} absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#f7f8f3] to-transparent`}
             aria-hidden="true"
           />
 
@@ -79,6 +80,7 @@ export default function CompanyPageShell({
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href={primaryHref}
+                  data-public-primary
                   className="cta-shell h-14 rounded-full bg-[#203137] px-7 text-sm font-semibold text-white shadow-[0_18px_45px_rgba(32,49,55,0.18)] transition hover:-translate-y-0.5 hover:bg-[#2b4148]"
                 >
                   <AnimatedButtonLabel label={primaryLabel} icon={ArrowRight} />

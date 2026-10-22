@@ -22,6 +22,7 @@ import ScenicBackground, {
 } from "@/components/marketing/ScenicBackground";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
+import publicStyles from "@/styles/public-appearance.module.css";
 import { marketingPageNavLinks } from "@/config/navigation";
 
 const SNAP_SCENE_ORDER = [
@@ -656,7 +657,7 @@ export default function SnapLanding() {
   };
 
   return (
-    <main className="relative z-[1] isolate min-h-screen overflow-x-clip bg-transparent font-sans text-white selection:bg-white/20 selection:text-white">
+    <main className={`${publicStyles.page} relative z-[1] isolate min-h-screen overflow-x-clip bg-transparent font-sans text-white selection:bg-white/20 selection:text-white`}>
       <ScenicBackground scene={activeScene} scenes={SNAP_SCENES} />
 
       <HeroTopNav

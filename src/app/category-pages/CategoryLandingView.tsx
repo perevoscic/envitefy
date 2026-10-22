@@ -1,4 +1,5 @@
 import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
+import publicStyles from "@/styles/public-appearance.module.css";
 import { templateCategoryForPath } from "@/lib/template-categories";
 import {
   ArrowRight,
@@ -147,7 +148,7 @@ export default function UseCaseLandingView({ page }: { page: UseCasePage }) {
   return (
     <div
       style={cssVars}
-      className="min-h-screen bg-[var(--use-case-surface)] text-[var(--use-case-ink)]"
+      className={`${publicStyles.page} min-h-screen bg-[var(--use-case-surface)] text-[var(--use-case-ink)]`}
     >
       <SignedOutPageChrome
         activeBottomNavLabel="Menu"

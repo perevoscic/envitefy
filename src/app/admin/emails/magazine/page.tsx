@@ -74,7 +74,7 @@ export default function MagazineEmailPreviewPage() {
 
   return (
     <div
-      className="min-h-[100dvh] bg-gradient-to-br from-[#ffffff] via-[#f6f3ff] to-[#f1ecff] text-[#3f3269] transition-colors"
+      className="min-h-[100dvh] bg-gradient-to-br from-[#ffffff] via-[#f6f3ff] to-[#f1ecff] text-[#3f3269] transition-colors dark:bg-none dark:bg-background"
       suppressHydrationWarning
     >
       <div
@@ -102,7 +102,7 @@ export default function MagazineEmailPreviewPage() {
               </svg>
             </Link>
             <h1
-              className="text-2xl font-bold bg-gradient-to-r from-[#6f57c8] to-[#9278e3] bg-clip-text text-transparent"
+              className="text-2xl font-bold bg-gradient-to-r from-[#6f57c8] to-[#9278e3] bg-clip-text text-transparent dark:bg-none dark:text-foreground"
               suppressHydrationWarning
             >
               📰 Envitefy Relaunch — Magazine
@@ -143,7 +143,7 @@ export default function MagazineEmailPreviewPage() {
                 <button
                   type="button"
                   onClick={openInEditor}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#7f67d3] hover:bg-[#6f57c8] text-white transition-colors"
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#7f67d3] hover:bg-[#6f57c8] text-white transition-colors dark:bg-primary dark:text-primary-foreground dark:hover:bg-[var(--primary-hover)]"
                 >
                   ✎ Edit & send in HTML editor
                 </button>

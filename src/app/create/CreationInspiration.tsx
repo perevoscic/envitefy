@@ -34,7 +34,7 @@ export default function CreationInspiration({ guess }: CreationInspirationProps)
         <h2 className={styles.previewTitle}>{presentation.previewHeading}</h2>
       </div>
       <div className={styles.previewScene}>
-        <div className={styles.previewBrowser}>
+        <div className={styles.previewBrowser} data-appearance-scope="authored" data-creation-example>
           <div className={styles.previewBrowserBar} aria-hidden="true">
             <span className={styles.previewBrowserDots}>
               <span />

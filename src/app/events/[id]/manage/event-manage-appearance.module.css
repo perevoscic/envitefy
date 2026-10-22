@@ -1,0 +1,8 @@
+.authoredPreview {
+  color: #2d1b36;
+}
+
+:global(html.dark) .workspace .surface {
+  background: var(--surface);
+  border-color: var(--border);
+}

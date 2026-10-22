@@ -1,6 +1,7 @@
 "use client";
 import { Calendar, Clock, FileText, MapPin, User, WandSparkles, X } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
+import appearance from "./snap-processing-appearance.module.css";
 
 export type SnapProcessingStatus = "idle" | "uploading" | "scanning" | "creating";
 export type SnapPreviewKind = "image" | "pdf" | "file" | null;
@@ -61,15 +62,15 @@ export function SnapProcessingCard({
 
   return (
     <div className="w-full max-w-md">
-      <div className="snap-processing-card relative overflow-hidden rounded-3xl border border-[#dfd6fb] bg-gradient-to-br from-[#ffffff] via-[#f8f4ff] to-[#f2ecff] p-6 text-[#2f2550] shadow-[0_24px_60px_rgba(84,61,140,0.24)]">
+      <div className={`${appearance.card} snap-processing-card relative overflow-hidden rounded-3xl border border-[#dfd6fb] bg-gradient-to-br from-[#ffffff] via-[#f8f4ff] to-[#f2ecff] p-6 text-[#2f2550] shadow-[0_24px_60px_rgba(84,61,140,0.24)]`}>
         <div className="snap-processing-glow pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[#b7a5ff]/20 blur-2xl" />
         <div className="snap-processing-glow pointer-events-none absolute -left-14 -bottom-14 h-36 w-36 rounded-full bg-[#88d2ff]/15 blur-3xl" />
         <div className="mb-4 text-center">
-          <p className="text-sm font-medium text-[#625089]">{statusIntro}</p>
+          <p className={`${appearance.mutedText} text-sm font-medium text-[#625089]`}>{statusIntro}</p>
         </div>
 
         <div className="relative flex flex-col items-center">
-          <div className="relative mb-5 aspect-[3/4] w-full overflow-hidden rounded-2xl border border-[#d8cff5] bg-[#f9f5ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]">
+          <div className={`${appearance.preview} relative mb-5 aspect-[3/4] w-full overflow-hidden rounded-2xl border border-[#d8cff5] bg-[#f9f5ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]`}>
             {previewKind === "image" && previewUrl && !imageFailed ? (
               <img
                 src={previewUrl}
@@ -141,12 +142,12 @@ export function SnapProcessingCard({
             )}
 
             {status === "uploading" && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#f8f2ff]/75 backdrop-blur-sm">
+              <div className={`${appearance.uploadOverlay} absolute inset-0 flex flex-col items-center justify-center bg-[#f8f2ff]/75 backdrop-blur-sm`}>
                 <ProgressRing radius={52} stroke={6} progress={progress} />
-                <p className="mt-4 font-mono text-lg font-bold text-[#6f57c7]">
+                <p className={`${appearance.accentText} mt-4 font-mono text-lg font-bold text-[#6f57c7]`}>
                   {Math.max(0, Math.min(100, Math.round(progress)))}%
                 </p>
-                <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-[#6c5a97]">
+                <p className={`${appearance.mutedText} mt-1 text-xs font-semibold uppercase tracking-widest text-[#6c5a97]`}>
                   Uploading...
                 </p>
               </div>
@@ -157,7 +158,7 @@ export function SnapProcessingCard({
 
           <div className="w-full">
             <div className="mb-2 flex items-center justify-between">
-              <span className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-[#685691]">
+              <span className={`${appearance.accentText} flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-[#685691]`}>
                 {isScanning || isCreating ? (
                   <>
                     <WandSparkles className="h-4 w-4 animate-pulse text-[#7f64d4]" />
@@ -170,7 +171,7 @@ export function SnapProcessingCard({
               <button
                 type="button"
                 onClick={onCancel}
-                className="rounded-full border border-[#ddd2fa] bg-white/85 p-1.5 text-[#7d6aa9] transition-colors hover:border-[#cbbcf2] hover:bg-white hover:text-[#5b4a88]"
+                className={`${appearance.accentText} rounded-full border border-[#ddd2fa] bg-white/85 p-1.5 text-[#7d6aa9] transition-colors hover:border-[#cbbcf2] hover:bg-white hover:text-[#5b4a88]`}
                 aria-label="Cancel upload"
               >
                 <X size={18} />
@@ -288,7 +289,7 @@ function SelectedFilesStrip({ files }: { files: File[] }) {
 
   return (
     <div className="mb-5 w-full">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#685691]">
+      <p className={`${appearance.accentText} mb-2 text-xs font-semibold uppercase tracking-wider text-[#685691]`}>
         {files.length} files selected
       </p>
       <ul className="-m-1 flex gap-2 overflow-x-auto p-1">
@@ -296,14 +297,14 @@ function SelectedFilesStrip({ files }: { files: File[] }) {
           <li
             key={`${file.name}-${file.lastModified}-${index}`}
             title={file.name}
-            className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border bg-[#f9f5ff] ${
+            className={`${appearance.preview} relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border bg-[#f9f5ff] ${
               index === 0 ? "border-[#8f75de] ring-2 ring-[#8f75de]/30" : "border-[#d8cff5]"
             }`}
           >
             {url ? (
               <img src={url} alt={file.name} className="h-full w-full object-cover" />
             ) : (
-              <span className="flex h-full w-full flex-col items-center justify-center gap-0.5 text-[#7d6aa9]">
+              <span className={`${appearance.fileMetadata} flex h-full w-full flex-col items-center justify-center gap-0.5 text-[#7d6aa9]`}>
                 <FileText className="h-5 w-5" aria-hidden="true" />
                 <span className="sr-only">{file.name}</span>
                 <span aria-hidden="true" className="text-[9px] font-bold uppercase">
@@ -320,13 +321,13 @@ function SelectedFilesStrip({ files }: { files: File[] }) {
 
 function FileFallback({ fileLabel, fileTypeLabel }: { fileLabel: string; fileTypeLabel: string }) {
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-[#fbf9ff] via-[#f5eeff] to-[#eef5ff] px-6 text-center text-[#5c4c83]">
-      <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#8e74df] to-[#7392ff] text-white shadow-[0_12px_30px_rgba(99,73,175,0.35)]">
+    <div className={`${appearance.fileFallback} flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-[#fbf9ff] via-[#f5eeff] to-[#eef5ff] px-6 text-center text-[#5c4c83]`}>
+      <span className={`${appearance.fileIcon} inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#8e74df] to-[#7392ff] text-white shadow-[0_12px_30px_rgba(99,73,175,0.35)]`}>
         <FileText className="h-7 w-7" />
       </span>
       <div className="max-w-full space-y-1">
         <p className="truncate text-sm font-semibold">{fileLabel}</p>
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#7d6aa9]">
+        <p className={`${appearance.fileMetadata} text-[10px] font-bold uppercase tracking-[0.18em] text-[#7d6aa9]`}>
           {fileTypeLabel}
         </p>
       </div>
@@ -351,6 +352,7 @@ function ProgressRing({
   return (
     <svg height={radius * 2} width={radius * 2} className="-rotate-90 transform" aria-hidden="true">
       <circle
+        className={appearance.progressTrack}
         stroke="rgba(110, 92, 164, 0.18)"
         fill="transparent"
         strokeWidth={stroke}
@@ -359,6 +361,7 @@ function ProgressRing({
         cy={radius}
       />
       <circle
+        className={appearance.progressValue}
         stroke="#7f66d5"
         fill="transparent"
         strokeWidth={stroke}
@@ -388,7 +391,7 @@ function DataNode({
 }) {
   return (
     <div
-      className="animate-float-node absolute z-30 flex items-center gap-2 rounded-full border border-[#dccffc] bg-white/95 px-2.5 py-1 text-[10px] font-bold text-[#5c4a8e] shadow-[0_10px_24px_rgba(102,77,171,0.2)]"
+      className={`${appearance.dataNode} animate-float-node absolute z-30 flex items-center gap-2 rounded-full border border-[#dccffc] bg-white/95 px-2.5 py-1 text-[10px] font-bold text-[#5c4a8e] shadow-[0_10px_24px_rgba(102,77,171,0.2)]`}
       style={{ top, left, animationDelay: delay }}
     >
       {icon}

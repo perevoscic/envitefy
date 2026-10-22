@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import appearance from "./event-manage-appearance.module.css";
 import type {
   EventAsset,
   EventAssetType,
@@ -285,9 +286,9 @@ export default function EventManageClient({
   }
 
   return (
-    <main className="min-h-screen bg-transparent text-[#161129]">
+    <main className={`${appearance.workspace} min-h-screen bg-transparent text-[#161129]`}>
       <div className="mx-auto w-full min-w-0 max-w-7xl px-3 py-4 sm:px-4 sm:py-5 lg:px-6">
-        <header className="mb-5 flex flex-col gap-4 rounded-[1.4rem] border border-[#eadfff] bg-white/86 px-5 py-5 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+        <header className={`${appearance.surface} mb-5 flex flex-col gap-4 rounded-[1.4rem] border border-[#eadfff] bg-white/86 px-5 py-5 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between`}>
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#8b7aaa]">
               Live card tools
@@ -323,7 +324,7 @@ export default function EventManageClient({
         </header>
 
         <div
-          className="mb-5 rounded-[1.2rem] border border-[#eadfff] bg-white/86 p-1 shadow-sm backdrop-blur"
+          className={`${appearance.surface} mb-5 rounded-[1.2rem] border border-[#eadfff] bg-white/86 p-1 shadow-sm backdrop-blur`}
           role="tablist"
           aria-label="Event tools sections"
         >
@@ -353,12 +354,12 @@ export default function EventManageClient({
 
         {error ? <p role="alert" className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</p> : null}
         <div className="grid gap-5">
-          <section className="min-h-[26rem] min-w-0 rounded-[1.4rem] border border-[#eadfff] bg-white/86 p-3 shadow-sm backdrop-blur sm:min-h-[34rem] sm:p-5">
+          <section className={`${appearance.surface} min-h-[26rem] min-w-0 rounded-[1.4rem] border border-[#eadfff] bg-white/86 p-3 shadow-sm backdrop-blur sm:min-h-[34rem] sm:p-5`}>
             {activeTab === "live-card" ? (
               <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
                 <div className="overflow-hidden rounded-[1.35rem] border border-[#eadfff] bg-white shadow-[0_22px_65px_rgba(68,43,112,0.08)]">
                   <div className="flex min-h-[26rem] items-center justify-center bg-[#f5f0ff] p-3 sm:min-h-[34rem] sm:p-10">
-                    <div className="flex aspect-[4/5] w-full max-w-md flex-col items-center justify-center border border-[#eadfff] bg-white px-5 py-8 text-center shadow-2xl shadow-[#3f275f]/10 sm:px-8 sm:py-10">
+                    <div data-appearance-scope="authored" className={`${appearance.authoredPreview} flex aspect-[4/5] w-full max-w-md flex-col items-center justify-center border border-[#eadfff] bg-white px-5 py-8 text-center shadow-2xl shadow-[#3f275f]/10 sm:px-8 sm:py-10`}>
                       <Sparkles className="mb-5 size-7 text-[#7c4dff]" aria-hidden="true" />
                       <h2 className="text-2xl font-semibold tracking-normal text-[#2d1b36] sm:text-4xl">
                         {headline}

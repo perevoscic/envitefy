@@ -197,6 +197,7 @@ export default function WeddingStudioPreview() {
 
         <div className="flex items-center justify-center lg:col-span-6">
           <div
+            data-appearance-scope="authored"
             className={`relative w-full max-w-md space-y-6 rounded-[2.5rem] p-8 text-center shadow-[0_30px_60px_-15px_rgba(121,91,61,0.12)] transition-all duration-500 sm:p-10 ${cardClass}`}
           >
             {theme === "gold" ? (
