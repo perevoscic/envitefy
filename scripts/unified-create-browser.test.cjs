@@ -799,8 +799,9 @@ test("unified creation retains sources, recommends native templates and protects
           return scroller.hasAttribute("data-intro-scroll") && scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop <= 1;
         });
         await page.waitForFunction(() => Array.from(document.querySelectorAll("[data-creation-event-type]")).at(-1).getAttribute("data-active") === "true");
-        const last = await manualCards.last().boundingBox(), viewport = await categoryScroller.boundingBox();
-        assert.ok(Math.abs(last.y + last.height / 2 - viewport.y - viewport.height / 2) <= 4, width + "px introduction centers the actual last item");
+        const last = await manualCards.last().evaluate(button => button.parentElement.getBoundingClientRect().toJSON());
+        const viewport = await categoryScroller.evaluate(element => ({ y: element.getBoundingClientRect().y, inset: parseFloat(getComputedStyle(element).scrollPaddingTop) }));
+        assert.ok(Math.abs(last.y - viewport.y - viewport.inset) <= 4, width + "px introduction aligns the actual last item with the active row");
         await page.waitForFunction(() => !document.querySelector("[data-category-scroller]").hasAttribute("data-intro-scroll"));
         assert.ok(performance.now() - started < 2800, width + "px load/refresh introduction finishes in under 2.8 seconds after fonts are ready");
         assert.equal(await categoryScroller.evaluate(element => element.scrollTop), 0, "the introduction returns to the first item");
@@ -864,7 +865,7 @@ test("unified creation retains sources, recommends native templates and protects
         await page.setViewportSize({ width, height: 1000 });
         await openCreate();
         await page.waitForTimeout(900);
-        assert.equal(await categoryScroller.evaluate(element => element.scrollTop), 0, "reduced motion leaves the first item centered");
+        assert.equal(await categoryScroller.evaluate(element => element.scrollTop), 0, "reduced motion leaves the first item at its starting row");
         const before = await manualCards.first().boundingBox();
         await categoryScroller.hover(); await page.mouse.wheel(0, 220);
         await page.waitForFunction(() => document.querySelector("[data-category-scroller]").scrollTop > 50);
@@ -891,7 +892,17 @@ test("unified creation retains sources, recommends native templates and protects
         assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), dark ? "general-dark" : "general-light");
         for (const width of [320, 390, 1440]) {
           await page.setViewportSize({ width, height: 1000 });
+          await categoryScroller.evaluate(element => { element.scrollTop = 0; });
+          await page.waitForFunction(() => document.querySelector('[data-creation-event-type]')?.getAttribute('data-active') === 'true');
           await assertNoOverflow("Category list in " + (dark ? "dark" : "light") + " at " + width + "px");
+          if (width <= 640) {
+            const placement = await categoryScroller.evaluate(element => {
+              const row = element.querySelector("[data-creation-event-type]").parentElement.getBoundingClientRect();
+              const bounds = element.getBoundingClientRect();
+              return { top: row.top - bounds.top, height: row.height };
+            });
+            assert.ok(Math.abs(placement.top - 28) <= 1 && placement.height >= 60, width + "px first category starts in the first full row below the heading fade: " + JSON.stringify(placement));
+          }
           const sample = await manualCards.first().evaluate(element => ({ fontSize: parseFloat(getComputedStyle(element).fontSize), width: element.getBoundingClientRect().width, height: element.getBoundingClientRect().height, clipped: element.scrollWidth > element.clientWidth + 1 }));
           assert.ok(sample.width >= 44 && sample.height >= 44 && !sample.clipped, width + "px labels remain usable: " + JSON.stringify(sample));
           assert.ok(sample.fontSize >= 24, width + "px categories use prominent typography");

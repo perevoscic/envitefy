@@ -21,12 +21,13 @@ export default function CategoryScrollPicker({ choices, onSelect, query, introPl
   const trackSelection = useCallback(() => {
     const viewport = scroller.current;
     if (!viewport || !list.current) return;
-    const middle = viewport.scrollTop + viewport.clientHeight / 2;
+    // Follow the first full row on mobile and the centered row on desktop.
+    const anchor = viewport.scrollTop + parseFloat(getComputedStyle(viewport).scrollPaddingTop);
     let closest = 0;
     let distance = Number.POSITIVE_INFINITY;
     Array.from(list.current.children).forEach((row, index) => {
       const item = row as HTMLElement;
-      const delta = Math.abs(item.offsetTop + item.offsetHeight / 2 - middle);
+      const delta = Math.abs(item.offsetTop - anchor);
       if (delta < distance) {
         closest = index;
         distance = delta;
@@ -164,7 +165,7 @@ export default function CategoryScrollPicker({ choices, onSelect, query, introPl
                     // Keyboard users see the whole focused category, including
                     // when tabbing to a row outside the scroll viewport.
                     if (event.target.matches(":focus-visible")) {
-                      event.target.scrollIntoView({ block: "center", inline: "nearest" });
+                      event.target.scrollIntoView({ block: "start", inline: "nearest" });
                     }
                   }}
                 >

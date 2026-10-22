@@ -4,6 +4,8 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 
 ## Reality Check
 
+- Mobile category starting row (October 22, 2026): `/create` starts its first category in the first full grid row below A page for, using 28px of leading scroll space to clear the transparent heading fade. Mobile scroll snapping, active accents, keyboard focus and the introduction use that same top row; keep desktop categories centered. This supersedes centering the initial category vertically on phones.
+
 - Occasion title colors (October 22, 2026): `/create` category titles use stable palettes keyed to the occasion/category rather than randomized hues: Halloween and Trunk-or-Treat orange/charcoal, Christmas evergreen/red, Thanksgiving and Friendsgiving autumn colors, Corn Mazes olive/ochre, and appropriate coordinated pairs for every holiday and category. Keep the same identity through scrolling, search, filtering and reloads. Use lighter matching inks in dark appearance for contrast, and preserve the shared transparent aurora background, keyboard/tap behavior and authored event artwork colors.
 
 - Create page background (October 22, 2026, clarified): `/create` itself is transparent in light and dark appearance so the shared app's pink-and-blue aurora background shows continuously behind the mobile navigation and creation content. Remove the page's opaque gray/lavender fill and its separate gradients, as well as the large outer workspace card surface/border/shadow. Keep controls and artwork readable. Use a transparent mask for the mobile category-heading fade; do not paint another surface over the shared background. This supersedes retaining the old Create-specific pastel canvas.

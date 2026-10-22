@@ -1,6 +1,7 @@
 .picker {
   --picker-height: clamp(340px, 53dvh, 560px);
   --row-height: clamp(84px, 8.2cqi, 112px);
+  --row-inset: calc((var(--picker-height) - var(--row-height)) / 2);
   position: relative;
   min-width: 0;
   isolation: isolate;
@@ -30,7 +31,7 @@
   scrollbar-width: thin;
   scrollbar-color: var(--creation-line) transparent;
   scroll-snap-type: y proximity;
-  scroll-padding-block: calc((var(--picker-height) - var(--row-height)) / 2);
+  scroll-padding-block: var(--row-inset) calc(var(--picker-height) - var(--row-inset) - var(--row-height));
   border-radius: 12px;
 }
 
@@ -46,7 +47,7 @@
 
 .list {
   margin: 0;
-  padding: calc((var(--picker-height) - var(--row-height)) / 2) 20px calc((var(--picker-height) - var(--row-height)) / 2) 35%;
+  padding: var(--row-inset) 20px calc(var(--picker-height) - var(--row-inset) - var(--row-height)) 35%;
   list-style: none;
 }
 
@@ -55,7 +56,7 @@
   align-items: center;
   min-width: 0;
   height: var(--row-height);
-  scroll-snap-align: center;
+  scroll-snap-align: start;
 }
 
 .category {
@@ -156,7 +157,7 @@
 }
 
 @container creation (max-width: 640px) {
-  .picker { --picker-height: clamp(300px, 48dvh, 430px); --row-height: 60px; }
+  .picker { --picker-height: clamp(300px, 48dvh, 430px); --row-height: 60px; --row-inset: 28px; }
   .lead {
     position: relative;
     z-index: 1;
