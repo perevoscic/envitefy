@@ -8,6 +8,8 @@ import "@/components/event-create/imported-event-theme.css";
 
 import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
 import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
+import { getThemedEventDesign, getThemedEventBodyPresentation, getThemedEventTheme, isThemedEventDesignDark } from "@/lib/event-page-themed-designs";
+import ThemedEventHeader from "@/components/templates/ThemedEventHeader";
 import { buildCalendarLinks } from "@/utils/calendar-links";
 
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
@@ -397,6 +399,7 @@ export default function SimpleTemplateView({
 
   // Use state data if available, fallback to prop
   const currentData = eventDataState || eventData;
+  const themedDesign = getThemedEventDesign(currentData?.bodyDesignId || currentData?.templateEditor?.templateId || currentData?.themeId);
   const simpleDesignTokens =
     currentData?.designTokens || currentData?.customFields?.designTokens || null;
   const hasSimpleDesignTokens = Boolean(
@@ -502,7 +505,7 @@ export default function SimpleTemplateView({
     const imported = importedSportsTheme(importedTheme);
     if (imported) return imported;
     // The theme object should be stored directly in currentData.theme
-    const storedTheme = currentData?.theme;
+    const storedTheme = currentData?.theme || (themedDesign ? getThemedEventTheme(themedDesign) : undefined);
 
     // Debug logging
     if (typeof window !== "undefined") {
@@ -709,6 +712,7 @@ export default function SimpleTemplateView({
 
   // Theme classes
   const isDarkBackground = (() => {
+    if (themedDesign && (!currentData?.themeId || currentData.themeId === themedDesign.id)) return isThemedEventDesignDark(themedDesign);
     // Prefer palette inference when available
     if (paletteIsDark !== null) return paletteIsDark;
     const bg = theme?.bg?.toLowerCase() ?? "";
@@ -756,7 +760,8 @@ export default function SimpleTemplateView({
   const paletteTextFallback =
     paletteIsDark === null ? "" : paletteIsDark ? "text-white" : "text-slate-900";
 
-  const rawTextClass = theme?.text || paletteTextFallback;
+  const authoredPalette = themedDesign && (!currentData?.themeId || currentData.themeId === themedDesign.id);
+  const rawTextClass = authoredPalette ? "text-inherit" : theme?.text || paletteTextFallback;
   const neutralPreviewSurface = neutralPreview?.surface || "white";
   const neutralPaletteDriven = Boolean(neutralPreview?.paletteDriven);
   const neutralSuppressTextShadows = Boolean(neutralPreview?.suppressTextShadows);
@@ -772,7 +777,7 @@ export default function SimpleTemplateView({
       ? theme.bg
       : "";
   const backgroundStyle = hasBgStyle ? (theme.bgStyle as CSSProperties) : undefined;
-  const forceLightText = isDarkBackground && !rawTextClass.toLowerCase().includes("text-white");
+  const forceLightText = !authoredPalette && isDarkBackground && !rawTextClass.toLowerCase().includes("text-white");
   const textClass = disableThemeBackground
     ? "text-slate-900"
     : hasSimpleDesignTokens
@@ -780,7 +785,7 @@ export default function SimpleTemplateView({
       : forceLightText
         ? "text-white"
         : rawTextClass || "text-white";
-  const accentClass = neutralUsesPalette
+  const accentClass = authoredPalette ? "text-inherit" : neutralUsesPalette
     ? "text-[color:var(--primary)]"
     : disableThemeBackground
       ? "text-slate-700"
@@ -799,7 +804,7 @@ export default function SimpleTemplateView({
       isDarkBackground);
   const headingShadow = usesLightText ? { textShadow: "0 2px 6px rgba(0,0,0,0.55)" } : undefined;
   const bodyShadow = usesLightText ? { textShadow: "0 1px 3px rgba(0,0,0,0.45)" } : undefined;
-  const titleColor = neutralUsesPalette
+  const titleColor = authoredPalette ? { color: themedDesign.ink } : neutralUsesPalette
     ? { color: "var(--color-heading, #1f2937)" }
     : hasSimpleDesignTokens
       ? undefined
@@ -4714,6 +4719,7 @@ export default function SimpleTemplateView({
           >
             <div className="relative z-10">
               {/* Header */}
+              <ThemedEventHeader design={themedDesign} fontFamily={headingFontFamily}>
               <TemplateImageTone enabled={currentData.heroImageFilterEnabled !== false} color={theme.accent || paletteColors[0] || theme.bg}>
 <div className="relative w-full h-64 md:h-96">
                 {heroImage?.trim() ? (
@@ -4870,6 +4876,7 @@ export default function SimpleTemplateView({
                 </div>
               </div>
 
+              </ThemedEventHeader>
               {!isLocked ? <>
                 <EventGuestActions visibility={currentData?.guestActions} title={eventTitle} start={guestStart} end={guestEnd} description={description} location={fullLocation} shareUrl={shareUrl} eventId={eventId} preview={!shareUrl || eventId === "preview"} inverse={isDarkBackground} timezone={currentData?.timezone} />
                 <EventGuestPlanningNotes value={guestPlanning} inverse={isDarkBackground} />
@@ -4879,7 +4886,7 @@ export default function SimpleTemplateView({
 
 
               {/* Details Section */}
-              <TemplateBodyLayout presentation={normalizedCategory === "sport_event" || currentData?.templateEditor?.category === "sport-events" ? getTemplateBodyPresentation("sport-events", currentData?.bodyDesignId || currentData?.templateEditor?.templateId || `${currentData?.customFields?.sport || currentData?.activityProfile || "football"}--stadium`) : undefined}>
+              <TemplateBodyLayout presentation={getThemedEventBodyPresentation(currentData?.bodyDesignId || currentData?.templateEditor?.templateId || currentData?.themeId) || (normalizedCategory === "sport_event" || currentData?.templateEditor?.category === "sport-events" ? getTemplateBodyPresentation("sport-events", currentData?.bodyDesignId || currentData?.templateEditor?.templateId || `${currentData?.customFields?.sport || currentData?.activityProfile || "football"}--stadium`) : undefined)}>
               <section
                 id="details"
                 className="py-10 border-t border-white/10 px-6 md:px-10 scroll-mt-24"

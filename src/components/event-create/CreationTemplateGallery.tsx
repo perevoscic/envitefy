@@ -17,6 +17,7 @@ import CategoryTemplateThumbnail from "@/components/templates/CategoryTemplateTh
 import type { CreationTemplate } from "@/lib/create/template-selection";
 import { GENERAL_EVENT_DESIGNS } from "@/lib/general-event-designs";
 import { getTemplateCategory } from "@/lib/template-categories";
+import { getThemedEventDesign } from "@/lib/event-page-themed-designs";
 
 type CreationTemplateGalleryProps = {
   templates: CreationTemplate[];
@@ -27,6 +28,8 @@ type CreationTemplateGalleryProps = {
 };
 
 function CreationTemplatePreview({ template }: { template: CreationTemplate }) {
+  const themed = getThemedEventDesign(template.id);
+  if (themed) return <TemplateArtworkThumbnail design={themed} />;
   if (template.category === "gymnastics") {
     const design = GYM_MEET_TEMPLATE_LIBRARY.find((item) => item.id === template.id);
     if (design) return <GymnasticsThumbnail design={design} />;

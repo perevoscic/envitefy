@@ -300,7 +300,8 @@ test("unified creation retains sources, recommends native templates and protects
   const holdAccessResponse = () => {
     let release;
     const promise = new Promise(resolve => { release = resolve; });
-    return accessResponseGate = { promise, release, started: false, finished: false };
+    accessResponseGate = { promise, release, started: false, finished: false };
+    return accessResponseGate;
   };
   try {
     await openCreate();
@@ -343,6 +344,32 @@ test("unified creation retains sources, recommends native templates and protects
     await mode("Start from scratch").focus(); await page.keyboard.press("Enter");
     const manualTypes = page.getByRole("region", { name: "Choose an event type", exact: true });
     await manualTypes.waitFor();
+    await t.test("event type dropdown filters available cards without creating or reading an event", async () => {
+      const filter = manualTypes.getByRole("combobox", { name: "Filter event types", exact: true });
+      const cards = manualTypes.locator("button[aria-label]");
+      const total = await cards.count();
+      const readsBefore = extracts.length;
+      const savedBefore = await page.evaluate(async () => (await window.__creationBrowser.listCreationIntakes("unified-host")).length);
+      assert.equal(await filter.inputValue(), "all");
+      assert.ok(total > 4, "All includes permitted categories beyond the preferred shortcuts");
+      assert.equal(await manualTypes.getByRole("link", { name: "Manage event types", exact: true }).count(), 0);
+      for (const [label, cardLabel] of [["Gymnastics", "Gymnastics"], ["Weddings", "Wedding"], ["Thematic", "General event"]]) {
+        await filter.selectOption({ label });
+        assert.equal(await cards.count(), 1);
+        assert.equal(await cards.getAttribute("aria-label"), cardLabel);
+      }
+      await manualTypes.getByRole("searchbox", { name: "Search event types", exact: true }).fill("no matching occasion");
+      assert.equal(await cards.count(), 0);
+      await filter.selectOption({ label: "Weddings" });
+      assert.equal(await cards.count(), 1, "choosing a type clears a previous search");
+      await filter.selectOption("all");
+      assert.equal(await cards.count(), total, "All restores every permitted category");
+      assert.equal(extracts.length, readsBefore);
+      assert.equal(await page.evaluate(async () => (await window.__creationBrowser.listCreationIntakes("unified-host")).length), savedBefore, "filtering creates no draft or intake");
+      assert.equal(forbidden.length, 0);
+      const box = await filter.boundingBox();
+      assert.ok(box && box.height >= 44, "dropdown keeps a usable phone target");
+    });
     for (const width of [390, 320]) {
       await page.setViewportSize({ width, height: 900 });
       await assertNoOverflow(`Manual categories at ${width}px`);
@@ -372,6 +399,35 @@ test("unified creation retains sources, recommends native templates and protects
     for (const width of [320, 390]) { await page.setViewportSize({ width, height: 900 }); await assertNoOverflow(`Template cards at ${width}px`); }
     await capture("templates-390.png");
     await page.setViewportSize({ width: 1440, height: 1000 }); await capture("templates-desktop.png");
+
+    await t.test("Holidays & seasonal filters the existing designs and retains its choice after reload", async () => {
+      const readsBefore = extracts.length;
+      await templates.getByRole("combobox", { name: "Event type", exact: true }).selectOption("holidays-seasonal:");
+      const occasion = templates.getByRole("combobox", { name: "Holiday or occasion", exact: true });
+      assert.equal(await occasion.locator("option").count(), 45);
+      await occasion.selectOption("christmas");
+      await page.waitForFunction(() => document.querySelectorAll("[data-template-masonry-card]").length === 10);
+      assert.ok((await templates.locator("[data-template-masonry-card]").evaluateAll((cards) => cards.map((card) => card.getAttribute("data-template-masonry-card")))).every((id) => id.startsWith("holidays--christmas--")));
+      assert.equal(extracts.length, readsBefore, "holiday filtering starts no extraction or generation");
+      for (const width of [320, 390, 1440]) {
+        await page.setViewportSize({ width, height: 1000 });
+        await assertNoOverflow(`Holiday designs at ${width}px`);
+      }
+      await capture("holiday-christmas-desktop.png");
+      const holidayIntake = new URL(page.url()).searchParams.get("intake");
+      await templates.getByRole("button", { name: /^Select Christmas/ }).first().click();
+      const holidayEditor = page.locator("[data-native-general] [data-event-page-design]");
+      await holidayEditor.waitFor();
+      assert.ok((await holidayEditor.getAttribute("data-event-page-design")).startsWith("holidays--christmas--"));
+      const retained = await page.evaluate((id) => window.__creationBrowser.readCreationIntake("unified-host", id), holidayIntake);
+      assert.equal(retained.guess.occasion, "christmas");
+      assert.equal(retained.information?.details?.date || "", "", "choosing a holiday never assigns an event date");
+      await openCreate(`?intake=${encodeURIComponent(holidayIntake)}&step=templates`); await templates.waitFor();
+      await page.reload(); await templates.waitFor();
+      assert.equal(await templates.getByRole("combobox", { name: "Holiday or occasion", exact: true }).inputValue(), "christmas");
+      assert.equal(await templates.locator("[data-template-masonry-card]").count(), 10);
+      await templates.getByRole("combobox", { name: "Event type", exact: true }).selectOption("birthdays:");
+    });
 
     await t.test("scratch creation keeps the original responsive gymnastics mosaic and loads designs while scrolling", async () => {
       const beforeScratchReads = extracts.length;
@@ -551,6 +607,19 @@ test("unified creation retains sources, recommends native templates and protects
         await manualTypes.getByRole("button", { name: "Gymnastics", exact: true }).waitFor();
         assert.equal(await manualTypes.getByRole("button", { name: "Football", exact: true }).count(), 1, "browse explicitly reveals available server-approved types");
         assert.equal(await manualTypes.getByRole("button", { name: "Birthday", exact: true }).count(), 0);
+        const filter = manualTypes.getByRole("combobox", { name: "Filter event types", exact: true });
+        assert.equal(await filter.locator("option").count(), 3, "restricted accounts get All and their two permitted types");
+        await filter.selectOption({ label: "Gymnastics" });
+        restrictedCategories = ["football"];
+        await reloadAccess();
+        await filter.locator('option[value="sports:gymnastics"]').waitFor({ state: "detached" });
+        assert.equal(await filter.inputValue(), "all", "revoking the selected category restores All");
+        assert.equal(await manualTypes.getByRole("button", { name: "Gymnastics", exact: true }).count(), 0);
+        assert.equal(await manualTypes.getByRole("button", { name: "Football", exact: true }).count(), 1);
+        restrictedCategories = ["gymnastics", "football"];
+        await reloadAccess();
+        await manualTypes.getByRole("button", { name: "Gymnastics", exact: true }).waitFor();
+        assert.equal(await filter.inputValue(), "all", "restored grants keep All instead of silently restoring a previous filter");
         assert.equal(extracts.length, readsBefore, "personalized suggestions and browsing start no parsing");
         assert.equal(forbidden.length, 0); assert.deepEqual(errors, []);
       } finally {

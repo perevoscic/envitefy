@@ -13,6 +13,10 @@ function load(file, mocks = {}, cache = new Map()) {
   if (cache.has(absolute)) return cache.get(absolute).exports;
   const module = { exports: {} };
   cache.set(absolute, module);
+  if (absolute.endsWith(".json")) {
+    module.exports = JSON.parse(readFileSync(absolute, "utf8"));
+    return module.exports;
+  }
   const source = ts.transpileModule(readFileSync(absolute, "utf8"), {
     fileName: absolute,
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true, target: ts.ScriptTarget.ES2022 },
@@ -91,6 +95,10 @@ test("choosing a template opens the real editor with its artwork, theme, and emp
     const markup = renderToStaticMarkup(React.createElement(Editor));
     assert.equal(progress.snapshot.themeId, design.id);
     assert.equal(progress.snapshot.data.hero, design.artwork);
+    if (design.occasion) {
+      assert.equal(progress.snapshot.data.creationCollection, "holidays-seasonal");
+      assert.equal(progress.snapshot.data.holidayOccasion, design.occasion);
+    }
     for (const field of ["title", "date", "time", "city", "state", "venue", "details", "rsvpDeadline"]) {
       assert.equal(progress.snapshot.data[field], "", `${design.id}: ${field}`);
     }
@@ -98,6 +106,42 @@ test("choosing a template opens the real editor with its artwork, theme, and emp
     assert.ok(markup.includes(design.artwork));
     assert.ok(markup.includes(design.theme.bg));
     assert.doesNotMatch(markup, /Invalid Date|Chicago|Community Guild|organizer@email/);
+  }
+});
+
+test("themed General editor retains authored ink on dark palettes instead of applying legacy white and beige text", () => {
+  const { EVENT_PAGE_THEMED_DESIGNS } = load("src/data/event-page-themed-designs.ts");
+  const designs = ["dark", "paper"].map((surface) => EVENT_PAGE_THEMED_DESIGNS.find((design) => design.collection === "graduations" && design.bodyPresentation.surface === surface));
+  for (const design of designs) {
+    assert.ok(design);
+    const Editor = load("src/app/event/general/customize/page.tsx", {
+      "@/data/event-page-themed-artwork-availability.json": { version: 1, readyDesignIds: [design.id] },
+      "next/navigation": { useRouter: () => ({}), useSearchParams: () => new URLSearchParams({ templateId: design.id, collection: design.collection }) },
+      "next/image": ({ src, alt }) => React.createElement("img", { src, alt }),
+      "@/components/EventCanvas": Container,
+      "@/components/events/EventEditorWorkspace": ({ preview }) => preview,
+      "@/components/events/TemplateImageTone": ({ children }) => children,
+      "@/components/events/HeroImageEditor": Empty,
+      "@/components/event-create/CreationTemplateGallery": Empty,
+      "@/components/events/useCreationEditorHydration": { useCreationEditorHydration: () => true },
+      "@/components/ScrollHandoffContainer": Container,
+      "@/components/branding/EnvitefyEventBranding": Empty,
+      "@/components/event-templates/EventGuestActions": Empty,
+      "@/components/event-templates/EventGuestPlanningEditor": Empty,
+      "@/components/event-templates/EventGuestPlanningNotes": Empty,
+      "@/components/events/useEventPageEditor": { useEventPageEditor: () => ({ ready: true, authenticated: true }) },
+      "@/lib/event-history-client": { useEventHistoryClient: () => ({}) },
+      "@/components/UnsavedProgressProvider": { useProgressNavigation: () => ({ allowNavigation() {} }) },
+      "@/hooks/useMobileDrawer": { useMobileDrawer: () => ({ mobileMenuOpen: false, previewTouchHandlers: {}, drawerTouchHandlers: {} }) },
+    }).default;
+    const markup = renderToStaticMarkup(React.createElement(Editor));
+    assert.match(markup, new RegExp(`background-color:${design.background};color:${design.ink}`));
+    const title = markup.match(/<h1\b[^>]*>/)?.[0];
+    assert.ok(title?.includes(`color:${design.ink}`), `${design.id}: title retains authored ink`);
+    assert.ok(title?.includes("text-inherit"), `${design.id}: title inherits the authored palette`);
+    assert.ok(!title?.includes("text-white"), `${design.id}: legacy white override stays inactive`);
+    assert.ok(!title?.includes("#f5e6d3"), `${design.id}: legacy beige override stays inactive`);
+    assert.ok(markup.includes("--body-heading-font:"), `${design.id}: body headings receive the selected font`);
   }
 });
 
@@ -158,7 +202,7 @@ test("General editor design changes and recovery retain imported facts and custo
   select(render(), second);
   let page = render();
   assert.equal(progress.snapshot.themeId, second.id);
-  assert.deepEqual(progress.snapshot.data, { ...imported.data, hero: second.artwork });
+  assert.deepEqual(progress.snapshot.data, { ...imported.data, hero: second.artwork, bodyDesignId: second.id });
   assert.deepEqual(progress.snapshot.advancedState, imported.advancedState);
   assert.equal(findGallery(page.props.sectionEditors.design()).props.selectedTemplateId, second.id);
 
@@ -169,5 +213,5 @@ test("General editor design changes and recovery retain imported facts and custo
   select(page, first);
   render();
   assert.equal(progress.snapshot.themeId, first.id);
-  assert.deepEqual(progress.snapshot.data, recovered.data, "switching a design retains the host's uploaded artwork and facts");
+  assert.deepEqual(progress.snapshot.data, { ...recovered.data, bodyDesignId: first.id }, "switching a design retains the host's uploaded artwork and facts while updating its design identity");
 });

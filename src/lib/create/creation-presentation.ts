@@ -18,6 +18,13 @@ type CategoryPresentation = Pick<
 >;
 
 const categories: Record<Exclude<CreateCategory, "sports">, CategoryPresentation> = {
+  "holidays-seasonal": {
+    artwork: "/templates/signup/holidays/new-years-day/morning-light.webp",
+    description: "Holiday gatherings, cultural celebrations & seasonal events",
+    previewHeading: "Make your holiday gathering feel special.",
+    previewCategory: "Holidays & seasonal · Gather together",
+    previewTitle: "A Seasonal Gathering",
+  },
   birthdays: {
     artwork: "/images/marketing/use-case-birthday.webp",
     description: "Parties, milestones & birthday celebrations",

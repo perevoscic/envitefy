@@ -4,11 +4,25 @@
   --body-gap: clamp(1.5rem, 3vw, 3.5rem);
   min-width: 0;
   padding: clamp(1.5rem, 4vw, 4rem) 0;
+  container-type: inline-size;
 }
 .sections {
   display: grid;
   gap: var(--body-gap);
   align-items: start;
+  min-width: 0;
+}
+.body .composedSections {
+  gap: var(--body-gap);
+  width: auto;
+}
+.body .composedSections > .item {
+  grid-column: auto;
+}
+.body .composedSections > :not(.item) {
+  grid-column: 1 / -1;
+}
+.item {
   min-width: 0;
 }
 .panel {
@@ -38,6 +52,7 @@
 }
 .panel :is(h2, [data-template-section-title]) {
   margin-block: 0 1.4rem;
+  font-family: var(--body-heading-font, inherit);
   line-height: 1.12;
   text-wrap: balance;
 }
@@ -61,40 +76,43 @@
 .body[data-template-body-layout="editorial"] .sections {
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
 }
-.body[data-template-body-layout="editorial"] .panel:nth-child(3n) {
+.body[data-template-body-layout="editorial"] .item:nth-child(3n) {
   grid-column: 1 / -1;
   margin-inline: 8%;
 }
-.body[data-template-body-layout="editorial"] .panel:nth-child(3n + 2) {
+.body[data-template-body-layout="editorial"] .item:nth-child(3n + 2) {
   margin-top: 4rem;
 }
-.body[data-template-body-layout="stagger"] .panel {
+.body[data-template-body-layout="stagger"] .item {
   width: 84%;
 }
-.body[data-template-body-layout="stagger"] .panel:nth-child(even) {
+.body[data-template-body-layout="stagger"] .item:nth-child(even) {
   margin-left: 16%;
 }
 .body[data-template-body-layout="columns"] .sections {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   column-gap: 7%;
 }
-.body[data-template-body-layout="columns"] .panel:nth-child(even) {
+.body[data-template-body-layout="columns"] .item:nth-child(even) {
   margin-top: 5rem;
 }
 .body[data-template-body-layout="poster"] .sections {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   padding-inline: 5%;
 }
-.body[data-template-body-layout="poster"] .panel:nth-child(3n + 1) {
+.body[data-template-body-layout="poster"] .item:nth-child(3n + 1) {
   grid-column: 1 / -1;
+}
+.body[data-template-body-layout="poster"] .item:nth-child(3n + 1).panel,
+.body[data-template-body-layout="poster"] .item:nth-child(3n + 1) .panel {
   padding-block: 4rem;
   text-align: center;
 }
 .body[data-template-body-layout="mosaic"] .sections {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
-.body[data-template-body-layout="mosaic"] .panel:nth-child(4n + 1),
-.body[data-template-body-layout="mosaic"] .panel:nth-child(4n) {
+.body[data-template-body-layout="mosaic"] .item:nth-child(4n + 1),
+.body[data-template-body-layout="mosaic"] .item:nth-child(4n) {
   grid-column: span 2;
 }
 .body[data-template-body-layout="ledger"] .panel > section {
@@ -110,7 +128,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4rem 8%;
 }
-.body[data-template-body-layout="gallery"] .panel:first-child {
+.body[data-template-body-layout="gallery"] .item:first-child {
   grid-column: 1 / -1;
   margin-inline: 12%;
 }
@@ -119,10 +137,10 @@
   margin-left: 3%;
   padding-left: 6%;
 }
-.body[data-template-body-layout="path"] .panel {
+.body[data-template-body-layout="path"] .item {
   width: 85%;
 }
-.body[data-template-body-layout="path"] .panel:nth-child(even) {
+.body[data-template-body-layout="path"] .item:nth-child(even) {
   margin-left: 15%;
 }
 .body[data-template-body-layout="path"] .panel::before {
@@ -141,20 +159,20 @@
   border: 4px double var(--body-line);
   padding: 1.25rem;
 }
-.body[data-template-body-layout="book"] .panel:nth-child(odd) {
+.body[data-template-body-layout="book"] .item:nth-child(odd) {
   margin-bottom: 3rem;
 }
-.body[data-template-body-layout="book"] .panel:nth-child(even) {
+.body[data-template-body-layout="book"] .item:nth-child(even) {
   margin-top: 3rem;
 }
-.body[data-template-body-layout="terraces"] .panel {
+.body[data-template-body-layout="terraces"] .item {
   width: 94%;
 }
-.body[data-template-body-layout="terraces"] .panel:nth-child(3n + 2) {
+.body[data-template-body-layout="terraces"] .item:nth-child(3n + 2) {
   width: 85%;
   margin-inline: auto;
 }
-.body[data-template-body-layout="terraces"] .panel:nth-child(3n) {
+.body[data-template-body-layout="terraces"] .item:nth-child(3n) {
   width: 76%;
   margin-left: auto;
 }
@@ -162,8 +180,11 @@
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr);
   gap: 2.5rem 6%;
 }
-.body[data-template-body-layout="rail"] .panel:nth-child(3n + 1) {
+.body[data-template-body-layout="rail"] .item:nth-child(3n + 1) {
   grid-column: 1 / -1;
+}
+.body[data-template-body-layout="rail"] .item:nth-child(3n + 1).panel,
+.body[data-template-body-layout="rail"] .item:nth-child(3n + 1) .panel {
   border-top-width: 6px;
 }
 .body[data-template-body-layout="islands"] .sections {
@@ -171,13 +192,22 @@
   padding-inline: 4%;
   gap: 5rem 9%;
 }
-.body[data-template-body-layout="islands"] .panel:nth-child(even) {
+.body[data-template-body-layout="islands"] .item:nth-child(even) {
   margin-top: 3rem;
 }
-.body[data-template-body-layout="islands"] .panel:nth-child(3n) {
+.body[data-template-body-layout="islands"] .item:nth-child(3n) {
   grid-column: 1 / -1;
   width: 72%;
   justify-self: center;
+}
+
+/* A host-authored pair and the RSVP form keep their full row within every arrangement. */
+.body .composedSections > .item:has([data-section-row*=" "]),
+.body .composedSections > .item[data-section-row*=" "],
+.body .composedSections > .item:has([data-body-section="rsvp"]) {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin-inline: 0;
 }
 
 /* Shapes use borders and padding, never clipping text, forms or focus rings. */
@@ -283,6 +313,15 @@
   border-radius: 0;
   padding: 2rem;
 }
+.body[data-body-radius] .panel {
+  border-radius: var(--body-panel-radius);
+}
+.body[data-body-spacing] .panel {
+  padding: var(--body-panel-padding);
+}
+.body[data-body-tone]:not([data-body-surface="outline"]):not([data-body-surface="ruled"]) .panel {
+  background: var(--body-tint);
+}
 
 .body[data-template-body-layout][data-body-heading="masthead"]
   .panel
@@ -347,46 +386,47 @@
   .body[data-template-body-layout] .sections {
     grid-template-columns: minmax(0, 1fr);
   }
-  .body[data-template-body-layout] .panel:nth-child(n) {
+  .body[data-template-body-layout] .item:nth-child(n) {
     grid-column: auto;
     margin-top: 0;
     margin-bottom: 0;
   }
-  .body[data-template-body-layout="editorial"] .panel:nth-child(3n) {
+  .body[data-template-body-layout="editorial"] .item:nth-child(3n) {
     margin-inline: 4%;
   }
-  .body[data-template-body-layout="stagger"] .panel {
+  .body[data-template-body-layout="stagger"] .item {
     width: 94%;
   }
-  .body[data-template-body-layout="stagger"] .panel:nth-child(even) {
+  .body[data-template-body-layout="stagger"] .item:nth-child(even) {
     margin-left: 6%;
   }
-  .body[data-template-body-layout="columns"] .panel:nth-child(even) {
+  .body[data-template-body-layout="columns"] .item:nth-child(even) {
     margin-left: 3%;
   }
   .body[data-template-body-layout="poster"] .sections {
     padding-inline: 3%;
   }
-  .body[data-template-body-layout="poster"] .panel:nth-child(3n + 1) {
+  .body[data-template-body-layout="poster"] .item:nth-child(3n + 1).panel,
+  .body[data-template-body-layout="poster"] .item:nth-child(3n + 1) .panel {
     padding-block: 3.5rem;
   }
-  .body[data-template-body-layout="mosaic"] .panel:nth-child(4n + 2) {
+  .body[data-template-body-layout="mosaic"] .item:nth-child(4n + 2) {
     margin-right: 5%;
   }
   .body[data-template-body-layout="ledger"] .panel > section {
     display: block;
   }
-  .body[data-template-body-layout="gallery"] .panel:first-child {
+  .body[data-template-body-layout="gallery"] .item:first-child {
     margin-inline: 6%;
   }
   .body[data-template-body-layout="path"] .sections {
     margin-left: 0;
     padding-left: 1rem;
   }
-  .body[data-template-body-layout="path"] .panel {
+  .body[data-template-body-layout="path"] .item {
     width: 97%;
   }
-  .body[data-template-body-layout="path"] .panel:nth-child(even) {
+  .body[data-template-body-layout="path"] .item:nth-child(even) {
     margin-left: 3%;
   }
   .body[data-template-body-layout="path"] .panel::before {
@@ -397,23 +437,23 @@
   .body[data-template-body-layout="book"] .sections {
     padding: 0.5rem;
   }
-  .body[data-template-body-layout="terraces"] .panel:nth-child(n) {
+  .body[data-template-body-layout="terraces"] .item:nth-child(n) {
     width: 100%;
   }
-  .body[data-template-body-layout="terraces"] .panel:nth-child(3n + 2) {
+  .body[data-template-body-layout="terraces"] .item:nth-child(3n + 2) {
     width: 95%;
   }
-  .body[data-template-body-layout="terraces"] .panel:nth-child(3n) {
+  .body[data-template-body-layout="terraces"] .item:nth-child(3n) {
     width: 90%;
   }
-  .body[data-template-body-layout="rail"] .panel:nth-child(3n + 2) {
+  .body[data-template-body-layout="rail"] .item:nth-child(3n + 2) {
     margin-inline: 5%;
   }
   .body[data-template-body-layout="islands"] .sections {
     padding-inline: 2%;
     gap: 2.5rem;
   }
-  .body[data-template-body-layout="islands"] .panel:nth-child(3n) {
+  .body[data-template-body-layout="islands"] .item:nth-child(3n) {
     width: 92%;
   }
   .body[data-template-body-layout] .panel[data-body-section="rsvp"] {
@@ -425,19 +465,34 @@
 /* One visible section fills the body in every design, including narrow previews.
    Keep this after the layout and mobile rules so decorative offsets cannot
    reserve space for a section that isn't there. */
-.body[data-template-body-layout] .sections:has(> .panel:only-child) {
+.body[data-template-body-layout] .sections:has(> .item):not(:has(> .item ~ .item)) {
   grid-template-columns: minmax(0, 1fr);
   margin-inline: 0;
   padding-inline: 0;
 }
-.body[data-template-body-layout] .sections > .panel:only-child {
+.body[data-template-body-layout] .sections:not(:has(> .item ~ .item)) > .item {
   grid-column: 1 / -1;
   width: 100%;
   margin: 0;
 }
-.body[data-template-body-layout="path"] .sections:has(> .panel:only-child) {
+.body[data-template-body-layout="path"] .sections:not(:has(> .item ~ .item)) {
   border-left: 0;
 }
-.body[data-template-body-layout="path"] .panel:only-child::before {
+.body[data-template-body-layout="path"] .sections:not(:has(> .item ~ .item)) .panel::before {
   content: none;
+}
+
+/* The same selected design also fits a narrow desktop editor or device preview. */
+@container (max-width: 700px) {
+  .body[data-template-body-layout] .sections {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .body[data-template-body-layout] .sections > .item:nth-child(n) {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin: 0;
+  }
+  .body[data-template-body-layout="ledger"] .panel > section {
+    display: block;
+  }
 }

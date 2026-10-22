@@ -66,35 +66,64 @@ function load(file) {
 const h = React.createElement;
 const Body = load("src/components/templates/TemplateBodyLayout.tsx").default;
 const NativeSections = load("src/components/events/EventPageSections.tsx").default;
-const CompositionProvider = load("src/components/events/EventPageCompositionContext.tsx").EventPageCompositionProvider;
-const Signup = load("src/components/smart-signup-form/SignupViewer.tsx").default;
-const jiti = createJiti(__filename, { alias: { "@": path.resolve("src") }, fsCache: false });
-const { getPublicTemplates } = jiti(path.resolve("src/lib/public-template-catalog.ts"));
-const { TEMPLATE_CATEGORIES } = jiti(path.resolve("src/lib/template-categories.ts"));
-const { getTemplateBodyPresentation } = jiti(
-  path.resolve("src/lib/template-body-presentations.ts"),
-);
+const CompositionProvider = load(
+  "src/components/events/EventPageCompositionContext.tsx",
+).EventPageCompositionProvider;
+const SectionBuilderProvider = load(
+  "src/components/events/EventSectionBuilder.tsx",
+).EventSectionBuilderProvider;
 const { getCelebrationDirection } = load("src/components/templates/celebration-materials.ts");
-const { createSignupTemplateForm } = jiti(path.resolve("src/lib/signup-starters.ts"));
 
-test("native Event Page layout choices respect saved section order and narrow containers", { timeout: 60000 }, async () => {
+test("native Event Page layout choices respect saved section order and narrow containers", {
+  timeout: 60000,
+}, async () => {
   const layouts = ["split", "banner", "poster", "editorial", "spotlight", "minimal", "cards"];
-  const sections = ["schedule", "details", "travel"].map((id) => ({ id, content: h("section", { id, style: { padding: "20px" } }, h("h2", null, id), h("p", null, "Useful event information.")) }));
-  const markup = layouts.map((layout) => `<article data-layout-case="${layout}">${renderToStaticMarkup(h(CompositionProvider, { value: { version: 1, layout, sections: [], sectionLayout: { version: 1, order: ["travel", "schedule", "details"], hidden: [], added: [] } } }, h(NativeSections, { sections })))}</article>`).join("");
-  const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
+  const sections = ["schedule", "details", "travel"].map((id) => ({
+    id,
+    content: h(
+      "section",
+      { id, style: { padding: "20px" } },
+      h("h2", null, id),
+      h("p", null, "Useful event information."),
+    ),
+  }));
+  const markup = layouts
+    .map(
+      (layout) =>
+        `<article data-layout-case="${layout}">${renderToStaticMarkup(h(CompositionProvider, { value: { version: 1, layout, sections: [], sectionLayout: { version: 1, order: ["travel", "schedule", "details"], hidden: [], added: [] } } }, h(NativeSections, { sections })))}</article>`,
+    )
+    .join("");
+  const browser = await chromium.launch({
+    headless: true,
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
+  });
   const page = await browser.newPage();
   try {
-    await page.setContent(`<style>${stylesheets.join("\n")}body{margin:0}article{width:100%;margin:20px 0;box-sizing:border-box}section{box-sizing:border-box;min-width:0}</style>${markup}`);
+    await page.setContent(
+      `<style>${stylesheets.join("\n")}body{margin:0}article{width:100%;margin:20px 0;box-sizing:border-box}section{box-sizing:border-box;min-width:0}</style>${markup}`,
+    );
     for (const width of [390, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       for (const layout of layouts) {
         const article = page.locator(`[data-layout-case="${layout}"]`);
-        assert.deepEqual(await article.locator("[data-section-row]").evaluateAll((rows) => rows.map((row) => row.dataset.sectionRow)), ["travel", "schedule", "details"]);
-        assert.ok(await article.evaluate((element) => element.scrollWidth <= element.clientWidth + 1), `${layout} fits at ${width}px`);
+        assert.deepEqual(
+          await article
+            .locator("[data-section-row]")
+            .evaluateAll((rows) => rows.map((row) => row.dataset.sectionRow)),
+          ["travel", "schedule", "details"],
+        );
+        assert.ok(
+          await article.evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
+          `${layout} fits at ${width}px`,
+        );
         if (["split", "cards"].includes(layout)) {
           const first = await article.locator('[data-section-row="travel"]').boundingBox();
           const second = await article.locator('[data-section-row="schedule"]').boundingBox();
-          assert.equal(Math.abs(first.y - second.y) < 1, width > 700, `${layout} columns at ${width}px`);
+          assert.equal(
+            Math.abs(first.y - second.y) < 1,
+            width > 700,
+            `${layout} columns at ${width}px`,
+          );
         }
       }
     }
@@ -105,12 +134,14 @@ test("native Event Page layout choices respect saved section order and narrow co
       const second = await article.locator('[data-section-row="schedule"]').boundingBox();
       assert.ok(second.y > first.y, `${layout} stacks inside a narrow desktop preview`);
     }
-  } finally { await browser.close(); }
+  } finally {
+    await browser.close();
+  }
 });
 
-function sharedBody(category, id, count = 1) {
+function sharedBody(category, id, count = 1, presentation) {
   return h(Body, {
-    presentation: getTemplateBodyPresentation(category, id),
+    presentation,
     design: { category, id },
     sections: [
       { id: "hidden", content: null },
@@ -128,9 +159,181 @@ function sharedBody(category, id, count = 1) {
   });
 }
 
+test("authored body treatments remain visible during section editing and saved composition", {
+  timeout: 60000,
+}, async () => {
+  const arrangements = [
+    "editorial",
+    "stagger",
+    "columns",
+    "poster",
+    "mosaic",
+    "ledger",
+    "gallery",
+    "path",
+    "book",
+    "terraces",
+    "rail",
+    "islands",
+  ];
+  const sections = ["details", "schedule", "rsvp"].map((id) => ({
+    id,
+    content: h(
+      "section",
+      { id },
+      h("h2", null, id),
+      h("p", null, "Your event information stays in the selected design."),
+      id === "rsvp" ? h("button", null, "Respond") : h("a", { href: "/program" }, "Read program"),
+    ),
+  }));
+  const value = {
+    version: 1,
+    sections: [{ id: "info:arrival", title: "Arrival", body: "Use the south entrance." }],
+    sectionLayout: {
+      version: 1,
+      order: ["info:arrival", "schedule", "details", "rsvp"],
+      hidden: ["details"],
+      added: ["info:arrival"],
+    },
+  };
+  const cases = arrangements.flatMap((arrangement) =>
+    [false, true].map((editing) => {
+      const body = h(Body, {
+        presentation: {
+          layout: arrangement,
+          surface: "frame",
+          heading: "ribbon",
+          flow: "practical",
+          borderRadius: "20px",
+          spacing: "balanced",
+          surfaceTone: "tinted",
+        },
+        style: { "--body-heading-font": '"Courier New", monospace' },
+        sections,
+      });
+      const runtime = { value, ...(editing ? { onChange: () => {} } : {}) };
+      return h(
+        "article",
+        {
+          "data-composed-case": `${arrangement}/${editing ? "editor" : "guest"}`,
+          key: `${arrangement}/${editing}`,
+        },
+        editing
+          ? h(
+              SectionBuilderProvider,
+              {
+                composition: runtime,
+                layout: value.sectionLayout,
+                onChange: () => {},
+                catalog: [],
+                renderEditor: () => null,
+              },
+              body,
+            )
+          : h(CompositionProvider, runtime, body),
+      );
+    }),
+  );
+  const materialBody = h(Body, { design: { category: "birthdays", id: "party-pop" }, sections });
+  cases.push(
+    h(
+      "article",
+      { "data-composed-case": "material/guest", key: "material" },
+      h(CompositionProvider, { value }, materialBody),
+    ),
+  );
+  const html = renderToStaticMarkup(h(React.Fragment, null, ...cases));
+  const browser = await chromium.launch({
+    headless: true,
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
+  });
+  try {
+    const page = await browser.newPage();
+    await page.setContent(
+      `<style>${stylesheets.join("\n")}*{box-sizing:border-box}body{margin:0}article{max-width:1200px;margin:0 auto}button,a{font:inherit}h2{font-family:Georgia,serif}</style>${html}`,
+    );
+    for (const width of [390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      const failures = await page.locator("[data-composed-case]").evaluateAll((fixtures) =>
+        fixtures.flatMap((fixture) => {
+          const body = fixture.querySelector("[data-template-body-layout]");
+          const bodyBox = body.getBoundingClientRect();
+          const panels = [...body.querySelectorAll("[data-body-section]")];
+          const ids = panels.map((panel) => panel.dataset.bodySection);
+          const issue = (message) => ({ id: fixture.dataset.composedCase, message });
+          if (ids.join(",") !== "info:arrival,schedule,rsvp")
+            return [issue(`Incorrect sections: ${ids}`)];
+          for (const panel of panels) {
+            const box = panel.getBoundingClientRect();
+            const style = getComputedStyle(panel);
+            if (
+              box.x < bodyBox.x - 1 ||
+              box.right > bodyBox.right + 1 ||
+              panel.scrollWidth > panel.clientWidth + 1
+            )
+              return [
+                issue(
+                  `Section ${panel.dataset.bodySection} overflows: body ${bodyBox.x}/${bodyBox.width}, panel ${box.x}/${box.width}, content ${panel.scrollWidth}/${panel.clientWidth}`,
+                ),
+              ];
+            if (
+              !fixture.dataset.composedCase.startsWith("material") &&
+              (parseFloat(style.borderTopWidth) < 1 || !style.boxShadow.includes("inset"))
+            )
+              return [issue("Authored frame is missing")];
+            if (
+              !fixture.dataset.composedCase.startsWith("material") &&
+              (style.borderTopLeftRadius !== "20px" || style.backgroundColor === "rgba(0, 0, 0, 0)")
+            )
+              return [issue("Authored radius or panel tone is missing")];
+            if (
+              !fixture.dataset.composedCase.startsWith("material") &&
+              !getComputedStyle(panel.querySelector("h2")).fontFamily.includes("Courier New")
+            )
+              return [issue("Authored body heading font is missing")];
+            for (const button of panel.parentElement.querySelectorAll("button")) {
+              const buttonBox = button.getBoundingClientRect();
+              if (buttonBox.x < bodyBox.x - 1 || buttonBox.right > bodyBox.right + 1)
+                return [issue("Section controls overflow")];
+            }
+          }
+          if (
+            fixture.dataset.composedCase.startsWith("material") &&
+            !getComputedStyle(panels[0]).backgroundImage.includes("gradient")
+          )
+            return [issue("Authored celebration material is missing")];
+          return [];
+        }),
+      );
+      assert.deepEqual(failures, [], `Authored bodies and controls fit at ${width}px`);
+    }
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.addStyleTag({ content: "article{max-width:500px}" });
+    for (const arrangement of arrangements) {
+      const article = page.locator(`[data-composed-case="${arrangement}/editor"]`);
+      const first = await article.locator('[data-body-section="info:arrival"]').boundingBox();
+      const second = await article.locator('[data-body-section="schedule"]').boundingBox();
+      assert.ok(
+        second.y > first.y && Math.abs(first.x - second.x) < 1,
+        `${arrangement} stacks in the narrow desktop editor`,
+      );
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
 test("all template bodies and signup designs fill a single section without a reserved column", {
   timeout: 120000,
 }, async (t) => {
+  const Signup = load("src/components/smart-signup-form/SignupViewer.tsx").default;
+  const jiti = createJiti(__filename, { alias: { "@": path.resolve("src") }, fsCache: false });
+  const { getPublicTemplates } = jiti(path.resolve("src/lib/public-template-catalog.ts"));
+  const { TEMPLATE_CATEGORIES } = jiti(path.resolve("src/lib/template-categories.ts"));
+  const { getTemplateBodyPresentation } = jiti(
+    path.resolve("src/lib/template-body-presentations.ts"),
+  );
+  const { createSignupTemplateForm } = jiti(path.resolve("src/lib/signup-starters.ts"));
   const cases = [];
   const layouts = new Set();
   for (const { slug } of TEMPLATE_CATEGORIES) {
@@ -143,7 +346,7 @@ test("all template bodies and signup designs fill a single section without a res
           h(
             "article",
             { key: `${slug}/${template.id}`, "data-case": `${slug}/${template.id}` },
-            sharedBody(slug, template.id),
+            sharedBody(slug, template.id, 1, profile),
           ),
         );
       }
@@ -218,7 +421,12 @@ test("all template bodies and signup designs fill a single section without a res
     }
     // CSS must respond when the host adds/removes a section without changing the selected design.
     const multi = renderToStaticMarkup(
-      sharedBody("signup-forms", "fall-and-seasonal--fall-pumpkins", 2),
+      sharedBody(
+        "signup-forms",
+        "fall-and-seasonal--fall-pumpkins",
+        2,
+        getTemplateBodyPresentation("signup-forms", "fall-and-seasonal--fall-pumpkins"),
+      ),
     );
     await page.setContent(`<style>${style}</style><article>${multi}</article>`);
     const before = await page.locator("[data-body-section]").first().boundingBox();

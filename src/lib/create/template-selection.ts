@@ -1,9 +1,9 @@
 import { getPublicTemplates } from "../public-template-catalog";
-import { GENERAL_EVENT_DESIGNS } from "../general-event-designs";
 import { FOOTBALL_GALLERY_DESIGNS } from "@/components/football-season-templates/footballGallery";
 import { getFootballDesign } from "@/components/football-season-templates/footballDesigns";
 import { getTemplateCategory, templateEditorHref } from "../template-categories";
 import { customCategoryForGuess, type CreateGuess } from "./create-intent";
+import { getGeneralCreationDesigns } from "./event-page-collections";
 
 export type CreationTemplate = {
   id: string; title: string; imageUrl: string; href: string; category: string;
@@ -15,7 +15,8 @@ export function getCreationTemplates(guess: CreateGuess): CreationTemplate[] {
   if (guess.category === "signup-forms") return getPublicTemplates("signup-forms").map(template => ({ id: template.id, title: template.name, imageUrl: template.heroImage, description: template.description, style: template.style, category: "signup-forms", family: "signup", href: templateEditorHref("signup-forms", template.id) }));
   const category = customCategoryForGuess(guess);
   if (category === "general")
-    return GENERAL_EVENT_DESIGNS.map(design => ({ id: design.id, title: design.name, imageUrl: design.artwork, description: design.description, style: design.style, category, family: "general", href: `/event/${category}/customize?templateId=${encodeURIComponent(design.id)}` }));
+    return getGeneralCreationDesigns(guess.category, guess.occasion)
+      .map(design => ({ id: design.id, title: design.name, imageUrl: design.artwork, description: design.description, style: design.style, category, family: "general", href: `/event/${category}/customize?templateId=${encodeURIComponent(design.id)}&collection=${encodeURIComponent(guess.category)}${guess.occasion ? `&occasion=${encodeURIComponent(guess.occasion)}` : ""}` }));
   if (category === "football") return FOOTBALL_GALLERY_DESIGNS.map(design => ({ id: design.id, title: design.name, imageUrl: getFootballDesign(design.id).hero, description: design.description, style: design.style, category, family: "football", href: `/event/football/customize?templateId=${encodeURIComponent(design.id)}` }));
   const catalog = getTemplateCategory(guess.category === "sports" && guess.sport !== "gymnastics" ? "sport-events" : category);
   if (!catalog) return [];

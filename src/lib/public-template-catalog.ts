@@ -10,6 +10,7 @@ import { genderRevealDesigns } from "@/lib/gender-reveal-designs";
 import { SIGNUP_THEMES } from "@/lib/signup-themes";
 import { SPORT_EVENT_PRESETS } from "@/lib/sport-event-presets";
 import { weddingDesignCatalog } from "@/lib/wedding-designs";
+import { getActiveThemedEventDesigns, getDeliveredThemedEventDesign, type ThemedEventDesign } from "@/lib/event-page-themed-designs";
 import type { TemplateCategory } from "./template-categories";
 
 export const BRIDAL_PRESETS = [
@@ -90,6 +91,24 @@ const sportGalleryArtwork: Record<string, string> = {
   cheerleading: "/templates/signup/photographic/sports-and-recreation/cheer-squad.webp",
   dance: "/templates/signup/photographic/health-and-fitness/dance-class.webp",
 };
+export function themedEventPublicTemplate(design: ThemedEventDesign): PublicTemplate {
+  return {
+    id: design.id, name: design.name, style: design.style, description: design.description,
+    heroImage: design.artwork,
+    sport: design.collection === "bridal-showers" ? undefined : getSportEventPresetLabel(design.collection),
+    keywords: `${design.subtype} ${design.tags.join(" ")}`,
+  };
+}
+function getSportEventPresetLabel(key: string) {
+  return SPORT_EVENT_PRESETS.find((sport) => sport.key === key)?.label;
+}
+function legacySportPublicTemplate(sport: typeof SPORT_EVENT_PRESETS[number], style: string, label: string): PublicTemplate {
+  return {
+    id: `${sport.key}--${style}`, name: `${sport.label} · ${label}`, style: label,
+    sport: sport.label, description: sport.defaultDetails,
+    heroImage: sportGalleryArtwork[sport.key] || "/templates/hero-images/general-sport-hero.jpeg",
+  };
+}
 export function getPublicTemplates(category: TemplateCategory): PublicTemplate[] {
   switch (category) {
     case "weddings":
@@ -107,7 +126,9 @@ export function getPublicTemplates(category: TemplateCategory): PublicTemplate[]
         heroImage: getFamilyTemplateDesign("baby-showers", template.templateId).heroImage,
       }));
     case "bridal-showers":
-      return [...BRIDAL_PRESETS];
+      return getActiveThemedEventDesigns("bridal-showers").length
+        ? getActiveThemedEventDesigns("bridal-showers").map(themedEventPublicTemplate)
+        : [...BRIDAL_PRESETS];
     case "gender-reveal":
       return genderRevealDesigns.map((design) => ({ ...design, style: design.style }));
     case "gymnastics":
@@ -116,17 +137,11 @@ export function getPublicTemplates(category: TemplateCategory): PublicTemplate[]
         heroImage: design.artwork || "",
       }));
     case "sport-events":
-      return SPORT_EVENT_PRESETS.flatMap((sport) =>
-        Object.entries(styleNames).map(([style, label]) => ({
-          id: `${sport.key}--${style}`,
-          name: `${sport.label} · ${label}`,
-          style: label,
-          sport: sport.label,
-          description: sport.defaultDetails,
-          heroImage:
-            sportGalleryArtwork[sport.key] || "/templates/hero-images/general-sport-hero.jpeg",
-        })),
-      );
+      return SPORT_EVENT_PRESETS.filter((sport) => sport.key !== "football").flatMap((sport) => {
+        const themed = getActiveThemedEventDesigns(sport.key);
+        return themed.length ? themed.map(themedEventPublicTemplate)
+          : Object.entries(styleNames).map(([style, label]) => legacySportPublicTemplate(sport, style, label));
+      });
     case "signup-forms":
       return [
         ...SIGNUP_THEMES.map((theme) => ({
@@ -175,5 +190,15 @@ export function getPublicTemplates(category: TemplateCategory): PublicTemplate[]
   }
 }
 export function getPublicTemplate(category: TemplateCategory, id: string) {
+  const themed = getDeliveredThemedEventDesign(id);
+  if (themed && ((category === "bridal-showers" && themed.collection === "bridal-showers") ||
+    (category === "sport-events" && getSportEventPresetLabel(themed.collection)))) return themedEventPublicTemplate(themed);
+  // Older saved drafts and published pages keep their original address after replacement.
+  if (category === "bridal-showers") return BRIDAL_PRESETS.find((template) => template.id === id) || getPublicTemplates(category).find((template) => template.id === id);
+  if (category === "sport-events") {
+    const [sportId, style] = id.split("--");
+    const sport = SPORT_EVENT_PRESETS.find((item) => item.key === sportId);
+    if (sport && Object.hasOwn(styleNames, style)) return legacySportPublicTemplate(sport, style, styleNames[style as keyof typeof styleNames]);
+  }
   return getPublicTemplates(category).find((template) => template.id === id);
 }

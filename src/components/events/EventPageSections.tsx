@@ -82,10 +82,16 @@ export default function EventPageSections({
   children,
   sections,
   className = "",
+  canvasClassName = "",
+  itemClassName,
+  renderSection,
 }: {
   children?: ReactNode;
   sections?: Array<{ id: string; content: ReactNode; label?: string; editorId?: string }>;
   className?: string;
+  canvasClassName?: string;
+  itemClassName?: string;
+  renderSection?: (section: EventSectionEntry, index: number) => ReactNode;
 }) {
   const composition = useEventPageComposition();
   const entries = sections
@@ -113,7 +119,9 @@ export default function EventPageSections({
       data-event-body-layout={composition.value?.layout || "template"}
     >
       <EventSectionCanvas
-        className={styles.canvas}
+        className={`${styles.canvas} ${canvasClassName}`}
+        itemClassName={itemClassName}
+        renderSection={renderSection}
         sections={entries}
         layout={composition.value?.sectionLayout}
         rowProps={() => ({})}

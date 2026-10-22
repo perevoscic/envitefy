@@ -12,6 +12,10 @@ const batches = [
       "src/lib/discovery/persist-concurrency.test.mjs",
       "src/lib/events-workspace.test.cjs",
       "src/lib/create/editor-handoff.test.cjs",
+      "src/lib/create/holiday-collections.test.cjs",
+      "src/lib/event-page-themed-designs.test.cjs",
+      "scripts/build-event-page-themed-artwork.test.mjs",
+      "scripts/event-page-themed-artwork.test.mjs",
       "src/app/left-sidebar.create-access.test.mjs",
       "src/app/left-sidebar.signup-forms.test.mjs",
       "src/app/left-sidebar.my-events.test.mjs",
@@ -52,10 +56,17 @@ const batches = [
 ];
 
 for (const [command, args] of batches) {
-  const result = spawnSync(command, args, {
-    stdio: "inherit",
-    cwd: new URL("..", import.meta.url),
-  });
+  // npm-installed Bun uses a command shim on Windows. The Bun batches above
+  // contain only fixed relative test paths, so cmd can resolve that shim.
+  const windowsBun = process.platform === "win32" && command === "bun";
+  const result = spawnSync(
+    windowsBun ? process.env.ComSpec || "cmd.exe" : command,
+    windowsBun ? ["/d", "/s", "/c", `bun ${args.join(" ")}`] : args,
+    {
+      stdio: "inherit",
+      cwd: new URL("..", import.meta.url),
+    },
+  );
   if (result.error) {
     console.error(
       result.error.code === "ENOENT" && command === "bun"

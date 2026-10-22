@@ -723,6 +723,8 @@ export function EventSectionCanvas({
   layout,
   className = "",
   cellClassName = "",
+  itemClassName = "",
+  renderSection,
   rowProps,
   visibleSectionIds,
 }: {
@@ -730,6 +732,10 @@ export function EventSectionCanvas({
   layout?: EventSectionLayout;
   className?: string;
   cellClassName?: string;
+  /** The visible row is the layout item, including while its editing tools are mounted. */
+  itemClassName?: string;
+  /** Apply authored section surfaces after native and added information sections are combined. */
+  renderSection?: (section: EventSectionEntry, index: number) => ReactNode;
   rowProps?: (section: EventSectionEntry) => HTMLAttributes<HTMLDivElement>;
   /** Presentation-only filtering; retain all entries for editing, ordering and Undo. */
   visibleSectionIds?: readonly string[];
@@ -776,11 +782,13 @@ export function EventSectionCanvas({
     !currentLayout?.widths &&
     !currentLayout?.pairs?.length &&
     !rowProps &&
+    !renderSection &&
+    !itemClassName &&
     !visibleSectionIds &&
     !composition?.value?.layout
   )
     return (
-      <div className={className}>
+      <div className={className} data-body-sections>
         {ordered.map((section) => (
           <Fragment key={section.id}>{section.content}</Fragment>
         ))}
@@ -789,14 +797,15 @@ export function EventSectionCanvas({
   const content = rows.map((row) => {
     const index = ordered.findIndex((section) => section.id === row[0].id);
     const attributes = !builder ? rowProps?.(row[0]) : undefined;
-    const visible = !visibleSectionIds || row.some((section) => visibleSectionIds.includes(section.id));
+    const visible =
+      !visibleSectionIds || row.some((section) => visibleSectionIds.includes(section.id));
     const rowContent = (
       <div
         key={row[0].id}
         {...attributes}
         hidden={!visible || attributes?.hidden}
         style={{ ...attributes?.style, ...(!visible ? { display: "none" } : {}) }}
-        className={`${styles.row} ${attributes?.className || ""}`}
+        className={`${styles.row} ${!builder ? itemClassName : ""} ${attributes?.className || ""}`}
         data-section-row={row.map((section) => section.id).join(" ")}
       >
         {row.map((section, offset) => (
@@ -807,7 +816,17 @@ export function EventSectionCanvas({
             style={{ "--section-span": currentLayout?.widths?.[section.id] ?? 12 } as CSSProperties}
           >
             {builder ? (
-              <EditableSection section={section} index={index + offset} count={ordered.length} />
+              <EditableSection
+                section={
+                  renderSection && section.content
+                    ? { ...section, content: renderSection(section, index + offset) }
+                    : section
+                }
+                index={index + offset}
+                count={ordered.length}
+              />
+            ) : renderSection ? (
+              renderSection(section, index + offset)
             ) : (
               section.content
             )}
@@ -816,7 +835,13 @@ export function EventSectionCanvas({
       </div>
     );
     return builder ? (
-      <div key={row[0].id} className={styles.rowGroup} data-section-group hidden={!visible} style={!visible ? { display: "none" } : undefined}>
+      <div
+        key={row[0].id}
+        className={`${styles.rowGroup} ${itemClassName}`}
+        data-section-group
+        hidden={!visible}
+        style={!visible ? { display: "none" } : undefined}
+      >
         <InsertionPoint index={index} />
         {rowContent}
       </div>
@@ -827,6 +852,7 @@ export function EventSectionCanvas({
   return (
     <div
       className={`${className} ${styles.canvas}`}
+      data-body-sections
       data-event-body-layout={composition?.value?.layout}
     >
       {builder ? (

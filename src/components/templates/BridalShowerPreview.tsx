@@ -2,6 +2,8 @@
 import TemplateImageTone from "@/components/events/TemplateImageTone";
 import { BRIDAL_PRESETS } from "@/lib/public-template-catalog";
 import type { CSSProperties } from "react";
+import { getThemedEventDesign } from "@/lib/event-page-themed-designs";
+import ThemedEventHeader from "./ThemedEventHeader";
 
 export type BridalPreviewData = {
   heroImageFilterEnabled?: boolean;
@@ -27,9 +29,25 @@ export default function BridalShowerPreview({
   data: BridalPreviewData;
   headerOnly?: boolean;
 }) {
+  const design = getThemedEventDesign(templateId);
   const preset = BRIDAL_PRESETS.find((item) => item.id === templateId) || BRIDAL_PRESETS[0];
   const theme = data.theme;
-  const fontFamily = data.fontFamily || theme?.fontFamily;
+  const fontFamily = data.fontFamily || theme?.fontFamily || design?.font;
+  if (design) return (
+    <ThemedEventHeader design={design} fontFamily={fontFamily}>
+      <div className="relative aspect-[4/3] w-full">
+        <img src={data.images?.hero || design.artwork} alt="Bridal shower celebration" className="template-hero-image h-full w-full object-cover" />
+      </div>
+      <div className="px-6 py-10 sm:px-10 sm:py-14" style={{ fontFamily }}>
+        <p className="text-xs uppercase tracking-[.25em]">You’re invited · Bridal shower</p>
+        <h1 className="mt-5 text-4xl leading-tight sm:text-5xl">{data.eventTitle || "A toast to the bride"}</h1>
+        <p className="mt-4 text-2xl">Celebrating {data.momName || "Sophia"}</p>
+        <p className="mt-7">{data.date} {data.time && `· ${data.time}`}</p>
+        <p className="mt-2">{data.venue || data.location}</p>
+        {!headerOnly && <p className="mt-6 leading-8">{data.babyDetails?.notes}</p>}
+      </div>
+    </ThemedEventHeader>
+  );
   return (
     <TemplateImageTone color={theme?.accent || preset.accent} enabled={data.heroImageFilterEnabled !== false}>
 <div

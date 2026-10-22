@@ -9,6 +9,8 @@ import EventCanvas from "@/components/EventCanvas";
 
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 import { BRIDAL_PRESETS } from "@/lib/public-template-catalog";
+import { EVENT_PAGE_THEMED_DESIGNS } from "@/data/event-page-themed-designs";
+import { getThemedEventDesign, getDeliveredThemedEventDesign, getThemedEventTheme } from "@/lib/event-page-themed-designs";
 import TemplateGalleryBackLink from "@/components/templates/TemplateGalleryBackLink";
 import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
@@ -50,6 +52,8 @@ import { persistImageMediaValue as persistExistingImage } from "@/utils/media-up
 
 function getTemplateById(id?: string | null): BabyShowerTemplateDefinition {
   if (!id) return babyShowerTemplateCatalog[0];
+  const themed = getDeliveredThemedEventDesign(id);
+  if (themed?.collection === "bridal-showers") return { ...babyShowerTemplateCatalog[0], id: themed.id, name: themed.name, description: themed.description };
   const bridal = BRIDAL_PRESETS.find((preset) => preset.id === id);
   if (bridal) return { ...babyShowerTemplateCatalog[0], id: bridal.id, name: bridal.name, description: bridal.description };
   return (
@@ -67,6 +71,7 @@ const FONTS = {
   allura: { name: "Allura", preview: "var(--font-allura)" },
   parisienne: { name: "Parisienne", preview: "var(--font-parisienne)" },
   ...Object.fromEntries(BABY_SHOWER_DESIGNS.map((design) => [design.font, { name: design.displayFont, preview: `"${design.displayFont}", Georgia, serif` }])),
+  ...Object.fromEntries(EVENT_PAGE_THEMED_DESIGNS.filter((design) => design.collection === "bridal-showers").map((design) => [design.id, { name: design.name, preview: design.font }])),
 };
 
 const FONT_SIZES = {
@@ -290,7 +295,8 @@ export default function BabyShowerTemplateCustomizePage() {
   const [activeView, setActiveView] = useTemplateState("activeView", "main");
   const selectedDesign = getBabyShowerDesign(template.id) ?? BABY_SHOWER_DESIGNS[0];
   const bridalPreset = BRIDAL_PRESETS.find((preset) => preset.id === template.id) || BRIDAL_PRESETS[0];
-  const designDefaults = isBridal ? { heroImage: bridalPreset.heroImage, themeId: bridalPreset.themeId, font: "playfair" } : getFamilyTemplateDesign("baby-showers", template.id);
+  const themedBridal = isBridal ? getDeliveredThemedEventDesign(template.id) : undefined;
+  const designDefaults = isBridal ? { heroImage: themedBridal?.artwork || bridalPreset.heroImage, themeId: themedBridal?.id || bridalPreset.themeId, font: themedBridal?.id || "playfair" } : getFamilyTemplateDesign("baby-showers", template.id);
   const [data, setData] = useTemplateState("data", () => ({
     ...INITIAL_DATA,
     ...(!editEventId && !isBridal ? {
@@ -308,7 +314,7 @@ export default function BabyShowerTemplateCustomizePage() {
       rsvp: { isEnabled: true, deadline: "" },
     } : {}),
 
-    ...(isBridal ? { babyName: "", momName: "Sophia", eventTitle: "A toast to the bride", babyDetails: { expectingDate: "", gender: "", notes: "Join us for an afternoon of love, laughter, and a toast to the bride." }, momDetails: { notes: "" }, registries: [], hosts: [], gallery: [], images: { ...INITIAL_DATA.images, hero: bridalPreset.heroImage } } : {}),
+    ...(isBridal ? { babyName: "", momName: "Sophia", eventTitle: "A toast to the bride", babyDetails: { expectingDate: "", gender: "", notes: "Join us for an afternoon of love, laughter, and a toast to the bride." }, momDetails: { notes: "" }, registries: [], hosts: [], gallery: [], images: { ...INITIAL_DATA.images, hero: designDefaults.heroImage } } : {}),
     date: familyTemplateDate(defaultDate, editEventId || isBridal ? INITIAL_DATA.date : selectedDesign.sample.date),
     theme: editEventId ? INITIAL_DATA.theme : { ...INITIAL_DATA.theme, themeId: designDefaults.themeId, font: designDefaults.font },
   }));
@@ -333,6 +339,7 @@ export default function BabyShowerTemplateCustomizePage() {
     setData((prev) => ({
       ...prev,
       theme: { ...prev.theme, [field]: value },
+      ...(field === "font" && FONTS[value] ? { fontFamily: FONTS[value].preview } : {}),
     }));
   };
 
@@ -371,7 +378,8 @@ const handleGalleryUpload = (e) => {
     }));
   };
 
-  const currentTheme =
+  const selectedThemedPalette = getDeliveredThemedEventDesign(data.theme.themeId);
+  const currentTheme = selectedThemedPalette ? getThemedEventTheme(selectedThemedPalette) :
     DESIGN_THEMES.find((c) => c.id === data.theme.themeId) || DESIGN_THEMES[0];
   const currentFont = FONTS[data.theme.font] || FONTS.playfair;
   const heroImageSrc = designDefaults.heroImage;
@@ -527,7 +535,7 @@ const handleGalleryUpload = (e) => {
           images: {
             ...prev.images,
             hero:
-              resolveBabyShowerHero(existing.heroImage || existing.images?.hero || prev.images.hero, getBabyShowerDesign(resolvedTemplateId)),
+              (isBridal ? existing.heroImage || existing.images?.hero || getThemedEventDesign(resolvedTemplateId)?.artwork || prev.images.hero : resolveBabyShowerHero(existing.heroImage || existing.images?.hero || prev.images.hero, getBabyShowerDesign(resolvedTemplateId))),
           },
           registries: normalizedRegistries,
           rsvp: {
@@ -568,7 +576,7 @@ const handleGalleryUpload = (e) => {
     }
     const location =
       data.city && data.state ? `${data.city}, ${data.state}` : undefined;
-    const selectedTheme =
+    const selectedTheme = selectedThemedPalette ? getThemedEventTheme(selectedThemedPalette) :
       DESIGN_THEMES.find((c) => c.id === data.theme.themeId) ||
       DESIGN_THEMES[0];
     const selectedFont = FONTS[data.theme.font] || FONTS.playfair;
@@ -633,6 +641,7 @@ const handleGalleryUpload = (e) => {
         rsvpDeadline: data.rsvp.deadline || undefined,
         numberOfGuests: 0,
         templateId: template.id,
+        ...(themedBridal ? { bodyDesignId: themedBridal.id } : {}),
         templateConfig: {
           displayName: data.eventTitle || (isBridal ? `${data.momName}’s Bridal Shower` : `${data.babyName}'s Baby Shower`),
           categoryLabel: isBridal ? "Bridal Shower" : "Baby Shower",
@@ -680,7 +689,7 @@ const handleGalleryUpload = (e) => {
       },
     };
     return payload;
-  }, [templateEditor, submitting, data, template.id, editEventId, router, heroImageSrc]);
+  }, [templateEditor, submitting, data, template.id, editEventId, router, heroImageSrc, selectedThemedPalette, themedBridal]);
 
   const editor = useEventPageEditor({ snapshot: { data, activeTemplateId, newHost, newRegistry }, category: isBridal ? "Bridal Showers" : "Baby Showers", templateId: activeTemplateId, eventId: editEventId, historyClient: eventHistoryClient, ready: !_loadingExisting, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload, templateCategory: isBridal ? "bridal-showers" : "baby-showers" });
 
@@ -877,7 +886,7 @@ const renderDesignEditor = () => (
             Typography
           </label>
           <div className="grid grid-cols-2 gap-3 max-h-none overflow-visible pr-1">
-            {Object.entries(FONTS).map(([key, font]) => (
+            {Object.entries(FONTS).filter(([key]) => !getThemedEventDesign(key) || key === data.theme.font).map(([key, font]) => (
               <button
                 key={key}
                 onClick={() => updateTheme("font", key)}
@@ -1230,7 +1239,7 @@ const renderDesignEditor = () => (
               location: [data.address, data.city, data.state].filter(Boolean).join(", "),
               templateId: template.id,
               heroImageFilterEnabled: data.heroImageFilterEnabled !== false,
-              heroImage: resolveBabyShowerHero(data.images.hero, selectedDesign),
+              heroImage: isBridal ? data.images.hero || designDefaults.heroImage : resolveBabyShowerHero(data.images.hero, selectedDesign),
               themeId: data.theme.themeId,
               theme: { ...currentTheme, fontFamily: currentFont.preview, fontSize: data.theme.fontSize },
               fontFamily: currentFont.preview,

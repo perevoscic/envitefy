@@ -1,0 +1,23 @@
+.header { background: inherit; color: inherit; isolation: isolate; }
+.header > :first-child { position: relative; overflow: hidden; }
+.header > :first-child img { width: 100%; height: 100%; object-fit: cover; }
+.header > :nth-child(2) { border-color: color-mix(in srgb, var(--themed-accent) 25%, transparent); }
+.header[data-composition="arch"] { padding: clamp(1rem, 4vw, 3rem); text-align: center; }
+.header[data-composition="arch"] > :first-child { max-width: 40rem; margin-inline: auto; border-radius: 48% 48% 0 0; aspect-ratio: 4 / 3; height: auto; }
+.header[data-composition="oval"] { padding: clamp(1rem, 4vw, 3rem); text-align: center; }
+.header[data-composition="oval"] > :first-child { max-width: 34rem; margin-inline: auto; border-radius: 50%; aspect-ratio: 1; height: auto; }
+.header[data-composition="framed"] { padding: clamp(.75rem, 3vw, 2rem); border: .6rem double var(--themed-accent); }
+.header[data-composition="framed"] > :first-child { outline: 1px solid var(--themed-accent); outline-offset: -.6rem; }
+.header[data-composition="postcard"] { padding: clamp(1.2rem, 4vw, 3rem); }
+.header[data-composition="postcard"] > :first-child { border: .65rem solid #fffaf0; transform: rotate(-1.5deg); box-shadow: 0 1rem 2rem #0002; }
+.header[data-composition="journal"] > :nth-child(2) { border-top: .3rem double var(--themed-accent); margin-top: 1rem; }
+.header[data-composition="poster"] > :nth-child(2) { border-top: .4rem solid var(--themed-accent); }
+.header[data-composition="organic"] > :first-child { border-radius: 0 0 44% 12%; }
+.header[data-composition="panorama"] > :first-child { aspect-ratio: 2.25; height: auto; }
+@container (min-width: 760px) {
+  .header[data-page-layout="split"], .header[data-page-layout="editorial"] { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: stretch; }
+  .header[data-page-layout="split"] > :first-child, .header[data-page-layout="editorial"] > :first-child { height: 100%; min-height: 26rem; aspect-ratio: auto; max-width: none; margin: 0; }
+  .header[data-page-layout="split"] > :nth-child(2), .header[data-page-layout="editorial"] > :nth-child(2) { align-content: center; }
+  .header[data-page-layout="poster"] > :first-child { min-height: 32rem; }
+}
+.shell { container-type: inline-size; min-width: 0; width: 100%; }

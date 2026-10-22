@@ -1,6 +1,7 @@
 import type { CustomEventCategory } from "../event-custom-design";
 import { detectSportActivity } from "../sports-discovery/detect";
 import { getSportActivityProfile, SPORT_ACTIVITY_PROFILES } from "../sports-discovery/profiles";
+import type { HolidayCollectionId } from "../holiday-collections";
 
 /** Categories the Create page can route to. Sports carry a separate sport key. */
 export const CREATE_CATEGORIES = [
@@ -20,6 +21,7 @@ export const CREATE_CATEGORIES = [
   "special-events",
   "signup-forms",
   "sports",
+  "holidays-seasonal",
   "general",
 ] as const;
 export type CreateCategory = (typeof CREATE_CATEGORIES)[number];
@@ -41,13 +43,14 @@ export const CREATE_CATEGORY_LABELS: Record<CreateCategory, string> = {
   "special-events": "Special event",
   "signup-forms": "Sign-up form",
   sports: "Sports",
+  "holidays-seasonal": "Holidays & seasonal",
   general: "General event",
 };
 
 export const CREATE_SPORT_KEYS = SPORT_ACTIVITY_PROFILES.map((profile) => profile.key);
 
 export type CreateConfidence = "high" | "low";
-export type CreateGuess = { category: CreateCategory; sport: string | null };
+export type CreateGuess = { category: CreateCategory; sport: string | null; occasion?: HolidayCollectionId | null };
 export type CreateClassification = CreateGuess & {
   confidence: CreateConfidence;
   /** Other likely answers, most likely first, never repeating the main guess. */
@@ -172,7 +175,7 @@ export function classifyCreateText(input: string): CreateClassification {
 /** The custom Event Page category used by Create with Envitefy and information uploads. */
 export function customCategoryForGuess(guess: CreateGuess): CustomEventCategory {
   if (guess.category !== "sports") {
-    if (["medical-appointments", "graduations", "housewarming", "open-house", "religious-events", "signup-forms"].includes(guess.category)) return "general";
+    if (["medical-appointments", "graduations", "housewarming", "open-house", "religious-events", "holidays-seasonal", "signup-forms"].includes(guess.category)) return "general";
     return guess.category as CustomEventCategory;
   }
   switch (guess.sport) {

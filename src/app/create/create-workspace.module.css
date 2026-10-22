@@ -10,6 +10,11 @@
   --creation-brand: linear-gradient(96deg, #6b3cff 0%, #6757ff 22%, #5a7dff 54%, #37a8ff 100%);
   --creation-serif: var(--font-playfair), Georgia, "Times New Roman", serif;
   --creation-shadow-card: 0 1px 2px rgb(34 28 53 / 4%), 0 28px 64px -32px rgb(74 47 191 / 26%);
+  --creation-mode-surface: rgb(255 255 255 / 88%);
+  --creation-mode-shadow: 0 2px 3px rgb(34 28 53 / 4%), 0 10px 18px -8px rgb(34 28 53 / 18%);
+  --creation-mode-upload: #2563eb;
+  --creation-mode-url: #7c3aed;
+  --creation-mode-scratch: #15803d;
   container-name: creation;
   container-type: inline-size;
   position: relative;
@@ -35,9 +40,14 @@
   --creation-violet-soft: var(--surface-alt);
   --creation-line: var(--border);
   --creation-tint: var(--field-background);
+  --creation-mode-surface: color-mix(in srgb, var(--surface) 92%, transparent);
+  --creation-mode-shadow: 0 2px 3px rgb(0 0 0 / 12%), 0 10px 20px -8px rgb(0 0 0 / 40%);
+  --creation-mode-upload: #93c5fd;
+  --creation-mode-url: #c4b5fd;
+  --creation-mode-scratch: #86efac;
   background: radial-gradient(60rem 26rem at 8% -6rem, #49304e80, transparent 70%), radial-gradient(50rem 24rem at 96% -4rem, #203f5080, transparent 70%), var(--background);
 }
-:global(html.dark) :is(.workspace, .steps, .stepNumber, .modeActive, .fileRow, .typeButton, .shortcutTile, .shortcutButton, .emptySuggestions, .summary) {
+:global(html.dark) :is(.workspace, .steps, .stepNumber, .fileRow, .typeButton, .shortcutTile, .shortcutButton, .emptySuggestions, .summary) {
   background: var(--surface);
   border-color: var(--border);
 }
@@ -46,7 +56,6 @@
 :global(html.dark) .fieldLabel { color: var(--foreground); }
 :global(html.dark) :is(.alert, .sourceError) { background: color-mix(in srgb, var(--error) 12%, var(--surface)); color: var(--error); }
 :global(html.dark) .page .uploadButton { background: var(--primary); color: var(--primary-foreground); }
-:global(html.dark) .modeActive { border-color: var(--primary); }
 :global(html.dark) .previewPane { background: radial-gradient(ellipse at 50% 20%, #49304e66, transparent 70%), var(--surface-alt); }
 
 .container {
@@ -206,55 +215,114 @@
 }
 
 .modeBar {
+  position: relative;
   display: grid;
   min-width: 0;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
+  gap: 8px;
   margin: 0;
-  padding: 5px;
-  border: 1px solid #efecf6;
-  border-radius: 14px;
-  background: var(--creation-tint);
+  padding: 8px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--creation-mode-surface);
+  box-shadow: var(--creation-mode-shadow);
+  backdrop-filter: blur(16px);
 }
 
 .modeButton {
-  display: flex;
+  --mode-accent: var(--creation-mode-upload);
+  position: relative;
+  display: grid;
   min-width: 0;
   min-height: 44px;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 9px 10px;
-  border: 1px solid transparent;
-  border-radius: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
   background: transparent;
   color: var(--creation-muted);
-  font-size: 13.5px;
-  font-weight: 550;
+  font-size: 14px;
+  font-weight: 500;
   line-height: 1.4;
   text-align: center;
   cursor: pointer;
+  isolation: isolate;
+  perspective: 600px;
   transition:
     color 180ms,
     background-color 180ms,
     box-shadow 180ms;
 }
 
+.modeButton[data-mode="url"] {
+  --mode-accent: var(--creation-mode-url);
+}
+
+.modeButton[data-mode="scratch"] {
+  --mode-accent: var(--creation-mode-scratch);
+}
+
+.modeGlow {
+  position: absolute;
+  z-index: -1;
+  inset: -8px;
+  border-radius: 16px;
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--mode-accent) 18%, transparent), transparent 72%);
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
+  transition: opacity 300ms ease, transform 450ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.modeFace {
+  display: flex;
+  min-width: 0;
+  min-height: inherit;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: inherit;
+  pointer-events: none;
+  backface-visibility: hidden;
+  transition: transform 400ms cubic-bezier(0.22, 1, 0.36, 1), opacity 250ms ease;
+}
+
+.modeFaceFront {
+  transform-origin: center bottom;
+}
+
+.modeFaceBack {
+  position: absolute;
+  inset: 0;
+  color: var(--creation-ink);
+  opacity: 0;
+  transform: rotateX(90deg);
+  transform-origin: center top;
+}
+
+.modeFaceBack svg {
+  color: var(--mode-accent);
+}
+
 .modeButton svg {
-  width: 17px;
-  height: 17px;
+  width: 19px;
+  height: 19px;
   flex-shrink: 0;
   stroke-width: 1.7;
 }
 
 .modeActive {
-  border-color: rgb(91 63 209 / 12%);
-  background: white;
-  color: var(--creation-plum);
-  font-weight: 620;
-  box-shadow:
-    0 1px 2px rgb(34 28 53 / 6%),
-    0 6px 14px -8px rgb(74 47 191 / 30%);
+  color: var(--creation-ink);
+}
+
+.modeActive .modeGlow,
+.modeButton:not(:disabled):focus-visible .modeGlow {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.modeButton:not(:disabled):active {
+  background: color-mix(in srgb, var(--creation-plum) 12%, transparent);
 }
 
 .sourcePane {
@@ -284,14 +352,47 @@
   line-height: 1.65;
 }
 
-.settingsLink {
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
-  gap: 4px;
+.typeFilter {
+  position: relative;
+  flex-shrink: 0;
+  max-width: 100%;
   color: var(--creation-plum);
   font-size: 13px;
   font-weight: 600;
+}
+
+.typeFilterSelect {
+  field-sizing: content;
+  min-width: 64px;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 10px 28px 10px 12px;
+  appearance: none;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.typeFilterSelect:hover {
+  background: var(--creation-violet-soft);
+}
+
+.typeFilterSelect option {
+  background: var(--creation-mode-surface);
+  color: var(--creation-ink);
+}
+
+.typeFilter svg {
+  position: absolute;
+  top: 50%;
+  right: 9px;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  transform: translateY(-50%);
 }
 
 .dropZone {
@@ -628,20 +729,6 @@
   transition:
     transform 180ms,
     color 180ms;
-}
-
-.moreTypes {
-  display: flex;
-  width: fit-content;
-  min-height: 44px;
-  align-items: center;
-  gap: 7px;
-  margin: 12px auto -6px;
-  padding: 7px 14px;
-  border-radius: 999px;
-  color: var(--creation-plum);
-  font-size: 13px;
-  font-weight: 600;
 }
 
 .pickerTools {
@@ -1077,6 +1164,41 @@
   font-weight: 550;
 }
 
+.collectionPanel {
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid var(--creation-line);
+  border-radius: 16px;
+  background: var(--surface, #fff);
+}
+
+.collectionFilter {
+  display: flex;
+  width: 100%;
+  max-width: 28rem;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--creation-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.collectionFilter select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--creation-line);
+  border-radius: 12px;
+  background: var(--creation-tint);
+  color: var(--creation-ink);
+  font-size: 14px;
+}
+
+.collectionFilterStandalone { margin-bottom: 20px; }
+.collectionHelp { margin: 8px 0 0; color: var(--creation-muted); font-size: 14px; line-height: 1.6; }
+
 .galleryHeading {
   display: flex;
   flex-wrap: wrap;
@@ -1178,9 +1300,19 @@
 }
 
 @media (hover: hover) {
-  .modeButton:not(:disabled):not(.modeActive):hover {
-    background: rgb(255 255 255 / 70%);
-    color: var(--creation-plum);
+  .modeButton:not(:disabled):hover .modeGlow {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+
+  .modeButton:not(:disabled):hover .modeFaceFront {
+    opacity: 0;
+    transform: rotateX(-90deg);
+  }
+
+  .modeButton:not(:disabled):hover .modeFaceBack {
+    opacity: 1;
+    transform: rotateX(0);
   }
 
   .page .uploadButton:not(:disabled):hover {
@@ -1212,9 +1344,7 @@
     background: var(--creation-violet-soft);
   }
 
-  .backButton:hover,
-  .moreTypes:hover,
-  .settingsLink:hover {
+  .backButton:hover {
     color: var(--creation-plum);
     text-decoration: underline;
     text-underline-offset: 4px;
@@ -1358,16 +1488,19 @@
   }
 
   .modeBar {
-    gap: 2px;
-    padding: 4px;
-    border-radius: 12px;
+    gap: 4px;
+    padding: 6px;
+    border-radius: 16px;
   }
 
   .modeButton {
     min-height: 46px;
+    font-size: 12px;
+  }
+
+  .modeFace {
     gap: 6px;
     padding: 8px 5px;
-    font-size: 12px;
   }
 
   .modeButton svg {
@@ -1538,12 +1671,15 @@
   }
 
   .modeButton {
+    min-height: 57px;
+    font-size: 12px;
+    line-height: 1.25;
+  }
+
+  .modeFace {
     flex-direction: column;
     gap: 4px;
-    min-height: 57px;
     padding: 7px 3px;
-    font-size: 11px;
-    line-height: 1.25;
   }
 
   .modeButton svg {
@@ -1593,6 +1729,21 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .modeButton .modeFaceFront,
+  .modeButton:not(:disabled):hover .modeFaceFront {
+    opacity: 1;
+    transform: none;
+  }
+
+  .modeButton .modeFaceBack {
+    display: none;
+  }
+
+  .modeButton .modeGlow,
+  .modeButton:not(:disabled):hover .modeGlow {
+    transform: none;
+  }
+
   .page *,
   .page *::before,
   .page *::after {

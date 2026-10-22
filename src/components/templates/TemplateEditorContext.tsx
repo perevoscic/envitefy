@@ -27,6 +27,7 @@ import { attachCreationIntakeEvent, creationIntakeOwner, readCreationIntake } fr
 import type { CustomEventInformation } from "@/lib/event-custom-design";
 import { hasAnalyticsConsent } from "@/lib/privacy-preferences";
 import { BRIDAL_PRESETS, getPublicTemplate } from "@/lib/public-template-catalog";
+import { getThemedEventDesign, getThemedEventTheme } from "@/lib/event-page-themed-designs";
 import { allowsPublicSignup } from "@/lib/signup-access";
 import { createEmptySignupTemplateForm, getSignupTemplateTheme } from "@/lib/signup-starters";
 import { stageSignupTheme, takeSignupTheme } from "@/lib/signup-theme-handoff";
@@ -347,16 +348,23 @@ export default function TemplateEditorProvider({
           data.theme = { ...theme, themeId: design.themeId, font: design.font };
           data.templateId = templateId;
         }
+        const themed = getThemedEventDesign(templateId);
         if (category === "bridal-showers")
           data.theme = {
             ...theme,
-            themeId:
-              BRIDAL_PRESETS.find((item) => item.id === templateId)?.themeId || "golden_hour",
+            themeId: themed?.id || BRIDAL_PRESETS.find((item) => item.id === templateId)?.themeId || "golden_hour",
+            ...(themed ? { font: themed.id } : {}),
           };
+        if (themed) data.fontFamily = themed.font;
         if (category === "sport-events") {
           const [sport, style] = templateId.split("--");
           const preset = getSportEventPreset(sport);
-          current.snapshot.themeId = getSportStyleThemeIds(preset, style)[0];
+          current.snapshot.themeId = themed?.id || getSportStyleThemeIds(preset, style)[0];
+          if (themed) {
+            data.themeFontOverride = false;
+            data.bodyDesignId = themed.id;
+            data.theme = getThemedEventTheme(themed);
+          }
           const extra = data.extra;
           data.extra = {
             ...(extra && typeof extra === "object" && !Array.isArray(extra) ? extra : {}),
@@ -366,7 +374,8 @@ export default function TemplateEditorProvider({
         }
         const imageFields = ["hero", "heroImage"];
         for (const key of imageFields)
-          if (data[key] === previousTemplate?.heroImage) data[key] = selected.heroImage;
+          if (data[key] === previousTemplate?.heroImage ||
+            (category === "sport-events" && data[key] === "/templates/hero-images/general-sport-hero.jpeg")) data[key] = selected.heroImage;
         const images = data.images;
         if (
           images &&

@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  ChevronDown,
   ChevronRight,
   FileText,
   ImageIcon,
@@ -42,6 +43,8 @@ import {
 } from "@/lib/create/creation-intake";
 import { creationChoicesFromLinks } from "@/lib/create/creation-navigation";
 import { getCreationPresentation } from "@/lib/create/creation-presentation";
+import { HOLIDAY_COLLECTIONS } from "@/lib/holiday-collections";
+import { getThemedEventDesign } from "@/lib/event-page-themed-designs";
 import {
   informationForCreation,
   prepareCreationEditor,
@@ -70,6 +73,9 @@ const control =
   "min-h-11 rounded-full border border-[#e2ddef] bg-white px-5 py-2.5 text-sm font-semibold text-[#5b3fd1] shadow-[0_1px_2px_rgb(34_28_53/4%)] transition hover:border-[#cbc0f5] hover:bg-[#f2efff] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5b3fd1] disabled:cursor-wait disabled:opacity-50";
 const primary =
   "min-h-12 rounded-full border border-[#5b3fd1] bg-[#5b3fd1] px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_22px_-12px_rgb(74_47_191/70%)] transition hover:border-[#4a2fbf] hover:bg-[#4a2fbf] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5b3fd1] disabled:cursor-not-allowed disabled:opacity-50";
+const typeChoiceKey = (choice: CreateGuess) => `${choice.category}:${choice.sport || ""}`;
+const typeFilterLabel = (choice: CreateGuess) =>
+  choice.category === "general" ? "Thematic" : choice.category === "weddings" ? "Weddings" : createGuessLabel(choice);
 
 export function allowedCreationGuess(guess: CreateGuess, allowed: string[]) {
   return allowed.includes(customCategoryForGuess(guess));
@@ -90,6 +96,8 @@ export default function UnifiedCreatePageClient() {
   const changingMode = useRef(false);
   const [switchingMode, setSwitchingMode] = useState(false);
   const [typeQuery, setTypeQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [designThemeFilter, setDesignThemeFilter] = useState("all");
   const [files, setFiles] = useState<File[]>([]);
   const [text, setText] = useState(""),
     [url, setUrl] = useState("");
@@ -108,7 +116,6 @@ export default function UnifiedCreatePageClient() {
   const [workingLabel, setWorkingLabel] = useState(""),
     [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
-  const [showTypes, setShowTypes] = useState(false);
   const [restoring, setRestoring] = useState(!!search?.get("intake")),
     [customDialog, setCustomDialog] = useState(false);
   const [waitingToRead, setWaitingToRead] = useState(false);
@@ -173,8 +180,18 @@ export default function UnifiedCreatePageClient() {
   }, [menu, ready, canCreatePage, allowedCategories.join(",")]);
   const templates = useMemo(
     () => (guess && supportedGuess ? getCreationTemplates(guess) : []),
-    [guess?.category, guess?.sport, supportedGuess],
+    [guess?.category, guess?.sport, guess?.occasion, supportedGuess],
   );
+  const designThemes = useMemo(() => {
+    const themes = new Map<string, string>();
+    for (const template of templates) {
+      const design = getThemedEventDesign(template.id);
+      if (design) themes.set(design.subtype, design.label);
+    }
+    return [...themes].map(([id, label]) => ({ id, label }));
+  }, [templates]);
+  const activeDesignThemeFilter = designThemes.some((theme) => theme.id === designThemeFilter) ? designThemeFilter : "all";
+  const visibleDesigns = useMemo(() => activeDesignThemeFilter === "all" ? templates : templates.filter((template) => getThemedEventDesign(template.id)?.subtype === activeDesignThemeFilter), [templates, activeDesignThemeFilter]);
   const defaultTemplateFor = (record: CreationIntake, confirmed = false) => {
     const selected = record.guess || record.classification;
     if (
@@ -194,8 +211,15 @@ export default function UnifiedCreatePageClient() {
   const preferredChoices = preferred
     .map((item) => item.guess!)
     .filter((item) => item.category !== "sports" || !!item.sport);
-  const initialChoices = preferredChoices;
-  const manualChoices = showTypes ? choices : initialChoices;
+  const manualChoices = [...preferredChoices, ...choices].filter(
+    (choice, index, all) => all.findIndex((item) => typeChoiceKey(item) === typeChoiceKey(choice)) === index,
+  );
+  const activeTypeFilter = manualChoices.some((choice) => typeChoiceKey(choice) === typeFilter)
+    ? typeFilter
+    : "all";
+  useEffect(() => {
+    if (ready && typeFilter !== "all" && activeTypeFilter === "all") setTypeFilter("all");
+  }, [ready, typeFilter, activeTypeFilter]);
 
   const update = useCallback((next: CreationIntake) => {
     current.current = next;
@@ -227,6 +251,8 @@ export default function UnifiedCreatePageClient() {
     setText("");
     setUrl("");
     setUsePastedText(false);
+    setTypeFilter("all");
+    setTypeQuery("");
     setPhase("source");
     setError("");
     setCustomDialog(false);
@@ -627,13 +653,14 @@ export default function UnifiedCreatePageClient() {
   };
   const chooseCategory = async (selected: CreateGuess) => {
     if (!allowedCreationGuess(selected, allowedCategories)) return;
+    setDesignThemeFilter("all");
     if (phase === "templates" && current.current) {
       const previous = current.current,
         category = customCategoryForGuess(selected);
       const version = ++epoch.current;
       request.current?.abort();
       const changed =
-        selected.category !== previous.guess?.category || selected.sport !== previous.guess?.sport;
+        selected.category !== previous.guess?.category || selected.sport !== previous.guess?.sport || selected.occasion !== previous.guess?.occasion;
       const next = changed
         ? {
             ...createCreationIntake(ownerId, previous.source),
@@ -835,7 +862,7 @@ export default function UnifiedCreatePageClient() {
           `/create${params.size ? `?${params}` : ""}`,
         );
       }
-      setShowTypes(false);
+      setTypeFilter("all");
       setTypeQuery("");
       return true;
     } catch (failure) {
@@ -862,7 +889,6 @@ export default function UnifiedCreatePageClient() {
     if (selected.category === "sports" && !selected.sport) {
       current.current = null;
       setIntake(null);
-      setShowTypes(true);
       return;
     }
     const next = createCreationIntake(ownerId, { kind: "scratch", files: [], text: "" });
@@ -882,7 +908,8 @@ export default function UnifiedCreatePageClient() {
   };
 
   const visibleTypes = manualChoices.filter((choice) =>
-    createGuessLabel(choice).toLowerCase().includes(typeQuery.trim().toLowerCase()),
+    (activeTypeFilter === "all" || typeChoiceKey(choice) === activeTypeFilter) &&
+    `${createGuessLabel(choice)} ${typeFilterLabel(choice)}`.toLowerCase().includes(typeQuery.trim().toLowerCase()),
   );
   const manualCreation = mode === "scratch";
   const progressSteps = manualCreation ? ["Start", "Design", "Details"] : ["Start", "Details"];
@@ -983,15 +1010,25 @@ export default function UnifiedCreatePageClient() {
                       type="button"
                       aria-label={option.title}
                       aria-pressed={mode === option.id}
+                      data-mode={option.id}
                       disabled={busy || switchingMode || !sourceAvailable}
                       onClick={() => void switchMode(option.id)}
                       className={`${styles.modeButton} ${mode === option.id ? styles.modeActive : ""}`}
                     >
-                      <option.icon aria-hidden="true" />
-                      <span className="sm:hidden">
-                        {option.id === "scratch" ? "From scratch" : option.title}
-                      </span>
-                      <span className="hidden sm:inline">{option.title}</span>
+                      <span className={styles.modeGlow} aria-hidden="true" />
+                      {(["front", "back"] as const).map((face) => (
+                        <span
+                          key={face}
+                          className={`${styles.modeFace} ${face === "back" ? styles.modeFaceBack : styles.modeFaceFront}`}
+                          aria-hidden="true"
+                        >
+                          <option.icon />
+                          <span className="sm:hidden">
+                            {option.id === "scratch" ? "From scratch" : option.title}
+                          </span>
+                          <span className="hidden sm:inline">{option.title}</span>
+                        </span>
+                      ))}
                     </button>
                   ))}
                 </div>
@@ -1021,26 +1058,39 @@ export default function UnifiedCreatePageClient() {
                                 Pick an event type to explore its designs.
                               </p>
                             </div>
-                            <Link href="/settings?section=creation" className={styles.settingsLink}>
-                              Manage event types
-                              <ChevronRight className="size-3.5" aria-hidden="true" />
-                            </Link>
+                            <label className={styles.typeFilter}>
+                              <span className="sr-only">Filter event types</span>
+                              <select
+                                value={activeTypeFilter}
+                                onChange={(event) => {
+                                  setTypeFilter(event.target.value);
+                                  setTypeQuery("");
+                                }}
+                                className={styles.typeFilterSelect}
+                              >
+                                <option value="all">All</option>
+                                {manualChoices.map((choice) => (
+                                  <option key={typeChoiceKey(choice)} value={typeChoiceKey(choice)}>
+                                    {typeFilterLabel(choice)}
+                                  </option>
+                                ))}
+                              </select>
+                              <ChevronDown aria-hidden="true" />
+                            </label>
                           </div>
-                          {showTypes ? (
-                            <div className={styles.pickerTools}>
-                              <label className="sr-only" htmlFor="creation-type-search">
-                                Search event types
-                              </label>
-                              <input
-                                id="creation-type-search"
-                                type="search"
-                                value={typeQuery}
-                                onChange={(event) => setTypeQuery(event.target.value)}
-                                placeholder="Search event types"
-                                className={styles.typeSearch}
-                              />
-                            </div>
-                          ) : null}
+                          <div className={styles.pickerTools}>
+                            <label className="sr-only" htmlFor="creation-type-search">
+                              Search event types
+                            </label>
+                            <input
+                              id="creation-type-search"
+                              type="search"
+                              value={typeQuery}
+                              onChange={(event) => setTypeQuery(event.target.value)}
+                              placeholder="Search event types"
+                              className={styles.typeSearch}
+                            />
+                          </div>
                           <div className={styles.typeGrid}>
                             {visibleTypes.map((choice) => {
                               const designs = getCreationTemplates(choice);
@@ -1090,22 +1140,8 @@ export default function UnifiedCreatePageClient() {
                                 ? "Checking available event types…"
                                 : typeQuery.trim()
                                   ? "No matching event types. Try another search."
-                                  : menu?.featureVisibility.hasLoadedPreferences
-                                    ? "Choose the event types you use, or browse available event types below."
-                                    : "Loading your event types…"}
+                                  : "No event types are available for this account."}
                             </p>
-                          ) : null}
-                          {!showTypes && choices.length > manualChoices.length ? (
-                            <button
-                              type="button"
-                              className={styles.moreTypes}
-                              onClick={() => setShowTypes(true)}
-                            >
-                              {initialChoices.length
-                                ? "More event types"
-                                : "Browse available event types"}
-                              <ChevronRight className="size-4" aria-hidden="true" />
-                            </button>
                           ) : null}
                         </>
                       ) : (
@@ -1417,6 +1453,31 @@ export default function UnifiedCreatePageClient() {
                 </select>
               </label>
             </div>
+            {guess.category === "holidays-seasonal" && supportedGuess ? (
+              <div className={styles.collectionPanel}>
+                <label className={styles.collectionFilter} htmlFor="creation-holiday-occasion">
+                  Holiday or occasion
+                  <select
+                    id="creation-holiday-occasion"
+                    value={guess.occasion || ""}
+                    onChange={(event) => {
+                      const occasion = HOLIDAY_COLLECTIONS.find((collection) => collection.id === event.target.value)?.id;
+                      void chooseCategory({ ...guess, occasion: occasion || null }).catch((failure) => setError(String(failure)));
+                    }}
+                  >
+                    <option value="">All holidays & seasonal occasions</option>
+                    {[...new Set(HOLIDAY_COLLECTIONS.map((collection) => collection.kind))].map((kind) => (
+                      <optgroup key={kind} label={kind}>
+                        {HOLIDAY_COLLECTIONS.filter((collection) => collection.kind === kind).map((collection) => (
+                          <option key={collection.id} value={collection.id}>{collection.name}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </label>
+                <p className={styles.collectionHelp}>Choose an occasion to see its matching designs. Add your event date in the editor.</p>
+              </div>
+            ) : null}
             {personalCapture && supportedGuess ? (
               <div className="mt-5 rounded-2xl border border-[#e2d9eb] bg-white p-5">
                 <h3 className="font-semibold">Save this appointment with Snap a Flyer</h3>
@@ -1494,11 +1555,20 @@ export default function UnifiedCreatePageClient() {
                       Continue to editor
                     </button>
                   ) : (
-                    <p>{templates.length} designs · Your details stay with you</p>
+                    <p>{activeDesignThemeFilter === "all" ? `${templates.length} designs` : `${visibleDesigns.length} of ${templates.length} designs`} · Your details stay with you</p>
                   )}
                 </div>
+                {designThemes.length ? (
+                  <label className={`${styles.collectionFilter} ${styles.collectionFilterStandalone}`} htmlFor="creation-design-theme">
+                    Theme or occasion
+                    <select id="creation-design-theme" value={activeDesignThemeFilter} onChange={(event) => setDesignThemeFilter(event.target.value)}>
+                      <option value="all">All themed designs</option>
+                      {designThemes.map((theme) => <option key={theme.id} value={theme.id}>{theme.label}</option>)}
+                    </select>
+                  </label>
+                ) : null}
                 <CreationTemplateGallery
-                  templates={templates}
+                  templates={visibleDesigns}
                   onSelect={(template) => void openTemplate(template)}
                 />
                 {!templates.length ? (
@@ -1610,7 +1680,7 @@ export default function UnifiedCreatePageClient() {
             ) : (
               <p className={styles.emptySuggestions} role="status">
                 {menu?.featureVisibility.hasLoadedPreferences
-                  ? "Choose the event types you use in Manage event types."
+                  ? "Browse available event types to choose a starting point."
                   : "Loading your event templates…"}
               </p>
             )}
@@ -1619,9 +1689,7 @@ export default function UnifiedCreatePageClient() {
                 type="button"
                 className={styles.shortcutButton}
                 disabled={switchingMode || restoring}
-                onClick={async () => {
-                  if (await switchMode("scratch")) setShowTypes(true);
-                }}
+                onClick={() => void switchMode("scratch")}
               >
                 Browse available event types
                 <ArrowRight className="size-4" aria-hidden="true" />

@@ -4,6 +4,7 @@ import type { TemplateHistoryPayload } from "./template-draft-handoff";
 import type { EditorSnapshot } from "./template-draft-storage";
 import { normalizeEventPageComposition } from "./event-page-composition";
 import { buildGymnasticsEventDateTimes } from "./gymnastics-event-dates";
+import { getDeliveredThemedEventDesign, getThemedEventTheme } from "./event-page-themed-designs";
 
 /** Incomplete drafts retain their fields without inventing missing event times. */
 export function buildTemplateDraftPayload(
@@ -35,6 +36,19 @@ export function buildTemplateDraftPayload(
     : null;
   const start = gymnasticsDates ? gymnasticsDates.startISO : parseCalendarDateTimeToIso(localStart, timezone);
   const end = gymnasticsDates ? gymnasticsDates.endISO : parseCalendarDateTimeToIso(localEnd, timezone);
+  const record = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  const designText = (value: unknown) => typeof value === "string" ? value : "";
+  const savedTheme = record(data.theme);
+  const themed = getDeliveredThemedEventDesign(designText(snapshot.activeTemplateId || data.bodyDesignId || data.templateId || savedTheme.themeId));
+  const chosenThemeId = designText(snapshot.themeId || savedTheme.themeId || savedTheme.id) || themed?.id;
+  const themedFields = themed ? {
+    bodyDesignId: themed.id,
+    ...(category === "bridal-showers" ? { templateId: themed.id, occasion: "bridal-shower" } : {}),
+    themeId: chosenThemeId,
+    theme: { ...(chosenThemeId === themed.id ? getThemedEventTheme(themed) : {}), ...savedTheme },
+    fontFamily: designText(data.fontFamily || savedTheme.fontFamily) || themed.font,
+    heroImage: designText(data.heroImage || data.hero || record(data.images).hero) || themed.artwork,
+  } : {};
   return {
     title,
     data: {
@@ -46,7 +60,7 @@ export function buildTemplateDraftPayload(
             description: data.description,
             allDay: data.allDay,
           }
-        : data),
+        : { ...data, ...themedFields }),
       title,
       ...(gymnasticsDates ? { allDay: gymnasticsDates.allDay, gymnasticsDateVersion: 1 } : {}),
       ...(category !== "signup-forms" && snapshot.pageComposition ? { eventPageComposition: normalizeEventPageComposition(snapshot.pageComposition) } : {}),

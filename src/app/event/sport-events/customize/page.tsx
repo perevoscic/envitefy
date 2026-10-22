@@ -41,6 +41,9 @@ import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
 import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
+import { getDeliveredThemedEventDesign, getThemedEventTheme, isThemedEventDesignDark } from "@/lib/event-page-themed-designs";
+import { getPublicTemplate } from "@/lib/public-template-catalog";
+import ThemedEventHeader from "@/components/templates/ThemedEventHeader";
 import { persistImageMediaValue as persistExistingImage } from "@/utils/media-upload-client";
 
 type FieldSpec = {
@@ -290,11 +293,19 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
   const search = useTemplateSearchParams();
     const router = useRouter();
   const { allowNavigation } = useProgressNavigation();
-    const sportPreset = getSportEventPreset(search?.get("sport"));
+    const [activeTemplateId, setActiveTemplateId] = useTemplateState("activeTemplateId", templateEditor?.templateId || search?.get("templateId") || `${search?.get("sport") || "football"}--${search?.get("style") || "stadium"}`);
+    const themedDesign = getDeliveredThemedEventDesign(activeTemplateId);
+    const sportPreset = getSportEventPreset(themedDesign?.collection || search?.get("sport") || activeTemplateId.split("--")[0]);
     const style = search?.get("style");
     const config = useMemo(
-      () => buildSportSpecificConfig(baseConfig, sportPreset, style),
-      [sportPreset, style],
+      () => {
+        const result = buildSportSpecificConfig(baseConfig, sportPreset, style);
+        const selected = getPublicTemplate("sport-events", activeTemplateId);
+        return { ...result, defaultHero: selected?.heroImage || result.defaultHero,
+          themes: themedDesign ? [getThemedEventTheme(themedDesign), ...result.themes] : result.themes,
+          prefill: { ...result.prefill, hero: selected?.heroImage || result.prefill?.hero } };
+      },
+      [sportPreset, style, activeTemplateId, themedDesign],
     );
     const editEventId = search?.get("edit") ?? undefined;
     const defaultDate = search?.get("d") ?? undefined;
@@ -328,6 +339,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       details: config.prefill?.details || "Tell guests what to expect.",
       importedTheme: null,
       themeFontOverride: false,
+      theme: config.themes[0],
+      fontFamily: themedDesign?.font || SPORT_FONTS[0].css,
       heroImageFilterEnabled: true,
       hero: config.prefill?.hero || "",
       rsvpEnabled: config.prefill?.rsvpEnabled ?? true,
@@ -340,12 +353,12 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
         })(),
       fontId: (config as any)?.prefill?.fontId || SPORT_FONTS[0]?.id || "anton",
       fontSize: (config as any)?.prefill?.fontSize || "medium",
-      extra: Object.fromEntries(
+      extra: { ...config.prefill?.extra, ...Object.fromEntries(
         config.detailFields.map((f) => [
           f.key,
           config.prefill?.extra?.[f.key] ?? (f.placeholder || ""),
         ]),
-      ),
+      ) },
     }));
     const [advancedState, setAdvancedState] = useTemplateState("advancedState", () => {
       const entries =
@@ -418,6 +431,9 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
           const json = await res.json();
           const existing = json?.data || {};
           existingEventDataRef.current = existing;
+          const restoredDesignId = existing.bodyDesignId || existing.templateEditor?.templateId;
+          const restoredDesign = getDeliveredThemedEventDesign(restoredDesignId);
+          if (restoredDesignId) setActiveTemplateId(restoredDesignId);
 
           const startIso = existing.start || existing.startISO || existing.startIso;
           let loadedDate: string | undefined;
@@ -446,6 +462,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
             heroImageFilterEnabled: existing.heroImageFilterEnabled !== false,
             importedTheme: readImportedEventTheme(existing.importedTheme),
             themeFontOverride: existing.themeFontOverride === true,
+            theme: existing.theme || prev.theme,
+            fontFamily: existing.fontFamily || existing.theme?.fontFamily || prev.fontFamily,
             hero: existing.heroImage || existing.hero || prev.hero,
             rsvpEnabled:
               typeof existing.rsvpEnabled === "boolean" ? existing.rsvpEnabled : prev.rsvpEnabled,
@@ -476,6 +494,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
 
           if (search?.get("intake") && style) {
             setThemeId(config.themes[0]?.id ?? "default-theme");
+          } else if (restoredDesign && (!existing.themeId || existing.themeId === restoredDesign.id)) {
+            setThemeId(restoredDesign.id);
           } else if (existing.themeId && config.themes.find((t) => t.id === existing.themeId)) {
             setThemeId(existing.themeId);
           } else if (existing.theme?.id && config.themes.find((t) => t.id === existing.theme.id)) {
@@ -508,12 +528,15 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
 
     const importedTheme = activeImportedTheme(data.importedTheme);
     const currentTheme = importedSportsTheme(data.importedTheme) || config.themes.find((t) => t.id === themeId) || config.themes[0];
+    const authoredTheme = !importedTheme && themedDesign && currentTheme.id === themedDesign.id;
+    const authoredFont = !data.themeFontOverride && themedDesign?.font;
 
     const selectedFont = SPORT_FONTS.find((f) => f.id === data.fontId) || SPORT_FONTS[0];
     const selectedSize =
       FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) || FONT_SIZE_OPTIONS[1];
 
     const isDarkBackground = useMemo(() => {
+      if (authoredTheme && themedDesign) return isThemedEventDesignDark(themedDesign);
       const bg = currentTheme?.bg?.toLowerCase() ?? "";
       const id = currentTheme?.id?.toLowerCase() ?? "";
       const darkTokens = [
@@ -536,22 +559,22 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       const hasDarkHex = /#0[0-9a-f]{5,}/i.test(bg);
       const idHintsDark = /(night|dark)/i.test(id);
       return hasDarkToken || hasDarkHex || idHintsDark;
-    }, [currentTheme]);
+    }, [currentTheme, authoredTheme, themedDesign]);
 
 
 const rawTextClass = currentTheme?.text || "";
     const forceLightText = isDarkBackground && !rawTextClass.toLowerCase().includes("text-white");
-    const textClass = forceLightText ? "text-white" : rawTextClass || "text-white";
-    const accentClass = forceLightText ? "text-white" : currentTheme?.accent || textClass;
+    const textClass = authoredTheme ? "text-inherit" : forceLightText ? "text-white" : rawTextClass || "text-white";
+    const accentClass = authoredTheme ? "text-inherit" : forceLightText ? "text-white" : currentTheme?.accent || textClass;
     const usesLightText = /text-(white|slate-50|neutral-50|gray-50)/.test(textClass);
     const headingShadow = usesLightText ? { textShadow: "0 2px 6px rgba(0,0,0,0.55)" } : undefined;
     const bodyShadow = usesLightText ? { textShadow: "0 1px 3px rgba(0,0,0,0.45)" } : undefined;
     // Title color for dark backgrounds - light gold/beige
-    const titleColor = isDarkBackground
+    const titleColor = authoredTheme ? { color: themedDesign.ink } : isDarkBackground
       ? { color: "#f5e6d3" } // Light beige/gold
       : undefined;
     const headingFontStyle = {
-      fontFamily: importedTheme && !data.themeFontOverride ? IMPORTED_THEME_FONTS[importedTheme.font] : selectedFont?.css,
+      fontFamily: importedTheme && !data.themeFontOverride ? IMPORTED_THEME_FONTS[importedTheme.font] : authoredFont || selectedFont?.css,
       ...(headingShadow || {}),
       ...(titleColor || {}),
     };
@@ -691,7 +714,7 @@ const rawTextClass = currentTheme?.text || "";
           rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
           numberOfGuests: 0,
           templateId: config.slug,
-          bodyDesignId: `${sportPreset.key}--${style || "stadium"}`,
+          bodyDesignId: activeTemplateId,
           templateConfig: {
             displayName: config.displayName,
             categoryLabel: config.categoryLabel || config.displayName,
@@ -711,7 +734,7 @@ const rawTextClass = currentTheme?.text || "";
           theme: themeToSave,
           fontId: validFontId,
           fontSize: validFontSize,
-          fontFamily: activeImportedTheme(data.importedTheme) && !data.themeFontOverride ? IMPORTED_THEME_FONTS[data.importedTheme.font] : currentSelectedFont?.css,
+          fontFamily: activeImportedTheme(data.importedTheme) && !data.themeFontOverride ? IMPORTED_THEME_FONTS[data.importedTheme.font] : authoredFont || currentSelectedFont?.css,
           fontSizeClass: currentSelectedSize?.className,
           time: data.time,
           date: data.date,
@@ -744,10 +767,11 @@ const rawTextClass = currentTheme?.text || "";
       router,
       themeId,
     sportPreset.key,
+      activeTemplateId, authoredFont,
       style,
     ]);
 
-    const editor = useEventPageEditor({ snapshot: { data, advancedState, themeId }, category: config.category, templateId: `${data.extra.sport || "football"}--${search?.get("style") || "stadium"}`, eventId: editEventId, historyClient: eventHistoryClient, ready: !_loadingExisting, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload, templateCategory: "sport-events" });
+    const editor = useEventPageEditor({ snapshot: { data, advancedState, themeId, activeTemplateId }, category: config.category, templateId: activeTemplateId, eventId: editEventId, historyClient: eventHistoryClient, ready: !_loadingExisting, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload, templateCategory: "sport-events" });
 
     const rsvpCopy = {
       menuTitle: config.rsvpCopy?.menuTitle || "RSVP",
@@ -918,7 +942,7 @@ const rawTextClass = currentTheme?.text || "";
                   key={theme.id}
                   theme={theme}
                   active={themeId === theme.id}
-                  onClick={() => { setThemeId(theme.id); setData(prev => ({ ...prev, importedTheme: prev.importedTheme ? { ...prev.importedTheme, enabled: false } : null })); }}
+                  onClick={() => { setThemeId(theme.id); setData(prev => ({ ...prev, theme, importedTheme: prev.importedTheme ? { ...prev.importedTheme, enabled: false } : null })); }}
                 />
               ))}
             </div>
@@ -949,7 +973,7 @@ const rawTextClass = currentTheme?.text || "";
                   key={f.id}
                   onClick={() => {
                     setFontScrollTop(fontListRef.current?.scrollTop || 0);
-                    setData((p) => ({ ...p, fontId: f.id, themeFontOverride: true }));
+                    setData((p) => ({ ...p, fontId: f.id, fontFamily: f.css, themeFontOverride: true }));
                   }}
                   className={`border rounded-lg p-3 text-left transition-colors ${
                     data.fontId === f.id
@@ -1119,10 +1143,11 @@ const rawTextClass = currentTheme?.text || "";
           <div className="w-full min-w-0 mb-12 md:mb-16 transition-all duration-500 ease-in-out">
             <div
               data-imported-theme={importedTheme?.id}
-              style={importedThemeStyle(data.importedTheme)}
+              style={importedThemeStyle(data.importedTheme) || currentTheme.bgStyle}
               className={`min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${textClass} transition-all duration-500 relative z-0`}
             >
               <div className="relative z-10">
+                <ThemedEventHeader design={themedDesign} fontFamily={headingFontStyle.fontFamily}>
                 <TemplateImageTone enabled={data.heroImageFilterEnabled !== false} color={currentTheme.accent || currentTheme.bg}>
 <div className="relative w-full aspect-video">
                   {importedTheme ? <img src={importedArtworkSrc(data.importedTheme, data.hero, config.defaultHero)} alt="Event artwork" className="template-hero-image w-full h-full object-cover" /> : data.hero ? (
@@ -1199,7 +1224,8 @@ const rawTextClass = currentTheme?.text || "";
                   </div>
                 </div>
 
-                <TemplateBodyLayout presentation={getTemplateBodyPresentation("sport-events", `${sportPreset.key}--${style || "stadium"}`)}>
+                </ThemedEventHeader>
+                <TemplateBodyLayout presentation={getTemplateBodyPresentation("sport-events", activeTemplateId)}>
                 <section id="details" className="py-10 border-t border-white/10 px-6 md:px-10">
                   <h2 className={`text-2xl mb-3 ${accentClass}`} style={headingFontStyle}>
                     Details

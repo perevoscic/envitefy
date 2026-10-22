@@ -28,6 +28,7 @@ import {
   parseEventGuestDate,
 } from "@/lib/event-guest-planning";
 import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
+import { getThemedEventDesign, getThemedEventTheme } from "@/lib/event-page-themed-designs";
 
 const DEFAULT_HERO_IMAGE = "/templates/hero-images/baby-shower-hero.jpeg";
 
@@ -191,15 +192,16 @@ export default function BabyShowerTemplateView({
   const isBridal = eventData?.occasion === "bridal-shower";
   const canEdit = canEditProp ?? isOwner;
   const design = isBridal ? undefined : getBabyShowerDesign(eventData?.templateId);
+  const themedBridal = isBridal ? getThemedEventDesign(eventData?.templateId) : undefined;
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
   const [rsvpAttending, setRsvpAttending] = useState<boolean | null>(null);
   const [rsvpName, setRsvpName] = useState("");
 
   const heroImage = isBridal
-    ? eventData?.heroImage || DEFAULT_HERO_IMAGE
+    ? eventData?.heroImage || themedBridal?.artwork || DEFAULT_HERO_IMAGE
     : resolveBabyShowerHero(eventData?.heroImage, design);
   // Get theme from saved data - saved theme should have all properties (bg, text, accent, bgStyle, name, etc.)
-  const savedTheme = { ...(design ? getBabyShowerTheme(design) : {}), ...eventData?.theme };
+  const savedTheme = { ...(design ? getBabyShowerTheme(design) : themedBridal ? getThemedEventTheme(themedBridal) : {}), ...eventData?.theme };
   const themeId = eventData?.themeId || savedTheme?.themeId || savedTheme?.id;
 
   // If saved theme is missing critical properties, look it up from DESIGN_THEMES as fallback

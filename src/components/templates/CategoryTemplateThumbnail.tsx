@@ -12,6 +12,7 @@ import WeddingDesignPreview from "@/components/weddings/WeddingDesignPreview";
 import { BIRTHDAY_DESIGN_BY_ID } from "@/data/birthday-design-catalog";
 import { BABY_SHOWER_DESIGNS, getBabyShowerDesign } from "@/lib/baby-shower-designs";
 import { getGenderRevealDesign } from "@/lib/gender-reveal-designs";
+import { getThemedEventDesign } from "@/lib/event-page-themed-designs";
 import { BRIDAL_PRESETS, type PublicTemplate } from "@/lib/public-template-catalog";
 import { getSportEventPreset, getSportStyleThemeIds } from "@/lib/sport-event-presets";
 import type { TemplateCategory } from "@/lib/template-categories";
@@ -24,6 +25,8 @@ export default function CategoryTemplateThumbnail({
   category: TemplateCategory;
   template: Pick<PublicTemplate, "id" | "name" | "heroImage">;
 }) {
+  const themed = getThemedEventDesign(template.id);
+  if (themed) return <TemplateArtworkThumbnail design={themed} />;
   if (category === "signup-forms") return <SignupTemplatePreview template={template} />;
   if (category === "weddings") {
     const design = weddingDesignCatalog.find((item) => item.id === template.id);

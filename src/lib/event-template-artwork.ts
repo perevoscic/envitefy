@@ -2,7 +2,8 @@ import { getFootballDesign } from "@/components/football-season-templates/footba
 import { getGymMeetTemplateMeta, resolveGymMeetTemplateId } from "@/components/gym-meet-templates/registry";
 import { getBabyShowerDesign, resolveBabyShowerHero } from "./baby-shower-designs";
 import { getGeneralEventDesign } from "./general-event-designs";
-import { getPublicTemplates } from "./public-template-catalog";
+import { getDeliveredThemedEventDesign } from "./event-page-themed-designs";
+import { getPublicTemplate, getPublicTemplates } from "./public-template-catalog";
 import { getSignupDesign } from "./signup-designs";
 import type { TemplateCategory } from "./template-categories";
 
@@ -51,7 +52,7 @@ function catalogArtwork(category: TemplateCategory, ids: string[]): string | nul
     catalogs.set(category, catalog);
   }
   for (const id of ids) {
-    const artwork = catalog.get(id);
+    const artwork = catalog.get(id) || getPublicTemplate(category, id)?.heroImage;
     if (artwork) return artwork;
   }
   return null;
@@ -64,6 +65,12 @@ export function resolveEventTemplateArtwork(data: Record<string, unknown>): stri
   const editor = record(data.templateEditor);
   const ids = [editor.templateId, data.pageTemplateId, data.variationId, theme.themeId,
     theme.id, data.themeId, data.bodyDesignId, data.templateId].map(text).filter(Boolean);
+  if (["general", "bridal-showers", "sport-events"].includes(category)) {
+    for (const id of ids) {
+      const themed = getDeliveredThemedEventDesign(id);
+      if (themed) return themed.artwork;
+    }
+  }
   switch (category) {
     case "gymnastics":
       return getGymMeetTemplateMeta(resolveGymMeetTemplateId({ pageTemplateId: text(data.pageTemplateId) || text(editor.templateId) })).artwork;
