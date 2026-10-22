@@ -37,6 +37,11 @@ const nextConfig = (phase: string): NextConfig => ({
   async redirects() {
     return [
       {
+        source: "/admin/ad-studio/:path*",
+        destination: "/admin",
+        permanent: false,
+      },
+      {
         source: "/livacards-invites",
         destination: "/live-cards",
         permanent: true,

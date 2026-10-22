@@ -532,7 +532,6 @@ const adminSidebarIcons: Record<
   events: Gauge,
   scans: Search,
   emails: Mail,
-  "ad-studio": WandSparkles,
   analytics: BarChart3,
   settings: Settings,
   health: HeartPulse,

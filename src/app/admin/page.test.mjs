@@ -25,10 +25,8 @@ test("admin nav config has expected sections", () => {
     "Dashboard",
     "Users",
     "Events",
-    "Envitefy Create",
     "Scans & Traffic",
     "Emails",
-    "Ad Studio",
     "Analytics",
     "Settings",
     "Logs / Health",
@@ -37,8 +35,7 @@ test("admin nav config has expected sections", () => {
   }
 
   assert.match(source, /href: "\/admin"/);
-  assert.match(source, /href: "\/admin\/ad-studio"/);
-  assert.doesNotMatch(source, /Content Studio|marketing-images/);
+  assert.doesNotMatch(source, /Ad Studio|ad-studio|Content Studio|marketing-images/);
 });
 
 test("admin layout does not render the duplicate internal admin rail", () => {

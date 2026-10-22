@@ -6,4 +6,4 @@ The `/admin/marketing-images` page and its legacy subpage, dedicated `/api/admin
 
 Historical database records, generated media, and the applied `20260904_add_admin_marketing_studio.sql` migration are retained. This retirement does not drop tables or delete stored assets.
 
-The customer invitation editor at `/studio`, the separate `/admin/ad-studio`, and the local `video-studio/` project are separate features. Do not restore the retired Content Studio page or cron as a dependency of those workflows.
+Live Cards at `/live-cards`, the legacy `/studio` redirects and associated invitation services, the independent `/api/admin/marketing-campaigns` workflow, and the local `video-studio/` project remain separate from Content Studio. [Admin Ad Studio was also retired](admin-ad-studio.md) on October 22, 2026. Do not restore either retired studio as a dependency of the retained workflows.

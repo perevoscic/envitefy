@@ -4,6 +4,8 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 
 ## Reality Check
 
+- Ad Studio retirement (October 22, 2026): remove the unused `/admin/ad-studio` UI, APIs, server actions and dedicated pipeline. Old page bookmarks redirect to `/admin` through Next configuration; retired API requests return 404. Preserve saved files in `qa-artifacts/ad-studio-runs`, shared branding/admin helpers/dependencies, Live Cards and `/studio` compatibility routes, marketing-campaign workflows and the local `video-studio/` project. Do not restore the retired Ad Studio as a dependency of those features. See `docs/admin-ad-studio.md`.
+
 - Compact appearance switch (October 22, 2026): use the small 56 × 28 sun/moon track with a white thumb, soft top shadow and subtle lavender glow in dark appearance. Retain a 44px-high invisible touch target. Do not show a System/Device button or a separate current-mode label. Fresh browsers follow device appearance automatically until the user explicitly toggles Light/Dark; retain that browser-local override across reloads and device changes. This supersedes the earlier three-choice appearance-control preference while preserving the shared provider, first-paint bootstrap and authored-design boundaries.
 
 - Appearance delivery and account menus (October 22, 2026): import shared navigation and switch CSS modules from the persistent root layout so the lazy sidebar's stylesheet delivery cannot leave dark navigation pale or toggle icons unstyled. Verify actual Next delivery as well as isolated fixtures. Account menus put Log out on the left and the compact toggle on the right in two equal columns in the bottom row; omit visible Appearance copy in navigation while preserving accessible names.

@@ -82,7 +82,6 @@ const adminRoutes = [
   "/admin/campaigns",
   "/admin/events",
   "/admin/analytics",
-  "/admin/ad-studio",
   "/admin/concierge",
   "/admin/landing-preview",
   "/admin/marketing-images",
